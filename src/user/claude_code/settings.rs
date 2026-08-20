@@ -55,6 +55,133 @@ pub struct SandboxFilesystem {
     pub allow_read: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub allow_managed_read_paths_only: Option<bool>,
+    /// Skip filesystem isolation while keeping network isolation (v2.1.216+).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub disabled: Option<bool>,
+}
+
+/// Terminate TLS inside the sandbox proxy. `{}` generates an ephemeral CA for
+/// the session; set both paths to supply your own. Required for credential
+/// `mask` substitution. Experimental, v2.1.199+.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct SandboxTlsTerminate {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ca_cert_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ca_key_path: Option<String>,
+}
+
+/// One environment variable protected from sandboxed commands. `mode` is
+/// `deny` (removed from the environment, v2.1.187+) or `mask` (replaced with a
+/// sentinel that the proxy substitutes back on `inject_hosts`, v2.1.199+).
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct SandboxCredentialEnvVar {
+    pub name: String,
+    pub mode: String,
+    /// Regex whose capture group 1 is masked, leaving the rest parseable.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extract: Option<String>,
+    /// `warn` (default), `deny`, or `error` when `extract` matches nothing.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub on_extract_no_match: Option<String>,
+    /// Format-aware masking; the only value is `jwt`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub decode: Option<String>,
+    /// JWT payload claims to mask instead of the whole token (v2.1.224+).
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub mask_claims: Vec<String>,
+    /// Hosts the proxy substitutes on; each must also pass `allowed_domains`.
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub inject_hosts: Vec<String>,
+}
+
+/// One credential file or directory protected from sandboxed commands.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct SandboxCredentialFile {
+    pub path: String,
+    pub mode: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extract: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub on_extract_no_match: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub decode: Option<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub mask_claims: Vec<String>,
+    /// Also replace verbatim copies found outside the matched spans (v2.1.221+).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mask_duplicates: Option<bool>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub inject_hosts: Vec<String>,
+}
+
+/// A group of masked environment variables forming one AWS credential, for
+/// SigV4 re-signing under non-standard variable names.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct SandboxCredentialAwsPair {
+    pub access_key_id_var: String,
+    pub secret_access_key_var: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub session_token_var: Option<String>,
+}
+
+/// Policies for AWS request forms the proxy cannot re-sign. Each accepts
+/// `deny` (default) or `passthrough`.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct SandboxCredentialSigv4 {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub streaming: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub presigned: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sigv4a: Option<String>,
+}
+
+/// Prompt-input spell checking. Read from user, `--settings`, and managed
+/// settings only.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Spellcheck {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub language: Option<String>,
+}
+
+/// One footer badge rule: a regex over turn output plus a URL template whose
+/// `{name}` placeholders are filled from named capture groups.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct FooterLinkRegex {
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
+    pub link_type: Option<String>,
+    pub pattern: String,
+    pub url: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
+}
+
+/// Credentials kept out of sandboxed commands. A deny here is a wall a
+/// `dangerouslyDisableSandbox` retry cannot climb, unlike a `denyRead` path.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct SandboxCredentials {
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub env_vars: Vec<SandboxCredentialEnvVar>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub files: Vec<SandboxCredentialFile>,
+    /// Allow `mask` substitution on plain HTTP as well as terminated HTTPS.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub allow_plaintext_inject: Option<bool>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub aws_pairs: Vec<SandboxCredentialAwsPair>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sigv4: Option<SandboxCredentialSigv4>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -78,6 +205,12 @@ pub struct SandboxNetwork {
     pub http_proxy_port: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub socks_proxy_port: Option<u32>,
+    /// Deny hosts outside the allowlist outright instead of prompting.
+    /// Sandboxed commands only; in-process tools such as WebFetch are unaffected.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub strict_allowlist: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tls_terminate: Option<SandboxTlsTerminate>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -105,6 +238,26 @@ pub struct Sandbox {
     pub bwrap_path: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub socat_path: Option<String>,
+    /// (macOS) Let sandboxed commands send Apple Events — required by `open`,
+    /// `osascript`, and browser auth flows, which otherwise fail with `-600`.
+    /// REMOVES code-execution isolation; prefer `excluded_commands` per tool.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub allow_apple_events: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub credentials: Option<SandboxCredentials>,
+    /// Custom `ripgrep` binary for the sandbox; defaults to the one Claude
+    /// Code's own Grep tool uses.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ripgrep: Option<SandboxRipgrep>,
+}
+
+/// A `ripgrep` binary the sandbox should use instead of the bundled one.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct SandboxRipgrep {
+    pub command: String,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub args: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -113,6 +266,11 @@ pub struct Attribution {
     pub commit: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pr: Option<String>,
+    /// Append the claude.ai session link as a `Claude-Session` commit trailer
+    /// and a PR-description link from cloud or Remote Control sessions.
+    /// Defaults to `true` upstream.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub session_url: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -478,6 +636,133 @@ pub struct ClaudeCodeSettings {
     force_remote_settings_refresh: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     wsl_inherits_windows_settings: Option<bool>,
+
+    // ================================================================
+    // Keys documented for Claude Code 2.1.236 that this builder could not
+    // previously express. Every one is Option/Vec and skipped when empty, so
+    // adding them changes no emitted settings file until something sets one.
+    // `ultracode` is deliberately absent — the docs state it is not read from
+    // settings.json — as is `teammateDefaultModel`, removed in v2.1.234.
+    // ================================================================
+
+    // ---- Models and sessions ----
+    #[serde(skip_serializing_if = "Option::is_none")]
+    advisor_model: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    enforce_available_models: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    switch_models_on_flag: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    fast_mode: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    auto_compact_enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    auto_compact_window: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    file_checkpointing_enabled: Option<bool>,
+
+    // ---- Interaction and dialogs ----
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ask_user_question_timeout: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    dialog_expiry: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    respond_to_bash_commands: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    permission_explainer_enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    prompt_suggestion_enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    emoji_completion_enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    external_editor_context: Option<bool>,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
+    vim_insert_mode_remaps: BTreeMap<String, String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    spellcheck: Option<Spellcheck>,
+
+    // ---- Display ----
+    #[serde(skip_serializing_if = "Option::is_none")]
+    theme: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    verbose: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ax_screen_reader: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    wheel_scroll_acceleration_enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    subagent_status_line: Option<StatusLine>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    footer_links_regexes: Vec<FooterLinkRegex>,
+
+    // ---- Workflows and skills ----
+    #[serde(skip_serializing_if = "Option::is_none")]
+    disable_workflows: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    workflow_keyword_trigger_enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    workflow_size_guideline: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    disable_bundled_skills: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    skill_listing_max_desc_chars: Option<u32>,
+
+    // ---- Artifact ----
+    #[serde(skip_serializing_if = "Option::is_none")]
+    enable_artifact: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    disable_artifact: Option<bool>,
+
+    // ---- IDE ----
+    #[serde(skip_serializing_if = "Option::is_none")]
+    auto_connect_ide: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    auto_install_ide_extension: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    diff_tool: Option<String>,
+
+    // ---- Remote control, notifications, cross-session ----
+    #[serde(skip_serializing_if = "Option::is_none")]
+    remote_control_at_startup: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    agent_push_notif_enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    input_needed_notif_enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    cross_session_inbound: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    isolate_peer_machines: Option<bool>,
+
+    // ---- Connectors and browser ----
+    #[serde(skip_serializing_if = "Option::is_none")]
+    disable_claude_ai_connectors: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    allow_all_claude_ai_mcps: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    browser_external_page_tools: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    disable_browser_external_navigation: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    disable_mobile_simulator_tools: Option<bool>,
+
+    // ---- Managed-only governance (2.1.236) ----
+    #[serde(skip_serializing_if = "Option::is_none")]
+    required_minimum_version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    required_maximum_version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    disable_sideload_flags: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    disable_command_plugin_sources: Option<bool>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    plugin_suggestion_marketplaces: Vec<String>,
+    /// `true` locks all four surfaces; an array locks only the named ones.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    strict_plugin_only_customization: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    process_wrapper: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    force_login_gateway_url: Option<String>,
 }
 
 impl ClaudeCodeSettings {
@@ -617,6 +902,58 @@ impl ClaudeCodeSettings {
             policy_helper: None,
             force_remote_settings_refresh: None,
             wsl_inherits_windows_settings: None,
+
+            // 2.1.236 schema completion — all unset, all skipped when empty.
+            advisor_model: None,
+            enforce_available_models: None,
+            switch_models_on_flag: None,
+            fast_mode: None,
+            auto_compact_enabled: None,
+            auto_compact_window: None,
+            file_checkpointing_enabled: None,
+            ask_user_question_timeout: None,
+            dialog_expiry: None,
+            respond_to_bash_commands: None,
+            permission_explainer_enabled: None,
+            prompt_suggestion_enabled: None,
+            emoji_completion_enabled: None,
+            external_editor_context: None,
+            vim_insert_mode_remaps: BTreeMap::new(),
+            spellcheck: None,
+            theme: None,
+            verbose: None,
+            ax_screen_reader: None,
+            wheel_scroll_acceleration_enabled: None,
+            subagent_status_line: None,
+            footer_links_regexes: Vec::new(),
+            disable_workflows: None,
+            workflow_keyword_trigger_enabled: None,
+            workflow_size_guideline: None,
+            disable_bundled_skills: None,
+            skill_listing_max_desc_chars: None,
+            enable_artifact: None,
+            disable_artifact: None,
+            auto_connect_ide: None,
+            auto_install_ide_extension: None,
+            diff_tool: None,
+            remote_control_at_startup: None,
+            agent_push_notif_enabled: None,
+            input_needed_notif_enabled: None,
+            cross_session_inbound: None,
+            isolate_peer_machines: None,
+            disable_claude_ai_connectors: None,
+            allow_all_claude_ai_mcps: None,
+            browser_external_page_tools: None,
+            disable_browser_external_navigation: None,
+            disable_mobile_simulator_tools: None,
+            required_minimum_version: None,
+            required_maximum_version: None,
+            disable_sideload_flags: None,
+            disable_command_plugin_sources: None,
+            plugin_suggestion_marketplaces: Vec::new(),
+            strict_plugin_only_customization: None,
+            process_wrapper: None,
+            force_login_gateway_url: None,
         }
     }
 
@@ -1625,6 +1962,410 @@ impl ClaudeCodeSettings {
     #[allow(dead_code)]
     pub fn with_wsl_inherits_windows_settings(mut self, inherit: bool) -> Self {
         self.wsl_inherits_windows_settings = Some(inherit);
+        self
+    }
+
+    // =====================================================================
+    // Claude Code 2.1.236 schema completion
+    // =====================================================================
+
+    #[allow(dead_code)]
+    pub fn with_advisor_model(mut self, model: &str) -> Self {
+        self.advisor_model = Some(model.to_string());
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_enforce_available_models(mut self, enforce: bool) -> Self {
+        self.enforce_available_models = Some(enforce);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_switch_models_on_flag(mut self, switch: bool) -> Self {
+        self.switch_models_on_flag = Some(switch);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_fast_mode(mut self, fast: bool) -> Self {
+        self.fast_mode = Some(fast);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_auto_compact_enabled(mut self, enabled: bool) -> Self {
+        self.auto_compact_enabled = Some(enabled);
+        self
+    }
+
+    /// Context fill before automatic compaction, in tokens (100000-1000000).
+    #[allow(dead_code)]
+    pub fn with_auto_compact_window(mut self, tokens: u32) -> Self {
+        self.auto_compact_window = Some(tokens);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_file_checkpointing_enabled(mut self, enabled: bool) -> Self {
+        self.file_checkpointing_enabled = Some(enabled);
+        self
+    }
+
+    /// `"60s"`, `"5m"`, `"10m"`, or `"never"` (the default).
+    #[allow(dead_code)]
+    pub fn with_ask_user_question_timeout(mut self, timeout: &str) -> Self {
+        self.ask_user_question_timeout = Some(timeout.to_string());
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_dialog_expiry(mut self, expiry: &str) -> Self {
+        self.dialog_expiry = Some(expiry.to_string());
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_respond_to_bash_commands(mut self, respond: bool) -> Self {
+        self.respond_to_bash_commands = Some(respond);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_permission_explainer_enabled(mut self, enabled: bool) -> Self {
+        self.permission_explainer_enabled = Some(enabled);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_prompt_suggestion_enabled(mut self, enabled: bool) -> Self {
+        self.prompt_suggestion_enabled = Some(enabled);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_emoji_completion_enabled(mut self, enabled: bool) -> Self {
+        self.emoji_completion_enabled = Some(enabled);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_external_editor_context(mut self, enabled: bool) -> Self {
+        self.external_editor_context = Some(enabled);
+        self
+    }
+
+    /// Two printable characters mapped to `"<Esc>"` in vim INSERT mode.
+    #[allow(dead_code)]
+    pub fn with_vim_insert_mode_remap(mut self, keys: &str, target: &str) -> Self {
+        self.vim_insert_mode_remaps
+            .insert(keys.to_string(), target.to_string());
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_spellcheck(mut self, spellcheck: Spellcheck) -> Self {
+        self.spellcheck = Some(spellcheck);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_theme(mut self, theme: &str) -> Self {
+        self.theme = Some(theme.to_string());
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_verbose(mut self, verbose: bool) -> Self {
+        self.verbose = Some(verbose);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_ax_screen_reader(mut self, enabled: bool) -> Self {
+        self.ax_screen_reader = Some(enabled);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_wheel_scroll_acceleration_enabled(mut self, enabled: bool) -> Self {
+        self.wheel_scroll_acceleration_enabled = Some(enabled);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_subagent_status_line(mut self, status_line: StatusLine) -> Self {
+        self.subagent_status_line = Some(status_line);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_footer_link_regex(mut self, link: FooterLinkRegex) -> Self {
+        self.footer_links_regexes.push(link);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_disable_workflows(mut self, disable: bool) -> Self {
+        self.disable_workflows = Some(disable);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_workflow_keyword_trigger_enabled(mut self, enabled: bool) -> Self {
+        self.workflow_keyword_trigger_enabled = Some(enabled);
+        self
+    }
+
+    /// `"unrestricted"`, `"large"`, `"medium"` (default), or `"small"`.
+    #[allow(dead_code)]
+    pub fn with_workflow_size_guideline(mut self, guideline: &str) -> Self {
+        self.workflow_size_guideline = Some(guideline.to_string());
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_disable_bundled_skills(mut self, disable: bool) -> Self {
+        self.disable_bundled_skills = Some(disable);
+        self
+    }
+
+    /// Per-skill cap on description text in the listing. Default 1536.
+    #[allow(dead_code)]
+    pub fn with_skill_listing_max_desc_chars(mut self, chars: u32) -> Self {
+        self.skill_listing_max_desc_chars = Some(chars);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_enable_artifact(mut self, enable: bool) -> Self {
+        self.enable_artifact = Some(enable);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_disable_artifact(mut self, disable: bool) -> Self {
+        self.disable_artifact = Some(disable);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_auto_connect_ide(mut self, connect: bool) -> Self {
+        self.auto_connect_ide = Some(connect);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_auto_install_ide_extension(mut self, install: bool) -> Self {
+        self.auto_install_ide_extension = Some(install);
+        self
+    }
+
+    /// `"auto"` or `"terminal"`.
+    #[allow(dead_code)]
+    pub fn with_diff_tool(mut self, tool: &str) -> Self {
+        self.diff_tool = Some(tool.to_string());
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_remote_control_at_startup(mut self, connect: bool) -> Self {
+        self.remote_control_at_startup = Some(connect);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_agent_push_notif_enabled(mut self, enabled: bool) -> Self {
+        self.agent_push_notif_enabled = Some(enabled);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_input_needed_notif_enabled(mut self, enabled: bool) -> Self {
+        self.input_needed_notif_enabled = Some(enabled);
+        self
+    }
+
+    /// `"accept"`, `"hold"`, or `"refuse"`.
+    #[allow(dead_code)]
+    pub fn with_cross_session_inbound(mut self, mode: &str) -> Self {
+        self.cross_session_inbound = Some(mode.to_string());
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_isolate_peer_machines(mut self, isolate: bool) -> Self {
+        self.isolate_peer_machines = Some(isolate);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_disable_claude_ai_connectors(mut self, disable: bool) -> Self {
+        self.disable_claude_ai_connectors = Some(disable);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_allow_all_claude_ai_mcps(mut self, allow: bool) -> Self {
+        self.allow_all_claude_ai_mcps = Some(allow);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_browser_external_page_tools(mut self, mode: &str) -> Self {
+        self.browser_external_page_tools = Some(mode.to_string());
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_disable_browser_external_navigation(mut self, disable: bool) -> Self {
+        self.disable_browser_external_navigation = Some(disable);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_disable_mobile_simulator_tools(mut self, disable: bool) -> Self {
+        self.disable_mobile_simulator_tools = Some(disable);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_required_minimum_version(mut self, version: &str) -> Self {
+        self.required_minimum_version = Some(version.to_string());
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_required_maximum_version(mut self, version: &str) -> Self {
+        self.required_maximum_version = Some(version.to_string());
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_disable_sideload_flags(mut self, disable: bool) -> Self {
+        self.disable_sideload_flags = Some(disable);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_disable_command_plugin_sources(mut self, disable: bool) -> Self {
+        self.disable_command_plugin_sources = Some(disable);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_plugin_suggestion_marketplaces(mut self, marketplaces: Vec<String>) -> Self {
+        self.plugin_suggestion_marketplaces = marketplaces;
+        self
+    }
+
+    /// `true` locks skills, agents, hooks, and MCP servers to plugin or
+    /// managed sources; an array locks only the named surfaces.
+    #[allow(dead_code)]
+    pub fn with_strict_plugin_only_customization(mut self, value: Value) -> Self {
+        self.strict_plugin_only_customization = Some(value);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_process_wrapper(mut self, wrapper: &str) -> Self {
+        self.process_wrapper = Some(wrapper.to_string());
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_force_login_gateway_url(mut self, url: &str) -> Self {
+        self.force_login_gateway_url = Some(url.to_string());
+        self
+    }
+
+    // ---- Sandbox additions ----
+
+    /// Skip filesystem isolation while keeping network isolation (v2.1.216+).
+    #[allow(dead_code)]
+    pub fn with_sandbox_filesystem_disabled(mut self, disabled: bool) -> Self {
+        let mut sandbox = self.sandbox.unwrap_or_default();
+        let mut filesystem = sandbox.filesystem.unwrap_or_default();
+        filesystem.disabled = Some(disabled);
+        sandbox.filesystem = Some(filesystem);
+        self.sandbox = Some(sandbox);
+        self
+    }
+
+    /// Deny non-allowlisted hosts outright instead of prompting.
+    #[allow(dead_code)]
+    pub fn with_sandbox_network_strict_allowlist(mut self, strict: bool) -> Self {
+        let mut sandbox = self.sandbox.unwrap_or_default();
+        let mut network = sandbox.network.unwrap_or_default();
+        network.strict_allowlist = Some(strict);
+        sandbox.network = Some(network);
+        self.sandbox = Some(sandbox);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_sandbox_network_tls_terminate(mut self, tls: SandboxTlsTerminate) -> Self {
+        let mut sandbox = self.sandbox.unwrap_or_default();
+        let mut network = sandbox.network.unwrap_or_default();
+        network.tls_terminate = Some(tls);
+        sandbox.network = Some(network);
+        self.sandbox = Some(sandbox);
+        self
+    }
+
+    /// (macOS) Allow Apple Events from sandboxed commands. REMOVES
+    /// code-execution isolation — prefer excluding the specific command.
+    #[allow(dead_code)]
+    pub fn with_sandbox_allow_apple_events(mut self, allow: bool) -> Self {
+        let mut sandbox = self.sandbox.unwrap_or_default();
+        sandbox.allow_apple_events = Some(allow);
+        self.sandbox = Some(sandbox);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_attribution_session_url(mut self, enabled: bool) -> Self {
+        let mut attr = self.attribution.unwrap_or_default();
+        attr.session_url = Some(enabled);
+        self.attribution = Some(attr);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_sandbox_ripgrep(mut self, ripgrep: SandboxRipgrep) -> Self {
+        let mut sandbox = self.sandbox.unwrap_or_default();
+        sandbox.ripgrep = Some(ripgrep);
+        self.sandbox = Some(sandbox);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_sandbox_credentials(mut self, credentials: SandboxCredentials) -> Self {
+        let mut sandbox = self.sandbox.unwrap_or_default();
+        sandbox.credentials = Some(credentials);
+        self.sandbox = Some(sandbox);
+        self
+    }
+
+    /// Remove or mask one environment variable inside the sandbox. Unlike a
+    /// `denyRead` path, this survives a `dangerouslyDisableSandbox` retry.
+    #[allow(dead_code)]
+    pub fn with_sandbox_credential_env_var(mut self, env_var: SandboxCredentialEnvVar) -> Self {
+        let mut sandbox = self.sandbox.unwrap_or_default();
+        let mut credentials = sandbox.credentials.unwrap_or_default();
+        credentials.env_vars.push(env_var);
+        sandbox.credentials = Some(credentials);
+        self.sandbox = Some(sandbox);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_sandbox_credential_file(mut self, file: SandboxCredentialFile) -> Self {
+        let mut sandbox = self.sandbox.unwrap_or_default();
+        let mut credentials = sandbox.credentials.unwrap_or_default();
+        credentials.files.push(file);
+        sandbox.credentials = Some(credentials);
+        self.sandbox = Some(sandbox);
         self
     }
 

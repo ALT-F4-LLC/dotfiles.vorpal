@@ -25,8 +25,15 @@ Three rules you must not fight:
   `workflow list|show|lint`, `step show|context|render|artifacts|artifact` —
   every one write-free, `run report` included, in any run status. `step
   render` is the only one that shows what a packet actually CONTAINED —
-  template-rendered, tokenless, and it refuses on a pin mismatch rather than
-  re-pinning — which is how you evidence the known packet defects (§3). A
+  template-rendered and tokenless — which is how you evidence the known packet
+  defects (§3). It does NOT, however, stand in for a pin check: this text used
+  to claim it "refuses on a pin mismatch rather than re-pinning", and on RUN-14
+  (2026-08-19) it returned exit 0 with full packets for two steps while
+  `contracts/synthesize-findings.md` was already mismatched against its pin —
+  a mismatch that then made every `synthesize` step in the run unclaimable.
+  To check pins, check pins: `run status --json` `.pins[]` where `kind == "file"`,
+  each `sha256` against `shasum -a 256 ~/.docket/config/<ref>`. A clean render
+  is not a clean run. A
   verb off that list does not run from this seat, `next` and everything under
   `dispatch` included. Until the run ends, your entire write surface is your
   findings log under `/tmp`. Every helper you spawn inherits this discipline VERBATIM, in
@@ -393,9 +400,13 @@ Measured limits of these surfaces (RUN-2's and RUN-5's shadows):
   shares one hash while `payload_bytes` differ — it reads as duplicates and
   is not — and the body text goes stale after supersession. Diff payloads,
   not hashes (DKT-112).
-- **`events list` defaults to `--limit 100`** and silently truncates big runs
-  — pass an explicit `--limit` post-mortem (a 194-event run lost its head,
-  2026-08-17).
+- **`events list --limit N` windows from the OLDEST end**, so a bigger `--limit`
+  buys more history, never more recency. Use `--tail N` for the newest events;
+  this text advised "pass an explicit `--limit` post-mortem" until 2026-08-20,
+  which is backwards. Measured on RUN-14's 2,851 events: `--limit 400` returned
+  seq ≤ 2760 and silently omitted everything after the dispatch opened, while
+  `--tail 60` returned 2757→2851. The default is 100, and it truncates either
+  way (a 194-event run lost its head, 2026-08-17).
 - **Naive per-line summation over `agent-*.jsonl` OVER-counts input/cache
   units** vs wave-usage's message-id dedup — never call a backfill lossy from
   a naive sum; recompute with the script's own method first (measured

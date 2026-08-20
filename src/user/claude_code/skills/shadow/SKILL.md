@@ -24,6 +24,7 @@ Three rules you must not fight:
 - **The observed run must never feel your presence.** You write nothing under
   its repo, answer no gate, claim nothing, and run no engine verb that can
   advance state. Yours are the read verbs — `run status`, `run report`,
+  `run verify-pins`,
   `events list`, `issue list`, `project list`, `config get`, `trust list`,
   `workflow list|show|lint`, `step show|context|render|artifacts|artifact` —
   every one write-free, `run report` included, in any run status. `step
@@ -34,12 +35,21 @@ Three rules you must not fight:
   (2026-08-19) it returned exit 0 with full packets for two steps while
   `contracts/synthesize-findings.md` was already mismatched against its pin —
   a mismatch that then made every `synthesize` step in the run unclaimable.
-  To check pins, check pins: `run status --json` `.data.pins[]` where `kind == "file"`,
-  each `sha256` against `shasum -a 256 ~/.docket/config/<ref>`. The top level is
-  `{data, ok}` — a bare `.pins[]` selects NOTHING, and a loop over nothing
-  reports every pin clean while verifying none, so COUNT the rows before you
-  believe the verdict: zero file pins on a real run means your path is wrong,
-  not that the run has none. A clean render
+  To check pins, ask the engine: `docket run verify-pins RUN-N --json`. It is
+  READ-ONLY and writes nothing — not even a re-pin — so it is safe on a parked
+  or active run mid-shadow, and it covers
+  EVERY pin the run holds rather than only the refs one verb reads. Exit 0 is
+  clean; exit 4 is drift, with `"code":"CONFLICT"` and an `error` naming each
+  changed file and both hashes (`file policy.toml changed: pinned 999ea767…, on
+  disk c6406653…`); exit 2 means a pinned ref no longer resolves at all. Read the
+  named files out of that error — a CONFLICT is a finding with its own evidence
+  already in it. FALLBACK, only for a seat whose binary predates the verb: walk
+  `run status --json` `.data.pins[]` where `kind == "file"`, each `sha256`
+  against `shasum -a 256 ~/.docket/config/<ref>` — and mind the selector trap,
+  the top level is `{data, ok}`, so a bare `.pins[]` selects NOTHING, and a loop
+  over nothing reports every pin clean while verifying none. COUNT the rows
+  before you believe that verdict: zero file pins on a real run means your path
+  is wrong, not that the run has none. A clean render
   is not a clean run. A
   verb off that list does not run from this seat, `next` and everything under
   `dispatch` included. Until the run ends, your entire write surface is your

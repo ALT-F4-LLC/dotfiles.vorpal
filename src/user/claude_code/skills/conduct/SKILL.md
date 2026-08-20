@@ -176,22 +176,26 @@ compare SOURCE against INSTALL. A run's PINS are a third set of bytes that can
 disagree with both: the engine froze them at ITS activation, and every
 `just activate` since has moved the install out from under them. Source and
 install agreeing tells you nothing about that. So on an already-active run, before
-the first dispatch, check the pins themselves:
+the first dispatch, ask the ENGINE about the pins — do not hand-roll it:
 
 ```bash
-docket run status $RUN --json | python3 -c '
-import json,sys,subprocess,os
-pins = json.load(sys.stdin)["data"].get("pins", [])
-for p in pins:
-    if p.get("kind") != "file": continue          # name@version refs live in the DB, not on disk
-    path = os.path.expanduser("~/.docket/config/" + p["ref"])
-    got = subprocess.run(["shasum","-a","256",path],capture_output=True,text=True).stdout.split()
-    if not got or got[0] != p["sha256"]:
-        print("PIN MISMATCH", p["ref"], "disk", (got[0][:12] if got else "MISSING"), "pinned", p["sha256"][:12])
-'
+docket run verify-pins $RUN --json
 ```
 
-Any line of output is a STOP-AND-REPORT: the run cannot claim a step whose packet
+That verb is READ-ONLY and writes nothing, not even a re-pin, so it is safe to
+run on any run in any status, and it answers for EVERY pin the run holds —
+which no other verb does, since `step render` and payload validation each check
+only the refs THEY read. Read the exit code:
+
+- **0** — every pin is sound. Proceed.
+- **4** — drift. The JSON carries `"code":"CONFLICT"` and an `error` naming each
+  changed file with both hashes, e.g. `{"ok":false,"error":"RUN-28: file
+  contracts/synthesize-findings.md changed: pinned 1dc9acf3…, on disk
+  7d77e677…; file policy.toml changed: pinned 999ea767…, on disk
+  c6406653…","code":"CONFLICT"}`.
+- **2** — a pinned ref no longer resolves at all (missing), and nothing changed.
+
+Any non-zero exit is a STOP-AND-REPORT: the run cannot claim a step whose packet
 is pinned to bytes that no longer exist, and the failure surfaces far away from
 its cause. RUN-14 is the case (2026-08-19/20): a mid-run `just activate` replaced
 `contracts/synthesize-findings.md`, and every `synthesize` step across all four
@@ -201,6 +205,29 @@ because the whole dispatch path — this skill's own `cat`, and the policy-guard
 hook — validates against the DISK copy, never against what the run pinned.
 Do NOT substitute `docket step render` for this check: it returned exit 0 with
 full packets on that run while the mismatch was already present.
+
+**Fallback only — for a seat whose binary predates `run verify-pins`** (the verb
+is absent from `docket run --help`). Walk the pins by hand:
+
+```bash
+docket run status $RUN --json | python3 -c '
+import json,sys,subprocess,os
+pins = json.load(sys.stdin)["data"].get("pins", [])
+print("file pins:", sum(1 for p in pins if p.get("kind") == "file"))
+for p in pins:
+    if p.get("kind") != "file": continue          # name@version refs live in the DB, not on disk
+    path = os.path.expanduser("~/.docket/config/" + p["ref"])
+    got = subprocess.run(["shasum","-a","256",path],capture_output=True,text=True).stdout.split()
+    if not got or got[0] != p["sha256"]:
+        print("PIN MISMATCH", p["ref"], "disk", (got[0][:12] if got else "MISSING"), "pinned", p["sha256"][:12])
+'
+```
+
+The selector trap is the whole reason this is a fallback: the top level of that
+JSON is `{data, ok}`, so a bare `.pins[]` selects NOTHING, and a loop over
+nothing reports every pin clean while verifying none. COUNT the rows before you
+believe the verdict — zero file pins on a real run means your path is wrong, not
+that the run has none. Any `PIN MISMATCH` line is the same STOP-AND-REPORT.
 **Transition debris:** a `.docket/config/` full of SYMLINKS is the retired
 link-farm model, and against the shared root it is now a second additions layer
 that duplicates or dangles — a dangling file link inside a scanned root refuses

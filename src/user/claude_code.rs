@@ -403,6 +403,20 @@ impl ClaudeCode {
         .build(context)
         .await?;
 
+        // The main conversation was the one surface with no definition at all:
+        // agents/, skills/, and workflows/ all govern spawned work, while the
+        // session the operator actually talks to had nothing. That is where the
+        // 2026-08-19 census found the unaddressed half of the cost -- 82
+        // interrupts and 217 stopped agents in a week, none of which any
+        // subagent brief can reach.
+        let memory = FileCreate::new(
+            &component_name(&self.name, "memory"),
+            self.systems.clone(),
+            include_str!("claude_code_memory.md"),
+        )
+        .build(context)
+        .await?;
+
         let statusline = FileCreate::new(
             &component_name(&self.name, "statusline"),
             self.systems,
@@ -415,6 +429,13 @@ impl ClaudeCode {
         let symlinks = vec![
             (get_env_key(&agents), claude_home("agents")),
             (get_env_key(&hooks), claude_home("hooks")),
+            (
+                FileCreate::output_file_path(
+                    &get_env_key(&memory),
+                    &component_name(&self.name, "memory"),
+                ),
+                claude_home("CLAUDE.md"),
+            ),
             (get_env_key(&scripts), claude_home("scripts")),
             (
                 FileCreate::output_file_path(
@@ -435,7 +456,7 @@ impl ClaudeCode {
         ];
 
         let artifacts = vec![
-            agents, hooks, scripts, settings, skills, statusline, workflows,
+            agents, hooks, memory, scripts, settings, skills, statusline, workflows,
         ];
 
         Ok((artifacts, symlinks))

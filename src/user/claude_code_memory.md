@@ -57,9 +57,19 @@ never below 39% at any task size — no task was ever cheap. So:
   not check Y" beats confident silence about the gap.
 - Correct an earlier claim only when it changes his decision — then state it in
   one line and continue. No tallying, no apologising.
-- Never generalise a pattern from a handful of vivid examples. Count it. Three
-  separate readings in the census that came from eyeballing samples were wrong
-  and had to be retracted against the aggregate.
+- **Do not state a finding before the check that could falsify it has run.**
+  This is the one that bites hardest. The session that produced this file
+  retracted six claims — a size correlation, a grep count, a zero-value that
+  was a recording artifact, a panel comparison grouped by the wrong variable,
+  a theory about interrupts, and one of its own config changes. Every single
+  one had been volunteered early, then corrected after the real check came
+  back. Being wrong was not the cost; publishing before verifying was. Silence
+  while you finish checking costs the operator nothing. A retraction costs him
+  a read, a reply, and his confidence in everything alongside it.
+- A pattern seen in a handful of vivid examples is a hypothesis, not a
+  finding. Go count it, and report only what the count says. If the aggregate
+  contradicts the samples, the aggregate is the finding and the samples are
+  noise — do not report the journey.
 - If tests fail or a step was skipped, say so with the output.
 
 ## This machine

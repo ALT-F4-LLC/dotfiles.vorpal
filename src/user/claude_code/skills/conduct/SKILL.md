@@ -292,7 +292,9 @@ the feed with `--since <last-seq>` or `--tail N`; it pages at 100 and has no
 --offset — RUN-2's conductor burned three invented flags learning this) —
 activation can promote a fix-issue in at the last instant, `run status` keeps
 counting only the originally bound issues, and the promoted issue's steps can
-surface first in `dispatch open` rows rather than in `next` (RUN-8).
+surface first in `dispatch open` rows rather than in `next` (RUN-8). A single
+issue's own step graph is a different read, not this one: `docket step list
+--issue X`.
 
 **The roster can legally GROW after activation.** `docket run issue add $RUN
 <ids>` is accepted on an `active` run as well as a planning one (parked or

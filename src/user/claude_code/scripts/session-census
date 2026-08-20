@@ -1,0 +1,401 @@
+#!/usr/bin/env python3
+"""session-census — read-only. Measure deliberation and course-correction cost
+across Claude Code sessions in ~/.claude/projects.
+
+Exists because "it feels like everything is over-thought" is unfalsifiable until
+someone counts. This counts. Run it before a change and after, and diff the JSON.
+
+Key correctness rules, learned the hard way (2026-08-19 census):
+
+  * MAIN vs SUBAGENT are measured separately and never pooled. Subagents take
+    their model/effort from docket policy.toml, so they cannot measure a change
+    to the global harness setting. Pooling them hides the signal.
+  * usage.output_tokens_details.thinking_tokens is not always present. Clients
+    before 2.1.228 never wrote it at all, and even current clients omit it on a
+    sizeable minority of messages. Absent is NOT zero: a message missing the
+    field may still carry thinking blocks. Counting absent as zero biases
+    think% LOW, so such messages are excluded from token metrics and their
+    count is reported. Measured 2026-08-19, the excluded set split ~evenly
+    between messages that did and did not contain thinking blocks (3014 vs
+    2965), so the exclusion is close to unbiased -- but think:text chars, which
+    is computable on every message, is the metric to trust when they disagree.
+  * Most user-role messages are not the operator: task notifications, teammate
+    messages, and isMeta skill-body injections all arrive as role=user. Only
+    typed prose, slash commands, and !bash count as operator input.
+  * Character counts (thinking chars vs visible text chars) work on every
+    version and are the version-independent cross-check on think%.
+
+Usage:  session-census [--days N] [--json OUT] [--root DIR]
+Exit 0 always (measurement, not a gate).
+"""
+import argparse
+import glob
+import json
+import os
+import re
+import sys
+import time
+from collections import defaultdict
+
+# Versions that predate thinking_tokens accounting. Token-based think% is not
+# computable for these; character-based metrics still are.
+NO_THINK_ACCOUNTING = {"2.1.219", "2.1.227"}
+
+# Subagent transcripts carry no role field, so the role is read off the opening
+# line of the brief the agent was handed. Order matters: the first match wins,
+# and tribunal is checked before the generic judge/review pattern because a seat
+# brief contains review vocabulary too. Anything unmatched lands in "other" --
+# a large "other" bucket means these patterns have drifted from the briefs.
+ROLE_PATTERNS = (
+    ("tribunal-seat", re.compile(r"one seat of a tribunal", re.I)),
+    ("retro-analyst", re.compile(r"retro analyst|mining docket run evidence", re.I)),
+    ("spec-author", re.compile(r"spec-author", re.I)),
+    ("executor-step", re.compile(r"executing one step|docket engine pipeline", re.I)),
+    ("judge/review", re.compile(r"judge|review agent|refute|adversar|critic", re.I)),
+    ("implement/write", re.compile(r"implement|author the|apply the fix|make the change", re.I)),
+    ("read/survey", re.compile(r"read-only|survey|mine |inventory|scan |locate ", re.I)),
+)
+
+
+def classify_role(brief):
+    for name, pat in ROLE_PATTERNS:
+        if pat.search(brief):
+            return name
+    return "other"
+
+
+SYS_PREFIXES = (
+    "<task-notification>",
+    "Another Claude session sent",
+    "[Request interrupted",
+    "<local-command",
+    "Caveat:",
+    "<system-reminder>",
+    "<user-prompt-submit-hook>",
+)
+KILL_MULTI = re.compile(r"^(\d+) background agents were stopped by the user")
+
+
+def user_text(msg):
+    c = (msg or {}).get("content")
+    if isinstance(c, str):
+        return c
+    return " ".join(
+        b.get("text", "")
+        for b in (c or [])
+        if isinstance(b, dict) and b.get("type") == "text"
+    )
+
+
+def classify_user(text, is_meta):
+    """Return one of: operator, interrupt, kill:<n>, or None (machine noise)."""
+    t = (text or "").strip()
+    if not t:
+        return None
+    if "[Request interrupted" in t:
+        return "interrupt"
+    m = KILL_MULTI.match(t)
+    if m:
+        return f"kill:{m.group(1)}"
+    if t.startswith("Background agent ") and "stopped by the user" in t:
+        return "kill:1"
+    if any(t.startswith(p) for p in SYS_PREFIXES):
+        return None
+    # isMeta carries skill bodies injected into context, not operator words.
+    if is_meta:
+        return None
+    return "operator"
+
+
+def blank_seg():
+    return {
+        "msgs": 0, "out": 0, "think": 0, "think_msgs": 0,
+        "think_chars": 0, "text_chars": 0, "sessions": set(),
+    }
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--days", type=float, default=7)
+    ap.add_argument("--json", dest="json_out")
+    ap.add_argument("--root", default=os.path.expanduser("~/.claude/projects"))
+    args = ap.parse_args()
+
+    cutoff = time.time() - args.days * 86400
+    files = [
+        p for p in glob.glob(os.path.join(args.root, "**", "*.jsonl"), recursive=True)
+        if os.path.getmtime(p) >= cutoff
+    ]
+    if not files:
+        print(f"no sessions under {args.root} in the last {args.days} days")
+        return 0
+
+    by_kind = {"main": blank_seg(), "subagent": blank_seg()}
+    by_me = defaultdict(blank_seg)          # main only: (model, effort)
+    by_mes = defaultdict(blank_seg)         # main only: (model, effort, skill)
+    by_role = defaultdict(blank_seg)        # subagent only: role from its brief
+    role_eff = defaultdict(lambda: defaultdict(int))
+    skipped = defaultdict(int)              # version -> msgs excluded from token metrics
+    operator = interrupts = kills = kill_events = 0
+    active = span = 0.0
+    first_ctx, peak_ctx = [], []
+    main_files = sub_files = 0
+
+    for path in files:
+        is_sub = "/subagents/" in path
+        # A subagent transcript lives at <project>/<parent-session>/subagents/...
+        # Attribute it to the parent session so "sessions" counts conversations,
+        # not agent files (the header already reports the file split).
+        if is_sub:
+            parts = path.split(os.sep)
+            i = parts.index("subagents")
+            sid = parts[i - 1][:8] if i else os.path.basename(path)[:8]
+        else:
+            sid = os.path.basename(path)[:8]
+        if is_sub:
+            sub_files += 1
+        else:
+            main_files += 1
+        stamps, ctx = [], []
+        role = None  # subagent only; read off the first line of its brief
+        with open(path, errors="replace") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                except ValueError:
+                    continue
+
+                ts = rec.get("timestamp")
+                if ts:
+                    try:
+                        stamps.append(
+                            time.mktime(time.strptime(ts[:19], "%Y-%m-%dT%H:%M:%S"))
+                        )
+                    except ValueError:
+                        pass
+
+                rtype = rec.get("type")
+
+                if rtype == "user" and is_sub and role is None:
+                    text = user_text(rec.get("message")).strip()
+                    if text:
+                        role = classify_role(text[:300])
+                    continue
+
+                if rtype == "user" and not is_sub:
+                    kind = classify_user(user_text(rec.get("message")),
+                                         rec.get("isMeta") is True)
+                    if kind == "operator":
+                        operator += 1
+                    elif kind == "interrupt":
+                        interrupts += 1
+                    elif kind and kind.startswith("kill:"):
+                        kills += int(kind.split(":")[1])
+                        kill_events += 1
+                    continue
+
+                if rtype != "assistant":
+                    continue
+                # Subagent transcripts flag every row isSidechain=true; that is
+                # normal there. Inside a MAIN file such a row would be a
+                # duplicate of subagent work, so drop it only in that case.
+                if not is_sub and rec.get("isSidechain") is True:
+                    continue
+
+                msg = rec.get("message") or {}
+                usage = msg.get("usage") or {}
+                out = usage.get("output_tokens") or 0
+                think = (usage.get("output_tokens_details") or {}).get("thinking_tokens")
+                model = msg.get("model")
+                effort = rec.get("effort")
+                skill = rec.get("attributionSkill")
+                version = rec.get("version", "?")
+
+                if not is_sub:
+                    ctx.append(
+                        (usage.get("input_tokens") or 0)
+                        + (usage.get("cache_creation_input_tokens") or 0)
+                        + (usage.get("cache_read_input_tokens") or 0)
+                    )
+
+                tc = txc = 0
+                for b in msg.get("content") or []:
+                    bt = b.get("type")
+                    if bt == "thinking":
+                        tc += len(b.get("thinking") or b.get("text") or "")
+                    elif bt == "text":
+                        txc += len(b.get("text") or "")
+
+                if is_sub:
+                    rseg = by_role[role or "other"]
+                    rseg["msgs"] += 1
+                    rseg["think_chars"] += tc
+                    rseg["text_chars"] += txc
+                    rseg["sessions"].add(sid)
+                    if version not in NO_THINK_ACCOUNTING and think is not None:
+                        rseg["out"] += out
+                        rseg["think"] += think
+                    if effort:
+                        role_eff[role or "other"][effort] += 1
+
+                seg = by_kind["subagent" if is_sub else "main"]
+                seg["msgs"] += 1
+                seg["think_chars"] += tc
+                seg["text_chars"] += txc
+                seg["sessions"].add(sid)
+
+                usable = version not in NO_THINK_ACCOUNTING and think is not None
+                if usable:
+                    seg["out"] += out
+                    seg["think"] += think
+                    if think > 0:
+                        seg["think_msgs"] += 1
+                else:
+                    skipped[version] += 1
+
+                if is_sub or not usable or not model or not effort:
+                    continue
+                for key, table in (((model, effort), by_me),
+                                   ((model, effort, skill or "-"), by_mes)):
+                    c = table[key]
+                    c["msgs"] += 1
+                    c["out"] += out
+                    c["think"] += think
+                    c["think_chars"] += tc
+                    c["text_chars"] += txc
+                    c["sessions"].add(sid)
+                    if think > 0:
+                        c["think_msgs"] += 1
+
+        if not is_sub:
+            if ctx:
+                first_ctx.append(ctx[0])
+                peak_ctx.append(max(ctx))
+            if len(stamps) > 1:
+                stamps.sort()
+                span += stamps[-1] - stamps[0]
+                active += sum(b - a for a, b in zip(stamps, stamps[1:]) if b - a <= 300)
+
+    def pct(seg):
+        return seg["think"] / seg["out"] * 100 if seg["out"] else 0.0
+
+    def ratio(seg):
+        return seg["think_chars"] / seg["text_chars"] if seg["text_chars"] else 0.0
+
+    def p(vals, q):
+        if not vals:
+            return 0
+        vals = sorted(vals)
+        return vals[min(int(len(vals) * q), len(vals) - 1)]
+
+    m, s = by_kind["main"], by_kind["subagent"]
+    print(f"session-census — last {args.days:g} days — {len(files)} files "
+          f"({main_files} main, {sub_files} subagent)\n")
+
+    print("DELIBERATION (main and subagent never pooled)")
+    print(f"  {'':<10}{'sessions':>9}{'msgs':>8}{'out_tok':>13}{'think%':>9}{'think:text':>12}{'%msgs think':>13}")
+    for name, seg in (("main", m), ("subagent", s)):
+        tm = seg["think_msgs"] * 100 // seg["msgs"] if seg["msgs"] else 0
+        print(f"  {name:<10}{len(seg['sessions']):>9}{seg['msgs']:>8}{seg['out']:>13,}"
+              f"{pct(seg):>8.1f}%{ratio(seg):>12.2f}{tm:>12}%")
+
+    if skipped:
+        tot = sum(skipped.values())
+        print(f"\n  excluded from token metrics (no thinking_tokens accounting): "
+              f"{tot} msgs — {', '.join(f'{v}:{n}' for v, n in sorted(skipped.items()))}")
+
+    print("\nMAIN by (model, effort) — the only rows that measure the global harness dial")
+    print(f"  {'model':<18}{'effort':<7}{'sess':>5}{'msgs':>7}{'out_tok':>12}{'think%':>9}{'think:text':>12}")
+    rank = {"low": 0, "medium": 1, "high": 2, "xhigh": 3, "max": 4}
+    for (model, effort), c in sorted(by_me.items(), key=lambda kv: (kv[0][0], rank.get(kv[0][1], 9))):
+        print(f"  {model.replace('claude-', ''):<18}{effort:<7}{len(c['sessions']):>5}"
+              f"{c['msgs']:>7}{c['out']:>12,}{pct(c):>8.1f}%{ratio(c):>12.2f}")
+
+    # Matched cells: same model+skill at >1 effort. The only quasi-controlled
+    # comparison available from observational data — read the direction, not the
+    # magnitude, and check n before believing any single row.
+    grouped = defaultdict(dict)
+    for (model, effort, skill), c in by_mes.items():
+        if c["msgs"] >= 25:
+            grouped[(model, skill)][effort] = c
+    matched = {k: v for k, v in grouped.items() if len(v) > 1}
+    if matched:
+        print("\nMATCHED CELLS — same model+skill, effort varies (n>=25 msgs)")
+        for (model, skill), efforts in sorted(matched.items()):
+            print(f"  {model.replace('claude-', '')} / {skill}")
+            for effort in sorted(efforts, key=lambda e: rank.get(e, 9)):
+                c = efforts[effort]
+                print(f"    {effort:<6} think={pct(c):>5.1f}%  think:text={ratio(c):>5.2f}"
+                      f"  msgs={c['msgs']:>5}  sessions={len(c['sessions'])}")
+
+    if by_role:
+        print("\nSUBAGENT COST BY ROLE — where fan-out actually spends")
+        print(f"  {'role':<17}{'msgs':>8}{'out_tok':>13}{'think%':>9}{'think:text':>12}  efforts")
+        for name, c in sorted(by_role.items(), key=lambda kv: -kv[1]["out"]):
+            effs = ",".join(f"{e}:{n}" for e, n in
+                            sorted(role_eff[name].items(), key=lambda x: -x[1])[:3])
+            print(f"  {name:<17}{c['msgs']:>8}{c['out']:>13,}{pct(c):>8.1f}%"
+                  f"{ratio(c):>12.2f}  {effs}")
+
+    print("\nOPERATOR ENGAGEMENT (main sessions only)")
+    print(f"  typed inputs (prose + slash + !bash) : {operator}")
+    print(f"  interrupts                           : {interrupts}"
+          f"{f'  ({interrupts * 100 // operator}% of typed inputs)' if operator else ''}")
+    print(f"  background agents stopped by user    : {kills} across {kill_events} events")
+
+    print("\nTIME (main sessions)")
+    print(f"  active (gaps <=5min) : {active / 3600:.1f} h    idle share: "
+          f"{(1 - active / span) * 100 if span else 0:.0f}%")
+    if operator:
+        print(f"  active min per typed input : {active / 60 / operator:.1f}")
+
+    print("\nCONTEXT (main sessions)")
+    print(f"  first request  p50={p(first_ctx, .5):,}  p90={p(first_ctx, .9):,}")
+    print(f"  peak           p50={p(peak_ctx, .5):,}  max={max(peak_ctx) if peak_ctx else 0:,}")
+
+    if args.json_out:
+        blob = {
+            "days": args.days,
+            "files": len(files),
+            "main": {k: (sorted(v) if isinstance(v, set) else v)
+                     for k, v in m.items() if k != "sessions"},
+            "main_sessions": len(m["sessions"]),
+            "main_think_pct": round(pct(m), 2),
+            "main_think_text_ratio": round(ratio(m), 3),
+            "subagent_think_pct": round(pct(s), 2),
+            "by_model_effort": {
+                f"{model}|{effort}": {
+                    "msgs": c["msgs"], "out": c["out"],
+                    "think_pct": round(pct(c), 2),
+                    "think_text_ratio": round(ratio(c), 3),
+                    "sessions": len(c["sessions"]),
+                }
+                for (model, effort), c in by_me.items()
+            },
+            "by_role": {
+                name: {
+                    "msgs": c["msgs"], "out": c["out"],
+                    "think_pct": round(pct(c), 2),
+                    "think_text_ratio": round(ratio(c), 3),
+                }
+                for name, c in by_role.items()
+            },
+            "operator_inputs": operator,
+            "interrupts": interrupts,
+            "agents_killed": kills,
+            "kill_events": kill_events,
+            "active_hours": round(active / 3600, 2),
+            "ctx_first_p50": p(first_ctx, .5),
+            "excluded_msgs_no_accounting": sum(skipped.values()),
+        }
+        with open(args.json_out, "w") as fh:
+            json.dump(blob, fh, indent=2)
+        print(f"\nwrote {args.json_out}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

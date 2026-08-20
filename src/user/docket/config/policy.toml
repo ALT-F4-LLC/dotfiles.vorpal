@@ -215,8 +215,24 @@ spec-author-testing        = { variant = "opus-xhigh" }
 # cost case against the standing home and a capability case for it: the
 # smallest declared input of any node (issue body only) means everything else
 # must be found, and a confident wrong guess costs a full cycle.
-investigate       = { variant = "fable-max" }
-research          = { variant = "fable-max" }   # sized with its class, never
+#
+# MODEL SWAPPED fable -> opus 2026-08-19, effort ceiling UNCHANGED. The
+# capability case above is a case for the CEILING, not for fable, and opus-max
+# is the same ceiling. Two readings put opus ahead at that ceiling: benchlm.ai
+# (2026-08-19) ranks Opus 5 #2 at 83.1 against Fable 5 #3 at 83.0; and the
+# local 7-day census (scripts/session-census) measured, at identical
+# effort=max, opus-5 at 30.3% thinking against fable-5 at 59.0%. Better score,
+# about half the deliberation. Operator ruling the same day: model diversity is
+# not a goal, best measured result is, and `max` is reserved for work that
+# genuinely needs the ceiling -- which this class does.
+#
+# fable-max is no longer any row's standing home. It stays live as the final
+# chain hop off opus-max, which is what [escalation].fable_gates was written
+# for ("failed-top-opus-round"): fable is now reached only by work that has
+# actually failed at the top of Opus, never by declaration.
+investigate       = { variant = "opus-max" }
+research          = { variant = "opus-max" }    # swapped with its class, but
+                                                #   still never
                                                 #   exercised: 4 lifetime
                                                 #   spawns planned, 4 skipped,
                                                 #   0 executed. If the next
@@ -229,11 +245,28 @@ research          = { variant = "fable-max" }   # sized with its class, never
                                                 #   unreachable row is a
                                                 #   routing claim nothing
                                                 #   tests.
-retro-analyst     = { variant = "fable-max" }   # mines the entire run ledger -> proposals (04, 05 §6)
+retro-analyst     = { variant = "opus-max" }    # mines the entire run ledger -> proposals (04, 05 §6).
+                                                #   Swapped with its class, and the
+                                                #   one row of the three with direct
+                                                #   measurement: 6 spawns, 503,339
+                                                #   output tokens, 67.8% of it
+                                                #   thinking (census 2026-08-19).
+                                                #   Ceiling kept — a retro reads a
+                                                #   whole epoch — but on the model
+                                                #   that benchmarks higher and
+                                                #   deliberates roughly half as much.
 
 # Tribunal seats — the standing panel where workflows used to declare
-# `type = "human"`. Composition ratified 2026-08-11 ("2 Fable and 1 Opus")
-# and now VALIDATED by ledger evidence: across 36 votes and 12 decided
+# `type = "human"`.
+#
+# CORRECTION 2026-08-19 (operator): "2 Fable and 1 Opus" was never a chosen
+# composition and carries no diversity intent. The panel was Fable throughout;
+# the security seat is Opus ONLY because fable is barred from security work
+# (`never = ["fable"]`, the security-classifier reroute). Read every "2-and-1"
+# claim below as an artifact of that reroute, not a design to preserve — it was
+# cited as validation for years' worth of pins it never actually justified.
+#
+# Earlier text, kept for the ledger evidence it carries: across 36 votes and 12 decided
 # proposals, no tribunal verdict was ever overturned by the operator, and all
 # three rejections caught real defects and were answered by rework. The
 # asymmetry argument stands: a wrong rejection costs one operator read; a
@@ -250,8 +283,54 @@ retro-analyst     = { variant = "fable-max" }   # mines the entire run ledger ->
 # would still write the requested name here. Resolved-model faithfulness AND
 # seat spend both remain unmeasured (`vote_usage` held 0 rows all epoch — a
 # filed engine gap), which is why these rows cite vote outcomes, not cost.
-tribunal-architecture = { variant = "fable-max" }
-tribunal-correctness  = { variant = "fable-max" }
+#
+# COST NOW MEASURED (2026-08-19) — the gap the paragraph above names is closed,
+# not from `vote_usage` (still 0 rows) but from the session transcripts, via
+# src/user/claude_code/scripts/session-census. Over 7 days, 189 tribunal seats
+# ran at effort=max and burned 5,309,378 output tokens at 68.7% thinking — the
+# highest deliberation ratio of any role measured anywhere in the fleet, and
+# 14% of all subagent output. A seat reads one proposal and casts one ballot
+# with a reason.
+#
+# LOWERED to opus-high on that measurement plus the outcome record above: 36
+# votes, 12 decided proposals, ZERO verdicts overturned. A perfect outcome
+# record is evidence of headroom, not of a ceiling being earned — had a verdict
+# ever been wrong the argument would run the other way. Two further reasons:
+# these seats outranked `judge-*` (all opus-high), so a voter was more
+# expensive than the judge whose findings it votes on; and opus-high still
+# reaches fable-max through the chain (opus-high -> opus-xhigh -> opus-max ->
+# fable-max), so the ceiling stays available to a seat that actually fails,
+# it is just no longer the entry rung.
+#
+# SWAPPED to opus-high on mined evidence, with no composition constraint to
+# respect (see the correction above). Every reading available points one way,
+# and none points at fable:
+#
+#   - Public benchmark (benchlm.ai, 2026-08-19): Opus 5 #2 at 83.1, Fable 5 #3
+#     at 83.0. Opus ahead, if narrowly.
+#   - Local census (scripts/session-census, 2026-08-19): at identical
+#     effort=max, opus-5 spent 30.3% of output on thinking, fable-5 59.0%.
+#   - Vote ledger, tribunal seats only (n=162): nothing separates them on
+#     quality. No seat of either model recorded a single finding; confidence
+#     is 0.87 fable vs 0.833 opus, and that gap is the security lens scoring
+#     its own domain-relevance low on non-security proposals, not judgement.
+#   - Cost, the one unambiguous signal: 189 seats spent 5,309,378 output tokens
+#     at 68.7% thinking -- 11.7 characters of private deliberation per
+#     character of the ballot cast. Highest ratio of any role in the fleet.
+#
+# Effort drops max -> high in the same move. That is deliberate: `max` is
+# reserved for work that genuinely needs the ceiling (operator ruling
+# 2026-08-19), and a seat that reads one proposal and casts one vote does not.
+#
+# KNOWN UNTESTED: this makes the tribunal all-Opus for the first time. The
+# ledger has 54 proposals of mixed-panel history and zero all-Opus tribunal
+# history, so the reject rate is the thing to watch -- the security seat
+# rejects 22% where the fable seats rejected 7%, and if the whole panel moves
+# toward 22% the cost lands as rework loops and operator gates, which is the
+# very expense this change set out to cut. Re-read at the next retro against
+# `select status, count(*) from proposals group by status`.
+tribunal-architecture = { variant = "opus-high" }
+tribunal-correctness  = { variant = "opus-high" }
 tribunal-security     = { variant = "opus-max", never = ["fable"], reason = "security-classifier-reroute" }
                           # RAISED from opus/xhigh: the security ceiling is
                           #   now opus-max (see [security]), and this seat

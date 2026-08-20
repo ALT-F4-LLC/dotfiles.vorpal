@@ -41,11 +41,27 @@ agent that never cast — the silent-seat checker is one — is named on stderr 
 dropped, because the engine refuses usage for a voter with no cast and misfiling
 it onto a seat that did cast would be worse than losing it.
 
+wave.js spawns internal bookkeeping probes of its own — staged-closure polling
+(`docket next --run ... --json`) and ballot reads — whose briefs carry no
+STEP-N unless the probe serves one. A step-less agent whose bootstrap matches
+that fixed probe brief is wave.js polling itself, not an attribution failure:
+it is named on stderr and dropped, the same way `--seats` drops a silent judge
+(DOT-381). A probe that DOES serve a step names it in its brief and is
+attributed normally, so only the internal machinery is excluded.
+
 Deterministic, read-only, stdout-only. Exit 1 if any agent's step cannot be
 attributed or a dispatched agent carries no usage — silence must not look like
 success.
 """
 import json, os, re, sys
+
+# The fixed opening line and self-description of wave.js's probeBrief(). Both
+# must appear in the agent's FIRST user message; containment (not a prefix
+# test) because list-shaped message content arrives JSON-encoded, and both
+# constants must stay newline-free — the brief's own line breaks arrive as
+# literal backslash-n in that encoding.
+PROBE_PREFIX = "Run exactly this one command:"
+PROBE_MARK = "read-only probe reporting what the record currently says"
 
 UNITS = {
     "input_tokens": "input_tokens",
@@ -91,11 +107,13 @@ def main() -> int:
     totals: dict[str, dict[str, int]] = {}
     errors: list[str] = []
     unattributed: list[str] = []
+    probes: list[str] = []
     for name in sorted(os.listdir(d)):
         if not (name.startswith("agent-") and name.endswith(".jsonl")):
             continue
         path = os.path.join(d, name)
         step = None
+        bootstrap = None
         per_msg: dict[str, dict] = {}
         with open(path, encoding="utf-8") as f:
             for line in f:
@@ -106,6 +124,8 @@ def main() -> int:
                 if step is None and obj.get("type") == "user":
                     content = obj.get("message", {}).get("content")
                     text = content if isinstance(content, str) else json.dumps(content)
+                    if bootstrap is None:
+                        bootstrap = text or ""
                     m = key_re.search(text or "")
                     if m:
                         step = m.group(1) if seats else m.group(0)
@@ -129,6 +149,12 @@ def main() -> int:
                 # a seat that did cast.
                 unattributed.append(name)
                 continue
+            if (bootstrap is not None and PROBE_PREFIX in bootstrap
+                    and PROBE_MARK in bootstrap):
+                # wave.js polling itself — internal machinery, no step to
+                # attribute to; see module docstring.
+                probes.append(name)
+                continue
             errors.append(f"{name}: no STEP-N found in first user message")
             continue
         if step in exclude:
@@ -142,6 +168,9 @@ def main() -> int:
     for name in unattributed:
         print(f"wave-usage: {name}: no seat (never cast) — usage dropped",
               file=sys.stderr)
+    for name in probes:
+        print(f"wave-usage: {name}: wave.js internal probe (no step) — "
+              "usage dropped", file=sys.stderr)
     if errors:
         for e in errors:
             print(f"wave-usage: {e}", file=sys.stderr)

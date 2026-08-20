@@ -206,9 +206,16 @@ step that may well run, and a floor that omits it is a floor for a run that
 did not happen. On top of the floor goes REWORK HEADROOM — at least one full
 fix-loop round per two issues. Standard-change's round is fix 1.0 plus four
 judges at 0.6 plus synthesize 0.4, so 3.8, and half the issues this epoch took
-one. For security-load-bearing budget TWO rounds: rejection-driven loops are
-that track's normal case — both security votes in its only complete run were
-rejected. A cap that is short by arithmetic is not discipline, it is a
+one. For security-load-bearing budget THREE rounds per issue: rejection-driven
+loops are that track's normal case — both complete runs to date had every
+security vote rejected at least once, and RUN-34, sized on two rounds (cap
+14), hit its wall on the THIRD normal-case fix pass and paid two mid-run
+raises to close at 20.9, floor plus three rounds almost exactly (a round is
+fix 1.0 + five judges at 0.6 + synthesize 0.4 ≈ 4.4). Price only the track's
+normal case into the cap: a round nobody could have planned — an operator's
+out-of-band commit needing independent review mid-run — is what the raise
+machinery is FOR, not a sizing failure. A cap that is short by arithmetic is
+not discipline, it is a
 tribunal you scheduled for yourself: RUN-3 walled before it dispatched
 anything and spent ~20 minutes raising, 22% of its wall clock; RUN-17 left 0.4
 of headroom over a two-issue base and raised 10 -> 18 through two serial

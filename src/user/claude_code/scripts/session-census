@@ -119,7 +119,18 @@ def main():
     ap.add_argument("--days", type=float, default=7)
     ap.add_argument("--json", dest="json_out")
     ap.add_argument("--root", default=os.path.expanduser("~/.claude/projects"))
+    ap.add_argument("--compare", metavar="BASELINE.json",
+                    help="diff this run against a saved --json baseline and print the deltas")
     args = ap.parse_args()
+
+    baseline = None
+    if args.compare:
+        try:
+            with open(args.compare) as fh:
+                baseline = json.load(fh)
+        except (OSError, ValueError) as exc:
+            print(f"could not read baseline {args.compare}: {exc}")
+            return 0
 
     cutoff = time.time() - args.days * 86400
     files = [
@@ -355,6 +366,40 @@ def main():
     print("\nCONTEXT (main sessions)")
     print(f"  first request  p50={p(first_ctx, .5):,}  p90={p(first_ctx, .9):,}")
     print(f"  peak           p50={p(peak_ctx, .5):,}  max={max(peak_ctx) if peak_ctx else 0:,}")
+
+    if baseline:
+        # Lower is better for every metric here, so an improvement prints as a
+        # negative delta. Percentage points are absolute (45.0 -> 38.0 is -7.0
+        # pts), everything else is a percent change against the baseline value.
+        now = {
+            "main think%": (round(pct(m), 2), baseline.get("main_think_pct"), "pts"),
+            "main think:text": (round(ratio(m), 3), baseline.get("main_think_text_ratio"), "x"),
+            "subagent think%": (round(pct(s), 2), baseline.get("subagent_think_pct"), "pts"),
+            "operator inputs": (operator, baseline.get("operator_inputs"), "n"),
+            "interrupts": (interrupts, baseline.get("interrupts"), "n"),
+            "agents killed": (kills, baseline.get("agents_killed"), "n"),
+            "active hours": (round(active / 3600, 2), baseline.get("active_hours"), "n"),
+            "first-req ctx p50": (p(first_ctx, .5), baseline.get("ctx_first_p50"), "n"),
+        }
+        print(f"\nVS BASELINE ({args.compare})")
+        print(f"  {'metric':<20}{'baseline':>12}{'now':>12}{'delta':>14}")
+        for label, (cur, was, unit) in now.items():
+            if was in (None, 0):
+                print(f"  {label:<20}{'-':>12}{cur:>12}{'(no baseline)':>14}")
+                continue
+            d = cur - was
+            shown = f"{d:+.2f} pts" if unit == "pts" else (
+                f"{d:+.2f}x" if unit == "x" else f"{d:+,.0f} ({d / was * 100:+.0f}%)")
+            print(f"  {label:<20}{was:>12}{cur:>12}{shown:>14}")
+        # Interrupt RATE is the course-correction signal; raw counts move with
+        # how much work was done, so normalise before reading anything into it.
+        b_op, b_int = baseline.get("operator_inputs"), baseline.get("interrupts")
+        if b_op and operator:
+            was_rate, now_rate = b_int / b_op * 100, interrupts / operator * 100
+            print(f"  {'interrupt rate':<20}{was_rate:>11.1f}%{now_rate:>11.1f}%"
+                  f"{now_rate - was_rate:>+13.1f} pts")
+        print("\n  Lower is better on every row. Counts scale with how much work "
+              "was done —\n  read the rates and ratios, not the raw totals.")
 
     if args.json_out:
         blob = {

@@ -1,0 +1,131 @@
+{
+  "days": 7.0,
+  "files": 1717,
+  "main": {
+    "msgs": 27415,
+    "out": 36407983,
+    "think": 16385412,
+    "think_msgs": 19377,
+    "think_chars": 7250745,
+    "text_chars": 1527200
+  },
+  "main_sessions": 149,
+  "main_think_pct": 45.0,
+  "main_think_text_ratio": 4.748,
+  "subagent_think_pct": 51.14,
+  "by_model_effort": {
+    "claude-sonnet-5|xhigh": {
+      "msgs": 14280,
+      "out": 21346195,
+      "think_pct": 44.63,
+      "think_text_ratio": 4.345,
+      "sessions": 90
+    },
+    "claude-fable-5|xhigh": {
+      "msgs": 7157,
+      "out": 9264356,
+      "think_pct": 51.86,
+      "think_text_ratio": 6.564,
+      "sessions": 42
+    },
+    "claude-fable-5|high": {
+      "msgs": 1272,
+      "out": 2369168,
+      "think_pct": 30.6,
+      "think_text_ratio": 4.671,
+      "sessions": 7
+    },
+    "claude-opus-5|max": {
+      "msgs": 3034,
+      "out": 2411593,
+      "think_pct": 32.68,
+      "think_text_ratio": 3.661,
+      "sessions": 7
+    },
+    "claude-opus-4-8|xhigh": {
+      "msgs": 77,
+      "out": 199157,
+      "think_pct": 69.6,
+      "think_text_ratio": 4.193,
+      "sessions": 2
+    },
+    "claude-opus-5|xhigh": {
+      "msgs": 469,
+      "out": 627641,
+      "think_pct": 46.25,
+      "think_text_ratio": 3.381,
+      "sessions": 1
+    },
+    "claude-fable-5|max": {
+      "msgs": 122,
+      "out": 187469,
+      "think_pct": 59.04,
+      "think_text_ratio": 4.299,
+      "sessions": 1
+    },
+    "claude-opus-4-8|high": {
+      "msgs": 2,
+      "out": 2404,
+      "think_pct": 0.0,
+      "think_text_ratio": 0.0,
+      "sessions": 1
+    }
+  },
+  "by_role": {
+    "executor-step": {
+      "msgs": 35026,
+      "out": 20405211,
+      "think_pct": 48.46,
+      "think_text_ratio": 7.238
+    },
+    "tribunal-seat": {
+      "msgs": 12741,
+      "out": 6788044,
+      "think_pct": 65.47,
+      "think_text_ratio": 11.608
+    },
+    "other": {
+      "msgs": 11209,
+      "out": 5454923,
+      "think_pct": 48.51,
+      "think_text_ratio": 1.395
+    },
+    "judge/review": {
+      "msgs": 483,
+      "out": 342950,
+      "think_pct": 68.44,
+      "think_text_ratio": 2.759
+    },
+    "read/survey": {
+      "msgs": 5351,
+      "out": 3009190,
+      "think_pct": 45.39,
+      "think_text_ratio": 2.652
+    },
+    "spec-author": {
+      "msgs": 2791,
+      "out": 1453797,
+      "think_pct": 36.0,
+      "think_text_ratio": 8.495
+    },
+    "implement/write": {
+      "msgs": 434,
+      "out": 258532,
+      "think_pct": 38.71,
+      "think_text_ratio": 0.506
+    },
+    "retro-analyst": {
+      "msgs": 643,
+      "out": 503339,
+      "think_pct": 67.76,
+      "think_text_ratio": 39.514
+    }
+  },
+  "operator_inputs": 370,
+  "interrupts": 82,
+  "agents_killed": 217,
+  "kill_events": 39,
+  "active_hours": 71.01,
+  "ctx_first_p50": 51740,
+  "excluded_msgs_no_accounting": 24282
+}

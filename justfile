@@ -22,3 +22,6 @@ citation-check:
 
 ac-commands:
     .docket/bin/ac-commands
+
+frozen-drift-check:
+    .docket/bin/frozen-drift-check

@@ -1,0 +1,201 @@
+#!/usr/bin/env bash
+#
+# frozen-drift-check — no file under a registered (frozen) docket name has
+# been edited in place without a version bump.
+#
+# Why (DOT-412): the engine freezes a schema's or workflow's bytes at
+# registration so that runs which pinned it can reproduce. A commit that edits
+# such a file in place — without bumping its version — creates drift the
+# engine only surfaces much later, at some unrelated run's activation
+# (`docket run activate` -> CONFLICT) or mid-run (`docket run verify-pins`),
+# far from the commit that caused it. Commit 8d37e6a wedged two runs this way
+# (RUN-35 pin drift, RUN-36 activation refusal). This check moves that
+# discovery back to the tree, on demand, before the next run pays for it.
+#
+# What it compares. `docket schema list --json` and `docket workflow list
+# --json` each carry the frozen record: name, version, source_path, and
+# source_sha256 (the bytes as registered). For every such record this script
+# hashes up to two on-disk candidates and diffs against source_sha256:
+#   - the registered source_path itself (the installed copy under
+#     ~/.docket/config/ — catches drift that already propagated), and
+#   - this repo's corpus counterpart (src/user/docket/config/...), mapped by
+#     name — schemas/<name>@<version>.json, workflows/<name>.toml — which
+#     catches the offending edit BEFORE `just activate` propagates it.
+# A candidate that does not exist on disk is skipped with a note: the frozen
+# bytes live in the engine, so a missing file cannot drift (stale PINS vs
+# disk is a different check, owned by `docket run verify-pins`).
+#
+# Schemas: the filename carries the version, so ANY byte change under a
+# registered name@version is drift — the legitimate path is a NEW
+# <name>@<version+1>.json, which is simply not registered yet and not checked.
+# Every registered schema version is checked (old versions stay frozen too).
+# Workflows: the filename is unversioned and a legitimate bump edits the same
+# file, so a byte change is drift only when the file's declared
+# [pipeline].version is NOT strictly above the registered version. Only the
+# highest registered version per workflow name is compared — one file cannot
+# match superseded registrations as well.
+#
+# Deliberate differences from doc-validate's shape:
+#   - Whole-corpus scope, never changed-files-only: drift can predate the
+#     working tree by weeks (DOT-412's did), so the engine's frozen records
+#     are compared against what is on disk NOW, regardless of git status.
+#   - Requires `docket` and `jq` and fails loudly without them — a freshness
+#     gate that silently passes when its tools are missing is worse than none.
+#
+# Out of scope: contract/policy files (contracts/*.md, policy.toml). Workflow
+# registrations record no per-contract hashes — packets are templates
+# ("contracts/{executor}.md") resolved and pinned per-run at activation — so
+# there is no global last-registered hash to diff those files against;
+# `docket run verify-pins` remains the (per-run) check for them.
+#
+# Exit codes: 0 clean, 1 drift found, 2 environment failure (not a git repo,
+# or docket/jq/shasum unavailable, or the engine returned an error).
+
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+if ! repo_root="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null)"; then
+  echo "frozen-drift-check FAILED: $script_dir is not inside a git repository." >&2
+  exit 2
+fi
+
+for tool in docket jq shasum; do
+  if ! command -v "$tool" >/dev/null 2>&1; then
+    echo "frozen-drift-check FAILED: required tool '$tool' not on PATH." >&2
+    exit 2
+  fi
+done
+
+if ! schemas_json="$(docket schema list --json 2>&1)" \
+   || ! echo "$schemas_json" | jq -e '.ok == true' >/dev/null 2>&1; then
+  echo "frozen-drift-check FAILED: 'docket schema list --json' did not return ok:" >&2
+  echo "$schemas_json" >&2
+  exit 2
+fi
+if ! workflows_json="$(docket workflow list --json 2>&1)" \
+   || ! echo "$workflows_json" | jq -e '.ok == true' >/dev/null 2>&1; then
+  echo "frozen-drift-check FAILED: 'docket workflow list --json' did not return ok:" >&2
+  echo "$workflows_json" >&2
+  exit 2
+fi
+
+failed=0
+records=0
+files=0
+
+sha256_of() {
+  shasum -a 256 "$1" | cut -d' ' -f1
+}
+
+report_drift() {
+  # $1 kind, $2 name@version, $3 file, $4 registered hash, $5 current hash, $6 extra
+  echo "frozen-drift-check: DRIFT $1 $2" >&2
+  echo "  file:       $3" >&2
+  echo "  registered: $4" >&2
+  echo "  current:    $5" >&2
+  [ -n "$6" ] && echo "  note:       $6" >&2
+  failed=1
+}
+
+# Candidate paths for one record: the registered source_path plus the repo
+# corpus counterpart, deduplicated when they are the same file. Emitted one
+# per line; either may be absent.
+candidates_for() {
+  # $1 source_path, $2 repo counterpart
+  local src="$1" repo="$2"
+  [ -n "$src" ] && [ -f "$src" ] && echo "$src"
+  if [ -f "$repo" ]; then
+    if [ -z "$src" ] || [ ! -f "$src" ] || ! [ "$repo" -ef "$src" ]; then
+      echo "$repo"
+    fi
+  fi
+  return 0
+}
+
+# --- schemas: every registered version is frozen; any byte change is drift ---
+# source_path is the one field that may be empty (builtins), so it goes LAST
+# in the TSV row: tab is IFS whitespace and an empty interior field would
+# collapse, shifting every field after it one place left.
+schema_rows="$(echo "$schemas_json" \
+  | jq -r '.data.schemas[] | [.name, (.version|tostring), .source_sha256, ((.builtin // false)|tostring), (.source_path // "")] | @tsv')"
+
+while IFS=$'\t' read -r name version reg_sha builtin source_path; do
+  [ -n "$name" ] || continue
+  records=$((records + 1))
+  ref="schema ${name}@${version}"
+  if [ "$builtin" = "true" ]; then
+    echo "frozen-drift-check: skip  $ref (builtin, no source file)"
+    continue
+  fi
+  repo_path="$repo_root/src/user/docket/config/schemas/${name}@${version}.json"
+  found=0
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    found=1
+    files=$((files + 1))
+    cur_sha="$(sha256_of "$f")"
+    if [ "$cur_sha" = "$reg_sha" ]; then
+      echo "frozen-drift-check: ok    $ref ($f)"
+    else
+      report_drift "schema" "${name}@${version}" "$f" "$reg_sha" "$cur_sha" \
+        "schemas are frozen per file; land a new ${name}@$((version + 1)).json instead of editing this one"
+    fi
+  done <<< "$(candidates_for "$source_path" "$repo_path")"
+  if [ "$found" -eq 0 ]; then
+    echo "frozen-drift-check: skip  $ref (no file on disk at ${source_path:-<no source_path registered>} or ${repo_path#"$repo_root"/})"
+  fi
+done <<< "$schema_rows"
+
+# --- workflows: highest registered version per name; a byte change is fine
+# --- only when the file's declared [pipeline].version is above it ----------
+workflow_rows="$(echo "$workflows_json" \
+  | jq -r '.data.workflows | group_by(.name) | map(max_by(.version)) | .[] | [.name, (.version|tostring), .source_sha256, (.source_path // "")] | @tsv')"
+
+declared_version_of() {
+  awk '/^\[pipeline\]/{s=1;next} /^\[/{s=0} s && /^version[[:space:]]*=/{match($0,/[0-9]+/); print substr($0,RSTART,RLENGTH); exit}' "$1"
+}
+
+while IFS=$'\t' read -r name version reg_sha source_path; do
+  [ -n "$name" ] || continue
+  records=$((records + 1))
+  ref="workflow ${name}@${version}"
+  repo_path="$repo_root/src/user/docket/config/workflows/${name}.toml"
+  found=0
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    found=1
+    files=$((files + 1))
+    cur_sha="$(sha256_of "$f")"
+    if [ "$cur_sha" = "$reg_sha" ]; then
+      echo "frozen-drift-check: ok    $ref ($f)"
+      continue
+    fi
+    declared="$(declared_version_of "$f")"
+    case "$declared" in
+      '' | *[!0-9]*)
+        report_drift "workflow" "${name}@${version}" "$f" "$reg_sha" "$cur_sha" \
+          "content changed and no [pipeline].version could be parsed from the file"
+        ;;
+      *)
+        if [ "$declared" -gt "$version" ]; then
+          echo "frozen-drift-check: ok    $ref ($f: pending bump, declares v${declared} > registered v${version})"
+        else
+          report_drift "workflow" "${name}@${version}" "$f" "$reg_sha" "$cur_sha" \
+            "content changed but declared [pipeline].version is still ${declared} (registered: ${version}); bump it"
+        fi
+        ;;
+    esac
+  done <<< "$(candidates_for "$source_path" "$repo_path")"
+  if [ "$found" -eq 0 ]; then
+    echo "frozen-drift-check: skip  $ref (no file on disk at ${source_path:-<no source_path registered>} or ${repo_path#"$repo_root"/})"
+  fi
+done <<< "$workflow_rows"
+
+echo ""
+if [ "$failed" -ne 0 ]; then
+  echo "frozen-drift-check FAILED: a registered (frozen) definition's file was edited without a version bump." >&2
+  echo "The engine will refuse activation (CONFLICT) or fail run verify-pins against these bytes." >&2
+  echo "Fix: bump the definition's version (schemas: add a new <name>@<n+1>.json; workflows: raise [pipeline].version), or revert the edit." >&2
+  exit 1
+fi
+echo "frozen-drift-check: ok ($records frozen records checked, $files files compared)"

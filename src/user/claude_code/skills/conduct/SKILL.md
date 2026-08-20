@@ -419,6 +419,29 @@ cat ~/.docket/config/policy.toml # fresh EVERY dispatch — do not reuse a prior
                                  # drifted to grep-only by dispatch 3)
 ```
 
+**Read `dispatch open`'s answer before you launch anything, and a
+`stale_targets` row in it is STOP-AND-VERIFY.** The engine emits one when a
+step's recorded target sha is no longer an ancestor of the shared checkout's
+HEAD — the branch moved on, and the tree that sha names may no longer exist on
+it. Two responses are allowed, and dispatching through it is neither:
+
+- **Confirm the claim-time semantics first.** Ask the engine what actually
+  happens when a step carrying a stale target gets claimed: does the packet get
+  reconstructed from current HEAD, or rendered against the phantom tree the
+  stale sha names? Proceed only once you have the answer in hand.
+- **Or escalate, quoting the warning verbatim.** The row names the sha and the
+  repo — that is exactly what the operator needs to see. Hand it over unedited
+  and stop.
+
+Never dispatch on an assumed rebind. A conductor did exactly that — reasoning
+that the workflow "would reconstruct its target from current HEAD," a behavior
+it had never checked — and only an unrelated hook deny stopped the wave. Had
+the assumption been wrong, five judges would have re-reviewed the same
+vanished tree two panels had already rejected 3-0. An answer about WHY the
+branch diverged (the operator's own intentional commits, say) is an authorship
+answer; it does not tell you what claiming a stale target does, and it is not
+the confirmation this rule asks for.
+
 Then invoke the wave **by scriptPath, always** — with the ABSOLUTE path: the
 Workflow tool does not expand `~` and resolves relative paths against the
 observed repo's cwd (both RUN-5 conductor sessions lost their first launch to

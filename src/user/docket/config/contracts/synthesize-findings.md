@@ -65,14 +65,42 @@ evidence that changed. What the annotation buys is that the next reader can tell
 was decided and recurs" from "this is new", which is the difference between re-reading
 one ruling and making a second one.
 
+YOUR PAYLOAD SPANS THE STANDING SET, NOT THE DELTA. Judges on a re-review round
+legitimately scope their own payloads to what changed and disposition the rest in prose
+— you are the step that puts the whole picture back together, and a round that clusters
+only the delta drops every earlier finding that was never routed out of the arithmetic
+entirely. Nothing downstream can recover them: the threshold reads your aggregate, a
+fix round is fed your aggregate, and a cluster absent from it is invisible to both
+while remaining open in fact. RUN-31 round 0 reduced 26 clusters, two were held and
+resolved and only those two were routed; the other 24 — nine of them high — were left
+unworked, and the round-2 payload that clustered only the delta held 8. Twenty-four
+open defects stopped existing as far as the machinery was concerned, and nothing said
+so.
+
+So: every finding still open is in your payload, whether it re-occurred in this round's
+inputs or was left standing on the previous round's aggregate record. A finding leaves
+the standing set only by being fixed, ruled on, or filed as a gap — and each of those
+leaves a trace you can name.
+
+CARRY A STANDING FINDING AS ITS SETTLED VALUE, NOT ITS ORIGINAL MEMBERS. Emit it as ONE
+element whose `severity` is the scalar the previous aggregate already reduced it to,
+with `prior_disposition` set. Do not re-emit the member array: a single-member cluster
+has spread 0, so `hold_spread` cannot trip on it and an operator's ruling is not put
+back in front of them, while its value still enters the arithmetic once — as the value
+the last round settled on rather than as a second copy of the votes that produced it.
+That is what lets the standing set be complete without spending a decision twice; it is
+re-emitting the members, not re-emitting the finding, that re-holds settled ground.
+
 # Emit
 `findings`: markdown body with one section per cluster — the defect stated once in your
 own words, its members (judge, finding id, that judge's severity and evidence), and the
 merge or split rationale where it was not obvious — plus the findings payload, one entry
 per cluster whose `severity` field carries the array of its members' severities (a
-single-member cluster carries the scalar). The body is where uncertainty and reasoning
-live; the payload is what the engine computes over, so its cluster membership must be
-exact — every input finding appears in exactly one cluster, and none is invented.
+single-member cluster carries the scalar, which is also how a standing finding carried
+forward from an earlier round is emitted — see Rounds). The body is where uncertainty
+and reasoning live; the payload is what the engine computes over, so its cluster
+membership must be exact — every input finding appears in exactly one cluster, no
+standing finding is dropped, and none is invented.
 
 # Stuck
 Findings whose evidence is too thin to tell one defect from two, or an input set you

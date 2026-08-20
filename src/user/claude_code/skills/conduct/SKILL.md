@@ -792,7 +792,44 @@ sees nothing.) You already hold those ids: each is what
 you passed as `--source "wave-journal:<wfId>"` at back-fill. Those go the same
 way. If one holds a recorded-but-never-integrated sha, remove it too but NAME
 the sha in your close report — it stays reachable in the object database until
-gc, and naming it is what keeps it recoverable. Any other `wf_*` entry belongs
+gc, and naming it is what keeps it recoverable.
+
+A worktree's COMMIT being integrated does not clear its WORKING TREE, and the
+sentence above does not cover what is uncommitted. An integration check that
+clears a worktree's commit says nothing about modified or untracked files
+sitting on top of it, and those are NOT in the object database: `worktree
+remove --force` destroys them outright, with no gc window to recover from. So
+before removing ANY worktree, ask it:
+
+    git -C <wt> status --porcelain
+
+Empty means go. Anything at all — ` M` modified, `??` untracked — means
+preserve first, as a real object:
+
+    git -C <wt> add -A          # untracked included; see the trap below
+    git -C <wt> stash create    # prints a sha; prints NOTHING on a clean tree
+    git tag preserved/<run>-<wfid> <that sha>
+    git tag -l 'preserved/*'    # READ IT BACK — an untagged sha is dangling
+
+THE TRAP, measured 2026-08-20 on git 2.50.1: `git stash create` alone captures
+only TRACKED modifications and silently drops untracked files, and `git stash
+create -u` is ACCEPTED — it returns a sha and no error — while still dropping
+them. Both leave you holding a sha that looks like a successful preservation
+and is missing the new files. `git add -A` first is what actually gets them in,
+because the untracked content then rides the index parent. Verify rather than
+trust: `git ls-tree -r <sha> --name-only` must list every path `status
+--porcelain` reported.
+
+Naming the sha in your close report is necessary and not sufficient. Also file
+an issue in that repo's own project carrying the tag, the run and step it came
+from, and ONE LINE on what the work actually was. A preservation the operator
+cannot identify is one they cannot act on — asked about exactly such a tag, the
+operator's answer was "I will probably never touch it as I have no idea what it
+relates to", and identifying it cost a second full pass after the fact. If the
+content turns out to duplicate what is already on the branch, say so and drop
+it; that judgement is cheap once, and impossible without the description.
+
+Any other `wf_*` entry belongs
 to some other session's run: leave it alone. Only ever remove worktrees this
 run's waves created; other checkouts are not yours.
 

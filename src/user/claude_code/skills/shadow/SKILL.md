@@ -31,8 +31,12 @@ Three rules you must not fight:
   (2026-08-19) it returned exit 0 with full packets for two steps while
   `contracts/synthesize-findings.md` was already mismatched against its pin —
   a mismatch that then made every `synthesize` step in the run unclaimable.
-  To check pins, check pins: `run status --json` `.pins[]` where `kind == "file"`,
-  each `sha256` against `shasum -a 256 ~/.docket/config/<ref>`. A clean render
+  To check pins, check pins: `run status --json` `.data.pins[]` where `kind == "file"`,
+  each `sha256` against `shasum -a 256 ~/.docket/config/<ref>`. The top level is
+  `{data, ok}` — a bare `.pins[]` selects NOTHING, and a loop over nothing
+  reports every pin clean while verifying none, so COUNT the rows before you
+  believe the verdict: zero file pins on a real run means your path is wrong,
+  not that the run has none. A clean render
   is not a clean run. A
   verb off that list does not run from this seat, `next` and everything under
   `dispatch` included. Until the run ends, your entire write surface is your

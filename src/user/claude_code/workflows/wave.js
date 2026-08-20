@@ -710,6 +710,15 @@ ${isolated ? `
    If a write is refused, triage the refusal before anything else. One that
    names the body's SIZE OR CONTENT, on a target under \`$TMPDIR\` or your own
    worktree, means the three forms above are how to write it — use them.
+   One that says the command is TOO COMPLEX TO VERIFY that it stays inside
+   the worktree names the command's SHAPE, not its body: reissue the same
+   work as single plain commands — ONE redirection or ONE heredoc each, no
+   \`&&\`, no pipes, no \`;\`, no command substitution — and run them
+   separately. Its closing line about git operations is boilerplate; it fires
+   on non-git commands too (a bare \`cat > "$TMPDIR/x.txt" <<'EOF'\` of two
+   words has drawn it), so do NOT read it as a claim that you touched git,
+   and do not go hunting for a git mistake you did not make. This is the same
+   guard as the brace-then-quote rule above, refusing on a different axis.
    One that names ANYTHING ELSE — the target path, a permission, a policy
    concern — is a real BLOCKED condition on the spot, exactly like a refused
    record, and so is one that survives the three forms: report \`WRITE
@@ -1019,6 +1028,15 @@ read what is being decided yourself before you vote —
   docket step show ${row.step} / docket step context ${row.step}
   docket step artifacts ${row.step}   (then \`docket step artifact ARTIFACT-N\`)
   git log --oneline -20 / git diff / git show <sha>
+
+THEIR FLAGS, since guessing one costs you a turn and teaches you nothing:
+\`step context\` takes \`--meta\` and NOTHING else; \`step artifact\` takes
+\`--payload\`; \`events list\` takes \`--tail N\` (the verb is \`events list\`,
+not \`event list\`); \`--json\` is global and works on any of them. None of
+these READ verbs takes \`--verbose\`, \`-v\`, or \`--version\` — \`-v\` belongs
+to the CAST command below, where it means the verdict, and reaching for it
+while reading is the one confusion to avoid. If you want a flag that is not
+listed here, run that verb's \`--help\` and read it; never guess one.
 
 plus reading any file those name. The gate sits downstream of the work it
 judges — its issue's earlier steps recorded THIS wave, and their artifacts and

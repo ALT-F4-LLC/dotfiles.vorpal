@@ -120,6 +120,24 @@ environment, a named override policy, or FIX-FIRST where the failure is
 itself a defect — a standing override is never assumed for one of those,
 security gates especially. Never rediscover it per step.
 
+**Warm the Go module cache before dispatching into a Go repo.** Sandboxed Go
+cannot verify TLS on this machine at all — the trust daemon is blocked under
+Seatbelt, so a stdlib HTTPS fetch fails `x509: OSStatus -26276` even in this
+session's own sandbox while `curl` to the same host returns 200 (probe-proven
+2026-08-20). The shared `GOMODCACHE` is the entire defense: an executor whose
+gate needs even ONE uncached module downloads, hits the wall, and fails all
+three gates with a TLS error that reads like an environment defect (STEP-880
+parked a clean step exactly this way, and the out-of-band repro passed only
+because the conductor's cache was already warm). So when the target repo has
+a `go.mod`, run `go mod download` in it from THIS session before the first
+dispatch — the gate-probe worktree above is a fine place, the repo's own
+toolchain spelling is (`go`, a `just` recipe, a `vorpal run go:` shim), and
+the unsandboxed retry is the sanctioned path when the sandboxed attempt hits
+the wall; that retry existing HERE and not in executors is the whole reason
+this step is the conductor's. And read the signature correctly ever after:
+`x509: OSStatus` in a wave gate is COLD CACHE, never a code finding — warm
+the missing module and redispatch instead of parking the step for review.
+
 **A safety-classifier block is not a flake, and a retry is not the answer.**
 The classifier screens a rendered brief before any agent exists, so a block is
 a verdict on brief CONTENT and a retry re-renders that content (measured

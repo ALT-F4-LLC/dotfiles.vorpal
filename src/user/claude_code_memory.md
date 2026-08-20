@@ -72,6 +72,23 @@ never below 39% at any task size — no task was ever cheap. So:
   noise — do not report the journey.
 - If tests fail or a step was skipped, say so with the output.
 
+## Sizing a definition
+
+Splitting content out of a skill body is right for a **lookup you know you
+need** and wrong for a **rule you do not know exists**. You can defer fetching
+a flag table, because wanting a flag is what sends you there. You cannot defer
+an edge-case ruling, because not knowing it exists is exactly how you break it.
+
+Audited 2026-08-19 across all nine skills and three agent files. Exactly one
+qualified: docket's 2,371-line flag reference, which duplicated a `--help` that
+agents were already invoking 1,226 times a week, and which is now
+`skills/docket/reference.md`. Everything else failed the test and was left
+alone — `conduct` is 1,378 lines of edge-case rulings (the most expensive body
+in the corpus, and still wrong to split), `bootstrap` is a linear procedure
+whose steps all execute, the agent files are already under 70 lines, and there
+is zero verbatim duplication between skills. Do not re-open this without new
+evidence; the size of a file is not the argument.
+
 ## This machine
 
 - Fixes land in SOURCE ONLY and are committed. Installs happen exclusively

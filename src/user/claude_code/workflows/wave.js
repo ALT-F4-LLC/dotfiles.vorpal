@@ -378,6 +378,13 @@ function bootstrap(row, r, isolated, isWrite) {
       substitute its literal value wherever <TMP> or \`$TMPDIR\` appears in
       this brief. (Use \`printenv\`, not \`echo\` — no variable expansion
       anywhere in your calls, this one included.)
+
+      PIN IT ONCE AND REUSE THE LITERAL. \`$TMPDIR\` is not guaranteed to
+      resolve to the same root in every call, so a path written as the
+      variable can name one directory when you create it and a different one
+      when you read it back — files and directories alike, both of which
+      persist perfectly well under whichever root actually received them.
+      The literal is what makes "I wrote it, therefore I can read it" true.
    b. \`git worktree list --porcelain\` — every checkout's path and HEAD sha.
    c. Compare \`git rev-parse HEAD\` in your tree to the HEAD of the shared
       checkout from (b) — the one NOT under \`.claude/worktrees\`. If they
@@ -508,10 +515,29 @@ ${!isWrite ? `
      writer's sha is never an ancestor of the shared branch even after its
      content lands, and proving tree-equivalence burns budget the brief does
      not ask for (measured). Extract:
-     \`git archive <sha> | tar -x -C "$TMPDIR/${row.step}-target"\` — the sha
-     resolves even when no branch of yours carries it, because every worktree
-     shares one object store. Read, build, and probe THERE, and attribute
-     every result to that tree, never to this checkout.
+     TWO plain calls, and \`<TMP>\` is the LITERAL from bootstrap (a), never
+     the words \`$TMPDIR\`:
+
+       mkdir -p <TMP>/${row.step}-target
+       git archive <sha> | tar -x -C <TMP>/${row.step}-target
+
+     The \`mkdir\` is not optional: \`tar -x -C\` on a directory that does not
+     exist fails \`could not chdir\` and extracts NOTHING, so a single-call
+     form without it reports a failure you then have to diagnose.
+
+     The literal is not optional either, and this is the half that bites
+     silently. \`$TMPDIR\` does not resolve to the same root in every call —
+     the same hazard the artifact-file rule below records for the Write tool
+     (RUN-1 STEP-32), one call apart instead of one tool apart. Extract under
+     one root and read under another and you get "no such file or directory"
+     against a tree you just built successfully, or worse, fall back to
+     reading the shared checkout — a judge reviewing a tree a round behind the
+     change, which is exactly what this obligation exists to prevent
+     (observed: RUN-31 STEP-821).
+
+     The sha resolves even when no branch of yours carries it, because every
+     worktree shares one object store. Read, build, and probe THERE, and
+     attribute every result to that tree, never to this checkout.
    - If the sha does not resolve at all, that is a hard gap: record it as a
      gap file per obligation 3 instead of reviewing whatever the checkout
      happens to hold.

@@ -427,13 +427,26 @@ function bootstrap(row, r, isolated, isWrite) {
 
    Uncommitted work in the shared tree is deliberately not visible, and
    your inputs arrive in the rendered packet, not from the tree.` : ''
+    const pinNote = isolated ? '' : `
+
+0. FIRST, before the claim: \`printenv TMPDIR\` — your literal scratch root.
+   Call it <TMP>; substitute its literal value wherever <TMP> appears below.
+   (Use \`printenv\`, not \`echo\`.)
+
+   PIN IT ONCE AND REUSE THE LITERAL. \`$TMPDIR\` is not guaranteed to resolve
+   to the same root in every call, so a path written as the variable can name
+   one directory when you create it and a different one when you read it
+   back — files persist perfectly well under whichever root actually received
+   them. The literal is what makes "I wrote it, therefore I can read it"
+   true, and the claim token you park in obligation 1 depends on exactly
+   that.`
     return `You are executing one step of a Docket run. Follow these obligations exactly.
 
 YOUR ASSIGNMENT: step ${row.step} (issue ${row.issue}, run ${row.run}). This
 brief was rendered for that step alone — every occurrence of ${row.step} below
 is your real, already-substituted step id, NOT a template placeholder. ${row.step}
 is the id you claim in obligation 1; a brief with an unfilled placeholder would
-read STEP-N or \${row.step}, and this one does not.${isolationNote}
+read STEP-N or \${row.step}, and this one does not.${isolationNote}${pinNote}
 
 1. Claim it AND PARK THE TOKEN ON DISK${isolated ? ` — ISOLATED: run form 1' from
    obligation 0 (separate plain commands, literal paths) instead of the block
@@ -441,19 +454,20 @@ read STEP-N or \${row.step}, and this one does not.${isolationNote}
    Every rule after the block still binds you.` : ', in ONE Bash call, exactly this:'}
 
    \`\`\`
-   docket step claim ${row.step} --owner wave:${row.step} --render --json > "$TMPDIR/${row.step}.claim.json" &&
-     jq -r '.data.token'  < "$TMPDIR/${row.step}.claim.json" > "$TMPDIR/${row.step}.token" &&
-     chmod 600 "$TMPDIR/${row.step}.token" &&
-     jq -r '.data.packet' < "$TMPDIR/${row.step}.claim.json" &&
-     cat /dev/null > "$TMPDIR/${row.step}.claim.json"
+   docket step claim ${row.step} --owner wave:${row.step} --render --json > <TMP>/${row.step}.claim.json &&
+     jq -r '.data.token'  < <TMP>/${row.step}.claim.json > <TMP>/${row.step}.token &&
+     chmod 600 <TMP>/${row.step}.token &&
+     jq -r '.data.packet' < <TMP>/${row.step}.claim.json &&
+     cat /dev/null > <TMP>/${row.step}.claim.json
    \`\`\`
 
    The last command TRUNCATES the claim file rather than deleting it. Its
    contents are spent the moment the packet above is printed, so emptying it
    is enough. Same rule at step 3.
 
-   Every path is spelled out because \`$TMPDIR\` IS SHARED BY EVERY EXECUTOR IN
-   THE WAVE (measured: concurrent subagents all get the same directory). Your
+   Every path is spelled out because YOUR SCRATCH ROOT <TMP> IS SHARED BY EVERY
+   EXECUTOR IN THE WAVE (measured: concurrent subagents all get the same
+   directory). Your
    step id is what makes these filenames yours; do not shorten them to
    \`claim.json\` or \`token\`, or a sibling's claim overwrites yours.
 
@@ -582,7 +596,7 @@ ${!isWrite ? `
    STDIN${isolated ? ` — ISOLATED: run form 3' from obligation 0 (literal
    token path) in place of the command below; everything else still binds you.` : ':'}
 
-   \`docket step record ${row.step}${isWrite ? ' --worktree <YOUR CHECKOUT>' : ''} --artifact-file "$TMPDIR/${row.step}-<kind>.md" --metadata '{"model_requested":"${r.model_requested}","effort_requested":"${r.effort_requested}","model_resolved":"<model that served you>","effort_resolved":"<effort you ran at>"}' < "$TMPDIR/${row.step}.token"\`
+   \`docket step record ${row.step}${isWrite ? ' --worktree <YOUR CHECKOUT>' : ''} --artifact-file <TMP>/${row.step}-<kind>.md --metadata '{"model_requested":"${r.model_requested}","effort_requested":"${r.effort_requested}","model_resolved":"<model that served you>","effort_resolved":"<effort you ran at>"}' < <TMP>/${row.step}.token\`
 
    \`record\` is an exact alias of \`step complete\` — identical saga, identical
    flags — and it is the verb to use: some shells parse the bare word
@@ -619,7 +633,7 @@ ${isWrite ? `
 
    or on failure:
 
-   \`docket step fail ${row.step} --note '<why>' < "$TMPDIR/${row.step}.token"\`
+   \`docket step fail ${row.step} --note '<why>' < <TMP>/${row.step}.token\`
 
    \`fail\` takes ONLY --note and --metadata — there is no --artifact-file on
    it. What you learned goes in the note (or the metadata bag); do not try to
@@ -649,9 +663,9 @@ ${isolated ? `
    TRYING FORMS. Leave your deliverables parked where the brief already has
    them —
 
-     $TMPDIR/${row.step}.token       (intact, 0600 — do NOT truncate it)
-     $TMPDIR/${row.step}-<kind>.md   (your artifact body)
-     $TMPDIR/${row.step}-payload.json (your payload, when the contract has one)
+     <TMP>/${row.step}.token       (intact, 0600 — do NOT truncate it)
+     <TMP>/${row.step}-<kind>.md   (your artifact body)
+     <TMP>/${row.step}-payload.json (your payload, when the contract has one)
 
    — and report RECORD BLOCKED: your step id, the refusal's first line
    verbatim, and every parked path including the token's. ONE refusal is an
@@ -676,7 +690,7 @@ ${isolated ? `
    verb, because argv is world-readable through \`ps\`. Redirect it; never read it.
 
    After the record command exits 0, leave the token file alone or truncate
-   it (\`cat /dev/null > "$TMPDIR/${row.step}.token"\`) — the engine retires
+   it (\`cat /dev/null > <TMP>/${row.step}.token\`) — the engine retires
    the token the moment the record lands, so the file is inert either way. If \`record\` or
    \`fail\` errored, KEEP the token file INTACT and stop — it is the only
    thing that can still drive this step, and losing it after a failed record
@@ -688,18 +702,18 @@ ${isolated ? `
    EVERY record carries an artifact file. The engine refuses a record without
    \`--artifact-file\` before it validates anything else — "a step completes by
    recording what it produced" — so the file is never optional. Create it WITH
-   BASH (a heredoc: \`cat > "$TMPDIR/${row.step}-<kind>.md" <<'EOF' ... EOF\`)
+   BASH (a heredoc: \`cat > <TMP>/${row.step}-<kind>.md <<'EOF' ... EOF\`)
    as a FRESH file whose name starts with your step id, then pass that path as
    \`--artifact-file\`. NEVER create this file with the Write tool: under the
    sandbox the Write tool materializes files at a DIFFERENT physical path
-   than the \`$TMPDIR\` your Bash commands resolve, and the record then
+   than the <TMP> root your Bash commands use, and the record then
    fails "no such file or directory" against a file you just wrote
    (observed: RUN-1 STEP-32).
 
    ARTIFACT FILES: THREE AUTHORING RULES. A large or brace-heavy heredoc
    body fails in an isolated shell. Author files these ways from the start
    and that failure never arises. Every form below writes ONLY to targets
-   under your \`$TMPDIR\` or your own worktree — that containment is the rule
+   under your <TMP> or your own worktree — that containment is the rule
    itself, not a detail of it, and a write aimed anywhere else is out of
    bounds whatever form it takes.
 
@@ -711,7 +725,7 @@ ${isolated ? `
      bracket-heavy): let the excerpt travel as file bytes rather than as
      command text. Write it to its own scratch file in small chunks with the
      SIZE form above, then \`cat\` that file into place — or build the
-     artifact with \`jq -n --rawfile body "$TMPDIR/<step>-excerpt.txt"\`.
+     artifact with \`jq -n --rawfile body <TMP>/<step>-excerpt.txt\`.
      Do not hand-encode, escape, or otherwise transform the content itself.
 
    (There is no \`--artifact-kind\`: the workflow's
@@ -728,20 +742,20 @@ ${isolated ? `
    \`{("kebab-key"): $v}\`; arrays as \`jq -n '[ ... ]'\` or by \`jq -s\` over
    per-element files.) Never
    write to or reuse a shared filename like \`change-summary.md\`: executors in
-   one wave share \`$TMPDIR\`, and under a shared name a racing sibling's bytes
+   one wave share <TMP>, and under a shared name a racing sibling's bytes
    — or a predecessor's leftover when your own write silently fails — get
    recorded as YOUR artifact (RUN-3's STEP-11 recorded STEP-21's summary
    exactly this way).
 
    If a write is refused, triage the refusal before anything else. One that
-   names the body's SIZE OR CONTENT, on a target under \`$TMPDIR\` or your own
+   names the body's SIZE OR CONTENT, on a target under <TMP> or your own
    worktree, means the three forms above are how to write it — use them.
    One that says the command is TOO COMPLEX TO VERIFY that it stays inside
    the worktree names the command's SHAPE, not its body: reissue the same
    work as single plain commands — ONE redirection or ONE heredoc each, no
    \`&&\`, no pipes, no \`;\`, no command substitution — and run them
    separately. Its closing line about git operations is boilerplate; it fires
-   on non-git commands too (a bare \`cat > "$TMPDIR/x.txt" <<'EOF'\` of two
+   on non-git commands too (a bare \`cat > <TMP>/x.txt <<'EOF'\` of two
    words has drawn it), so do NOT read it as a claim that you touched git,
    and do not go hunting for a git mistake you did not make. This is the same
    guard as the brace-then-quote rule above, refusing on a different axis.

@@ -100,6 +100,18 @@ reads (CLI help, the workflow corpus under `~/.docket/config/`, the
 scope-matcher's own rules) are yours; the repo survey is the agent's. You are the intake, and your context belongs to the
 conversation, not to directory listings.
 
+**While the reader runs, ask operator-only questions and hold premise-riding
+ones.** Operator-only — preferences, authorizations, budget, anything whose
+answer does not move with repo state — goes in the early round as §1 says.
+Premise-riding — anything whose framing assumes a repo fact the reader is at
+that moment checking ("how should this already-fixed blocker route") — waits
+for the verdict, even if that costs a later round. §1's "one round of three"
+still holds; this only decides which round a question belongs in. Asking on an
+unverified premise buys a correction plus a second round, which is the more
+expensive outcome (2026-08-20: a planner asked how an open blocker should
+route, then had to open with "correction to what I told you earlier" when the
+verdict two minutes later showed it already fixed on HEAD).
+
 **Every delegate brief ends with this sentence, pasted verbatim** —
 unconditionally, whatever the spawn mechanism, with no rewording and no
 paraphrase:

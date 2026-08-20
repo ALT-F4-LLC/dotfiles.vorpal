@@ -167,10 +167,13 @@ contracts eight edits behind, and paid in re-review churn an operator gate had
 already ruled on), and keep corpus installs BETWEEN runs — a mid-run `just
 activate` changes what already-pinned refs resolve to, and it changes them for
 every repo at once, since all of them read the same bytes.
-Attaching to an ALREADY-ACTIVE run skips activation but not the probe: run the
-same two diffs, plus `diff` of installed wave.js and tribunal.js against their
-source, before your first dispatch. An existence check proves nothing about
-bytes. Divergence mid-run is stop-and-report all the same.
+Attaching to an ALREADY-ACTIVE run skips activation but not the probe, and the
+probe is never the pin check alone: run BOTH `diff -r` staleness checks above
+(`$DOCKET_SRC/config` vs `~/.docket/config`, and `$DOCKET_SRC/bin` vs
+`~/.docket/bin`), plus `diff` of installed wave.js and tribunal.js against their
+source, before your first dispatch. Announcing the probe is not running it. An
+existence check proves nothing about bytes. Divergence mid-run is
+stop-and-report all the same.
 **Pins vs disk, and this is the one that actually bites.** The two diffs above
 compare SOURCE against INSTALL. A run's PINS are a third set of bytes that can
 disagree with both: the engine froze them at ITS activation, and every
@@ -667,6 +670,13 @@ A background helper you spawned is invisible to `TaskList` and `ListAgents`
 while it runs — its completion notification is the only status surface, and
 `SendMessage` to its name is the only nudge lever. Prefer `run_in_background:
 false` for the join; it is short and you need the result to proceed.
+
+**TaskStop a delegate the moment its report is in hand.** Stopping it is the
+last step of using it, not end-of-run housekeeping: a helper that has already
+reported — by SendMessage or by finishing — and sits registered becomes the
+operator's cleanup (2026-08-20: a scope-read agent killed by hand two minutes
+after it delivered). This holds for every agent you spawn, not just the usage
+join.
 
 **A panel you convened yourself gets the same treatment, keyed by seat.** Every
 tribunal.js launch has its own transcript directory, and its seats' spend has
@@ -1289,6 +1299,12 @@ does. Cluster ids, severity vocab, and engine terms live in your accompanying
 message, not in the question line. Two operators in one fleet answered "I am
 confused - ELI5" and a plain re-ask got the decision immediately (RUN-16,
 RUN-19) — the first phrasing should not need a second.
+
+**Scope and what-next questions go through the same tool.** "Want me to pick up
+X, or leave it for now?" tacked onto a status report is a decision, not
+narration: ask it with the question tool, recommended option first, exactly as
+you would a gate (2026-08-20: a conductor's scope question rode a report as
+prose while every gate question that same session used the tool correctly).
 
 On their answer:
 

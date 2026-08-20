@@ -1185,6 +1185,31 @@ being decided alongside it — the diff for a commit gate, the finding summary
 for a held cluster, the numbers for a budget breach. "Step 12 needs approval"
 is not a gate, it is a rubber stamp.
 
+**The artifact a question is framed from is read IN FULL.** No `head`, no
+`tail`, no byte cap on a findings packet, a judge report, a diff, or anything
+else whose content decides what you ask — the window you can see is not the
+tally. (The event feed's own `--tail N` paging is not this: a feed has no
+tally to misread, an artifact does.) RUN-32's reconcile@3 packet ran 538 lines; a conductor rendered it
+through `| tail -100`, saw exactly what that window holds (three LOW clusters
+and the RESOLUTION footer), and asked the operator to close on "3 cosmetic
+lows" while four blocker verdicts in the judge table, a carried blocker, and a
+double-blocker sat above the cut. Nothing untracked shipped only because a
+PRIOR session's abandon ruling had already preserved them — a safety that
+conductor did not know it had. Where an artifact is too large to quote,
+summarize from the ARTIFACT'S OWN tally — its cluster list and judge table,
+"10 clusters C301–C310, 4 blockers" — never from the slice you happened to
+render.
+
+**The premise-check runs before the QUESTION, not only before a filing.** The
+scope-read you do before creating an issue — the repo, the project's backlog,
+the rulings already recorded (`issue-abandoned` notes and the ids they cite,
+per "Ending and resuming") — is what tells you whether the recommendation you
+are about to put in front of the operator is already contradicted. A question
+whose premise an existing ruling or an existing issue has already answered is
+a WRONG question, and the operator pays for it twice: once for the answer,
+once for the correction. Run the check first, and carry what it found into the
+question's own text.
+
 A gate that PASSES over a reject or a concerns cast is not finished when you
 relay it: link the proposal to the downstream issue(s) the finding bears on —
 `docket vote link <proposal-id> --issue <successor>` — so the next planner

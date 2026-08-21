@@ -15,7 +15,9 @@
 
 [pipeline]
 name    = "investigation"
-version = 4   # 4: `read-gate` human -> tribunal vote (operator policy,
+version = 5   # 5: `report` gets its own contract (contracts/report.md) instead
+              #   of reusing investigate's (DOT-516, 2026-08-21)
+              # 4: `read-gate` human -> tribunal vote (operator policy,
               #   2026-08-11)
 description = "Read-only root-cause investigation with optional research fanout, ending at a tribunal read that escalates to the operator."
 
@@ -102,7 +104,10 @@ executor = "investigate"             # the same node writes the report from its
                                      #   own findings plus whatever research
                                      #   returned
 emits = "investigation"
-packet = ["contracts/{executor}.md"]
+packet = ["contracts/report.md"]     # explicit path (the spec-project.toml
+                                     #   pattern): the synthesis role gets its
+                                     #   own contract instead of re-rendering
+                                     #   investigate's diagnosis charter
 expected_cost = 0.40
 inputs = ["investigate.investigation", "research.*", "issue.body"]
 

@@ -1,6 +1,6 @@
 ---
 name: shadow
-description: Observe Claude Code sessions — live, or post-mortem — and find friction across every layer they cross: harness, skills, workflows, loops, agents, hooks, config, the models themselves, and the Docket engine. Strictly read-only — it fixes nothing, anywhere. Log findings with evidence as they land; once the run ends, file EVERY finding as an issue in its owning Docket project — the intake of the funnel a `tend` loop (or a plan → conduct run) drains — then deliver a severity-ranked review naming what was filed. Invoked bare it sweeps EVERY project under ~/.claude/projects for the past 7 days of sessions; pass a session id to observe just that one — a conduct run, any other skill's run, or a finished session worth learning from.
+description: Observe Claude Code sessions — live, or post-mortem — and find friction across every layer they cross: harness, skills, workflows, loops, agents, hooks, config, the models themselves, and the Docket engine. Strictly read-only — it fixes nothing, anywhere, and investigation may read every project's checkout and all of ~/.claude. Runs from ANY repository — the store is machine-global and filing anchors itself to each owning checkout. Log findings with evidence as they land; once the run ends, file EVERY finding as an issue in its owning Docket project — the intake of the funnel a `tend` loop (or a plan → conduct run) drains — then deliver a severity-ranked review naming what was filed. Invoked bare it sweeps EVERY project under ~/.claude/projects for the past 7 days of sessions; pass a session id to observe just that one — a conduct run, any other skill's run, or a finished session worth learning from.
 argument-hint: "[session-id]"
 ---
 
@@ -14,7 +14,10 @@ someone else. You are the intake of a funnel — a `tend` loop (or a plan →
 conduct run) on the owning repo drains what you file; you never drain it
 yourself. The definitions live in
 `~/Development/repository/github.com/ALT-F4-LLC/dotfiles.vorpal.git/main/src/user/claude_code`
-— `$SRC` below; note the underscore.
+— `$SRC` below; note the underscore. The docket corpus source sits beside it
+at `$SRC/../docket/config/`. Both anchors are absolute on purpose: this
+skill runs from ANY repository, so nothing below may resolve against
+wherever you happen to be launched.
 
 You are the only shadow. Every layer is yours, and a layer you skip is a layer
 nobody watched.
@@ -58,7 +61,10 @@ Three rules you must not fight:
   only, report back via SendMessage — because a helper cannot infer the seat
   it serves, and one measured audit helper otherwise executed a `config set`
   it found quoted in the very document it was auditing.
-- **You are read-only everywhere, not just in the observed repo.** No
+- **You are read-only everywhere, not just in the observed repo.** The
+  whole machine is your reading room — every project's checkout, every
+  transcript under `~/.claude`, every store surface — and none of it is
+  your writing room. No
   definition edits, no scripts written, no commits, no tribunal — the fix
   path is gone from this skill entirely. A finding's remedy is work for
   someone else, and the only writes you ever make beyond the findings log
@@ -70,8 +76,18 @@ Three rules you must not fight:
 - **Every finding files to its OWNING project** (operator ruling,
   2026-08-16: gaps belong to their respective projects). File from the
   owning repo's own checkout (`docket issue create`), which is also what
-  routes it: the store is machine-global and a project is a checkout's git
-  identity. Definition findings file in the dotfiles project; engine defects
+  routes it: the store is machine-global, a project is a checkout's git
+  identity, and `issue create` takes no project flag — the checkout IS the
+  router. Any seat can reach one: `docket project list --json` names every
+  project's `identity`, its absolute repo path (store-global, answers from
+  an unregistered directory — probe-proven 2026-08-20), and the working
+  checkout is that identity's primary worktree — `<identity>/main` on this
+  machine; `ls` the identity when in doubt. So filing is a one-call
+  subshell, `cd <checkout> && docket issue create …`, from wherever you
+  sit. Never create from an unregistered or wrong checkout planning to
+  re-home later; `docket issue move <id> --project <identity|name|id>`
+  fixes the rare miss, it is not a filing path. Definition findings file
+  in the dotfiles project; engine defects
   file in the docket project (Docket is a separate codebase — write the
   defect up with verb, refusal text verbatim, minimal repro); the observed
   repo's own bug files in ITS project — never into whichever project the
@@ -121,17 +137,17 @@ The sweep is agent work. Fan out read-only analysts — one per session, or
 one per project where a project's sessions are small — each briefed with
 rule 1's discipline VERBATIM, the §2 checklist for whatever skill that
 session ran, §3's layer table, and the instruction to report via SendMessage
-(a background agent's final text is delivered to nobody — §4). Analysts run
-their docket cross-checks from their observed repo's own root, exactly as a
-single-session shadow would (§4's store-resolution and project-scoping rules
-are per-repo). You aggregate: the log is
+(a background agent's final text is delivered to nobody — §4). Analysts
+anchor their docket cross-checks to their observed repo's checkout by
+subshell, exactly as a single-session shadow would — never to the launch
+repo (§4's store-resolution and project-scoping rules are per-repo). You aggregate: the log is
 `/tmp/claude/shadow/fleet-<YYYY-MM-DD>/findings.md`, one entry per DISTINCT
 finding — the same defect surfacing in four sessions is ONE finding carrying
 four evidence lines, and the recurrence count is its severity argument. Then
 §6 runs once, over the aggregate: one filing pass, every finding to its
 owning project, then one review naming what was filed.
 
-Everything from "Sit in the observed repo's root" below is written for a
+Everything from "Any seat works" below is written for a
 single attach; in the sweep it applies per observed session, carried out by
 that session's analyst.
 
@@ -139,14 +155,26 @@ Live and post-mortem are the same job: live you tail transcripts as they grow
 and can flag in real time, post-mortem they are complete and §5's interrupts
 have no one to interrupt. Orientation, layers, log, review are identical.
 
-**Sit in the observed repo's root.** Same-repo shadowing is the common case
-and the right one: where you stand picks both the store and the project the
-verbs answer for (§4), and where the hooks are live the session-start hook
-hands you the active-run status the moment you boot. Sharing the repo means
-sharing the hooks, and hooks cannot tell a shadow from a conductor — but
+**Any seat works — anchor the verbs, not yourself.** You may be launched in
+any repository, the observed one or not, and the job is identical: the
+store is machine-global, id-addressed verbs resolve store-wide from
+anywhere (ids are a store-wide sequence; `issue show` and `run status
+RUN-N` probe-proven from an unregistered directory, 2026-08-20), and every
+LISTING verb gets an explicit anchor — a one-call subshell into the
+checkout it should answer for, resolved by rule 3's `project list` route
+(`cd <checkout> && docket events list …`). Anchoring is load-bearing
+because a listing verb asked from the wrong directory does not refuse, it
+answers EMPTY — `issue list` and `events list` from an unregistered
+directory both return `ok:true` with zero rows (same probe) — and an empty
+answer read as a quiet queue is a false finding. Hooks follow the LAUNCH
+repo, not the observed one: seated in the observed repo you inherit its
+live hooks, and the session-start hook hands you the active-run status the
+moment you boot; from any other seat, the guards that fire answer for the
+launch repo's runs, so attribute their behavior accordingly. Either way
+hooks cannot tell a shadow from a conductor — but
 **check which hooks are live before attributing any behavior to one, and
 never wait on output from one that is not:** read the settings builder's hook
-block (the `with_hook` chain in `src/user/claude_code.rs`) against the built
+block (the `with_hook` chain in `claude_code.rs`, beside `$SRC`) against the built
 `~/.claude/settings.json` — all five docket hooks are LIVE today (verified
 firing 2026-08-11). Where they run, expect these and use them instead
 of fighting them:
@@ -178,7 +206,7 @@ DB-touching verb opens the store read-write and migrates it forward before
 answering — there is no read-only open — so a seat that cannot write the
 store fails with `unable to open database file (14)` wherever it stands. But
 `~/.docket` is in the sandbox write allowlist today: run `docket run status`
-from the observed repo's root at attach and believe that result, not this
+from wherever you stand at attach and believe that result, not this
 line. Only if it fails do you need the sandbox override for the read verbs,
 or the DB read directly with
 `sqlite3 'file:$HOME/.docket/issues.db?immutable=1'` (plain `mode=ro` fails:
@@ -205,15 +233,17 @@ Before reading one transcript line:
    target; any other target gets the same treatment fresh.
 2. **Skim every surface the run will cross.** `$SRC/workflows/wave.js`,
    `$SRC/agents/executor-*.md`, `$SRC/hooks/`, and the docket config source —
-   not under `$SRC` but beside it at `src/user/docket/config/` (`contracts/`,
-   `fragments/`, `schemas/`, `workflows/`, `policy.toml`) — plus the observed
+   not under `$SRC` but beside it at `$SRC/../docket/config/` (`contracts/`,
+   `fragments/`, `schemas/`, `workflows/`, `policy.toml`; spelled
+   `src/user/docket/config/` repo-relative in remedies and filed issues,
+   because workers run in that repo) — plus the observed
    repo's `.docket/config/` when it has one: briefs render from the INSTALLED
    corpus at `~/.docket/config`, a repo's additions layering second, never
    from the source tree.
 3. **Establish which bytes are actually running — starting with whether an
    installed copy exists at all.** Resolve it at attach rather than trusting
    this line: `ls -ld ~/.claude/{agents,skills,workflows,scripts,hooks}`
-   against the builder's symlink vec (`src/user/claude_code.rs:300-325`).
+   against the builder's symlink vec (`claude_code.rs:300-325`, beside `$SRC`).
    All five come back as live symlinks into the content-addressed vorpal
    store — from the first `just activate` after 2026-08-11, when `workflows`
    joined the builder; before that activation it is still a real directory
@@ -431,10 +461,12 @@ Measured limits of these surfaces (RUN-2's and RUN-5's shadows):
   a naive sum; recompute with the script's own method first (measured
   2026-08-17: 73,195 naive vs 38,576 deduped cache-creation on one wave).
 
-Cross-check the engine whenever the store is reachable, from the observed
-repo's root: resolution runs `$DOCKET_PATH` → a repo-local `.docket/issues.db`
-found by walking up → the global `~/.docket/issues.db`, and where you stand
-also picks the project the project-scoped verbs answer for. `run status`
+Cross-check the engine whenever the store is reachable, anchoring each verb
+per §1: resolution runs `$DOCKET_PATH` → a repo-local `.docket/issues.db`
+found by walking up → the global `~/.docket/issues.db`, and where a verb
+runs from also picks the project the project-scoped ones answer for —
+id-addressed verbs from anywhere, listing verbs by subshell from the
+checkout they should answer for (or `--all-projects` where offered). `run status`
 against what the transcript believes mid-run; `run report` and `events list`
 post-mortem; `step artifacts STEP-N` then `step artifact ARTIFACT-N
 [--payload]` for what a step actually produced — those two retired reading
@@ -495,7 +527,8 @@ Then:
    `rev-parse HEAD` — the run itself may have moved them. File issues
    against what is on disk now, noted against what ran then; stale bytes
    discovered here are themselves a finding.
-2. **File everything** (rule 3: each from its owning repo's checkout). One
+2. **File everything** (rule 3: each by subshell into its owning repo's
+   checkout, resolved via `docket project list --json` — any seat). One
    `docket issue create` per DISTINCT finding — load-bearing and friction
    individually, paper-cuts batched into one issue per definition file or
    surface. (`issue create` writes; rule 1's read-verbs-only list bounds the

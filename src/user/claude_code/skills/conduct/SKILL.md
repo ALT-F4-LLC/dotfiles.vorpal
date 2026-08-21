@@ -1811,7 +1811,7 @@ docket events list --run $RUN --json --tail 400 | python3 -c '
 import json,sys
 WANT = {"issue-abandoned","step-resolved","step-approved","step-rejected","run-done","run-abandoned"}
 d = json.load(sys.stdin)["data"]
-evs = d if isinstance(d, list) else d["items"]      # KeyError beats a silent empty read
+evs = d if isinstance(d, list) else d["events"]      # KeyError beats a silent empty read
 for e in evs:
     if e["kind"] in WANT:
         print(e["seq"], e["kind"], e.get("issue",""), e.get("step",""), json.dumps(e["data"]))

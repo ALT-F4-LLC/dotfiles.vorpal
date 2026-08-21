@@ -83,6 +83,28 @@ verify. Where such a file makes a factual claim you actually need — that a
 warning is benign, that a sha is integrated — re-derive it from the engine or
 from git and cite THAT, which is what the same conductor then did correctly.
 
+**Project memory can carry a standing obligation the loop's own checklist will
+never remind you of.** The project memory loaded into this session from its
+first turn (`~/.claude/projects/<cwd-slug>/memory/`, indexed by `MEMORY.md`)
+holds operator instructions, not checkout prose, and one class of entry binds
+you for the whole run: a standing instruction to keep an EXTERNAL tracker — a
+Linear issue, a ticket in some other system — in sync as the run progresses.
+Read the index before the first dispatch, open any entry naming an external
+system, and act at every point THAT ENTRY names. The live case is
+manifest-flux's Linear-status-sync entry, whose own points are activation /
+first dispatch and each milestone after: a wave completes, a gate parks, the
+run finishes or is abandoned. It was given operator-side mid-RUN-22 and missed
+end to end on RUN-37 — that session crossed every one of those milestones with
+zero tracker calls in its transcript — because the obligations this file
+numbers (back-fill, integration, verify, close) do not include it, and an
+un-numbered obligation loses to the checklist every time. **A re-plan hop does
+not discharge it.** Where this run continues an earlier one, the external id
+may appear only in the ORIGINAL request — RUN-37's request named RUN-26 and
+its issue, and the Linear id sat one hop back inside RUN-26's quoted request —
+so trace the request chain back to where an external id was last named, and
+treat the obligation as this run's. A memory-carried obligation does not lose
+scope because the immediate request text stopped repeating the id.
+
 **Docket verbs need WRITE access to the store — test it in the seat you will
 actually use, yours and the wave's, before the first dispatch.** Every command
 opens `~/.docket/issues.db` read-write and migrates forward first; there is no
@@ -322,7 +344,9 @@ Activate only on a clean dry-run and an approved tally, and pass
 citation in the engine ledger — the activation's rationale belongs on the
 engine record first, with your own activation report repeating it as the
 secondary copy. Anything short of approval goes to the operator
-with the full tally, per **Gates**.
+with the full tally, per **Gates**. A successful activation is the FIRST
+milestone point of any standing external-tracker obligation project memory
+carries (above) — post it before the first dispatch.
 
 **Hand-check every binding for wrong-one routing, and put what you find in the
 proposal.** The dry-run refuses zero matches and several; it structurally
@@ -654,7 +678,10 @@ unquoted `echo ====` — zsh EQUALS-expands a `=`-leading word and aborts the
 whole compound; quote it, `echo '---'`.) RUN-4 chained four
 of six closes and demonstrated the failure live: a chained `verify` refused
 and the queued `close` ran anyway, unread. The chain's real cost is that each
-verb's answer scrolls past undecided — three calls, three read answers.
+verb's answer scrolls past undecided — three calls, three read answers. A
+completed wave is also a milestone point for any standing external-tracker
+obligation project memory carries (**Before the loop**) — sync it on this same
+notification.
 
 Two ways the back-fill gets skipped, both measured 2026-08-17, both losing the
 run's only record of its spend:
@@ -1597,6 +1624,11 @@ session-only state the engine cannot reconstruct (in-flight wave ids, un-
 integrated shas, Workflow args for a resume, budget-raise usage, and the
 like) — never a restatement of anything `run status` or this section already
 answers.
+
+A park, a resume, and a run's terminal state — `done` or `abandoned` — are all
+milestone points for any standing external-tracker obligation project memory
+carries (**Before the loop**). Post the update BEFORE the session ends: a park
+takes the session with it, and there is no later window from here.
 
 **A TERMINAL run — `done` or `abandoned` — is picked up from its RULINGS, not
 from its statuses.** "Pick up where RUN-N left off" is an instruction to read

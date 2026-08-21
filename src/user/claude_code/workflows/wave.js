@@ -178,7 +178,7 @@ function fableEligible(policy, hint, row, standingVariant) {
     for (const g of gates) {
         if (g === 'investigator-class' && INVESTIGATOR_CLASS.includes(hint)) return true
         if (g === 'novel-architecture' && labels.includes('novel-architecture')) return true
-        if (g === 'failed-top-opus-round' && row.attempt > 1 &&
+        if (g === 'failed-top-opus-round' && row.attempt > 0 &&
             standing.model === 'opus' &&
             (standing.effort === 'xhigh' || standing.effort === 'max')) return true
     }
@@ -257,11 +257,13 @@ function resolve(row, policy) {
     }
 
     const standing = variant
-    // Escalation: one escalate_to hop per failed attempt, from the standing
-    // variant. The walk stops at the chain's end, at the security ceiling, or
-    // just before a variant whose model is never-listed.
-    if (row.attempt > 1) {
-        for (let hop = 1; hop < row.attempt; hop++) {
+    // Escalation: one escalate_to hop per prior claim — row.attempt counts
+    // claims-so-far, whatever ended each one (gate failure or lease reap; the
+    // row exposes no split — DOT-486) — from the standing variant. The walk
+    // stops at the chain's end, at the security ceiling, or just before a
+    // variant whose model is never-listed.
+    if (row.attempt > 0) {
+        for (let hop = 0; hop < row.attempt; hop++) {
             if (ceiling && variant === ceiling) break
             const cur = variantSpec(policy, variant)
             if (!cur || !cur.escalate_to) break

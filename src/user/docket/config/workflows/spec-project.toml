@@ -20,7 +20,11 @@
 
 [pipeline]
 name    = "spec-project"
-version = 6   # 6: reconcile aggregates severity by `max` instead of
+version = 7   # 7: `write` concurrency 1 -> 20, the standard-change@8 move:
+              #   per-executor worktrees isolate writers, so write=1 only
+              #   cost wall clock — RUN-41 staged seven implements one per
+              #   stage for no correctness (2026-08-21).
+              # 6: reconcile aggregates severity by `max` instead of
               #   `median` — an even-count median resolves an exact tie to
               #   the LOWER band, demoting the mixed clusters that most need
               #   attention (retro 2026-08-19, panel DKT-V62 architecture
@@ -58,17 +62,18 @@ unless_labels = ["release", "retro"]
                              #   this bounds) against a 104m average, and every read
                              #   class finished inside 13m.
                              # `max` is required by V24 and is CONCURRENCY, a
-                             #   separate question from duration. `write` = 1 is the
-                             #   writer serialization the spec's reference instance
-                             #   specifies (02 §11.1); read classes take 4, the
-                             #   fanout width these pipelines actually declare, so
-                             #   the bound records existing behaviour rather than
-                             #   newly throttling anything.
+                             #   separate question from duration. `write` takes 20
+                             #   since @7 (standard-change@8's move): 02 §11.1's
+                             #   write=1 reference instance predates per-executor
+                             #   worktrees, which isolate writers; overlap surfaces
+                             #   at integration as a conflicting cherry-pick, a
+                             #   stop-and-ask gate. Read classes take 4, the fanout
+                             #   width these pipelines actually declare.
 "judge-architecture"  = { max = 4, max_step_duration = "1h" }
 "judge-correctness"   = { max = 4, max_step_duration = "1h" }
 "judge-simplicity"    = { max = 4, max_step_duration = "1h" }
 "synthesize-findings" = { max = 4, max_step_duration = "1h" }
-"write"               = { max = 1, max_step_duration = "2h" }
+"write"               = { max = 20, max_step_duration = "2h" }
 
 [[step]]
 name = "spec-author"

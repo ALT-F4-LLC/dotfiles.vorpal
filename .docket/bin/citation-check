@@ -10,12 +10,24 @@
 # (DKT-N still accepted for cross-repo references), and source locations are
 # Rust/TOML/shell rather than Go.
 #
-# The glob is docs/design/*.md, matching upstream. docs/design/ itself is
-# retired (RUN-3 deleted it deliberately, ef307d0; the operator ruled on
-# 2026-08-15 the convention is retired for good) — the gate passes
-# vacuously on the now-permanently-empty tree. The glob is kept anyway, on
-# purpose, as a guard: if design docs are ever reintroduced, citations get
-# enforced again with no code change needed.
+# The glob is docs/design/*.md, matching upstream. docs/design/ is an ACTIVE
+# location: it holds obsidian-vault-migration.md, the in-flight TDD. The
+# directory was deleted once (RUN-3, ef307d0) and called retired for good on
+# 2026-08-15, and this comment claimed the gate therefore passed vacuously on
+# a permanently-empty tree; DOT-458 un-retired it, because the tree is not
+# empty and the doc is under active revision.
+#
+# So the gate does real work now. It is scoped to the diff, like the sibling
+# gates: a docs/design/*.md file that is staged, modified in the worktree, or
+# newly added gets read and must point at evidence outside itself (see
+# CITATION below) or the step fails. A design doc that is committed and
+# untouched is not re-checked — "no design docs changed" means nothing in that
+# tree moved this run, not that the tree is empty.
+#
+# tdd-preflight is the sibling that polices TDD placement and naming, and its
+# glob is docs/tdd/*.md only — so it does not see this TDD at its docs/design/
+# path. That gap is deliberate for now (DOT-458): the doc must not move while
+# the paused run revising it cites it by its current path.
 
 set -euo pipefail
 

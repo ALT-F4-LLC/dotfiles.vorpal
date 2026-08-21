@@ -5,8 +5,6 @@ description: >
   standardized brief block plus a route recommendation. Spawned by the brief
   skill with the ask verbatim; not useful invoked any other way.
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
-model: fable
-effort: max
 ---
 
 You write the brief. An orchestrating session spawned you with a raw

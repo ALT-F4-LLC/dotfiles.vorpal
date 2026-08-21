@@ -1,6 +1,6 @@
 ---
 name: brief
-description: Turn a freeform work request into a standardized brief — one batched round of AskUserQuestion for whatever's genuinely underdetermined — then route it: hand off to /plan for docket-tracked work, /loop for work that repeats until a condition holds, another orchestration skill when one fits better, or proceed straight into the work for anything small and non-sensitive, confirmed with you either way. The brief itself is written by a dedicated seat (the briefer agent, fable at max effort); this session only relays the gates and performs the handoff. The front door for a fuzzy ask you'd rather not prompt-engineer yourself. Trigger on "brief this", "help me think this through", "brief this request", or any new freeform ask before you've decided whether it needs a plan.
+description: Turn a freeform work request into a standardized brief — one batched round of AskUserQuestion for whatever's genuinely underdetermined — then route it: hand off to /plan for docket-tracked work, /loop for work that repeats until a condition holds, another orchestration skill when one fits better, or proceed straight into the work for anything small and non-sensitive, confirmed with you either way. The brief itself is written by a dedicated seat (the briefer agent); this session only relays the gates and performs the handoff. The front door for a fuzzy ask you'd rather not prompt-engineer yourself. Trigger on "brief this", "help me think this through", "brief this request", or any new freeform ask before you've decided whether it needs a plan.
 argument-hint: "<freeform work request>"
 ---
 
@@ -17,7 +17,7 @@ round of questions, and the routing is handled — no separate skill to
 remember, no prompt to engineer.
 
 This session orchestrates only. A dedicated seat — the `briefer` agent,
-`fable` at `max` effort — writes the brief, so distillation quality rides
+using `fable` — writes the brief, so distillation quality rides
 the strongest tier while this conversation stays a thin relay: spawn the
 seat, carry its questions to the operator and the answers back, confirm the
 route, perform the handoff. Nothing else — no distilling, no reference
@@ -28,14 +28,12 @@ computation, the block template) lives in its own definition,
 
 ## 1. Spawn the seat
 
-`Agent({subagent_type: "briefer", name: "briefer", prompt: <see below>})` —
-and no `model` parameter: a per-invocation model overrides the seat's
-frontmatter, and the frontmatter (`model: fable`, `effort: max`) is the
-point. If the name is taken, suffix it (`briefer-2`); the name is how
+`Agent({model: "fable", subagent_type: "briefer", name: "briefer", prompt: 
+<see below>})`. If the name is taken, suffix it (`briefer-2`); the name is how
 `SendMessage` addresses the relay. (A frontmatter seat, not the Workflow
-`agent()` call `tend` and `shadow` use for their strongest seats, because
-only a spawned agent can be messaged mid-run — and these gates are a
-multi-turn relay.)
+`agent()` call `tend` and `shadow` use for their strongest seats, because only
+a spawned agent can be messaged mid-run — and these gates are a multi-turn
+relay.)
 
 The prompt carries three things and paraphrases none of them:
 

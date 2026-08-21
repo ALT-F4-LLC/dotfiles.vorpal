@@ -178,7 +178,7 @@ most optimal batch, settled 2026-08-21 ("ready, high-priority, parallel-safe"):
 batch: spawn ONE `executor-read` agent over the candidates' scope globs — do
 the globs match files, has any candidate's fix already landed (`git log`
 over its globs since the issue's `created_at`), and does any pair collide
-under the matcher's rules — with the verbatim send-your-report sentence §2
+under the matcher's rules — with the verbatim send-your-report block §2
 quotes, and wait for it the way §2 says: end the turn, one long-fallback
 wakeup, no probing. An issue whose work is already on HEAD is not a batch
 member; it is a comment on that issue and a line in the proposal.
@@ -248,25 +248,36 @@ expensive outcome (2026-08-20: a planner asked how an open blocker should
 route, then had to open with "correction to what I told you earlier" when the
 verdict two minutes later showed it already fixed on HEAD).
 
-**Every delegate brief ends with this sentence, pasted verbatim** —
+**Every delegate brief ends with these sentences, pasted verbatim** —
 unconditionally, whatever the spawn mechanism, with no rewording and no
 paraphrase:
 
-> When finished, SEND your complete report to team-lead via SendMessage. Your
-> final text is delivered to no one; going idle without sending is a failure.
+> When finished, SEND your complete report to team-lead via SendMessage. If you
+> have no SendMessage tool, your final text IS the report — put the whole report
+> there and say you had no send channel. Going idle with the report in neither
+> place is a failure.
 
-Copy those two sentences onto the end of the brief exactly as written; do not
+Copy those sentences onto the end of the brief exactly as written; do not
 restate them in your own words. The mechanism is not knowable at brief-writing
-time, and background spawns run as in-process teammates whose final text is
-delivered to no one; a redundant send costs one duplicated message, a missing
-one costs the report. Three planners have now inverted this instruction while
-the rule sat in their context: RUN-5's reader composed its report as final text
-no one received; RUN-7's reader repeated it when its brief said "no separate
+time, and the two mechanisms differ in opposite directions: a delegate spawned
+as an in-process teammate has SendMessage and its final text is delivered to no
+one, while an Agent-tool background spawn of a tool-limited archetype has no
+SendMessage at all — `executor-read`, the archetype this section spawns, carries
+`Read, Grep, Glob, Bash, LSP` and nothing else — and there its final text IS
+delivered, in the task notification's output. That is why the pasted block names
+both channels rather than one: a redundant send costs one duplicated message, a
+report in neither place costs the report, and a brief that mandates only
+SendMessage costs a tool-limited reader the turns it spends discovering the
+mismatch and justifying the fallback (DOT-525, 2026-08-21: the reader's report
+arrived intact as final text, having first argued its way out of an instruction
+its seat could not execute). Three planners have now inverted this instruction
+while the rule sat in their context: RUN-5's reader composed its report as final
+text no one received; RUN-7's reader repeated it when its brief said "no separate
 send needed" — never write that into a brief; and a 2026-08-20 planner told its
-scope reader that its final text "is delivered directly back to me", then spent
-a recovery round-trip nudging the idle agent before the report arrived. Every
-one of those briefs paraphrased the rule instead of pasting it, which is why
-the sentence above is quoted rather than described.
+teammate-spawned scope reader that its final text "is delivered directly back to
+me", then spent a recovery round-trip nudging the idle agent before the report
+arrived. Every one of those briefs paraphrased the rule instead of pasting it,
+which is why the block above is quoted rather than described.
 
 Any engine fact the brief carries — run
 status, issue ids, branch state — comes from a fresh `docket run

@@ -30,16 +30,24 @@ backfill already carries — a gate probed in one wave and seated in the next
 emits usage in both journals, and the engine's append-only refusal is
 per-batch, not per-row.
 
-`--seats` keys the rows by SEAT instead of by step, for a panel the conductor
-convened itself, and emits `{"voter", "unit", "quantity"}` for `docket vote
-backfill-usage --from-json -`. A tribunal seat carries a proposal id and never
-a step id, so `dispatch backfill-usage` has nothing to attach to and this spend
-had no ledger path at all: in-wave panels ARE counted, because their seats run
-as steps, while conductor-side panels of identical shape recorded nothing. The
-difference was only WHERE the ballot executed, not how much work it did. An
-agent that never cast — the silent-seat checker is one — is named on stderr and
-dropped, because the engine refuses usage for a voter with no cast and misfiling
-it onto a seat that did cast would be worse than losing it.
+`--seats` keys the rows by (PROPOSAL, SEAT) instead of by step, for a panel the
+conductor convened itself, and emits `{"proposal", "voter", "unit", "quantity"}`
+for `docket vote backfill-usage --from-json -`. A tribunal seat carries a
+proposal id and never a step id, so `dispatch backfill-usage` has nothing to
+attach to and this spend had no ledger path at all: in-wave panels ARE counted,
+because their seats run as steps, while conductor-side panels of identical shape
+recorded nothing. The difference was only WHERE the ballot executed, not how much
+work it did. An agent that never cast — the silent-seat checker is one — is named
+on stderr and dropped, because the engine refuses usage for a voter with no cast
+and misfiling it onto a seat that did cast would be worse than losing it.
+
+The PROPOSAL half of that key is what makes one run of the script serve a
+multi-panel wave: one wave now seats several panels (the staged closure rides
+vote rows) with the SAME seat names on each, so a voter-only key cannot be split
+per proposal — and `vote backfill-usage` takes one proposal at a time. Rows
+carry the proposal so the caller can `jq` the one output per panel instead of
+hand-deriving the mapping (DOT-447). `--exclude` still names a bare SEAT in this
+mode and drops it under every proposal, which is its documented contract.
 
 wave.js spawns internal bookkeeping probes of its own — staged-closure polling
 (`docket next --run ... --json`) and ballot reads — whose briefs carry no
@@ -73,8 +81,30 @@ UNITS = {
 USAGE = ("usage: wave-usage [--seats] [--exclude STEP-N|SEAT]... "
          "<transcript-dir>")
 
+HELP = f"""{USAGE}
+
+Emit backfill rows JSON for a completed wave, joined from the agent transcripts
+in <transcript-dir> and deduplicated by message id. Read-only; stdout only.
+
+  --seats           key rows by (proposal, voter), read from each judge's own
+                    `docket vote cast <proposal> --voter <seat>` command, for
+                    `docket vote backfill-usage --from-json -`. Without it rows
+                    are keyed by the STEP-N in each agent's bootstrap prompt,
+                    for `docket dispatch backfill-usage --from-json -`.
+  --exclude VALUE   drop a key a prior back-fill already carries: a STEP-N, or
+                    in --seats mode a bare SEAT name, dropped under every
+                    proposal. Repeatable.
+  -h, --help        print this and exit 0.
+
+Exits 1 if any agent's step cannot be attributed or a dispatched agent carries
+no usage; 2 on a usage error.
+"""
+
 def main() -> int:
     argv = sys.argv[1:]
+    if "-h" in argv or "--help" in argv:
+        print(HELP, end="")
+        return 0
     exclude: set[str] = set()
     seats = False
     if "--seats" in argv:
@@ -99,12 +129,15 @@ def main() -> int:
     # nothing (measured ~40k output tokens per panel that no run budget saw).
     # `docket vote backfill-usage --from-json -` takes these rows.
     #
-    # The seat name is read from the cast command the brief hands the judge —
-    # `docket vote cast <id> --voter <seat>` — which is the same string the
-    # seat is required to pass, so the join cannot disagree with the cast.
-    key_re = re.compile(r"--voter\s+(\S+)") if seats else re.compile(r"STEP-\d+")
-    key_name = "voter" if seats else "step"
-    totals: dict[str, dict[str, int]] = {}
+    # The proposal id and the seat name are read from the cast command the brief
+    # hands the judge — `docket vote cast <id> --voter <seat>` — which is the
+    # same string the seat is required to pass, so the join cannot disagree with
+    # the cast. Both come from ONE match on that command, never from two
+    # searches: a brief that names a second cast anywhere would otherwise pair
+    # one line's proposal with another line's voter.
+    key_re = (re.compile(r"docket vote cast\s+(\S+)\s+--voter\s+(\S+)") if seats
+              else re.compile(r"STEP-\d+"))
+    totals: dict[tuple[str, str] | str, dict[str, int]] = {}
     errors: list[str] = []
     unattributed: list[str] = []
     probes: list[str] = []
@@ -128,7 +161,7 @@ def main() -> int:
                         bootstrap = text or ""
                     m = key_re.search(text or "")
                     if m:
-                        step = m.group(1) if seats else m.group(0)
+                        step = m.groups() if seats else m.group(0)
                 if obj.get("type") == "assistant":
                     msg = obj.get("message", {})
                     usage = msg.get("usage")
@@ -157,10 +190,14 @@ def main() -> int:
                 continue
             errors.append(f"{name}: no STEP-N found in first user message")
             continue
-        if step in exclude:
-            continue  # a prior dispatch's backfill already carries this step
+        # In seats mode the key is (proposal, seat) but `--exclude` names a bare
+        # SEAT, unchanged from before the proposal half existed: one exclusion
+        # drops that seat under every proposal in the directory.
+        if (step[1] if seats else step) in exclude:
+            continue  # a prior back-fill already carries this step/seat
         if not any(agent_sums.values()):
-            errors.append(f"{name} ({step}): transcript carries no usage")
+            label = "/".join(step) if seats else step
+            errors.append(f"{name} ({label}): transcript carries no usage")
             continue
         t = totals.setdefault(step, {u: 0 for u in UNITS.values()})
         for u, q in agent_sums.items():
@@ -175,9 +212,12 @@ def main() -> int:
         for e in errors:
             print(f"wave-usage: {e}", file=sys.stderr)
         return 1
+    # Tuples sort lexicographically, so seats-mode rows come out grouped by
+    # proposal — which is the order the per-proposal `jq` downstream wants.
     order = (lambda k: k) if seats else (lambda k: int(k.split("-")[1]))
     rows = [
-        {key_name: key, "unit": unit, "quantity": qty}
+        {**({"proposal": key[0], "voter": key[1]} if seats else {"step": key}),
+         "unit": unit, "quantity": qty}
         for key in sorted(totals, key=order)
         for unit, qty in totals[key].items()
     ]

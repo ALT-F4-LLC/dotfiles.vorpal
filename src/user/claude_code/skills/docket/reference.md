@@ -6,6 +6,58 @@ and loaded in full on every invocation, while agents ran `docket <verb> --help`
 invocations. The CLI's own `--help` is authoritative and cheaper than this
 file; reach here for the exhaustive per-flag semantics `--help` does not carry.
 
+## JSON envelope — per-verb `data` shapes
+
+Every `--json` response is `{"ok": <bool>, "data": <verb-specific>}` (errors are
+`{"ok": false, "error": "...", "code": "..."}` with no `data` key at all). The
+envelope is stable; the shape of `data` is NOT, and guessing it is what crashes
+hand-rolled parsers. Every row below was run against the live binary —
+**verified against `docket version nightly-11-gb8aeb64` (commit `b8aeb64`,
+built 2026-08-21T21:22:22Z) on 2026-08-21**, in the `dotfiles.vorpal.git`
+project. No row is inherited or assumed.
+
+| Verb | `data` under `--json` (v1) | `data` under `--json=v2` / `--format json` |
+| --- | --- | --- |
+| `events list` (incl. `--run`, `--tail N`) | `{events: [...], total: <int>}` | `{items: [...], total, truncated}` |
+| `issue list` | `{issues: [...], total: <int>}` | `{items: [...], total, truncated}` |
+| `step list --run RUN-N` | `{steps: [...], total: <int>}` | `{items: [...], total, truncated}` |
+| `run status` (no id) | `{runs: [...], total: <int>}` | `{items: [...], total, truncated}` |
+| `run status RUN-N` | `{run: {...}, issues: <int>, steps: [...], pins: [...]}` | identical |
+| `run budget RUN-N` | `{run, budget, source, floor, reported, spend, row_version}` | identical |
+| `step artifact ARTIFACT-N --payload` | the payload itself — array, object, **or `null`** | identical |
+| `step artifact ARTIFACT-N` (no `--payload`) | `{artifact, kind, producer, body, payload, bytes, payload_bytes, sha256, created_at_ms}` | identical |
+| `step artifacts STEP-N` | `{step: "STEP-N", artifacts: [...]}` | identical |
+| `vote list` (`--all` for resolved) | `{proposals: [...], total: <int>}` | `{items: [...], total, truncated}` |
+| `vote show VOTE-ID` | `{id, status, weighted_score, threshold, required_voters, criticality, final_outcome, escalation_reason, description, rationale, domain_tags, files_changed, linked_issues, linked_docs, created_by, created_at, updated_at, votes: [...]}` | identical |
+
+Four traps, each one confirmed by running the verb rather than reading it:
+
+- **`items` is the v2 key, never the v1 key.** `--json` (v1, the bare flag)
+  names the collection after the verb — `events`, `issues`, `steps`, `runs`,
+  `proposals`. `--json=v2` and `--format json` rename it to `items` and add
+  `truncated`. `json.load(...)["data"]["items"]` on a bare `--json` pipe is a
+  guaranteed `KeyError`. Show-shaped verbs (`run status RUN-N`, `run budget`,
+  `vote show`, `step artifact`) are byte-identical across v1 and v2.
+- **`run status RUN-N` does not return the issue or step rows.** `issues` is an
+  `int` count, and `steps` is a status ROLLUP —
+  `[{"status": "done", "count": 32}, {"status": "skipped", "count": 30}, ...]`,
+  not step objects. For real step rows use `step list --run RUN-N`, whose
+  elements carry `{run, issue, step, instance, kind, attempt, status,
+  expected_cost}`.
+- **`total` is the match count, not the returned length.** `events list` with
+  no `--tail` returned `len(events) == 100` against `total == 278`. Paging off
+  `total` without checking the array length reads the same first page forever.
+- **`--payload` can hand you `null`.** Artifacts of kind `findings` carry an
+  array, `issue.diff` an object, and `doc`/`gap` carry no structured payload at
+  all — `data` is JSON `null`. Type-check before subscripting.
+
+`run status RUN-N`'s `pins` elements are `{kind, ref, sha256}` (`kind` is
+`"file"` for on-disk config pins; `name@version` refs live in the DB, not on
+disk). `vote show`'s `votes` elements are `{id, proposal_id, voter_name,
+voter_role, verdict, confidence, domain_relevance, effective_weight, findings,
+findings_json, summary, metadata, created_at}` — note `findings` is a string
+and `findings_json` is frequently `null`.
+
 ## Complete Command & Flag Reference
 
 Every flag below is transcribed directly from the `cmd.Flags().*` calls in

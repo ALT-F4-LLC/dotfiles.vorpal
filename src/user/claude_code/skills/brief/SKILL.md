@@ -31,9 +31,10 @@ computation, the block template) lives in its own definition,
 `Agent({model: "fable", subagent_type: "briefer", name: "briefer", prompt: 
 <see below>})`. If the name is taken, suffix it (`briefer-2`); the name is how
 `SendMessage` addresses the relay. (A frontmatter seat, not the Workflow
-`agent()` call `tend` and `shadow` use for their strongest seats, because only
-a spawned agent can be messaged mid-run — and these gates are a multi-turn
-relay.)
+`agent()` call `tend` uses to seat its workers, because only a spawned agent
+can be messaged mid-run — and these gates are a multi-turn relay. `Agent`
+carries no effort tier, so this seat rides the session default: an accepted
+cost of messageability, not an oversight.)
 
 The prompt carries three things and paraphrases none of them:
 

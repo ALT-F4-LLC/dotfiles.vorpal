@@ -96,35 +96,62 @@ Exclude two more kinds before picking — this queue isn't tend's alone:
 One worker at a time, ever — no parallel workers within an issue, no
 parallel work across issues (operator ruling, 2026-08-20: keep it simple).
 The worker spawns into this working tree (no worktree isolation); strict
-sequence is what makes that safe. Built-in agent types only:
+sequence is what makes that safe. Built-in agent types only —
 `general-purpose` to implement, `Explore` when the issue is a pure
-read-only investigation. Never a custom agent definition.
+read-only investigation — never a custom agent definition.
 
-**Size the seat to the issue, and when in doubt, seat up** — the point of
-delegating is that a worker can afford a stronger model and effort than the
-loop itself:
+One seating mechanism, always: the built-in `Workflow` tool's `agent()`
+call, whose opts take `agentType`, `model`, and `effort`. Every seat sets
+**both `model` and `effort` explicitly**, whatever the tier. The plain
+`Agent` tool has no place here at any size: it carries no effort
+parameter, so a worker seated through it runs at whatever this session's
+default happens to be — an inherited accident, not a decision — and the
+remember-to-switch-tools split that "Agent normally, Workflow for big
+seats" creates is exactly how seats get mis-sized.
 
-- Mechanical single-file edits (typo, config value, doc line): `haiku` or
-  `sonnet`.
-- Ordinary implementation work — most issues: `opus`.
-- Gnarly work (subtle correctness, cross-cutting changes, debugging an
-  unknown cause): `fable` at `max` effort.
+1. **Rule the tier, in one line.** Size the seat to the issue, and when in
+   doubt, seat up — the point of delegating is that a worker can afford a
+   stronger model and effort than the loop itself:
 
-Mechanism: the built-in `Agent` tool takes `model`; reasoning effort rides
-the session default. When the seat needs an explicit effort tier (`xhigh`,
-`max`), delegate through the built-in `Workflow` tool instead — its
-`agent()` takes both — with the worker brief embedded in the script:
+   - Mechanical single-file edits (typo, config value, doc line): `haiku`
+     or `sonnet`.
+   - Ordinary implementation work — most issues: `opus`.
+   - Gnarly work (subtle correctness, cross-cutting changes, debugging an
+     unknown cause): `fable` at `max` effort.
 
-```js
-export const meta = {name: 'tend-issue', description: '<issue title>',
-  phases: [{title: 'Implement'}]}
-phase('Implement')
-return await agent(`<worker brief>`, {model: 'fable', effort: 'max'})
-```
+   Effort is an explicit pick at every tier now, not just gnarly's: choose
+   it with the same judgment that sized the model — a mechanical edit has
+   no use for deep reasoning, gnarly always gets `max` — never by echoing
+   the session's own default, which is no longer part of the decision.
+   Write the ruling down as one line — the tier named (mechanical /
+   ordinary / gnarly) plus why THIS issue fits it — and carry it into the
+   spawn as step 2 shows. The line is required, not decoration: one
+   mechanism for every seat makes reflexively seating everything
+   `fable`/`max` exactly as easy as inheriting the default used to be (two
+   issues in a row went out at `fable`/`max` with no per-issue
+   justification, 2026-08-21), and stating the reason is what forces the
+   judgment to actually happen.
 
-`model` only takes effect inside `agent()`'s opts, as above. Setting
-`model` on a `meta.phases` entry instead is display-only for the progress
-UI — it silently seats the session default, with no error.
+2. **Spawn through `Workflow`**, the worker brief embedded in the script.
+   The statement immediately before the `agent()` call is a `log()` line
+   carrying step 1's ruling verbatim, so every seat's transcript shows the
+   tier, the reason, and the explicit `model`/`effort` pair together. A
+   spawn missing the tier line, or missing either opt, is mis-seated
+   regardless of which tier it picked:
+
+   ```js
+   export const meta = {name: 'tend-issue', description: '<issue title>',
+     phases: [{title: 'Implement'}]}
+   phase('Implement')
+   log('tier: ordinary — one-module fix, cause already named in the issue')
+   return await agent(`<worker brief>`, {agentType: 'general-purpose',
+     model: 'opus', effort: 'high'})
+   ```
+
+   `model` and `effort` take effect only inside `agent()`'s opts, as
+   above. Setting either on a `meta.phases` entry instead is display-only
+   for the progress UI — it silently seats the session default, with no
+   error.
 
 **The worker brief** carries the whole contract: the repo's absolute path,
 the issue id, title, description, and acceptance criteria verbatim, plus
@@ -135,9 +162,12 @@ message is the report — files changed, what was verified and how, anything
 left undone.
 
 A report that names its verification and shows the evidence goes to §2.5.
-A report with no verification evidence gets one follow-up round
-(`SendMessage` to the same worker), not a commit; if the second report
-still can't show its check, treat the issue as blocked (§2.4).
+A report with no verification evidence gets one follow-up round, not a
+commit — a `Workflow` seat cannot be messaged after its script returns, so
+the follow-up is a fresh `agent()` spawn (same tier, same explicit opts,
+same tier line) briefed with the first report and the check it failed to
+show. If the second report still can't show its check, treat the issue as
+blocked (§2.4).
 
 ## Stop
 

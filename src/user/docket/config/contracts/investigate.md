@@ -61,8 +61,12 @@ produced them plus what that search could not have seen.
 `investigation`: the conclusion first — what is happening and why — then the evidence
 under it, then the recommendation with its confidence. Include a coverage statement
 naming what case-space you examined and what you did not. For any conclusion that
-remains inconclusive, name the single cheapest next probe that would resolve it. Where a
-conclusion admits a falsifier, name the evidence that would disprove it.
+remains inconclusive, name the single cheapest next probe that would resolve it. If that
+probe needs to modify a scratch copy — never the real checkout, which stays untouched —
+write the file whole via a heredoc (`cat > path <<'EOF' ... EOF`) rather than an in-place
+editor like `sed -i` or `perl -i`; the harness's auto-mode classifier denies in-place
+edits for this seat archetype. Where a conclusion admits a falsifier, name the evidence
+that would disprove it.
 
 Discoveries — defects outside the reported symptom, latent problems you tripped over —
 are listed as discoveries with their fix shape, not folded into the root cause.

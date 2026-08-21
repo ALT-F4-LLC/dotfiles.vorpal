@@ -300,6 +300,10 @@ doc-producing issues with `doc:<type>` or accept the PRD default (the hyphen
 spellings route nothing). `git log --format='%s' -30` tells you the repo's
 conventions. Existing
 issues (`docket issue list`) tell you whether some of this is already tracked.
+Any probe you ask the reader to run must itself be non-mutating and
+sandbox-feasible — a command that writes state (installs a package, syncs a
+`.venv`) or needs network egress the sandbox does not allowlist has no place
+in a read-only brief, however useful its output would be.
 
 **When the read contradicts the request's premise, verify before recording.**
 A scope map that says "this bug looks already fixed" changes the run's shape;

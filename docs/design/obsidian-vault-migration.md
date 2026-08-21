@@ -958,8 +958,8 @@ eight symlinks activation owns under `~/.claude` (`claude_code.rs:584-611`:
 `~/.claude/projects`. A reset project directory, a rebuilt machine, or a
 re-cloned checkout would revert memory to non-vault, and nothing would notice.
 
-Phase 2c therefore ships **`src/user/claude_code/scripts/vault-memory-link`**, a
-committed, idempotent, re-runnable script. `src/user/claude_code/scripts` is
+Phase 2a therefore ships **`src/user/claude_code/scripts/vault-memory-link`**, a
+committed, idempotent, re-runnable script that Phase 2c runs. `src/user/claude_code/scripts` is
 installed wholesale as `~/.claude/scripts` by a `FileSource`
 (`claude_code.rs:535-537`, symlinked at line 594), executable bits preserved
 (`ls -l ~/.claude/scripts` shows `-rwxr-xr-x` on every script there today), so

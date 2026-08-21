@@ -15,13 +15,18 @@ between them and run the commands.
 never artifact bodies. Every loop iteration asks the engine again. If you ever
 find yourself thinking "I remember that step 4 failed" — you do not; ask.
 
-*(A note on the `RUN-N` citations throughout this file: they are lore from
-runs of the RETIRED store epoch, kept because each names a failure worth not
-repeating. Run ids restarted at the 2026-08 store reset, so a citation here can
-collide with a live run of the same number in your own project — on 2026-08-17
-a conductor driving a live RUN-6 read this file's RUN-6 lore as its own
-history. Never treat one as a fact about the run you are driving; ask the
-engine.)*
+*(A note on the `RUN-N` citations throughout this file: they are lore, kept
+because each names a failure worth not repeating, and not one of them is a fact
+about the run you are driving. Run ids restarted at the 2026-08 store reset and
+this file straddles it, so read a citation's number for its epoch: `RUN-1`
+through `RUN-8` predate the reset and name runs of the RETIRED epoch, whose
+numbers can collide with a live run of the same number in your own project — on
+2026-08-17 a conductor driving a live RUN-6 read this file's RUN-6 lore as its
+own history. `RUN-10` and up are CURRENT-epoch runs — real rows in the store you
+are working against, every one of them already ended — so a citation there can
+name the very run you are driving (RUN-38 below does) and is still only history
+someone recorded afterwards. Either epoch, the rule is the same: ask the engine,
+never this file, for anything about your run.)*
 
 **You make no routing decisions.** You never choose a model, a tier, an effort,
 or an executor. You never compare tiers. If you are weighing which model should
@@ -216,7 +221,15 @@ gate failures — a docker-socket build, pre-existing vuln-scan CVEs — that th
 gate probe exists to surface ONCE. Read its EXIT CODE, not its last line: 0
 clean, 1 drift or failure, 2 "a check was SKIPPED" — which is what you get by
 omitting `$RUN`, meaning the pins were never checked, and 2 is not a pass on
-an active run. The retyping is
+an active run. Run all four EVERY time, and never narrow them by what the
+remaining steps look like — not on a resume whose leftovers are vote, verify and
+action rows, not on a run whose recorded gate failures were all write-class. You
+hold no run state: which rows come next is the engine's answer to `next`, not a
+shape you can predict, and a vote's `on_fail`, an `--as retry` or a fix batch
+puts a write-class step in front of you one dispatch after you judged there were
+none — at which point the same findings arrive as parked steps instead of as one
+pre-dispatch report. The four are once-per-run and cheap; a run that really does
+stay read-only pays only that. The retyping is
 what the script exists to stop: RUN-33's hand-rolled version piped a diff
 through `head -30` and then reported HEAD's exit — always 0 — as the diff's
 verdict, and ran `test -f ~/.claude/workflows/wave.js` where the byte-diff was
@@ -1215,7 +1228,10 @@ read>`; on an operator's yes instead, the reason carries THEIR words.
 `--if-version` is optimistic concurrency — CONFLICT (exit 4) means the cap
 moved under you: re-read and re-ask, never retry blind. A run that ALREADY
 breached is parked `waiting-human`, and raising the cap does not restart it;
-`run resume` does.
+`docket run resume $RUN --reason "<why it is moving again>"` does — never bare.
+A bare resume leaves the run advertising the transition reason that PARKED it,
+so `run status` tells the next reader the breach is still the live state long
+after the cap moved.
 
 **`--accept-missing-usage`.** Never on your own initiative — that is the
 invariant, and it has no exceptions. Nor is it a panel's to grant: it sits on
@@ -1708,7 +1724,11 @@ later session.
 
 A run parked `waiting-human` ends cleanly with the session — gates do not
 block the stop guard, and a parked run stays parked for any later session to
-pick up from `docket run status --active --json`. While EXECUTABLE work is
+pick up from `docket run status --active --json`. Whoever picks it up moves it
+with `docket run resume $RUN --reason "<what unblocked it>"`, never a bare
+resume: the run keeps advertising the reason it parked on until a resume
+overwrites it, and a run driven to `done` on a stale one reads afterwards as
+though the park were never answered. While EXECUTABLE work is
 pending, the run-guard is what blocks the turn-end instead — WHEN it is
 installed. Check the `hooks` key in `~/.claude/settings.json` before you lean
 on it: with no `Stop` hook wired there, nothing mechanical stops you ending a

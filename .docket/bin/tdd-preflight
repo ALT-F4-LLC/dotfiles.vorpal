@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+#
+# tdd-preflight — a TDD lives in the right place under a name a reader can
+# find it by.
+#
+# Wired as the `tdd-preflight` gate on spec-doc.toml's TDD-authoring steps,
+# alongside `doc-validate` and `reserved-name-check`.
+#
+# Adapted from docket.git's scripts/qa/tdd-preflight.sh, with two deliberate
+# differences:
+#
+#   - Anchored to THIS repository (git toplevel from the script's own path,
+#     the same anchor doc-validate and secret-scan use), never to the
+#     caller's cwd and never to another checkout.
+#   - No `Status:` line requirement. doc-validate's git pathspec (`docs/*.md`)
+#     already reaches nested paths including docs/tdd/*.md and enforces this
+#     repo's own convention (a `# ` title, nothing more) there; duplicating a
+#     frontmatter field this repo's docs never carried would train people to
+#     route around the gate, the same reasoning doc-validate's port recorded.
+#
+# So this gate checks only the ORDER doc-validate's title check cannot
+# express: a changed TDD is in docs/tdd/, flat, and named for a feature in
+# kebab-case. Whether the design is GOOD is a reviewer's judgment, not a
+# gate's.
+
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+if ! repo_root="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null)"; then
+  echo "tdd-preflight FAILED: $script_dir is not inside a git repository." >&2
+  exit 1
+fi
+cd "$repo_root"
+
+changed=$( { git diff --cached --name-only -- 'docs/tdd/*.md'
+             git diff --name-only -- 'docs/tdd/*.md'
+             git ls-files --others --exclude-standard -- 'docs/tdd/*.md'
+           } | sort -u )
+
+if [ -z "$changed" ]; then
+  echo "tdd-preflight: no docs/tdd/ changes"
+  exit 0
+fi
+
+status=0
+
+# `while IFS= read -r`, not `for f in $changed` — a path with a space would
+# otherwise split into names that are not files and skip past the checks
+# silently (the same trap doc-validate.sh documents).
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  [ -f "$f" ] || continue
+
+  base="${f##*/}"
+
+  # Flat namespace, kebab-case feature name: docs/tdd/<feature>.md.
+  if [ "$f" != "docs/tdd/$base" ]; then
+    echo "tdd-preflight: nested path under docs/tdd/: $f" >&2
+    echo "  the convention is flat: docs/tdd/<feature>.md" >&2
+    status=1
+    continue
+  fi
+
+  slug="${base%.md}"
+  if ! printf '%s' "$slug" | grep -qE '^[a-z0-9]+(-[a-z0-9]+)*$'; then
+    echo "tdd-preflight: $f is not named for a feature in kebab-case" >&2
+    echo "  expected docs/tdd/<feature>.md, e.g. docs/tdd/obsidian-vault-migration.md" >&2
+    status=1
+  fi
+done <<< "$changed"
+
+if [ "$status" -ne 0 ]; then
+  cat >&2 <<'EOF'
+
+tdd-preflight FAILED.
+
+A TDD is a flat, kebab-case markdown file under docs/tdd/. doc-validate
+checks the header shape; this gate checks only placement and naming.
+EOF
+  exit 1
+fi
+
+echo "tdd-preflight: ok"
+exit 0

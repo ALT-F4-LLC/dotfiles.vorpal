@@ -61,8 +61,9 @@ ratification in conversation.
 
 Model+effort combos, named literally. There is NO implied ordering and no
 generic ladder: escalation is the explicit `escalate_to` chain on each
-variant, one hop per failed attempt. Rungs are still earned by a failed
-attempt, never by predicted difficulty.
+variant, one hop per prior claim (attempt). Rungs are still earned by a
+prior claim — whatever ended it, gate failure or lease reap — never by
+predicted difficulty.
 
 **Aliases, not model IDs.** Exactly one other file turns an alias into a
 concrete model ID: src/user/claude_code.rs:135-138, the
@@ -79,6 +80,12 @@ and zero step-failed/escalation events exist. Every observed "retry" was a
 lease timeout, not a capability failure. The chains are therefore
 sized from workload shape and failure asymmetry, not observed ascent, and
 the next retro should re-read them once a real escalation has fired.
+ROOT CAUSE FOUND (2026-08-21, DOT-486): the walk's off-by-one required TWO
+prior claims to deliver even one hop (`attempt > 1` guard, `attempt - 1`
+hops), so a first retry structurally could never escalate — the mystery
+above is explained, not open. Fixed: hops are now earned one per prior
+claim (attempt), whatever ended it. The original text stands as the
+evidence that exposed it.
 
 Every variant is referenced by an executor row or a chain hop — an
 unreferenced variant violates the every-row-reachable invariant. wave.js's
@@ -384,10 +391,11 @@ mis-briefing silently.
 
 ## [escalation]
 
-One `escalate_to` hop per failed attempt, following the chain from the
-row's standing variant. Rungs are earned by a failed attempt, not predicted
-difficulty — the presence of a security-sounding keyword in an issue is not
-on its own a reason to move.
+One `escalate_to` hop per prior claim (attempt), following the chain from
+the row's standing variant. Rungs are earned by a prior claim, whatever
+ended it (gate failure or lease reap), not predicted difficulty — the
+presence of a security-sounding keyword in an issue is not on its own a
+reason to move.
 
 Note the asymmetry with core: the engine's `max_attempts` / `on_fail` decide
 WHETHER a step retries (06 §11.1, engine-enforced). This decides what
@@ -399,10 +407,10 @@ blind to failure modes that PASS gates (the symptom-suppressing fix, the
 interaction-coupled test seam) — which is why fix and test-infra were
 right-sized at dispatch instead of left to earn rungs they can never earn.
 
-`on_failure = "one-hop"`: exactly one escalate_to hop per failed attempt
-(security work stops at [security].ceiling — declared ONCE there, and it is
-a true bound: a walk never enters what lies beyond the ceiling on the
-chain).
+`on_failure = "one-hop"`: exactly one escalate_to hop per prior claim
+(attempt), whatever ended it (security work stops at [security].ceiling —
+declared ONCE there, and it is a true bound: a walk never enters what lies
+beyond the ceiling on the chain).
 
 `fable_gates`: entering a fable-model variant BY CHAIN-WALK needs a gate; a
 row STANDING on a fable variant needs none — its residency is policy.toml's

@@ -17,8 +17,8 @@ version = 3
 # (src/user/claude_code.rs's ANTHROPIC_DEFAULT_*_MODEL bindings are the only
 # alias->ID mapping; IDs here would be a second source of truth that drifts).
 # No implied ordering: escalation is the explicit `escalate_to` chain, one hop
-# per failed attempt — rungs earned by a failed attempt, never predicted
-# difficulty.
+# per prior claim (attempt) — rungs earned by a prior claim, whatever ended it
+# (gate failure or lease reap), never predicted difficulty.
 # INVARIANT: every variant must be referenced by an executor row or a chain hop.
 
 [variants]
@@ -116,13 +116,13 @@ labels  = ["security-load-bearing", "security"]
 # workflow files, each declaring its concrete executor.
 
 # --- Escalation -------------------------------------------------------------
-# One `escalate_to` hop per failed attempt, following the chain from the
+# One `escalate_to` hop per prior claim (attempt), following the chain from the
 # row's standing variant. The engine's max_attempts / on_fail decide WHETHER a
 # step retries (engine-enforced); this decides only what variant the retry
 # SPAWNS at.
 
 [escalation]
-on_failure   = "one-hop"                  # exactly one escalate_to hop per failed attempt;
+on_failure   = "one-hop"                  # exactly one escalate_to hop per prior claim (attempt);
                                           #   security work stops at [security].ceiling — a
                                           #   true bound the walk never passes
 fable_gates  = [                          # entering a fable-model variant BY CHAIN-WALK needs

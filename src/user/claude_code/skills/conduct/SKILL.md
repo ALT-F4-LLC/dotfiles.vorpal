@@ -1280,7 +1280,7 @@ invoke the spawner:
                                           # chunked, fresh (step 2's script;
                                           # copy its chunks, never retype them)
 docket vote create -d "<the decision, stated plainly>" -r "<evidence summary>" \
-  -n 3 -c <criticality> --threshold 0.67 --created-by conductor
+  -n 3 -c <low|medium|high|critical> --threshold 0.67 --created-by conductor
 docket vote link <proposal-id> --issue <ID>   # where a relevant issue exists
 ```
 

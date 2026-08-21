@@ -20,6 +20,12 @@ doc-validate:
 citation-check:
     .docket/bin/citation-check
 
+tdd-preflight:
+    .docket/bin/tdd-preflight
+
+reserved-name-check:
+    .docket/bin/reserved-name-check
+
 ac-commands:
     .docket/bin/ac-commands
 

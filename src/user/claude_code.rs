@@ -80,6 +80,13 @@ const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
     "~/Library/Caches/go-build",
     "~/Library/Caches/golangci-lint",
     "~/Library/Caches/pip",
+    // pip-audit's own HTTP cache — a different tool's cache from pip's above,
+    // so that entry does not cover it. The vuln-scan gate's `uv run pip-audit`
+    // failed sandboxed (exit 1) after "Failed to write to cache directory,
+    // performance may be degraded: Operation not permitted" on this path,
+    // blocking the gate on every write step declaring it (RUN-38 isolated
+    // write executors, 2026-08-20, DOT-439).
+    "~/Library/Caches/pip-audit",
     "~/Library/Caches/staticcheck",
     "~/go/pkg/mod",
 ];
@@ -441,6 +448,10 @@ impl ClaudeCode {
             .with_sandbox_excluded_commands(vec![
                 // Docs, verbatim: "docker is incompatible with the sandbox.
                 // Add `docker *` to excludedCommands to run it outside".
+                // Matches DIRECT invocations only: a wrapped one like `make
+                // build-docker` has `make` as its top-level command, so the
+                // whole tree stays sandboxed — the daemon-socket grant in
+                // allow_unix_sockets below is what lets that case connect.
                 "docker *".to_string(),
                 // Go-based, so it cannot verify TLS under Seatbelt: 62 lifts
                 // vs 10 sandboxed runs, failing on api.github.com — a host
@@ -495,6 +506,19 @@ impl ClaudeCode {
                 "vuln.go.dev".to_string(),
             ])
             .with_sandbox_network_allow_unix_sockets(vec![
+                // The OrbStack docker daemon socket. `docker *` in
+                // excluded_commands above covers only direct invocations; the
+                // build gate's `make build-docker` -> `docker buildx build`
+                // runs with `make` on top, matches nothing, and the sandboxed
+                // client is denied connecting to the docker API at this socket
+                // while `docker version` from an unsandboxed seat succeeds
+                // (RUN-38 isolated write executors, 2026-08-20/21, DOT-439).
+                // Excluding `make *` instead would let every Makefile target
+                // run wholly outside the sandbox; this grants the one socket
+                // the evidence names — no more than the docker exclusion
+                // already concedes — and only helps once the daemon is up: a
+                // cold daemon is "no such file or directory", not a denial.
+                "~/.orbstack/run/docker.sock".to_string(),
                 "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock".to_string(),
             ])
             // enable_weaker_network_isolation is deliberately NOT set. It reads

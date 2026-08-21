@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+"""policy-escaped-chunks — read-only. Print ~/.docket/config/policy.toml
+JSON-escaped (surrounding quotes included) in fixed 2000-char chunks, so that
+`args.policyText` on a wave or tribunal launch is COPIED from visible tool
+output instead of re-emitted from context.
+
+Re-emitting the ~28k-char file from memory is not a coin flip: one conductor
+dropped the SAME 44 characters twice in a row, and the policy-guard hook denied
+both launches (DOT-473). Copying opaque chunk blocks out of this output does
+not have that failure mode — which is why a denial is answered by re-running
+this script, never by retyping the file.
+
+Output alternates one `--- chunk i/n (N chars) ---` marker line and then that
+chunk on a line of its own — JSON escaping leaves no real newlines, so a chunk
+is always exactly one line, and the payload is every second line. Concatenate
+the chunk lines in order, nothing between them and no reflowing: the result is
+the complete JSON string value. The final line's decoded count is the number
+policy-guard compares against.
+
+Usage: policy-escaped-chunks    (no flags, no arguments, writes nothing)
+"""
+import json
+import os
+
+CHUNK = 2000
+path = os.path.expanduser("~/.docket/config/policy.toml")
+with open(path, encoding="utf-8") as fh:
+    escaped = json.dumps(fh.read())
+chunks = [escaped[i:i + CHUNK] for i in range(0, len(escaped), CHUNK)]
+for n, chunk in enumerate(chunks, 1):
+    print(f"--- chunk {n}/{len(chunks)} ({len(chunk)} chars) ---")
+    print(chunk)
+print(f"--- end: {len(chunks)} chunks, {len(escaped)} escaped chars, "
+      f"decodes to {len(json.loads(escaped))} chars of {path} ---")

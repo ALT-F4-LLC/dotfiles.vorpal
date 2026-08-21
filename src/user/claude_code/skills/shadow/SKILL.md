@@ -1,6 +1,6 @@
 ---
 name: shadow
-description: Observe Claude Code sessions — live, or post-mortem — and find friction across every layer they cross: harness, skills, workflows, loops, agents, hooks, config, the models themselves, and the Docket engine. Strictly read-only — it fixes nothing, anywhere, and investigation may read every project's checkout and all of ~/.claude. Runs from ANY repository — the store is machine-global and filing anchors itself to each owning checkout. Log findings with evidence as they land; once the run ends, file EVERY finding as an issue in its owning Docket project — the intake of the funnel a `tend` loop (or a plan → conduct run) drains — then deliver a severity-ranked review naming what was filed. Invoked bare it sweeps EVERY project under ~/.claude/projects for the past 7 days of sessions — unless THIS session is itself running the plan or conduct skill, in which case it spawns one live background shadow agent (Fable at max effort) over this very session and hands the turn back to the run; pass a session id to observe just that one — a conduct run, any other skill's run, or a finished session worth learning from.
+description: Observe Claude Code sessions — live, or post-mortem — and find friction across every layer they cross: harness, skills, workflows, loops, agents, hooks, config, the models themselves, and the Docket engine. Strictly read-only — it fixes nothing, anywhere, and investigation may read every project's checkout and all of ~/.claude. Runs from ANY repository — the store is machine-global and filing anchors itself to each owning checkout. Log findings with evidence as they land; once the run ends, file EVERY finding as an issue in its owning Docket project — the intake of the funnel a `tend` loop (or a plan → conduct run) drains — then deliver a severity-ranked review naming what was filed. Invoked bare it sweeps EVERY project under ~/.claude/projects for the past 7 days of sessions — unless THIS session is itself running the plan or conduct skill, in which case it spawns one live background shadow agent (Fable) over this very session and hands the turn back to the run; pass a session id to observe just that one — a conduct run, any other skill's run, or a finished session worth learning from.
 argument-hint: "[session-id]"
 ---
 
@@ -109,8 +109,8 @@ Three modes. An explicit argument always wins; bare, the session decides:
   path.
 - **Bare, with `plan` or `conduct` active in THIS session** — the live
   self-shadow: spawn one background shadow agent over this very session,
-  seated `fable` at `max` effort, and hand the turn straight back to the
-  run (§1b).
+  seated `fable` via the `Agent` tool, and hand the turn straight back to
+  the run (§1b).
 - **Bare, anywhere else** — the fleet sweep, and the default: mine EVERY
   project under `~/.claude/projects` for the past 7 days of sessions,
   post-mortem. No candidate list, no which-one question — enumerate and go
@@ -175,22 +175,22 @@ background shadow agent over this very session, then hand the turn straight
 back to the run. Skip §1's questions round — the active run IS the goal,
 and the seat that goes quiet after attaching is the spawned one, not you.
 
-The seat is `fable` at `max` effort — cross-layer observation is exactly
-what the strongest tier exists for. The built-in `Agent` tool takes `model`
-but no effort tier, so the spawn goes through the built-in `Workflow` tool,
-whose `agent()` takes both at the call site (the same mechanism `tend` uses
-for its strongest seats), the brief embedded in the script:
+The seat is `fable` — cross-layer observation is exactly what the strongest
+model exists for. Spawn it with the built-in `Agent` tool, the brief as the
+prompt:
 
-```js
-export const meta = {name: 'shadow-live',
-  description: 'live shadow of this session', phases: [{title: 'Shadow'}]}
-phase('Shadow')
-return await agent(`<the brief>`, {model: 'fable', effort: 'max'})
+```
+Agent({subagent_type: "general-purpose", model: "fable",
+       name: "shadow-live", description: "live shadow of this session",
+       prompt: "<the brief>"})
 ```
 
-`model` and `effort` bind ONLY in `agent()`'s opts as above — set on a
-`meta.phases` entry they are display-only and silently seat the session
-default.
+One tool, one call — a lone background observer is not orchestration, and
+the `Workflow` tool is not the way to start one however tempting its
+`agent()` opts look. `Agent` exposes no effort tier, so this seat runs at
+the session default; that is an accepted limitation, not a reason to reach
+for another tool. The `name` matters: it is what makes the agent
+addressable by `SendMessage` for §5's interrupt routing in both directions.
 
 The brief stays short because the contract already exists — it seats the
 agent on this skill in single-session mode:
@@ -213,18 +213,19 @@ agent on this skill in single-session mode:
   already landed — then watch from the live edge. §5's three interrupt
   conditions route via `SendMessage` to this session, carrying §4's caveat
   that delivery waits for the conductor's next turn boundary; everything
-  else is a log entry. The shadow's own workflow transcripts are out of
-  scope — a shadow does not shadow itself.
+  else is a log entry. The shadow's own transcripts are out of scope — a
+  shadow does not shadow itself.
 - **The ending**: §6 runs inside the agent once the observed run ends, and
-  the final message — the severity-ranked review naming what was filed —
-  is the workflow's return value, delivered with its completion
-  notification. No SendMessage needed for the review itself.
+  the severity-ranked review naming what was filed is its final message.
+  Demand it by `SendMessage` too: a named background agent's final text is
+  delivered to NOBODY — the spawner gets a content-free idle ping and the
+  review sits unread in the agent's transcript file (§4).
 
 Then one line to the operator naming the spawn, and the conversation goes
-back to being a conductor. Do not poll the workflow; its completion
-notifies. One boundary: the workflow lives inside this session, so a run
-expected to outlive this conversation belongs to a separate
-`/shadow <session-id>` seat instead — say so rather than spawn.
+back to being a conductor. Do not poll the agent; its completion notifies.
+One boundary: the agent lives inside this session, so a run expected to
+outlive this conversation belongs to a separate `/shadow <session-id>` seat
+instead — say so rather than spawn.
 
 Everything from "Any seat works" below is written for a
 single attach; in the sweep it applies per observed session, carried out by

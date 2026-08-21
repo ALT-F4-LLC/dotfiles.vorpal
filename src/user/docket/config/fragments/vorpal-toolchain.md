@@ -45,3 +45,8 @@ not finish in the default timeout. Expect roughly:
 ```
 cd <repo-root> && GOCACHE="$TMPDIR/gocache" GOPATH="$TMPDIR/gopath" go build ./...
 ```
+
+- **Process substitution is denied**: `diff <(...) <(...)` fails with "Operation not
+  permitted" on `/dev/fd/N` — diff temp files under `$TMPDIR` instead.
+- **No PyYAML in the executor environment**: `python3 -c "import yaml"` raises
+  `ModuleNotFoundError: No module named 'yaml'` — parse YAML with `yq` or Go tooling instead.

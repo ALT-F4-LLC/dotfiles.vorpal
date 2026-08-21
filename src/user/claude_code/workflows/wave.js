@@ -1231,6 +1231,26 @@ function parseHeldCluster(show) {
     }
 }
 
+// `docket vote show <id> --json` answers with the standard envelope
+//   {ok: true, data: {id, status, final_outcome?, weighted_score,
+//                     votes: [{voter_name, verdict, summary, ...}], ...}}
+// A probe's text can carry a harness banner AHEAD of that JSON (seen on two
+// probes), so slice from the first `{` before parsing. Returns the `data`
+// object, or null when the text will not parse — callers then fall back to
+// matching the raw text, and say so in the log.
+function parseVoteShow(text) {
+    const s = text || ''
+    const i = s.indexOf('{')
+    if (i < 0) return null
+    try {
+        const parsed = JSON.parse(s.slice(i))
+        const data = parsed && typeof parsed === 'object' ? parsed.data : null
+        return data && typeof data === 'object' ? data : null
+    } catch {
+        return null
+    }
+}
+
 async function runGate(row, phaseLabel) {
     // The ballot: record-driving opened the proposal when the gate's last
     // predecessor recorded — an earlier stage this wave already awaited — so
@@ -1254,6 +1274,22 @@ async function runGate(row, phaseLabel) {
     const tallyOutcome = async (voteId) => {
         const t = await probe(`docket vote show ${voteId} --json`,
             `${row.step} · gate:tally`, phaseLabel, row.step)
+        // DOT-514: read the verdict STRUCTURALLY. The regex below matches
+        // anywhere in the text — including inside a seat's free-text summary,
+        // so a rationale quoting `"status": "rejected"` while explaining why it
+        // did NOT reject flipped an approved gate to gate-rejected (rejected is
+        // tested first). Parsing the envelope reads only the tally's own field.
+        const data = parseVoteShow(t)
+        if (data) {
+            const verdicts = [data.status, data.final_outcome]
+                .filter((v) => typeof v === 'string')
+                .map((v) => v.toLowerCase())
+            if (verdicts.includes('rejected')) return { outcome: 'rejected', tally: t }
+            if (verdicts.includes('approved')) return { outcome: 'approved', tally: t }
+            return { outcome: 'unknown', tally: t }
+        }
+        log(`${row.step}: gate:tally JSON did not parse — falling back to a ` +
+            `regex match on the raw probe text`)
         if (/"(status|final_outcome)"\s*:\s*"rejected"/i.test(t)) return { outcome: 'rejected', tally: t }
         if (/"(status|final_outcome)"\s*:\s*"approved"/i.test(t)) return { outcome: 'approved', tally: t }
         return { outcome: 'unknown', tally: t }
@@ -1298,9 +1334,24 @@ async function runGate(row, phaseLabel) {
         })))
 
     // One re-spawn for seats whose cast never landed — tribunal.js's rule.
-    let record = await probe(`docket vote show ${voteId}`,
+    // DOT-514: this reads the SAME `--json` envelope the tally does and takes
+    // the roster from `.data.votes[].voter_name`. It used to spend a separate
+    // human-format probe (~12-13k tokens, 35-60s) to substring-match seat
+    // names out of prose — the JSON read already carries that structurally.
+    const record = await probe(`docket vote show ${voteId} --json`,
         `${row.step} · gate:record`, phaseLabel, row.step)
-    const missing = seats.filter((s) => !record.includes(s.seat))
+    const recorded = parseVoteShow(record)
+    let missing
+    if (recorded && Array.isArray(recorded.votes)) {
+        const cast = recorded.votes
+            .map((v) => (v && typeof v.voter_name === 'string') ? v.voter_name : '')
+            .filter(Boolean)
+        missing = seats.filter((s) => !cast.some((n) => n.includes(s.seat)))
+    } else {
+        log(`${row.step}: gate:record JSON did not parse — falling back to a ` +
+            `substring match on the raw probe text`)
+        missing = seats.filter((s) => !record.includes(s.seat))
+    }
     if (missing.length > 0) {
         log(`${row.step}: ${missing.length} seat(s) returned without a recorded ` +
             `cast (${missing.map((s) => s.seat).join(', ')}) — re-spawning each ONCE`)

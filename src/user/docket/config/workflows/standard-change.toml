@@ -22,7 +22,13 @@
 
 [pipeline]
 name    = "standard-change"
-version = 15                 # 15: reconcile's payload moves from findings@4
+version = 16                 # 16: every class `max` -> 16, the wave dispatcher's
+                             #   ceiling (the harness runs at most min(16, CPUs - 2)
+                             #   agents per workflow): read classes leave the 4-wide
+                             #   single-issue fanout that throttled multi-issue
+                             #   runs, and `write` comes down from the undocumented
+                             #   20 to the same ceiling (2026-08-21).
+                             # 15: reconcile's payload moves from findings@4
                              #   to findings@5 — findings@4 declared `line`
                              #   as a bare integer, so the explicit
                              #   `line: null` synthesize-findings emits for a
@@ -116,21 +122,26 @@ unless_labels = [
                              #   this bounds) against a 104m average, and every read
                              #   class finished inside 13m.
                              # `max` is required by V24 and is CONCURRENCY, a
-                             #   separate question from duration. `write` takes 20
-                             #   since @8: 02 §11.1's write=1 reference instance
-                             #   predates per-executor worktrees, which isolate
-                             #   writers; overlap surfaces at integration as a
-                             #   conflicting cherry-pick, a stop-and-ask gate.
-                             #   Read classes take 4, the fanout width these
-                             #   pipelines actually declare.
-"judge-architecture"  = { max = 4, max_step_duration = "1h" }
-"judge-correctness"   = { max = 4, max_step_duration = "1h" }
-"judge-security"      = { max = 4, max_step_duration = "1h" }
-"judge-simplicity"    = { max = 4, max_step_duration = "1h" }
-"judge-testing"       = { max = 4, max_step_duration = "1h" }
-"synthesize-findings" = { max = 4, max_step_duration = "1h" }
-"verify-ac"           = { max = 4, max_step_duration = "1h" }
-"write"               = { max = 20, max_step_duration = "2h" }
+                             #   separate question from duration. Every class takes
+                             #   16, the wave dispatcher's ceiling: it runs a stage
+                             #   through the harness's parallel(), capped at
+                             #   min(16, CPUs - 2) concurrent agents per workflow,
+                             #   so 16 is the largest cohort that can actually run
+                             #   at once. A tighter `max` splits rows the
+                             #   dispatcher could run together into extra stage
+                             #   barriers; a looser one certifies concurrency the
+                             #   dispatcher then queues. Writers are no exception:
+                             #   per-executor worktrees isolate them, and overlap
+                             #   surfaces at integration as a conflicting
+                             #   cherry-pick, a stop-and-ask gate.
+"judge-architecture"  = { max = 16, max_step_duration = "1h" }
+"judge-correctness"   = { max = 16, max_step_duration = "1h" }
+"judge-security"      = { max = 16, max_step_duration = "1h" }
+"judge-simplicity"    = { max = 16, max_step_duration = "1h" }
+"judge-testing"       = { max = 16, max_step_duration = "1h" }
+"synthesize-findings" = { max = 16, max_step_duration = "1h" }
+"verify-ac"           = { max = 16, max_step_duration = "1h" }
+"write"               = { max = 16, max_step_duration = "2h" }
 
 [[step]]
 name = "implement"           # the general case; test-infra-labeled issues take

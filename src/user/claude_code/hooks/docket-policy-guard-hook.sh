@@ -11,13 +11,13 @@
 #
 # Second check (operator-approved 2026-08-20, DOT-298): the run pinned
 # policy.toml at activation, and a mid-run `just activate` can drift disk away
-# from that pin. The length check ties the launch to DISK; nothing tied disk
+# from that pin. The content check ties the launch to DISK; nothing tied disk
 # to the PIN — a 33-agent wave once routed on a policy its run never pinned,
 # found only by hand a day later. So before trusting disk, resolve the
 # launching cwd's ACTIVE runs and ask the engine's own pin comparator
 # (`docket run verify-pins`) whether policy.toml still matches. This runs
 # FIRST: under drift, a conductor correctly relaunching the PINNED bytes would
-# fail the disk-length check, and the drift is the message worth seeing.
+# fail the disk content check, and the drift is the message worth seeing.
 # Only the policy.toml pin is enforced here — other drifted refs already make
 # every engine verb that reads them refuse; policy.toml is the one artifact
 # that reaches a wave without passing through an engine verb.
@@ -32,13 +32,23 @@
 #
 # Fail-OPEN everywhere except a REAL mismatch: no jq, no policy file, a
 # launch carrying no policyText (other workflows), no docket binary, no
-# active run, a run with no policy.toml pin, and malformed engine output all
-# allow. Both sides of the length check are measured in Unicode codepoints
-# via jq — never wc -m, which counts bytes under a non-UTF-8 locale
-# (policy.toml holds multi-byte chars) and would deny every clean launch, the
-# exact false-alarm defect wave-audit just shed.
-# KNOWN LIMIT, accepted: a same-length substitution passes — the length check
-# catches the observed condensation class, not forgery.
+# active run, a run with no policy.toml pin, no shasum, and malformed engine
+# output all allow. The policyText presence gate is measured in Unicode
+# codepoints via jq — never wc -m, which counts bytes under a non-UTF-8
+# locale (policy.toml holds multi-byte chars) and would misread every clean
+# launch, the exact false-alarm defect wave-audit just shed. The content
+# check itself hashes raw bytes, where codepoint-vs-byte is moot: jq emits
+# the decoded string as UTF-8 — the same bytes the file holds — so both
+# sides feed shasum an identical stream whenever the text is clean.
+# The same-length-substitution limit formerly accepted here was CLOSED
+# (operator-approved 2026-08-21, DOT-474): the disk comparison is now
+# SHA-256 content equality — args.policyText must hash-match the file's
+# bytes as-is, or the file minus the trailing newline that $(cat …) strips.
+# Evidence forcing the change: a conductor twice dropped the IDENTICAL
+# 44-char sentence while the other 28,020 chars stayed byte-perfect; length
+# caught that only because it was a pure deletion — an equal-length
+# substitution, transposition, or balanced drop-and-duplicate would have
+# sailed through onto the file that routes and judges every launch.
 
 set -uo pipefail
 
@@ -125,13 +135,35 @@ if command -v docket >/dev/null 2>&1; then
   done
 fi
 
-WANT=$(jq -Rs 'length' < "$POLICY" 2>/dev/null)
-{ [ -n "$WANT" ] && [ "$WANT" -gt 0 ]; } 2>/dev/null || exit 0
+# ---- Content check (DOT-474): SHA-256 over bytes, not length ----
+command -v shasum >/dev/null 2>&1 || exit 0
+[ -s "$POLICY" ] || exit 0
+WANT_HASH=$(shasum -a 256 < "$POLICY" 2>/dev/null | awk '{print $1}') \
+  || WANT_HASH=""
+[ -n "$WANT_HASH" ] || exit 0
 
-if [ "$GOT" -ne "$WANT" ] && [ "$GOT" -ne "$((WANT - 1))" ]; then
-  DELTA=$((WANT - GOT)); [ "$DELTA" -lt 0 ] && DELTA=$((0 - DELTA))
-  PCT=$((DELTA * 100 / WANT))
-  echo "policy-guard: LAUNCH DENIED — args.policyText is $GOT chars but $POLICY is $WANT chars (off by $DELTA, ~$PCT%). A wave or panel launched on a condensed policy routes and judges on incomplete tables. Re-run \`cat ~/.docket/config/policy.toml\` and relaunch with that output byte-for-byte (the trailing newline may drop; nothing else may)." >&2
+# Hash the decoded policyText straight off the jq pipe — same decode-args
+# pattern as GOT above, never through a shell variable, whose $() capture
+# strips trailing newlines and cannot hold every byte. jq -j emits the bare
+# string (hash of the text as sent); jq -r appends one newline (hash of the
+# text plus the trailing newline $(cat …) strips) — the same two-way accept
+# the length check had as GOT == WANT / WANT - 1. pipefail is set above, so
+# a failed decode trips the || and clears the hash: fail open, per the
+# header — a hash computed from broken tooling is not a REAL mismatch.
+GOT_HASH=$(printf '%s' "$HOOK_INPUT" | jq -j '
+  .tool_input.args
+  | if type == "string" then (try fromjson catch {}) else (. // {}) end
+  | .policyText // ""' 2>/dev/null | shasum -a 256 2>/dev/null \
+  | awk '{print $1}') || GOT_HASH=""
+GOT_NL_HASH=$(printf '%s' "$HOOK_INPUT" | jq -r '
+  .tool_input.args
+  | if type == "string" then (try fromjson catch {}) else (. // {}) end
+  | .policyText // ""' 2>/dev/null | shasum -a 256 2>/dev/null \
+  | awk '{print $1}') || GOT_NL_HASH=""
+{ [ -n "$GOT_HASH" ] && [ -n "$GOT_NL_HASH" ]; } || exit 0
+
+if [ "$GOT_HASH" != "$WANT_HASH" ] && [ "$GOT_NL_HASH" != "$WANT_HASH" ]; then
+  echo "policy-guard: LAUNCH DENIED — args.policyText does not match $POLICY byte-for-byte (modulo the trailing newline). Length alone no longer clears a launch: a same-size substitution or transposition hashes differently. A wave or panel launched on altered text routes and judges on the wrong tables. Re-run \`~/.claude/scripts/policy-escaped-chunks\` and rebuild policyText by copying its chunk lines verbatim — never by re-emitting the file from memory." >&2
   exit 2
 fi
 exit 0

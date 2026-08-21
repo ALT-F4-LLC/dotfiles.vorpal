@@ -521,16 +521,45 @@ remains the mistake above.
 
 ```bash
 docket dispatch open --run $RUN --json
-cat ~/.docket/config/policy.toml # fresh EVERY dispatch — do not reuse a prior
+~/.claude/scripts/policy-escaped-chunks
+                                 # policyText, escaped and chunked — run it
+                                 # fresh EVERY dispatch. Do not reuse a prior
                                  # iteration's text, and do not substitute a
                                  # hash check for the re-read (RUN-5's
                                  # conductor "verified" against a hash it had
                                  # never recorded). The version grep below is
-                                 # a CHECK, not the re-read: this full cat IS
-                                 # how policyText gets produced, in the same
+                                 # a CHECK, not the re-read: this run IS how
+                                 # policyText gets produced, in the same
                                  # iteration as the launch it feeds (RUN-3
                                  # drifted to grep-only by dispatch 3)
 ```
+
+**Build `policyText` from that script's output on the FIRST attempt — it is
+the mechanism, not a recovery move.** Resolve it as you resolve every other
+shipped script: `~/.claude/scripts/policy-escaped-chunks` when `test -f`
+passes, else `$CC_SRC/scripts/policy-escaped-chunks`, where `$CC_SRC` is
+`<...>/dotfiles.vorpal.git/main/src/user/claude_code` — a script added since
+the last `just activate` resolves ONLY at that source path, same install lag
+as every other definition here. It reads the live
+`~/.docket/config/policy.toml`, JSON-escapes it (surrounding quotes included),
+and prints it as fixed 2000-char chunks — one marker line, then that chunk on
+a line of its own, so the payload is every second line — closing with a line
+that names the chunk count, the escaped length, and the DECODED length. That
+decoded number is exactly what policy-guard compares your `policyText`
+against (28,064 as of this writing). Copy the chunk lines verbatim out of the
+output, concatenated in order with nothing between them and no reflowing, as
+the value of `policyText`.
+
+**Never reproduce policy.toml from your own context.** Emitting ~28k
+characters verbatim from memory is a DETERMINISTIC failure, not a risky one:
+one conductor dropped the identical 44 characters on two consecutive attempts,
+~100s of wasted generation each, and having verified a byte-perfect scratch
+copy beforehand changed nothing — the omission happens in the *next* emission,
+not in whether the file can be reproduced once (DOT-473). Copying opaque
+blocks out of visible tool output has no such failure mode, which is the whole
+reason the script exists. `cat ~/.docket/config/policy.toml` is still fine for
+reading the file and for the version grep below; it is not how the argument
+gets built.
 
 **Read `dispatch open`'s answer before you launch anything, and a
 `stale_targets` row in it is STOP-AND-VERIFY.** The engine emits one when a
@@ -605,21 +634,39 @@ converges either way, but hand-escaping a multi-KB policy text into a JSON
 string is an escaping error waiting to happen, and the harness's own encoder
 never makes one (RUN-1 graph-engine shadow, observed twice). There is no
 `policyPath` parameter: the script cannot read files, so policy.toml travels
-as TEXT in `policyText`. And policyText is the cat output BYTE-FOR-BYTE —
-never a condensation, however faithful the tables look. RUN-4's conductor
+as TEXT in `policyText`. And policyText is the file BYTE-FOR-BYTE —
+never a condensation, however faithful the tables look. (No contradiction with
+the chunk script: `policy-escaped-chunks` output IS the JSON string literal
+that the `policyText` field of that literal object takes, escaped
+mechanically rather than by hand. What you must never do is stringify the
+whole `args` object yourself.) RUN-4's conductor
 cat'd the 16.9KB file six times and emitted a ~4.7KB condensed rendering into
 six of eight launches and a 791-byte splice into the two panel launches —
 the splice dropped `[escalation]` and `[[resolve]]` entirely (tribunal.js
 reads `escalation.fallback`), and nothing logged the difference. wave.js and
 tribunal.js log `policy <N> chars` at startup — the faithful number is `wc -m
 ~/.docket/config/policy.toml` MINUS ONE (`$(cat …)` strips the file's trailing
-newline; matching either is fine, anything else is a condensation). The
+newline; matching either is fine, anything else is a condensation — the chunk
+script keeps the trailing newline, so its output decodes to the un-decremented
+count). The
 wave-audit hook runs this same comparison on every Workflow launch that
 carries policyText — tribunal.js launches identically, not just wave
 dispatches — and stays SILENT on a clean launch, so any policyText advisory
-it emits is a REAL condensation: TaskStop the launch, re-cat, relaunch.
+it emits is a REAL condensation: TaskStop the launch, re-run
+`policy-escaped-chunks`, relaunch from its output.
 Never read it as ambient noise — on 2026-08-17 three governance panels and
 two waves ran condensed while the advisory scrolled past (RUN-15, RUN-17).
+
+**A policy-guard length denial is answered by re-running the script — never by
+re-typing.** When `docket-policy-guard-hook` denies with `args.policyText is N
+chars but …/policy.toml is M chars`, the only correct response is to run
+`policy-escaped-chunks` again and copy its chunk lines afresh. Do NOT
+re-transcribe the file from context, and do not "try harder" at the same
+emission: free re-emission reproduces the SAME omission — measured twice, the
+identical 44 characters both times — so a retyped retry buys another ~100s of
+generation and a second denial. (A denial naming a PIN drift instead of a
+length is a different animal entirely and has no relaunch at all: it is the
+stop-and-report above.)
 
 **Keep human rows; hand the wave everything else.** Filter OUT only
 `kind: "human"` rows — those are the operator's — and pass every other row
@@ -637,8 +684,8 @@ primary control, the wave's refusal the backstop.
 
 **Your entire involvement with policy is three mechanical acts:**
 
-1. `cat` policy.toml as text.
-2. Pass it through as `policyText`, unread.
+1. Run `policy-escaped-chunks` to get policy.toml as escaped text.
+2. Pass its concatenated chunks through as `policyText`, unread.
 3. Confirm the `[policy]` table declares `version = 3`. The table header and
    the key sit on SEPARATE lines, so this is `grep -A1 '^\[policy\]'` and
    NEVER a substring search for `[policy] version = 3` — that literal occurs
@@ -1229,7 +1276,9 @@ tribunal.js is still yours to convene: open the proposal yourself, then
 invoke the spawner:
 
 ```bash
-cat ~/.docket/config/policy.toml   # policyText — the WHOLE file, byte-for-byte, fresh
+~/.claude/scripts/policy-escaped-chunks   # policyText — the WHOLE file, escaped,
+                                          # chunked, fresh (step 2's script;
+                                          # copy its chunks, never retype them)
 docket vote create -d "<the decision, stated plainly>" -r "<evidence summary>" \
   -n 3 -c <criticality> --threshold 0.67 --created-by conductor
 docket vote link <proposal-id> --issue <ID>   # where a relevant issue exists
@@ -1262,7 +1311,9 @@ Resolve the path and emit `args` exactly as you do for wave.js — absolute,
 `test -f ~/.claude/workflows/tribunal.js` else `$CC_SRC/workflows/tribunal.js`,
 `args` a REAL object the harness stringifies for you. `policyText` is the
 literal pinned policy.toml text, re-read in the same iteration as the launch
-it feeds and passed byte-for-byte (see step 2 — RUN-4 condensed it in all
+it feeds and passed byte-for-byte — built by copying `policy-escaped-chunks`
+output, never re-typed from context, and a length denial here is answered
+exactly as it is on a wave (see step 2 — RUN-4 condensed it in all
 eight launches); `context` is the decision's rendered evidence, verbatim;
 `cwd` is the repo the run belongs to. A conversational gate has no row, so
 the seats are a constant this contract fixes, like the proposal shape:

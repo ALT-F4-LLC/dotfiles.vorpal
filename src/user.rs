@@ -123,11 +123,6 @@ impl UserEnvironment {
         let environments = [
             "EDITOR=nvim",
             "GOPATH=${HOME}/Development/language/go",
-            "LLAMA_ARG_CACHE_RAM=0",
-            "OLLAMA_CONTEXT_LENGTH=32768",
-            "OLLAMA_KEEP_ALIVE=30m",
-            "OLLAMA_KV_CACHE_TYPE=q8_0",
-            "OLLAMA_NUM_PARALLEL=1",
             &format!("PATH={}:${{PATH}}", path.join(":")),
         ];
 

@@ -760,7 +760,8 @@ Pre-derived because conduct is the richest target. The conductor:
   when the step it names did NOT record.
 - **Gates.** Presented with the actual artifact — the diff, the findings,
   the numbers — never "step N needs approval"; notes carrying the operator's
-  words, not a summary of them.
+  words, not a summary of them. A pass-over-reject with a seat condition and
+  no filed issue is a finding.
 - **The two flags.** `--ack-reap` and `--accept-missing-usage` on explicit
   operator authorization only. Silence is not a yes; "keep going" about
   something else is not a yes.

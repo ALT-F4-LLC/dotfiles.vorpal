@@ -1130,7 +1130,10 @@ proposal ids: panel cost lives entirely outside the run ledger (wave-usage
 attributes by step id; panels carry vote ids), and on re-plan-heavy runs it
 has equalled the run's whole tracked spend (RUN-17: 185,673 untracked output
 tokens vs 186,606 tracked), so a close report that omits it understates the
-session by up to half. Name
+session by up to half. It names the issues filed for seat conditions, by id
+(**Escalating to the operator** — a gate that passed over a reject on a
+condition), so the promise and the issue keeping it are legible in the same
+place. Name
 any stash your own integration or diagnosis created too — a close report
 that said "working tree clean" over a stashed operator draft hid exactly the
 state the next session tripped on (measured).
@@ -1528,6 +1531,18 @@ A reproduced security dissent once survived only in chat while the record
 showed nothing; HRN-3 froze because an out-voted seat's truth had nowhere
 durable to live. The conversational relay, which you also do, is not the
 durable copy.
+
+And read EVERY seat's rationale on such a pass for a CONDITION that names
+later work — a follow-up issue, a fix before phase N, a re-review. Each
+condition is FILED as an issue — `docket issue create` in the project that
+owns the work, per the gap-routing rule — BEFORE `dispatch close`, with the
+proposal linked to it (`docket vote link <proposal> --issue <new>`); the new
+id goes in the close report and in any plan prompt you hand the operator. The
+link to a successor issue is provenance, not the deliverable. A condition that
+lives only in a vote rationale is the RUN-39 case: a gate passed over one
+reject, both approving seats conditioned their approval on C44/C45/C46 being
+filed before later planning started, the conductor linked the vote to an
+existing issue and filed nothing, and the findings vanished.
 
 **When the park followed a step's gates, read the verdicts before you present
 or characterize the outcome in any user-facing text.** `docket step gates STEP-N

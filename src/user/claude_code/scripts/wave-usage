@@ -37,9 +37,30 @@ proposal id and never a step id, so `dispatch backfill-usage` has nothing to
 attach to and this spend had no ledger path at all: in-wave panels ARE counted,
 because their seats run as steps, while conductor-side panels of identical shape
 recorded nothing. The difference was only WHERE the ballot executed, not how much
-work it did. An agent that never cast — the silent-seat checker is one — is named
-on stderr and dropped, because the engine refuses usage for a voter with no cast
-and misfiling it onto a seat that did cast would be worse than losing it.
+work it did.
+
+THE TWO MODES PARTITION THE AGENTS ON ONE TEST — did this agent cast a ballot? —
+so running both over a wave counts every agent exactly once and drops none:
+
+  * an agent that DID cast is emitted only by `--seats`, keyed by its
+    (proposal, seat); plain mode auto-skips it (naming it on stderr) because
+    emitting it under its step too would double-count the judges;
+  * an agent that NEVER cast is emitted only by plain mode, keyed by the STEP-N
+    in its bootstrap prompt; `--seats` still names it on stderr and drops it,
+    because the engine refuses usage for a voter with no cast and misfiling it
+    onto a seat that did cast would be worse than losing it.
+
+The never-cast half is not just the silent-seat checker: EVERY vote-carrying
+wave spawns non-seat agents beside the judges — a claim relay, a record relay, a
+tally reader, a proposal relay, and, on a staged conditional row, a probe that
+discovers a skip. They are haiku-tier and individually small, but they are on
+every vote wave, and before DOT-505 both modes threw them away — seats mode
+because they never cast, plain mode because the conductor `--exclude`d the vote
+step wholesale to keep the judges from being counted twice. That exclusion is no
+longer needed and MUST NOT be reinstated: the skip above is per-agent, so a
+conductor now runs plain mode over vote steps and `dispatch backfill-usage`
+carries the relay spend. `--exclude` keeps its own, unrelated purpose below —
+dropping a key a PRIOR dispatch's backfill already carries.
 
 The PROPOSAL half of that key is what makes one run of the script serve a
 multi-panel wave: one wave now seats several panels (the staged closure rides
@@ -71,6 +92,16 @@ import json, os, re, sys
 PROBE_PREFIX = "Run exactly this one command:"
 PROBE_MARK = "read-only probe reporting what the record currently says"
 
+# The step id an agent's bootstrap names, and the cast command the brief hands a
+# judge. BOTH are read on every run, in either mode, because the answer to "did
+# this agent cast?" is what splits the wave between the two modes — one join,
+# one partition, so an agent cannot be emitted twice or fall between them.
+# The proposal id and the seat name come from ONE match on that command, never
+# from two searches: a brief that names a second cast anywhere would otherwise
+# pair one line's proposal with another line's voter.
+STEP_RE = re.compile(r"STEP-\d+")
+CAST_RE = re.compile(r"docket vote cast\s+(\S+)\s+--voter\s+(\S+)")
+
 UNITS = {
     "input_tokens": "input_tokens",
     "output_tokens": "output_tokens",
@@ -88,9 +119,13 @@ in <transcript-dir> and deduplicated by message id. Read-only; stdout only.
 
   --seats           key rows by (proposal, voter), read from each judge's own
                     `docket vote cast <proposal> --voter <seat>` command, for
-                    `docket vote backfill-usage --from-json -`. Without it rows
-                    are keyed by the STEP-N in each agent's bootstrap prompt,
-                    for `docket dispatch backfill-usage --from-json -`.
+                    `docket vote backfill-usage --from-json -`. Emits ONLY the
+                    agents that cast. Without it rows are keyed by the STEP-N in
+                    each agent's bootstrap prompt, for `docket dispatch
+                    backfill-usage --from-json -`, and cover ONLY the agents
+                    that never cast — the wave's relays and probes included.
+                    The two modes partition the wave: run both, count each agent
+                    once, and do not `--exclude` vote steps to compensate.
   --exclude VALUE   drop a key a prior back-fill already carries: a STEP-N, or
                     in --seats mode a bare SEAT name, dropped under every
                     proposal. Repeatable.
@@ -132,20 +167,19 @@ def main() -> int:
     # The proposal id and the seat name are read from the cast command the brief
     # hands the judge — `docket vote cast <id> --voter <seat>` — which is the
     # same string the seat is required to pass, so the join cannot disagree with
-    # the cast. Both come from ONE match on that command, never from two
-    # searches: a brief that names a second cast anywhere would otherwise pair
-    # one line's proposal with another line's voter.
-    key_re = (re.compile(r"docket vote cast\s+(\S+)\s+--voter\s+(\S+)") if seats
-              else re.compile(r"STEP-\d+"))
+    # the cast. Plain mode reads that SAME cast to decide what to leave alone,
+    # so the agent seats mode emits is exactly the agent plain mode skips.
     totals: dict[tuple[str, str] | str, dict[str, int]] = {}
     errors: list[str] = []
     unattributed: list[str] = []
+    seated: list[str] = []
     probes: list[str] = []
     for name in sorted(os.listdir(d)):
         if not (name.startswith("agent-") and name.endswith(".jsonl")):
             continue
         path = os.path.join(d, name)
         step = None
+        cast = None
         bootstrap = None
         per_msg: dict[str, dict] = {}
         with open(path, encoding="utf-8") as f:
@@ -154,14 +188,20 @@ def main() -> int:
                     obj = json.loads(line)
                 except json.JSONDecodeError:
                     continue
-                if step is None and obj.get("type") == "user":
+                if ((step is None or cast is None)
+                        and obj.get("type") == "user"):
                     content = obj.get("message", {}).get("content")
                     text = content if isinstance(content, str) else json.dumps(content)
                     if bootstrap is None:
                         bootstrap = text or ""
-                    m = key_re.search(text or "")
-                    if m:
-                        step = m.groups() if seats else m.group(0)
+                    if step is None:
+                        m = STEP_RE.search(text or "")
+                        if m:
+                            step = m.group(0)
+                    if cast is None:
+                        m = CAST_RE.search(text or "")
+                        if m:
+                            cast = m.groups()
                 if obj.get("type") == "assistant":
                     msg = obj.get("message", {})
                     usage = msg.get("usage")
@@ -173,38 +213,54 @@ def main() -> int:
         for usage in per_msg.values():
             for src, dst in UNITS.items():
                 agent_sums[dst] += int(usage.get(src) or 0)
-        if step is None:
-            if seats:
-                # A panel spawns agents that never cast — tribunal.js's silent-
-                # seat checker is one. Their spend is real but attaches to no
+        if seats:
+            if cast is None:
+                # A vote wave spawns agents that never cast — the relays, the
+                # tally reader, the conditional-row probe, tribunal.js's
+                # silent-seat checker. Their spend is real but attaches to no
                 # seat, and the engine refuses usage for a voter that never
-                # cast, so it is reported and dropped rather than misfiled onto
-                # a seat that did cast.
+                # cast, so it is reported and dropped here rather than misfiled
+                # onto a seat that did cast. PLAIN MODE CARRIES IT, keyed by
+                # step — the two modes partition the wave (DOT-505).
                 unattributed.append(name)
                 continue
-            if (bootstrap is not None and PROBE_PREFIX in bootstrap
-                    and PROBE_MARK in bootstrap):
-                # wave.js polling itself — internal machinery, no step to
-                # attribute to; see module docstring.
-                probes.append(name)
+            key: tuple[str, str] | str = cast
+        else:
+            if cast is not None:
+                # This agent cast a ballot, so `--seats` emits it keyed by
+                # (proposal, seat). Emitting it here under its step as well
+                # would count the judges twice — skip it, and say so, so a
+                # conductor never has to `--exclude` a vote step to compensate.
+                seated.append(f"{name} ({cast[0]}/{cast[1]})")
                 continue
-            errors.append(f"{name}: no STEP-N found in first user message")
-            continue
+            if step is None:
+                if (bootstrap is not None and PROBE_PREFIX in bootstrap
+                        and PROBE_MARK in bootstrap):
+                    # wave.js polling itself — internal machinery, no step to
+                    # attribute to; see module docstring.
+                    probes.append(name)
+                    continue
+                errors.append(f"{name}: no STEP-N found in first user message")
+                continue
+            key = step
         # In seats mode the key is (proposal, seat) but `--exclude` names a bare
         # SEAT, unchanged from before the proposal half existed: one exclusion
         # drops that seat under every proposal in the directory.
-        if (step[1] if seats else step) in exclude:
+        if (key[1] if seats else key) in exclude:
             continue  # a prior back-fill already carries this step/seat
         if not any(agent_sums.values()):
-            label = "/".join(step) if seats else step
+            label = "/".join(key) if seats else key
             errors.append(f"{name} ({label}): transcript carries no usage")
             continue
-        t = totals.setdefault(step, {u: 0 for u in UNITS.values()})
+        t = totals.setdefault(key, {u: 0 for u in UNITS.values()})
         for u, q in agent_sums.items():
             t[u] += q
     for name in unattributed:
-        print(f"wave-usage: {name}: no seat (never cast) — usage dropped",
-              file=sys.stderr)
+        print(f"wave-usage: {name}: no seat (never cast) — dropped here, "
+              "carried by plain mode (run without --seats)", file=sys.stderr)
+    for label in seated:
+        print(f"wave-usage: {label}: cast a ballot — skipped here, carried by "
+              "seats mode (run with --seats)", file=sys.stderr)
     for name in probes:
         print(f"wave-usage: {name}: wave.js internal probe (no step) — "
               "usage dropped", file=sys.stderr)

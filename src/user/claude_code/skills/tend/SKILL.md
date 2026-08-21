@@ -41,9 +41,9 @@ Exclude two more kinds before picking — this queue isn't tend's alone:
 
 - **Run-included.** For each run `docket run status --active --json` returns
   (planning, active, or paused — anything not done or abandoned),
-  `docket issue list --run <ref> --json` names that run's whole roster. Any
-  backlog/todo issue sitting on any of those rosters belongs to a plan/conduct
-  session, even while the run is parked — skip it.
+  `docket issue list --run <ref> --json --limit 1000` names that run's whole
+  roster. Any backlog/todo issue sitting on any of those rosters belongs to a
+  plan/conduct session, even while the run is parked — skip it.
 - **Claimed.** Any issue with a non-empty `assignee` — tend never sets one on
   the issues it works, so a populated `assignee` means someone or something
   else already has it. Skip it.

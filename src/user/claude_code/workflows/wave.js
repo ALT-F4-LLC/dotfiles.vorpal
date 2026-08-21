@@ -1033,7 +1033,7 @@ function lensOf(seat) {
 }
 // SYNC-END seat-contract
 
-function seatBrief(r, voteId, row, isRespawn) {
+function seatBrief(r, voteId, row, isRespawn, heldCluster) {
     const { role, text } = lensOf(r.seat)
     const metadataClaim = JSON.stringify({
         seat: r.seat,
@@ -1049,6 +1049,15 @@ ${r.seat}. Nothing it may have concluded reached anyone, so decide the case
 yourself from scratch. Whatever stopped the first attempt, the cast is the one
 thing that must happen this time: if the command errors, do not abandon it
 silently — end with the verbatim error as instructed below.` : ''
+    // DOT-513: absent on ordinary gates — then this renders NOTHING and the
+    // brief is byte-for-byte what it was before held clusters existed.
+    const heldClusterNote = heldCluster ? `
+
+HELD CLUSTER: you decide ONE finding cluster — index ${heldCluster.clusterIndex} of
+${heldCluster.clusterCount} in ${heldCluster.artifact} (produced by ${heldCluster.producerStep}). Read it with
+\`docket step artifact ${heldCluster.artifact} --payload\` and judge that cluster
+only: is the held remedy right, and should it block? The other clusters are
+other seats' or already decided.` : ''
 
     return `You are ONE SEAT of a tribunal deciding a gate step MID-WAVE in a Docket run.
 You decide alone. You cannot see the other seats, you do not coordinate with
@@ -1069,7 +1078,7 @@ the same root in every call, so a path written as the variable can name one
 directory when you create it and a different one when you read it back — files
 persist perfectly well under whichever root actually received them. The literal
 is what makes "I wrote it, therefore I can read it" true, and the summary file
-your cast reads back below depends on exactly that.
+your cast reads back below depends on exactly that.${heldClusterNote}
 
 Run \`docket\` BARE from your working directory — the store resolves from
 anywhere inside the repository; nothing to probe for, nothing to prepend.
@@ -1196,6 +1205,32 @@ function probe(command, label, phaseLabel, servingStep) {
         })
 }
 
+// Some gate steps decide ONE held finding cluster out of several, and their
+// `step show --json` carries the assignment as a flat four-field object:
+//   "held_cluster":{"cluster_index":0,"cluster_count":10,
+//                   "artifact":"ARTIFACT-1251","producer_step":"reconcile@3"}
+// Parse it out of the probe text (which may wrap the JSON in banner prose) so
+// the seat brief can NAME the cluster on trial — without this, seats grep the
+// repo and the event log to learn which cluster they are deciding. Ordinary
+// gates carry no such field; they yield null and the brief renders unchanged.
+function parseHeldCluster(show) {
+    const m = show.match(/"held_cluster"\s*:\s*(\{[^{}]*\})/)
+    if (!m) return null
+    try {
+        const hc = JSON.parse(m[1])
+        if (typeof hc.cluster_index !== 'number' || typeof hc.cluster_count !== 'number' ||
+            typeof hc.artifact !== 'string' || typeof hc.producer_step !== 'string') return null
+        return {
+            clusterIndex: hc.cluster_index,
+            clusterCount: hc.cluster_count,
+            artifact: hc.artifact,
+            producerStep: hc.producer_step,
+        }
+    } catch {
+        return null
+    }
+}
+
 async function runGate(row, phaseLabel) {
     // The ballot: record-driving opened the proposal when the gate's last
     // predecessor recorded — an earlier stage this wave already awaited — so
@@ -1208,6 +1243,10 @@ async function runGate(row, phaseLabel) {
     // Proposal ids are project-prefixed: 1-8 upcased letters, "-V", digits
     // (docket's FormatProposalID / project set-prefix grammar), e.g. DKT-V29.
     const m = show.match(/"proposal"\s*:\s*"([A-Z]{1,8}-V\d+)"/)
+    // DOT-513: a held-cluster gate decides ONE cluster of findings, not the
+    // whole gate — pass the assignment into every seat's brief (null on the
+    // ordinary gates whose show text carries no held_cluster field).
+    const heldCluster = parseHeldCluster(show)
     // A vote step's STATUS cannot carry the verdict: the engine records a
     // REJECTED vote as `done` when its on_fail routes machine-side (measured
     // three runs: 0-3-0 tallies rendered "gate-passed" and the conductor
@@ -1247,7 +1286,7 @@ async function runGate(row, phaseLabel) {
     const seats = voters.map((v) => resolveSeat(v, policy))
     log(`${row.step}: ${voteId} — seating ${seats.map((s) => s.seat).join(', ')}`)
     await parallel(seats.map((r) => () =>
-        agent(seatBrief(r, voteId, row, false), {
+        agent(seatBrief(r, voteId, row, false, heldCluster), {
             label: `${row.step} · seat:${r.seat}`,
             phase: phaseLabel,
             agentType: 'executor-read',
@@ -1266,7 +1305,7 @@ async function runGate(row, phaseLabel) {
         log(`${row.step}: ${missing.length} seat(s) returned without a recorded ` +
             `cast (${missing.map((s) => s.seat).join(', ')}) — re-spawning each ONCE`)
         await parallel(missing.map((r) => () =>
-            agent(seatBrief(r, voteId, row, true), {
+            agent(seatBrief(r, voteId, row, true, heldCluster), {
                 label: `${row.step} · seat:${r.seat} (retry)`,
                 phase: phaseLabel,
                 agentType: 'executor-read',

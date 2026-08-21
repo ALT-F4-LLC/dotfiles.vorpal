@@ -173,22 +173,7 @@ impl ClaudeCode {
             .with_auto_updates_channel("latest")
             .with_away_summary_enabled(false)
             .with_cleanup_period_days(7)
-            // LOWERED from xhigh 2026-08-19 on mined evidence, not taste. A
-            // 7-day census of 163 main sessions (scripts/session-census) found
-            // 45% of all output tokens were thinking, with a floor of ~39% at
-            // every task size -- no task was ever cheap. The only quasi-
-            // controlled comparison available, same model and same skill with
-            // effort as the sole variable, put xhigh well above high in three
-            // of four cells: shadow 18.7% -> 60.2%, loop 40.4% -> 56.4%,
-            // conduct 25.7% -> 38.2%; docket dissented (56.1% -> 52.6%) on the
-            // thinnest cell (32 msgs, 1 session).
-            //
-            // Deliberately the ONLY reasoning dial moved in this change.
-            // always_thinking_enabled stays true so the next census can
-            // attribute any movement to this line alone; changing both would
-            // make the before/after unreadable. Re-run session-census after a
-            // week and decide the next step from the diff.
-            .with_effort_level("high")
+            .with_effort_level("xhigh")
             .with_feedback_survey_rate(0.0)
             .with_include_git_instructions(false)
             .with_model("sonnet")

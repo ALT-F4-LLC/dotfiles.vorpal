@@ -116,6 +116,18 @@ Three modes. An explicit argument always wins; bare, the session decides:
   post-mortem. No candidate list, no which-one question — enumerate and go
   (§1a).
 
+Memory is a second evidence layer, scraped alongside transcripts in every
+mode: read each entry file under the in-scope project(s)' `memory/`
+directory (skip `MEMORY.md` itself — it is an index, not an entry) for a
+claim disk or transcript evidence now contradicts, a watch item nobody ever
+checked, or a reference to an id/tool/fix that turned out wrong. Scope
+follows the mode: the fleet sweep reads every project's `memory/` (§1a);
+single-session and the live self-shadow read only the observed project's,
+`~/.claude/projects/<flattened-cwd>/memory/`, the same `.cwd`-derived
+directory transcripts come from. A bad entry is a finding under §3's table
+(row: Memory) and files per §6, whose reference line is what lets the fix
+remove the entry.
+
 ### 1a. The fleet sweep (bare invocation)
 
 Scope is time-boxed, not project-boxed: every main transcript in every
@@ -358,6 +370,7 @@ the definitions assume. By layer:
 | Harness | Permission prompts the definitions did not budget for, sandbox denials, workflow-registry staleness, notification latency or loss, `$TMPDIR` shared across executors surprising someone — anything that makes the conductor's or operator's job harder than the skill text assumes. |
 | Repetition | The same pipeline retyped — by the conductor every loop iteration, or by every executor because a brief inlines it. The third appearance is a finding; take it to the extraction bar below. |
 | Engine | Refusal text that misleads, a documented flag that does not exist, a read surface missing (usage absent from `journal.jsonl` is the canonical case). Rule-3 territory: file it. |
+| Memory | An operator memory entry (`~/.claude/projects/*/memory/*.md`, in-scope per §1) claiming a fix, a pending status, or a watch item that disk or transcript evidence now contradicts — stale, already resolved, or simply wrong. File it with a reference to the entry (§6) so the fix removes it. |
 
 **The two packet-composition defects earlier shadows carried are FIXED and
 live-verified — do not expect them, and re-file nothing against them.**
@@ -612,7 +625,11 @@ Then:
      file:line, enough to re-find it), the remedy with its SOURCE path — as
      a diff when small — and acceptance criteria a worker can check without
      this session's context. Session ids, run refs, and transcript paths go
-     here, never in the title.
+     here, never in the title. A finding sourced from a memory entry (§3's
+     Memory row) also names that entry on its own line — `Memory ref:
+     <path under ~/.claude/projects/…/memory/> — <name: slug>` — precise
+     enough that the fixer can find and delete the entry once the issue is
+     resolved; shadow itself stays read-only and never edits or removes it.
    - `-p`: severity mapped — load-bearing → `high`, friction → `medium`,
      paper-cut batch → `low`; `critical` only for a defect actively costing
      live runs correctness or money right now.

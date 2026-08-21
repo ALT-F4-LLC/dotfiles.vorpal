@@ -444,14 +444,29 @@ keep working. Middle-of-the-loop is not the same as unattended, though: several
 stop-and-ASK gates live INSIDE it, each stated where it arises rather than
 listed here — symlink debris in `.docket/config`, a `next` set that disagrees
 with the roster you presented, added issues left unexpanded, parked payload
-whose provenance you cannot tie to its step, a cherry-pick conflict, and
-content staged but uncommitted in the shared tree. These go STRAIGHT to the
+whose provenance you cannot tie to its step, a cherry-pick conflict, content
+staged but uncommitted in the shared tree, and any engine action that leaves
+the run in a state the protocol did not predict (stated below, because it has
+no single site — it can arise at any verb). These go STRAIGHT to the
 operator rather than to a panel: each turns on the state of the operator's own
 tree, or on the provenance of something already executing, which is exactly the
 class **Gates** reserves. None is yours to settle by judgment, and what none of
 them does is end the run. A run that stops after one wave because nobody asked the engine a
 second time looks exactly like a run that finished, which is why this is stated
 so plainly: RUN-3's operator observed the whole run execute as a single wave.
+
+**An UNEXPECTED state change freezes every mutating verb.** When an engine
+action leaves the run somewhere the protocol did not predict — a gate skipped,
+a step gone from the ready set, any status this loop does not produce —
+diagnosis is READ VERBS ONLY (`step show`, `step gates`, `run status`, `events
+list`), and the next MUTATING verb waits for an operator ruling. Flagging a
+surprise and experimenting on it must never share a turn: "it's probably
+reversible" is not authorization, and a recovery idea is a proposal you put in
+front of the operator, not a test you run to see what happens. Measured: a
+conductor that discovered an override-pass had silently skipped a required
+gate flagged it honestly and, in that same turn, ran an unapproved
+engine-mutating verb as a live "test" of the recovery — it desynced a sibling
+step and the run had to be paused.
 
 ### 1. Ask what is ready
 

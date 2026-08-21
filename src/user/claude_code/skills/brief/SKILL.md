@@ -1,14 +1,16 @@
 ---
 name: brief
-description: Turn a freeform work request into a standardized brief — one batched round of AskUserQuestion for whatever's genuinely underdetermined — then route it: hand off to /plan for docket-tracked work, or proceed straight into the work for anything small and non-sensitive, confirmed with you either way. The front door for a fuzzy ask you'd rather not prompt-engineer yourself. Trigger on "brief this", "help me think this through", "brief this request", or any new freeform ask before you've decided whether it needs a plan.
+description: Turn a freeform work request into a standardized brief — one batched round of AskUserQuestion for whatever's genuinely underdetermined — then route it: hand off to /plan for docket-tracked work, /loop for work that repeats until a condition holds, another orchestration skill when one fits better, or proceed straight into the work for anything small and non-sensitive, confirmed with you either way. The front door for a fuzzy ask you'd rather not prompt-engineer yourself. Trigger on "brief this", "help me think this through", "brief this request", or any new freeform ask before you've decided whether it needs a plan.
 argument-hint: "<freeform work request>"
 ---
 
 # brief
 
 Take the freeform request in `$ARGUMENTS` and turn it into one standardized
-block, then route the work — to `/plan` for anything docket-tracked, or
-straight into execution for anything small enough not to need that. Either
+block, then route the work — to `/plan` for anything docket-tracked, to
+`/loop` for anything that repeats until a condition holds, to another
+orchestration skill when the session offers a better fit, or straight into
+execution for anything small enough not to need any of that. Either
 way you confirm the route before anything happens beyond the questions
 themselves. This is the front door: hand off a raw ask, answer one batched
 round of questions, and the routing is handled — no separate skill to
@@ -47,7 +49,8 @@ to whatever the work routes to.
 | **Scope** | Files/dirs/surfaces in play, as concretely as the request allows. For a cross-cutting "find every reference to X" request, don't enumerate a site list that will be incomplete — frame Scope as an independent repo-root re-derivation instead. |
 | **Out-of-scope** | Surfaces the operator signaled NOT to touch, or "not specified". |
 | **Acceptance criteria** | Checkable bullets a reviewer could verify objectively, copied verbatim where the operator stated them — you may add ones you derived, labeled as derived, but never paraphrase theirs. |
-| **Size hint** | `trivial` (single edit, ≤3 files, one turn) \| `bounded` (1-4 phases, no architecture) \| `needs-design` (new architecture, data model, or cross-cutting concern). This is the field the route hinges on. |
+| **Size hint** | `trivial` (single edit, ≤3 files, one turn) \| `bounded` (1-4 phases, no architecture) \| `needs-design` (new architecture, data model, or cross-cutting concern). With Shape and Security-sensitive, one of the three fields the route hinges on. |
+| **Shape** | `one-shot` (deliver once and stop) \| `iterative` (repeat or continue until a condition holds — watching, converging, draining a backlog, periodic upkeep). Iterative shape is what routes work to `/loop`. |
 | **Security-sensitive** | `yes` only when the work touches authn/authz, secrets, crypto, sandbox/permissions, a trust boundary, supply chain, or untrusted input at a privilege boundary; otherwise `no`. This field can override size in the routing decision — see below. |
 | **Constraints** | Hard limits the operator stated (no new deps, frozen APIs, perf/token budgets) or "none stated". |
 
@@ -78,7 +81,7 @@ sanity checks only — never a mutation, never the fix itself.
 Derive everything the request supports. For fields that remain genuinely
 underdetermined and would change either the field's own content or the
 routing decision, ask ONE `AskUserQuestion` round — at most 4 questions, best
-guess marked "(Recommended)" — prioritizing **Size hint** and
+guess marked "(Recommended)" — prioritizing **Size hint**, **Shape**, and
 **Security-sensitive** first (they drive the route), then ambiguous scope
 boundaries. Don't ask about fields the request already answers; a request
 that's already fully structured (goal + scope + acceptance criteria all
@@ -86,25 +89,39 @@ stated) skips this round entirely — go straight to drafting the block.
 
 ## Route, then confirm
 
-Once the block is drafted, compute a recommended route from the two fields
-that decide it:
+Once the block is drafted, compute a recommended route from the three fields
+that decide it — Security-sensitive, Shape, and Size hint, in that order:
 
-- **Security-sensitive: yes** → recommend `/plan`, regardless of size. Docket's
-  security-load-bearing workflow is the trust machinery for this class of
-  work; direct execution skips it entirely.
-- **Security-sensitive: no, Size hint: trivial** → recommend direct — do the
-  work now, in this conversation, no docket overhead for a single-turn edit.
-- **Size hint: bounded or needs-design** → recommend `/plan`, regardless of
-  security — multi-phase or architectural work benefits from docket's
-  dependency graph, budget, and verification gates even when nothing about it
-  is sensitive.
+- **Security-sensitive: yes** → recommend `/plan`, regardless of shape or
+  size. Docket's security-load-bearing workflow is the trust machinery for
+  this class of work; every other route skips it entirely.
+- **Shape: iterative** → recommend `/loop` — hand the loop a
+  conversation-sized task to repeat on its own cadence, with the block's Goal
+  and Acceptance criteria as its stop condition. This fits only when each
+  pass is small; if a single pass is itself bounded or needs-design work, the
+  loop belongs inside a docket run — recommend `/plan` instead.
+- **Security-sensitive: no, Shape: one-shot, Size hint: trivial** → recommend
+  direct — do the work now, in this conversation, no orchestration overhead
+  for a single-turn edit.
+- **Size hint: bounded or needs-design** → recommend `/plan` — multi-phase or
+  architectural work benefits from docket's dependency graph, budget, and
+  verification gates even when nothing about it is sensitive. `/plan` is also
+  the workflow-backed route: it drives the `workflow` engine under the hood,
+  so work needing that scale of fan-out reaches workflows through `/plan` —
+  never offer `workflow` as a route of its own.
+
+These are the standing routes, not a closed world. When the session's skill
+listing carries another orchestration skill that fits the work's shape
+materially better than the computed route, recommend it instead and name it
+in the one-line reason. Only skills actually listed in this session qualify —
+never invent or guess one.
 
 Present the drafted block plus the recommended route and the one-line reason
-for it as an `AskUserQuestion`, three options: confirm the recommended route,
-take the other route, or "just give me the block" — a pure emit-and-stop for
-when the operator wants to route it themselves. Never act past the block
-without this confirmation; the route changes what happens next materially
-enough that it isn't yours to decide silently.
+for it as an `AskUserQuestion`: the recommended route first, the plausible
+alternate route(s) next, and "just give me the block" last — a pure
+emit-and-stop for when the operator wants to route it themselves. Never act
+past the block without this confirmation; the route changes what happens next
+materially enough that it isn't yours to decide silently.
 
 ## Handoff
 
@@ -112,6 +129,17 @@ enough that it isn't yours to decide silently.
 verbatim>"})`. Plan's own §1 reads a supplied brief block as already-answered
 input and only asks about what it left open — this skill's job ends the
 moment plan takes the turn.
+
+**Route: `/loop`.** If `loop` appears in this session's invocable skills,
+invoke `Skill({skill: "loop", args: "<the confirmed block, verbatim>"})`.
+Where the harness offers loop only as a command the operator types, you
+cannot start it yourself — emit a ready-to-paste one-liner (`/loop <goal and
+stop condition, distilled from the block>`), then stop. Either way the block
+travels whole: its Acceptance criteria are the loop's stop condition.
+
+**Route: another orchestration skill.** Same contract as `/plan`: invoke
+`Skill({skill: "<name>", args: "<the confirmed block, verbatim>"})` and end
+your involvement the moment it takes the turn.
 
 **Route: direct.** No docket issue, no plan artifact, no team spawn — proceed
 in this same conversation using the confirmed block as your working contract:
@@ -121,7 +149,8 @@ This is ordinary conversational work, just executed against a spec instead of
 the raw ask.
 
 **Route: "just give me the block".** Emit the block verbatim and stop. Do not
-continue, execute, or invoke `/plan`; the operator carries it from here.
+continue, execute, or invoke any route skill; the operator carries it from
+here.
 
 ```
 Goal: <one sentence — what to optimize / done-state>
@@ -130,6 +159,7 @@ Scope: <files/dirs in play>
 Out-of-scope: <surfaces NOT to touch>
 Acceptance criteria: <checkable bullets>
 Size hint: trivial | bounded | needs-design
+Shape: one-shot | iterative
 Security-sensitive: yes | no
 Constraints: <no new deps, API freezes, etc.>
 ```

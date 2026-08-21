@@ -75,6 +75,7 @@ const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
     "~/.cache/uv",
     "~/.cargo/git",
     "~/.cargo/registry",
+    "~/.docker/buildx/activity/",
     "~/Development/language/go/pkg/mod",
     "~/Library/Application Support/go",
     "~/Library/Caches/go-build",

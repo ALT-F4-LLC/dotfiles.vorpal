@@ -285,23 +285,49 @@ reaches a wave without passing through an engine verb; every OTHER drifted ref
 is refused by the engine verb that reads it. Either way there is no route past
 drift, so `verify-pins` is not advisory.
 
-**Dispositions at a pin-drift stop-and-report — all three are executable:**
+**Dispositions at a pin-drift stop-and-report — all four are executable:**
 
 - **Show the diffs.** Give the operator the drifted refs (`docket run
   verify-pins $RUN` names each with both hashes) and, where useful, the actual
   byte diff — the PINNED bytes usually survive in the previous install
   generation in the vorpal store, which is content-addressed (RUN-33's did).
+- **Repin** — `docket run repin RUN-N --reason R` — for drift the operator
+  judges ADOPTABLE, the common case being their own additive corpus edit, where
+  the bytes now on disk are the ones they meant the run to have. It adopts what
+  each drifted ref resolves to now as the run's pins, so the steps not yet
+  claimed proceed under the new bytes and the hook stops denying the relaunch.
+  `--reason` is REQUIRED and the verb refuses without it. It also refuses rather
+  than let a step straddle the transition: while any step is CLAIMED (an
+  executor mid-flight holds a packet rendered under the old agreement), while a
+  DISPATCH IS OPEN (its manifest was offered under the current pins), on a run
+  that is done, abandoned, or planning or whose steps are all TERMINAL (nothing
+  remains for the new agreement to govern), and when a pinned ref NO LONGER
+  RESOLVES AT ALL — that last one is exit 2 above, there are no current bytes to
+  adopt, and the remedy is to restore the file, not to repin. The guarantee is
+  that completed steps' provenance is never rewritten: only the pin rows move,
+  and one `run-repinned` event per changed ref carries the old sha, the new sha,
+  and the reason, so the agreement a finished step worked under stays
+  recoverable from the trail. Repinning is all-or-nothing across the run's pins,
+  and repinning a run with no drift is a clean no-op that says so.
 - **Pause the run** (`/pause`) and hand the decision back with a resume prompt.
 - **Abandon and re-plan**, which re-pins from scratch on the current disk.
 
+**Present the four; run none of them unprompted.** Pin drift is a
+stop-and-report — the tree and the corpus are the operator's, so which bytes the
+run should be working against is their call, not the conductor's. Repin in
+particular moves the recorded agreement every future packet is verified against;
+it is offered as a disposition, with a reason the operator gives, and never
+reached for on the conductor's own judgement to get a stalled dispatch moving.
+
 **"Proceed anyway / accept the risk" is NOT one of them — never offer it.** The
 hook refuses the relaunch outright, so the operator spends a round-trip choosing
-an option that cannot execute (that is exactly what RUN-33 cost). Nor is there a
-repin: `docket run activate --help` — "Re-activating an active run expands
-newly-unblocked phases only and INHERITS the original pin set — a workflow
-re-registered or a pinned file edited since activation does not reach a run
-already under way." The missing recovery path is tracked as DKT-408 in the
-docket project; do not improvise one here.
+an option that cannot execute (that is exactly what RUN-33 cost). Re-activating
+is not a back door either: `docket run activate --help` — "Re-activating an
+active run expands newly-unblocked phases only and INHERITS the original pin set
+— a workflow re-registered or a pinned file edited since activation does not
+reach a run already under way." That inheritance is a guarantee in-flight work
+relies on, which is exactly why adoption shipped as its own gated verb rather
+than as a flag on activation.
 
 **Fallback only — for a seat whose binary predates `run verify-pins`** (the verb
 is absent from `docket run --help`). Walk the pins by hand:

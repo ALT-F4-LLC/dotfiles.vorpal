@@ -1193,14 +1193,46 @@ not cheap to skip, and they go to the panel like the rest. What survives of it
 is the evidence: a death witnessed first-party is the strongest rationale a
 proposal can carry, so put it in verbatim.
 
-**Budget: project before the wall.** Project it first at activation: the
-moment the run is active, sum the created steps' `expected_cost` against the
-cap, and when the cap falls short convene the raise panel BEFORE the first
+**Budget: project before the wall.** Project it first at activation, and
+COMPUTE the projection — never read it off a field. The computation is two
+reads and a subtraction, and it is exactly this:
+
+```bash
+docket step list --run $RUN --json | jq '[.data.steps[] | select(.status=="pending" or .status=="ready" or .status=="gated") | .expected_cost] | add'
+docket run budget $RUN --json    # headroom = .data.budget minus .data.spend
+```
+
+Fits when that sum is at or under the headroom. `step list --run` IS the
+run-scoped enumeration DKT-54 asked for and it has shipped, so "I could not
+enumerate the steps" is no longer a thing to write in a proposal — write the
+sum and the command that produced it. Run it as ONE shipped script instead of
+retyping the pipeline: `~/.claude/scripts/budget-headroom $RUN` when `test -f`
+passes, else `$CC_SRC/scripts/budget-headroom $RUN`, resolved the same way as
+`attach-probe` above. It is read-only (`step list`, `run budget`, no `--set`),
+prints cap / spend / pending sum / headroom and a one-word verdict, and prints
+the pending ROW COUNT beside the sum so a status name the select does not
+cover shows up as a count that disagrees with the roster instead of as a
+silently short sum.
+
+**`run activate --dry-run`'s `expected_cost_total` is the run's whole-roster
+total including done and skipped steps, NOT the increment — never put it in a
+raise question.** RUN-39 is the worked example, and it needs both of its
+numbers held apart: the dry-run printed `expected_cost_total: 35.1`, which was
+the WHOLE run's roster (done + skipped + superseded + pending), while the
+actual increment for the 5 newly-created steps was 2.1. 35.1 is the run total.
+2.1 is the increment. Reading the 35.1 as the increment is what bought a
+second raise to 48 that the run never needed.
+
+So a projection that looks disproportionate against the per-step history is
+CHECKED — with the one command above, by you, now — BEFORE it enters a
+question or a proposal. And "investigate first" is never an option you offer
+the operator when the investigation is a check you can run yourself: offering
+it spends a human round trip on a `jq` you were already holding.
+
+When the cap falls short convene the raise panel BEFORE the first
 dispatch — a wall found mid-phase serializes that phase's fanout around a
 panel (RUN-4: cap 3 vs 4.8 split a 4-judge review into two waves around a
-6-minute panel, ~18 wasted minutes). Until the engine grows a run-scoped step
-listing (filed as docket-repo DKT-54), state in the proposal how you
-enumerated the steps. When the running spend-per-step times the
+6-minute panel, ~18 wasted minutes). When the running spend-per-step times the
 pending count no longer fits the cap, put the arithmetic to the panel THEN — a
 raise granted before the breach costs nothing, while a breach mid-wave pauses
 the run and strands every queued claim (RUN-5 paid once, then flagged the

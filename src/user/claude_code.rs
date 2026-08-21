@@ -75,7 +75,19 @@ const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
     "~/.cache/uv",
     "~/.cargo/git",
     "~/.cargo/registry",
-    "~/.docker/buildx/activity/",
+    // buildx's whole state directory, not one subpath of it. Granting only
+    // `buildx/activity` was the earlier narrow fix for "failed to update
+    // builder last activity time: ... operation not permitted", and the same
+    // failure class returned one subpath over: under OrbStack `docker buildx
+    // build` also stages through `buildx/refs/<builder>/<node>/.tmp-*`, so the
+    // build gate's `make build-docker` parked twice on "failed to build: open
+    // ~/.docker/buildx/refs/orbstack/orbstack/.tmp-<random>: operation not
+    // permitted" (RUN-38, 2026-08-21, DOT-466). Probed 2026-08-21: with
+    // `activity` allowed, writes to `refs/orbstack/orbstack` AND to the buildx
+    // root were both still denied — so adding `refs` alone would have left
+    // `.lock`, `current`, and `instances` to fail next. Credentials live in
+    // `~/.docker/config.json`, a sibling of this directory, so it stays denied.
+    "~/.docker/buildx",
     "~/Development/language/go/pkg/mod",
     "~/Library/Application Support/go",
     "~/Library/Caches/go-build",

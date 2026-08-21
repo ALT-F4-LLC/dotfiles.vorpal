@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "findings@3",
+  "title": "findings@4",
   "description": "Successor to findings@1, the CLUSTER document — the one declared on the `aggregate` step whose declared severity order the ordered thresholds compile from. Identical to findings@1 in every constraint (`id` stays optional for the V30 reason findings@1 records; `severity` stays scalar-or-array as the aggregate's input contract), plus the optional `prior_disposition` from the retro of 2026-08-19. That retro measured what an undeclared disposition costs: RUN-29's round 1 restated 9 of 19 clusters near-verbatim from round 0's deferred items (3 titles byte-identical), and one locus the operator had already accepted at round 0 with a tracked follow-up came back as a fresh high at round 1 and was HELD again at round 2, spending a second operator ruling on settled ground. A cluster carrying `prior_disposition` is recognisable as a re-occurrence rather than a discovery. The field is OPTIONAL and additive: a payload that never sets it validates exactly as it did against findings@1, and `additionalProperties` stays true so the conjunction with `aggregate@1` remains satisfiable (V30).",
   "type": "array",
   "items": {
@@ -58,7 +58,7 @@
         "type": "boolean"
       },
       "prior_disposition": {
-        "description": "How this same locus was already ruled on in an EARLIER fix-loop round. Set by synthesize-findings when its inputs identify a cluster as a re-occurrence, and carried through unchanged by `aggregate`. Its presence is the signal that the cluster is settled ground rather than a discovery: a reader — human or panel — owes it a re-read of the earlier ruling before spending a second decision. Absent on a genuinely new cluster, which is the ordinary case. Every sub-field is optional so a partially-known disposition is still recordable; an empty object records nothing and is no better than omitting the field.",
+        "description": "How this same locus was already ruled on in an EARLIER fix-loop round. Set by synthesize-findings when its inputs identify a cluster as a re-occurrence, and carried through unchanged by `aggregate`. Its presence is the signal that the cluster is settled ground rather than a discovery: a reader — human or panel — owes it a re-read of the earlier ruling before spending a second decision. Absent on a genuinely new cluster, which is the ordinary case. Every sub-field is optional so a partially-known disposition is still recordable; an empty object records nothing and is no better than omitting the field. A re-review round's payload spans the STANDING SET, not the delta: a finding still open is carried forward with this key set even when it did not re-occur in that round's inputs, emitted as one element carrying the scalar the previous aggregate reduced it to rather than its original member array — spread 0, so `hold_spread` cannot re-hold ground an operator already ruled on. Clustering only the delta dropped 24 open findings, nine of them high, out of every later aggregate in RUN-31.",
         "type": "object",
         "properties": {
           "round": {

@@ -23,7 +23,13 @@
 
 [pipeline]
 name    = "security-load-bearing"
-version = 10  # 10: a rejected `verify-tribunal` routes `fix-loop` instead
+version = 11  # 11: reconcile's payload moves from findings@3 to findings@4
+              #   — the engine enforces byte-identity on a frozen
+              #   registration, and findings@3's `prior_disposition`
+              #   description text was edited in place post-registration
+              #   (DKT-317 follow-up) without a version bump; findings@4
+              #   carries the corrected text under a fresh registration.
+              # 10: a rejected `verify-tribunal` routes `fix-loop` instead
               #   of parking at `waiting-human` (operator ruling 2026-08-19,
               #   DOT-277) — see that step's comment for the bound that keeps
               #   the park as the floor.
@@ -166,11 +172,17 @@ params = { field = "severity", method = "max", hold_spread = 2, output = "findin
                                      #   the security vote firing and not.
                                      #   `hold_spread` is unchanged.
 inputs = ["synthesize.findings"]
-payload = "findings@3"               # findings@1's successor: same declared
-                                     #   severity order, plus the optional
-                                     #   `prior_disposition` (retro
-                                     #   2026-08-19). The `review` step above
-                                     #   stays on findings@1 — judges emit no
+payload = "findings@4"               # findings@3's re-registration (DKT-317
+                                     #   follow-up): the engine enforces
+                                     #   byte-identity on a frozen
+                                     #   registration, so the
+                                     #   `prior_disposition` wording fix moved
+                                     #   here instead of editing findings@3 in
+                                     #   place. Same declared severity order
+                                     #   and optional `prior_disposition` as
+                                     #   findings@3 (retro 2026-08-19). The
+                                     #   `review` step above stays on
+                                     #   findings@1 — judges emit no
                                      #   disposition, so nothing there needs
                                      #   the successor.
 threshold = { "security-vote" = "any(severity >= high)" }   # AUTO FIX-LOOP RETIRED for the

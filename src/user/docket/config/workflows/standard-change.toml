@@ -4,21 +4,31 @@
 # attempts, artifact recording, context assembly, event logging (02 §5, §8).
 # A pipeline author writes topology and thresholds only (05 §1).
 # `issue.diff` is the engine-provided virtual artifact — referenced, never emitted.
-# Requires `findings@2` AND `findings@3` registered first: the review fanout
+# Requires `findings@2` AND `findings@4` registered first: the review fanout
 # declares findings@2 (judge-boundary anchor keys required — retro after RUN-5;
 # 7 judge-architecture findings keyed location/rule were silently dropped
-# downstream, see DKT-79), while `reconcile` takes findings@3 — findings@1's
-# successor, carrying the same declared severity order the ordered severity
-# threshold compiles from (06 §11.2, V21c/V29) plus the optional
-# `prior_disposition` that makes a previously-ruled cluster recognisable as
-# one. The split is deliberate: `aggregate` carries through only input keys, so
-# a schema requiring `id` on the reconcile document trips V30 — which is why
-# findings@3 inherits findings@1's optional `id` rather than findings@2's
-# required one.
+# downstream, see DKT-79), while `reconcile` takes findings@4 — findings@3's
+# re-registration (DKT-317 follow-up: the engine enforces byte-identity on a
+# frozen registration, so findings@3's `prior_disposition` wording fix moved
+# to a fresh schema instead of editing findings@3 in place) — carrying the
+# same declared severity order the ordered severity threshold compiles from
+# (06 §11.2, V21c/V29) plus the optional `prior_disposition` that makes a
+# previously-ruled cluster recognisable as one. The split is deliberate:
+# `aggregate` carries through only input keys, so a schema requiring `id` on
+# the reconcile document trips V30 — which is why findings@3/@4 inherit
+# findings@1's optional `id` rather than findings@2's required one.
 
 [pipeline]
 name    = "standard-change"
-version = 13                 # 13: a rejected `verify-tribunal` routes
+version = 14                 # 14: reconcile's payload moves from findings@3
+                             #   to findings@4 — the engine enforces
+                             #   byte-identity on a frozen registration, and
+                             #   findings@3's `prior_disposition` description
+                             #   text was edited in place post-registration
+                             #   (DKT-317 follow-up) without a version bump;
+                             #   findings@4 carries the corrected text under
+                             #   a fresh registration.
+                             # 13: a rejected `verify-tribunal` routes
                              #   `fix-loop` instead of parking at
                              #   `waiting-human` (operator ruling 2026-08-19,
                              #   DOT-277) — see that step's comment for the
@@ -281,11 +291,15 @@ params = { field = "severity", method = "max", hold_spread = 2, output = "findin
                                      #   undisputed cases land.
 inputs = ["synthesize.findings"]     # the clusters the builtin reduces (DKT-28,
                                      #   V31: required non-empty)
-payload = "findings@3"               # severity's declared order (V29), plus
-                                     #   `prior_disposition` — findings@1's
-                                     #   successor, additive and optional, so
-                                     #   a payload that sets it never
-                                     #   validates differently (retro
+payload = "findings@4"               # findings@3's re-registration (DKT-317
+                                     #   follow-up: byte-identity on the
+                                     #   frozen findings@3 registration
+                                     #   forced the wording fix into a fresh
+                                     #   schema). severity's declared order
+                                     #   (V29), plus `prior_disposition` —
+                                     #   findings@1's successor, additive and
+                                     #   optional, so a payload that sets it
+                                     #   never validates differently (retro
                                      #   2026-08-19)
 threshold = { "fix-loop" = "any(severity >= blocker)" }   # no match -> pass (06 §11.2)
                                      # BLOCKER-ONLY LOOPING (operator policy,

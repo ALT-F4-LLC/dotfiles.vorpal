@@ -376,7 +376,23 @@ flags on first use in a session; the CLI is the authority, not this block.
 rather than guess it. The FLOOR is the bound workflow's expected-cost sum with
 its when-gated steps INCLUDED: a `when` you cannot evaluate at plan time is a
 step that may well run, and a floor that omits it is a floor for a run that
-did not happen. On top of the floor goes REWORK HEADROOM — at least one full
+did not happen. You READ that sum, you never estimate it: `docket workflow
+show` does not print step costs, so the only surface that has them is the
+bound workflow's source — `grep -n expected_cost
+~/.docket/config/workflows/<wf>.toml`, summed over every line it returns, with
+each `fanout` step's cost multiplied by its sibling count (`grep -n 'fanout ='
+~/.docket/config/workflows/<wf>.toml` gives the list; the tomls annotate those
+lines `# per expanded sibling`). Standard-change's review is 0.60 × four
+judges = 2.40, making that track 7.9 an issue; security-load-bearing's is 0.60
+× five = 3.00, making it 7.2. Two bounded greps over one file for one key each
+— not the raw corpus dump §2 warns off, and nothing here binds, so the source
+tomls are the right surface. Never present a floor you did not read this way
+as corpus arithmetic: a live bare-`/plan` planner invented per-issue floors of
+6.0 and 7.6, called the total "per the corpus arithmetic," and had a cap of 75
+authorized against a rule-correct 80 (grep for `expected_cost` in that
+transcript: zero hits). If the read did not happen, the number is an estimate
+and the proposal must say so in those words. On top of the floor goes REWORK
+HEADROOM — at least one full
 fix-loop round per two issues. Standard-change's round is fix 1.0 plus four
 judges at 0.6 plus synthesize 0.4, so 3.8, and half the issues this epoch took
 one. For security-load-bearing budget THREE rounds per issue: rejection-driven

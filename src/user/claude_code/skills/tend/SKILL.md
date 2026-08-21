@@ -25,7 +25,7 @@ pass and say so — there will be no next tick.
 ## 1. Each tick
 
 ```bash
-docket issue list --json -s backlog -s todo
+docket issue list --json --limit 1000 -s backlog -s todo
 docket run status --active --json
 ```
 

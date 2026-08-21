@@ -27,8 +27,10 @@ checkout: `src/user/docket/config/contracts/retro-analyst.md`) — the node the
 corpus already defines for exactly this — plus §2's table verbatim. The variant
 `policy.toml` gives `retro-analyst` binds only when the retro pipeline
 dispatches that node through the wave; a skill-side spawn carries no variant, so
-name the intended model and effort in the spawn or the analysts silently run
-at the session default. They run the verbs and return evidence-labelled
+seat each analyst through the built-in `Workflow` tool's `agent()` call with
+the intended `model` and `effort` set explicitly in its opts — the plain
+`Agent` tool carries no effort parameter, and through it the analysts
+silently run at the session default. They run the verbs and return evidence-labelled
 findings; you compose §3's proposals and hold the approval conversation. The
 verbs, for their briefs:
 

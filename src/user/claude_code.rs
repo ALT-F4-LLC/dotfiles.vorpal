@@ -190,6 +190,7 @@ impl ClaudeCode {
             // are deliberately empty; a session trailer would put harness
             // vocabulary back into commit messages by the side door.
             .with_attribution_session_url(false)
+            .with_auto_memory_enabled(false)
             .with_auto_updates_channel("latest")
             .with_away_summary_enabled(false)
             .with_cleanup_period_days(7)

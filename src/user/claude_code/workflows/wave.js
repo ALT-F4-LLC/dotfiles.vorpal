@@ -1060,6 +1060,17 @@ YOUR LENS:      ${text}
 THE GATE:       step ${row.step} (${row.instance}, issue ${row.issue}, run ${row.run})
 THE PROPOSAL:   ${voteId}${respawnNote}
 
+FIRST, before anything else: \`printenv TMPDIR\` — your literal scratch root.
+Call it <TMP>; substitute its literal value wherever <TMP> appears in this
+brief. (Use \`printenv\`, not \`echo\`.)
+
+PIN IT ONCE AND REUSE THE LITERAL. \`$TMPDIR\` is not guaranteed to resolve to
+the same root in every call, so a path written as the variable can name one
+directory when you create it and a different one when you read it back — files
+persist perfectly well under whichever root actually received them. The literal
+is what makes "I wrote it, therefore I can read it" true, and the summary file
+your cast reads back below depends on exactly that.
+
 Run \`docket\` BARE from your working directory — the store resolves from
 anywhere inside the repository; nothing to probe for, nothing to prepend.
 

@@ -1,6 +1,6 @@
 # Obsidian vault migration for agent-generated documentation
 
-Status: Draft, revision 4 — 2026-08-21
+Status: Draft, revision 5 — 2026-08-21
 
 | Field | Value |
 |---|---|
@@ -24,6 +24,18 @@ regression control now exercises the tool layer the two new `permissions.deny`
 rules actually land in, instead of only the sandbox layer beside it (§11 P4,
 AC 2b.6). §16 maps every cluster from all three reviews to the section that
 answers it.
+
+Revision 5 answers the three findings the acceptance vote conditioned its
+approval on (§16.4). All three were in the parts of the document that execute:
+BLOCKING AC 2c.4, probe P12 and the Phase 2c goal still carried a literal note
+count that the phase's own 2c.5 invalidates while the phase is running, and now
+require the two counts to equal each other instead (C44); `--migrate` created a
+vault folder before any state was determined, and the state table was exhaustive
+without being exclusive, so the `mkdir` moved inside the arms that write and the
+table gained a precedence order plus the criteria that exercise it (C45); and
+the single `mismatched` message asserted one cause for a state reached four
+ways, so it is now one variant per cause, with the fail-closed default given
+guidance that removes nothing (C46).
 
 ## 1. Problem, goal, constraints, non-goals
 
@@ -1053,9 +1065,12 @@ and change nothing:
   are readable — whether `diff -r` between the memory bytes and the vault target
   is empty.
 
-Those four facts name exactly one state from the table below. Every mutation the
-script performs is selected by that state, so there is no path through
-`--migrate` that runs a command without having first named the state it is in.
+Those four facts name exactly one state from the table below — exactly one,
+because the table carries a precedence order as well as rows, and the order is
+what makes it exclusive rather than merely exhaustive. Every mutation the script
+performs is selected by that state and happens inside that state's arm, so there
+is no path through `--migrate` that touches the filesystem without having first
+named the state it is in.
 
 **`--migrate`** then performs, per project directory, the mutations its state
 selects:
@@ -1064,8 +1079,8 @@ selects:
    or `..`, or begins with `.` or `-`. Refuse the whole run if two project
    directories derive the same name (§6.1's injectivity check, AC 2c.2). *The
    empty case is not hypothetical arithmetic: a project directory named exactly
-   the 64-character constant prefix derives the empty string, `mkdir -p
-   ~/Obsidian/Development/Memory/` then no-ops on the `Memory/` root, and if
+   the 64-character constant prefix derives the empty string, so the target is
+   the `Memory/` root itself — step 4's `mkdir -p` no-ops on it — and if
    that project is processed while `Memory/` is still empty the destination
    inspection sees an empty target, copies that project's notes into the root,
    and links its memory to the whole corpus — every later project's folder
@@ -1075,15 +1090,25 @@ selects:
    today; whether the harness can ever emit such a slug was not measured, and
    "not reachable from today's corpus" is exactly the premise that expired once
    already in this review (§2.3). One `case` arm costs less than the answer.*
-2. `mkdir -p ~/Obsidian/Development/Memory/<vault-name>`.
+2. **Nothing is created here.** Step 1 derives and validates a name; it does not
+   touch the filesystem, and neither does anything else before the state arms.
+   *Revision 4 had `mkdir -p ~/Obsidian/Development/Memory/<vault-name>` at this
+   position, unconditional and ahead of every arm, which meant a run that ended
+   at the `mismatched` arm (step 11) had already created a vault folder while
+   printing "Nothing was changed" — the one sentence in the whole output the
+   operator has to be able to trust. The `mkdir -p` now lives inside the two
+   arms that write into the target: step 4, immediately before the copy, and
+   step 8, immediately before the link. Steps 3, 10 and 11 create nothing, and
+   step 9 creates only through the step 4 it resumes into.*
 3. **`linked`** → report and continue. Idempotence, so both modes are safe to
    run at any time.
 4. **`unlinked`, with `…/memory` a real directory** → look at the destination
    before writing to it, because a re-run after a partly-reverted migration
    arrives here with the target already populated:
-   - target empty → `cp -a <memory-dir>/. <target>/`, then `diff -r` the two,
-     and stop the whole run if it is non-empty. The only thing mutated on that
-     path is a folder that was empty a moment earlier.
+   - target absent or empty → `mkdir -p <target>` if it is absent, then `cp -a
+     <memory-dir>/. <target>/`, then `diff -r` the two, and stop the whole run
+     if it is non-empty. The only thing mutated on that path is a folder that
+     did not exist, or was empty, a moment earlier.
    - target non-empty and `diff -r` against it already empty → the copy
      happened on an earlier run; continue to 5 without copying.
    - target non-empty and different → this is `mismatched`; see the row in the
@@ -1094,9 +1119,12 @@ selects:
    `mv <project-dir>/.memory-link-pending <memory-dir>`.
 7. Re-verify through the link: `readlink` resolves, and `diff -r
    <project-dir>/.memory-backup-<date> <memory-dir>` is empty.
-8. **`unlinked`, with `…/memory` absent** → create the link directly (steps 5
-   and 6's second move, with nothing to back up). That is the fourteen-project
-   case from §2.3, and every checkout created later.
+8. **`unlinked`, with `…/memory` absent** → `mkdir -p <target>` if it is absent
+   — the first mutation this arm makes, and it makes it only here — then create
+   the link directly (steps 5 and 6's second move, with nothing to back up).
+   That is the fourteen-project case from §2.3, and every checkout created
+   later. Without the `mkdir` in this arm the `ln -s` would leave a dangling
+   link, which is why the create belongs here and not one step earlier.
 9. **`interrupted-copy`** → the marker exists and `…/memory` is still a real
    directory, so the interruption landed between 5 and 6. Remove the stale
    marker and resume at step 4; the destination inspection there is what makes
@@ -1139,6 +1167,33 @@ unforeseen state stops the run instead of selecting a mutation by accident:
 | `interrupted-relink` | `.memory-link-pending` exists, `…/memory` is absent, and a backup is present | `--migrate` performs step 6's second move |
 | `mismatched` | `…/memory` links somewhere unexpected, or is a real directory beside an existing backup, or the vault target is non-empty and differs from it — and every state this table does not name | operator decides; the script will not choose |
 
+**Precedence, because the rows overlap.** Exhaustive is not exclusive, and
+revision 4's table was only exhaustive. One real combination matches two rows: a
+`cp -a` interrupted *inside step 4* leaves `…/memory` a real directory, **no**
+pending marker (step 5 has not run yet), no backup, and a vault target holding a
+partial copy that differs from the memory bytes. That is the `unlinked` row
+verbatim — real directory, no backup, no marker — and the `mismatched` row
+verbatim — target non-empty and differs. Read as `unlinked`, `--migrate`
+proceeds into step 4 against a target it did not write and cannot account for.
+So the rows are evaluated in a stated order and the **first match wins**:
+
+1. `linked`
+2. `mismatched`
+3. `interrupted-relink`
+4. `interrupted-copy`
+5. `unlinked`
+6. anything the table does not name → `mismatched` (the fail-closed default)
+
+`mismatched` sits above both interrupted rows and above `unlinked` for one
+reason: it is the only row whose fix is "stop and ask", and a state that could
+be either a conflict or a half-finished copy is exactly the state the script
+must not resolve on its own. The interrupted-cp-a case therefore reports
+`mismatched`, not `unlinked`, and mutates nothing — which is also what step 4's
+own destination inspection concludes if it is ever reached by a race, so the two
+statements of the rule agree. AC 2a.8e exercises this combination specifically,
+because it is the one fixture that distinguishes an ordered table from an
+unordered one.
+
 It is the operator's answer to "is memory still vault-canonical", and it is what
 makes the state re-derivable after a machine rebuild — the answer to "run it
 again", not "read a document that may not exist". §12 gives it a cadence and the
@@ -1165,14 +1220,70 @@ the one place the operator has to act.
   Run --migrate to fix the unlinked one. mismatched needs you: see above.
   ```
 
-- The `mismatched` message names both paths, because "compare the two by hand
-  and decide" is unusable without them:
+- The `mismatched` message is **one variant per cause in the table**, not one
+  message for all four. Every variant names both paths, because "compare the two
+  by hand and decide" is unusable without them; but the diagnosis has to be the
+  one the script actually made. Revision 4 printed a single string asserting
+  "both hold notes and differ" for a state the table reaches four ways, and
+  then told the operator to `diff -r` and keep a side — destructive guidance
+  resting on a diagnosis that is wrong three times out of four, and wrong in the
+  fail-closed-default case in the worst direction: it invites a deletion on
+  evidence of nothing more than an unrecognised combination.
+
+  **(a) the vault target is non-empty and differs from the memory bytes** — the
+  only variant that has actually observed a conflict, and the only one that may
+  suggest resolving it:
 
   ```
-  mismatched: ~/.claude/projects/<slug>/memory and
+  mismatched (target differs): ~/.claude/projects/<slug>/memory and
   ~/Obsidian/Development/Memory/<vault-name> both hold notes and differ.
-  Nothing was changed. Compare them (diff -r), keep the side you meant, then
-  re-run --migrate.
+  Nothing was changed. Note that a --migrate interrupted during its copy leaves
+  exactly this state, so the vault side may be a partial copy rather than a
+  rival version: check whether it is a subset of the project side before you
+  treat either as authoritative. Then compare them (diff -r), keep the side you
+  meant, and re-run --migrate.
+  ```
+
+  **(b) `…/memory` is a symlink, but not to the expected vault folder**:
+
+  ```
+  mismatched (unexpected link): ~/.claude/projects/<slug>/memory is a symlink to
+  <actual target>, not to ~/Obsidian/Development/Memory/<vault-name>.
+  Nothing was changed. Nothing was compared either — this project's memory is
+  not where this script puts it, and it does not assume the other end is stale.
+  Decide which target is correct; --migrate will not repoint a link it did not
+  create.
+  ```
+
+  **(c) `…/memory` is a real directory beside an existing backup** — a
+  half-reverted migration, not a content conflict:
+
+  ```
+  mismatched (directory beside backup): ~/.claude/projects/<slug>/memory is a
+  real directory and <project-dir>/.memory-backup-<date> exists beside it.
+  Nothing was changed. This is what a reverted or partly reverted migration
+  looks like; the two are probably the same notes twice, not two versions.
+  Confirm with diff -r, retire the backup you no longer want (§9), and re-run
+  --migrate. Do not delete either side until the diff says which is which.
+  ```
+
+  **(d) the fail-closed default — a combination the table does not name.** No
+  conflict has been detected here, so the message may not imply one, and it
+  gives no instruction that removes anything:
+
+  ```
+  mismatched (unrecognised state): ~/.claude/projects/<slug>/memory and
+  ~/Obsidian/Development/Memory/<vault-name> are in a combination this script
+  does not recognise, so it stopped rather than guess.
+    memory:  <symlink to X | real directory | absent>
+    marker:  <.memory-link-pending present | absent>
+    backup:  <.memory-backup-<date> present | absent>
+    target:  <absent | empty | non-empty, diff empty | non-empty, differs>
+  Nothing was changed, and nothing here says the two sides disagree — this is a
+  safe default, not a detected conflict. Do not delete, move, or overwrite
+  either side on the strength of this message. Report the four facts above; if
+  they describe a legitimate state, the table is missing a row and the fix is in
+  the script, not in your filesystem.
   ```
 
 - Status goes to stderr, data to stdout, so the per-project lines pipe cleanly.
@@ -1570,7 +1681,7 @@ proves nothing about a sandbox control.
 | **P9** | `diff -r <project-dir>/.memory-backup-<date> <memory-dir>` per project after relink | empty | the migration moved bytes, not content |
 | **P10** | path-matching matrix, each with a positive control in the same pass: (a) sandboxed write to `~/Obsidian/Development/Memory/<project>/sub/deep.md`; (b) sandboxed write to `~/Obsidian/Development-scratch/probe.md`; (c) the same paths with a trailing slash | (a) denied — the deny is recursive; (b) denied — matching is on component boundaries; (c) same verdicts as without | settles the two semantics §6.3 depends on. **Blocking in 2b**: (a) failing means the `Memory/` deny is not a control at all |
 | **P11** | on a **copy** of the vault under `$TMPDIR`: a no-op plugin plus a `community-plugins.json` enabling it, then open that copy in Obsidian | records whether a vault-local plugin loads without leaving Restricted Mode | sizes T11. The `.obsidian` deny ships either way; this decides whether the residual is "code execution" or "config tampering" |
-| **P12** | after migration, count `*/memory/*.md` under `~/.claude/projects` twice: once with plain `find`, once with `find -L` | `0` and `98` | the `-L` caveat in §7 is real, and every later count uses the right form |
+| **P12** | after migration, count `*/memory/*.md` under `~/.claude/projects` twice — once with plain `find`, once with `find -L` — and in the same pass count `*.md` under `~/Obsidian/Development/Memory` with `find -L` | plain `find` returns `0`; the `find -L` project-side count equals the vault-side count, whatever that number is when the probe runs. No literal is written into this probe: the rollout is one project at a time (§9) and 2c.5 writes a new note per project, so the corpus grows while the phase is still running | the `-L` caveat in §7 is real, and every later count uses the right form |
 | **P13** | negative: the in-process **Write** tool to `~/Obsidian/Development/.obsidian/probe.json`, and the **Edit** tool against an existing file there. positive control, same pass: the Write tool to `~/Obsidian/Development/Reports/probe.md` | both refused by the permission layer; the control succeeds | the tool-layer half of the T11 control exists and `Write(<glob>)` is a rule form the matcher accepts. A refusal of the control instead means the probe, not the rule, is broken. **Blocking in 2b**: without it T11 is closed on one of two routes |
 | **P14** | on a **copy** of the vault under `$TMPDIR` with one `Designs/` note carrying a `Project:` link to a folder with no `MEMORY.md`: click the unresolved link in Obsidian | records whether Obsidian offers to create the note, and where | sizes the §6.1 dangling-link hazard. Non-blocking: the operator is not an adversary, and the created file would be empty |
 
@@ -1703,8 +1814,10 @@ them is still visible to anyone running the report.
 **Adoption metric**, measured monthly, per folder rather than combined, so an
 empty folder cannot hide behind a healthy one: the count of `*.md` in
 `Designs/`, in `Reports/`, and under `Memory/` (with `find -L`, per §7). The
-starting point immediately after migration is 98 under `Memory/`, 1 at the root
-(`Home.md`), 0 in each of the other two. The threshold that counts as working is
+starting point immediately after migration is the whole migrated corpus under
+`Memory/` — the number 2c.4 measured on the day the phase closed, read off the
+machine rather than written down here in advance — 1 at the root (`Home.md`), 0
+in each of the other two. The threshold that counts as working is
 a non-zero and rising count in `Designs/` and `Reports/` within one month; a
 folder that stays at zero for a month means the §6.4 rule is not being read, and
 the answer is a stronger mechanism, not a stronger sentence. What the counts do
@@ -1805,10 +1918,13 @@ working-agreement edit, any vault content.
 | 2a.4 | `grep -rn 'Obsidian/Personal' src/` returns nothing | BLOCKING |
 | 2a.5 | `sandbox-friction-report` skips filing — and still prints — for all four of these subject strings, which is what the two `case` patterns of §12 must cover: `/~/Obsidian/Development/Memory/x`, `/Users/erikreinert/Obsidian/Development/Memory/x`, `/~/.claude/projects/x/memory`, `/Users/erikreinert/.claude/projects/x/memory`. Stated as strings, not as a line number, because the criterion must not break when the file moves by a line | BLOCKING |
 | 2a.6 | `vault-memory-link` exists, is executable, implements `--check` and `--migrate`, and reports the five states of §6.6. On the un-migrated machine `--check` prints one line for **every** directory `ls ~/.claude/projects` returns — no count is written into the script or into this criterion — reports each `unlinked`, prints the summary line, exits 1, and changes nothing | BLOCKING |
-| 2a.8 | `vault-memory-link --migrate` on a fixture whose destination folder is non-empty and different reports `mismatched`, prints the message naming both paths, exits non-zero, and leaves both sides byte-identical to what they were | BLOCKING |
+| 2a.8 | `vault-memory-link --migrate` on a fixture whose destination folder is non-empty and different reports `mismatched`, prints the **(a) `target differs`** variant of §6.6's message naming both paths, exits non-zero, and leaves both sides byte-identical to what they were | BLOCKING |
+| 2a.8a2 | on a fixture whose `<vault-name>` folder does **not** exist and whose state is `mismatched` by any cause, `--migrate` creates nothing under `~/Obsidian/Development/Memory/` — `test -e` on the derived folder fails after the run, and the run still prints "Nothing was changed". No mutation may precede the state determination (§6.6 step 2), and this is the criterion that catches a `mkdir` that drifts back above the arms | BLOCKING |
 | 2a.8b | `--migrate` on an `interrupted-copy` fixture — `.memory-link-pending` present, `…/memory` still a real directory — completes the migration and ends `linked`, with the backup holding the original bytes. Exercised separately from 2a.8c because the two states have different completions | BLOCKING |
 | 2a.8c | `--migrate` on an `interrupted-relink` fixture — `.memory-link-pending` present, `…/memory` absent, backup present — performs the second move alone and ends `linked`, with `diff -r` between backup and link empty | BLOCKING |
-| 2a.8d | `--check` reports the correct state for one fixture of each of the five states, including a fabricated combination the table does not name, which must report `mismatched`. Run before any real directory is touched | BLOCKING |
+| 2a.8d | `--check` reports the correct state for one fixture of each of the five states, including a fabricated combination the table does not name, which must report `mismatched`. Every fixture in this set matches exactly one row; the one fixture that matches two is 2a.8e's, and this criterion does not cover it. Run before any real directory is touched | BLOCKING |
+| 2a.8e | precedence, on the one combination that matches two rows: a fixture built by interrupting `cp -a` **inside step 4** — `…/memory` a real directory, **no** `.memory-link-pending`, no backup, and the vault target holding a partial copy that differs — which matches the `unlinked` row and the `mismatched` row verbatim. `--check` must report `mismatched`, not `unlinked`, per §6.6's precedence order; `--migrate` on the same fixture must change nothing on either side, print the (a) `target differs` variant, and exit non-zero. 2a.8d cannot catch this: every fixture in that set matches one row, so an implementation with no precedence at all passes it | BLOCKING |
+| 2a.8f | the `mismatched` output is one variant per cause, not one string for all of them: four fixtures — target differs, link to an unexpected target, real directory beside a backup, and an unnamed combination — each produce their own §6.6 message, each naming the cause actually detected. The fail-closed-default fixture's message prints the four observed facts, contains no `diff -r` instruction and no instruction to remove or overwrite either side, and does not claim the two sides differ | BLOCKING |
 | 2a.9 | the derivation refuses the empty string, `/`, `..`, a leading `.`, and a leading `-`, and the whole run refuses a duplicate derivation (probe P5, run against the real listing) | BLOCKING |
 | 2a.7 | every change is committed to source and none is applied by hand under `~/.claude` | BLOCKING |
 
@@ -1833,8 +1949,9 @@ changes. *Depends on*: 2a, and the operator running `just activate`.
 
 ### Phase 2c — memory migration
 
-*Goal*: 98 notes live in the vault, reached by one symlink per project
-directory. *Scope*: filesystem
+*Goal*: every memory note lives in the vault, reached by one symlink per project
+directory — the post-migration project-side count equals the post-migration
+vault-side count, whatever that count is when it is measured. *Scope*: filesystem
 only, no repository file changes. *Depends on*: 2b, and the §14 Q1 answer.
 
 | # | Acceptance criterion | Blocking |
@@ -1842,7 +1959,7 @@ only, no repository file changes. *Depends on*: 2b, and the §14 Q1 answer.
 | 2c.1 | probe P2 passes on a scratch copy **before** any real memory directory is touched | BLOCKING |
 | 2c.2 | probe P5 passes: the derivation rejects the empty string, `..`, `/`, a leading `.`, and a leading `-`, and over the real `~/.claude/projects` listing produces as many distinct names as there are directories (`… \| sort \| uniq -d` returns nothing). No count is written into this criterion — the listing at migration time is the input set | BLOCKING |
 | 2c.3 | for every project directory, `readlink <memory-dir>` resolves into `~/Obsidian/Development/Memory/`, and for every migrated one `diff -r <project-dir>/.memory-backup-<date> <memory-dir>` is empty | BLOCKING |
-| 2c.4 | `find -L ~/.claude/projects -path '*/memory/*.md' -type f` and `find ~/Obsidian/Development/Memory -name '*.md'` both count 98 — the same files, seen through both paths. The `-L` is not optional: without it the first command returns 0 on exactly the state this criterion verifies | BLOCKING |
+| 2c.4 | `find -L ~/.claude/projects -path '*/memory/*.md' -type f \| wc -l` and `find -L ~/Obsidian/Development/Memory -name '*.md' \| wc -l`, run in the same pass at verification time, return **the same number as each other** — the same files, seen through both paths. The equality is the criterion; no literal count is written into it, and none may be substituted. A fixed number cannot work here even as a pre-migration measurement: §9 rolls out one project directory at a time and 2c.5 requires a live session in each migrated project to write a *new* memory note, so the corpus is larger at the end of the phase than at its start, and both sides must still agree. The `-L` is not optional on either side: without it the first command returns 0 on exactly the state this criterion verifies | BLOCKING |
 | 2c.5 | a live session in a migrated project loads `MEMORY.md` and writes a new memory note that appears in the vault | BLOCKING |
 | 2c.6 | `find ~/.claude/projects -maxdepth 2 -name memory -type d` returns nothing — every memory path is a link, so no project can accumulate memory outside the vault | BLOCKING |
 | 2c.7 | each project's `.memory-backup-<date>` exists until that project passes 2c.5, and is removed by the operator afterwards. A backup beside a marker or an absent `…/memory` is an `interrupted-*` state, not a pass: `vault-memory-link --check` must report every project `linked` and exit 0 at the end of the phase, which is what distinguishes a kept backup from an orphaned one | BLOCKING |
@@ -1959,7 +2076,7 @@ are noted as such.
 | C1 | Folder-name derivation is not a computable function of the slug; the two worked examples applied different rules | §6.1 — prefix-strip, no character-class inversion; injectivity checked at migration time (2c.2); tree, ALT-1, and AC all name the same rule |
 | C2 | New project directories reproduce the ALT-2 failure one level up; the link count was stated as both 12 and 4 | §6.2 — one link per project directory, the set read from the listing rather than fixed (revision 4, C38); drift check added as 2c.6 |
 | C3 | The migration installs symlinks under `~/.claude` that no source revision describes and activation never repairs | §6.6 — committed `vault-memory-link` script with `--check` and `--migrate`, installed by activation; the constraint tension is named in §1 |
-| C4 | BLOCKING gate 2c.4 used `find` without `-L` and would return 0, not 98 | §7 and 2c.4 — `-L` required, verified on a fixture with a positive control, and the reason stated in the criterion itself |
+| C4 | BLOCKING gate 2c.4 used `find` without `-L` and would return 0 rather than the real note count | §7 and 2c.4 — `-L` required, verified on a fixture with a positive control, and the reason stated in the criterion itself |
 | C5 | Vault notes carry no provenance and no uniqueness component | §6.1 — `<origin>` in the filename, five required frontmatter fields; §7 states a vault note is not a recorded artifact |
 | C6 | Sync modelled only as egress; its ingress direction writes files no control binds | §3.1 A3, T9, §8.4, §14 Q1 — both directions in scope, and Q1 asks about writers, not only about leaving |
 | C7 | The Sync question gated 2c only, while 2d writes new documents into the same vault | §14 Q1 blocks 2c and 2d; §13 splits the activation so 2a can land with Q1 open |
@@ -2024,3 +2141,14 @@ created or exposed.
 | C41 | `vault-memory-link` would be the first script installed on every seat path that moves user data, and the design named its mitigations without naming the precedent | §6.6 — the six existing scripts are enumerated, the one that mutates anything is named, and the three properties are stated as the standard for the class; the same sentence is in the script's header so it outlives this document |
 | C42 | The step 1 refusal list still admitted the empty derived name, whose migration target is the `Memory/` root itself | §6.6 step 1 — the empty string is refused, with the consequence spelled out (one project's memory linked to the whole corpus) and the reachability honestly labelled unmeasured rather than argued away |
 | C43 | The design wrote `Home.md` and the script header in full but proposed no operator-facing output for `vault-memory-link` | §6.6 — per-project line, summary line with derived counts, the `mismatched` message naming both paths, stdout/stderr split, and exit codes for both modes |
+
+### 16.4 The acceptance vote's conditions — answered by revision 5
+
+Three findings the approving seats made conditions of acceptance, all of them in
+the executable half of the document rather than its prose.
+
+| # | Finding | Disposition |
+|---|---|---|
+| C44 | A literal note count survived in BLOCKING AC 2c.4, probe P12 and the Phase 2c goal, contradicting §10 and C38's "no criterion names a count" — and no literal can work there, because 2c.5 requires a new memory note per project while §9 rolls the phase out one project at a time, so even a correct pre-migration number is stale before the phase closes | §13 AC 2c.4, §11 P12 and the Phase 2c goal — all three now require the post-migration project-side count to equal the post-migration vault-side count, measured in the same pass at verification time, with `-L` on both sides and the reason the equality (not a number) is the criterion stated in the criterion itself. §12's adoption baseline reads the same number off the machine instead of naming it |
+| C45 | §6.6 step 0 claimed every mutation was selected by the state, while step 2's `mkdir -p` ran unconditionally ahead of every arm — so a run ending at the `mismatched` arm had created a vault folder and then printed "Nothing was changed". Separately, the state table was exhaustive but not exclusive: a `cp -a` interrupted inside step 4 matches the `unlinked` row and the `mismatched` row verbatim, with no stated winner, and 2a.8d could not catch it because every fixture in that set matches one row | §6.6 — step 2 creates nothing and says so; the `mkdir -p` moved into step 4 (before the copy) and step 8 (before the link), the only two arms that write into the target. The table gains a first-match-wins precedence order with `mismatched` above both interrupted rows and above `unlinked`, so the interrupted-cp-a case fails closed. AC 2a.8e exercises that fixture in both modes, AC 2a.8a2 fails any run that creates a vault folder before determining the state, and 2a.8d now says which fixtures it does not cover |
+| C46 | The single `mismatched` message asserted one cause — "both hold notes and differ" — for a state the table reaches four ways including the new fail-closed default, then told the operator to `diff -r` and keep a side: destructive guidance resting on a diagnosis that is wrong three times in four, and worst in the default case, where nothing had been detected at all | §6.6 — four message variants, one per cause in the table, each naming what was actually detected. (a) target differs also warns that an interrupted copy produces this state, so the vault side may be a subset rather than a rival; (b) unexpected link states that nothing was compared; (c) directory-beside-backup names a half-reverted migration rather than a conflict; (d) the fail-closed default prints the four observed facts, says plainly that no conflict was detected, instructs no deletion, comparison, or overwrite, and points the fix at the script's missing row. AC 2a.8f gates all four, and 2a.8 names the variant it expects |

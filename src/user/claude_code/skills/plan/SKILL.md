@@ -1,6 +1,6 @@
 ---
 name: plan
-description: Turn a work request into an activatable Docket run — converse until the request is unambiguous, then record the request, a plan artifact, and issues with kinds, labels, scopes, depends_on relations, and verbatim acceptance criteria. Records and stops; never runs the work. Use at the start of a piece of work, or to extend a run's later phase after execution has learned something.
+description: Turn a work request into an activatable Docket run — converse until the request is unambiguous, then record the request, a plan artifact, and issues with kinds, labels, scopes, depends_on relations, and verbatim acceptance criteria. Invoked bare (`/plan` with no request and no issue id) it instead surveys the current Docket project's open backlog and proposes the most optimal next batch — ready, highest-priority, parallel-safe, run-ready, within a stated budget — then on confirmation records that batch as a run binding the backlog issues directly. Records and stops; never runs the work. Use at the start of a piece of work, to pick the next batch off the backlog, or to extend a run's later phase after execution has learned something.
 ---
 
 # plan
@@ -30,6 +30,12 @@ Three rules you must not fight:
   FACT to verify, not a source — transcripts capture transient states (a
   staged-deletion snapshot put an impossible expected string into an AC; a
   judge caught it one step before the verify gate would have hard-failed it).
+
+**Two intakes, picked by the argument.** `/plan <request>` and `/plan DKT-N`
+enter at §1 — the conversation decides what the work is. Bare `/plan` — no
+request, no issue id (the literal word `backlog` counts as bare) — enters at
+§1b: the backlog already says what the work is, and the conversation decides
+which of it goes next. Both intakes record through §3 and stop at §5.
 
 Every `RUN-N` and `DKT-N` cited below is a lesson from the PRE-RESET store
 epoch. The episodes are real; the ids are not — the store has since been reset,
@@ -88,6 +94,136 @@ later, and a wrong guess is silent — so if the answer is not obvious from the
 request, ask it outright. Security is one instance of a general fact: labels
 are the ONLY discriminator that routes an issue to its workflow, and §3 makes
 confirming each issue's intended binding a recording obligation.
+
+## 1b. Bare `/plan`: propose the next batch from the backlog
+
+The request here is the backlog itself, so §1's questions are mostly already
+answered — by the issues' own bodies. What you owe the operator instead is a
+ranked proposal and one confirmation round. Everything in the three rules at
+the top still holds: you record, you never activate, and the ACs already in
+the bodies are the ACs — you do not rewrite them.
+
+**Survey** (commands you run; the operator types none of them):
+
+```bash
+docket next --json=v2 --limit 1000                    # ready: no open blockers, in backlog/todo
+docket issue list --json=v2 --limit 1000 -s backlog -s todo   # every field the ranking reads
+docket run status --active --json                     # runs that already own issues
+docket issue list --run <ref> --json=v2 --limit 1000  # one per run above: its roster
+```
+
+Project resolves from cwd's git identity, same as every other docket verb.
+A `VALIDATION_ERROR` naming no project, or no store reachable, means this
+repo isn't bound — say so and stop. `--limit 1000` is not optional: `issue
+list` caps at 50 and `next` at 10 by default, and neither output flags the
+truncation — a 108-issue backlog was surveyed as 50 and reported complete
+(groom/tend fix, 2026-08-21). `docket next` is the readiness verb: it
+returns only issues with no incomplete `depends_on` blocker, so a backlog/todo
+issue it omits is blocked and stays out of the batch. Join its ids against the
+`issue list` rows, which carry `priority`, `labels`, `scope`, `assignee`, and
+`description` (verified 2026-08-21 on `--json=v2`; `next` is for the ids).
+
+**Exclude what is not free** — this queue isn't plan's alone, and the
+definitions are the ones `groom` and `tend` already use:
+
+- **Run-included.** An open issue on any active run's roster (`docket run
+  status --active --json`, then `docket issue list --run <ref> --limit
+  1000` per run —
+  planning, active, or paused, anything not done or abandoned) belongs to
+  that run's plan/conduct session, even while the run is parked.
+- **Claimed.** Any issue with a non-empty `assignee` — someone or something
+  else already has it.
+
+Both are listed in the proposal under "not free", never silently dropped.
+
+**Rank what remains, in this order** — the operator's own definition of the
+most optimal batch, settled 2026-08-21 ("ready, high-priority, parallel-safe"):
+
+1. **Ready** — in `docket next`'s set. Blocked issues are deferred with the
+   blocker named; they are next batch's candidates, not this one's.
+2. **Highest priority first** — `critical` > `high` > `medium` > `low` >
+   `none`; ties break on id ascending (older first).
+3. **Parallel-safe** — walk down the ranked list and admit an issue only when
+   its scope globs are prefix-disjoint from every glob already in the batch,
+   by the matcher's own rules in §3: the literal prefix before the first
+   `*?[{`, containment either way is a collision, no trim back to a
+   separator, and a leading wildcard collides with everything. A colliding
+   issue is deferred with the glob pair named, whatever its priority: a
+   batch that serializes against itself is not the optimal one, it is the
+   slow one. Two ready issues never carry an edge between each other
+   (readiness means no open blocker), so the batch has no internal
+   `depends_on` by construction — an issue the operator pulls in from the
+   deferred list brings its own edge with it.
+4. **Run-ready** — every §3 recording obligation the bound workflow will
+   check at activation, checked here first: the body carries acceptance
+   criteria (at least one checkable item, not a restated title); the labels
+   produce the intended workflow under `docket workflow show <intended>`
+   (§3's labels-confirm-binding rule — a domain-flavored issue carrying none
+   of its variant's labels binds the baseline silently); `--scope` is set
+   when the bound workflow holds the tree, and every glob matches at least
+   one file in this checkout. An issue that fails is not run-ready: list it
+   under "not ready" with the missing thing named. The operator may have you
+   fill it in this session — `docket issue edit` for labels, `--scope`, or a
+   body with ACs in the operator's words, fine until the activate that binds
+   it — or send it to `/groom`; you never fill ACs from your own guess.
+5. **Fits the stated budget** — size each admitted issue by §3's arithmetic
+   (the bound workflow's expected-cost floor with when-gated steps included,
+   plus rework headroom: one fix-loop round per two issues on
+   standard-change, three rounds per issue on security-load-bearing) and
+   take issues in rank order until the next one would breach the cap. No
+   cap stated yet means the confirmation round asks for one — it is an
+   operator-only question, so it goes in that same round, not a second.
+
+**Read before you propose.** §2 applies unchanged, narrowed to the candidate
+batch: spawn ONE `executor-read` agent over the candidates' scope globs — do
+the globs match files, has any candidate's fix already landed (`git log`
+over its globs since the issue's `created_at`), and does any pair collide
+under the matcher's rules — with the verbatim send-your-report sentence §2
+quotes, and wait for it the way §2 says: end the turn, one long-fallback
+wakeup, no probing. An issue whose work is already on HEAD is not a batch
+member; it is a comment on that issue and a line in the proposal.
+
+**Propose, in ONE question round.** Present the proposal as prose above the
+question, then ask through the built-in question tool — never as a prose
+question:
+
+- the batch, ranked: id, title, priority, labels → the workflow they bind,
+  scope globs, expected cost, and the one-line reason it ranks where it does;
+  the running total against the cap;
+- deferred, with the reason each time: blocked by DKT-N / collides with DKT-N
+  on `<prefix>` / not free (run RUN-N, or assignee) / not ready (what is
+  missing) / already landed (commit);
+- one single-select question, recommended option first: record this batch as
+  a run (Recommended); record a subset or a different set — the operator
+  names it as typed text; propose again under a different cap; propose only —
+  stop here and record nothing. Plus the budget question if no cap was stated.
+
+An empty ready set is a finding, not a failure: say what the survey found —
+nothing open, everything blocked, everything claimed or run-included, nothing
+run-ready — and stop; `/groom` is the skill for a backlog that is full but
+not ready, and you name it rather than grooming here.
+
+**On "record", go to §3 with the batch as the roster.** The differences from
+request intake are exactly these, and nothing else in §3 relaxes:
+
+- No `issue create`: the issues exist. Run-readiness fills the operator
+  approved in the round land through `docket issue edit` BEFORE `run start`,
+  and a corrected glob list passes every glob you mean to keep.
+- `run start --issue` names the backlog issues themselves — direct binding
+  is the operator's settled choice for batch mode (2026-08-21), and it is
+  what makes the §3 `/plan DKT-N` obligations NOT apply here: a batch member
+  is the unit of work, not a question the run answers.
+- `--request-file` holds the invocation and the operator's confirmation
+  verbatim — the option they picked and any text they typed — because that
+  is what was asked; the ranked proposal is not a substitute for it.
+- The plan artifact carries the ranking rationale, the deferred list with
+  its reasons, and the budget arithmetic, written for the person who reads
+  this run in three months and wonders why DKT-N waited.
+- `--budget` is the cap the round settled, sized by §3's arithmetic.
+
+Then §5: present the recorded run and stop. The same planner, invoked bare
+again after this run closes, finds the deferred list waiting as next batch's
+ready set — that is the shape, not a shortcoming.
 
 ## 2. Read before you decompose
 
@@ -393,9 +529,16 @@ everything.
 a false edge serializes work that could have run in parallel, and a missing one
 lets a step run before its input exists.
 
-**Planning FROM an existing backlog issue** (`/plan DKT-N`) — four obligations,
-each checked independently before `run start` (RUN-7's first body carried three
-and dropped the deliverable; a shadow caught it inside the planning window):
+**Planning FROM a single existing backlog issue** (`/plan DKT-N`) — four
+obligations, each checked independently before `run start` (RUN-7's first
+body carried three and dropped the deliverable; a shadow caught it inside the
+planning window). This is the single-issue intake only: DKT-N here is a
+finding or a problem statement the run DECOMPOSES into fresh issues. The
+bare-`/plan` batch (§1b) is the other case — its members have already passed
+the run-readiness check and ARE the units of work, so §1b binds them with
+`--issue` directly and none of the four obligations below apply to them. The
+two paths do not contradict each other; they answer different questions about
+what the issue is:
 
 - DKT-N itself stays OUT of the run — create fresh run issues; never bind it
   with `--issue`.

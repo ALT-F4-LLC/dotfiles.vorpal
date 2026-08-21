@@ -200,14 +200,23 @@ retyping it: `~/.claude/scripts/attach-probe $RUN` when `test -f` passes, else
 since the last `just activate` resolves ONLY at that source path, same install
 lag as every other definition here. It is read-only by construction (`git rev-parse`, `diff`,
 `cmp`, `shasum`, and the two write-nothing verbs `run status` and `run
-verify-pins`), and it runs every check of this section without
-short-circuiting: seat location, store access, BOTH `diff -r` staleness trees
-above (`$DOCKET_SRC/config` and `$DOCKET_SRC/bin` against `~/.docket/`),
-sha256 byte-diffs of the installed wave.js and tribunal.js against their
-source, `run verify-pins`, and the `.docket/config` symlink debris check
-below. Read its EXIT CODE, not its last line: 0 clean, 1 drift or failure, 2
-"a check was SKIPPED" — which is what you get by omitting `$RUN`, meaning the
-pins were never checked, and 2 is not a pass on an active run. The retyping is
+verify-pins`), and it runs SIX checks without short-circuiting: seat location,
+store access, BOTH `diff -r` staleness trees above (`$DOCKET_SRC/config` and
+`$DOCKET_SRC/bin` against `~/.docket/`), sha256 byte-diffs of the installed
+wave.js and tribunal.js against their source, `run verify-pins`, and the
+`.docket/config` symlink debris check below. **Those six are not this whole
+section.** The permission-surface check, the DENY-list read-class check, the
+completion-gate probe against a clean scratch worktree, and the Go module
+cache warmup are all pre-dispatch obligations of this section and NOT ONE of
+them is in the script: a clean probe says nothing whatever about them, and you
+still run each yourself before the first dispatch. RUN-38 read the probe's six
+as the pre-loop checklist, never ran the gate probe, and both its dispatched
+waves then parked write steps `waiting-human` on the same two environmental
+gate failures — a docker-socket build, pre-existing vuln-scan CVEs — that the
+gate probe exists to surface ONCE. Read its EXIT CODE, not its last line: 0
+clean, 1 drift or failure, 2 "a check was SKIPPED" — which is what you get by
+omitting `$RUN`, meaning the pins were never checked, and 2 is not a pass on
+an active run. The retyping is
 what the script exists to stop: RUN-33's hand-rolled version piped a diff
 through `head -30` and then reported HEAD's exit — always 0 — as the diff's
 verdict, and ran `test -f ~/.claude/workflows/wave.js` where the byte-diff was

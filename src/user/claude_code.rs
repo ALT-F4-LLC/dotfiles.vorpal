@@ -172,7 +172,7 @@ impl ClaudeCode {
             .with_attribution_session_url(false)
             .with_auto_updates_channel("latest")
             .with_away_summary_enabled(false)
-            .with_cleanup_period_days(14)
+            .with_cleanup_period_days(7)
             // LOWERED from xhigh 2026-08-19 on mined evidence, not taste. A
             // 7-day census of 163 main sessions (scripts/session-census) found
             // 45% of all output tokens were thinking, with a floor of ~39% at

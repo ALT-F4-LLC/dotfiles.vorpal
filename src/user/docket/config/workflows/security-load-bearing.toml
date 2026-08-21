@@ -23,7 +23,17 @@
 
 [pipeline]
 name    = "security-load-bearing"
-version = 11  # 11: reconcile's payload moves from findings@3 to findings@4
+version = 12  # 12: reconcile's payload moves from findings@4 to findings@5
+              #   — findings@4 declared `line` as a bare integer, so the
+              #   explicit `line: null` synthesize-findings emits for a
+              #   whole-commit/whole-file-scope finding failed validation
+              #   and forced an operator override-pass on a real run, which
+              #   silently skipped this file's security vote (DOT-483; the
+              #   skip itself was engine bug DKT-470, fixed engine-side);
+              #   byte-identity on the frozen findings@4 registration lands
+              #   the integer-or-null widening as a fresh schema instead of
+              #   an in-place edit.
+              # 11: reconcile's payload moves from findings@3 to findings@4
               #   — the engine enforces byte-identity on a frozen
               #   registration, and findings@3's `prior_disposition`
               #   description text was edited in place post-registration
@@ -172,19 +182,20 @@ params = { field = "severity", method = "max", hold_spread = 2, output = "findin
                                      #   the security vote firing and not.
                                      #   `hold_spread` is unchanged.
 inputs = ["synthesize.findings"]
-payload = "findings@4"               # findings@3's re-registration (DKT-317
-                                     #   follow-up): the engine enforces
-                                     #   byte-identity on a frozen
-                                     #   registration, so the
-                                     #   `prior_disposition` wording fix moved
-                                     #   here instead of editing findings@3 in
-                                     #   place. Same declared severity order
-                                     #   and optional `prior_disposition` as
-                                     #   findings@3 (retro 2026-08-19). The
-                                     #   `review` step above stays on
-                                     #   findings@1 — judges emit no
-                                     #   disposition, so nothing there needs
-                                     #   the successor.
+payload = "findings@5"               # findings@4's re-registration (DOT-483):
+                                     #   the engine enforces byte-identity on
+                                     #   a frozen registration, so widening
+                                     #   `line` to integer-or-null —
+                                     #   synthesize-findings emits an explicit
+                                     #   null for a whole-commit/whole-file-
+                                     #   scope finding — moved here instead of
+                                     #   editing findings@4 in place. Same
+                                     #   declared severity order and optional
+                                     #   `prior_disposition` as findings@4
+                                     #   (retro 2026-08-19). The `review` step
+                                     #   above stays on findings@1 — judges
+                                     #   emit no disposition, so nothing there
+                                     #   needs the successor.
 threshold = { "security-vote" = "any(severity >= high)" }   # AUTO FIX-LOOP RETIRED for the
                                      #   security track (2026-08-10): Medium
                                      #   findings are recorded, never looped;

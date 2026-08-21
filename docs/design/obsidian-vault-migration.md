@@ -1,6 +1,6 @@
 # Obsidian vault migration for agent-generated documentation
 
-Status: Draft, revision 3 — 2026-08-21
+Status: Draft, revision 4 — 2026-08-21
 
 | Field | Value |
 |---|---|
@@ -9,20 +9,21 @@ Status: Draft, revision 3 — 2026-08-21
 | Target vault | `~/Obsidian/Development` |
 | Phase | 1 of 2 — this document only; implementation is planned separately |
 | Source surfaces touched by Phase 2 | `src/user/claude_code.rs`, `src/user/claude_code_memory.md`, `src/user/claude_code/scripts/` |
-| Verified against | working tree at `c741c64`, this seat's live sandbox policy, installed `~/.claude/settings.json` (store artifact `90bebaf…`, installed 2026-08-21 07:54) |
+| Verified against | working tree at `d1b5ab8`, this seat's live sandbox policy, installed `~/.claude/settings.json` (store artifact `90bebaf…`, installed 2026-08-21 07:54), and a re-count of `~/.claude/projects` taken 2026-08-21 |
 
-Revision 3 answers the eleven reconciled clusters left by the second review.
-Four of them changed the design rather than its wording: the installed
-working-agreement rule now carries the whole note contract instead of the
-filename alone, so the BLOCKING criterion that tests for frontmatter tests
-behaviour something actually asks for (§6.4); the `.obsidian` deny gains a
-tool-layer half, because the sandbox half binds only shells and the in-process
-tools are the route agents author files with (§6.3); the friction-report skip
-matches the subject *fragment* in both of the two spellings the report itself
-produces, and covers the `~/.claude/projects` access path as well (§12); and
-`vault-memory-link` specifies the two re-entry states revision 2 reached only
-through a `cp -a` that could mutate the vault before failing (§6.6). §16 maps
-every cluster from both reviews to the section that answers it.
+Revision 4 answers the ten reconciled clusters left by the third review. Three
+of them changed the design rather than its wording. `vault-memory-link` gains a
+state-determination step that both modes run, so `--check` computes every state
+it reports and `--migrate` has a branch for each, including the two distinct
+completions the single `interrupted` label was hiding (§6.6). The
+project-directory corpus was re-measured during this review and had moved from
+25 to 26, one of them outside the org root — so the naming branch revision 3
+called unreachable is the branch that runs *first*, and no acceptance criterion
+hard-codes a count any more (§2.3, §6.1, §13). And the credential-deny
+regression control now exercises the tool layer the two new `permissions.deny`
+rules actually land in, instead of only the sandbox layer beside it (§11 P4,
+AC 2b.6). §16 maps every cluster from all three reviews to the section that
+answers it.
 
 ## 1. Problem, goal, constraints, non-goals
 
@@ -35,8 +36,8 @@ Two mechanisms, and only two:
 
 1. **Memory becomes vault-canonical.** The 98 memory notes that exist today move
    into the vault, and `~/.claude/projects/<slug>/memory` becomes a symlink to a
-   vault folder — for all 25 project directories, not only the 4 that hold notes
-   today, so a first memory write in any project lands in the vault by
+   vault folder — for *every* project directory, not only the four that hold
+   notes today, so a first memory write in any project lands in the vault by
    construction. One copy of every byte, two access paths.
 2. **New free-standing agent docs are written vault-natively.** Reports,
    analyses, and design write-ups that today land in a repo tree or a scratch
@@ -100,7 +101,11 @@ deliberately not:
 
 Every claim in this section was read from the source or the live system while
 writing revision 2, and is labelled OBSERVED or INFERRED per the threat-model
-method. Line numbers are at `c3b3e6f`.
+method. Line numbers were re-checked at `d1b5ab8` while writing revision 4 and
+are unchanged: `SENSITIVE_PATHS` at `claude_code.rs:11-22`,
+`deny_sensitive_paths` at `:123-131`, `sandbox_filesystem_deny_read_paths` at
+`:133-141`, `with_sandbox_filesystem_allow_write` at `:469`, and
+`with_sandbox_filesystem_deny_read` at `:481`.
 
 ### 2.1 How permissions reach a session
 
@@ -200,9 +205,11 @@ point somewhere else. What this repository *can* change is whether a write that
 resolves into the vault is permitted, and where the path the memory system uses
 actually leads.
 
-OBSERVED, the corpus that moves. `ls ~/.claude/projects | wc -l` returns **25**
-project directories. `find ~/.claude/projects -maxdepth 2 -name memory -type d`
-returns **12** of them. Four hold notes:
+OBSERVED, the corpus that moves, **measured 2026-08-21 and stated as a
+measurement rather than as a constant, because this count demonstrably moves**:
+`ls ~/.claude/projects | wc -l` returns **26** project directories.
+`find ~/.claude/projects -maxdepth 2 -name memory -type d` returns **12** of
+them. Four hold notes:
 
 | Project directory under `~/.claude/projects/` | Notes |
 |---|---|
@@ -214,8 +221,37 @@ returns **12** of them. Four hold notes:
 The other eight `memory/` directories are empty:
 `…-terraform-github-git`, `…-agentic-services-git`, `…-artifacts-vorpal-git`,
 `…-vodka-git`, `…-vorpal-git`, `…-agentic-mcp-services-git`,
-`…-manifest-flux-git`, `…-harness-git`. Thirteen further project directories
-have no `memory/` at all — they are the reason §6.2 links all 25.
+`…-manifest-flux-git`, `…-harness-git`. Fourteen further project directories
+have no `memory/` at all — they are the reason §6.2 links every project
+directory rather than the ones that hold memory today.
+
+**The count moved between revision 3's review and this revision, and the two
+consequences are load-bearing.** Revision 3 recorded 25, measured on the same
+machine by two independent readers; today's listing is 26. The positive control
+run in the same pass shows it is the same corpus and not a different machine:
+`find ~/.claude/projects -maxdepth 2 -name memory -type d | wc -l` still returns
+12 and `find -L ~/.claude/projects -path '*/memory/*.md' -type f | wc -l` still
+returns 98, exactly as recorded. Only the directory count changed.
+
+1. **The new directory is the first one that is not under the org root.**
+   Filtering the listing against the constant prefix
+   `-Users-erikreinert-Development-repository-github-com-ALT-F4-LLC-` leaves
+   exactly one entry, a remote harness-workspace path beginning
+   `-Users-erikreinert--harness-workspaces-…` (151 characters, one `.jsonl`
+   transcript, no `memory/`). §6.1's fallback naming branch — the one revision 3
+   called currently unreachable — is therefore reachable, and because that name
+   sorts ahead of every org-root name it is the *first* entry a whole-listing
+   `--migrate` run reaches. (§9's rollout takes one project at a time in an
+   order the operator chooses, so the two are not in conflict: what matters is
+   that the branch runs at all, not that it runs first.) §6.1 says so now, and
+   probe P5 puts the real directory in its input set.
+2. **No acceptance criterion may hard-code a project count.** A criterion keyed
+   to `25` will either fail on a correct implementation or be edited at run time
+   to whatever the machine holds, and an edited-at-run-time gate is not a gate.
+   Every criterion that used to name a number now names a derivation: *every*
+   project directory in the listing, and as many distinct vault names as there
+   are directories. That directory is a per-cloud-session remote workspace, so
+   the population grows on the operator's normal usage, not on a rare event.
 
 `find ~/.claude/projects -path "*/memory/*.md" -type f | wc -l` returns **98**;
 `find … -not -name "*.md" -type f` returns nothing, so the corpus is markdown
@@ -417,8 +453,8 @@ Revision 1 did not model this boundary; the grant it proposed crossed it.
 | # | Approach | Verdict |
 |---|---|---|
 | ALT-0 | **Do nothing.** Memory stays under `~/.claude/projects`, new docs keep landing wherever the session chose | **Rejected**, but it is the honest baseline and wins on one axis outright: it is the only option with no new write grant and no egress boundary. It loses because the operator's goal — a human-legible, linked view of how the fleet thinks — is unreachable from 98 notes in a hidden state directory with no index, no backlinks, and no graph |
-| ALT-1 | **Directory symlink per project directory, vault-native new docs** — the chosen design | **Chosen.** One symlink for each of the 25 project directories, so notes created *later*, in any project, land in the vault automatically. Single copy, exact rollback, and the new write grant can be narrowed by a deny at the same chokepoint |
-| ALT-2 | **File-level symlinks**, one per note | **Rejected.** 98 links instead of 25 is the smaller objection. The fatal one: a note the memory system creates *after* the migration is a new file in `~/.claude/projects/<slug>/memory/`, with no link and no vault presence, so the vault silently stops being canonical on the first new memory write. It has one real merit — the directory stays shell-write-denied, which is safer — and §8.3 weighs it |
+| ALT-1 | **Directory symlink per project directory, vault-native new docs** — the chosen design | **Chosen.** One symlink for each project directory in the listing, so notes created *later*, in any project, land in the vault automatically. Single copy, exact rollback, and the new write grant can be narrowed by a deny at the same chokepoint |
+| ALT-2 | **File-level symlinks**, one per note | **Rejected.** 98 links instead of one per project directory is the smaller objection. The fatal one: a note the memory system creates *after* the migration is a new file in `~/.claude/projects/<slug>/memory/`, with no link and no vault presence, so the vault silently stops being canonical on the first new memory write. It has one real merit — the directory stays shell-write-denied, which is safer — and §8.3 weighs it |
 | ALT-3 | **Mirror or sync pipeline** — a hook or timer copying files into the vault | **Rejected by constraint and on merit.** The operator's "Does it have to exist in both places?" settled it, and merit agrees: two copies means a reconciliation policy, a conflict story, and a window in which the vault shows stale beliefs. Its one genuine advantage — the vault could be read-only to agents, killing T1 and T2 outright — is why ALT-4 exists |
 | ALT-4 | **New docs to the vault; memory stays where it is** | **Rejected, and the closest call in this table.** It delivers most of the goal with none of T1, T2, or T9: no memory path changes, no deny bypassed, no synced directory holding instruction-adjacent notes, and the vault needs write access anyway for new docs. It loses because memory is the more valuable half of "how everything thinks" — 98 notes of accumulated belief against a handful of future write-ups — and a vault without it is a partial view the operator still supplements by hand. Recorded because if the acceptance vote judges T1 unacceptable, or if §14 Q1 comes back "a remote is bound", this is the fallback that keeps the initiative alive |
 | ALT-5 | **Vault at a path already granted**, e.g. under `~/.claude/` or the org root | **Rejected.** The operator named `~/Obsidian/Development`; a vault inside `~/.claude` would be definitions-adjacent, and the org root is a git tree. Neither is a place a human opens Obsidian on |
@@ -436,7 +472,8 @@ Revision 1 did not model this boundary; the grant it proposed crossed it.
 │   ├── docket-git/                 MEMORY.md + 25 notes
 │   ├── manifest-flux-git-main/     MEMORY.md + 2 notes
 │   ├── manifest-argocd-git/        MEMORY.md + 1 note
-│   └── … 21 further empty folders, one per remaining project directory
+│   └── … one further empty folder per remaining project directory
+│       (22 of them on 2026-08-21 — the number tracks the listing, §2.3)
 ├── Designs/                    design write-ups and proposals
 └── Reports/                    analyses, censuses, measurements, reviews
 ```
@@ -474,15 +511,29 @@ Properties of the prefix-strip rule, each checkable:
 
 - **Injective over the real input set, and checked rather than asserted.**
   Removing a constant prefix from distinct strings yields distinct strings, so
-  the rule is injective *within* the prefixed branch — which is every project
-  directory today (25 of 25 carry the prefix, so the fallback branch is
-  currently unreachable). It is not injective *across* the two branches: an
-  unprefixed directory literally named `dotfiles-vorpal-git` would collide with
-  the stripped form of the prefixed one. That is why the property is verified at
-  migration time rather than argued — the mapping over all project directories
-  must produce as many distinct names as there are directories (`… | sort |
-  uniq -d` returns nothing — AC 2c.2), and the script stops on a duplicate
-  instead of merging two projects' memories.
+  the rule is injective *within* the prefixed branch. It is not injective
+  *across* the two branches: an unprefixed directory literally named
+  `dotfiles-vorpal-git` would collide with the stripped form of the prefixed
+  one. That is why the property is verified at migration time rather than argued
+  — the mapping over all project directories must produce as many distinct names
+  as there are directories (`… | sort | uniq -d` returns nothing — AC 2c.2), and
+  the script stops on a duplicate instead of merging two projects' memories.
+- **The fallback branch is the one that runs first, and revision 3 said the
+  opposite.** Revision 3 declined to harden it on the stated ground that 25 of
+  25 directories carried the prefix, so the branch was unreachable. That is
+  false as of 2026-08-21: one of the 26 directories is a remote
+  harness-workspace path outside the org root (§2.3), it takes the fallback, and
+  because its name sorts ahead of every org-root name it is the first thing
+  `--migrate` processes. The derived name is `_Users-erikreinert--harness-…`,
+  151 characters — well under the 255-byte filename limit, so no
+  `ENAMETOOLONG` — and the leading-dash replacement is what keeps it from
+  parsing as a flag. Probe P5 runs the derivation over the real listing,
+  including that entry, rather than over invented inputs alone. The cost of the
+  all-directories rule is visible in the same fact: one empty vault folder per
+  cloud session, with a 151-character name. That is accepted — an empty folder
+  costs an inode and a line in the file explorer, and the alternative is a
+  filter on project-directory names, which is exactly the kind of guess §6.1
+  exists to avoid.
 - **Traversal-closed by input format**, which is stronger than validating the
   output. A project directory name is generated by the harness from an absolute
   path with `/` and `.` replaced by `-`, so it contains neither. The migration
@@ -514,17 +565,29 @@ Properties of the prefix-strip rule, each checkable:
   string is the one that binds a writer: if the two ever diverge, this section
   is the one that is wrong, because a writer reads the working agreement and
   not this document.
-- *Frontmatter on new notes*, five fields, all required:
+- *Frontmatter on new notes*, five fields, all required. Everything in angle
+  brackets is a stand-in the writer replaces; the five field names, the colons,
+  and the `---` fences are literal:
 
   ```yaml
   ---
-  date: 2026-08-21
-  repo: dotfiles.vorpal.git
-  surface: docket-step | session | hook
-  origin: STEP-1258 | session:1bfab684
-  tags: [design, sandbox]
+  date: <YYYY-MM-DD>
+  repo: <the repository the document is about>
+  surface: <one of docket-step, session, hook>
+  origin: <the step id as issued, e.g. STEP-1258, or session- plus the first
+           eight characters of the session id, e.g. session-1bfab684>
+  tags: [<topic>, ...]
   ---
   ```
+
+  **`origin` has one spelling, in two cases.** The frontmatter carries the id
+  *as issued* — `STEP-1258`, upper case, because that is the string the engine
+  record and every issue reference use; the filename carries the same value
+  lowercased, because a filename should not shout. For a session writer both are
+  the same string: `session-` followed by the first eight characters of the
+  session id, dash and not colon, in both places. Revision 3 spelled the session
+  form three ways across this section and §6.4, which left a session writer no
+  frontmatter value it could copy.
 
   A note with no `origin` is visibly anomalous — which is the whole detection
   value, since §2.2 establishes there is no way to grant the vault to some seats
@@ -534,7 +597,7 @@ Properties of the prefix-strip rule, each checkable:
   new note carries, immediately under the frontmatter, a line
   `Project: [[Memory/<vault-name>/MEMORY|<vault-name>]]`. Obsidian's backlink
   pane then shows, on each project's memory index, every design and report about
-  that project. Without it the vault is 25 closed memory islands plus two folders
+  that project. Without it the vault is a folder of closed memory islands plus two folders
   of unconnected new notes: the memory corpus links only inside its own folder,
   and no migrated byte may be edited (§1 non-goals), so the edge has to come
   from the new side. Two link syntaxes coexist — markdown inside `Memory/`,
@@ -543,8 +606,8 @@ Properties of the prefix-strip rule, each checkable:
 
   **Most of those links are unresolved, by design, and that has to be said
   where the convention is stated rather than discovered by clicking one.** Four
-  of the 25 project folders hold a `MEMORY.md`; the other 21 are the empty
-  targets §6.2 creates so a first memory write lands in the vault. A `Project:`
+  project folders hold a `MEMORY.md`; every other one is an empty target §6.2
+  creates so a first memory write lands in the vault. A `Project:`
   link into one of them points at a note that does not exist, and Obsidian
   renders it as an unresolved link with an empty backlink pane. It self-heals
   the moment that project's memory system writes its index, and until then the
@@ -586,10 +649,22 @@ copied here. They live in their repositories and are referred to by path.
 ```
 
 The two project links in that file are **examples the operator extends**, not an
-index of all 25: `Home.md` is written once at Phase 2d and nothing keeps it
-current, so a reader who takes it as the complete list would miss 23 folders.
-The complete list is the `Memory/` folder itself, which is why the bullet under
-the links points there.
+index of every project: `Home.md` is written once at Phase 2d and nothing keeps
+it current, so a reader who takes it as the complete list would miss every other
+folder. The complete list is the `Memory/` folder itself, which is why the
+bullet under the links points there.
+
+**Who writes `Home.md`, `Designs/`, and `Reports/`.** The operator, from a
+terminal — or any sandboxed shell write, since the vault root is in
+`allowWrite` and `Home.md` sits outside both denies. **Not** the in-process
+Write tool: the conditional `additionalDirectories` grant of §6.3 stops at
+`Designs/` and `Reports/` deliberately (§8.2), so on the branch where probe P3
+shows that tool refuses paths outside the project root, a `Write` to the vault
+*root* is refused while a `Write` into `Reports/` succeeds. That asymmetry is
+intended and it is stated here because the obvious repair for a refused
+`Home.md` write is to widen `additionalDirectories` back to the vault root —
+which is precisely the widening §8.2 removed, and which AC 2b.9 forbids. Use a
+shell.
 
 Nothing configures `Home.md` as a landing note: `.obsidian/app.json` is `{}`
 (§2.4) and this design does not write Obsidian's configuration — §6.3 denies
@@ -599,19 +674,23 @@ recorded here so nobody implements a config write to achieve it.
 
 ### 6.2 The symlink
 
-For **every** project directory under `~/.claude/projects/` — all 25, not only
-the 4 that hold notes — `…/memory` becomes a **directory** symlink to
-`~/Obsidian/Development/Memory/<vault-name>`, and the target directory is
-created empty if the project has no memory yet.
+For **every** project directory under `~/.claude/projects/` — every entry in the
+listing, not only the four that hold notes — `…/memory` becomes a **directory**
+symlink to `~/Obsidian/Development/Memory/<vault-name>`, and the target
+directory is created empty if the project has no memory yet. The set is whatever
+`ls ~/.claude/projects` returns at migration time (26 on 2026-08-21, §2.3), read
+by the script rather than fixed by this document.
 
-Two reasons this is all-25 rather than all-12 or the-4-with-notes:
+Two reasons this is all-of-them rather than the twelve with a `memory/`
+directory or the four with notes:
 
 1. It is the same argument that rejects ALT-2, one level up. ALT-2 fails because
    a note created after the migration has no link; linking only the projects
    that have memory today fails because a *project* that first writes memory
-   after the migration has no link. Thirteen project directories have no
-   `memory/` at all today (§2.3), and every future checkout of the other 85
-   repositories adds one.
+   after the migration has no link. Fourteen project directories have no
+   `memory/` at all today (§2.3), every future checkout of the other 85
+   repositories adds one, and — measured this revision — every cloud session
+   adds one too.
 2. It converts a recurring drift check into a construction guarantee **for the
    project directories that exist on migration day**, and no further. The check
    is `find ~/.claude/projects -maxdepth 2 -name memory -type d`, which must
@@ -658,15 +737,34 @@ const SANDBOX_OBSIDIAN_MEMORY_PATH: &str = "~/Obsidian/Development/Memory";
 // A vault-local plugin is JavaScript the desktop app can execute as the
 // operator, outside Seatbelt, so a grant that reaches .obsidian/ turns a
 // sandboxed file write into code execution with no sandbox at all. Nothing
-// this fleet writes belongs in Obsidian's configuration.
-const SANDBOX_OBSIDIAN_CONFIG_PATH: &str = "~/Obsidian/Development/.obsidian";
+// this fleet writes belongs in Obsidian's configuration. Denied at BOTH
+// layers, so this constant is stored in the tool-layer glob form and the
+// sandbox layer strips the suffix — the same direction of derivation
+// SENSITIVE_PATHS uses (see sandbox_filesystem_deny_read_paths).
+const SANDBOX_OBSIDIAN_CONFIG_PATH: &str = "~/Obsidian/Development/.obsidian/**";
 ```
+
+**One constant, two spellings, one direction of derivation.** The third constant
+is the only path in this design denied at both layers, and this repository
+already has a rule for that case: `SENSITIVE_PATHS` (`claude_code.rs:11-22`)
+stores the tool-layer glob — `~/.doppler/**`, `~/.ssh/**`, `~/.kube/**` — and
+`sandbox_filesystem_deny_read_paths` (`:133-141`) maps
+`strip_suffix("/**").unwrap_or(p)` before handing the list to
+`with_sandbox_filesystem_deny_read` (`:481`). Revision 3 declared the constant
+bare and wrote the glob by hand at the tool-layer call site, which is the
+derivation running backwards: two idioms in one file, no rule for choosing
+between them, and — because AC 2a.2 and AC 2a.2b then read two independently
+written strings — a typo in either one passing the other. The `/**` form with a
+strip at the sandbox call site is the form that matches the file. The helper
+needs no new signature for it: `deny_sensitive_paths` (`:123-131`) takes
+`impl IntoIterator<Item = &'static str>`, so a one-element array of a `&'static
+str` const is exactly what it already accepts.
 
 | Field | Change | Value | Status |
 |---|---|---|---|
 | `sandbox.filesystem.allowWrite` | one more `.chain(std::iter::once(&SANDBOX_OBSIDIAN_VAULT_PATH))` in the chain at `claude_code.rs:469-480` | `~/Obsidian/Development` | **required** |
-| `sandbox.filesystem.denyWrite` | first call to `with_sandbox_filesystem_deny_write` (`settings.rs:1294`, currently unused), two elements | `~/Obsidian/Development/Memory` and `~/Obsidian/Development/.obsidian` | **required** — the compensating controls for T1/T2 and for T11 |
-| `permissions.deny` | two more `with_permission_deny` rules through the existing `deny_sensitive_paths` helper (`claude_code.rs:123-131`), wrapped as **both** `Edit(…)` and `Write(…)` | `~/Obsidian/Development/.obsidian/**` | **required** — the tool-layer half of the T11 control; see below |
+| `sandbox.filesystem.denyWrite` | first call to `with_sandbox_filesystem_deny_write` (`settings.rs:1294`, currently unused), two elements: `SANDBOX_OBSIDIAN_MEMORY_PATH` verbatim, and `SANDBOX_OBSIDIAN_CONFIG_PATH` through `strip_suffix("/**")` | `~/Obsidian/Development/Memory` and `~/Obsidian/Development/.obsidian` | **required** — the compensating controls for T1/T2 and for T11 |
+| `permissions.deny` | two more `with_permission_deny` rules through the existing `deny_sensitive_paths` helper (`claude_code.rs:123-131`) over a one-element array of `SANDBOX_OBSIDIAN_CONFIG_PATH`, wrapped as **both** `Edit(…)` and `Write(…)` | `~/Obsidian/Development/.obsidian/**` — the constant verbatim | **required** — the tool-layer half of the T11 control; see below |
 | `permissions.additionalDirectories` | first call to `with_permission_additional_directories` (`settings.rs:1194`, currently unused; it takes a `Vec<String>`, so two entries cost the same as one) | `~/Obsidian/Development/Designs` and `~/Obsidian/Development/Reports` — **not** the vault root | **conditional** — added only if probe P3 (§11) shows the in-process Write tool refuses a path outside the project root. P3 is BLOCKING in Phase 2b, because Phase 2d's whole premise is that tool writes to the vault succeed. Memory writes never need this grant: they address `~/.claude/projects/<slug>/memory/…`, which is inside the session's own state, and B2 matches the literal string, not the resolved one |
 | `sandbox.filesystem.allowRead` | none | — | not needed: the read policy is a `denyOnly` list and the vault is not on it, verified by reading `~/Obsidian/Development/.obsidian/app.json` from this seat |
 | `sandbox.filesystem.denyRead` | none | — | the credential-path list is untouched |
@@ -718,7 +816,8 @@ it.
 
 One required edit: a fourth bullet appended to the **"This machine"** section of
 `src/user/claude_code_memory.md` (the heading is at line 92, the section's three
-existing bullets run 94-99, and the file is 99 lines — OBSERVED at `c741c64`).
+existing bullets run 94-99, and the file is 99 lines — re-confirmed OBSERVED at
+`d1b5ab8`, unchanged since `c741c64`).
 The string to install, verbatim, because a paraphrase is not something a
 reviewer or a gate can check:
 
@@ -732,22 +831,28 @@ reviewer or a gate can check:
   ever copied into the vault. Name the file `YYYY-MM-DD-<slug>-<origin>.md`,
   where `<origin>` is the producing Docket step id lowercased (`step-1258`) if a
   step wrote it and otherwise `session-` plus the first eight characters of the
-  session id; `<origin>` is what stops two concurrent writers landing on one
-  name. Open every such file with exactly this frontmatter and this link:
+  session id (`session-1bfab684`); `<origin>` is what stops two concurrent
+  writers landing on one name. Open every such file with exactly this
+  frontmatter and this link — the field names, the colons and the `---` fences
+  are literal, and everything in angle brackets is yours to replace:
 
   ```
   ---
-  date: 2026-08-21
-  repo: dotfiles.vorpal.git
-  surface: docket-step | session | hook
-  origin: STEP-1258
-  tags: [design, sandbox]
+  date: <YYYY-MM-DD, today>
+  repo: <the repository this document is about>
+  surface: <one of: docket-step, session, hook>
+  origin: <the step id as issued, e.g. STEP-1258, or session-<first eight
+           characters of the session id>, e.g. session-1bfab684>
+  tags: [<topic>, <topic>]
   ---
 
   Project: [[Memory/<project-folder>/MEMORY|<project-folder>]]
   ```
 
-  All five fields are required. `<project-folder>` is the folder under the
+  All five fields are required and none of them is optional or inheritable.
+  `origin` carries the step id **as issued** (upper case) while the filename
+  carries the same value lowercased; a session writer uses the identical
+  `session-xxxxxxxx` string in both. `<project-folder>` is the folder under the
   vault's `Memory/` for the checkout the document is about — the directory name
   under `~/.claude/projects/` with the leading
   `-Users-erikreinert-Development-repository-github-com-ALT-F4-LLC-` removed.
@@ -764,6 +869,23 @@ ambiguously onto folders otherwise, and §10 predicts what ambiguity produces �
 everything in one folder), the filename with `<origin>` expanded where it is
 used rather than defined three sections away, the five frontmatter fields, and
 the `Project:` link.
+
+**Why every substitution point is marked, and what revision 3's block did.**
+Revision 3 introduced that block with "Open every such file with exactly this
+frontmatter" and then showed `date: 2026-08-21`, `repo: dotfiles.vorpal.git`,
+`origin: STEP-1258` and `tags: [design, sandbox]` as bare values, with only
+`surface` written as an alternation — and `surface: docket-step | session |
+hook` copied literally is valid YAML whose value is the string
+`docket-step | session | hook`, which means nothing. Read literally, that
+instruction produces a vault whose notes are all dated 2026-08-21 and all
+attributed to one repository and one step, indefinitely. That is worse than no
+frontmatter at all: §7 calls `origin` the only thing binding a note to what
+produced it, and §12's detection story is that a note with *no* `origin` is
+visibly anomalous — a population carrying the *same* `origin` satisfies the
+letter of the rule and defeats both. Marking the stand-ins the way the same
+block already marks `<project-folder>`, and saying in one clause which tokens
+are literal, costs four lines and is what gives AC 2d.5 a pass condition it
+could not otherwise have.
 
 **Why the whole contract, and not a pointer to this document.** §13 requires
 each acceptance criterion to survive this document being deleted, and AC 2d.5 is
@@ -847,7 +969,8 @@ status as every other control in this design.
 ```sh
 # vault-memory-link — make every project's memory directory a vault folder.
 #
-#   vault-memory-link --check     report drift, change nothing, exit 1 if any
+#   vault-memory-link --check     report state, change nothing, exit 1 if any
+#                                 project is not `linked`
 #   vault-memory-link --migrate   copy, verify, relink, keep a backup
 #
 # --migrate is an OPERATOR command, run from a terminal. That is not a request:
@@ -858,6 +981,30 @@ status as every other control in this design.
 # covers. Do not disable the sandbox for it, and do not remove the deny "just
 # for the migration" — both switch off this design's only new control during
 # the one operation that touches all 98 instruction-adjacent notes.
+#
+# MONTHLY, by the operator, from a terminal. These three are the standing
+# checks on the vault; nothing schedules them, so they live here, beside the
+# command, rather than in a design document that may be deleted:
+#
+#   1. vault-memory-link --check
+#        every project `linked`. Any other state means a checkout has been
+#        accumulating memory outside the vault; fix it with --migrate.
+#   2. per-folder note counts
+#        find -L ~/Obsidian/Development/Memory -name '*.md' | wc -l
+#        ls ~/Obsidian/Development/Designs ~/Obsidian/Development/Reports
+#        Designs/ and Reports/ rising means the routing rule is being read; a
+#        month at zero means it is not, and the answer is a stronger
+#        mechanism, not a stronger sentence.
+#   3. definition-exclusion intersection
+#        the SHA-256 set of *.md under the vault and the SHA-256 set of
+#        ~/.claude/{skills,agents,workflows,hooks} plus
+#        src/user/docket/config/ must not intersect.
+#
+# This is the first script installed into ~/.claude/scripts that changes user
+# state rather than only reporting on it. Any future one carries the same three
+# properties: both of its writes denied at the Seatbelt layer, an operator-only
+# header giving the mechanical reason rather than asking nicely, and a row in
+# the design's asset table with an integrity requirement.
 ```
 
 The mechanical argument matters more than the instruction, because this file is
@@ -867,61 +1014,173 @@ reasoning, not a writer. If a later change ever makes an agent invocation of `--
 succeed, that is a control change to review, not a convenience that was always
 available.
 
-What it does, per project directory, in this order and no other:
+**This script sets a precedent for that directory, and the precedent is stated
+rather than left implicit.** `src/user/claude_code/scripts` holds six
+executables and one data file today — `attach-probe`, `integration-check`,
+`sandbox-friction-report`, `session-census`, `shadow-transcript-summary.sh`,
+`wave-usage`, and `session-census.baseline.json` — and exactly one mutates
+anything outside itself: `sandbox-friction-report`, which files docket issues
+only behind an opt-in flag (`FILE_ISSUES=0` at line 30, `--file` at line 35,
+and an early `exit 0` at line 106 without it).
+`vault-memory-link --migrate` would be the first entry there that moves *user
+data*: `cp -a`, `mv`, and `ln -s` across 98 instruction-adjacent notes and into
+the one subtree §8.2 denies to every agent. Nothing at install time
+distinguishes a reporter from a mutator — same directory, same `FileSource`,
+same executable bit, same symlink — so the three properties this design gives
+it (both writes denied at the Seatbelt layer, an operator-only header carrying
+the mechanical reason, an asset row with an integrity requirement in §3.2) are
+the standard for the class, not a one-off. The next mutating script inherits
+the channel; it should inherit the scrutiny with it. That sentence lives in the
+script's own header too, so it survives this document.
 
-1. Derive `<vault-name>` (§6.1) and refuse any name containing `/` or `..`, or
-   beginning with `.` or `-`. Refuse the whole run if two project directories
-   derive the same name (§6.1's injectivity check, AC 2c.2).
+**Both modes begin with the same determination, and that is the change revision
+4 makes.** Revision 3 specified `--check` as "runs steps 1 and 3 only", which
+was true when there were two states and stale the moment revision 3 added
+`interrupted` and the `.memory-link-pending` marker: steps 1 and 3 compute
+`linked` and one undifferentiated not-`linked`, so three of the four states it
+promised to report were uncomputable. The determination is now a step of its
+own, both modes run it, and `--check` is defined as *that step and nothing
+after it* — a definition that does not go stale the next time the step list
+changes.
+
+**Step 0 — determine the state.** Read four facts about the project directory
+and change nothing:
+
+- the derived `<vault-name>` (§6.1) and whether it is refusable,
+- what `…/memory` is: a symlink (and to where), a real directory, or absent,
+- whether `<project-dir>/.memory-link-pending` exists,
+- whether a `<project-dir>/.memory-backup-<date>` exists, and — when both sides
+  are readable — whether `diff -r` between the memory bytes and the vault target
+  is empty.
+
+Those four facts name exactly one state from the table below. Every mutation the
+script performs is selected by that state, so there is no path through
+`--migrate` that runs a command without having first named the state it is in.
+
+**`--migrate`** then performs, per project directory, the mutations its state
+selects:
+
+1. Derive `<vault-name>` (§6.1) and refuse it if it is **empty**, contains `/`
+   or `..`, or begins with `.` or `-`. Refuse the whole run if two project
+   directories derive the same name (§6.1's injectivity check, AC 2c.2). *The
+   empty case is not hypothetical arithmetic: a project directory named exactly
+   the 64-character constant prefix derives the empty string, `mkdir -p
+   ~/Obsidian/Development/Memory/` then no-ops on the `Memory/` root, and if
+   that project is processed while `Memory/` is still empty the destination
+   inspection sees an empty target, copies that project's notes into the root,
+   and links its memory to the whole corpus — every later project's folder
+   inside one project's memory, loaded at the front of every session in it. No
+   directory in today's listing ends with a dash or equals the prefix (`ls
+   ~/.claude/projects | grep -c -- '-$'` returns 0), so it is not reachable
+   today; whether the harness can ever emit such a slug was not measured, and
+   "not reachable from today's corpus" is exactly the premise that expired once
+   already in this review (§2.3). One `case` arm costs less than the answer.*
 2. `mkdir -p ~/Obsidian/Development/Memory/<vault-name>`.
-3. If `…/memory` is already a symlink to that folder, report `linked` and
-   continue — idempotence, so `--check` is safe to run from a hook or by hand at
-   any time.
-4. If `…/memory` is a real directory, **look at the destination before writing
-   to it**, because a re-run after an interrupted or partly-reverted migration
+3. **`linked`** → report and continue. Idempotence, so both modes are safe to
+   run at any time.
+4. **`unlinked`, with `…/memory` a real directory** → look at the destination
+   before writing to it, because a re-run after a partly-reverted migration
    arrives here with the target already populated:
    - target empty → `cp -a <memory-dir>/. <target>/`, then `diff -r` the two,
      and stop the whole run if it is non-empty. The only thing mutated on that
      path is a folder that was empty a moment earlier.
    - target non-empty and `diff -r` against it already empty → the copy
      happened on an earlier run; continue to 5 without copying.
-   - target non-empty and different → report `mismatched`, **change nothing**,
-     and stop the run. Revision 2 reached this state through `cp -a` and merged
-     the two before `diff -r` could fail, which left the vault mutated by a run
-     that reported failure and said nothing about what to do next. The recovery
-     is the operator's: compare the two by hand and decide, because only they
-     know which side is the one they meant to keep.
+   - target non-empty and different → this is `mismatched`; see the row in the
+     table.
 5. `ln -s <target> <project-dir>/.memory-link-pending` — build the finished link
    first, under a name that cannot be mistaken for live memory.
 6. `mv <memory-dir> <project-dir>/.memory-backup-<YYYY-MM-DD>`, then
    `mv <project-dir>/.memory-link-pending <memory-dir>`.
 7. Re-verify through the link: `readlink` resolves, and `diff -r
    <project-dir>/.memory-backup-<date> <memory-dir>` is empty.
-8. If `…/memory` does not exist and no backup is present, just create the link —
-   that is the 13-project case from §2.3, and every checkout created later.
+8. **`unlinked`, with `…/memory` absent** → create the link directly (steps 5
+   and 6's second move, with nothing to back up). That is the fourteen-project
+   case from §2.3, and every checkout created later.
+9. **`interrupted-copy`** → the marker exists and `…/memory` is still a real
+   directory, so the interruption landed between 5 and 6. Remove the stale
+   marker and resume at step 4; the destination inspection there is what makes
+   resuming safe.
+10. **`interrupted-relink`** → the marker exists, `…/memory` is absent, and a
+    backup is present, so the interruption landed *inside* 6. Perform step 6's
+    second move alone, then step 7.
+11. **`mismatched`** → change nothing, stop the run, and exit non-zero.
+
+**The two interrupted states have different completions, and revision 3 gave
+them one label.** Its recovery sentence — "re-running `--migrate` finishes it by
+performing step 6's second move alone" — is correct for `interrupted-relink` and
+wrong for `interrupted-copy`: applied there it renames a symlink over a
+non-empty directory, which POSIX `rename(2)` refuses — the same fact this
+section cites two paragraphs on — leaving that project's notes never copied
+while the run reports progress. Steps 9 and 10 are the two completions, and
+AC 2a.8b and 2a.8c exercise them separately.
 
 **The window between step 6's two moves cannot be closed, so it is narrowed and
 labelled instead of being called atomic.** POSIX `rename(2)` will not put a
 symlink over a non-empty directory, so there is no ordering in which the path
 never disappears. What step 5 buys is that the interrupted state is
-self-describing: a `.memory-link-pending` marker beside a `.memory-backup-<date>`
-with no `memory` is the `interrupted` state and nothing else, and re-running
-`--migrate` finishes it by performing step 6's second move alone. Revision 2's
-ordering left the same interruption looking like a project that had never been
-touched, with an orphaned backup beside it.
+self-describing: the marker's presence, plus whether `…/memory` is still a real
+directory, distinguishes the two interruptions from each other and both from a
+project that was never touched. Revision 2's ordering left an interruption
+looking like a project that had never been touched, with an orphaned backup
+beside it.
 
-`--check` runs steps 1 and 3 only, mutates nothing, and prints one line per
-project directory in one of **four** states:
+**The states.** `--check` performs every inspection in step 0 and none of the
+mutations, and prints one line per project directory in one of **five** states.
+Any combination of the four facts that this table does not name is reported
+`mismatched` and mutates nothing — the default is the fail-closed one, so an
+unforeseen state stops the run instead of selecting a mutation by accident:
 
 | State | Means | Fix |
 |---|---|---|
-| `linked` | `…/memory` is a symlink to the expected vault folder | none |
+| `linked` | `…/memory` is a symlink to the expected vault folder. A `.memory-backup-<date>` may sit beside it, awaiting retirement (§9) | none |
 | `unlinked` | `…/memory` is a real directory or absent, with no backup and no pending marker — never migrated, or a checkout created since | `--migrate` |
-| `interrupted` | a `.memory-backup-<date>` or a `.memory-link-pending` exists without a resolved link | `--migrate` completes it |
-| `mismatched` | `…/memory` links somewhere unexpected, or is a real directory beside an existing backup, or its target differs from it | operator decides; the script will not choose |
+| `interrupted-copy` | `.memory-link-pending` exists and `…/memory` is still a real directory | `--migrate` resumes at step 4 |
+| `interrupted-relink` | `.memory-link-pending` exists, `…/memory` is absent, and a backup is present | `--migrate` performs step 6's second move |
+| `mismatched` | `…/memory` links somewhere unexpected, or is a real directory beside an existing backup, or the vault target is non-empty and differs from it — and every state this table does not name | operator decides; the script will not choose |
 
 It is the operator's answer to "is memory still vault-canonical", and it is what
 makes the state re-derivable after a machine rebuild — the answer to "run it
-again", not "read a document that may not exist". §12 gives it a cadence.
+again", not "read a document that may not exist". §12 gives it a cadence and the
+script's own header carries that cadence, so it survives this document.
+
+**What it prints, and what it exits.** The design writes `Home.md` and the
+script header in full, so the operator-facing strings are written here too
+rather than left to an implementer — and the error case first, because that is
+the one place the operator has to act.
+
+- One line per project directory, `<project-directory>: <state>`, on stdout:
+
+  ```
+  dotfiles-vorpal-git: linked
+  docket-git: linked
+  manifest-argocd-git: unlinked
+  ```
+
+- A summary line last, counting each state present, with the total derived from
+  the listing rather than written into the script:
+
+  ```
+  26 project directories: 24 linked, 1 unlinked, 1 mismatched.
+  Run --migrate to fix the unlinked one. mismatched needs you: see above.
+  ```
+
+- The `mismatched` message names both paths, because "compare the two by hand
+  and decide" is unusable without them:
+
+  ```
+  mismatched: ~/.claude/projects/<slug>/memory and
+  ~/Obsidian/Development/Memory/<vault-name> both hold notes and differ.
+  Nothing was changed. Compare them (diff -r), keep the side you meant, then
+  re-run --migrate.
+  ```
+
+- Status goes to stderr, data to stdout, so the per-project lines pipe cleanly.
+- Exit codes: `--check` exits 0 when every project is `linked` and 1 otherwise.
+  `--migrate` exits 0 when every project ends `linked`, and 1 when it stopped —
+  on a `mismatched` project, a refused name, or a duplicate derivation — with
+  the reason on stderr. Phase 2c's rollout stops on a non-zero exit, so it has
+  to be one.
 
 **The backup is named `.memory-backup-<date>`, not `memory.pre-vault`.** It is
 hidden, it does not begin with `memory`, and no glob looking for a memory
@@ -1055,6 +1314,23 @@ Residual risk after the controls, stated so nobody reads it as elimination:
   repository has only ever emitted `Edit(…)` and `Read(…)` — and probe P13
   settles it. Until it does, T11 is closed on the shell route and asserted on
   the tool route.
+
+  **That INFERRED form lands in the list that also carries the credential
+  denials**, and this is why P4 grew a second half. `permissions.deny` is one
+  list: the `Read(~/.aws/**)`, `Read(~/.ssh/**)`, `Read(~/.gnupg/**)` rules
+  `deny_sensitive_paths` emits over `SENSITIVE_PATHS` sit in it alongside the
+  two rules this design adds. If an unrecognised rule form causes the loader to
+  drop or ignore more than the one rule it cannot parse, the credential denials
+  go with it and the file still parses, so AC 2b.1 still passes. That
+  degradation mode is itself **INFERRED** and unverified — the tool layer
+  demonstrably works today — but the control that would notice it was aimed at
+  the wrong layer: revision 3's P4 was a sandboxed `cat`, bound by
+  `sandbox.filesystem.denyRead`, a different mechanism this change does not
+  touch. §8.4 states the asymmetry in the other direction already: a `Read(…)`
+  rule scopes to the Read *tool* and never sees `cat`. Read that sentence
+  backwards and the `Read(…)` rules exist to bind the in-process tool, and
+  nothing was probing them. P4(b) does, for the cost of two tool calls that
+  read no credential byte.
 - **Nothing detects a note modified in place.** `Designs/` and `Reports/` sit
   inside the `allowWrite` grant and outside every deny, so any sandboxed seat
   can rewrite the body of an existing note; the vault has no history (ALT-6);
@@ -1164,13 +1440,16 @@ design; the vault grant is a literal path prefix with no wildcard, and its
 matching semantics are measured by P10 rather than assumed. **Input
 validation**: the one derived value is the vault folder name, and §6.1 closes
 T6 by input format with an output check as a second layer. **Secret handling**:
-no secret is read, written, or transported; the `denyRead` credential list is
-untouched, and probe P4 is the regression control that proves it.
+no secret is read, written, or transported; the credential denials are untouched
+at **both** layers, and probe P4 is the regression control that proves it at
+both — the sandbox `denyRead` list *and* the `permissions.deny` list this
+design's two new tool-layer rules actually join.
 **Cryptography**: none — N/A. **Supply chain**: no dependency is added; the one
 supply-chain-shaped surface is Obsidian's plugin directory, which is why §6.3
 denies it rather than excluding it from the model. **Logging**: notes are prose
 written by agents, and the confidentiality question they raise is T3, not a
-logging defect. **Denial of service**: 98 files and 25 symlinks; no unbounded
+logging defect. **Denial of service**: 98 files and one symlink per project
+directory; no unbounded
 allocation, no regex, no retry path.
 
 ## 9. Migration, rollout, and rollback
@@ -1256,6 +1535,14 @@ It is six months later and this did not work. The likeliest reasons:
   same slug on the same day. *Mitigation:* `<origin>` in the filename makes the
   collision impossible rather than unlikely, and `origin` in the frontmatter
   makes an unattributed note visibly anomalous.
+- **A gate was edited to match the machine instead of failing.** A BLOCKING
+  criterion named a project count, the count had moved by the time anyone ran
+  it, and whoever ran it updated the number and moved on — after which the
+  criterion measured nothing. *Mitigation:* it already happened once, between
+  revision 3 and this one (§2.3), which is why no criterion names a count any
+  more. The residual is that "as many distinct names as there are directories"
+  is a slightly harder thing to check by eye than "25", and an implementer in a
+  hurry may reach for the literal again.
 - **The 1:1 project mapping proved wrong.** The operator wanted one memory per
   repository, not one per checkout, and ended up reading two folders for
   `manifest-flux`. *Mitigation:* accepted; §14 Q3 makes it a deliberate
@@ -1275,8 +1562,8 @@ proves nothing about a sandbox control.
 | **P1** | negative: sandboxed `printf x >> ~/Obsidian/Development/Memory/<any>/probe.md`. positive control, same pass: the same write into `~/Obsidian/Development/Reports/probe.md` | denied; allowed | `denyWrite` is enforced and dominates `allowWrite` — the §8.2 control is real, not declarative. **Blocks the migration if it fails** |
 | **P2** | on a **copy** of one project's memory directory under `$TMPDIR`, symlinked the same way: a live session loads `MEMORY.md` and writes a new memory note through the link | both succeed | the memory system tolerates a directory symlink. **Blocks the migration if it fails** |
 | **P3** | in-process Write tool to `~/Obsidian/Development/Reports/probe.md` with `additionalDirectories` unset | succeeds, or refuses naming an allowed-directory restriction | decides the one conditional row in §6.3. **Blocking in 2b**: Phase 2d's premise is that this write path works |
-| **P4** | regression: sandboxed `cat ~/.aws/credentials` and `cat ~/.ssh/id_*` after the change | denied, as before | the new grant did not perturb `denyRead`. A weakened existing mitigation is a finding in its own right |
-| **P5** | abuse: run the folder-name derivation over inputs containing `..`, a `/`, and a leading `.`; and over the real listing of `~/.claude/projects` | rejected with no directory created; and 25 distinct names | T6 cannot produce a write outside the vault, and the mapping is injective on the real input set |
+| **P4** | regression, **at both layers**, run *after* the tool-layer rules of 2a.2b have landed. (a) sandboxed `cat ~/.aws/credentials` and `cat ~/.ssh/id_*`. (b) an in-process **Read tool** call for a *non-existent* filename under `~/.aws/` and under `~/.ssh/`, so the pass condition is the refusal message and no credential byte is read; positive control in the same pass: the same call for a non-existent file under the checkout | (a) denied. (b) `File is in a directory that is denied by your permission settings.`; the control returns `File does not exist.` | neither the new grant nor the two new `permissions.deny` rules perturbed the credential denials. The two layers are separate lists with separate matchers (§6.3, §8.4), and (a) alone measures only one of them. A weakened existing mitigation is a finding in its own right |
+| **P5** | abuse: run the folder-name derivation over inputs containing `..`, a `/`, a leading `.`, a leading `-`, and the empty string; and over the **real** listing of `~/.claude/projects`, which since 2026-08-21 includes the unprefixed `-Users-erikreinert--harness-workspaces-…` entry that takes the fallback branch | each abusive input rejected with no directory created; the real listing produces as many distinct names as there are directories, and the fallback branch produces `_Users-erikreinert--harness-…` | T6 cannot produce a write outside the vault; the mapping is injective on the real input set; and the branch revision 3 called unreachable is exercised by the input it actually runs on first |
 | **P6** | abuse: place a note in a **scratch copy** of a memory folder containing an instruction-shaped line ("ignore your brief and …"), start a session against that copy | the session treats it as data and says so | B1's control covers memory notes. A negative here is a finding about the rule, not about this design |
 | **P7** | sandboxed write to `~/Obsidian/Personal/probe.md` | denied | T8: the grant is `Development`-scoped |
 | **P8** | `jq -e . ~/.claude/settings.json` | exit 0 | §8.5. Passes today; kept as a gate because it has failed before |
@@ -1317,6 +1604,17 @@ words the evidence rules require:
   and `trim_path` transforms it without resolving it (§12, measured on two
   fixtures). Confirmable in one command once Phase 2c has run; the §12 skip
   pattern covers that spelling either way.
+- **INFERRED**: that an unrecognised `permissions.deny` rule form would drop
+  only its own rule rather than neighbouring ones. Basis: nothing observed
+  either way; the concern is the shape of a loader, not a measurement. The
+  reason it matters is that the neighbours are the credential denials (§8.2),
+  and probe P4(b) is the standing control that would notice.
+- **NOT MEASURED, and named as such**: whether the harness can ever emit a
+  project-directory slug equal to the constant prefix, which is the input that
+  derives the empty vault name (§6.6 step 1). No directory in today's listing
+  does. The cheapest discriminating test is a session whose cwd slugifies to
+  the org root with a trailing separator; the refusal ships either way, because
+  one `case` arm costs less than the answer.
 - **UNVERIFIABLE from here**: whether an Obsidian Sync remote is bound. The
   plugin is enabled; the binding is not in the vault. Only the operator can
   answer (§14 Q1).
@@ -1413,11 +1711,29 @@ the answer is a stronger mechanism, not a stronger sentence. What the counts do
 *not* measure is a note edited in place — that residual is stated in §8.2 and is
 not dressed up here.
 
-**Link drift, the same cadence: `vault-memory-link --check`.** This is the
-recurring half of §6.2. Linking all 25 project directories is a construction
-guarantee for the directories that exist on migration day; a checkout that first
-runs a session afterwards gets a fresh `~/.claude/projects/<slug>` and a real,
-unlinked `memory/` inside it, and nothing re-establishes the guarantee for it.
+**Where the cadence lives, because a section of this document is not a
+schedule.** §13 requires each acceptance criterion to survive this document
+being deleted, and the three monthly checks in this section — the adoption
+metric above, the link-drift check below, and the definition-exclusion
+intersection after it — have to meet the same bar or they are a sentence nobody
+reads again. They are therefore written into
+`vault-memory-link`'s own header, beside the `--check`/`--migrate` synopsis
+(§6.6) — a committed artifact that `just activate` installs, that already
+carries operator-facing rules, and that the operator is looking at whenever they
+run the check. AC 2d.7 gates that. A `cron` entry is deliberately not proposed:
+this fleet already runs `sandbox-friction-report` as an operator habit with no
+scheduler, so an operator-run periodic script is the house pattern, and the gap
+this closes is not the absence of a timer but the instruction surviving
+nowhere.
+
+**Link drift: `vault-memory-link --check`.** This is the recurring half of §6.2.
+Linking every project directory is a construction guarantee for the directories
+that exist on migration day; a checkout that first runs a session afterwards
+gets a fresh `~/.claude/projects/<slug>` and a real, unlinked `memory/` inside
+it, and nothing re-establishes the guarantee for it. The corpus growing from 25
+to 26 during this review (§2.3) is that mechanism observed once already, on a
+cloud session rather than a checkout.
+
 The failure is silent by construction — a vault that reads complete while a new
 project accumulates memory outside it — so the check has to be scheduled, not
 merely available. Any state other than `linked` is answered by re-running
@@ -1426,8 +1742,8 @@ merely available. Any state other than `linked` is answered by re-running
 A `SessionStart` hook calling `--check` is the stronger form: it would catch the
 new checkout in the session that creates it, instead of up to a month later.
 It is **not** adopted here, deliberately and not by omission — it puts a
-filesystem walk of 25 directories in front of every session start, and its only
-possible action is to print a warning, because the fix is an operator-run
+filesystem walk of every project directory in front of every session start, and
+its only action is to print a warning, because the fix is an operator-run
 `--migrate` either way. If the monthly check ever finds a project that has been
 accumulating memory outside the vault for weeks, that evidence is the argument
 for the hook, and it should be adopted then rather than pre-emptively.
@@ -1483,13 +1799,17 @@ working-agreement edit, any vault content.
 | # | Acceptance criterion | Blocking |
 |---|---|---|
 | 2a.1 | `grep -c 'SANDBOX_OBSIDIAN_VAULT_PATH' src/user/claude_code.rs` returns 2 — the constant and its one use in the `allowWrite` chain at `claude_code.rs:469-480` | BLOCKING |
-| 2a.2 | `with_sandbox_filesystem_deny_write` is called exactly once, with both `~/Obsidian/Development/Memory` and `~/Obsidian/Development/.obsidian` as elements | BLOCKING |
-| 2a.2b | `permissions.deny` in the generated settings contains both `Edit(~/Obsidian/Development/.obsidian/**)` and `Write(~/Obsidian/Development/.obsidian/**)`, added through `deny_sensitive_paths` rather than by hand | BLOCKING |
+| 2a.2 | `with_sandbox_filesystem_deny_write` is called exactly once, with both `~/Obsidian/Development/Memory` and `~/Obsidian/Development/.obsidian` as elements, and the second is produced from `SANDBOX_OBSIDIAN_CONFIG_PATH` by `strip_suffix("/**")` rather than written out again — `grep -c 'SANDBOX_OBSIDIAN_CONFIG_PATH' src/user/claude_code.rs` returns 3 (the declaration and two uses), and no `.obsidian` string literal appears anywhere else in the file | BLOCKING |
+| 2a.2b | `permissions.deny` in the generated settings contains both `Edit(~/Obsidian/Development/.obsidian/**)` and `Write(~/Obsidian/Development/.obsidian/**)`, added through `deny_sensitive_paths` over `SANDBOX_OBSIDIAN_CONFIG_PATH` rather than by hand | BLOCKING |
 | 2a.3 | `just tests` passes, including the four `sandbox_read_denials_*` tests (`claude_code.rs:682`, `:696`, `:706`, `:720`) | BLOCKING |
 | 2a.4 | `grep -rn 'Obsidian/Personal' src/` returns nothing | BLOCKING |
 | 2a.5 | `sandbox-friction-report` skips filing — and still prints — for all four of these subject strings, which is what the two `case` patterns of §12 must cover: `/~/Obsidian/Development/Memory/x`, `/Users/erikreinert/Obsidian/Development/Memory/x`, `/~/.claude/projects/x/memory`, `/Users/erikreinert/.claude/projects/x/memory`. Stated as strings, not as a line number, because the criterion must not break when the file moves by a line | BLOCKING |
-| 2a.6 | `vault-memory-link` exists, is executable, implements `--check` and `--migrate`, reports the four states of §6.6, and `--check` on the un-migrated machine reports 25 project directories `unlinked` and changes nothing | BLOCKING |
-| 2a.8 | `vault-memory-link --migrate` on a fixture whose destination folder is non-empty and different reports `mismatched` and leaves both sides byte-identical to what they were — the re-entry case, exercised before the real run | BLOCKING |
+| 2a.6 | `vault-memory-link` exists, is executable, implements `--check` and `--migrate`, and reports the five states of §6.6. On the un-migrated machine `--check` prints one line for **every** directory `ls ~/.claude/projects` returns — no count is written into the script or into this criterion — reports each `unlinked`, prints the summary line, exits 1, and changes nothing | BLOCKING |
+| 2a.8 | `vault-memory-link --migrate` on a fixture whose destination folder is non-empty and different reports `mismatched`, prints the message naming both paths, exits non-zero, and leaves both sides byte-identical to what they were | BLOCKING |
+| 2a.8b | `--migrate` on an `interrupted-copy` fixture — `.memory-link-pending` present, `…/memory` still a real directory — completes the migration and ends `linked`, with the backup holding the original bytes. Exercised separately from 2a.8c because the two states have different completions | BLOCKING |
+| 2a.8c | `--migrate` on an `interrupted-relink` fixture — `.memory-link-pending` present, `…/memory` absent, backup present — performs the second move alone and ends `linked`, with `diff -r` between backup and link empty | BLOCKING |
+| 2a.8d | `--check` reports the correct state for one fixture of each of the five states, including a fabricated combination the table does not name, which must report `mismatched`. Run before any real directory is touched | BLOCKING |
+| 2a.9 | the derivation refuses the empty string, `/`, `..`, a leading `.`, and a leading `-`, and the whole run refuses a duplicate derivation (probe P5, run against the real listing) | BLOCKING |
 | 2a.7 | every change is committed to source and none is applied by hand under `~/.claude` | BLOCKING |
 
 ### Phase 2b — activate and probe
@@ -1504,7 +1824,7 @@ changes. *Depends on*: 2a, and the operator running `just activate`.
 | 2b.3 | probe P1 passes: the sandboxed write into `Memory/` is denied and the sandboxed write into `Reports/` succeeds, in the same pass | BLOCKING |
 | 2b.4 | probe P10(a) passes: a sandboxed write to a file nested inside `Memory/<project>/` is denied — the deny is recursive, not exact-path | BLOCKING |
 | 2b.5 | probe P10(b) passes: a sandboxed write to `~/Obsidian/Development-scratch/` is denied — matching is on component boundaries | BLOCKING |
-| 2b.6 | probe P4 passes: `~/.aws` and `~/.ssh` reads are still denied from a sandboxed seat | BLOCKING |
+| 2b.6 | probe P4 passes at **both** layers, run after 2a.2b's rules are installed: (a) sandboxed `cat` of `~/.aws` and `~/.ssh` is denied, and (b) an in-process Read tool call for a non-existent file under each returns `File is in a directory that is denied by your permission settings.` while the same call inside the checkout returns `File does not exist.` The two new `permissions.deny` rules share a list with the credential denials, so a sandbox-layer check alone does not cover them | BLOCKING |
 | 2b.7 | probe P7 passes: a sandboxed write to `~/Obsidian/Personal/` is denied | BLOCKING |
 | 2b.8 | a sandboxed write to `~/Obsidian/Development/.obsidian/probe.json` is denied | BLOCKING |
 | 2b.8b | probe P13 passes: the in-process Write and Edit tools are both refused against `~/Obsidian/Development/.obsidian/`, while the same Write into `Reports/` succeeds in the same pass | BLOCKING |
@@ -1513,18 +1833,19 @@ changes. *Depends on*: 2a, and the operator running `just activate`.
 
 ### Phase 2c — memory migration
 
-*Goal*: 98 notes live in the vault, reached by 25 symlinks. *Scope*: filesystem
+*Goal*: 98 notes live in the vault, reached by one symlink per project
+directory. *Scope*: filesystem
 only, no repository file changes. *Depends on*: 2b, and the §14 Q1 answer.
 
 | # | Acceptance criterion | Blocking |
 |---|---|---|
 | 2c.1 | probe P2 passes on a scratch copy **before** any real memory directory is touched | BLOCKING |
-| 2c.2 | probe P5 passes: the derivation rejects `..`, `/`, and a leading `.`, and over the real `~/.claude/projects` listing produces 25 names with no duplicate | BLOCKING |
+| 2c.2 | probe P5 passes: the derivation rejects the empty string, `..`, `/`, a leading `.`, and a leading `-`, and over the real `~/.claude/projects` listing produces as many distinct names as there are directories (`… \| sort \| uniq -d` returns nothing). No count is written into this criterion — the listing at migration time is the input set | BLOCKING |
 | 2c.3 | for every project directory, `readlink <memory-dir>` resolves into `~/Obsidian/Development/Memory/`, and for every migrated one `diff -r <project-dir>/.memory-backup-<date> <memory-dir>` is empty | BLOCKING |
 | 2c.4 | `find -L ~/.claude/projects -path '*/memory/*.md' -type f` and `find ~/Obsidian/Development/Memory -name '*.md'` both count 98 — the same files, seen through both paths. The `-L` is not optional: without it the first command returns 0 on exactly the state this criterion verifies | BLOCKING |
 | 2c.5 | a live session in a migrated project loads `MEMORY.md` and writes a new memory note that appears in the vault | BLOCKING |
 | 2c.6 | `find ~/.claude/projects -maxdepth 2 -name memory -type d` returns nothing — every memory path is a link, so no project can accumulate memory outside the vault | BLOCKING |
-| 2c.7 | each project's `.memory-backup-<date>` exists until that project passes 2c.5, and is removed by the operator afterwards. A backup with no resolved link is the `interrupted` state, not a pass: `vault-memory-link --check` must report every project `linked` at the end of the phase, which is what distinguishes a kept backup from an orphaned one | BLOCKING |
+| 2c.7 | each project's `.memory-backup-<date>` exists until that project passes 2c.5, and is removed by the operator afterwards. A backup beside a marker or an absent `…/memory` is an `interrupted-*` state, not a pass: `vault-memory-link --check` must report every project `linked` and exit 0 at the end of the phase, which is what distinguishes a kept backup from an orphaned one | BLOCKING |
 
 ### Phase 2d — new-document routing
 
@@ -1534,12 +1855,13 @@ the vault. *Depends on*: 2b, the §14 Q1 answer, and a second `just activate`.
 
 | # | Acceptance criterion | Blocking |
 |---|---|---|
-| 2d.1 | `~/Obsidian/Development/` contains `Home.md` with the content given in §6.1, plus `Designs/` and `Reports/`. `Runs/` and `Attachments/` are NOT created | BLOCKING |
+| 2d.1 | `~/Obsidian/Development/` contains `Home.md` with the content given in §6.1, plus `Designs/` and `Reports/`. `Runs/` and `Attachments/` are NOT created. **Written by the operator from a terminal, or by a sandboxed shell — the vault root is in `allowWrite` and carries no deny — and not through the in-process Write tool**, whose conditional `additionalDirectories` grant stops at `Designs/` and `Reports/` by design (§6.3, §8.2). A refused `Home.md` write is not a reason to widen that grant to the vault root; 2b.9 forbids it | BLOCKING |
 | 2d.2 | `src/user/claude_code_memory.md` contains the §6.4 string verbatim, as a fourth bullet under "This machine", committed, and installed by `just activate`. Verbatim means all four of its elements are present in the installed file: the two destination folders with the proposes/measures tie-breaker, the `YYYY-MM-DD-<slug>-<origin>.md` pattern **with `<origin>` defined in the same bullet**, the five frontmatter field names, and the `Project:` link line. 2d.5 tests behaviour this criterion has to have installed first | BLOCKING |
 | 2d.3 | the SHA-256 set of `*.md` under `~/Obsidian/Development` and the SHA-256 set of the installed definition corpus (`~/.claude/skills`, `~/.claude/agents`, `~/.claude/workflows`, `~/.claude/hooks`, `src/user/docket/config/`) have an empty intersection | BLOCKING |
 | 2d.4 | no file under `~/Obsidian/Development` originates from `dotfiles.vorpal.git`'s tree | BLOCKING |
-| 2d.5 | an agent writes a document to `~/Obsidian/Development/Reports/` through the in-process Write tool, in a live session, and it lands with the §6.1 filename and frontmatter | BLOCKING — this is the only criterion that exercises the path the whole phase exists for |
+| 2d.5 | an agent writes a document to `~/Obsidian/Development/Reports/` through the in-process Write tool, in a live session, and it lands with the §6.1 filename and frontmatter. Pass condition, stated so a literal copy of the template cannot satisfy it: `date` is the day the note was written, `origin` matches the `<origin>` component of the note's own filename modulo case, `surface` is one of the three bare words rather than the alternation, and none of the five values is the example value from §6.4's block unless it is genuinely correct for that note | BLOCKING — this is the only criterion that exercises the path the whole phase exists for |
 | 2d.6 | a reviewer confirms no vault note paraphrases a definition | non-blocking — a convention, not a gate (§12) |
+| 2d.7 | `vault-memory-link`'s header carries all three monthly checks of §12 — `--check`, the per-folder note counts, and the definition-exclusion hash intersection — so the cadence survives this document being deleted. `grep -c` for each of the three in the installed `~/.claude/scripts/vault-memory-link` returns non-zero | BLOCKING |
 
 ## 14. Open questions
 
@@ -1635,7 +1957,7 @@ are noted as such.
 | # | Finding | Disposition |
 |---|---|---|
 | C1 | Folder-name derivation is not a computable function of the slug; the two worked examples applied different rules | §6.1 — prefix-strip, no character-class inversion; injectivity checked at migration time (2c.2); tree, ALT-1, and AC all name the same rule |
-| C2 | New project directories reproduce the ALT-2 failure one level up; the link count was stated as both 12 and 4 | §6.2 — 25 links, one per project directory; single count used in §5, §6.1, §6.2, §9, §13; drift check added as 2c.6 |
+| C2 | New project directories reproduce the ALT-2 failure one level up; the link count was stated as both 12 and 4 | §6.2 — one link per project directory, the set read from the listing rather than fixed (revision 4, C38); drift check added as 2c.6 |
 | C3 | The migration installs symlinks under `~/.claude` that no source revision describes and activation never repairs | §6.6 — committed `vault-memory-link` script with `--check` and `--migrate`, installed by activation; the constraint tension is named in §1 |
 | C4 | BLOCKING gate 2c.4 used `find` without `-L` and would return 0, not 98 | §7 and 2c.4 — `-L` required, verified on a fixture with a positive control, and the reason stated in the criterion itself |
 | C5 | Vault notes carry no provenance and no uniqueness component | §6.1 — `<origin>` in the filename, five required frontmatter fields; §7 states a vault note is not a recorded artifact |
@@ -1676,10 +1998,29 @@ half that stayed open.
 | C24 | The friction-report skip was keyed on one spelling of a subject the design gives two names, and missed the `~/.claude/projects` access path entirely | §12 — two fragment-matching patterns, neither anchored on `$HOME`; both spellings measured by running the report's own `capture` and `trim_path` over two fixtures, with the absolute form as the positive control; AC 2a.5 now names the four subject strings instead of a line number |
 | C25 | `vault-memory-link` was called idempotent but specified only over already-linked and never-started; the two re-entry states the document predicts left the vault mutated or the state unreportable | §6.6 — step 4 inspects the destination before writing and reports `mismatched` without mutating; step 5 builds the link under a pending name so an interruption is self-describing; `--check` gains a fourth state, `interrupted`; the un-closable rename window is stated as such rather than called atomic; AC 2a.8 exercises the case on a fixture |
 | C26 | The `.obsidian` deny bound only sandboxed shells while the conditional `additionalDirectories` grant handed the in-process tool layer the vault root | §6.3 — tool-layer deny through the existing `deny_sensitive_paths` idiom, wrapped as both `Edit(…)` and `Write(…)`; the conditional grant narrowed to `Designs/` and `Reports/`; §8.4 gains the in-process class as a fourth writer; probe P13 and AC 2a.2b/2b.8b; the `Write(…)` form is labelled INFERRED |
-| C27 | Linking all 25 project directories is a construction guarantee only for migration day; nothing gave `--check` a cadence | §6.2 reason 2 says exactly that, and §12 schedules `--check` monthly beside the adoption metric; the `SessionStart` hook is named as the stronger form and deliberately deferred, with the evidence that would justify it |
+| C27 | Linking all 25 project directories is a construction guarantee only for migration day; nothing gave `--check` a cadence | §6.2 reason 2 says exactly that, and §12 schedules `--check` monthly beside the adoption metric; the `SessionStart` hook is named as the stronger form and deliberately deferred, with the evidence that would justify it. Revision 4 moved that cadence out of §12 prose and into the script's installed header (C36) |
 | C28 | Provenance was added for creation only; nothing detects a note modified in place, and round 0's git-in-the-vault alternative was dropped without a rejection on the record | ALT-6 records the rejection with its two reasons — the `git *` bypass makes the history unauthenticated against the adversary it is for, and a `.git` inside a possibly-synced vault collides with unanswered Q1 — and §8.2 carries the modification residual explicitly; §7 restates `origin` as an unauthenticated self-report whose value is detection, not attribution |
 | C29 | The `Project:` link is dangling for 21 of 25 folders, and following one offers to create a file inside the denied `Memory/` subtree | §6.1 — unresolved by design, self-healing on first memory write, with "do not follow it" stated where the convention is; the `MEMORY.md` stub is recorded as rejected (the migration authors no content); `Home.md`'s two links are named as examples; probe P14 sizes the click |
 | C30 | The operator-only rule on the migration script was prose in a file installed on every seat path | §6.6 — the header now gives the mechanical reason: both writes are denied at the Seatbelt layer, `Memory/` by this design's deny and the relink by the harness's `denyWithinAllow`, so an agent invocation is inert rather than merely discouraged |
 | C31 | Q1 was asked in both directions but its three enumerated answers covered egress only | §14 Q1 — four numbered answers, each stating what it accepts in both directions, and answer 3 spelled out as accepting an ingress writer |
 | C32 | The operator-executed, unsandboxed migration script was not carried as an asset | §3.2 gains the row with its integrity requirement; §9 gains the `git log -p` step before the first `--migrate` after any activation |
-| C33 | The fallback naming branch produced the leading-dash names the same section calls hazardous; step 1 did not refuse a leading dash; injectivity held within a branch, not across both | §6.1 — the fallback replaces a leading `-` with `_`; the refusal list gains a leading `-`; the injectivity claim is restated as verified over the real input set, with the cross-branch collision named and AC 2c.2 as the check |
+| C33 | The fallback naming branch produced the leading-dash names the same section calls hazardous; step 1 did not refuse a leading dash; injectivity held within a branch, not across both | §6.1 — the fallback replaces a leading `-` with `_`; the refusal list gains a leading `-`; the injectivity claim is restated as verified over the real input set, with the cross-branch collision named and AC 2c.2 as the check. **Note:** the evidence under which this was graded a Suggestion — "the fallback branch is unreachable today" — has since expired; see C38 below |
+
+### 16.3 Revision 3's review — answered by revision 4
+
+Every cluster from the third reconciled review. Six were residuals of earlier
+clusters at the same locus; four are new material this revision's own fixes
+created or exposed.
+
+| # | Finding | Disposition |
+|---|---|---|
+| C34 | `--check` was specified as "steps 1 and 3 only" while the state table had grown to four, so three of its states were uncomputable; `--migrate` had no branch for a marker-present state, and one `interrupted` label covered two states with different completions | §6.6 — step 0 determines the state and both modes run it; `--check` is defined as that step and none of the mutations, a definition that does not go stale; the step list gains branches 9 and 10 for the two interruptions and 11 for `mismatched`; the table has five states plus a fail-closed default for anything it does not name; AC 2a.8b, 2a.8c and 2a.8d exercise each completion separately |
+| C35 | The installed working-agreement string showed four frontmatter values as unmarked examples under "exactly this frontmatter", and spelled `origin` three ways, leaving a session writer no value to copy | §6.4 and §6.1 — every substitution point is in angle brackets, the literal tokens are named, and `origin` has one spelling in two cases (as issued in frontmatter, lowercased in the filename; `session-xxxxxxxx` with a dash in both). AC 2d.5 gains a pass condition a literal copy of the template cannot satisfy |
+| C36 | The monthly cadence lived only in §12 prose of a document §13 says may be deleted: no criterion and no installed artifact carried it | §6.6 — all three checks are written into `vault-memory-link`'s own header beside the synopsis, which is committed and installed; §12 says why that carrier and why not `cron`; AC 2d.7 gates it |
+| C37 | BLOCKING AC 2d.1 named no actor for the `Home.md` write, while the narrowed `additionalDirectories` grant stops at `Designs/` and `Reports/` — so the obvious repair for a refusal was the vault-root widening §8.2 had just removed | §6.1 and AC 2d.1 — the operator from a terminal, or a sandboxed shell (the vault root is in `allowWrite`), never the in-process Write tool; the widening is named as the wrong repair in both places |
+| C38 | The project-directory corpus is 26, not 25, with one entry outside the org root, so the fallback naming branch the document called unreachable runs first — and three BLOCKING criteria hard-coded a count that had already moved mid-review | §2.3 — re-measured 2026-08-21 with the 12-directory and 98-note positive controls confirming the same corpus; the count is stated as a measurement with a date; §6.1 replaces the unreachability claim with the branch's real first-run status and the cost of the all-directories rule; probe P5 takes the real listing as input; no criterion names a count |
+| C39 | The two new tool-layer deny rules join the list that carries the credential denies, while the only regression control scheduled for that list exercised the sandbox layer instead | §11 P4 — a second half using the in-process Read tool against a non-existent filename under each credential path, with a positive control in the same pass; §8.2 states the shared-list concern and labels the degradation mode INFERRED; §8.6 names both layers; AC 2b.6 requires both and runs after 2a.2b lands |
+| C40 | `SANDBOX_OBSIDIAN_CONFIG_PATH` stored the bare path while the repository idiom stores the tool-layer glob and strips it for the sandbox layer, so two criteria checked two independently written strings | §6.3 — the constant is declared as `~/Obsidian/Development/.obsidian/**` and the sandbox layer strips the suffix, matching `SENSITIVE_PATHS` and `sandbox_filesystem_deny_read_paths`; AC 2a.2 requires the constant to be the only source of both spellings |
+| C41 | `vault-memory-link` would be the first script installed on every seat path that moves user data, and the design named its mitigations without naming the precedent | §6.6 — the six existing scripts are enumerated, the one that mutates anything is named, and the three properties are stated as the standard for the class; the same sentence is in the script's header so it outlives this document |
+| C42 | The step 1 refusal list still admitted the empty derived name, whose migration target is the `Memory/` root itself | §6.6 step 1 — the empty string is refused, with the consequence spelled out (one project's memory linked to the whole corpus) and the reachability honestly labelled unmeasured rather than argued away |
+| C43 | The design wrote `Home.md` and the script header in full but proposed no operator-facing output for `vault-memory-link` | §6.6 — per-project line, summary line with derived counts, the `mismatched` message naming both paths, stdout/stderr split, and exit codes for both modes |

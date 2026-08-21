@@ -1315,48 +1315,6 @@ function needsClaimProbe(row) {
     return g !== undefined && g < s
 }
 
-// ASK THE ENGINE WHAT IS READY, rather than inferring it from the manifest
-// (DOT-226). The per-row probe above answers "did this step already settle?",
-// which is the wrong question for the case that actually cost tokens: a step
-// still `pending` whose `after` predecessor is not done reads as perfectly
-// claimable and spawns anyway, then dies on the engine's own words — RUN-28
-// wf_93e53958-2d5, STEP-693: `step verify@0 is not ready to claim: an
-// `after` predecessor is not done`. Six such spawns across that run's waves,
-// 3,262 output and 53,691 cache-creation tokens on claims that could only
-// CONFLICT.
-//
-// One `next --run` read per stage replaces N per-row reads and answers the
-// right question. It is only asked from the SECOND stage on: the first
-// stage's rows are what the dispatch just routed, so re-asking about them
-// buys nothing.
-//
-// `--limit` matters. It defaults to 10, and a silent truncation here would
-// read as "not ready" and skip real work, so it is passed explicitly above
-// the row count.
-//
-// FAIL-OPEN, in the same direction as every other probe: anything short of a
-// parsed `"ok":true` envelope (probe spawn error, an engine error, prose, a
-// shape change) returns null and the stage spawns exactly as it did before.
-// An `ok:true` answer with an EMPTY step list is a real answer — nothing in
-// this stage is ready — and is honored, which is the whole point.
-const READY_PROBE_LIMIT_SLACK = 50
-
-async function readyStepIds(run, rowCount, phaseLabel) {
-    if (!run) return null
-    const limit = rowCount + READY_PROBE_LIMIT_SLACK
-    const out = await probe(`docket next --run ${run} --limit ${limit} --json`,
-        `${run} · ready`, phaseLabel)
-    if (!/"ok"\s*:\s*true/.test(out)) {
-        if (out.trim()) log(`${run}: readiness probe unusable — spawning the stage unfiltered`)
-        return null
-    }
-    const ids = new Set()
-    for (const m of out.matchAll(/"step"\s*:\s*"(STEP-\d+)"/g)) ids.add(m[1])
-    return ids
-}
-
-const waveRun = (rows.find((r) => typeof r.run === 'string' && r.run) || {}).run || ''
-
 const byStep = new Map()
 // A park observed anywhere stops every LATER stage (in-flight groups finish;
 // the engine re-offers unlaunched steps after the park lifts). A CONFLICT or
@@ -1389,9 +1347,6 @@ for (const k of stageKeys) {
     })
     if (group.length === 0) continue
     const label = `stage ${k} (${group.length} row${group.length === 1 ? '' : 's'})`
-    const ready = k === stageKeys[0] || !group.some((r) => r.kind === 'executor')
-        ? null
-        : await readyStepIds(waveRun, group.length, label)
     const settled = await parallel(group.map((row) => () => {
         if (row.kind === 'action') {
             // Engine-run, and normally already DONE: the record of its last
@@ -1402,15 +1357,7 @@ for (const k of stageKeys) {
             return Promise.resolve({ step: row.step, status: 'engine-run', text: null })
         }
         if (row.kind === 'vote') return runGate(row, label)
-        if (ready && !ready.has(row.step)) {
-            // The engine's own answer, so no per-row probe is needed and no
-            // guess is made. The step stays pending and the next dispatch
-            // offers it — the same recovery as before, minus the corpse.
-            log(`${row.step}: the engine does not list it as ready this stage — ` +
-                `skipping the spawn; the next dispatch re-offers it`)
-            return { step: row.step, status: 'skipped-not-ready', text: null }
-        }
-        if (!ready && needsClaimProbe(row)) {
+        if (needsClaimProbe(row)) {
             return probe(`docket step show ${row.step} --json`,
                 `${row.step} · pre-claim`, label, row.step).then((show) => {
                 // Skip only on a positively recognized TERMINAL status; empty

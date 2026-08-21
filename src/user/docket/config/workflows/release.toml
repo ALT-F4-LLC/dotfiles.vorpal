@@ -20,7 +20,14 @@
 
 [pipeline]
 name    = "release"
-version = 7   # 7: verify's unmet park routes through an interposed tribunal
+version = 8   # 8: every class `max` 4 -> 16, the wave dispatcher's ceiling
+              #   (the harness runs at most min(16, CPUs - 2) agents per
+              #   workflow); 4 was the single-issue fanout width and
+              #   throttled multi-issue runs. `pr-comment` declares
+              #   holds_tree = false: it drafts a comment set and never
+              #   touches the tree, so it no longer excludes on scope
+              #   (2026-08-21)
+              # 7: verify's unmet park routes through an interposed tribunal
               #   vote first (operator policy, 2026-08-16) — the panel
               #   escalates only what it will not pass
               # 6: description + commit notes updated to the
@@ -54,14 +61,17 @@ unless_labels = ["retro"]    # only `retro` outranks it (precedence order in
                              #   this bounds) against a 104m average, and every read
                              #   class finished inside 13m.
                              # `max` is required by V24 and is CONCURRENCY, a
-                             #   separate question from duration. `write` = 1 is the
-                             #   writer serialization the spec's reference instance
-                             #   specifies (02 §11.1); read classes take 4, the
-                             #   fanout width these pipelines actually declare, so
-                             #   the bound records existing behaviour rather than
-                             #   newly throttling anything.
-"pr-comment-author" = { max = 4, max_step_duration = "1h" }
-"verify-ac"         = { max = 4, max_step_duration = "1h" }
+                             #   separate question from duration. Every class takes
+                             #   16, the wave dispatcher's ceiling: it runs a stage
+                             #   through the harness's parallel(), capped at
+                             #   min(16, CPUs - 2) concurrent agents per workflow,
+                             #   so 16 is the largest cohort that can actually run
+                             #   at once. A tighter `max` splits rows the
+                             #   dispatcher could run together into extra stage
+                             #   barriers; a looser one certifies concurrency the
+                             #   dispatcher then queues.
+"pr-comment-author" = { max = 16, max_step_duration = "1h" }
+"verify-ac"         = { max = 16, max_step_duration = "1h" }
                              # the `write` row left with the commit step — no
                              #   write-class step remains in this pipeline
 
@@ -117,6 +127,9 @@ inputs = ["verify.ac-report", "issue.body"]
 
 [[step]]
 name = "pr-comment"
+holds_tree = false            # drafts a comment set, never writes the tree: exempt
+                             #   from scope exclusion so it coexists with other
+                             #   issues' steps instead of serialising against them
 after = ["verify"]           # was after commit-exec; the commit tail is removed
 executor = "pr-comment-author"
 emits = "comment-set"

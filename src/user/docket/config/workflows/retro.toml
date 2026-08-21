@@ -19,7 +19,13 @@
 
 [pipeline]
 name    = "retro"
-version = 6   # 6: reconcile aggregates severity by `max` instead of
+version = 7   # 7: every class `max` 4 -> 16, the wave dispatcher's ceiling
+              #   (the harness runs at most min(16, CPUs - 2) agents per
+              #   workflow); 4 was the single-issue fanout width and
+              #   throttled multi-issue runs. `revise` declares
+              #   holds_tree = false: it emits proposals and never edits
+              #   config, so it no longer excludes on scope (2026-08-21)
+              # 6: reconcile aggregates severity by `max` instead of
               #   `median` — an even-count median resolves an exact tie to
               #   the LOWER band, demoting the mixed clusters that most need
               #   attention (retro 2026-08-19, panel DKT-V62 architecture
@@ -54,16 +60,19 @@ labels_any  = ["retro"]
                              #   this bounds) against a 104m average, and every read
                              #   class finished inside 13m.
                              # `max` is required by V24 and is CONCURRENCY, a
-                             #   separate question from duration. `write` = 1 is the
-                             #   writer serialization the spec's reference instance
-                             #   specifies (02 §11.1); read classes take 4, the
-                             #   fanout width these pipelines actually declare, so
-                             #   the bound records existing behaviour rather than
-                             #   newly throttling anything.
-"judge-correctness"   = { max = 4, max_step_duration = "1h" }
-"judge-simplicity"    = { max = 4, max_step_duration = "1h" }
-"retro-analyst"       = { max = 4, max_step_duration = "1h" }
-"synthesize-findings" = { max = 4, max_step_duration = "1h" }
+                             #   separate question from duration. Every class takes
+                             #   16, the wave dispatcher's ceiling: it runs a stage
+                             #   through the harness's parallel(), capped at
+                             #   min(16, CPUs - 2) concurrent agents per workflow,
+                             #   so 16 is the largest cohort that can actually run
+                             #   at once. A tighter `max` splits rows the
+                             #   dispatcher could run together into extra stage
+                             #   barriers; a looser one certifies concurrency the
+                             #   dispatcher then queues.
+"judge-correctness"   = { max = 16, max_step_duration = "1h" }
+"judge-simplicity"    = { max = 16, max_step_duration = "1h" }
+"retro-analyst"       = { max = 16, max_step_duration = "1h" }
+"synthesize-findings" = { max = 16, max_step_duration = "1h" }
 
 [[step]]
 name = "analyze"
@@ -126,6 +135,9 @@ max_fix_loops = 2
 
 [[step]]
 name = "revise"
+holds_tree = false            # emits proposals, never edits config or the tree:
+                             #   exempt from scope exclusion so it coexists with
+                             #   other issues' steps instead of serialising
 executor = "retro-analyst"
 emits = "proposals"
 packet = ["contracts/{executor}.md"]

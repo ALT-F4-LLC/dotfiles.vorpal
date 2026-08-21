@@ -1115,9 +1115,20 @@ gate routes onward per its declared routing, to the human operator or into a
 rework loop that answers your findings, so reject when the evidence says
 reject; do not approve to keep things moving.
 
-CAST YOUR VOTE — exactly once, as your last action, in ONE Bash call:
+CAST YOUR VOTE — exactly once, as your last action, in TWO Bash calls. First
+write your one-paragraph summary to a scratch file with a QUOTED heredoc —
+quoting the delimiter means the shell expands NOTHING in the body: backticks,
+$( ), and $VAR all stay literal text:
 
-  docket vote cast ${voteId} --voter ${r.seat} --role ${role} -v <approve|approve-with-concerns|reject> --confidence <0.0-1.0> --domain-relevance <0.0-1.0> --metadata '${metadataClaim}' --summary "<one-paragraph reasoning>"
+  cat > <TMP>/${row.step}-${r.seat}-summary.txt <<'EOF'
+  <your one-paragraph reasoning, on ONE line>
+  EOF
+
+Then cast, reading the file back — safe because the substitution wraps a fixed
+\`cat\` of your own file, so its content passes into the flag verbatim instead
+of being re-parsed as shell syntax:
+
+  docket vote cast ${voteId} --voter ${r.seat} --role ${role} -v <approve|approve-with-concerns|reject> --confidence <0.0-1.0> --domain-relevance <0.0-1.0> --metadata '${metadataClaim}' --summary "$(cat <TMP>/${row.step}-${r.seat}-summary.txt)"
 
   --verdict/-v      approve                = nothing you found should stop this
                     approve-with-concerns  = proceed, with the risks you name recorded
@@ -1132,11 +1143,13 @@ CAST YOUR VOTE — exactly once, as your last action, in ONE Bash call:
                     variant, model, effort) so the ledger records what cast
                     this vote. Pass it VERBATIM — do not edit it, and add
                     nothing to it: it is unverified, stored as-is, and public.
-  --summary         ONE paragraph, on ONE line, in double quotes: your verdict's
-                    reasoning and the specific evidence behind it. No line
-                    breaks; escape any embedded double quote as \\". Name files,
-                    shas, and commands you ran — a summary that could have been
-                    written without investigating will read like one.
+  --summary         ONE paragraph: your verdict's reasoning and the specific
+                    evidence behind it. Write it to the scratch file EXACTLY as
+                    above — NEVER type the paragraph inline in double quotes:
+                    backticks, $( ), and $VAR execute there. No line breaks
+                    inside the file. Name files, shas, and commands you ran —
+                    a summary that could have been written without
+                    investigating will read like one.
 
 YOUR FINAL TEXT IS NOT DELIVERED ANYWHERE. THE CAST IS YOUR DELIVERABLE. If the
 cast command errors, read the error, fix what it names, and retry ONCE. If it

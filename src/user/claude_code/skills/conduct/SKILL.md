@@ -1482,7 +1482,8 @@ durable to live. The conversational relay, which you also do, is not the
 durable copy.
 
 **When the park followed a step's gates, read the verdicts before you present
-anything.** `docket step gates STEP-N --json` is the verb that carries them —
+or characterize the outcome in any user-facing text.** `docket step gates STEP-N
+--json` is the verb that carries them —
 each gate's verdict, exit code, argv, duration, and output. `step show` and
 `step artifacts` do not, and the event stream renders a pass and a failure
 identically, so a conductor reading either surface reports failures as passes

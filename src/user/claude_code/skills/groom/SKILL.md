@@ -19,7 +19,7 @@ reference or `docket <verb> --help`).
 ## 1. Survey
 
 ```bash
-docket issue list --json -s backlog -s todo -s in-progress -s review
+docket issue list --json --limit 1000 -s backlog -s todo -s in-progress -s review
 docket run status --active --json
 ```
 
@@ -32,9 +32,9 @@ Two kinds of issue are in scope to read but not yours to freely edit —
 this queue isn't groom's alone:
 
 - **Run-included.** For each run `docket run status --active --json`
-  returns, `docket issue list --run <ref> --json` names that run's roster.
-  An open issue on any of those rosters belongs to a plan/conduct session,
-  even while the run is parked.
+  returns, `docket issue list --run <ref> --json --limit 1000` names that
+  run's roster. An open issue on any of those rosters belongs to a
+  plan/conduct session, even while the run is parked.
 - **Claimed.** Any issue with a non-empty `assignee` — someone or something
   else already has it.
 

@@ -26,6 +26,7 @@ pass and say so — there will be no next tick.
 
 ```bash
 docket issue list --json -s backlog -s todo
+docket run status --active --json
 ```
 
 Project resolves from cwd's git identity, same as every other docket verb
@@ -35,6 +36,17 @@ everything sitting in `backlog` or `todo` — the pre-existing backlog is fair
 game, not just issues that show up after you started watching (operator
 ruling, 2026-08-20). Ignore issues already `in-progress` or `review` — you
 put them there yourself in a prior tick (see §2's blocked case).
+
+Exclude two more kinds before picking — this queue isn't tend's alone:
+
+- **Run-included.** For each run `docket run status --active --json` returns
+  (planning, active, or paused — anything not done or abandoned),
+  `docket issue list --run <ref> --json` names that run's whole roster. Any
+  backlog/todo issue sitting on any of those rosters belongs to a plan/conduct
+  session, even while the run is parked — skip it.
+- **Claimed.** Any issue with a non-empty `assignee` — tend never sets one on
+  the issues it works, so a populated `assignee` means someone or something
+  else already has it. Skip it.
 
 - **Empty:** nothing to do. `ScheduleWakeup({delaySeconds: 150-180,
   noop: true, ...})` and stop. No "no new issues" message — a quiet tick is

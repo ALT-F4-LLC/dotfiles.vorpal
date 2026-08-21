@@ -4,23 +4,36 @@
 # attempts, artifact recording, context assembly, event logging (02 §5, §8).
 # A pipeline author writes topology and thresholds only (05 §1).
 # `issue.diff` is the engine-provided virtual artifact — referenced, never emitted.
-# Requires `findings@2` AND `findings@4` registered first: the review fanout
+# Requires `findings@2` AND `findings@5` registered first: the review fanout
 # declares findings@2 (judge-boundary anchor keys required — retro after RUN-5;
 # 7 judge-architecture findings keyed location/rule were silently dropped
-# downstream, see DKT-79), while `reconcile` takes findings@4 — findings@3's
-# re-registration (DKT-317 follow-up: the engine enforces byte-identity on a
-# frozen registration, so findings@3's `prior_disposition` wording fix moved
-# to a fresh schema instead of editing findings@3 in place) — carrying the
+# downstream, see DKT-79), while `reconcile` takes findings@5 — findings@4's
+# re-registration (DOT-483: the engine enforces byte-identity on a frozen
+# registration, so widening `line` to integer-or-null — synthesize-findings
+# emits an explicit null for whole-commit/whole-file-scope findings — moved
+# to a fresh schema instead of editing findings@4 in place, the same move
+# DKT-317 forced for findings@3 -> findings@4) — carrying the
 # same declared severity order the ordered severity threshold compiles from
 # (06 §11.2, V21c/V29) plus the optional `prior_disposition` that makes a
 # previously-ruled cluster recognisable as one. The split is deliberate:
 # `aggregate` carries through only input keys, so a schema requiring `id` on
-# the reconcile document trips V30 — which is why findings@3/@4 inherit
+# the reconcile document trips V30 — which is why findings@3/@4/@5 inherit
 # findings@1's optional `id` rather than findings@2's required one.
 
 [pipeline]
 name    = "standard-change"
-version = 14                 # 14: reconcile's payload moves from findings@3
+version = 15                 # 15: reconcile's payload moves from findings@4
+                             #   to findings@5 — findings@4 declared `line`
+                             #   as a bare integer, so the explicit
+                             #   `line: null` synthesize-findings emits for a
+                             #   whole-commit/whole-file-scope finding failed
+                             #   validation and forced an operator override-
+                             #   pass on a real run (DOT-483); the engine
+                             #   enforces byte-identity on a frozen
+                             #   registration, so the integer-or-null
+                             #   widening lands as a fresh schema instead of
+                             #   an in-place edit of findings@4.
+                             # 14: reconcile's payload moves from findings@3
                              #   to findings@4 — the engine enforces
                              #   byte-identity on a frozen registration, and
                              #   findings@3's `prior_disposition` description
@@ -291,16 +304,19 @@ params = { field = "severity", method = "max", hold_spread = 2, output = "findin
                                      #   undisputed cases land.
 inputs = ["synthesize.findings"]     # the clusters the builtin reduces (DKT-28,
                                      #   V31: required non-empty)
-payload = "findings@4"               # findings@3's re-registration (DKT-317
-                                     #   follow-up: byte-identity on the
-                                     #   frozen findings@3 registration
-                                     #   forced the wording fix into a fresh
-                                     #   schema). severity's declared order
-                                     #   (V29), plus `prior_disposition` —
-                                     #   findings@1's successor, additive and
-                                     #   optional, so a payload that sets it
-                                     #   never validates differently (retro
-                                     #   2026-08-19)
+payload = "findings@5"               # findings@4's re-registration (DOT-483:
+                                     #   byte-identity on the frozen
+                                     #   findings@4 registration forced the
+                                     #   `line` integer-or-null widening into
+                                     #   a fresh schema — synthesize-findings
+                                     #   emits `line: null` for a whole-
+                                     #   commit/whole-file-scope finding, and
+                                     #   findings@4's bare integer refused
+                                     #   it). Same declared severity order
+                                     #   (V29) and optional
+                                     #   `prior_disposition` as findings@4
+                                     #   (retro 2026-08-19); every payload
+                                     #   findings@4 accepted still validates
 threshold = { "fix-loop" = "any(severity >= blocker)" }   # no match -> pass (06 §11.2)
                                      # BLOCKER-ONLY LOOPING (operator policy,
                                      #   2026-08-10): `high` findings are

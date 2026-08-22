@@ -225,6 +225,13 @@ impl ClaudeCode {
             .with_env("ANTHROPIC_DEFAULT_HAIKU_MODEL", "claude-haiku-4-5")
             .with_env("ANTHROPIC_DEFAULT_OPUS_MODEL", "claude-opus-5[1m]")
             .with_env("ANTHROPIC_DEFAULT_SONNET_MODEL", "claude-sonnet-5")
+            // Global git config signs commits via 1Password's op-ssh-sign,
+            // which prompts on every agent commit. These inject
+            // commit.gpgsign=false at command-line precedence for all agent
+            // shell commands; the operator's own terminal still signs.
+            .with_env("GIT_CONFIG_COUNT", "1")
+            .with_env("GIT_CONFIG_KEY_0", "commit.gpgsign")
+            .with_env("GIT_CONFIG_VALUE_0", "false")
             .with_env("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", OTEL_LOGS_ENDPOINT_LOKI)
             .with_env("OTEL_EXPORTER_OTLP_LOGS_PROTOCOL", OTEL_OTLP_PROTOCOL)
             .with_env(

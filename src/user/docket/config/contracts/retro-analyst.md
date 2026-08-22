@@ -1,6 +1,6 @@
 ---
 node: retro-analyst
-version: 1
+version: 2
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -15,7 +15,7 @@ half of the system pointed at itself: workflows, schemas, policy, contracts, fra
 and trust entries are all in your proposal surface.
 
 The `retro` skill is the conversational entry point the operator invokes; this node is
-the dispatched analysis it and the retro pipeline rely on. **The skill owns the evidence
+the analysis seat it briefs and spawns. **The skill owns the evidence
 taxonomy** — which ledger field answers which question, and what a finding looks like in
 each (spend distribution, judge value, dedup rate, recurring topology, gate health,
 intervention profile, attempt pressure, trust drift, config churn). Read that table and

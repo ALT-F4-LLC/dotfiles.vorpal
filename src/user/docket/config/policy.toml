@@ -1,5 +1,5 @@
 [policy]
-version = 10
+version = 11
 
 [variants]
 fable-high = { model = "fable", effort = "high" }
@@ -30,7 +30,6 @@ judge-testing = { variant = "opus-high" }
 pr-comment-author = { variant = "sonnet-medium" }
 prd-author = { variant = "fable-max" }
 research = { variant = "fable-xhigh" }
-retro-analyst = { variant = "fable-xhigh" }
 spec-author-architecture = { variant = "opus-high" }
 spec-author-code-quality = { variant = "opus-high" }
 spec-author-operations = { variant = "opus-high" }

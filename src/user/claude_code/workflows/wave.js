@@ -154,7 +154,7 @@ function parseToml(text) {
 }
 // SYNC-END policy-parser
 
-const INVESTIGATOR_CLASS = ['investigate', 'research', 'retro-analyst']
+const INVESTIGATOR_CLASS = ['investigate', 'research']
 
 function executorRow(policy, hint) {
     const row = (policy.executors || {})[hint]

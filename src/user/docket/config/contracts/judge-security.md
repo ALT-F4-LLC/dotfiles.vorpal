@@ -1,14 +1,16 @@
 ---
 node: judge-security
-version: 1
+version: 2
 archetype: executor-read
 packet_includes:
   - fragments/severity-ladder-security.md
   - fragments/security-review-dimensions.md
   - fragments/evidence-rules.md
   - fragments/truth-first.md
+  - fragments/re-review-rounds.md
+  - fragments/diff-reconstruction.md
 emits: findings
-payload: findings@1
+payload: findings@6
 ---
 # Charter
 Examine one change for security defects: vulnerabilities introduced, protections
@@ -29,13 +31,6 @@ they gain, and label the claim OBSERVED (you traced it) or INFERRED (you suspect
 with the cheapest probe that would confirm). Absence of findings in a dimension is
 reported as examined-clean, not silence.
 
-On a re-review round — your inputs carry a previous round's findings — scope to
-the delta: state whether each prior finding in your dimension is closed or
-still open, examine what changed since, and do not re-derive findings at
-unchanged loci a prior round already recorded. Repetition is not discovery,
-and flat finding volume across rounds is the signal a fix loop cannot
-converge on.
-
 # Emit
 `findings`: markdown body with one section per finding (location · mechanism · impact ·
 evidence label · suggested direction), plus the findings payload — one entry per finding
@@ -48,9 +43,3 @@ examined-clean report; an empty payload is a valid, meaningful result.
 If the brief lacks the context to judge a boundary (e.g. the caller of changed code is
 outside the provided artifacts), emit your findings plus a `gap` note naming the missing
 context — never assume it safe, never guess it dangerous.
-
-An empty `issue.diff` beside a change-summary that names commits is not a missing
-input: the fix landed as ordinary commits before this step ran. Review those
-commits (`git show <sha>` in your own worktree) as the diff under judgment, and
-say in your findings that the target was reconstructed that way (RUN-8 set this
-pattern). Gap only when neither the diff nor any named commit is reachable.

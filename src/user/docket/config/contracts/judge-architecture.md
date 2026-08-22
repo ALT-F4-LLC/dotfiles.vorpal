@@ -1,6 +1,6 @@
 ---
 node: judge-architecture
-version: 1
+version: 2
 archetype: executor-read
 packet_includes:
   - fragments/severity-ladder-general.md
@@ -8,8 +8,10 @@ packet_includes:
   - fragments/evidence-rules.md
   - fragments/truth-first.md
   - fragments/rerun-discipline.md
+  - fragments/re-review-rounds.md
+  - fragments/diff-reconstruction.md
 emits: findings
-payload: findings@1
+payload: findings@6
 ---
 # Charter
 Examine one change for how it fits the system: pattern conformance, module boundaries
@@ -35,13 +37,6 @@ unit, say so plainly and name the seam it should split on. Apply the evidence ru
 throughout, and label each claim OBSERVED or INFERRED — a categorical claim about a
 symbol's surface needs a search you actually ran, not a narrow one generalized.
 
-On a re-review round — your inputs carry a previous round's findings — scope to
-the delta: state whether each prior finding in your dimension is closed or
-still open, examine what changed since, and do not re-derive findings at
-unchanged loci a prior round already recorded. Repetition is not discovery,
-and flat finding volume across rounds is the signal a fix loop cannot
-converge on.
-
 # Emit
 `findings`: markdown body with one section per finding (location · the general rule it
 instances · the second-order consequence · evidence label · suggested direction), plus
@@ -55,9 +50,3 @@ examined; an empty payload is a valid, meaningful result.
 If no design document or stated intent reaches you and the change is large enough that
 conformance is the question, emit your findings plus a `gap` note saying so. Judging
 architecture against an unstated design produces preference dressed as a finding.
-
-An empty `issue.diff` beside a change-summary that names commits is not a missing
-input: the fix landed as ordinary commits before this step ran. Review those
-commits (`git show <sha>` in your own worktree) as the diff under judgment, and
-say in your findings that the target was reconstructed that way (RUN-8 set this
-pattern). Gap only when neither the diff nor any named commit is reachable.

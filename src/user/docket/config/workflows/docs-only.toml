@@ -1,7 +1,7 @@
 [pipeline]
 description = "Documentation change: optional label-gated design phase (PRD -> reviewer gate -> TDD draft -> ADR resolution -> critic -> TDD final -> committee gate) feeding the implement pipeline; one correctness judge, doc-validate and citation gates, one design fix-loop, tribunal-filtered escalation; the conductor integrates commits, the operator publishes."
 name = "docs-only"
-version = 11
+version = 12
 
 [match]
 labels_any = ["docs-only"]
@@ -133,7 +133,7 @@ holds_tree = false
 inputs = ["implement.change-summary", "issue.diff"]
 name = "review"
 packet = ["contracts/{executor}.md"]
-payload = "findings@5"
+payload = "findings@6"
 threshold = { "review-tribunal" = "any(severity >= high)" }
 
 [[step]]

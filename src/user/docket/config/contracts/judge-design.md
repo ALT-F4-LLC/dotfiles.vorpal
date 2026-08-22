@@ -1,6 +1,6 @@
 ---
 node: judge-design
-version: 1
+version: 2
 archetype: executor-read
 packet_includes:
   - fragments/hig-principles.md
@@ -8,8 +8,10 @@ packet_includes:
   - fragments/severity-ladder-general.md
   - fragments/evidence-rules.md
   - fragments/truth-first.md
+  - fragments/re-review-rounds.md
+  - fragments/diff-reconstruction.md
 emits: findings
-payload: findings@1
+payload: findings@6
 ---
 # Charter
 Examine one change for design conformance: whether what it introduces matches the
@@ -55,13 +57,6 @@ or INFERRED (you suspect it, with the cheapest check that would confirm). Pair e
 Blocker with a concrete alternative; where none exists yet, say so in those words rather
 than downgrading the finding.
 
-On a re-review round — your inputs carry a previous round's findings — scope to
-the delta: state whether each prior finding in your dimension is closed or
-still open, examine what changed since, and do not re-derive findings at
-unchanged loci a prior round already recorded. Repetition is not discovery,
-and flat finding volume across rounds is the signal a fix loop cannot
-converge on.
-
 # Emit
 `findings`: markdown body with one section per finding (dimension · spec section ·
 expected versus observed · governing principle where one applies · evidence label ·
@@ -76,9 +71,3 @@ If no accepted specification covers the surface this change touches, or the spec
 silent on a behavior the change decides, emit your findings plus a `gap` naming the
 missing coverage. Judging a change against a spec that does not govern it produces
 findings that are really reviewer preference — say which you are holding.
-
-An empty `issue.diff` beside a change-summary that names commits is not a missing
-input: the fix landed as ordinary commits before this step ran. Review those
-commits (`git show <sha>` in your own worktree) as the diff under judgment, and
-say in your findings that the target was reconstructed that way (RUN-8 set this
-pattern). Gap only when neither the diff nor any named commit is reachable.

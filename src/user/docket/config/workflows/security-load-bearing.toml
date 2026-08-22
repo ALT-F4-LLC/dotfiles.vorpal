@@ -1,7 +1,7 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-load-bearing"
-version = 14
+version = 15
 
 [match]
 labels_any = ["security-load-bearing"]
@@ -57,17 +57,18 @@ holds_tree = false
 inputs = ["implement.change-summary", "threat-model.threat-model", "issue.diff"]
 name = "review"
 packet = ["contracts/{executor}.md"]
-payload = "findings@5"
+payload = "findings@6"
 
 [[step]]
 after = ["review"]
 emits = "findings"
 executor = "synthesize-findings"
-expected_cost = 0.40
+expected_cost = 0.60
 holds_tree = false
 inputs = ["review.*"]
 name = "synthesize"
 packet = ["contracts/{executor}.md"]
+payload = "findings-cluster@1"
 
 [[step]]
 action = "aggregate"

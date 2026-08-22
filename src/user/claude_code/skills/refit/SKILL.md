@@ -1,6 +1,6 @@
 ---
 name: refit
-description: Redesign one Docket workflow definition in src/user/docket/config/workflows through an interactive, capability-checked refactor — iterate the target pipeline spec with the operator, verify every claimed engine capability against the live docket engine source, surface each engine-forced deviation as an explicit decision before implementing, then land the full surface set (workflow TOML, contracts, fragments, policy rows, vote-seat lenses, schemas), lint it, file engine issues for real gaps, and commit. Use on "refit the ui-change workflow", "/refit standard-change", "refactor a docket workflow", "add a phase to release", "redesign the investigation pipeline", or any request to change what a workflow under src/user/docket/config/workflows does.
+description: Redesign one Docket workflow definition in src/user/docket/config/workflows through an interactive, capability-checked refactor — iterate the target pipeline spec with the operator, verify every claimed engine capability against the live docket engine source, surface each engine-forced deviation as an explicit decision, render the settled design as a visual Artifact for approval before implementing, then land the full surface set (workflow TOML, contracts, fragments, policy rows, vote-seat lenses, schemas), lint it, file engine issues for real gaps, and commit. Use on "refit the ui-change workflow", "/refit standard-change", "refactor a docket workflow", "add a phase to release", "redesign the investigation pipeline", or any request to change what a workflow under src/user/docket/config/workflows does.
 ---
 
 # refit
@@ -74,7 +74,27 @@ from the engine checkout): what the workflow needed, what the engine
 provides, a concrete proposal. Engine defects and gaps are filed, never
 patched in place.
 
-## 4. Implement every surface
+## 4. Visualize before implementing
+
+Once the deviations are settled, render the agreed design as an Artifact and
+hold for approval on the picture before touching any file. Load the
+`artifact-design` and `artifact-diagramming` skills first, then draw the
+workflow as it will actually expand: every step with its executor, variant,
+and cost; vote gates with their rule and voters; threshold conditions on the
+edges they fire; the fix-loop's re-entry point and budget; every
+`waiting-human` park; any cross-cutting store the nodes share; and the
+`when` predicate that gates a conditional lane. Conditional and superseded
+paths draw differently from the happy path — the picture's job is to let the
+operator catch a wrong edge cheaper than a wrong implementation.
+
+Present the artifact link and ask for approval via `AskUserQuestion`
+(approve / revise). A revision request loops back through §3's gates if it
+reopens a deviation, or straight to a redraw if it is design-only; nothing
+in §5 onward happens until the picture is approved. Keep the artifact
+updated at the same URL as the design moves — after landing, it doubles as
+the workflow's schematic.
+
+## 5. Implement every surface
 
 A workflow change is rarely one file. Work the full checklist; skipping a
 surface is how activation refuses or a wave refuses to route:
@@ -107,7 +127,7 @@ surface is how activation refuses or a wave refuses to route:
 - **Schemas** (`config/schemas/`) — a new `payload` kind needs a schema file
   and threshold predicates that match its fields.
 
-## 5. Validate
+## 6. Validate
 
 ```bash
 docket workflow lint src/user/docket/config/workflows/<name>.toml
@@ -122,7 +142,7 @@ re-lint. The acceptance floor is a clean lint at the bumped version;
 anything the lint cannot see (live loop behavior, seat quality) is reported
 as unverified, not claimed.
 
-## 6. Land
+## 7. Land
 
 Commit via the `commit` skill. Other sessions share this tree — stage only
 the files this refit touched, nothing else. Then report in plain language:

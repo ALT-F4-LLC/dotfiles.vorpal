@@ -1,12 +1,13 @@
 ---
 node: design-qa
-version: 2
+version: 3
 archetype: executor-read
 packet_includes:
   - fragments/hig-principles.md
   - fragments/copy-discipline.md
   - fragments/severity-ladder-general.md
   - fragments/evidence-rules.md
+  - fragments/diff-reconstruction.md
   - fragments/truth-first.md
 emits: findings
 payload: findings@6

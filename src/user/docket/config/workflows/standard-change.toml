@@ -1,7 +1,7 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 18
+version = 19
 
 [match]
 unless_labels = [
@@ -36,39 +36,25 @@ max_attempts = 2
 name = "implement"
 on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
-when = "labels != test-infra"
-
-[[step]]
-after = []
-class = "write"
-emits = "change-summary"
-executor = "test-infra"
-expected_cost = 1.50
-gates = ["build", "tests", "self-hygiene", "secret-scan"]
-max_attempts = 2
-name = "implement-test-infra"
-on_fail = "waiting-human"
-packet = ["contracts/{executor}.md"]
-when = "labels contains test-infra"
 
 [[step]]
 name = "review"
 holds_tree = false
-after = ["implement", "implement-test-infra"]
+after = ["implement"]
 fanout = ["judge-correctness", "judge-architecture", "judge-simplicity", "judge-testing"]
 emits = "findings"
 packet = ["contracts/{executor}.md"]
 payload = "findings@6"
 expected_cost = 0.60
-inputs = ["implement.change-summary", "implement-test-infra.change-summary", "issue.diff"]
+inputs = ["implement.change-summary", "issue.diff"]
 
 [[step]]
-after = ["implement", "implement-test-infra"]
+after = ["implement"]
 emits = "findings"
 executor = "judge-security"
 expected_cost = 0.60
 holds_tree = false
-inputs = ["implement.change-summary", "implement-test-infra.change-summary", "issue.diff"]
+inputs = ["implement.change-summary", "issue.diff"]
 name = "review-security"
 packet = ["contracts/{executor}.md"]
 payload = "findings@6"
@@ -102,7 +88,7 @@ emits = "change-summary"
 executor = "fix"
 expected_cost = 1.00
 gates = ["build", "tests", "secret-scan"]
-inputs = ["reconcile.findings", "implement.change-summary", "implement-test-infra.change-summary"]
+inputs = ["reconcile.findings", "implement.change-summary"]
 loop = true
 name = "fix"
 packet = ["contracts/{executor}.md"]
@@ -114,17 +100,8 @@ executor = "verify-ac"
 expected_cost = 0.50
 gates = [{ name = "ac-commands", pre = true }]
 holds_tree = false
-inputs = ["issue.body", "issue.diff", "implement.change-summary", "implement-test-infra.change-summary", "verify.gate-results"]
+inputs = ["issue.body", "issue.diff", "implement.change-summary", "verify.gate-results"]
 name = "verify"
 packet = ["contracts/{executor}.md"]
 payload = "ac-report@1"
-threshold = { "fix-loop" = "any(status == unmet)", "verify-tribunal" = "any(status == unverifiable)" }
-
-[[step]]
-after = ["verify"]
-inputs = ["verify.ac-report", "issue.body"]
-name = "verify-tribunal"
-on_fail = "fix-loop"
-type = "vote"
-vote_rule = "tribunal"
-voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
+threshold = { "fix-loop" = "any(status == unmet)", "waiting-human" = "any(status == unverifiable)" }

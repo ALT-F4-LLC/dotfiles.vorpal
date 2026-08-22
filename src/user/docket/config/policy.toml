@@ -1,5 +1,5 @@
 [policy]
-version = 7
+version = 8
 
 [variants]
 fable-high = { model = "fable", effort = "high" }
@@ -17,12 +17,7 @@ sonnet-xhigh = { model = "sonnet", effort = "xhigh", escalate_to = "opus-xhigh" 
 
 [executors]
 adr-author = { variant = "fable-max" }
-adr-critic = { variant = "opus-high" }
-design-completeness = { variant = "fable-xhigh" }
-design-feasibility = { variant = "fable-xhigh" }
 design-qa = { variant = "opus-high" }
-design-reviser = { variant = "opus-high" }
-design-risk = { variant = "fable-xhigh" }
 fix = { variant = "sonnet-medium" }
 implement = { variant = "sonnet-medium" }
 investigate = { variant = "fable-xhigh" }
@@ -70,4 +65,7 @@ fable_gates = [
 ]
 
 [escalation.fallback]
+fable-high = "opus-xhigh"
 fable-max = "opus-max"
+fable-medium = "opus-high"
+fable-xhigh = "opus-max"

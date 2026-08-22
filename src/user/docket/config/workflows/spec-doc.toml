@@ -1,7 +1,7 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec), escalating to the operator."
 name = "spec-doc"
-version = 13
+version = 14
 
 [match]
 labels_any = ["spec-doc"]
@@ -235,7 +235,7 @@ name = "accept-human"
 on_fail = "waiting-human"
 type = "vote"
 vote_rule = "tribunal"
-voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
+voters = ["tribunal-architecture", "tribunal-security", "tribunal-design"]
 when = "labels != doc:tdd and labels != doc:adr"
 
 [[step]]

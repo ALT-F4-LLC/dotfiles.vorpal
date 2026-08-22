@@ -1,5 +1,5 @@
 [policy]
-version = 12
+version = 13
 
 [variants]
 fable-high = { model = "fable", effort = "high" }
@@ -42,6 +42,7 @@ tdd-author-security = { variant = "opus-xhigh", never = ["fable"], reason = "sec
 threat-model = { variant = "opus-xhigh", never = ["fable"], reason = "security-classifier-reroute" }
 tribunal-architecture = { variant = "fable-xhigh" }
 tribunal-correctness = { variant = "fable-xhigh" }
+tribunal-design = { variant = "fable-xhigh" }
 tribunal-security = { variant = "opus-xhigh", never = ["fable"], reason = "security-classifier-reroute" }
 ux-spec-author = { variant = "fable-max" }
 verify-ac = { variant = "opus-high" }

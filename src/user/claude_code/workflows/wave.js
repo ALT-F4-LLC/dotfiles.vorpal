@@ -1145,6 +1145,14 @@ test, a demonstrated failure, a verified repro — outranks any aggregate that
 demotes it. Never discount reproduced evidence because other reviewers scored
 the issue lower.
 
+SETTLED GROUND (operator-ratified): a finding whose \`prior_disposition\`
+records a ruling — accepted, corrected, rejected, or deferred with its
+follow-up issue named — is decided ground: an operator or an earlier panel
+already spent that decision, and the fix loop deliberately does not re-route
+it. Re-read the ruling before weighing the finding, and re-litigate it only on
+evidence the ruling did not have. Do not reject a gate over settled findings
+alone; open findings are the ones your verdict is for.
+
 ESCALATION (operator-ratified): a reject does not block work forever — the
 gate routes onward per its declared routing, to the human operator or into a
 rework loop that answers your findings, so reject when the evidence says

@@ -1,7 +1,7 @@
 [pipeline]
 name = "ui-change"
-version = 11
-description = "UI change bound to an accepted ux-spec, design-judged and design-QA'd; the conductor integrates commits, the operator publishes."
+version = 12
+description = "UI change bound to an accepted ux-spec (cited in the issue body — no engine input form reaches a cross-issue doc, DKT-547), design-judged and design-QA'd in parallel with AC verification; the conductor integrates commits, the operator publishes."
 
 [match]
 labels_any = ["ui"]
@@ -106,7 +106,7 @@ vote_rule = "tribunal"
 voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
 
 [[step]]
-after = ["verify"]
+after = ["reconcile"]
 emits = "findings"
 executor = "design-qa"
 expected_cost = 0.50

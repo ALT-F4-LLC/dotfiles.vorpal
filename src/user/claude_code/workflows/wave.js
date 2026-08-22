@@ -1020,6 +1020,11 @@ const LENSES = {
         'here versus asserted? Was the claimed behaviour reproduced, and could you ' +
         'reproduce it from what is in front of you? What would have to be true for this ' +
         'to be wrong, and does anything check that?',
+    design:
+        'USER-FACING SHAPE AND COHERENCE. Does what a person sees and does here hold ' +
+        'together — flows that complete, states that are all accounted for, names that ' +
+        'mean what they say? Where does the design contradict itself or the system it ' +
+        'joins, and what would a first-time user get wrong because of it?',
     completeness:
         'COVERAGE AND OMISSION. Is every requirement, decision, and affected surface ' +
         'accounted for, or does the document settle the easy parts and go quiet on the ' +

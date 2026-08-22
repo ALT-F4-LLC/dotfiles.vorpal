@@ -1,12 +1,12 @@
 ---
 node: prd-author
-version: 1
+version: 2
 archetype: executor-write
 packet_includes:
   - fragments/doc-house-style.md
   - fragments/writing-for-humans.md
   - fragments/scope-discipline.md
-emits: prd
+emits: doc
 ---
 # Charter
 Write the product requirements for one feature: what the product surface must do, for

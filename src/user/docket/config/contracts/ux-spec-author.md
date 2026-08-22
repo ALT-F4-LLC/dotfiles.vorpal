@@ -1,6 +1,6 @@
 ---
 node: ux-spec-author
-version: 1
+version: 2
 archetype: executor-write
 packet_includes:
   - fragments/doc-house-style.md
@@ -8,7 +8,7 @@ packet_includes:
   - fragments/hig-principles.md
   - fragments/copy-discipline.md
   - fragments/evidence-rules.md
-emits: ux-spec
+emits: doc
 ---
 # Charter
 Specify one user-facing surface completely enough to build: structure, flows including

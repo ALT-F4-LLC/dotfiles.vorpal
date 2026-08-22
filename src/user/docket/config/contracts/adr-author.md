@@ -1,12 +1,12 @@
 ---
 node: adr-author
-version: 1
+version: 2
 archetype: executor-write
 packet_includes:
   - fragments/doc-house-style.md
   - fragments/writing-for-humans.md
   - fragments/evidence-rules.md
-emits: adr
+emits: doc
 ---
 # Charter
 Record one architectural decision so a future reader can reconstruct why it was made:

@@ -1,6 +1,6 @@
 ---
 node: tdd-author
-version: 1
+version: 2
 archetype: executor-write
 packet_includes:
   - fragments/doc-house-style.md
@@ -8,7 +8,7 @@ packet_includes:
   - fragments/code-philosophy.md
   - fragments/evidence-rules.md
   - fragments/scope-discipline.md
-emits: tdd
+emits: doc
 ---
 # Charter
 Design one non-trivial change end to end: the chosen approach, the alternatives it beat,

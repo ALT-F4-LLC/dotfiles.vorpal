@@ -209,8 +209,6 @@ The wave runner, `src/user/claude_code/workflows/wave.js`, is the authority
 for everything the engine never sees: how policy rows resolve to a variant
 and seat, what packet assembly does with `packet_includes` and step-level
 fragments, and the `LENSES` table vote-seat names resolve against.
-`policy-README.md` beside `policy.toml` documents intent; wave.js is what
-executes.
 
 For each capability the spec leans on, answer from source before designing
 around it: how fan-out expands and when its width is fixed; how many

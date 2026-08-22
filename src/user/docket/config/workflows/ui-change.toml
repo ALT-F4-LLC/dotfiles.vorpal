@@ -1,226 +1,118 @@
-# ui-change — label-matched variant of standard-change (05 §2).
-# Deltas from the baseline, per 05 §2:
-#   - requires an accepted `ux-spec` artifact as input (missing => activation
-#     error; the planner must include a ux-spec-author issue). The requirement is
-#     expressed as a cross-issue `inputs` binding, which activation resolves —
-#     an unresolvable binding IS the activation refusal 05 §2 asks for, rather
-#     than a second mechanism invented here.
-#   - review fanout adds `judge-design`
-#   - appends a `design-qa` step after verify with gates `render-verify` and
-#     `copy-verify` (copy literals greppable per the copy-discipline fragment)
-
 [pipeline]
-name    = "ui-change"
-version = 9   # 9: every class `max` -> 16, the wave dispatcher's ceiling
-              #   (the harness runs at most min(16, CPUs - 2) agents per
-              #   workflow): `write` leaves the 02 §11.1 serialization behind
-              #   — per-executor worktrees isolate writers, overlap is a
-              #   cherry-pick conflict gate at integration — and read classes
-              #   leave the 4-wide single-issue fanout that throttled
-              #   multi-issue runs (2026-08-21).
-              # 8: reconcile aggregates severity by `max` instead of
-              #   `median` — an even-count median resolves an exact tie to
-              #   the LOWER band, demoting the mixed clusters that most need
-              #   attention (retro 2026-08-19, panel DKT-V62 architecture
-              #   seat; same move as standard-change@12).
-              # 7: verify's unverifiable park routes through an interposed
-              #   tribunal vote first (operator policy, 2026-08-16) — the
-              #   panel escalates only what it will not pass
-              # 6: fix-loop thresholds high -> blocker (2026-08-10)
+name = "ui-change"
+version = 10
 description = "UI change bound to an accepted ux-spec, design-judged and design-QA'd; the conductor integrates commits, the operator publishes."
 
-[match]                      # exactly-one-match (06 §11.1): security outranks ui,
-                             #   and the doc/meta pipelines outrank both
-                             # NO `kind` CLAUSE (DKT-25): an absent list already
-                             #   matches every kind (match.go:48). DKT-22 spelled
-                             #   out the whole closed set here, which decided
-                             #   nothing and made a sixth kind unroutable in all
-                             #   nine workflows at once. The label terms below are
-                             #   what actually discriminate.
-labels_any  = ["ui"]
+[match]
+labels_any = ["ui"]
 unless_labels = [
-  "security-load-bearing", "docs-only", "investigation",
-  "spec-doc", "spec-project", "release", "retro",
+  "docs-only",
+  "investigation",
+  "release",
+  "retro",
+  "security-load-bearing",
+  "spec-doc",
+  "spec-project",
 ]
 
-
-
-
-[limits]                     # per-class bounds (DKT-16). `max_step_duration` is a
-                             #   SCHEDULE-TO-CLOSE bound measured from the claim,
-                             #   independent of heartbeats — a runaway holder cannot
-                             #   renew past it (02 §11.1, enforced in
-                             #   Scheduler.Expired). Without it the lease TTL is the
-                             #   only clock, so a dead executor's step sits claimed
-                             #   for the full TTL with nothing shorter-circuiting it.
-                             #   Durations are derived from RUN-1's measured steps,
-                             #   not guessed: `write` peaked at 735m (the runaway
-                             #   this bounds) against a 104m average, and every read
-                             #   class finished inside 13m.
-                             # `max` is required by V24 and is CONCURRENCY, a
-                             #   separate question from duration. Every class takes
-                             #   16, the wave dispatcher's ceiling: it runs a stage
-                             #   through the harness's parallel(), capped at
-                             #   min(16, CPUs - 2) concurrent agents per workflow,
-                             #   so 16 is the largest cohort that can actually run
-                             #   at once. A tighter `max` splits rows the
-                             #   dispatcher could run together into extra stage
-                             #   barriers; a looser one certifies concurrency the
-                             #   dispatcher then queues. Writers are no exception:
-                             #   per-executor worktrees isolate them, and overlap
-                             #   surfaces at integration as a conflicting
-                             #   cherry-pick, a stop-and-ask gate.
-"design-qa"           = { max = 16, max_step_duration = "1h" }
-"judge-architecture"  = { max = 16, max_step_duration = "1h" }
-"judge-correctness"   = { max = 16, max_step_duration = "1h" }
-"judge-design"        = { max = 16, max_step_duration = "1h" }
-"judge-simplicity"    = { max = 16, max_step_duration = "1h" }
-"judge-testing"       = { max = 16, max_step_duration = "1h" }
+[limits]
+"design-qa" = { max = 16, max_step_duration = "1h" }
+"judge-architecture" = { max = 16, max_step_duration = "1h" }
+"judge-correctness" = { max = 16, max_step_duration = "1h" }
+"judge-design" = { max = 16, max_step_duration = "1h" }
+"judge-simplicity" = { max = 16, max_step_duration = "1h" }
+"judge-testing" = { max = 16, max_step_duration = "1h" }
 "synthesize-findings" = { max = 16, max_step_duration = "1h" }
-"verify-ac"           = { max = 16, max_step_duration = "1h" }
-"write"               = { max = 16, max_step_duration = "2h" }
+"verify-ac" = { max = 16, max_step_duration = "1h" }
+"write" = { max = 16, max_step_duration = "2h" }
 
 [[step]]
-name = "implement"
 after = []
+class = "write"
+emits = "change-summary"
 executor = "implement"
-class = "write"
-emits = "change-summary"
-packet = ["contracts/{executor}.md"]
 expected_cost = 1.50
-inputs = ["issue.body"]              # the accepted ux-spec reaches this step as a
-                                     #   pinned file (06 §2's operator-supplied
-                                     #   file pins); its ACs are carried verbatim
-                                     #   in the issue body by the distillation rule
 gates = ["build", "tests", "self-hygiene", "secret-scan"]
-                                     # `scope` removed: gates get no issue
-                                     #   identity, so scope containment is
-                                     #   un-mechanized (DKT-66)
+inputs = ["issue.body"]
 max_attempts = 2
+name = "implement"
 on_fail = "waiting-human"
+packet = ["contracts/{executor}.md"]
 
 [[step]]
-name = "review"
-holds_tree = false            # reads the tree, never writes it: exempt from scope
-                             #   exclusion so this step coexists with other issues'
-                             #   steps instead of serialising against them
 after = ["implement"]
-fanout = ["judge-correctness", "judge-architecture", "judge-simplicity", "judge-testing", "judge-design"]
 emits = "findings"
-packet = ["contracts/{executor}.md"]
-payload = "findings@1"               # judge-boundary validation, per-judge failure
-                                     #   attribution (see standard-change's note);
-                                     #   deliberately absent on `synthesize`
 expected_cost = 0.60
+fanout = ["judge-correctness", "judge-architecture", "judge-simplicity", "judge-testing", "judge-design"]
+holds_tree = false
 inputs = ["implement.change-summary", "issue.diff"]
-
-[[step]]
-name = "synthesize"
-holds_tree = false            # reads the tree, never writes it: exempt from scope
-                             #   exclusion so this step coexists with other issues'
-                             #   steps instead of serialising against them
-after = ["review"]
-executor = "synthesize-findings"
-emits = "findings"
+name = "review"
 packet = ["contracts/{executor}.md"]
+payload = "findings@5"
+
+[[step]]
+after = ["review"]
+emits = "findings"
+executor = "synthesize-findings"
 expected_cost = 0.40
+holds_tree = false
 inputs = ["review.*"]
+name = "synthesize"
+packet = ["contracts/{executor}.md"]
 
 [[step]]
-name = "reconcile"
-after = ["synthesize"]
 action = "aggregate"
-params = { field = "severity", method = "max", hold_spread = 2, output = "findings" }
+after = ["synthesize"]
 inputs = ["synthesize.findings"]
-payload = "findings@1"
-threshold = { "fix-loop" = "any(severity >= blocker)" }   # BLOCKER-ONLY LOOPING (operator policy 2026-08-10):
-                                     #   high findings are recorded and surface at
-                                     #   gates/backlog, never re-loop — Opus-tier
-                                     #   judges sustain finding pressure forever and
-                                     #   a high-keyed loop cannot converge (RUN-1
-                                     #   graph-engine; full rationale in
-                                     #   standard-change.toml).
 max_fix_loops = 2
+name = "reconcile"
+params = { field = "severity", method = "max", hold_spread = 2, output = "findings" }
+payload = "findings@5"
+threshold = { "fix-loop" = "any(severity >= blocker)" }
 
 [[step]]
-name = "fix"
-executor = "fix"
+after_loop = "review"
 class = "write"
 emits = "change-summary"
-packet = ["contracts/{executor}.md"]
+executor = "fix"
 expected_cost = 1.00
-loop = true
-inputs = ["reconcile.findings", "implement.change-summary"]
 gates = ["build", "tests", "secret-scan"]
-after_loop = "review"
+inputs = ["reconcile.findings", "implement.change-summary"]
+loop = true
+name = "fix"
+packet = ["contracts/{executor}.md"]
 
 [[step]]
-name = "verify"
-holds_tree = false            # reads the tree, never writes it: exempt from scope
-                             #   exclusion so this step coexists with other issues'
-                             #   steps instead of serialising against them
 after = ["reconcile"]
-executor = "verify-ac"
 emits = "ac-report"
-packet = ["contracts/{executor}.md"]
-payload = "ac-report@1"
+executor = "verify-ac"
 expected_cost = 0.50
 gates = [{ name = "ac-commands", pre = true }]
+holds_tree = false
 inputs = ["issue.body", "issue.diff", "implement.change-summary"]
-threshold = { "fix-loop" = "any(status == unmet)", "verify-tribunal" = "any(status == unverifiable)" }
-                                     # TRIBUNAL-FILTERED ESCALATION (operator
-                                     #   policy, 2026-08-16): an unverifiable AC
-                                     #   used to park straight to the operator;
-                                     #   it now routes to the interposed vote
-                                     #   step below. `fix-loop` is evaluated
-                                     #   BEFORE any interposed step routing
-                                     #   (ThresholdOrder), so a report carrying
-                                     #   both unmet and unverifiable rows loops
-                                     #   first — fix the fixable, judge what
-                                     #   remains.
-
-[[step]]                     # reached ONLY by verify's threshold routing
-name = "verify-tribunal"
-after = ["verify"]                   # names the predecessor V8 requires; the step
-                                     #   stays otherwise-unreached — interposition
-                                     #   is what makes it ready (06 §11.2)
-type = "vote"                        # TRIBUNAL (operator policy, 2026-08-16):
-                                     #   the panel reads the ac-report FIRST and
-                                     #   escalates only what it will not pass.
-voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
-vote_rule = "tribunal"               # registered engine-side (see
-                                     #   investigation.toml's note on V26)
-on_fail = "waiting-human"            # any non-approval escalates to the human
-inputs = ["verify.ac-report", "issue.body"]
-
-[[step]]                     # appended after verify (05 §2)
-name = "design-qa"
-holds_tree = false            # reads the tree, never writes it: exempt from scope
-                             #   exclusion so this step coexists with other issues'
-                             #   steps instead of serialising against them
-after = ["verify"]
-executor = "design-qa"
-emits = "findings"
+name = "verify"
 packet = ["contracts/{executor}.md"]
-payload = "findings@1"               # design-qa's contract declares findings@1;
-                                     #   the threshold below compares on severity
+payload = "ac-report@1"
+threshold = { "fix-loop" = "any(status == unmet)", "verify-tribunal" = "any(status == unverifiable)" }
+
+[[step]]
+after = ["verify"]
+inputs = ["verify.ac-report", "issue.body"]
+name = "verify-tribunal"
+on_fail = "waiting-human"
+type = "vote"
+vote_rule = "tribunal"
+voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
+
+[[step]]
+after = ["verify"]
+emits = "findings"
+executor = "design-qa"
 expected_cost = 0.50
 gates = ["render-verify", "copy-verify"]
+holds_tree = false
 inputs = ["issue.body", "issue.diff", "implement.change-summary"]
-threshold = { "fix-loop" = "any(severity >= blocker)" }   # BLOCKER-ONLY LOOPING (operator policy 2026-08-10):
-                                     #   high findings are recorded and surface at
-                                     #   gates/backlog, never re-loop — Opus-tier
-                                     #   judges sustain finding pressure forever and
-                                     #   a high-keyed loop cannot converge (RUN-1
-                                     #   graph-engine; full rationale in
-                                     #   standard-change.toml).
-
-# COMMIT TAIL REMOVED (operator decision, 2026-08-09): commit-gate, commit, and
-# commit-exec are gone from every pipeline — automated commits are incompatible
-# with the harness security model (interactive 1Password commit-signing
-# authorization is unavailable to headless executors and engine actions;
-# `commit-msg` 0 pass / 1 fail across RUN-1/2/5, all override-passed; DKT-13/
-# DKT-61). Full rationale in standard-change.toml's matching note. Since
-# 2026-08-10 the conductor integrates write shas as real unsigned commits and
-# publishing stays the operator's; `design-qa` is the terminal engine step,
-# and its fix-loop threshold on BLOCKER findings remains the rework route.
+name = "design-qa"
+packet = ["contracts/{executor}.md"]
+payload = "findings@5"
+threshold = { "fix-loop" = "any(severity >= blocker)" }

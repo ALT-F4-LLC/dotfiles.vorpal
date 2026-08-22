@@ -1,163 +1,24 @@
-# spec-project — the init-specs replacement (05 §2).
-# Per 05 §2: "seven parallel `spec-author` steps (one per spec file) ->
-# `doc-validate` gates -> single review fanout -> human acceptance."
-#
-# The seven are the reserved engineering-spec names the spec-author contract
-# names: architecture, security, operations, performance, code quality, review
-# strategy, testing.
-#
-# FANOUT ARITY, and why this is ONE step and not seven: `fanout` expands to one
-# sibling per hint (06 §11.1), and every sibling of a fanned step shares the step's
-# `emits`, `gates`, and `inputs`. Seven spec-author siblings is exactly that shape.
-# Which of the seven a given sibling writes is carried by the hint itself, and
-# [OBSERVED] that is literally true at the engine seam: `expand.go:160-168` sets
-# `row.Executor = hint` per sibling and `packets/default.tmpl:5-6` renders it as
-# `target: <hint>`, so the hint reaches the executor's brief as that sibling's
-# identity. Opaque to core, resolved by policy: each of the seven has its own
-# [executors] row (DKT-64). `min_siblings` is NOT declared: 05 §2 asks for seven specs, not
-# a quorum of them, so the default (all) is the plain join the design wants — a
-# missing spec must block acceptance, not be voted around.
-
 [pipeline]
-name    = "spec-project"
-version = 7   # 7: every class `max` -> 16, the wave dispatcher's ceiling
-              #   (the harness runs at most min(16, CPUs - 2) agents per
-              #   workflow): `write` leaves the 02 §11.1 serialization behind
-              #   — per-executor worktrees isolate writers, overlap is a
-              #   cherry-pick conflict gate at integration — and read classes
-              #   leave the 4-wide single-issue fanout that throttled
-              #   multi-issue runs (2026-08-21).
-              # 6: reconcile aggregates severity by `max` instead of
-              #   `median` — an even-count median resolves an exact tie to
-              #   the LOWER band, demoting the mixed clusters that most need
-              #   attention (retro 2026-08-19, panel DKT-V62 architecture
-              #   seat; same move as standard-change@12).
-              #   (5: `accept` human -> tribunal vote, operator policy
-              #   2026-08-11. 4: fix-loop threshold high -> blocker,
-              #   2026-08-10.)
 description = "Author the seven reserved project spec files in parallel, review them once, and accept by tribunal vote that escalates to the operator."
+name = "spec-project"
+version = 8
 
-[match]                      # closed kind set (see spec-doc's note): the label is
-                             #   what binds. Engine wins over 05's prose; DKT filed.
-                             # NO `kind` CLAUSE (DKT-25): an absent list already
-                             #   matches every kind (match.go:48). DKT-22 spelled
-                             #   out the whole closed set here, which decided
-                             #   nothing and made a sixth kind unroutable in all
-                             #   nine workflows at once. The label terms below are
-                             #   what actually discriminate.
-labels_any  = ["spec-project"]
+[match]
+labels_any = ["spec-project"]
 unless_labels = ["release", "retro"]
-                             # excludes only what outranks it (precedence order in
-                             #   docs-only.toml)
 
-
-
-
-[limits]                     # per-class bounds (DKT-16). `max_step_duration` is a
-                             #   SCHEDULE-TO-CLOSE bound measured from the claim,
-                             #   independent of heartbeats — a runaway holder cannot
-                             #   renew past it (02 §11.1, enforced in
-                             #   Scheduler.Expired). Without it the lease TTL is the
-                             #   only clock, so a dead executor's step sits claimed
-                             #   for the full TTL with nothing shorter-circuiting it.
-                             #   Durations are derived from RUN-1's measured steps,
-                             #   not guessed: `write` peaked at 735m (the runaway
-                             #   this bounds) against a 104m average, and every read
-                             #   class finished inside 13m.
-                             # `max` is required by V24 and is CONCURRENCY, a
-                             #   separate question from duration. Every class takes
-                             #   16, the wave dispatcher's ceiling: it runs a stage
-                             #   through the harness's parallel(), capped at
-                             #   min(16, CPUs - 2) concurrent agents per workflow,
-                             #   so 16 is the largest cohort that can actually run
-                             #   at once. A tighter `max` splits rows the
-                             #   dispatcher could run together into extra stage
-                             #   barriers; a looser one certifies concurrency the
-                             #   dispatcher then queues. Writers are no exception:
-                             #   per-executor worktrees isolate them, and overlap
-                             #   surfaces at integration as a conflicting
-                             #   cherry-pick, a stop-and-ask gate.
-"judge-architecture"  = { max = 16, max_step_duration = "1h" }
-"judge-correctness"   = { max = 16, max_step_duration = "1h" }
-"judge-simplicity"    = { max = 16, max_step_duration = "1h" }
+[limits]
+"judge-architecture" = { max = 16, max_step_duration = "1h" }
+"judge-correctness" = { max = 16, max_step_duration = "1h" }
+"judge-simplicity" = { max = 16, max_step_duration = "1h" }
 "synthesize-findings" = { max = 16, max_step_duration = "1h" }
-"write"               = { max = 16, max_step_duration = "2h" }
+"write" = { max = 16, max_step_duration = "2h" }
 
 [[step]]
-name = "spec-author"
 after = []
-fanout = [
-  "spec-author-architecture",
-  "spec-author-security",
-  "spec-author-operations",
-  "spec-author-performance",
-  "spec-author-code-quality",
-  "spec-author-review-strategy",
-  "spec-author-testing",
-]                                    # the seven reserved names, one sibling each
 class = "write"
 emits = "spec"
-packet = ["contracts/spec-author.md"]
-expected_cost = 1.00                 # per expanded sibling
-inputs = ["issue.body"]
-gates = ["doc-validate", "reserved-name-check"]
-                                     # `reserved-name-check` (05 §3) is the gate
-                                     #   that makes the seven-name claim mechanical:
-                                     #   spec-author CLAIMS these names in the shared
-                                     #   docs/spec/ dir. A registry row, so it wires
-                                     #   as a named gate.
-max_attempts = 2
-on_fail = "waiting-human"
-
-[[step]]
-name = "review"
-holds_tree = false            # reads the tree, never writes it: exempt from scope
-                             #   exclusion so this step coexists with other issues'
-                             #   steps instead of serialising against them
-after = ["spec-author"]
-fanout = ["judge-architecture", "judge-correctness", "judge-simplicity"]
-                                     # the "single review fanout" of 05 §2: one
-                                     #   fanout over the seven specs together, not
-                                     #   one review per spec
-emits = "findings"
-packet = ["contracts/{executor}.md"]
-payload = "findings@1"
-expected_cost = 0.60                 # per expanded sibling
-inputs = ["spec-author.*", "issue.body"]
-                                     # `.*` resolves over DONE siblings only, ordered
-                                     #   by (declared position, sibling index,
-                                     #   artifact id) — 06 §2
-
-[[step]]
-name = "synthesize"
-holds_tree = false            # reads the tree, never writes it: exempt from scope
-                             #   exclusion so this step coexists with other issues'
-                             #   steps instead of serialising against them
-after = ["review"]
-executor = "synthesize-findings"
-emits = "findings"
-packet = ["contracts/{executor}.md"]
-expected_cost = 0.40
-inputs = ["review.*"]
-
-[[step]]
-name = "reconcile"
-after = ["synthesize"]
-action = "aggregate"
-params = { field = "severity", method = "max", hold_spread = 2, output = "findings" }
-inputs = ["synthesize.findings"]
-payload = "findings@1"
-threshold = { "fix-loop" = "any(severity >= blocker)" }   # BLOCKER-ONLY LOOPING (operator policy 2026-08-10):
-                                     #   high findings are recorded and surface at
-                                     #   gates/backlog, never re-loop — Opus-tier
-                                     #   judges sustain finding pressure forever and
-                                     #   a high-keyed loop cannot converge (RUN-1
-                                     #   graph-engine; full rationale in
-                                     #   standard-change.toml).
-max_fix_loops = 2
-
-[[step]]
-name = "revise"
+expected_cost = 1.00
 fanout = [
   "spec-author-architecture",
   "spec-author-security",
@@ -167,32 +28,69 @@ fanout = [
   "spec-author-review-strategy",
   "spec-author-testing",
 ]
-class = "write"
-emits = "spec"
-packet = ["contracts/spec-author.md"]
-expected_cost = 0.70                 # per expanded sibling
-loop = true
-inputs = ["reconcile.findings", "spec-author.*"]
 gates = ["doc-validate", "reserved-name-check"]
-after_loop = "review"
+inputs = ["issue.body"]
+max_attempts = 2
+name = "spec-author"
+on_fail = "waiting-human"
+packet = ["contracts/spec-author.md"]
 
 [[step]]
-name = "accept"
+after = ["spec-author"]
+emits = "findings"
+expected_cost = 0.60
+fanout = ["judge-architecture", "judge-correctness", "judge-simplicity"]
+holds_tree = false
+inputs = ["spec-author.*", "issue.body"]
+name = "review"
+packet = ["contracts/{executor}.md"]
+payload = "findings@5"
+
+[[step]]
+after = ["review"]
+emits = "findings"
+executor = "synthesize-findings"
+expected_cost = 0.40
+holds_tree = false
+inputs = ["review.*"]
+name = "synthesize"
+packet = ["contracts/{executor}.md"]
+
+[[step]]
+action = "aggregate"
+after = ["synthesize"]
+inputs = ["synthesize.findings"]
+max_fix_loops = 2
+name = "reconcile"
+params = { field = "severity", method = "max", hold_spread = 2, output = "findings" }
+payload = "findings@5"
+threshold = { "fix-loop" = "any(severity >= blocker)" }
+
+[[step]]
+after_loop = "review"
+class = "write"
+emits = "spec"
+expected_cost = 0.70
+fanout = [
+  "spec-author-architecture",
+  "spec-author-security",
+  "spec-author-operations",
+  "spec-author-performance",
+  "spec-author-code-quality",
+  "spec-author-review-strategy",
+  "spec-author-testing",
+]
+gates = ["doc-validate", "reserved-name-check"]
+inputs = ["reconcile.findings", "spec-author.*"]
+loop = true
+name = "revise"
+packet = ["contracts/spec-author.md"]
+
+[[step]]
 after = ["reconcile"]
-type = "vote"                        # TRIBUNAL (operator policy, ratified in
-                                     #   conversation 2026-08-11) standing where
-                                     #   05 §2 wrote "human acceptance". Seven specs
-                                     #   is the largest artifact any pipeline hands
-                                     #   an operator at once, which is exactly the
-                                     #   gate where an unaided read degrades into a
-                                     #   rubber stamp.
-voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
-vote_rule = "tribunal"               # registered engine-side before registration
-                                     #   (see investigation.toml's note on V26)
-on_fail = "waiting-human"            # any non-approval escalates to the human,
-                                     #   replacing `fix-loop`: a contested spec set
-                                     #   is the operator's call, not an automatic
-                                     #   round trip to seven authors. Legal only
-                                     #   because this is no longer `type="human"`
-                                     #   (V13).
 inputs = ["spec-author.*", "reconcile.findings"]
+name = "accept"
+on_fail = "waiting-human"
+type = "vote"
+vote_rule = "tribunal"
+voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]

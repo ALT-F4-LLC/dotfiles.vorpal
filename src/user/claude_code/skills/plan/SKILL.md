@@ -169,7 +169,7 @@ most optimal batch, settled 2026-08-21 ("ready, high-priority, parallel-safe"):
 5. **Fits the stated budget** — size each admitted issue by §3's arithmetic
    (the bound workflow's expected-cost floor with when-gated steps included,
    plus rework headroom: one fix-loop round per two issues on
-   standard-change, three rounds per issue on security-load-bearing) and
+   standard-change, three rounds per issue on security-change) and
    take issues in rank order until the next one would breach the cap. No
    cap stated yet means the confirmation round asks for one — it is an
    operator-only question, so it goes in that same round, not a second.
@@ -295,7 +295,7 @@ field (`bug feature task epic chore`, enforced by `issue create -T`) that routes
 nothing. Labels route INSIDE a bound workflow too, via `when`-gated steps: a
 `spec-doc` issue picks its author by the COLON-form doc label — `doc:tdd`,
 `doc:adr`, `doc:ux-spec`; no doc label means PRD — and `security` /
-`security-load-bearing` push a TDD to the security author, so file
+`security-change` push a TDD to the security author, so file
 doc-producing issues with `doc:<type>` or accept the PRD default (the hyphen
 spellings route nothing). `git log --format='%s' -30` tells you the repo's
 conventions. Existing
@@ -387,7 +387,7 @@ bound workflow's source — `grep -n expected_cost
 each `fanout` step's cost multiplied by its sibling count (`grep -n 'fanout ='
 ~/.docket/config/workflows/<wf>.toml` gives the list; the tomls annotate those
 lines `# per expanded sibling`). Standard-change's review is 0.60 × four
-judges = 2.40, making that track 7.9 an issue; security-load-bearing's is 0.60
+judges = 2.40, making that track 7.9 an issue; security-change's is 0.60
 × five = 3.00, making it 7.2. Two bounded greps over one file for one key each
 — not the raw corpus dump §2 warns off, and nothing here binds, so the source
 tomls are the right surface. Never present a floor you did not read this way
@@ -399,7 +399,7 @@ and the proposal must say so in those words. On top of the floor goes REWORK
 HEADROOM — at least one full
 fix-loop round per two issues. Standard-change's round is fix 1.0 plus four
 judges at 0.6 plus synthesize 0.4, so 3.8, and half the issues this epoch took
-one. For security-load-bearing budget THREE rounds per issue: rejection-driven
+one. For security-change budget THREE rounds per issue: rejection-driven
 loops are that track's normal case — both complete runs to date had every
 security vote rejected at least once, and RUN-34, sized on two rounds (cap
 14), hit its wall on the THIRD normal-case fix pass and paid two mid-run
@@ -438,7 +438,7 @@ record it.** Binding is exactly-one-match over the corpus's `[match]` blocks
 and every one of them discriminates on labels alone (§2): `standard-change` is
 the baseline that matches any issue carrying NONE of the variant labels, and
 each variant binds on exactly one — `ui`, `docs-only`, `investigation`,
-`security-load-bearing`, `spec-doc`, `spec-project`, `release`, `retro`. So a
+`security-change`, `spec-doc`, `spec-project`, `release`, `retro`. So a
 missing variant label does not fail — it binds the WRONG workflow, exactly one
 match, and the engine's zero-or-several refusal structurally cannot see it: no
 scope warning, no lint, nothing downstream flags it. Before `issue create`,

@@ -1,6 +1,6 @@
 [pipeline]
 name = "ui-change"
-version = 12
+version = 13
 description = "UI change bound to an accepted ux-spec (cited in the issue body — no engine input form reaches a cross-issue doc, DKT-547), design-judged and design-QA'd in parallel with AC verification; the conductor integrates commits, the operator publishes."
 
 [match]
@@ -10,6 +10,7 @@ unless_labels = [
   "investigation",
   "release",
   "retro",
+  "security-change",
   "security-load-bearing",
   "spec-doc",
   "spec-project",

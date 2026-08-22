@@ -1,7 +1,7 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec), escalating to the operator."
 name = "spec-doc"
-version = 12
+version = 13
 
 [match]
 labels_any = ["spec-doc"]
@@ -26,7 +26,7 @@ max_attempts = 2
 name = "author-tdd-security"
 on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
-when = "labels contains doc:tdd and labels contains security-load-bearing"
+when = "labels contains doc:tdd and labels contains security-change"
 
 [[step]]
 after = []
@@ -40,7 +40,7 @@ max_attempts = 2
 name = "author-tdd-security-alt"
 on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
-when = "labels contains doc:tdd and labels contains security and labels != security-load-bearing"
+when = "labels contains doc:tdd and labels contains security and labels != security-change"
 
 [[step]]
 after = []
@@ -54,7 +54,7 @@ max_attempts = 2
 name = "author-tdd"
 on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
-when = "labels contains doc:tdd and labels != security-load-bearing and labels != security"
+when = "labels contains doc:tdd and labels != security-change and labels != security"
 
 [[step]]
 after = []
@@ -141,7 +141,7 @@ inputs = ["reconcile.findings", "issue.latest.doc"]
 loop = true
 name = "revise-tdd-security"
 packet = ["contracts/{executor}.md"]
-when = "labels contains doc:tdd and labels contains security-load-bearing"
+when = "labels contains doc:tdd and labels contains security-change"
 
 [[step]]
 after_loop = "review"
@@ -154,7 +154,7 @@ inputs = ["reconcile.findings", "issue.latest.doc"]
 loop = true
 name = "revise-tdd-security-alt"
 packet = ["contracts/{executor}.md"]
-when = "labels contains doc:tdd and labels contains security and labels != security-load-bearing"
+when = "labels contains doc:tdd and labels contains security and labels != security-change"
 
 [[step]]
 after_loop = "review"
@@ -167,7 +167,7 @@ inputs = ["reconcile.findings", "issue.latest.doc"]
 loop = true
 name = "revise-tdd"
 packet = ["contracts/{executor}.md"]
-when = "labels contains doc:tdd and labels != security-load-bearing and labels != security"
+when = "labels contains doc:tdd and labels != security-change and labels != security"
 
 [[step]]
 after_loop = "review"

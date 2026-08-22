@@ -1,5 +1,5 @@
 [policy]
-version = 9
+version = 10
 
 [variants]
 fable-high = { model = "fable", effort = "high" }
@@ -50,7 +50,7 @@ verify-ac = { variant = "opus-high" }
 
 [security]
 ceiling = "opus-max"
-labels = ["security-load-bearing", "security"]
+labels = ["security-change", "security-load-bearing", "security"]
 never = ["fable"]
 nodes = ["judge-security", "threat-model", "tdd-author-security", "spec-author-security", "tribunal-security"]
 reason = "Fable screens cyber/bio content and silently serves Opus when a request trips those screens, which security review does by its nature. The ledger would then credit a model that never ran. Name Opus up front so recorded and executing model agree."

@@ -92,7 +92,7 @@ Compute a recommended route from the three fields that decide it —
 Security-sensitive, Shape, and Size hint, in that order:
 
 - **Security-sensitive: yes** → recommend `/plan`, regardless of shape or
-  size. Docket's security-load-bearing workflow is the trust machinery for
+  size. Docket's security-change workflow is the trust machinery for
   this class of work; every other route skips it entirely.
 - **Shape: iterative** → recommend `/loop` — hand the loop a
   conversation-sized task to repeat on its own cadence, with the block's

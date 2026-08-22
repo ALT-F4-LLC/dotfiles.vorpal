@@ -1,6 +1,6 @@
 ---
 name: refit
-description: Redesign one Docket workflow definition in src/user/docket/config/workflows through an interactive, capability-checked refactor — mine run evidence across every project that executed the workflow to ground optimization proposals, iterate the target pipeline spec with the operator, verify every claimed engine capability against the live docket engine source, surface each engine-forced deviation as an explicit decision, render the settled design as a visual Artifact for approval before implementing, then land the full surface set (workflow TOML, contracts, fragments, policy rows, vote-seat lenses, schemas), lint it, file engine issues for real gaps, and commit. Use on "refit the ui-change workflow", "/refit standard-change", "refactor a docket workflow", "optimize the release pipeline", "add a phase to release", "redesign the investigation pipeline", or any request to change or improve what a workflow under src/user/docket/config/workflows does.
+description: Redesign one Docket workflow definition in src/user/docket/config/workflows through an interactive, capability-checked refactor — mine run evidence across every project that executed the workflow to ground optimization proposals, iterate the target pipeline spec with the operator, verify every claimed engine capability against the live docket engine source, surface each engine-forced deviation as an explicit decision, render the settled design as a visual Artifact for approval before implementing, then land the full surface set (workflow TOML, contracts, fragments, policy rows, vote-seat lenses, schemas), lint it, file engine issues for real gaps, and commit. Invoked bare (`/refit` with no workflow named) it instead runs corpus mode — review every workflow in the corpus, mine run evidence triage-then-deep-dive, and interactively suggest (never perform) per-workflow refits, removals, and new-workflow additions, ending with an agreed action list. Use on "refit the ui-change workflow", "/refit standard-change", "refactor a docket workflow", "optimize the release pipeline", "add a phase to release", "redesign the investigation pipeline", bare "/refit" for a whole-corpus review, or any request to change or improve what a workflow under src/user/docket/config/workflows does.
 ---
 
 # refit
@@ -16,6 +16,46 @@ edited, and the operator's `just activate` is the only installer.
 **You change definitions; you never run them.** No `docket run`, no issue
 grooming, no executing the pipeline you just built (`conduct` does that). A
 live run is out of scope unless the operator asks for one afterward.
+
+Two modes, dispatched on the invocation: a named workflow enters single
+mode (§1–§8); no parameter at all enters corpus mode (next section).
+
+## Corpus mode (invoked bare)
+
+Invoked with no workflow named, review the whole corpus instead of
+redesigning one definition. Suggest-only: corpus mode never edits,
+removes, or creates a workflow file — every accepted change is deferred to
+a single-mode `refit <name>` the operator runs afterward. Sections 1–8
+apply only to single mode.
+
+**Triage, then deep-dive.** Read every definition under
+`src/user/docket/config/workflows/` whole, plus `policy.toml`. Mine in two
+passes: first an aggregate pass across every project (`docket project
+list`, then run counts, outcomes, and costs per workflow via `docket
+stats` and `docket run`); then §2's full per-step mining ONLY on workflows
+the aggregate flags as suspect — never-run definitions, chronic parks or
+budget exhaustions, gates that never reject, cost far off `expected_cost`.
+§2's evidence rules apply throughout: counts over vivid samples, thin
+evidence said plainly. A workflow cleared on aggregate numbers alone is
+reported as such, not as deep-mined.
+
+**Verdicts.** Every workflow gets one: **keep** (evidence shows it earning
+its shape), **refit** (name what needs changing and why, citing numbers —
+the suggestion is "run `refit <name>`", never an edit here), or **remove**
+(no runs, superseded, or overlapping a sibling that covers it — removal
+too is only proposed). Alongside the verdicts, propose **new workflows**
+for gaps the evidence shows the corpus not covering: each a named gap, its
+evidence, and a one-paragraph shape — not a draft pipeline spec; full
+design belongs to the follow-up refit.
+
+**Interactive review.** Deliver a plain-language chat report — per-workflow
+verdict with cited evidence, then the new-workflow proposals — and walk
+the operator through it via `AskUserQuestion` rounds, one accept/reject
+per suggestion (batched where they fit), recommended option first. End
+with the agreed action list: which `refit <name>` runs to do, which
+removals were approved (still landed by a follow-up, not by this mode),
+which new workflows to design. Then stop — corpus mode records nothing and
+lands nothing.
 
 ## 1. Intake
 

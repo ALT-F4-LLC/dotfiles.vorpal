@@ -1,5 +1,5 @@
 [policy]
-version = 11
+version = 12
 
 [variants]
 fable-high = { model = "fable", effort = "high" }
@@ -27,7 +27,6 @@ judge-design = { variant = "opus-high" }
 judge-security = { variant = "opus-high", never = ["fable"], reason = "security-classifier-reroute" }
 judge-simplicity = { variant = "opus-medium" }
 judge-testing = { variant = "opus-high" }
-pr-comment-author = { variant = "sonnet-medium" }
 prd-author = { variant = "fable-max" }
 research = { variant = "fable-xhigh" }
 spec-author-architecture = { variant = "opus-high" }

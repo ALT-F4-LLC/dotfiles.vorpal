@@ -329,7 +329,7 @@ function resolve(row, policy) {
 const WRITE_HINTS = [
     'implement', 'fix',
     'prd-author', 'tdd-author', 'tdd-author-security',
-    'adr-author', 'ux-spec-author', 'pr-comment-author',
+    'adr-author', 'ux-spec-author',
     'spec-author-architecture', 'spec-author-security', 'spec-author-operations',
     'spec-author-performance', 'spec-author-code-quality',
     'spec-author-review-strategy', 'spec-author-testing',

@@ -1,6 +1,6 @@
 ---
 node: synthesize-findings
-version: 2
+version: 3
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -104,7 +104,22 @@ values — `member_ids` is the ONE linkage key; the older spellings (`members`,
 `cluster_members`, `member_findings`) are retired, and the payload validates against
 `findings-cluster@1`, which is where these shapes are written down. A standing finding
 carried forward from a prior round's aggregate record may omit `member_ids` — it
-references that record, not this round's judge payloads. The body is where uncertainty
+references that record, not this round's judge payloads.
+
+`open_severity`: on every cluster that carries NO settling ruling, also emit
+`open_severity` — a scalar, the max of the cluster's member severities on the same
+five-value ladder. A settling ruling is a `prior_disposition` whose `ruling` is
+`accepted`, `corrected-to-<severity>`, `rejected`, or `deferred` WITH its
+`follow_up_issue` named; a cluster so ruled omits `open_severity` entirely (never null,
+never a floor value). A deferral with no follow-up issue is not settled — the cluster
+keeps its `open_severity`, which is what keeps an evaporated deferral visible. This one
+field is what the spec-doc fix-loop threshold reads (`any(open_severity >= high)`):
+present-and-high routes a revision round before any vote is paid, absent means the
+ground is settled and cannot re-fire the loop. Emitting it on settled ground re-opens a
+decision an operator or panel already made; omitting it on an open cluster hides an open
+defect from the loop. Both are payload defects, not style choices.
+
+The body is where uncertainty
 and reasoning live; the payload is what the engine computes over, so its cluster
 membership must be exact — every input finding appears in exactly one cluster, no
 standing finding is dropped, and none is invented.

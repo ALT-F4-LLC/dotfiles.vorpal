@@ -1,6 +1,6 @@
 ---
 name: refit
-description: Redesign one Docket workflow definition in src/user/docket/config/workflows through an interactive, capability-checked refactor — iterate the target pipeline spec with the operator, verify every claimed engine capability against the live docket engine source, surface each engine-forced deviation as an explicit decision, render the settled design as a visual Artifact for approval before implementing, then land the full surface set (workflow TOML, contracts, fragments, policy rows, vote-seat lenses, schemas), lint it, file engine issues for real gaps, and commit. Use on "refit the ui-change workflow", "/refit standard-change", "refactor a docket workflow", "add a phase to release", "redesign the investigation pipeline", or any request to change what a workflow under src/user/docket/config/workflows does.
+description: Redesign one Docket workflow definition in src/user/docket/config/workflows through an interactive, capability-checked refactor — mine run evidence across every project that executed the workflow to ground optimization proposals, iterate the target pipeline spec with the operator, verify every claimed engine capability against the live docket engine source, surface each engine-forced deviation as an explicit decision, render the settled design as a visual Artifact for approval before implementing, then land the full surface set (workflow TOML, contracts, fragments, policy rows, vote-seat lenses, schemas), lint it, file engine issues for real gaps, and commit. Use on "refit the ui-change workflow", "/refit standard-change", "refactor a docket workflow", "optimize the release pipeline", "add a phase to release", "redesign the investigation pipeline", or any request to change or improve what a workflow under src/user/docket/config/workflows does.
 ---
 
 # refit
@@ -31,7 +31,37 @@ recommended option first — and let everything with a conventional answer
 default. When the operator hands you a numbered pipeline spec, treat it as
 the contract and ask only about what it leaves open.
 
-## 2. Verify against the engine
+## 2. Mine the evidence
+
+The corpus is shared: every project on this machine runs these same
+definitions, so the target workflow's real behavior lives across every
+project's ledger, not just this repo's. Enumerate them (`docket project
+list`) and, for each with runs of the target workflow, read what actually
+happened — runs, steps, events, votes, costs (`docket run`, `docket step`,
+`docket events`, `docket stats`; exact verbs and flags via `--help` or the
+`docket` skill).
+
+Count, per step across all runs: spawns versus skips (a `when` lane or
+fanout row never taken is a routing claim nothing tests); gate outcomes (a
+gate that has never rejected, or never passed, is telling you something);
+fix-loop entries, convergence, and budget exhaustions; vote margins
+(unanimous everywhere versus real 2-of-3 decisions); recorded cost against
+`expected_cost`; parks, and what the operator did with each.
+
+A pattern seen in a few vivid runs is a hypothesis, not a finding — go
+count it, and the aggregate is the finding even when it contradicts the
+samples. Each optimization you propose cites its numbers ("this fanout row:
+4 planned, 0 executed across every run → drop it at the version bump");
+thin evidence (few runs, young workflow) is said plainly and the proposal
+leans on design judgment instead — never dressed as data. Mined findings
+feed §1's iteration as proposal input; when the operator invoked refit as
+"optimize <workflow>" with no spec of their own, they ARE the proposal.
+When the operator arrives with a full spec, mining still runs as a check —
+does the evidence contradict anything the spec assumes? (`retro` sweeps the
+whole corpus on its own cadence; this mining is scoped to the one workflow
+being redesigned.)
+
+## 3. Verify against the engine
 
 **The docket engine source is the only capability authority.** Not memory,
 not this file, not what a sibling workflow appears to imply — engines move,
@@ -59,7 +89,7 @@ rule, routable voters) and what its rejection can route to; what exhausting
 a budget does. Read until the mechanism is settled — one honest pass, not a
 re-derivation loop — and carry the answer as a cited fact (`file:line`).
 
-## 3. Gate the deviations
+## 4. Gate the deviations
 
 Where the verified engine and the operator's spec collide, the resolution is
 the operator's. Present each collision as an `AskUserQuestion`: what the
@@ -74,7 +104,7 @@ from the engine checkout): what the workflow needed, what the engine
 provides, a concrete proposal. Engine defects and gaps are filed, never
 patched in place.
 
-## 4. Visualize before implementing
+## 5. Visualize before implementing
 
 Once the deviations are settled, render the agreed design as an Artifact and
 hold for approval on the picture before touching any file. Load the
@@ -88,13 +118,13 @@ paths draw differently from the happy path — the picture's job is to let the
 operator catch a wrong edge cheaper than a wrong implementation.
 
 Present the artifact link and ask for approval via `AskUserQuestion`
-(approve / revise). A revision request loops back through §3's gates if it
+(approve / revise). A revision request loops back through §4's gates if it
 reopens a deviation, or straight to a redraw if it is design-only; nothing
-in §5 onward happens until the picture is approved. Keep the artifact
+in §6 onward happens until the picture is approved. Keep the artifact
 updated at the same URL as the design moves — after landing, it doubles as
 the workflow's schematic.
 
-## 5. Implement every surface
+## 6. Implement every surface
 
 A workflow change is rarely one file. Work the full checklist; skipping a
 surface is how activation refuses or a wave refuses to route:
@@ -127,7 +157,7 @@ surface is how activation refuses or a wave refuses to route:
 - **Schemas** (`config/schemas/`) — a new `payload` kind needs a schema file
   and threshold predicates that match its fields.
 
-## 6. Validate
+## 7. Validate
 
 ```bash
 docket workflow lint src/user/docket/config/workflows/<name>.toml
@@ -142,7 +172,7 @@ re-lint. The acceptance floor is a clean lint at the bumped version;
 anything the lint cannot see (live loop behavior, seat quality) is reported
 as unverified, not claimed.
 
-## 7. Land
+## 8. Land
 
 Commit via the `commit` skill. Other sessions share this tree — stage only
 the files this refit touched, nothing else. Then report in plain language:

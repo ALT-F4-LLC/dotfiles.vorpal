@@ -1,6 +1,6 @@
 ---
 node: tdd-author-security
-version: 1
+version: 2
 archetype: executor-write
 packet_includes:
   - fragments/doc-house-style.md
@@ -9,7 +9,7 @@ packet_includes:
   - fragments/security-review-dimensions.md
   - fragments/evidence-rules.md
   - fragments/scope-discipline.md
-emits: tdd
+emits: doc
 ---
 # Charter
 Design work whose correctness is a security property: trust boundaries, authentication

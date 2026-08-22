@@ -1,5 +1,5 @@
 [policy]
-version = 6
+version = 7
 
 [variants]
 fable-high = { model = "fable", effort = "high" }
@@ -9,7 +9,7 @@ fable-xhigh = { model = "fable", effort = "xhigh" }
 opus-high = { model = "opus", effort = "high", escalate_to = "fable-high" }
 opus-medium = { model = "opus", effort = "medium", escalate_to = "fable-medium" }
 opus-xhigh  = { model = "opus", effort = "xhigh", escalate_to = "fable-xhigh" }
-opux-max = { model = "opus", effort = "max", escalate_to = "fable-max" }
+opus-max = { model = "opus", effort = "max", escalate_to = "fable-max" }
 sonnet-high = { model = "sonnet", effort = "high", escalate_to = "opus-high" }
 sonnet-max = { model = "sonnet", effort = "max", escalate_to = "opus-max" }
 sonnet-medium = { model = "sonnet", effort = "medium", escalate_to = "opus-medium" }
@@ -50,12 +50,12 @@ test-infra = { variant = "sonnet-high" }
 threat-model = { variant = "opus-xhigh", never = ["fable"], reason = "security-classifier-reroute" }
 tribunal-architecture = { variant = "fable-xhigh" }
 tribunal-correctness = { variant = "fable-xhigh" }
-tribunal-security = { variant = "opux-xhigh", never = ["fable"], reason = "security-classifier-reroute" }
+tribunal-security = { variant = "opus-xhigh", never = ["fable"], reason = "security-classifier-reroute" }
 ux-spec-author = { variant = "fable-max" }
 verify-ac = { variant = "opus-high" }
 
 [security]
-ceiling = "opux-max"
+ceiling = "opus-max"
 labels = ["security-load-bearing", "security"]
 never = ["fable"]
 nodes = ["judge-security", "threat-model", "tdd-author-security", "spec-author-security", "tribunal-security"]
@@ -70,4 +70,4 @@ fable_gates = [
 ]
 
 [escalation.fallback]
-fable-max = "opux-max"
+fable-max = "opus-max"

@@ -1,186 +1,69 @@
-# docs-only — kind/label-matched, scope = docs/** (05 §2).
-# Per 05 §2: "implement -> single `judge-correctness` review -> verify; gates:
-# `doc-validate` (per doc type), `citation-check`. No fix-loop (attempts
-# suffice), no commit vote."
-# Consequences of "no fix-loop", read against the engine:
-#   - there is no `fix` step and no `after_loop` anywhere in this file;
-#   - no threshold may route "fix-loop" (there would be no loop body to enter),
-#     so the review outcome routes to an interposed tribunal instead (06 §11.2)
-#     — the panel reads the findings and escalates only what it will not pass
-#     (operator policy, 2026-08-16). `max_fix_loops` is therefore absent too.
-#   - the single-judge review is an ordinary executor step, not a `fanout`: a
-#     one-hint fanout would register (V15 only refuses an EMPTY fanout) but would
-#     model a join over one sibling that 05 §2 does not ask for.
-# `synthesize`/`reconcile` are absent: clustering across judges is meaningless
-# with one judge, and `aggregate` over a single input computes nothing new.
-# Scope (`docs/**`) is issue data, not a pipeline field (02 §5). No gate
-# enforces it: gates receive no issue identity (DKT-66), so scope containment
-# is un-mechanized — an action-shaped gap, not a gate-shaped one.
-
 [pipeline]
-name    = "docs-only"
-version = 9   # 9: every class `max` -> 16, the wave dispatcher's ceiling
-              #   (the harness runs at most min(16, CPUs - 2) agents per
-              #   workflow): `write` leaves the 02 §11.1 serialization behind
-              #   — per-executor worktrees isolate writers, overlap is a
-              #   cherry-pick conflict gate at integration — and read classes
-              #   leave the 4-wide single-issue fanout that throttled
-              #   multi-issue runs (2026-08-21).
-              # 8: the two operator parks (review high+, verify unmet) route
-              #   through interposed tribunal votes first (operator policy,
-              #   2026-08-16) — the panel escalates only what it will not pass
-              # 7: verify step declares verify.gate-results so its own
-              #   ac-commands pre-gate row resolves at claim (DOT-13,
-              #   engine fix 7a2cbff)
-              # 6: description + commit-tail note updated to the
-              #   conductor-integrates model (2026-08-10)
 description = "Documentation change: one correctness judge, doc-validate and citation gates, no fix-loop, tribunal-filtered escalation; the conductor integrates commits, the operator publishes."
+name = "docs-only"
+version = 10
 
-[match]                      # no `docs` kind exists (closed set, see spec-doc's
-                             #   note); `docs-only` is the label 05 §2 names anyway
-                             # Precedence (exactly-one-match, 06 §11.1): the nine
-                             #   [match] clauses form a total order, each excluding
-                             #   every label that binds above it —
-                             #   retro > release > spec-project > spec-doc >
-                             #   investigation > docs-only > security > ui >
-                             #   standard-change.
-                             # `kind` carries all five closed-set kinds (DKT-22):
-                             #   `epic` included so an epic carrying this label
-                             #   routes here like any other kind — see the parallel
-                             #   note on `standard-change`, the workflow that
-                             #   catches an unlabeled epic.
-labels_any  = ["docs-only"]
+[match]
+labels_any = ["docs-only"]
 unless_labels = ["investigation", "spec-doc", "spec-project", "release", "retro"]
 
-
-
-
-[limits]                     # per-class bounds (DKT-16). `max_step_duration` is a
-                             #   SCHEDULE-TO-CLOSE bound measured from the claim,
-                             #   independent of heartbeats — a runaway holder cannot
-                             #   renew past it (02 §11.1, enforced in
-                             #   Scheduler.Expired). Without it the lease TTL is the
-                             #   only clock, so a dead executor's step sits claimed
-                             #   for the full TTL with nothing shorter-circuiting it.
-                             #   Durations are derived from RUN-1's measured steps,
-                             #   not guessed: `write` peaked at 735m (the runaway
-                             #   this bounds) against a 104m average, and every read
-                             #   class finished inside 13m.
-                             # `max` is required by V24 and is CONCURRENCY, a
-                             #   separate question from duration. Every class takes
-                             #   16, the wave dispatcher's ceiling: it runs a stage
-                             #   through the harness's parallel(), capped at
-                             #   min(16, CPUs - 2) concurrent agents per workflow,
-                             #   so 16 is the largest cohort that can actually run
-                             #   at once. A tighter `max` splits rows the
-                             #   dispatcher could run together into extra stage
-                             #   barriers; a looser one certifies concurrency the
-                             #   dispatcher then queues. Writers are no exception:
-                             #   per-executor worktrees isolate them, and overlap
-                             #   surfaces at integration as a conflicting
-                             #   cherry-pick, a stop-and-ask gate.
+[limits]
 "judge-correctness" = { max = 16, max_step_duration = "1h" }
-"verify-ac"         = { max = 16, max_step_duration = "1h" }
-"write"             = { max = 16, max_step_duration = "2h" }
+"verify-ac" = { max = 16, max_step_duration = "1h" }
+"write" = { max = 16, max_step_duration = "2h" }
 
 [[step]]
-name = "implement"
 after = []
-executor = "implement"
 class = "write"
 emits = "change-summary"
-packet = ["contracts/{executor}.md"]
+executor = "implement"
 expected_cost = 0.80
-inputs = ["issue.body"]
 gates = ["build", "self-hygiene", "doc-validate", "citation-check"]
-                                     # `scope` removed: gates get no issue
-                                     #   identity, so scope containment is
-                                     #   un-mechanized (DKT-66)
-                                     # `doc-validate` is 05 §3's per-type gate:
-                                     #   doc_validate.py per type. Per-type
-                                     #   checks are its parameters, not sibling
-                                     #   gate names (see the fold decisions).
+inputs = ["issue.body"]
 max_attempts = 2
-on_fail = "waiting-human"            # attempts suffice (05 §2); nothing loops
+name = "implement"
+on_fail = "waiting-human"
+packet = ["contracts/{executor}.md"]
 
 [[step]]
-name = "review"
-holds_tree = false            # reads the tree, never writes it: exempt from scope
-                             #   exclusion so this step coexists with other issues'
-                             #   steps instead of serialising against them
 after = ["implement"]
-executor = "judge-correctness"       # the single judge 05 §2 specifies
 emits = "findings"
-packet = ["contracts/{executor}.md"]
-payload = "findings@1"
+executor = "judge-correctness"
 expected_cost = 0.60
+holds_tree = false
 inputs = ["implement.change-summary", "issue.diff"]
+name = "review"
+packet = ["contracts/{executor}.md"]
+payload = "findings@5"
 threshold = { "review-tribunal" = "any(severity >= high)" }
-                                     # no fix-loop exists to route to; a high+
-                                     #   finding routes to the interposed
-                                     #   tribunal below (06 §11.2), which
-                                     #   escalates only what it will not pass
-                                     #   (operator policy, 2026-08-16). NOTE the
-                                     #   run no longer parks at review: the
-                                     #   routing step itself is done, so
-                                     #   `verify` proceeds while the panel reads.
-
-[[step]]                     # reached ONLY by review's threshold routing
-name = "review-tribunal"
-after = ["review"]                   # names the predecessor V8 requires; the step
-                                     #   stays otherwise-unreached — interposition
-                                     #   is what makes it ready (06 §11.2)
-type = "vote"                        # TRIBUNAL (operator policy, 2026-08-16):
-                                     #   the panel reads high+ findings FIRST and
-                                     #   escalates only what it will not pass —
-                                     #   same rationale as investigation's
-                                     #   read-gate.
-voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
-vote_rule = "tribunal"               # registered engine-side (see
-                                     #   investigation.toml's note on V26)
-on_fail = "waiting-human"            # any non-approval escalates to the human
-inputs = ["review.findings", "issue.diff"]
 
 [[step]]
-name = "verify"
-holds_tree = false            # reads the tree, never writes it: exempt from scope
-                             #   exclusion so this step coexists with other issues'
-                             #   steps instead of serialising against them
 after = ["review"]
-executor = "verify-ac"
+inputs = ["review.findings", "issue.diff"]
+name = "review-tribunal"
+on_fail = "waiting-human"
+type = "vote"
+vote_rule = "tribunal"
+voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
+
+[[step]]
+after = ["review"]
 emits = "ac-report"
-packet = ["contracts/{executor}.md"]
-payload = "ac-report@1"
+executor = "verify-ac"
 expected_cost = 0.40
 gates = [{ name = "ac-commands", pre = true }]
+holds_tree = false
 inputs = ["issue.body", "issue.diff", "implement.change-summary", "verify.gate-results"]
+name = "verify"
+packet = ["contracts/{executor}.md"]
+payload = "ac-report@1"
 threshold = { "verify-tribunal" = "any(status == unmet)" }
-                                     # unmet routes to the tribunal rather than
-                                     #   looping (nothing loops here); the
-                                     #   `unverifiable` clause collapses into the
-                                     #   same routing, so it is not restated
 
-[[step]]                     # reached ONLY by verify's threshold routing
-name = "verify-tribunal"
-after = ["verify"]                   # names the predecessor V8 requires; the step
-                                     #   stays otherwise-unreached — interposition
-                                     #   is what makes it ready (06 §11.2)
-type = "vote"                        # TRIBUNAL (operator policy, 2026-08-16):
-                                     #   the panel reads the ac-report FIRST and
-                                     #   escalates only what it will not pass.
-voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
-vote_rule = "tribunal"               # registered engine-side (see
-                                     #   investigation.toml's note on V26)
-on_fail = "waiting-human"            # any non-approval escalates to the human
+[[step]]
+after = ["verify"]
 inputs = ["verify.ac-report", "issue.body"]
-
-# COMMIT TAIL REMOVED (operator decision, 2026-08-09): commit-gate, commit, and
-# commit-exec are gone from every pipeline — automated commits are incompatible
-# with the harness security model (interactive 1Password commit-signing
-# authorization is unavailable to headless executors and engine actions;
-# `commit-msg` 0 pass / 1 fail across RUN-1/2/5, all override-passed; DKT-13/
-# DKT-61). Full rationale in standard-change.toml's matching note. Since 2026-08-10 the
-# conductor integrates each write sha as a real unsigned commit; only
-# publishing stays the operator's. `verify` (with its interposed tribunal, when
-# routed) is the terminal engine step; the tribunal filters unmet-AC
-# escalations, and only its non-approvals park for the operator.
+name = "verify-tribunal"
+on_fail = "waiting-human"
+type = "vote"
+vote_rule = "tribunal"
+voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]

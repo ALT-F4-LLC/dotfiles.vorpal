@@ -1,139 +1,70 @@
-# policy.toml — wave-side spawn routing.
-#
-# THE ENGINE NEVER READS THIS FILE: core pins it by content hash at activation
-# and never parses it. Its only consumers are wave.js and tribunal.js, which
-# read these tables and deliver the result as spawn model/effort (the workflow
-# scripts read no files — this text rides verbatim in their launch args).
-# NO TRUST ENTRIES, NO ARGV TEMPLATES: executable argv lives only in the
-# per-user ~/.config/docket/trust.toml and is NEVER repo-shipped.
-# The rationale and evidence behind every row: policy-README.md (sibling
-# file; its sections mirror this one).
-
 [policy]
-version = 3
-
-# --- Variants ---------------------------------------------------------------
-# Model+effort combos, named literally — aliases, never concrete model IDs
-# (src/user/claude_code.rs's ANTHROPIC_DEFAULT_*_MODEL bindings are the only
-# alias->ID mapping; IDs here would be a second source of truth that drifts).
-# No implied ordering: escalation is the explicit `escalate_to` chain, one hop
-# per prior claim (attempt) — rungs earned by a prior claim, whatever ended it
-# (gate failure or lease reap), never predicted difficulty.
-# INVARIANT: every variant must be referenced by an executor row or a chain hop.
+version = 4
 
 [variants]
-sonnet-high = { model = "sonnet", effort = "high",   escalate_to = "opus-high" }
-opus-medium = { model = "opus",   effort = "medium", escalate_to = "opus-high" }
-opus-high   = { model = "opus",   effort = "high",   escalate_to = "opus-xhigh" }
-opus-xhigh  = { model = "opus",   effort = "xhigh",  escalate_to = "opus-max" }
-opus-max    = { model = "opus",   effort = "max",    escalate_to = "fable-max" }
-fable-max   = { model = "fable",  effort = "max" }
-                          # top of the system, no escalate_to; no row stands
-                          #   here — entry is by chain off opus-max only,
-                          #   gated by [escalation].fable_gates
-
-# --- Executor routing -------------------------------------------------------
-# executor hint -> variant. Keys are node names — opaque strings core never
-# interprets.
+fable-high = { model = "fable", effort = "high" }
+fable-max = { model = "fable", effort = "max" }
+fable-medium = { model = "fable", effort = "medium" }
+fable-xhigh = { model = "fable", effort = "xhigh" }
+opus-high = { model = "opus", effort = "high", escalate_to = "fable-high" }
+opus-medium = { model = "opus", effort = "medium", escalate_to = "fable-medium" }
+opus-xhigh  = { model = "opus", effort = "xhigh", escalate_to = "fable-xhigh" }
+opux-max = { model = "opus", effort = "max", escalate_to = "fable-max" }
+sonnet-high = { model = "sonnet", effort = "high", escalate_to = "opus-high" }
+sonnet-max = { model = "sonnet", effort = "max", escalate_to = "opus-max" }
+sonnet-medium = { model = "sonnet", effort = "medium", escalate_to = "opus-medium" }
+sonnet-xhigh = { model = "sonnet", effort = "xhigh", escalate_to = "opus-xhigh" }
 
 [executors]
+# Authors
+adr-author = { variant = "fable-max" }
+prd-author = { variant = "fable-max" }
+ux-spec-author = { variant = "fable-max" }
 
-# Write nodes. Deliberately NO commit-author row: automated commits are
-# incompatible with the harness security model (operator policy 2026-08-09) —
-# do not re-add one.
-implement         = { variant = "sonnet-high" }
-test-infra        = { variant = "opus-high" }
-fix               = { variant = "opus-medium" }
-
-# Review nodes. INVARIANT: opus-high is the floor for ASSURANCE-BEARING
-# review (nodes whose findings gate shipping); dispatching such review below
-# it is a routing defect. Nodes that transcribe or advise are sized to that.
-judge-correctness = { variant = "opus-high" }
+# design-qa = { variant = "opus-high" }
+fix = { variant = "sonnet-medium" }
+implement = { variant = "sonnet-medium" }
+investigate = { variant = "fable-xhigh" }
 judge-architecture = { variant = "opus-high" }
-judge-testing     = { variant = "opus-high" }
-judge-design      = { variant = "opus-high" }
-judge-security    = { variant = "opus-high", never = ["fable"], reason = "security-classifier-reroute" }
-judge-simplicity  = { variant = "opus-medium" }
-design-qa         = { variant = "opus-high" }
-verify-ac         = { variant = "opus-high" }
-synthesize-findings = { variant = "opus-high" }
-pr-comment-author = { variant = "sonnet-high" }
-
-# Authoring nodes. Deliberately NO spec-doc-author row and no router of that
-# name anywhere: spec-doc's authoring is when-gated workflow steps, each
-# declaring one concrete author below directly — do not re-add a router.
-prd-author        = { variant = "opus-high" }
-tdd-author        = { variant = "opus-xhigh" }
+judge-correctness = { variant = "opus-high" }
+judge-design = { variant = "opus-high" }
+judge-security = { variant = "opus-high", never = ["fable"], reason = "security-classifier-reroute" }
+judge-simplicity = { variant = "opus-medium" }
+judge-testing = { variant = "opus-high" }
+pr-comment-author = { variant = "sonnet-medium" }
+research = { variant = "fable-xhigh" }
+retro-analyst = { variant = "fable-xhigh" }
+spec-author-architecture = { variant = "opus-high" }
+spec-author-code-quality = { variant = "opus-high" }
+spec-author-operations = { variant = "opus-high" }
+spec-author-performance = { variant = "opus-high" }
+spec-author-review-strategy = { variant = "opus-high" }
+spec-author-security = { variant = "opus-high", never = ["fable"], reason = "security-classifier-reroute" }
+spec-author-testing = { variant = "opus-high" }
+synthesize-findings = { variant = "sonnet-medium" }
+tdd-author = { variant = "fable-xhigh" }
 tdd-author-security = { variant = "opus-xhigh", never = ["fable"], reason = "security-classifier-reroute" }
-adr-author        = { variant = "opus-xhigh" }
-ux-spec-author    = { variant = "opus-xhigh" }
-
-# spec-project's seven reserved spec files: seven DISTINCT executor hints (the
-# hint is the per-sibling identity carrier), not seven spawns of one row.
-spec-author-architecture   = { variant = "opus-xhigh" }
-spec-author-security       = { variant = "opus-xhigh", never = ["fable"], reason = "security-classifier-reroute" }
-spec-author-operations     = { variant = "opus-xhigh" }
-spec-author-performance    = { variant = "opus-xhigh" }
-spec-author-code-quality   = { variant = "opus-xhigh" }
-spec-author-review-strategy = { variant = "opus-xhigh" }
-spec-author-testing        = { variant = "opus-xhigh" }
-
-# Investigator-class — diagnosis and synthesis with no map to follow.
-investigate       = { variant = "opus-max" }
-research          = { variant = "opus-max" }
-retro-analyst     = { variant = "opus-max" }
-
-# Tribunal seats — the standing panel where workflows used to declare
-# `type = "human"`. Referenced by the `voters` lists in investigation.toml,
-# spec-doc.toml, spec-project.toml, and retro.toml; retiring one of those
-# retires the row.
-tribunal-architecture = { variant = "opus-high" }
-tribunal-correctness  = { variant = "opus-high" }
-tribunal-security     = { variant = "opus-max", never = ["fable"], reason = "security-classifier-reroute" }
-
-# Security nodes — see [security] for why these never reach fable.
-threat-model      = { variant = "opus-high", never = ["fable"], reason = "security-classifier-reroute" }
-
-# --- Security model pins ----------------------------------------------------
-# INVARIANTS, both deliberate: sensitivity is checked AHEAD of any escalation
-# hop — security-sensitive work takes these pins even when its node's own row
-# says otherwise — and opus-max is the ceiling: a security step that fails AT
-# opus-max gets broken into smaller pieces, never a higher rung.
+test-infra = { variant = "sonnet-high" }
+threat-model = { variant = "opus-xhigh", never = ["fable"], reason = "security-classifier-reroute" }
+tribunal-architecture = { variant = "fable-xhigh" }
+tribunal-correctness = { variant = "fable-xhigh" }
+tribunal-security = { variant = "opux-xhigh", never = ["fable"], reason = "security-classifier-reroute" }
+verify-ac = { variant = "opus-high" }
 
 [security]
-nodes   = ["judge-security", "threat-model", "tdd-author-security", "spec-author-security", "tribunal-security"]
-never   = ["fable"]
-ceiling = "opus-max"
-reason  = "Fable screens cyber/bio content and silently serves Opus when a request trips those screens, which security review does by its nature. The ledger would then credit a model that never ran. Name Opus up front so recorded and executing model agree."
-
-# Sensitivity is a property of the TASK, not only the node. A step on an issue
-# carrying any of these labels takes the security pins above even when its own
-# executor row is unpinned.
-labels  = ["security-load-bearing", "security"]
-
-# INVARIANT: NO [[resolve]] tables — retired 2026-08-13; wave.js refuses to
-# route while any is present. Label routing is when-gated sibling steps in the
-# workflow files, each declaring its concrete executor.
-
-# --- Escalation -------------------------------------------------------------
-# One `escalate_to` hop per prior claim (attempt), following the chain from the
-# row's standing variant. The engine's max_attempts / on_fail decide WHETHER a
-# step retries (engine-enforced); this decides only what variant the retry
-# SPAWNS at.
+ceiling = "opux-max"
+labels = ["security-load-bearing", "security"]
+never = ["fable"]
+nodes = ["judge-security", "threat-model", "tdd-author-security", "spec-author-security", "tribunal-security"]
+reason = "Fable screens cyber/bio content and silently serves Opus when a request trips those screens, which security review does by its nature. The ledger would then credit a model that never ran. Name Opus up front so recorded and executing model agree."
 
 [escalation]
-on_failure   = "one-hop"                  # exactly one escalate_to hop per prior claim (attempt);
-                                          #   security work stops at [security].ceiling — a
-                                          #   true bound the walk never passes
-fable_gates  = [                          # entering a fable-model variant BY CHAIN-WALK needs
-                                          #   a gate; a row STANDING on a fable variant needs
-                                          #   none — its residency is this file's declaration
-  "investigator-class",                   # diagnosis with no map to follow
-  "novel-architecture",                   # spec with no precedent here
-  "failed-top-opus-round",                # already failed at opus-xhigh/opus-max
+on_failure = "one-hop"
+fable_gates = [
+  "failed-top-opus-round",
+  "investigator-class",
+  "novel-architecture",
 ]
 
-# When fable cannot be used — gate unmet, never-listed, or unavailable — the
-# step drops to the top Opus rung.
 [escalation.fallback]
-fable-max = "opus-max"
+fable-max = "opux-max"

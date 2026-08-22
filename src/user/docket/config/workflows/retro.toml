@@ -1,171 +1,76 @@
-# retro — the evolve-* replacement (05 §6).
-# Per 05 §6: "`retro-analyst` reads the run ledger and event log across recent
-# runs (attempt spikes, gate-failure clusters, held-finding rates, cost outliers,
-# model requested-vs-resolved drift) -> emits a proposals artifact -> planner
-# turns accepted proposals into issues (contract edits, fragment edits,
-# pipeline/policy changes, gate additions) -> those issues flow through
-# `standard-change`/`spec-doc` pipelines like any change."
-#
-# The pipeline ENDS at acceptance of the proposals — since 2026-08-11 a tribunal
-# vote that escalates anything short of approval to the operator. What follows —
-# "planner turns accepted proposals into issues" — is a planner invocation
-# (03 §2), not a step: the planner is an in-session skill, and the issues it
-# creates bind to their OWN pipelines. Modelling that tail here would put one
-# pipeline's steps inside another's run.
-#
-# `retro-analyst` reads the ledger through the engine's own read verbs; no gate
-# is declared because there is nothing to check that the engine has not already
-# recorded (02 §1.5: gate results are recorded facts).
-
 [pipeline]
-name    = "retro"
-version = 7   # 7: every class `max` 4 -> 16, the wave dispatcher's ceiling
-              #   (the harness runs at most min(16, CPUs - 2) agents per
-              #   workflow); 4 was the single-issue fanout width and
-              #   throttled multi-issue runs. `revise` declares
-              #   holds_tree = false: it emits proposals and never edits
-              #   config, so it no longer excludes on scope (2026-08-21)
-              # 6: reconcile aggregates severity by `max` instead of
-              #   `median` — an even-count median resolves an exact tie to
-              #   the LOWER band, demoting the mixed clusters that most need
-              #   attention (retro 2026-08-19, panel DKT-V62 architecture
-              #   seat; same move as standard-change@12).
-              #   (5: `accept` human -> tribunal vote, operator policy
-              #   2026-08-11. 4: fix-loop threshold high -> blocker,
-              #   2026-08-10.)
 description = "Mine recent run evidence into config-change proposals, accepted by tribunal vote that escalates to the operator."
+name = "retro"
+version = 8
 
-[match]                      # closed kind set (see spec-doc's note): `retro` is a
-                             #   label, not a kind. Engine wins over 05; DKT filed.
-                             # NO `kind` CLAUSE (DKT-25): an absent list already
-                             #   matches every kind (match.go:48). DKT-22 spelled
-                             #   out the whole closed set here, which decided
-                             #   nothing and made a sixth kind unroutable in all
-                             #   nine workflows at once. The label terms below are
-                             #   what actually discriminate.
-labels_any  = ["retro"]
+[match]
+labels_any = ["retro"]
 
-
-
-
-[limits]                     # per-class bounds (DKT-16). `max_step_duration` is a
-                             #   SCHEDULE-TO-CLOSE bound measured from the claim,
-                             #   independent of heartbeats — a runaway holder cannot
-                             #   renew past it (02 §11.1, enforced in
-                             #   Scheduler.Expired). Without it the lease TTL is the
-                             #   only clock, so a dead executor's step sits claimed
-                             #   for the full TTL with nothing shorter-circuiting it.
-                             #   Durations are derived from RUN-1's measured steps,
-                             #   not guessed: `write` peaked at 735m (the runaway
-                             #   this bounds) against a 104m average, and every read
-                             #   class finished inside 13m.
-                             # `max` is required by V24 and is CONCURRENCY, a
-                             #   separate question from duration. Every class takes
-                             #   16, the wave dispatcher's ceiling: it runs a stage
-                             #   through the harness's parallel(), capped at
-                             #   min(16, CPUs - 2) concurrent agents per workflow,
-                             #   so 16 is the largest cohort that can actually run
-                             #   at once. A tighter `max` splits rows the
-                             #   dispatcher could run together into extra stage
-                             #   barriers; a looser one certifies concurrency the
-                             #   dispatcher then queues.
-"judge-correctness"   = { max = 16, max_step_duration = "1h" }
-"judge-simplicity"    = { max = 16, max_step_duration = "1h" }
-"retro-analyst"       = { max = 16, max_step_duration = "1h" }
+[limits]
+"judge-correctness" = { max = 16, max_step_duration = "1h" }
+"judge-simplicity" = { max = 16, max_step_duration = "1h" }
+"retro-analyst" = { max = 16, max_step_duration = "1h" }
 "synthesize-findings" = { max = 16, max_step_duration = "1h" }
 
 [[step]]
-name = "analyze"
-holds_tree = false            # reads the tree, never writes it: exempt from scope
-                             #   exclusion so this step coexists with other issues'
-                             #   steps instead of serialising against them
 after = []
-executor = "retro-analyst"
 emits = "proposals"
-packet = ["contracts/{executor}.md"]
+executor = "retro-analyst"
 expected_cost = 1.00
+holds_tree = false
 inputs = ["issue.body"]
 max_attempts = 2
+name = "analyze"
 on_fail = "waiting-human"
+packet = ["contracts/{executor}.md"]
 
 [[step]]
-name = "review"
-holds_tree = false            # reads the tree, never writes it: exempt from scope
-                             #   exclusion so this step coexists with other issues'
-                             #   steps instead of serialising against them
 after = ["analyze"]
+emits = "findings"
+expected_cost = 0.50
 fanout = ["judge-correctness", "judge-simplicity"]
-                                     # the proposals are reviewed like any other
-                                     #   judgment: are they supported by the
-                                     #   evidence cited, and do they add machinery
-                                     #   the system does not need
-emits = "findings"
-packet = ["contracts/{executor}.md"]
-payload = "findings@1"
-expected_cost = 0.50                 # per expanded sibling
+holds_tree = false
 inputs = ["analyze.proposals"]
+name = "review"
+packet = ["contracts/{executor}.md"]
+payload = "findings@5"
 
 [[step]]
-name = "synthesize"
-holds_tree = false            # reads the tree, never writes it: exempt from scope
-                             #   exclusion so this step coexists with other issues'
-                             #   steps instead of serialising against them
 after = ["review"]
-executor = "synthesize-findings"
 emits = "findings"
-packet = ["contracts/{executor}.md"]
+executor = "synthesize-findings"
 expected_cost = 0.30
+holds_tree = false
 inputs = ["review.*"]
-
-[[step]]
-name = "reconcile"
-after = ["synthesize"]
-action = "aggregate"
-params = { field = "severity", method = "max", hold_spread = 2, output = "findings" }
-inputs = ["synthesize.findings"]
-payload = "findings@1"
-threshold = { "fix-loop" = "any(severity >= blocker)" }   # BLOCKER-ONLY LOOPING (operator policy 2026-08-10):
-                                     #   high findings are recorded and surface at
-                                     #   gates/backlog, never re-loop — Opus-tier
-                                     #   judges sustain finding pressure forever and
-                                     #   a high-keyed loop cannot converge (RUN-1
-                                     #   graph-engine; full rationale in
-                                     #   standard-change.toml).
-max_fix_loops = 2
-
-[[step]]
-name = "revise"
-holds_tree = false            # emits proposals, never edits config or the tree:
-                             #   exempt from scope exclusion so it coexists with
-                             #   other issues' steps instead of serialising
-executor = "retro-analyst"
-emits = "proposals"
+name = "synthesize"
 packet = ["contracts/{executor}.md"]
-expected_cost = 0.60
-loop = true
-inputs = ["reconcile.findings", "analyze.proposals"]
-after_loop = "review"
 
 [[step]]
-name = "accept"
+action = "aggregate"
+after = ["synthesize"]
+inputs = ["synthesize.findings"]
+max_fix_loops = 2
+name = "reconcile"
+params = { field = "severity", method = "max", hold_spread = 2, output = "findings" }
+payload = "findings@5"
+threshold = { "fix-loop" = "any(severity >= blocker)" }
+
+[[step]]
+after_loop = "review"
+emits = "proposals"
+executor = "retro-analyst"
+expected_cost = 0.60
+holds_tree = false
+inputs = ["reconcile.findings", "analyze.proposals"]
+loop = true
+name = "revise"
+packet = ["contracts/{executor}.md"]
+
+[[step]]
 after = ["reconcile"]
-type = "vote"                        # TRIBUNAL (operator policy, ratified in
-                                     #   conversation 2026-08-11). The operator still
-                                     #   accepts proposals in conversation (T9) and
-                                     #   accepted ones still become issues via a
-                                     #   fresh planner invocation — the tribunal
-                                     #   decides which proposals are worth that
-                                     #   conversation, and a retro's output is a long
-                                     #   list of small config edits, which is the
-                                     #   shape that most rewards a first pass.
-voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
-vote_rule = "tribunal"               # registered engine-side before registration
-                                     #   (see investigation.toml's note on V26)
-on_fail = "waiting-human"            # any non-approval escalates to the human. The
-                                     #   old `skip` was forced: V13 bars
-                                     #   `waiting-human` on `type="human"` steps, so
-                                     #   a rejected proposal set had nowhere to go
-                                     #   but silence. A vote step lifts that bar, and
-                                     #   the run's evidence stays recorded either
-                                     #   way.
 inputs = ["analyze.proposals", "reconcile.findings"]
+name = "accept"
+on_fail = "waiting-human"
+type = "vote"
+vote_rule = "tribunal"
+voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]

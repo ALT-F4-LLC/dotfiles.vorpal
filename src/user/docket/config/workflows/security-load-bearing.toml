@@ -1,236 +1,83 @@
-# security-load-bearing — label-matched variant of standard-change (05 §2).
-# Deltas from the baseline, per 05 §2:
-#   - prepends `threat-model` (before implement; its artifact feeds the
-#     implement brief)
-#   - review fanout adds `judge-security`
-#   - adds gates `vuln-scan` (govulncheck), stricter `secret-scan`, and
-#     `sdet-abuse` (Q4 closure — named abuse cases from the threat model
-#     actually executed; 05 §3)
-#   - threshold: medium security findings => fix-loop; a payload carrying high+
-#     findings and no mediums requires a VOTE GATE (05 §4) instead of silent
-#     acceptance. The two predicates are disjoint by construction — see the
-#     reconcile step's comment for why they have to be.
-#   - (was: commit gate requires the vote reference — the commit tail is
-#     removed, see the note at the end of this file; the vote outcome reaches
-#     the operator through the reconciled payload and the run report, and the
-#     operator's own manual commit is the acceptance act)
-# The vote gate is interposed by routing a threshold to a STEP NAME, which is
-# exactly 06 §11.2's interposition rule: "the reference instance's security
-# workflow interposes its vote gate this way — upstream 05 §2".
-# `secret-scan` is stricter here as a TRUST-ENTRY property (argv/timeout/flake
-# live in trust.toml, 06 §4), not a distinct pipeline-visible name: the pipeline
-# references gate names only (05 §3).
-
 [pipeline]
-name    = "security-load-bearing"
-version = 13  # 13: every class `max` -> 16, the wave dispatcher's ceiling
-              #   (the harness runs at most min(16, CPUs - 2) agents per
-              #   workflow): `write` leaves the 02 §11.1 serialization behind
-              #   — per-executor worktrees isolate writers, overlap is a
-              #   cherry-pick conflict gate at integration — and read classes
-              #   leave the 4-wide single-issue fanout that throttled
-              #   multi-issue runs (2026-08-21).
-              # 12: reconcile's payload moves from findings@4 to findings@5
-              #   — findings@4 declared `line` as a bare integer, so the
-              #   explicit `line: null` synthesize-findings emits for a
-              #   whole-commit/whole-file-scope finding failed validation
-              #   and forced an operator override-pass on a real run, which
-              #   silently skipped this file's security vote (DOT-483; the
-              #   skip itself was engine bug DKT-470, fixed engine-side);
-              #   byte-identity on the frozen findings@4 registration lands
-              #   the integer-or-null widening as a fresh schema instead of
-              #   an in-place edit.
-              # 11: reconcile's payload moves from findings@3 to findings@4
-              #   — the engine enforces byte-identity on a frozen
-              #   registration, and findings@3's `prior_disposition`
-              #   description text was edited in place post-registration
-              #   (DKT-317 follow-up) without a version bump; findings@4
-              #   carries the corrected text under a fresh registration.
-              # 10: a rejected `verify-tribunal` routes `fix-loop` instead
-              #   of parking at `waiting-human` (operator ruling 2026-08-19,
-              #   DOT-277) — see that step's comment for the bound that keeps
-              #   the park as the floor.
-              # 9: reconcile aggregates severity by `max` instead of
-              #   `median` — a lower median demotes the mixed clusters that
-              #   most need attention (retro 2026-08-19); and reconcile's
-              #   payload moves to findings@3, whose `prior_disposition`
-              #   carries an earlier round's ruling forward so a settled
-              #   cluster is not decided twice
-              # 8: verify's unverifiable park routes through an interposed
-              #   tribunal vote first (operator policy, 2026-08-16) — the
-              #   panel escalates only what it will not pass
-              # 7: medium auto fix-loop retired (2026-08-10)
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
+name = "security-load-bearing"
+version = 14
 
-[match]                      # exactly-one-match (06 §11.1): security is the highest-
-                             #   precedence CODE pipeline, but the doc/meta pipelines
-                             #   are different work and still outrank it
-                             # NO `kind` CLAUSE (DKT-25): an absent list already
-                             #   matches every kind (match.go:48). DKT-22 spelled
-                             #   out the whole closed set here, which decided
-                             #   nothing and made a sixth kind unroutable in all
-                             #   nine workflows at once. The label terms below are
-                             #   what actually discriminate.
-labels_any  = ["security-load-bearing"]
+[match]
+labels_any = ["security-load-bearing"]
 unless_labels = [
-  "docs-only", "investigation",
-  "spec-doc", "spec-project", "release", "retro",
+  "docs-only",
+  "investigation",
+  "release",
+  "retro",
+  "spec-doc",
+  "spec-project",
 ]
 
-
-
-
-[limits]                     # per-class bounds (DKT-16). `max_step_duration` is a
-                             #   SCHEDULE-TO-CLOSE bound measured from the claim,
-                             #   independent of heartbeats — a runaway holder cannot
-                             #   renew past it (02 §11.1, enforced in
-                             #   Scheduler.Expired). Without it the lease TTL is the
-                             #   only clock, so a dead executor's step sits claimed
-                             #   for the full TTL with nothing shorter-circuiting it.
-                             #   The values are RUNAWAY CEILINGS, not budgets, and
-                             #   they sit well above observed behaviour: RUN-1's
-                             #   entire run was 161.5m of wall clock, its
-                             #   claim-to-record `write` peak was 20.1m (fix@1)
-                             #   against a 10.8m average, and every read class
-                             #   finished inside 12.0m — so 2h/1h bound a dead or
-                             #   runaway holder without constraining a real step.
-                             # `max` is required by V24 and is CONCURRENCY, a
-                             #   separate question from duration. Every class takes
-                             #   16, the wave dispatcher's ceiling: it runs a stage
-                             #   through the harness's parallel(), capped at
-                             #   min(16, CPUs - 2) concurrent agents per workflow,
-                             #   so 16 is the largest cohort that can actually run
-                             #   at once. A tighter `max` splits rows the
-                             #   dispatcher could run together into extra stage
-                             #   barriers; a looser one certifies concurrency the
-                             #   dispatcher then queues. Writers are no exception:
-                             #   per-executor worktrees isolate them, and overlap
-                             #   surfaces at integration as a conflicting
-                             #   cherry-pick, a stop-and-ask gate.
-"judge-architecture"  = { max = 16, max_step_duration = "1h" }
-"judge-correctness"   = { max = 16, max_step_duration = "1h" }
-"judge-security"      = { max = 16, max_step_duration = "1h" }
-"judge-simplicity"    = { max = 16, max_step_duration = "1h" }
-"judge-testing"       = { max = 16, max_step_duration = "1h" }
+[limits]
+"judge-architecture" = { max = 16, max_step_duration = "1h" }
+"judge-correctness" = { max = 16, max_step_duration = "1h" }
+"judge-security" = { max = 16, max_step_duration = "1h" }
+"judge-simplicity" = { max = 16, max_step_duration = "1h" }
+"judge-testing" = { max = 16, max_step_duration = "1h" }
 "synthesize-findings" = { max = 16, max_step_duration = "1h" }
-"threat-model"        = { max = 16, max_step_duration = "1h" }
-"verify-ac"           = { max = 16, max_step_duration = "1h" }
-"write"               = { max = 16, max_step_duration = "2h" }
+"threat-model" = { max = 16, max_step_duration = "1h" }
+"verify-ac" = { max = 16, max_step_duration = "1h" }
+"write" = { max = 16, max_step_duration = "2h" }
 
 [[step]]
-name = "threat-model"
-holds_tree = false            # reads the tree, never writes it: exempt from scope
-                             #   exclusion so this step coexists with other issues'
-                             #   steps instead of serialising against them
-after = []                           # root: the threat model precedes implement
-executor = "threat-model"
+after = []
 emits = "threat-model"
-packet = ["contracts/{executor}.md"]
+executor = "threat-model"
 expected_cost = 0.80
+holds_tree = false
 inputs = ["issue.body"]
+name = "threat-model"
+packet = ["contracts/{executor}.md"]
 
 [[step]]
-name = "implement"
 after = ["threat-model"]
-executor = "implement"
 class = "write"
 emits = "change-summary"
-packet = ["contracts/{executor}.md"]
+executor = "implement"
 expected_cost = 1.50
-inputs = ["threat-model.threat-model", "issue.body"]   # the threat model feeds
-                                     #   the implement brief (05 §2)
 gates = ["build", "tests", "self-hygiene", "secret-scan", "vuln-scan", "sdet-abuse"]
-                                     # `scope` removed: gates get no issue
-                                     #   identity, so scope containment is
-                                     #   un-mechanized (DKT-66)
+inputs = ["threat-model.threat-model", "issue.body"]
 max_attempts = 2
+name = "implement"
 on_fail = "waiting-human"
+packet = ["contracts/{executor}.md"]
 
 [[step]]
-name = "review"
-holds_tree = false            # reads the tree, never writes it: exempt from scope
-                             #   exclusion so this step coexists with other issues'
-                             #   steps instead of serialising against them
 after = ["implement"]
+emits = "findings"
+expected_cost = 0.60
 fanout = ["judge-correctness", "judge-architecture", "judge-simplicity", "judge-testing", "judge-security"]
-emits = "findings"
-packet = ["contracts/{executor}.md"]
-payload = "findings@1"               # judge-boundary validation, per-judge failure
-                                     #   attribution (see standard-change's note);
-                                     #   deliberately absent on `synthesize`
-expected_cost = 0.60                 # per expanded sibling
+holds_tree = false
 inputs = ["implement.change-summary", "threat-model.threat-model", "issue.diff"]
-
-[[step]]
-name = "synthesize"
-holds_tree = false            # reads the tree, never writes it: exempt from scope
-                             #   exclusion so this step coexists with other issues'
-                             #   steps instead of serialising against them
-after = ["review"]
-executor = "synthesize-findings"
-emits = "findings"
+name = "review"
 packet = ["contracts/{executor}.md"]
-expected_cost = 0.40
-inputs = ["review.*"]
+payload = "findings@5"
 
 [[step]]
-name = "reconcile"
-after = ["synthesize"]
+after = ["review"]
+emits = "findings"
+executor = "synthesize-findings"
+expected_cost = 0.40
+holds_tree = false
+inputs = ["review.*"]
+name = "synthesize"
+packet = ["contracts/{executor}.md"]
+
+[[step]]
 action = "aggregate"
-params = { field = "severity", method = "max", hold_spread = 2, output = "findings" }
-                                     # MAX, NOT MEDIAN (retro 2026-08-19): the
-                                     #   top of the declared order is the bad
-                                     #   end, so a lower median demotes the
-                                     #   cluster that most needs attention, and
-                                     #   silently. Measured on the general
-                                     #   track, which shares this aggregate:
-                                     #   RUN-2's [low, medium] -> low, RUN-3's
-                                     #   [high, info] -> info (10.9-minute hold,
-                                     #   operator-corrected to high), and both
-                                     #   of RUN-20's exact low/high ties -> low,
-                                     #   both corrected to high. `max` never
-                                     #   demotes. Sharper here than anywhere:
-                                     #   this file's routing turns on `>= high`,
-                                     #   so a demotion is the difference between
-                                     #   the security vote firing and not.
-                                     #   `hold_spread` is unchanged.
+after = ["synthesize"]
 inputs = ["synthesize.findings"]
-payload = "findings@5"               # findings@4's re-registration (DOT-483):
-                                     #   the engine enforces byte-identity on
-                                     #   a frozen registration, so widening
-                                     #   `line` to integer-or-null —
-                                     #   synthesize-findings emits an explicit
-                                     #   null for a whole-commit/whole-file-
-                                     #   scope finding — moved here instead of
-                                     #   editing findings@4 in place. Same
-                                     #   declared severity order and optional
-                                     #   `prior_disposition` as findings@4
-                                     #   (retro 2026-08-19). The `review` step
-                                     #   above stays on findings@1 — judges
-                                     #   emit no disposition, so nothing there
-                                     #   needs the successor.
-threshold = { "security-vote" = "any(severity >= high)" }   # AUTO FIX-LOOP RETIRED for the
-                                     #   security track (2026-08-10): Medium
-                                     #   findings are recorded, never looped;
-                                     #   high+ still routes to the HUMAN vote,
-                                     #   which converges by decision. Same
-                                     #   rationale as standard-change.toml.
-                                     # `fix-loop` is evaluated BEFORE any
-                                     #   interposed step routing regardless of
-                                     #   declaration order (ThresholdOrder,
-                                     #   internal/engine/threshold.go) — so the
-                                     #   two predicates must be DISJOINT or the
-                                     #   vote gate is unreachable. RUN-2
-                                     #   recorded zero votes for exactly this
-                                     #   reason. The §11.2 grammar has no
-                                     #   compound predicates, so `==` is the
-                                     #   disjoint form: payloads with mediums
-                                     #   loop, and the vote fires when a payload
-                                     #   carries highs and no mediums. A payload
-                                     #   with both mediums and highs loops first
-                                     #   — fix the fixable, vote when only highs
-                                     #   remain.
 max_fix_loops = 2
+name = "reconcile"
+params = { field = "severity", method = "max", hold_spread = 2, output = "findings" }
+payload = "findings@5"
+threshold = { "security-vote" = "any(severity >= high)" }
 
 [[step]]
 name = "fix"
@@ -244,96 +91,33 @@ inputs = ["reconcile.findings", "implement.change-summary", "threat-model.threat
 gates = ["build", "tests", "secret-scan", "vuln-scan"]
 after_loop = "review"
 
-[[step]]                     # reached ONLY by reconcile's threshold routing
-name = "security-vote"
-after = ["reconcile"]                # names the predecessor V8 requires; the step
-                                     #   stays otherwise-unreached — interposition
-                                     #   is what makes it ready (06 §11.2)
-type = "vote"                        # 05 §4: waivers and security acceptance are
-                                     #   where per-voter accountability is the point
-voters = ["judge-security", "judge-architecture", "judge-correctness"]
-vote_rule = "security-acceptance"
-on_fail = "fix-loop"                 # a refused waiver is rework, not a park
+[[step]]
+after = ["reconcile"]
 inputs = ["reconcile.findings"]
+name = "security-vote"
+on_fail = "fix-loop"
+type = "vote"
+vote_rule = "security-acceptance"
+voters = ["judge-security", "judge-architecture", "judge-correctness"]
 
 [[step]]
-name = "verify"
-holds_tree = false            # reads the tree, never writes it: exempt from scope
-                             #   exclusion so this step coexists with other issues'
-                             #   steps instead of serialising against them
 after = ["reconcile"]
-executor = "verify-ac"
 emits = "ac-report"
-packet = ["contracts/{executor}.md"]
-payload = "ac-report@1"
+executor = "verify-ac"
 expected_cost = 0.50
 gates = [{ name = "ac-commands", pre = true }]
+holds_tree = false
 inputs = ["issue.body", "issue.diff", "implement.change-summary"]
+name = "verify"
+packet = ["contracts/{executor}.md"]
+payload = "ac-report@1"
 threshold = { "fix-loop" = "any(status == unmet)", "verify-tribunal" = "any(status == unverifiable)" }
-                                     # TRIBUNAL-FILTERED ESCALATION (operator
-                                     #   policy, 2026-08-16): an unverifiable AC
-                                     #   used to park straight to the operator;
-                                     #   it now routes to the interposed vote
-                                     #   step below. `fix-loop` is evaluated
-                                     #   BEFORE any interposed step routing
-                                     #   (ThresholdOrder), so a report carrying
-                                     #   both unmet and unverifiable rows loops
-                                     #   first — fix the fixable, judge what
-                                     #   remains. Distinct from `security-vote`,
-                                     #   which is 05 §4's own waiver panel over
-                                     #   FINDINGS; this seat judges the
-                                     #   AC-REPORT in the operator's stead.
 
-[[step]]                     # reached ONLY by verify's threshold routing
-name = "verify-tribunal"
-after = ["verify"]                   # names the predecessor V8 requires; the step
-                                     #   stays otherwise-unreached — interposition
-                                     #   is what makes it ready (06 §11.2)
-type = "vote"                        # TRIBUNAL (operator policy, 2026-08-16):
-                                     #   the panel reads the ac-report FIRST and
-                                     #   escalates only what it will not pass.
-voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
-vote_rule = "tribunal"               # registered engine-side (see
-                                     #   investigation.toml's note on V26)
-on_fail = "fix-loop"                 # REJECTED VERIFY-TRIBUNAL IS REWORK, not a
-                                     #   park (operator ruling, 2026-08-19,
-                                     #   DOT-277). It parked before, and the
-                                     #   park was terminal: RUN-26 sat at
-                                     #   `waiting-human: rejected` for 30+
-                                     #   hours with neither a loop nor an
-                                     #   abandon recorded as a choice. A panel
-                                     #   that will not pass the ac-report is
-                                     #   saying the work is not demonstrably
-                                     #   done — the same reading `security-vote`
-                                     #   already applies to a refused waiver.
-                                     #   The park is the FLOOR, not the first
-                                     #   move: `max_fix_loops = 2` bounds the
-                                     #   loop and the engine degrades the
-                                     #   routing to `waiting-human` on
-                                     #   exhaustion (06 §11.3), so an AC that
-                                     #   genuinely cannot be verified still
-                                     #   reaches the operator, two rework
-                                     #   attempts later.
-                                     #   KNOWN LIMIT, not fixed here: `fix`
-                                     #   does not take `verify.ac-report` as an
-                                     #   input, so the loop carries the
-                                     #   reconciled findings and not the list of
-                                     #   unverifiable ACs. Adding that binding
-                                     #   would be unresolvable on the first
-                                     #   ordinal, where `fix` can be entered
-                                     #   before any `verify` has run, and an
-                                     #   unresolvable binding refuses
-                                     #   activation.
+[[step]]
+after = ["verify"]
 inputs = ["verify.ac-report", "issue.body"]
-
-# COMMIT TAIL REMOVED (operator decision, 2026-08-09): commit-gate, commit, and
-# commit-exec are gone from every pipeline — automated commits are incompatible
-# with the harness security model (interactive 1Password commit-signing
-# authorization is unavailable to headless executors and engine actions;
-# `commit-msg` 0 pass / 1 fail across RUN-1/2/5, all override-passed; DKT-13/
-# DKT-61). Full rationale in standard-change.toml's matching note. The threat-
-# model / judge-security / sdet-abuse / vote-gated path above is unchanged:
-# `security-vote` remains the acceptance gate and `verify` the terminal engine
-# step. The vote reference the removed commit-gate carried rides in the
-# reconciled payload and the run report; the operator reads it there before
-# committing by hand.
+name = "verify-tribunal"
+on_fail = "fix-loop"
+type = "vote"
+vote_rule = "tribunal"
+voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]

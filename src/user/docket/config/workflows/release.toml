@@ -1,151 +1,48 @@
-# release — the run-level verification/PR tail for multi-issue runs (05 §2).
-# WAS the commit/PR tail; the commit half is removed (operator decision,
-# 2026-08-09 — see the note at the end of this file). What remains of 05 §2's
-# "aggregate verify (run-level verify-ac over the union diff) -> ... optional
-# `pr-comment-author`": the aggregate verify and the optional PR comment. The
-# release PUBLICATION (push/PR/tag) is the operator's; integration commits
-# are the conductor's (2026-08-10)
-# after reading the aggregate ac-report.
-#
-# The plan-time choice is expressed as a LABEL, which is the only thing `[match]`
-# and `when` can read (06 §11.1, V22): an issue labeled `release` binds here
-# instead of standard-change, which is what makes the two mutually exclusive
-# under the exactly-one-match rule. standard-change already excludes nothing
-# about `release`, so its `unless_labels` is the other half of that pair — see
-# the deviation note in the report.
-#
-# "Union diff" is `issue.diff` on the release issue: the engine computes the
-# diff for the ISSUE'S SCOPE (06 §11.1), so a release issue scoped over the run's
-# files is exactly the union. No new virtual artifact is invented here.
-
 [pipeline]
-name    = "release"
-version = 8   # 8: every class `max` 4 -> 16, the wave dispatcher's ceiling
-              #   (the harness runs at most min(16, CPUs - 2) agents per
-              #   workflow); 4 was the single-issue fanout width and
-              #   throttled multi-issue runs. `pr-comment` declares
-              #   holds_tree = false: it drafts a comment set and never
-              #   touches the tree, so it no longer excludes on scope
-              #   (2026-08-21)
-              # 7: verify's unmet park routes through an interposed tribunal
-              #   vote first (operator policy, 2026-08-16) — the panel
-              #   escalates only what it will not pass
-              # 6: description + commit notes updated to the
-              #   conductor-integrates model (2026-08-10)
+name = "release"
+version = 9
 description = "Run-level release tail: aggregate AC verification with tribunal-filtered escalation and optional PR comment; the conductor integrates commits, the operator publishes."
 
-[match]                      # closed kind set (see spec-doc's note): `release` is a
-                             #   label, not a kind. Engine wins over 05; DKT filed.
-                             # NO `kind` CLAUSE (DKT-25): an absent list already
-                             #   matches every kind (match.go:48). DKT-22 spelled
-                             #   out the whole closed set here, which decided
-                             #   nothing and made a sixth kind unroutable in all
-                             #   nine workflows at once. The label terms below are
-                             #   what actually discriminate.
-labels_any  = ["release"]
-unless_labels = ["retro"]    # only `retro` outranks it (precedence order in
-                             #   docs-only.toml)
+[match]
+labels_any = ["release"]
+unless_labels = ["retro"]
 
-
-
-
-[limits]                     # per-class bounds (DKT-16). `max_step_duration` is a
-                             #   SCHEDULE-TO-CLOSE bound measured from the claim,
-                             #   independent of heartbeats — a runaway holder cannot
-                             #   renew past it (02 §11.1, enforced in
-                             #   Scheduler.Expired). Without it the lease TTL is the
-                             #   only clock, so a dead executor's step sits claimed
-                             #   for the full TTL with nothing shorter-circuiting it.
-                             #   Durations are derived from RUN-1's measured steps,
-                             #   not guessed: `write` peaked at 735m (the runaway
-                             #   this bounds) against a 104m average, and every read
-                             #   class finished inside 13m.
-                             # `max` is required by V24 and is CONCURRENCY, a
-                             #   separate question from duration. Every class takes
-                             #   16, the wave dispatcher's ceiling: it runs a stage
-                             #   through the harness's parallel(), capped at
-                             #   min(16, CPUs - 2) concurrent agents per workflow,
-                             #   so 16 is the largest cohort that can actually run
-                             #   at once. A tighter `max` splits rows the
-                             #   dispatcher could run together into extra stage
-                             #   barriers; a looser one certifies concurrency the
-                             #   dispatcher then queues.
+[limits]
 "pr-comment-author" = { max = 16, max_step_duration = "1h" }
 "verify-ac"         = { max = 16, max_step_duration = "1h" }
-                             # the `write` row left with the commit step — no
-                             #   write-class step remains in this pipeline
 
 [[step]]
-name = "verify"
-holds_tree = false            # reads the tree, never writes it: exempt from scope
-                             #   exclusion so this step coexists with other issues'
-                             #   steps instead of serialising against them
 after = []
-executor = "verify-ac"               # run-level verify-ac over the union diff
 emits = "ac-report"
-packet = ["contracts/{executor}.md"]
-payload = "ac-report@1"
+executor = "verify-ac"
 expected_cost = 0.70
 gates = [{ name = "ac-commands", pre = true }]
+holds_tree = false
 inputs = ["issue.body", "issue.diff"]
-threshold = { "verify-tribunal" = "any(status == unmet)" }
-                                     # a release has no fix-loop of its own: the
-                                     #   repair belongs to the issue that owns the
-                                     #   code, so an unmet AC routes to the
-                                     #   interposed tribunal below (06 §11.2),
-                                     #   which escalates to the operator only
-                                     #   what it will not pass (operator policy,
-                                     #   2026-08-16)
 max_attempts = 2
+name = "verify"
 on_fail = "waiting-human"
-
-[[step]]                     # reached ONLY by verify's threshold routing
-name = "verify-tribunal"
-after = ["verify"]                   # names the predecessor V8 requires; the step
-                                     #   stays otherwise-unreached — interposition
-                                     #   is what makes it ready (06 §11.2)
-type = "vote"                        # TRIBUNAL (operator policy, 2026-08-16):
-                                     #   the panel reads the aggregate ac-report
-                                     #   FIRST and escalates only what it will
-                                     #   not pass — same rationale as
-                                     #   investigation's read-gate.
-voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
-vote_rule = "tribunal"               # registered engine-side (see
-                                     #   investigation.toml's note on V26)
-on_fail = "waiting-human"            # any non-approval escalates to the human
-inputs = ["verify.ac-report", "issue.body"]
-
-# COMMIT TAIL REMOVED (operator decision, 2026-08-09): commit-gate, commit, and
-# commit-exec are gone from every pipeline — automated commits are incompatible
-# with the harness security model (interactive 1Password commit-signing
-# authorization is unavailable to headless executors and engine actions;
-# `commit-msg` 0 pass / 1 fail across RUN-1/2/5, all override-passed; DKT-13/
-# DKT-61). Full rationale in standard-change.toml's matching note. The release
-# PUBLICATION is the operator's, after reading `verify`'s aggregate
-# ac-report; integration commits are the conductor's (2026-08-10). `pr-comment` therefore follows `verify` directly and composes from
-# the issue and the union diff rather than a drafted commit message.
+packet = ["contracts/{executor}.md"]
+payload = "ac-report@1"
+threshold = { "verify-tribunal" = "any(status == unmet)" }
 
 [[step]]
-name = "pr-comment"
-holds_tree = false            # drafts a comment set, never writes the tree: exempt
-                             #   from scope exclusion so it coexists with other
-                             #   issues' steps instead of serialising against them
-after = ["verify"]           # was after commit-exec; the commit tail is removed
-executor = "pr-comment-author"
+after = ["verify"]
+inputs = ["verify.ac-report", "issue.body"]
+name = "verify-tribunal"
+on_fail = "waiting-human"
+type = "vote"
+vote_rule = "tribunal"
+voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
+
+[[step]]
+after = ["verify"]
 emits = "comment-set"
-packet = ["contracts/{executor}.md"]
+executor = "pr-comment-author"
 expected_cost = 0.30
-when = "labels contains pr"          # the "optional" of 05 §2
+holds_tree = false
 inputs = ["issue.body", "issue.diff"]
-                                     # was ["commit.commit-message", ...]; the
-                                     #   drafted message no longer exists — the
-                                     #   comment is composed from the release
-                                     #   issue and the union diff
-                                     # no posting gate: gh-inline-comment needs
-                                     #   the comment body as $1, and a named gate
-                                     #   is spawned argv-verbatim with no step
-                                     #   artifacts (DKT-66; comments elsewhere
-                                     #   citing "DKT-84" mean DKT-66) — posting
-                                     #   is the executor's own work
-on_fail = "skip"                     # a failed comment post must not block the
-                                     #   operator's manual commit
+name = "pr-comment"
+on_fail = "skip"
+packet = ["contracts/{executor}.md"]
+when = "labels contains pr"

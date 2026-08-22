@@ -1,446 +1,247 @@
-# spec-doc — for issues that PRODUCE a PRD/TDD/ADR/ux-spec (05 §2).
-# Per 05 §2: "Author node by doc type -> `doc-validate` + `tdd-preflight` gates
-# -> review fanout (architecture + security when security-relevant + design for
-# ux-specs) -> reconcile -> ACCEPTANCE: TDD and ADR acceptance is a vote gate
-# (matching today's panels); PRD acceptance is a human gate (operator)."
-#
-# AUTHORING IS SIX when-GATED SIBLING STEPS, one per (doc type × security
-# label) route, each declaring its CONCRETE executor. The engine substitutes
-# `{executor}` in `packet` from the step's own declared executor
-# (internal/workflow/packet.go), so a concrete declaration is what renders the
-# right specialist contract; the retired label-keyed [[resolve]] table rendered
-# a router packet instead, briefing every author with the wrong charter
-# (m3-harness.md F-W1; DKT-70 decision (d), implemented 2026-08-13). The `when`
-# clauses are mutually exclusive by construction: `and` is the engine's only
-# connective (V22), so the old table's first-match-wins precedence is
-# reproduced as trailing `!=` conjuncts, and exactly one author (with its
-# paired revise loop body) materializes per issue — the rest expand `skipped`
-# (06 §11.1). Two tdd-security variants, not one: the old table routed BOTH
-# `security-load-bearing` and bare `security` to tdd-author-security, a
-# disjunction V22 forces into two steps. The doc-type discriminant is the
-# COLON label `doc:<type>` on every surface (DKT-85: the when clauses here,
-# the specialist contracts' prose, and issue labeling all agree on it).
-#
-# THREE acceptance steps, not one: 05 §2 splits acceptance by doc type, and each
-# is guarded by `when` over the issue's labels, so exactly one materializes per
-# issue and the other two are `skipped` (06 §11.1). That is the engine's own
-# conditional; no expression language is invented here. The ADR and human
-# clauses carry trailing `!=` guards so a multi-labeled issue (e.g. doc:tdd +
-# doc:adr) opens exactly one gate — the TDD one — instead of two.
-#
-# All three are `type="vote"` since 2026-08-11, but they are not the same gate
-# wearing three names. The TDD and ADR steps carry 05 §2's own review panels under
-# `doc-acceptance` — judges deciding whether a design is sound. The third carries
-# the tribunal under `tribunal`, standing where 05 §2 wrote "human gate": it does
-# not replace the operator, it filters for them, and anything short of approval
-# routes to `waiting-human` so the operator still decides the contested cases.
-#
-# `emits` on every author variant is "doc": the five author contracts emit five
-# different artifact kinds (prd | tdd | adr | ux-spec | spec), but `emits` is a
-# single required string per step (V7), and one uniform kind across the
-# variants is what lets review/accept/record declare their inputs plainly. See
-# the mirror flag in the report.
-
 [pipeline]
-name    = "spec-doc"
-version = 8   # 8: every class `max` -> 16, the wave dispatcher's ceiling
-              #   (the harness runs at most min(16, CPUs - 2) agents per
-              #   workflow): `write` leaves the 02 §11.1 serialization behind
-              #   — per-executor worktrees isolate writers, overlap is a
-              #   cherry-pick conflict gate at integration — and read classes
-              #   leave the 4-wide single-issue fanout that throttled
-              #   multi-issue runs (2026-08-21).
-              # 7: reconcile aggregates severity by `max` instead of
-              #   `median` — an even-count median resolves an exact tie to
-              #   the LOWER band, demoting the mixed clusters that most need
-              #   attention (retro 2026-08-19, panel DKT-V62 architecture
-              #   seat; same move as standard-change@12).
-              #   (6: author/revise split into six when-gated concrete-executor
-              #   siblings; the label-keyed [[resolve]] table and the
-              #   spec-doc-author router contract are retired (DKT-70/DKT-85
-              #   decision (d), 2026-08-13). (5: `accept-human` human ->
-              #   tribunal vote, operator policy 2026-08-11. 4: fix-loop
-              #   threshold high -> blocker, 2026-08-10.)
 description = "Author a PRD/TDD/ADR/ux-spec, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec), escalating to the operator."
+name = "spec-doc"
+version = 9
 
-[match]                      # Docket's issue kinds are a CLOSED set — {bug, feature,
-                             #   task, epic, chore} (internal/model/issue.go) — so a
-                             #   `spec` kind cannot exist. The doc-producing issue is
-                             #   an ordinary task carrying the `spec-doc` label.
-                             #   Engine wins over 05's prose; DKT filed.
-                             # NO `kind` CLAUSE (DKT-25): an absent list already
-                             #   matches every kind (match.go:48). DKT-22 spelled
-                             #   out the whole closed set here, which decided
-                             #   nothing and made a sixth kind unroutable in all
-                             #   nine workflows at once. The label terms below are
-                             #   what actually discriminate.
-labels_any  = ["spec-doc"]
+[match]
+labels_any = ["spec-doc"]
 unless_labels = ["spec-project", "release", "retro"]
-                             # excludes only what outranks it (precedence order in
-                             #   docs-only.toml)
 
-
-
-
-[limits]                     # per-class bounds (DKT-16). `max_step_duration` is a
-                             #   SCHEDULE-TO-CLOSE bound measured from the claim,
-                             #   independent of heartbeats — a runaway holder cannot
-                             #   renew past it (02 §11.1, enforced in
-                             #   Scheduler.Expired). Without it the lease TTL is the
-                             #   only clock, so a dead executor's step sits claimed
-                             #   for the full TTL with nothing shorter-circuiting it.
-                             #   Durations are derived from RUN-1's measured steps,
-                             #   not guessed: `write` peaked at 735m (the runaway
-                             #   this bounds) against a 104m average, and every read
-                             #   class finished inside 13m.
-                             # `max` is required by V24 and is CONCURRENCY, a
-                             #   separate question from duration. Every class takes
-                             #   16, the wave dispatcher's ceiling: it runs a stage
-                             #   through the harness's parallel(), capped at
-                             #   min(16, CPUs - 2) concurrent agents per workflow,
-                             #   so 16 is the largest cohort that can actually run
-                             #   at once. A tighter `max` splits rows the
-                             #   dispatcher could run together into extra stage
-                             #   barriers; a looser one certifies concurrency the
-                             #   dispatcher then queues. Writers are no exception:
-                             #   per-executor worktrees isolate them, and overlap
-                             #   surfaces at integration as a conflicting
-                             #   cherry-pick, a stop-and-ask gate.
-"judge-architecture"  = { max = 16, max_step_duration = "1h" }
-"judge-design"        = { max = 16, max_step_duration = "1h" }
-"judge-security"      = { max = 16, max_step_duration = "1h" }
+[limits]
+"judge-architecture" = { max = 16, max_step_duration = "1h" }
+"judge-design" = { max = 16, max_step_duration = "1h" }
+"judge-security" = { max = 16, max_step_duration = "1h" }
 "synthesize-findings" = { max = 16, max_step_duration = "1h" }
-"write"               = { max = 16, max_step_duration = "2h" }
-
-# --- Authoring: six when-gated siblings, one per route -----------------------
-# Precedence, encoded as trailing `!=` conjuncts (old table order): tdd+
-# security-load-bearing > tdd+security > tdd > adr > ux-spec > prd (default).
-# Hand-verified mutually exclusive over every label combination, including
-# multi-labeled issues: doc:tdd outranks doc:adr outranks doc:ux-spec, and the
-# two security variants split on security-load-bearing before bare security.
+"write" = { max = 16, max_step_duration = "2h" }
 
 [[step]]
+after = []
+class = "write"
+emits = "doc"
+executor = "tdd-author-security"
+expected_cost = 1.20
+gates = ["doc-validate", "tdd-preflight", "reserved-name-check"]
+inputs = ["issue.body"]
+max_attempts = 2
 name = "author-tdd-security"
-after = []
-executor = "tdd-author-security"
+on_fail = "waiting-human"
+packet = ["contracts/{executor}.md"]
 when = "labels contains doc:tdd and labels contains security-load-bearing"
+
+[[step]]
+after = []
 class = "write"
 emits = "doc"
-packet = ["contracts/{executor}.md"]
+executor = "tdd-author-security"
 expected_cost = 1.20
-inputs = ["issue.body"]
 gates = ["doc-validate", "tdd-preflight", "reserved-name-check"]
-                                     # `reserved-name-check` (05 §3) belongs here:
-                                     #   authors must REFUSE the seven reserved
-                                     #   engineering-spec names in the shared
-                                     #   docs/spec/ output dir. It is a registry row,
-                                     #   so it wires as a named gate, not a flag.
+inputs = ["issue.body"]
 max_attempts = 2
-on_fail = "waiting-human"
-
-[[step]]                     # bare `security` label, same specialist: the old
-                             #   table's two tdd-security rules were a
-                             #   disjunction, which V22 forces into a sibling.
-                             #   NOT collapsed into one step keyed only on
-                             #   security-load-bearing — a bare-security TDD
-                             #   issue still takes the security model pins
-                             #   ([security].labels), so falling through to the
-                             #   non-security contract would re-open DKT-70's
-                             #   defect for that label.
 name = "author-tdd-security-alt"
-after = []
-executor = "tdd-author-security"
-when = "labels contains doc:tdd and labels contains security and labels != security-load-bearing"
-class = "write"
-emits = "doc"
-packet = ["contracts/{executor}.md"]
-expected_cost = 1.20
-inputs = ["issue.body"]
-gates = ["doc-validate", "tdd-preflight", "reserved-name-check"]
-max_attempts = 2
 on_fail = "waiting-human"
+packet = ["contracts/{executor}.md"]
+when = "labels contains doc:tdd and labels contains security and labels != security-load-bearing"
 
 [[step]]
+after = []
+class = "write"
+emits = "doc"
+executor = "tdd-author"
+expected_cost = 1.20
+gates = ["doc-validate", "tdd-preflight", "reserved-name-check"]
+inputs = ["issue.body"]
+max_attempts = 2
 name = "author-tdd"
-after = []
-executor = "tdd-author"
-when = "labels contains doc:tdd and labels != security-load-bearing and labels != security"
-class = "write"
-emits = "doc"
-packet = ["contracts/{executor}.md"]
-expected_cost = 1.20
-inputs = ["issue.body"]
-gates = ["doc-validate", "tdd-preflight", "reserved-name-check"]
-max_attempts = 2
 on_fail = "waiting-human"
+packet = ["contracts/{executor}.md"]
+when = "labels contains doc:tdd and labels != security-load-bearing and labels != security"
 
 [[step]]
+after = []
+class = "write"
+emits = "doc"
+executor = "adr-author"
+expected_cost = 1.20
+gates = ["doc-validate", "tdd-preflight", "reserved-name-check"]
+inputs = ["issue.body"]
+max_attempts = 2
 name = "author-adr"
-after = []
-executor = "adr-author"
-when = "labels contains doc:adr and labels != doc:tdd"
-class = "write"
-emits = "doc"
-packet = ["contracts/{executor}.md"]
-expected_cost = 1.20
-inputs = ["issue.body"]
-gates = ["doc-validate", "tdd-preflight", "reserved-name-check"]
-max_attempts = 2
 on_fail = "waiting-human"
+packet = ["contracts/{executor}.md"]
+when = "labels contains doc:adr and labels != doc:tdd"
 
 [[step]]
+after = []
+class = "write"
+emits = "doc"
+executor = "ux-spec-author"
+expected_cost = 1.20
+gates = ["doc-validate", "tdd-preflight", "reserved-name-check"]
+inputs = ["issue.body"]
+max_attempts = 2
 name = "author-ux-spec"
-after = []
-executor = "ux-spec-author"
+on_fail = "waiting-human"
+packet = ["contracts/{executor}.md"]
 when = "labels contains doc:ux-spec and labels != doc:tdd and labels != doc:adr"
+
+[[step]]
+after = []
 class = "write"
 emits = "doc"
-packet = ["contracts/{executor}.md"]
+executor = "prd-author"
 expected_cost = 1.20
-inputs = ["issue.body"]
 gates = ["doc-validate", "tdd-preflight", "reserved-name-check"]
+inputs = ["issue.body"]
 max_attempts = 2
-on_fail = "waiting-human"
-
-[[step]]                     # the default route: an issue with no doc-type
-                             #   label authors a PRD, as the old table's
-                             #   `default = "prd-author"` did.
 name = "author-prd"
-after = []
-executor = "prd-author"
-when = "labels != doc:tdd and labels != doc:adr and labels != doc:ux-spec"
-class = "write"
-emits = "doc"
-packet = ["contracts/{executor}.md"]
-expected_cost = 1.20
-inputs = ["issue.body"]
-gates = ["doc-validate", "tdd-preflight", "reserved-name-check"]
-max_attempts = 2
 on_fail = "waiting-human"
-
-[[step]]
-name = "review"
-holds_tree = false            # reads the tree, never writes it: exempt from scope
-                             #   exclusion so this step coexists with other issues'
-                             #   steps instead of serialising against them
-after = ["author-tdd-security", "author-tdd-security-alt", "author-tdd", "author-adr", "author-ux-spec", "author-prd"]
-                                     # joins over whichever author ran; the five
-                                     #   `skipped` siblings are terminal, and a
-                                     #   join waits for terminal siblings (06 §2).
-                                     # KNOWN LIMIT (disclosed with DKT-70's fix,
-                                     #   filed as follow-up alongside DKT-103):
-                                     #   on a fix-loop re-review (ordinal >= 1)
-                                     #   the loop-producer-redirect matches by
-                                     #   KIND, so the multi-entry doc inputs
-                                     #   below all resolve to the ONE live doc
-                                     #   and it inlines once per entry.
-fanout = ["judge-architecture", "judge-security", "judge-design"]
-                                     # 05 §2's three lenses. The fanout width is
-                                     #   fixed at registration; per-issue relevance
-                                     #   ("security when security-relevant", "design
-                                     #   for ux-specs") is the SIBLING's business —
-                                     #   a judge with nothing to say emits an empty
-                                     #   findings array. `when` is a step-level
-                                     #   field, not a per-hint one (06 §11.1), so it
-                                     #   cannot prune individual siblings.
-emits = "findings"
 packet = ["contracts/{executor}.md"]
-payload = "findings@1"
-expected_cost = 0.60                 # per expanded sibling
-inputs = ["author-tdd-security.doc", "author-tdd-security-alt.doc", "author-tdd.doc", "author-adr.doc", "author-ux-spec.doc", "author-prd.doc", "issue.body"]
-
-[[step]]
-name = "synthesize"
-holds_tree = false            # reads the tree, never writes it: exempt from scope
-                             #   exclusion so this step coexists with other issues'
-                             #   steps instead of serialising against them
-after = ["review"]
-executor = "synthesize-findings"
-emits = "findings"
-packet = ["contracts/{executor}.md"]
-expected_cost = 0.40
-inputs = ["review.*"]
-
-[[step]]
-name = "reconcile"
-after = ["synthesize"]
-action = "aggregate"
-params = { field = "severity", method = "max", hold_spread = 2, output = "findings" }
-inputs = ["synthesize.findings"]
-payload = "findings@1"
-threshold = { "fix-loop" = "any(severity >= blocker)" }   # BLOCKER-ONLY LOOPING (operator policy 2026-08-10):
-                                     #   high findings are recorded and surface at
-                                     #   gates/backlog, never re-loop — Opus-tier
-                                     #   judges sustain finding pressure forever and
-                                     #   a high-keyed loop cannot converge (RUN-1
-                                     #   graph-engine; full rationale in
-                                     #   standard-change.toml).
-max_fix_loops = 2
-
-# --- Revision: six paired loop bodies, one per author sibling ----------------
-# Same `when` as the paired author, same concrete executor, so the revision is
-# that author's own (05 §2: the revision is the author's, not a separate
-# node). No `after` on any of them (V10/V18: forbidden on a loop = true step);
-# all six declare after_loop = "review", which is correct and required — the
-# engine merges every after_loop root into one closure
-# (internal/engine/loop.go afterLoopDownstream), so this gates exactly as the
-# old single revise step did, not as six independent loops. Inputs are
-# pairwise: each body reads its OWN author's doc, never a sibling's.
-
-[[step]]
-name = "revise-tdd-security"
-executor = "tdd-author-security"
-when = "labels contains doc:tdd and labels contains security-load-bearing"
-class = "write"
-emits = "doc"
-packet = ["contracts/{executor}.md"]
-expected_cost = 0.90
-loop = true
-inputs = ["reconcile.findings", "author-tdd-security.doc"]
-gates = ["doc-validate", "reserved-name-check"]
-after_loop = "review"
-
-[[step]]
-name = "revise-tdd-security-alt"
-executor = "tdd-author-security"
-when = "labels contains doc:tdd and labels contains security and labels != security-load-bearing"
-class = "write"
-emits = "doc"
-packet = ["contracts/{executor}.md"]
-expected_cost = 0.90
-loop = true
-inputs = ["reconcile.findings", "author-tdd-security-alt.doc"]
-gates = ["doc-validate", "reserved-name-check"]
-after_loop = "review"
-
-[[step]]
-name = "revise-tdd"
-executor = "tdd-author"
-when = "labels contains doc:tdd and labels != security-load-bearing and labels != security"
-class = "write"
-emits = "doc"
-packet = ["contracts/{executor}.md"]
-expected_cost = 0.90
-loop = true
-inputs = ["reconcile.findings", "author-tdd.doc"]
-gates = ["doc-validate", "reserved-name-check"]
-after_loop = "review"
-
-[[step]]
-name = "revise-adr"
-executor = "adr-author"
-when = "labels contains doc:adr and labels != doc:tdd"
-class = "write"
-emits = "doc"
-packet = ["contracts/{executor}.md"]
-expected_cost = 0.90
-loop = true
-inputs = ["reconcile.findings", "author-adr.doc"]
-gates = ["doc-validate", "reserved-name-check"]
-after_loop = "review"
-
-[[step]]
-name = "revise-ux-spec"
-executor = "ux-spec-author"
-when = "labels contains doc:ux-spec and labels != doc:tdd and labels != doc:adr"
-class = "write"
-emits = "doc"
-packet = ["contracts/{executor}.md"]
-expected_cost = 0.90
-loop = true
-inputs = ["reconcile.findings", "author-ux-spec.doc"]
-gates = ["doc-validate", "reserved-name-check"]
-after_loop = "review"
-
-[[step]]
-name = "revise-prd"
-executor = "prd-author"
 when = "labels != doc:tdd and labels != doc:adr and labels != doc:ux-spec"
-class = "write"
-emits = "doc"
-packet = ["contracts/{executor}.md"]
-expected_cost = 0.90
-loop = true
-inputs = ["reconcile.findings", "author-prd.doc"]
-gates = ["doc-validate", "reserved-name-check"]
-after_loop = "review"
-
-# ACCEPTANCE — three steps, because `and` is the engine's ONLY `when` connective
-# (V22/splitWhen: "a disjunction over kind/labels is expressible as two steps").
-# 05 §2 groups TDD and ADR under one vote gate; that grouping is a disjunction,
-# so it expands into two vote steps sharing one `vote_rule`. Exactly one of the
-# three holds per issue — the ADR and human clauses carry `!=` guards so a
-# multi-labeled issue opens one gate, not two; the other two expand as
-# `skipped`, which is terminal and keeps `record`'s join resolvable (06 §2,
-# §11.1).
-
-[[step]]                     # TDD acceptance: a vote gate (05 §2)
-name = "accept-vote-tdd"
-after = ["reconcile"]
-type = "vote"
-voters = ["judge-architecture", "judge-security", "judge-correctness"]
-vote_rule = "doc-acceptance"
-on_fail = "fix-loop"                 # a rejected design goes back to the author
-when = "labels contains doc:tdd"
-inputs = ["author-tdd-security.doc", "author-tdd-security-alt.doc", "author-tdd.doc", "reconcile.findings"]
-
-[[step]]                     # ADR acceptance: the same vote gate (05 §2)
-name = "accept-vote-adr"
-after = ["reconcile"]
-type = "vote"
-voters = ["judge-architecture", "judge-security", "judge-correctness"]
-vote_rule = "doc-acceptance"
-on_fail = "fix-loop"
-when = "labels contains doc:adr and labels != doc:tdd"
-inputs = ["author-adr.doc", "reconcile.findings"]
-
-[[step]]                     # PRD acceptance: 05 §2 names the operator, and since
-                             #   2026-08-11 the operator is reached THROUGH the
-                             #   tribunal rather than instead of it. ux-specs fall
-                             #   here too — 05 §2 names a vote only for TDD and
-                             #   ADR, so everything else accepts by this step.
-name = "accept-human"        # NAME RETAINED deliberately though the type changed:
-                             #   `record`'s `after` joins on this literal, and a
-                             #   rename is a graph edit disguised as a cosmetic one.
-                             #   Read it as "the acceptance that ends with a human",
-                             #   which `on_fail` below makes true.
-after = ["reconcile"]
-type = "vote"                        # TRIBUNAL (operator policy, ratified in
-                                     #   conversation 2026-08-11). Distinct from the
-                                     #   two doc-acceptance votes above: those are
-                                     #   05 §2's own panels, judging the design.
-                                     #   This one stands in the operator's place, so
-                                     #   it carries the tribunal seats and rule.
-voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
-vote_rule = "tribunal"               # registered engine-side before registration
-                                     #   (see investigation.toml's note on V26)
-on_fail = "waiting-human"            # any non-approval escalates to the human —
-                                     #   replacing `fix-loop`, which sent a disputed
-                                     #   PRD back to the author without the operator
-                                     #   ever learning it was disputed. Legal only
-                                     #   because this is no longer `type="human"`
-                                     #   (V13).
-when = "labels != doc:tdd and labels != doc:adr"
-                                     # the complement of the two vote clauses,
-                                     #   written with the one connective that
-                                     #   exists; covers doc:prd and doc:ux-spec
-inputs = ["author-prd.doc", "author-ux-spec.doc", "reconcile.findings"]
 
 [[step]]
-name = "record"
+after = ["author-tdd-security", "author-tdd-security-alt", "author-tdd", "author-adr", "author-ux-spec", "author-prd"]
+emits = "findings"
+expected_cost = 0.60
+fanout = ["judge-architecture", "judge-security", "judge-design"]
+holds_tree = false
+inputs = ["author-tdd-security.doc", "author-tdd-security-alt.doc", "author-tdd.doc", "author-adr.doc", "author-ux-spec.doc", "author-prd.doc", "issue.body"]
+name = "review"
+packet = ["contracts/{executor}.md"]
+payload = "findings@5"
+
+[[step]]
+after = ["review"]
+emits = "findings"
+executor = "synthesize-findings"
+expected_cost = 0.40
+holds_tree = false
+inputs = ["review.*"]
+name = "synthesize"
+packet = ["contracts/{executor}.md"]
+
+[[step]]
+action = "aggregate"
+after = ["synthesize"]
+inputs = ["synthesize.findings"]
+max_fix_loops = 2
+name = "reconcile"
+params = { field = "severity", method = "max", hold_spread = 2, output = "findings" }
+payload = "findings@5"
+threshold = { "fix-loop" = "any(severity >= blocker)" }
+
+[[step]]
+after_loop = "review"
+class = "write"
+emits = "doc"
+executor = "tdd-author-security"
+expected_cost = 0.90
+gates = ["doc-validate", "reserved-name-check"]
+inputs = ["reconcile.findings", "author-tdd-security.doc"]
+loop = true
+name = "revise-tdd-security"
+packet = ["contracts/{executor}.md"]
+when = "labels contains doc:tdd and labels contains security-load-bearing"
+
+[[step]]
+after_loop = "review"
+class = "write"
+emits = "doc"
+executor = "tdd-author-security"
+expected_cost = 0.90
+gates = ["doc-validate", "reserved-name-check"]
+inputs = ["reconcile.findings", "author-tdd-security-alt.doc"]
+loop = true
+name = "revise-tdd-security-alt"
+packet = ["contracts/{executor}.md"]
+when = "labels contains doc:tdd and labels contains security and labels != security-load-bearing"
+
+[[step]]
+after_loop = "review"
+class = "write"
+emits = "doc"
+executor = "tdd-author"
+expected_cost = 0.90
+gates = ["doc-validate", "reserved-name-check"]
+inputs = ["reconcile.findings", "author-tdd.doc"]
+loop = true
+name = "revise-tdd"
+packet = ["contracts/{executor}.md"]
+when = "labels contains doc:tdd and labels != security-load-bearing and labels != security"
+
+[[step]]
+after_loop = "review"
+class = "write"
+emits = "doc"
+executor = "adr-author"
+expected_cost = 0.90
+gates = ["doc-validate", "reserved-name-check"]
+inputs = ["reconcile.findings", "author-adr.doc"]
+loop = true
+name = "revise-adr"
+packet = ["contracts/{executor}.md"]
+when = "labels contains doc:adr and labels != doc:tdd"
+
+[[step]]
+after_loop = "review"
+class = "write"
+emits = "doc"
+executor = "ux-spec-author"
+expected_cost = 0.90
+gates = ["doc-validate", "reserved-name-check"]
+inputs = ["reconcile.findings", "author-ux-spec.doc"]
+loop = true
+name = "revise-ux-spec"
+packet = ["contracts/{executor}.md"]
+when = "labels contains doc:ux-spec and labels != doc:tdd and labels != doc:adr"
+
+[[step]]
+after_loop = "review"
+class = "write"
+emits = "doc"
+executor = "prd-author"
+expected_cost = 0.90
+gates = ["doc-validate", "reserved-name-check"]
+inputs = ["reconcile.findings", "author-prd.doc"]
+loop = true
+name = "revise-prd"
+packet = ["contracts/{executor}.md"]
+when = "labels != doc:tdd and labels != doc:adr and labels != doc:ux-spec"
+
+[[step]]
+after = ["reconcile"]
+inputs = ["author-tdd-security.doc", "author-tdd-security-alt.doc", "author-tdd.doc", "reconcile.findings"]
+name = "accept-vote-tdd"
+on_fail = "fix-loop"
+type = "vote"
+vote_rule = "doc-acceptance"
+voters = ["judge-architecture", "judge-security", "judge-correctness"]
+when = "labels contains doc:tdd"
+
+[[step]]
+after = ["reconcile"]
+inputs = ["author-adr.doc", "reconcile.findings"]
+name = "accept-vote-adr"
+on_fail = "fix-loop"
+type = "vote"
+vote_rule = "doc-acceptance"
+voters = ["judge-architecture", "judge-security", "judge-correctness"]
+when = "labels contains doc:adr and labels != doc:tdd"
+
+[[step]]
+after = ["reconcile"]
+inputs = ["author-prd.doc", "author-ux-spec.doc", "reconcile.findings"]
+name = "accept-human"
+on_fail = "waiting-human"
+type = "vote"
+vote_rule = "tribunal"
+voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
+when = "labels != doc:tdd and labels != doc:adr"
+
+[[step]]
+action = "doc-record"
 after = ["accept-vote-tdd", "accept-vote-adr", "accept-human"]
-                                     # joins over whichever acceptance ran; the
-                                     #   `skipped` one is terminal, and a join
-                                     #   waits for terminal siblings (06 §2)
-action = "doc-record"                # trusted action, not an executor: recording
-                                     #   is "insert a row and copy bytes", which
-                                     #   is engine-run and never claimed
-params = { output = "doc-record" }   # accepted docs are recorded as Docket docs
-                                     #   (DOC-N) and the referencing issues carry
-                                     #   their ACs verbatim — the distillation rule.
-                                     #   `params.output` is the kind an action step
-                                     #   produces (V11); `emits` is absent on action
-                                     #   steps (V7) and silently ignored if present
 expected_cost = 0.20
-inputs = ["author-tdd-security.doc", "author-tdd-security-alt.doc", "author-tdd.doc", "author-adr.doc", "author-ux-spec.doc", "author-prd.doc"]
 gates = ["citation-check"]
+inputs = ["author-tdd-security.doc", "author-tdd-security-alt.doc", "author-tdd.doc", "author-adr.doc", "author-ux-spec.doc", "author-prd.doc"]
+name = "record"
+params = { output = "doc-record" }

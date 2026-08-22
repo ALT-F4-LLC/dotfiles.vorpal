@@ -1,5 +1,5 @@
 [policy]
-version = 5
+version = 6
 
 [variants]
 fable-high = { model = "fable", effort = "high" }
@@ -16,15 +16,11 @@ sonnet-medium = { model = "sonnet", effort = "medium", escalate_to = "opus-mediu
 sonnet-xhigh = { model = "sonnet", effort = "xhigh", escalate_to = "opus-xhigh" }
 
 [executors]
-# Authors
 adr-author = { variant = "fable-max" }
-prd-author = { variant = "fable-max" }
-ux-spec-author = { variant = "fable-max" }
-
-# design-qa = { variant = "opus-high" }
 adr-critic = { variant = "opus-high" }
 design-completeness = { variant = "fable-xhigh" }
 design-feasibility = { variant = "fable-xhigh" }
+design-qa = { variant = "opus-high" }
 design-reviser = { variant = "opus-high" }
 design-risk = { variant = "fable-xhigh" }
 fix = { variant = "sonnet-medium" }
@@ -37,6 +33,7 @@ judge-security = { variant = "opus-high", never = ["fable"], reason = "security-
 judge-simplicity = { variant = "opus-medium" }
 judge-testing = { variant = "opus-high" }
 pr-comment-author = { variant = "sonnet-medium" }
+prd-author = { variant = "fable-max" }
 research = { variant = "fable-xhigh" }
 retro-analyst = { variant = "fable-xhigh" }
 spec-author-architecture = { variant = "opus-high" }
@@ -54,6 +51,7 @@ threat-model = { variant = "opus-xhigh", never = ["fable"], reason = "security-c
 tribunal-architecture = { variant = "fable-xhigh" }
 tribunal-correctness = { variant = "fable-xhigh" }
 tribunal-security = { variant = "opux-xhigh", never = ["fable"], reason = "security-classifier-reroute" }
+ux-spec-author = { variant = "fable-max" }
 verify-ac = { variant = "opus-high" }
 
 [security]

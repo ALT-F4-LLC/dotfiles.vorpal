@@ -1,5 +1,5 @@
 [policy]
-version = 4
+version = 5
 
 [variants]
 fable-high = { model = "fable", effort = "high" }
@@ -22,6 +22,11 @@ prd-author = { variant = "fable-max" }
 ux-spec-author = { variant = "fable-max" }
 
 # design-qa = { variant = "opus-high" }
+adr-critic = { variant = "opus-high" }
+design-completeness = { variant = "fable-xhigh" }
+design-feasibility = { variant = "fable-xhigh" }
+design-reviser = { variant = "opus-high" }
+design-risk = { variant = "fable-xhigh" }
 fix = { variant = "sonnet-medium" }
 implement = { variant = "sonnet-medium" }
 investigate = { variant = "fable-xhigh" }

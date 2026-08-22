@@ -1020,6 +1020,21 @@ const LENSES = {
         'here versus asserted? Was the claimed behaviour reproduced, and could you ' +
         'reproduce it from what is in front of you? What would have to be true for this ' +
         'to be wrong, and does anything check that?',
+    completeness:
+        'COVERAGE AND OMISSION. Is every requirement, decision, and affected surface ' +
+        'accounted for, or does the document settle the easy parts and go quiet on the ' +
+        'hard ones? What is missing that the author should have known to include, and ' +
+        'would a reader discover the gap before or after acting on this?',
+    feasibility:
+        'BUILDABILITY WITHIN REAL CONSTRAINTS. Can this actually be built and operated ' +
+        'as described, by the people and systems that will have to, with the ' +
+        'dependencies it assumes available? Where does it rely on something unproven, ' +
+        'and what breaks first when an estimate here turns out optimistic?',
+    risk:
+        'FAILURE MODES, REVERSIBILITY, AND EXPOSURE. What goes wrong if this ships as ' +
+        'designed, how likely, and who bears it? Which choices here are hard to walk ' +
+        'back, and does anything cheaper preserve the option? Is every named risk ' +
+        'paired with a mitigation someone could actually execute?',
 }
 const WHOLE_SYSTEM_LENS =
     'WHOLE-SYSTEM REVIEW. No narrower lens is declared for your seat, so read this ' +

@@ -1,7 +1,7 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec), escalating to the operator."
 name = "spec-doc"
-version = 9
+version = 10
 
 [match]
 labels_any = ["spec-doc"]
@@ -107,17 +107,18 @@ holds_tree = false
 inputs = ["author-tdd-security.doc", "author-tdd-security-alt.doc", "author-tdd.doc", "author-adr.doc", "author-ux-spec.doc", "author-prd.doc", "issue.body"]
 name = "review"
 packet = ["contracts/{executor}.md"]
-payload = "findings@5"
+payload = "findings@6"
 
 [[step]]
 after = ["review"]
 emits = "findings"
 executor = "synthesize-findings"
-expected_cost = 0.40
+expected_cost = 0.60
 holds_tree = false
 inputs = ["review.*"]
 name = "synthesize"
 packet = ["contracts/{executor}.md"]
+payload = "findings-cluster@1"
 
 [[step]]
 action = "aggregate"

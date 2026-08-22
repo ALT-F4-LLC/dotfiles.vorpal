@@ -1,6 +1,6 @@
 [pipeline]
 name = "ui-change"
-version = 10
+version = 11
 description = "UI change bound to an accepted ux-spec, design-judged and design-QA'd; the conductor integrates commits, the operator publishes."
 
 [match]
@@ -48,17 +48,18 @@ holds_tree = false
 inputs = ["implement.change-summary", "issue.diff"]
 name = "review"
 packet = ["contracts/{executor}.md"]
-payload = "findings@5"
+payload = "findings@6"
 
 [[step]]
 after = ["review"]
 emits = "findings"
 executor = "synthesize-findings"
-expected_cost = 0.40
+expected_cost = 0.60
 holds_tree = false
 inputs = ["review.*"]
 name = "synthesize"
 packet = ["contracts/{executor}.md"]
+payload = "findings-cluster@1"
 
 [[step]]
 action = "aggregate"
@@ -114,5 +115,5 @@ holds_tree = false
 inputs = ["issue.body", "issue.diff", "implement.change-summary"]
 name = "design-qa"
 packet = ["contracts/{executor}.md"]
-payload = "findings@5"
+payload = "findings@6"
 threshold = { "fix-loop" = "any(severity >= blocker)" }

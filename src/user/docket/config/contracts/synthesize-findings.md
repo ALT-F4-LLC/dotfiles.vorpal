@@ -1,11 +1,12 @@
 ---
 node: synthesize-findings
-version: 1
+version: 2
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
   - fragments/truth-first.md
 emits: findings
+payload: findings-cluster@1
 ---
 # Charter
 Group the findings several judges produced about one change into clusters, one cluster per
@@ -97,7 +98,13 @@ own words, its members (judge, finding id, that judge's severity and evidence), 
 merge or split rationale where it was not obvious — plus the findings payload, one entry
 per cluster whose `severity` field carries the array of its members' severities (a
 single-member cluster carries the scalar, which is also how a standing finding carried
-forward from an earlier round is emitted — see Rounds). The body is where uncertainty
+forward from an earlier round is emitted — see Rounds). Each cluster carries its
+members' finding `id`s in `member_ids`, in the same order as an array severity's
+values — `member_ids` is the ONE linkage key; the older spellings (`members`,
+`cluster_members`, `member_findings`) are retired, and the payload validates against
+`findings-cluster@1`, which is where these shapes are written down. A standing finding
+carried forward from a prior round's aggregate record may omit `member_ids` — it
+references that record, not this round's judge payloads. The body is where uncertainty
 and reasoning live; the payload is what the engine computes over, so its cluster
 membership must be exact — every input finding appears in exactly one cluster, no
 standing finding is dropped, and none is invented.

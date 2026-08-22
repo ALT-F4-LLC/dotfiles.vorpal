@@ -1,7 +1,7 @@
 [pipeline]
 description = "Mine recent run evidence into config-change proposals, accepted by tribunal vote that escalates to the operator."
 name = "retro"
-version = 8
+version = 9
 
 [match]
 labels_any = ["retro"]
@@ -33,7 +33,7 @@ holds_tree = false
 inputs = ["analyze.proposals"]
 name = "review"
 packet = ["contracts/{executor}.md"]
-payload = "findings@5"
+payload = "findings@6"
 
 [[step]]
 after = ["review"]
@@ -44,6 +44,7 @@ holds_tree = false
 inputs = ["review.*"]
 name = "synthesize"
 packet = ["contracts/{executor}.md"]
+payload = "findings-cluster@1"
 
 [[step]]
 action = "aggregate"

@@ -1,7 +1,7 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 17
+version = 18
 
 [match]
 unless_labels = [
@@ -58,7 +58,7 @@ after = ["implement", "implement-test-infra"]
 fanout = ["judge-correctness", "judge-architecture", "judge-simplicity", "judge-testing"]
 emits = "findings"
 packet = ["contracts/{executor}.md"]
-payload = "findings@5"
+payload = "findings@6"
 expected_cost = 0.60
 inputs = ["implement.change-summary", "implement-test-infra.change-summary", "issue.diff"]
 
@@ -71,18 +71,19 @@ holds_tree = false
 inputs = ["implement.change-summary", "implement-test-infra.change-summary", "issue.diff"]
 name = "review-security"
 packet = ["contracts/{executor}.md"]
-payload = "findings@5"
+payload = "findings@6"
 when = "labels contains security"
 
 [[step]]
 after = ["review", "review-security"]
 emits = "findings"
 executor = "synthesize-findings"
-expected_cost = 0.40
+expected_cost = 0.60
 holds_tree = false
 inputs = ["review.*", "review-security.findings"]
 name = "synthesize"
 packet = ["contracts/{executor}.md"]
+payload = "findings-cluster@1"
 
 [[step]]
 action = "aggregate"

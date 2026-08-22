@@ -1,10 +1,11 @@
 ---
 node: implement
-version: 1
+version: 2
 archetype: executor-write
 packet_includes:
   - fragments/code-philosophy.md
   - fragments/tdd-discipline.md
+  - fragments/test-infra-discipline.md
   - fragments/scope-discipline.md
   - fragments/truth-first.md
   - fragments/vorpal-toolchain.md

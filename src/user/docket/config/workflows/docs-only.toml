@@ -1,14 +1,13 @@
 [pipeline]
-description = "Documentation change: optional label-gated design phase (PRD -> reviewer gate -> TDD draft -> ADR resolution -> critic -> TDD final -> committee gate) feeding the implement pipeline; one correctness judge, doc-validate and citation gates, one design fix-loop, tribunal-filtered escalation; the conductor integrates commits, the operator publishes."
+description = "Documentation change: implement with doc-validate and citation gates, one correctness judge, tribunal-filtered review and AC verification, and a bounded fix-loop re-entering at review; the conductor integrates commits, the operator publishes. Design-heavy doc work routes through spec-doc first."
 name = "docs-only"
-version = 12
+version = 13
 
 [match]
 labels_any = ["docs-only"]
 unless_labels = ["investigation", "spec-doc", "spec-project", "release", "retro"]
 
 [limits]
-"adr-critic" = { max = 16, max_step_duration = "1h" }
 "judge-correctness" = { max = 16, max_step_duration = "1h" }
 "verify-ac" = { max = 16, max_step_duration = "1h" }
 "write" = { max = 16, max_step_duration = "2h" }
@@ -16,109 +15,11 @@ unless_labels = ["investigation", "spec-doc", "spec-project", "release", "retro"
 [[step]]
 after = []
 class = "write"
-emits = "prd"
-executor = "prd-author"
-expected_cost = 1.20
-inputs = ["issue.body"]
-max_attempts = 2
-name = "prd"
-on_fail = "waiting-human"
-packet = ["contracts/{executor}.md", "fragments/design-phase.md"]
-when = "labels contains design"
-
-[[step]]
-after = ["prd"]
-inputs = ["prd.prd", "issue.body"]
-name = "prd-gate"
-on_fail = "waiting-human"
-type = "vote"
-vote_rule = "tribunal"
-voters = ["design-completeness", "design-feasibility", "design-risk"]
-when = "labels contains design"
-
-[[step]]
-after = ["prd-gate"]
-class = "write"
-emits = "tdd-draft"
-executor = "tdd-author"
-expected_cost = 1.20
-inputs = ["prd.prd", "issue.body"]
-max_attempts = 2
-name = "tdd-draft"
-on_fail = "waiting-human"
-packet = ["contracts/{executor}.md", "fragments/design-phase.md"]
-when = "labels contains design"
-
-[[step]]
-after = ["tdd-draft"]
-class = "write"
-emits = "adr-set"
-executor = "adr-author"
-expected_cost = 1.50
-inputs = ["prd.prd", "tdd-draft.tdd-draft", "issue.body"]
-max_attempts = 2
-name = "adr-resolve"
-on_fail = "waiting-human"
-packet = ["contracts/{executor}.md", "fragments/design-phase.md"]
-when = "labels contains design"
-
-[[step]]
-after = ["adr-resolve"]
-emits = "findings"
-executor = "adr-critic"
-expected_cost = 0.60
-holds_tree = false
-inputs = ["issue.latest.adr-set", "issue.latest.tdd-draft", "prd.prd", "issue.body"]
-max_fix_loops = 3
-name = "adr-critic"
-packet = ["contracts/{executor}.md", "fragments/design-phase.md"]
-payload = "findings@5"
-threshold = { "fix-loop" = "any(severity >= high)" }
-when = "labels contains design"
-
-[[step]]
-after_loop = "adr-critic"
-class = "write"
-emits = "tdd-draft"
-executor = "design-reviser"
-expected_cost = 0.90
-inputs = ["adr-critic.findings", "issue.latest.adr-set", "issue.latest.tdd-draft", "issue.latest.prd", "issue.body"]
-loop = true
-name = "design-revise"
-packet = ["contracts/{executor}.md", "fragments/design-phase.md"]
-when = "labels contains design"
-
-[[step]]
-after = ["adr-critic"]
-class = "write"
-emits = "tdd"
-executor = "tdd-author"
-expected_cost = 0.90
-inputs = ["issue.latest.tdd-draft", "issue.latest.adr-set", "prd.prd", "issue.body"]
-max_attempts = 2
-name = "tdd-final"
-on_fail = "waiting-human"
-packet = ["contracts/{executor}.md", "fragments/design-phase.md"]
-when = "labels contains design"
-
-[[step]]
-after = ["tdd-final"]
-inputs = ["tdd-final.tdd", "prd.prd", "issue.body"]
-name = "design-gate"
-on_fail = "fix-loop"
-type = "vote"
-vote_rule = "tribunal"
-voters = ["design-completeness", "design-feasibility", "design-risk"]
-when = "labels contains design"
-
-[[step]]
-after = ["design-gate"]
-class = "write"
 emits = "change-summary"
 executor = "implement"
 expected_cost = 0.80
 gates = ["build", "self-hygiene", "doc-validate", "citation-check"]
-inputs = ["issue.body", "tdd-final.tdd", "prd.prd"]
+inputs = ["issue.body"]
 max_attempts = 2
 name = "implement"
 on_fail = "waiting-human"
@@ -140,10 +41,22 @@ threshold = { "review-tribunal" = "any(severity >= high)" }
 after = ["review"]
 inputs = ["review.findings", "issue.diff"]
 name = "review-tribunal"
-on_fail = "waiting-human"
+on_fail = "fix-loop"
 type = "vote"
 vote_rule = "tribunal"
 voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
+
+[[step]]
+after_loop = "review"
+class = "write"
+emits = "change-summary"
+executor = "fix"
+expected_cost = 0.60
+gates = ["build", "doc-validate", "citation-check"]
+inputs = ["review.findings", "implement.change-summary"]
+loop = true
+name = "fix"
+packet = ["contracts/{executor}.md"]
 
 [[step]]
 after = ["review"]
@@ -153,16 +66,17 @@ expected_cost = 0.40
 gates = [{ name = "ac-commands", pre = true }]
 holds_tree = false
 inputs = ["issue.body", "issue.diff", "implement.change-summary", "verify.gate-results"]
+max_fix_loops = 2
 name = "verify"
 packet = ["contracts/{executor}.md"]
 payload = "ac-report@1"
-threshold = { "verify-tribunal" = "any(status == unmet)" }
+threshold = { "fix-loop" = "any(status == unmet)", "verify-tribunal" = "any(status == unverifiable)" }
 
 [[step]]
 after = ["verify"]
 inputs = ["verify.ac-report", "issue.body"]
 name = "verify-tribunal"
-on_fail = "waiting-human"
+on_fail = "fix-loop"
 type = "vote"
 vote_rule = "tribunal"
 voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]

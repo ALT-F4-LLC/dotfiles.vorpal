@@ -1,5 +1,5 @@
 [policy]
-version = 8
+version = 9
 
 [variants]
 fable-high = { model = "fable", effort = "high" }
@@ -41,7 +41,6 @@ spec-author-testing = { variant = "opus-high" }
 synthesize-findings = { variant = "sonnet-medium" }
 tdd-author = { variant = "fable-xhigh" }
 tdd-author-security = { variant = "opus-xhigh", never = ["fable"], reason = "security-classifier-reroute" }
-test-infra = { variant = "sonnet-high" }
 threat-model = { variant = "opus-xhigh", never = ["fable"], reason = "security-classifier-reroute" }
 tribunal-architecture = { variant = "fable-xhigh" }
 tribunal-correctness = { variant = "fable-xhigh" }

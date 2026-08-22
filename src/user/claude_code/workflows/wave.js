@@ -327,7 +327,7 @@ function resolve(row, policy) {
 }
 
 const WRITE_HINTS = [
-    'implement', 'test-infra', 'fix',
+    'implement', 'fix',
     'prd-author', 'tdd-author', 'tdd-author-security',
     'adr-author', 'ux-spec-author', 'pr-comment-author',
     'spec-author-architecture', 'spec-author-security', 'spec-author-operations',

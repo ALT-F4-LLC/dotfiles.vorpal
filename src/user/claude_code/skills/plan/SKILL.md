@@ -438,7 +438,7 @@ record it.** Binding is exactly-one-match over the corpus's `[match]` blocks
 and every one of them discriminates on labels alone (§2): `standard-change` is
 the baseline that matches any issue carrying NONE of the variant labels, and
 each variant binds on exactly one — `ui`, `docs-only`, `investigation`,
-`security-change`, `spec-doc`, `spec-project`, `release`, `retro`. So a
+`security-change`, `spec-doc`, `spec-project`, `release`. So a
 missing variant label does not fail — it binds the WRONG workflow, exactly one
 match, and the engine's zero-or-several refusal structurally cannot see it: no
 scope warning, no lint, nothing downstream flags it. Before `issue create`,

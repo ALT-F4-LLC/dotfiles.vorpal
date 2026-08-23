@@ -45,7 +45,7 @@ after = ["implement"]
 fanout = ["judge-correctness", "judge-architecture", "judge-testing"]
 emits = "findings"
 packet = ["contracts/{executor}.md"]
-payload = "findings@7"
+payload = "findings@8"
 expected_cost = 0.60
 inputs = ["implement.change-summary", "issue.diff"]
 
@@ -58,7 +58,7 @@ holds_tree = false
 inputs = ["implement.change-summary", "issue.diff"]
 name = "review-security"
 packet = ["contracts/{executor}.md"]
-payload = "findings@7"
+payload = "findings@8"
 when = "labels contains security"
 
 [[step]]
@@ -79,7 +79,7 @@ inputs = ["synthesize.findings"]
 max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
-payload = "findings@7"
+payload = "findings@8"
 threshold = { "fix-loop" = "any(severity >= blocker)" }
 
 [[step]]

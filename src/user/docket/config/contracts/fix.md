@@ -1,6 +1,6 @@
 ---
 node: fix
-version: 1
+version: 2
 archetype: executor-write
 packet_includes:
   - fragments/code-philosophy.md
@@ -25,6 +25,16 @@ change (review re-runs on your delta) and you do not soften a finding by making 
 symptom unobservable.
 
 # Method
+When the packet carries an `ac-report`, read it before the findings. It is `verify`'s
+per-AC judgment on the change you are repairing, and the criteria it marks `unmet` name
+why this round exists — `any(status == unmet)` is the threshold that routed you here.
+Close those first: an unmet AC is an obligation the issue itself stated, and a round that
+clears findings while leaving one open buys nothing, because verify re-runs on your
+delta. Record each in the summary the way you record a finding — what was missing, what
+changed, the evidence it is now met. An AC marked `unverifiable` did not route you here
+(that goes to a tribunal or a human) and is not yours to close by making it verifiable:
+leave it alone and say in the summary that you did.
+
 Read every routed finding before touching code, and group them by cause rather than by
 file: three findings on three lines are often one defect, and fixing them one at a time
 produces three patches where one belongs. Where findings genuinely conflict — two

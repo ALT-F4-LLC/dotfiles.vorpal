@@ -1,6 +1,6 @@
 ---
 node: judge-correctness
-version: 2
+version: 3
 archetype: executor-read
 packet_includes:
   - fragments/hard-gates.md
@@ -18,10 +18,12 @@ Examine one change for defects in what the code actually does: logic errors, bou
 and edge-case handling, error paths, and the five hard-gate symptoms.
 
 # Not
-You do not judge design conformance or coupling (judge-architecture owns it), test
-adequacy (judge-testing), overbuild (judge-simplicity), or security posture
-(judge-security). You do not fix anything, and you do not issue a verdict — you emit
-findings only; acceptance is computed from the reconciled set, not asserted by you.
+You do not judge design conformance or coupling (judge-architecture owns it — and
+overbuild with it, since it carries the code-philosophy fragment those findings ground
+in; judge-simplicity owns overbuild only on the fanouts that seat it), test adequacy
+(judge-testing), or security posture (judge-security). You do not fix anything, and you
+do not issue a verdict — you emit findings only; acceptance is computed from the
+reconciled set, not asserted by you.
 
 # Method
 Read the issue body first: a defect is a divergence from what the code was supposed to

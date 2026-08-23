@@ -367,7 +367,7 @@ from a genuine new dependency level ("Phase N (parallel, after Phase N-1):").
 | `--priority` | `-p` | stringSlice | `nil` | repeatable |
 | `--label` | `-l` | stringSlice | `nil` | repeatable |
 | `--type` | `-T` | stringSlice | `nil` | repeatable |
-| `--limit` | — | int | `10` | |
+| `--limit` | — | int | `10` | issue mode: always applies, default 10. **Step mode (`--run`): unlimited unless `--limit` is explicitly passed** — even an explicit `--limit 0` still means unlimited (`0` is the engine's no-limit sentinel); only an explicit `--limit N` with `N > 0` truncates (DKT-564) |
 | `--run` | — | string | `""` | switches to STEP mode: lists a run's offer (ready steps + staged closure) |
 
 Watch-eligible. Issue mode's `.data.issues` is always an array — `[]`, never
@@ -378,7 +378,11 @@ Watch-eligible. Issue mode's `.data.issues` is always an array — `[]`, never
 below: the claimable steps **plus their staged dependency closure** — rows
 carried ahead of their own readiness (`status: staged`), leveled by `stage`,
 so a dispatcher sees whole dependency chains rather than one frontier at a
-time. The offer **rations class headroom**: a class with a finite `[limits]
+time. **Step mode's `--limit` default does not apply** (DKT-564): omit the
+flag and the offer is unbounded — the registered default of `10` is
+issue-mode's alone, and the v2 envelope's `truncated` reads `false` whenever
+no `--limit` was actually typed. The offer **rations class headroom**: a class
+with a finite `[limits]
 max` contributes at most that many rows, so fewer same-class rows than ready
 steps is the offer working, not a bug. The issue filters (`--status`,
 `--priority`, `--label`, `--type`) are

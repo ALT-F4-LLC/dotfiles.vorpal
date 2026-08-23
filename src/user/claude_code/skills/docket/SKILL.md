@@ -888,9 +888,10 @@ legitimately `claimed` at `waiting-human`.
 | `threshold` | table: routing → predicate | routing computed from the step's results |
 | `on_fail` | `"fix-loop"` \| `"waiting-human"` \| `"skip"` \| `"abandon-issue"`; default `"waiting-human"` | where a failure routes. **Required explicitly on `type="human"` and `type="vote"` steps** — the default is a routing nobody chose |
 | `loop` | bool, default false | marks a loop-body step |
+| `serves` | [step names], default = every `fix-loop`-capable step | scopes this `loop = true` step (and its `after_loop` chain) to the named steps' **loop cluster** — entry fires only the bodies serving the step whose routing actually triggered it (the **trigger**). Omitted or empty means "serves every trigger," one cluster for the whole workflow — byte-identical to a workflow written before DKT-544 |
 | `after_loop` | step name | where execution re-enters after a loop body |
 | `max_attempts` | int ≥ 1 | per-instance retry budget |
-| `max_fix_loops` | int ≥ 0 | loop-entry budget per issue |
+| `max_fix_loops` | int ≥ 0 | round budget, checked against the issue's one loop-ordinal counter. Declared on a step with no `serves`, it is the **issue-level ceiling**. Declared on a `serves`-scoped body, it is that **cluster's own** budget, counted over ordinals holding that cluster's instances — the issue-level ceiling still governs on top of it (DKT-544) |
 | `expected_cost` | number ≥ 0, default 0 | the step's contribution to the run's budget floor, accrued **per claim**. Per expanded sibling on a fanout — four siblings accrue four times, no proration |
 | `when` | predicate over `kind` / `labels` — `<kind\|labels> <==\|!=\|contains> <value>` or `labels contains-any (a, b, c)` clauses, joined by `and` throughout or `or` throughout | step is skipped when false. `or` needs one clause to hold, `and` needs all; mixing the two connectives in one predicate is rejected at register time (there are no parentheses, so `a and b or c` has no defined reading). `contains-any` holds when the list intersects the issue's labels — the step-level `labels_any` — so `kind == doc:tdd and labels contains-any (security-change, security)` says "this kind AND any of these labels" without mixing connectives |
 | `metadata` | opaque table | recorded and delivered verbatim |
@@ -965,6 +966,52 @@ kind**: a step emitting it is refused at `workflow register` (V11a), since an
 artifact of that kind could never be addressed — the engine-served form would
 shadow it.
 
+`<step>.vote-record` is the named **vote step's** recorded tally, as JSON: the
+proposal id, its status, the weighted score, and every cast (`voter`, `role`,
+`verdict`, `confidence`, `rationale`, `findings`) — mirrors `gate-results` in
+shape and instance-selection (same issue, `done` vote-step producers only,
+highest matching ordinal). A vote step an operator moved a run past with
+`docket step resolve` before any proposal opened contributes **no input at
+all**, not an empty record. `vote-record` is a reserved kind exactly like
+`gate-results`: a step declaring `emits = "vote-record"` is refused at
+register time, and so is `<step>.vote-record` naming a producer whose `type`
+is not `"vote"` (DKT-545, rule V11).
+
+```toml
+inputs = ["gate.vote-record"]
+```
+
+`issue.linked.<relation>.<kind>` is a **cross-issue** input: the latest
+recorded artifact of `<kind>` held by each issue this issue is linked to by
+`<relation>`, resolved and **pinned by artifact id at activation**, in the
+same transaction that snapshots the issue (DKT-547). `<relation>` is an
+existing relation type or its inverse token — "linked" is not a new relation
+kind, just a way to address either end of an ordinary `docket issue link add`
+edge:
+
+| Canonical (forward) | Inverse |
+|---|---|
+| `blocks` | `blocked_by` / `blocked-by` |
+| `depends_on` / `depends-on` | `dependency_of` / `dependency-of` |
+| `relates_to` | — (symmetric; its own inverse) |
+| `duplicates` | `duplicate_of` |
+
+```toml
+inputs = ["issue.body", "issue.linked.depends_on.ux-spec"]
+```
+
+There is no separate "linkable" marking and no project scoping — any recorded
+artifact on any issue this one is linked to is reachable, even across
+projects. `<kind>` names exactly **one** kind; a wildcard (`*`) is refused at
+register time, and so is `gate-results` or `vote-record` as the named kind (no
+linked issue could ever hold either). Resolution happens **once, at
+activation**: an artifact recorded on the linked issue afterward never reaches
+the bundle, and every linked issue holding the kind resolves, ordered by
+linked-issue id. Activation refuses loudly (`VALIDATION_ERROR`, exit 3) rather
+than binding an empty input — an issue with no edge of `<relation>` at all, or
+whose linked issue(s) hold no artifact of `<kind>`, fails the **whole**
+activation, naming `docket issue link add` as the way out.
+
 **`after` is required, and `after = []` is how you declare a root.** Implicit
 topology was a footgun: a step that forgets `after` would silently become a
 root and run first. Only the first step and `loop = true` steps may omit it.
@@ -1019,6 +1066,22 @@ no registry of known executors and no behavior keyed on the value: put role
 names, team names, or people's names there and they mean what you intend.
 `params` and `metadata` are likewise opaque — docket never reads a key inside
 them.
+
+**`when`'s list form has constraints the worked example above doesn't show.**
+`contains-any` needs at least one element — `labels contains-any ()` is
+rejected — with no leading, trailing, or doubled commas and no nesting;
+whitespace around elements and parens is fine, whitespace inside a bare value
+is not. Values in either clause form may be quoted (`kind == "bug"`,
+`labels contains-any ("docs", "urgent")`) or bare — they read the same.
+`contains-any` is **`labels`-only**: `kind contains-any (...)` is not a form
+the grammar defines. The mixed-connective refusal (rule V22, register time)
+reads:
+
+```
+step %q: `when` %q mixes `and` and `or`; a predicate must join its
+clauses with one connective throughout, because the grammar has
+no precedence rule and no parentheses to disambiguate the mix
+```
 
 ### Gates — what actually runs
 
@@ -1363,22 +1426,43 @@ A `threshold` (or an `on_fail`) that routes `fix-loop` enters a loop. There is
 **no other loop construct** — a threshold routing to a *step name* interposes
 that step as a one-off gate and is not a loop.
 
+**Loop entry is scoped to a cluster (DKT-544).** A `loop = true` step's
+`serves` list scopes it — and its `after_loop` chain — to the named steps'
+`fix-loop` routings, its **loop cluster**. On entry the engine derives the
+**trigger**: the step whose routing actually resolved to `fix-loop` (an
+`-held` approval step maps back to the routing step that names it first).
+Only the bodies **serving that trigger** instantiate, and only their
+`after_loop` downstream is superseded — a second gate elsewhere in the
+workflow stays untouched, still `pending`, not stale. Omitting `serves` (or
+leaving it empty) means "serves every trigger": one cluster spans the whole
+workflow, byte-identical to a workflow written before this existed. Input
+redirection for stale artifacts is still computed workflow-wide, not per
+cluster — only the supersede/instantiate set on entry is cluster-scoped. The
+event feed's `loop-entered` data gains a `trigger` field alongside `ordinal`.
+
 What happens on loop entry, in one transaction:
 
 1. **The issue's loop counter increments.** The counter is per-issue, not
-   per-step. If the new count would exceed `max_fix_loops`, the routing becomes
-   `waiting-human` instead and no loop is entered — loops are bounded by
-   construction, and the parked step's routing records why.
-2. **Unclaimed work downstream of `after_loop` is superseded.** Instances at a
-   lower ordinal that are still `pending` become `superseded` — a terminal
-   status, not a deletion. Already-claimed and running instances are **left
-   alone to finish**; their eventual routing is recorded for the ledger but
-   applies no downstream effect, so a slow step from the previous ordinal cannot
-   re-route an issue that has already moved on.
-3. **`loop = true` steps instantiate at the new ordinal**, along with the
-   `after_loop` step and everything transitively after it. Gates re-run and
-   thresholds re-apply on the new instances — they are fresh, with no gate trail
-   and no routing carried over.
+   per-step — one shared sequence even across independent clusters. If the new
+   count would exceed `max_fix_loops`, the routing becomes `waiting-human`
+   instead and no loop is entered — loops are bounded by construction, and the
+   parked step's routing records why. A **cluster-scoped** `max_fix_loops` (one
+   declared on a `serves`-scoped body) bounds only that cluster's own rounds,
+   under the issue-level ceiling declared elsewhere — hitting it parks with
+   `loop round %d for %q would exceed its cluster's max_fix_loops = %d on %s`
+   instead of the issue-wide `loop %d would exceed max_fix_loops = %d on %s`;
+   either way `docket step resolve --as fix-round` authorizes one more round.
+2. **Unclaimed work downstream of the triggered cluster's `after_loop` root(s)
+   is superseded.** Instances at a lower ordinal that are still `pending`
+   become `superseded` — a terminal status, not a deletion. Already-claimed and
+   running instances are **left alone to finish**; their eventual routing is
+   recorded for the ledger but applies no downstream effect, so a slow step
+   from the previous ordinal cannot re-route an issue that has already moved
+   on.
+3. **`loop = true` steps serving the trigger instantiate at the new ordinal**,
+   along with their `after_loop` step and everything transitively after it.
+   Gates re-run and thresholds re-apply on the new instances — they are fresh,
+   with no gate trail and no routing carried over.
 
 Steps **upstream** of `after_loop` do not re-run. That is why `inputs` bind
 **per input**: a step at ordinal 1 resolves each declared input at ordinal 1 if
@@ -1640,6 +1724,33 @@ docket vote backfill-usage DKT-V1 --json --voter tribunal-security --unit output
 docket vote link DKT-V1 --json --issue DKT-1
 docket vote unlink DKT-V1 --json --issue DKT-1
 ```
+
+**A vote step may add a `threshold`, evaluated over the cast set once an
+approved tally comes back — before the step is allowed to route `pass`**
+(DKT-545). It reads the same predicate grammar `threshold` uses on gate steps,
+but over the cast's own fields: `vote` / `verdict` (aliases for the same
+field) and `voter`. Only `==`/`!=` are legal — casts carry no registered
+schema, so an ordered comparison (`>=`, `>`, …) is refused at register time
+(V36). Routing is restricted to `fix-loop`, `waiting-human`, `pass` — no
+step-name interposition on a vote gate.
+
+```toml
+[[step]]
+name = "gate"
+type = "vote"
+voters = ["seat-a", "seat-b", "seat-c"]
+vote_rule = "majority"
+on_fail = "waiting-human"
+threshold = { "fix-loop" = "count>=2(vote == approve-with-concerns)" }
+```
+
+A **rejected** tally is untouched — it still routes per `on_fail`, threshold
+or not. A **committed** proposal (an operator's manual `vote commit`) skips
+the threshold too — that decision was made out of band. A step declaring no
+`threshold` behaves exactly as before. `approve-with-concerns` has always
+tallied as a full approval weight; what's new is only this post-approval
+routing check, not the tally math. The step's own recorded tally is readable
+downstream as an input — see `<step>.vote-record` above.
 
 ---
 

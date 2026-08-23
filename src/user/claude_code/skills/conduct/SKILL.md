@@ -429,8 +429,12 @@ it by id (`{issue, workflow}`), `promoted_issues[]` names what activation
 promotes, and `issues_bound` is the count beside them. That is a READ — the
 created_at_ms-window reconstruction earlier runs needed is retired, and so is
 hunting for a verb that lists a planning run's issues. After activation
-`docket next --run $RUN --json` reports what is ready; if it disagrees with
-what you presented, that is a stop-and-report, not a shrug. Keep the promotion
+`docket next --run $RUN --limit 500 --json` reports what is ready; if it disagrees with
+what you presented, that is a stop-and-report, not a shrug. **The engine's
+default `--limit` is 10 and it truncates silently, with no marker in the
+JSON** — RUN-43's first manifest read returned 10 of 27 rows and would have
+stranded 17 steps if trusted, so the explicit generous limit above is
+load-bearing, not decorative. Keep the promotion
 vigilance regardless: check `events list --run $RUN` for `issue-promoted` (tail
 the feed with `--since <last-seq>` or `--tail N`; it pages at 100 and has no
 --offset — RUN-2's conductor burned three invented flags learning this) —
@@ -519,7 +523,7 @@ step and the run had to be paused.
 ### 1. Ask what is ready
 
 ```bash
-docket next --run $RUN --json
+docket next --run $RUN --limit 500 --json
 ```
 
 - **Rows returned** → step 2.

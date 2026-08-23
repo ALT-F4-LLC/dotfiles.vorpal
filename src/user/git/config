@@ -56,6 +56,12 @@
 [github]
 	user = "erikreinert"
 
+# Trust roster for ssh signature verification, installed by the claude_code
+# artifact. Without it every ssh-signed commit renders %G? as N and prints an
+# error, so agent commit signatures cannot be audited (DOT-563).
+[gpg "ssh"]
+	allowedSignersFile = "~/.config/git/allowed_signers"
+
 [init]
 	defaultBranch = "main"
 

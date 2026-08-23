@@ -1154,11 +1154,13 @@ function spawn(row, phaseLabel) {
 //
 // Seat routing mirrors tribunal.js's resolveSeat: no attempt chain, no fable
 // gates (a seat's variant is its standing home); the [security] node pins
-// still bind.
+// still bind, and — unlike tribunal.js, whose caller has no issue to read
+// labels from — this call site passes the row's issue labels, so
+// [security].labels also binds here (DOT-596).
 // ---------------------------------------------------------------------------
 
 // SYNC-BEGIN seat-contract
-function resolveSeat(seat, policy) {
+function resolveSeat(seat, policy, labels = []) {
     const row = (policy.executors || {})[seat]
     if (!row) {
         throw new Error(
@@ -1172,7 +1174,10 @@ function resolveSeat(seat, policy) {
     let never = (row.never || []).slice()
 
     const sec = policy.security || {}
-    if ((sec.nodes || []).includes(seat)) {
+    const sensitive =
+        (sec.nodes || []).includes(seat) ||
+        (sec.labels || []).some((l) => labels.includes(l))
+    if (sensitive) {
         never = never.concat(sec.never || [])
         if (sec.ceiling) {
             const beyond = new Set()
@@ -1563,7 +1568,7 @@ async function runGate(row, phaseLabel) {
             `escalate instead of guessing a panel`)
         return { step: row.step, status: 'gate-blocked', text: show }
     }
-    const seats = voters.map((v) => resolveSeat(v, policy))
+    const seats = voters.map((v) => resolveSeat(v, policy, labelsOf(row)))
     log(`${row.step}: ${voteId} — seating ${seats.map((s) => s.seat).join(', ')}`)
     await parallel(seats.map((r) => () =>
         agent(seatBrief(r, voteId, row, false, heldCluster), {

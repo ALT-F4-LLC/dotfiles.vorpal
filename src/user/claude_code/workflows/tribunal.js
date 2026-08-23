@@ -283,6 +283,19 @@ yourself from scratch. Whatever stopped the first attempt, the cast is the one
 thing that must happen this time: if the command errors, do not abandon it
 silently — end with the verbatim error as instructed below.` : ''
 
+    const activationNote = gateKind === 'activation' ? `
+
+BIND-THEN-PIN (read before you cite a registry gap as provenance drift):
+\`docket run activate\` registers the source-config version at BIND TIME, as
+part of the same transaction that pins it to the run (documented in \`docket
+run activate --help\`). That means the to-be-activated name@version is
+EXPECTED to be ABSENT from \`docket workflow show\`'s registry right up until
+activation runs — absence pre-activation is the normal, designed state, not
+evidence of anything wrong. A provenance objection must diff the source-config
+BYTES against the proposal (or, post-activation, compare the registered
+version's hash to the run's pins) — never treat registry absence alone as
+proof of drift.` : ''
+
     return `You are ONE SEAT of a tribunal deciding a gated proposal in a Docket run.
 You decide alone. You cannot see the other seats, you do not coordinate with
 them, and your vote is recorded on its own merits — the engine tallies the
@@ -292,7 +305,7 @@ YOUR SEAT:      ${r.seat}
 YOUR LENS:      ${text}
 THE GATE:       ${gateKind}
 THE PROPOSAL:   ${voteId}
-WORKING DIR:    ${cwd}${respawnNote}
+WORKING DIR:    ${cwd}${respawnNote}${activationNote}
 
 Your shell's working directory RESETS between Bash calls, so start every single
 command with \`cd ${cwd} && \` — that path is also what scopes docket to the

@@ -1,10 +1,11 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 20
+version = 21
 
 [match]
 unless_labels = [
+  "disposition",
   "docs-only",
   "investigation",
   "release",

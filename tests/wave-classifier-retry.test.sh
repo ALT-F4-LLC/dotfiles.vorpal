@@ -23,15 +23,19 @@
 # (grep, below), because spawn() closes over workflow globals (agent, log)
 # that do not exist outside a live Workflow run.
 #
-# ALSO NOT COVERED, and load-bearing: in the harness measured while this was
-# written (claude 2.1.241) a pre-spawn classifier block resolves agent() to a
-# BARE null — `if (await <preflight>(...)) return null` — and the reason text
-# is emitted only onto the progress stream as workflowProgress[].error. A
-# workflow script cannot read that. So the predicate below can only fire on a
-# REJECTED spawn (one whose error object carries the text), and the exact
-# RUN-43 shape stays unretried until the harness surfaces the reason in-band.
-# See the DOT-558 note on handle()'s null branch for why retrying a bare null
-# anyway would be worse: it would relaunch operator-skipped agents.
+# THE PRE-SPAWN (BARE NULL) PATH (DOT-565): in the harness measured while
+# this was written (claude 2.1.241) a pre-spawn classifier block resolves
+# agent() to a BARE null — `if (await <preflight>(...)) return null` — and
+# the reason text is emitted only onto the progress stream as
+# workflowProgress[].error, which a workflow script cannot read. wave.js now
+# covers that shape out-of-band: the null branch spawns a read-only probe
+# agent that recovers the harness's own persisted progress record for the
+# step's label from the wave state file, and probeRecovered() (second region
+# below) gates what the probe hands back — only a found, label-matched,
+# blocked === true entry with a non-empty error string yields a reason, and
+# that reason must still pass transientClassifierBlock() before the
+# identical-bytes resubmission fires. A bare null is still never retried
+# BLIND — that would relaunch operator-skipped agents (DOT-558).
 
 set -uo pipefail
 
@@ -67,7 +71,11 @@ extract classifier-retry > "${WORK}/predicates.js" \
     || fatal "bad or missing TEST markers for classifier-retry"
 [ -s "${WORK}/predicates.js" ] || fatal "extracted predicate region is empty"
 
-cat "${WORK}/predicates.js" > "${WORK}/suite.js"
+extract null-probe > "${WORK}/null-probe.js" \
+    || fatal "bad or missing TEST markers for null-probe"
+[ -s "${WORK}/null-probe.js" ] || fatal "extracted null-probe region is empty"
+
+cat "${WORK}/predicates.js" "${WORK}/null-probe.js" > "${WORK}/suite.js"
 cat >> "${WORK}/suite.js" <<'JS'
 
 let pass = 0
@@ -140,6 +148,38 @@ ok(!transientClassifierBlock([
 ].join('\n')),
     'a judge REVIEWING the retry, quoting both signature phrases, is not a block')
 
+// ---- probeRecovered: the provenance gate on the pre-spawn (bare null) path ----
+// The probe's structured claim is trusted for nothing: found, blocked, an
+// exact label echo, and a non-empty error string are ALL required, and the
+// recovered reason still has to pass transientClassifierBlock() after.
+const LABEL = 'STEP-1547 · judge-simplicity'
+const GOOD = { found: true, label: LABEL, blocked: true, state: 'error', error: RUN_43, file: 'wf_b8679e05-2dc.json' }
+
+ok(probeRecovered(GOOD, LABEL) === RUN_43,
+    'a found, label-matched, blocked entry yields its error verbatim')
+ok(transientClassifierBlock(probeRecovered(GOOD, LABEL)),
+    'the recovered RUN-43 reason then passes the transience predicate — the retry fires')
+
+const CONTENT = { ...GOOD, error: '[STEP-1547 · judge-simplicity] blocked by safety classifier: prompt requests credential exfiltration' }
+ok(probeRecovered(CONTENT, LABEL) !== null && !transientClassifierBlock(probeRecovered(CONTENT, LABEL)),
+    'a recovered CONTENT block is provenance-valid but fails transience — no retry')
+
+ok(probeRecovered({ ...GOOD, label: 'STEP-1548 · judge-testing' }, LABEL) === null,
+    'a label mismatch is rejected — another step\'s block never fires this retry')
+ok(probeRecovered({ ...GOOD, blocked: false }, LABEL) === null,
+    'blocked !== true is rejected — a skip or mid-flight death is never a block')
+ok(probeRecovered({ ...GOOD, blocked: 'true' }, LABEL) === null,
+    'a stringly-typed blocked field is rejected — strict === true only')
+ok(probeRecovered({ ...GOOD, found: false }, LABEL) === null,
+    'found: false recovers nothing, whatever else the probe claims')
+ok(probeRecovered({ ...GOOD, error: '' }, LABEL) === null,
+    'an empty error string recovers nothing')
+ok(probeRecovered({ ...GOOD, error: undefined }, LABEL) === null,
+    'a missing error field recovers nothing')
+ok(probeRecovered(null, LABEL) === null, 'a null probe result (probe skipped/blocked/dead) recovers nothing')
+ok(probeRecovered(undefined, LABEL) === null, 'an undefined probe result recovers nothing')
+ok(probeRecovered({}, LABEL) === null, 'an empty probe object recovers nothing')
+
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)
 JS
@@ -160,20 +200,30 @@ shape() { # <count> <label> <pattern>
     fi
 }
 
-shape 1 'the retry is gated by transientClassifierBlock at exactly one call site' \
+shape 1 'the rejected-spawn retry is gated by transientClassifierBlock at exactly one call site' \
     'if (transientClassifierBlock(err)) return retryTransient'
 shape 1 'the retry helper is defined exactly once' \
     'const retryTransient = (err, iso) =>'
-shape 1 'the retry resubmits through the same launch() path — same brief, same opts' \
-    'return launch(iso).catch((err2) =>'
-shape 1 "a second failure returns today's spawn-failed" \
+shape 1 'the rejected-spawn retry resubmits through launch() marked retried — same brief, same opts, never again' \
+    'return launch(iso, true).catch((err2) =>'
+shape 2 "a second failure returns today's spawn-failed, on both retry paths" \
     'spawn error on transient-classifier retry'
 
+# ---- The pre-spawn (bare null) path: probe-gated, exactly once ----
+shape 1 'the null-path retry is gated on a probe-RECOVERED reason passing the transience predicate' \
+    'if (reason && transientClassifierBlock(reason))'
+shape 1 'the probe claim passes through the provenance gate at exactly one call site' \
+    'probeRecovered(p, stepLabel)'
+shape 1 'the null-path resubmission goes through launch() marked retried — a second null never re-probes' \
+    'return launch(isolated, true).catch((err2) =>'
+shape 1 'a retried launch that nulls again escalates instead of probing' \
+    'if (retried) return escalate()'
+
 if grep -q 'transientClassifierBlock(text)' "$WAVE"; then
-    printf 'FAIL: the null (SPAWN PRODUCED NOTHING) branch must not gate a retry — a bare null cannot be told from an operator skip\n' >&2
+    printf 'FAIL: the null branch must never gate a retry on the bare null itself — only on a probe-recovered reason; a bare null cannot be told from an operator skip\n' >&2
     shape_fail=1
 else
-    printf 'PASS: the null branch retries nothing\n'
+    printf 'PASS: the bare null itself gates no retry\n'
 fi
 
 exit $shape_fail

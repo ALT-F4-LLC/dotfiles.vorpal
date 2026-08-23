@@ -925,6 +925,99 @@ function transientClassifierBlock(e) {
 }
 // TEST-END classifier-retry
 
+// A pre-spawn classifier block resolves agent() to a BARE null (DOT-565):
+// the reason goes only to the harness's progress stream, which this script
+// cannot read. But the harness PERSISTS that stream — verified against
+// RUN-43's own file — as JSON at
+// ~/.claude/projects/<flattened-cwd>/<session-id>/[subagents/]workflows/<wfId>.json,
+// each workflowProgress entry carrying `label`, `blocked`, and the verbatim
+// `error`. A read-only probe agent CAN read that file, so the null branch
+// recovers the reason out-of-band instead of guessing. Killed waves persist
+// partial progress (measured 2026-08-23), so the file is not completion-only;
+// whether every mid-run block is flushed by the time the probe looks is
+// UNVERIFIED — if it is not, the probe finds nothing and the branch degrades
+// to exactly its old conservative behavior. That limitation is recorded on
+// DOT-565.
+const PROBE_SCHEMA = {
+    type: 'object',
+    properties: {
+        found: { type: 'boolean' },
+        label: { type: 'string' },
+        blocked: { type: 'boolean' },
+        state: { type: 'string' },
+        error: { type: 'string' },
+        file: { type: 'string' },
+    },
+    required: ['found'],
+    additionalProperties: false,
+}
+
+function probeBrief(label) {
+    return [
+        'You are a DIAGNOSTIC PROBE inside a running Docket wave (wave.js). A',
+        'step\'s agent launch just resolved to null: the launch may have been',
+        'blocked by the pre-spawn safety classifier, skipped by the operator,',
+        'lost to an unavailable model, or died mid-flight. The harness records',
+        'which — but only in its own wave state file, which the workflow script',
+        'cannot read. Your ONLY job is to recover that record VERBATIM so the',
+        'wave can tell a transient infra block (sanctioned to resubmit the',
+        'IDENTICAL brief once) from everything else (which stays',
+        'operator-escalated). You change nothing and rephrase nothing.',
+        '',
+        `TARGET LABEL (match byte-for-byte): ${label}`,
+        '',
+        'WHERE: the harness persists each workflow run as JSON at',
+        '  ~/.claude/projects/*/workflows/wf_*.json',
+        '  ~/.claude/projects/*/subagents/workflows/wf_*.json',
+        '(one level of session-id directory between the project dir and',
+        '`workflows`/`subagents`). Each file has a top-level `status` and a',
+        '`workflowProgress` array whose entries carry `label`, `state`,',
+        '`blocked`, and `error`.',
+        '',
+        'HOW — parse the JSON (python3 or jq); never raw-grep for the answer,',
+        'because other fields such as promptPreview quote labels too:',
+        '1. Consider only files modified within the last 12 hours whose',
+        '   top-level status is NOT "completed", "failed", or "killed" — the',
+        '   wave you sit inside is still running, so a terminal-status file is',
+        '   some OTHER, older run of the same step.',
+        '2. In those, find workflowProgress entries whose `label` field equals',
+        '   the target label EXACTLY. Ignore your own entry (its label ends in',
+        '   "block-probe") and NEVER read agent-*.jsonl transcripts — agents',
+        '   quote classifier text in prose, and prose is out of domain.',
+        '3. If exactly one live-wave entry matches, report its fields',
+        '   verbatim. If none match, or more than one candidate remains, or',
+        '   anything is ambiguous, report found: false. Uncertainty is a',
+        '   found: false, never a guess.',
+        '',
+        'Return via the structured output: found (did you locate exactly one',
+        'match in a live wave), label (the entry\'s label field, verbatim),',
+        'blocked (its blocked field), state (its state field), error (its',
+        'error field, byte-for-byte — never trimmed, rewrapped, or',
+        'paraphrased), file (the path you read it from).',
+    ].join('\n')
+}
+
+// TEST-BEGIN null-probe — extracted and exercised by
+// tests/wave-classifier-retry.test.sh. Keep everything between the markers
+// free of workflow globals (agent, log, args) so it stays evaluable alone.
+//
+// The probe returns a structured CLAIM about this step's progress entry.
+// Trust none of it structurally: a recovered reason is usable only when the
+// probe found a live-wave entry, the entry is a pre-spawn BLOCK
+// (blocked === true — an operator skip or mid-flight death is never
+// blocked), the label echoes this step's label byte-for-byte (so a sloppy
+// probe cannot hand back some other step's block), and the reason is a
+// non-empty string. Anything less returns null and the null branch stays
+// exactly as conservative as before the probe existed. The returned reason
+// still has to pass transientClassifierBlock() at the call site — this
+// function decides provenance, not transience.
+function probeRecovered(p, label) {
+    if (!p || p.found !== true || p.blocked !== true) return null
+    if (p.label !== label) return null
+    return typeof p.error === 'string' && p.error !== '' ? p.error : null
+}
+// TEST-END null-probe
+
 function spawn(row, phaseLabel) {
     const r = resolve(row, policy)
     const type = archetype(row, r.hint)
@@ -941,8 +1034,9 @@ function spawn(row, phaseLabel) {
     log(`${row.step}: ${r.hint} -> ${type} @ ${r.model}/${r.effort} (variant ${r.variant})` +
         ` [${labelsOf(row).join(' ') || 'no labels'}]` +
         (isolated ? ' [worktree]' : ''))
+    const stepLabel = `${row.step} · ${r.hint}`
     const opts = (iso) => ({
-        label: `${row.step} · ${r.hint}`,
+        label: stepLabel,
         phase: phaseLabel,
         agentType: type,
         model: r.model,
@@ -950,43 +1044,81 @@ function spawn(row, phaseLabel) {
         ...(iso ? { isolation: 'worktree' } : {}),
     })
     const failed = () => ({ step: row.step, status: 'spawn-failed', text: null })
-    const handle = (text) => {
-        if (text == null) {
-            // NO RETRY HERE, deliberately (DOT-558). agent() resolves to a bare
-            // `null` for a pre-spawn classifier block, an operator SKIP, an
-            // unavailable model, and a mid-flight death alike — measured in the
-            // harness (2.1.241): the block path is `if (await <preflight>(...))
-            // return null`, and the reason string is emitted only onto the
-            // progress stream, as workflowProgress[].error. Nothing in-script
-            // can tell those four apart (`Date.now()` is unavailable to
-            // workflow scripts, so not even elapsed time), so a retry on this
-            // branch would relaunch agents the operator had just skipped. The
-            // transient-classifier retry below therefore fires only where a
-            // reason is actually in hand, i.e. a REJECTED spawn.
-            log(`${row.step}: SPAWN PRODUCED NOTHING (launch blocked before the ` +
-                `agent existed — this wave's task .output workflowProgress[].error ` +
-                `carries the stated reason when there is one — or model ${r.model} ` +
-                `unavailable, the agent was skipped, or it died mid-flight) — whether a claim ` +
-                `was recorded is UNKNOWN; reconcile via \`docket dispatch verify\` ` +
-                `and \`docket step show ${row.step}\`, then, if it is still claimed ` +
-                `by this dead spawn, return it to the pool with \`docket step reap ` +
-                `${row.step} --reason '<what you observed>'\` (token-free) before ` +
-                `any retry. If that error carries the TRANSIENT classifier ` +
-                `signature (\`Stage 2 classifier error\` / \`usually transient\`), ` +
-                `redispatch the step UNCHANGED — same brief, never reworded`)
-            return failed()
-        }
-        return { step: row.step, status: 'returned', text }
+    const escalate = () => {
+        log(`${row.step}: SPAWN PRODUCED NOTHING (launch blocked before the ` +
+            `agent existed — this wave's task .output workflowProgress[].error ` +
+            `carries the stated reason when there is one — or model ${r.model} ` +
+            `unavailable, the agent was skipped, or it died mid-flight) — whether a claim ` +
+            `was recorded is UNKNOWN; reconcile via \`docket dispatch verify\` ` +
+            `and \`docket step show ${row.step}\`, then, if it is still claimed ` +
+            `by this dead spawn, return it to the pool with \`docket step reap ` +
+            `${row.step} --reason '<what you observed>'\` (token-free) before ` +
+            `any retry. If that error carries the TRANSIENT classifier ` +
+            `signature (\`Stage 2 classifier error\` / \`usually transient\`), ` +
+            `redispatch the step UNCHANGED — same brief, never reworded`)
+        return failed()
     }
-    const launch = (iso) => agent(bootstrap(row, r, iso, isWrite), opts(iso)).then(handle)
+    const handle = (text, retried) => {
+        if (text != null) return { step: row.step, status: 'returned', text }
+        // A bare null is still NEVER retried blind (DOT-558): agent() resolves
+        // to `null` for a pre-spawn classifier block, an operator SKIP, an
+        // unavailable model, and a mid-flight death alike — measured in the
+        // harness (2.1.241): the block path is `if (await <preflight>(...))
+        // return null`, and the reason string goes only onto the progress
+        // stream, as workflowProgress[].error, which this script cannot read
+        // (`Date.now()` is unavailable too, so not even elapsed time
+        // discriminates). A blind retry here would relaunch agents the
+        // operator had just skipped. Instead (DOT-565) a read-only probe
+        // recovers the harness's own persisted record of THIS label from the
+        // wave state file, and the identical-bytes resubmission fires only on
+        // a probe-recovered, label-matched, blocked === true entry whose
+        // reason carries the transient signature. Every other outcome — probe
+        // found nothing, probe itself blocked or skipped, content block,
+        // operator skip, dead agent — escalates exactly as before the probe
+        // existed. The probe inherits the session model (nulls are rare, and
+        // a wrong extraction here is the one thing that could relaunch a
+        // skipped agent) at low effort; a null probe result is a found-nothing.
+        if (retried) return escalate()
+        return agent(probeBrief(stepLabel), {
+            label: `${row.step} · block-probe`,
+            phase: phaseLabel,
+            agentType: 'executor-read',
+            effort: 'low',
+            schema: PROBE_SCHEMA,
+        }).then((p) => probeRecovered(p, stepLabel), () => null)
+            .then((reason) => {
+                if (reason && transientClassifierBlock(reason)) {
+                    log(`${row.step}: probe recovered the harness's block record and ` +
+                        `it admits its own transience (${reason}) — resubmitting the ` +
+                        `IDENTICAL brief once (never reworded); a second null is ` +
+                        `spawn-failed`)
+                    return launch(isolated, true).catch((err2) => {
+                        log(`${row.step}: spawn error on transient-classifier retry: ${err2}`)
+                        return failed()
+                    })
+                }
+                if (reason) {
+                    log(`${row.step}: probe recovered a NON-transient classifier block ` +
+                        `(${reason}) — a content refusal stays operator-escalated, and ` +
+                        `identical bytes would be refused deterministically anyway`)
+                } else {
+                    log(`${row.step}: probe could not attribute the null to a ` +
+                        `classifier block — leaving it operator-escalated`)
+                }
+                return escalate()
+            })
+    }
+    const launch = (iso, retried) =>
+        agent(bootstrap(row, r, iso, isWrite), opts(iso)).then((text) => handle(text, retried))
     // EXACTLY ONCE, and only from the top-level catch: same brief bytes, same
-    // opts, same isolation. A second failure returns 'spawn-failed' exactly as
-    // an unretried one does.
+    // opts, same isolation. `retried` rides through so a retry that resolves
+    // null does not probe-and-retry again. A second failure returns
+    // 'spawn-failed' exactly as an unretried one does.
     const retryTransient = (err, iso) => {
         log(`${row.step}: safety-classifier block admits its own transience ` +
             `(${err}) — resubmitting the IDENTICAL brief once (never reworded); ` +
             `a second failure is spawn-failed`)
-        return launch(iso).catch((err2) => {
+        return launch(iso, true).catch((err2) => {
             log(`${row.step}: spawn error on transient-classifier retry: ${err2}`)
             return failed()
         })

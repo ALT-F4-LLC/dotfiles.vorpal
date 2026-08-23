@@ -229,7 +229,7 @@ impl ClaudeCode {
             .with_env("GIT_CONFIG_KEY_0", "user.signingkey")
             .with_env("GIT_CONFIG_KEY_1", "gpg.ssh.program")
             .with_env("GIT_CONFIG_KEY_2", "gpg.format")
-            .with_env("GIT_CONFIG_VALUE_0", "${HOME}/.ssh/agent-signing.pub")
+            .with_env("GIT_CONFIG_VALUE_0", "~/.ssh/agent-signing.pub")
             .with_env("GIT_CONFIG_VALUE_1", "ssh-keygen")
             .with_env("GIT_CONFIG_VALUE_2", "ssh")
             .with_env("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", OTEL_LOGS_ENDPOINT_LOKI)

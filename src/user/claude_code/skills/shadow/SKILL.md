@@ -720,8 +720,10 @@ Pre-derived because conduct is the richest target. The conductor:
 - **Integration is the conductor's**, at reconcile, write steps first and in
   step-id order — the newest and most failure-prone obligation, so watch it
   hardest. Per write step: verify the sha the change-summary's first line
-  names (`git cat-file -e <sha>^{commit}`), `git cherry-pick --no-gpg-sign
-  <sha>` as a REAL commit on the shared branch, then remove that worktree and
+  names (`git cat-file -e <sha>^{commit}`), `git cherry-pick <sha>` (signed
+  by the agent signing key — `--no-gpg-sign` is retired, and its presence is
+  itself a finding) as a REAL commit on the shared branch, then remove that
+  worktree and
   its `worktree-wf_*` branch in the same breath. Each of these is a finding:
   integrating without the verify; leaving the pick staged but uncommitted
   (the retired model — staged content found in the shared tree is a

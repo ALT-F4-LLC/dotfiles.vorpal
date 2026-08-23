@@ -1,0 +1,51 @@
+[pipeline]
+description = "Cross-issue disposition: write the verdict comment and close the carrier, gated on the build/test sanity check and AC verification with a bounded revise loop; no code-review machinery."
+name = "disposition"
+version = 1
+
+[match]
+labels_any = ["disposition"]
+unless_labels = ["investigation", "spec-doc", "spec-project", "release", "retro", "security-change", "security-load-bearing"]
+
+[limits]
+"dispose" = { max = 16, max_step_duration = "1h" }
+"verify-ac" = { max = 16, max_step_duration = "1h" }
+
+[[step]]
+after = []
+class = "write"
+emits = "disposition"
+executor = "dispose"
+expected_cost = 0.60
+gates = ["build", "tests"]
+inputs = ["issue.body"]
+max_attempts = 2
+name = "dispose"
+on_fail = "waiting-human"
+packet = ["contracts/{executor}.md"]
+
+[[step]]
+after = ["dispose"]
+emits = "ac-report"
+executor = "verify-ac"
+expected_cost = 0.40
+gates = [{ name = "ac-commands", pre = true }]
+holds_tree = false
+inputs = ["issue.body", "issue.diff", "dispose.disposition", "verify.gate-results"]
+max_fix_loops = 2
+name = "verify"
+packet = ["contracts/{executor}.md"]
+payload = "ac-report@1"
+threshold = { "fix-loop" = "any(status == unmet)", "waiting-human" = "any(status == unverifiable)" }
+
+[[step]]
+after_loop = "verify"
+class = "write"
+emits = "disposition"
+executor = "dispose"
+expected_cost = 0.40
+gates = ["build", "tests"]
+inputs = ["verify.ac-report", "dispose.disposition", "issue.body"]
+loop = true
+name = "revise"
+packet = ["contracts/{executor}.md"]

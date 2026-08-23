@@ -734,9 +734,9 @@ primary control, the wave's refusal the backstop.
 
 1. Run `policy-escaped-chunks` to get policy.toml as escaped text.
 2. Pass its concatenated chunks through as `policyText`, unread.
-3. Confirm the `[policy]` table declares `version = 3`. The table header and
+3. Confirm the `[policy]` table declares `version = 13`. The table header and
    the key sit on SEPARATE lines, so this is `grep -A1 '^\[policy\]'` and
-   NEVER a substring search for `[policy] version = 3` — that literal occurs
+   NEVER a substring search for `[policy] version = 13` — that literal occurs
    nowhere in the file, and a conductor checking for it refuses a healthy
    policy before the first wave. If the table declares some other version,
    refuse and stop; do not guess at an unknown schema.

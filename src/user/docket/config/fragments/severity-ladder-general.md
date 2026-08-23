@@ -1,6 +1,6 @@
 ---
 fragment: severity-ladder-general
-version: 1
+version: 2
 ---
 # Severity ladder — general
 
@@ -42,7 +42,7 @@ is never a Blocker.
 
 **Concern is `high`, not `medium`, and its venue is the RECORD, not the loop.** A
 Concern is "should fix or explicitly justify" — the justification now happens where a
-human can weigh it: `high` outranks everything below it in cluster medians, is what a
+human can weigh it: `high` sets a cluster's severity under max aggregation, is what a
 held cluster's disagreement is measured over, surfaces at the reconcile and operator
 gates, and lands in the run record and backlog the operator reviews before publishing.
 What it no longer does is conscript a fix round: mechanical rework is the Blocker's
@@ -50,9 +50,9 @@ venue alone.
 
 **Suggestion is `low`, keeping `medium` in reserve.** Both sit below every gate, so
 routing does not distinguish them. `low` is the better home because a cluster's
-severity is a median over its members, and a security judge on the same change emits
-on a ladder whose serious values route to a human security vote; parking
-general-track niceties at `low` keeps them from pulling a mixed cluster upward.
+severity is the MAXIMUM over its members, so a Suggestion never moves a mixed cluster,
+and the held-spread check measures how far members disagree; parking general-track
+niceties at `low` keeps a nicety from widening that spread into a hold.
 `medium` stays available for a Concern you have deliberately downgraded but are not
 willing to drop.
 
@@ -67,7 +67,7 @@ emit your findings plus a `gap` note saying exactly what you could not resolve.
 **Praise lives in the body.** Every payload entry carries a severity and reads downstream
 as a defect. Recording what is right tells the next reader what was examined and found
 good — that is a body function, and filing it as `info` would put a compliment into the
-cluster median.
+cluster's severity arithmetic.
 
 **Report every finding; do not self-filter.** Severity is a classification, not a
 suppression mechanism. A finding a linter would also catch is reported at `Suggestion` —

@@ -1,6 +1,6 @@
 ---
 node: verify-ac
-version: 1
+version: 2
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -42,6 +42,14 @@ failing the same way. Then judge that AC `unverifiable`, quoting the denial and 
 control, never `unmet` — and name the profile gap in your report so the operator
 can extend the sandbox or supply an out-of-band run. Never infer a pass from an
 implement artifact's claim of one; a run you cannot reproduce is not your evidence.
+
+An AC that no execution of this issue's declared scope can satisfy is evidence about
+the plan, not the change. The common case is a criterion naming a file, document, or
+surface outside every step's scope — the doc half of a code+doc AC, or a design
+document this contract forbids you to read. Prove it the same way: name the scope, name
+what the AC requires that lies outside it. Then judge that AC `unverifiable`, quoting
+the mismatch, never `unmet` — an `unmet` here opens a fix round that cannot close it —
+and emit a `gap` naming the scope/AC mismatch so it files as an issue.
 
 # Emit
 `ac-report`: markdown body with one section per AC (classification · evidence ·

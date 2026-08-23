@@ -1,6 +1,6 @@
 ---
 node: synthesize-findings
-version: 3
+version: 4
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -17,7 +17,7 @@ arithmetic, held-spread detection, routing — is computed from what you emit.
 
 # Not
 You do not decide severity. Each cluster carries its members' severities unchanged; the
-engine takes the median and holds the ones that disagree, and a cluster you flatten to a
+engine takes the maximum and holds the ones whose members disagree by `hold_spread` or more, and a cluster you flatten to a
 single severity has pre-empted the arithmetic that exists to surface disagreement. You do
 not drop findings — not duplicates (they become members), not ones you find weak, not
 ones you judge wrong; a finding you disbelieve is still a member, and the judges' evidence

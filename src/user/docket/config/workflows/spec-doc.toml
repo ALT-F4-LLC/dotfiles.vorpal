@@ -1,7 +1,7 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec), escalating to the operator."
 name = "spec-doc"
-version = 14
+version = 15
 
 [match]
 labels_any = ["spec-doc"]
@@ -104,7 +104,7 @@ emits = "findings"
 expected_cost = 0.60
 fanout = ["judge-architecture", "judge-security", "judge-design"]
 holds_tree = false
-inputs = ["author-tdd-security.doc", "author-tdd-security-alt.doc", "author-tdd.doc", "author-adr.doc", "author-ux-spec.doc", "author-prd.doc", "issue.body"]
+inputs = ["issue.latest.doc", "issue.body"]
 name = "review"
 packet = ["contracts/{executor}.md"]
 payload = "findings@7"
@@ -126,7 +126,7 @@ after = ["synthesize"]
 inputs = ["synthesize.findings"]
 max_fix_loops = 2
 name = "reconcile"
-params = { field = "severity", method = "max", hold_spread = 2, output = "findings" }
+params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
 payload = "findings@7"
 threshold = { "fix-loop" = "any(open_severity >= high)" }
 
@@ -210,7 +210,7 @@ when = "labels != doc:tdd and labels != doc:adr and labels != doc:ux-spec"
 
 [[step]]
 after = ["reconcile"]
-inputs = ["author-tdd-security.doc", "author-tdd-security-alt.doc", "author-tdd.doc", "reconcile.findings"]
+inputs = ["issue.latest.doc", "reconcile.findings"]
 name = "accept-vote-tdd"
 on_fail = "fix-loop"
 type = "vote"
@@ -220,7 +220,7 @@ when = "labels contains doc:tdd"
 
 [[step]]
 after = ["reconcile"]
-inputs = ["author-adr.doc", "reconcile.findings"]
+inputs = ["issue.latest.doc", "reconcile.findings"]
 name = "accept-vote-adr"
 on_fail = "fix-loop"
 type = "vote"
@@ -230,7 +230,7 @@ when = "labels contains doc:adr and labels != doc:tdd"
 
 [[step]]
 after = ["reconcile"]
-inputs = ["author-prd.doc", "author-ux-spec.doc", "reconcile.findings"]
+inputs = ["issue.latest.doc", "reconcile.findings"]
 name = "accept-human"
 on_fail = "waiting-human"
 type = "vote"
@@ -243,6 +243,6 @@ action = "doc-record"
 after = ["accept-vote-tdd", "accept-vote-adr", "accept-human"]
 expected_cost = 0.20
 gates = ["citation-check"]
-inputs = ["author-tdd-security.doc", "author-tdd-security-alt.doc", "author-tdd.doc", "author-adr.doc", "author-ux-spec.doc", "author-prd.doc"]
+inputs = ["issue.latest.doc"]
 name = "record"
 params = { output = "doc-record" }

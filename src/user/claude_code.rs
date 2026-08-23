@@ -218,20 +218,20 @@ impl ClaudeCode {
             .with_enabled_plugin("typescript-lsp@claude-plugins-official", true);
 
         let settings_builder = settings_builder
-            .with_env("CLAUDE_CODE_ENABLE_TELEMETRY", "1")
-            .with_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1")
-            .with_env("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", "0") // REASON: Must be 0 for 'with_permission_default_mode('auto')'
             .with_env("ANTHROPIC_DEFAULT_FABLE_MODEL", "claude-fable-5")
             .with_env("ANTHROPIC_DEFAULT_HAIKU_MODEL", "claude-haiku-4-5")
             .with_env("ANTHROPIC_DEFAULT_OPUS_MODEL", "claude-opus-5[1m]")
             .with_env("ANTHROPIC_DEFAULT_SONNET_MODEL", "claude-sonnet-5")
-            // Global git config signs commits via 1Password's op-ssh-sign,
-            // which prompts on every agent commit. These inject
-            // commit.gpgsign=false at command-line precedence for all agent
-            // shell commands; the operator's own terminal still signs.
-            .with_env("GIT_CONFIG_COUNT", "1")
-            .with_env("GIT_CONFIG_KEY_0", "commit.gpgsign")
-            .with_env("GIT_CONFIG_VALUE_0", "false")
+            .with_env("CLAUDE_CODE_ENABLE_TELEMETRY", "1")
+            .with_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1")
+            .with_env("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", "0") // REASON: Must be 0 for 'with_permission_default_mode('auto')'
+            .with_env("GIT_CONFIG_COUNT", "3")
+            .with_env("GIT_CONFIG_KEY_0", "user.signingkey")
+            .with_env("GIT_CONFIG_KEY_1", "gpg.ssh.program")
+            .with_env("GIT_CONFIG_KEY_2", "gpg.format")
+            .with_env("GIT_CONFIG_VALUE_0", "${HOME}/.ssh/agent-signing.pub")
+            .with_env("GIT_CONFIG_VALUE_1", "ssh-keygen")
+            .with_env("GIT_CONFIG_VALUE_2", "ssh")
             .with_env("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", OTEL_LOGS_ENDPOINT_LOKI)
             .with_env("OTEL_EXPORTER_OTLP_LOGS_PROTOCOL", OTEL_OTLP_PROTOCOL)
             .with_env(

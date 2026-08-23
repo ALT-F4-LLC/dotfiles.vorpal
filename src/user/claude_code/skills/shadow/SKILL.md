@@ -1,6 +1,6 @@
 ---
 name: shadow
-description: Observe Claude Code sessions — live, or post-mortem — and find friction across every layer they cross: harness, skills, workflows, loops, agents, hooks, config, the models themselves, and the Docket engine. Strictly read-only — it fixes nothing, anywhere, and investigation may read every project's checkout and all of ~/.claude. Runs from ANY repository — the store is machine-global and filing anchors itself to each owning checkout. Log findings with evidence as they land; once the run ends, file EVERY finding as an issue in its owning Docket project — the intake of the funnel a `tend` loop (or a plan → conduct run) drains — then deliver a severity-ranked review naming what was filed. Invoked bare it sweeps EVERY project under ~/.claude/projects for the past 7 days of sessions — unless THIS session is itself running the plan or conduct skill, in which case it spawns one background shadow agent (Fable) over this very session, pings it at each dispatch boundary because that seat takes no turns of its own, and hands the turn back to the run; pass a session id to observe just that one — a conduct run, any other skill's run, or a finished session worth learning from.
+description: Observe Claude Code sessions — live, or post-mortem — and find friction across every layer they cross: harness, skills, workflows, loops, agents, hooks, config, the models themselves, and the Docket engine. Strictly read-only — it fixes nothing, anywhere, and investigation may read every project's checkout and all of ~/.claude. Runs from ANY repository — the store is machine-global and filing anchors itself to each owning checkout. Log findings with evidence as they land; once the run ends, file EVERY finding as an issue in its owning Docket project — the intake of the funnel a `tend` loop (or a plan → conduct run) drains — then deliver a severity-ranked review naming what was filed. Invoked bare it sweeps EVERY project under ~/.claude/projects for the past 7 days of sessions — unless THIS session is itself running an execution skill — plan, conduct, retro, or any other — in which case it spawns one background shadow agent (Fable) over this very session, pings it at each dispatch boundary because that seat takes no turns of its own, and hands the turn back to the run; pass a session id to observe just that one — a conduct run, any other skill's run, or a finished session worth learning from.
 argument-hint: "[session-id]"
 ---
 
@@ -107,7 +107,8 @@ Three modes. An explicit argument always wins; bare, the session decides:
   from the transcript's own `.cwd` field — the project-directory name
   flattens `/`, `.`, and `_` identically and cannot be decoded back into a
   path.
-- **Bare, with `plan` or `conduct` active in THIS session** — the live
+- **Bare, with an execution skill active in THIS session** (`plan`,
+  `conduct`, `retro`, or any other) — the live
   self-shadow: spawn one background shadow agent over this very session,
   seated `fable` via the `Agent` tool, hand the turn straight back to the
   run, and ping the agent at every dispatch boundary — that seat wakes on
@@ -165,11 +166,11 @@ four evidence lines, and the recurrence count is its severity argument. Then
 §6 runs once, over the aggregate: one filing pass, every finding to its
 owning project, then one review naming what was filed.
 
-### 1b. The live self-shadow (bare, plan or conduct in this session)
+### 1b. The live self-shadow (bare, any execution skill active in this session)
 
-A bare invocation landing in a session that has itself run the `plan` or
-`conduct` skill is not asking for a fleet sweep — the operator wants THIS
-session's run watched while it happens. The conversation seat cannot be the
+A bare invocation landing in a session that has itself run an execution
+skill — `plan`, `conduct`, `retro`, or any other — is not asking for a fleet
+sweep — the operator wants THIS session's run watched while it happens. The conversation seat cannot be the
 watcher: it is the conductor, and a conductor narrating itself is neither
 independent nor quiet. So the move here is a delegation with one continuing
 duty attached: spawn one background shadow agent over this very session, hand
@@ -211,9 +212,9 @@ agent on this skill in single-session mode:
   verify by content before briefing — the transcript at
   `~/.claude/projects/<flattened-cwd>/<id>.jsonl` must contain this
   conversation's own `/shadow` invocation. A wrong id seats the agent on
-  someone else's session. Name the observed skill (`plan` or `conduct`)
-  and the repo from your own cwd — the agent should not re-derive what you
-  already know.
+  someone else's session. Name the observed skill (whichever execution
+  skill is active — `plan`, `conduct`, `retro`, or another) and the repo
+  from your own cwd — the agent should not re-derive what you already know.
 - **Watch rules, and this seat's real cadence.** Read the arc so far once to
   orient — run id, phase, what already landed — then watch from the live
   edge. But the brief must say plainly what this seat is, in these words:

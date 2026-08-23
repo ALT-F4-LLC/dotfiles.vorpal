@@ -84,10 +84,10 @@ short `- ` bullets — one plain fact each, never prose paragraphs, never a
 file list.
 
 **Plain language, self-contained.** A message must make sense to a reader
-with no session context: no issue-tracker IDs (`DKT-12`, `RUN-3`), no
-harness or agent vocabulary (wave, executor, shadow, conductor, agent
-names), no "operator policy" citations. Say what changed and why in ordinary
-words — the tracker knows its IDs; the log should not need them.
+with no session context: no issue-tracker IDs, no harness or agent
+vocabulary (wave, executor, shadow, conductor, agent names), no "operator
+policy" citations. Say what changed and why in ordinary words — the tracker
+knows its IDs; the log should not need them.
 
 ## 5. Commit
 

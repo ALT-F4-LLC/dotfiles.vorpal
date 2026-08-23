@@ -155,18 +155,23 @@ function parseToml(text) {
 // SYNC-END policy-parser
 
 // ---------------------------------------------------------------------------
-// Seat routing. A seat is not a step: there is no attempt chain, no
-// label-keyed [[resolve]] table, and no [security].labels match (a seat carries
-// no issue labels). [escalation].fable_gates gate a step's chain-walk into a
-// fable variant after failures; a seat's variant is its declared standing
-// home, so a fable-max seat resolves to fable-max. What still binds: the
-// [security] node pins — the never-list, and the ceiling as a chain-derived
-// bound: everything reachable FROM [security].ceiling by escalate_to lies
-// beyond it, and a pinned seat standing there is clamped back to the ceiling.
+// Seat routing. A seat is not a step: there is no attempt chain and no
+// label-keyed [[resolve]] table. resolveSeat DOES take an issue-labels list
+// (DOT-596, so wave.js — which seats vote rows off the same per-issue
+// manifest row resolve() reads — can apply [security].labels the way resolve
+// does); this file's own args {voteId, voters, policyText, context, gateKind,
+// cwd} carry no issue, so every call here resolves labels to the default []
+// and only [security].nodes ever fires. [escalation].fable_gates gate a
+// step's chain-walk into a fable variant after failures; a seat's variant is
+// its declared standing home, so a fable-max seat resolves to fable-max.
+// What still binds: the [security] node pins — the never-list, and the
+// ceiling as a chain-derived bound: everything reachable FROM
+// [security].ceiling by escalate_to lies beyond it, and a pinned seat
+// standing there is clamped back to the ceiling.
 // ---------------------------------------------------------------------------
 
 // SYNC-BEGIN seat-contract
-function resolveSeat(seat, policy) {
+function resolveSeat(seat, policy, labels = []) {
     const row = (policy.executors || {})[seat]
     if (!row) {
         throw new Error(
@@ -180,7 +185,10 @@ function resolveSeat(seat, policy) {
     let never = (row.never || []).slice()
 
     const sec = policy.security || {}
-    if ((sec.nodes || []).includes(seat)) {
+    const sensitive =
+        (sec.nodes || []).includes(seat) ||
+        (sec.labels || []).some((l) => labels.includes(l))
+    if (sensitive) {
         never = never.concat(sec.never || [])
         if (sec.ceiling) {
             const beyond = new Set()

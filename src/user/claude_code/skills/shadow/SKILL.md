@@ -1,6 +1,6 @@
 ---
 name: shadow
-description: Observe Claude Code sessions — live, or post-mortem — and find friction across every layer they cross: harness, skills, workflows, loops, agents, hooks, config, the models themselves, and the Docket engine. Strictly read-only — it fixes nothing, anywhere, and investigation may read every project's checkout and all of ~/.claude. Runs from ANY repository — the store is machine-global and filing anchors itself to each owning checkout. Log findings with evidence as they land; once the run ends, file EVERY finding as an issue in its owning Docket project — the intake of the funnel a `tend` loop (or a plan → conduct run) drains — then deliver a severity-ranked review naming what was filed. Invoked bare it sweeps EVERY project under ~/.claude/projects for the past 7 days of sessions — unless THIS session is itself running the plan or conduct skill, in which case it spawns one live background shadow agent (Fable) over this very session and hands the turn back to the run; pass a session id to observe just that one — a conduct run, any other skill's run, or a finished session worth learning from.
+description: Observe Claude Code sessions — live, or post-mortem — and find friction across every layer they cross: harness, skills, workflows, loops, agents, hooks, config, the models themselves, and the Docket engine. Strictly read-only — it fixes nothing, anywhere, and investigation may read every project's checkout and all of ~/.claude. Runs from ANY repository — the store is machine-global and filing anchors itself to each owning checkout. Log findings with evidence as they land; once the run ends, file EVERY finding as an issue in its owning Docket project — the intake of the funnel a `tend` loop (or a plan → conduct run) drains — then deliver a severity-ranked review naming what was filed. Invoked bare it sweeps EVERY project under ~/.claude/projects for the past 7 days of sessions — unless THIS session is itself running the plan or conduct skill, in which case it spawns one background shadow agent (Fable) over this very session, pings it at each dispatch boundary because that seat takes no turns of its own, and hands the turn back to the run; pass a session id to observe just that one — a conduct run, any other skill's run, or a finished session worth learning from.
 argument-hint: "[session-id]"
 ---
 
@@ -109,8 +109,9 @@ Three modes. An explicit argument always wins; bare, the session decides:
   path.
 - **Bare, with `plan` or `conduct` active in THIS session** — the live
   self-shadow: spawn one background shadow agent over this very session,
-  seated `fable` via the `Agent` tool, and hand the turn straight back to
-  the run (§1b).
+  seated `fable` via the `Agent` tool, hand the turn straight back to the
+  run, and ping the agent at every dispatch boundary — that seat wakes on
+  nothing else (§1b).
 - **Bare, anywhere else** — the fleet sweep, and the default: mine EVERY
   project under `~/.claude/projects` for the past 7 days of sessions,
   post-mortem. No candidate list, no which-one question — enumerate and go
@@ -170,10 +171,13 @@ A bare invocation landing in a session that has itself run the `plan` or
 `conduct` skill is not asking for a fleet sweep — the operator wants THIS
 session's run watched while it happens. The conversation seat cannot be the
 watcher: it is the conductor, and a conductor narrating itself is neither
-independent nor quiet. So the whole move here is a delegation: spawn one
-background shadow agent over this very session, then hand the turn straight
-back to the run. Skip §1's questions round — the active run IS the goal,
-and the seat that goes quiet after attaching is the spawned one, not you.
+independent nor quiet. So the move here is a delegation with one continuing
+duty attached: spawn one background shadow agent over this very session, hand
+the turn straight back to the run, and ping that agent at every dispatch
+boundary — it takes no turns of its own, and the pings are the only thing
+separating a live watch from a post-mortem that merely started early. Skip
+§1's questions round — the active run IS the goal, and the seat that goes
+quiet after attaching is the spawned one, not you.
 
 The seat is `fable` — cross-layer observation is exactly what the strongest
 model exists for. Spawn it with the built-in `Agent` tool, the brief as the
@@ -190,7 +194,8 @@ the `Workflow` tool is not the way to start one however tempting its
 `agent()` opts look. `Agent` exposes no effort tier, so this seat runs at
 the session default; that is an accepted limitation, not a reason to reach
 for another tool. The `name` matters: it is what makes the agent
-addressable by `SendMessage` for §5's interrupt routing in both directions.
+addressable by `SendMessage` in both directions — the address your
+dispatch-boundary pings go to, and the return path for §5's interrupts.
 
 The brief stays short because the contract already exists — it seats the
 agent on this skill in single-session mode:
@@ -209,10 +214,21 @@ agent on this skill in single-session mode:
   someone else's session. Name the observed skill (`plan` or `conduct`)
   and the repo from your own cwd — the agent should not re-derive what you
   already know.
-- **Live rules**: read the arc so far once to orient — run id, phase, what
-  already landed — then watch from the live edge. §5's three interrupt
-  conditions route via `SendMessage` to this session, carrying §4's caveat
-  that delivery waits for the conductor's next turn boundary; everything
+- **Watch rules, and this seat's real cadence.** Read the arc so far once to
+  orient — run id, phase, what already landed — then watch from the live
+  edge. But the brief must say plainly what this seat is, in these words:
+  **an `Agent`-spawned background agent does not wake itself.** A `Monitor`
+  it arms keeps collecting — journal results, gate rows, docket events — and
+  delivers NOTHING until something gives the agent a turn, and the only
+  thing that does is an inbound `SendMessage`, which then flushes the whole
+  backlog at once (measured on RUN-44, 2026-08-23: ~200 monitor events over
+  ~100 minutes produced zero turns, and the entire backlog arrived in one
+  batch on the conductor's first message — after the run had already
+  ended). So this agent's turns ARE the dispatch-boundary pings below and
+  nothing else; between them it is accumulating, not watching. §5's three
+  interrupt conditions still route via `SendMessage` to this session, but
+  they land at the next dispatch boundary rather than in real time, and then
+  wait again on §4's turn-boundary caveat at the conductor's end. Everything
   else is a log entry. The shadow's own transcripts are out of scope — a
   shadow does not shadow itself.
 - **The log surface**, named up front because §5's is not available to this
@@ -232,11 +248,30 @@ agent on this skill in single-session mode:
   delivered to NOBODY — the spawner gets a content-free idle ping and the
   review sits unread in the agent's transcript file (§4).
 
+**Then ping it at every dispatch boundary — that obligation is what makes
+this seat live at all, and it is yours, not the agent's.** Having spawned it,
+you owe it one `SendMessage` at each dispatch OPEN and each dispatch CLOSE —
+`SendMessage({to: "shadow-live", message: "dispatch 3 open — STEP-7,
+STEP-8"})`, `"dispatch 3 closed — STEP-7 recorded, STEP-8 gate-failed"` —
+plus one at each operator gate and one when the run ends. A ping is not a
+poll: one line, sent as you pass the boundary anyway, no reply awaited and
+never waited on. Each ping is the agent's only turn — it flushes the queued
+monitor backlog, lets the agent log against it, and lets an interrupt come
+back BEFORE the next wave dispatches, which is exactly where §5's conditions
+1 and 3 have to land (stale bytes about to be dispatched, an `--ack-reap`
+about to be granted on bad information). Drop the pings and the seat is a
+post-mortem with earlier setup — the failure RUN-44 measured. A run whose
+conductor will not carry that obligation should be told so at spawn time,
+in the brief's own words, so the review does not claim a live watch that
+never happened.
+
 Then one line to the operator naming the spawn, and the conversation goes
-back to being a conductor. Do not poll the agent; its completion notifies.
-One boundary: the agent lives inside this session, so a run expected to
-outlive this conversation belongs to a separate `/shadow <session-id>` seat
-instead — say so rather than spawn.
+back to being a conductor. Beyond the boundary pings, do not poll the agent;
+its completion notifies. One boundary: the agent lives inside this session,
+so a run expected to outlive this conversation belongs to a separate
+`/shadow <session-id>` seat instead — say so rather than spawn. That seat is
+also the answer for an operator who wants true real-time interrupts: a
+conversation seat tails on its own cadence and owes nobody a ping.
 
 Everything from "Any seat works" below is written for a
 single attach; in the sweep it applies per observed session, carried out by
@@ -244,8 +279,13 @@ that session's analyst, and in the live self-shadow (§1b) by the spawned
 agent, never by the invoking conversation.
 
 Live and post-mortem are the same job: live you tail transcripts as they grow
-and can flag in real time, post-mortem they are complete and §5's interrupts
-have no one to interrupt. Orientation, layers, log, review are identical.
+and can still flag while the run can change, post-mortem they are complete and
+§5's interrupts have no one to interrupt. How live "live" is depends entirely
+on whether your seat takes turns of its own: a conversation seat (`/shadow
+<session-id>`), and a sweep analyst while it is still working its session,
+tail on their own cadence and flag in real time; the `Agent`-spawned
+self-shadow of §1b takes none — it wakes only when its conductor pings it, so
+its live edge is dispatch-paced at best and post-mortem if the pings stop. Orientation, layers, log, review are identical.
 
 **Any seat works — anchor the verbs, not yourself.** You may be launched in
 any repository, the observed one or not, and the job is identical: the
@@ -536,7 +576,15 @@ Measured limits of these surfaces (RUN-2's and RUN-5's shadows):
   that keeps probing inside one turn blocks its own delivery, and "no report
   landed" from such a session indicts the session, not the delegate
   (measured 2026-08-11: 94s queued, delivered the same second the turn
-  ended).
+  ended). **The queue runs INBOUND too, and that is the sharper trap:** a
+  background agent takes a turn only when a message arrives for it, so its
+  own `Monitor` events — and any other notification it armed — pile up
+  undelivered until one does, then arrive as a single batch. RUN-44's live
+  self-shadow collected ~200 events across ~100 minutes without a single
+  turn, and processed all of them the moment its spawner's first
+  `SendMessage` landed, by which time the run was over (2026-08-23). A
+  background watcher nobody pings is a post-mortem watcher, whatever its
+  monitors say (§1b).
 - **An artifact listing's `sha256`/`bytes` describe a short summary BODY, not
   the payload**: a supersession chain (one re-emit per held-cluster approval)
   shares one hash while `payload_bytes` differ — it reads as duplicates and
@@ -604,6 +652,17 @@ Interrupt the operator mid-run for exactly three things:
 2. A wedged session — a guard bricking every call.
 3. An authorization about to be granted on bad information — an `--ack-reap`
    while the old writer still shows signs of life.
+
+All three assume a seat that still has turns of its own while the run is
+moving, and only some seats do. A conversation seat always does, and so does
+a sweep analyst for as long as it is still working its session (§1a). The
+`Agent`-spawned self-shadow (§1b) does NOT: it goes quiet by design, wakes
+only on its conductor's dispatch-boundary pings, and so raises these at
+dispatch granularity — in time for 1 and 3, often too late for 2. With no
+pings arriving it cannot raise them at all; from that seat they are
+unreachable, not merely slow. Do not narrate that gap mid-run — log the
+condition as a finding and say in the review which of the three this seat
+could actually have caught.
 
 Everything else is a log entry. A shadow that narrates is noise, and noise is
 friction — do not become your own finding.

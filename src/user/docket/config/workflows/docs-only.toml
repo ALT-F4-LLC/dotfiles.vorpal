@@ -34,7 +34,7 @@ holds_tree = false
 inputs = ["implement.change-summary", "issue.diff"]
 name = "review"
 packet = ["contracts/{executor}.md"]
-payload = "findings@6"
+payload = "findings@7"
 threshold = { "review-tribunal" = "any(severity >= high)" }
 
 [[step]]

@@ -82,6 +82,22 @@ mid-execution, their worktree paths if known, and that their outcome is
 unknown until a later session reconciles (`docket step show STEP-N`,
 `git worktree list`).
 
+## Winding down a live shadow
+
+In BOTH modes, once the run is parked and the dispatch is settled (graceful)
+or abandoned (hard): if this session spawned a live shadow over itself via
+the `shadow` skill — the background agent it names `shadow-live`,
+addressable by that name with `SendMessage` — tell it the run is pausing.
+One message: stop observing now and finish your work — run the shadow
+skill's own close-out (file every finding as an issue in its owning project,
+deliver the severity-ranked review) — because a shadow agent lives inside
+the session that spawned it and cannot carry over; the resuming session will
+spawn a new one. Do not poll for the review afterwards — its reply lands at
+a later turn boundary, and the resume snapshot does not wait on it.
+
+A pause with no live shadow skips this section; do not spawn one just to
+stop it.
+
 ## Building the resume snapshot
 
 The snapshot exists because a huge amount of what a conduct session knows
@@ -174,7 +190,9 @@ absolute checkout path and branch to
 work from, why it was paused, the halt mode used, a one-paragraph state
 summary (where the run stands, what is unfinished), `docket run resume RUN-N
 --reason '<why>'` as the first action, then the session-only state above in
-full, then a pointer to `conduct`'s own SKILL.md for everything
+full — including whether a live shadow was watching and was told to wind
+down, so the resuming session knows to seat a fresh one via `/shadow` —
+then a pointer to `conduct`'s own SKILL.md for everything
 engine-recoverable.
 
 ## Resuming

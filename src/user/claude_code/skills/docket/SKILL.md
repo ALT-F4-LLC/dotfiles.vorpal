@@ -201,16 +201,48 @@ exactly as it did when the flag was a boolean.
 | `--json=false`, `--json=0` | human | retained from the boolean-flag era |
 | anything else | `VALIDATION_ERROR` (exit 3) | e.g. `--json=v3` |
 
-**v1 is frozen, with one recorded amendment.** New response data appears under
-v2 only, which is what makes `--json` safe for existing scripts.
+**v1 is frozen, with the recorded amendments below.** New response data appears
+under v2 only, which is what makes `--json` safe for existing scripts. Every
+amendment is additive — no key has ever changed meaning or disappeared — so a
+script selecting a key it already read keeps reading exactly that.
 
-The amendment is DKT-55: an issue's `scope` reaches the **v1** payload of
-`issue show` and `issue list` **when the issue declares one, and only then**.
-An issue with no declared scope emits no `scope` key and stays byte-identical
-to the pre-scope shape, so a repo that never passed `--scope` sees a v1 that
-has not moved; a declared-but-empty scope emits `[]`. The amendment was made
-because the declaration is the fact an operator checks first, and it was
-invisible on the surface everyone reads. Nothing else amends v1.
+| Amendment | Payload | Shape |
+|---|---|---|
+| DKT-55 | `issue show`, `issue list` | `scope` appears **when the issue declares one, and only then** — no declared scope emits no key and stays byte-identical to the pre-scope shape; a declared-but-empty scope emits `[]` |
+| DKT-245 | `issue show`, `issue list` | `resolution` appears **when a routing has set one**, so an abandoned issue stops being indistinguishable from a finished one |
+| DKT-404 | `issue show` | `run_disposition` appears **when a run abandoned its work on the issue** |
+| DKT-452 | every issue payload | `issue` mirrors `id`, **unconditionally** — see below |
+
+### Primary-key naming (`id` vs the noun)
+
+Every verb keys its primary entity by the entity's **noun**: `run status` keys
+`run`, `step show` keys `step`, `dispatch open` keys `dispatch`, `issue claim` /
+`issue release` / `issue heartbeat` key `issue`. The issue READ verbs were the
+exception — they keyed `id` and nothing else — so a caller that had just parsed
+a run or a step reached for `.data.issue` on `issue show`, got `null`, and had
+to dump the key set to recover (DKT-452).
+
+Both keys now carry the id, on **v1 and v2 alike**, wherever an issue is
+serialized — `issue show` (including its nested `sub_issues`), `issue list`
+rows, and the issue returned by `issue create` / `edit` / `close` / `reopen` /
+`move`:
+
+```console
+$ docket issue show DKT-1 --json | jq -r '.data.id, .data.issue'
+DKT-1
+DKT-1
+$ docket issue list --json | jq -c '.data.issues[] | {id, issue}'
+{"id":"DKT-1","issue":"DKT-1"}
+```
+
+`id` is the older spelling and is not deprecated; `issue` is the one that
+matches every other verb. Prefer whichever your surrounding code already uses —
+they cannot disagree, since both are written from the same value.
+
+This is the one amendment that is NOT conditional, so v1 issue payloads are no
+longer byte-identical to their pre-DKT-452 bytes. That is deliberate: a
+conditional alias would be absent in precisely the case the alias exists to
+serve, and an *added* key cannot break a reader that selects `.data.id`.
 
 Under **`--json=v2`**, list commands return a uniform envelope instead of their
 per-command key (`issues`, `docs`, `proposals`, `entries`):
@@ -860,7 +892,7 @@ legitimately `claimed` at `waiting-human`.
 | `max_attempts` | int ≥ 1 | per-instance retry budget |
 | `max_fix_loops` | int ≥ 0 | loop-entry budget per issue |
 | `expected_cost` | number ≥ 0, default 0 | the step's contribution to the run's budget floor, accrued **per claim**. Per expanded sibling on a fanout — four siblings accrue four times, no proration |
-| `when` | predicate over `kind` / `labels` | step is skipped when false |
+| `when` | predicate over `kind` / `labels` — `<kind\|labels> <==\|!=\|contains> <value>` or `labels contains-any (a, b, c)` clauses, joined by `and` throughout or `or` throughout | step is skipped when false. `or` needs one clause to hold, `and` needs all; mixing the two connectives in one predicate is rejected at register time (there are no parentheses, so `a and b or c` has no defined reading). `contains-any` holds when the list intersects the issue's labels — the step-level `labels_any` — so `kind == doc:tdd and labels contains-any (security-change, security)` says "this kind AND any of these labels" without mixing connectives |
 | `metadata` | opaque table | recorded and delivered verbatim |
 | `packet` | list of paths, relative to `.docket/config/` | files inlined into the step's rendered work packet, **in declared order**. Each must be pinned by the run (they are, automatically, if they live under `.docket/config/`); an entry the run did not pin is refused **at activation**. An entry may carry the `{executor}` token, substituted with that sibling's executor hint — which is how one `fanout` step gives each sibling a different file. Docket reads their bytes and never interprets them |
 

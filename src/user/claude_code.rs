@@ -8,6 +8,18 @@ const OTEL_LOGS_ENDPOINT_LOKI: &str = "https://loki.bulbasaur.altf4.domains/otlp
 const OTEL_METRICS_ENDPOINT_MIMIR: &str = "https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics";
 const OTEL_OTLP_PROTOCOL: &str = "http/protobuf";
 
+// Where the allowed-signers roster installs, and the same path as git itself
+// has to be told about it. It lives under git's own config directory rather
+// than ~/.claude because git is what reads it, and the operator's own shell
+// must be able to point `gpg.ssh.allowedSignersFile` at the same file.
+//
+// The two spellings are NOT interchangeable: activation expands `${HOME}`
+// when it makes the symlink, while git expands only a leading `~/` in a
+// path-valued config and would take `${HOME}` literally -- the same trap that
+// broke user.signingkey in 51185c9.
+const GIT_ALLOWED_SIGNERS_INSTALL_PATH: &str = "${HOME}/.config/git/allowed_signers";
+const GIT_ALLOWED_SIGNERS_CONFIG_PATH: &str = "~/.config/git/allowed_signers";
+
 const SENSITIVE_PATHS: &[&str] = &[
     "~/.claude.json",
     "~/.doppler/**",
@@ -225,13 +237,19 @@ impl ClaudeCode {
             .with_env("CLAUDE_CODE_ENABLE_TELEMETRY", "1")
             .with_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1")
             .with_env("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", "0") // REASON: Must be 0 for 'with_permission_default_mode('auto')'
-            .with_env("GIT_CONFIG_COUNT", "3")
+            // KEY_3 is what makes the signatures KEY_0 produces auditable:
+            // without an allowed-signers file git refuses to verify at all,
+            // renders %G? as N on every agent-signed commit, and prints an
+            // error while doing it -- so "signed" was unfalsifiable (DOT-563).
+            .with_env("GIT_CONFIG_COUNT", "4")
             .with_env("GIT_CONFIG_KEY_0", "user.signingkey")
             .with_env("GIT_CONFIG_KEY_1", "gpg.ssh.program")
             .with_env("GIT_CONFIG_KEY_2", "gpg.format")
+            .with_env("GIT_CONFIG_KEY_3", "gpg.ssh.allowedSignersFile")
             .with_env("GIT_CONFIG_VALUE_0", "~/.ssh/agent-signing.pub")
             .with_env("GIT_CONFIG_VALUE_1", "ssh-keygen")
             .with_env("GIT_CONFIG_VALUE_2", "ssh")
+            .with_env("GIT_CONFIG_VALUE_3", GIT_ALLOWED_SIGNERS_CONFIG_PATH)
             .with_env("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", OTEL_LOGS_ENDPOINT_LOKI)
             .with_env("OTEL_EXPORTER_OTLP_LOGS_PROTOCOL", OTEL_OTLP_PROTOCOL)
             .with_env(
@@ -592,6 +610,17 @@ impl ClaudeCode {
         .build(context)
         .await?;
 
+        // Trust roster for `gpg.ssh.allowedSignersFile` above. Declared here,
+        // beside the settings that inject the signing key, because the same
+        // module owns both halves of the signing story.
+        let allowed_signers = FileCreate::new(
+            &component_name(&self.name, "allowed-signers"),
+            self.systems.clone(),
+            include_str!("claude_code_allowed_signers"),
+        )
+        .build(context)
+        .await?;
+
         let statusline = FileCreate::new(
             &component_name(&self.name, "statusline"),
             self.systems,
@@ -603,6 +632,13 @@ impl ClaudeCode {
 
         let symlinks = vec![
             (get_env_key(&agents), claude_home("agents")),
+            (
+                FileCreate::output_file_path(
+                    &get_env_key(&allowed_signers),
+                    &component_name(&self.name, "allowed-signers"),
+                ),
+                GIT_ALLOWED_SIGNERS_INSTALL_PATH.to_string(),
+            ),
             (get_env_key(&hooks), claude_home("hooks")),
             (
                 FileCreate::output_file_path(
@@ -631,7 +667,15 @@ impl ClaudeCode {
         ];
 
         let artifacts = vec![
-            agents, hooks, memory, scripts, settings, skills, statusline, workflows,
+            agents,
+            allowed_signers,
+            hooks,
+            memory,
+            scripts,
+            settings,
+            skills,
+            statusline,
+            workflows,
         ];
 
         Ok((artifacts, symlinks))
@@ -642,10 +686,36 @@ impl ClaudeCode {
 mod tests {
     use super::{
         claude_home, component_name, sandbox_filesystem_deny_read_paths,
-        sorted_permission_patterns, SENSITIVE_PATHS, SENSITIVE_PATHS_DENY_EDIT_ONLY,
+        sorted_permission_patterns, GIT_ALLOWED_SIGNERS_CONFIG_PATH,
+        GIT_ALLOWED_SIGNERS_INSTALL_PATH, SENSITIVE_PATHS, SENSITIVE_PATHS_DENY_EDIT_ONLY,
         SENSITIVE_PATHS_DENY_READ_ONLY,
     };
     use crate::file::FileCreate;
+
+    #[test]
+    fn allowed_signers_install_and_config_paths_name_the_same_file() {
+        // Activation expands `${HOME}`; git expands only a leading `~/`. The
+        // spellings must differ and still resolve to one file, or the symlink
+        // lands somewhere git never looks and %G? goes back to N.
+        assert_eq!(
+            GIT_ALLOWED_SIGNERS_INSTALL_PATH.replace("${HOME}", "~"),
+            GIT_ALLOWED_SIGNERS_CONFIG_PATH
+        );
+        assert!(GIT_ALLOWED_SIGNERS_CONFIG_PATH.starts_with("~/"));
+    }
+
+    #[test]
+    fn allowed_signers_roster_carries_the_agent_signing_key() {
+        let roster = include_str!("claude_code_allowed_signers");
+
+        // The key ~/.ssh/agent-signing.pub holds, scoped to git's namespace.
+        // Drop this line and every agent-signed commit verifies as U instead
+        // of G, silently.
+        assert!(roster.contains(
+            "namespaces=\"git\" ssh-ed25519 \
+             AAAAC3NzaC1lZDI1NTE5AAAAIDAUWPpoXS64HKvi6LIuEdhWkmAaMBB7XNB8QGmfYejg"
+        ));
+    }
 
     #[test]
     fn component_artifacts_are_namespaced_by_user_and_component() {

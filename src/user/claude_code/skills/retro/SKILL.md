@@ -35,18 +35,20 @@ findings; you compose §3's proposals and hold the approval conversation. The
 verbs, for their briefs:
 
 ```bash
-docket run report RUN-N --json           # per run; read-only, never advances a run
-docket events list --run RUN-N --json    # the transition trail
-docket events list --json --limit 500    # this project's feed; trust grants live here
-docket events list --json --all-projects # every project sharing the store
-docket step artifacts STEP-N --json      # one step's artifact index
-docket step artifact <id> --json         # one artifact's body; the report indexes only
+docket run report RUN-N --json                        # per run; read-only, never advances a run
+docket events list --run RUN-N --json --all-projects  # the transition trail
+docket events list --json --limit 500 --all-projects  # recent feed; trust grants live here
+docket events list --json --all-projects              # every project sharing the store
+docket step artifacts STEP-N --json                   # one step's artifact index
+docket step artifact <id> --json                      # one artifact's body; the report indexes only
 ```
 
 Collect every run since the last retro before concluding anything — one run is
-an anecdote. `events list` is project-scoped and the store is machine-global,
-so other repos' runs share the ledger; `--all-projects` is for a store-wide
-audit. **Every docket verb opens the store read-write and migrates forward**,
+an anecdote. The docket events store is machine-global, but `events list` is
+cwd-scoped by default: a run's events may have been recorded from a different
+project's working directory, so a cwd-scoped query — `--run RUN-N` included —
+can return `ok:true, total 0` for a run that genuinely exists. Always pass
+`--all-projects`, as every verb above now does. **Every docket verb opens the store read-write and migrates forward**,
 so all of these run sandboxed only where the store path is itself writable
 under the sandbox's policy — check the store path against the write allowlist
 rather than assuming an unsandboxed shell is needed. Where it is not writable,
@@ -61,9 +63,9 @@ rather than assuming an unsandboxed shell is needed. Where it is not writable,
 | Dedup rate (D3) | duplicate findings across a fanout's artifacts — the report is an index and carries no bodies, so read them with `step artifacts` then `step artifact` | under 10% at width ≤ 4 across 5 runs → propose exact-locus dedup instead of `synthesize` |
 | Recurring shapes (D5) | the same topology planned ≥ 3 times | migrate it into a workflow template — never leave the planner to re-improvise |
 | Gate health | `gates` pass/fail/**unmatched**, `gate_trail` (its `output` rides non-pass rows only, last 2000 bytes) | any `unmatched` is a missing trust entry, not a failing check |
-| Intervention profile | `run-paused`, `step-held`, and `step-routed` with destination `waiting-human` — that string is a run/step STATUS, not an event kind, so filtering events on it returns nothing; `lease-reaped` behind the holds | designed gate vs breach vs held — three different fixes; a hold behind a `lease-reaped` carrying `data.forced` was a relay declaring a dead spawn, not a slow step |
+| Intervention profile | `run-paused`, `step-held`, and `step-routed` with destination `waiting-human` — that string is a run/step STATUS, not an event kind, so filtering events on it returns nothing; `lease-reaped` behind the holds — query with `--all-projects`, since the run being investigated may have been driven from another project's cwd | designed gate vs breach vs held — three different fixes; a hold behind a `lease-reaped` carrying `data.forced` was a relay declaring a dead spawn, not a slow step |
 | Attempt pressure | `attempts`, loop ordinals | a step repeatedly at `max_attempts` wants a smaller charter, not a bigger budget |
-| Trust drift (D14) | `trust-added`/`trust-removed` (store-level; visible in either scoping) | **an entry the operator does not recognize is a finding, and you raise it first** |
+| Trust drift (D14) | `trust-added`/`trust-removed` (store-level; query with `--all-projects` — visible either way, but only that flag proves you saw all of them) | **an entry the operator does not recognize is a finding, and you raise it first** |
 | Config churn (D15) | your own proposals per run over time | churn trending up means bootstrap mined the repo wrong; fix the source, not each symptom |
 | Routing drift | the four metadata keys (below), read per step with `docket step show` / `step context` — `run report`'s `metadata` is a key → distinct-values rollup that never pairs requested with resolved on one step, so it shows aggregate skew only | requested ≠ resolved across runs means policy asks for a model it does not get |
 | Vote calibration | `vote_rule` outcomes vs the threshold | a rule that never fails, or always fails, is a threshold not doing work |
@@ -128,7 +130,8 @@ will not appear here. Read attempt counts alongside.
 no longer TTL-only: `step heartbeat` extends a live claim, `step reap STEP-N
 --reason R` is the token-free channel for a relay that watched its executor
 die, and `[limits]` classes take `{max, lease_ttl, max_step_duration}`. Read
-the reaps apart. An expiry — or a step completing against a lease it no longer
+the reaps apart (query events with `--all-projects`, since the reaped run may
+have been driven from another project's cwd). An expiry — or a step completing against a lease it no longer
 holds — means `lease.ttl.<class>` is sized below real step duration; propose
 the observed worst case plus headroom. **Name the class the way the step
 does**: a class is the step's `class` field and it defaults to the EXECUTOR

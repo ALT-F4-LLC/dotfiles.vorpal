@@ -51,8 +51,8 @@ Four traps, each one confirmed by running the verb rather than reading it:
   array, `issue.diff` an object, and `doc`/`gap` carry no structured payload at
   all — `data` is JSON `null`. Type-check before subscripting.
 
-One amendment post-dates that verification: DKT-452 added an unconditional
-`issue` key mirroring `id` on every serialized issue — `issue show` (nested
+One amendment post-dates that verification: an unconditional `issue` key was
+added, mirroring `id` on every serialized issue — `issue show` (nested
 `sub_issues` included), `issue list` rows, and the issue returned by
 `issue create`/`edit`/`close`/`reopen`/`move` — on v1 and v2 alike. The shapes
 above still hold (`issue list` is still `{issues, total}` under v1); the rows
@@ -121,7 +121,7 @@ that never mentions `--scope` leaves an earlier declaration alone.
 
 **Reading it back:** `issue show` and `issue list` carry `scope` **when the
 issue declares one**, under plain `--json` as well as `--json=v2` — a recorded
-amendment to the v1 freeze (DKT-55, see above). The three states are
+amendment to the v1 freeze (see above). The three states are
 distinguishable on the wire: no key at all is undeclared, `[]` is
 declared-to-touch-nothing, and a populated array is the declaration. A
 declared scope also survives `export`/`import` intact, `NULL` included.
@@ -130,7 +130,7 @@ declared scope also survives `export`/`import` intact, `NULL` included.
 
 No local flags. Watch-eligible.
 
-**It says when a run gave up on the issue** (DKT-404). Abandoning an issue
+**It says when a run gave up on the issue.** Abandoning an issue
 deliberately leaves its tracker status alone, so a `todo` or `review` an
 abandon froze is byte-identical to work nobody has started — RUN-14's four
 abandoned issues sat at `todo` for days, and a later session read two
@@ -165,12 +165,12 @@ which is where a history belongs.
 | `--sort` | — | string | `""` | `field:direction`, e.g. `priority:asc` |
 | `--limit` | — | int | `50` | |
 | `--all` | — | bool | `false` | include `done` issues |
-| `--project` | — | string | `""` | list ANOTHER project's issues, by prefix, name, identity path, or row id (DKT-72, DKT-453) |
-| `--run` | — | string | `""` | list one RUN's roster — the issues bound to `RUN-N` (DKT-405) |
+| `--project` | — | string | `""` | list ANOTHER project's issues, by prefix, name, identity path, or row id |
+| `--run` | — | string | `""` | list one RUN's roster — the issues bound to `RUN-N` |
 
 Watch-eligible.
 
-`--run RUN-N` is the run roster as a LISTING (DKT-405). Before it, the roster
+`--run RUN-N` is the run roster as a LISTING. Before it, the roster
 existed only inside `run status --json` — a document to parse rather than a
 listing to read — and `issue list --run` answered `unknown flag`. It shows the
 whole roster **including `done` issues**: a roster is a closed set, and the
@@ -186,7 +186,7 @@ Listing is otherwise cwd-scoped: the project the working directory resolves to.
 reading another project's issues means changing directory into it, and is
 impossible for a project whose checkout is not on this machine. Ids render
 under the NAMED project's prefix, not the caller's, for the same reason
-`events list --all-projects` does (DKT-67): the prefix is the only thing on the
+`events list --all-projects` does: the prefix is the only thing on the
 row that says whose issue it is.
 
 **The target resolves four ways** — exact `identity` path, numeric row `id`,
@@ -194,7 +194,7 @@ row that says whose issue it is.
 `docket project list` prints, through the same resolver `issue move --project`
 and `project delete` use. The PREFIX is the key that matters most: it is the
 only project identifier an issue id carries (`FLX-141`), so it is the one a
-reader has actually seen, and until DKT-453 it was the one key this flag
+reader has actually seen, and until recently it was the one key this flag
 refused — a conductor guessed it, got `NOT_FOUND`, and fell back to listing
 every project's issues. An ambiguous name or prefix is a `VALIDATION_ERROR`
 naming the candidates (id, name, identity) rather than a guess.
@@ -248,7 +248,7 @@ a **project migration** (`<id>` plus `--project`, no status arg).
 | Flag | Short | Type | Default | Notes |
 |---|---|---|---|---|
 | `--if-version` | — | int | `0` | apply only at this version; `CONFLICT` otherwise (enforced even on a no-op move). Status moves only — with `--project` it is a `VALIDATION_ERROR` |
-| `--note` | — | string | `""` | why the issue moved; recorded as an issue **comment** in the **same transaction** as the move, so a refused move records no comment (DKT-480). Recorded even on a no-op move. Status moves only — with `--project` it is a `VALIDATION_ERROR` |
+| `--note` | — | string | `""` | why the issue moved; recorded as an issue **comment** in the **same transaction** as the move, so a refused move records no comment. Recorded even on a no-op move. Status moves only — with `--project` it is a `VALIDATION_ERROR` |
 | `--project` | — | string | `""` | migrate the issue **and its whole sub-issue tree** to another project in the shared store |
 
 **Migration (`--project`)** re-homes work that landed in the wrong project —
@@ -256,7 +256,7 @@ most commonly a gap recorded by `step complete --gap-file`, which lands in the
 run's own project unconditionally. The target resolves in order: exact
 `identity`, then numeric `id`, then unique `name`, then unique `prefix` (the
 name/prefix matches are case-insensitive) — the same resolver `issue list
---project` and `project delete` use (DKT-453); an ambiguous name or prefix is a
+--project` and `project delete` use; an ambiguous name or prefix is a
 `VALIDATION_ERROR` naming the candidates. Labels re-map **by
 name** into the target project (created there when missing, color preserved);
 comments, relations, and activity ride along untouched — ids are store-wide,
@@ -283,7 +283,7 @@ Only transitions if currently `done`, sets status to `backlog`.
 | Flag | Short | Type | Default | Notes |
 |---|---|---|---|---|
 | `--force` | `-f` | bool | `false` | cascade-delete sub-issues; mutually exclusive with `--orphan` |
-| `--yes` | `-y` | bool | `false` | alias for `--force` (DKT-72) |
+| `--yes` | `-y` | bool | `false` | alias for `--force` |
 | `--orphan` | — | bool | `false` | promote sub-issues to root; mutually exclusive with `--force` |
 
 `--yes` is an ALIAS, not a third behavior: the confirmation it answers is a
@@ -367,7 +367,7 @@ from a genuine new dependency level ("Phase N (parallel, after Phase N-1):").
 | `--priority` | `-p` | stringSlice | `nil` | repeatable |
 | `--label` | `-l` | stringSlice | `nil` | repeatable |
 | `--type` | `-T` | stringSlice | `nil` | repeatable |
-| `--limit` | — | int | `10` | issue mode: always applies, default 10. **Step mode (`--run`): unlimited unless `--limit` is explicitly passed** — even an explicit `--limit 0` still means unlimited (`0` is the engine's no-limit sentinel); only an explicit `--limit N` with `N > 0` truncates (DKT-564) |
+| `--limit` | — | int | `10` | issue mode: always applies, default 10. **Step mode (`--run`): unlimited unless `--limit` is explicitly passed** — even an explicit `--limit 0` still means unlimited (`0` is the engine's no-limit sentinel); only an explicit `--limit N` with `N > 0` truncates |
 | `--run` | — | string | `""` | switches to STEP mode: lists a run's offer (ready steps + staged closure) |
 
 Watch-eligible. Issue mode's `.data.issues` is always an array — `[]`, never
@@ -378,7 +378,7 @@ Watch-eligible. Issue mode's `.data.issues` is always an array — `[]`, never
 below: the claimable steps **plus their staged dependency closure** — rows
 carried ahead of their own readiness (`status: staged`), leveled by `stage`,
 so a dispatcher sees whole dependency chains rather than one frontier at a
-time. **Step mode's `--limit` default does not apply** (DKT-564): omit the
+time. **Step mode's `--limit` default does not apply**: omit the
 flag and the offer is unbounded — the registered default of `10` is
 issue-mode's alone, and the v2 envelope's `truncated` reads `false` whenever
 no `--limit` was actually typed. The offer **rations class headroom**: a class
@@ -439,8 +439,8 @@ The `next row` shape (engine-spec §11.4):
 | `proposal` | `DKT-VN` of the proposal this vote step opened; **absent** until it is opened |
 | `class` | opaque concurrency-accounting key |
 | `attempt` | **claims made against this step, ever** — a 0-based spent-count, incremented at claim time ONLY. Nothing else moves it: not a reap, not `step fail`, not `step resolve --as retry` (retry refreshes the budget base; the counter is never reset). A `next` row necessarily samples it BEFORE the claim it invites, so a fresh step reads `0` and a step with one dead claim reads `1`; the packet/`step show` after that claim reads one higher. It counts claims, NOT failures — a reaped lease spends one with nothing failing. An escalation policy wants `failed_attempts` below, not this |
-| `failed_attempts` | how many of those claims ended in an explicit `step fail` — the holder measured its work and recorded the failure (DKT-490). **Omitted when 0** |
-| `reaped_claims` | how many were reaped **without** a failure — lease expiry, `max_step_duration`, forced `step reap`: the holder went silent, nothing was measured (DKT-490). **Omitted when 0.** `failed_attempts + reaped_claims ≤ attempt`; the remainder is live claims, recorded completions, and pre-v23 history (the migration back-fills nothing) |
+| `failed_attempts` | how many of those claims ended in an explicit `step fail` — the holder measured its work and recorded the failure. **Omitted when 0** |
+| `reaped_claims` | how many were reaped **without** a failure — lease expiry, `max_step_duration`, forced `step reap`: the holder went silent, nothing was measured. **Omitted when 0.** `failed_attempts + reaped_claims ≤ attempt`; the remainder is live claims, recorded completions, and pre-v23 history (the migration back-fills nothing) |
 | `expected_cost` | declared cost; accrues to the run's budget floor when this step is claimed |
 | `lease_ttl_s` | lease TTL in **seconds** |
 | `stage` | start-order constraint **within this offer**: do not start a row until every lower-stage row in the set has completed; rows sharing a stage run concurrently. `0` (omitted) means unstaged. NOT a priority — for `ready` rows it is a hint, for `staged` rows `claim` itself enforces the predicate |
@@ -622,7 +622,7 @@ run already started — the same pinning property a workflow version has.
 `docket run report` prints the effective cap and where it came from, so "why
 didn't it stop?" is answered by a read verb.
 
-**A breached run is un-wedged with `docket run budget RUN-N --set N`** (DKT-29).
+**A breached run is un-wedged with `docket run budget RUN-N --set N`.**
 `run resume` alone clears nothing — the cap has not moved, so the next claim
 breaches again — which is why raising the cap and resuming are two commands:
 
@@ -679,17 +679,17 @@ zeros, `abandoned` reports the trail up to abandonment.
 | `run` | id, status, reason, request, wall clock (activation → now, or → the terminal transition) |
 | `budget` | effective `cap` and its `cap_source` (`run` \| `config` \| `unlimited`), the `floor`, `reported` per unit, the `budget_unit` the cap counts, `spend` = max(reported, floor), `burn_rate` (floor per wall-clock hour), and `breach_reason` when a budget paused the run |
 | `steps` | count by **effective** status, plus per-step `attempts`, each row carrying its `issue`, its `routing` (how the step ended, with its reason) and — for a vote step — `vote` (its proposal and how it tallied) |
-| `issues` | the run's **issue-level terminal rulings** (DKT-403): per abandoned issue, `{issue, disposition, by, reason}` — the operator's recorded rationale, verbatim. Rendered as a *How issues ended* section |
+| `issues` | the run's **issue-level terminal rulings**: per abandoned issue, `{issue, disposition, by, reason}` — the operator's recorded rationale, verbatim. Rendered as a *How issues ended* section |
 | `gates` | per-gate pass/fail/unmatched/**skipped** counts, a **stub** count, and the per-step trail |
 | `actions` | the same rollup over action results, `builtin` included |
 | `artifacts` | the **index**: id, kind, producer instance, producer `executor` and `issue`, sha256, bytes — never the bodies |
 | `metadata` | step `metadata` keys → distinct values with counts, verbatim and uninterpreted — over the **merged** bag, so both what a definition declared and what a worker reported via `step complete --metadata` are counted |
 | `actors` | per-actor event counts (`next` / `gate` / `threshold` / `human`) — the attribution rollup described under `docket events` below, computed over the events that remain |
 | `vote_metadata` | the same key → distinct-value rollup over vote seats' `--metadata` bags |
-| `vote_usage` | per-unit sums of vote seats' `--usage` reports (DKT-95), beside the step ledger's `reported` — never merged with it |
-| `vote_usage_coverage` | `{casts, reported}` — how many seat-casts reported spend at all (DKT-257). **Never omitted**, so "panels ran and said nothing" is distinguishable from "no panels ran" |
+| `vote_usage` | per-unit sums of vote seats' `--usage` reports, beside the step ledger's `reported` — never merged with it |
+| `vote_usage_coverage` | `{casts, reported}` — how many seat-casts reported spend at all. **Never omitted**, so "panels ran and said nothing" is distinguishable from "no panels ran" |
 
-**A status alone does not say what happened** (DKT-258), which is why every
+**A status alone does not say what happened**, which is why every
 step row carries its `routing` and the human report prints a *How steps ended*
 section. One word covers outcomes that need opposite responses:
 
@@ -704,7 +704,7 @@ never measured`, where before it wrote only the status and left a cascade-
 terminated step byte-identical to a real failure.
 
 **A park's routing text is a question, and the report now says when it was
-answered** (DKT-403). `docket run abandon --issue` terminalizes an issue's
+answered.** `docket run abandon --issue` terminalizes an issue's
 remaining steps **without touching `routing`**, so a step parked with "loop 4
 would exceed `max_fix_loops` = 3; `docket step resolve --as fix-round`
 authorizes one more round" went `failed-routed` still carrying that question,
@@ -723,7 +723,7 @@ section of the report read. Two things close it:
 Only abandonment appears: an issue that **completed** leaves no event and needs
 none — its steps are `done` and the step sections say so.
 
-**Step lines name their issue on a multi-issue run (DKT-405).** Instance
+**Step lines name their issue on a multi-issue run.** Instance
 labels are unique within an issue and repeat across them, so the 4-issue
 RUN-32 printed `"implement@0": 2` twice under *Attempts* and `"reconcile@0":
 done — "fix-loop"` three times under *How steps ended*, with nothing to tell
@@ -731,7 +731,7 @@ the rows apart. Where the report's attempt rows cover two or more distinct
 issues, every step line is labelled `"HRN-300 implement@0":` instead. A
 single-issue run is unchanged: the id would be the same constant on every line
 and disambiguates nothing. `--json` is unchanged either way — every attempt row
-has carried `issue` since DKT-403.
+has always carried `issue`.
 
 A vote step's `attempts` is permanently `0` — it is never claimed — so the count
 that tells every other row apart from one that did nothing says nothing here.
@@ -877,7 +877,7 @@ without committing to it.
 
 **The gate preflight.** The trust report answers "will this command run" for a
 *harvested* command. Activation asks the same question of every gate the bound
-workflows **declare** (DKT-255) and warns with the list of gates that resolve to
+workflows **declare** and warns with the list of gates that resolve to
 no trust entry here, naming the workflows that declared each one. It prints
 **nothing** when every gate resolves — an activation already prints four blocks,
 and a fifth saying "all 6 gates are fine" on every run is how the one that is
@@ -905,8 +905,7 @@ named gate has no argv here to resolve. Under `--json` the data rides in a
 
 **The hold policy.** A hold is the one step in a run no author declared — the
 engine mints it when a `hold_spread` trips — so who *answers* it is not visible
-anywhere a workflow author or an operator normally looks. Activation now says
-(DKT-266): with **both** `vote.hold.rule` and `vote.hold.voters` set, holds go
+anywhere a workflow author or an operator normally looks. Activation now says: with **both** `vote.hold.rule` and `vote.hold.voters` set, holds go
 to a panel and the line names it; with **neither** set, one operator decides and
 nothing prints; with **one** set, holds go to one operator and activation warns,
 because that is the state an operator who configured half of it would least
@@ -932,7 +931,7 @@ snapshot, so an operator who sets a scope after a first activation has fixed
 the omission by the next one. "Holds the tree" means `holds_tree` and nothing
 else — never a class name, which core attaches no meaning to.
 
-**The routing lint (DKT-33).** A second warning, in the same `scope_warnings`
+**The routing lint.** A second warning, in the same `scope_warnings`
 array, fires per issue whose declared scope resolves **nothing** under the
 run's recorded exec root — the signature of an issue planned into the wrong
 repository, which otherwise surfaces only after a full wave (an executor
@@ -980,7 +979,7 @@ Two of those `CONFLICT`s say more than that they happened:
 terminal from any non-terminal status. A paused run blocks new claims and
 honors in-flight completes.
 
-**Abandonment NAMES the run's recorded worktrees (DKT-116).** A relay's
+**Abandonment NAMES the run's recorded worktrees.** A relay's
 close-time sweep only covers worktrees its own session created, and an
 abandoned run never reaches a close — so abandonment was the exit that
 stranded checkouts and `worktree-wf_*` branches with nothing reporting them.
@@ -995,7 +994,7 @@ recorded-but-never-integrated sha may still be worth recovering from one. A
 worktree a relay created for a step that never recorded is a fact docket was
 never told, and stays the relay's to sweep.
 
-**The warning is STATTED before it is printed (DKT-405).** The recorded rows
+**The warning is STATTED before it is printed.** The recorded rows
 outlive the directories: a relay that swept its own checkouts at close time
 leaves `steps.work_root` behind, so the recorded list is a superset of what is
 still there. Abandoning RUN-14 flagged 20 "outstanding" worktrees that `git
@@ -1008,7 +1007,7 @@ told about is not a discovery pass — the engine still walks no filesystem, and
 unchanged. A path that cannot be statted at all (permission, dead mount)
 counts as present: a failure to look is not an absence.
 
-**`abandon --issue` is the per-issue disposition (DKT-28)** — for a mis-routed
+**`abandon --issue` is the per-issue disposition** — for a mis-routed
 or unimplementable issue that should not take the whole run down with it.
 Every remaining (non-terminal) step of that issue moves to `failed-routed` —
 the same terminus the `abandon-issue` routing produces — an `issue-abandoned`
@@ -1017,7 +1016,7 @@ ordinary reconciliation rollup runs in the **same transaction**, so the run
 continues, returns from a park, or completes if this was its last unfinished
 work. The issue's **own status is not forced terminal** — triage stays the
 operator's — but the issue's **`resolution` is set to `abandoned`** (schema
-v18, DKT-245), and both `step resolve --as abandon-issue` and this verb record
+v18), and both `step resolve --as abandon-issue` and this verb record
 it, since they are one fact about the issue with two actors. That is what
 keeps an issue whose fix step had completed from going on rendering `✔ done`
 for work a review reproduced as not fixing anything: `issue list` shows
@@ -1025,7 +1024,7 @@ for work a review reproduced as not fixing anything: `issue list` shows
 resolution side by side, and `issue show --json` carries a `resolution` key —
 emitted **only when set**, so an unresolved issue's payload is unchanged. The
 resolution says *that* a run gave up; **which run, when, and why** is the
-`Run disposition` section `issue show` prints beside it (DKT-404, under
+`Run disposition` section `issue show` prints beside it (under
 `issue show` above).
 `issue reopen` clears it, because an issue back on the board is one the
 operator has taken off the machine's hands. Refusals: run not `active` or `waiting-human` → `CONFLICT`
@@ -1048,7 +1047,7 @@ paused run as the final state, unable to learn that the run had ended, when, or
 why. There is no `run-done` here: no operator verb moves a run to `done` —
 that is the reconciliation rollup's transition, and it logs itself.
 
-**`resume` states pin drift unprompted (DKT-408).** Resuming is exactly the
+**`resume` states pin drift unprompted.** Resuming is exactly the
 moment a parked run's steps are about to claim again, and a corpus install
 that replaced a pinned file during the park is invisible until then. The
 resume itself still **succeeds** — an operator may be resuming precisely in
@@ -1067,7 +1066,7 @@ the moment they stop.
 |---|---|---|---|
 | `--reason` | string | `""` | **required** — why the recorded agreement is moving; empty is `VALIDATION_ERROR` (exit 3) |
 
-The recovery half of the pin story (DKT-408). `run activate` freezes a pin per
+The recovery half of the pin story. `run activate` freezes a pin per
 ref at content-hash granularity, and `docket run verify-pins RUN-N` reports
 when one no longer matches disk (`ok` / `changed` / `missing` per pin,
 `CONFLICT`/`NOT_FOUND` if any is unsound) — but writes nothing, not even a
@@ -1135,7 +1134,7 @@ and the `spend` = `max(reported, floor)` that is actually enforced. Those are th
 numbers an operator needs to choose a new cap, so choosing one does not require
 reading a report first.
 
-**There is a SECOND, INDEPENDENT cap over MEASURED usage** (DKT-238) — what the
+**There is a SECOND, INDEPENDENT cap over MEASURED usage** — what the
 ledger actually recorded, as opposed to the declared step costs the cap above
 counts. Arm it with `run start --usage-budget N` (or `budget.usage.default`)
 **and** `budget.usage.unit`; both are required, since a cap with no unit counts
@@ -1215,8 +1214,7 @@ pin-drift check below reads disk, not the database, but still writes nothing.
 is still live work. Passing `--active` with an ID is `VALIDATION_ERROR`, since
 it filters a list.
 
-**Pin drift is checked and stated unprompted, for the single-run form
-(DKT-408).** For a run that is `active` or `waiting-human`, status also hashes
+**Pin drift is checked and stated unprompted, for the single-run form.** For a run that is `active` or `waiting-human`, status also hashes
 the run's pinned files against disk — otherwise this verb's only reach outside
 the database — and, when anything no longer matches, adds a `pin_drift` field
 (the unsound pin verdicts, `omitempty`) to the JSON payload and a
@@ -1268,8 +1266,7 @@ that could differ in key order.
 that a reap would have freed would make the manifest wrong the moment it was
 written.
 
-**`stale_targets` asks about CONTENT, not just about the sha (DKT-424,
-DKT-451).** Integration cherry-picks an executor's worktree commit onto the
+**`stale_targets` asks about CONTENT, not just about the sha.** Integration cherry-picks an executor's worktree commit onto the
 shared branch, which always mints a new sha, so a recorded target is never an
 ancestor of HEAD after the designed flow and ancestry alone would warn on every
 run. A disproved ancestry therefore opens a second question before anything is
@@ -1282,8 +1279,7 @@ act on, while `whether HEAD still carries its tree could not be determined` is a
 sha that moved with the tree question unanswered — check the tree by hand before
 reading that one as divergence.
 
-**`stale_targets` names the claim-time semantics in its own reason text
-(DKT-415).** A claim does **not** re-derive a step's target from the branch's
+**`stale_targets` names the claim-time semantics in its own reason text.** A claim does **not** re-derive a step's target from the branch's
 current HEAD: it re-resolves the step's declared inputs and takes the target
 from the winning `issue.diff` artifact's recorded round record, whose diff body
 is the text its producer recorded at completion. So a warned row stays on the
@@ -1292,7 +1288,7 @@ before the row is claimed — which is exactly the condition under which
 dispatching through the warning is safe, and it is stated in the `reason` rather
 than left for a conductor to guess.
 
-**Pin drift is surfaced the same advisory way `stale_targets` is (DKT-408)** —
+**Pin drift is surfaced the same advisory way `stale_targets` is** —
 a `pin_drift` field, the run's unsound pin verdicts, rides beside
 `stale_targets` in the response, plus the same lines on stderr for a human
 (naming each drifted ref, both hashes, and `docket run repin` as the remedy).
@@ -1307,7 +1303,7 @@ enforcement. `pin_drift` is **absent whenever every pin is sound**.
 withholds steps for lack of budget headroom, the response carries
 `budget_held` — `withheld: N step(s), reason=budget headroom X < cost:
 <instance> (cost Y)…` — and the same line goes to stderr for a human; `next`
-reports the identical fact on stderr (DKT-242). The field is **absent whenever
+reports the identical fact on stderr. The field is **absent whenever
 nothing was withheld**, the same dormancy the reap hold and the loop-body hold
 keep, so an uncapped run's payload is unchanged. Without it, an offer of 1 of 5
 ready judges — or an empty `next` against a run reporting 9 pending — is
@@ -1339,7 +1335,7 @@ moved off the scheduler — the dispatch working, and not a failure),
 narrow, alarming case). The comparison used to stop at the first shifted row,
 so a dispatch where several steps had moved mid-flight reported one and hid the
 rest, costing a manual per-step confirm round before a `close` that reconciles
-the same state without complaint (DKT-243). The exit code is unchanged: any row
+the same state without complaint. The exit code is unchanged: any row
 that is not `matched` or `recorded` still fails the verb.
 
 `stage` and `conditional` are **normalized before the comparison**: both are
@@ -1347,8 +1343,8 @@ set-relative, and both legitimately move as an in-offer predecessor records or
 routes, so a row whose stage collapsed or whose conditional mark cleared is
 not a discrepancy.
 
-A step that has legitimately left the scheduler is **skipped**, not reported
-(DKT-65). That set is terminal (`done`, `skipped`, `superseded`,
+A step that has legitimately left the scheduler is **skipped**, not reported.
+That set is terminal (`done`, `skipped`, `superseded`,
 `failed-routed`) **plus `waiting-human`**: a step that recorded correctly and
 then parked is absent from the recomputation by design, and calling that a
 mismatch failed the verb on two measured runs for dispatches that were entirely
@@ -1417,7 +1413,7 @@ about to be double-counted. `skip` passes that row over, records the rest, and
 **names every row it skipped** — never a silent drop. Cross-wave duplicates are
 structural (a gate probed in wave N and seated in wave N+1 emits usage in both
 journals), and aborting the batch for them meant hand-filtering rows before
-every re-run (DKT-241). A skipped row writes nothing, so the batch stays
+every re-run. A skipped row writes nothing, so the batch stays
 all-or-nothing over the rows it actually records.
 
 **To see what is already recorded, read `docket run report`'s `step_usage`** —
@@ -1525,7 +1521,7 @@ Without `--run` the feed is project-wide, which is the only place events
 belonging to no run — trust grants, project registrations — are visible;
 `--all-projects` widens it to every project in the store.
 
-**How a store-level event is scoped** (DKT-68). An event's project is its run's,
+**How a store-level event is scoped.** An event's project is its run's,
 else its issue's, else **the repository its payload names** — `repo` for a trust
 change, `identity` for a `project-registered`. A store-level event naming no
 repository at all is a fact about the store and appears in every scoped view;
@@ -1535,7 +1531,7 @@ this one's. The scoped feed used to admit every project-less row, which made a
 52 trust rows from other repos — 87% noise, with the history the operator asked
 for pushed off the top.
 
-**Ids render under their OWNING project's prefix** (DKT-67), not the querying
+**Ids render under their OWNING project's prefix**, not the querying
 project's. `--all-projects` used to render every issue id under the caller's
 prefix, so the one view whose whole purpose is to span projects displayed six
 siblings' issues as if they were the caller's own. Rows also carry `project` —
@@ -1543,7 +1539,7 @@ the owning project's name, omitted in a single-project feed and shown as a
 column under `--all-projects`, since two projects can both hold a `fix@1` and a
 `RUN-6` and the ids alone do not say whose.
 
-**`at_ms` is monotonic with `seq`** (DKT-66). It was not: `gate-rerun` and
+**`at_ms` is monotonic with `seq`.** It was not: `gate-rerun` and
 `gate-unmatched` carried a clock taken at the top of a long transaction — on the
 resume path, the step's record time — so a `gate-unmatched` at seq 265 was
 stamped 57 seconds before seq 264, and any consumer windowing on `at_ms`
@@ -1551,7 +1547,7 @@ mis-ordered gate history. Those kinds now stamp at emission, and the writer
 clamps every event up to its predecessor's stamp, so the documented
 oldest-first-arrival reading holds for `at_ms` as well as for `seq`.
 
-**Gate events carry their verdict** (DKT-63): `detail=<gate> verdict=<v>
+**Gate events carry their verdict**: `detail=<gate> verdict=<v>
 exit=<n>`. A failing gate used to render character-identical to a passing one,
 and a conductor reading the feed reported three failed gates as passes. An
 unmatched gate carries no `exit` at all — it never ran, and `exit=0` would read
@@ -1673,12 +1669,12 @@ then **completed** with an artifact.
 | `step heartbeat STEP-N` | **yes** | extends the lease; does not touch `attempt` |
 | `step reap STEP-N --reason R` | no | forced reap of a dead holder's claim, without waiting out the lease |
 | `step complete STEP-N --artifact-file F …` | **yes** (stages 0–1) | the saga |
-| `step fail STEP-N [--note …] [--metadata …]` | **yes** | routes per `on_fail` when the CLAIM count reaches `max_attempts` (E-8: attempt counts claims, never failures); counts the failure into the row's `failed_attempts` (a reap counts into `reaped_claims` instead — DKT-490) |
+| `step fail STEP-N [--note …] [--metadata …]` | **yes** | routes per `on_fail` when the CLAIM count reaches `max_attempts` (E-8: attempt counts claims, never failures); counts the failure into the row's `failed_attempts` (a reap counts into `reaped_claims` instead) |
 | `step annotate STEP-N --metadata JSON` | no | merges opaque KV onto a **finished** step's record; event-logged |
 | `step approve\|reject STEP-N [--note …] [--value V]` | no | `type="human"` gate steps, and a materialized held step of either kind (a vote-minted one once a failed tally parks it) |
 | `step resolve STEP-N --as …` | no | `waiting-human` resolutions; `retry` **resets the retry budget** (moves `attempt_base`) — `attempt` itself and the `failed_attempts`/`reaped_claims` breakdown are never reset and not incremented by it |
 | `step show STEP-N` | no | read-only; effective status |
-| `step list (--run RUN-N \| --issue ISSUE-N)` | no | read-only; steps with id, run, instance, issue, kind, effective status, attempt (plus its `failed_attempts`/`reaped_claims` breakdown when nonzero — DKT-490), expected_cost — in (issue, creation) order. Scope by `--run` (the whole run), `--issue` (that issue across every run holding a step for it), or both (that issue inside that run); at least one is required. The budget-projection enumeration (DKT-54): step ids are a store-wide sequence, so id arithmetic cannot enumerate a run. `--issue` is the issue-shaped question a conductor actually holds (DKT-244). Watch-eligible. |
+| `step list (--run RUN-N \| --issue ISSUE-N)` | no | read-only; steps with id, run, instance, issue, kind, effective status, attempt (plus its `failed_attempts`/`reaped_claims` breakdown when nonzero), expected_cost — in (issue, creation) order. Scope by `--run` (the whole run), `--issue` (that issue across every run holding a step for it), or both (that issue inside that run); at least one is required. The budget-projection enumeration: step ids are a store-wide sequence, so id arithmetic cannot enumerate a run. `--issue` is the issue-shaped question a conductor actually holds. Watch-eligible. |
 | `step context STEP-N [--meta]` | no | re-emits `context` read-only |
 | `step render STEP-N [--template F]` | no | context bundle → rendered work packet |
 | `step artifacts STEP-N` | no | read-only; lists what the step PRODUCED, sizes not bodies |
@@ -1695,11 +1691,11 @@ and hashes but never a body. Reading a verdict meant opening
 
 `step artifacts STEP-N` lists — reference, kind, size, payload size, hash,
 `supersedes` — and deliberately carries **no bodies**, since an artifact runs to
-1MiB. `supersedes` names the artifact this one REVISES (DKT-70), and is absent
+1MiB. `supersedes` names the artifact this one REVISES, and is absent
 on an original. A held cluster's resolution records its own artifact rather than
 annotating the original, deliberately — what the engine computed and what the
 operator accepted are two records. The `sha256` is a content address over the
-artifact's **body AND payload** (DKT-112): a supersession whose payload changed
+artifact's **body AND payload**: a supersession whose payload changed
 never shares a hash with what it revises, and the resolution artifact's body is
 **regenerated** from the resolved payload — it counts the still-held and
 operator-resolved clusters as they now stand rather than repeating the stale
@@ -1710,8 +1706,8 @@ produced nothing lists nothing and exits 0; a step that does not exist is
 `NOT_FOUND`, so a typo never reads as "this step produced nothing".
 
 `step render` emits a **`== RESOLUTION`** block when the step carries a routing
-record — the routing that sent it back, and the note whoever decided it wrote
-(DKT-247). A resolve/approve note used to be audit-trail only, so an operator
+record — the routing that sent it back, and the note whoever decided it wrote.
+A resolve/approve note used to be audit-trail only, so an operator
 ruling issued BETWEEN rounds could not reach the retry it authorized, and
 rulings were applied as out-of-band repo commits instead. It is **scoped to
 the step's own row**: a note on another step never renders here, because
@@ -1720,7 +1716,7 @@ another's packet is exactly the collision that makes possible. Absent on a
 step with no routing record, so a first-round packet is unchanged.
 
 **The resolution also names the gates that did not pass** — verdict and reason,
-last attempt per gate (DKT-261). It rides in `context.resolution.gates` under
+last attempt per gate. It rides in `context.resolution.gates` under
 `--json`, so a relay composing a retry can tell an **environmental** failure
 from a **capability** one without a second query.
 
@@ -1739,8 +1735,7 @@ escalated three times and helped zero. Key it on `fail` — the verdict that
 survives the other two now having their own — and read the reason before
 spending a more expensive variant.
 
-`step show` renders a **gate summary** when the step has recorded gate results
-(DKT-63) — a verdict, the gate name, an exit code, and a pointer to
+`step show` renders a **gate summary** when the step has recorded gate results — a verdict, the gate name, an exit code, and a pointer to
 `step gates` when something did not pass. It used to print no gate section at
 all, so the surface an operator reaches for to ask "why is this step parked" was
 silent about the gates that parked it; a conductor read it and the event feed on
@@ -1844,7 +1839,7 @@ re-homed by whoever reads the completion: `docket issue move <id> --project
 <target>` (operator ruling, 2026-08-16: gaps belong to their respective
 projects).
 
-**A gap-only completion PARKS instead of passing (DKT-25).** When the declared
+**A gap-only completion PARKS instead of passing.** When the declared
 emit's body is empty (whitespace-trimmed) and at least one gap was recorded,
 the step routes `waiting-human` **before the gate verdict or threshold is
 consulted** — the worker's whole answer was "this work cannot be done here,
@@ -1862,7 +1857,7 @@ repository, `docket issue move --project` re-homes the filed issue.
 | `--note` | string | why the step failed — lands on the **failure EVENT**, prose for a human reading the run's history |
 | `--metadata` | string | a JSON **object** of opaque keys to values, merged onto the step's own — lands on the **STEP ROW**, structured KV for a query. `--note` and `--metadata` are complementary, not alternatives, and both are accepted on the same invocation |
 
-`--metadata` is DKT-69's parity with `step complete --metadata`: the same
+`--metadata` here has parity with `step complete --metadata`: the same
 shallow, last-write-wins merge, the same shared write path
 (`internal/engine`'s `mergeMetadata` and `db.SetStepMetadataTx`), and the same
 16 KiB cap — measured and refused pre-transaction, so a rejected `--metadata`
@@ -1886,7 +1881,7 @@ which is the run an operator most wants tier-drift data from.
 | `--metadata` | string | **required**; a JSON **object** of opaque keys to values, merged onto the finished step's own metadata |
 
 The post-completion channel for facts that become true only **after** a step's
-record freezes (DKT-35). The canonical case is integration: a relay that
+record freezes. The canonical case is integration: a relay that
 rebases or cherry-picks a recorded commit mints a NEW sha, and every run
 record citing the writer's own — change-summary first lines, issue comments,
 the round record — is unreachable from any ref once the worktree is swept.
@@ -1911,7 +1906,7 @@ exactly that authorization. Empty or non-object `--metadata` is
 |---|---|---|
 | `--as` | string | **required**: `retry` \| `rerun-gates` \| `skip` \| `abandon-issue` \| `override-pass` \| `fix-round` |
 | `--note` | string | why |
-| `--batch` | bool | with `--as override-pass` only: also record one **run-scoped** grant per failed gate (DKT-546) |
+| `--batch` | bool | with `--as override-pass` only: also record one **run-scoped** grant per failed gate |
 
 `retry` resets the **step's** attempt budget. That is a different counter from
 the issue-level attempt trail, which is monotonic and never reset. It also
@@ -1924,7 +1919,7 @@ attempt for work that happened twice. `resolve` is also how an operator moves a
 run past a `type="vote"` step whose voters have not cast — a run must not be
 hostage to a quorum that never arrives.
 
-**`rerun-gates` re-measures without re-executing** (DKT-259). Most retries in
+**`rerun-gates` re-measures without re-executing**. Most retries in
 practice are not about the work at all: a gate failed because a trust entry was
 missing or a tool was broken, someone fixed that out of band, and the step's own
 output was never in question. `retry` was the only lever, and it is the wrong
@@ -1952,7 +1947,7 @@ And a **byte-identical** re-record is not a supersession at all: nothing
 revised, so no new revision is written.
 
 **`override-pass --batch` extends the ruling to identical later failures in
-the same run** (DKT-546, schema v24). The dominant measured operator toil is
+the same run** (schema v24). The dominant measured operator toil is
 environmental gate parks — the same "sandbox artifact, not a code defect"
 ruling re-made for every step of a run. With `--batch`, the override-pass also
 records one grant per failed completion gate, keyed by the failure
@@ -1968,10 +1963,10 @@ run** — a new run re-asks. Refusals: `--batch` without `--as override-pass`,
 or on a park with no failed completion gate (a vote quorum, a rejected hold, a
 gap-only completion), is `VALIDATION_ERROR` (exit 3). A step whose threshold
 interposes another step is **never** auto-passed — that would silently skip
-the interposed step (DKT-470) with no operator present to read the warning —
+the interposed step with no operator present to read the warning —
 so it parks with the block named, for individual resolution.
 
-**`fix-round` is the sanctioned re-entry into an exhausted fix loop** (DKT-237).
+**`fix-round` is the sanctioned re-entry into an exhausted fix loop**.
 Exhausting `max_fix_loops` parks the issue, correctly — but nothing could then
 mint another round, and going around the engine became the reasonable move: one
 run's fix was built by an out-of-band agent, cherry-picked with no judge review
@@ -2008,7 +2003,7 @@ exactly as `approve` would, so the payload never says "undecided" about a
 cluster the routing already passed.
 
 **Resolving a held cluster runs `dispatch open`'s stale-target check at resolve
-time (DKT-414).** Under the staged closure the verify/review rows downstream of
+time.** Under the staged closure the verify/review rows downstream of
 a held reconcile are usually already inside an open dispatch, so no
 `dispatch open` runs between the resolution and their execution — one run
 resolved a hold while the shared branch HEAD had moved off the recorded target
@@ -2023,7 +2018,7 @@ present on non-held resolutions. **Advisory, never a refusal** — the resolutio
 has already committed, and completed steps keep their recorded provenance
 untouched. It shares the underlying check, so it also inherits the tree
 comparison described under `dispatch open`: a sanctioned cherry-pick that
-rewrote the sha but not the content warns about nothing (DKT-424, DKT-451).
+rewrote the sha but not the content warns about nothing.
 
 #### `docket step approve|reject`
 
@@ -2057,7 +2052,7 @@ travels with it as `operator_note` — the full rules are in *Held clusters* abo
 On a declared human gate, or alongside `reject`, it is a `VALIDATION_ERROR`.
 
 Deciding a **held cluster** with either verb carries the same resolve-time
-stale-target advisory `step resolve` documents above (DKT-414): when the
+stale-target advisory `step resolve` documents above: when the
 decision un-blocks downstream steps whose packets render from a recorded target
 sha the shared checkout's HEAD no longer carries, the divergence is named on
 stderr (human mode) and in a `stale_targets` field beside the row (JSON).
@@ -2118,7 +2113,7 @@ way; every verdict a guard actually computes still denies through exit 2.
 the machine is done working, and a run waiting on a person is not something a
 stop interferes with.
 
-It also does not block on a run **nothing has ever happened to** (DKT-71):
+It also does not block on a run **nothing has ever happened to**:
 never dispatched, and no step ever out of `pending`. `bootstrap`'s contractual
 terminal state is exactly that — an activated, never-dispatched run — and all
 six bootstraps measured on 2026-08-16 were denied a turn-end over it, twice
@@ -2181,7 +2176,7 @@ Acking a seq twice is a success that changes nothing. Acking a seq that names no
 reap of this run is `VALIDATION_ERROR` (exit 3) — an acknowledgment must name a
 real reap.
 
-**`--deciding-vote` breaks the one deadlock this guard creates** (DKT-236).
+**`--deciding-vote` breaks the one deadlock this guard creates**.
 Unacknowledged reaps hold headroom; the sanctioned way to decide whether to
 acknowledge them is a judge panel; and the hold denied that panel's own spawn —
 the exact state the panel exists to decide. Nothing could move, so what happened
@@ -2274,7 +2269,7 @@ trusted in one project does not execute in a clone of another; moving a
 repository invalidates its entries (`trust list --all` shows the stale binding
 so you can see why a gate went `unmatched`).
 
-**The unmatched diagnostic leads with the case you are actually in** (DKT-64).
+**The unmatched diagnostic leads with the case you are actually in**.
 When an entry of the gate's name exists only in ANOTHER repository, the message
 leads with `no trust entry for this repo; approve it with docket trust add`, and
 mentions the other binding as an aside with the moved-path reading offered
@@ -2318,7 +2313,7 @@ with control characters escaped.
 #### The tenancy audit trail
 
 Registering a project writes a `project-registered` event carrying the `cwd`,
-the resolved `identity`, and the `verb` that triggered it (DKT-61). A project
+the resolved `identity`, and the `verb` that triggered it. A project
 row is what every other row is attributed TO, and until this kind existed the
 project itself recorded nothing about its own origin: attributing one junk row
 to the verb that minted it took a hand-join of raw table timestamps against nine
@@ -2326,7 +2321,7 @@ session transcripts. Like a trust event it has **no run** — registration
 precedes any run of the project by definition — and it is scoped to the project
 it names, so it appears in that project's feed rather than in every project's.
 
-Registration itself is now **gated** (DKT-58): a project row is created only
+Registration itself is now **gated**: a project row is created only
 when the identity is a git worktree (or a deliberate `.docket` store) **and**
 the verb is not a read. A read from a directory with no project answers "nothing
 here"; a run-addressed verb (`step`, `dispatch`, `trust`, `guard`, `events`)
@@ -2407,10 +2402,10 @@ not suppressible.
 | `--domain-relevance` | — | float64 | `0` | required (when explicitly set) in `--json`; range `[0.0, 1.0]` |
 | `--findings` | — | string | `""` | `"-"` reads stdin |
 | `--findings-json` | — | string | `""` | `"-"` reads stdin; parsed as `model.Findings` JSON; mutually exclusive with `--findings` for stdin use |
-| `--summary` | — | string | `""` | review summary; `"-"` reads stdin (DKT-519). A seat's rationale is routinely kilobytes of prose, and argv runs it past a shell first — a summary containing backticks was once expanded by the shell and stored expanded, and a voter casts once, so there is no amend path |
+| `--summary` | — | string | `""` | review summary; `"-"` reads stdin. A seat's rationale is routinely kilobytes of prose, and argv runs it past a shell first — a summary containing backticks was once expanded by the shell and stored expanded, and a voter casts once, so there is no amend path |
 | `--summary-file` | — | string | `""` | read the summary from PATH; mutually exclusive with `--summary`. Use it when stdin already feeds `--findings`/`--findings-json` — stdin can feed only ONE flag per invocation, and asking two is a `VALIDATION_ERROR` naming both |
 | `--metadata` | — | string | `""` | JSON object, 16 KiB cap measured on the **encoded** bag (whitespace does not count, escaping does); the seat's own opaque claim about what cast the vote — worked example above; stored whole, never read by core, never verified. It is visible in the process list, stored verbatim in the store, and re-emitted verbatim by `docket export`, so put nothing secret in it |
-| `--usage` | — | string | `""` | `{"unit": n, ...}` — this seat's own spend report (DKT-95), recorded per seat in the `vote_usage` ledger inside the cast's transaction and summed per unit in the run report's `vote_usage` section. Same rules as `step complete --usage`: at most 32 units, finite non-negative numbers, opaque unit names. Exists because a vote step is never claimed (attempt stays 0), so the step ledger's key cannot hold per-seat rows. A relay that measures a seat's spend AFTER the cast records it with `docket vote backfill-usage` instead; the two stay distinguishable by `vote_usage.source` (v17, DKT-115) |
+| `--usage` | — | string | `""` | `{"unit": n, ...}` — this seat's own spend report, recorded per seat in the `vote_usage` ledger inside the cast's transaction and summed per unit in the run report's `vote_usage` section. Same rules as `step complete --usage`: at most 32 units, finite non-negative numbers, opaque unit names. Exists because a vote step is never claimed (attempt stays 0), so the step ledger's key cannot hold per-seat rows. A relay that measures a seat's spend AFTER the cast records it with `docket vote backfill-usage` instead; the two stay distinguishable by `vote_usage.source` (v17) |
 
 #### `docket vote commit <id>` — `vote_commit.go`
 
@@ -2425,8 +2420,7 @@ not suppressible.
 |---|---|---|---|---|
 | `--reason` | — | string | `""` | **required**; why the proposal is being closed without a tally |
 
-Closes an **open** proposal whose underlying decision was made another way
-(DKT-114) — an operator authorized the guarded action directly, or the
+Closes an **open** proposal whose underlying decision was made another way — an operator authorized the guarded action directly, or the
 question was superseded — and which would otherwise sit open forever. `closed`
 is terminal and is **never a verdict**: no vote was counted, and the reason
 lands in the proposal's `final_outcome`. Refusals: a decided proposal
@@ -2437,7 +2431,7 @@ closing the step's own machinery underneath it would not route the step. A
 closed proposal refuses further casts (`CONFLICT`), exactly as any finalized
 one does.
 
-**Three closures now happen automatically** (DKT-262), because an open proposal
+**Three closures now happen automatically**, because an open proposal
 is not inert: `vote list` shows it as outstanding work, and it is what a
 spawn-guard carve-out points at, so a stale one makes two surfaces lie.
 
@@ -2472,7 +2466,7 @@ not use it simply gets no auto-close, exactly as before.
 | `--from-json` | — | string | `""` | JSON array of `{"voter","unit","quantity"}`; `-` reads stdin |
 | `--source` | — | string | `"backfilled"` | who measured it; recorded on every row (v17) |
 
-The vote-scoped back-fill (DKT-115). `vote cast --usage` is the seat's OWN
+The vote-scoped back-fill. `vote cast --usage` is the seat's OWN
 report at cast time; a relay that measures panel cost from its transcripts
 afterwards had no ledger path — tribunal seats carry a proposal id, never a
 step id, so `dispatch backfill-usage` (step-keyed by design) could not receive
@@ -2555,7 +2549,7 @@ Watch-eligible.
 | Flag | Short | Type | Default | Notes |
 |---|---|---|---|---|
 | `--cascade` | — | bool | `false` | also removes issue/proposal links (not the linked issues/proposals) |
-| `--force` | `-f` | bool | `false` | **required in `--json` mode and non-interactive human mode** (DKT-27: an output-format flag is never consent); in interactive human mode it skips the confirmation prompt |
+| `--force` | `-f` | bool | `false` | **required in `--json` mode and non-interactive human mode** (an output-format flag is never consent); in interactive human mode it skips the confirmation prompt |
 
 #### `docket doc link add/remove` — `doc_link.go`
 
@@ -2588,7 +2582,7 @@ Watch-eligible.
 |---|---|---|---|---|
 | `--merge` | — | bool | `false` | skip duplicates by ID; mutually exclusive with `--replace` |
 | `--replace` | — | bool | `false` | destructive: clears DB first; mutually exclusive with `--merge` |
-| `--yes` | — | bool | `false` | confirm `--replace`; **required** in every output mode (DKT-15) |
+| `--yes` | — | bool | `false` | confirm `--replace`; **required** in every output mode |
 
 ### `docket board` — `board.go`
 
@@ -2634,7 +2628,7 @@ claims it; `(unclaimed)` renders when none has. A `Collection` under
 #### `docket project delete <prefix|name|identity|id>`
 
 No local flags. Removes an EMPTY project row — the way back out for a row
-created by mistake (DKT-59). It refuses any project that an issue, run,
+created by mistake. It refuses any project that an issue, run,
 document, proposal, workflow, schema, or label still references (`CONFLICT`,
 naming the counts), and refuses the default project outright
 (`VALIDATION_ERROR`), so it can remove junk and cannot remove history. To empty
@@ -2651,7 +2645,7 @@ number always works, so references in old commit messages and other projects'
 run records never go stale.
 
 **An id renders under the prefix of the project that OWNS it, not the one you
-are reading from** (DKT-256). Ids are minted from one store-wide sequence —
+are reading from**. Ids are minted from one store-wide sequence —
 `DKT-267` and `DOT-268` were consecutive — so a prefix rendered from your cwd
 made every cross-project reference silently wrong: the same `run report` row
 showed `DOT-81` from one checkout and `ART-81` from another, and
@@ -2670,7 +2664,7 @@ third outcome — a *different* issue wearing the requested number. 1–8 letter
 A prefix ANOTHER project already holds is refused (`CONFLICT`, naming the
 holder): the prefix is a project's only discriminator in a listing, an event
 feed, or a report, so two projects sharing one makes every id in the store
-ambiguous about its owner (DKT-60). Registration derives a unique prefix from
+ambiguous about its owner. Registration derives a unique prefix from
 the project's name — initials for a multi-word name, first three letters
 otherwise — rather than the hardcoded `DKT` it used to write for every row.
 The rest of the invocation renders in the new voice immediately.
@@ -2690,7 +2684,7 @@ Engine defaults, stored in the `meta` table. **Not** `skipDB` — unlike the bar
 verb these need the database. `get` with no key lists every value with its
 source (`set` or `default`); under `--json=v2` the listing is a standard
 `{items,total,truncated}` collection. A key that is unset AND has no shipped
-default prints `<unset>` in human mode rather than an empty line (DKT-69) — an
+default prints `<unset>` in human mode rather than an empty line — an
 empty line is indistinguishable from a key set to `""`, and in bulk it produced
 fewer lines than keys, so a reader matching lines to keys positionally read the
 wrong values. `--json` is unchanged: `source` already carries the distinction

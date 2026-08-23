@@ -206,12 +206,12 @@ under v2 only, which is what makes `--json` safe for existing scripts. Every
 amendment is additive — no key has ever changed meaning or disappeared — so a
 script selecting a key it already read keeps reading exactly that.
 
-| Amendment | Payload | Shape |
-|---|---|---|
-| DKT-55 | `issue show`, `issue list` | `scope` appears **when the issue declares one, and only then** — no declared scope emits no key and stays byte-identical to the pre-scope shape; a declared-but-empty scope emits `[]` |
-| DKT-245 | `issue show`, `issue list` | `resolution` appears **when a routing has set one**, so an abandoned issue stops being indistinguishable from a finished one |
-| DKT-404 | `issue show` | `run_disposition` appears **when a run abandoned its work on the issue** |
-| DKT-452 | every issue payload | `issue` mirrors `id`, **unconditionally** — see below |
+| Payload | Shape |
+|---|---|
+| `issue show`, `issue list` | `scope` appears **when the issue declares one, and only then** — no declared scope emits no key and stays byte-identical to the pre-scope shape; a declared-but-empty scope emits `[]` |
+| `issue show`, `issue list` | `resolution` appears **when a routing has set one**, so an abandoned issue stops being indistinguishable from a finished one |
+| `issue show` | `run_disposition` appears **when a run abandoned its work on the issue** |
+| every issue payload | `issue` mirrors `id`, **unconditionally** — see below |
 
 ### Primary-key naming (`id` vs the noun)
 
@@ -220,7 +220,7 @@ Every verb keys its primary entity by the entity's **noun**: `run status` keys
 `issue release` / `issue heartbeat` key `issue`. The issue READ verbs were the
 exception — they keyed `id` and nothing else — so a caller that had just parsed
 a run or a step reached for `.data.issue` on `issue show`, got `null`, and had
-to dump the key set to recover (DKT-452).
+to dump the key set to recover.
 
 Both keys now carry the id, on **v1 and v2 alike**, wherever an issue is
 serialized — `issue show` (including its nested `sub_issues`), `issue list`
@@ -240,7 +240,7 @@ matches every other verb. Prefer whichever your surrounding code already uses �
 they cannot disagree, since both are written from the same value.
 
 This is the one amendment that is NOT conditional, so v1 issue payloads are no
-longer byte-identical to their pre-DKT-452 bytes. That is deliberate: a
+longer byte-identical to their pre-amendment bytes. That is deliberate: a
 conditional alias would be absent in precisely the case the alias exists to
 serve, and an *added* key cannot break a reader that selects `.data.id`.
 
@@ -426,7 +426,7 @@ Engine defaults live in the database and are read by the claim machinery:
 | `vote.hold.voters` | comma-separated names or `""` | `""` | who casts on a materialized held step. Empty (the default) mints held steps as `human` |
 
 **A class is whatever string your steps carry, and a step that declares no
-`class` carries its `executor` name** (DKT-260). So `lease.ttl.read` binds
+`class` carries its `executor` name**. So `lease.ttl.read` binds
 nothing unless your definitions actually say `class = "read"` — and in a corpus
 where steps declare no class, the only strings that ever appear in that column
 are executor names, which is not what "per-class lease TTL" suggests. The cost
@@ -518,7 +518,7 @@ fall back to an interactive `huh` form when required
 flags are omitted and stdin is a TTY. `import --replace` is the one
 exception: it requires `--yes` unconditionally, in every output mode and
 regardless of terminal attachment — never a prompt, and never `--json` as
-consent (DKT-15). (`issue comment` and `doc comment`
+consent. (`issue comment` and `doc comment`
 use a different fallback — they open `$EDITOR` when no message is piped
 and stdin is a TTY; see the Comments section below.) **In non-interactive/agent contexts
 (no TTY) these commands return a `VALIDATION_ERROR` listing the missing
@@ -888,10 +888,10 @@ legitimately `claimed` at `waiting-human`.
 | `threshold` | table: routing → predicate | routing computed from the step's results |
 | `on_fail` | `"fix-loop"` \| `"waiting-human"` \| `"skip"` \| `"abandon-issue"`; default `"waiting-human"` | where a failure routes. **Required explicitly on `type="human"` and `type="vote"` steps** — the default is a routing nobody chose |
 | `loop` | bool, default false | marks a loop-body step |
-| `serves` | [step names], default = every `fix-loop`-capable step | scopes this `loop = true` step (and its `after_loop` chain) to the named steps' **loop cluster** — entry fires only the bodies serving the step whose routing actually triggered it (the **trigger**). Omitted or empty means "serves every trigger," one cluster for the whole workflow — byte-identical to a workflow written before DKT-544 |
+| `serves` | [step names], default = every `fix-loop`-capable step | scopes this `loop = true` step (and its `after_loop` chain) to the named steps' **loop cluster** — entry fires only the bodies serving the step whose routing actually triggered it (the **trigger**). Omitted or empty means "serves every trigger," one cluster for the whole workflow — byte-identical to a workflow written before this existed |
 | `after_loop` | step name | where execution re-enters after a loop body |
 | `max_attempts` | int ≥ 1 | per-instance retry budget |
-| `max_fix_loops` | int ≥ 0 | round budget, checked against the issue's one loop-ordinal counter. Declared on a step with no `serves`, it is the **issue-level ceiling**. Declared on a `serves`-scoped body, it is that **cluster's own** budget, counted over ordinals holding that cluster's instances — the issue-level ceiling still governs on top of it (DKT-544) |
+| `max_fix_loops` | int ≥ 0 | round budget, checked against the issue's one loop-ordinal counter. Declared on a step with no `serves`, it is the **issue-level ceiling**. Declared on a `serves`-scoped body, it is that **cluster's own** budget, counted over ordinals holding that cluster's instances — the issue-level ceiling still governs on top of it |
 | `expected_cost` | number ≥ 0, default 0 | the step's contribution to the run's budget floor, accrued **per claim**. Per expanded sibling on a fanout — four siblings accrue four times, no proration |
 | `when` | predicate over `kind` / `labels` — `<kind\|labels> <==\|!=\|contains> <value>` or `labels contains-any (a, b, c)` clauses, joined by `and` throughout or `or` throughout | step is skipped when false. `or` needs one clause to hold, `and` needs all; mixing the two connectives in one predicate is rejected at register time (there are no parentheses, so `a and b or c` has no defined reading). `contains-any` holds when the list intersects the issue's labels — the step-level `labels_any` — so `kind == doc:tdd and labels contains-any (security-change, security)` says "this kind AND any of these labels" without mixing connectives |
 | `metadata` | opaque table | recorded and delivered verbatim |
@@ -930,7 +930,7 @@ in-flight probe carried the probe. Action, human, and vote steps never record a
 diff either; with no diff artifact at all, the input resolves to an **empty
 diff**, never an error and never a live `git diff`.
 
-**The bundle carries a machine-readable target ref (DKT-24).** Context
+**The bundle carries a machine-readable target ref.** Context
 assembly lifts the resolved `issue.diff` artifact's round record onto the
 bundle as `target_sha` — the commit the diff's tree stood at — and
 `target_worktree` — the producing record's declared worktree path, good while
@@ -946,7 +946,7 @@ a JSON array in §11.4's gate-result shape (`gate`, `ordinal`, `argv`, `exit`,
 `duration_ms`, `output`, `truncated`, `verdict`, `pre`, `reason`), the same
 shape a claim response's `pre_gates` carries. Instance selection mirrors
 ordinary artifact resolution — same issue, `done` only, ordinal-scoped with
-the per-input fallback, siblings in index order — with one departure (DKT-12):
+the per-input fallback, siblings in index order — with one departure:
 the **requesting step admits itself regardless of status**, so a self-declared
 `<self>.gate-results` reads the step's own claim-time `pre = true` rows (which
 commit before context assembly, while the step is still `claimed`).
@@ -975,7 +975,7 @@ highest matching ordinal). A vote step an operator moved a run past with
 all**, not an empty record. `vote-record` is a reserved kind exactly like
 `gate-results`: a step declaring `emits = "vote-record"` is refused at
 register time, and so is `<step>.vote-record` naming a producer whose `type`
-is not `"vote"` (DKT-545, rule V11).
+is not `"vote"` (rule V11).
 
 ```toml
 inputs = ["gate.vote-record"]
@@ -984,7 +984,7 @@ inputs = ["gate.vote-record"]
 `issue.linked.<relation>.<kind>` is a **cross-issue** input: the latest
 recorded artifact of `<kind>` held by each issue this issue is linked to by
 `<relation>`, resolved and **pinned by artifact id at activation**, in the
-same transaction that snapshots the issue (DKT-547). `<relation>` is an
+same transaction that snapshots the issue. `<relation>` is an
 existing relation type or its inverse token — "linked" is not a new relation
 kind, just a way to address either end of an ordinary `docket issue link add`
 edge:
@@ -1341,8 +1341,8 @@ and the routing step **stops**. Concretely:
   carries `held_cluster` — `cluster_index`, `cluster_count`, the `artifact`
   the payload lives on, and the `producer_step` that recorded it — and `step
   artifacts` on the row, which is legitimately empty because a hold produces
-  nothing, names that artifact instead of stopping at "produced no artifacts"
-  (DKT-239). Two clusters of one payload point at the SAME artifact, which is
+  nothing, names that artifact instead of stopping at "produced no artifacts".
+  Two clusters of one payload point at the SAME artifact, which is
   exactly what the index disambiguates.
 
 **One step per cluster, so you can answer them differently.** A hold carrying
@@ -1426,7 +1426,7 @@ A `threshold` (or an `on_fail`) that routes `fix-loop` enters a loop. There is
 **no other loop construct** — a threshold routing to a *step name* interposes
 that step as a one-off gate and is not a loop.
 
-**Loop entry is scoped to a cluster (DKT-544).** A `loop = true` step's
+**Loop entry is scoped to a cluster.** A `loop = true` step's
 `serves` list scopes it — and its `after_loop` chain — to the named steps'
 `fix-loop` routings, its **loop cluster**. On entry the engine derives the
 **trigger**: the step whose routing actually resolved to `fix-loop` (an
@@ -1726,8 +1726,8 @@ docket vote unlink DKT-V1 --json --issue DKT-1
 ```
 
 **A vote step may add a `threshold`, evaluated over the cast set once an
-approved tally comes back — before the step is allowed to route `pass`**
-(DKT-545). It reads the same predicate grammar `threshold` uses on gate steps,
+approved tally comes back — before the step is allowed to route `pass`**.
+It reads the same predicate grammar `threshold` uses on gate steps,
 but over the cast's own fields: `vote` / `verdict` (aliases for the same
 field) and `voter`. Only `==`/`!=` are legal — casts carry no registered
 schema, so an ordered comparison (`>=`, `>`, …) is refused at register time
@@ -1803,7 +1803,7 @@ docket export -o markdown > issues.md
 
 docket import backup.json --json --merge          # skip duplicates by ID
 docket import backup.json --json --replace --yes  # destructive: wipes DB first; --yes is required
-                                                    # in every output mode, --json never substitutes (DKT-15)
+                                                    # in every output mode, --json never substitutes
 docket import backup.json --json                  # default: requires an EMPTY database, else CONFLICT
 ```
 
@@ -1860,7 +1860,7 @@ with no enum validation in the CLI layer — pick a project convention (e.g.
 The issue prefix is per-project (`docket project set-prefix`) and display
 only: in a project whose prefix is `VOR`, issues render `VOR-42`, but the
 number is the store-wide identity — `DKT-42`, `VOR-42`, and bare `42` all
-parse to the same issue, **from any project** (DKT-72). That last part is what
+parse to the same issue, **from any project**. That last part is what
 makes `issue list --project` usable: the listing prints another project's ids,
 and the next command has to be able to take one back. `DOC`, `RUN`, and `STEP`
 are reserved, never project-configurable, and never parse as issue ids — an

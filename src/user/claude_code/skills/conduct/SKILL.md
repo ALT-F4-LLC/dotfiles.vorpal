@@ -420,7 +420,7 @@ proposal the other two seats voted on.
 
 The roster of WHAT was bound comes from the engine, never from the run's
 request prose: the request names the plan's SUBJECTS, not the bound issues
-(DKT-94). RUN-6's conductor queried the request's issue ids, found them
+. RUN-6's conductor queried the request's issue ids, found them
 label-less, and built a false misrouting theory before hand-mapping the real
 roster out of the scope warnings.
 
@@ -535,7 +535,7 @@ docket next --run $RUN --limit 500 --json
   empty, so that refusal IS the signal. Reconcile before anything else — in
   step 3's binding order, not a shortened one: BACK-FILL usage first (step 3),
   because this is the path you take after a crashed relay and so the likeliest
-  place for measured tokens to strand (DKT-98); then `docket dispatch verify
+  place for measured tokens to strand; then `docket dispatch verify
   --run $RUN` — which writes NOTHING, not even a lease reap, so it can never
   mutate the set it compares — then close it (`dispatch close` takes no reason
   flag; its JSON OUTPUT reports the reason under `close_reason`), or abandon
@@ -821,9 +821,9 @@ when the step it names did NOT record.
 
 The same order governs the crashed-relay exit: back-fill BEFORE `dispatch
 abandon` too — abandon has no later back-fill window, and RUN-6 stranded
-~141k measured tokens by abandoning first (DKT-98). If the back-fill refuses
-against a dispatch being abandoned, cite DKT-98 and the refusal verbatim in
-the abandon `--reason`.
+~141k measured tokens by abandoning first. If the back-fill refuses
+against a dispatch being abandoned, explain why back-fill had to happen
+first and include the refusal verbatim in the abandon `--reason`.
 
 ```bash
 # 1. the join is a script (below) — it emits the rows JSON; you check the shape
@@ -985,7 +985,7 @@ that burns a duplicate executor run to relearn what is already on disk
 (RUN-3 paid one full judge round). On a WRITE-class step, carry
 `--worktree <its checkout>` through as well: the flag DEFAULTS to the invoking
 checkout, so a record run from your seat without it diffs your tree — and
-runs the step's completion gates in it (DKT-9) — not the one the work
+runs the step's completion gates in it — not the one the work
 happened in; the same failure the next paragraph exists to prevent. Parked
 state whose provenance you cannot tie to the step is a stop-and-ask, not a
 judgment call.
@@ -994,8 +994,8 @@ judgment call.
 archetypes included — runs in a private worktree; a write executor's
 deliverable is a COMMIT there, its sha on the first line of the change-summary
 and in the report. It records with `--worktree <its checkout>` so the engine
-computes the recorded diff where the work happened (DKT-106, answered) and —
-since DKT-9 (2026-08-16) — spawns the step's completion gates and verify's
+computes the recorded diff where the work happened and —
+since 2026-08-16 — spawns the step's completion gates and verify's
 ac-commands pre-gate with that checkout as cwd, so gate evidence measures the
 work rather than the shared checkout's HEAD. The record does NOT wait on
 integration, and the old cherry-pick-first ordering is gone. **The empty-`issue.diff` packet defect is FIXED** (diff base pinned to
@@ -1212,7 +1212,7 @@ docket run budget $RUN --json    # headroom = .data.budget minus .data.spend
 ```
 
 Fits when that sum is at or under the headroom. `step list --run` IS the
-run-scoped enumeration DKT-54 asked for and it has shipped, so "I could not
+run-scoped enumeration that was asked for, and it has shipped, so "I could not
 enumerate the steps" is no longer a thing to write in a proposal — write the
 sum and the command that produced it. Run it as ONE shipped script instead of
 retyping the pipeline: `~/.claude/scripts/budget-headroom $RUN` when `test -f`
@@ -1652,7 +1652,7 @@ names this precondition.
 `reject` skips the threshold and routes the step per its `on_fail` — usually
 parking the issue (saga §7.7.3, by design). The verdict is STICKY: a `--as
 retry` on the parked routing step re-runs the aggregate, re-reads the same
-terminal reject, and re-parks (DKT-24). Present reject as "stop this issue and
+terminal reject, and re-parks. Present reject as "stop this issue and
 ask me again," never as "same routing, different ledger mark" (RUN-2).
 
 **A held cluster has a THIRD answer: correct the value.** `docket step approve
@@ -1664,7 +1664,7 @@ be a member of the pinned schema's declared enum; the engine refuses anything
 else, and the enum comes from the FROZEN pins, not the files on disk. Offer all
 three: approve the computed value, approve a corrected one, or reject. An
 instruction the engine genuinely cannot execute is still surfaced first, then
-materialized as a backlog issue so it cannot evaporate (the DKT-23 pattern) —
+materialized as a backlog issue so it cannot evaporate —
 but check for a flag before reaching for that.
 
 **You never apply a hold ruling's content edit yourself; it routes to a fix

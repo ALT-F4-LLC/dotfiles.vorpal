@@ -18,6 +18,8 @@ jobs:
 
       - run: bash tests/docket-spawn-guard-hook.test.sh
 
+      - run: bash tests/wave-chain-dead-ladder.test.sh
+
       - run: bash tests/wave-classifier-retry.test.sh
 
       - run: bash tests/wave-park-signals.test.sh

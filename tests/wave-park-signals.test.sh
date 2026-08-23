@@ -148,10 +148,17 @@ ok(!chainDead(returned(CONFLICT_FINDING)),
     'a long finding that merely NAMES conflicts does not kill the chain')
 
 // ---- Statuses the ladder sets itself still count as dead ----
+// 'spawn-failed' joined them in DOT-559: the step never recorded, so every
+// later `after` row of the same issue is refused at claim.
 for (const status of ['gate-parked', 'gate-blocked', 'gate-rejected',
-                      'skipped-not-claimable', 'skipped-not-ready']) {
+                      'skipped-not-claimable', 'skipped-not-ready',
+                      'spawn-failed']) {
     ok(chainDead({ status, text: null }), `status ${status} kills the chain`)
 }
+ok(!chainDead({ status: 'returned', text: 'STEP-9 recorded (done)' }),
+    'a plain done reply does not kill the chain')
+ok(!chainDead({ status: 'engine-run', text: null }),
+    'an engine-run action row does not kill the chain')
 ok(!chainDead(null), 'a null result is not chain-dead')
 ok(!runParked(null), 'a null result is not a park')
 ok(!runParked({ status: 'engine-run', text: 'STEP-9 recorded (waiting-human)' }),

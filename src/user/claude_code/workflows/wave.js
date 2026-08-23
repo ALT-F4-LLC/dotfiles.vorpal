@@ -1511,6 +1511,12 @@ async function runGate(row, phaseLabel) {
 // measured). Stages are one schedule now; the wave runs them as one ladder.
 // The residual cross-issue wait is the price of that schedule being honored —
 // rows the engine certifies concurrent share a stage and still run together.
+// TEST-BEGIN stage-ladder — extracted and exercised by
+// tests/wave-chain-dead-ladder.test.sh, which wraps this whole region in an
+// async function and feeds it stub `parallel`/`spawn`/`runGate`/`probe`/`log`
+// globals. Everything the ladder itself needs must stay INSIDE the markers;
+// the only workflow globals it may reach for are those stubs, `rows`, and
+// `input`.
 const stages = new Map()
 for (const row of rows) {
     const s = Number.isInteger(row.stage) ? row.stage : 0
@@ -1545,9 +1551,10 @@ function needsClaimProbe(row) {
 
 const byStep = new Map()
 // A park observed anywhere stops every LATER stage (in-flight groups finish;
-// the engine re-offers unlaunched steps after the park lifts). A CONFLICT or
-// an uncleared gate kills only its own ISSUE's later rows — the chain behind
-// it cannot become claimable this wave, and spawning it anyway boots corpses.
+// the engine re-offers unlaunched steps after the park lifts). A CONFLICT, a
+// failed spawn, or an uncleared gate kills only its own ISSUE's later rows —
+// the chain behind it cannot become claimable this wave, and spawning it
+// anyway boots corpses.
 let parked = false
 const deadIssues = new Set()
 
@@ -1557,6 +1564,12 @@ function chainDead(res) {
     if (res.status === 'gate-parked' || res.status === 'gate-blocked' ||
         res.status === 'gate-rejected' || res.status === 'skipped-not-claimable' ||
         res.status === 'skipped-not-ready') return true
+    // DOT-559: a stage-N executor that never produced an agent leaves its step
+    // unrecorded, so every later `after` row of the same ISSUE is guaranteed to
+    // die on claim ("an `after` predecessor is not done"). RUN-43 spent ~52K
+    // tokens booting three such corpses. The engine re-offers the whole chain
+    // at the next dispatch, so calling the issue dead here loses nothing.
+    if (res.status === 'spawn-failed') return true
     // Same body-scan trap as runParked: `includes('CONFLICT')` would kill an
     // issue's whole remaining chain on a judge that merely REPORTED one.
     return res.status === 'returned' && isConflictReport(res.text)
@@ -1601,8 +1614,15 @@ for (const k of stageKeys) {
     }))
     settled.forEach((res, i) => {
         const row = group[i]
-        byStep.set(row.step, res || { step: row.step, status: 'spawn-failed' })
-        if (chainDead(res) && row.issue) deadIssues.add(row.issue)
+        // Normalize BEFORE the chain test: a missing settle is recorded as
+        // spawn-failed, so it has to be read as one too (DOT-559).
+        const out = res || { step: row.step, status: 'spawn-failed', text: null }
+        byStep.set(row.step, out)
+        if (chainDead(out) && row.issue) {
+            deadIssues.add(row.issue)
+            log(`${row.step}: settled ${out.status} — issue ${row.issue}'s later ` +
+                `stages will not be launched this wave`)
+        }
     })
     if (settled.some(runParked)) {
         parked = true
@@ -1613,3 +1633,4 @@ for (const k of stageKeys) {
 
 return rows.map((row) => byStep.get(row.step) ||
     { step: row.step, status: parked ? 'not-launched-run-parked' : 'spawn-failed' })
+// TEST-END stage-ladder

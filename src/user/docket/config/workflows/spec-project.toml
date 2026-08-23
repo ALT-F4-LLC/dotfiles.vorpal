@@ -44,7 +44,7 @@ holds_tree = false
 inputs = ["spec-author.*", "issue.body"]
 name = "review"
 packet = ["contracts/{executor}.md"]
-payload = "findings@6"
+payload = "findings@7"
 
 [[step]]
 after = ["review"]
@@ -64,7 +64,7 @@ inputs = ["synthesize.findings"]
 max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 2, output = "findings" }
-payload = "findings@5"
+payload = "findings@7"
 threshold = { "fix-loop" = "any(severity >= blocker)" }
 
 [[step]]

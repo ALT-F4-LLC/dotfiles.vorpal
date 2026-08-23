@@ -567,7 +567,7 @@ ${!isWrite ? `
    options before \`add\`/\`commit\`):
 
    git add -A
-   git commit --no-gpg-sign -m "type(scope): summary"
+   git commit -m "type(scope): summary"
 
    The subject is a CONVENTIONAL COMMIT, whatever the repo's history does:
    "type(scope): summary" — type one of feat|fix|docs|refactor|test|perf|
@@ -580,10 +580,12 @@ ${!isWrite ? `
    integration.
 
    Then \`git rev-parse HEAD\` and put that sha ON THE FIRST LINE of your
-   change-summary artifact AND in your final report. The commit is unsigned
-   integration plumbing on a throwaway worktree branch — the operator's own
-   signed commit remains the only thing that enters published history. Do NOT
-   push, and do not touch any other checkout.
+   change-summary artifact AND in your final report. The commit signs
+   non-interactively with the dedicated agent signing key the harness
+   injects (ssh-format, \`~/.ssh/agent-signing.pub\`) — never pass
+   \`--no-gpg-sign\` and never touch signing config. It is still integration
+   plumbing on a throwaway worktree branch; publishing remains the
+   operator's alone. Do NOT push, and do not touch any other checkout.
 
    IF THE COMMIT IS REFUSED (guard or permission), do not fight it: leave the
    worktree exactly as it is, and report COMMIT BLOCKED with the refusal's

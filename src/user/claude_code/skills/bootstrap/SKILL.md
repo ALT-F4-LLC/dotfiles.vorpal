@@ -719,8 +719,8 @@ RESOLVED store, never about a scratch one.
 The 2026-08 corpus mechanizes NO commit inside a pipeline: every shipped
 pipeline ends before one. The boundary is conductor-commits /
 operator-publishes — the conductor cherry-picks write-step output into real
-unsigned commits at integration, and only push and PR stay the operator's
-(1Password-gated signing is unavailable to headless executors). This
+commits at integration (signed non-interactively with the harness-injected
+agent signing key), and only push and PR stay the operator's. This
 section applies ONLY if a repo-local workflow YOU wrote declares a
 commit-terminal ACTION step; skip it otherwise, and do not invent a
 commit-exec entry nothing consumes. Where it does apply, the history in one

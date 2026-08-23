@@ -1010,16 +1010,18 @@ packet's issue.diff is issue-cumulative.) At each integration point, write
 steps first, in step-id order:
 
 1. Verify the sha exists: `git cat-file -e <sha>^{commit}`.
-2. `git cherry-pick -x --no-gpg-sign <sha>` — a REAL COMMIT on the shared
+2. `git cherry-pick -x <sha>` — a REAL COMMIT on the shared
    branch, `-x` appending "(cherry picked from commit <sha>)" to the message
    so the mapping from writer sha to integrated sha survives in history even
    after the worktree branch is gone. (Operator policy since RUN-1
    graph-engine: integration commits land immediately; the
-   staged-not-committed interim is RETIRED — it left unsigned content camped
-   in the operator's index and made every fix step supersede its predecessor
-   instead of chaining on it.) The integration commit is unsigned relay
-   plumbing; PUBLISHING — push, PR, release — remains the operator's alone,
-   and nothing you do pushes.
+   staged-not-committed interim is RETIRED — it left uncommitted content
+   camped in the operator's index and made every fix step supersede its
+   predecessor instead of chaining on it.) The integration commit signs
+   non-interactively with the harness-injected agent signing key
+   (ssh-format, `~/.ssh/agent-signing.pub`) — never pass `--no-gpg-sign`.
+   It is still relay plumbing; PUBLISHING — push, PR, release — remains
+   the operator's alone, and nothing you do pushes.
 3. If a resolution comment or deliverable already cites the writer's sha
    (the change-summary from record does — see above), update it, or add a
    follow-up, with the integrated sha at this same integration point: the
@@ -1043,7 +1045,7 @@ operator's work in progress: stop and ask, never build on it.
 
 A COMMIT BLOCKED report (the executor's commit was refused in its worktree)
 means you make the commit on its behalf first — `git -C <its worktree> add
--A` then `git -C <its worktree> commit --no-gpg-sign` with a message in the
+-A` then `git -C <its worktree> commit` with a message in the
 house commit style (`~/.claude/skills/commit/SKILL.md` §4: `type(scope):
 summary`, plain language, no step or issue IDs, no paragraphs — the
 change-summary already maps sha to step) — and proceed from step 1.

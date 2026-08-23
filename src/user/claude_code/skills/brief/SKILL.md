@@ -75,7 +75,7 @@ take its fresh FINAL, and re-run this gate.
 ## 4. Handoff
 
 **Route: `/plan`.** Invoke `Skill({skill: "plan", args: "<the confirmed
-block, verbatim>"})`. Plan's own §1 reads a supplied brief block as
+block, verbatim>"})`. Plan's own seat reads a supplied brief block as
 already-answered input and only asks about what it left open — this skill's
 job ends the moment plan takes the turn.
 

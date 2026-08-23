@@ -871,6 +871,60 @@ function runParked(res) {
 }
 // TEST-END park-signals
 
+// The safety classifier runs PRE-SPAWN, and it fails CLOSED: when its stage-2
+// check errors out, it blocks the launch and says so in its own reason text.
+// RUN-43 (wave wf_b8679e05-2dc, 2026-08-22) lost 3 of 24 executor spawns to
+// ONE such error, verbatim and byte-identical across all three:
+//
+//   [STEP-1547 · judge-simplicity] blocked by safety classifier: Stage 2
+//   classifier error - blocking based on stage 1 assessment (usually
+//   transient — retrying often succeeds)
+//
+// STEP-1548 (judge-testing, opus) and STEP-1561 (synthesize-findings, sonnet)
+// carried the same sentence — different issues, different classes, different
+// models. That is infra, not content: all three later recorded `done` on
+// redispatch from the SAME rendered brief bytes, which is direct proof that
+// an identical resubmission succeeds.
+//
+// So the retry is gated on the classifier's own transient admission and on
+// nothing else, and it resubmits the SAME BYTES — same brief, same opts. A
+// REWORDED resubmission is the one thing never to do: to the classifier it
+// reads as an obfuscated retry of blocked content. A content-based block
+// (any reason WITHOUT this signature) is a real refusal, is deterministic on
+// identical bytes anyway, and stays operator-escalated on the first failure.
+//
+// TEST-BEGIN classifier-retry — extracted and exercised by
+// tests/wave-classifier-retry.test.sh against the verbatim RUN-43 reason.
+// Keep everything between the markers free of workflow globals (agent, log,
+// args) so it stays evaluable on its own.
+//
+// Both regexes must hit. CLASSIFIER_BLOCK is the harness's own wrapper —
+// `[${label}] blocked by safety classifier: ${reason}` — which keeps the
+// predicate off every other spawn error; TRANSIENT_CLASSIFIER is the
+// classifier's admission that its own stage 2 broke. A content-based reason
+// names the content, never its own machinery, so it matches neither phrase.
+// The input domain is BLOCK-REASON AND ERROR STRINGS ONLY — never an agent
+// reply. (RUN-28 is the standing lesson one field over: a body scan over
+// agent prose parked a wave on a judge who merely QUOTED the phrase it
+// scanned for. A judge reviewing this very retry will quote these sentences.)
+const CLASSIFIER_BLOCK = /blocked by safety classifier/i
+const TRANSIENT_CLASSIFIER = /Stage 2 classifier error|usually transient/i
+
+function reasonText(e) {
+    if (typeof e === 'string') return e
+    if (e && typeof e === 'object') {
+        if (typeof e.error === 'string') return e.error
+        if (typeof e.message === 'string') return e.message
+    }
+    return ''
+}
+
+function transientClassifierBlock(e) {
+    const s = reasonText(e)
+    return CLASSIFIER_BLOCK.test(s) && TRANSIENT_CLASSIFIER.test(s)
+}
+// TEST-END classifier-retry
+
 function spawn(row, phaseLabel) {
     const r = resolve(row, policy)
     const type = archetype(row, r.hint)
@@ -895,8 +949,20 @@ function spawn(row, phaseLabel) {
         effort: r.effort,
         ...(iso ? { isolation: 'worktree' } : {}),
     })
+    const failed = () => ({ step: row.step, status: 'spawn-failed', text: null })
     const handle = (text) => {
         if (text == null) {
+            // NO RETRY HERE, deliberately (DOT-558). agent() resolves to a bare
+            // `null` for a pre-spawn classifier block, an operator SKIP, an
+            // unavailable model, and a mid-flight death alike — measured in the
+            // harness (2.1.241): the block path is `if (await <preflight>(...))
+            // return null`, and the reason string is emitted only onto the
+            // progress stream, as workflowProgress[].error. Nothing in-script
+            // can tell those four apart (`Date.now()` is unavailable to
+            // workflow scripts, so not even elapsed time), so a retry on this
+            // branch would relaunch agents the operator had just skipped. The
+            // transient-classifier retry below therefore fires only where a
+            // reason is actually in hand, i.e. a REJECTED spawn.
             log(`${row.step}: SPAWN PRODUCED NOTHING (launch blocked before the ` +
                 `agent existed — this wave's task .output workflowProgress[].error ` +
                 `carries the stated reason when there is one — or model ${r.model} ` +
@@ -905,24 +971,40 @@ function spawn(row, phaseLabel) {
                 `and \`docket step show ${row.step}\`, then, if it is still claimed ` +
                 `by this dead spawn, return it to the pool with \`docket step reap ` +
                 `${row.step} --reason '<what you observed>'\` (token-free) before ` +
-                `any retry`)
-            return { step: row.step, status: 'spawn-failed', text: null }
+                `any retry. If that error carries the TRANSIENT classifier ` +
+                `signature (\`Stage 2 classifier error\` / \`usually transient\`), ` +
+                `redispatch the step UNCHANGED — same brief, never reworded`)
+            return failed()
         }
         return { step: row.step, status: 'returned', text }
     }
-    return agent(bootstrap(row, r, isolated, isWrite), opts(isolated)).then(handle)
+    const launch = (iso) => agent(bootstrap(row, r, iso, isWrite), opts(iso)).then(handle)
+    // EXACTLY ONCE, and only from the top-level catch: same brief bytes, same
+    // opts, same isolation. A second failure returns 'spawn-failed' exactly as
+    // an unretried one does.
+    const retryTransient = (err, iso) => {
+        log(`${row.step}: safety-classifier block admits its own transience ` +
+            `(${err}) — resubmitting the IDENTICAL brief once (never reworded); ` +
+            `a second failure is spawn-failed`)
+        return launch(iso).catch((err2) => {
+            log(`${row.step}: spawn error on transient-classifier retry: ${err2}`)
+            return failed()
+        })
+    }
+    return launch(isolated)
         .catch((err) => {
+            if (transientClassifierBlock(err)) return retryTransient(err, isolated)
             if (isolated && /base branch|worktree/i.test(String(err))) {
                 log(`${row.step}: worktree isolation unavailable (${err}) — retrying ` +
                     `WITHOUT isolation; cross-contamination guard is OFF for this spawn`)
-                return agent(bootstrap(row, r, false, isWrite), opts(false)).then(handle)
+                return launch(false)
                     .catch((err2) => {
                         log(`${row.step}: spawn error on non-isolated retry: ${err2}`)
-                        return { step: row.step, status: 'spawn-failed', text: null }
+                        return failed()
                     })
             }
             log(`${row.step}: spawn error: ${err}`)
-            return { step: row.step, status: 'spawn-failed', text: null }
+            return failed()
         })
 }
 

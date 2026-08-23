@@ -1572,15 +1572,44 @@ the ledger record one decision where several were made (RUN-5: two bundles
 flagged by the operator, unbundled on the spot). One gate per question inside a
 multi-question call is fine; one question carrying several gates is not.
 
-One gate per question is about distinct decisions — it does not mean
-re-litigating a settled one. When a later step parks on a gate whose verdict
-AND reason text are identical to one the operator already resolved THIS run
-(the same unmatched trust gap, the same sandbox-caused failure), present the
-new park WITH the standing precedent and ask once whether it extends:
-"apply the same resolution to identical repeats for the rest of this run" /
-"keep deciding each". Record each step's resolution note naming the precedent
-answer. RUN-18 asked four separate times for one verbatim-identical gap
-(2026-08-17); the operator's answer never changed.
+**A gate disposition is scoped to the STEP it answered.** An override-pass on
+STEP-N settles STEP-N. It settles nothing about the next step that parks the
+same way, however identical the root cause, the failing script, or your own
+reasoning — a `waiting-human` park is reserved to the operator, and approval
+in one context never extends to the next. A recurrence parks again and is
+asked again. The ONLY thing that carries is an answer whose own text covered a
+class, and it carries exactly as far as the class the operator named and no
+wider — you may not read a class ruling out of a step-scoped answer, out of
+strong evidence, or out of how obviously the same the two parks look. RUN-44
+override-passed STEP-1705 on a render-verify gate it had proved a false
+positive, then resolved STEP-1721 — same defect class, different script — with
+no question at all, "applying the same override-pass disposition the operator
+already established for this defect class." The evidence was sound and the run
+stayed correct; the disposition was still not the conductor's to extend.
+
+So offer the generalization AT THE FIRST such gate instead of assuming it at
+the second. When the park you are presenting is one that can plainly recur —
+a defect class the run will hit again, an environment failure that is not
+step-specific — add a class-scoped option beside the step-scoped one:
+"Override-pass this step only (Recommended)" / "Override-pass this step and
+any recurrence of this exact defect class for the rest of this run — each one
+still logged and still filed" / "Park and stop the issue". Name the class in
+words the operator can check, and say what stays true either way: every
+recurrence still gets its own resolve verb, its own note, and the durable fix
+issue the broken-check rule below requires. And where no class-scoped answer
+covers a later park whose verdict AND reason text are identical to one already
+resolved THIS run (the same unmatched trust gap, the same sandbox-caused
+failure), present the new park WITH the standing precedent and ask once
+whether it extends: "apply the same resolution to identical repeats for the
+rest of this run" / "keep deciding each". Record each step's resolution note
+naming the precedent answer, or the class-scoped answer that covered it.
+RUN-18 asked four separate times for one verbatim-identical gap (2026-08-17)
+and the operator's answer never changed — which is an argument for offering
+the class option up front, never for taking it unasked.
+
+One gate per question is about distinct decisions, and re-asking a recurrence
+is not re-litigating: what the operator settled is what their answer's own
+scope says they settled.
 
 **Keep shell and JSON literals OUT of the question text.** A question string
 carrying nested quotes and `$(...)` has been rejected outright —

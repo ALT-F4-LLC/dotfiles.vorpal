@@ -1,7 +1,7 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 16
+version = 17
 
 [match]
 labels_any = ["security-change", "security-load-bearing"]
@@ -18,7 +18,6 @@ unless_labels = [
 "judge-architecture" = { max = 16, max_step_duration = "1h" }
 "judge-correctness" = { max = 16, max_step_duration = "1h" }
 "judge-security" = { max = 16, max_step_duration = "1h" }
-"judge-simplicity" = { max = 16, max_step_duration = "1h" }
 "judge-testing" = { max = 16, max_step_duration = "1h" }
 "synthesize-findings" = { max = 16, max_step_duration = "1h" }
 "threat-model" = { max = 16, max_step_duration = "1h" }
@@ -52,7 +51,7 @@ packet = ["contracts/{executor}.md"]
 after = ["implement"]
 emits = "findings"
 expected_cost = 0.60
-fanout = ["judge-correctness", "judge-architecture", "judge-simplicity", "judge-testing", "judge-security"]
+fanout = ["judge-correctness", "judge-architecture", "judge-testing", "judge-security"]
 holds_tree = false
 inputs = ["implement.change-summary", "threat-model.threat-model", "issue.diff"]
 name = "review"
@@ -76,7 +75,7 @@ after = ["synthesize"]
 inputs = ["synthesize.findings"]
 max_fix_loops = 3
 name = "reconcile"
-params = { field = "severity", method = "max", hold_spread = 2, output = "findings" }
+params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
 payload = "findings@7"
 threshold = { "security-vote" = "any(severity >= high)" }
 
@@ -88,8 +87,8 @@ emits = "change-summary"
 packet = ["contracts/{executor}.md"]
 expected_cost = 1.00
 loop = true
-inputs = ["reconcile.findings", "implement.change-summary", "threat-model.threat-model"]
-gates = ["build", "tests", "secret-scan", "vuln-scan"]
+inputs = ["reconcile.findings", "implement.change-summary", "threat-model.threat-model", "issue.latest.ac-report"]
+gates = ["build", "tests", "self-hygiene", "secret-scan", "vuln-scan", "sdet-abuse"]
 after_loop = "review"
 
 [[step]]

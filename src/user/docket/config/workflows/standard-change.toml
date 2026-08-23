@@ -1,7 +1,7 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 21
+version = 22
 
 [match]
 unless_labels = [
@@ -21,7 +21,6 @@ unless_labels = [
 "judge-architecture" = { max = 16, max_step_duration = "1h" }
 "judge-correctness" = { max = 16, max_step_duration = "1h" }
 "judge-security" = { max = 16, max_step_duration = "1h" }
-"judge-simplicity" = { max = 16, max_step_duration = "1h" }
 "judge-testing" = { max = 16, max_step_duration = "1h" }
 "synthesize-findings" = { max = 16, max_step_duration = "1h" }
 "verify-ac" = { max = 16, max_step_duration = "1h" }
@@ -43,7 +42,7 @@ packet = ["contracts/{executor}.md"]
 name = "review"
 holds_tree = false
 after = ["implement"]
-fanout = ["judge-correctness", "judge-architecture", "judge-simplicity", "judge-testing"]
+fanout = ["judge-correctness", "judge-architecture", "judge-testing"]
 emits = "findings"
 packet = ["contracts/{executor}.md"]
 payload = "findings@7"
@@ -79,7 +78,7 @@ after = ["synthesize"]
 inputs = ["synthesize.findings"]
 max_fix_loops = 2
 name = "reconcile"
-params = { field = "severity", method = "max", hold_spread = 2, output = "findings" }
+params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
 payload = "findings@7"
 threshold = { "fix-loop" = "any(severity >= blocker)" }
 
@@ -89,8 +88,8 @@ class = "write"
 emits = "change-summary"
 executor = "fix"
 expected_cost = 1.00
-gates = ["build", "tests", "secret-scan"]
-inputs = ["reconcile.findings", "implement.change-summary"]
+gates = ["build", "tests", "self-hygiene", "secret-scan"]
+inputs = ["reconcile.findings", "implement.change-summary", "issue.latest.ac-report"]
 loop = true
 name = "fix"
 packet = ["contracts/{executor}.md"]

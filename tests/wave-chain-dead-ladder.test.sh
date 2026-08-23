@@ -18,6 +18,11 @@
 # function, feeds it stub spawn/runGate/probe/parallel/log globals, and asserts
 # on what got spawned and what came back.
 #
+# It also covers the ladder's OTHER corpse guard, the pre-claim probe
+# (DOT-560): the probe stub is scripted per step, so the suite can assert both
+# halves of the contract — a recognized unreachable status skips the spawn, and
+# anything unrecognized (empty, prose, engine error) still spawns.
+#
 # WHAT THIS SUITE CANNOT SEE: the real spawn() (agent launch, worktree
 # isolation, the DOT-558 classifier retry) is stubbed out wholesale, and the
 # engine's re-offer of the skipped steps at the next dispatch is engine
@@ -86,7 +91,14 @@ const runGate = (row) => {
         ? { step: row.step, status: 'gate-passed', text: '{"status":"done"}' }
         : settleFor(row))
 }
-const probe = () => Promise.resolve('')
+// The pre-claim probe. PROBES maps a step to the raw text `docket step show`
+// would have returned for it; an unlisted step probes empty (fail-open).
+let PROBES = new Map()
+let PROBED = []
+const probe = (_cmd, _label, _phase, step) => {
+    PROBED.push(step)
+    return Promise.resolve(PROBES.get(step) || '')
+}
 
 const ladder = async () => {
 JS
@@ -117,11 +129,13 @@ const RUN43 = () => [
     ex('STEP-2002', 'HRN-99', 1),
 ]
 
-const run = async (theRows, results) => {
+const run = async (theRows, results, probes) => {
     rows = theRows
     SPAWNED = []
+    PROBED = []
     LOG.length = 0
     RESULTS = new Map(Object.entries(results || {}))
+    PROBES = new Map(Object.entries(probes || {}))
     return ladder()
 }
 
@@ -174,6 +188,56 @@ ok(statusOf(out, 'STEP-1550') === 'not-launched-run-parked' &&
     'a mid-wave park leaves every later row not-launched-run-parked')
 ok(SPAWNED.includes('STEP-2001'),
     'while the parking row\'s own stage-mates still ran')
+
+// ---- DOT-560: the pre-claim probe's fail-open must not cover 'pending' ----
+// Shape: one issue whose stage-0 row is an ACTION (engine-run, so the chain is
+// NOT dead), with executors behind it at stages 1 and 2. needsClaimProbe fires
+// on exactly those two, and their probes run AFTER stage 0 was awaited — the
+// stage barrier has passed, so a 'pending' step can no longer become 'ready'
+// within this wave.
+const act = (step, issue, stage) => ({ step, issue, stage, kind: 'action' })
+const PROBE43 = () => [
+    act('STEP-1540', 'HRN-30', 0),
+    ex('STEP-1563', 'HRN-30', 1),
+    ex('STEP-1572', 'HRN-30', 2),
+]
+const st = (s) => `{"data":{"step":"STEP-x","status":"${s}"}}`
+
+out = await run(PROBE43(), {}, { 'STEP-1563': st('pending'), 'STEP-1572': st('pending') })
+ok(PROBED.includes('STEP-1563'),
+    'DOT-560: the row behind an action row is pre-claim probed')
+ok(statusOf(out, 'STEP-1563') === 'skipped-not-claimable',
+    'DOT-560: a post-barrier probe reading "pending" settles skipped-not-claimable')
+ok(!SPAWNED.includes('STEP-1563'),
+    'DOT-560: and no executor is spawned for it')
+ok(statusOf(out, 'STEP-1572') === 'skipped-dead-issue' && !SPAWNED.includes('STEP-1572'),
+    'DOT-560: skipped-not-claimable still kills the rest of the issue\'s chain')
+
+// Fail-open is the whole reason the probe is safe to run: anything the regex
+// does not positively recognize still spawns.
+out = await run(PROBE43(), {}, {})
+ok(SPAWNED.includes('STEP-1563') && statusOf(out, 'STEP-1563') === 'returned',
+    'DOT-560: an EMPTY probe still spawns (fail-open preserved)')
+
+out = await run(PROBE43(), {}, {
+    'STEP-1563': 'docket: could not reach the database\n',
+    'STEP-1572': 'Step STEP-1572 is pending.\n',
+})
+ok(SPAWNED.includes('STEP-1563') && SPAWNED.includes('STEP-1572'),
+    'DOT-560: unparseable probe prose still spawns, even prose containing "pending"')
+
+// And a 'ready' step — the case the probe exists to let through — is untouched.
+out = await run(PROBE43(), {}, { 'STEP-1563': st('ready'), 'STEP-1572': st('ready') })
+ok(SPAWNED.includes('STEP-1563') && SPAWNED.includes('STEP-1572') &&
+   statusOf(out, 'STEP-1572') === 'returned',
+    'DOT-560: a probe reading "ready" spawns as before')
+
+// The terminal statuses the probe already skipped on must keep skipping.
+for (const s of ['done', 'superseded', 'skipped', 'failed']) {
+    out = await run(PROBE43(), {}, { 'STEP-1563': st(s) })
+    ok(statusOf(out, 'STEP-1563') === 'skipped-not-claimable' && !SPAWNED.includes('STEP-1563'),
+        `DOT-560 fence: "${s}" still settles skipped-not-claimable without a spawn`)
+}
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)

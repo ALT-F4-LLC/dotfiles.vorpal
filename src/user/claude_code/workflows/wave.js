@@ -1601,12 +1601,23 @@ for (const k of stageKeys) {
         if (needsClaimProbe(row)) {
             return probe(`docket step show ${row.step} --json`,
                 `${row.step} · pre-claim`, label, row.step).then((show) => {
-                // Skip only on a positively recognized TERMINAL status; empty
-                // output, prose, and anything unrecognized all spawn (fail-open).
-                const term = show.match(/"status"\s*:\s*"(done|superseded|skipped|failed)"/)
+                // Skip only on a positively recognized status the wave cannot
+                // act on; empty output, prose, and anything unrecognized all
+                // spawn (fail-open).
+                //
+                // DOT-560: `pending` belongs in that set HERE and only here.
+                // This probe runs after the row's earlier stages have been
+                // awaited and settled — the stage barrier already passed — so
+                // nothing left in this wave can advance the step to `ready`.
+                // A pending row is dead for the wave: spawning it burns an
+                // executor (~17K tokens) that dies on claim CONFLICT with "an
+                // `after` predecessor is not done". The engine re-offers the
+                // step at the next dispatch, so skipping loses nothing.
+                const term = show.match(/"status"\s*:\s*"(done|superseded|skipped|failed|pending)"/)
                 if (!term) return spawn(row, label)
                 log(`${row.step}: not claimable (${term[1]}) — a same-issue ` +
-                    `gate or action upstream settled it; skipping the spawn`)
+                    `gate or action upstream left it unreachable for this ` +
+                    `wave; skipping the spawn`)
                 return { step: row.step, status: 'skipped-not-claimable', text: show }
             })
         }

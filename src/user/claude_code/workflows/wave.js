@@ -801,9 +801,9 @@ if (!input || typeof input !== 'object') throw new Error(
 const rows = input.rows || []
 const policy = parseToml(input.policyText || '')
 
-if (policy.policy?.version !== 8) {
+if (policy.policy?.version !== 13) {
     throw new Error(
-        `wave.js: policy.toml [policy] version is ${JSON.stringify(policy.policy?.version)}, expected 8 ` +
+        `wave.js: policy.toml [policy] version is ${JSON.stringify(policy.policy?.version)}, expected 13 ` +
         `(the [variants]/escalate_to shape, unchanged since v2 — only the version number moved). ` +
         `Refusing to route against an unknown schema.`
     )

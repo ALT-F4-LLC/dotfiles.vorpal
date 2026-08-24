@@ -952,7 +952,7 @@ const PROBE_SCHEMA = {
     additionalProperties: false,
 }
 
-function probeBrief(label) {
+function blockProbeBrief(label) {
     return [
         'You are a DIAGNOSTIC PROBE inside a running Docket wave (wave.js). A',
         'step\'s agent launch just resolved to null: the launch may have been',
@@ -1079,7 +1079,7 @@ function spawn(row, phaseLabel) {
         // a wrong extraction here is the one thing that could relaunch a
         // skipped agent) at low effort; a null probe result is a found-nothing.
         if (retried) return escalate()
-        return agent(probeBrief(stepLabel), {
+        return agent(blockProbeBrief(stepLabel), {
             label: `${row.step} · block-probe`,
             phase: phaseLabel,
             agentType: 'executor-read',

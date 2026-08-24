@@ -22,6 +22,8 @@ jobs:
 
       - run: bash tests/wave-classifier-retry.test.sh
 
+      - run: bash tests/wave-escalation-walk.test.sh
+
       - run: bash tests/wave-park-signals.test.sh
 
       - run: bash tests/workflow-module-parse.test.sh

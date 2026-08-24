@@ -170,16 +170,76 @@ most optimal batch, settled 2026-08-21 ("ready, high-priority, parallel-safe"):
    deferred list brings its own edge with it.
 4. **Run-ready** — every §3 recording obligation the bound workflow will
    check at activation, checked here first: the body carries acceptance
-   criteria (at least one checkable item, not a restated title); the labels
-   produce the intended workflow under `docket workflow show <intended>`
-   (§3's labels-confirm-binding rule — a domain-flavored issue carrying none
-   of its variant's labels binds the baseline silently); `--scope` is set
-   when the bound workflow holds the tree, and every glob matches at least
-   one file in this checkout. An issue that fails is not run-ready: list it
+   criteria (at least one checkable item, not a restated title); `--scope` is
+   set when the bound workflow holds the tree, and every glob matches at
+   least one file in this checkout; plus the binding probe and the scope-vs-AC
+   lint below. An issue that fails any of them is not run-ready: list it
    under "not ready" with the missing thing named. The operator may have you
    fill it in this session — `docket issue edit` for labels, `--scope`, or a
    body with ACs in the operator's words, fine until the activate that binds
    it — or send it to `/groom`; you never fill ACs from your own guess.
+
+   **Probe the binding, and probe it in both directions.** §3's
+   labels-confirm-binding rule asks whether an issue's labels produce the
+   INTENDED workflow (`docket workflow show <intended>`) — and for a backlog
+   issue you did not author, the intended one is whatever its ACs and scope
+   imply. That question is one-directional: it cannot see a SECOND registered
+   workflow whose `[match]` also accepts those labels, which is the refusal
+   activation actually throws. So count the matches yourself, against the
+   REGISTERED corpus and not the source tomls — a stale registration is
+   invisible in `ls ~/.docket/config/workflows/` and is precisely what
+   refuses:
+
+   ```bash
+   docket workflow list --json=v2 --limit 0   # every registered name@version; --limit 0
+                                              # because the default is 50 and this lists
+                                              # every VERSION of every name, not just the
+                                              # binding one
+   docket workflow show <name>                # per binding-eligible name: its [match] block
+   ```
+
+   The bindable set is the highest registered version of each name whose row
+   carries no `deprecated_at_ms` (a retired version still resolves under
+   `show` and never binds), plus any `.docket/config/workflows/*.toml` this
+   repo carries, which activation auto-registers before it matches. Every
+   corpus `[match]` routes on labels alone (§2), so evaluate each candidate's
+   labels against `labels_any` / `labels_all` / `unless_labels`,
+   `unless_labels` last and winning, and count:
+
+   - **Exactly one** — that is the workflow the issue binds. Carry the
+     `<name>@<version>` into the proposal beside its labels, whether or not
+     it surprises you.
+   - **Zero or several** — the `VALIDATION_ERROR` (exit 3) `docket run
+     activate <run> --dry-run` would print, naming the issue and every
+     candidate. Not ready: `labels match 2 workflows (<a>, <b>)`.
+   - **One, but not the one the ACs and scope imply** — §3's route-by-omission
+     tell, and an operator decision rather than yours. Not ready: `binds <wf>,
+     ACs imply <other>`.
+
+   A live bare-`/plan` batch shipped one of each into conduct
+   (agentic-services, 2026-08-24), where the activation dry-run caught them
+   and each cost an operator gate mid-conduct: a `security-load-bearing` label
+   ambiguous against a stale registration, refused outright; and a label-less
+   issue whose ACs touched only `.env.example` and `README.md` binding the
+   full `standard-change` pipeline. Both were mechanically visible here, one
+   round earlier and at no gate's cost. If `workflow list` comes back EMPTY,
+   this store has never activated and nothing is registered yet (§2) — say
+   that in the proposal rather than reporting a clean probe.
+
+   **Scope covers what the ACs name.** Every file path an acceptance criterion
+   names must be matched by one of the issue's scope globs. The check is
+   textual — paths against globs, by the matcher's own rules in §3 — so it
+   needs no repo read and belongs here rather than in the reader's brief. An
+   AC that requires editing `README.md` under `scope: ['.env.example']` cannot
+   pass without a diff the scope gate rejects (the same batch, same day). The
+   remedy is scope-side, never AC-side: the ACs in a backlog body are the
+   operator's words and §1b does not rewrite them. Not ready: `AC names
+   <path>, not in scope` — and the fix the operator may authorize in the
+   confirmation round is `docket issue edit --scope`, which REPLACES the whole
+   list, so pass every glob you mean to keep. This is §3's
+   AC-wider-than-scope rule read mechanically, in the direction a backlog
+   issue you did not author actually fails it.
+
 5. **Fits the stated budget** — size each admitted issue by §3's arithmetic
    (the bound workflow's expected-cost floor with when-gated steps included,
    plus rework headroom: that issue's own bound workflow's
@@ -202,12 +262,15 @@ member; it is a comment on that issue and a line in the proposal.
 **Propose, in ONE question round.** Present the proposal as prose above the
 question, then ask via a QUESTIONS report — never as a prose question:
 
-- the batch, ranked: id, title, priority, labels → the workflow they bind,
-  scope globs, expected cost, and the one-line reason it ranks where it does;
-  the running total against the cap;
+- the batch, ranked: id, title, priority, labels → the workflow they bind
+  (the `<name>@<version>` step 4's probe returned, named for every member,
+  not only the surprising ones), scope globs, expected cost, and the one-line
+  reason it ranks where it does; the running total against the cap;
 - deferred, with the reason each time: blocked by DKT-N / collides with DKT-N
-  on `<prefix>` / not free (run RUN-N, or assignee) / not ready (what is
-  missing) / already landed (commit);
+  on `<prefix>` / not free (run RUN-N, or assignee) / not ready (which
+  obligation from step 4 — no ACs, no scope, a glob matching nothing, `labels
+  match N workflows`, `binds <wf>, ACs imply <other>`, or `AC names <path>,
+  not in scope`) / already landed (commit);
 - one single-select question, recommended option first: record this batch as
   a run (Recommended); record a subset or a different set — the operator
   names it as typed text; propose again under a different cap; propose only —

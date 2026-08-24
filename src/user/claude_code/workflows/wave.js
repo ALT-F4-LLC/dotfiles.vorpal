@@ -260,8 +260,14 @@ function resolve(row, policy) {
     // Escalation: one escalate_to hop per prior claim — row.attempt counts
     // claims-so-far, whatever ended each one (gate failure or lease reap; the
     // row exposes no split — DOT-486) — from the standing variant. The walk
-    // stops at the chain's end, at the security ceiling, or just before a
-    // variant whose model is never-listed.
+    // stops at the chain's end or at the security ceiling. A hop whose model
+    // is never-listed is REDIRECTED through [escalation.fallback] rather than
+    // ended there: the non-pinned path enters the fable variant, fails
+    // fableEligible(), and lands on the fallback, so breaking here stranded a
+    // pinned step one hop BELOW where an unpinned one reaches (DOT-650). The
+    // redirect is itself a hop, is bounded by the ceiling like any other, and
+    // the walk ends only when the fallback is missing, never-listed, or a
+    // no-op.
     if (row.attempt > 0) {
         for (let hop = 0; hop < row.attempt; hop++) {
             if (ceiling && variant === ceiling) break
@@ -281,7 +287,17 @@ function resolve(row, policy) {
                 variant = ceiling
                 break
             }
-            if (never.includes(next.model)) break
+            if (never.includes(next.model)) {
+                const fb = ((policy.escalation || {}).fallback || {})[cur.escalate_to]
+                const fbSpec = fb ? variantSpec(policy, fb) : null
+                if (!fbSpec || never.includes(fbSpec.model) || fb === variant) break
+                if (ceiling && beyond.has(fb)) {
+                    variant = ceiling
+                    break
+                }
+                variant = fb
+                continue
+            }
             variant = cur.escalate_to
         }
     }

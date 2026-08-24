@@ -1,6 +1,6 @@
 ---
 node: judge-correctness
-version: 3
+version: 4
 archetype: executor-read
 packet_includes:
   - fragments/hard-gates.md
@@ -11,7 +11,7 @@ packet_includes:
   - fragments/re-review-rounds.md
   - fragments/diff-reconstruction.md
 emits: findings
-payload: findings@6
+payload: findings@8
 ---
 # Charter
 Examine one change for defects in what the code actually does: logic errors, boundary

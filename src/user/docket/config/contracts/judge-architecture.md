@@ -1,6 +1,6 @@
 ---
 node: judge-architecture
-version: 2
+version: 3
 archetype: executor-read
 packet_includes:
   - fragments/severity-ladder-general.md
@@ -11,7 +11,7 @@ packet_includes:
   - fragments/re-review-rounds.md
   - fragments/diff-reconstruction.md
 emits: findings
-payload: findings@6
+payload: findings@8
 ---
 # Charter
 Examine one change for how it fits the system: pattern conformance, module boundaries

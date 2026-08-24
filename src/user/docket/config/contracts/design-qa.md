@@ -1,6 +1,6 @@
 ---
 node: design-qa
-version: 3
+version: 4
 archetype: executor-read
 packet_includes:
   - fragments/hig-principles.md
@@ -10,7 +10,7 @@ packet_includes:
   - fragments/diff-reconstruction.md
   - fragments/truth-first.md
 emits: findings
-payload: findings@6
+payload: findings@8
 ---
 # Charter
 Verify the surface as actually built against its accepted UX specification: walk every

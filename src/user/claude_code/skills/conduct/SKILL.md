@@ -136,7 +136,14 @@ quoted permission refusal, at near-zero tokens, having claimed nothing.
 **Probe the completion gates against a clean scratch worktree before the
 first dispatch.** Run the bound workflow's pinned gate commands once in a
 throwaway worktree of clean HEAD (`git worktree add <tmp> HEAD`, run them,
-`git worktree remove <tmp>`). A gate that fails on clean HEAD is not caused
+`git worktree remove <tmp>`). Spell `<tmp>` as a path under this session's
+scratchpad directory written out LITERALLY — the absolute path the harness
+named, never `$TMPDIR` or any other environment expansion — because that
+expansion has been observed resolving to two DIFFERENT directories across
+consecutive `Bash` calls in one session: RUN-45 created the probe worktree
+under `$TMPDIR`, and the very next call could not `cd` into it, costing four
+calls (create, two failed `cd`s, remove) before recreating it under the
+literal path. A gate that fails on clean HEAD is not caused
 by this run's changes — commonly ENVIRONMENTAL, an untracked toolchain that
 never materializes in a fresh worktree (a direnv-provisioned
 `.env/bin/protoc` cost one run five parks and eleven override rituals before
@@ -1548,9 +1555,15 @@ durable copy.
 And read EVERY seat's rationale on such a pass for a CONDITION that names
 later work — a follow-up issue, a fix before phase N, a re-review. Each
 condition is FILED as an issue — `docket issue create` in the project that
-owns the work, per the gap-routing rule — BEFORE `dispatch close`, with the
-proposal linked to it (`docket vote link <proposal> --issue <new>`); the new
-id goes in the close report and in any plan prompt you hand the operator. The
+owns the work, per the gap-routing rule, and ALWAYS carrying `-l tribunal`,
+the provenance label for a panel-condition filing — BEFORE `dispatch close`,
+with the proposal linked to it (`docket vote link <proposal> --issue <new>`);
+the new id goes in the close report and in any plan prompt you hand the
+operator. That label is required, not decorative: it is what lets a later
+census separate conditions a panel imposed from every other issue in the
+project. `-l shadow` is NEVER it — that one marks what the `shadow` skill
+itself filed, and a panel condition wearing it inflates every count of
+shadow's own findings (RUN-45 filed three conditions that way). The
 link to a successor issue is provenance, not the deliverable. A condition that
 lives only in a vote rationale is the RUN-39 case: a gate passed over one
 reject, both approving seats conditioned their approval on C44/C45/C46 being

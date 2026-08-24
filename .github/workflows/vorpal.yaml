@@ -24,6 +24,8 @@ jobs:
 
       - run: bash tests/wave-park-signals.test.sh
 
+      - run: bash tests/workflow-module-parse.test.sh
+
       - run: bash tests/workflow-sync.test.sh
 
   build-dev:

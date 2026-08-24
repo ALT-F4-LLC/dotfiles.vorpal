@@ -182,10 +182,12 @@ most optimal batch, settled 2026-08-21 ("ready, high-priority, parallel-safe"):
    it — or send it to `/groom`; you never fill ACs from your own guess.
 5. **Fits the stated budget** — size each admitted issue by §3's arithmetic
    (the bound workflow's expected-cost floor with when-gated steps included,
-   plus rework headroom: one fix-loop round per two issues on
-   standard-change, three rounds per issue on security-change) and
-   take issues in rank order until the next one would breach the cap. No
-   cap stated yet means the confirmation round asks for one — it is an
+   plus rework headroom: that issue's own bound workflow's
+   `rework_round_cost` × that workflow's own declared `max_fix_loops`, read
+   from the pinned toml and summed per issue, never one round per workflow
+   and never divided by issue count) and take issues in rank order until the
+   next one would breach the cap. No cap stated yet means the confirmation
+   round asks for one — it is an
    operator-only question, so it goes in that same round, not a second.
 
 **Read before you propose.** §2 applies unchanged, narrowed to the candidate
@@ -415,8 +417,13 @@ bound workflow's source — `grep -n expected_cost
 each `fanout` step's cost multiplied by its sibling count (`grep -n 'fanout ='
 ~/.docket/config/workflows/<wf>.toml` gives the list; the tomls annotate those
 lines `# per expanded sibling`). Standard-change's review is 0.60 × four
-judges = 2.40, making that track 7.9 an issue; security-change's is 0.60
-× five = 3.00, making it 7.2. Two bounded greps over one file for one key each
+judges = 2.40 — three in the `review` fanout plus the when-gated
+`review-security` — security-change's and ui-change's are 0.60 × four,
+spec-doc's 0.60 × three, and spec-project's `spec-author` fans out SEVEN
+ways at 1.00 apiece. The per-track total is the sum YOU read and never a
+figure copied out of this paragraph: these tomls are versioned
+(standard-change is on 22, security-change on 17) and a total frozen into
+prose goes stale silently. Two bounded greps over one file for one key each
 — not the raw corpus dump §2 warns off, and nothing here binds, so the source
 tomls are the right surface. Never present a floor you did not read this way
 as corpus arithmetic: a live bare-`/plan` planner invented per-issue floors of
@@ -424,16 +431,60 @@ as corpus arithmetic: a live bare-`/plan` planner invented per-issue floors of
 authorized against a rule-correct 80 (grep for `expected_cost` in that
 transcript: zero hits). If the read did not happen, the number is an estimate
 and the proposal must say so in those words. On top of the floor goes REWORK
-HEADROOM — at least one full
-fix-loop round per two issues. Standard-change's round is fix 1.0 plus four
-judges at 0.6 plus synthesize 0.4, so 3.8, and half the issues this epoch took
-one. For security-change budget THREE rounds per issue: rejection-driven
-loops are that track's normal case — both complete runs to date had every
-security vote rejected at least once, and RUN-34, sized on two rounds (cap
-14), hit its wall on the THIRD normal-case fix pass and paid two mid-run
-raises to close at 20.9, floor plus three rounds almost exactly (a round is
-fix 1.0 + five judges at 0.6 + synthesize 0.4 ≈ 4.4). Price only the track's
-normal case into the cap: a round nobody could have planned — an operator's
+HEADROOM, and it is read the same way the floor is, never guessed: for EVERY
+admitted issue, its bound workflow's `rework_round_cost` × that workflow's
+own declared `max_fix_loops`, summed across the batch. Both factors are in
+the pinned definition. `grep -n max_fix_loops
+~/.docket/config/workflows/<wf>.toml` gives the bound — it lives on the step
+that OWNS the loop, which is `reconcile` on standard-change, ui-change,
+security-change, spec-doc and spec-project, `verify` on docs-only and
+disposition, and the `read-gate` vote on investigation. The round is the
+`loop = true` step plus everything replayed from its `after_loop` re-entry
+point up to that owning step — on the change tracks exactly the fix +
+judges + synthesize arithmetic the floor already does. Read the step NAMES,
+not the costs alone: the fix step is called `revise` on spec-doc,
+spec-project, investigation and disposition, docs-only's `review` is a
+single `judge-correctness` with no fanout and the track has no synthesize
+step at all, and spec-doc's six `revise-*` variants are mutually exclusive
+`when`s — exactly one fires, so its round carries 1.50 once, not six times.
+
+The corpus as it reads today, round × declared loops = reserved per issue:
+standard-change 1.0 + 2.40 + 0.60 = 4.0 × 2 = 8.0; ui-change 4.0 × 2 = 8.0;
+security-change 4.0 × 3 = 12.0; spec-doc 1.50 + 1.80 + 0.60 = 3.9 × 2 = 7.8;
+spec-project (`revise` fans out seven ways at 0.70) 4.90 + 1.80 + 0.60 =
+7.3 × 2 = 14.6; docs-only 0.60 + 0.60 + verify 0.40 = 1.6 × 2 = 3.2;
+disposition 0.40 + verify 0.40 = 0.8 × 2 = 1.6; investigation `revise` 0.40
+alone, its re-entry being a vote that costs nothing, × 2 = 0.8. Recompute
+them from the tomls rather than trusting this list — it is a worked example
+of the read, not a substitute for it, and every one of these files is
+versioned.
+
+Two things this forbids, both of them measured. NEVER budget a fixed number
+of rounds the workflow did not declare: security-change declares THREE and
+rejection-driven loops are that track's normal case — both complete runs to
+date had every security vote rejected at least once, and RUN-34, sized on
+two rounds (cap 14), hit its wall on the THIRD pass and paid two mid-run
+raises to close at 20.9; that third round was in its own definition the
+whole time, and 12.0 of reserved headroom is what reading it gets you. And
+NEVER divide by issue count — every admitted issue reserves its own
+workflow's full `max_fix_loops`, because loops are per issue and the batch
+is what makes them concurrent, not what makes them share. RUN-43 recorded
+"floor 22.9 + rework headroom (1 standard-change round @3.8, 1 ui-change
+round @4.6) = 31.3 -> cap 32" and then spent 21.2 on FIVE fix-loop rounds —
+a 2.5x under-forecast that cost two run pauses and a manual loop override
+(seq 6503/6505). Its exact issue mix is not recoverable from that line, so
+there is no honest reforecast of it here; what IS derivable is that the
+smallest mix the line admits — one standard-change issue, one ui-change
+issue — reserves 8.0 + 8.0 = 16.0 under this rule against the 8.4 it wrote
+down, and every larger mix reserves more. RUN-39 is the same defect from the
+other end: it activated at `budget.default` 12 — a default is not a sized
+cap — for a spec-doc issue whose own definition declares 3.8 of floor and
+7.8 of headroom before the run has learned anything, then raised twice, 12
+-> 15 -> 48, the second raise projecting 35.1 for an investigation expansion
+the run itself declared at 2.60. A number that came from neither the pinned
+definition nor this arithmetic is not a cap, and it is not a raise either.
+Price only the track's normal case into the cap: a round nobody could have
+planned — an operator's
 out-of-band commit needing independent review mid-run — is what the raise
 machinery is FOR, not a sizing failure. A cap that is short by arithmetic is
 not discipline, it is a

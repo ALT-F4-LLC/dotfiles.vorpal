@@ -1,6 +1,6 @@
 ---
 node: judge-testing
-version: 2
+version: 3
 archetype: executor-read
 packet_includes:
   - fragments/tdd-discipline.md
@@ -11,7 +11,7 @@ packet_includes:
   - fragments/re-review-rounds.md
   - fragments/diff-reconstruction.md
 emits: findings
-payload: findings@6
+payload: findings@8
 ---
 # Charter
 Examine one change for the adequacy and honesty of its tests: what is covered, what is

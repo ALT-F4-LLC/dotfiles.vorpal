@@ -1,6 +1,7 @@
 ---
 name: conduct
-description: Drive an activated Docket run to completion — ask the engine what is ready, dispatch it (the manifest carries the staged closure, whole dependency chains per wave), invoke the wave workflow, close the dispatch, repeat. Vote gates ride the wave (it seats the panel mid-wave); conversational gates go to tribunal.js; every non-approval that parks, and every reserved matter, escalates to the operator, and the engine verb runs on the outcome. Holds no run state and makes no routing decisions; the engine schedules and wave.js routes.
+description: Drive an activated Docket run to completion — ask the engine what is ready, dispatch it (the manifest carries the staged closure, whole dependency chains per wave), invoke the wave workflow, close the dispatch, repeat. Vote gates ride the wave (it seats the panel mid-wave); conversational gates go to tribunal.js; every non-approval that parks, and every reserved matter, escalates to the operator, and the engine verb runs on the outcome. Invoked as `/conduct RUN-N` it drives that run explicitly; invoked bare it resolves "the next run" itself — the newest active or waiting-human run in the project, else the newest run still in planning, else a plain report that there is nothing to drive — so it chains directly after `/plan`'s own bare mode with no question in between. Holds no run state and makes no routing decisions; the engine schedules and wave.js routes.
+argument-hint: "[RUN-N]"
 ---
 
 # conduct
@@ -54,6 +55,52 @@ proposal, note, or reason as if it resolved: a judge or auditor re-deriving it
 finds nothing, and the dangling id then lives in the audit trail forever (a
 vote rationale citing one drew a "does not resolve" concern from its own
 panel, measured).
+
+## Which run
+
+Two modes, the same split `shadow` and `plan` already use: an explicit
+argument always wins; bare, you resolve it yourself rather than asking.
+
+- **`/conduct RUN-N`** — the operator named the run. `$RUN` is `RUN-N`,
+  verbatim; go straight to **Before the loop** below with it.
+- **Bare `/conduct`** — no run named, so you resolve "the next run" from the
+  engine, not from a question back to the operator:
+
+  ```bash
+  docket run status --active --json
+  ```
+
+  This lists every non-terminal run (`planning`, `active`, `waiting-human`)
+  in the current project — one read, no run state kept. Resolve `$RUN` by
+  this precedence, applied once:
+
+  1. **Any `active` or `waiting-human` run** — a run already under way
+     outranks one not yet started; finishing it is closer to done than
+     activating something new. More than one: take the highest `RUN-N` (ids
+     are a store-wide increasing sequence, so highest is most recent).
+  2. **Else, any `planning` run** — nothing in flight, but something
+     recorded and waiting to be activated. This is exactly what `/plan`'s
+     bare mode leaves behind: it records a run and stops without activating
+     it. More than one: take the highest `RUN-N`.
+  3. **Else, nothing to drive.** Say so plainly — "no non-terminal run in
+     this project" — and stop. This is the empty case, not a guess: it is
+     not yours to invent a run, and it is not a question back to the
+     operator either, since a question here has only one honest answer,
+     "there isn't one" — `/plan` (bare or targeted) is what puts one in
+     front of you next.
+
+  Rule 2 is the hinge that makes `/loop /groom /plan /conduct` work as a
+  bare-invoked loop: `/plan`'s bare mode surveys the backlog, records a run,
+  and stops; the next loop iteration's bare `/conduct` is what picks that
+  run up and drives it, with no operator turn in between. Rule 1 keeps a
+  run already being driven from being abandoned mid-loop for a fresher one
+  `/plan` just recorded.
+
+  Whichever rule resolves it, treat `$RUN` exactly as the targeted mode
+  would from here on — same activation path if `planning`, same "Resuming
+  or attaching" path below if `active`/`waiting-human`. Bare mode changes
+  how `$RUN` gets its value; nothing past this section reads differently
+  once it has one.
 
 ## Before the loop
 

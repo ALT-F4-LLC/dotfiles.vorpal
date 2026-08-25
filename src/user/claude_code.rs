@@ -453,14 +453,16 @@ impl ClaudeCode {
             // dangerouslyDisableSandbox, which the bypass-ask hook prompts on:
             // vorpal 145 lifts vs 24 sandboxed, gh 62 vs 10, ~1,650 lifts in
             // seven days. The documented spelling is `["docker *"]`.
-            // This is also the SUPPORTED remedy for the Go TLS failure: Go
+            // This was also long the only remedy for the Go TLS failure: Go
             // CLIs verify certificates through Security.framework, which
             // Seatbelt blocks, so `gh` and friends fail on every host —
             // including hosts already in allowed_domains (measured: 58
             // proxy.golang.org, 16 api.github.com, 14 vuln.go.dev, oldest
-            // 2026-08-04). enableWeakerNetworkIsolation is NOT the fix here;
-            // the docs scope it to an httpProxyPort MITM setup, which this
-            // configuration does not use.
+            // 2026-08-04). The root cause is now diagnosed and granted
+            // narrowly instead — see allow_mach_lookup below (DOT-617). The
+            // `gh *` and `vorpal *` entries stay on their own lift evidence;
+            // once post-activation runs show them passing sandboxed, they are
+            // candidates for removal.
             // `go` is deliberately absent: with its real module cache writable
             // (above) a Go build needs no network at all, so excluding the
             // whole toolchain would grant far more than the evidence asks for —
@@ -560,12 +562,35 @@ impl ClaudeCode {
                 "~/.orbstack/run/docker.sock".to_string(),
                 "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock".to_string(),
             ])
-            // enable_weaker_network_isolation is deliberately NOT set. It reads
-            // like the fix for the Go TLS failure above, and it is not: the
-            // sandboxing guide scopes it to "using httpProxyPort with a MITM
-            // proxy and custom CA", which this configuration does not do, and
-            // it costs a documented data-exfiltration path. excluded_commands
-            // above is the supported remedy for that failure.
+            // THE Go-TLS-wall fix (DOT-617, diagnosed 2026-08-24). Root cause,
+            // proven twice over: Go's crypto/x509 on darwin verifies every
+            // chain through Security.framework, whose SecTrustEvaluateWithError
+            // asks trustd over XPC — and the Seatbelt profile denies the mach
+            // bootstrap look-up for `com.apple.trustd.agent`. Client-side
+            // unified log from a sandboxed evaluation: "failed to do a
+            // bootstrap look-up: xpc_error=[159]" then "Failed to talk to
+            // trustd after 4 attempts" then errSecInternalComponent (-26276).
+            // Controlled A/B under sandbox-exec: a profile whose ONLY deny is
+            // this one mach-lookup reproduces -26276 exactly; allowing it,
+            // same binary same certs, verifies. Why every earlier probe
+            // misled: `curl` verifies against the file /etc/ssl/cert.pem
+            // (LibreSSL, no trustd), `security verify-cert` silently falls
+            // back to in-process legacy evaluation Go does not have, and
+            // GODEBUG=x509usefallbackroots=1 is a no-op unless the binary
+            // imports x509roots/fallback (govulncheck does not); SSL_CERT_FILE
+            // is ignored on darwin. So no env var can save a stock Go binary —
+            // only this grant can. It is byte-for-byte what
+            // enableWeakerNetworkIsolation would emit (`(allow mach-lookup
+            // (global-name "com.apple.trustd.agent"))`, confirmed in the
+            // 2.1.242 profile template), minus that flag's misleading
+            // MITM-only doc scoping. The documented cost — trustd fetches
+            // OCSP/AIA on the process's behalf outside the proxy allowlist, a
+            // narrow exfiltration channel — is accepted knowingly: the status
+            // quo it replaces is the DOT-617 standing disposition of re-running
+            // entire vuln scans unsandboxed, which concedes strictly more.
+            .with_sandbox_network_allow_mach_lookup(vec![
+                "com.apple.trustd.agent".to_string(),
+            ])
             .with_sandbox_network_allow_local_binding(true)
             .build(context)
             .await?;

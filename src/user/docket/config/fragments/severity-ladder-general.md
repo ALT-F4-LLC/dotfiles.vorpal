@@ -1,11 +1,15 @@
 ---
 fragment: severity-ladder-general
-version: 2
+version: 3
 ---
 # Severity ladder — general
 
 - **Blocker** — must fix: data loss, a breaking change with no migration, a critical
-  missing test on a privileged path, or any hard-gate symptom.
+  missing test on a privileged path, or — only where your packet carries
+  `fragments/hard-gates.md` — any hard-gate symptom. A seat without that fragment has no
+  gate list, no counter-examples, and no override rules to judge against, so it raises no
+  gate findings at all; where the same substance falls inside its own remit it is graded
+  on its own rubric and named in its own terms.
 - **Concern** — should fix or explicitly justify: a pattern violation, a missing edge
   case, a test gap on a non-critical path.
 - **Suggestion** — worth considering here or later: a better approach, a minor

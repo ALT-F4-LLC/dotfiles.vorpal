@@ -1,6 +1,6 @@
 [pipeline]
 name = "ui-change"
-version = 14
+version = 15
 description = "UI change bound to an accepted ux-spec (cited in the issue body — no engine input form reaches a cross-issue doc, DKT-547), design-judged and design-QA'd in parallel with AC verification; the conductor integrates commits, the operator publishes."
 
 [match]
@@ -69,7 +69,7 @@ max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
 payload = "findings@8"
-threshold = { "fix-loop" = "any(severity >= blocker)" }
+threshold = { "fix-loop" = "any(open_severity >= blocker)" }
 
 [[step]]
 after_loop = "review"

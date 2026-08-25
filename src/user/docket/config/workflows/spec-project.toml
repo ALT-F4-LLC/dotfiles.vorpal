@@ -1,7 +1,7 @@
 [pipeline]
 description = "Author the seven reserved project spec files in parallel, review them once, and accept by tribunal vote that escalates to the operator."
 name = "spec-project"
-version = 10
+version = 11
 
 [match]
 labels_any = ["spec-project"]
@@ -65,7 +65,7 @@ max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
 payload = "findings@8"
-threshold = { "fix-loop" = "any(severity >= blocker)" }
+threshold = { "fix-loop" = "any(open_severity >= blocker)" }
 
 [[step]]
 after_loop = "review"

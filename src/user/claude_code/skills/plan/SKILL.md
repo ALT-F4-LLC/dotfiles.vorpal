@@ -119,7 +119,10 @@ re-derive the batch yourself.
 Present the recorded run — the issues, their edges, the scopes, the budget —
 using the seat's presentation notes, and say plainly where the approval to
 activate lives now: it is a tribunal vote that `conduct` convenes and
-surfaces when the run is driven. Then stop.
+surfaces when the run is driven. Then TaskStop the seat you spawned in §1,
+by that same name (`planner`, or its suffixed form), if it's still alive —
+an idle seat otherwise sits there waking you into no-op turns until the
+operator kills it by hand. Then stop.
 
 Do not offer to activate it yourself as a convenience. Do not start the run.
 Do not keep the plan in your head for later; it is in Docket now, which is

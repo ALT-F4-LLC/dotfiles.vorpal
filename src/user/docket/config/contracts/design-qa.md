@@ -1,6 +1,6 @@
 ---
 node: design-qa
-version: 6
+version: 7
 archetype: executor-read
 packet_includes:
   - fragments/hig-principles.md
@@ -10,6 +10,7 @@ packet_includes:
   - fragments/diff-reconstruction.md
   - fragments/truth-first.md
   - fragments/re-review-rounds.md
+  - fragments/test-code-boundaries.md
 emits: findings
 payload: findings@9
 ---

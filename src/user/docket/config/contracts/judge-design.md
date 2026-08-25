@@ -1,6 +1,6 @@
 ---
 node: judge-design
-version: 4
+version: 5
 archetype: executor-read
 packet_includes:
   - fragments/hig-principles.md
@@ -9,6 +9,7 @@ packet_includes:
   - fragments/evidence-rules.md
   - fragments/truth-first.md
   - fragments/re-review-rounds.md
+  - fragments/test-code-boundaries.md
   - fragments/diff-reconstruction.md
 emits: findings
 payload: findings@9
@@ -24,6 +25,11 @@ running later against the built output with its own gates. You do not assess cod
 quality, test adequacy, or security (other judges own those), do not author or revise the
 specification, and do not fix anything. You do not issue a verdict — you emit findings
 only; acceptance is computed from the reconciled set, not asserted by you.
+
+Disclaiming test adequacy does not put test files out of your reach: a test that pins a
+copy literal, a glyph, a viewport floor, or any other commitment the spec makes is
+asserting the specification, and a test asserting it wrongly is a conformance finding —
+per the test-code-boundaries fragment.
 
 You do not treat the specification as optional. A change that is defensible on its own
 terms but diverges from the accepted spec is a finding: either the change is wrong or the

@@ -327,6 +327,33 @@ transcript you cannot read. No matching doc is not an error; it means either
 this run was never paused through `/pause`, or the operator is resuming from
 pasted text instead — proceed on engine state alone, same as always.
 
+**A resume prompt's DISPOSITION REQUIRED notes are debts you inherit, and
+silence is not one of the ways to pay one.** Such a prompt carries more than
+run state: `pause` prefixes with **`DISPOSITION REQUIRED:`** every advisory
+note the halted session could not finish — a suspected engine defect, an
+anomaly it saw but did not chase, a check it wants run before the condition
+recurs. Those are exactly the parts no engine verb will ever re-raise, so an
+unanswered one is gone. Before your first dispatch, give EACH labelled note
+one of exactly three dispositions, and say aloud which you chose:
+
+- **Investigate now** — when the answer is cheap, or when the note bears on
+  work you are about to dispatch. Report what you found.
+- **File it as an issue** in its owning project, and name the id. This is the
+  default for anything that outlives this run; the routing is the same one
+  that governs everything else you file (the repo that owns the fix owns the
+  issue).
+- **Decline it**, with the reason stated — out of scope, already filed,
+  superseded by engine state, or judged not worth the spend.
+
+What is never available is dropping it. RUN-52's resuming conductor inherited
+a prompt relaying that all three seats of one packet had found their target
+sha absent from the object store, "worth checking before it recurs" — then
+investigated nothing, filed nothing, said nothing, and dispatched another step
+of the same shape with the lead unowned; the engine defect was eventually
+filed by a shadow observer, not by the conductor holding the prompt. A prompt
+with no labels — pasted text, or one from an older `/pause` — does not exempt
+you: read its advisory notes yourself and dispose of each the same way.
+
 **Pins vs disk, and this is the one that actually bites.** The two diffs above
 compare SOURCE against INSTALL. A run's PINS are a third set of bytes that can
 disagree with both: the engine froze them at ITS activation, and every

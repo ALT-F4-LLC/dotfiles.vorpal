@@ -145,6 +145,18 @@ checkout, never a wave worktree.
 - **Foreign `wf_*` worktree entries observed** but not this session's to
   remove — name them as operator-cleanup candidates so they are not
   rediscovered cold.
+- **Defect leads and other advisory observations** this session saw but did
+  not finish — a suspected engine defect, an anomaly across seats, a check
+  worth running before the condition recurs. Write each as its own note,
+  prefixed with the literal label **`DISPOSITION REQUIRED:`**, and say what
+  the concrete next check would be (the verb to run, the artifact or step id
+  to look at, the id of anything already filed). The label is not decoration:
+  `conduct`'s attach procedure requires the resuming session to answer every
+  note carrying it — investigate now, file it as an issue, or decline it with
+  a stated reason — and an unlabelled lead is one it may silently drop.
+  RUN-52's resume prompt relayed such a lead as ordinary prose; the resuming
+  conductor never investigated it, never filed it, and dispatched a step of
+  the same shape with the lead unowned.
 
 **Engine-recoverable state — link to it, do not restate it:**
 
@@ -194,6 +206,14 @@ full — including whether a live shadow was watching and was told to wind
 down, so the resuming session knows to seat a fresh one via `/shadow` —
 then a pointer to `conduct`'s own SKILL.md for everything
 engine-recoverable.
+
+Give the advisory notes their own list in the prompt, each one carrying its
+**`DISPOSITION REQUIRED:`** prefix, and never fold one into the state summary.
+State plainly, once, above that list: each of these requires an explicit
+disposition from the resuming session — investigate, file it as an issue, or
+decline it with a stated reason — and none may be left unanswered. A lead
+written as narrative inside the state summary is the one that gets read as
+background and dropped.
 
 ## Resuming
 

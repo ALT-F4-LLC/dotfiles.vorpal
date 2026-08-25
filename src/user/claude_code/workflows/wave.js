@@ -1393,7 +1393,15 @@ follow-up issue named — is decided ground: an operator or an earlier panel
 already spent that decision, and the fix loop deliberately does not re-route
 it. Re-read the ruling before weighing the finding, and re-litigate it only on
 evidence the ruling did not have. Do not reject a gate over settled findings
-alone; open findings are the ones your verdict is for.
+alone; open findings are the ones your verdict weighs — but weighing is not
+counting. Severity already routes: \`blocker\` is the only value that marks a
+change that must not proceed, and an open finding below blocker (a Concern,
+\`high\`), even with no ruling yet, is not by itself reject grounds — its
+venue is \`approve-with-concerns\` and the record, where the operator resolves
+it; the severity ladder rules that mechanical rework is the Blocker's venue
+alone. Reject over sub-blocker findings only when your own evidence convinces
+you the change must not proceed as presented — a judgment about the change,
+never an inventory of open highs.
 
 ESCALATION (operator-ratified): a reject does not block work forever — the
 gate routes onward per its declared routing, to the human operator or into a

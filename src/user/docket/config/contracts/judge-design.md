@@ -1,6 +1,6 @@
 ---
 node: judge-design
-version: 5
+version: 6
 archetype: executor-read
 packet_includes:
   - fragments/hig-principles.md
@@ -77,3 +77,23 @@ If no accepted specification covers the surface this change touches, or the spec
 silent on a behavior the change decides, emit your findings plus a `gap` naming the
 missing coverage. Judging a change against a spec that does not govern it produces
 findings that are really reviewer preference — say which you are holding.
+
+**Expect to gap on roughly one run in three, and gap anyway.** Measured over the 7 days
+to 2026-08-25: 26 gaps beside 65 findings artifacts — 29% of this seat's recorded
+outputs, four times the next judge's rate, and intended. You are the only judge whose
+governing input is a document nobody upstream is obliged to have written: ui-change puts
+you in the review fanout for every `ui` issue with no precondition that an accepted
+ux-spec covers the surface, and none can be added — a step's `when` predicate reads the
+issue's kind and labels, never the state of a document, and a gate can only fail a step,
+never skip it. The rate is a property of that seating, not a defect in you or in this
+contract; a future reader finding it high should not re-open it as one. The alternative
+to gapping is grading an ungoverned surface, which is the failure this contract exists
+to prevent.
+
+Your gap is not narration. `step complete --gap-file` files it as a backlog issue related
+to this one, inside the completion's own transaction, so the missing coverage outlives the
+run. What it does not do is get the spec written: the filed issue carries no labels, and
+nothing routes it to the ux-spec pipeline on its own. So name the surface and each
+undecided behavior precisely enough that whoever grooms that issue can label it for the
+spec track and hand it to an author without re-deriving what was missing. That issue, not
+this step, is where the spec gets written.

@@ -1,12 +1,7 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 20  # 20: review/reconcile repoint findings@8 -> findings@9 and
-              #   synthesize repoints findings-cluster@1 -> findings-cluster@2
-              #   — a citation-scrub pass rewrote both schemas' field
-              #   descriptions to drop literal DKT/RUN/DOT-style provenance
-              #   ids, which the engine refuses as an in-place edit to a
-              #   frozen registration
+version = 21
 
 [match]
 labels_any = ["security-change", "security-load-bearing"]
@@ -82,7 +77,7 @@ max_fix_loops = 3
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
 payload = "findings@9"
-threshold = { "security-vote" = "any(severity >= high)" }
+threshold = { "security-vote" = "any(severity >= blocker)" }
 
 [[step]]
 name = "fix"

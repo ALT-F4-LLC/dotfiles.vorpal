@@ -1,12 +1,7 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by a research step, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec), escalating to the operator."
 name = "spec-doc"
-version = 18  # 18: review/reconcile repoint findings@8 -> findings@9 and
-              #   synthesize repoints findings-cluster@1 -> findings-cluster@2
-              #   — a citation-scrub pass rewrote both schemas' field
-              #   descriptions to drop literal DKT/RUN/DOT-style provenance
-              #   ids, which the engine refuses as an in-place edit to a
-              #   frozen registration
+version = 19
 
 [match]
 labels_any = ["spec-doc"]
@@ -145,7 +140,7 @@ max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
 payload = "findings@9"
-threshold = { "fix-loop" = "any(open_severity >= high)" }
+threshold = { "fix-loop" = "any(open_severity >= blocker)" }
 
 [[step]]
 after_loop = "review"

@@ -256,6 +256,30 @@ step ID "implement@0": want STEP-N or N` (VALIDATION_ERROR). Nor is there an
 `issue list --run` or an `issue list --query`; RUN-33 burned both inventing
 them, then grepped the event stream for what these two verbs answer directly.
 
+**Resuming or attaching to a run this session did not activate: check for a
+resume prompt before you touch it.** `/pause` records the halted session's
+state — mid-execution steps, un-integrated writer shas, held authorization
+claims, the pause reason — as a docket doc, and its ONLY consumer is an
+operator remembering to paste it. Do not depend on that. Whenever the run is
+`waiting-human` with a pause-originated park reason, or you are attaching to
+any run this session itself did not activate:
+
+```bash
+docket doc list -T resume-prompt --json
+```
+
+The doc's title is `Resume RUN-N` for the run you are resuming (`pause`'s own
+convention) — match on that, not on recency, since the store can hold
+resume-prompt docs for other runs. If one matches, read it in full
+(`docket doc show DOC-N`) and honor its contents before your first mutating
+verb: which steps were mid-execution when the wave was killed, what was
+already integrated onto the shared branch, un-integrated writer shas still
+sitting in a worktree, and the pause reason itself. None of that is
+recoverable from the engine — it lives only in that doc or in a session
+transcript you cannot read. No matching doc is not an error; it means either
+this run was never paused through `/pause`, or the operator is resuming from
+pasted text instead — proceed on engine state alone, same as always.
+
 **Pins vs disk, and this is the one that actually bites.** The two diffs above
 compare SOURCE against INSTALL. A run's PINS are a third set of bytes that can
 disagree with both: the engine froze them at ITS activation, and every

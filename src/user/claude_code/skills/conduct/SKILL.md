@@ -1604,6 +1604,66 @@ summarize from the ARTIFACT'S OWN tally — its cluster list and judge table,
 "10 clusters C301–C310, 4 blockers" — never from the slice you happened to
 render.
 
+**A fix-round gate PAST the workflow's `max_fix_loops` presents the LOOP, not
+the round.** The latest tribunal rejection is what ONE round decided; what the
+operator is actually being asked to buy is the next round of a loop that has
+already overrun its declared cap. So on a `--as fix-round` authorization past
+the cap the actual artifact INCLUDES a loop-history line beside the rejection
+text, carrying five fields, each one read verb away:
+
+- **Rounds run against the cap** — "round 9 of a loop capped at 3". The cap is
+  `max_fix_loops` in the workflow's FROZEN pin — `docket workflow show
+  <name>@<version> --source`, with the pinned version named in `run report`'s
+  "Pinned workflows" block — never the file on disk. The round is the
+  `loop-entered` event's own `ordinal=N`, its `trigger=` naming the step that
+  routed the entry: `docket events list --run $RUN` shows one per entry, the
+  first at `ordinal=1`.
+- **Consecutive rejections, listed by proposal id** — the ids, not a count.
+  `run report`'s "How steps ended" names every loop step's outcome verbatim
+  (`"AGT-643 security-vote@5": superseded after "DKT-V240 rejected"`) with the
+  routing note beside it, so the whole chain reads off one verb; mid-run, the
+  `vote-tallied` events carry the same ids in `detail=`.
+- **Fixer and judge variants actually served** — a tier asymmetry is a fact
+  about the loop, not colour. The routing is policy.toml's `[executors]`
+  `variant` for `fix` and for each judge seat, resolved through `[variants]`
+  to a model and effort, read from the run's PINNED policy bytes; what
+  actually ran is the journal's `agent-<agentId>.meta.json` `model` (see
+  "Where the numbers actually are"); and `run report` totals both sides —
+  `Metadata` (`model_resolved`, `effort_resolved`) for executors, `Vote
+  metadata` (`variant`, `seat`) for panels. A loop fixing at `sonnet-medium`
+  against `opus-high` reviewers is something the operator is deciding on
+  whether or not you say it. Round-based escalation (`[escalation]`
+  `on_round` / `round_executors`) may already have moved the fixer, so report
+  the RESOLVED variant rather than assuming the table's default still holds.
+- **Spend against budget, including every raise** — `run report`'s Budget
+  block (`Cap`, `Floor`, `Spend`, `Burn rate`), plus each `run-budget-set`
+  event's `from=`, `to=`, and `reason=`. A cap raised mid-loop is part of the
+  loop's history, not settled ground behind it.
+- **Finding-volume trend across rounds** — the cluster count per round and the
+  blocker count inside it. Each round's aggregate artifact is the source:
+  `docket step artifacts STEP-N` on that round's reconcile/aggregate step,
+  then `docket step artifact ARTIFACT-N --payload`, which prints a bare JSON
+  list whose entries carry `open_severity`, `held`, and `operator_resolved` —
+  count it. Flat volume across rounds is the corpus's own stated
+  non-convergence signal (`fragments/re-review-rounds.md`), so when the counts
+  are flat, the line says so.
+
+RUN-51 (agentic-services, 2026-08-24/25) granted six rounds past
+security-change's `max_fix_loops = 3` — `step-resolved detail=fix-round` at
+ordinals 4 through 9 — each on a gate presenting the latest rejection text and
+"Authorize one more fix round (Recommended)". Read singly, every one of them
+looked like one more round would do it. The line this rule requires would have
+read, at the round-9 gate: round 9 of a loop capped at 3, nine consecutive
+rejections DKT-V218 through DKT-V256, fix at `sonnet-medium` against four
+`opus-high` reviewers every round, against a cap already raised twice mid-loop
+(36→60, then 60→75), with 11 clusters at round 7 and 10 at round 8. That reads
+as structural whack-a-mole, which is what the operator concluded one rejection
+later — abandoning the issue at DKT-V259, with the run finishing at 69.5 of the
+75. Assembling the line is YOUR work and needs no verb that does not exist:
+the engine computes every field above today. This rule governs what the gate
+PRESENTS; the option set is whatever the workflow and the operator's own
+vocabulary give you, unchanged.
+
 **The premise-check runs before the QUESTION, not only before a filing.** The
 scope-read you do before creating an issue — the repo, the project's backlog,
 the rulings already recorded (`issue-abandoned` notes and the ids they cite,

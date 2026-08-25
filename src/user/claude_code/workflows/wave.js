@@ -1290,7 +1290,7 @@ function lensOf(seat) {
 }
 // SYNC-END seat-contract
 
-function seatBrief(r, voteId, row, isRespawn, heldCluster) {
+function seatBrief(r, voteId, row, isRespawn, heldCluster, target) {
     const { role, text } = lensOf(r.seat)
     const metadataClaim = JSON.stringify({
         seat: r.seat,
@@ -1315,6 +1315,55 @@ ${heldCluster.clusterCount} in ${heldCluster.artifact} (produced by ${heldCluste
 \`docket step artifact ${heldCluster.artifact} --payload\` and judge that cluster
 only: is the held remedy right, and should it block? The other clusters are
 other seats' or already decided.` : ''
+    // DOT-673: seats kept voting on a tree their own checkout did not contain
+    // — "fix@1 commit 5b05f86, not an ancestor of this judge worktree HEAD
+    // 4d83ae0" — and then rejected on evidence grounds ("reject on
+    // evidence-versus-assertion grounds, not on the fix's substance"), because
+    // the correctness lens asks whether you could reproduce it FROM WHAT IS IN
+    // FRONT OF YOU. No code edit answers that reject: the fix loop cannot move
+    // a judge's HEAD. The engine already lifts the resolved `issue.diff` round
+    // record onto the context bundle as `target_sha` / `target_worktree`, so
+    // NAME the round's target here and say how to read a commit that is not an
+    // ancestor of this HEAD. Either half may be missing — a bundle carries
+    // both or neither per the engine, but a swept worktree or an older
+    // manifest can leave one — and with NEITHER this renders NOTHING, leaving
+    // the brief byte-for-byte what it was before DOT-673.
+    const targetSha = (target && target.sha) || ''
+    const targetWorktree = (target && target.worktree) || ''
+    const targetLines = []
+    if (targetSha) {
+        targetLines.push(`TARGET SHA:     ${targetSha} — the commit the diff under this gate stood at`)
+    }
+    if (targetWorktree) {
+        targetLines.push(`TARGET WORKTREE:${targetWorktree} — the checkout that recorded it, while it is still on disk`)
+    }
+    const targetReads = [
+        targetSha ? `  git cat-file -t ${targetSha}   — proves the object is here at all` : '',
+        targetSha ? `  git show --stat ${targetSha}   then \`git show ${targetSha}\` for the body` : '',
+        targetSha ? `  git diff ${targetSha}^ ${targetSha} -- <path>` : '',
+        targetWorktree ? `  git -C ${targetWorktree} log --oneline -5` : '',
+    ].filter(Boolean).join('\n')
+    const targetNote = (targetSha || targetWorktree) ? `
+${targetLines.join('\n')}
+
+THAT IS THE STATE UNDER VOTE, AND YOUR OWN CHECKOUT MAY NOT CONTAIN IT — a
+fact about where you were seated, not about the change. Write-class seats work
+in PRIVATE worktrees and hand their work back as a commit on their own ref, so
+a panel seated mid-wave routinely sits at a HEAD that predates the round it is
+judging. Every worktree of this repository SHARES ONE OBJECT STORE, so the
+commit is readable from where you are even when it is not an ancestor of your
+HEAD:
+
+${targetReads}
+
+Do NOT reject because your own HEAD is behind: that verdict is about your
+visibility, and no fix the loop can make will answer it. If after those reads
+you still cannot see the state under vote — the object is genuinely absent, or
+that worktree is already swept — say exactly that in your summary and decide on
+the artifacts of record with a LOW \`--confidence\` (and a low
+\`--domain-relevance\` when the question has moved outside what you can check),
+or \`approve-with-concerns\` naming precisely what you could not verify. Reject
+when the evidence you DID read says the change must not proceed.` : ''
 
     return `You are ONE SEAT of a tribunal deciding a gate step MID-WAVE in a Docket run.
 You decide alone. You cannot see the other seats, you do not coordinate with
@@ -1324,7 +1373,7 @@ panel, not you.
 YOUR SEAT:      ${r.seat}
 YOUR LENS:      ${text}
 THE GATE:       step ${row.step} (${row.instance}, issue ${row.issue}, run ${row.run})
-THE PROPOSAL:   ${voteId}${respawnNote}
+THE PROPOSAL:   ${voteId}${targetNote}${respawnNote}
 
 FIRST, before anything else: \`printenv TMPDIR\` — your literal scratch root.
 Call it <TMP>; substitute its literal value wherever <TMP> appears in this
@@ -1504,6 +1553,33 @@ function parseHeldCluster(show) {
     }
 }
 
+// DOT-673: the round's target ref, for the seat brief. Context assembly lifts
+// the resolved `issue.diff` artifact's round record onto the bundle as
+// `target_sha` (the commit the diff's tree stood at) and `target_worktree`
+// (the producing record's declared checkout). Both are omitted when the
+// resolved diff carries no round record — and a vote step that does not
+// declare `issue.diff` among its inputs has no diff to lift from at all — so
+// ABSENCE IS NORMAL here and yields null rather than a throw.
+//
+// The probe below greps rather than dumping the bundle: `step context` inlines
+// every recorded input artifact, and a findings artifact runs to 1MiB. This
+// matches the two fields wherever they sit in the envelope, in the compact and
+// the pretty-printed form alike.
+const TARGET_REF_GREP =
+    `grep -Eo '"target_(sha|worktree)"[[:space:]]*:[[:space:]]*"[^"]*"'`
+
+function parseTargetRef(text) {
+    const s = text || ''
+    const grab = (key) => {
+        const m = s.match(new RegExp(`"${key}"\\s*:\\s*"([^"]+)"`))
+        return m ? m[1] : ''
+    }
+    const sha = grab('target_sha')
+    const worktree = grab('target_worktree')
+    if (!sha && !worktree) return null
+    return { sha, worktree }
+}
+
 // `docket vote show <id> --json` answers with the standard envelope
 //   {ok: true, data: {id, status, final_outcome?, weighted_score,
 //                     votes: [{voter_name, verdict, summary, ...}], ...}}
@@ -1593,9 +1669,21 @@ async function runGate(row, phaseLabel) {
         return { step: row.step, status: 'gate-blocked', text: show }
     }
     const seats = voters.map((v) => resolveSeat(v, policy, labelsOf(row)))
-    log(`${row.step}: ${voteId} — seating ${seats.map((s) => s.seat).join(', ')}`)
+    // DOT-673: name the round's target ref in every seat's brief. Seats are
+    // NOT seated on the checkout the round was written in — writers work in
+    // private worktrees — so without this a judge reads its own lagging HEAD,
+    // finds the change absent, and rejects on evidence grounds, which no fix
+    // loop can answer. One cheap grep-filtered probe; absent target (the gate
+    // declares no `issue.diff` input, or the diff carries no round record)
+    // yields null and the brief renders as it did before.
+    const target = parseTargetRef(await probe(
+        `docket step context ${row.step} --json | ${TARGET_REF_GREP}`,
+        `${row.step} · gate:target`, phaseLabel, row.step))
+    log(`${row.step}: ${voteId} — seating ${seats.map((s) => s.seat).join(', ')}` +
+        (target ? ` on target ${target.sha || '(no sha)'}${target.worktree ? ` (${target.worktree})` : ''}`
+                : ` with NO target ref on the bundle — seats read their own HEAD`))
     await parallel(seats.map((r) => () =>
-        agent(seatBrief(r, voteId, row, false, heldCluster), {
+        agent(seatBrief(r, voteId, row, false, heldCluster, target), {
             label: `${row.step} · seat:${r.seat}`,
             phase: phaseLabel,
             agentType: 'executor-read',
@@ -1629,7 +1717,7 @@ async function runGate(row, phaseLabel) {
         log(`${row.step}: ${missing.length} seat(s) returned without a recorded ` +
             `cast (${missing.map((s) => s.seat).join(', ')}) — re-spawning each ONCE`)
         await parallel(missing.map((r) => () =>
-            agent(seatBrief(r, voteId, row, true, heldCluster), {
+            agent(seatBrief(r, voteId, row, true, heldCluster, target), {
                 label: `${row.step} · seat:${r.seat} (retry)`,
                 phase: phaseLabel,
                 agentType: 'executor-read',

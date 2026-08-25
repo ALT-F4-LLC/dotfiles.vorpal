@@ -1,7 +1,22 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 21
+version = 22  # 22: `reconcile` gains a `fix-loop` route so a high-severity
+              #   finding routes into a fix round without convening a vote.
+              #   Its predicate is `severity == high`, NOT `>= high`, and
+              #   the engine forces that: `ThresholdOrder` evaluates the
+              #   reserved `fix-loop` key BEFORE any step-name routing no
+              #   matter what order is written here (TOML tables decode to
+              #   Go maps, which lose declaration order), and §11.2 is
+              #   first-match-routes. `any(severity >= high)` would there-
+              #   fore match every blocker as well, and `security-vote`
+              #   could never convene again. On this ladder — info < low <
+              #   medium < high < blocker — `== high` and `>= high` agree
+              #   on every value but `blocker`, which is precisely the one
+              #   that must fall through to the vote. Residual: a round
+              #   carrying a high AND a blocker takes the fix round first
+              #   and reaches the vote on a later round (or parks at
+              #   `max_fix_loops`), rather than voting immediately.
 
 [match]
 labels_any = ["security-change", "security-load-bearing"]
@@ -77,7 +92,7 @@ max_fix_loops = 3
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
 payload = "findings@9"
-threshold = { "security-vote" = "any(severity >= blocker)" }
+threshold = { "security-vote" = "any(severity >= blocker)", "fix-loop" = "any(severity == high)" }
 
 [[step]]
 name = "fix"

@@ -24,6 +24,20 @@ Key correctness rules, learned the hard way (2026-08-19 census):
     typed prose, slash commands, and !bash count as operator input.
   * Character counts (thinking chars vs visible text chars) work on every
     version and are the version-independent cross-check on think%.
+  * The "do not narrate things that need no action" rule in CLAUDE.md is
+    measurable, and until 2026-08-25 (DOT-753) nothing measured it — the
+    working agreement quoted a 152/766 figure that no script here computed.
+    It is computed structurally now, with no wording heuristic: a teammate
+    idle notification arrives as a role=user message carrying
+    {"type":"idle_notification"}, and the turn answering it is text-only
+    exactly when it emits visible text and zero tool_use blocks. Both halves
+    are structural. Note that tool_result rows are role=user too, which is
+    precisely what makes the NEXT user-role row the correct turn boundary.
+    Measured over the 7 days to 2026-08-25: 150 of 276 pings (54%) drew a
+    text-only turn; hand-reading all 150 put 142 of the 143 model-authored
+    ones in the pure-narration class ("no action needed", median 82 chars),
+    7 being harness session-limit artifacts rather than model output. Silence
+    is the intended response, so LOWER IS BETTER here like every other row.
 
 Usage:  session-census [--days N] [--json OUT] [--root DIR]
 Exit 0 always (measurement, not a gate).
@@ -74,6 +88,12 @@ SYS_PREFIXES = (
     "<user-prompt-submit-hook>",
 )
 KILL_MULTI = re.compile(r"^(\d+) background agents were stopped by the user")
+
+# A teammate idle ping, as it actually lands in the transcript: a role=user
+# message whose body embeds the seat's JSON. Matched on the JSON key rather
+# than the "Another Claude session sent" envelope, because that envelope also
+# carries real reports — the ones a reply IS the right answer to.
+IDLE_NOTIFICATION = re.compile(r'"type"\s*:\s*"idle_notification"')
 
 
 def user_text(msg):
@@ -148,6 +168,7 @@ def main():
     role_eff = defaultdict(lambda: defaultdict(int))
     skipped = defaultdict(int)              # version -> msgs excluded from token metrics
     operator = interrupts = kills = kill_events = 0
+    idle_notifs = idle_textonly = idle_worked = 0
     active = span = 0.0
     first_ctx, peak_ctx = [], []
     main_files = sub_files = 0
@@ -169,6 +190,10 @@ def main():
             main_files += 1
         stamps, ctx = [], []
         role = None  # subagent only; read off the first line of its brief
+        # Open idle-notification window (main only): are we inside the reply
+        # turn that answers a ping, and what has that turn emitted so far?
+        idle_open = False
+        idle_tools = idle_texts = 0
         with open(path, errors="replace") as fh:
             for line in fh:
                 line = line.strip()
@@ -197,8 +222,23 @@ def main():
                     continue
 
                 if rtype == "user" and not is_sub:
-                    kind = classify_user(user_text(rec.get("message")),
-                                         rec.get("isMeta") is True)
+                    text = user_text(rec.get("message"))
+                    # ANY user-role row ends the previous reply turn — tool_result
+                    # rows included, which is the point: a turn that called a tool
+                    # is closed by that tool's own result row and can never be
+                    # miscounted as text-only. Close before opening, so a ping
+                    # arriving back-to-back with another is scored on its own turn.
+                    if idle_open:
+                        if idle_tools:
+                            idle_worked += 1
+                        elif idle_texts:
+                            idle_textonly += 1
+                        idle_open = False
+                    if IDLE_NOTIFICATION.search(text or ""):
+                        idle_notifs += 1
+                        idle_open = True
+                        idle_tools = idle_texts = 0
+                    kind = classify_user(text, rec.get("isMeta") is True)
                     if kind == "operator":
                         operator += 1
                     elif kind == "interrupt":
@@ -232,13 +272,27 @@ def main():
                         + (usage.get("cache_read_input_tokens") or 0)
                     )
 
-                tc = txc = 0
+                tc = txc = tu = 0
+                visible = False
                 for b in msg.get("content") or []:
                     bt = b.get("type")
                     if bt == "thinking":
                         tc += len(b.get("thinking") or b.get("text") or "")
                     elif bt == "text":
-                        txc += len(b.get("text") or "")
+                        bx = b.get("text") or ""
+                        txc += len(bx)
+                        # Whitespace-only text is not a turn the operator reads.
+                        if bx.strip():
+                            visible = True
+                    elif bt == "tool_use":
+                        tu += 1
+
+                # idle_open is only ever set on a main file, so this needs no
+                # is_sub guard of its own.
+                if idle_open:
+                    idle_tools += tu
+                    if visible:
+                        idle_texts += 1
 
                 if is_sub:
                     rseg = by_role[role or "other"]
@@ -282,6 +336,14 @@ def main():
                         c["think_msgs"] += 1
 
         if not is_sub:
+            # A ping answered in the session's LAST turn has no following
+            # user-role row to close it; without this the final turn of every
+            # such session goes uncounted.
+            if idle_open:
+                if idle_tools:
+                    idle_worked += 1
+                elif idle_texts:
+                    idle_textonly += 1
             if ctx:
                 first_ctx.append(ctx[0])
                 peak_ctx.append(max(ctx))
@@ -357,6 +419,18 @@ def main():
           f"{f'  ({interrupts * 100 // operator}% of typed inputs)' if operator else ''}")
     print(f"  background agents stopped by user    : {kills} across {kill_events} events")
 
+    # The working agreement's own "do not narrate" rule, scored against itself.
+    # Structural, not a wording judgement: see the docstring. Only the text-only
+    # row is a cost — the tool-call row is a ping that turned out to need work,
+    # and silence is the rule being followed.
+    print("\nIDLE-NOTIFICATION NARRATION (main sessions) — CLAUDE.md's 'do not narrate' rule")
+    print(f"  teammate idle pings received         : {idle_notifs}")
+    print(f"  answered with a TEXT-ONLY turn       : {idle_textonly}"
+          f"{f'  ({idle_textonly * 100 // idle_notifs}% — the cost)' if idle_notifs else ''}")
+    print(f"  answered with >=1 tool call          : {idle_worked}")
+    print(f"  absorbed silently (the rule followed): "
+          f"{idle_notifs - idle_textonly - idle_worked}")
+
     print("\nTIME (main sessions)")
     print(f"  active (gaps <=5min) : {active / 3600:.1f} h    idle share: "
           f"{(1 - active / span) * 100 if span else 0:.0f}%")
@@ -378,6 +452,9 @@ def main():
             "operator inputs": (operator, baseline.get("operator_inputs"), "n"),
             "interrupts": (interrupts, baseline.get("interrupts"), "n"),
             "agents killed": (kills, baseline.get("agents_killed"), "n"),
+            "idle narration %": (
+                round(idle_textonly / idle_notifs * 100, 2) if idle_notifs else 0.0,
+                baseline.get("idle_notif_textonly_pct"), "pts"),
             "active hours": (round(active / 3600, 2), baseline.get("active_hours"), "n"),
             "first-req ctx p50": (p(first_ctx, .5), baseline.get("ctx_first_p50"), "n"),
         }
@@ -432,6 +509,11 @@ def main():
             "interrupts": interrupts,
             "agents_killed": kills,
             "kill_events": kill_events,
+            "idle_notifications": idle_notifs,
+            "idle_notif_textonly": idle_textonly,
+            "idle_notif_toolcall": idle_worked,
+            "idle_notif_textonly_pct": (
+                round(idle_textonly / idle_notifs * 100, 2) if idle_notifs else 0.0),
             "active_hours": round(active / 3600, 2),
             "ctx_first_p50": p(first_ctx, .5),
             "excluded_msgs_no_accounting": sum(skipped.values()),

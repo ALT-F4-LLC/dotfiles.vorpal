@@ -1,12 +1,17 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 25  # 25: review/review-security/reconcile repoint findings@8 ->
-              #   findings@9 and synthesize repoints findings-cluster@1 ->
-              #   findings-cluster@2 — a citation-scrub pass rewrote both
-              #   schemas' field descriptions to drop literal DKT/RUN/DOT-
-              #   style provenance ids, which the engine refuses as an
-              #   in-place edit to a frozen registration
+version = 26  # 26: implement and fix add the `vuln-scan` gate. An ordinary
+              #   change can add a third-party dependency, and nothing in
+              #   this pipeline audited a newly added dependency's own CVE
+              #   exposure — a hash-pinned lockfile buys integrity, not
+              #   vulnerability freedom. The gate is UNCONDITIONAL because
+              #   §11.1 admits no gate predicate: a gate entry carries only
+              #   `name`, `source`, and `pre`, and step-level `when` reads
+              #   issue kind/labels, never the diff. A repo with no
+              #   `vuln-scan` trust entry records `unmatched`, which routes
+              #   as a failure — register one (a declared stub, if there is
+              #   no scanner yet) before binding this version
 
 [match]
 unless_labels = [
@@ -37,7 +42,7 @@ class = "write"
 emits = "change-summary"
 executor = "implement"
 expected_cost = 1.50
-gates = ["build", "tests", "self-hygiene", "secret-scan"]
+gates = ["build", "tests", "self-hygiene", "secret-scan", "vuln-scan"]
 inputs = ["issue.body"]
 max_attempts = 2
 name = "implement"
@@ -94,7 +99,7 @@ class = "write"
 emits = "change-summary"
 executor = "fix"
 expected_cost = 1.00
-gates = ["build", "tests", "self-hygiene", "secret-scan"]
+gates = ["build", "tests", "self-hygiene", "secret-scan", "vuln-scan"]
 inputs = ["reconcile.findings", "implement.change-summary", "issue.latest.ac-report"]
 loop = true
 name = "fix"

@@ -1736,13 +1736,15 @@ Which verb is the step's TYPE, not your reading of the situation:
 parked `waiting-human` takes `resolve --as …` and nothing else (RUN-8 burned an
 operator's answer on that refusal). A vote step parked by its `on_fail` answers
 by the same rule — `resolve --as …`, or `approve`/`reject`/`--value` where the
-park is a held cluster. The artifact a gate presents is found, then read, as a
-PAIR of verbs: `docket step artifacts STEP-N` lists the producing step's
-artifact ids, `docket step artifact ARTIFACT-N [--payload]` prints one, and
-`--payload` works only where the listing shows a structured payload — a
-body-only artifact refuses the flag, so omit it to read the body. There is no
-`docket artifact` command, and the events log carries no artifact bodies
-(RUN-2 burned six calls rediscovering this hop). An engine-minted
+park is a held cluster. Resolving the parking step on a rollup-parked run
+auto-resumes the run in that same call — do not follow with `docket run resume`,
+which CONFLICTs (run already active). The artifact a gate presents is found,
+then read, as a PAIR of verbs: `docket step artifacts STEP-N` lists the
+producing step's artifact ids, `docket step artifact ARTIFACT-N [--payload]`
+prints one, and `--payload` works only where the listing shows a structured
+payload — a body-only artifact refuses the flag, so omit it to read the body.
+There is no `docket artifact` command, and the events log carries no artifact
+bodies (RUN-2 burned six calls rediscovering this hop). An engine-minted
 held-cluster row (`reconcile-held@0#N`) is the exception that carries nothing
 itself: `step artifacts` on it returns none and `step show` names no cluster.
 Its payload lives on the synthesize/aggregate step's artifact — `step

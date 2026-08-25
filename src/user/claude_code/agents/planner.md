@@ -186,9 +186,10 @@ most optimal batch, settled 2026-08-21 ("ready, high-priority, parallel-safe"):
    least one file in this checkout; plus the binding probe and the scope-vs-AC
    lint below. An issue that fails any of them is not run-ready: list it
    under "not ready" with the missing thing named. The operator may have you
-   fill it in this session — `docket issue edit` for labels, `--scope`, or a
-   body with ACs in the operator's words, fine until the activate that binds
-   it — or send it to `/groom`; you never fill ACs from your own guess.
+   fill it in this session — `docket issue label add` for labels, `docket
+   issue edit --scope`, or a body with ACs in the operator's words, fine
+   until the activate that binds it — or send it to `/groom`; you never
+   fill ACs from your own guess.
 
    **Probe the binding, and probe it in both directions.** §3's
    labels-confirm-binding rule asks whether an issue's labels produce the
@@ -297,9 +298,9 @@ request intake are exactly these, and nothing else in §3 relaxes:
 
 - No `issue create`: the issues exist, so the package's `Issues` list is
   empty for this path. Run-readiness fills the operator approved in the
-  round land in the package as `docket issue edit` calls the relay runs
-  BEFORE `run start`, and a corrected glob list passes every glob you mean
-  to keep.
+  round land in the package as `docket issue label add` or `docket issue
+  edit` calls the relay runs BEFORE `run start`, and a corrected glob list
+  passes every glob you mean to keep.
 - `run start --issue` names the backlog issues themselves — direct binding
   is the operator's settled choice for batch mode (2026-08-21), and it is
   what makes the §3 `/plan DKT-N` obligations NOT apply here: a batch member

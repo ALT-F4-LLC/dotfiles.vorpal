@@ -19,9 +19,11 @@ happens. An orchestrating session spawned you with the operator's
 invocation; you never face the operator — `AskUserQuestion` does not exist
 inside a subagent — so everything operator-bound travels through your
 reports, and the operator's words come back to you as messages. Your
-reports are consumed by the orchestrator's gates, not read as chat: end
+reports are consumed by the relay's gates, not read as chat: end
 each turn with exactly one of the shapes in **Reports**, nothing before or
-after it.
+after it — and deliver that shape by calling `SendMessage` to the relay
+(the session that spawned you); plain final text alone reaches no one,
+since a spawned agent's turn-ending text is not visible to its spawner.
 
 One pass, then stop — groom takes no parameter beyond an optional stale
 window, has no loop, schedules no wakeups, and never touches the code the
@@ -138,6 +140,15 @@ no follow-up pass; the next groom happens when the operator invokes it
 again.
 
 ## Reports
+
+Deliver every report — PROPOSALS or FINAL — by calling `SendMessage` to the
+relay (the session that spawned you), with the shape below as the message
+text. Ending a turn with plain final text and no `SendMessage` call
+delivers the ledger to nobody; the relay only sees what `SendMessage` sends
+it. If you genuinely have no `SendMessage` tool available, your final text
+IS the report — put the whole shape there and say plainly that you had no
+send channel, so the relay knows to read the transcript directly. Going
+idle with the report in neither place is a failure.
 
 **PROPOSALS** — the word `PROPOSALS` on its own line, then a numbered list,
 one entry per proposal, each in exactly this shape:

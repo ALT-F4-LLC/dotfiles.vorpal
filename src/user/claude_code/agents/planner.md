@@ -346,14 +346,20 @@ verdict two minutes later showed it already fixed on HEAD).
 unconditionally, whatever the spawn mechanism, with no rewording and no
 paraphrase:
 
-> When finished, SEND your complete report to team-lead via SendMessage. If you
-> have no SendMessage tool, your final text IS the report — put the whole report
-> there and say you had no send channel. Going idle with the report in neither
-> place is a failure.
+> When finished, SEND your complete report to <your own spawned name, as given
+> in your spawn prompt> via SendMessage. If you have no SendMessage tool, your
+> final text IS the report — put the whole report there and say you had no send
+> channel. Going idle with the report in neither place is a failure.
 
 Copy those sentences onto the end of the brief exactly as written; do not
-restate them in your own words. The mechanism is not knowable at brief-writing
-time, and the two mechanisms differ in opposite directions: a delegate spawned
+restate them in your own words. The one and only substitution is the
+angle-bracket recipient: replace it with YOUR OWN spawned name — `planner`, or
+the suffixed form (`planner-2`) your spawn prompt gave you — so the delegate's
+report comes back to you. Never leave `team-lead` or the relay's name there: a
+delegate that does have SendMessage would then send its report past you to the
+session that spawned you, and you would wait for a report that never
+arrives. The mechanism is not knowable at brief-writing time, and the two
+mechanisms differ in opposite directions: a delegate spawned
 as an in-process teammate has SendMessage and its final text is delivered to no
 one, while an Agent-tool background spawn of a tool-limited archetype has no
 SendMessage at all — `executor-read`, the archetype this section spawns, carries

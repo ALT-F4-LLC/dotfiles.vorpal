@@ -227,6 +227,72 @@ for (const hint of Object.keys(executors)) {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Round-based escalation (DOT-724). A fix-loop round is a FRESH step id
+// (`docket step resolve --as fix-round` mints fix@N+1 at attempt 0), so the
+// attempt walk alone never fires across rounds — RUN-51's AGT-643 ran nine
+// fix rounds all at sonnet-medium. [escalation] on_round/round_executors
+// counts each round after an opted-in executor's first (instance `name@N`,
+// first entry minted at @1) as one escalate_to hop.
+// ---------------------------------------------------------------------------
+const loopRow = (executor, instance, attempt, labels) => {
+    const r = { kind: 'executor', executor, instance, attempt,
+        step: `STEP-${executor}-${instance}` }
+    if (labels && labels.length) r.labels = labels
+    return r
+}
+const variantAtRound = (executor, instance, attempt, labels) =>
+    resolve(loopRow(executor, instance, attempt, labels), policy).variant
+
+// The regression fence for the defect itself: consecutive fix rounds, each a
+// fresh step at attempt 0, climb the escalate_to chain instead of re-running
+// at standing forever.
+const ROUNDS = [
+    // Unpinned fix loop: one hop per round after the first; the fable hop is
+    // gated, so the climb settles on [escalation.fallback]'s opus-high.
+    [[], ['sonnet-medium', 'opus-medium', 'opus-high', 'opus-high', 'opus-high', 'opus-high']],
+    // AGT-643's actual shape: security-pinned (label in [security].labels),
+    // so fable hops redirect through the fallback and the climb holds at the
+    // [security].ceiling.
+    [['security-load-bearing'], ['sonnet-medium', 'opus-medium', 'opus-high', 'opus-xhigh', 'opus-max', 'opus-max']],
+]
+for (const [labels, want] of ROUNDS) {
+    const who = `fix (rounds${labels.length ? `, ${labels.join(',')}` : ''})`
+    for (let n = 1; n <= want.length; n++) {
+        let got
+        try { got = variantAtRound('fix', `fix@${n}`, 0, labels) }
+        catch (e) { got = `THREW: ${e.message}` }
+        eq(got, want[n - 1], `${who} fix@${n} attempt:0`)
+    }
+}
+
+// Round hops COMPOSE with attempt hops: a round-2 fix that also burned one
+// claim of its own stands two hops up.
+eq(variantAtRound('fix', 'fix@2', 1, []), 'opus-high',
+    'fix@2 attempt:1 composes round and attempt hops')
+
+// Scope fence: every per-round step shares the instance ordinal, and NONE of
+// the unlisted ones may move — the judges reviewing round 9 stand exactly
+// where they stood at round 0, and the walk stays attempt-keyed for them.
+eq(variantAtRound('judge-correctness', 'review@9#2', 0, []), 'opus-high',
+    'judge-correctness review@9#2 attempt:0 keeps its standing variant')
+eq(variantAtRound('judge-security', 'review@9#3', 0, []), 'opus-high',
+    'judge-security review@9#3 attempt:0 keeps its standing variant')
+eq(variantAtRound('synthesize-findings', 'synthesize@9', 0, []), 'sonnet-medium',
+    'synthesize-findings synthesize@9 attempt:0 keeps its standing variant')
+eq(variantAtRound('verify-ac', 'verify@9', 0, []), 'opus-high',
+    'verify-ac verify@9 attempt:0 keeps its standing variant')
+eq(variantAtRound('implement', 'implement@0', 0, []), 'sonnet-medium',
+    'implement implement@0 attempt:0 keeps its standing variant')
+eq(variantAtRound('implement', 'implement@0', 1, []), 'opus-medium',
+    'implement implement@0 attempt:1 still escalates by attempt alone')
+
+// A listed executor whose row carries no instance at all is attempt-keyed
+// only — the whole TABLE above already runs `fix` instanceless, so this just
+// names the invariant.
+eq(variantAtRound('fix', undefined, 0, []), 'sonnet-medium',
+    'fix with NO instance field resolves at its standing variant')
+
 // The walk is monotone in `attempt` for a couple of representative rows: it
 // may hold, but it must never walk BACK down to a variant it already left.
 for (const [hint, labels] of [['implement', []], ['fix', ['security']], ['judge-security', []]]) {

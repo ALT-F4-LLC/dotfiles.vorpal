@@ -499,10 +499,11 @@ if (!Array.isArray(input.voters) || input.voters.length === 0) {
 const { voteId, voters, context, gateKind, cwd } = input
 const policy = parseToml(input.policyText)
 
-if (policy.policy?.version !== 14) {
+if (policy.policy?.version !== 15) {
     throw new Error(
-        `tribunal.js: policy.toml [policy] version is ${JSON.stringify(policy.policy?.version)}, expected 14 ` +
-        `(the [variants]/escalate_to shape, unchanged since v2 — only the version number moved). ` +
+        `tribunal.js: policy.toml [policy] version is ${JSON.stringify(policy.policy?.version)}, expected 15 ` +
+        `(the [variants]/escalate_to shape, unchanged since v2 — only the version number moved; ` +
+        `v15 added [escalation] on_round/round_executors, DOT-724 — seat routing ignores both). ` +
         `Refusing to route against an unknown schema.`
     )
 }

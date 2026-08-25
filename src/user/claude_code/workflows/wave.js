@@ -191,6 +191,30 @@ function labelsOf(row) {
     return []
 }
 
+// Round-based escalation hops (DOT-724). A fix-loop round is a FRESH step id:
+// `docket step resolve --as fix-round` mints fix@N+1 at attempt 0, so the
+// attempt walk in resolve() never sees a loop's failure history — RUN-51's
+// AGT-643 burned nine fix rounds with the fixer pinned at its standing
+// variant while every judge reviewing it stood at opus-high. The engine
+// encodes the round ordinal in the manifest row's instance name — `name@N`,
+// with `#k` for fanout siblings, and a loop step's first entry minted at @1 —
+// and [escalation] on_round = "one-hop" + round_executors opts an executor
+// into counting each round AFTER its first as one escalate_to hop. Scoping by
+// executor name is deliberate: EVERY per-round step shares the ordinal
+// (review@N judge fanouts, synthesize@N, verify@N), and only the listed
+// loop-workers should climb — the workflow's own `loop = true` marker never
+// reaches the manifest row, so policy.toml is the only conduit this routing
+// can read it from.
+function roundHops(policy, hint, row) {
+    const esc = policy.escalation || {}
+    if (esc.on_round !== 'one-hop') return 0
+    if (!(esc.round_executors || []).includes(hint)) return 0
+    const m = /@(\d+)(?:#\d+)?$/.exec(row.instance || '')
+    if (!m) return 0
+    const round = parseInt(m[1], 10)
+    return round > 1 ? round - 1 : 0
+}
+
 function resolve(row, policy) {
     const labels = labelsOf(row)
 
@@ -259,17 +283,21 @@ function resolve(row, policy) {
     const standing = variant
     // Escalation: one escalate_to hop per prior claim — row.attempt counts
     // claims-so-far, whatever ended each one (gate failure or lease reap; the
-    // row exposes no split — DOT-486) — from the standing variant. The walk
-    // stops at the chain's end or at the security ceiling. A hop whose model
-    // is never-listed is REDIRECTED through [escalation.fallback] rather than
-    // ended there: the non-pinned path enters the fable variant, fails
-    // fableEligible(), and lands on the fallback, so breaking here stranded a
-    // pinned step one hop BELOW where an unpinned one reaches (DOT-650). The
-    // redirect is itself a hop, is bounded by the ceiling like any other, and
-    // the walk ends only when the fallback is missing, never-listed, or a
-    // no-op.
-    if (row.attempt > 0) {
-        for (let hop = 0; hop < row.attempt; hop++) {
+    // row exposes no split — DOT-486) — from the standing variant, PLUS one
+    // hop per prior fix-loop round for the executors [escalation] opts in
+    // (roundHops above, DOT-724): a loop round is a fresh step id at attempt
+    // 0, so without the round term the walk restarted from standing every
+    // round. The walk stops at the chain's end or at the security ceiling. A
+    // hop whose model is never-listed is REDIRECTED through
+    // [escalation.fallback] rather than ended there: the non-pinned path
+    // enters the fable variant, fails fableEligible(), and lands on the
+    // fallback, so breaking here stranded a pinned step one hop BELOW where
+    // an unpinned one reaches (DOT-650). The redirect is itself a hop, is
+    // bounded by the ceiling like any other, and the walk ends only when the
+    // fallback is missing, never-listed, or a no-op.
+    const hops = (row.attempt > 0 ? row.attempt : 0) + roundHops(policy, found.key, row)
+    if (hops > 0) {
+        for (let hop = 0; hop < hops; hop++) {
             if (ceiling && variant === ceiling) break
             const cur = variantSpec(policy, variant)
             if (!cur || !cur.escalate_to) break
@@ -817,10 +845,11 @@ if (!input || typeof input !== 'object') throw new Error(
 const rows = input.rows || []
 const policy = parseToml(input.policyText || '')
 
-if (policy.policy?.version !== 14) {
+if (policy.policy?.version !== 15) {
     throw new Error(
-        `wave.js: policy.toml [policy] version is ${JSON.stringify(policy.policy?.version)}, expected 14 ` +
-        `(the [variants]/escalate_to shape, unchanged since v2 — only the version number moved). ` +
+        `wave.js: policy.toml [policy] version is ${JSON.stringify(policy.policy?.version)}, expected 15 ` +
+        `(the [variants]/escalate_to shape, unchanged since v2 — only the version number moved; ` +
+        `v15 added [escalation] on_round/round_executors, DOT-724). ` +
         `Refusing to route against an unknown schema.`
     )
 }

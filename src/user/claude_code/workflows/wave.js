@@ -1528,6 +1528,12 @@ still fails, end your reply with the verbatim error text and nothing else —
 that is the only case where your final text matters.`
 }
 
+// TEST-BEGIN gate-vote — extracted and exercised by
+// tests/wave-vote-retry-report.test.sh, which concatenates this region after
+// the classifier-retry region (whose CLASSIFIER_BLOCK / TRANSIENT_CLASSIFIER /
+// reasonText the probe retry below reads) and feeds it stub `agent`,
+// `parallel`, `log`, `seatBrief`, `resolveSeat`, `labelsOf`, and `policy`
+// globals. Everything else the region needs must stay INSIDE the markers.
 function probeBrief(command, servingStep) {
     return `Run exactly this one command:
 
@@ -1542,18 +1548,52 @@ read-only probe reporting what the record currently says.${servingStep ? `
 You are serving ${servingStep}; usage attribution joins on that id.` : ''}`
 }
 
-function probe(command, label, phaseLabel, servingStep) {
-    return agent(probeBrief(command, servingStep), {
-        label,
-        phase: phaseLabel,
-        agentType: 'executor-read',
-        model: 'haiku',
-        effort: 'low',
-    }).then((text) => text == null ? '' : text)
-        .catch((err) => {
+function probe(command, label, phaseLabel, servingStep, acct) {
+    const once = () => {
+        if (acct) acct.spawns++
+        return agent(probeBrief(command, servingStep), {
+            label,
+            phase: phaseLabel,
+            agentType: 'executor-read',
+            model: 'haiku',
+            effort: 'low',
+        }).then((text) => text == null ? '' : text)
+    }
+    return once().catch((err) => {
+        // DOT-744: a GATE probe that dies at the agent level (RUN-52's
+        // gate:tally, "API Error: Connection lost mid-response") used to
+        // degrade straight to '' — the wave then judged the gate on an empty
+        // read, and the completion notification carried the corpse as a
+        // failures entry BESIDE the same step's gate-passed verdict. A probe
+        // is one read-only, idempotent command, so resubmit the IDENTICAL
+        // brief once — except on a non-transient classifier block, which is
+        // deterministic on identical bytes (the DOT-558 doctrine). The
+        // absorbed error and the retry land in `acct`, so a SUCCEEDING
+        // tally reports them as notes instead of leaving them to read as
+        // failures (gateSuccess below). Accounting — and with it the retry —
+        // rides only the gate path: call sites that pass no acct keep the
+        // old single-shot fail-open behavior.
+        if (!acct) {
             log(`${label}: probe spawn error: ${err}`)
             return ''
+        }
+        const reason = reasonText(err) || String(err)
+        acct.absorbed.push(`[${label}] ${reason}`)
+        if (CLASSIFIER_BLOCK.test(reason) && !TRANSIENT_CLASSIFIER.test(reason)) {
+            log(`${label}: probe blocked on content (${reason}) — deterministic ` +
+                `on identical bytes, not retried`)
+            return ''
+        }
+        log(`${label}: probe spawn error (${reason}) — retrying the identical ` +
+            `read-only probe once`)
+        acct.retries++
+        return once().catch((err2) => {
+            const reason2 = reasonText(err2) || String(err2)
+            acct.absorbed.push(`[${label} (retry)] ${reason2}`)
+            log(`${label}: probe spawn error on retry: ${reason2}`)
+            return ''
         })
+    })
 }
 
 // Some gate steps decide ONE held finding cluster out of several, and their
@@ -1629,7 +1669,41 @@ function parseVoteShow(text) {
     }
 }
 
+// DOT-744: assemble a gate's SUCCESS result. A vote row whose tally succeeds
+// after agent-level noise (a seat re-spawn, a probe resubmission, a dead
+// probe) must not read as failed: RUN-52's completion notification carried
+// "[STEP-2493 · gate:tally] failed: API Error: Connection lost mid-response"
+// BESIDE the same step's trusted gate-passed verdict — exactly the shape a
+// conductor misreads as a failed gate — and the 8-spawns-for-3-seats cost was
+// visible nowhere. So the success result carries the spawn/seat/retry
+// accounting explicitly, and every absorbed agent-level error as a NOTE
+// naming the tally's success — never as a failure. Failure outcomes
+// (gate-rejected / gate-blocked / gate-parked) deliberately do NOT come
+// through here: their errors are real and stay failures.
+function gateSuccess(step, text, acct) {
+    const n = (count, one, many) => `${count} ${count === 1 ? one : many}`
+    const res = {
+        step,
+        status: 'gate-passed',
+        text,
+        spawn_accounting: `${n(acct.spawns, 'spawn', 'spawns')} for ` +
+            `${n(acct.seats, 'seat', 'seats')}, ${n(acct.retries, 'retry', 'retries')}`,
+    }
+    if (acct.absorbed.length > 0) {
+        res.notes = acct.absorbed.map((e) =>
+            `absorbed agent-level error (superseded in-wave; the tally ` +
+            `SUCCEEDED — NOT a failure of this step): ${e}`)
+    }
+    return res
+}
+
 async function runGate(row, phaseLabel) {
+    // DOT-744: seat-spawn accounting for THIS gate. Every agent launched on
+    // the row's behalf is a spawn (probes included — RUN-52's journal showed
+    // 8 spawns for a 3-seat panel with nothing saying why); seat re-spawns
+    // and probe resubmissions are retries; agent-level errors land in
+    // `absorbed` and ride the SUCCESS result as notes (gateSuccess above).
+    const acct = { seats: 0, spawns: 0, retries: 0, absorbed: [] }
     // The ballot: record-driving opened the proposal when the gate's last
     // predecessor recorded — an earlier stage this wave already awaited — so
     // one probe normally finds it. A gate with NO proposal means the
@@ -1637,7 +1711,7 @@ async function runGate(row, phaseLabel) {
     // blocked, its issue's later rows are dead for this wave, and the next
     // round routes whatever on_fail produced.
     let show = await probe(`docket step show ${row.step} --json`,
-        `${row.step} · gate:show`, phaseLabel)
+        `${row.step} · gate:show`, phaseLabel, undefined, acct)
     // Proposal ids are project-prefixed: 1-8 upcased letters, "-V", digits
     // (docket's FormatProposalID / project set-prefix grammar), e.g. DKT-V29.
     const m = show.match(/"proposal"\s*:\s*"([A-Z]{1,8}-V\d+)"/)
@@ -1651,7 +1725,7 @@ async function runGate(row, phaseLabel) {
     // believed it). The TALLY is the outcome; read it from the proposal.
     const tallyOutcome = async (voteId) => {
         const t = await probe(`docket vote show ${voteId} --json`,
-            `${row.step} · gate:tally`, phaseLabel, row.step)
+            `${row.step} · gate:tally`, phaseLabel, row.step, acct)
         // DOT-514: read the verdict STRUCTURALLY. The regex below matches
         // anywhere in the text — including inside a seat's free-text summary,
         // so a rationale quoting `"status": "rejected"` while explaining why it
@@ -1682,7 +1756,10 @@ async function runGate(row, phaseLabel) {
             }
         }
         log(`${row.step}: gate already decided — continuing`)
-        return { step: row.step, status: 'gate-passed', text: show }
+        const early = gateSuccess(row.step, show, acct)
+        log(`${row.step}: ${early.spawn_accounting}` + (early.notes ?
+            ` — ${early.notes.length} agent-level error(s) absorbed (NOT failures for this step)` : ''))
+        return early
     }
     if (!m) {
         log(`${row.step}: gate has no proposal — its predecessors did not all ` +
@@ -1707,12 +1784,14 @@ async function runGate(row, phaseLabel) {
     // yields null and the brief renders as it did before.
     const target = parseTargetRef(await probe(
         `docket step context ${row.step} --json | ${TARGET_REF_GREP}`,
-        `${row.step} · gate:target`, phaseLabel, row.step))
+        `${row.step} · gate:target`, phaseLabel, row.step, acct))
     log(`${row.step}: ${voteId} — seating ${seats.map((s) => s.seat).join(', ')}` +
         (target ? ` on target ${target.sha || '(no sha)'}${target.worktree ? ` (${target.worktree})` : ''}`
                 : ` with NO target ref on the bundle — seats read their own HEAD`))
-    await parallel(seats.map((r) => () =>
-        agent(seatBrief(r, voteId, row, false, heldCluster, target), {
+    acct.seats = seats.length
+    await parallel(seats.map((r) => () => {
+        acct.spawns++
+        return agent(seatBrief(r, voteId, row, false, heldCluster, target), {
             label: `${row.step} · seat:${r.seat}`,
             phase: phaseLabel,
             agentType: 'executor-read',
@@ -1720,8 +1799,10 @@ async function runGate(row, phaseLabel) {
             effort: r.effort,
         }).catch((err) => {
             log(`${row.step} seat ${r.seat}: spawn error: ${err}`)
+            acct.absorbed.push(`[${row.step} · seat:${r.seat}] ${reasonText(err) || String(err)}`)
             return null
-        })))
+        })
+    }))
 
     // One re-spawn for seats whose cast never landed — tribunal.js's rule.
     // DOT-514: this reads the SAME `--json` envelope the tally does and takes
@@ -1729,7 +1810,7 @@ async function runGate(row, phaseLabel) {
     // human-format probe (~12-13k tokens, 35-60s) to substring-match seat
     // names out of prose — the JSON read already carries that structurally.
     const record = await probe(`docket vote show ${voteId} --json`,
-        `${row.step} · gate:record`, phaseLabel, row.step)
+        `${row.step} · gate:record`, phaseLabel, row.step, acct)
     const recorded = parseVoteShow(record)
     let missing
     if (recorded && Array.isArray(recorded.votes)) {
@@ -1745,8 +1826,10 @@ async function runGate(row, phaseLabel) {
     if (missing.length > 0) {
         log(`${row.step}: ${missing.length} seat(s) returned without a recorded ` +
             `cast (${missing.map((s) => s.seat).join(', ')}) — re-spawning each ONCE`)
-        await parallel(missing.map((r) => () =>
-            agent(seatBrief(r, voteId, row, true, heldCluster, target), {
+        await parallel(missing.map((r) => () => {
+            acct.spawns++
+            acct.retries++
+            return agent(seatBrief(r, voteId, row, true, heldCluster, target), {
                 label: `${row.step} · seat:${r.seat} (retry)`,
                 phase: phaseLabel,
                 agentType: 'executor-read',
@@ -1754,14 +1837,16 @@ async function runGate(row, phaseLabel) {
                 effort: r.effort,
             }).catch((err) => {
                 log(`${row.step} seat ${r.seat}: respawn error: ${err}`)
+                acct.absorbed.push(`[${row.step} · seat:${r.seat} (retry)] ${reasonText(err) || String(err)}`)
                 return null
-            })))
+            })
+        }))
     }
 
     // `done` says only that the step COMPLETED — a rejection whose on_fail
     // routes into rework also reads done/superseded. The tally is the verdict.
     show = await probe(`docket step show ${row.step} --json`,
-        `${row.step} · gate:outcome`, phaseLabel)
+        `${row.step} · gate:outcome`, phaseLabel, undefined, acct)
     if (/"status"\s*:\s*"done"/.test(show)) {
         const { outcome, tally } = await tallyOutcome(voteId)
         if (outcome === 'rejected') {
@@ -1771,12 +1856,16 @@ async function runGate(row, phaseLabel) {
             return { step: row.step, status: 'gate-rejected', text: tally }
         }
         log(`${row.step}: gate passed — continuing`)
-        return { step: row.step, status: 'gate-passed', text: show }
+        const res = gateSuccess(row.step, show, acct)
+        log(`${row.step}: ${res.spawn_accounting}` + (res.notes ?
+            ` — ${res.notes.length} agent-level error(s) absorbed (NOT failures for this step)` : ''))
+        return res
     }
     log(`${row.step}: gate did NOT clear (${(show.match(/"status"\s*:\s*"([a-z-]+)"/) || [])[1] || 'unknown'}) ` +
         `— skipping this issue's later stages; the conductor escalates`)
     return { step: row.step, status: 'gate-parked', text: show }
 }
+// TEST-END gate-vote
 
 // GLOBAL STAGE BARRIERS (2026-08-15, superseding RUN-2's per-issue lanes).
 // The lanes existed because engine stages only ordered SAME-ISSUE work, so a

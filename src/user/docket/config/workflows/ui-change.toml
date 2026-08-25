@@ -1,7 +1,7 @@
 [pipeline]
 name = "ui-change"
-version = 18
-description = "UI change bound to an accepted ux-spec (cited in the issue body — no engine input form reaches a cross-issue doc, DKT-547), design-judged and design-QA'd in parallel with AC verification; the conductor integrates commits, the operator publishes."
+version = 19
+description = "UI change bound to an accepted ux-spec (cited in the issue body — no engine input form reaches a cross-issue doc, DKT-547), design-judged and design-QA'd before AC verification so an AC that reads the design-QA findings can resolve met/unmet instead of unverifiable; the conductor integrates commits, the operator publishes."
 
 [match]
 labels_any = ["ui"]
@@ -85,12 +85,25 @@ packet = ["contracts/{executor}.md"]
 
 [[step]]
 after = ["reconcile"]
+emits = "findings"
+executor = "design-qa"
+expected_cost = 0.90
+gates = [{ name = "render-verify", pre = true }, { name = "copy-verify", pre = true }]
+holds_tree = false
+inputs = ["issue.body", "issue.diff", "implement.change-summary", "design-qa.gate-results"]
+name = "design-qa"
+packet = ["contracts/{executor}.md"]
+payload = "findings@8"
+threshold = { "fix-loop" = "any(severity >= blocker)" }
+
+[[step]]
+after = ["design-qa"]
 emits = "ac-report"
 executor = "verify-ac"
 expected_cost = 0.50
 gates = [{ name = "ac-commands", pre = true }]
 holds_tree = false
-inputs = ["issue.body", "issue.diff", "implement.change-summary", "verify.gate-results"]
+inputs = ["issue.body", "issue.diff", "implement.change-summary", "verify.gate-results", "design-qa.findings"]
 name = "verify"
 packet = ["contracts/{executor}.md"]
 payload = "ac-report@1"
@@ -104,16 +117,3 @@ on_fail = "waiting-human"
 type = "vote"
 vote_rule = "tribunal"
 voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
-
-[[step]]
-after = ["reconcile"]
-emits = "findings"
-executor = "design-qa"
-expected_cost = 0.90
-gates = [{ name = "render-verify", pre = true }, { name = "copy-verify", pre = true }]
-holds_tree = false
-inputs = ["issue.body", "issue.diff", "implement.change-summary", "design-qa.gate-results"]
-name = "design-qa"
-packet = ["contracts/{executor}.md"]
-payload = "findings@8"
-threshold = { "fix-loop" = "any(severity >= blocker)" }

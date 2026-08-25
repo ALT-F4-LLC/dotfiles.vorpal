@@ -68,7 +68,7 @@ on_failure = "one-hop"
 # the per-round re-runs that share the ordinal (review@N judges, synthesize@N,
 # verify@N) are deliberately NOT listed and keep their standing variants.
 on_round = "one-hop"
-round_executors = ["fix"]
+round_executors = ["fix", "dispose"]
 fable_gates = [
   "failed-top-opus-round",
   "investigator-class",

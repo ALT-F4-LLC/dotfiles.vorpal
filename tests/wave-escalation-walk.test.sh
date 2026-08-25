@@ -271,6 +271,41 @@ for (const [labels, want] of ROUNDS) {
 eq(variantAtRound('fix', 'fix@2', 1, []), 'opus-high',
     'fix@2 attempt:1 composes round and attempt hops')
 
+// DOT-745: dispose is the second round_executors member. Its disposition-loop
+// `revise` step (workflows/disposition.toml) shares the SAME engine-level
+// defect fix had — a fresh step id per round, invisible to the attempt-keyed
+// walk — but dispose stands on opus-high rather than fix's sonnet-medium, so
+// its climb is shorter: one hop lands it on the fable-high gate, which is
+// gated the same way design-qa's is, so it settles on the fallback
+// opus-xhigh instead of ever reaching fable.
+const DISPOSE_ROUNDS = [
+    // Unpinned dispose loop: round 2 hops opus-high -> opus-xhigh (the fable
+    // hop is gated) and holds there for every later round.
+    [[], ['opus-high', 'opus-xhigh', 'opus-xhigh', 'opus-xhigh', 'opus-xhigh', 'opus-xhigh']],
+    // Security-pinned: the same redirect-through-fallback DOT-650 gives fix
+    // continues one hop further for dispose, opus-xhigh -> opus-max, and
+    // holds at the [security].ceiling.
+    [['security-load-bearing'], ['opus-high', 'opus-xhigh', 'opus-max', 'opus-max', 'opus-max', 'opus-max']],
+]
+for (const [labels, want] of DISPOSE_ROUNDS) {
+    const who = `dispose (rounds${labels.length ? `, ${labels.join(',')}` : ''})`
+    for (let n = 1; n <= want.length; n++) {
+        let got
+        try { got = variantAtRound('dispose', `dispose@${n}`, 0, labels) }
+        catch (e) { got = `THREW: ${e.message}` }
+        eq(got, want[n - 1], `${who} dispose@${n} attempt:0`)
+    }
+}
+
+// Round hops COMPOSE with attempt hops for dispose too.
+eq(variantAtRound('dispose', 'dispose@2', 1, []), 'opus-xhigh',
+    'dispose@2 attempt:1 composes round and attempt hops')
+
+// A listed executor whose row carries no instance at all is attempt-keyed
+// only, same invariant as fix below.
+eq(variantAtRound('dispose', undefined, 0, []), 'opus-high',
+    'dispose with NO instance field resolves at its standing variant')
+
 // Scope fence: every per-round step shares the instance ordinal, and NONE of
 // the unlisted ones may move — the judges reviewing round 9 stand exactly
 // where they stood at round 0, and the walk stays attempt-keyed for them.

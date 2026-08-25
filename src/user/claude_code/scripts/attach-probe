@@ -2,9 +2,9 @@
 #
 # attach-probe — the conduct skill's pre-dispatch probe, as one read-only run.
 #
-# Why (DOT-423): every conductor attaching to an already-active run must clear
+# Why: every conductor attaching to an already-active run must clear
 # the same six checks before its first dispatch, and every session used to
-# retype them. Retyping drifts. RUN-33 (2026-08-20) piped a `diff` through
+# retype them. Retyping drifts. A past run (2026-08-20) piped a `diff` through
 # `head -30` and then reported `$?` — head's exit, which is always 0 — as the
 # "config diff exit"; the same session ran `test -f
 # ~/.claude/workflows/wave.js` where the skill mandates a byte-diff and itself

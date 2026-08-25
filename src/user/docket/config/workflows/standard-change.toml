@@ -1,7 +1,12 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 24
+version = 25  # 25: review/review-security/reconcile repoint findings@8 ->
+              #   findings@9 and synthesize repoints findings-cluster@1 ->
+              #   findings-cluster@2 — a citation-scrub pass rewrote both
+              #   schemas' field descriptions to drop literal DKT/RUN/DOT-
+              #   style provenance ids, which the engine refuses as an
+              #   in-place edit to a frozen registration
 
 [match]
 unless_labels = [
@@ -46,7 +51,7 @@ after = ["implement"]
 fanout = ["judge-correctness", "judge-architecture", "judge-testing"]
 emits = "findings"
 packet = ["contracts/{executor}.md"]
-payload = "findings@8"
+payload = "findings@9"
 expected_cost = 0.60
 inputs = ["implement.change-summary", "issue.diff"]
 
@@ -59,7 +64,7 @@ holds_tree = false
 inputs = ["implement.change-summary", "issue.diff"]
 name = "review-security"
 packet = ["contracts/{executor}.md"]
-payload = "findings@8"
+payload = "findings@9"
 when = "labels contains security"
 
 [[step]]
@@ -71,7 +76,7 @@ holds_tree = false
 inputs = ["review.*", "review-security.findings"]
 name = "synthesize"
 packet = ["contracts/{executor}.md"]
-payload = "findings-cluster@1"
+payload = "findings-cluster@2"
 
 [[step]]
 action = "aggregate"
@@ -80,7 +85,7 @@ inputs = ["synthesize.findings"]
 max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
-payload = "findings@8"
+payload = "findings@9"
 threshold = { "fix-loop" = "any(open_severity >= blocker)" }
 
 [[step]]

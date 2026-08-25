@@ -1,5 +1,5 @@
 [policy]
-version = 15
+version = 16
 
 [variants]
 fable-high = { model = "fable", effort = "high" }
@@ -57,10 +57,11 @@ reason = "Fable screens cyber/bio content and silently serves Opus when a reques
 
 [escalation]
 on_failure = "one-hop"
-# Round-based escalation (DOT-724). A fix-loop round is a FRESH step id —
+# Round-based escalation. A fix-loop round is a FRESH step id —
 # `docket step resolve --as fix-round` mints fix@N+1 at attempt 0 — so
 # on_failure's attempt-keyed walk never sees a loop's failure history and the
-# fixer sat at sonnet-medium for all nine rounds of RUN-51/AGT-643. The engine
+# fixer sat at sonnet-medium for all nine rounds of a past run before this gap
+# was caught. The engine
 # encodes the round ordinal in the instance name (`fix@N`, first entry minted
 # at @1); executors listed in round_executors count each round AFTER their
 # first as one escalate_to hop, composed with any attempt hops and bounded by

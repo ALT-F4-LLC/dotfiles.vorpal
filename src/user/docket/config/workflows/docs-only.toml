@@ -1,7 +1,10 @@
 [pipeline]
 description = "Documentation change: implement with doc-validate and citation gates, one correctness judge, tribunal-filtered review and AC verification, and a bounded fix-loop re-entering at review; the conductor integrates commits, the operator publishes. Design-heavy doc work routes through spec-doc first."
 name = "docs-only"
-version = 16
+version = 17  # 17: review step repoints findings@8 -> findings@9 — a citation-
+              #   scrub pass rewrote findings@8's field descriptions to drop
+              #   literal DKT/RUN/DOT-style provenance ids, which the engine
+              #   refuses as an in-place edit to a frozen registration
 
 [match]
 labels_any = ["docs-only"]
@@ -34,7 +37,7 @@ holds_tree = false
 inputs = ["implement.change-summary", "issue.diff"]
 name = "review"
 packet = ["contracts/{executor}.md"]
-payload = "findings@8"
+payload = "findings@9"
 threshold = { "review-tribunal" = "any(severity >= high)" }
 
 [[step]]

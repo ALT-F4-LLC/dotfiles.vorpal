@@ -238,11 +238,11 @@ function labelsOf(row) {
     return []
 }
 
-// Round-based escalation hops (DOT-724). A fix-loop round is a FRESH step id:
+// Round-based escalation hops. A fix-loop round is a FRESH step id:
 // `docket step resolve --as fix-round` mints fix@N+1 at attempt 0, so the
-// attempt walk in resolve() never sees a loop's failure history — RUN-51's
-// AGT-643 burned nine fix rounds with the fixer pinned at its standing
-// variant while every judge reviewing it stood at opus-high. The engine
+// attempt walk in resolve() never sees a loop's failure history — one past
+// run had its fixer burn nine fix rounds pinned at its standing variant
+// while every judge reviewing it stood at opus-high. The engine
 // encodes the round ordinal in the manifest row's instance name — `name@N`,
 // with `#k` for fanout siblings, and a loop step's first entry minted at @1 —
 // and [escalation] on_round = "one-hop" + round_executors opts an executor
@@ -330,16 +330,16 @@ function resolve(row, policy) {
     const standing = variant
     // Escalation: one escalate_to hop per prior claim — row.attempt counts
     // claims-so-far, whatever ended each one (gate failure or lease reap; the
-    // row exposes no split — DOT-486) — from the standing variant, PLUS one
+    // row exposes no split) — from the standing variant, PLUS one
     // hop per prior fix-loop round for the executors [escalation] opts in
-    // (roundHops above, DOT-724): a loop round is a fresh step id at attempt
+    // (roundHops above): a loop round is a fresh step id at attempt
     // 0, so without the round term the walk restarted from standing every
     // round. The walk stops at the chain's end or at the security ceiling. A
     // hop whose model is never-listed is REDIRECTED through
     // [escalation.fallback] rather than ended there: the non-pinned path
     // enters the fable variant, fails fableEligible(), and lands on the
-    // fallback, so breaking here stranded a pinned step one hop BELOW where
-    // an unpinned one reaches (DOT-650). The redirect is itself a hop, is
+    // fallback, so breaking here once stranded a pinned step one hop BELOW
+    // where an unpinned one reaches. The redirect is itself a hop, is
     // bounded by the ceiling like any other, and the walk ends only when the
     // fallback is missing, never-listed, or a no-op.
     const hops = (row.attempt > 0 ? row.attempt : 0) + roundHops(policy, found.key, row)
@@ -435,10 +435,10 @@ function archetype(row, hint) {
 // HOW THIS BRIEF IS WORDED, and it is load-bearing: state the required form,
 // omit the defense. A brief never addresses the safety classifier, never names
 // a technique by what it gets past, and never pre-argues its own
-// authorization — that wording is itself screened, and on 2026-08-17 it cost
-// manifest-argocd every executor spawn across three dispatch cycles (RUN-5:
-// each spawn refused, zero steps claimed). Say what to do and what containment
-// binds; a rule needs no argument for why it is allowed.
+// authorization — that wording is itself screened: a self-justifying brief
+// once cost an entire dispatch every executor spawn across three dispatch
+// cycles, each spawn refused, zero steps claimed. Say what to do and what
+// containment binds; a rule needs no argument for why it is allowed.
 function bootstrap(row, r, isolated, isWrite) {
     const isolationNote = isolated ? `
 
@@ -583,8 +583,8 @@ read STEP-N or \${row.step}, and this one does not.${isolationNote}${pinNote}
    the REQUEST section — everything that actually binds you sits BELOW it: your
    contract file, every fragment, PINNED, and OUTPUT. Read the named file with
    the Read tool before doing anything else. A 30KB brief is the normal case for
-   a step carrying several pinned files, not an anomaly (RUN-7 STEP-319: 30,697
-   bytes, of which ~2,000 were shown).
+   a step carrying several pinned files, not an anomaly (one observed brief ran
+   30,697 bytes, of which only the first ~2,000 were shown inline).
 
    On CONFLICT: stop immediately and report AT MOST three lines: your step id,
    the word CONFLICT, and the engine's error line verbatim. Do not investigate
@@ -634,13 +634,13 @@ ${!isWrite ? `
 
      The literal is not optional either, and this is the half that bites
      silently. \`$TMPDIR\` does not resolve to the same root in every call —
-     the same hazard the artifact-file rule below records for the Write tool
-     (RUN-1 STEP-32), one call apart instead of one tool apart. Extract under
+     the same hazard the artifact-file rule below records for the Write tool,
+     one call apart instead of one tool apart. Extract under
      one root and read under another and you get "no such file or directory"
      against a tree you just built successfully, or worse, fall back to
      reading the shared checkout — a judge reviewing a tree a round behind the
-     change, which is exactly what this obligation exists to prevent
-     (observed: RUN-31 STEP-821).
+     change, which is exactly what this obligation exists to prevent (this has
+     been observed in practice).
 
      The sha resolves even when no branch of yours carries it, because every
      worktree shares one object store. Read, build, and probe THERE, and
@@ -715,8 +715,8 @@ ${!isWrite ? `
    \`just activate\` — never a live bypass, and never on your say-so.
 ${isWrite ? `
    \`--worktree\` names the checkout the work happened in. The engine
-   computes the recorded diff THERE, and — since DKT-9 (docket.git,
-   2026-08-16) — spawns your step's completion gates and the downstream
+   computes the recorded diff THERE, and — since a past engine change —
+   spawns your step's completion gates and the downstream
    verify pre-gate with that checkout as cwd too. Get its literal path once
    with \`git rev-parse --show-toplevel\` and paste that in; without it the
    engine diffs the wrong tree and its gates measure the shared checkout
@@ -724,7 +724,7 @@ ${isWrite ? `
 ` : ''}
    \`model_resolved\` is the exact model id your environment reports (e.g.
    \`claude-sonnet-5\`), never a branding form — a "[1m]" suffix in the ledger
-   fragments every routing-drift query that reads it (measured, RUN-8).
+   fragments every routing-drift query that reads it (measured on a past run).
 
    or on failure:
 
@@ -772,7 +772,7 @@ ${isolated ? `
    any OTHER reason; the conductor is not isolated and records the step from
    your parked state. NEVER record \`fail\` for work that succeeded — a
    false failure burns an attempt and re-runs the whole step to relearn what
-   your parked artifacts already hold (RUN-8 measured one full re-judging).
+   your parked artifacts already hold (measured: one past run paid for a full re-judging this way).
 ` : ''}
 
    The CLI reads the token from DOCKET_TOKEN or, when that is unset, from stdin
@@ -803,7 +803,7 @@ ${isolated ? `
    sandbox the Write tool materializes files at a DIFFERENT physical path
    than the <TMP> root your Bash commands use, and the record then
    fails "no such file or directory" against a file you just wrote
-   (observed: RUN-1 STEP-32).
+   (this has been observed in practice).
 
    ARTIFACT FILES: THREE AUTHORING RULES. A large or brace-heavy heredoc
    body fails in an isolated shell. Author files these ways from the start
@@ -839,8 +839,8 @@ ${isolated ? `
    write to or reuse a shared filename like \`change-summary.md\`: executors in
    one wave share <TMP>, and under a shared name a racing sibling's bytes
    — or a predecessor's leftover when your own write silently fails — get
-   recorded as YOUR artifact (RUN-3's STEP-11 recorded STEP-21's summary
-   exactly this way).
+   recorded as YOUR artifact (this has happened in practice: one step
+   recorded another step's summary exactly this way).
 
    If a write is refused, triage the refusal before anything else. One that
    names the body's SIZE OR CONTENT, on a target under <TMP> or your own
@@ -906,21 +906,20 @@ if (policy.resolve) {
 }
 
 // An agent's reply is PROSE. Read only the two shapes the brief actually
-// mandates — never a substring of the body (DOT-226).
+// mandates — never a substring of the body.
 //
-// Both park signals used to be `includes` over the whole reply, and RUN-28
-// wave 1 shows the cost: judge STEP-687 reviewed the pause skill, quoted the
-// engine constant it was reviewing — `CondRunActive = "run is not active"` —
-// and recorded `done`. Its last line said so verbatim, `STEP-687 recorded
-// (done)`. The wave read the quote, declared the run parked, and never
-// launched stage 2; the engine re-offered synthesize one full dispatch
-// round-trip later. A reviewer of park handling cannot describe a park
-// without tripping a body scan, and this corpus reviews its own park
-// handling constantly.
+// Both park signals used to be `includes` over the whole reply, and one past
+// run shows the cost: a judge reviewed the pause skill, quoted the engine
+// constant it was reviewing — `CondRunActive = "run is not active"` — and
+// recorded `done`. Its last line said so verbatim, `<step> recorded (done)`.
+// The wave read the quote, declared the run parked, and never launched stage
+// 2; the engine re-offered synthesize one full dispatch round-trip later. A
+// reviewer of park handling cannot describe a park without tripping a body
+// scan, and this corpus reviews its own park handling constantly.
 // TEST-BEGIN park-signals — extracted and exercised by
-// tests/wave-park-signals.test.sh against the verbatim RUN-28 replies. Keep
-// everything between the markers free of workflow globals (agent, log, args)
-// so it stays evaluable on its own.
+// tests/wave-park-signals.test.sh against verbatim replies captured from that
+// run. Keep everything between the markers free of workflow globals (agent,
+// log, args) so it stays evaluable on its own.
 const CONFLICT_REPORT_MAX_LINES = 4
 
 function lastLine(text) {
@@ -942,8 +941,8 @@ function isConflictReport(text) {
 // launched INTO a park ('run is not active'), and the record-status tail of
 // the agent whose own record CAUSED the park ('STEP-N recorded
 // (waiting-human)') — the second stops the next stage before it spawns
-// corpses (measured twice on RUN-8: 5 judges launched into a park the prior
-// stage's result already announced). The tail format is mandated by the
+// corpses (measured twice on one run: 5 judges launched into a park the
+// prior stage's result already announced). The tail format is mandated by the
 // brief's closing instruction below, which says to END the reply with it, so
 // it is read at the END and nowhere else; trailing emphasis or punctuation is
 // tolerated, a paragraph after it is not. Fail-open: no match keeps launching,
@@ -958,14 +957,14 @@ function runParked(res) {
 
 // The safety classifier runs PRE-SPAWN, and it fails CLOSED: when its stage-2
 // check errors out, it blocks the launch and says so in its own reason text.
-// RUN-43 (wave wf_b8679e05-2dc, 2026-08-22) lost 3 of 24 executor spawns to
-// ONE such error, verbatim and byte-identical across all three:
+// One past run lost 3 of 24 executor spawns to ONE such error, verbatim and
+// byte-identical across all three:
 //
-//   [STEP-1547 · judge-simplicity] blocked by safety classifier: Stage 2
+//   [STEP-N · judge-simplicity] blocked by safety classifier: Stage 2
 //   classifier error - blocking based on stage 1 assessment (usually
 //   transient — retrying often succeeds)
 //
-// STEP-1548 (judge-testing, opus) and STEP-1561 (synthesize-findings, sonnet)
+// The other two steps (judge-testing on opus, synthesize-findings on sonnet)
 // carried the same sentence — different issues, different classes, different
 // models. That is infra, not content: all three later recorded `done` on
 // redispatch from the SAME rendered brief bytes, which is direct proof that
@@ -979,8 +978,9 @@ function runParked(res) {
 // identical bytes anyway, and stays operator-escalated on the first failure.
 //
 // TEST-BEGIN classifier-retry — extracted and exercised by
-// tests/wave-classifier-retry.test.sh against the verbatim RUN-43 reason.
-// Keep everything between the markers free of workflow globals (agent, log,
+// tests/wave-classifier-retry.test.sh against the verbatim reason text
+// captured from that run. Keep everything between the markers free of
+// workflow globals (agent, log,
 // args) so it stays evaluable on its own.
 //
 // Both regexes must hit. CLASSIFIER_BLOCK is the harness's own wrapper —
@@ -989,9 +989,10 @@ function runParked(res) {
 // classifier's admission that its own stage 2 broke. A content-based reason
 // names the content, never its own machinery, so it matches neither phrase.
 // The input domain is BLOCK-REASON AND ERROR STRINGS ONLY — never an agent
-// reply. (RUN-28 is the standing lesson one field over: a body scan over
-// agent prose parked a wave on a judge who merely QUOTED the phrase it
-// scanned for. A judge reviewing this very retry will quote these sentences.)
+// reply. (The park-signal lesson above is the standing example one field
+// over: a body scan over agent prose parked a wave on a judge who merely
+// QUOTED the phrase it scanned for. A judge reviewing this very retry will
+// quote these sentences.)
 const CLASSIFIER_BLOCK = /blocked by safety classifier/i
 const TRANSIENT_CLASSIFIER = /Stage 2 classifier error|usually transient/i
 
@@ -1010,10 +1011,10 @@ function transientClassifierBlock(e) {
 }
 // TEST-END classifier-retry
 
-// A pre-spawn classifier block resolves agent() to a BARE null (DOT-565):
-// the reason goes only to the harness's progress stream, which this script
-// cannot read. But the harness PERSISTS that stream — verified against
-// RUN-43's own file — as JSON at
+// A pre-spawn classifier block resolves agent() to a BARE null: the reason
+// goes only to the harness's progress stream, which this script cannot
+// read. But the harness PERSISTS that stream — verified against a captured
+// run's own file — as JSON at
 // ~/.claude/projects/<flattened-cwd>/<session-id>/[subagents/]workflows/<wfId>.json,
 // each workflowProgress entry carrying `label`, `blocked`, and the verbatim
 // `error`. A read-only probe agent CAN read that file, so the null branch
@@ -1021,8 +1022,8 @@ function transientClassifierBlock(e) {
 // partial progress (measured 2026-08-23), so the file is not completion-only;
 // whether every mid-run block is flushed by the time the probe looks is
 // UNVERIFIED — if it is not, the probe finds nothing and the branch degrades
-// to exactly its old conservative behavior. That limitation is recorded on
-// DOT-565.
+// to exactly its old conservative behavior. That limitation is real and, as
+// of this writing, unresolved.
 const PROBE_SCHEMA = {
     type: 'object',
     properties: {
@@ -1106,14 +1107,14 @@ function probeRecovered(p, label) {
 function spawn(row, phaseLabel) {
     const r = resolve(row, policy)
     const type = archetype(row, r.hint)
-    // Only writers get a worktree (RUN-8 docket, 2026-08-12). Isolation exists
+    // Only writers get a worktree. Isolation exists
     // so parallel WRITERS cannot cross-contaminate the shared tree; read-class
     // steps never mutate it. And the harness guard that polices an isolated
     // shell refuses any heredoc body carrying `{` immediately followed by `"`
     // — every JSON object literal, compact or pretty — so isolating readers
     // taxed exactly the steps whose payloads are JSON: 89 refusals across 21
-    // agents in 6 waves, including the one that evaded the guard and tripped
-    // the security classifier (STEP-197).
+    // agents in 6 waves, including one that evaded the guard and tripped
+    // the security classifier.
     const isWrite = type === 'executor-write'
     const isolated = isWrite
     log(`${row.step}: ${r.hint} -> ${type} @ ${r.model}/${r.effort} (variant ${r.variant})` +
@@ -1145,7 +1146,7 @@ function spawn(row, phaseLabel) {
     }
     const handle = (text, retried) => {
         if (text != null) return { step: row.step, status: 'returned', text }
-        // A bare null is still NEVER retried blind (DOT-558): agent() resolves
+        // A bare null is still NEVER retried blind: agent() resolves
         // to `null` for a pre-spawn classifier block, an operator SKIP, an
         // unavailable model, and a mid-flight death alike — measured in the
         // harness (2.1.241): the block path is `if (await <preflight>(...))
@@ -1153,7 +1154,7 @@ function spawn(row, phaseLabel) {
         // stream, as workflowProgress[].error, which this script cannot read
         // (`Date.now()` is unavailable too, so not even elapsed time
         // discriminates). A blind retry here would relaunch agents the
-        // operator had just skipped. Instead (DOT-565) a read-only probe
+        // operator had just skipped. Instead, a read-only probe
         // recovers the harness's own persisted record of THIS label from the
         // wave state file, and the identical-bytes resubmission fires only on
         // a probe-recovered, label-matched, blocked === true entry whose
@@ -1241,7 +1242,7 @@ function spawn(row, phaseLabel) {
 // gates (a seat's variant is its standing home); the [security] node pins
 // still bind, and — unlike tribunal.js, whose caller has no issue to read
 // labels from — this call site passes the row's issue labels, so
-// [security].labels also binds here (DOT-596).
+// [security].labels also binds here.
 // ---------------------------------------------------------------------------
 
 // SYNC-BEGIN seat-contract
@@ -1375,7 +1376,7 @@ ${r.seat}. Nothing it may have concluded reached anyone, so decide the case
 yourself from scratch. Whatever stopped the first attempt, the cast is the one
 thing that must happen this time: if the command errors, do not abandon it
 silently — end with the verbatim error as instructed below.` : ''
-    // DOT-513: absent on ordinary gates — then this renders NOTHING and the
+    // Absent on ordinary gates — then this renders NOTHING and the
     // brief is byte-for-byte what it was before held clusters existed.
     const heldClusterNote = heldCluster ? `
 
@@ -1384,19 +1385,20 @@ ${heldCluster.clusterCount} in ${heldCluster.artifact} (produced by ${heldCluste
 \`docket step artifact ${heldCluster.artifact} --payload\` and judge that cluster
 only: is the held remedy right, and should it block? The other clusters are
 other seats' or already decided.` : ''
-    // DOT-673: seats kept voting on a tree their own checkout did not contain
-    // — "fix@1 commit 5b05f86, not an ancestor of this judge worktree HEAD
-    // 4d83ae0" — and then rejected on evidence grounds ("reject on
-    // evidence-versus-assertion grounds, not on the fix's substance"), because
-    // the correctness lens asks whether you could reproduce it FROM WHAT IS IN
-    // FRONT OF YOU. No code edit answers that reject: the fix loop cannot move
-    // a judge's HEAD. The engine already lifts the resolved `issue.diff` round
-    // record onto the context bundle as `target_sha` / `target_worktree`, so
-    // NAME the round's target here and say how to read a commit that is not an
-    // ancestor of this HEAD. Either half may be missing — a bundle carries
-    // both or neither per the engine, but a swept worktree or an older
-    // manifest can leave one — and with NEITHER this renders NOTHING, leaving
-    // the brief byte-for-byte what it was before DOT-673.
+    // Seats used to keep voting on a tree their own checkout did not contain
+    // — one judge reported "fix@1 commit 5b05f86, not an ancestor of this
+    // judge worktree HEAD 4d83ae0" — and then rejected on evidence grounds
+    // ("reject on evidence-versus-assertion grounds, not on the fix's
+    // substance"), because the correctness lens asks whether you could
+    // reproduce it FROM WHAT IS IN FRONT OF YOU. No code edit answers that
+    // reject: the fix loop cannot move a judge's HEAD. The engine already
+    // lifts the resolved `issue.diff` round record onto the context bundle as
+    // `target_sha` / `target_worktree`, so NAME the round's target here and
+    // say how to read a commit that is not an ancestor of this HEAD. Either
+    // half may be missing — a bundle carries both or neither per the engine,
+    // but a swept worktree or an older manifest can leave one — and with
+    // NEITHER this renders NOTHING, leaving the brief byte-for-byte what it
+    // was before this fix.
     const targetSha = (target && target.sha) || ''
     const targetWorktree = (target && target.worktree) || ''
     const targetLines = []
@@ -1600,19 +1602,19 @@ function probe(command, label, phaseLabel, servingStep, acct) {
         }).then((text) => text == null ? '' : text)
     }
     return once().catch((err) => {
-        // DOT-744: a GATE probe that dies at the agent level (RUN-52's
-        // gate:tally, "API Error: Connection lost mid-response") used to
-        // degrade straight to '' — the wave then judged the gate on an empty
-        // read, and the completion notification carried the corpse as a
-        // failures entry BESIDE the same step's gate-passed verdict. A probe
-        // is one read-only, idempotent command, so resubmit the IDENTICAL
-        // brief once — except on a non-transient classifier block, which is
-        // deterministic on identical bytes (the DOT-558 doctrine). The
-        // absorbed error and the retry land in `acct`, so a SUCCEEDING
-        // tally reports them as notes instead of leaving them to read as
-        // failures (gateSuccess below). Accounting — and with it the retry —
-        // rides only the gate path: call sites that pass no acct keep the
-        // old single-shot fail-open behavior.
+        // A GATE probe that dies at the agent level (one past run hit this on
+        // its gate:tally probe: "API Error: Connection lost mid-response")
+        // used to degrade straight to '' — the wave then judged the gate on
+        // an empty read, and the completion notification carried the corpse
+        // as a failures entry BESIDE the same step's gate-passed verdict. A
+        // probe is one read-only, idempotent command, so resubmit the
+        // IDENTICAL brief once — except on a non-transient classifier block,
+        // which is deterministic on identical bytes. The absorbed error and
+        // the retry land in `acct`, so a SUCCEEDING tally reports them as
+        // notes instead of leaving them to read as failures (gateSuccess
+        // below). Accounting — and with it the retry — rides only the gate
+        // path: call sites that pass no acct keep the old single-shot
+        // fail-open behavior.
         if (!acct) {
             log(`${label}: probe spawn error: ${err}`)
             return ''
@@ -1662,7 +1664,7 @@ function parseHeldCluster(show) {
     }
 }
 
-// DOT-673: the round's target ref, for the seat brief. Context assembly lifts
+// The round's target ref, for the seat brief. Context assembly lifts
 // the resolved `issue.diff` artifact's round record onto the bundle as
 // `target_sha` (the commit the diff's tree stood at) and `target_worktree`
 // (the producing record's declared checkout). Both are omitted when the
@@ -1709,17 +1711,17 @@ function parseVoteShow(text) {
     }
 }
 
-// DOT-744: assemble a gate's SUCCESS result. A vote row whose tally succeeds
+// Assemble a gate's SUCCESS result. A vote row whose tally succeeds
 // after agent-level noise (a seat re-spawn, a probe resubmission, a dead
-// probe) must not read as failed: RUN-52's completion notification carried
-// "[STEP-2493 · gate:tally] failed: API Error: Connection lost mid-response"
-// BESIDE the same step's trusted gate-passed verdict — exactly the shape a
-// conductor misreads as a failed gate — and the 8-spawns-for-3-seats cost was
-// visible nowhere. So the success result carries the spawn/seat/retry
-// accounting explicitly, and every absorbed agent-level error as a NOTE
-// naming the tally's success — never as a failure. Failure outcomes
-// (gate-rejected / gate-blocked / gate-parked) deliberately do NOT come
-// through here: their errors are real and stay failures.
+// probe) must not read as failed: one past run's completion notification
+// carried "[STEP-N · gate:tally] failed: API Error: Connection lost
+// mid-response" BESIDE the same step's trusted gate-passed verdict — exactly
+// the shape a conductor misreads as a failed gate — and the 8-spawns-for-3-
+// seats cost was visible nowhere. So the success result carries the
+// spawn/seat/retry accounting explicitly, and every absorbed agent-level
+// error as a NOTE naming the tally's success — never as a failure. Failure
+// outcomes (gate-rejected / gate-blocked / gate-parked) deliberately do NOT
+// come through here: their errors are real and stay failures.
 function gateSuccess(step, text, acct) {
     const n = (count, one, many) => `${count} ${count === 1 ? one : many}`
     const res = {
@@ -1738,11 +1740,11 @@ function gateSuccess(step, text, acct) {
 }
 
 async function runGate(row, phaseLabel) {
-    // DOT-744: seat-spawn accounting for THIS gate. Every agent launched on
-    // the row's behalf is a spawn (probes included — RUN-52's journal showed
-    // 8 spawns for a 3-seat panel with nothing saying why); seat re-spawns
-    // and probe resubmissions are retries; agent-level errors land in
-    // `absorbed` and ride the SUCCESS result as notes (gateSuccess above).
+    // Seat-spawn accounting for THIS gate. Every agent launched on
+    // the row's behalf is a spawn (probes included — one past run's journal
+    // showed 8 spawns for a 3-seat panel with nothing saying why); seat
+    // re-spawns and probe resubmissions are retries; agent-level errors land
+    // in `absorbed` and ride the SUCCESS result as notes (gateSuccess above).
     const acct = { seats: 0, spawns: 0, retries: 0, absorbed: [] }
     // The ballot: record-driving opened the proposal when the gate's last
     // predecessor recorded — an earlier stage this wave already awaited — so
@@ -1755,7 +1757,7 @@ async function runGate(row, phaseLabel) {
     // Proposal ids are project-prefixed: 1-8 upcased letters, "-V", digits
     // (docket's FormatProposalID / project set-prefix grammar), e.g. DKT-V29.
     const m = show.match(/"proposal"\s*:\s*"([A-Z]{1,8}-V\d+)"/)
-    // DOT-513: a held-cluster gate decides ONE cluster of findings, not the
+    // A held-cluster gate decides ONE cluster of findings, not the
     // whole gate — pass the assignment into every seat's brief (null on the
     // ordinary gates whose show text carries no held_cluster field).
     const heldCluster = parseHeldCluster(show)
@@ -1766,7 +1768,7 @@ async function runGate(row, phaseLabel) {
     const tallyOutcome = async (voteId) => {
         const t = await probe(`docket vote show ${voteId} --json`,
             `${row.step} · gate:tally`, phaseLabel, row.step, acct)
-        // DOT-514: read the verdict STRUCTURALLY. The regex below matches
+        // Read the verdict STRUCTURALLY. The regex below matches
         // anywhere in the text — including inside a seat's free-text summary,
         // so a rationale quoting `"status": "rejected"` while explaining why it
         // did NOT reject flipped an approved gate to gate-rejected (rejected is
@@ -1815,7 +1817,7 @@ async function runGate(row, phaseLabel) {
         return { step: row.step, status: 'gate-blocked', text: show }
     }
     const seats = voters.map((v) => resolveSeat(v, policy, labelsOf(row)))
-    // DOT-673: name the round's target ref in every seat's brief. Seats are
+    // Name the round's target ref in every seat's brief. Seats are
     // NOT seated on the checkout the round was written in — writers work in
     // private worktrees — so without this a judge reads its own lagging HEAD,
     // finds the change absent, and rejects on evidence grounds, which no fix
@@ -1845,7 +1847,7 @@ async function runGate(row, phaseLabel) {
     }))
 
     // One re-spawn for seats whose cast never landed — tribunal.js's rule.
-    // DOT-514: this reads the SAME `--json` envelope the tally does and takes
+    // This reads the SAME `--json` envelope the tally does and takes
     // the roster from `.data.votes[].voter_name`. It used to spend a separate
     // human-format probe (~12-13k tokens, 35-60s) to substring-match seat
     // names out of prose — the JSON read already carries that structurally.
@@ -1907,15 +1909,16 @@ async function runGate(row, phaseLabel) {
 }
 // TEST-END gate-vote
 
-// GLOBAL STAGE BARRIERS (2026-08-15, superseding RUN-2's per-issue lanes).
-// The lanes existed because engine stages only ordered SAME-ISSUE work, so a
-// global barrier made one issue's re-review wait on another issue's slowest
-// row for nothing. The staged closure changed what a stage MEANS: the engine
-// now also packs CROSS-ISSUE cohort constraints into stage numbers — two
-// issues' writers sharing one bounded class slot, or one scope, are placed in
-// DIFFERENT stages, and per-issue lanes would run them concurrently and
-// bounce the later one off `claim` (the exact corpse-spawn waste DKT-23
-// measured). Stages are one schedule now; the wave runs them as one ladder.
+// GLOBAL STAGE BARRIERS (2026-08-15, superseding the earlier per-issue
+// lanes). The lanes existed because engine stages only ordered SAME-ISSUE
+// work, so a global barrier made one issue's re-review wait on another
+// issue's slowest row for nothing. The staged closure changed what a stage
+// MEANS: the engine now also packs CROSS-ISSUE cohort constraints into stage
+// numbers — two issues' writers sharing one bounded class slot, or one
+// scope, are placed in DIFFERENT stages, and per-issue lanes would run them
+// concurrently and bounce the later one off `claim` (the exact corpse-spawn
+// waste this measured). Stages are one schedule now; the wave runs them as
+// one ladder.
 // The residual cross-issue wait is the price of that schedule being honored —
 // rows the engine certifies concurrent share a stage and still run together.
 // TEST-BEGIN stage-ladder — extracted and exercised by
@@ -1971,11 +1974,11 @@ function chainDead(res) {
     if (res.status === 'gate-parked' || res.status === 'gate-blocked' ||
         res.status === 'gate-rejected' || res.status === 'skipped-not-claimable' ||
         res.status === 'skipped-not-ready') return true
-    // DOT-559: a stage-N executor that never produced an agent leaves its step
+    // A stage-N executor that never produced an agent leaves its step
     // unrecorded, so every later `after` row of the same ISSUE is guaranteed to
-    // die on claim ("an `after` predecessor is not done"). RUN-43 spent ~52K
-    // tokens booting three such corpses. The engine re-offers the whole chain
-    // at the next dispatch, so calling the issue dead here loses nothing.
+    // die on claim ("an `after` predecessor is not done"). One past run spent
+    // ~52K tokens booting three such corpses. The engine re-offers the whole
+    // chain at the next dispatch, so calling the issue dead here loses nothing.
     if (res.status === 'spawn-failed') return true
     // Same body-scan trap as runParked: `includes('CONFLICT')` would kill an
     // issue's whole remaining chain on a judge that merely REPORTED one.
@@ -2012,7 +2015,7 @@ for (const k of stageKeys) {
                 // act on; empty output, prose, and anything unrecognized all
                 // spawn (fail-open).
                 //
-                // DOT-560: `pending` belongs in that set HERE and only here.
+                // `pending` belongs in that set HERE and only here.
                 // This probe runs after the row's earlier stages have been
                 // awaited and settled — the stage barrier already passed — so
                 // nothing left in this wave can advance the step to `ready`.
@@ -2033,7 +2036,7 @@ for (const k of stageKeys) {
     settled.forEach((res, i) => {
         const row = group[i]
         // Normalize BEFORE the chain test: a missing settle is recorded as
-        // spawn-failed, so it has to be read as one too (DOT-559).
+        // spawn-failed, so it has to be read as one too.
         const out = res || { step: row.step, status: 'spawn-failed', text: null }
         byStep.set(row.step, out)
         if (chainDead(out) && row.issue) {

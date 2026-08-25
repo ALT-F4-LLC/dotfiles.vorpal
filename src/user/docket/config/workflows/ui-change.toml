@@ -1,7 +1,13 @@
 [pipeline]
 name = "ui-change"
-version = 19
-description = "UI change bound to an accepted ux-spec (cited in the issue body — no engine input form reaches a cross-issue doc, DKT-547), design-judged and design-QA'd before AC verification so an AC that reads the design-QA findings can resolve met/unmet instead of unverifiable; the conductor integrates commits, the operator publishes."
+version = 20  # 20: two independent reasons — (1) this table's own description
+              #   text had a citation dropped in a provenance-citation-scrub
+              #   pass; (2) review/reconcile/design-qa repoint findings@8 ->
+              #   findings@9 and synthesize repoints findings-cluster@1 ->
+              #   findings-cluster@2, the same scrub applied to those two
+              #   schemas' field descriptions. The engine refuses an in-place
+              #   edit to a frozen registration either way.
+description = "UI change bound to an accepted ux-spec (cited in the issue body — no engine input form reaches a cross-issue doc), design-judged and design-QA'd before AC verification so an AC that reads the design-QA findings can resolve met/unmet instead of unverifiable; the conductor integrates commits, the operator publishes."
 
 [match]
 labels_any = ["ui"]
@@ -48,7 +54,7 @@ holds_tree = false
 inputs = ["implement.change-summary", "issue.diff"]
 name = "review"
 packet = ["contracts/{executor}.md"]
-payload = "findings@8"
+payload = "findings@9"
 
 [[step]]
 after = ["review"]
@@ -59,7 +65,7 @@ holds_tree = false
 inputs = ["review.*"]
 name = "synthesize"
 packet = ["contracts/{executor}.md"]
-payload = "findings-cluster@1"
+payload = "findings-cluster@2"
 
 [[step]]
 action = "aggregate"
@@ -68,7 +74,7 @@ inputs = ["synthesize.findings"]
 max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
-payload = "findings@8"
+payload = "findings@9"
 threshold = { "fix-loop" = "any(open_severity >= blocker)" }
 
 [[step]]
@@ -93,7 +99,7 @@ holds_tree = false
 inputs = ["issue.body", "issue.diff", "implement.change-summary", "design-qa.gate-results"]
 name = "design-qa"
 packet = ["contracts/{executor}.md"]
-payload = "findings@8"
+payload = "findings@9"
 threshold = { "fix-loop" = "any(severity >= blocker)" }
 
 [[step]]

@@ -11,7 +11,7 @@
 # STEP status, not RUN status, is what `guard stop`/`guard record` read — a
 # distinction worth stating because the obvious remediation used to be wrong.
 # [OBSERVED] `docket run pause RUN-N` moves the RUN to `waiting-human`, but its
-# steps revert to `pending`, so `run status` reads `RUN-2 waiting-human` while
+# steps revert to `pending`, so `run status` reads the run as `waiting-human` while
 # `guard stop` still reads `work is still pending: [approve@0 (pending)]`.
 # Carve-out 4 below is the fix: when NO live run in the project is waiting on
 # the machine, that IS the sanctioned "work waiting on a person" state the
@@ -61,7 +61,7 @@
 # affirmative answer to its own question, and everything else — missing
 # tooling, an unreadable engine answer, an unexpected status — falls through to
 # the deny at the bottom of the file. Count them by reading, not by trusting a
-# number in this header. The first two were observed on RUN-1 (2026-08-06):
+# number in this header. The first two were observed on a past run (2026-08-06):
 #
 # NO DATABASE = NOTHING IN FLIGHT. Every guard verb exits 2 with "✘ Error: no
 # docket database found" when no .docket exists up-tree — the same exit code as
@@ -77,7 +77,7 @@
 # free meanwhile") REQUIRES ending the turn — notifications only deliver at
 # turn boundaries. But claimed/running steps made this hook deny every
 # turn-end mid-wave, which taught the conductor to busy-wait ("I just need to
-# actually wait rather than end the turn" — RUN-1, verbatim), burning tokens
+# actually wait rather than end the turn" — that early run, verbatim), burning tokens
 # and starving itself of the very notification it awaited. `docket guard
 # record` exits 2 exactly while a dispatch is open or a discrepancy stands —
 # both states where the machine is working WITHOUT the session, so a yielding
@@ -116,10 +116,11 @@ esac
 # every project on the machine, which made carve-out 1 dead code (a database
 # always exists up-tree now) and widened `guard stop`'s no-run-argument
 # wiring from repo-wide to machine-wide — a session standing in an unrelated
-# repo was denied over another project's run [OBSERVED 2026-08-11, RUN-2:
-# dotfiles cwd, deny named docket.git's steps]. `run status` IS
-# project-scoped (same probe: 0 runs from dotfiles, RUN-2 from docket.git),
-# so zero live runs in the cwd's project means a stop here interferes with
+# repo was denied over another project's run [OBSERVED 2026-08-11: standing in
+# the dotfiles cwd, the deny named a run's steps from a different project's repo].
+# `run status` IS project-scoped (same probe: 0 runs from dotfiles, the run
+# showed up scoped to that other repo instead), so zero live runs in the cwd's
+# project means a stop here interferes with
 # nothing: allow. The affirmative zero is the only new allow path — missing
 # jq or a parse failure falls through to the deny, keeping conductor-seat
 # behavior byte-identical. (Engine asymmetry — guards store-wide, sibling
@@ -212,14 +213,14 @@ if command -v jq >/dev/null 2>&1; then
 fi
 
 # Carve-out 5: every live run is pin-blocked — the two-guard wedge. [OBSERVED
-# 2026-08-20, RUN-33 conduct session 07d6e1de] The policy-guard hook had
+# 2026-08-20, on a past conduct session] The policy-guard hook had
 # hard-denied the wave launch over pin drift (correctly), the conductor
 # reconciled, closed the open dispatch, and tried to end its turn — and THIS
 # hook denied the stop over the very judge rows that deny had made
 # undispatchable. Pending steps whose dispatch the engine and policy-guard
 # refuse are not abandonable work; they are a blocked run, and holding the
 # session open cannot advance them (there is no repin verb — drift is the
-# operator's to resolve; filed engine-side as DKT-408).
+# operator's to resolve; filed engine-side).
 #
 # The probe is the engine's own whole-run pin comparator, `docket run
 # verify-pins` — read-only, writes nothing, not even a re-pin. Its contract

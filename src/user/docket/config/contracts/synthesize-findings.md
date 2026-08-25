@@ -1,12 +1,12 @@
 ---
 node: synthesize-findings
-version: 5
+version: 6
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
   - fragments/truth-first.md
 emits: findings
-payload: findings-cluster@1
+payload: findings-cluster@2
 ---
 # Charter
 Group the findings several judges produced about one change into clusters, one cluster per
@@ -72,7 +72,7 @@ legitimately scope their own payloads to what changed and disposition the rest i
 only the delta drops every earlier finding that was never routed out of the arithmetic
 entirely. Nothing downstream can recover them: the threshold reads your aggregate, a
 fix round is fed your aggregate, and a cluster absent from it is invisible to both
-while remaining open in fact. RUN-31 round 0 reduced 26 clusters, two were held and
+while remaining open in fact. In a past run, round 0 reduced 26 clusters, two were held and
 resolved and only those two were routed; the other 24 — nine of them high — were left
 unworked, and the round-2 payload that clustered only the delta held 8. Twenty-four
 open defects stopped existing as far as the machinery was concerned, and nothing said
@@ -102,7 +102,7 @@ forward from an earlier round is emitted — see Rounds). Each cluster carries i
 members' finding `id`s in `member_ids`, in the same order as an array severity's
 values — `member_ids` is the ONE linkage key; the older spellings (`members`,
 `cluster_members`, `member_findings`) are retired, and the payload validates against
-`findings-cluster@1`, which is where these shapes are written down. A standing finding
+`findings-cluster@2`, which is where these shapes are written down. A standing finding
 carried forward from a prior round's aggregate record may omit `member_ids` — it
 references that record, not this round's judge payloads.
 

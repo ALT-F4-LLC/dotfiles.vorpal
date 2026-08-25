@@ -50,10 +50,9 @@ the work is. An empty invocation (bare `/plan`, or the literal word
 the conversation decides which of it goes next. Both paths end in a FINAL
 report; neither activates or executes.
 
-Every `RUN-N` and `DKT-N` cited below is a lesson from the PRE-RESET store
-epoch. The episodes are real; the ids are not — the store has since been
-reset, so those numbers now name unrelated live entities. Read them as
-history, never resolve one against the current store.
+The episodes cited below as evidence for these rules are real; where a past
+run, issue, or incident is named, it is described in prose rather than by a
+lookup-able id — read each as history, not as a store reference to resolve.
 
 ## 1. Converse until it decomposes
 
@@ -79,8 +78,9 @@ as options and the operator's selection or typed text becomes the verbatim
 source. If later verification refutes a FACT inside operator-selected text,
 strike the false premise, keep the criterion, and annotate the change with
 the evidence in the body — re-ask only if the correction changes what the
-operator would decide (RUN-5: a flake-artifact baseline was recorded into
-AC1 and corrected this way). Put your recommended option first, labelled
+operator would decide (a past run recorded a flake-artifact baseline into
+AC1 this way and had to correct it after the fact). Put your recommended
+option first, labelled
 "(Recommended)". A prose question costs the operator a redirect (it did,
 2026-08-06); an exclusive-meaning label ("X only", "neither") never belongs
 in a multi-select option set — a set that needs one is a single-select
@@ -187,9 +187,8 @@ most optimal batch, settled 2026-08-21 ("ready, high-priority, parallel-safe"):
    lint below. An issue that fails any of them is not run-ready: list it
    under "not ready" with the missing thing named. The operator may have you
    fill it in this session — `docket issue label add` for labels, `docket
-   issue edit --scope`, or a body with ACs in the operator's words, fine
-   until the activate that binds it — or send it to `/groom`; you never
-   fill ACs from your own guess.
+   issue edit --scope`, or a body with ACs in the operator's words, fine until the activate that binds
+   it — or send it to `/groom`; you never fill ACs from your own guess.
 
    **Probe the binding, and probe it in both directions.** §3's
    labels-confirm-binding rule asks whether an issue's labels produce the
@@ -367,9 +366,8 @@ angle-bracket recipient: replace it with YOUR OWN spawned name — `planner`, or
 the suffixed form (`planner-2`) your spawn prompt gave you — so the delegate's
 report comes back to you. Never leave `team-lead` or the relay's name there: a
 delegate that does have SendMessage would then send its report past you to the
-session that spawned you, and you would wait for a report that never
-arrives. The mechanism is not knowable at brief-writing time, and the two
-mechanisms differ in opposite directions: a delegate spawned
+session that spawned you, and you would wait for a report that never arrives. The mechanism is not knowable at brief-writing
+time, and the two mechanisms differ in opposite directions: a delegate spawned
 as an in-process teammate has SendMessage and its final text is delivered to no
 one, while an Agent-tool background spawn of a tool-limited archetype has no
 SendMessage at all — `executor-read`, the archetype this section spawns, carries
@@ -378,12 +376,12 @@ delivered, in the task notification's output. That is why the pasted block names
 both channels rather than one: a redundant send costs one duplicated message, a
 report in neither place costs the report, and a brief that mandates only
 SendMessage costs a tool-limited reader the turns it spends discovering the
-mismatch and justifying the fallback (DOT-525, 2026-08-21: the reader's report
-arrived intact as final text, having first argued its way out of an instruction
-its seat could not execute). Three planners have now inverted this instruction
-while the rule sat in their context: RUN-5's reader composed its report as final
-text no one received; RUN-7's reader repeated it when its brief said "no separate
-send needed" — never write that into a brief; and a 2026-08-20 planner told its
+mismatch and justifying the fallback (a read-only reader argued its way out of
+an instruction its seat could not execute before its report finally arrived
+intact as final text, 2026-08-21). Three planners have now inverted this
+instruction while the rule sat in their context: one reader composed its report
+as final text no one received; another reader repeated it when its brief said
+"no separate send needed" — never write that into a brief; and a 2026-08-20 planner told its
 teammate-spawned scope reader that its final text "is delivered directly back to
 me", then spent a recovery round-trip nudging the idle agent before the report
 arrived. Every one of those briefs paraphrased the rule instead of pasting it,
@@ -424,8 +422,9 @@ A scope map that says "this bug looks already fixed" changes the run's shape;
 spawn a second read-only agent to settle it — a forced verdict taxonomy, the
 hole hypotheses named, reproduction in an isolated scratch dir — while the
 conversation continues. The run record must not encode a premise a read has
-already cast doubt on. (RUN-2: the verifier found the reported mechanism fixed
-and a different one real; the recorded issues were built on the truth.)
+already cast doubt on. (In a past run, the verifier found the reported
+mechanism fixed and a different one real; the recorded issues were built on
+the truth.)
 
 **Your reader's reply cannot reach you mid-turn — and your own turn is what
 blocks it.** Teammate messages deliver at turn boundaries only, so waiting
@@ -438,8 +437,8 @@ dead 114 seconds after spawning it, and recorded solo; the "missing" report
 was queued the whole time and delivered the same second the turn finally
 ended. A delegate is not failed until a wakeup has actually FIRED and found
 nothing, and there is no fallback allowance to re-derive its brief inline — a
-solo re-derivation under time pressure is how RUN-2's first record missed a
-test that already existed, and how that planner's solo scopes missed every
+solo re-derivation under time pressure is how an earlier run's first record
+missed a test that already existed, and how that planner's solo scopes missed every
 test file its reader had already mapped. If the operator's pace forces
 recording before the reply lands, mark the bodies PROVISIONAL in so many
 words and reconcile the moment it arrives — a body stays editable until the
@@ -471,7 +470,7 @@ the operator types none of them.
 First, if the scope read or premise verdict is more than a few minutes old,
 re-check it now: one `git log --since=<read time>` over the scoped paths. A fix
 that lands between the read and the record otherwise becomes a bound issue whose
-implement step exists to discover the work is done (RUN-8: a fix was
+implement step exists to discover the work is done (in a past run, a fix was
 committed nine minutes before `run start` recorded it as work to do).
 
 This is what the relay runs from your package, shown here so you know
@@ -487,12 +486,13 @@ docket doc create -T plan -t "<title>" --idempotency-key <key> -d @<path>  # the
 ```
 
 Issues first: `run start --issue` names them, so they must already exist —
-RUN-2's planner discovered the reverse order cannot work. The set is not frozen
-there: `docket run issue add RUN-N DKT-N...` attaches and `run issue remove`
-detaches while the run is in `planning`, and `add` still works on an `active`
-run, where the next activate binds the newcomers as it would a later phase.
-ACTIVATION is the freeze, not `run start` — so a list that turns out short costs
-an add, not the abandon-and-restart it cost RUN-4 → RUN-5. The idempotency key
+an earlier planner discovered the reverse order cannot work. The set is not
+frozen there: `docket run issue add RUN-N DKT-N...` attaches and `run issue
+remove` detaches while the run is in `planning`, and `add` still works on an
+`active` run, where the next activate binds the newcomers as it would a later
+phase. ACTIVATION is the freeze, not `run start` — so a list that turns out
+short costs an add, not the abandon-and-restart a past run once paid for
+getting this wrong. The idempotency key
 you put on each `Issues` entry makes the creates re-runnable: the same key
 returns the original entity, never a duplicate. Flag shapes differ by verb and
 it matters: `issue create -d` takes a literal string (`-` reads stdin); the
@@ -556,22 +556,22 @@ versioned.
 Two things this forbids, both of them measured. NEVER budget a fixed number
 of rounds the workflow did not declare: security-change declares THREE and
 rejection-driven loops are that track's normal case — both complete runs to
-date had every security vote rejected at least once, and RUN-34, sized on
-two rounds (cap 14), hit its wall on the THIRD pass and paid two mid-run
+date had every security vote rejected at least once, and one past run, sized
+on two rounds (cap 14), hit its wall on the THIRD pass and paid two mid-run
 raises to close at 20.9; that third round was in its own definition the
 whole time, and 12.0 of reserved headroom is what reading it gets you. And
 NEVER divide by issue count — every admitted issue reserves its own
 workflow's full `max_fix_loops`, because loops are per issue and the batch
-is what makes them concurrent, not what makes them share. RUN-43 recorded
-"floor 22.9 + rework headroom (1 standard-change round @3.8, 1 ui-change
-round @4.6) = 31.3 -> cap 32" and then spent 21.2 on FIVE fix-loop rounds —
-a 2.5x under-forecast that cost two run pauses and a manual loop override
-(seq 6503/6505). Its exact issue mix is not recoverable from that line, so
+is what makes them concurrent, not what makes them share. One past run
+recorded "floor 22.9 + rework headroom (1 standard-change round @3.8, 1
+ui-change round @4.6) = 31.3 -> cap 32" and then spent 21.2 on FIVE fix-loop
+rounds — a 2.5x under-forecast that cost two run pauses and a manual loop
+override. Its exact issue mix is not recoverable from that line, so
 there is no honest reforecast of it here; what IS derivable is that the
 smallest mix the line admits — one standard-change issue, one ui-change
 issue — reserves 8.0 + 8.0 = 16.0 under this rule against the 8.4 it wrote
-down, and every larger mix reserves more. RUN-39 is the same defect from the
-other end: it activated at `budget.default` 12 — a default is not a sized
+down, and every larger mix reserves more. Another run showed the same defect
+from the other end: it activated at `budget.default` 12 — a default is not a sized
 cap — for a spec-doc issue whose own definition declares 3.8 of floor and
 7.8 of headroom before the run has learned anything, then raised twice, 12
 -> 15 -> 48, the second raise projecting 35.1 for an investigation expansion
@@ -582,13 +582,13 @@ planned — an operator's
 out-of-band commit needing independent review mid-run — is what the raise
 machinery is FOR, not a sizing failure. A cap that is short by arithmetic is
 not discipline, it is a
-tribunal you scheduled for yourself: RUN-3 walled before it dispatched
-anything and spent ~20 minutes raising, 22% of its wall clock; RUN-17 left 0.4
+tribunal you scheduled for yourself: one run walled before it dispatched
+anything and spent ~20 minutes raising, 22% of its wall clock; another left 0.4
 of headroom over a two-issue base and raised 10 -> 18 through two serial
-votes; RUN-18 raised 12 -> 20 with 23 minutes of idle; RUN-29 raised three
+votes; a third raised 12 -> 20 with 23 minutes of idle; a fourth raised three
 times, 5 -> 9 -> 12 -> 20, and spent 15, three times its plan. The raise
 machinery is for work that turned out harder than it read — not for a sum you
-could have taken here (RUN-4's cap of 3 against a 4.8-cost workflow forced a
+could have taken here (one run's cap of 3 against a 4.8-cost workflow forced a
 mid-run raise panel and serialized its review fanout). Round UP and say what
 the headroom is for; an unspent cap costs nothing (`docket run budget --set
 <n> --reason '<why>'` adjusts it later, with `--if-version` when a concurrent
@@ -631,7 +631,7 @@ and can diverge; a raw grep over them has also blown the output cap where
 one read verb answered). The tell to hunt is an
 issue whose title or scope lives in a variant's domain while its labels carry
 none of that variant's terms: a TUI/UI-scoped issue without `ui` is the
-canonical case (harness HRN-3, 2026-08-16 — "TUI: default on-load screen to
+canonical case (a past harness-repo issue, 2026-08-16 — "TUI: default on-load screen to
 home", scope `internal/tui/**`, `labels=[]` — bound `standard-change`
 silently, dropping judge-design from the fanout and skipping the terminal
 design-qa/render-verify step; one tribunal seat caught it at the activation
@@ -651,7 +651,7 @@ is answered yes by default. A scope-less issue is treated as NEVER
 conflicting (S1 is permissive, not conservative); activation emits a scope
 warning for it and then activates anyway — the only lint that refuses is a graph
 cycle. So under scope-parallel execution its holder runs beside anything and
-ships regardless, unless you act on the warning here: RUN-5 shipped its
+ships regardless, unless you act on the warning here: a past run shipped its
 verify-everything-and-commit issue scopeless and only a shadow noticed. A
 tree-holding issue without scope globs is a planning defect, caught here or
 nowhere.
@@ -666,11 +666,11 @@ remainder — a stop-and-flag rule PAIRED with an AC that excludes the flagged
 region, a separate issue, or a documented permanent exclusion. A stop-and-flag
 scope rule alone does not license a tree-wide AC: an AC that can only pass by
 editing tree the scope forbids is a planning defect, caught at recording or
-at verification — and verification is too late. DOT-3 shipped an AC requiring
-a tree-wide grep to return nothing while its own scope forbade editing
+at verification — and verification is too late. One past issue shipped an AC
+requiring a tree-wide grep to return nothing while its own scope forbade editing
 outside five directories plus README.md; seven archival files outside that
-boundary held matches, so the AC was unsatisfiable as worded and the
-contradiction surfaced only at verification, recorded as DOT-4.
+boundary held matches, so the AC was unsatisfiable as worded, and the
+contradiction surfaced only at verification, recorded against it afterward.
 
 **An AC that needs a live cluster is post-merge by construction, not an AC.**
 On GitOps repos, author acceptance criteria as statically verifiable render
@@ -680,7 +680,7 @@ the live cluster) in the issue body as post-merge checks instead. The sandbox
 cannot reach a cluster, so a runtime AC is unverifiable on every run by
 construction: across three manifest-flux runs, all 7 cluster-command ACs
 came back "unverifiable" and the AC gate delivered zero assurance (operator
-ruling 2026-08-19, FLX-137/FLX-138).
+ruling, 2026-08-19).
 
 **Scope that lives in another repository is a mis-filed issue, not a scope.**
 When an issue's Change section, scope globs, or an embedded operator ruling
@@ -707,7 +707,7 @@ body is what gets rendered into every brief. Comments added later never reach a
 brief. So any operator ruling, settled semantics, resolved ambiguity, or decision
 that came out of the conversation above must be written into the body now, in the
 issue it governs. "We agreed X in chat" is not a channel; "it's in a comment on the issue"
-is not a channel. RUN-3 had a gated-inclusion ruling live only in a comment, and
+is not a channel. A past run had a gated-inclusion ruling live only in a comment, and
 the executor reasoned around it in a vacuum — it did the wrong thing correctly,
 because the right thing never reached it. If a ruling arrives mid-run, it cannot
 be back-fitted: it goes into the *next* planning pass, in a body.
@@ -715,7 +715,7 @@ be back-fitted: it goes into the *next* planning pass, in a body.
 **Scope** is a path glob checked mechanically against the diff — write the
 narrowest glob that can honestly hold the change. Narrow is not a style
 preference here: scope overlap is how the engine decides two steps conflict, so a
-broad glob serializes the run **against itself**. RUN-3's `internal/engine/**`
+broad glob serializes the run **against itself**. One run's `internal/engine/**`
 made every issue collide with every other issue, and ~40% of all spawns died on
 claim conflicts as a result. And conflict is LITERAL-PREFIX containment, not real
 glob intersection (the engine's `scope.go`): everything before the first `*?[{`
@@ -744,8 +744,8 @@ are real dependencies only: a false edge serializes work that could have run in
 parallel, and a missing one lets a step run before its input exists.
 
 **Planning FROM a single existing backlog issue** (`/plan DKT-N`) — four
-obligations, each checked independently before recording (RUN-7's first
-body carried three and dropped the deliverable; a shadow caught it inside the
+obligations, each checked independently before recording (an earlier run's
+first body carried three and dropped the deliverable; a shadow caught it inside the
 planning window). This is the single-issue intake only: DKT-N here is a
 finding or a problem statement the run DECOMPOSES into fresh issues. The
 bare-`/plan` batch (§1b) is the other case — its members have already passed

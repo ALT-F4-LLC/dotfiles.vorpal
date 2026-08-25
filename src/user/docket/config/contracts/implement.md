@@ -1,6 +1,6 @@
 ---
 node: implement
-version: 2
+version: 3
 archetype: executor-write
 packet_includes:
   - fragments/code-philosophy.md
@@ -29,7 +29,7 @@ the run to it), the issue is already satisfied, not mis-stated — verify each A
 the tree, emit a change-summary naming the pre-existing commit(s) with the AC → evidence
 mapping, and record it with `step complete`. Re-implementing or gapping an
 already-satisfied issue are both waste; the verify path still feeds the review fanout,
-which can find real defects in the landed fix (RUN-8 did). Implement the
+which can find real defects in the landed fix (an earlier run's did). Implement the
 smallest change that satisfies the ACs under the code-philosophy fragment. Run the
 project's build and test commands and include their real output in the summary. If an AC
 is untestable as written, say so explicitly in the summary rather than approximating it.

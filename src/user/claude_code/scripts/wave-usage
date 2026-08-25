@@ -11,13 +11,13 @@ Joins each agent-<id>.jsonl's usage to its step id (named in the agent's first
 user message — the bootstrap prompt) and sums the four typed units per step.
 Usage entries are deduplicated BY MESSAGE ID before summing: streamed assistant
 messages repeat across transcript lines, and a per-line sum double-counts
-(measured 1.65-2.36x on RUN-2 before the dedup).
+(measured 1.65-2.36x on a past wave before the dedup).
 
 DEDUP TAKES THE LAST OCCURRENCE OF A MESSAGE ID, NOT THE FIRST, and that
 direction is load-bearing — do not "simplify" it back to a seen-set. Streaming
 rewrites one message id across many lines and `output_tokens` GROWS with each
 rewrite, so the first occurrence is a PARTIAL count. Taking the first
-under-reported output ~3x (measured on RUN-7 STEP-319: 4,488 recorded against
+under-reported output ~3x (measured on one step: 4,488 recorded against
 14,691 actual) while input and both cache units, which never change across
 occurrences, matched exactly — which is why it went unnoticed. The original
 double-count this dedup was written to fix was driven by those cache units
@@ -54,7 +54,7 @@ The never-cast half is not just the silent-seat checker: EVERY vote-carrying
 wave spawns non-seat agents beside the judges — a claim relay, a record relay, a
 tally reader, a proposal relay, and, on a staged conditional row, a probe that
 discovers a skip. They are haiku-tier and individually small, but they are on
-every vote wave, and before DOT-505 both modes threw them away — seats mode
+every vote wave, and before this split both modes threw them away — seats mode
 because they never cast, plain mode because the conductor `--exclude`d the vote
 step wholesale to keep the judges from being counted twice. That exclusion is no
 longer needed and MUST NOT be reinstated: the skip above is per-agent, so a
@@ -67,15 +67,15 @@ multi-panel wave: one wave now seats several panels (the staged closure rides
 vote rows) with the SAME seat names on each, so a voter-only key cannot be split
 per proposal — and `vote backfill-usage` takes one proposal at a time. Rows
 carry the proposal so the caller can `jq` the one output per panel instead of
-hand-deriving the mapping (DOT-447). `--exclude` still names a bare SEAT in this
+hand-deriving the mapping. `--exclude` still names a bare SEAT in this
 mode and drops it under every proposal, which is its documented contract.
 
 wave.js spawns internal bookkeeping probes of its own — staged-closure polling
 (`docket next --run ... --json`) and ballot reads — whose briefs carry no
 STEP-N unless the probe serves one. A step-less agent whose bootstrap matches
 that fixed probe brief is wave.js polling itself, not an attribution failure:
-it is named on stderr and dropped, the same way `--seats` drops a silent judge
-(DOT-381). A probe that DOES serve a step names it in its brief and is
+it is named on stderr and dropped, the same way `--seats` drops a silent judge.
+A probe that DOES serve a step names it in its brief and is
 attributed normally, so only the internal machinery is excluded.
 
 Deterministic, read-only, stdout-only. Exit 1 if any agent's step cannot be
@@ -221,7 +221,7 @@ def main() -> int:
                 # seat, and the engine refuses usage for a voter that never
                 # cast, so it is reported and dropped here rather than misfiled
                 # onto a seat that did cast. PLAIN MODE CARRIES IT, keyed by
-                # step — the two modes partition the wave (DOT-505).
+                # step — the two modes partition the wave.
                 unattributed.append(name)
                 continue
             key: tuple[str, str] | str = cast

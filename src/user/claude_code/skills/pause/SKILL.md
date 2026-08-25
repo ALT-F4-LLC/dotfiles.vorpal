@@ -153,10 +153,10 @@ checkout, never a wave worktree.
   to look at, the id of anything already filed). The label is not decoration:
   `conduct`'s attach procedure requires the resuming session to answer every
   note carrying it — investigate now, file it as an issue, or decline it with
-  a stated reason — and an unlabelled lead is one it may silently drop.
-  RUN-52's resume prompt relayed such a lead as ordinary prose; the resuming
-  conductor never investigated it, never filed it, and dispatched a step of
-  the same shape with the lead unowned.
+  a stated reason — and an unlabelled lead is one it may silently drop. In an
+  earlier pause, a resume prompt relayed such a lead as ordinary prose instead
+  of with the label; the resuming conductor never investigated it, never
+  filed it, and dispatched a step of the same shape with the lead unowned.
 
 **Engine-recoverable state — link to it, do not restate it:**
 

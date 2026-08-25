@@ -1,7 +1,12 @@
 [pipeline]
 description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step, review them once, and accept by tribunal vote that escalates to the operator."
 name = "spec-project"
-version = 13
+version = 14  # 14: review/reconcile repoint findings@8 -> findings@9 and
+              #   synthesize repoints findings-cluster@1 -> findings-cluster@2
+              #   — a citation-scrub pass rewrote both schemas' field
+              #   descriptions to drop literal DKT/RUN/DOT-style provenance
+              #   ids, which the engine refuses as an in-place edit to a
+              #   frozen registration
 
 [match]
 labels_any = ["spec-project"]
@@ -56,7 +61,7 @@ holds_tree = false
 inputs = ["spec-author.*", "issue.body"]
 name = "review"
 packet = ["contracts/{executor}.md"]
-payload = "findings@8"
+payload = "findings@9"
 
 [[step]]
 after = ["review"]
@@ -67,7 +72,7 @@ holds_tree = false
 inputs = ["review.*"]
 name = "synthesize"
 packet = ["contracts/{executor}.md"]
-payload = "findings-cluster@1"
+payload = "findings-cluster@2"
 
 [[step]]
 action = "aggregate"
@@ -76,7 +81,7 @@ inputs = ["synthesize.findings"]
 max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
-payload = "findings@8"
+payload = "findings@9"
 threshold = { "fix-loop" = "any(open_severity >= blocker)" }
 
 [[step]]

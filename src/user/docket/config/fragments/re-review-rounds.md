@@ -1,6 +1,6 @@
 ---
 fragment: re-review-rounds
-version: 2
+version: 3
 ---
 # Re-review rounds
 
@@ -17,7 +17,7 @@ The loci a fix touched are legitimately new ground, and a genuinely new defect
 there is a real finding — report it at its honest severity. But under max
 aggregation one `blocker` from one judge at one new locus spends an entire fix
 round, and a fresh fix diff reliably offers new loci, so a loop whose rounds
-each blocker-ize the previous round's fix never converges (measured, RUN-50:
+each blocker-ize the previous round's fix never converges (measured, in a past run:
 finding volume 20 → 16 → 17 across three rounds while the loci rotated — each
 round's blockers were about the previous round's fix). On a re-review round,
 emit `blocker` ONLY when one of these holds:

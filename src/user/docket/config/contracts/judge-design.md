@@ -1,6 +1,6 @@
 ---
 node: judge-design
-version: 3
+version: 4
 archetype: executor-read
 packet_includes:
   - fragments/hig-principles.md
@@ -11,7 +11,7 @@ packet_includes:
   - fragments/re-review-rounds.md
   - fragments/diff-reconstruction.md
 emits: findings
-payload: findings@8
+payload: findings@9
 ---
 # Charter
 Examine one change for design conformance: whether what it introduces matches the

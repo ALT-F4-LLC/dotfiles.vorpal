@@ -34,8 +34,8 @@ Three rules you must not fight:
   render` is the only one that shows what a packet actually CONTAINED —
   template-rendered and tokenless — which is how you evidence the known packet
   defects (§3). It does NOT, however, stand in for a pin check: this text used
-  to claim it "refuses on a pin mismatch rather than re-pinning", and on RUN-14
-  (2026-08-19) it returned exit 0 with full packets for two steps while
+  to claim it "refuses on a pin mismatch rather than re-pinning", and on a past
+  run (2026-08-19) it returned exit 0 with full packets for two steps while
   `contracts/synthesize-findings.md` was already mismatched against its pin —
   a mismatch that then made every `synthesize` step in the run unclaimable.
   To check pins, ask the engine: `docket run verify-pins RUN-N --json`. It is
@@ -222,10 +222,10 @@ agent on this skill in single-session mode:
   it arms keeps collecting — journal results, gate rows, docket events — and
   delivers NOTHING until something gives the agent a turn, and the only
   thing that does is an inbound `SendMessage`, which then flushes the whole
-  backlog at once (measured on RUN-44, 2026-08-23: ~200 monitor events over
-  ~100 minutes produced zero turns, and the entire backlog arrived in one
-  batch on the conductor's first message — after the run had already
-  ended). So this agent's turns ARE the dispatch-boundary pings below and
+  backlog at once (measured on an earlier live self-shadow run, 2026-08-23:
+  ~200 monitor events over ~100 minutes produced zero turns, and the entire
+  backlog arrived in one batch on the conductor's first message — after the
+  run had already ended). So this agent's turns ARE the dispatch-boundary pings below and
   nothing else; between them it is accumulating, not watching. §5's three
   interrupt conditions still route via `SendMessage` to this session, but
   they land at the next dispatch boundary rather than in real time, and then
@@ -261,7 +261,7 @@ monitor backlog, lets the agent log against it, and lets an interrupt come
 back BEFORE the next wave dispatches, which is exactly where §5's conditions
 1 and 3 have to land (stale bytes about to be dispatched, an `--ack-reap`
 about to be granted on bad information). Drop the pings and the seat is a
-post-mortem with earlier setup — the failure RUN-44 measured. A run whose
+post-mortem with earlier setup — the failure measured above. A run whose
 conductor will not carry that obligation should be told so at spawn time,
 in the brief's own words, so the review does not claim a live watch that
 never happened.
@@ -430,10 +430,10 @@ the definitions assume. By layer:
 **The two packet-composition defects earlier shadows carried are FIXED and
 live-verified — do not expect them, and re-file nothing against them.**
 (a) `issue.diff` rendering EMPTY for `--worktree`-recorded steps: fixed by
-a9eaebd + 43fb186 (the diff base is the RUN's recorded exec root);
-first real diffs confirmed in production on RUN-2, 2026-08-11. (b) A review
-round inputting the PRIOR step's change-summary: fixed by b98150a (loop
-inputs rebind to the loop's latest emit); verified live on the same run
+rebasing the diff off the run's recorded exec root;
+first real diffs confirmed in production on an earlier run, 2026-08-11. (b) A review
+round inputting the PRIOR step's change-summary: fixed by rebinding loop
+inputs to the loop's latest emit; verified live on the same run
 (`step context` showed review@1's change-summary AND diff both from fix@1).
 STORED artifacts from before those fixes remain empty/stale forever — a
 judge reading one and falling back to `git show` is history, not a live
@@ -521,10 +521,10 @@ renders the compact per-line view; don't retype the jq — the installed
 a run working, not a run stalled — the wave notifies on completion, and gates
 park runs for hours by design.
 
-Measured limits of these surfaces (RUN-2's and RUN-5's shadows):
+Measured limits of these surfaces (from earlier shadow runs):
 
-- **A session can ROLL TO A NEW TRANSCRIPT ID at context compaction.** RUN-5's
-  conductor continued under a fresh file whose replayed history was
+- **A session can ROLL TO A NEW TRANSCRIPT ID at context compaction.** In one
+  observed run, the conductor continued under a fresh file whose replayed history was
   byte-identical; every watcher keyed on the old id went silently stale for an
   hour. If the engine moves while your transcript is quiet, re-find the live
   file by cwd + recency before concluding anything — and watch engine events
@@ -548,7 +548,8 @@ Measured limits of these surfaces (RUN-2's and RUN-5's shadows):
   `.output` file is the only record of a zero-spawn wave.
 - **A task's `.output` file exists from LAUNCH, empty.** The harness creates
   it as a 0-byte placeholder when the task starts, so file-existence is a
-  false completion signal — one RUN-1 watcher fired on it mid-flight. Wave
+  false completion signal — one watcher, in an earlier observed run, fired on
+  it mid-flight. Wave
   completion is `.output` NON-EMPTY; executor progress is journal growth.
 - **Binary provenance includes the PATH.** `which` on the operator's PATH,
   not just in-repo copies — the shadow that checked only `./bin` and
@@ -580,10 +581,11 @@ Measured limits of these surfaces (RUN-2's and RUN-5's shadows):
   ended). **The queue runs INBOUND too, and that is the sharper trap:** a
   background agent takes a turn only when a message arrives for it, so its
   own `Monitor` events — and any other notification it armed — pile up
-  undelivered until one does, then arrive as a single batch. RUN-44's live
-  self-shadow collected ~200 events across ~100 minutes without a single
-  turn, and processed all of them the moment its spawner's first
-  `SendMessage` landed, by which time the run was over (2026-08-23). A
+  undelivered until one does, then arrive as a single batch. A live
+  self-shadow observed this directly: it collected ~200 events across ~100
+  minutes without a single turn, and processed all of them the moment its
+  spawner's first `SendMessage` landed, by which time the run was over
+  (2026-08-23). A
   background watcher nobody pings is a post-mortem watcher, whatever its
   monitors say (§1b).
 - **An artifact listing's `sha256`/`bytes` describe a short summary BODY, not
@@ -594,7 +596,7 @@ Measured limits of these surfaces (RUN-2's and RUN-5's shadows):
 - **`events list --limit N` windows from the OLDEST end**, so a bigger `--limit`
   buys more history, never more recency. Use `--tail N` for the newest events;
   this text advised "pass an explicit `--limit` post-mortem" until 2026-08-20,
-  which is backwards. Measured on RUN-14's 2,851 events: `--limit 400` returned
+  which is backwards. Measured on one run's 2,851 events: `--limit 400` returned
   seq ≤ 2760 and silently omitted everything after the dispatch opened, while
   `--tail 60` returned 2757→2851. The default is 100, and it truncates either
   way (a 194-event run lost its head, 2026-08-17).
@@ -673,8 +675,8 @@ the conductor to hold your message as an unverifiable peer claim rather than
 act on it — that skepticism is its permission model working, and it should not
 be argued with. Say so when relaying, and prefer pointing the operator at the
 observed session's own next gate: an instruction given there is the only form
-it can execute on (RUN-8: relayed instruction correctly refused, validated
-after the fact, and still unexecuted).
+it can execute on — in one observed case a relayed instruction was correctly
+refused, validated after the fact, and still went unexecuted.
 
 ## 6. After the run
 
@@ -747,7 +749,8 @@ Pre-derived because conduct is the richest target. The conductor:
   retired link-farm debris, stopped and reported rather than deleted. A repo
   with no `.docket` at all is the normal case, not a missing step.
 - **The loop is continuous.** A wave completing treated as the run completing
-  is the classic failure (RUN-3 executed a whole run as one wave); so is
+  is the classic failure (one observed run executed its entire run as a
+  single wave); so is
   stopping to report, or asking permission to continue, between iterations.
 - **No cached run state.** Any "I remember step N…" reasoning instead of
   re-asking the engine.
@@ -758,12 +761,13 @@ Pre-derived because conduct is the richest target. The conductor:
   last `just activate` means the wave is dispatching stale bytes, which is
   §5's first interrupt condition and not a paper-cut. `diff` them at §2.3 and
   again before flagging either. A by-name invocation is a defect even
-  when it works (the name registry served pre-edit bytes on RUN-3). `args` is
+  when it works (in one observed run the name registry served pre-edit,
+  stale bytes). `args` is
   a real object `{rows, policyText}`, policy as TEXT, `cat`-ed fresh from
   `~/.docket/config/policy.toml` every dispatch. (wave.js's args-decode
   log line is normal harness transport — the harness stringifies args
-  regardless of the caller; proven by controlled probe on RUN-5. Never count
-  it as a finding.)
+  regardless of the caller; proven by a controlled probe on an earlier run.
+  Never count it as a finding.)
 - **Roster derivation.** A run's issue set comes from the dry-run
   activation's `bound_issues[]` ({issue, workflow}) and `promoted_issues[]`;
   reconstructing it by timestamp window is a workaround the engine retired.
@@ -832,8 +836,8 @@ And the wave:
   writers-serial interim is retired): rows sharing an engine `stage` value
   run fully parallel, stages ascend with an await between, and a stage-less
   row is stage 0. A stage-0 set offered together IS engine-certified
-  concurrent regardless of class — verified live on RUN-8 in both regimes
-  (all-stage-0 reader/writer mix; fixer-0/judges-1 ordering). If a claim
+  concurrent regardless of class — verified live on an earlier run in both
+  regimes (all-stage-0 reader/writer mix; fixer-0/judges-1 ordering). If a claim
   then conflicts, the finding is the engine's certification or the
   dispatch's row set, never the wave's staging.
 - **Brief hygiene.** Embedded commands are `docket step record`, run bare from

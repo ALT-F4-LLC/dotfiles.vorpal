@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# policy-guard (operator-approved 2026-08-17, DKT-V31 follow-up) — PreToolUse:
+# policy-guard (operator-approved 2026-08-17, added after wave-audit's advisory
+# alone proved insufficient) — PreToolUse:
 # Workflow. DENIES a Workflow launch whose args.policyText does not carry
 # ~/.docket/config/policy.toml byte-for-byte (modulo the trailing newline that
 # $(cat …) strips). The PostToolUse wave-audit advisory proved insufficient
@@ -9,7 +10,7 @@
 # containment half — it refuses BEFORE any seat or executor spawns; the
 # wave-audit advisory remains the after-the-fact narrator.
 #
-# Second check (operator-approved 2026-08-20, DOT-298): the run pinned
+# Second check (operator-approved 2026-08-20): the run pinned
 # policy.toml at activation, and a mid-run `just activate` can drift disk away
 # from that pin. The content check ties the launch to DISK; nothing tied disk
 # to the PIN — a 33-agent wave once routed on a policy its run never pinned,
@@ -21,7 +22,7 @@
 # Only the policy.toml pin is enforced here — other drifted refs already make
 # every engine verb that reads them refuse; policy.toml is the one artifact
 # that reaches a wave without passing through an engine verb.
-# The deny is scoped to the run the launch SERVES (DOT-445): wave rows name
+# The deny is scoped to the run the launch SERVES: wave rows name
 # their run outright; a tribunal's voteId resolves through its linked issues
 # to the runs holding steps for them. Drift on a run this launch does not
 # serve prints a stderr advisory and allows — an unrelated drifted zombie
@@ -41,7 +42,7 @@
 # the decoded string as UTF-8 — the same bytes the file holds — so both
 # sides feed shasum an identical stream whenever the text is clean.
 # The same-length-substitution limit formerly accepted here was CLOSED
-# (operator-approved 2026-08-21, DOT-474): the disk comparison is now
+# (operator-approved 2026-08-21): the disk comparison is now
 # SHA-256 content equality — args.policyText must hash-match the file's
 # bytes as-is, or the file minus the trailing newline that $(cat …) strips.
 # Evidence forcing the change: a conductor twice dropped the IDENTICAL
@@ -64,7 +65,7 @@ GOT=$(printf '%s' "$HOOK_INPUT" | jq -r '
   | .policyText // "" | length' 2>/dev/null)
 { [ -n "$GOT" ] && [ "$GOT" -gt 0 ]; } 2>/dev/null || exit 0
 
-# ---- Pin backstop (DOT-298; deny scoped to the served run, DOT-445) ----
+# ---- Pin backstop (deny scoped to the served run) ----
 if command -v docket >/dev/null 2>&1; then
   HOOK_CWD=$(printf '%s' "$HOOK_INPUT" | jq -r '.cwd // empty' 2>/dev/null)
   if [ -n "$HOOK_CWD" ] && [ -d "$HOOK_CWD" ]; then
@@ -107,8 +108,8 @@ if command -v docket >/dev/null 2>&1; then
       # Tribunal launch: voteId -> linked_issues, intersected with the issues
       # the drifted run holds steps for. A vote linked to an issue the
       # drifted run carries serves that run — an activation vote shared
-      # between a drifted zombie and its re-plan (the DKT-V118 shape) stays
-      # denied; that ambiguity is the guard working. KNOWN LIMIT, accepted:
+      # between a drifted zombie and its re-plan stays denied; that ambiguity
+      # is the guard working. KNOWN LIMIT, accepted:
       # step list sees only EXPANDED steps, so an issue bound to the drifted
       # run in a not-yet-expanded later phase escapes the intersection.
       [ -n "$LINKED" ] || LINKED=$(docket vote show "$VOTE_ID" --json 2>/dev/null \
@@ -135,7 +136,7 @@ if command -v docket >/dev/null 2>&1; then
   done
 fi
 
-# ---- Content check (DOT-474): SHA-256 over bytes, not length ----
+# ---- Content check: SHA-256 over bytes, not length ----
 command -v shasum >/dev/null 2>&1 || exit 0
 [ -s "$POLICY" ] || exit 0
 WANT_HASH=$(shasum -a 256 < "$POLICY" 2>/dev/null | awk '{print $1}') \

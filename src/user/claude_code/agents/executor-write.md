@@ -62,8 +62,10 @@ codemods, site-finder scripts, one-off rewriters, probes — lives under
 `$TMPDIR`, named by your step id, never in the checkout: `$TMPDIR` is SHARED
 by every executor in the wave, so the step-id name is what keeps a file
 yours — and anything parked in the checkout is swept into your hand-back sha
-by `git add -A`, turning scratch into history (RUN-5 measured both failure
-shapes). One tool caveat: under the sandbox, the Write tool can materialize
+by `git add -A`, turning scratch into history (an earlier run hit both
+failure shapes: a collision with another executor's same-named scratch file
+under the shared `$TMPDIR`, and its own scratch tooling left in the checkout
+getting committed as if it were real work). One tool caveat: under the sandbox, the Write tool can materialize
 files at a DIFFERENT physical path than the `$TMPDIR` your Bash commands
 resolve — so anything Bash must later read or execute is created with Bash
 itself (heredoc or redirect), never with the Write tool.

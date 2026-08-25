@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "findings@8",
-  "description": "Successor to findings@7, the CLUSTER document declared on the reconcile steps and on the review/design-qa steps that feed one. Identical to findings@7 in every constraint — same `required: [\"severity\"]`, same `severity` and `open_severity` ladders and declared order, same optional `id`/`members`/`held`/`demoted_from`/`operator_resolved`/`prior_disposition`, `additionalProperties` stays true. The only change is prose, and it is a correction: `demoted_from` said it stays declared \"because other workflows still aggregate by median\", which stopped being true when the batch that put every aggregate on max landed. No workflow in the corpus aggregates by median any more — the five `action = \"aggregate\"` steps (security-change, spec-doc, spec-project, standard-change, ui-change) all declare `method = \"max\", hold_spread = 3` — so a reader who took that sentence at face value would look for a demotion path that no longer exists. The engine enforces byte-identity on a frozen registration, so even a prose-only correction lands as a fresh version rather than an in-place edit — the same move DKT-317 forced for findings@3 -> findings@4 and DOT-483 for findings@4 -> findings@5. findings@7 stays registered for runs that already declared it; findings@5 carries the same stale sentence and is now orphaned — nothing in the corpus declares it, and its removal is a later, separate change.",
+  "title": "findings@9",
+  "description": "Successor to findings@8, the CLUSTER document declared on the reconcile steps and on the review/design-qa steps that feed one. Identical to findings@8 in every constraint — same `required: [\"severity\"]`, same `severity` and `open_severity` ladders and declared order, same optional `id`/`members`/`held`/`demoted_from`/`operator_resolved`/`prior_disposition`, `additionalProperties` stays true. The only change is prose, and it is the same kind of correction findings@8 itself made: several field descriptions cited the specific past issue/run ids behind their own history in place, inviting a reader to go look them up; this version inlines what each one taught and drops the id instead. The engine enforces byte-identity on a frozen registration, so even a prose-only correction lands as a fresh version rather than an in-place edit — the same rule findings@8's own history describes. findings@8 stays registered for runs that already declared it; like findings@5 before it, it is now orphaned once every workflow in the corpus repoints here.",
   "type": "array",
   "items": {
     "type": "object",
@@ -33,7 +33,7 @@
         "type": "string"
       },
       "line": {
-        "description": "1-indexed line within `file`. Optional per 02 §6. An explicit `null` is ALSO valid — synthesize-findings emits `line: null` for a finding whose scope is the whole file or the whole commit, where there is no single line to anchor to (DOT-483); that is distinct from simply omitting the key. `minimum` applies only when the value is a number, so the integer case stays constrained and null passes untouched.",
+        "description": "1-indexed line within `file`. Optional per 02 §6. An explicit `null` is ALSO valid — synthesize-findings emits `line: null` for a finding whose scope is the whole file or the whole commit, where there is no single line to anchor to; that is distinct from simply omitting the key. `minimum` applies only when the value is a number, so the integer case stays constrained and null passes untouched.",
         "type": ["integer", "null"],
         "minimum": 1
       },
@@ -42,7 +42,7 @@
         "type": "string"
       },
       "alternative": {
-        "description": "A concrete alternative to the flagged approach. OPTIONAL at every severity: the judge-design rule pairing a blocker with an alternative is a prose obligation in that contract, and synthesize-findings — which emits this same payload and adds no alternative — would be refused by a schema-level conditional (DKT-51).",
+        "description": "A concrete alternative to the flagged approach. OPTIONAL at every severity: the judge-design rule pairing a blocker with an alternative is a prose obligation in that contract, and synthesize-findings — which emits this same payload and adds no alternative — would be refused by a schema-level conditional.",
         "type": "string"
       },
       "members": {
@@ -64,7 +64,7 @@
         "type": "boolean"
       },
       "prior_disposition": {
-        "description": "How this same locus was already ruled on in an EARLIER fix-loop round. Set by synthesize-findings when its inputs identify a cluster as a re-occurrence, and carried through unchanged by `aggregate`. Its presence is the signal that the cluster is settled ground rather than a discovery: a reader — human or panel — owes it a re-read of the earlier ruling before spending a second decision. Absent on a genuinely new cluster, which is the ordinary case. Every sub-field is optional so a partially-known disposition is still recordable; an empty object records nothing and is no better than omitting the field. A re-review round's payload spans the STANDING SET, not the delta: a finding still open is carried forward with this key set even when it did not re-occur in that round's inputs, emitted as one element carrying the scalar the previous aggregate reduced it to rather than its original member array — spread 0, so `hold_spread` cannot re-hold ground an operator already ruled on. Clustering only the delta dropped 24 open findings, nine of them high, out of every later aggregate in RUN-31.",
+        "description": "How this same locus was already ruled on in an EARLIER fix-loop round. Set by synthesize-findings when its inputs identify a cluster as a re-occurrence, and carried through unchanged by `aggregate`. Its presence is the signal that the cluster is settled ground rather than a discovery: a reader — human or panel — owes it a re-read of the earlier ruling before spending a second decision. Absent on a genuinely new cluster, which is the ordinary case. Every sub-field is optional so a partially-known disposition is still recordable; an empty object records nothing and is no better than omitting the field. A re-review round's payload spans the STANDING SET, not the delta: a finding still open is carried forward with this key set even when it did not re-occur in that round's inputs, emitted as one element carrying the scalar the previous aggregate reduced it to rather than its original member array — spread 0, so `hold_spread` cannot re-hold ground an operator already ruled on. Clustering only the delta dropped 24 open findings, nine of them high, out of every later aggregate in a run that hit this exact gap.",
         "type": "object",
         "properties": {
           "round": {
@@ -83,7 +83,7 @@
             "minLength": 1
           },
           "follow_up_issue": {
-            "description": "The issue id the deferred work was filed as. REQUIRED IN PRACTICE when `ruling` is a deferral: a deferral with no issue is the evaporation this field exists to make visible (RUN-19: two approved hold remedies, no next round, no issue anywhere in the store). Not schema-required, because a schema-level conditional here would refuse payloads the aggregate legitimately carries through.",
+            "description": "The issue id the deferred work was filed as. REQUIRED IN PRACTICE when `ruling` is a deferral: a deferral with no issue is the evaporation this field exists to make visible (a past run had two approved hold remedies, no next round, and no issue anywhere in the store). Not schema-required, because a schema-level conditional here would refuse payloads the aggregate legitimately carries through.",
             "type": "string",
             "minLength": 1
           }

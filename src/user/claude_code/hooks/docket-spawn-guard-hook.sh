@@ -30,17 +30,18 @@
 
 set -uo pipefail
 
-# THE PANEL DEADLOCK (DOT-166) IS THE ENGINE'S TO BREAK, NOT THIS HOOK'S.
+# THE PANEL DEADLOCK IS THE ENGINE'S TO BREAK, NOT THIS HOOK'S.
 #
 # The reap half denies every Workflow spawn while a write-class reap is
 # unacknowledged -- and the conduct skill's documented remedy for exactly that
 # hold is to open a vote proposal and seat a panel by launching tribunal.js
 # through this same Workflow tool. So the hold blocked its own resolution:
-# reproduced on RUN-14, where the tribunal launch for DKT-V46 was refused with
-# the identical guard message before tribunal.js's own code ran.
+# reproduced on a past run, where the tribunal launch for the deadlock-breaking
+# vote was refused with the identical guard message before tribunal.js's own
+# code ran.
 #
-# `guard spawn --deciding-vote PROPOSAL-N` is the sanctioned exit (DKT-236,
-# filed FROM DOT-166 and shipped engine-side). All this hook does is notice a
+# `guard spawn --deciding-vote PROPOSAL-N` is the sanctioned exit (filed from
+# that same deadlock and shipped engine-side). All this hook does is notice a
 # tribunal.js launch, lift the proposal id out of its args, and pass it along.
 # Every judgement stays with the engine: the proposal must EXIST and be OPEN,
 # only the REAP half is relaxed, nothing is acknowledged, and the admission is
@@ -97,8 +98,9 @@ command -v docket >/dev/null 2>&1 || exit 0
 # gap: the reap half goes unasked for the older run. It is narrow because the
 # row half is vacuous here anyway (no --rows, see above), and because
 # `wave-audit`'s `guard record` DOES answer over every non-terminal run —
-# verified: with RUN-3 holding an open dispatch and RUN-4 newer and clean, this
-# hook allowed while wave-audit denied and named RUN-3. Closing it properly
+# verified: with an older run holding an open dispatch and a newer run clean,
+# this hook allowed (since it asks only about the newest) while wave-audit
+# denied and named the older run. Closing it properly
 # needs an engine-side `--active` mode on `guard spawn` (TDD §4.5's own stated
 # fallback for $RUN cost) rather than a hook-side loop over runs, which would
 # reintroduce policy into a shim.

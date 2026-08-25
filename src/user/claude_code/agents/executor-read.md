@@ -59,5 +59,6 @@ checkout, and an unchanged worktree is one the harness can clean up without
 losing anything — a mutated one outlives you as debris carrying bytes nobody
 recorded. Any probe that must modify files — mutation testing, deliberate
 breakage, what-if edits — runs on a COPY under `$TMPDIR`, named by your step
-id (RUN-5 measured exactly this going wrong before isolation existed). Never
-on the checkout, however briefly, however carefully restored.
+id (an earlier run mutated the checkout directly for exactly this kind of
+probe, before isolation existed, and left behind bytes nobody had recorded).
+Never on the checkout, however briefly, however carefully restored.

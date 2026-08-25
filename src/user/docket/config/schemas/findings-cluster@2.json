@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "findings-cluster@1",
-  "description": "The SYNTHESIZE document (refit of 2026-08-21) — the first schema this seam has carried. Declared on synthesize steps ONLY: never on judges (findings@6 owns that boundary) and never on reconcile (findings@5 owns the aggregate's carry-through, whose declared severity order the ordered thresholds compile from). Historically synthesize declared no `payload` because every findings@N put a property-level scalar `enum` on `severity`, which refuses the multi-member cluster shape the builtin `aggregate` reads — its `clusterMembers` takes member severities from the `severity` field itself, scalar-or-array (06 §2). The engine compiles full JSON Schema draft 2020-12 (schema.go), so this document writes that input contract down as an anyOf instead of leaving the seam unvalidated. What unvalidated cost, measured across 42 runs: the member-linkage key drifted into four spellings (`members`, `cluster_members`, `member_ids`, `member_findings`), and 23% of elements legitimately carried array severities nothing checked. This document standardizes `member_ids` as the ONE linkage key. No `ordered_enum` anywhere: no threshold reads this document, and the reconcile step's findings@5 keeps the declared order thresholds compile from.",
+  "title": "findings-cluster@2",
+  "description": "Successor to findings-cluster@1, a byte-identity-forced re-registration: two field descriptions cited a past issue id in place as a lookup key, and the engine refuses an in-place edit to a frozen registration. Otherwise unchanged. The SYNTHESIZE document — declared on synthesize steps ONLY: never on judges (findings@6 owns that boundary) and never on reconcile (findings@5 owns the aggregate's carry-through, whose declared severity order the ordered thresholds compile from). Historically synthesize declared no `payload` because every findings@N put a property-level scalar `enum` on `severity`, which refuses the multi-member cluster shape the builtin `aggregate` reads — its `clusterMembers` takes member severities from the `severity` field itself, scalar-or-array (06 §2). The engine compiles full JSON Schema draft 2020-12 (schema.go), so this document writes that input contract down as an anyOf instead of leaving the seam unvalidated. What unvalidated cost, measured across 42 runs: the member-linkage key drifted into four spellings (`members`, `cluster_members`, `member_ids`, `member_findings`), and 23% of elements legitimately carried array severities nothing checked. This document standardizes `member_ids` as the ONE linkage key. No `ordered_enum` anywhere: no threshold reads this document, and the reconcile step's findings@5 keeps the declared order thresholds compile from.",
   "type": "array",
   "items": {
     "type": "object",
@@ -47,7 +47,7 @@
         "type": "string"
       },
       "line": {
-        "description": "1-indexed line within `file`. Optional; an explicit `null` is also valid for a cluster whose scope is the whole file or the whole commit (DOT-483). `minimum` applies only when the value is a number.",
+        "description": "1-indexed line within `file`. Optional; an explicit `null` is also valid for a cluster whose scope is the whole file or the whole commit. `minimum` applies only when the value is a number.",
         "type": ["integer", "null"],
         "minimum": 1
       },
@@ -56,7 +56,7 @@
         "type": "string"
       },
       "alternative": {
-        "description": "A concrete alternative, when one member carried it. Optional at every severity (DKT-51).",
+        "description": "A concrete alternative, when one member carried it. Optional at every severity.",
         "type": "string"
       },
       "prior_disposition": {

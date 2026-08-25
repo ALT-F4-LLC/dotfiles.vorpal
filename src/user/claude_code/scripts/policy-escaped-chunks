@@ -6,7 +6,7 @@ output instead of re-emitted from context.
 
 Re-emitting the ~28k-char file from memory is not a coin flip: one conductor
 dropped the SAME 44 characters twice in a row, and the policy-guard hook denied
-both launches (DOT-473). Copying opaque chunk blocks out of this output does
+both launches. Copying opaque chunk blocks out of this output does
 not have that failure mode — which is why a denial is answered by re-running
 this script, never by retyping the file.
 

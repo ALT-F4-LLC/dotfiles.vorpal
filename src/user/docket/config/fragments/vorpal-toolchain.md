@@ -1,6 +1,6 @@
 ---
 fragment: vorpal-toolchain
-version: 2
+version: 3
 ---
 # Vorpal toolchain
 
@@ -29,7 +29,7 @@ tool or to a covering vorpal tool — e.g. `gofmt` has no standalone alias, so u
 **There is no bare `go` on PATH** — only `go1.26.5`, natively. Use
 `vorpal run go:1.26.0 <args>`; the `1.26.0` alias resolves to a binary that reports
 `go1.26.5`, which is expected and not a mismatch to chase. Do **not** go hunting for a
-binary with `find`, and never `find /` — a RUN-7 executor did exactly that and landed on
+binary with `find`, and never `find /` — an earlier executor did exactly that and landed on
 the identical artifact the alias resolves to, having paid a filesystem-wide scan for it.
 
 Two denials are normal here and neither means you are doing it wrong:

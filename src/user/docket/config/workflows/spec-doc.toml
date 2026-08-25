@@ -1,7 +1,12 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by a research step, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec), escalating to the operator."
 name = "spec-doc"
-version = 17
+version = 18  # 18: review/reconcile repoint findings@8 -> findings@9 and
+              #   synthesize repoints findings-cluster@1 -> findings-cluster@2
+              #   — a citation-scrub pass rewrote both schemas' field
+              #   descriptions to drop literal DKT/RUN/DOT-style provenance
+              #   ids, which the engine refuses as an in-place edit to a
+              #   frozen registration
 
 [match]
 labels_any = ["spec-doc"]
@@ -119,7 +124,7 @@ holds_tree = false
 inputs = ["issue.latest.doc", "issue.body"]
 name = "review"
 packet = ["contracts/{executor}.md"]
-payload = "findings@8"
+payload = "findings@9"
 
 [[step]]
 after = ["review"]
@@ -130,7 +135,7 @@ holds_tree = false
 inputs = ["review.*"]
 name = "synthesize"
 packet = ["contracts/{executor}.md"]
-payload = "findings-cluster@1"
+payload = "findings-cluster@2"
 
 [[step]]
 action = "aggregate"
@@ -139,7 +144,7 @@ inputs = ["synthesize.findings"]
 max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
-payload = "findings@8"
+payload = "findings@9"
 threshold = { "fix-loop" = "any(open_severity >= high)" }
 
 [[step]]

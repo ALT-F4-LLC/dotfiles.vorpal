@@ -132,11 +132,11 @@ No local flags. Watch-eligible.
 
 **It says when a run gave up on the issue.** Abandoning an issue
 deliberately leaves its tracker status alone, so a `todo` or `review` an
-abandon froze is byte-identical to work nobody has started — RUN-14's four
-abandoned issues sat at `todo` for days, and a later session read two
+abandon froze is byte-identical to work nobody has started — a past run's four
+abandoned issues sat at `todo` for days, and a later session read two of those
 operator-abandoned issues as "still parked on a gate that was never resolved"
 and re-asked both decisions. `issue show` now prints a **`Run disposition`**
-section — `work abandoned in RUN-32 by implement@0 (2026-08-20)` plus the
+section — `work abandoned in <run> by implement@0 (<timestamp>)` plus the
 recorded reason **verbatim** — and `--json` carries `run_disposition`
 `{run, disposition, by, reason, at}`, emitted **only when a run abandoned its
 work**, so an ordinary issue's payload is unchanged. `by` is absent when an
@@ -724,11 +724,12 @@ Only abandonment appears: an issue that **completed** leaves no event and needs
 none — its steps are `done` and the step sections say so.
 
 **Step lines name their issue on a multi-issue run.** Instance
-labels are unique within an issue and repeat across them, so the 4-issue
-RUN-32 printed `"implement@0": 2` twice under *Attempts* and `"reconcile@0":
+labels are unique within an issue and repeat across them, so a four-issue
+run once printed `"implement@0": 2` twice under *Attempts* and `"reconcile@0":
 done — "fix-loop"` three times under *How steps ended*, with nothing to tell
 the rows apart. Where the report's attempt rows cover two or more distinct
-issues, every step line is labelled `"HRN-300 implement@0":` instead. A
+issues, every step line is labelled with its issue prefixed onto the instance,
+e.g. `"<issue> implement@0":`, instead. A
 single-issue run is unchanged: the id would be the same constant on every line
 and disambiguates nothing. `--json` is unchanged either way — every attempt row
 has always carried `issue`.
@@ -997,7 +998,7 @@ never told, and stays the relay's to sweep.
 **The warning is STATTED before it is printed.** The recorded rows
 outlive the directories: a relay that swept its own checkouts at close time
 leaves `steps.work_root` behind, so the recorded list is a superset of what is
-still there. Abandoning RUN-14 flagged 20 "outstanding" worktrees that `git
+still there. Abandoning one run once flagged 20 "outstanding" worktrees that `git
 worktree list` showed were already gone, and the conductor spent a
 verification pass discovering the warning was about nothing. The message now
 lists only the paths still on disk and counts the rest (`all 20 recorded … are
@@ -2645,21 +2646,25 @@ number always works, so references in old commit messages and other projects'
 run records never go stale.
 
 **An id renders under the prefix of the project that OWNS it, not the one you
-are reading from**. Ids are minted from one store-wide sequence —
-`DKT-267` and `DOT-268` were consecutive — so a prefix rendered from your cwd
-made every cross-project reference silently wrong: the same `run report` row
-showed `DOT-81` from one checkout and `ART-81` from another, and
-`docket issue link add DOT-268 relates_to DKT-267` confirmed success as
-"Linked DOT-268 relates_to **DOT-267**", renaming another project's issue in
-the act of reporting that the right thing had been done.
+are reading from**. Ids are minted from one store-wide sequence, so two issues
+in two different projects can land one number apart — which once meant a
+prefix rendered from your cwd made every cross-project reference silently
+wrong: the same `run report` row showed one prefix from one checkout and a
+different prefix from another for the exact same issue, and linking two issues
+across projects confirmed success while naming the *wrong* project's issue —
+renaming another project's issue, in effect, in the act of reporting that the
+right thing had been done.
 
 **A prefixed reference that disagrees with the row's owner is refused**, naming
-both projects. Before this, `docket issue show DOT-20` from `docket.git`
-discarded the prefix, resolved `20` under the caller's project, and printed
-`DKT-20` — the reader asked about one issue and was shown another. Cross-project
-reads stay legal: `DOT-268` resolves issue 268 when 268 really is DOT's, which
-is what makes `issue list --project`'s output round-trip. What is gone is the
-third outcome — a *different* issue wearing the requested number. 1–8 letters (upcased); `DOC`,
+both projects. Before this, asking to show a cross-project issue by an
+explicit prefix that disagreed with the caller's own project silently
+discarded that prefix, resolved the bare number under the caller's own
+project, and returned a *different* issue rendered under the caller's own
+prefix — the reader asked about one issue and was shown another. Cross-project
+reads stay legal: a prefixed reference resolves the issue that number really
+belongs to, which is what makes `issue list --project`'s output round-trip.
+What is gone is the third outcome — a *different* issue wearing the requested
+number. 1–8 letters (upcased); `DOC`,
 `RUN`, and `STEP` are reserved for their own entities (`VALIDATION_ERROR`).
 A prefix ANOTHER project already holds is refused (`CONFLICT`, naming the
 holder): the prefix is a project's only discriminator in a listing, an event

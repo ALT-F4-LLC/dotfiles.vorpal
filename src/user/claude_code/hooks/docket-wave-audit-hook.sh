@@ -6,7 +6,7 @@
 # stderr but always exits 0. It used to deny (exit 2), which was correct when
 # Workflow returned at wave COMPLETION — but Workflow now returns at LAUNCH,
 # so an open dispatch at this hook point is the normal mid-flight state and a
-# blocking exit denied every legitimate wave (observed on RUN-2, 2026-08-06).
+# blocking exit denied every legitimate wave (observed on an early run).
 # No policy, no branching on run content, no state (AC-4.1).
 #
 # 03 §5 calls this "a courtesy early warning": enforcement is engine-side either
@@ -51,19 +51,19 @@ if [ -n "$HOOK_INPUT" ] && [ -f "$HOME/.docket/config/policy.toml" ] \
     # multi-byte chars (20932 bytes vs 20834 chars today), which would make
     # the loud message below fire on every clean launch in a C-locale hook
     # environment — recreating the exact alarm fatigue this block kills
-    # (DKT-V31, tribunal-security's locale finding).
+    # (a locale-counting false alarm a prior security review had flagged).
     WANT=$(jq -Rs 'length' < "$HOME/.docket/config/policy.toml" 2>/dev/null)
     # $(cat file) strips the trailing newline, so a byte-for-byte launch
     # legitimately arrives one char short. Warning on that fired on every
     # CLEAN launch (19+ false positives across the 2026-08-17 fleet), and
     # the noise trained conductors to ignore the REAL condensation warnings
-    # in the same pile (RUN-15's DKT-V24 panel; RUN-17's DKT-V22/V23 panels
-    # plus two waves). Exact and exact-minus-one are silent; anything else
+    # in the same pile (several real governance panels and waves in that same
+    # fleet). Exact and exact-minus-one are silent; anything else
     # says so loudly, with numbers.
     if [ -n "$WANT" ] && [ "$GOT" -ne "$WANT" ] 2>/dev/null && [ "$GOT" -ne "$((WANT - 1))" ]; then
       DELTA=$((WANT - GOT)); [ "$DELTA" -lt 0 ] && DELTA=$((0 - DELTA))
       PCT=$((DELTA * 100 / WANT))
-      echo "wave-audit: POLICY CONDENSED — this launch carried policyText of $GOT chars but ~/.docket/config/policy.toml is $WANT chars (off by $DELTA, ~$PCT%). The wave or panel just launched is routing/judging on an INCOMPLETE policy: TaskStop it, re-cat the file, and relaunch byte-for-byte. This is the RUN-4 defect; on 2026-08-17 it reached three live governance votes." >&2
+      echo "wave-audit: POLICY CONDENSED — this launch carried policyText of $GOT chars but ~/.docket/config/policy.toml is $WANT chars (off by $DELTA, ~$PCT%). The wave or panel just launched is routing/judging on an INCOMPLETE policy: TaskStop it, re-cat the file, and relaunch byte-for-byte. This defect class has previously reached live governance votes before being caught." >&2
     fi
   fi
 fi

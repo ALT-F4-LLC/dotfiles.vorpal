@@ -204,7 +204,7 @@ function assertPolicyShape(policy, refusal) {
 // ---------------------------------------------------------------------------
 // Seat routing. A seat is not a step: there is no attempt chain and no
 // label-keyed [[resolve]] table. resolveSeat DOES take an issue-labels list
-// (DOT-596, so wave.js — which seats vote rows off the same per-issue
+// (so wave.js — which seats vote rows off the same per-issue
 // manifest row resolve() reads — can apply [security].labels the way resolve
 // does); this file's own args {voteId, voters, policyText, context, gateKind,
 // cwd} carry no issue, so every call here resolves labels to the default []

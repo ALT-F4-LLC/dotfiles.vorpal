@@ -5,10 +5,10 @@
 # writes (`step list`, `run budget` with no --set). Use it instead of reading
 # `run activate --dry-run`'s expected_cost_total, which is the WHOLE run's
 # roster total (done + skipped + superseded + pending), not the increment —
-# misreading it as the increment bought RUN-39 a second raise to 48 it did not
-# need (35.1 was the run total; the increment was 2.1). Prints the pending ROW
+# misreading it as the increment bought a past run a second raise to 48 it did
+# not need (35.1 was the run total; the increment was 2.1). Prints the pending ROW
 # COUNT beside the sum so a status the select misses shows as a short count.
-# Usage: budget-headroom RUN-39
+# Usage: budget-headroom RUN-N
 set -eu
 [ $# -eq 1 ] || { echo "usage: budget-headroom RUN-N" >&2; exit 2; }
 run=$1

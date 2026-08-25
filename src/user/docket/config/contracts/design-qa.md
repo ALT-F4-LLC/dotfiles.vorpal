@@ -1,6 +1,6 @@
 ---
 node: design-qa
-version: 5
+version: 6
 archetype: executor-read
 packet_includes:
   - fragments/hig-principles.md
@@ -9,6 +9,7 @@ packet_includes:
   - fragments/evidence-rules.md
   - fragments/diff-reconstruction.md
   - fragments/truth-first.md
+  - fragments/re-review-rounds.md
 emits: findings
 payload: findings@9
 ---
@@ -61,6 +62,22 @@ observe the real behavior before attributing the fault; a spec-versus-implementa
 attribution made from inference is a fabricated finding. Deviations that do not affect
 usability are reported as accepted with their rationale, and components deferred past the
 spec's cutline are out of scope entirely.
+
+**On a re-review round your delta is the surface, not the diff.** The re-review fragment
+governs you as it governs the judges, read in your own terms: your locus is a workflow,
+state, or copy literal on the built surface, so scoping to the delta means re-walking the
+prior round's findings to state each one closed or still open and walking what the fix
+changed — not re-deriving findings on surfaces a prior round already recorded and the fix
+did not touch. Flat finding volume across rounds is the signal the loop cannot converge.
+Your threshold reads your own payload rather than a reconciled cluster, so a single
+`blocker` here opens a fix round with nothing moderating it: on a re-review round emit
+`blocker` only for a regression — a surface a prior round recorded as fixed is broken
+again, or the fix broke a surface that behaved correctly before it ran — or where the
+fix's own surface independently meets the Blocker bar on its own evidence, a missing or
+broken render included, by the test that you would have called it a Blocker in round 0
+for the same stated reason. A surface that is merely less polished than the spec's ideal
+is authored at Concern or below; it still reaches the operator gates through the run
+record.
 
 # Emit
 `findings`: markdown body with one section per finding (spec section or cross-surface ·

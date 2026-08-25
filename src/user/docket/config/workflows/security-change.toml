@@ -1,7 +1,7 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 17
+version = 18
 
 [match]
 labels_any = ["security-change", "security-load-bearing"]
@@ -87,7 +87,7 @@ emits = "change-summary"
 packet = ["contracts/{executor}.md"]
 expected_cost = 1.00
 loop = true
-inputs = ["reconcile.findings", "implement.change-summary", "threat-model.threat-model", "issue.latest.ac-report"]
+inputs = ["reconcile.findings", "implement.change-summary", "threat-model.threat-model", "issue.latest.ac-report", "security-vote.vote-record", "verify-tribunal.vote-record"]
 gates = ["build", "tests", "self-hygiene", "secret-scan", "vuln-scan", "sdet-abuse"]
 after_loop = "review"
 

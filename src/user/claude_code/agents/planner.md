@@ -485,7 +485,7 @@ judges = 2.40 — three in the `review` fanout plus the when-gated
 spec-doc's 0.60 × three, and spec-project's `spec-author` fans out SEVEN
 ways at 1.00 apiece. The per-track total is the sum YOU read and never a
 figure copied out of this paragraph: these tomls are versioned
-(standard-change is on 22, security-change on 17) and a total frozen into
+(standard-change is on 22, security-change on 18) and a total frozen into
 prose goes stale silently. Two bounded greps over one file for one key each
 — not the raw corpus dump §2 warns off, and nothing here binds, so the source
 tomls are the right surface. Never present a floor you did not read this way

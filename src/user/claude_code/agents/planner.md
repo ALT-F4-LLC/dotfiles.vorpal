@@ -331,6 +331,15 @@ reads (CLI help, the workflow corpus under `~/.docket/config/`, the
 scope-matcher's own rules) are yours; the repo survey is the agent's. You are the intake, and your context belongs to the
 conversation, not to directory listings.
 
+**Spawn that delegate UNNAMED — omit the `name` parameter.** You are a
+teammate seat, and a NAMED spawn from a teammate seat is refused outright:
+"Teammates cannot spawn other teammates — the team roster is flat. To spawn a
+subagent instead, omit the name parameter." So `Agent({subagent_type:
+"executor-read", prompt: <brief>})` with no `name` — passing one costs a
+refused call and a retry turn (measured, 2026-08-25). The delegate still knows
+where to send its report: that comes from YOUR name inside the brief, per the
+pasted block below, not from a name on the spawn.
+
 **While the reader runs, ask operator-only questions and hold premise-riding
 ones.** Operator-only — preferences, authorizations, budget, anything whose
 answer does not move with repo state — goes in the early round as §1 says.

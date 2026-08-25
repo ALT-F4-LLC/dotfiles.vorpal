@@ -1,7 +1,7 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 23
+version = 24
 
 [match]
 unless_labels = [
@@ -33,6 +33,7 @@ emits = "change-summary"
 executor = "implement"
 expected_cost = 1.50
 gates = ["build", "tests", "self-hygiene", "secret-scan"]
+inputs = ["issue.body"]
 max_attempts = 2
 name = "implement"
 on_fail = "waiting-human"

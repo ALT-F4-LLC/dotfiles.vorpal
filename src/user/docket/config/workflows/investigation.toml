@@ -1,7 +1,7 @@
 [pipeline]
 description = "Read-only root-cause investigation ending at a tribunal read that revises the report on rejection and escalates to the operator."
 name = "investigation"
-version = 8
+version = 9
 
 [match]
 labels_any  = ["investigation"]
@@ -48,7 +48,7 @@ emits = "investigation"
 executor = "investigate"
 expected_cost = 0.40
 holds_tree = false
-inputs = ["report.investigation", "issue.body"]
+inputs = ["issue.latest.investigation", "issue.body"]
 loop = true
 name = "revise"
 packet = ["contracts/revise.md"]

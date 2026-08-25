@@ -1,7 +1,7 @@
 [pipeline]
 description = "Author the seven reserved project spec files in parallel, review them once, and accept by tribunal vote that escalates to the operator."
 name = "spec-project"
-version = 11
+version = 12
 
 [match]
 labels_any = ["spec-project"]
@@ -82,7 +82,7 @@ fanout = [
   "spec-author-testing",
 ]
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["reconcile.findings", "spec-author.*"]
+inputs = ["reconcile.findings", "issue.latest.spec"]
 loop = true
 name = "revise"
 packet = ["contracts/spec-author.md"]

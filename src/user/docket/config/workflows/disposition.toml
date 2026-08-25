@@ -1,7 +1,7 @@
 [pipeline]
 description = "Cross-issue disposition: write the verdict comment and close the carrier, gated on the build/test sanity check and AC verification with a bounded revise loop; no code-review machinery."
 name = "disposition"
-version = 1
+version = 2
 
 [match]
 labels_any = ["disposition"]
@@ -45,7 +45,7 @@ emits = "disposition"
 executor = "dispose"
 expected_cost = 0.40
 gates = ["build", "tests"]
-inputs = ["verify.ac-report", "dispose.disposition", "issue.body"]
+inputs = ["verify.ac-report", "issue.latest.disposition", "issue.body"]
 loop = true
 name = "revise"
 packet = ["contracts/{executor}.md"]

@@ -846,7 +846,7 @@ primary control, the wave's refusal the backstop.
 3. Confirm the `[policy]` table declares an integer `version` field. The table
    header and the key sit on SEPARATE lines, so this is `grep -A1
    '^\[policy\]'` and NEVER a substring search for a literal like `[policy]
-   version = 13` — that string occurs nowhere in the file, and a conductor
+   version = 15` — that string occurs nowhere in the file, and a conductor
    checking for it refuses a healthy policy before the first wave. There is no
    single version number baked into this check: the corpus bumps it as policy
    evolves, and each bump is a normal, attributable retro commit, not a

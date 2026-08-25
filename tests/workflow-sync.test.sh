@@ -22,7 +22,7 @@ WORKFLOWS="${WORKFLOWS_DIR:-${SCRIPT_DIR}/../src/user/claude_code/workflows}"
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/workflow-sync.XXXXXX")
 trap 'rm -rf "$WORK"' EXIT
 
-REGIONS=(policy-parser seat-contract)
+REGIONS=(policy-parser policy-shape seat-contract)
 
 extract() { # <file> <region> — fenced region body, self-names normalized
     awk -v r="$2" '

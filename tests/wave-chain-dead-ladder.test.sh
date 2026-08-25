@@ -68,6 +68,9 @@ grep -q 'chainDead' "${WORK}/ladder.js" || fatal "stage-ladder region does not c
     cat <<'JS'
 let rows = []
 let input = { policyText: '' }
+// The accepted [policy] version, which assertPolicyShape returns above the
+// extracted region and the ladder's opening log line reports.
+const policyVersion = 16
 const LOG = []
 const log = (m) => LOG.push(String(m))
 const parallel = (fns) => Promise.all(fns.map((f) => f()))

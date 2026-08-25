@@ -154,6 +154,53 @@ function parseToml(text) {
 }
 // SYNC-END policy-parser
 
+// SYNC-BEGIN policy-shape
+// What this script reads out of policy.toml is a SHAPE, not a version number:
+// [executors].<seat>.variant naming a [variants] row, and [variants] rows
+// carrying model/effort/escalate_to. That shape has not moved since v2 —
+// every bump since is a normal retro commit against tables this file never
+// reads (v15, for one, added [escalation].on_round/round_executors, which
+// seat and step routing both ignore). An exact-match check on the current
+// number therefore refuses HEALTHY policy the first retro after it is
+// written: pinned at 15, it refused the corpus's v16 and blocked every
+// dispatch wave and every conversational gate fleet-wide (DOT-746).
+//
+// So this mirrors the conduct skill's own [policy] gate — the field must be
+// PRESENT and an INTEGER — replaces the equality with a documented floor, and
+// then checks the tables the routing actually depends on. A version ABOVE the
+// floor is not an "unknown schema"; a policy.toml with no [variants] table
+// is, and that is what gets caught here.
+const POLICY_VERSION_FLOOR = 2   // first version carrying the [executors].variant -> [variants]/escalate_to shape this file routes on
+
+function assertPolicyShape(policy, refusal) {
+    const version = policy.policy?.version
+    if (!Number.isInteger(version)) {
+        throw new Error(
+            `tribunal.js: policy.toml [policy] version is ${JSON.stringify(version)} — the ` +
+            `[policy] table must declare an integer version field. ${refusal}`
+        )
+    }
+    if (version < POLICY_VERSION_FLOOR) {
+        throw new Error(
+            `tribunal.js: policy.toml [policy] version is ${version}, below the floor ` +
+            `${POLICY_VERSION_FLOOR} — the [executors].variant -> [variants]/escalate_to ` +
+            `routing shape this script reads dates from v${POLICY_VERSION_FLOOR}. ${refusal}`
+        )
+    }
+    for (const table of ['executors', 'variants']) {
+        const t = policy[table]
+        if (!t || typeof t !== 'object' || Array.isArray(t) || Object.keys(t).length === 0) {
+            throw new Error(
+                `tribunal.js: policy.toml (version ${version}) carries no non-empty [${table}] ` +
+                `table — that is the shape this script routes against, whatever the version ` +
+                `number says. ${refusal}`
+            )
+        }
+    }
+    return version
+}
+// SYNC-END policy-shape
+
 // ---------------------------------------------------------------------------
 // Seat routing. A seat is not a step: there is no attempt chain and no
 // label-keyed [[resolve]] table. resolveSeat DOES take an issue-labels list
@@ -499,20 +546,13 @@ if (!Array.isArray(input.voters) || input.voters.length === 0) {
 const { voteId, voters, context, gateKind, cwd } = input
 const policy = parseToml(input.policyText)
 
-if (policy.policy?.version !== 15) {
-    throw new Error(
-        `tribunal.js: policy.toml [policy] version is ${JSON.stringify(policy.policy?.version)}, expected 15 ` +
-        `(the [variants]/escalate_to shape, unchanged since v2 — only the version number moved; ` +
-        `v15 added [escalation] on_round/round_executors, DOT-724 — seat routing ignores both). ` +
-        `Refusing to route against an unknown schema.`
-    )
-}
+const policyVersion = assertPolicyShape(policy, 'Refusing to seat the panel.')
 
 // The proposal must already exist and be open: the CALLER creates it. This
 // script fills a proposal, and never creates, approves, tallies, or commits one.
 const seats = voters.map((v) => resolveSeat(v, policy))
 
-log(`tribunal: ${voteId} — ${gateKind} gate, ${seats.length} seat(s), policy ${(input.policyText || '').length} chars, cwd ${cwd}`)
+log(`tribunal: ${voteId} — ${gateKind} gate, ${seats.length} seat(s), policy v${policyVersion}, ${(input.policyText || '').length} chars, cwd ${cwd}`)
 for (const s of seats) {
     log(`  ${s.seat}: role ${lensOf(s.seat).role} @ ${s.model}/${s.effort} (variant ${s.variant})`)
 }

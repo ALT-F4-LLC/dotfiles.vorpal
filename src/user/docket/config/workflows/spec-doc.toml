@@ -1,7 +1,7 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec), escalating to the operator."
 name = "spec-doc"
-version = 15
+version = 16
 
 [match]
 labels_any = ["spec-doc"]
@@ -137,7 +137,7 @@ emits = "doc"
 executor = "tdd-author-security"
 expected_cost = 1.50
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["reconcile.findings", "issue.latest.doc"]
+inputs = ["reconcile.findings", "issue.latest.doc", "accept-vote-tdd.vote-record"]
 loop = true
 name = "revise-tdd-security"
 packet = ["contracts/{executor}.md"]
@@ -150,7 +150,7 @@ emits = "doc"
 executor = "tdd-author-security"
 expected_cost = 1.50
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["reconcile.findings", "issue.latest.doc"]
+inputs = ["reconcile.findings", "issue.latest.doc", "accept-vote-tdd.vote-record"]
 loop = true
 name = "revise-tdd-security-alt"
 packet = ["contracts/{executor}.md"]
@@ -163,7 +163,7 @@ emits = "doc"
 executor = "tdd-author"
 expected_cost = 1.50
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["reconcile.findings", "issue.latest.doc"]
+inputs = ["reconcile.findings", "issue.latest.doc", "accept-vote-tdd.vote-record"]
 loop = true
 name = "revise-tdd"
 packet = ["contracts/{executor}.md"]
@@ -176,7 +176,7 @@ emits = "doc"
 executor = "adr-author"
 expected_cost = 1.50
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["reconcile.findings", "issue.latest.doc"]
+inputs = ["reconcile.findings", "issue.latest.doc", "accept-vote-adr.vote-record"]
 loop = true
 name = "revise-adr"
 packet = ["contracts/{executor}.md"]

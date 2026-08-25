@@ -58,9 +58,17 @@ reports as arrive.
 
 - **QUESTIONS report** — run ONE `AskUserQuestion` round passing the seat's
   question array unchanged: its questions, its options, its recommended
-  marks. Do not answer for the operator, drop or reword a question, or add
-  your own. Send the answers back to the seat with `SendMessage`, verbatim —
-  including any free-text "Other" entries — then wait for its next report.
+  marks. Unchanged means byte-for-byte, and the rule has no cosmetic
+  exception: do not answer for the operator, drop, reorder, or reword a
+  question, do not add your own, and do not touch an option's `label` or
+  `description` — not to depersonalize first person into the imperative, not
+  to fix tone, capitalization, or phrasing you would have written
+  differently. The seat wrote those words for the operator to read; you are
+  not a copy editor on them. A wording you believe is genuinely wrong goes
+  back to the seat with `SendMessage` for it to reissue — it never gets
+  patched in transit. Send the answers back to the seat with `SendMessage`,
+  verbatim — including any free-text "Other" entries — then wait for its
+  next report.
 - **FINAL report** — the recording package (or a "nothing to record"
   disposition) plus presentation notes for the stop. Go to §3.
 

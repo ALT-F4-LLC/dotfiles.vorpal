@@ -1,6 +1,6 @@
 ---
 node: verify-ac
-version: 3
+version: 4
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -66,6 +66,17 @@ Prove the real case the same way: name the scope, name what the AC requires that
 outside it. Then judge that AC `unverifiable`, quoting the mismatch, never `unmet` — an
 `unmet` here opens a fix round that cannot close it — and emit a `gap` naming the
 scope/AC mismatch so it files as an issue.
+
+**Scope runs both ways, and the reverse direction is yours alone.** The same two inputs
+that let you rule an AC outside the declared scope let you see the opposite — a diff
+reaching files the declaration never named. No judge can: every code-review fanout is fed
+the change summary and the diff without the issue body, so the panel holds the actual file
+set and no declaration to measure it against. Reconcile the two yourself and report an
+overrun in its own section of your report — the files, the declared scope they fall
+outside of, and whether the change summary named them as a deliberate reach or passed over
+them in silence. It moves no AC's status; a per-AC judgment answers to its criterion alone.
+Where the overrun is large enough to want a review of its own, emit a `gap` for it exactly
+as for the scope/AC mismatch above.
 
 # Emit
 `ac-report`: markdown body with one section per AC (classification · evidence ·

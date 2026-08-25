@@ -426,6 +426,42 @@ already cast doubt on. (In a past run, the verifier found the reported
 mechanism fixed and a different one real; the recorded issues were built on
 the truth.)
 
+**A landed-fix check covers EVERY path in the candidate's own scope, not the
+interesting subset.** The `git log`/diff command that answers "has a fix
+already landed" is generated FROM the scope list the same brief already
+carries — every path in it, in the order the brief lists them — and you assert
+the two sets match before the brief goes out. A path dropped from the command
+is a path the check reports clean about, because it never looked there. In a
+2026-08-25 bare-`/plan` session, the brief named a candidate's scope as five
+paths — two CLI command files, a worker module, the installer script, and the
+makefile — and then asked its delegate to run `git log --oneline --since=…`
+over the first three only. The two silently dropped paths were where the
+unfixed defect actually lived: the delegate verified the RPC layer, reported
+"do not batch — the claimed defects are closed on HEAD", and the plan doc and
+the FINAL both recorded "already landed" with no caveat, which is a verdict a
+later groom or close pass reads as resolved.
+
+**Before declaring a candidate "already fixed" or "do not batch," read that
+issue's own history.** `docket issue show <id> --json` carries the issue's
+comment history and — emitted only when a run gave up on it — the
+`run_disposition` that run left behind, `{run, disposition, by, reason, at}`
+with the reason verbatim (`docket issue comment list <id>` is the comment-only
+read if you want it separately). An abandoned run's stated rejection reason is
+precisely the fact a premise check exists to catch — it is
+not recoverable from the code, so no amount of clean `git log` output
+substitutes for it. Read it before you accept the verdict, and reconcile the
+verdict against it in words: when a prior run was abandoned because "the real
+fix needs these files," an already-fixed verdict must say what landed in those
+files since, or it is not a verdict. The same session's candidate carried a
+disposition recording that its previous run had been abandoned because a
+mandatory flag broke default installs and the real fix needed the installer
+script and the makefile — the two paths its git-log command had dropped, and a
+defect independently confirmed live on HEAD afterwards. Neither the planner nor
+its delegate read that history, and re-deriving cleanliness from code alone is
+what let the verdict through. Neither rule adds a delegate: the scope-complete
+check is what the ONE `executor-read` brief must carry, and the history read is
+an engine read, which is yours.
+
 **Your reader's reply cannot reach you mid-turn — and your own turn is what
 blocks it.** Teammate messages deliver at turn boundaries only, so waiting
 means ENDING THE TURN: schedule ONE long-fallback wakeup (15+ minutes) and

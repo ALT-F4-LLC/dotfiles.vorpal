@@ -1,7 +1,7 @@
 [pipeline]
-description = "Author the seven reserved project spec files in parallel, review them once, and accept by tribunal vote that escalates to the operator."
+description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step, review them once, and accept by tribunal vote that escalates to the operator."
 name = "spec-project"
-version = 12
+version = 13
 
 [match]
 labels_any = ["spec-project"]
@@ -11,11 +11,23 @@ unless_labels = ["release", "retro"]
 "judge-architecture" = { max = 16, max_step_duration = "1h" }
 "judge-correctness" = { max = 16, max_step_duration = "1h" }
 "judge-simplicity" = { max = 16, max_step_duration = "1h" }
+"research" = { max = 16, max_step_duration = "1h" }
 "synthesize-findings" = { max = 16, max_step_duration = "1h" }
 "write" = { max = 16, max_step_duration = "2h" }
 
 [[step]]
 after = []
+emits = "research-notes"
+executor = "research"
+expected_cost = 0.50
+holds_tree = false
+inputs = ["issue.body"]
+name = "research"
+packet = ["contracts/{executor}.md"]
+when = "labels contains needs-research"
+
+[[step]]
+after = ["research"]
 class = "write"
 emits = "spec"
 expected_cost = 1.00
@@ -29,7 +41,7 @@ fanout = [
   "spec-author-testing",
 ]
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["issue.body"]
+inputs = ["research.*", "issue.body"]
 max_attempts = 2
 name = "spec-author"
 on_fail = "waiting-human"
@@ -82,7 +94,7 @@ fanout = [
   "spec-author-testing",
 ]
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["reconcile.findings", "issue.latest.spec"]
+inputs = ["reconcile.findings", "issue.latest.spec", "research.*"]
 loop = true
 name = "revise"
 packet = ["contracts/spec-author.md"]

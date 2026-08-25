@@ -1,7 +1,7 @@
 [pipeline]
-description = "Read-only root-cause investigation ending at a tribunal read that revises the report on rejection and escalates to the operator."
+description = "Read-only root-cause investigation with an optional research step, ending at a tribunal read that revises the report on rejection and escalates to the operator."
 name = "investigation"
-version = 9
+version = 10
 
 [match]
 labels_any  = ["investigation"]
@@ -9,6 +9,7 @@ unless_labels = ["spec-doc", "spec-project", "release", "retro"]
 
 [limits]
 "investigate" = { max = 16, max_step_duration = "1h" }
+"research" = { max = 16, max_step_duration = "1h" }
 
 [[step]]
 after = []
@@ -24,11 +25,22 @@ packet = ["contracts/{executor}.md"]
 
 [[step]]
 after = ["investigate"]
+emits = "research-notes"
+executor = "research"
+expected_cost = 0.50
+holds_tree = false
+inputs = ["investigate.investigation", "issue.body"]
+name = "research"
+packet = ["contracts/{executor}.md"]
+when = "labels contains needs-research"
+
+[[step]]
+after = ["investigate", "research"]
 emits = "investigation"
 executor = "investigate"
 expected_cost = 0.40
 holds_tree = false
-inputs = ["investigate.investigation", "issue.body"]
+inputs = ["investigate.investigation", "research.*", "issue.body"]
 name = "report"
 packet = ["contracts/report.md"]
 
@@ -48,7 +60,7 @@ emits = "investigation"
 executor = "investigate"
 expected_cost = 0.40
 holds_tree = false
-inputs = ["issue.latest.investigation", "issue.body"]
+inputs = ["issue.latest.investigation", "research.*", "issue.body"]
 loop = true
 name = "revise"
 packet = ["contracts/revise.md"]

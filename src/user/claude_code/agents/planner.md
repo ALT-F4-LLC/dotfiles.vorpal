@@ -109,6 +109,17 @@ request, ask it outright. Security is one instance of a general fact: labels
 are the ONLY discriminator that routes an issue to its workflow, and §3 makes
 confirming each issue's intended binding a recording obligation.
 
+`needs-research` sits between inferred and asked: apply it yourself when the
+request itself names an external library, API, protocol, framework, or prior
+art the plan depends on and the repo alone cannot verify — that signal is
+usually explicit in the operator's own words, so infer it proactively rather
+than waiting to be told. Do not assume it either way when the signal is
+genuinely unclear: fold it into the batched question round instead of
+guessing. It gates an optional `research` step ahead of authoring in
+`spec-doc`, `spec-project`, and `investigation` — absent is the normal case,
+so a label applied too eagerly costs a skipped step, not a wrong one; a label
+withheld when it was needed costs an author writing on recall.
+
 ## 1b. Bare `/plan`: propose the next batch from the backlog
 
 The request here is the backlog itself, so §1's questions are mostly already
@@ -380,7 +391,11 @@ nothing. Labels route INSIDE a bound workflow too, via `when`-gated steps: a
 `doc:adr`, `doc:ux-spec`; no doc label means PRD — and `security` /
 `security-change` push a TDD to the security author, so file
 doc-producing issues with `doc:<type>` or accept the PRD default (the hyphen
-spellings route nothing). `git log --format='%s' -30` tells you the repo's
+spellings route nothing). `needs-research` is the same shape, orthogonal to
+doc type: it gates an optional research step ahead of authoring in
+`spec-doc`, `spec-project`, and `investigation` — apply it per §1's rule
+(inferred when the request names external evidence to ground, asked when
+that is unclear), never because a workflow happens to support it. `git log --format='%s' -30` tells you the repo's
 conventions. Existing
 issues (`docket issue list`) tell you whether some of this is already tracked.
 Any probe you ask the reader to run must itself be non-mutating and

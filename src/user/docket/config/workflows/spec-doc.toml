@@ -1,7 +1,7 @@
 [pipeline]
-description = "Author a PRD/TDD/ADR/ux-spec, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec), escalating to the operator."
+description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by a research step, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec), escalating to the operator."
 name = "spec-doc"
-version = 16
+version = 17
 
 [match]
 labels_any = ["spec-doc"]
@@ -11,17 +11,29 @@ unless_labels = ["spec-project", "release", "retro"]
 "judge-architecture" = { max = 16, max_step_duration = "1h" }
 "judge-design" = { max = 16, max_step_duration = "1h" }
 "judge-security" = { max = 16, max_step_duration = "1h" }
+"research" = { max = 16, max_step_duration = "1h" }
 "synthesize-findings" = { max = 16, max_step_duration = "1h" }
 "write" = { max = 16, max_step_duration = "2h" }
 
 [[step]]
 after = []
+emits = "research-notes"
+executor = "research"
+expected_cost = 0.50
+holds_tree = false
+inputs = ["issue.body"]
+name = "research"
+packet = ["contracts/{executor}.md"]
+when = "labels contains needs-research"
+
+[[step]]
+after = ["research"]
 class = "write"
 emits = "doc"
 executor = "tdd-author-security"
 expected_cost = 1.20
 gates = ["doc-validate", "tdd-preflight", "reserved-name-check"]
-inputs = ["issue.body"]
+inputs = ["research.*", "issue.body"]
 max_attempts = 2
 name = "author-tdd-security"
 on_fail = "waiting-human"
@@ -29,13 +41,13 @@ packet = ["contracts/{executor}.md"]
 when = "labels contains doc:tdd and labels contains security-change"
 
 [[step]]
-after = []
+after = ["research"]
 class = "write"
 emits = "doc"
 executor = "tdd-author-security"
 expected_cost = 1.20
 gates = ["doc-validate", "tdd-preflight", "reserved-name-check"]
-inputs = ["issue.body"]
+inputs = ["research.*", "issue.body"]
 max_attempts = 2
 name = "author-tdd-security-alt"
 on_fail = "waiting-human"
@@ -43,13 +55,13 @@ packet = ["contracts/{executor}.md"]
 when = "labels contains doc:tdd and labels contains security and labels != security-change"
 
 [[step]]
-after = []
+after = ["research"]
 class = "write"
 emits = "doc"
 executor = "tdd-author"
 expected_cost = 1.20
 gates = ["doc-validate", "tdd-preflight", "reserved-name-check"]
-inputs = ["issue.body"]
+inputs = ["research.*", "issue.body"]
 max_attempts = 2
 name = "author-tdd"
 on_fail = "waiting-human"
@@ -57,13 +69,13 @@ packet = ["contracts/{executor}.md"]
 when = "labels contains doc:tdd and labels != security-change and labels != security"
 
 [[step]]
-after = []
+after = ["research"]
 class = "write"
 emits = "doc"
 executor = "adr-author"
 expected_cost = 1.20
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["issue.body"]
+inputs = ["research.*", "issue.body"]
 max_attempts = 2
 name = "author-adr"
 on_fail = "waiting-human"
@@ -71,13 +83,13 @@ packet = ["contracts/{executor}.md"]
 when = "labels contains doc:adr and labels != doc:tdd"
 
 [[step]]
-after = []
+after = ["research"]
 class = "write"
 emits = "doc"
 executor = "ux-spec-author"
 expected_cost = 1.20
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["issue.body"]
+inputs = ["research.*", "issue.body"]
 max_attempts = 2
 name = "author-ux-spec"
 on_fail = "waiting-human"
@@ -85,13 +97,13 @@ packet = ["contracts/{executor}.md"]
 when = "labels contains doc:ux-spec and labels != doc:tdd and labels != doc:adr"
 
 [[step]]
-after = []
+after = ["research"]
 class = "write"
 emits = "doc"
 executor = "prd-author"
 expected_cost = 1.20
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["issue.body"]
+inputs = ["research.*", "issue.body"]
 max_attempts = 2
 name = "author-prd"
 on_fail = "waiting-human"
@@ -137,7 +149,7 @@ emits = "doc"
 executor = "tdd-author-security"
 expected_cost = 1.50
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["reconcile.findings", "issue.latest.doc", "accept-vote-tdd.vote-record"]
+inputs = ["reconcile.findings", "issue.latest.doc", "accept-vote-tdd.vote-record", "research.*"]
 loop = true
 name = "revise-tdd-security"
 packet = ["contracts/{executor}.md"]
@@ -150,7 +162,7 @@ emits = "doc"
 executor = "tdd-author-security"
 expected_cost = 1.50
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["reconcile.findings", "issue.latest.doc", "accept-vote-tdd.vote-record"]
+inputs = ["reconcile.findings", "issue.latest.doc", "accept-vote-tdd.vote-record", "research.*"]
 loop = true
 name = "revise-tdd-security-alt"
 packet = ["contracts/{executor}.md"]
@@ -163,7 +175,7 @@ emits = "doc"
 executor = "tdd-author"
 expected_cost = 1.50
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["reconcile.findings", "issue.latest.doc", "accept-vote-tdd.vote-record"]
+inputs = ["reconcile.findings", "issue.latest.doc", "accept-vote-tdd.vote-record", "research.*"]
 loop = true
 name = "revise-tdd"
 packet = ["contracts/{executor}.md"]
@@ -176,7 +188,7 @@ emits = "doc"
 executor = "adr-author"
 expected_cost = 1.50
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["reconcile.findings", "issue.latest.doc", "accept-vote-adr.vote-record"]
+inputs = ["reconcile.findings", "issue.latest.doc", "accept-vote-adr.vote-record", "research.*"]
 loop = true
 name = "revise-adr"
 packet = ["contracts/{executor}.md"]
@@ -189,7 +201,7 @@ emits = "doc"
 executor = "ux-spec-author"
 expected_cost = 1.50
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["reconcile.findings", "issue.latest.doc"]
+inputs = ["reconcile.findings", "issue.latest.doc", "research.*"]
 loop = true
 name = "revise-ux-spec"
 packet = ["contracts/{executor}.md"]
@@ -202,7 +214,7 @@ emits = "doc"
 executor = "prd-author"
 expected_cost = 1.50
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["reconcile.findings", "issue.latest.doc"]
+inputs = ["reconcile.findings", "issue.latest.doc", "research.*"]
 loop = true
 name = "revise-prd"
 packet = ["contracts/{executor}.md"]

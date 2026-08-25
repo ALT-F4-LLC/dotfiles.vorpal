@@ -510,8 +510,10 @@ Two coupled invariants any addition must keep:
   and by design.
 - **`fanout` members are the sibling's identity.** Distinct names (the seven
   `spec-author-<axis>` hints) tell each sibling which artifact it owns; repeated
-  names (`["research","research"]`) mean the siblings are interchangeable. Keep
-  whichever the work actually is; do not "tidy" seven names into one.
+  names (e.g. `["reviewer","reviewer"]`) would mean the siblings are
+  interchangeable — no corpus workflow currently repeats a name, so treat this
+  as the shape to recognize, not a live example to copy. Keep whichever the
+  work actually is; do not "tidy" seven names into one.
 
 ## 4. Propose trust — do not add it
 

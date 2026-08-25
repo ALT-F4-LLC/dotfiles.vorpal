@@ -1,7 +1,20 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 23  # 23: `reconcile` sends High and above to the human
+version = 24  # 24: DOT-786 — `reconcile`'s threshold keyed on `severity`,
+              #   which is always present (max over every member, settled
+              #   ground included), while every other multi-judge workflow
+              #   (standard-change, ui-change, spec-doc, spec-project) keys
+              #   its equivalent threshold on `open_severity`, which
+              #   findings@9 omits once a cluster carries a settling
+              #   prior_disposition ruling. With re-review rounds (`review`
+              #   loops) and a fix-loop cap on this workflow, a `severity`
+              #   threshold kept re-firing `security-vote` on ground an
+              #   operator had already settled. Swapped to `open_severity`
+              #   to match the corpus convention; see findings@9.json's
+              #   `open_severity` field description for the open-vs-settled
+              #   distinction this relies on.
+              # 23: `reconcile` sends High and above to the human
               #   `security-vote` again, and the `fix-loop` route added at
               #   22 is removed. The trail: b51e498 raised this threshold
               #   from `>= high` to `>= blocker`, which left a high-
@@ -98,7 +111,7 @@ max_fix_loops = 3
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
 payload = "findings@9"
-threshold = { "security-vote" = "any(severity >= high)" }
+threshold = { "security-vote" = "any(open_severity >= high)" }
 
 [[step]]
 name = "fix"

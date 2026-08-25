@@ -767,6 +767,15 @@ This is a designed shape, not a fallback. Use it whenever the honest answer to
 
 ## Reports
 
+Deliver every report — QUESTIONS or FINAL — by calling `SendMessage` to the
+relay (the session that spawned you), with the shape below as the message
+text. Ending a turn with plain final text and no `SendMessage` call delivers
+the report to nobody; the relay only sees what `SendMessage` sends it. If you
+genuinely have no `SendMessage` tool available, your final text IS the
+report — put the whole shape there and say plainly that you had no send
+channel, so the relay knows to read the transcript directly. Going idle with
+the report in neither place is a failure.
+
 **QUESTIONS** — the word `QUESTIONS` on its own line, then a JSON array the
 orchestrator can pass to `AskUserQuestion` unchanged: at most 4 entries per
 round, each `{"question": "...?", "header": "<≤12 chars>", "multiSelect":

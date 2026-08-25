@@ -84,6 +84,7 @@ const SANDBOX_DOCKET_TRUST_PATH: &str = "~/.config/docket";
 // `GOPROXY=off go build ./...` succeeds sandboxed with no network at all.
 // The stale entry is kept only so an older GOPATH layout does not regress.
 const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
+    "~/.cache/golangci-lint-harness",
     "~/.cache/uv",
     "~/.cargo/git",
     "~/.cargo/registry",

@@ -1,22 +1,28 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 22  # 22: `reconcile` gains a `fix-loop` route so a high-severity
-              #   finding routes into a fix round without convening a vote.
-              #   Its predicate is `severity == high`, NOT `>= high`, and
-              #   the engine forces that: `ThresholdOrder` evaluates the
-              #   reserved `fix-loop` key BEFORE any step-name routing no
-              #   matter what order is written here (TOML tables decode to
-              #   Go maps, which lose declaration order), and §11.2 is
-              #   first-match-routes. `any(severity >= high)` would there-
-              #   fore match every blocker as well, and `security-vote`
-              #   could never convene again. On this ladder — info < low <
-              #   medium < high < blocker — `== high` and `>= high` agree
-              #   on every value but `blocker`, which is precisely the one
-              #   that must fall through to the vote. Residual: a round
-              #   carrying a high AND a blocker takes the fix round first
-              #   and reaches the vote on a later round (or parks at
-              #   `max_fix_loops`), rather than voting immediately.
+version = 23  # 23: `reconcile` sends High and above to the human
+              #   `security-vote` again, and the `fix-loop` route added at
+              #   22 is removed. The trail: b51e498 raised this threshold
+              #   from `>= high` to `>= blocker`, which left a high-
+              #   severity finding with no route at all and no vote; DOT-775
+              #   read that gap as a missing fix round, and commit 2201b41
+              #   closed it at 22 by adding `fix-loop = any(severity ==
+              #   high)` beside the blocker-only vote. DOT-785 then found
+              #   that route contradicts both ladders the corpus ships:
+              #   `fragments/severity-ladder-security.md` says High and
+              #   above route to the HUMAN security vote and that the
+              #   automatic fix loop is retired for this track, and
+              #   `fragments/severity-ladder-general.md` says only a
+              #   Blocker opens a fix round. So this bump keeps 2201b41's
+              #   diagnosis and reverts its routing: the fix-loop key goes,
+              #   and the vote fires on `>= high` — where it sat before
+              #   b51e498 — so every high and every blocker convenes the
+              #   vote and nothing falls through unrouted. With `fix-loop`
+              #   no longer a key on this step, the `ThresholdOrder`
+              #   precedence that forced `== high` at 22 no longer bears on
+              #   it; the `fix` step stays reachable, via the votes'
+              #   `on_fail` and `verify`'s unmet-AC threshold.
 
 [match]
 labels_any = ["security-change", "security-load-bearing"]
@@ -92,7 +98,7 @@ max_fix_loops = 3
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
 payload = "findings@9"
-threshold = { "security-vote" = "any(severity >= blocker)", "fix-loop" = "any(severity == high)" }
+threshold = { "security-vote" = "any(severity >= high)" }
 
 [[step]]
 name = "fix"

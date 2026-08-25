@@ -68,7 +68,11 @@ and nothing for a declined one. Do not re-derive a merge, add a closure the
 seat did not propose, or skip a command it listed. Then message the seat
 with `SendMessage`: which proposal numbers were approved, which declined,
 and which commands ran (with any failure output verbatim). Wait for its
-FINAL.
+FINAL. Waiting means ENDING YOUR TURN — the seat's report is queued and
+delivers only at your next turn boundary. Do not probe the seat's
+transcript in the same turn, and ignore any idle_notification timestamped
+BEFORE your own message: it is stale. Reconstruct from the transcript only
+if a FRESH idle arrives after your message with no report following.
 
 ## 4. Report and stop
 

@@ -1,6 +1,6 @@
 [pipeline]
 name = "ui-change"
-version = 15
+version = 16
 description = "UI change bound to an accepted ux-spec (cited in the issue body — no engine input form reaches a cross-issue doc, DKT-547), design-judged and design-QA'd in parallel with AC verification; the conductor integrates commits, the operator publishes."
 
 [match]
@@ -78,7 +78,7 @@ emits = "change-summary"
 executor = "fix"
 expected_cost = 1.00
 gates = ["build", "tests", "self-hygiene", "secret-scan"]
-inputs = ["reconcile.findings", "implement.change-summary", "issue.latest.ac-report"]
+inputs = ["reconcile.findings", "implement.change-summary", "issue.latest.ac-report", "design-qa.findings"]
 loop = true
 name = "fix"
 packet = ["contracts/{executor}.md"]

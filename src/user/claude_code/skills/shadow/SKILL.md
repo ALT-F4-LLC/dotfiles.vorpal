@@ -111,8 +111,10 @@ Three modes. An explicit argument always wins; bare, the session decides:
   `conduct`, `retro`, or any other) — the live
   self-shadow: spawn one background shadow agent over this very session,
   seated `fable` via the `Agent` tool, hand the turn straight back to the
-  run, and ping the agent at every dispatch boundary — that seat wakes on
-  nothing else (§1b).
+  run, and — where the engine says the run is still moving — ping the agent
+  at every dispatch boundary, because that seat wakes on nothing else; against
+  an already-terminal run the same spawn goes out briefed post-mortem, with no
+  ping contract at all (§1b).
 - **Bare, anywhere else** — the fleet sweep, and the default: mine EVERY
   project under `~/.claude/projects` for the past 7 days of sessions,
   post-mortem. No candidate list, no which-one question — enumerate and go
@@ -176,9 +178,38 @@ independent nor quiet. So the move here is a delegation with one continuing
 duty attached: spawn one background shadow agent over this very session, hand
 the turn straight back to the run, and ping that agent at every dispatch
 boundary — it takes no turns of its own, and the pings are the only thing
-separating a live watch from a post-mortem that merely started early. Skip
+separating a live watch from a post-mortem that merely started early. That
+whole shape assumes the run is still moving, which is why the first move is
+checking that it is. Skip
 §1's questions round — the active run IS the goal, and the seat that goes
 quiet after attaching is the spawned one, not you.
+
+**Before composing the brief, re-check that there is still a run to watch.**
+The conductor is the last seat to learn its own run ended — a wave-completion
+notification can sit queued while you compose, so your own belief about the
+phase is the one thing you may not brief from. Immediately before writing the
+brief, not at invocation and not from the last dispatch you remember, ask the
+engine twice: the run's state (`docket run status RUN-N`, anchored per rule 3)
+and whether the outstanding wave's task has actually completed. Then branch:
+
+- **Run still active, wave still moving** — the live brief below, ping
+  contract and all.
+- **Run terminal, or its final wave finished** — brief a POST-MORTEM. There
+  are no dispatch boundaries left to ping, so a live-watch contract is
+  unfulfillable from birth: all three of §5's interrupt conditions assume a run
+  that can still change, and against a finished run they are unreachable, not
+  merely slow (§5). Promising pings anyway buys nothing and costs the review
+  its honesty — the seat claims a live watch it never had. Say post-mortem in
+  the one line you give the operator too.
+
+Measured (agentic-services, RUN-62): `/shadow` at 20:52:54Z, run-done event at
+20:53:13Z, the `Agent` spawn at 20:53:49Z — a "live" seat born 36s after the
+run ended, briefed that a dispatch opened twenty minutes earlier was
+"dispatching now as you are spawned", owed boundary pings for a run with no
+boundaries left. The conductor was honest about what it knew; it just never
+asked. Checking narrows that window rather than closing it — a run can still
+end between the check and the spawn — so the brief tells the agent to state in
+its review whichever it actually found on its first orienting read.
 
 The seat is `fable` — cross-layer observation is exactly what the strongest
 model exists for. Spawn it with the built-in `Agent` tool, the brief as the
@@ -199,7 +230,9 @@ addressable by `SendMessage` in both directions — the address your
 dispatch-boundary pings go to, and the return path for §5's interrupts.
 
 The brief stays short because the contract already exists — it seats the
-agent on this skill in single-session mode:
+agent on this skill in single-session mode. Three of its five parts read the
+same either way; the cadence part and the ending part fork on the check
+above:
 
 - **The skill itself**, resolved as the session must (§2.3): the installed
   `~/.claude/skills/shadow/SKILL.md` if present, else
@@ -215,9 +248,10 @@ agent on this skill in single-session mode:
   someone else's session. Name the observed skill (whichever execution
   skill is active — `plan`, `conduct`, `retro`, or another) and the repo
   from your own cwd — the agent should not re-derive what you already know.
-- **Watch rules, and this seat's real cadence.** Read the arc so far once to
-  orient — run id, phase, what already landed — then watch from the live
-  edge. But the brief must say plainly what this seat is, in these words:
+- **Watch rules, and this seat's real cadence.** Live branch: read the arc so
+  far once to orient — run id, phase, what already landed — then watch from
+  the live edge. But the brief must say plainly what this seat is, in these
+  words:
   **an `Agent`-spawned background agent does not wake itself.** A `Monitor`
   it arms keeps collecting — journal results, gate rows, docket events — and
   delivers NOTHING until something gives the agent a turn, and the only
@@ -232,6 +266,18 @@ agent on this skill in single-session mode:
   wait again on §4's turn-boundary caveat at the conductor's end. Everything
   else is a log entry. The shadow's own transcripts are out of scope — a
   shadow does not shadow itself.
+
+  **Post-mortem branch: there is no cadence to describe, and no pings are
+  owed.** Say that in the brief in those terms, and give the agent the
+  terminal state as of spawn time instead — run id, the status the engine
+  returned, the wave or dispatch that closed it, and the verb and clock time
+  you read it from, stated as a fact about the moment you spawned rather than
+  as a live edge to tail. Then: no pings are coming, none are owed, do not
+  wait at one; the arc is complete, so read all of it rather than orienting
+  and jumping to the edge; and §5's interrupts have no one to interrupt, so
+  every finding — including any of the three interrupt conditions this seat
+  can see with hindsight — is a log entry, noted in the review as caught after
+  the fact.
 - **The log surface**, named up front because §5's is not available to this
   seat: the agent logs into ITS OWN scratchpad directory — the one its own
   environment names, which only it can know, so tell it to use that and
@@ -243,14 +289,19 @@ agent on this skill in single-session mode:
   <that dir>/findings.md <<'EOF' … EOF`) is this mode's PRIMARY surface, not
   a fallback after a denial. §5's `/tmp/claude/shadow/<session-id>/` path
   belongs to the conversation-seat modes and does not apply here.
-- **The ending**: §6 runs inside the agent once the observed run ends, and
-  the severity-ranked review naming what was filed is its final message.
-  Demand it by `SendMessage` too: a named background agent's final text is
+- **The ending**: §6 runs inside the agent, and the severity-ranked review
+  naming what was filed is its final message. Live, that is once the observed
+  run ends; post-mortem, the run has already ended, so §6 runs directly —
+  there is nothing to wait for and no end-of-run ping to wait for it with, and
+  a seat told otherwise will sit idle until the conductor kills it. Demand the
+  review by `SendMessage` either way: a named background agent's final text is
   delivered to NOBODY — the spawner gets a content-free idle ping and the
   review sits unread in the agent's transcript file (§4).
 
-**Then ping it at every dispatch boundary — that obligation is what makes
-this seat live at all, and it is yours, not the agent's.** Having spawned it,
+**Then, on the live branch, ping it at every dispatch boundary — that
+obligation is what makes this seat live at all, and it is yours, not the
+agent's.** (Post-mortem there are no boundaries and this whole obligation is
+void; you owe the agent nothing after the spawn.) Having spawned it,
 you owe it one `SendMessage` at each dispatch OPEN and each dispatch CLOSE —
 `SendMessage({to: "shadow-live", message: "dispatch 3 open — STEP-7,
 STEP-8"})`, `"dispatch 3 closed — STEP-7 recorded, STEP-8 gate-failed"` —
@@ -261,7 +312,9 @@ monitor backlog, lets the agent log against it, and lets an interrupt come
 back BEFORE the next wave dispatches, which is exactly where §5's conditions
 1 and 3 have to land (stale bytes about to be dispatched, an `--ack-reap`
 about to be granted on bad information). Drop the pings and the seat is a
-post-mortem with earlier setup — the failure measured above. A run whose
+post-mortem with earlier setup — the 2026-08-23 failure measured above, and
+the difference between that and an honest post-mortem is only that the brief
+said otherwise. A run whose
 conductor will not carry that obligation should be told so at spawn time,
 in the brief's own words, so the review does not claim a live watch that
 never happened.

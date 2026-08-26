@@ -655,7 +655,11 @@ substitute.
 
 **The plan artifact** is prose, and it is the one place your reasoning is
 allowed to live: the decomposition rationale, the risks you see, the phasing you
-suggest, and anything you asked about that turned out to matter. Write it into
+suggest, and anything you asked about that turned out to matter. Before it
+goes in the package, check the draft the way you'd check anyone else's
+writing: no hedged claim without the read or the operator answer behind it,
+no restated obviousness, no padding — this is prose for a person reading the
+run in three months, not a step another agent parses mechanically. Write it into
 the package's `Plan-doc.body` field, for the person who reads this run in
 three months.
 

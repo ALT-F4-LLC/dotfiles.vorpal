@@ -1,7 +1,13 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 26  # 26: implement and fix add the `vuln-scan` gate. An ordinary
+version = 27  # 27: DOT-811 — `security` joins unless_labels beside
+              #   `security-change` and `security-load-bearing`, because
+              #   security-change@26 now matches that label too. Without this
+              #   the two workflows would both match an issue labelled only
+              #   `security`; with it, that issue binds the security track
+              #   instead of falling through to this baseline unnoticed.
+              # 26: implement and fix add the `vuln-scan` gate. An ordinary
               #   change can add a third-party dependency, and nothing in
               #   this pipeline audited a newly added dependency's own CVE
               #   exposure — a hash-pinned lockfile buys integrity, not
@@ -20,6 +26,7 @@ unless_labels = [
   "investigation",
   "release",
   "retro",
+  "security",
   "security-change",
   "security-load-bearing",
   "spec-doc",

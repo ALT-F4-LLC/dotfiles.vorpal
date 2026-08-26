@@ -1,7 +1,25 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 25  # 25: DOT-792 — comment on `security-vote`'s judge-* voters:
+version = 26  # 26: DOT-811 — `security` joins labels_any, so all three of
+              #   policy.toml's [security].labels route to this track. The two
+              #   vocabularies had diverged: policy named three labels, this
+              #   [match] named two, so an issue labelled only `security` took
+              #   the security MODEL routing (opus-max ceiling, no Fable) and
+              #   the ORDINARY standard-change pipeline — no threat model, no
+              #   security-vote, no abuse-case gate — and nothing detected it,
+              #   because `run activate --dry-run` refuses zero matches and
+              #   several but an exactly-one-WRONG match is structurally
+              #   invisible to it. Reconciled toward routing rather than by
+              #   deleting the label from policy: deletion would have left the
+              #   same silent baseline binding and dropped the Opus floor too.
+              #   Co-change, so nothing can match this workflow AND another:
+              #   standard-change@27, ui-change@21 and disposition@3 add
+              #   `security` to their unless_labels beside the two siblings
+              #   they already exclude. The remaining workflows need no change
+              #   — docs-only, investigation, spec-doc and spec-project are
+              #   already on this [match]'s unless_labels.
+              # 25: DOT-792 — comment on `security-vote`'s judge-* voters:
               #   deliberately judge-*, not tribunal-* (different policy.toml
               #   tier, different remit); documentation only, no behavior
               #   change.
@@ -42,7 +60,7 @@ version = 25  # 25: DOT-792 — comment on `security-vote`'s judge-* voters:
               #   `on_fail` and `verify`'s unmet-AC threshold.
 
 [match]
-labels_any = ["security-change", "security-load-bearing"]
+labels_any = ["security-change", "security-load-bearing", "security"]
 unless_labels = [
   "docs-only",
   "investigation",

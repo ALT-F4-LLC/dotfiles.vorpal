@@ -50,6 +50,22 @@ verify-ac = { variant = "opus-high" }
 
 [security]
 ceiling = "opus-max"
+# DOT-811: every label here also ROUTES — it is not a model-only list. Until
+# security-change@26 these three labels model-routed while only two of them
+# appeared in any workflow's [match].labels_any, so an issue labelled just
+# `security` drew the ceiling and the `never` below but ran the ordinary
+# standard-change pipeline, with no threat model, no security-vote and no
+# abuse-case gate, and no check could see it: `run activate --dry-run` refuses
+# zero matches and refuses several, but an exactly-one-WRONG match is
+# structurally undetectable there. The split was reconciled by making
+# `security` route (security-change@26 [match].labels_any; excluded in
+# standard-change@27, ui-change@21, disposition@3) rather than by deleting it
+# here — deleting it would have removed the divergence without closing the
+# hole, since an issue labelled only `security` would still bind the baseline
+# silently, and would have lost the Opus floor as well. So: a label added to
+# this list must also be added to security-change's `labels_any` and to the
+# `unless_labels` of every workflow that excludes its siblings, or it re-opens
+# the same trap.
 labels = ["security-change", "security-load-bearing", "security"]
 never = ["fable"]
 nodes = ["judge-security", "threat-model", "tdd-author-security", "spec-author-security", "tribunal-security"]

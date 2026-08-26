@@ -1,11 +1,17 @@
 [pipeline]
 description = "Cross-issue disposition: write the verdict comment and close the carrier, gated on the build/test sanity check and AC verification with a bounded revise loop; no code-review machinery."
 name = "disposition"
-version = 2
+version = 3  # 3: DOT-811 — `security` joins unless_labels beside
+             #   `security-change` and `security-load-bearing`, which this
+             #   list already excludes. security-change@26 now matches
+             #   `security`, so without this an issue labelled `disposition` +
+             #   `security` would match two workflows and refuse activation;
+             #   with it the security track wins, as it already does for the
+             #   two sibling labels.
 
 [match]
 labels_any = ["disposition"]
-unless_labels = ["investigation", "spec-doc", "spec-project", "release", "retro", "security-change", "security-load-bearing"]
+unless_labels = ["investigation", "spec-doc", "spec-project", "release", "retro", "security", "security-change", "security-load-bearing"]
 
 [limits]
 "dispose" = { max = 16, max_step_duration = "1h" }

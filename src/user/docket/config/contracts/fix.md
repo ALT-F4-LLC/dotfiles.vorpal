@@ -1,6 +1,6 @@
 ---
 node: fix
-version: 3
+version: 4
 archetype: executor-write
 packet_includes:
   - fragments/code-philosophy.md
@@ -59,6 +59,20 @@ larger than the finding's location suggests, prefer reworking the thing cleanly 
 layering a patch on a flawed approach; when the honest fix exceeds the issue's declared
 scope, that is a gap, not a license to widen.
 
+Close the class, not the instance. A routed finding demonstrates one locus of a defect
+class; before you emit, sweep for that class's sibling instances — the same idiom
+elsewhere in the file, its mirror in a twin implementation, and above all the code you
+yourself wrote this round, which is where the class most often recurs: fix rounds have
+closed an error-masking instance and reintroduced the identical class eleven lines below
+in the same commit, at every model tier. A sibling inside a routed finding's cause is
+that finding, and yours to close with it; a sibling beyond the issue's declared scope is
+a gap to file, named with the loci your sweep returned. Record the sweep in the summary
+either way — the pattern searched, the loci it returned, which were closed and which
+filed — because an unrecorded sweep is indistinguishable from no sweep, and the next
+round's judges will otherwise run it themselves at many times your cost. When your
+closure takes one branch of a reviewer's stated alternative, say which half was not
+taken.
+
 Prove each finding closed. For a finding with a test-expressible failure, write the test
 that fails against the current code, observe it fail, then fix — the finding's own claim
 is your red. For a finding about a control or a guard, the regression test must drive the
@@ -69,6 +83,16 @@ never holds the neutered state, so no revert step exists, and none is permitted:
 that pins a function nobody calls proves nothing about the wiring. For a finding you
 cannot express as a test, cite the file:line and the reasoning that shows it addressed,
 and label the claim OBSERVED or INFERRED.
+
+The same proof discipline covers prose. Any checkable claim you write — into the summary,
+a comment, a docstring, an annotation — a census ("all three callers"), an exhaustive
+quantifier ("none skipped", "the only instance"), an assertion of closure — runs the one
+search or command that could falsify it before you write it, with the result recorded
+beside the claim; where you cannot run it, drop the quantifier rather than shrink it.
+Review rounds have been fed by change-summaries whose counts came from a tree one commit
+off and by docstrings asserting fail-closed rules the implementation does not enforce:
+beside any count or measurement, name the commit it was measured at (`git rev-parse
+HEAD`), so the claim and the tree it describes cannot drift apart.
 
 Findings whose evidence label was INFERRED get checked before they get fixed. A fix
 applied to a defect that does not exist is churn that reviewers must re-review, and the
@@ -84,7 +108,8 @@ obligations require (the conductor integrates by that sha) · Findings addressed
 changed → the evidence it is closed, with observed pre-fail and post-pass output where a
 test carries it) · Findings not addressed (id → why: not reproducible, disagreed with the
 premise, or out of declared scope — with the evidence, never as a bare assertion) ·
-Files changed (one line of why each) · Known limits. Do not restate the diff; the engine
+Files changed (one line of why each) · Class sweeps (pattern searched → loci returned →
+closed here or filed) · Known limits. Do not restate the diff; the engine
 snapshots it, and review sees your delta.
 
 # Stuck

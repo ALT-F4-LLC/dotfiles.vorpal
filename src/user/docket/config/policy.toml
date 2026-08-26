@@ -1,5 +1,5 @@
 [policy]
-version = 16
+version = 17
 
 [variants]
 fable-high = { model = "fable", effort = "high" }
@@ -85,6 +85,19 @@ on_failure = "one-hop"
 # the per-round re-runs that share the ordinal (review@N judges, synthesize@N,
 # verify@N) are deliberately NOT listed and keep their standing variants.
 on_round = "one-hop"
+# DOT-846 (retro, 2026-08-26): DECLINED — `fix` does not start one hop up on
+# security-labelled issues. Measured across 19 fix-loop runs (15 security-flavored:
+# RUN-25/29/30/34/35/36/38/48/49/50/51/52/58/59/60; 4 contrast: RUN-32/53/56/61):
+# round-1 fixers that already served opus-medium reproduced the just-closed-class
+# recurrence DOT-846 attributes to the base tier in every group that could observe
+# one (e.g. RUN-60's own fix@2, RUN-61's SYN-30 "re-introducing the class this same
+# commit deleted twice"), while sonnet-medium round-1 fixers converged in one round
+# on several security issues (VPL-336, VPL-280, AGT-310). The recurrence tracks the
+# fix diff's size and spread, not the tier, and appears at the same rate on
+# unlabelled work. The remedy landed instead as the sibling-sweep and
+# claim-discipline obligations in contracts/fix.md@4. Do not re-open without runs
+# where a tier-differentiated comparison is observable — today the ledger prices no
+# tier (expected_cost is variant-blind) and pairs requested/resolved only per step.
 round_executors = ["fix", "dispose"]
 fable_gates = [
   "failed-top-opus-round",

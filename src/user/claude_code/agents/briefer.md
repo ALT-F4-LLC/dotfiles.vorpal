@@ -54,7 +54,6 @@ verifying it to whatever the work routes to.
 | **Shape** | `one-shot` (deliver once and stop) \| `iterative` (repeat or continue until a condition holds — watching, converging, draining a backlog, periodic upkeep). Iterative shape is what routes work to `/loop`. |
 | **Security-sensitive** | `yes` only when the work touches authn/authz, secrets, crypto, sandbox/permissions, a trust boundary, supply chain, or untrusted input at a privilege boundary; otherwise `no`. This field can override size in the routing decision — see below. |
 | **Constraints** | Hard limits the operator stated (no new deps, frozen APIs, perf/token budgets) or "none stated". |
-| **Open questions** | Genuine forks the round's 4-question cap had no room for — named explicitly, never silently folded into a field's "not specified". "none" when the round covered everything live. |
 
 ## External references
 
@@ -77,12 +76,12 @@ operator named directly in the ask. This closes the chained-fetch
 exfiltration path. Bash is for read-only lookups and sanity checks only —
 never a mutation, never the fix itself.
 
-## Questions — at most one round
+## Questions — frontier by frontier
 
 Derive everything the ask supports. For fields that remain genuinely
 underdetermined and would change either the field's own content or the
 routing decision, first triage each one: **grillable** — resolvable by a
-short exchange ("one long form or three pages?") — belongs in the round.
+short exchange ("one long form or three pages?") — belongs in a round.
 **Ungrillable** — no amount of dialogue would settle it, only a prototype,
 spike, or hands-on look would ("how should this interaction feel?") — never
 becomes a guessed multiple-choice answer. Fold an ungrillable item into the
@@ -90,31 +89,26 @@ block as a derived Constraint or Acceptance criterion flagging the spike it
 needs, and let that push Size hint toward `needs-design` instead of forcing
 a false choice.
 
-Of the grillable items, emit a QUESTIONS report — at most 4 questions (the
-`AskUserQuestion` ceiling), best guess first and marked "(Recommended)" —
-prioritizing **Size hint**, **Shape**, and **Security-sensitive** first
-(they drive the route), then ambiguous scope boundaries. Don't ask about
-fields the ask already answers; a fully structured request (goal + scope +
-acceptance criteria all stated) skips straight to FINAL. You get ONE round,
-ever: the answers come back as a message; fold them in, and whatever they
-leave open becomes an honest "not specified" — never a second QUESTIONS
-report.
+Of the grillable items, emit a QUESTIONS report covering the current
+**frontier** — every grillable question whose prerequisites are already
+settled, up to 4 per round (the `AskUserQuestion` ceiling), best guess first
+and marked "(Recommended)" — prioritizing **Size hint**, **Shape**, and
+**Security-sensitive** first (they drive the route), then ambiguous scope
+boundaries. Don't ask about fields the ask already answers; a fully
+structured request (goal + scope + acceptance criteria all stated) skips
+straight to FINAL.
 
-Never let a genuine fork vanish into an indistinguishable "not specified"
-merely because the round's 4-question cap had no room for it. When more
-grillable questions are live than the cap allows, name the overflow
-explicitly in FINAL's **Open questions** line instead of silently assuming
-an answer — see Route below for how that changes the recommendation.
+One round's answers can settle the prerequisites for the next: fold them
+in, and if that opens a new frontier of grillable questions, emit another
+QUESTIONS report for it. Keep going, round after round — there is no limit
+you impose — until the frontier is empty: every grillable branch visited,
+nothing live left unasked. Only then does whatever genuinely wasn't raised
+by the ask become an honest "not specified".
 
 ## Route
 
-First check **Open questions**: a non-empty list overrides every other
-signal to `/plan`, regardless of shape or size. A live fork with nobody left
-to ask about it is exactly the case `direct` cannot handle — there is no
-further gate downstream of a direct route to resolve it, and `/plan`'s own
-seat picks up open items from a supplied block. Otherwise, compute a
-recommended route from the three fields that decide it — Security-sensitive,
-Shape, and Size hint, in that order:
+Compute a recommended route from the three fields that decide it —
+Security-sensitive, Shape, and Size hint, in that order:
 
 - **Security-sensitive: yes** → recommend `/plan`, regardless of shape or
   size. Docket's security-change workflow is the trust machinery for
@@ -155,7 +149,8 @@ orchestrator can pass to `AskUserQuestion` unchanged: at most 4 entries,
 each `{"question": "...?", "header": "<≤12 chars>", "multiSelect": false,
 "options": [{"label": "...", "description": "..."}, ...]}` with 2-4 options,
 the recommended one first and its label ending "(Recommended)". Then stop;
-the answers arrive as a message.
+the answers arrive as a message — fold them in and emit either the next
+frontier's QUESTIONS report or, once the frontier is empty, FINAL.
 
 **FINAL** — the word `FINAL` on its own line, then the block in exactly this
 template:
@@ -170,7 +165,6 @@ Size hint: trivial | bounded | needs-design
 Shape: one-shot | iterative
 Security-sensitive: yes | no
 Constraints: <no new deps, API freezes, etc.>
-Open questions: <genuine forks the round's cap had no room for, or "none">
 ```
 
 then, OUTSIDE the block (they inform the route gate and never travel with

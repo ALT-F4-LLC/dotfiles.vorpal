@@ -1,6 +1,6 @@
 ---
 name: brief
-description: Turn a freeform work request into a standardized brief — one batched round of AskUserQuestion for whatever's genuinely underdetermined — then route it: hand off to /plan for docket-tracked work, /loop for work that repeats until a condition holds, another orchestration skill when one fits better, or proceed straight into the work for anything small and non-sensitive, confirmed with you either way. The brief itself is written by a dedicated seat (the briefer agent); this session only relays the gates and performs the handoff. The front door for a fuzzy ask you'd rather not prompt-engineer yourself. Trigger on "brief this", "help me think this through", "brief this request", or any new freeform ask before you've decided whether it needs a plan.
+description: Turn a freeform work request into a standardized brief — frontier-by-frontier rounds of AskUserQuestion, as many as the ask genuinely needs, for whatever's underdetermined — then route it: hand off to /plan for docket-tracked work, /loop for work that repeats until a condition holds, another orchestration skill when one fits better, or proceed straight into the work for anything small and non-sensitive, confirmed with you either way. The brief itself is written by a dedicated seat (the briefer agent); this session only relays the gates and performs the handoff. The front door for a fuzzy ask you'd rather not prompt-engineer yourself. Trigger on "brief this", "help me think this through", "brief this request", or any new freeform ask before you've decided whether it needs a plan.
 argument-hint: "<freeform work request>"
 ---
 
@@ -12,9 +12,9 @@ block, then route the work — to `/plan` for anything docket-tracked, to
 orchestration skill when the session offers a better fit, or straight into
 execution for anything small enough not to need any of that. Either
 way you confirm the route before anything happens beyond the questions
-themselves. This is the front door: hand off a raw ask, answer one batched
-round of questions, and the routing is handled — no separate skill to
-remember, no prompt to engineer.
+themselves. This is the front door: hand off a raw ask, work through
+however many rounds of questions it actually takes, and the routing is
+handled — no separate skill to remember, no prompt to engineer.
 
 This session orchestrates only. A dedicated seat — the `briefer` agent,
 using `fable` — writes the brief, so distillation quality rides
@@ -51,11 +51,16 @@ The prompt carries three things and paraphrases none of them:
 The seat cannot face the operator — `AskUserQuestion` is removed from every
 subagent — so its reports come to you and you carry them across, unedited:
 
-- **QUESTIONS report** — run ONE `AskUserQuestion` round passing the seat's
+- **QUESTIONS report** — run one `AskUserQuestion` round passing the seat's
   question array unchanged: its questions, its options, its recommended
   marks. Do not answer for the operator, drop or reword a question, or add
   your own. Send the answers back to the seat with `SendMessage`, verbatim —
-  including any free-text "Other" entries — then wait for its FINAL.
+  including any free-text "Other" entries — then wait for its next report.
+  The seat may come back with another QUESTIONS report covering the next
+  frontier — questions whose prerequisites your last round's answers just
+  settled. Relay that round exactly the same way, and keep looping until
+  the seat reports FINAL. There is no round limit you enforce: the seat
+  stops asking on its own once its frontier is empty.
 - **FINAL report** — the block plus a recommended route, one-line reason,
   and alternates. Go to §3.
 

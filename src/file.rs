@@ -31,6 +31,38 @@ pub struct SourceLayout {
     pub source_path: String,
 }
 
+/// Directory names that must never be captured into an artifact output.
+///
+/// A Claude Code session leaves a `.claude/.cc-writes` write-tracking directory
+/// wherever its cwd lands, including inside `src/user/**`. Git never reports
+/// one -- the directory is always empty, and git does not track empty
+/// directories -- but vorpal walks the filesystem, so the debris gets baked
+/// into a content-addressed artifact and shipped to every install (DOT-823).
+///
+/// This cannot be expressed as an `ArtifactSource` exclude. Vorpal matches
+/// excludes as literal path prefixes relative to the artifact context
+/// (`path.strip_prefix(source_path).starts_with(exclude)` in
+/// `cli/src/command/store/paths.rs::get_file_paths`) with no glob support, so
+/// an exclude list would have to name every directory that might ever host a
+/// session -- and the observed debris sits at four different depths. The copy
+/// step prunes by name instead, which is depth-independent.
+pub const HARNESS_DIRS: [&str; 1] = [".claude"];
+
+/// Shell fragment that removes every `HARNESS_DIRS` entry from `output`, at any
+/// depth. `-depth` visits children before parents so removing a directory never
+/// invalidates the rest of the walk, and `-exec ... +` batches into one `rm`.
+/// `find` is on PATH for both step backends: `/usr/bin` on darwin, and
+/// findutils inside the linux sandbox.
+pub fn prune_harness_dirs(output: &str) -> String {
+    let names = HARNESS_DIRS
+        .iter()
+        .map(|name| format!("-name '{name}'"))
+        .collect::<Vec<String>>()
+        .join(" -o ");
+
+    format!(r#"find "{output}" -depth -type d \( {names} \) -exec rm -rf {{}} +"#)
+}
+
 impl SourceLayout {
     pub fn for_path(path: &str) -> Self {
         if path.starts_with("http") {
@@ -119,8 +151,10 @@ impl FileSource {
         let step_script = formatdoc! {r#"
             pushd source/{name}-file-source
             cp -r {source_path} ${{VORPAL_OUTPUT}}
+            {prune}
         "#,
             name = self.name,
+            prune = prune_harness_dirs("${VORPAL_OUTPUT}"),
             source_path = layout.source_path,
         };
 
@@ -143,7 +177,7 @@ impl FileSource {
 
 #[cfg(test)]
 mod tests {
-    use super::{FileCreate, SourceLayout};
+    use super::{prune_harness_dirs, FileCreate, SourceLayout, HARNESS_DIRS};
 
     #[test]
     fn local_source_copies_the_declared_subtree_from_its_own_directory() {
@@ -171,6 +205,28 @@ mod tests {
             SourceLayout::for_path("http://example.com/x.txt").source_path,
             "."
         );
+    }
+
+    #[test]
+    fn harness_debris_is_pruned_from_the_copied_output_at_any_depth() {
+        let script = prune_harness_dirs("${VORPAL_OUTPUT}");
+
+        assert_eq!(
+            script,
+            r#"find "${VORPAL_OUTPUT}" -depth -type d \( -name '.claude' \) -exec rm -rf {} +"#
+        );
+    }
+
+    #[test]
+    fn every_harness_dir_is_named_in_the_prune_expression() {
+        let script = prune_harness_dirs("/out");
+
+        for name in HARNESS_DIRS {
+            assert!(
+                script.contains(&format!("-name '{name}'")),
+                "{name} not pruned"
+            );
+        }
     }
 
     #[test]

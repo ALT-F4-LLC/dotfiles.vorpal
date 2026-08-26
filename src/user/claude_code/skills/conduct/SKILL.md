@@ -130,7 +130,10 @@ from git and cite THAT, which is what the same conductor then did correctly.
 
 **Project memory can carry a standing obligation the loop's own checklist will
 never remind you of.** The project memory loaded into this session from its
-first turn (`~/.claude/projects/<cwd-slug>/memory/`, indexed by `MEMORY.md`)
+first turn (`~/.claude/projects/<cwd-slug>/memory/`, indexed by `MEMORY.md`,
+where the slug flattens `/`, `.` and `_` in the cwd identically to `-` —
+flatten only `/` and the dots in `github.com` and `.git` survive into a path
+that does not exist, which one conductor hit and recovered by glob)
 holds operator instructions, not checkout prose, and one class of entry binds
 you for the whole run: a standing instruction to keep an EXTERNAL tracker — a
 Linear issue, a ticket in some other system — in sync as the run progresses.
@@ -706,7 +709,11 @@ that names the chunk count, the escaped length, and the DECODED length. That
 decoded number is exactly what policy-guard compares your `policyText`
 against (28,064 as of this writing). Copy the chunk lines verbatim out of the
 output, concatenated in order with nothing between them and no reflowing, as
-the value of `policyText`.
+the value of `policyText`. Copy THIS iteration's chunk lines: a fresh emit
+whose closing summary — chunk count, escaped length, decoded length — matches
+the last one has not verified a single byte between them, and that equality is
+exactly what talked one conductor into launching dispatch 2 on dispatch 1's
+captured text.
 
 **Never reproduce policy.toml from your own context.** Emitting ~28k
 characters verbatim from memory is a DETERMINISTIC failure, not a risky one:
@@ -1470,7 +1477,11 @@ note naming the new id. The engine has no cross-project routing on
 the conductor's, at the same close that reconciles the wave. The same
 routing governs everything YOU file — an engine defect, a definition gap, a
 follow-on issue: file it in its owning project from the start, never into
-this run's project because this is where you happen to sit.
+this run's project because this is where you happen to sit. Everything YOU
+file carries `-l conduct`, the provenance label for a conductor's own filing:
+`-l shadow` marks what the `shadow` skill filed and `-l tribunal` a panel
+condition (**Gates**), so borrowing either miscounts that skill's yield (one
+conductor filed its own gate-failure fix under `-l shadow`).
 
 ## Gates
 
@@ -1776,7 +1787,14 @@ existing issue and filed nothing, and the findings vanished.
 **When the park followed a step's gates, read the verdicts before you present
 or characterize the outcome in any user-facing text.** `docket step gates STEP-N
 --json` is the verb that carries them —
-each gate's verdict, exit code, argv, duration, and output. `step show` and
+each gate's verdict, exit code, argv, duration, and output. That output is
+rationed, not absent (DKT-425): `--json` carries `output_tail` on every row
+that did NOT pass, and `--full` alongside it adds every row's complete
+`output` (it shapes the JSON only — bare `--full` still prints the table).
+A failing row with no `output` field means read its `output_tail`, not that the text
+lives only in the human render — one conductor claimed the latter and paid for
+a second read of a row whose `output_tail` already held 461 characters of the
+exact failure. `step show` and
 `step artifacts` do not, and the event stream renders a pass and a failure
 identically, so a conductor reading either surface reports failures as passes
 (measured 2026-08-17: three gates at exit 1 reported green to the operator).

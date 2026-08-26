@@ -562,10 +562,10 @@ platform = "aarch64-darwin"
 
 [[sources]]
 name = "pi"
-path = "https://github.com/earendil-works/pi/releases/download/v0.83.0/pi-darwin-arm64.tar.gz"
+path = "https://github.com/earendil-works/pi/releases/download/v0.84.3/pi-darwin-arm64.tar.gz"
 includes = []
 excludes = []
-digest = "3523a9b925587d36e81c61d5a8ef99f4b626f1c7222e193698ced1ced383ef79"
+digest = "b80d08f617687d4cc8adb1c90708433c7c0b70aa6872617ab684dc0149f8685f"
 platform = "aarch64-darwin"
 
 [[sources]]

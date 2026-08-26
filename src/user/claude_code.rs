@@ -226,7 +226,7 @@ impl ClaudeCode {
             .with_effort_level("xhigh")
             .with_feedback_survey_rate(0.0)
             .with_include_git_instructions(false)
-            .with_model("opus")
+            .with_model("sonnet")
             .with_output_style("Concise")
             .with_permission_default_mode("auto")
             .with_permission_disable_bypass_permissions_mode("disable")
@@ -606,9 +606,7 @@ impl ClaudeCode {
             // narrow exfiltration channel — is accepted knowingly: the status
             // quo it replaces is the DOT-617 standing disposition of re-running
             // entire vuln scans unsandboxed, which concedes strictly more.
-            .with_sandbox_network_allow_mach_lookup(vec![
-                "com.apple.trustd.agent".to_string(),
-            ])
+            .with_sandbox_network_allow_mach_lookup(vec!["com.apple.trustd.agent".to_string()])
             .with_sandbox_network_allow_local_binding(true)
             .build(context)
             .await?;

@@ -308,6 +308,11 @@ activation refuses or a wave refuses to route:
   version in the same change. The old version stays until no registered
   workflow references it; its removal is a later, separate change.
 
+Before moving to §7, write one line per surface above — touched, or
+not-applicable and why — even when the answer is obvious. A surface skipped
+by oversight looks identical to one skipped on purpose until it is named;
+the checklist is what tells them apart before a lint or an activation does.
+
 ## 7. Validate
 
 ```bash

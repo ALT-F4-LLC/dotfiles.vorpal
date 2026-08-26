@@ -31,9 +31,16 @@ git diff; git diff --cached; git log --oneline -5
 Read the diffs, not just the filenames — grouping and messages both come from
 what changed, and the recent log calibrates scope names. Already-staged
 changes are input like everything else; the index is state to incorporate, not
-an instruction to preserve. Mid-merge, mid-rebase, or mid-cherry-pick: stop
-and say so — finishing that state is not this skill's call. Nothing to
-commit: say so and stop; never manufacture a commit.
+an instruction to preserve.
+
+Concurrent sessions edit this tree — the normal condition here, not an edge
+case. Yours are the files you changed in this conversation; every other
+modified or staged path is presumed another session's work in progress. A
+presumed-foreign file never enters a commit, however neatly it fits the work
+in front of you, and unclear provenance resolves foreign — exclude it and name
+it rather than guess. Mid-merge, mid-rebase, or mid-cherry-pick: stop and say
+so — finishing that state is not this skill's call. Nothing to commit: say so
+and stop; never manufacture a commit.
 
 An argument is an intent hint — `/commit just the parser fix` commits the
 changes matching the hint and leaves the rest in the tree, named in the
@@ -94,8 +101,8 @@ knows its IDs; the log should not need them.
 Per group, in dependency order:
 
 ```bash
-git add <exact paths>        # named paths only — never -A, never .
-git diff --cached --stat     # staged set matches the group, nothing extra
+git add <exact paths>        # only paths you changed — never -A, never .
+git diff --cached --stat     # matches the group — nothing foreign or extra
 git commit -m "$(cat <<'EOF'
 type(scope): summary
 
@@ -111,4 +118,6 @@ remain in the tree, and the hook's output verbatim.
 ## 6. Report
 
 One plain-language summary: each commit's hash and subject, what was skipped
-and why, anything flagged by the guard. State that nothing was pushed.
+and why, anything flagged by the guard. Name every dirty path left behind —
+each presumed-foreign file individually, so the operator sees what this
+session declined to touch. State that nothing was pushed.

@@ -1,5 +1,5 @@
 [policy]
-version = 17
+version = 18
 
 [variants]
 fable-high = { model = "fable", effort = "high" }
@@ -19,8 +19,8 @@ sonnet-xhigh = { model = "sonnet", effort = "xhigh", escalate_to = "opus-xhigh" 
 adr-author = { variant = "fable-max" }
 design-qa = { variant = "opus-high" }
 dispose = { variant = "opus-high" }
-fix = { variant = "sonnet-medium" }
-implement = { variant = "sonnet-medium" }
+fix = { variant = "sonnet-xhigh" }
+implement = { variant = "sonnet-high" }
 investigate = { variant = "fable-xhigh" }
 judge-architecture = { variant = "opus-high" }
 judge-correctness = { variant = "opus-high" }

@@ -1008,6 +1008,149 @@ function runParked(res) {
 }
 // TEST-END park-signals
 
+// ---------------------------------------------------------------------------
+// ORPHANED CLAIM (DOT-864). One claim refusal inverts its own meaning when it
+// is relayed at face value: `not ready to claim: the step is not pending`.
+// Read literally it says the step never started; what it actually says is that
+// the step is ALREADY CLAIMED — routinely by a PREDECESSOR OF THE VERY AGENT
+// that just reported it.
+//
+// RUN-61 DISPATCH-332 (wave wf_289fc41a-863, 2026-08-25) is the fixture. The
+// operator interrupted the fix@1 executor mid-step (its transcript ends
+// "[Request interrupted by user]"; the journal has a `started` with no
+// `result`). On workflow resume the HARNESS relaunched the identical agent
+// spec — a second `started` under the same idempotency key, a new agentId, the
+// same worktreePath. None of wave.js's own retry paths fired, and none could:
+// harness resume is invisible from inside this script. The relaunched agent
+// claimed, was refused with that sentence, and the wave reported the sentence
+// as STEP-2760's outcome before chain-killing nine downstream rows. The truth
+// was the opposite of the report — claimed, holder dead, reap needed — and the
+// conductor had to reconstruct it from the journal.
+//
+// THE CAVEAT THIS FIX CARRIES, because it bounds what the fix can see: on a
+// harness resume an interrupted executor's brief re-executes with IDENTICAL
+// BYTES. The docket claim is the ONLY thing standing between that and silent
+// duplicate work — and it stands only for WRITE-class work, which claims. A
+// READ-class brief that never claims re-runs INVISIBLY: no conflict, no
+// second record, no trace but the tokens. So this branch diagnoses the
+// write-class case alone; the read-class one leaves nothing here to detect.
+//
+// The remedy is REPORT-ONLY. The chain-kill is correct either way (nothing
+// downstream of an unrecorded step becomes claimable this wave), so it is
+// preserved exactly — via the explicit `claim-conflict` status in chainDead(),
+// which does not depend on the report staying inside isConflictReport()'s
+// line budget.
+// TEST-BEGIN orphaned-claim — extracted and exercised by
+// tests/wave-orphaned-claim.test.sh, which concatenates the park-signals
+// region ahead of it (isConflictReport) and the chain-dead region after it.
+// Keep everything between the markers free of workflow globals (agent, probe,
+// log, args) so it stays evaluable on its own.
+const CLAIM_CONFLICT_STATUS = 'claim-conflict'
+const NOT_PENDING_CONFLICT = /not ready to claim:\s*the step is not pending/i
+
+// Same domain rule as every other predicate here: a CONFLICT REPORT, which
+// obligation 1 caps at three lines, never an arbitrary agent reply. A judge
+// writing ABOUT this conflict fails the line budget and is left alone. The
+// park signal wins the tie: 'run is not active' is a run-wide park that
+// runParked() must still see on a `returned` result, so it is never enriched
+// into a status of its own here.
+function isOrphanedClaimConflict(text) {
+    if (!isConflictReport(text)) return false
+    if (text.includes('run is not active')) return false
+    return NOT_PENDING_CONFLICT.test(text)
+}
+
+// `docket step show STEP-N --json` read the way the rest of this file reads
+// engine JSON: named fields, matched wherever they sit in the envelope, each
+// one independently OPTIONAL. Absence is normal (a lease block is absent on an
+// unclaimed step; `failed_attempts`/`reaped_claims` are omitted at 0), and
+// nothing here is asserted that the text did not actually carry.
+function parseStepShow(show) {
+    const s = typeof show === 'string' ? show : ''
+    const grab = (key, val) => {
+        const m = s.match(new RegExp(`"${key}"\\s*:\\s*${val}`))
+        return m ? m[1] : ''
+    }
+    return {
+        status: grab('status', '"([a-z-]+)"'),
+        attempt: grab('attempt', '(\\d+)'),
+        owner: grab('owner', '"([^"]*)"'),
+        live: grab('live', '(true|false)'),
+        failed: grab('failed_attempts', '(\\d+)'),
+        reaped: grab('reaped_claims', '(\\d+)'),
+    }
+}
+
+// A step whose row is HELD by a claim — the orphan case.
+const CLAIM_HELD = ['claimed', 'running']
+// A step that already recorded. The refusal then means this spawn arrived
+// after the fact, which is the opposite diagnosis and needs no reap.
+const ALREADY_RECORDED = ['done', 'superseded', 'skipped', 'failed']
+
+// Build the step's real state as the outcome, in place of the raw refusal.
+// Returns null when the probe text carries no status at all — the caller then
+// relays the CONFLICT exactly as before, so a dead or empty probe degrades to
+// precisely the old behavior.
+function orphanedClaimReport(step, conflict, show) {
+    const st = parseStepShow(show)
+    if (!st.status) return null
+    const at = st.attempt !== '' ? ` at attempt ${st.attempt}` : ''
+    const facts = [
+        `status=${st.status}`,
+        st.attempt !== '' ? `attempt=${st.attempt}` : '',
+        st.owner ? `owner=${JSON.stringify(st.owner)}` : '',
+        st.live !== '' ? `lease live=${st.live}` : '',
+        st.failed !== '' ? `failed_attempts=${st.failed}` : '',
+        st.reaped !== '' ? `reaped_claims=${st.reaped}` : '',
+    ].filter(Boolean).join(', ')
+
+    let headline, reading
+    if (CLAIM_HELD.includes(st.status)) {
+        headline = `claimed${at}, holder returned nothing: likely orphaned ` +
+            `claim, reap needed`
+        reading = `The step is CLAIMED, not unstarted. The agent this wave ` +
+            `launched for ${step} was refused that claim and recorded ` +
+            `nothing, so the lease is held by something other than the agent ` +
+            `that just ran — the standing case is an executor interrupted ` +
+            `mid-step whose claim outlived it (the harness relaunches the ` +
+            `identical brief on resume; the claim is what stops the duplicate ` +
+            `from doing the work twice). ESTABLISH the holder is gone, then ` +
+            `return the step to the pool: \`docket step reap ${step} ` +
+            `--reason '<what you observed>'\` (token-free). Do NOT read this ` +
+            `outcome as "the step never started".`
+    } else if (ALREADY_RECORDED.includes(st.status)) {
+        headline = `already ${st.status}${at}: the spawn arrived after the ` +
+            `fact, no reap needed`
+        reading = `The step already RECORDED (${st.status}). The refusal ` +
+            `means this spawn arrived after the work landed, not that the ` +
+            `step never started; nothing holds a lease, so there is nothing ` +
+            `to reap.`
+    } else {
+        headline = `refused as "not pending" while \`step show\` reads ` +
+            `${st.status}${at}`
+        reading = `The refusal and the step's own row disagree — the claim ` +
+            `was refused as "not pending" while \`step show\` reads ` +
+            `${st.status}. Reconcile before any retry (\`docket dispatch ` +
+            `verify\`, \`docket step show ${step}\`); this is not evidence ` +
+            `that the step never started.`
+    }
+
+    return {
+        step,
+        status: CLAIM_CONFLICT_STATUS,
+        headline,
+        step_status: st.status,
+        text: [
+            `${step} CLAIM CONFLICT — ${headline}.`,
+            `docket step show ${step}: ${facts}`,
+            reading,
+            `Engine refusal, verbatim:`,
+            conflict,
+        ].join('\n'),
+    }
+}
+// TEST-END orphaned-claim
+
 // The safety classifier runs PRE-SPAWN, and it fails CLOSED: when its stage-2
 // check errors out, it blocks the launch and says so in its own reason text.
 // One past run lost 3 of 24 executor spawns to ONE such error, verbatim and
@@ -1198,7 +1341,34 @@ function spawn(row, phaseLabel) {
         return failed()
     }
     const handle = (text, retried) => {
-        if (text != null) return { step: row.step, status: 'returned', text }
+        if (text != null) {
+            const returned = { step: row.step, status: 'returned', text }
+            // DOT-864: the ONE refusal whose face value inverts the truth.
+            // "not ready to claim: the step is not pending" reads as "never
+            // started" and means "already claimed" — so ask the engine what
+            // the step's row actually says and report THAT, with the refusal
+            // kept verbatim underneath. One cheap read-only probe, the same
+            // one the gate and pre-claim paths spend, and only on this exact
+            // conflict shape. See the ORPHANED CLAIM note above for the
+            // caveat this cannot see: a read-class brief re-runs invisibly on
+            // harness resume, since only a claim refuses the duplicate.
+            if (!isOrphanedClaimConflict(text)) return returned
+            log(`${row.step}: claim refused "the step is not pending" — probing ` +
+                `the step's real state rather than relaying the refusal as the ` +
+                `outcome`)
+            return probe(`docket step show ${row.step} --json`,
+                `${row.step} · claim-conflict`, phaseLabel, row.step)
+                .then((show) => {
+                    const diagnosed = orphanedClaimReport(row.step, text, show)
+                    if (!diagnosed) {
+                        log(`${row.step}: the claim-conflict probe read no status ` +
+                            `— relaying the refusal verbatim, exactly as before`)
+                        return returned
+                    }
+                    log(`${row.step}: ${diagnosed.headline}`)
+                    return diagnosed
+                }, () => returned)
+        }
         // A bare null is still NEVER retried blind: agent() resolves
         // to `null` for a pre-spawn classifier block, an operator SKIP, an
         // unavailable model, and a mid-flight death alike — measured in the
@@ -2032,6 +2202,11 @@ function chainDead(res) {
     // ~52K tokens booting three such corpses. The engine re-offers the whole
     // chain at the next dispatch, so calling the issue dead here loses nothing.
     if (res.status === 'spawn-failed') return true
+    // DOT-864: a diagnosed claim CONFLICT is the SAME dead chain it always
+    // was — only the report changed. It carries its own status precisely so
+    // the kill does not ride on the report's text staying inside
+    // isConflictReport()'s three-line budget, which the diagnosis exceeds.
+    if (res.status === 'claim-conflict') return true
     // Same body-scan trap as runParked: `includes('CONFLICT')` would kill an
     // issue's whole remaining chain on a judge that merely REPORTED one.
     return res.status === 'returned' && isConflictReport(res.text)

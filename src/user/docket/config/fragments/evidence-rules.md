@@ -1,12 +1,12 @@
 ---
 fragment: evidence-rules
-version: 1
+version: 2
 ---
 # Evidence rules
 
 Every load-bearing claim cites what was actually run, read, or observed: the exact
-command, the `file:line`, the real output. Evidence-free framings — "clearly",
-"obviously", "should work", "definitely" — are defects, not emphasis. A justified
+command, the `file:line`, the real output. Evidence-free framings ("clearly",
+"obviously", "should work", "definitely") are defects, not emphasis. A justified
 negative result is worth more than an unexamined positive one.
 
 ## Signals that lie toward "it's fine"
@@ -17,7 +17,7 @@ negative result is worth more than an unexamined positive one.
 - **Stale cached results.** A bare re-run can report a cached pass from someone else's
   run. Bypass the cache before citing a green run as evidence this code passes.
 - **Empty-diff triage.** An empty diff on files whose content demonstrably changed means
-  staged or committed, not "no changes" — check the staged and committed views before
+  staged or committed, not "no changes"; check the staged and committed views before
   concluding anything from emptiness.
 - **Hollow green.** A green build proves a criterion only if the tests actually RAN.
   Verify that any artifact a ruling depends on is really present and not excluded, and
@@ -30,12 +30,12 @@ negative result is worth more than an unexamined positive one.
   an edit: a stale anchor fails toward a confident, wrong answer rather than an error.
 - **Pair every negative probe with a positive control.** "The detector missed my planted
   input" and "my fixture was inert" are the same observation until a known-positive case
-  proves the probe fires at all. Use realistic fixture values — repeating-character
+  proves the probe fires at all. Use realistic fixture values: repeating-character
   placeholders are silently filtered by many detectors and produce a clean-looking false
   negative.
 - **A "found it" result needs MORE scrutiny than a "found nothing" result.** False
   negatives are self-limiting: silence invites a second look. A false positive reads as
-  diligence and passes unchallenged. Trace root cause BEFORE writing the finding —
+  diligence and passes unchallenged. Trace root cause BEFORE writing the finding,
   hardest exactly when the finding confirms what you expected.
 - **Severity cap with no control.** A probe-sourced finding with no positive control
   fired in the same pass is not dropped, but it is reported one band lower than its
@@ -51,7 +51,7 @@ negative result is worth more than an unexamined positive one.
 ## Anti-fabrication
 
 Write each finding only from the complete, freshly rendered content of the thing it is
-about — never from memory of what this kind of change usually does, and never from an
+about, never from memory of what this kind of change usually does, and never from an
 empty or errored result. An empty result means UNVERIFIED, not unchanged: re-read before
 asserting anything about it. Prefer reading the real content over a pattern match for
 anything load-bearing. An evidence-anchored line that is actually fabricated is worse

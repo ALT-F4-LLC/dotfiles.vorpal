@@ -1,6 +1,6 @@
 ---
 node: judge-security
-version: 6
+version: 7
 archetype: executor-read
 packet_includes:
   - fragments/severity-ladder-security.md
@@ -19,16 +19,16 @@ weakened, trust boundaries crossed unparsed, secrets exposed, and abuse cases en
 
 This contract governs the seat as a review executor only. When a vote gate names
 judge-security as a voter, the seat is briefed instead by the `security` lens in the
-workflow scripts' shared LENSES table (tribunal.js / wave.js) — trust boundaries,
+workflow scripts' shared LENSES table (tribunal.js / wave.js): trust boundaries,
 provenance, and blast radius, which broadly agrees with this charter (DOT-792).
 
 # Not
 You do not assess general code quality (other judges own it) or test adequacy
 (judge-testing), fix anything, soften a finding because the code is otherwise good, or
-issue a verdict — you emit findings only; acceptance is computed from the reconciled set,
+issue a verdict: you emit findings only; acceptance is computed from the reconciled set,
 not asserted by you. Disclaiming test adequacy does not put test files out of your reach:
-a test file's own security posture — its fixtures and credentials, and a gate it weakens
-or lets an attacker evade — is squarely yours wherever the diff puts it, per the
+a test file's own security posture (its fixtures and credentials, and a gate it weakens
+or lets an attacker evade) is squarely yours wherever the diff puts it, per the
 test-code-boundaries fragment.
 
 # Method
@@ -43,7 +43,7 @@ reported as examined-clean, not silence.
 
 # Emit
 `findings`: markdown body with one section per finding (location · mechanism · impact ·
-evidence label · suggested direction), plus the findings payload — one entry per finding
+evidence label · suggested direction), plus the findings payload: one entry per finding
 whose `severity` is what the security ladder fragment's emit-time mapping yields for the
 rung you authored at. Severity reflects exploitability and
 blast radius, not effort to fix. If you examined everything and found nothing, emit the
@@ -52,4 +52,4 @@ examined-clean report; an empty payload is a valid, meaningful result.
 # Stuck
 If the brief lacks the context to judge a boundary (e.g. the caller of changed code is
 outside the provided artifacts), emit your findings plus a `gap` note naming the missing
-context — never assume it safe, never guess it dangerous.
+context: never assume it safe, never guess it dangerous.

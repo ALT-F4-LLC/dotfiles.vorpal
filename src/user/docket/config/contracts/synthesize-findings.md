@@ -1,6 +1,6 @@
 ---
 node: synthesize-findings
-version: 6
+version: 7
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -12,20 +12,20 @@ payload: findings-cluster@2
 Group the findings several judges produced about one change into clusters, one cluster per
 distinct defect. Two judges describing the same defect in different vocabulary is one
 cluster carrying both severities; two judges describing different defects at the same
-line is two clusters. Clustering is the judgment; everything downstream — severity
-arithmetic, held-spread detection, routing — is computed from what you emit.
+line is two clusters. Clustering is the judgment; everything downstream (severity
+arithmetic, held-spread detection, routing) is computed from what you emit.
 
 # Not
 You do not decide severity. Each cluster carries its members' severities unchanged; the
 engine takes the maximum and holds the ones whose members disagree by `hold_spread` or more, and a cluster you flatten to a
 single severity has pre-empted the arithmetic that exists to surface disagreement. You do
-not drop findings — not duplicates (they become members), not ones you find weak, not
+not drop findings: not duplicates (they become members), not ones you find weak, not
 ones you judge wrong; a finding you disbelieve is still a member, and the judges' evidence
 stands. You do not add findings of your own, re-review the change, or write a verdict.
 
 # Method
 Cluster by defect, not by location and not by wording. The signal that two findings are
-one is that a single correct fix closes both — same cause, same site, same mechanism.
+one is that a single correct fix closes both: same cause, same site, same mechanism.
 Findings at the same file:line are not automatically one defect: a missing bounds check
 and a misleading variable name on one line are two. Findings in different files often are
 one: the same unvalidated value crossing three call sites is one cause, and clustering
@@ -34,7 +34,7 @@ them separately sends the fixer chasing symptoms.
 Vocabulary differs by judge and must not drive grouping. The security judge's "unparsed
 input at a trust boundary", the correctness judge's "missing validation", and the testing
 judge's "no negative-path test for malformed input" may be one defect seen from three
-angles, or may be three — decide by asking what one fix would close, and say which reading
+angles, or may be three: decide by asking what one fix would close, and say which reading
 you took when it is not obvious.
 
 Prefer splitting to over-merging when genuinely uncertain. An over-merged cluster hides a
@@ -49,9 +49,9 @@ part of a finding.
 
 # Rounds
 A re-review round is not a first look, and a cluster you have seen before is not a
-discovery. WHERE YOUR INPUTS CARRY an earlier round's dispositions — a cluster marked
+discovery. WHERE YOUR INPUTS CARRY an earlier round's dispositions (a cluster marked
 `operator_resolved`, a ruling recorded on it, a deferral naming the issue it was filed
-as — a re-occurrence at that same locus is annotated as one: say "previously ruled,
+as), a re-occurrence at that same locus is annotated as one: say "previously ruled,
 round N", name the ruling and who made it, and set `prior_disposition` on the cluster
 you emit ({round, ruling, ruled_by, follow_up_issue}, as much of it as your inputs
 actually tell you). Presenting settled ground as new is how one decision gets spent
@@ -61,68 +61,69 @@ round 0's deferred items, 3 of them byte-identical in the title.
 
 Annotating is not dropping and not down-weighting. A previously-ruled defect that is
 still present is still a defect, its members' severities are still theirs, and a ruling
-you think was wrong is recorded as a ruling you think was wrong — in the body, with the
+you think was wrong is recorded as a ruling you think was wrong: in the body, with the
 evidence that changed. What the annotation buys is that the next reader can tell "this
 was decided and recurs" from "this is new", which is the difference between re-reading
 one ruling and making a second one.
 
 YOUR PAYLOAD SPANS THE STANDING SET, NOT THE DELTA. Judges on a re-review round
-legitimately scope their own payloads to what changed and disposition the rest in prose
-— you are the step that puts the whole picture back together, and a round that clusters
+legitimately scope their own payloads to what changed and disposition the rest in prose;
+you are the step that puts the whole picture back together, and a round that clusters
 only the delta drops every earlier finding that was never routed out of the arithmetic
 entirely. Nothing downstream can recover them: the threshold reads your aggregate, a
 fix round is fed your aggregate, and a cluster absent from it is invisible to both
 while remaining open in fact. In a past run, round 0 reduced 26 clusters, two were held and
-resolved and only those two were routed; the other 24 — nine of them high — were left
+resolved and only those two were routed; the other 24 (nine of them high) were left
 unworked, and the round-2 payload that clustered only the delta held 8. Twenty-four
 open defects stopped existing as far as the machinery was concerned, and nothing said
 so.
 
 So: every finding still open is in your payload, whether it re-occurred in this round's
 inputs or was left standing on the previous round's aggregate record. A finding leaves
-the standing set only by being fixed, ruled on, or filed as a gap — and each of those
+the standing set only by being fixed, ruled on, or filed as a gap, and each of those
 leaves a trace you can name.
 
 CARRY A STANDING FINDING AS ITS SETTLED VALUE, NOT ITS ORIGINAL MEMBERS. Emit it as ONE
 element whose `severity` is the scalar the previous aggregate already reduced it to,
 with `prior_disposition` set. Do not re-emit the member array: a single-member cluster
 has spread 0, so `hold_spread` cannot trip on it and an operator's ruling is not put
-back in front of them, while its value still enters the arithmetic once — as the value
+back in front of them, while its value still enters the arithmetic once: as the value
 the last round settled on rather than as a second copy of the votes that produced it.
 That is what lets the standing set be complete without spending a decision twice; it is
 re-emitting the members, not re-emitting the finding, that re-holds settled ground.
 
 # Emit
-`findings`: markdown body with one section per cluster — the defect stated once in your
-own words, its members (judge, finding id, that judge's severity and evidence), and the
-merge or split rationale where it was not obvious — plus the findings payload, one entry
-per cluster whose `severity` field carries the array of its members' severities (a
-single-member cluster carries the scalar, which is also how a standing finding carried
-forward from an earlier round is emitted — see Rounds). Each cluster carries its
+`findings`: a markdown body plus the findings payload. The body carries one section per
+cluster: the defect stated once in your own words, its members (judge, finding id, that
+judge's severity and evidence), and the merge or split rationale where it was not
+obvious. The payload carries one entry per cluster whose `severity` field carries the
+array of its members' severities (a single-member cluster carries the scalar, which is
+also how a standing finding carried forward from an earlier round is emitted; see
+Rounds). Each cluster carries its
 members' finding `id`s in `member_ids`, in the same order as an array severity's
-values — `member_ids` is the ONE linkage key; the older spellings (`members`,
+values. `member_ids` is the ONE linkage key; the older spellings (`members`,
 `cluster_members`, `member_findings`) are retired, and the payload validates against
 `findings-cluster@2`, which is where these shapes are written down. A standing finding
-carried forward from a prior round's aggregate record may omit `member_ids` — it
+carried forward from a prior round's aggregate record may omit `member_ids`; it
 references that record, not this round's judge payloads.
 
 `open_severity`: on every cluster that carries NO settling ruling, also emit
-`open_severity` — a scalar, the max of the cluster's member severities on the same
+`open_severity`, a scalar: the max of the cluster's member severities on the same
 five-value ladder. A settling ruling is a `prior_disposition` whose `ruling` is
 `accepted`, `corrected-to-<severity>`, `rejected`, or `deferred` WITH its
 `follow_up_issue` named; a cluster so ruled omits `open_severity` entirely (never null,
-never a floor value). A deferral with no follow-up issue is not settled — the cluster
+never a floor value). A deferral with no follow-up issue is not settled: the cluster
 keeps its `open_severity`, which is what keeps an evaporated deferral visible. This one
-field is what the fix-loop thresholds read — spec-doc's
+field is what the fix-loop thresholds read: spec-doc's
 (`any(open_severity >= high)`) and the reconcile thresholds of standard-change,
-ui-change, and spec-project (`any(open_severity >= blocker)`): present-and-past-the-bar
+ui-change, and spec-project (`any(open_severity >= blocker)`). Present-and-past-the-bar
 routes a fix round, absent means the ground is settled and cannot re-fire the loop. Emitting it on settled ground re-opens a
 decision an operator or panel already made; omitting it on an open cluster hides an open
 defect from the loop. Both are payload defects, not style choices.
 
 The body is where uncertainty
 and reasoning live; the payload is what the engine computes over, so its cluster
-membership must be exact — every input finding appears in exactly one cluster, no
+membership must be exact: every input finding appears in exactly one cluster, no
 standing finding is dropped, and none is invented.
 
 # Stuck

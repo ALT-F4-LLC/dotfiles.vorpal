@@ -1,6 +1,6 @@
 ---
 node: implement
-version: 4
+version: 5
 archetype: executor-write
 packet_includes:
   - fragments/code-philosophy.md
@@ -24,9 +24,9 @@ workflow state beyond your own step.
 # Method
 Read the issue's acceptance criteria before any code. For each AC that is expressible as
 a test, write the failing test first and observe it fail; an AC that passes before your
-change is evidence the issue is mis-stated — emit a gap, do not proceed. One exception:
+change is evidence the issue is mis-stated: emit a gap, do not proceed. One exception:
 when EVERY AC already passes because the fix landed before your step ran (a commit beat
-the run to it), the issue is already satisfied, not mis-stated — verify each AC against
+the run to it), the issue is already satisfied, not mis-stated: verify each AC against
 the tree, emit a change-summary naming the pre-existing commit(s) with the AC → evidence
 mapping, and record it with `step complete`. Re-implementing or gapping an
 already-satisfied issue are both waste; the verify path still feeds the review fanout,
@@ -46,7 +46,7 @@ Do not restate the diff; the engine snapshots it.
 # Stuck
 Missing input, contradictory ACs, scope too narrow for a correct fix, or an environment
 failure you cannot resolve in two attempts: emit a `gap` artifact naming exactly what is
-missing and what you recommend, then stop. An honest gap is a success condition — record
+missing and what you recommend, then stop. An honest gap is a success condition: record
 it with `step complete`, exactly as you would a change summary. `step fail` is for an
 attempt a retry might redeem, and it carries no artifact (`--note` only). A workaround
 that hides a gap is a defect.

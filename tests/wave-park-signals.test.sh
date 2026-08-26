@@ -150,9 +150,12 @@ ok(!chainDead(returned(CONFLICT_FINDING)),
 // ---- Statuses the ladder sets itself still count as dead ----
 // 'spawn-failed' joined them in DOT-559: the step never recorded, so every
 // later `after` row of the same issue is refused at claim.
+// 'parked-base-ancestry' joined in DOT-871: a fix round whose judged tree
+// does not contain the prior round's integrated commit is parked before its
+// judge fanout, and the issue's later per-round rows die with it.
 for (const status of ['gate-parked', 'gate-blocked', 'gate-rejected',
                       'skipped-not-claimable', 'skipped-not-ready',
-                      'spawn-failed']) {
+                      'spawn-failed', 'parked-base-ancestry']) {
     ok(chainDead({ status, text: null }), `status ${status} kills the chain`)
 }
 ok(!chainDead({ status: 'returned', text: 'STEP-9 recorded (done)' }),

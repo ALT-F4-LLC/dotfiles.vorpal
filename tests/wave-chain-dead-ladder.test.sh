@@ -59,6 +59,11 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
 }
 
 extract park-signals > "${WORK}/park.js" || fatal "bad or missing TEST markers for park-signals"
+# The ladder calls the fix-round base-ancestry helpers (DOT-871), which live
+# in their own region so tests/wave-fix-round-ancestry.test.sh can exercise
+# them alone — concatenate that region ahead of the ladder, same as the
+# orphaned-claim suite does for its neighbours.
+extract fix-round-ancestry > "${WORK}/ancestry.js" || fatal "bad or missing TEST markers for fix-round-ancestry"
 extract stage-ladder > "${WORK}/ladder.js" || fatal "bad or missing TEST markers for stage-ladder"
 [ -s "${WORK}/ladder.js" ] || fatal "extracted stage-ladder region is empty"
 grep -q 'chainDead' "${WORK}/ladder.js" || fatal "stage-ladder region does not contain chainDead"
@@ -106,6 +111,7 @@ const probe = (_cmd, _label, _phase, step) => {
 const ladder = async () => {
 JS
     cat "${WORK}/park.js"
+    cat "${WORK}/ancestry.js"
     cat "${WORK}/ladder.js"
     printf '}\n'
 } > "${WORK}/suite.mjs"

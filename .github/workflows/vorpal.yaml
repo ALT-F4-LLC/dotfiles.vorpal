@@ -24,6 +24,8 @@ jobs:
 
       - run: bash tests/wave-escalation-walk.test.sh
 
+      - run: bash tests/wave-fix-round-ancestry.test.sh
+
       - run: bash tests/wave-orphaned-claim.test.sh
 
       - run: bash tests/wave-park-signals.test.sh

@@ -803,7 +803,8 @@ disk, and nothing in the transcript said so. `scriptPath` is the only invocation
 that provably runs the file that is there now. This is not a preference; a
 by-name invocation is a defect regardless of how convenient it looks.
 
-Pass `args` as `{rows, policyText}`. wave.js always RECEIVES a string and
+Pass `args` as `{rows, policyText}` — plus `integrated` when the dispatch
+carries a fix round's review fanout (its own rule below). wave.js always RECEIVES a string and
 decodes it as normal transport (proven by a controlled probe), so
 the decode line in its log is never a finding. But do not read that as "the
 string in your transcript is the harness's doing, not yours" — this skill said
@@ -854,6 +855,29 @@ identical 44 characters both times — so a retyped retry buys another ~100s of
 generation and a second denial. (A denial naming a PIN drift instead of a
 length is a different animal entirely and has no relaunch at all: it is the
 stop-and-report above.)
+
+**A dispatch carrying a fix round's review fanout also carries `integrated`.**
+When the rows include a review fanout for a fix round — instances `name@N#k`
+with N ≥ 2 — add a third `args` field, `integrated`, mapping each such issue
+to the sha of the INTEGRATION COMMIT you landed for its most recent fix round
+(the cherry-pick of the sha on that round's change-summary first line —
+Worktree writers below). wave.js asserts, before seating the fanout, that the
+round's judged tree descends from that commit (`git merge-base --is-ancestor
+<integrated sha> <target sha>`) and parks the round as a
+`parked-base-ancestry` relay finding when it does not — the check five judges
+per round used to run one round too late (DOT-871: RUN-35 round 2 spent a
+17.37M-token round re-finding two defects round 1 had closed; RUN-51 spent
+rounds 5-6 detecting a forked fix worktree). The sha must be the INTEGRATED
+one, never the writer's: integration cherry-picks, so the writer's sha is
+never an ancestor of the shared branch even after its content lands, and
+passing it would park every healthy round. You hold no run state, so derive
+it fresh at dispatch time: the writer sha is the change-summary's first line,
+and the integration commit that carried it is `git log --format='%H %s'
+--grep="cherry picked from commit <writer sha>"` on the shared branch (the
+`-x` at integration wrote that trailer exactly so this mapping survives). No
+fix-round fanout in the rows, or no integration yet for an issue — omit the
+field or that entry; wave.js fails open and dispatches exactly as before. An
+entry you cannot re-derive is omitted, never guessed.
 
 **Keep human rows; hand the wave everything else.** Filter OUT only
 `kind: "human"` rows — those are the operator's — and pass every other row
@@ -1193,6 +1217,19 @@ between steps) is a stop-and-ask gate presenting the sha and the conflicting
 hunks — never resolved by judgment. If you find content STAGED but
 uncommitted in the shared tree, that is residue of the retired model or an
 operator's work in progress: stop and ask, never build on it.
+
+A wave result of `parked-base-ancestry` is the fix-round ancestry guard
+firing (the `integrated` hand-off above): the round's judged tree does not
+contain the prior round's integrated commit — a missed integration, or a fix
+worktree cut from a stale HEAD — and the wave parked the review fanout
+instead of paying judges to rediscover it. The report carries the evidence
+(`git merge-base --is-ancestor` exit status and `git branch -a --contains`).
+Treat it as YOUR finding, not a step failure and not a judge finding: verify
+the integration commit is actually on the shared branch (this section's
+steps), repair the tree the round judges so it descends from it — a
+cherry-pick conflict or a fix commit built on the wrong base is a
+stop-and-ask, presented with the report's evidence — then redispatch; the
+engine re-offers the round's steps. Never redispatch through it unrepaired.
 
 A COMMIT BLOCKED report (the executor's commit was refused in its worktree)
 means you make the commit on its behalf first — `git -C <its worktree> add

@@ -1,7 +1,7 @@
 export const meta = {
     name: 'wave',
     description: 'Run one dispatched manifest end to end: spawn one executor per executor row (routed by policy.toml), seat a judge panel on each vote row, and skip action rows (engine-run at record time). Stages run as awaited groups — the staged closure means one wave can carry judges -> gate -> reconcile -> report. Invoke by scriptPath ONLY, with args {rows, policyText} as a real object — policy.toml is passed as TEXT, never a path; the script cannot read files.',
-    whenToUse: 'Invoked by the conduct skill on an open dispatch, always as Workflow({scriptPath}) — never by name. args is {rows, policyText}: `next` rows verbatim (executor, vote, and action rows; human rows stay with the conductor) plus the literal TEXT of policy.toml. There is no policyPath and no file access.',
+    whenToUse: 'Invoked by the conduct skill on an open dispatch, always as Workflow({scriptPath}) — never by name. args is {rows, policyText}: `next` rows verbatim (executor, vote, and action rows; human rows stay with the conductor) plus the literal TEXT of policy.toml. On a dispatch carrying a fix round\'s review fanout, args also carries `integrated` — a map from each such issue to the sha of its prior round\'s INTEGRATION commit — so the wave can assert base ancestry before seating the fanout (DOT-871). There is no policyPath and no file access.',
 }
 
 // ---------------------------------------------------------------------------
@@ -2131,6 +2131,134 @@ async function runGate(row, phaseLabel) {
 }
 // TEST-END gate-vote
 
+// ---------------------------------------------------------------------------
+// FIX-ROUND BASE ANCESTRY (DOT-871). The conductor integrates a fix round by
+// cherry-picking the sha on the change-summary's first line onto the shared
+// branch; the next round's fix worktree is cut from that branch's HEAD, so
+// the tree the next review fanout judges must DESCEND from the integrated
+// commit. Nothing verified that, and twice the hand-off broke with a judge
+// fanout paying to discover it one round late: RUN-35 (VPL-160) round 2 —
+// all five judges recorded that round-1's commit was not an ancestor of the
+// judged commit (`git merge-base --is-ancestor` non-zero, `git branch -a
+// --contains` empty) and re-filed two defects round 1 had closed, one
+// 17.37M-token round re-finding closed work; RUN-51 (AGT-643) rounds 5-6 —
+// fix@5's worktree was a SIBLING of round 4's commit, and two full review
+// rounds went to detecting and repairing the fork.
+//
+// So the wave asserts the ancestry BEFORE the fanout spawns — the exact
+// check the judges already ran one round too late — and parks the round as a
+// RELAY finding ('parked-base-ancestry', chain-dead for the issue) instead
+// of seating judges on a tree that cannot contain the prior round's fix.
+//
+// THE SHA IS THE INTEGRATED ONE, AND ONLY THE CONDUCTOR HOLDS IT:
+// integration cherry-picks, so the WRITER's sha (the change-summary's first
+// line) is never an ancestor of the shared branch even after its content
+// lands — asserting on it would park every healthy round. The conductor
+// therefore passes `args.integrated`, mapping each issue with a fix round in
+// this dispatch to the sha of its most recent integration commit
+// (conduct/SKILL.md, "Worktree writers"). Absent map, absent entry, non-sha
+// entry, no round fanout, round 1, missing target on the bundle, dead or
+// unparseable probe — every one of these FAILS OPEN to the old behavior: the
+// guard exists to stop a measured waste, never to add a new way for a
+// healthy round to stall.
+// TEST-BEGIN fix-round-ancestry — extracted and exercised by
+// tests/wave-fix-round-ancestry.test.sh (and concatenated ahead of the
+// stage-ladder region by tests/wave-chain-dead-ladder.test.sh, whose ladder
+// calls into it). Keep everything between the markers free of workflow
+// globals (agent, probe, log, args) so it stays evaluable on its own.
+
+// A fix round's REVIEW FANOUT: the engine mints per-round step instances as
+// `name@N`, with `#k` on fanout siblings (roundHops above reads the same
+// grammar). Only fanout rows (`@N#k`) are guarded: they are the judge seats,
+// a write row (`fix@N`, no `#k`) is what CREATES the round's tree, and
+// per-round singletons behind the fanout (synthesize@N) die with the chain
+// when the fanout parks. Round 1 reviews the initial implement — there is no
+// prior fix round to contain — so the guard starts at round 2.
+const FANOUT_INSTANCE_RE = /@(\d+)#\d+$/
+
+function fixRoundFanoutRound(row) {
+    const m = FANOUT_INSTANCE_RE.exec((row && row.instance) || '')
+    return m ? parseInt(m[1], 10) : 0
+}
+
+// Both shas travel into a probe's command line, so both are shape-checked:
+// the integrated sha against the conductor's map entry, the target sha as
+// parsed off the engine bundle. Anything not plain hex is treated as absent.
+const ANCESTRY_SHA_RE = /^[0-9a-f]{7,40}$/i
+
+function integratedShaFor(row, integrated) {
+    if (!integrated || typeof integrated !== 'object' ||
+        Array.isArray(integrated)) return ''
+    const sha = row && row.issue ? integrated[row.issue] : ''
+    return typeof sha === 'string' && ANCESTRY_SHA_RE.test(sha) ? sha : ''
+}
+
+function needsAncestryCheck(row, integrated) {
+    if (!row || row.kind !== 'executor') return false
+    if (fixRoundFanoutRound(row) < 2) return false
+    return integratedShaFor(row, integrated) !== ''
+}
+
+// The judged tree: context assembly lifts the resolved issue.diff round
+// record onto the bundle as `target_sha` — the same field the gate path's
+// TARGET_REF_GREP reads (parseTargetRef above), narrowed to the sha half
+// because the ancestry check has no use for the worktree path.
+const ANCESTRY_TARGET_GREP =
+    `grep -Eo '"target_sha"[[:space:]]*:[[:space:]]*"[^"]*"'`
+
+function parseAncestryTargetSha(text) {
+    const m = (text || '').match(/"target_sha"\s*:\s*"([^"]+)"/)
+    return m && ANCESTRY_SHA_RE.test(m[1]) ? m[1] : ''
+}
+
+// One read-only probe carrying both directions of the evidence the RUN-35
+// judges recorded: the merge-base exit status (0 = the judged tree contains
+// the prior round's integrated commit) and the branch containment listing.
+// Every worktree shares one object store, so both commands resolve from the
+// shared checkout the probe runs in.
+function ancestryProbeCommand(prior, target) {
+    return `git merge-base --is-ancestor ${prior} ${target}; ` +
+        `echo "ancestry-exit=$?"; git branch -a --contains ${prior}`
+}
+
+function parseAncestryExit(text) {
+    const m = (text || '').match(/ancestry-exit=(\d+)/)
+    return m ? parseInt(m[1], 10) : null
+}
+
+// The parked round, as a RELAY finding: the report names what broke, carries
+// the probe evidence verbatim, and says what the conductor does about it —
+// exactly what five judges per round were re-deriving. chainDead() reads the
+// status, so the issue's later rows die with the fanout this wave, and the
+// engine re-offers the round's steps after the tree is repaired.
+function ancestryParkReport(step, broken) {
+    const headline = `fix round ${broken.round} parked before its judge ` +
+        `fanout: the prior round's integrated commit ${broken.prior} is not ` +
+        `an ancestor of the judged tree ${broken.target}`
+    return {
+        step,
+        status: 'parked-base-ancestry',
+        headline,
+        text: [
+            `${step} BASE ANCESTRY BROKEN — ${headline}.`,
+            `git merge-base --is-ancestor ${broken.prior} ${broken.target} ` +
+                `exited ${broken.exit} (0 would mean the judged tree ` +
+                `contains the prior round's fix).`,
+            `Probe evidence (exit marker, then \`git branch -a --contains ` +
+                `${broken.prior}\`):`,
+            broken.evidence,
+            `This is a relay finding, not a judge finding: seating the ` +
+                `fanout would spend a full review round re-discovering work ` +
+                `the prior round already closed. Repair the hand-off — ` +
+                `verify the integration commit is actually on the shared ` +
+                `branch, and repair the tree this round judges so it ` +
+                `descends from it (a conflict there is a stop-and-ask) — ` +
+                `then redispatch; the engine re-offers the round's steps.`,
+        ].join('\n'),
+    }
+}
+// TEST-END fix-round-ancestry
+
 // GLOBAL STAGE BARRIERS (2026-08-15, superseding the earlier per-issue
 // lanes). The lanes existed because engine stages only ordered SAME-ISSUE
 // work, so a global barrier made one issue's re-review wait on another
@@ -2144,11 +2272,13 @@ async function runGate(row, phaseLabel) {
 // The residual cross-issue wait is the price of that schedule being honored —
 // rows the engine certifies concurrent share a stage and still run together.
 // TEST-BEGIN stage-ladder — extracted and exercised by
-// tests/wave-chain-dead-ladder.test.sh, which wraps this whole region in an
-// async function and feeds it stub `parallel`/`spawn`/`runGate`/`probe`/`log`
+// tests/wave-chain-dead-ladder.test.sh and
+// tests/wave-fix-round-ancestry.test.sh, which wrap this whole region in an
+// async function and feed it stub `parallel`/`spawn`/`runGate`/`probe`/`log`
 // globals. Everything the ladder itself needs must stay INSIDE the markers;
-// the only workflow globals it may reach for are those stubs, `rows`, and
-// `input`.
+// the only workflow globals it may reach for are those stubs, `rows`,
+// `input`, and the fix-round-ancestry region's helpers (both suites
+// concatenate that region ahead of this one).
 const stages = new Map()
 for (const row of rows) {
     const s = Number.isInteger(row.stage) ? row.stage : 0
@@ -2159,6 +2289,17 @@ const stageKeys = [...stages.keys()].sort((a, b) => a - b)
 
 log(`wave: ${rows.map((r) => `${r.step}·${r.kind === 'executor' ? r.executor : r.kind}`).join(', ')} — policy v${policyVersion}, ${(input.policyText || '').length} chars`)
 log(`wave: ${rows.length} row(s) across stage(s) ${stageKeys.join('→')}`)
+{
+    // DOT-871: say up front which issues the fix-round ancestry guard is
+    // armed for, so a wave with no `integrated` map is legible as unguarded
+    // rather than silently skipping the check.
+    const guarded = rows.filter((r) => needsAncestryCheck(r, input.integrated))
+    if (guarded.length > 0) {
+        const issues = [...new Set(guarded.map((r) => r.issue))]
+        log(`wave: fix-round ancestry guard armed for ${issues.join(', ')} ` +
+            `(${guarded.length} fanout row(s))`)
+    }
+}
 
 // Executor rows staged BEHIND a same-issue action or vote row can be
 // superseded/unclaimable by the time their stage arrives (the predecessor
@@ -2179,6 +2320,55 @@ function needsClaimProbe(row) {
     const s = Number.isInteger(row.stage) ? row.stage : 0
     const g = gateStageByIssue.get(row.issue)
     return g !== undefined && g < s
+}
+
+// DOT-871: the fix-round base-ancestry guard (helpers above the ladder). One
+// verdict per issue-round, shared by every fanout sibling: two cheap
+// read-only probes — the round's target sha off the bundle, then the
+// merge-base check — decide whether the fanout spawns at all. The probes run
+// AT THE ROW'S OWN STAGE, after its earlier stages settled, so the bundle's
+// round record is live (a fix@N recorded earlier this wave is already on
+// it). Every uncertain outcome resolves null (fail-open: spawn as before);
+// only a positively parsed non-zero merge-base exit parks.
+const ancestryVerdicts = new Map()
+function ancestryVerdict(row, phaseLabel) {
+    const round = fixRoundFanoutRound(row)
+    const prior = integratedShaFor(row, input.integrated)
+    const key = `${row.issue}@${round}`
+    if (!ancestryVerdicts.has(key)) {
+        ancestryVerdicts.set(key, (async () => {
+            const ctx = await probe(
+                `docket step context ${row.step} --json | ${ANCESTRY_TARGET_GREP}`,
+                `${row.step} · ancestry:target`, phaseLabel, row.step)
+            const target = parseAncestryTargetSha(ctx)
+            if (!target) {
+                log(`${row.step}: fix-round ancestry guard found no ` +
+                    `target_sha on the bundle — fail-open, dispatching ` +
+                    `round ${round} as before`)
+                return null
+            }
+            const evidence = await probe(ancestryProbeCommand(prior, target),
+                `${row.step} · ancestry:merge-base`, phaseLabel, row.step)
+            const exit = parseAncestryExit(evidence)
+            if (exit === null) {
+                log(`${row.step}: ancestry probe carried no exit marker — ` +
+                    `fail-open, dispatching round ${round} as before`)
+                return null
+            }
+            if (exit === 0) {
+                log(`${row.step}: round ${round} judged tree ${target} ` +
+                    `contains the prior round's integrated ${prior} — ` +
+                    `ancestry holds`)
+                return null
+            }
+            log(`${row.step}: BASE ANCESTRY BROKEN — merge-base ` +
+                `--is-ancestor ${prior} ${target} exited ${exit}; parking ` +
+                `round ${round} as a relay finding instead of spending its ` +
+                `judge fanout`)
+            return { round, prior, target, exit, evidence }
+        })())
+    }
+    return ancestryVerdicts.get(key)
 }
 
 const byStep = new Map()
@@ -2207,6 +2397,11 @@ function chainDead(res) {
     // the kill does not ride on the report's text staying inside
     // isConflictReport()'s three-line budget, which the diagnosis exceeds.
     if (res.status === 'claim-conflict') return true
+    // DOT-871: a fix round parked on broken base ancestry. The judged tree
+    // does not contain the prior round's integrated commit, so every later
+    // per-round row of the issue (synthesize@N, verify@N) would work the
+    // same wrong tree.
+    if (res.status === 'parked-base-ancestry') return true
     // Same body-scan trap as runParked: `includes('CONFLICT')` would kill an
     // issue's whole remaining chain on a judge that merely REPORTED one.
     return res.status === 'returned' && isConflictReport(res.text)
@@ -2236,30 +2431,42 @@ for (const k of stageKeys) {
             return Promise.resolve({ step: row.step, status: 'engine-run', text: null })
         }
         if (row.kind === 'vote') return runGate(row, label)
-        if (needsClaimProbe(row)) {
-            return probe(`docket step show ${row.step} --json`,
-                `${row.step} · pre-claim`, label, row.step).then((show) => {
-                // Skip only on a positively recognized status the wave cannot
-                // act on; empty output, prose, and anything unrecognized all
-                // spawn (fail-open).
-                //
-                // `pending` belongs in that set HERE and only here.
-                // This probe runs after the row's earlier stages have been
-                // awaited and settled — the stage barrier already passed — so
-                // nothing left in this wave can advance the step to `ready`.
-                // A pending row is dead for the wave: spawning it burns an
-                // executor (~17K tokens) that dies on claim CONFLICT with "an
-                // `after` predecessor is not done". The engine re-offers the
-                // step at the next dispatch, so skipping loses nothing.
-                const term = show.match(/"status"\s*:\s*"(done|superseded|skipped|failed|pending)"/)
-                if (!term) return spawn(row, label)
-                log(`${row.step}: not claimable (${term[1]}) — a same-issue ` +
-                    `gate or action upstream left it unreachable for this ` +
-                    `wave; skipping the spawn`)
-                return { step: row.step, status: 'skipped-not-claimable', text: show }
-            })
+        const launchRow = () => {
+            if (needsClaimProbe(row)) {
+                return probe(`docket step show ${row.step} --json`,
+                    `${row.step} · pre-claim`, label, row.step).then((show) => {
+                    // Skip only on a positively recognized status the wave cannot
+                    // act on; empty output, prose, and anything unrecognized all
+                    // spawn (fail-open).
+                    //
+                    // `pending` belongs in that set HERE and only here.
+                    // This probe runs after the row's earlier stages have been
+                    // awaited and settled — the stage barrier already passed — so
+                    // nothing left in this wave can advance the step to `ready`.
+                    // A pending row is dead for the wave: spawning it burns an
+                    // executor (~17K tokens) that dies on claim CONFLICT with "an
+                    // `after` predecessor is not done". The engine re-offers the
+                    // step at the next dispatch, so skipping loses nothing.
+                    const term = show.match(/"status"\s*:\s*"(done|superseded|skipped|failed|pending)"/)
+                    if (!term) return spawn(row, label)
+                    log(`${row.step}: not claimable (${term[1]}) — a same-issue ` +
+                        `gate or action upstream left it unreachable for this ` +
+                        `wave; skipping the spawn`)
+                    return { step: row.step, status: 'skipped-not-claimable', text: show }
+                })
+            }
+            return spawn(row, label)
         }
-        return spawn(row, label)
+        // DOT-871: a fix round's review fanout is asserted against the prior
+        // round's integrated commit BEFORE the judges spawn (ancestryVerdict
+        // above; one shared verdict per issue-round). A broken ancestry parks
+        // the round as a relay finding; anything short of a positively
+        // broken read launches exactly as before.
+        if (needsAncestryCheck(row, input.integrated)) {
+            return ancestryVerdict(row, label).then((broken) =>
+                broken ? ancestryParkReport(row.step, broken) : launchRow())
+        }
+        return launchRow()
     }))
     settled.forEach((res, i) => {
         const row = group[i]

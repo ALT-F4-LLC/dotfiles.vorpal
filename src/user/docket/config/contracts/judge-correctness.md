@@ -1,6 +1,6 @@
 ---
 node: judge-correctness
-version: 7
+version: 8
 archetype: executor-read
 packet_includes:
   - fragments/hard-gates.md
@@ -25,10 +25,9 @@ reproducibility, and verification: a deliberately different remit, for judging w
 gate is asked to accept rather than hunting defects in a diff (DOT-792).
 
 # Not
-You do not judge design conformance or coupling (judge-architecture owns it — and
-overbuild with it, since it carries the code-philosophy fragment those findings ground
-in; judge-simplicity owns overbuild only on the fanouts that seat it), test adequacy
-(judge-testing), or security posture (judge-security). Disclaiming test adequacy does not
+You do not judge design conformance or coupling, or overbuild (judge-architecture owns
+all three and says so in its own Charter), test adequacy (judge-testing), or security
+posture (judge-security). Disclaiming test adequacy does not
 put test files out of your reach: a test is code and its own logic can be wrong — a
 tautological assertion, an environment-dependent expectation, a helper that types away
 the check — per the test-code-boundaries fragment. You do not fix anything, and you do not

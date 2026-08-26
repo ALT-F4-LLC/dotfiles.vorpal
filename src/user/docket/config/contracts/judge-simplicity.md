@@ -1,6 +1,6 @@
 ---
 node: judge-simplicity
-version: 5
+version: 6
 archetype: executor-read
 packet_includes:
   - fragments/code-philosophy.md
@@ -18,6 +18,16 @@ payload: findings@9
 Examine one change for what should not exist: overbuild, speculative abstraction, dead
 scaffolding, and violations of the code-philosophy principles that no mechanical gate
 catches.
+
+**Where this seat sits, and why.** The 2026-08-23 retro cut this node from the
+standard-change, ui-change, and security-change review fanouts: across nine runs it
+produced zero unique clusters above low severity on those workflows, so the seat was
+deliberately scoped down rather than lost. On the code-review workflows overbuild is
+judge-architecture's, whose Charter claims it and which carries the laziness ladder for
+it; this contract stays seated where a whole authored artifact, not a diff, is the unit
+under review. Re-seating this node on a code-review fanout adds a judge to every review
+round there — real cost, a wider reconcile — and needs its own evidence, not the
+observation that the seat is idle.
 
 # Not
 You do not hunt defects in what the code does (judge-correctness owns that), judge

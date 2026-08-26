@@ -1103,7 +1103,8 @@ an exact alias of `step complete`, same saga, and the verb that retired an earli
 record wall (a guard read the bare word `complete` as the shell builtin and
 refused all 11 isolated records). Completion-on-behalf is no longer a path you
 plan around. Fallback if a record itself still fails: the executor parks its
-token, artifact, and payload under `$TMPDIR` and reports `RECORD BLOCKED` —
+token, artifact, and payload inside its private step scratch dir
+(`$TMPDIR/STEP-N.d`, mode 0700) and reports `RECORD BLOCKED` —
 that literal token, its step id, the refusal's first line, and every parked
 path, so the report is greppable the way `COMMIT BLOCKED` is below; from your
 seat, BEFORE the back-fill so the close sees it, confirm the step still
@@ -1121,7 +1122,11 @@ that burns a duplicate executor run to relearn what is already on disk
 `--worktree <its checkout>` through as well: the flag DEFAULTS to the invoking
 checkout, so a record run from your seat without it diffs your tree — and
 runs the step's completion gates in it — not the one the work
-happened in; the same failure the next paragraph exists to prevent. Parked
+happened in; the same failure the next paragraph exists to prevent. Once the
+on-behalf record lands, sweep the parked dir (`rm -rf` the literal
+`STEP-N.d` path the report named): the engine retired the token and copied
+the artifacts into its store at record, so the dir is a spent credential
+plus a rendered brief sitting in scratch every later agent shares. Parked
 state whose provenance you cannot tie to the step is a stop-and-ask, not a
 judgment call.
 
@@ -1287,6 +1292,21 @@ claimed by a holder you have ESTABLISHED is gone, `docket step reap STEP-N
 exactly the relay that spawned the corpse, and consequences identical to an
 expiry reap (write-class headroom hold included). Liveness is no longer
 TTL-only: do not sit out a long lease to get a step back.
+
+**Sweep the corpse's scratch with the reap.** A dead executor leaves its
+private step scratch dir behind — its parked token, its full rendered
+packet. Once the reap lands, remove it: pin `$TMPDIR` to its literal (per
+the expansion rule above) and `rm -rf <that literal>/STEP-N.d` — plus any
+legacy flat-root leftovers (`STEP-N.token`, `STEP-N.claim.json`,
+`STEP-N.packet.md`) from briefs rendered before the per-step dir existed.
+The reap already NULLed the lease's token hash, so a replay of the parked
+token is refused by the engine as an auth error (verified in docket.git:
+`ReapStepTx` in `internal/db/steps.go` clears owner/token_hash, and
+`authorizeLease` in `internal/db/leases.go` refuses on either) — the sweep
+is about not leaving a dead holder's credential and brief in the scratch
+root every later agent shares, not about revocation. Executors sweep their
+own dir on an ordinary record; the reap path is yours because the executor
+that would have swept is the thing that died.
 
 **`--ack-reap`.** This flag tells the engine "I have established that the
 crashed writer is gone." The engine cannot check that — it takes your word. So

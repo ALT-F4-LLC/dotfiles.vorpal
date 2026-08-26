@@ -432,6 +432,35 @@ function archetype(row, hint) {
     return 'executor-read'
 }
 
+// SCRATCH HYGIENE (DOT-834, tribunal-security condition on DKT-V284): every
+// file an executor writes — claim.json, token, packet.md, artifact/payload/
+// gap bodies, a judge's reconstructed target tree — lives in a private
+// per-step directory <TMP>/<step>.d, mode 0700, built fresh at claim
+// (rm -rf then mkdir -m 700, so a re-attempt of the same step id never
+// inherits a predecessor's leftovers) and removed by the executor in the
+// same breath as a record or fail that exits 0. Before this, tokens (0600)
+// and packets/claims (0644, world-readable) accumulated unbounded at the
+// shared TMPDIR root across runs and sessions — 911 stale tokens and 139
+// world-readable packets measured on one machine on 2026-08-25. A fresh run
+// cannot inherit stale files by construction: step ids are engine-minted and
+// monotonic, so a new run's dirs are new paths, and the old flat-root paths
+// are never read again. The interrupted path (executor dies holding a
+// claim) is swept by the conductor at reap — see conduct/SKILL.md, "A dead
+// spawn is reaped, not waited out."
+//
+// REPLAY OF A STALE TOKEN IS REFUSED BY THE ENGINE EITHER WAY — verified
+// read-only against docket.git @ b50e049 (DOT-834 acceptance criterion 1):
+// record/fail/heartbeat all authorize through the single predicate
+// authorizeLease() (internal/db/leases.go), which returns ErrNotHolder when
+// the lease's owner/token_hash are NULL. Completion NULLs them
+// (RetireStepTokenTx -> clearLeaseTx, internal/db/steps.go: "After this
+// commits, `complete` is AUTH_ERROR (R9)"), a reap NULLs them the same way
+// (ReapStepTx, internal/db/steps.go), and a re-claim mints a fresh random
+// token whose sha256 hash the old token cannot match (TokenMatches,
+// internal/model/lease.go, constant-time). The dir sweep is therefore
+// defense against exposure and accumulation of spent credentials and
+// rendered briefs, not the revocation mechanism itself.
+//
 // HOW THIS BRIEF IS WORDED, and it is load-bearing: state the required form,
 // omit the defense. A brief never addresses the safety classifier, never names
 // a technique by what it gets past, and never pre-argues its own
@@ -500,13 +529,17 @@ function bootstrap(row, r, isolated, isWrite) {
    for the shared tree; run their ISOLATED forms instead, everything else
    in their prose still binding:
 
-   1'. Claim, as separate plain commands, literal paths throughout:
-       \`docket step claim ${row.step} --owner wave:${row.step} --render --json > <TMP>/${row.step}.claim.json\`
-       \`jq -r '.data.token' <TMP>/${row.step}.claim.json > <TMP>/${row.step}.token\`
-       \`chmod 600 <TMP>/${row.step}.token\`
-       \`jq -r '.data.packet' <TMP>/${row.step}.claim.json > <TMP>/${row.step}.packet.md\`
-       \`cat /dev/null > <TMP>/${row.step}.claim.json\`
-       Then open <TMP>/${row.step}.packet.md with the Read tool — the packet
+   1'. Claim, as separate plain commands, literal paths throughout — the
+       first two build your PRIVATE STEP SCRATCH DIR (obligation 1's
+       rationale below explains it):
+       \`rm -rf <TMP>/${row.step}.d\`
+       \`mkdir -m 700 <TMP>/${row.step}.d\`
+       \`docket step claim ${row.step} --owner wave:${row.step} --render --json > <TMP>/${row.step}.d/${row.step}.claim.json\`
+       \`jq -r '.data.token' <TMP>/${row.step}.d/${row.step}.claim.json > <TMP>/${row.step}.d/${row.step}.token\`
+       \`chmod 600 <TMP>/${row.step}.d/${row.step}.token\`
+       \`jq -r '.data.packet' <TMP>/${row.step}.d/${row.step}.claim.json > <TMP>/${row.step}.d/${row.step}.packet.md\`
+       \`cat /dev/null > <TMP>/${row.step}.d/${row.step}.claim.json\`
+       Then open <TMP>/${row.step}.d/${row.step}.packet.md with the Read tool — the packet
        goes to a FILE here, not stdout, which also keeps a large brief from
        being truncated by the harness's inline-output cap.
        If the claim itself errors naming a packet file ("pinned by this run
@@ -516,7 +549,7 @@ function bootstrap(row, r, isolated, isWrite) {
        the claim already recorded and the token is gone; a re-claim burns an
        attempt on the same wall, and the relay's reap is the only way out.
    3'. Record with the token fed to stdin from its literal path:
-       \`docket step record ${row.step} ... < <TMP>/${row.step}.token\`
+       \`docket step record ${row.step} ... < <TMP>/${row.step}.d/${row.step}.token\`
 
    Uncommitted work in the shared tree is deliberately not visible, and
    your inputs arrive in the rendered packet, not from the tree.` : ''
@@ -547,11 +580,13 @@ read STEP-N or \${row.step}, and this one does not.${isolationNote}${pinNote}
    Every rule after the block still binds you.` : ', in ONE Bash call, exactly this:'}
 
    \`\`\`
-   docket step claim ${row.step} --owner wave:${row.step} --render --json > <TMP>/${row.step}.claim.json &&
-     jq -r '.data.token'  < <TMP>/${row.step}.claim.json > <TMP>/${row.step}.token &&
-     chmod 600 <TMP>/${row.step}.token &&
-     jq -r '.data.packet' < <TMP>/${row.step}.claim.json &&
-     cat /dev/null > <TMP>/${row.step}.claim.json
+   rm -rf <TMP>/${row.step}.d &&
+     mkdir -m 700 <TMP>/${row.step}.d &&
+     docket step claim ${row.step} --owner wave:${row.step} --render --json > <TMP>/${row.step}.d/${row.step}.claim.json &&
+     jq -r '.data.token'  < <TMP>/${row.step}.d/${row.step}.claim.json > <TMP>/${row.step}.d/${row.step}.token &&
+     chmod 600 <TMP>/${row.step}.d/${row.step}.token &&
+     jq -r '.data.packet' < <TMP>/${row.step}.d/${row.step}.claim.json &&
+     cat /dev/null > <TMP>/${row.step}.d/${row.step}.claim.json
    \`\`\`
 
    The last command TRUNCATES the claim file rather than deleting it. Its
@@ -560,8 +595,13 @@ read STEP-N or \${row.step}, and this one does not.${isolationNote}${pinNote}
 
    Every path is spelled out because YOUR SCRATCH ROOT <TMP> IS SHARED BY EVERY
    EXECUTOR IN THE WAVE (measured: concurrent subagents all get the same
-   directory). Your
-   step id is what makes these filenames yours; do not shorten them to
+   directory) — and it OUTLIVES the wave: the same root is handed to later
+   runs and sessions. That is why EVERYTHING you write goes inside
+   <TMP>/${row.step}.d — your PRIVATE STEP SCRATCH DIR, mode 0700, built
+   fresh by the rm/mkdir pair above (the \`rm -rf\` clears any stale
+   leftover from a prior attempt of this same step; never skip it, and
+   never aim it anywhere but that literal step-id path). Your step id is
+   what makes the dir and these filenames yours; do not shorten them to
    \`claim.json\` or \`token\`, or a sibling's claim overwrites yours.
 
    THE TOKEN IS RETURNED EXACTLY ONCE, in that response body — re-claiming is
@@ -571,10 +611,11 @@ read STEP-N or \${row.step}, and this one does not.${isolationNote}${pinNote}
    channel that reaches step 3.
 
    WRITING THE TOKEN TO THIS FILE IS REQUIRED AND AUTHORIZED — it is the
-   designed mechanism, not a leak. It is mode 0600 under your own step id, it
-   dies with the session's scratch directory, and the engine retires the token
-   the moment you record. Do not skip the file write to be cautious: skipping
-   it strands the step and is the WORSE outcome.
+   designed mechanism, not a leak. It is mode 0600 inside your own 0700 step
+   scratch dir, you remove that dir the moment your record lands (obligation
+   3), and the engine retires the token in the same instant. Do not skip the
+   file write to be cautious: skipping it strands the step and is the WORSE
+   outcome.
 
    The last command prints your rendered brief. Read it — it is your contract.
 
@@ -625,8 +666,8 @@ ${!isWrite ? `
      TWO plain calls, and \`<TMP>\` is the LITERAL from bootstrap (a), never
      the words \`$TMPDIR\`:
 
-       mkdir -p <TMP>/${row.step}-target
-       git archive <sha> | tar -x -C <TMP>/${row.step}-target
+       mkdir -p <TMP>/${row.step}.d/target
+       git archive <sha> | tar -x -C <TMP>/${row.step}.d/target
 
      The \`mkdir\` is not optional: \`tar -x -C\` on a directory that does not
      exist fails \`could not chdir\` and extracts NOTHING, so a single-call
@@ -691,7 +732,7 @@ ${!isWrite ? `
    STDIN${isolated ? ` — ISOLATED: run form 3' from obligation 0 (literal
    token path) in place of the command below; everything else still binds you.` : ':'}
 
-   \`docket step record ${row.step}${isWrite ? ' --worktree <YOUR CHECKOUT>' : ''} --artifact-file <TMP>/${row.step}-<kind>.md --metadata '{"model_requested":"${r.model_requested}","effort_requested":"${r.effort_requested}","model_resolved":"<model that served you>","effort_resolved":"<effort you ran at>"}' < <TMP>/${row.step}.token\`
+   \`docket step record ${row.step}${isWrite ? ' --worktree <YOUR CHECKOUT>' : ''} --artifact-file <TMP>/${row.step}.d/${row.step}-<kind>.md --metadata '{"model_requested":"${r.model_requested}","effort_requested":"${r.effort_requested}","model_resolved":"<model that served you>","effort_resolved":"<effort you ran at>"}' < <TMP>/${row.step}.d/${row.step}.token\`
 
    \`record\` is an exact alias of \`step complete\` — identical saga, identical
    flags — and it is the verb to use: some shells parse the bare word
@@ -728,7 +769,7 @@ ${isWrite ? `
 
    or on failure:
 
-   \`docket step fail ${row.step} --note '<why>' < <TMP>/${row.step}.token\`
+   \`docket step fail ${row.step} --note '<why>' < <TMP>/${row.step}.d/${row.step}.token\`
 
    \`fail\` takes ONLY --note and --metadata — there is no --artifact-file on
    it. What you learned goes in the note (or the metadata bag); do not try to
@@ -758,9 +799,12 @@ ${isolated ? `
    TRYING FORMS. Leave your deliverables parked where the brief already has
    them —
 
-     <TMP>/${row.step}.token       (intact, 0600 — do NOT truncate it)
-     <TMP>/${row.step}-<kind>.md   (your artifact body)
-     <TMP>/${row.step}-payload.json (your payload, when the contract has one)
+     <TMP>/${row.step}.d/${row.step}.token       (intact, 0600 — do NOT truncate it)
+     <TMP>/${row.step}.d/${row.step}-<kind>.md   (your artifact body)
+     <TMP>/${row.step}.d/${row.step}-payload.json (your payload, when the contract has one)
+
+   (the WHOLE step scratch dir stays intact in this case; the conductor
+   records from it on your behalf and sweeps it after)
 
    — and report RECORD BLOCKED: your step id, the refusal's first line
    verbatim, and every parked path including the token's. ONE refusal is an
@@ -784,10 +828,17 @@ ${isolated ? `
    reproduce it in your reply. There is deliberately no \`--token\` flag on any
    verb, because argv is world-readable through \`ps\`. Redirect it; never read it.
 
-   After the record command exits 0, leave the token file alone or truncate
-   it (\`cat /dev/null > <TMP>/${row.step}.token\`) — the engine retires
-   the token the moment the record lands, so the file is inert either way. If \`record\` or
-   \`fail\` errored, KEEP the token file INTACT and stop — it is the only
+   After the record command exits 0, REMOVE YOUR STEP SCRATCH DIR in one
+   plain call — \`rm -rf <TMP>/${row.step}.d\` — token, packet, and all. The
+   engine retires the token the moment the record lands (a replay is refused
+   as an auth error) and copies your artifact, payload, and gap files into
+   its store during the record itself, so nothing in the dir will ever be
+   read again. The sweep is part of the record, not optional tidying: a
+   leftover dir parks a spent credential and your full rendered brief in a
+   scratch root that later agents, runs, and sessions all share. The same
+   sweep follows a \`fail\` that exits 0. If \`record\` or
+   \`fail\` errored, KEEP the dir and its token file INTACT and stop — the
+   token is the only
    thing that can still drive this step, and losing it after a failed record
    turns a routine step failure into a zombie claim the lease must reap.
 
@@ -797,7 +848,7 @@ ${isolated ? `
    EVERY record carries an artifact file. The engine refuses a record without
    \`--artifact-file\` before it validates anything else — "a step completes by
    recording what it produced" — so the file is never optional. Create it WITH
-   BASH (a heredoc: \`cat > <TMP>/${row.step}-<kind>.md <<'EOF' ... EOF\`)
+   BASH (a heredoc: \`cat > <TMP>/${row.step}.d/${row.step}-<kind>.md <<'EOF' ... EOF\`)
    as a FRESH file whose name starts with your step id, then pass that path as
    \`--artifact-file\`. NEVER create this file with the Write tool: under the
    sandbox the Write tool materializes files at a DIFFERENT physical path
@@ -820,7 +871,7 @@ ${isolated ? `
      bracket-heavy): let the excerpt travel as file bytes rather than as
      command text. Write it to its own scratch file in small chunks with the
      SIZE form above, then \`cat\` that file into place — or build the
-     artifact with \`jq -n --rawfile body <TMP>/<step>-excerpt.txt\`.
+     artifact with \`jq -n --rawfile body <TMP>/<step>.d/<step>-excerpt.txt\`.
      Do not hand-encode, escape, or otherwise transform the content itself.
 
    (There is no \`--artifact-kind\`: the workflow's
@@ -837,7 +888,9 @@ ${isolated ? `
    \`{("kebab-key"): $v}\`; arrays as \`jq -n '[ ... ]'\` or by \`jq -s\` over
    per-element files.) Never
    write to or reuse a shared filename like \`change-summary.md\`: executors in
-   one wave share <TMP>, and under a shared name a racing sibling's bytes
+   one wave share the <TMP> root — your private step dir exists precisely so
+   your bytes cannot collide, so write inside it —
+   and under a shared name a racing sibling's bytes
    — or a predecessor's leftover when your own write silently fails — get
    recorded as YOUR artifact (this has happened in practice: one step
    recorded another step's summary exactly this way).

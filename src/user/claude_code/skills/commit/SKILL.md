@@ -117,7 +117,14 @@ remain in the tree, and the hook's output verbatim.
 
 ## 6. Report
 
-One plain-language summary: each commit's hash and subject, what was skipped
-and why, anything flagged by the guard. Name every dirty path left behind —
-each presumed-foreign file individually, so the operator sees what this
-session declined to touch. State that nothing was pushed.
+Before writing the summary, check it against three things:
+
+- Every modified or untracked path from §1's survey is either in a landed
+  commit or named as skipped, with why.
+- No secret-shaped file (§3) entered a commit.
+- No commit mixes unrelated intent (§2).
+
+Then one plain-language summary: each commit's hash and subject, what was
+skipped and why, anything flagged by the guard. Name every dirty path left
+behind — each presumed-foreign file individually, so the operator sees what
+this session declined to touch. State that nothing was pushed.

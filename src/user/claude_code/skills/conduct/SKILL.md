@@ -175,8 +175,11 @@ recognize instantly: every agent in a fanout returns `BOOTSTRAP DENIED` or a
 quoted permission refusal, at near-zero tokens, having claimed nothing.
 
 **Probe the completion gates against a clean scratch worktree before the
-first dispatch.** Run the bound workflow's pinned gate commands once in a
-throwaway worktree of clean HEAD (`git worktree add <tmp> HEAD`, run them,
+first dispatch.** Take the roster from `docket trust list` — the entries bound
+to this repo are what the workflow's gate names resolve to, and argv some
+earlier step happened to record is a subset of it, never the list — and run
+every one of those commands once in a throwaway worktree of clean HEAD (`git
+worktree add <tmp> HEAD`, run them,
 `git worktree remove <tmp>`). Spell `<tmp>` as a path under this session's
 scratchpad directory written out LITERALLY — the absolute path the harness
 named, never `$TMPDIR` or any other environment expansion — because that
@@ -738,6 +741,28 @@ vanished tree two panels had already rejected 3-0. An answer about WHY the
 branch diverged (the operator's own intentional commits, say) is an authorship
 answer; it does not tell you what claiming a stale target does, and it is not
 the confirmation this rule asks for.
+
+**Before a dispatch that carries hard gates, derive the roster from `docket
+trust list` and resolve each gate against the tree the gate will actually see.**
+The roster is the trust store's entries for this repo — never the argv a prior
+step happened to record. On RUN-59 a conductor re-ran the three commands
+`fix@1` had recorded (`make build`, `make test`, `make format`), called the
+gates probed, and dispatched `fix@2` into the five entries it had never looked
+at; three of those — `secret-scan`, `vuln-scan`, `sdet-abuse` — had no `make`
+target anywhere, and the wave parked the step `waiting-human` on all three,
+costing an operator-ruled override-pass. It read `trust list` an hour later,
+after the failures. The second half is the half that looks done and is not:
+gates run with the STEP WORKTREE as cwd, so resolve each entry's argv at that
+worktree's BASE commit (`git show <base>:makefile`, or whatever the argv
+actually invokes), not in the live checkout. Read that base rather than
+assuming it is the shared HEAD — `git worktree list --porcelain` for a
+checkout that already exists, the row's target sha otherwise, and where they
+disagree resolve against the OLDEST of them. The live checkout is a FALSE
+PASS: `fix@2`'s worktree was cut at `0de2a41`, the three stub targets landed
+55 minutes later in `5b12f79`, and a probe of the shared tree taken any time
+after that commit would have passed every gate the worktree was about to fail.
+A target missing at the base is a pre-dispatch stop-and-report, not a mid-wave
+discovery.
 
 Then invoke the wave **by scriptPath, always** — with the ABSOLUTE path: the
 Workflow tool does not expand `~` and resolves relative paths against the

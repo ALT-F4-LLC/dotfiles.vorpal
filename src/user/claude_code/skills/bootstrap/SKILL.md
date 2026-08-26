@@ -198,7 +198,12 @@ garbage. Then: diff the snapshot against `git status --porcelain
 --untracked-files=all` now, confirm
 every added line is a path under `docs/spec/` and that there are seven, and
 check each file opens with a `# ` title, carries a `Status: … <date>` line,
-and ends in its gaps section. Keep the paths it returns: §5a deletes exactly
+and ends in its gaps section. Also grep each file for hedge-and-puff language
+that has no place in an engineering spec — "leverage," "robust,"
+"cutting-edge," "it's worth noting," "at the end of the day," and the like —
+and flag any hit by file and line; these specs are read by §2's mining and
+§3's gate decisions, and unlike everything else this skill hands off, they
+are the one artifact meant to read as engineering prose. Keep the paths it returns: §5a deletes exactly
 those, so the record of what §0 wrote has to survive until then. You act on
 the checklist — respawn a stalled axis, revert a stray — you do not perform
 the reading. You are an orchestrator; the whole of this skill's hands-on work

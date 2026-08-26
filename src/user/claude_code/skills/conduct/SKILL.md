@@ -1963,6 +1963,21 @@ and its id goes in the approval note and in the option text, which then names
 an issue rather than a round that may never come. An option whose only
 guarantee is your intention is not one you may offer.
 
+**`override-pass` records a generic pass; it evaluates nothing and routes
+nothing.** The verb writes a plain `pass` on the step it resolves — it does not
+compute that step's threshold, does not re-read its gate results, and does not
+schedule what a genuine pass would have led to. Steps INTERPOSED on that
+outcome — a tribunal gate the workflow places after a verify, a re-review round
+conditioned on the verdict — are not routed to: they go `skipped`, and the
+engine says so only in a warning AFTER the mutation (filed as DKT-861). On
+RUN-61 an override-passed `verify@2` skipped `verify-tribunal@2` (STEP-2780)
+outright and the panel never ruled; the dissent it was meant to hear reached no
+record. So when the interposed condition should still apply, resolve those
+steps DIRECTLY — the engine's own warning text says exactly this — rather than
+expecting the override to carry into them, and read `docket next` / `step show`
+on the interposed rows after any override-pass to see which of them the engine
+actually left standing.
+
 **A gate that failed on a broken check is settled on evidence, not overridden
 blind.** When a gate's output shows it never actually ran (one case: govulncheck
 DNS-failing in the sandbox, then reporting "a reachable vulnerability"),
@@ -2040,6 +2055,23 @@ the boundary," and no fixer ever saw the ruling. Say what an approve changes
 needs its own issue. Gathering the evidence FOR a presentation — an artifact
 larger than one engine command, a diff — may be delegated to an executor-read
 agent; the presenting itself is yours.
+
+**An option that promises engine routing is checked against the VERB before it
+is written.** "the tribunal will then rule", "the fixer gets another round",
+"the panel decides from here" — each names a routing the engine either performs
+or does not, and the check is one read away: the verb's own semantics as
+documented above, plus `docket step show` on the step the promised routing
+would reach. Run it BEFORE the option text exists, not after the operator has
+answered it. Where the verb does not perform that routing, the option may not
+claim it — reword it to what the verb actually records, or offer instead the
+answer that does reach that step (resolving the interposed step directly). On
+RUN-61 an option labelled "Accept, let the panel rule" described an
+override-pass as routing to the verify tribunal with the dissent on record;
+override-pass routes to nothing, the tribunal step went `skipped`, and the
+panel the operator thought they were buying never sat. The rule above says
+present only what the decision reaches; this one says how you find out what it
+reaches, and the finding out is a read you owe every time an option's text
+names a later step.
 
 Nothing here — panel or operator — has an auto-approve, a default, or a
 timeout. A parked run stays parked, and that is fine: it can be resumed by any

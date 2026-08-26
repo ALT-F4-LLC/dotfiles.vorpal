@@ -132,6 +132,13 @@ straight to FINAL.
 
 ## 5. Report and stop
 
+Before writing it, check the summary and each proposal's one-sentence
+defense against §2's evidence: no hedged claim standing without the
+duplicate, staleness, or priority fact behind it, no vague label ("seems
+off") standing in for the reason. The relay and the operator read this
+prose directly — it gets the same scrutiny §2 already gives the judgment
+underneath it.
+
 One summary, plain language: how many issues surveyed, the stale window
 used, what was edited automatically (by kind, with ids), what was
 proposed, what the operator approved or declined, and what was applied.

@@ -39,6 +39,13 @@ secret-scan:
 doc-validate:
     .docket/bin/doc-validate
 
+# Shipped by the docket corpus and installed by `just activate`, so this is the
+# one recipe reaching outside .docket/bin. Silenced with `@` because the engine
+# hands the action a JSON bundle on stdin and parses exactly one JSON document
+# back on stdout.
+doc-record:
+    @"$HOME/.docket/bin/doc-record"
+
 citation-check:
     .docket/bin/citation-check
 

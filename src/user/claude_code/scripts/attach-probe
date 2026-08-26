@@ -150,9 +150,49 @@ for tree in config bin; do
     if diff_out=$(diff -rq "$src" "$inst" 2>&1); then
         say OK "corpus/$tree" "identical: $src == $inst"
     else
-        say DRIFT "corpus/$tree" "$(printf '%s\n' "$diff_out" | grep -c .) file(s) differ — a stale pin cannot be fixed mid-run"
-        printf '%s\n' "$diff_out" | detail
-        bad=1
+        # A one-sided DIRECTORY that holds no non-directory entry at ANY depth
+        # cannot move a pin: a pin is the sha256 of a FILE, and there is no
+        # file under it to hash. Harness scratch (`.claude/.cc-writes`) lands
+        # in the install tree this way and made this check fail on every run
+        # for a non-condition — a stop-and-report signal that always fires is
+        # one that gets read past. Such lines are set aside, and NAMED in the
+        # output rather than silently dropped. Everything else still counts:
+        # a directory holding a file however deep, a dangling or any other
+        # symlink (not a directory, so `! -type d` matches it), and every
+        # "Files ... differ" line.
+        real=''
+        void=''
+        while IFS= read -r line; do
+            keep=$line
+            case "$line" in
+                'Only in '*': '*)
+                    rest=${line#Only in }
+                    p="${rest%%: *}/${rest#*: }"
+                    if [ -d "$p" ] && [ ! -L "$p" ] &&
+                       [ -z "$(find "$p" ! -type d -print 2>/dev/null | head -n 1)" ]; then
+                        void="$void$line"$'\n'
+                        keep=''
+                    fi
+                    ;;
+            esac
+            [ -n "$keep" ] && real="$real$keep"$'\n'
+        done <<EOF
+$diff_out
+EOF
+        n_real=$(printf '%s' "$real" | grep -c .)
+        n_void=$(printf '%s' "$void" | grep -c .)
+        if [ "$n_real" -eq 0 ]; then
+            say OK "corpus/$tree" "no file differs; $n_void file-free director(ies) disregarded — no pin surface"
+        else
+            say DRIFT "corpus/$tree" "$n_real file(s) differ — a stale pin cannot be fixed mid-run"
+            printf '%s' "$real" | detail
+            bad=1
+        fi
+        if [ "$n_void" -gt 0 ]; then
+            { echo 'disregarded — one-sided but holds no file at any depth, so nothing there can be pinned:'
+              printf '%s' "$void"
+            } | detail
+        fi
     fi
 done
 

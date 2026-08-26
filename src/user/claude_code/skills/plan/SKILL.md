@@ -25,6 +25,14 @@ Rules you must not fight, same as the seat's own:
   is a *fresh* invocation of this skill — not this one continuing to watch.
 - **Acceptance criteria are copied verbatim.** The seat may add ACs it
   derived and say so; it may not paraphrase the operator's.
+- **You record the graph as given.** The seat carves issues narrow and
+  prefix-disjoint on purpose, so the run's first wave is as wide as it can
+  honestly be. Do not merge two issues because they look like one job, do not
+  widen or combine their scope globs, and do not add a `depends_on` edge the
+  package does not list because an order seemed natural to you. Every such
+  convenience serializes a wave the seat sized deliberately. A graph you
+  believe is wrong goes back to the seat with `SendMessage` for a fresh
+  package — it never gets patched in transit.
 
 **Three intakes, picked by the argument, all seated.** `/plan <request>`,
 `/plan DKT-N`, and bare `/plan` (the literal word `backlog` counts as bare)
@@ -116,8 +124,10 @@ re-derive the batch yourself.
 
 ## 4. Stop
 
-Present the recorded run — the issues, their edges, the scopes, the budget —
-using the seat's presentation notes, and say plainly where the approval to
+Present the recorded run — the issues, their edges, the scopes, the budget,
+and the package's `First-wave width` (how many issues carry no incoming edge,
+so how many run concurrently on the first dispatch) — using the seat's
+presentation notes, and say plainly where the approval to
 activate lives now: it is a tribunal vote that `conduct` convenes and
 surfaces when the run is driven. Then TaskStop the seat you spawned in §1,
 by that same name (`planner`, or its suffixed form), if it's still alive —

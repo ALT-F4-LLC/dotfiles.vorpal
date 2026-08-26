@@ -63,6 +63,22 @@ const SANDBOX_DOCKET_STORE_PATH: &str = "~/.docket";
 // `Bash(docket trust add/rm:*)` ask rules below), so this only removes the
 // sandbox noise, not the human gate.
 const SANDBOX_DOCKET_TRUST_PATH: &str = "~/.config/docket";
+// macOS `mktemp(1)` does NOT honour $TMPDIR: it targets the per-user Darwin
+// temp root (`getconf DARWIN_USER_TEMP_DIR`, /var/folders/<hash>/T), which no
+// allowWrite entry covered, so every bare `mktemp` was denied from inside the
+// sandbox. Probed 2026-08-25 from a sandboxed seat: $TMPDIR read
+// /tmp/claude-501 while `mktemp` still failed "mkstemp failed on
+// /var/folders/.../T/tmp.XXXX: Operation not permitted" — both directly and
+// inside a make recipe, so the variable is not a workaround. This blocked
+// agentic-services' newly-real `secret-scan` gate, whose recipe opens its
+// file list with `mktemp`: it failed exit 2 on CLEAN HEAD in RUN-60's
+// pre-dispatch gate probe and passed exit 0 unsandboxed. That gate gates
+// every implement and fix step of security-change and standard-change, so
+// without it the whole run parks on an environment fault. Granting the root
+// rather than one hashed subdirectory keeps it portable across machines and
+// users; the OS already scopes everything beneath it per-uid, and no
+// credential store lives there.
+const SANDBOX_DARWIN_TEMP_ROOT: &str = "/var/folders";
 // Bash process substitution — `diff <(a) <(b)` — hands the tool a /dev/fd/N
 // path, and a `-` operand resolves the same way. Both are denied: probed
 // 2026-08-20, `diff <(echo a) <(echo b)` returns "diff: /dev/fd/11: Operation
@@ -512,6 +528,7 @@ impl ClaudeCode {
                     .iter()
                     .chain(std::iter::once(&SANDBOX_AGENT_MEMORY_PATH))
                     .chain(std::iter::once(&SANDBOX_BARE_REPO_ROOT))
+                    .chain(std::iter::once(&SANDBOX_DARWIN_TEMP_ROOT))
                     .chain(std::iter::once(&SANDBOX_DOCS_CACHE_PATH))
                     .chain(std::iter::once(&SANDBOX_DOCKET_STORE_PATH))
                     .chain(std::iter::once(&SANDBOX_DOCKET_TRUST_PATH))

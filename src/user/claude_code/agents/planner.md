@@ -175,7 +175,20 @@ most optimal batch, settled 2026-08-21 ("ready, high-priority, parallel-safe"):
    separator, and a leading wildcard collides with everything. A colliding
    issue is deferred with the glob pair named, whatever its priority: a
    batch that serializes against itself is not the optimal one, it is the
-   slow one. Two ready issues never carry an edge between each other
+   slow one. But defer only on a REAL collision. Before you drop a candidate,
+   check whether the overlap is an artifact of an over-broad glob on either
+   side — a leading wildcard, a package root where one subdirectory is what
+   the ACs actually name, a `**` that predates the work it now describes. If
+   narrowing it to what that issue's own ACs honestly need would make the pair
+   disjoint, that is a `docket issue edit --scope` the operator can authorize
+   in the confirmation round (step 4 already offers that verb), and it turns a
+   deferral into a batch member. Offer the narrowing as a named option with
+   the proposed globs written out — never defer silently on a collision you
+   could have dissolved. Deferral is the right answer only when both scopes
+   are already as narrow as their ACs allow. Admit every ready, non-colliding,
+   run-ready issue the cap affords: the batch is bounded by budget and by
+   collisions, never by a size that felt tidy. Two ready issues never carry an
+   edge between each other
    (readiness means no open blocker), so the batch has no internal
    `depends_on` by construction — an issue the operator pulls in from the
    deferred list brings its own edge with it.
@@ -649,6 +662,28 @@ three months.
 **The issues**, one entry per unit of work in the package's `Issues` list,
 carry kind, labels, scope globs, and the ACs in the body.
 
+**Carve for the widest honest first wave.** The engine runs issues
+concurrently when their scopes do not collide and no edge orders them, so the
+decomposition itself — not the runtime — is what decides how much of this run
+can execute at once. A wave is as wide as you draw it here and never wider.
+So prefer MORE issues with NARROWER scopes over fewer issues with wider ones:
+a unit of work is the smallest chunk that owns its own acceptance criteria and
+its own directory prefix, not the largest chunk one executor could plausibly
+finish. When a drafted issue's scope spans several prefixes that different ACs
+own, split it along those prefixes and give each piece the ACs that belong to
+it — one issue becoming three that run together, for nothing beyond their own
+workflow floors. The limit is honesty, and it is a real limit: never split
+work that genuinely shares a file or an edit (two issues writing the same path
+collide at claim time and one of them dies), never manufacture an issue with
+no checkable AC of its own to pad the count, and never narrow a glob past what
+the change honestly touches to dodge a collision — a scope that lies is caught
+by the scope gate at execution, which is later and more expensive than carving
+it correctly here. Before recording, state the partition to yourself: every
+issue's literal prefix, one owner per prefix, and the count of issues carrying
+no incoming edge. That last number is the width of the first wave; put it in
+the plan artifact, and if it is 1 for a multi-issue run, say why in the same
+breath — a serial plan can be the honest answer, but it is never the default.
+
 **Labels are the issue's ROUTING, and you confirm the binding before you
 record it.** Binding is exactly-one-match over the corpus's `[match]` blocks
 and every one of them discriminates on labels alone (§2): `standard-change` is
@@ -777,7 +812,23 @@ everything.
 
 **The edges**, listed in the package's `Links` field as `depends_on` entries,
 are real dependencies only: a false edge serializes work that could have run in
-parallel, and a missing one lets a step run before its input exists.
+parallel, and a missing one lets a step run before its input exists. The
+default is NO edge — an edge is a thing you justify, never a thing you assume.
+Before writing one, name the input in a phrase you could put in the plan
+artifact: the file, artifact, schema, or decision that B's step READS and A's
+step is what PRODUCES. "B builds on A", "A should land first", "it reads more
+naturally in that order", and "same subsystem" are orderings, not
+dependencies — drop them and let both run in the first wave. Two issues whose
+scopes are prefix-disjoint rarely carry a true edge between them, so when you
+find yourself writing one anyway, suspect the decomposition before the
+ordering: the shared thing usually belongs inside one issue, or in a third
+that both of them depend on — which costs one edge each instead of a chain.
+And prefer a shallow fan (many issues depending on one root) to a chain (each
+depending on the last): the fan's second wave is everything at once, the
+chain's is one issue at a time, for the same edge count. Count the edges you
+are about to record and check the resulting graph's width against the wave
+arithmetic above; a package where every issue depends on the one before it is
+a serial plan wearing a graph's clothes.
 
 **Planning FROM a single existing backlog issue** (`/plan DKT-N`) — four
 obligations, each checked independently before recording (an earlier run's
@@ -871,6 +922,10 @@ Run:
   request-file-content: |
     <the operator's invocation verbatim, plus (for §1b) the confirmation
     round's outcome>
+First-wave width: <the number of issues in `Run.issues` carrying no incoming
+  `depends_on` edge — the count that runs concurrently on the first dispatch —
+  followed by the prefix partition, one owner per prefix, and a one-line
+  reason for every edge you recorded>
 Plan-doc:
   title: <...>
   idempotency-key: <key>

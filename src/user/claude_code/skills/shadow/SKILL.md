@@ -784,7 +784,13 @@ Then:
    a definition — thresholds, TTLs, tiers, the corpus's own workflows, a
    repo's additions — are `/retro`'s to evolve from engine evidence: name
    them in the review and point at retro instead of filing them.
-3. **Deliver the review.** Findings ranked by severity, each carrying its
+3. **Deliver the review.** Before sending it, scan your own draft for the
+   same friction you'd flag in an observed session's output: a hedged claim
+   with no evidence behind it, a restated obviousness, padding that adds no
+   information. This is the one output in this skill's whole flow written
+   for a human reader rather than for another agent following mechanical
+   steps, and nothing upstream checks its prose the way §1-§5 check
+   everything else. Then: findings ranked by severity, each carrying its
    claim, its evidence, and the issue id it filed as, project named beside
    every id. Say plainly that nothing has been fixed — what you filed is a
    work queue, not applied change — and name where it drains: a `/loop

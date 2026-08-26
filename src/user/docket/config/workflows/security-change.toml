@@ -1,7 +1,11 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 24  # 24: DOT-786 — `reconcile`'s threshold keyed on `severity`,
+version = 25  # 25: DOT-792 — comment on `security-vote`'s judge-* voters:
+              #   deliberately judge-*, not tribunal-* (different policy.toml
+              #   tier, different remit); documentation only, no behavior
+              #   change.
+              # 24: DOT-786 — `reconcile`'s threshold keyed on `severity`,
               #   which is always present (max over every member, settled
               #   ground included), while every other multi-judge workflow
               #   (standard-change, ui-change, spec-doc, spec-project) keys
@@ -132,6 +136,11 @@ name = "security-vote"
 on_fail = "fix-loop"
 type = "vote"
 vote_rule = "security-acceptance"
+# Deliberately judge-*, not tribunal-*: this is the security-acceptance panel,
+# not the operator-stand-in tribunal, and policy.toml routes the two seat
+# families to different tiers (judge-* opus-high, tribunal-* fable/opus-xhigh).
+# As voters these seats are briefed by the workflow scripts' LENSES table, not
+# by contracts/judge-*.md — one name, two remits (DOT-792).
 voters = ["judge-security", "judge-architecture", "judge-correctness"]
 
 [[step]]

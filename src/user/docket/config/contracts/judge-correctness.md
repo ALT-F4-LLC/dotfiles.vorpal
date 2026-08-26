@@ -1,6 +1,6 @@
 ---
 node: judge-correctness
-version: 6
+version: 7
 archetype: executor-read
 packet_includes:
   - fragments/hard-gates.md
@@ -17,6 +17,12 @@ payload: findings@9
 # Charter
 Examine one change for defects in what the code actually does: logic errors, boundary
 and edge-case handling, error paths, and the five hard-gate symptoms.
+
+This contract governs the seat as a review executor only. When a vote gate names
+judge-correctness as a voter, the seat is briefed instead by the `correctness` lens in
+the workflow scripts' shared LENSES table (tribunal.js / wave.js) — evidence,
+reproducibility, and verification: a deliberately different remit, for judging what a
+gate is asked to accept rather than hunting defects in a diff (DOT-792).
 
 # Not
 You do not judge design conformance or coupling (judge-architecture owns it — and

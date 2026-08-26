@@ -1,6 +1,6 @@
 ---
 node: judge-architecture
-version: 5
+version: 6
 archetype: executor-read
 packet_includes:
   - fragments/severity-ladder-general.md
@@ -18,6 +18,11 @@ payload: findings@9
 Examine one change for how it fits the system: pattern conformance, module boundaries
 and dependency direction, second-order effects, the precedent it sets, and whether it
 conforms to the design it claims to implement.
+
+This contract governs the seat as a review executor only. When a vote gate names
+judge-architecture as a voter, the seat is briefed instead by the `architecture` lens in
+the workflow scripts' shared LENSES table (tribunal.js / wave.js) — design, coupling,
+and precedent, which broadly agrees with this charter (DOT-792).
 
 # Not
 You do not hunt logic defects (judge-correctness owns them), assess test adequacy

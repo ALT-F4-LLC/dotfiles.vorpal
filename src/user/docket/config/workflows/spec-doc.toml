@@ -1,7 +1,7 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by a research step, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec), escalating to the operator."
 name = "spec-doc"
-version = 19
+version = 20
 
 [match]
 labels_any = ["spec-doc"]
@@ -227,6 +227,12 @@ name = "accept-vote-tdd"
 on_fail = "fix-loop"
 type = "vote"
 vote_rule = "doc-acceptance"
+# Deliberately judge-*, not tribunal-*: doc-acceptance is the judges' own
+# panel, not the operator-stand-in tribunal (`accept-human` below), and
+# policy.toml routes the two seat families to different tiers (judge-*
+# opus-high, tribunal-* fable/opus-xhigh). As voters these seats are briefed
+# by the workflow scripts' LENSES table, not by contracts/judge-*.md — one
+# name, two remits (DOT-792).
 voters = ["judge-architecture", "judge-security", "judge-correctness"]
 when = "labels contains doc:tdd"
 
@@ -237,6 +243,7 @@ name = "accept-vote-adr"
 on_fail = "fix-loop"
 type = "vote"
 vote_rule = "doc-acceptance"
+# judge-*, deliberately — see accept-vote-tdd (DOT-792).
 voters = ["judge-architecture", "judge-security", "judge-correctness"]
 when = "labels contains doc:adr and labels != doc:tdd"
 

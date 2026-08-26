@@ -283,6 +283,20 @@ function resolveSeat(seat, policy, labels = []) {
 // An unrecognised seat gets the whole-system lens rather than a throw — a gate
 // decided by a generically-briefed judge is still decided; a thrown panel
 // leaves the gate undecidable.
+//
+// A lens is the seat's VOTER brief only. The same trailing names also exist
+// as review-executor contracts (contracts/judge-<name>.md), which govern the
+// seat when a workflow fans it out as a reviewer — one name, two remits,
+// resolved by row kind. architecture and security broadly agree across the
+// two; correctness deliberately does not: the contract hunts logic defects in
+// a diff, while the lens below interrogates the evidence behind what the gate
+// is asked to accept (DOT-792; the contract carries the mirror note).
+//
+// Only lenses reachable from a current workflow's voter names are kept
+// (architecture, security, correctness, design). completeness, feasibility,
+// and risk went with the workflows that named them (release, retro,
+// security-load-bearing); a seat re-adding one must re-add its lens or it
+// falls to the whole-system brief below.
 const LENSES = {
     architecture:
         'DESIGN, COUPLING, AND PRECEDENT. Does this fit the shape of the system it ' +
@@ -304,21 +318,6 @@ const LENSES = {
         'together — flows that complete, states that are all accounted for, names that ' +
         'mean what they say? Where does the design contradict itself or the system it ' +
         'joins, and what would a first-time user get wrong because of it?',
-    completeness:
-        'COVERAGE AND OMISSION. Is every requirement, decision, and affected surface ' +
-        'accounted for, or does the document settle the easy parts and go quiet on the ' +
-        'hard ones? What is missing that the author should have known to include, and ' +
-        'would a reader discover the gap before or after acting on this?',
-    feasibility:
-        'BUILDABILITY WITHIN REAL CONSTRAINTS. Can this actually be built and operated ' +
-        'as described, by the people and systems that will have to, with the ' +
-        'dependencies it assumes available? Where does it rely on something unproven, ' +
-        'and what breaks first when an estimate here turns out optimistic?',
-    risk:
-        'FAILURE MODES, REVERSIBILITY, AND EXPOSURE. What goes wrong if this ships as ' +
-        'designed, how likely, and who bears it? Which choices here are hard to walk ' +
-        'back, and does anything cheaper preserve the option? Is every named risk ' +
-        'paired with a mitigation someone could actually execute?',
 }
 const WHOLE_SYSTEM_LENS =
     'WHOLE-SYSTEM REVIEW. No narrower lens is declared for your seat, so read this ' +

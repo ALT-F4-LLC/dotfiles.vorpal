@@ -173,6 +173,18 @@ preflight, stale-install diffs against the last `just activate`, and a fresh
 `cat` of `policy.toml` (never trust a prior session's re-cat — the file may
 have changed).
 
+**Before writing the prompt, check it against this list — each item filled in
+or explicitly marked not applicable, never silently dropped:** absolute cwd
+and branch; every wave's `wfId` and journal path; the full original `Workflow`
+args for anything a later session might resume; every un-integrated writer
+sha with its worktree path; whether this run's budget raise has already been
+used; operator precedent rulings and any unexecuted answer; held peer
+authorization claims; every tribunal proposal id with its tally; foreign
+`wf_*` worktree entries observed; and every advisory note carrying
+**`DISPOSITION REQUIRED:`**. This is the same list as above, checked as a gate
+rather than trusted as a memory — the earlier pause that dropped an unlabelled
+lead is exactly what a silent gap here produces again.
+
 ## Recording and printing the resume prompt
 
 The prompt is a single document, delivered two ways — the operator ruling was

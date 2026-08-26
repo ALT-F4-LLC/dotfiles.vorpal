@@ -24,13 +24,17 @@ Gathering and analysis are agent work: spawn `executor-read` analysts (one,
 or one per run when runs are many), each briefed with the corpus contract
 `~/.docket/config/contracts/retro-analyst.md` (source in the dotfiles
 checkout: `src/user/docket/config/contracts/retro-analyst.md`) — the node the
-corpus already defines for exactly this — plus §2's table verbatim. The variant
-`policy.toml` gives `retro-analyst` binds only when the retro pipeline
-dispatches that node through the wave; a skill-side spawn carries no variant, so
-seat each analyst through the built-in `Workflow` tool's `agent()` call with
-the intended `model` and `effort` set explicitly in its opts — the plain
-`Agent` tool carries no effort parameter, and through it the analysts
-silently run at the session default. They run the verbs and return evidence-labelled
+corpus already defines for exactly this — plus §2's table verbatim.
+`retro-analyst` carries no `policy.toml` row: the retro pipeline that once
+dispatched it through the wave was removed (`retro.toml`, commit `87713f8`,
+2026-08-22 — deliberate and permanent, not an accident: "no issue ever carried
+the retro label, so no run ever bound it" and this skill "covers the same
+analyze/vote/apply loop on its own"), and the row went with it. The skill-side
+spawn below is the only path this node has, so seat each analyst through the
+built-in `Workflow` tool's `agent()` call with the intended `model` and
+`effort` set explicitly in its opts — the plain `Agent` tool carries no effort
+parameter, and through it the analysts silently run at the session default.
+They run the verbs and return evidence-labelled
 findings; you compose §3's proposals and hold the approval conversation. The
 verbs, for their briefs:
 

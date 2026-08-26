@@ -1483,6 +1483,11 @@ file carries `-l conduct`, the provenance label for a conductor's own filing:
 condition (**Gates**), so borrowing either miscounts that skill's yield (one
 conductor filed its own gate-failure fix under `-l shadow`).
 
+Under zsh, QUOTE every glob-shaped `--scope` value (`--scope 'src/**'`) or run
+`set -f` first — an unquoted `path/**` is glob-mangled by the shell and the
+scopes are silently dropped from the created issue (2026-08-25: DOT-834 was
+created with all three of its scopes missing, repaired only by a later edit).
+
 ## Gates
 
 A gate is any decision the run cannot make for itself, and there are two paths.

@@ -146,9 +146,9 @@ const run = async (theRows, results, probes) => {
 let out = await run(RUN43(), {
     'STEP-1547': { step: 'STEP-1547', status: 'spawn-failed', text: null },
 })
-ok(statusOf(out, 'STEP-1550') === 'skipped-dead-issue' &&
-   statusOf(out, 'STEP-1563') === 'skipped-dead-issue',
-    'AC1: later-stage rows of the spawn-failed issue settle skipped-dead-issue')
+ok(statusOf(out, 'STEP-1550') === 'skipped-chain-dead' &&
+   statusOf(out, 'STEP-1563') === 'skipped-chain-dead',
+    'AC1: later-stage rows of the spawn-failed issue settle skipped-chain-dead')
 ok(!SPAWNED.includes('STEP-1550') && !SPAWNED.includes('STEP-1563'),
     'AC1: and neither of them is spawned')
 ok(SPAWNED.includes('STEP-2001') && SPAWNED.includes('STEP-2002') &&
@@ -165,7 +165,7 @@ ok(out.length === 5 && out.every((r) => r && typeof r.step === 'string'),
 out = await run(RUN43(), { 'STEP-1547': null })
 ok(statusOf(out, 'STEP-1547') === 'spawn-failed',
     'a null settle is still recorded as spawn-failed')
-ok(statusOf(out, 'STEP-1550') === 'skipped-dead-issue' && !SPAWNED.includes('STEP-1550'),
+ok(statusOf(out, 'STEP-1550') === 'skipped-chain-dead' && !SPAWNED.includes('STEP-1550'),
     'and it kills the chain exactly like an explicit spawn-failed')
 
 // ---- The guard against over-killing: a healthy stage still ladders ----
@@ -177,7 +177,7 @@ ok(SPAWNED.length === 5 && out.every((r) => r.status === 'returned'),
 out = await run(RUN43(), {
     'STEP-1547': { step: 'STEP-1547', status: 'gate-rejected', text: null },
 })
-ok(statusOf(out, 'STEP-1550') === 'skipped-dead-issue' &&
+ok(statusOf(out, 'STEP-1550') === 'skipped-chain-dead' &&
    statusOf(out, 'STEP-2002') === 'returned',
     'gate-rejected still kills its own chain and only its own')
 
@@ -213,7 +213,7 @@ ok(statusOf(out, 'STEP-1563') === 'skipped-not-claimable',
     'DOT-560: a post-barrier probe reading "pending" settles skipped-not-claimable')
 ok(!SPAWNED.includes('STEP-1563'),
     'DOT-560: and no executor is spawned for it')
-ok(statusOf(out, 'STEP-1572') === 'skipped-dead-issue' && !SPAWNED.includes('STEP-1572'),
+ok(statusOf(out, 'STEP-1572') === 'skipped-chain-dead' && !SPAWNED.includes('STEP-1572'),
     'DOT-560: skipped-not-claimable still kills the rest of the issue\'s chain')
 
 // Fail-open is the whole reason the probe is safe to run: anything the regex

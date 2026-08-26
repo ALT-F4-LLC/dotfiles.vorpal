@@ -716,7 +716,11 @@ Then:
      definition that is wrong), `task` for edits and script extractions,
      `chore` for a paper-cut batch.
    - `-l shadow` for provenance, plus `--scope` on the paths the remedy
-     touches when you know them.
+     touches when you know them. Under zsh, QUOTE every glob-shaped
+     `--scope` value (`--scope 'src/**'`) or run `set -f` first — an
+     unquoted `path/**` is glob-mangled by the shell and the scopes are
+     silently dropped (2026-08-25: DOT-834 was created with all three of
+     its scopes missing, repaired only by a later edit).
 
    A finding whose remedy would add a trust entry, widen a sandbox
    allowlist, change what a hook permits, or destroy uncommitted work still

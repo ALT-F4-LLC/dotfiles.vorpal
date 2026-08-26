@@ -2217,8 +2217,9 @@ for (const k of stageKeys) {
     if (parked) break
     const group = stages.get(k).filter((row) => {
         if (row.issue && deadIssues.has(row.issue)) {
-            byStep.set(row.step, { step: row.step, status: 'skipped-dead-issue', text: null })
-            log(`${row.step}: skipped — issue ${row.issue}'s chain died at an earlier stage`)
+            byStep.set(row.step, { step: row.step, status: 'skipped-chain-dead', text: null })
+            log(`${row.step}: skipped — this wave's chain died at an earlier ` +
+                `stage (the issue itself is untouched)`)
             return false
         }
         return true

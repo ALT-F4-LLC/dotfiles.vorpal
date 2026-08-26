@@ -1799,6 +1799,27 @@ a WRONG question, and the operator pays for it twice: once for the answer,
 once for the correction. Run the check first, and carry what it found into the
 question's own text.
 
+**"Tracked by <ID>" is a claim with a status, and you read the status before
+you relay it.** Whenever a park message, a gate's output, a judge rationale, or
+a trust-store annotation offers a tracking issue as the reason a residual gap
+is acceptable, run `docket issue show <id>` in the same iteration as the
+presentation and put the issue's CURRENT state — open and where, or closed and
+when, or no such id — beside the claim in the question itself. A closed or
+missing tracker is not bookkeeping to tidy afterwards: it is the gate-relevant
+fact that the gap the operator is being asked to accept has nobody carrying it,
+and it belongs in front of them before they answer rather than in a later
+correction. The failure mode is authorization granted on a stale tracked-by
+claim: on RUN-62 three sdet-abuse override-passes went to the operator as
+"AB-1..AB-4 still untested, tracked by the already-open AGT-311" — inherited
+verbatim from a trust-entry annotation and never checked — while AGT-311 had
+been closed done seventeen hours earlier the same day. The operator bought
+three passes believing the residual gap had an open tracker; it had none. Where
+the read shows the tracker closed or gone, say so IN the question and offer
+filing a fresh one as part of the answer — the disposition-files-the-issue rule
+below is the shape that takes. Ids inside a recorded ruling carry their own
+required read (see "Ending and resuming"); this rule governs any id a gate
+presentation leans on, whoever wrote it.
+
 A gate that PASSES over a reject or a concerns cast is not finished when you
 relay it: link the proposal to the downstream issue(s) the finding bears on —
 `docket vote link <proposal-id> --issue <successor>` — so the next planner

@@ -1,11 +1,12 @@
 ---
 node: fix
-version: 2
+version: 3
 archetype: executor-write
 packet_includes:
   - fragments/code-philosophy.md
   - fragments/tdd-discipline.md
   - fragments/scope-discipline.md
+  - fragments/evidence-rules.md
   - fragments/truth-first.md
   - fragments/vorpal-toolchain.md
 emits: change-summary

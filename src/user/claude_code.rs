@@ -32,7 +32,19 @@ const SENSITIVE_PATHS: &[&str] = &[
     "~/Desktop/**",
     "~/Downloads/**",
 ];
-const SENSITIVE_PATHS_DENY_EDIT_ONLY: &[&str] = &["/Applications/**", "/Library/**", "/System/**"];
+// The docket trust store itself (DOT-812). Edit-only, not read-denied: the
+// Edit/Write TOOLS have no legitimate reason to touch trust.toml (the
+// sanctioned write path is the `docket trust add/rm` CLI verb, gated by the
+// ask rule below and by docket-trust-guard-hook.sh for the executor
+// archetypes), while `docket trust list` and anything else that reads the
+// file must keep working. Read alongside SANDBOX_DOCKET_TRUST_LOCK_PATH
+// above, which closes the same file to a sandboxed Bash write.
+const SENSITIVE_PATHS_DENY_EDIT_ONLY: &[&str] = &[
+    "/Applications/**",
+    "/Library/**",
+    "/System/**",
+    "~/.config/docket/trust.toml",
+];
 const SENSITIVE_PATHS_DENY_READ_ONLY: &[&str] = &["~/.aws/**"];
 
 const SANDBOX_AGENT_MEMORY_PATH: &str = "~/.claude/agent-memory";
@@ -57,12 +69,27 @@ const SANDBOX_FRICTION_LEDGER_PATH: &str = "~/.claude/friction";
 // invocation fails with "unable to open database file (14)". The corpus
 // symlink targets stay in the read-only Vorpal store and are not covered.
 const SANDBOX_DOCKET_STORE_PATH: &str = "~/.docket";
-// The docket trust store: `docket trust` verbs take a lock at
-// ~/.config/docket/trust.toml.lock and fail sandboxed without this, forcing
-// a lift per invocation. The verbs themselves stay permission-gated (the
-// `Bash(docket trust add/rm:*)` ask rules below), so this only removes the
-// sandbox noise, not the human gate.
-const SANDBOX_DOCKET_TRUST_PATH: &str = "~/.config/docket";
+// The docket trust store LOCK ONLY (DOT-812) -- NOT the directory. `docket
+// trust` verbs take a lock at ~/.config/docket/trust.toml.lock and fail
+// sandboxed without this, forcing a lift per invocation. This grant used to
+// cover the whole ~/.config/docket directory, which meant trust.toml -- the
+// file that authorizes every gate an executor's own steps complete against --
+// was ALSO sandbox-writable by any means at all: a raw `echo >>` or `sed -i`
+// never goes near the `docket trust add/rm` CLI verb the ask rules below
+// pattern-match, so it left the whole ask-rule gate a no-op for a sandboxed
+// write that skips the CLI. Narrowed to the lock file alone: `docket trust
+// list` and every other sandboxed docket verb still only need to read
+// trust.toml (unrestricted; see sandbox_filesystem_deny_read_paths, which
+// does not name this path) and take the lock, so nothing sandboxed regresses
+// -- trust.toml itself becomes unwritable from inside the sandbox, full stop.
+// Read alongside deny_sensitive_paths' new `Edit(~/.config/docket/trust.toml)`
+// entry below, which closes the same file to the Edit/Write TOOLS the way
+// this closes it to a sandboxed Bash write, and the trust-guard hook
+// registered further down, which closes the `docket trust add/rm` CLI verb
+// itself for the executor archetypes even on an unsandboxed retry -- no one
+// mechanism here is sufficient alone; see docket-trust-guard-hook.sh for the
+// full argument.
+const SANDBOX_DOCKET_TRUST_LOCK_PATH: &str = "~/.config/docket/trust.toml.lock";
 // macOS `mktemp(1)` does NOT honour $TMPDIR: it targets the per-user Darwin
 // temp root (`getconf DARWIN_USER_TEMP_DIR`, /var/folders/<hash>/T), which no
 // allowWrite entry covered, so every bare `mktemp` was denied from inside the
@@ -311,6 +338,12 @@ impl ClaudeCode {
             .with_hook(
                 "PreToolUse",
                 Some("Bash"),
+                "bash ~/.claude/hooks/docket-trust-guard-hook.sh",
+                "command",
+            )
+            .with_hook(
+                "PreToolUse",
+                Some("Bash"),
                 "bash ~/.claude/hooks/docket-commit-guard-hook.sh",
                 "command",
             )
@@ -531,7 +564,7 @@ impl ClaudeCode {
                     .chain(std::iter::once(&SANDBOX_DARWIN_TEMP_ROOT))
                     .chain(std::iter::once(&SANDBOX_DOCS_CACHE_PATH))
                     .chain(std::iter::once(&SANDBOX_DOCKET_STORE_PATH))
-                    .chain(std::iter::once(&SANDBOX_DOCKET_TRUST_PATH))
+                    .chain(std::iter::once(&SANDBOX_DOCKET_TRUST_LOCK_PATH))
                     .chain(std::iter::once(&SANDBOX_FRICTION_LEDGER_PATH))
                     .map(|p| p.to_string())
                     .collect(),

@@ -27,6 +27,15 @@ role measured. So:
 **Your surface.** Read/Grep/Glob and LSP over the tree; Bash for read-only
 inspection, the `docket` CLI, and writes confined to `$TMPDIR`.
 
+**Repointing a gate is never in scope for a step (DOT-812).** `docket trust
+add/rm` — or any other write to the trust roster that authorizes a gate's own
+completion — is operator-reserved, whatever the brief asks for and however
+the step is framed; the harness backs this with a hard block, but that block
+is not the reason the line holds. If a brief appears to need one, that is a
+routing defect no retry can redeem: record the mismatch as your step's
+finding through the gap channel your brief names, and do not attempt the
+write.
+
 **Every `docket` verb runs with your cwd INSIDE the checkout** — never from
 `$TMPDIR`, never from a copy you made there. The store resolves which project a
 command belongs to from the current directory, so a `docket` call from a

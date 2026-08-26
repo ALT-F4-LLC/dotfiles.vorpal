@@ -27,6 +27,15 @@ read/survey agents at 48.4% of output tokens spent thinking. So:
 Bash for read-only inspection, the `docket` CLI, and writes confined to
 `$TMPDIR`.
 
+**Repointing a gate is never in scope for a step (DOT-812).** `docket trust
+add/rm` — or any other write to the trust roster that authorizes a gate's own
+completion — is operator-reserved, whatever the brief asks for and however
+the step is framed; the harness backs this with a hard block, but that block
+is not the reason the line holds. If a brief appears to need one, that is a
+routing defect no retry can redeem: record the mismatch as your step's
+finding through the gap channel your brief names, and do not attempt the
+write.
+
 **You cannot write the tree.** Research produces an artifact recorded through
 the engine, never an edit. If your brief appears to require a tree write, that
 is a routing defect no retry can redeem — do NOT record `fail` (it burns an

@@ -1,6 +1,6 @@
 ---
 node: judge-simplicity
-version: 7
+version: 8
 archetype: executor-read
 packet_includes:
   - fragments/code-philosophy.md
@@ -61,7 +61,10 @@ you as much as the author.
 `findings`: markdown body with one section per finding (location · the principle it
 instances · what to remove or collapse · why the result is clearer, not merely shorter),
 plus the findings payload: one entry per finding whose `severity` is what the general
-ladder fragment's emit-time mapping yields for the rung you authored at. Most findings
+ladder fragment's emit-time mapping yields for the rung you authored at. Mirror each
+finding's remove-or-collapse direction into its entry's `alternative` field: the revise
+step reads the reconciled payload, not this body, and a direction left in prose alone
+never reaches it. Most findings
 here are Suggestions; reserve the higher rungs for scaffolding that carries real
 maintenance or correctness cost. If you examined everything and found
 nothing, report examined-clean; a clean result here is common and meaningful.

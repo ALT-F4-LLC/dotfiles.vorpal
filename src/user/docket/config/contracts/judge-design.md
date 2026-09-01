@@ -1,6 +1,6 @@
 ---
 node: judge-design
-version: 7
+version: 8
 archetype: executor-read
 packet_includes:
   - fragments/hig-principles.md
@@ -68,7 +68,9 @@ than downgrading the finding.
 expected versus observed · governing principle where one applies · evidence label ·
 suggested direction), plus the findings payload: one entry per finding whose `severity`
 is what the general ladder fragment's emit-time mapping yields for the rung you authored
-at. Components the spec's cutline defers are out of scope,
+at. Mirror each finding's suggested direction into its entry's `alternative` field: the
+fix and revise steps read the reconciled payload, not this body, and a direction left in
+prose alone never reaches them. Components the spec's cutline defers are out of scope,
 not findings. If you examined everything and found nothing, report examined-clean; an
 empty payload is a valid, meaningful result.
 

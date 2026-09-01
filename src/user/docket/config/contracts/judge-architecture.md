@@ -1,6 +1,6 @@
 ---
 node: judge-architecture
-version: 8
+version: 9
 archetype: executor-read
 packet_includes:
   - fragments/severity-ladder-general.md
@@ -74,9 +74,11 @@ symbol's surface needs a search you actually ran, not a narrow one generalized.
 `findings`: markdown body with one section per finding (location · the general rule it
 instances · the second-order consequence · evidence label · suggested direction), plus
 the findings payload: one entry per finding whose `severity` is what the general ladder
-fragment's emit-time mapping yields for the rung you authored at. Every Blocker and
-Concern names the rule it instances, not only its one-line
-fix. If you examined everything and found nothing, report examined-clean naming what you
+fragment's emit-time mapping yields for the rung you authored at. Mirror each finding's
+suggested direction into its entry's `alternative` field: the fix and revise steps read
+the reconciled payload, not this body, and a direction left in prose alone never reaches
+them. Every Blocker and Concern names the rule it instances, not only its one-line fix.
+If you examined everything and found nothing, report examined-clean naming what you
 examined; an empty payload is a valid, meaningful result.
 
 # Stuck

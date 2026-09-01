@@ -1,6 +1,6 @@
 ---
 node: judge-security
-version: 7
+version: 8
 archetype: executor-read
 packet_includes:
   - fragments/severity-ladder-security.md
@@ -45,9 +45,11 @@ reported as examined-clean, not silence.
 `findings`: markdown body with one section per finding (location · mechanism · impact ·
 evidence label · suggested direction), plus the findings payload: one entry per finding
 whose `severity` is what the security ladder fragment's emit-time mapping yields for the
-rung you authored at. Severity reflects exploitability and
-blast radius, not effort to fix. If you examined everything and found nothing, emit the
-examined-clean report; an empty payload is a valid, meaningful result.
+rung you authored at. Mirror each finding's suggested direction into its entry's
+`alternative` field: the fix and revise steps read the reconciled payload, not this body,
+and a direction left in prose alone never reaches them. Severity reflects exploitability
+and blast radius, not effort to fix. If you examined everything and found nothing, emit
+the examined-clean report; an empty payload is a valid, meaningful result.
 
 # Stuck
 If the brief lacks the context to judge a boundary (e.g. the caller of changed code is

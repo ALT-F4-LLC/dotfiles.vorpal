@@ -1,6 +1,6 @@
 ---
 node: judge-testing
-version: 6
+version: 7
 archetype: executor-read
 packet_includes:
   - fragments/tdd-discipline.md
@@ -50,7 +50,9 @@ corroboration is not verification) and label each claim OBSERVED or INFERRED.
 falsely proven · why the current test does not establish it · evidence label · suggested
 direction), plus the findings payload: one entry per finding whose `severity` is what
 the general ladder fragment's emit-time mapping yields for the rung you authored at.
-Coverage numbers are reported as diagnostics, never as a
+Mirror each finding's suggested direction into its entry's `alternative` field: the fix
+and revise steps read the reconciled payload, not this body, and a direction left in
+prose alone never reaches them. Coverage numbers are reported as diagnostics, never as a
 verdict on adequacy. If you examined everything and found nothing, report examined-clean;
 an empty payload is a valid, meaningful result.
 

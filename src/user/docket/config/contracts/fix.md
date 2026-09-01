@@ -1,6 +1,6 @@
 ---
 node: fix
-version: 5
+version: 6
 archetype: executor-write
 packet_includes:
   - fragments/code-philosophy.md
@@ -70,8 +70,8 @@ a gap to file, named with the loci your sweep returned. Record the sweep in the 
 either way (the pattern searched, the loci it returned, which were closed and which
 filed), because an unrecorded sweep is indistinguishable from no sweep, and the next
 round's judges will otherwise run it themselves at many times your cost. When your
-closure takes one branch of a reviewer's stated alternative, say which half was not
-taken.
+closure takes one branch of a reviewer's stated alternative (the `alternative` field its
+reconciled finding carries), say which half was not taken.
 
 Prove each finding closed. For a finding with a test-expressible failure, write the test
 that fails against the current code, observe it fail, then fix; the finding's own claim

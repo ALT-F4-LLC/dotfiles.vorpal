@@ -1,6 +1,6 @@
 ---
 node: synthesize-findings
-version: 7
+version: 8
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -105,7 +105,10 @@ values. `member_ids` is the ONE linkage key; the older spellings (`members`,
 `cluster_members`, `member_findings`) are retired, and the payload validates against
 `findings-cluster@2`, which is where these shapes are written down. A standing finding
 carried forward from a prior round's aggregate record may omit `member_ids`; it
-references that record, not this round's judge payloads.
+references that record, not this round's judge payloads. When any member carries an
+`alternative`, the cluster carries one too (the most concrete where members differ): the
+fix round is fed your clusters, never the judges' bodies, and an alternative dropped
+here is gone for good.
 
 `open_severity`: on every cluster that carries NO settling ruling, also emit
 `open_severity`, a scalar: the max of the cluster's member severities on the same

@@ -1,6 +1,6 @@
 ---
 node: judge-correctness
-version: 9
+version: 10
 archetype: executor-read
 packet_includes:
   - fragments/hard-gates.md
@@ -52,7 +52,9 @@ concrete failure (this input, this wrong output) is a Suggestion at most.
 triggering input or sequence · evidence label · suggested direction), listing recognized
 overrides verbatim with their locations, plus the findings payload: one entry per
 finding whose `severity` is what the general ladder fragment's emit-time mapping yields
-for the rung you authored at. Report every finding, including
+for the rung you authored at. Mirror each finding's suggested direction into its entry's
+`alternative` field: the fix and revise steps read the reconciled payload, not this body,
+and a direction left in prose alone never reaches them. Report every finding, including
 minor ones, at its honest severity. If you examined everything and found nothing, say
 which dimensions you examined and report examined-clean; an empty payload is a valid,
 meaningful result.

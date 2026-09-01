@@ -45,7 +45,7 @@ if [ -n "$HOOK_INPUT" ] && [ -f "$HOME/.docket/config/policy.toml" ] \
     .tool_input.args
     | if type == "string" then (try fromjson catch {}) else (. // {}) end
     | .policyText // "" | length' 2>/dev/null)
-  # DOT-998: a wave launch now legitimately carries the fixed sentinel
+  # A wave launch now legitimately carries the fixed sentinel
   # `__USE_PINNED_POLICY__` instead of the file — docket-policy-guard-hook.sh
   # (PreToolUse) substitutes the canonical bytes via updatedInput before the
   # tool runs. If this PostToolUse hook ever sees the PRE-substitution args

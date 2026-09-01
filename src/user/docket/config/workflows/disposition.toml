@@ -1,7 +1,7 @@
 [pipeline]
 description = "Cross-issue disposition: write the verdict comment and close the carrier, gated on the build/test sanity check and AC verification with a bounded revise loop; no code-review machinery."
 name = "disposition"
-version = 3  # 3: DOT-811 — `security` joins unless_labels beside
+version = 3  # 3: `security` joins unless_labels beside
              #   `security-change` and `security-load-bearing`, which this
              #   list already excludes. security-change@26 now matches
              #   `security`, so without this an issue labelled `disposition` +

@@ -19,7 +19,7 @@ sonnet-xhigh = { model = "sonnet", effort = "xhigh", escalate_to = "opus-xhigh" 
 adr-author = { variant = "fable-max" }
 design-qa = { variant = "opus-high" }
 dispose = { variant = "opus-high" }
-# DOT-997: seat for the reconcile drain-highs routing — files each still-open
+# Seat for the reconcile drain-highs routing — files each still-open
 # high cluster as a --gap-file backlog issue. Mechanical selection and faithful
 # copying, no judgment over severities; same tier as synthesize-findings.
 drain-highs = { variant = "sonnet-medium" }
@@ -54,7 +54,7 @@ verify-ac = { variant = "opus-high" }
 
 [security]
 ceiling = "opus-max"
-# DOT-811: every label here also ROUTES — it is not a model-only list. Until
+# Every label here also ROUTES — it is not a model-only list. Until
 # security-change@26 these three labels model-routed while only two of them
 # appeared in any workflow's [match].labels_any, so an issue labelled just
 # `security` drew the ceiling and the `never` below but ran the ordinary
@@ -89,14 +89,14 @@ on_failure = "one-hop"
 # the per-round re-runs that share the ordinal (review@N judges, synthesize@N,
 # verify@N) are deliberately NOT listed and keep their standing variants.
 on_round = "one-hop"
-# DOT-846 (retro, 2026-08-26): DECLINED — `fix` does not start one hop up on
+# Retro, 2026-08-26: DECLINED — `fix` does not start one hop up on
 # security-labelled issues. Measured across 19 fix-loop runs (15 security-flavored:
 # RUN-25/29/30/34/35/36/38/48/49/50/51/52/58/59/60; 4 contrast: RUN-32/53/56/61):
 # round-1 fixers that already served opus-medium reproduced the just-closed-class
-# recurrence DOT-846 attributes to the base tier in every group that could observe
-# one (e.g. RUN-60's own fix@2, RUN-61's SYN-30 "re-introducing the class this same
+# recurrence the retro attributes to the base tier in every group that could observe
+# one (e.g. RUN-60's own fix@2, RUN-61's own "re-introducing the class this same
 # commit deleted twice"), while sonnet-medium round-1 fixers converged in one round
-# on several security issues (VPL-336, VPL-280, AGT-310). The recurrence tracks the
+# on several security issues. The recurrence tracks the
 # fix diff's size and spread, not the tier, and appears at the same rate on
 # unlabelled work. The remedy landed instead as the sibling-sweep and
 # claim-discipline obligations in contracts/fix.md@4. Do not re-open without runs

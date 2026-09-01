@@ -1,7 +1,7 @@
 export const meta = {
     name: 'wave',
     description: 'Run one dispatched manifest end to end: spawn one executor per executor row (routed by policy.toml), seat a judge panel on each vote row, and skip action rows (engine-run at record time). Stages run as awaited groups — the staged closure means one wave can carry judges -> gate -> reconcile -> report. Invoke by scriptPath ONLY, with args {rows, policyText} as a real object — policy.toml is passed as TEXT, never a path; the script cannot read files.',
-    whenToUse: 'Invoked by the conduct skill on an open dispatch, always as Workflow({scriptPath}) — never by name. args is {rows, policyText}: `next` rows verbatim (executor, vote, and action rows; human rows stay with the conductor) plus the literal TEXT of policy.toml. On a dispatch carrying a fix round\'s review fanout, args also carries `integrated` — a map from each such issue to the sha of its prior round\'s INTEGRATION commit — so the wave can assert base ancestry before seating the fanout (DOT-871). There is no policyPath and no file access.',
+    whenToUse: 'Invoked by the conduct skill on an open dispatch, always as Workflow({scriptPath}) — never by name. args is {rows, policyText}: `next` rows verbatim (executor, vote, and action rows; human rows stay with the conductor) plus the literal TEXT of policy.toml. On a dispatch carrying a fix round\'s review fanout, args also carries `integrated` — a map from each such issue to the sha of its prior round\'s INTEGRATION commit — so the wave can assert base ancestry before seating the fanout. There is no policyPath and no file access.',
 }
 
 // ---------------------------------------------------------------------------
@@ -158,8 +158,8 @@ function parseToml(text) {
 // [executors].<seat>.variant naming a [variants] row, carrying model/effort/
 // escalate_to. That shape hasn't moved since v2, so an exact-match check on
 // the current version refuses healthy policy the moment it bumps — pinned at
-// 15, it refused v16 and blocked every dispatch wave and gate fleet-wide
-// (DOT-746). So this mirrors the conduct skill's own [policy] gate (present,
+// 15, it refused v16 and blocked every dispatch wave and gate fleet-wide.
+// So this mirrors the conduct skill's own [policy] gate (present,
 // integer) against a documented floor, then checks the tables routing
 // actually depends on: a version above the floor is fine, a missing
 // [variants]/[executors] table is not.
@@ -421,7 +421,7 @@ function archetype(row, hint) {
     return 'executor-read'
 }
 
-// SCRATCH HYGIENE (DOT-834, tribunal-security condition on DKT-V284): every
+// SCRATCH HYGIENE: every
 // file an executor writes lives in a private per-step directory <TMP>/<step>.d,
 // mode 0700, built fresh at claim (rm -rf then mkdir -m 700) and removed by the
 // executor the moment a record or fail exits 0. Before this, tokens (0600) and
@@ -433,7 +433,7 @@ function archetype(row, hint) {
 // spawn is reaped, not waited out."
 //
 // Replay of a stale token is refused by the engine either way (verified
-// read-only against docket.git @ b50e049, DOT-834 AC1: record/fail/heartbeat
+// read-only against docket.git @ b50e049: record/fail/heartbeat
 // all authorize through authorizeLease(), which refuses when owner/token_hash
 // are NULL; completion and reap NULL them (RetireStepTokenTx/ReapStepTx), and
 // a re-claim mints a fresh token the old one cannot match). The dir sweep is
@@ -877,7 +877,7 @@ if (!input || typeof input !== 'object') throw new Error(
 
 const rows = input.rows || []
 
-// DOT-998: a conductor no longer hand-copies policy.toml into policyText.
+// A conductor no longer hand-copies policy.toml into policyText.
 // It passes this sentinel instead; docket-policy-guard-hook.sh (PreToolUse)
 // substitutes the canonical ~/.docket/config/policy.toml bytes via
 // updatedInput before this script ever runs, so `input.policyText` should
@@ -965,7 +965,7 @@ function runParked(res) {
 // TEST-END park-signals
 
 // ---------------------------------------------------------------------------
-// ORPHANED CLAIM (DOT-864). One claim refusal inverts its own meaning when
+// ORPHANED CLAIM. One claim refusal inverts its own meaning when
 // relayed at face value: `not ready to claim: the step is not pending` reads
 // as "never started" but actually means ALREADY CLAIMED — routinely by a
 // PREDECESSOR OF THE VERY AGENT that just reported it.
@@ -1183,7 +1183,7 @@ function blockProbeBrief(label) {
         '',
         'WAVE PROBE: not a step execution. Your usage is wave overhead — the',
         'label below names the step you are READING ABOUT, and the usage join',
-        'must not attribute your tokens to it (DOT-994).',
+        'must not attribute your tokens to it.',
         '',
         `TARGET LABEL (match byte-for-byte): ${label}`,
         '',
@@ -1276,7 +1276,7 @@ function spawn(row, phaseLabel) {
     const handle = (text, retried) => {
         if (text != null) {
             const returned = { step: row.step, status: 'returned', text }
-            // DOT-864: the ONE refusal whose face value inverts the truth.
+            // The ONE refusal whose face value inverts the truth.
             // "not ready to claim: the step is not pending" reads as "never
             // started" and means "already claimed" — ask the engine what the
             // step's row actually says and report THAT, refusal kept verbatim
@@ -1465,7 +1465,7 @@ function resolveSeat(seat, policy, labels = []) {
 // a workflow fans it out as a reviewer: one name, two remits, resolved by row
 // kind. architecture and security broadly agree across the two; correctness
 // deliberately does not, since the contract hunts logic defects while this lens
-// interrogates the evidence behind the gate's ask (DOT-792; the contract
+// interrogates the evidence behind the gate's ask (the contract
 // carries the mirror note).
 //
 // Only lenses reachable from a current workflow's voter names are kept
@@ -1735,7 +1735,7 @@ read-only probe reporting what the record currently says.
 
 WAVE PROBE: not a step execution. Your usage is wave overhead${servingStep ? `. This
 read serves ${servingStep}, which is the step it READS, not a step you run — the
-usage join must not attribute your tokens to it (DOT-994)` : ''}.`
+usage join must not attribute your tokens to it` : ''}.`
 }
 
 function probe(command, label, phaseLabel, servingStep, acct) {
@@ -2054,14 +2054,14 @@ async function runGate(row, phaseLabel) {
 // TEST-END gate-vote
 
 // ---------------------------------------------------------------------------
-// FIX-ROUND BASE ANCESTRY (DOT-871). The conductor integrates a fix round by
+// FIX-ROUND BASE ANCESTRY. The conductor integrates a fix round by
 // cherry-picking the sha on the change-summary's first line onto the shared
 // branch; the next round's fix worktree is cut from that branch's HEAD, so
 // the tree the next review fanout judges must DESCEND from the integrated
 // commit. Nothing verified that, and twice the hand-off broke a round late:
-// RUN-35 (VPL-160) round 2 — all five judges found round-1's commit was not
+// RUN-35 round 2 — all five judges found round-1's commit was not
 // an ancestor of the judged commit and re-filed two defects round 1 had
-// closed (17.37M tokens re-finding closed work); RUN-51 (AGT-643) rounds 5-6
+// closed (17.37M tokens re-finding closed work); RUN-51 rounds 5-6
 // — fix@5's worktree was a SIBLING of round 4's commit, two full review
 // rounds spent detecting and repairing the fork.
 //
@@ -2206,7 +2206,7 @@ const stageKeys = [...stages.keys()].sort((a, b) => a - b)
 log(`wave: ${rows.map((r) => `${r.step}·${r.kind === 'executor' ? r.executor : r.kind}`).join(', ')} — policy v${policyVersion}, ${(input.policyText || '').length} chars`)
 log(`wave: ${rows.length} row(s) across stage(s) ${stageKeys.join('→')}`)
 {
-    // DOT-871: say up front which issues the fix-round ancestry guard is
+    // Say up front which issues the fix-round ancestry guard is
     // armed for, so a wave with no `integrated` map is legible as unguarded
     // rather than silently skipping the check.
     const guarded = rows.filter((r) => needsAncestryCheck(r, input.integrated))
@@ -2238,7 +2238,7 @@ function needsClaimProbe(row) {
     return g !== undefined && g < s
 }
 
-// DOT-871: the fix-round base-ancestry guard (helpers above the ladder). One
+// The fix-round base-ancestry guard (helpers above the ladder). One
 // verdict per issue-round, shared by every fanout sibling: two cheap
 // read-only probes decide whether the fanout spawns — the round's target sha
 // off the bundle, then the merge-base check. The probes run AT THE ROW'S OWN
@@ -2307,12 +2307,12 @@ function chainDead(res) {
     // ~52K tokens booting three such corpses. The engine re-offers the whole
     // chain at the next dispatch, so calling the issue dead here loses nothing.
     if (res.status === 'spawn-failed') return true
-    // DOT-864: a diagnosed claim CONFLICT is the SAME dead chain it always
+    // A diagnosed claim CONFLICT is the SAME dead chain it always
     // was — only the report changed. It carries its own status precisely so
     // the kill does not ride on the report's text staying inside
     // isConflictReport()'s three-line budget, which the diagnosis exceeds.
     if (res.status === 'claim-conflict') return true
-    // DOT-871: a fix round parked on broken base ancestry. The judged tree
+    // A fix round parked on broken base ancestry. The judged tree
     // does not contain the prior round's integrated commit, so every later
     // per-round row of the issue (synthesize@N, verify@N) would work the
     // same wrong tree.
@@ -2369,7 +2369,7 @@ for (const k of stageKeys) {
             }
             return spawn(row, label)
         }
-        // DOT-871: a fix round's review fanout is asserted against the prior
+        // A fix round's review fanout is asserted against the prior
         // round's integrated commit BEFORE the judges spawn (ancestryVerdict
         // above; one shared verdict per issue-round). A broken ancestry parks
         // the round as a relay finding; anything short of a positively

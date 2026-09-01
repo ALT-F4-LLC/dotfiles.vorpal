@@ -51,7 +51,7 @@
 # substitution, transposition, or balanced drop-and-duplicate would have
 # sailed through onto the file that routes and judges every launch.
 #
-# DOT-998 (operator-approved 2026-09-01): making the model the copy machine
+# Operator-approved 2026-09-01: making the model the copy machine
 # for ~28k bytes that must be exact was itself the residual failure mode —
 # every dispatch re-ran an error-prone hand-copy whose only outcome on a slip
 # was deny-and-retype (measured cost ~90s + a full args retype). A launch
@@ -64,7 +64,7 @@
 # this falls through and denies on mismatch too — the sentinel string itself
 # is not valid TOML, so an un-substituted launch cannot silently route on
 # wrong bytes; wave.js also asserts the sentinel never reaches it unresolved
-# (DOT-998 note there). The guarantee is unchanged: what launches is either
+# (see the note there). The guarantee is unchanged: what launches is either
 # the pinned bytes or nothing.
 
 set -uo pipefail
@@ -183,7 +183,7 @@ if [ "$GOT_HASH" = "$WANT_HASH" ] || [ "$GOT_NL_HASH" = "$WANT_HASH" ]; then
   exit 0
 fi
 
-# ---- Sentinel substitution (DOT-998) ----
+# ---- Sentinel substitution ----
 # Not a byte match. Before denying, check whether this is the fixed sentinel
 # a dispatch is now allowed to pass instead of the file — same hash
 # machinery, no separate decode of a (possibly large) policyText.
@@ -206,7 +206,7 @@ if [ -n "$SENTINEL_HASH" ] && [ "$GOT_HASH" = "$SENTINEL_HASH" ]; then
         hookSpecificOutput: {
           hookEventName: "PreToolUse",
           permissionDecision: "allow",
-          permissionDecisionReason: "policy-guard: substituted canonical policy.toml bytes for the PINNED sentinel (DOT-998)",
+          permissionDecisionReason: "policy-guard: substituted canonical policy.toml bytes for the PINNED sentinel",
           updatedInput: $ti
         }
       }' 2>/dev/null && exit 0

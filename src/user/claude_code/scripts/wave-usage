@@ -54,7 +54,7 @@ over a wave counts every agent at most once and loses none silently:
   * an agent briefed to do NEITHER is wave overhead. Neither mode emits it;
     plain mode sums it and prints one WAVE OVERHEAD line on stderr.
 
-DO NOT JOIN ON THE FIRST STEP-N IN THE BRIEF (DOT-994). Every executor bootstrap
+DO NOT JOIN ON THE FIRST STEP-N IN THE BRIEF. Every executor bootstrap
 names its assignment in a `docket step record STEP-N` obligation, and THAT is the
 join — the same string the claimant is required to pass, so the join cannot
 disagree with the record, exactly as the seats join reads the cast. A bare
@@ -108,7 +108,7 @@ import json, os, re, sys
 # dashes as literal \\u2014.
 #
 # PROBE_MARKER is the explicit declaration wave.js's probeBrief() now opens with,
-# and is the marker to key on going forward (DOT-994 seam (b)). The other three
+# and is the marker to key on going forward (seam (b)). The other three
 # are the shapes already deployed in transcripts that predate it, so a back-fill
 # over an OLD wave classifies correctly too: probeBrief's fixed opening line plus
 # its self-description (truncated deliberately — wave.js writes "what the record
@@ -147,7 +147,7 @@ def is_probe(bootstrap: str) -> bool:
 # names a second cast anywhere would otherwise pair one line's proposal with
 # another line's voter.
 #
-# STEP_RE is NOT a join (DOT-994). It is a loose "which step is this agent
+# STEP_RE is NOT a join. It is a loose "which step is this agent
 # looking at" read, used only to label an overhead agent in the report — a probe
 # names the step it READS, which is precisely the id that must not be joined on.
 STEP_RE = re.compile(r"STEP-\d+")
@@ -179,7 +179,7 @@ in <transcript-dir> and deduplicated by message id. Read-only; stdout only.
                     to record a step. An agent briefed to do neither — every
                     read-only probe wave.js spawns — is WAVE OVERHEAD: it is
                     summed and reported on stderr, never keyed to the step it
-                    happened to read (DOT-994). The modes partition the wave:
+                    happened to read. The modes partition the wave:
                     run both, count each agent once, and do not `--exclude` vote
                     steps to compensate.
   --exclude VALUE   drop a key a prior back-fill already carries: a STEP-N, or
@@ -294,7 +294,7 @@ def main() -> int:
             if bootstrap is None:
                 errors.append(f"{name}: no user message — cannot classify")
                 continue
-            # THE STEP JOIN (DOT-994). An agent executes a step only if its
+            # THE STEP JOIN. An agent executes a step only if its
             # brief obliges it to claim/record that step, and the obligation
             # names the id — so read the id from the obligation rather than
             # grabbing the first STEP-N in the prose. Read it from the BOOTSTRAP
@@ -308,7 +308,7 @@ def main() -> int:
                 # step, so its spend is wave overhead — reported below, and NOT
                 # keyed to whatever step its brief happens to mention. Keying on
                 # that mention is what put ~17K tokens apiece on a pending and a
-                # superseded step (DOT-994); a probe names the step it READS.
+                # superseded step; a probe names the step it READS.
                 #
                 # The one shape that must never land here is an executor. If a
                 # brief reword ever breaks RECORD_RE, every claimant would fall

@@ -27,7 +27,7 @@ role measured. So:
 **Your surface.** Read/Grep/Glob and LSP over the tree; Bash for read-only
 inspection, the `docket` CLI, and writes confined to `$TMPDIR`.
 
-**Repointing a gate is never in scope for a step (DOT-812).** `docket trust
+**Repointing a gate is never in scope for a step.** `docket trust
 add/rm` — or any other write to the trust roster that authorizes a gate's own
 completion — is operator-reserved, whatever the brief asks for and however
 the step is framed; the harness backs this with a hard block, but that block

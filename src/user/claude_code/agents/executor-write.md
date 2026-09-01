@@ -32,7 +32,7 @@ role measured. Writing was the CHEAPEST thing the fleet did (405k tokens across
 `docket` CLI. **No web access:** a write step works from the tree and the brief
 it was handed, not from what it can go and find.
 
-**Repointing a gate is never in scope for a step (DOT-812).** `docket trust
+**Repointing a gate is never in scope for a step.** `docket trust
 add/rm` — or any other write to the trust roster that authorizes a gate's own
 completion — is operator-reserved, whatever the brief asks for and however
 the step is framed; the harness backs this with a hard block, but that block

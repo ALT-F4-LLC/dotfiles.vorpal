@@ -1,6 +1,6 @@
 [pipeline]
 name = "ui-change"
-version = 22  # 22: DOT-997 — reconcile gains a second routing, `drain-highs`
+version = 22  # 22: reconcile gains a second routing, `drain-highs`
               #   on `any(open_severity >= high)`, interposing a new executor
               #   step that files each still-open high cluster (not held, not
               #   operator-resolved) as a `--gap-file` backlog issue at its
@@ -22,7 +22,7 @@ version = 22  # 22: DOT-997 — reconcile gains a second routing, `drain-highs`
               #   accrued. Same change: standard-change@28, spec-doc@21,
               #   spec-project@15; new contracts/drain-highs.md; policy@19
               #   seats the executor.
-              # 21: DOT-811 — `security` joins unless_labels beside
+              # 21: `security` joins unless_labels beside
               #   `security-change` and `security-load-bearing`, which this
               #   list already excludes. security-change@26 now matches
               #   `security`, so without this an issue labelled `ui` +

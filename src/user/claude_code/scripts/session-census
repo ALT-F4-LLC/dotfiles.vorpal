@@ -25,7 +25,7 @@ Key correctness rules, learned the hard way (2026-08-19 census):
   * Character counts (thinking chars vs visible text chars) work on every
     version and are the version-independent cross-check on think%.
   * The "do not narrate things that need no action" rule in CLAUDE.md is
-    measurable, and until 2026-08-25 (DOT-753) nothing measured it — the
+    measurable, and until 2026-08-25 nothing measured it — the
     working agreement quoted a 152/766 figure that no script here computed.
     It is computed structurally now, with no wording heuristic: a teammate
     idle notification arrives as a role=user message carrying

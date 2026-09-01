@@ -1,7 +1,7 @@
 [pipeline]
 description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step, review them once, and accept by tribunal vote that escalates to the operator."
 name = "spec-project"
-version = 15  # 15: DOT-997 — reconcile gains the `drain-highs` routing on
+version = 15  # 15: reconcile gains the `drain-highs` routing on
               #   `any(open_severity >= high)` plus the interposed executor
               #   step it names, which files each still-open high cluster
               #   (not held, not operator-resolved) as a `--gap-file` backlog

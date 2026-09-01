@@ -159,8 +159,8 @@ function parseToml(text) {
 // [executors].<seat>.variant naming a [variants] row, carrying model/effort/
 // escalate_to. That shape hasn't moved since v2, so an exact-match check on
 // the current version refuses healthy policy the moment it bumps — pinned at
-// 15, it refused v16 and blocked every dispatch wave and gate fleet-wide
-// (DOT-746). So this mirrors the conduct skill's own [policy] gate (present,
+// 15, it refused v16 and blocked every dispatch wave and gate fleet-wide.
+// So this mirrors the conduct skill's own [policy] gate (present,
 // integer) against a documented floor, then checks the tables routing
 // actually depends on: a version above the floor is fine, a missing
 // [variants]/[executors] table is not.
@@ -281,7 +281,7 @@ function resolveSeat(seat, policy, labels = []) {
 // a workflow fans it out as a reviewer: one name, two remits, resolved by row
 // kind. architecture and security broadly agree across the two; correctness
 // deliberately does not, since the contract hunts logic defects while this lens
-// interrogates the evidence behind the gate's ask (DOT-792; the contract
+// interrogates the evidence behind the gate's ask (the contract
 // carries the mirror note).
 //
 // Only lenses reachable from a current workflow's voter names are kept

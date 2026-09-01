@@ -737,7 +737,7 @@ cat ~/.docket/config/policy.toml   # read-only sanity check, see version grep be
 ```
 
 **`policyText` for a wave launch is the literal sentinel string
-`__USE_PINNED_POLICY__` — never the file (DOT-998).** `docket-policy-guard-hook.sh`
+`__USE_PINNED_POLICY__` — never the file.** `docket-policy-guard-hook.sh`
 (PreToolUse:Workflow) substitutes the canonical `~/.docket/config/policy.toml`
 bytes for that exact sentinel via the harness's `updatedInput` before wave.js
 ever runs, so wave.js still receives the pinned bytes byte-for-byte — the
@@ -752,7 +752,7 @@ fallback if the hook or its registration is ever unavailable; do not reach for
 it on a normal wave dispatch.
 
 **A byte-perfect literal policyText still works too** — the hook hashes it and
-allows silently, same as before DOT-998 — but there is no reason to build one
+allows silently, same as before — but there is no reason to build one
 for a wave launch now, and doing so reintroduces the exact hand-copy risk the
 sentinel exists to remove.
 
@@ -809,7 +809,7 @@ run both lost their first launch to the tilde form). The installed path is
 the ONLY launchable one, not merely the preferred one: the tool accepts a
 scriptPath only under the session's cwd or a directory added to the session,
 and the settings corpus adds exactly `~/.claude/workflows`
-(`permissions.additionalDirectories`, DOT-952). A conductor's normal seat is
+(`permissions.additionalDirectories`). A conductor's normal seat is
 the target repo's own worktree, where the dotfiles source tree is neither —
 so `$CC_SRC/workflows/wave.js` is NOT a fallback (before that settings entry
 was installed, one activation gate had the installed path and then the source
@@ -858,7 +858,7 @@ converges either way, but hand-escaping a multi-KB string into a JSON string
 is an escaping error waiting to happen, and the harness's own encoder never
 makes one (observed twice by a shadow review). There is no `policyPath`
 parameter: the script cannot read files. For a wave launch `policyText` is
-now the fixed sentinel `__USE_PINNED_POLICY__` (DOT-998, see step 2 above) —
+now the fixed sentinel `__USE_PINNED_POLICY__` (see step 2 above) —
 a five-word literal, not the file — so the historical hazard this paragraph
 used to warn about (a hand-copied ~28k-char policy silently condensed:
 one conductor cat'd the file six times and still emitted a ~4.7KB condensed
@@ -894,7 +894,7 @@ Worktree writers below). wave.js asserts, before seating the fanout, that the
 round's judged tree descends from that commit (`git merge-base --is-ancestor
 <integrated sha> <target sha>`) and parks the round as a
 `parked-base-ancestry` relay finding when it does not — the check five judges
-per round used to run one round too late (DOT-871: RUN-35 round 2 spent a
+per round used to run one round too late (RUN-35 round 2 spent a
 17.37M-token round re-finding two defects round 1 had closed; RUN-51 spent
 rounds 5-6 detecting a forked fix worktree). The sha must be the INTEGRATED
 one, never the writer's: integration cherry-picks, so the writer's sha is
@@ -923,7 +923,7 @@ through is the one mistake the wave still refuses; filtering here is the
 primary control, the wave's refusal the backstop.
 
 **Your entire involvement with policy, for a wave dispatch, is two mechanical
-acts (DOT-998):**
+acts:**
 
 1. Pass the literal sentinel `__USE_PINNED_POLICY__` as `policyText`, unread —
    docket-policy-guard-hook.sh substitutes the real bytes before wave.js runs.
@@ -1094,8 +1094,8 @@ agent's own `docket step claim/record STEP-N` obligation names. An agent
 briefed to neither cast nor record — every read-only probe the wave spawns —
 is WAVE OVERHEAD: the script sums it onto one stderr line and attributes it to
 no step, because a probe names the step it READ and back-filling that read onto
-that step invents spend for work no one did (DOT-994: ~17K tokens apiece landed
-on a pending and a superseded step before this). That overhead line is a
+that step invents spend for work no one did (~17K tokens apiece landed
+on a pending and a superseded step before this defect was found). That overhead line is a
 report, not a discrepancy — quote its total in the wave report if anything,
 and never try to `--exclude` your way around it. It exits nonzero when an
 executor's brief names no step to record or an agent carries no usage — report
@@ -1162,8 +1162,8 @@ Attribution is therefore a JOIN on `agentId`, not a lookup by step id: read
 each `agent-<id>.jsonl` for usage, and map its `agentId` to a step through the
 agent's first `user` message — the bootstrap prompt. There is no `label` field.
 
-**Join on the OBLIGATION the brief carries, never on the first `STEP-N` in it**
-(DOT-994). An agent owns a step only if its brief tells it to `docket step
+**Join on the OBLIGATION the brief carries, never on the first `STEP-N` in it.**
+An agent owns a step only if its brief tells it to `docket step
 claim`/`record STEP-N` — that id, the one it must pass back to the engine, is
 the key. A brief that merely mentions a step is a READ: every wave spawns
 read-only probes (`docket step show STEP-N --json`, gate tally and record
@@ -1587,7 +1587,7 @@ conductor filed its own gate-failure fix under `-l shadow`).
 
 Under zsh, QUOTE every glob-shaped `--scope` value (`--scope 'src/**'`) or run
 `set -f` first — an unquoted `path/**` is glob-mangled by the shell and the
-scopes are silently dropped from the created issue (2026-08-25: DOT-834 was
+scopes are silently dropped from the created issue (2026-08-25: an issue was
 created with all three of its scopes missing, repaired only by a later edit).
 
 ## Gates
@@ -1680,7 +1680,7 @@ Workflow({ scriptPath: "<absolute installed path to tribunal.js>",
 Resolve the path and emit `args` exactly as you do for wave.js — the
 installed `~/.claude/workflows/tribunal.js`, absolute, `~` expanded, and no
 source-tree fallback: it is the only path the Workflow tool will launch from
-a conductor's seat (step 2's DOT-952 rule), and an absent installed file is
+a conductor's seat (step 2's installed-path rule), and an absent installed file is
 stop-and-report, not a path hunt. `args` is a REAL object the harness
 stringifies for you. `policyText` is the
 literal pinned policy.toml text, re-read in the same iteration as the launch
@@ -1880,9 +1880,9 @@ missing tracker is not bookkeeping to tidy afterwards: it is the gate-relevant
 fact that the gap the operator is being asked to accept has nobody carrying it,
 and it belongs in front of them before they answer rather than in a later
 correction. The failure mode is authorization granted on a stale tracked-by
-claim: on RUN-62 three sdet-abuse override-passes went to the operator as
-"AB-1..AB-4 still untested, tracked by the already-open AGT-311" — inherited
-verbatim from a trust-entry annotation and never checked — while AGT-311 had
+claim: on RUN-62 three sdet-abuse override-passes went to the operator citing
+"AB-1..AB-4 still untested, tracked by the already-open [issue]" — inherited
+verbatim from a trust-entry annotation and never checked — while that issue had
 been closed done seventeen hours earlier the same day. The operator bought
 three passes believing the residual gap had an open tracker; it had none. Where
 the read shows the tracker closed or gone, say so IN the question and offer
@@ -1922,7 +1922,7 @@ existing issue and filed nothing, and the findings vanished.
 or characterize the outcome in any user-facing text.** `docket step gates STEP-N
 --json` is the verb that carries them —
 each gate's verdict, exit code, argv, duration, and output. That output is
-rationed, not absent (DKT-425): `--json` carries `output_tail` on every row
+rationed, not absent: `--json` carries `output_tail` on every row
 that did NOT pass, and `--full` alongside it adds every row's complete
 `output` (it shapes the JSON only — bare `--full` still prints the table).
 A failing row with no `output` field means read its `output_tail`, not that the text
@@ -2103,7 +2103,7 @@ compute that step's threshold, does not re-read its gate results, and does not
 schedule what a genuine pass would have led to. Steps INTERPOSED on that
 outcome — a tribunal gate the workflow places after a verify, a re-review round
 conditioned on the verdict — are not routed to: they go `skipped`, and the
-engine says so only in a warning AFTER the mutation (filed as DKT-861). On
+engine says so only in a warning AFTER the mutation. On
 RUN-61 an override-passed `verify@2` skipped `verify-tribunal@2` (STEP-2780)
 outright and the panel never ruled; the dissent it was meant to hear reached no
 record. So when the interposed condition should still apply, resolve those

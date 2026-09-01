@@ -1,7 +1,7 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 28  # 28: DOT-997 — reconcile gains the `drain-highs` routing on
+version = 28  # 28: reconcile gains the `drain-highs` routing on
               #   `any(open_severity >= high)` plus the interposed executor
               #   step it names, which files each still-open high cluster
               #   (not held, not operator-resolved) as a `--gap-file` backlog
@@ -14,7 +14,7 @@ version = 28  # 28: DOT-997 — reconcile gains the `drain-highs` routing on
               #   blocker still loops; a round with nothing open at high or
               #   above routes `pass` with the drain step terminalized
               #   `skipped`, never claimed and never billed.
-              # 27: DOT-811 — `security` joins unless_labels beside
+              # 27: `security` joins unless_labels beside
               #   `security-change` and `security-load-bearing`, because
               #   security-change@26 now matches that label too. Without this
               #   the two workflows would both match an issue labelled only

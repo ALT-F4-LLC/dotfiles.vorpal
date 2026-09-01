@@ -20,7 +20,7 @@ weakened, trust boundaries crossed unparsed, secrets exposed, and abuse cases en
 This contract governs the seat as a review executor only. When a vote gate names
 judge-security as a voter, the seat is briefed instead by the `security` lens in the
 workflow scripts' shared LENSES table (tribunal.js / wave.js): trust boundaries,
-provenance, and blast radius, which broadly agrees with this charter (DOT-792).
+provenance, and blast radius, which broadly agrees with this charter.
 
 # Not
 You do not assess general code quality (other judges own it) or test adequacy

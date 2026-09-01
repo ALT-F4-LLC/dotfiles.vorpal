@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# trust-guard (DOT-812) — PreToolUse: Bash.
+# trust-guard — PreToolUse: Bash.
 #
 # `docket trust add/rm` mutates the trust store that authorizes an executor's
 # own completion gates (`~/.config/docket/trust.toml`, granted sandbox-write
@@ -27,7 +27,7 @@
 # and absent for the main conversation's -- so EXECUTOR_ARCHETYPES below is
 # the whole of this hook's policy, and it names only the three graph-fleet
 # executor archetypes (agents/executor-{read,write,research}.md), not every
-# subagent type: a groomer or planner seat was never in DOT-812's scope, and
+# subagent type: a groomer or planner seat was never in this hook's scope, and
 # widening this list to "any agent_id present" would deny seats this issue
 # never asked to touch, on no evidence any of them needs to.
 #
@@ -210,4 +210,4 @@ function decode(raw,    inner, cpos) {
 ' 2>/dev/null)
 [ "$MATCH" = "MATCH" ] || allow_default
 
-deny "trust-store write blocked: \`docket trust add/rm\` is operator-reserved and never in scope for an executor step, whatever the brief says (DOT-812). If your step genuinely needs a trust entry changed, that is a routing defect: record the mismatch as your step's finding through the gap channel your brief names, and do not retry this call."
+deny "trust-store write blocked: \`docket trust add/rm\` is operator-reserved and never in scope for an executor step, whatever the brief says. If your step genuinely needs a trust entry changed, that is a routing defect: record the mismatch as your step's finding through the gap channel your brief names, and do not retry this call."

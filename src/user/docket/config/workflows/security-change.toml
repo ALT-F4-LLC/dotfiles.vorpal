@@ -1,7 +1,7 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 26  # 26: DOT-811 — `security` joins labels_any, so all three of
+version = 26  # 26: `security` joins labels_any, so all three of
               #   policy.toml's [security].labels route to this track. The two
               #   vocabularies had diverged: policy named three labels, this
               #   [match] named two, so an issue labelled only `security` took
@@ -19,11 +19,11 @@ version = 26  # 26: DOT-811 — `security` joins labels_any, so all three of
               #   they already exclude. The remaining workflows need no change
               #   — docs-only, investigation, spec-doc and spec-project are
               #   already on this [match]'s unless_labels.
-              # 25: DOT-792 — comment on `security-vote`'s judge-* voters:
+              # 25: comment on `security-vote`'s judge-* voters:
               #   deliberately judge-*, not tribunal-* (different policy.toml
               #   tier, different remit); documentation only, no behavior
               #   change.
-              # 24: DOT-786 — `reconcile`'s threshold keyed on `severity`,
+              # 24: `reconcile`'s threshold keyed on `severity`,
               #   which is always present (max over every member, settled
               #   ground included), while every other multi-judge workflow
               #   (standard-change, ui-change, spec-doc, spec-project) keys
@@ -40,10 +40,10 @@ version = 26  # 26: DOT-811 — `security` joins labels_any, so all three of
               #   `security-vote` again, and the `fix-loop` route added at
               #   22 is removed. The trail: b51e498 raised this threshold
               #   from `>= high` to `>= blocker`, which left a high-
-              #   severity finding with no route at all and no vote; DOT-775
-              #   read that gap as a missing fix round, and commit 2201b41
+              #   severity finding with no route at all and no vote; that gap
+              #   was read as a missing fix round, and commit 2201b41
               #   closed it at 22 by adding `fix-loop = any(severity ==
-              #   high)` beside the blocker-only vote. DOT-785 then found
+              #   high)` beside the blocker-only vote. A later review then found
               #   that route contradicts both ladders the corpus ships:
               #   `fragments/severity-ladder-security.md` says High and
               #   above route to the HUMAN security vote and that the
@@ -158,7 +158,7 @@ vote_rule = "security-acceptance"
 # not the operator-stand-in tribunal, and policy.toml routes the two seat
 # families to different tiers (judge-* opus-high, tribunal-* fable/opus-xhigh).
 # As voters these seats are briefed by the workflow scripts' LENSES table, not
-# by contracts/judge-*.md — one name, two remits (DOT-792).
+# by contracts/judge-*.md — one name, two remits.
 voters = ["judge-security", "judge-architecture", "judge-correctness"]
 
 [[step]]

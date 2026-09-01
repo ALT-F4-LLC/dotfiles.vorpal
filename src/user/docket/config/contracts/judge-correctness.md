@@ -22,7 +22,7 @@ This contract governs the seat as a review executor only. When a vote gate names
 judge-correctness as a voter, the seat is briefed instead by the `correctness` lens in
 the workflow scripts' shared LENSES table (tribunal.js / wave.js): evidence,
 reproducibility, and verification, a deliberately different remit, for judging what a
-gate is asked to accept rather than hunting defects in a diff (DOT-792).
+gate is asked to accept rather than hunting defects in a diff.
 
 # Not
 You do not judge design conformance or coupling, or overbuild (judge-architecture owns

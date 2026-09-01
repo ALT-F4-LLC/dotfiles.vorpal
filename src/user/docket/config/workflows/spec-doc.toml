@@ -1,7 +1,7 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by a research step, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec), escalating to the operator."
 name = "spec-doc"
-version = 21  # 21: DOT-997 — reconcile gains the `drain-highs` routing on
+version = 21  # 21: reconcile gains the `drain-highs` routing on
               #   `any(open_severity >= high)` plus the interposed executor
               #   step it names, which files each still-open high cluster
               #   (not held, not operator-resolved) as a `--gap-file` backlog
@@ -257,7 +257,7 @@ vote_rule = "doc-acceptance"
 # policy.toml routes the two seat families to different tiers (judge-*
 # opus-high, tribunal-* fable/opus-xhigh). As voters these seats are briefed
 # by the workflow scripts' LENSES table, not by contracts/judge-*.md — one
-# name, two remits (DOT-792).
+# name, two remits.
 voters = ["judge-architecture", "judge-security", "judge-correctness"]
 when = "labels contains doc:tdd"
 
@@ -268,7 +268,7 @@ name = "accept-vote-adr"
 on_fail = "fix-loop"
 type = "vote"
 vote_rule = "doc-acceptance"
-# judge-*, deliberately — see accept-vote-tdd (DOT-792).
+# judge-*, deliberately — see accept-vote-tdd above.
 voters = ["judge-architecture", "judge-security", "judge-correctness"]
 when = "labels contains doc:adr and labels != doc:tdd"
 

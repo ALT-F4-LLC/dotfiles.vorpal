@@ -1,6 +1,7 @@
 ---
 name: retro
 description: Evolve the shared docket corpus (src/user/docket/config/, operator-installed by `just activate`) and a repo's own optional .docket/config/ additions from run evidence — read run reports and the event log, find what recent runs actually cost and caught, and propose versioned config edits for approval. Operator-invoked only; suggest it after about five completed runs.
+model: fable
 ---
 
 # retro
@@ -190,7 +191,7 @@ literal absolute path (the tool expands no `~`), and there is no source-tree
 fallback: the Workflow tool launches
 only a scriptPath under the session's cwd or a directory added to the session,
 and the settings corpus adds exactly `~/.claude/workflows`
-(`permissions.additionalDirectories`, DOT-952) — the source copy in the
+(`permissions.additionalDirectories`) — the source copy in the
 dotfiles checkout is refused verbatim from any other seat, and since the
 install lags source until the operator's `just activate`, un-activated source
 bytes are bytes no session runs anyway. An absent installed file means the

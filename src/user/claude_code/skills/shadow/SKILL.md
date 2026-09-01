@@ -798,7 +798,7 @@ Then:
      touches when you know them. Under zsh, QUOTE every glob-shaped
      `--scope` value (`--scope 'src/**'`) or run `set -f` first — an
      unquoted `path/**` is glob-mangled by the shell and the scopes are
-     silently dropped (2026-08-25: DOT-834 was created with all three of
+     silently dropped (2026-08-25: an issue was created with all three of
      its scopes missing, repaired only by a later edit).
 
    A finding whose remedy would add a trust entry, widen a sandbox
@@ -846,7 +846,7 @@ Pre-derived because conduct is the richest target. The conductor:
 - **Wave invocation.** By `scriptPath` only — the installed
   `~/.claude/workflows/wave.js`, never `$SRC/workflows/wave.js`: the settings
   corpus adds only `~/.claude/workflows` to a session's directories
-  (`permissions.additionalDirectories`, DOT-952), so the Workflow tool refuses
+  (`permissions.additionalDirectories`), so the Workflow tool refuses
   the source path from a normal conduct seat, and a conductor falling back to
   it — or copying the script somewhere launchable to get past the refusal —
   is a finding, not an accommodation.

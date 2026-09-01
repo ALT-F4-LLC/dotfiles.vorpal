@@ -246,8 +246,9 @@ gate — a PANEL one since 2026-08-11, per **Gates** below, EXCEPT on a run
 operator's alone and no panel stands in for it (bootstrap §5), so if the
 operator has already declined it once, ask them rather than convening — and it
 PINS config bytes for the whole run — from the shared root
-`~/.docket/config` first, then this repo's `.docket/config/` if it has one. Two
-checks first.
+`~/.docket/config` first, then this repo's `.docket/config/` if it has one.
+Three checks first — two on the tree, then one on the ballots already standing
+for this run.
 **Stale install:** diff the dotfiles checkout's corpus source against the
 installed corpus — the source mirrors the install tree for tree, so
 `DOCKET_SRC=~/Development/repository/github.com/ALT-F4-LLC/dotfiles.vorpal.git/main/src/user/docket;
@@ -498,14 +499,53 @@ that duplicates or dangles — a dangling file link inside a scanned root refuse
 activation naming the file. Any symlink `find .docket/config -type l` reports is
 a stop-and-report for the operator to delete; real files there are legitimate,
 being the repo's own additions. A repo with no `.docket` at all is the normal
-case, and this check is simply vacuous there. Both checks run BEFORE the panel
-and neither is a panel matter: a stale install or symlink debris is a
+case, and this check is simply vacuous there. Both TREE checks run BEFORE the
+panel and neither is a panel matter: a stale install or symlink debris is a
 stop-and-report to the operator, whose tree it is.
+
+**A third check, and it is the last thing before the panel: no activation
+proposal is already standing for this run.** An activation ballot is a
+CONVERSATIONAL gate — an ad-hoc proposal bound to no step — so nothing sweeps
+it when a session walks away from its attempt: `docket run abandon` auto-closes
+only the ballots a run's own VOTE STEPS opened, and a killed, paused or
+superseded activation attempt leaves its proposal `open` indefinitely. Before
+`docket vote create`, list what is already standing:
+
+```bash
+docket vote list --json          # open proposals only, by default
+```
+
+There is no `--run` filter on that verb, and the run number lives in the
+proposal's own text: match on the description and on `linked_issues` against
+the issues the fresh dry-run binds, then `docket vote show <id>` on each
+candidate to read the binding it actually names. Reconcile every match before
+you create anything — exactly two outcomes, and say aloud which you chose:
+
+- **ADOPT it** when it names this run and the same binding the fresh dry-run
+  reports. Pass its id to tribunal.js as `voteId` instead of opening a second
+  ballot on an identical question, and if it is short of quorum top up the
+  missing seats per **A panel that cannot finish escalates**.
+- **CLOSE it** when it is superseded — a different binding, a roster since
+  grown, an earlier attempt this one replaces: `docket vote close <id> --reason
+  "superseded by <new-proposal-id>"` once the replacement exists, or, closing
+  first, a reason naming this run and the attempt it replaces. `--reason` is
+  required and the verb refuses without it; `closed` is terminal and is never a
+  verdict.
+
+Skip this and the ballots accumulate silently. Three open activation proposals
+for one run once stood at the same time (RUN-66, 2026-08-31 — one two days old,
+one twelve minutes old from a parallel session, plus the fresh one), and the
+only thing that surfaced them was a tribunal seat noticing mid-panel, which is
+not a mechanism. Both stale rows then took `vote close --reason "Superseded by
+…"` — the same reconcile this check runs BEFORE the panel rather than during
+it. An open ballot is not inert: it shows the operator outstanding work that
+does not exist, and it is what admits a panel past a reap hold.
 
 Then `docket run activate $RUN --dry-run`, and put the binding to the PANEL —
 issues bound, steps, pins, any lint (the dry-run JSON's `scope_warnings`,
 VERBATIM — one gate once dropped all five warnings behind the generic word
-"lint"), plus what the two checks said, all of it as the proposal's context.
+"lint"), plus what the three checks said — including which standing proposal
+you adopted or closed — all of it as the proposal's context.
 Activate only on a clean dry-run and an approved tally, and pass
 `--reason "approved by <proposal-id>"` so the run-activated event carries the
 citation in the engine ledger — the activation's rationale belongs on the
@@ -1628,7 +1668,10 @@ other now.
 **Conversational gates** — ack-reap, activation, budget, and skill fix batches
 when you are conducting one — have no step row and no wave to ride, so
 tribunal.js is still yours to convene: open the proposal yourself, then
-invoke the spawner:
+invoke the spawner. **On an ACTIVATION gate, the standing-proposal reconcile
+comes first** — `docket vote list`, then adopt or `docket vote close --reason`
+each open activation ballot for this run, per **Before the loop**; only then
+does the create below run.
 
 ```bash
 ~/.claude/scripts/policy-escaped-chunks   # policyText — the WHOLE file, escaped,
@@ -2222,6 +2265,22 @@ session-only state the engine cannot reconstruct (in-flight wave ids, un-
 integrated shas, Workflow args for a resume, budget-raise usage, and the
 like) — never a restatement of anything `run status` or this section already
 answers.
+
+**A session that walks away from a conversational gate closes its own
+proposal.** Pausing, abandoning the attempt, or handing the run back with the
+gate undecided leaves every ad-hoc proposal this session opened — activation,
+budget, ack-reap, fix-batch — sitting `open` with nothing to sweep it: the
+`run abandon` transition auto-closes only the ballots the run's own VOTE STEPS
+opened, so a conversational one is yours to clear before the session ends:
+
+```bash
+docket vote close <proposal-id> --reason "RUN-N activation attempt abandoned; not decided"
+```
+
+Leave it standing ONLY when the tally is already in and what you are parking on
+is the OUTCOME. Otherwise the next session's pre-panel check (**Before the
+loop**) finds your row and has to reconcile it, and until someone does, an
+operator's `vote list` reads it as outstanding work.
 
 A park, a resume, and a run's terminal state — `done` or `abandoned` — are all
 milestone points for any standing external-tracker obligation project memory

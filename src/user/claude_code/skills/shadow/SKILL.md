@@ -298,6 +298,18 @@ above:
   delivered to NOBODY — the spawner gets a content-free idle ping and the
   review sits unread in the agent's transcript file (§4).
 
+  **And demand log-before-send, in the brief's own words: append the FULL
+  final review — the severity ranking, its evidence, and the ids of every
+  issue just filed — to the findings log above BEFORE sending it**, so the log
+  alone is always sufficient. `SendMessage` is one delivery path through one
+  seat that can die mid-relay: measured (RUN-66, 2026-09-01) the review
+  arrived at 05:12:37.277Z and a monthly spend limit froze the conductor at
+  05:12:38.270Z, one second later, so it was never relayed; a later kill and
+  `/compact` buried it in the dead transcript, and it survived only because
+  that agent happened to have written it to its log first. Make the habit
+  contractual — the log is what makes the review recoverable without the
+  conductor.
+
 **Then, on the live branch, ping it at every dispatch boundary — that
 obligation is what makes this seat live at all, and it is yours, not the
 agent's.** (Post-mortem there are no boundaries and this whole obligation is
@@ -325,6 +337,13 @@ an idle notification for that back to you, the conductor, after every ping;
 it is expected noise, not a signal. Absorb it silently: no turn text saying
 nothing was needed, no wakeup-cancel call. Speak only when the agent's own
 message carries content — an interrupt, a log entry, the final review.
+
+**When the final review does arrive, relay it to the operator VERBATIM in
+your next message.** It has reached exactly one seat — yours — and holding it
+for a tidier summary later is how it gets lost. If this session dies before
+that relay lands, the review is still on disk: the shadow's findings log at
+the path the brief named, which the brief required it be written to before it
+was sent. Say so if you are recovering one.
 
 Then one line to the operator naming the spawn, and the conversation goes
 back to being a conductor. Beyond the boundary pings, do not poll the agent;

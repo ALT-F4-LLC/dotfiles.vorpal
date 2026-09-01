@@ -190,7 +190,18 @@ expansion has been observed resolving to two DIFFERENT directories across
 consecutive `Bash` calls in one session: one conductor created the probe worktree
 under `$TMPDIR`, and the very next call could not `cd` into it, costing four
 calls (create, two failed `cd`s, remove) before recreating it under the
-literal path. A gate that fails on clean HEAD is not caused
+literal path. **Write the path of every worktree YOU register into your own
+notes the moment you create it** — this probe (which the Go-cache warm below
+reuses) and any worktree you add mid-investigation. Each is a registration in
+the SHARED repo
+that outlives the `Bash` call that made it, and each sits at a DETACHED head
+with no `worktree-wf_*` branch, so the close sweep's branch-derived set below
+cannot see it: the tracked path is the ONLY thing that puts it back in the
+sweep. Remove it as soon as you are done with it, and carry any that survive to
+close-out into the close sweep. Measured: a conductor's `gate-probe-wt`, homed
+in a session scratchpad, was still registered in the shared repo at close-out —
+the scratchpad was then cleaned, leaving a prunable-but-dangling registration
+the run never named. A gate that fails on clean HEAD is not caused
 by this run's changes — commonly ENVIRONMENTAL, an untracked toolchain that
 never materializes in a fresh worktree (a direnv-provisioned
 `.env/bin/protoc` cost one run five parks and eleven override rituals before
@@ -1281,8 +1292,21 @@ way. If one holds a recorded-but-never-integrated sha, remove it too but NAME
 the sha in your close report — it stays reachable in the object database until
 gc, and naming it is what keeps it recoverable.
 
-A worktree's COMMIT being integrated does not clear its WORKING TREE, and the
-sentence above does not cover what is uncommitted. An integration check that
+The sweep set ALSO carries every worktree THIS SESSION registered itself — the
+gate probe, and any worktree you added mid-investigation — matched by the paths
+you wrote down at creation (see **Probe the completion gates** above), because
+such a worktree is DETACHED, carries no `worktree-wf_*` branch, and neither the
+branch pattern nor a path glob will surface it. Those take `git worktree remove
+<path>` alone: there is no paired branch to `git branch -D`, and inventing one
+force-deletes something else. One homed under this session's scratchpad still
+needs the explicit remove — the scratchpad's own cleanup deletes the DIRECTORY
+and leaves the REGISTRATION behind in the shared repo, dangling and prunable
+(measured: a `gate-probe-wt` detached probe survived its whole run that way).
+If your notes and `git worktree list` disagree, the list is the authority for
+what still exists and your notes are the authority for what is YOURS.
+
+A worktree's COMMIT being integrated does not clear its WORKING TREE, and
+nothing above covers what is uncommitted. An integration check that
 clears a worktree's commit says nothing about modified or untracked files
 sitting on top of it, and those are NOT in the object database: `worktree
 remove --force` destroys them outright, with no gc window to recover from. So
@@ -1317,8 +1341,11 @@ content turns out to duplicate what is already on the branch, say so and drop
 it; that judgement is cheap once, and impossible without the description.
 
 Any other `wf_*` entry belongs
-to some other session's run: leave it alone. Only ever remove worktrees this
-run's waves created; other checkouts are not yours.
+to some other session's run: leave it alone. Only ever remove worktrees THIS
+session created — its waves' `worktree-wf_*` checkouts and the probe worktrees
+it registered itself, by their tracked paths. A detached entry you did not
+create and cannot match to a path you wrote down is somebody else's; other
+checkouts are not yours.
 
 Foreign `wf_*` entries are still worth NAMING: list them in the close report
 as operator-cleanup candidates — abandoned runs sweep nothing, and five repos

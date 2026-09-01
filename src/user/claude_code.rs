@@ -345,6 +345,12 @@ impl ClaudeCode {
             .with_permission_allow("WebSearch")
             .with_permission_allow("Workflow");
 
+        // DOT-952: Workflow scriptPath requires the directory to be readable as an
+        // added directory; the Bash(~/.claude/workflows/*) allow above covers only
+        // Bash invocations.
+        let settings_builder = settings_builder
+            .with_permission_additional_directories(vec!["~/.claude/workflows".to_string()]);
+
         let settings_builder = settings_builder
             .with_permission_ask("Bash(docket trust add:*)")
             .with_permission_ask("Bash(docket trust rm:*)")

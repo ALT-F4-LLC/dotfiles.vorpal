@@ -54,6 +54,15 @@ over a wave counts every agent at most once and loses none silently:
   * an agent briefed to do NEITHER is wave overhead. Neither mode emits it;
     plain mode sums it and prints one WAVE OVERHEAD line on stderr.
 
+ASK WHAT THE BRIEF IS FOR BEFORE ASKING WHAT STEP IT NAMES. The three questions
+are answered in one fixed order — briefed to cast? briefed only to read? briefed
+to record? — and the first Yes wins. The read test sits ABOVE the step join
+deliberately: a brief that hands its agent one read command (`docket step show
+STEP-N --json`) is wave overhead however much record-shaped text its prose
+carries, because a probe can quote the obligation it is reading about. Ordering
+it the other way left the ledger safe only by luck — the join ran first, and the
+probe test was merely the label picked once the join had missed.
+
 DO NOT JOIN ON THE FIRST STEP-N IN THE BRIEF. Every executor bootstrap
 names its assignment in a `docket step record STEP-N` obligation, and THAT is the
 join — the same string the claimant is required to pass, so the join cannot
@@ -119,6 +128,22 @@ PROBE_PREFIX = "Run exactly this one command:"
 PROBE_MARK = "read-only probe reporting what the"
 BLOCK_PROBE_MARK = "You are a DIAGNOSTIC PROBE inside a running Docket wave"
 
+# THE BRIEF'S OWN JOB, read from the command it hands the agent rather than from
+# any sentence about it. probeBrief's fixed opening line is followed by exactly
+# one command, and when that command is a READ verb — `docket step show`,
+# `docket step context`, `docket vote show|tally`, `docket next` — the agent was
+# told to read a record and nothing else — a brief that only tells an agent to
+# read a step, which is precisely the shape that must never be joined onto the
+# step it reads. Keying on the command keeps
+# the classification working when the prose around it is reworded (the three
+# marker constants above are all prose), and it is deliberately anchored to the
+# opening line: a brief that merely MENTIONS `docket step show` somewhere in its
+# body — every implementer brief for an engine issue about `step show` does —
+# is not a probe and must not be read as one.
+READ_JOB_RE = re.compile(
+    PROBE_PREFIX + r"(?:\\n|\s)+`?docket\s+(?:[a-z-]+\s+)?"
+    r"(?:show|context|list|tally|next|log)\b")
+
 # The opening line of wave.js's bootstrap() — the ONE brief that makes an agent
 # a claimant. It is the safety net under RECORD_RE: an agent that opens with
 # this and yet carries no claim/record command means the brief was reworded out
@@ -131,7 +156,8 @@ def is_probe(bootstrap: str) -> bool:
     """Was this agent briefed to READ the record rather than advance it?"""
     return (PROBE_MARKER in bootstrap
             or BLOCK_PROBE_MARK in bootstrap
-            or (PROBE_PREFIX in bootstrap and PROBE_MARK in bootstrap))
+            or (PROBE_PREFIX in bootstrap and PROBE_MARK in bootstrap)
+            or READ_JOB_RE.search(bootstrap) is not None)
 
 # The three things a bootstrap brief can say about what its agent is for.
 #
@@ -294,6 +320,24 @@ def main() -> int:
             if bootstrap is None:
                 errors.append(f"{name}: no user message — cannot classify")
                 continue
+            # A BRIEF THAT DECLARES ITSELF A READ IS OVERHEAD, AND THAT ANSWER
+            # OUTRANKS THE STEP JOIN — exactly as the cast test above outranks
+            # it. Until this precedence existed, a probe stayed out of the
+            # ledger only because its brief happened to contain no
+            # record-shaped text: the join ran first and the probe test was
+            # merely the LABEL chosen after it missed. Nothing stopped a
+            # reworded probe brief (or one quoting the obligation it is reading
+            # about — "the executor will run `docket step record STEP-N`") from
+            # matching RECORD_RE and back-filling a read onto the step it read,
+            # which is the probe-misattribution defect in its general form. Asking what the
+            # brief is FOR before asking what step it names makes the fix
+            # structural instead of incidental.
+            #
+            # EXEC_MARK breaks the tie the one way that cannot lose real work:
+            # an executor brief never carries a probe marker, so the two
+            # together mean drift, and the claimant path (with its own drift
+            # error below) still wins.
+            probe = is_probe(bootstrap) and EXEC_MARK not in bootstrap
             # THE STEP JOIN. An agent executes a step only if its
             # brief obliges it to claim/record that step, and the obligation
             # names the id — so read the id from the obligation rather than
@@ -302,7 +346,7 @@ def main() -> int:
             # and a probe's own `docket step show` output can quote a step
             # artifact that names the record command. What briefs the agent is
             # what decides this; what the agent read back cannot.
-            m = RECORD_RE.search(bootstrap)
+            m = None if probe else RECORD_RE.search(bootstrap)
             if m is None:
                 # Briefed neither to cast nor to record: this agent advanced no
                 # step, so its spend is wave overhead — reported below, and NOT
@@ -320,8 +364,7 @@ def main() -> int:
                                   f"no `docket step claim/record STEP-N` — the "
                                   f"bootstrap brief and RECORD_RE have drifted")
                     continue
-                what = ("read-only probe" if is_probe(bootstrap)
-                        else "not a wave agent")
+                what = "read-only probe" if probe else "not a wave agent"
                 overhead.append(
                     (name, f"{what}{f', mentions {step}' if step else ''}"))
                 for u, q in agent_sums.items():

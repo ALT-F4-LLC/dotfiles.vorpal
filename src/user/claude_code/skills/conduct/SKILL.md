@@ -1170,7 +1170,9 @@ read-only probes (`docket step show STEP-N --json`, gate tally and record
 reads, the pre-claim probe), and joining on the mention back-filled ~17K
 mostly-cache tokens apiece onto a step that was still pending and one that was
 superseded — steps no agent ever ran. Those agents are wave overhead: sum them,
-report the total separately, and attribute them to nothing. A judge is the
+report the total separately, and attribute them to nothing. The read test is
+asked FIRST: a brief whose job is one read command stays overhead even when its
+prose quotes the `record` obligation it is reading about. A judge is the
 other exception — it carries `docket vote cast`, not a record, and is keyed by
 seat in the panel back-fill instead.
 

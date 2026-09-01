@@ -1,6 +1,6 @@
 ---
 node: verify-ac
-version: 5
+version: 6
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -34,14 +34,9 @@ body still supplies the criterion; design-qa's findings only supply the observat
 
 # Method
 For each AC in the issue body: classify it as command-verifiable (the engine executed
-the fenced AC commands as *pre-gates at claim*; until the packet carries a gate-results
-section, read the recorded output with `docket step gates <STEP> --json=v2`, which
-carries verdict, exit code, captured output, and pre:true, rather than re-running what
-you cannot observe.
-Sunset: the packet gap is fixed in docket's engine [resolveGateResults now admits
-the requesting step]; once a rebuilt binary is installed and the workflow's verify step
-declares `verify.gate-results` as an input, the packet carries `== INPUT gate-results`
-at claim and this line reverts to "read them from your bundle"), statically
+the fenced AC commands as *pre-gates at claim*, and their recorded verdict, exit code,
+captured output, and `pre: true` arrive in your bundle as the `gate-results` input:
+read that input rather than re-running what you cannot observe), statically
 verifiable (trace the diff and cite file:line), or runtime-only (mark
 unverifiable-static; never substitute a static proxy for a runtime claim). Then judge
 met / unmet / unverifiable with the evidence attached. An AC whose gate command passed

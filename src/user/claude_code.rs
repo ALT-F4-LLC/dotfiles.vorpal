@@ -11,6 +11,8 @@ const OTEL_METRICS_ENDPOINT_MIMIR: &str = "https://mimir.bulbasaur.altf4.domains
 const OTEL_OTLP_PROTOCOL: &str = "http/protobuf";
 const SANDBOX_AGENT_MEMORY_PATH: &str = "~/.claude/agent-memory";
 const SANDBOX_BARE_REPO_ROOT: &str = "~/Development/repository/github.com/ALT-F4-LLC";
+const SANDBOX_CLAUDE_SCRATCH_ROOT: &str = "/tmp/claude-501";
+const SANDBOX_CLAUDE_SCRATCH_ROOT_PRIVATE: &str = "/private/tmp/claude-501";
 const SANDBOX_DARWIN_TEMP_ROOT: &str = "/var/folders";
 const SANDBOX_DOCKET_STORE_PATH: &str = "~/.docket";
 const SANDBOX_DOCKET_TRUST_LOCK_PATH: &str = "~/.config/docket/trust.toml.lock";
@@ -389,6 +391,8 @@ impl ClaudeCode {
                     .iter()
                     .chain(std::iter::once(&SANDBOX_AGENT_MEMORY_PATH))
                     .chain(std::iter::once(&SANDBOX_BARE_REPO_ROOT))
+                    .chain(std::iter::once(&SANDBOX_CLAUDE_SCRATCH_ROOT))
+                    .chain(std::iter::once(&SANDBOX_CLAUDE_SCRATCH_ROOT_PRIVATE))
                     .chain(std::iter::once(&SANDBOX_DARWIN_TEMP_ROOT))
                     .chain(std::iter::once(&SANDBOX_DOCS_CACHE_PATH))
                     .chain(std::iter::once(&SANDBOX_DOCKET_STORE_PATH))

@@ -126,6 +126,46 @@ const SANDBOX_DARWIN_TEMP_ROOT: &str = "/var/folders";
 // ~1,650 sandbox lifts in seven days. With the real cache writable,
 // `GOPROXY=off go build ./...` succeeds sandboxed with no network at all.
 // The stale entry is kept only so an older GOPATH layout does not regress.
+// Auto mode classifier context. A 7-day census (through the comment this
+// replaced, kept in git history) found ZERO classifier denials, so this was
+// deliberately left unset — any `autoMode.allow` entry would have described
+// actions nothing had ever blocked. The operator reversed that call
+// (2026-08-31) after `/config` (or auto mode's own onboarding) populated this
+// block in the live settings.json; captured verbatim here so `just activate`
+// stops overwriting it back to unset. It describes the org/repo/tooling
+// context the classifier weighs, not credentials or secret values — but the
+// repo is PUBLIC, so nothing sensitive-VALUED belongs in either list below.
+const AUTO_MODE_ENVIRONMENT_CONTEXT: &[&str] = &[
+    "### Org-wide",
+    "**Organization**: None configured",
+    "**Cloud provider(s)**: None configured",
+    "**Repository visibility**: PUBLIC — ALT-F4-LLC/dotfiles.vorpal (github.com:ALT-F4-LLC/dotfiles.vorpal.git); any push here is publishing",
+    "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
+    "**Secrets management**: Doppler CLI observed in project tooling and shell history (config-derived, not usage-corroborated as a secret store beyond CLI invocation)",
+    "**Default / protected branches**: `main` (protected, per gh); rulesets: none listed",
+    "**CI/CD deploy targets**: None configured",
+    "**Network posture**: None configured",
+    "**Source control**: The trusted repo (ALT-F4-LLC/dotfiles.vorpal) and its origin remote only — public repo, so only this repo's own work should be pushed there",
+    "**Trusted internal domains**: None configured",
+    "**Trusted cloud buckets**: None configured",
+    "**Key internal services**: None configured",
+    "**Internal package registry**: None configured",
+    "**Sensitive data locations & audiences**: any file or store holding personal data, confidential business data, credentials, regulated data, or similarly sensitive material; preserve exact handles when known and share only with audiences cleared at the [named+specifics] bar; repo has `.env` in .gitignore and a `.docket/bin/secret-scan` tool and `.envrc` — treat these paths as sensitive-data locations",
+    "**Data retention / declassification**: None configured",
+    "**Sensitive remote targets**: any namespace, host, or container whose name carries `prod` or `production` as a whole word or name segment (hyphen/underscore/dot-delimited)",
+    "**Protected deployment namespaces / environments**: None configured — fall back to the Sensitive remote targets heuristic",
+    "**Protected IaC scopes**: IAM, RBAC, networking, quota, and node-pool resources; anything whose name or tag carries `prod` or `production` as a whole word or name segment",
+    "### User-specific",
+    "**Primary use of Claude Code**: software development (dotfiles/Vorpal build tooling and Claude Code agent configuration in this repo)",
+    "**Trusted repo**: ALT-F4-LLC/dotfiles.vorpal (public) — the working directory and its origin remote; since it's public, only this repo's own work should be committed/pushed there, and secrets/sensitive data are never cleared into it by visibility alone",
+    "**Org-specific CLIs**: docket (422× in-project usage; also present in shell history and as a Makefile/justfile-adjacent tool with a bundled secret-scan script) — routine under this repo",
+    "**routine under ~/.claude/ prefix**: fixes and edits under `~/.claude` are governed by the working agreement there (source-only edits, install via `just activate`, never edit installed tree directly)",
+];
+const AUTO_MODE_ALLOW_RULES: &[&str] = &[
+    "$defaults",
+    "Bash(docket:*) in ALT-F4-LLC/dotfiles.vorpal — high-frequency project CLI (422 uses)",
+];
+
 const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
     "~/.cache/golangci-lint-harness",
     "~/.cache/uv",
@@ -237,6 +277,7 @@ impl ClaudeCode {
         .await?;
 
         let settings_builder = settings::ClaudeCodeSettings::new(&self.name, self.systems.clone())
+            .with_agent_push_notif_enabled(true)
             .with_always_thinking_enabled(true)
             .with_attribution_commit("")
             .with_attribution_pr("")
@@ -253,6 +294,7 @@ impl ClaudeCode {
             .with_effort_level("high")
             .with_feedback_survey_rate(0.0)
             .with_include_git_instructions(false)
+            .with_input_needed_notif_enabled(true)
             .with_model("sonnet")
             .with_output_style("Concise")
             .with_permission_default_mode("auto")
@@ -371,6 +413,16 @@ impl ClaudeCode {
                 "bash ~/.claude/hooks/docket-session-start-hook.sh",
                 "command",
             )
+            .with_hook_timeout(
+                "SessionStart",
+                Some("*"),
+                &format!(
+                    "bash '{}' session",
+                    claude_home("hooks/herdr-agent-state.sh")
+                ),
+                "command",
+                10,
+            )
             // The evidence half of the sandbox self-improving loop. Records a
             // line per sandbox denial or unsandboxed retry and does nothing
             // else — no verdict, no output, exit 0 on every path — so it can
@@ -386,19 +438,30 @@ impl ClaudeCode {
             // before it runs, so PostToolUse never sees it — yet those denials
             // are what accumulate toward auto mode's pause threshold (3 in a
             // row or 20 total, not configurable), and the pause is what turns
-            // an unattended executor into a stalled one. `auto_mode` is NOT
-            // configured anywhere in this file, deliberately: a 7-day census of
-            // every transcript found ZERO classifier denials, so any
-            // `autoMode.allow` written today would be describing actions
-            // nothing has ever blocked — speculative widening of what the
-            // classifier permits, bought with no evidence. This hook is what
-            // gives a later one something real to say.
+            // an unattended executor into a stalled one. This hook is what
+            // gives `auto_mode` below something real to say.
             .with_hook(
                 "PermissionDenied",
                 Some("Bash"),
                 "bash ~/.claude/hooks/sandbox-friction-hook.sh",
                 "command",
             );
+
+        // See AUTO_MODE_ENVIRONMENT_CONTEXT above for why this exists despite
+        // the zero-denial census that once argued against it.
+        let settings_builder = settings_builder.with_auto_mode(settings::AutoMode {
+            environment: AUTO_MODE_ENVIRONMENT_CONTEXT
+                .iter()
+                .map(|s| s.to_string())
+                .collect(),
+            allow: AUTO_MODE_ALLOW_RULES
+                .iter()
+                .map(|s| s.to_string())
+                .collect(),
+            soft_deny: Vec::new(),
+            hard_deny: Vec::new(),
+            classify_all_shell: None,
+        });
 
         let settings_builder = settings_builder
             .with_permission_allow("Bash(docket config get:*)")

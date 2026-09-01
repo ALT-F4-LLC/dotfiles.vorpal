@@ -1,7 +1,26 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by a research step, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec), escalating to the operator."
 name = "spec-doc"
-version = 22  # 22: a third TDD security lane pair, `author-tdd-security-slb`
+version = 23  # 23: the three TDD security lane pairs (`author-tdd-security`,
+              #   `-alt`, `-slb` and their `revise-` twins) collapse back to
+              #   one pair. They were three copies of one step — same
+              #   executor, gates, inputs, cost — differing only in which of
+              #   the three security labels each `when` tested, because the
+              #   engine's step-level `when` admitted only conjunctions and
+              #   the disjoint split was the only way to say "any of these".
+              #   The engine now accepts a set-membership clause,
+              #   `labels contains_any [a, b, c]`, evaluated as list
+              #   intersection; a single `when` of
+              #   `labels contains doc:tdd and labels contains_any
+              #   [security-change, security-load-bearing, security]` is the
+              #   exact union of the three old predicates, so no label
+              #   combination routes differently than it did at @22 —
+              #   `author-tdd`/`revise-tdd` keep their three `!=` clauses and
+              #   remain the disjoint complement. `review.after` drops the
+              #   two retired names. Routing equivalence is by construction;
+              #   no spec-doc run had exercised the `-slb` lane, so this is
+              #   not measured against the ledger.
+              # 22: a third TDD security lane pair, `author-tdd-security-slb`
               #   and `revise-tdd-security-slb`, for an issue labelled
               #   `doc:tdd` + `security-load-bearing` with neither
               #   `security-change` nor `security`. policy.toml's [security]
@@ -73,35 +92,7 @@ max_attempts = 2
 name = "author-tdd-security"
 on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
-when = "labels contains doc:tdd and labels contains security-change"
-
-[[step]]
-after = ["research"]
-class = "write"
-emits = "doc"
-executor = "tdd-author-security"
-expected_cost = 1.20
-gates = ["doc-validate", "tdd-preflight", "reserved-name-check"]
-inputs = ["research.*", "issue.body"]
-max_attempts = 2
-name = "author-tdd-security-alt"
-on_fail = "waiting-human"
-packet = ["contracts/{executor}.md"]
-when = "labels contains doc:tdd and labels contains security and labels != security-change"
-
-[[step]]
-after = ["research"]
-class = "write"
-emits = "doc"
-executor = "tdd-author-security"
-expected_cost = 1.20
-gates = ["doc-validate", "tdd-preflight", "reserved-name-check"]
-inputs = ["research.*", "issue.body"]
-max_attempts = 2
-name = "author-tdd-security-slb"
-on_fail = "waiting-human"
-packet = ["contracts/{executor}.md"]
-when = "labels contains doc:tdd and labels contains security-load-bearing and labels != security-change and labels != security"
+when = "labels contains doc:tdd and labels contains_any [security-change, security-load-bearing, security]"
 
 [[step]]
 after = ["research"]
@@ -160,7 +151,7 @@ packet = ["contracts/{executor}.md"]
 when = "labels != doc:tdd and labels != doc:adr and labels != doc:ux-spec"
 
 [[step]]
-after = ["author-tdd-security", "author-tdd-security-alt", "author-tdd-security-slb", "author-tdd", "author-adr", "author-ux-spec", "author-prd"]
+after = ["author-tdd-security", "author-tdd", "author-adr", "author-ux-spec", "author-prd"]
 emits = "findings"
 expected_cost = 0.60
 fanout = ["judge-architecture", "judge-security", "judge-design"]
@@ -213,33 +204,7 @@ inputs = ["reconcile.findings", "issue.latest.doc", "accept-vote-tdd.vote-record
 loop = true
 name = "revise-tdd-security"
 packet = ["contracts/{executor}.md"]
-when = "labels contains doc:tdd and labels contains security-change"
-
-[[step]]
-after_loop = "review"
-class = "write"
-emits = "doc"
-executor = "tdd-author-security"
-expected_cost = 1.50
-gates = ["doc-validate", "reserved-name-check"]
-inputs = ["reconcile.findings", "issue.latest.doc", "accept-vote-tdd.vote-record", "research.*"]
-loop = true
-name = "revise-tdd-security-alt"
-packet = ["contracts/{executor}.md"]
-when = "labels contains doc:tdd and labels contains security and labels != security-change"
-
-[[step]]
-after_loop = "review"
-class = "write"
-emits = "doc"
-executor = "tdd-author-security"
-expected_cost = 1.50
-gates = ["doc-validate", "reserved-name-check"]
-inputs = ["reconcile.findings", "issue.latest.doc", "accept-vote-tdd.vote-record", "research.*"]
-loop = true
-name = "revise-tdd-security-slb"
-packet = ["contracts/{executor}.md"]
-when = "labels contains doc:tdd and labels contains security-load-bearing and labels != security-change and labels != security"
+when = "labels contains doc:tdd and labels contains_any [security-change, security-load-bearing, security]"
 
 [[step]]
 after_loop = "review"

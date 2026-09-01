@@ -1158,6 +1158,10 @@ function blockProbeBrief(label) {
         'block (sanctioned to resubmit the IDENTICAL brief once) from everything',
         'else (operator-escalated). Change nothing, rephrase nothing.',
         '',
+        'WAVE PROBE: not a step execution. Your usage is wave overhead — the',
+        'label below names the step you are READING ABOUT, and the usage join',
+        'must not attribute your tokens to it (DOT-994).',
+        '',
         `TARGET LABEL (match byte-for-byte): ${label}`,
         '',
         'WHERE: the harness persists each workflow run as JSON at',
@@ -1704,8 +1708,11 @@ no summary, no commentary, no code fence, nothing added. If the command errors,
 return the error text verbatim instead.
 
 Do not cast a vote, do not investigate, do not run anything else. You are a
-read-only probe reporting what the record currently says.${servingStep ? `
-You are serving ${servingStep}; usage attribution joins on that id.` : ''}`
+read-only probe reporting what the record currently says.
+
+WAVE PROBE: not a step execution. Your usage is wave overhead${servingStep ? `. This
+read serves ${servingStep}, which is the step it READS, not a step you run — the
+usage join must not attribute your tokens to it (DOT-994)` : ''}.`
 }
 
 function probe(command, label, phaseLabel, servingStep, acct) {

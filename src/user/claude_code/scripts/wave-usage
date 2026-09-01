@@ -39,28 +39,46 @@ because their seats run as steps, while conductor-side panels of identical shape
 recorded nothing. The difference was only WHERE the ballot executed, not how much
 work it did.
 
-THE TWO MODES PARTITION THE AGENTS ON ONE TEST — did this agent cast a ballot? —
-so running both over a wave counts every agent exactly once and drops none:
+THE MODES PARTITION THE AGENTS ON TWO TESTS OF THE BOOTSTRAP BRIEF — was this
+agent told to cast a ballot, and was it told to record a step? — so running both
+over a wave counts every agent at most once and loses none silently:
 
-  * an agent that DID cast is emitted only by `--seats`, keyed by its
+  * an agent BRIEFED TO CAST is emitted only by `--seats`, keyed by its
     (proposal, seat); plain mode auto-skips it (naming it on stderr) because
     emitting it under its step too would double-count the judges;
-  * an agent that NEVER cast is emitted only by plain mode, keyed by the STEP-N
-    in its bootstrap prompt; `--seats` still names it on stderr and drops it,
-    because the engine refuses usage for a voter with no cast and misfiling it
-    onto a seat that did cast would be worse than losing it.
+  * an agent BRIEFED TO RECORD A STEP is emitted only by plain mode, keyed by
+    the step its own `docket step claim/record STEP-N` obligation names;
+    `--seats` names it on stderr and drops it, because the engine refuses usage
+    for a voter with no cast and misfiling it onto a seat that did cast would be
+    worse than losing it;
+  * an agent briefed to do NEITHER is wave overhead. Neither mode emits it;
+    plain mode sums it and prints one WAVE OVERHEAD line on stderr.
 
-The never-cast half is not just the silent-seat checker: EVERY vote-carrying
-wave spawns non-seat agents beside the judges — a claim relay, a record relay, a
-tally reader, a proposal relay, and, on a staged conditional row, a probe that
-discovers a skip. They are haiku-tier and individually small, but they are on
-every vote wave, and before this split both modes threw them away — seats mode
-because they never cast, plain mode because the conductor `--exclude`d the vote
-step wholesale to keep the judges from being counted twice. That exclusion is no
-longer needed and MUST NOT be reinstated: the skip above is per-agent, so a
-conductor now runs plain mode over vote steps and `dispatch backfill-usage`
-carries the relay spend. `--exclude` keeps its own, unrelated purpose below —
-dropping a key a PRIOR dispatch's backfill already carries.
+DO NOT JOIN ON THE FIRST STEP-N IN THE BRIEF (DOT-994). Every executor bootstrap
+names its assignment in a `docket step record STEP-N` obligation, and THAT is the
+join — the same string the claimant is required to pass, so the join cannot
+disagree with the record, exactly as the seats join reads the cast. A bare
+STEP-N search cannot tell "execute this step" from "read this step": wave.js
+probes a step's row before claiming it (`docket step show STEP-N --json`), and
+under the old first-match join each such probe back-filled ~17K mostly-cache
+tokens onto the step it PROBED — measured on RUN-66's wf_68b7e3e1-abe, where
+STEP-3146 (pending, never claimed), STEP-3158 (superseded) and STEP-3166 got
+whole ledger rows for steps no agent ever ran, and STEP-3156/STEP-3157 carried
+their probe's spend on top of their executor's. The step id a probe names is
+kept only to LABEL it in the overhead report.
+
+The overhead half is not just the silent-seat checker: EVERY wave spawns agents
+that execute nothing — the pre-claim probe, the gate's show/tally/record/target
+reads, the fix-round ancestry reads, the block-probe that recovers a null
+spawn's reason, and wave.js's own staged-closure polling. They are haiku-tier
+and individually small, but they are on every wave. Before the per-agent split
+both modes threw them away — seats mode because they never cast, plain mode
+because the conductor `--exclude`d the vote step wholesale to keep the judges
+from being counted twice. That exclusion is no longer needed and MUST NOT be
+reinstated: the skips are per-agent, so a conductor runs plain mode over vote
+steps and `dispatch backfill-usage` carries every agent that really recorded
+one. `--exclude` keeps its own, unrelated purpose below — dropping a key a PRIOR
+dispatch's backfill already carries.
 
 The PROPOSAL half of that key is what makes one run of the script serve a
 multi-panel wave: one wave now seats several panels (the staged closure rides
@@ -70,37 +88,71 @@ carry the proposal so the caller can `jq` the one output per panel instead of
 hand-deriving the mapping. `--exclude` still names a bare SEAT in this
 mode and drops it under every proposal, which is its documented contract.
 
-wave.js spawns internal bookkeeping probes of its own — staged-closure polling
-(`docket next --run ... --json`) and ballot reads — whose briefs carry no
-STEP-N unless the probe serves one. A step-less agent whose bootstrap matches
-that fixed probe brief is wave.js polling itself, not an attribution failure:
-it is named on stderr and dropped, the same way `--seats` drops a silent judge.
-A probe that DOES serve a step names it in its brief and is
-attributed normally, so only the internal machinery is excluded.
+Overhead is reported, never guessed at: each such agent is named on stderr with
+what it read and what it cost, under one WAVE OVERHEAD total. That report is the
+whole point of the third bucket — a wave's probe spend is real, it simply has no
+step that owns it, and printing it beats both misfiling it and dropping it
+silently.
 
-Deterministic, read-only, stdout-only. Exit 1 if any agent's step cannot be
-attributed or a dispatched agent carries no usage — silence must not look like
-success.
+Deterministic, read-only, stdout-only. Exit 1 if an agent's bootstrap cannot be
+read at all, if an agent briefed as a step executor names no step to record (the
+brief and the join have drifted), or if a dispatched agent carries no usage —
+silence must not look like success.
 """
 import json, os, re, sys
 
-# The fixed opening line and self-description of wave.js's probeBrief(). Both
-# must appear in the agent's FIRST user message; containment (not a prefix
-# test) because list-shaped message content arrives JSON-encoded, and both
-# constants must stay newline-free — the brief's own line breaks arrive as
-# literal backslash-n in that encoding.
+# The markers that identify an agent spawned to READ rather than to execute.
+# Containment (not a prefix test) because list-shaped message content arrives
+# JSON-encoded, and every constant must stay newline-free AND PURE ASCII — the
+# brief's line breaks arrive as literal backslash-n in that encoding, and its em
+# dashes as literal \\u2014.
+#
+# PROBE_MARKER is the explicit declaration wave.js's probeBrief() now opens with,
+# and is the marker to key on going forward (DOT-994 seam (b)). The other three
+# are the shapes already deployed in transcripts that predate it, so a back-fill
+# over an OLD wave classifies correctly too: probeBrief's fixed opening line plus
+# its self-description (truncated deliberately — wave.js writes "what the record
+# currently says" and tribunal.js's checker "what the VOTE record currently
+# says"; both are probes), and blockProbeBrief's opening sentence.
+PROBE_MARKER = "WAVE PROBE: not a step execution"
 PROBE_PREFIX = "Run exactly this one command:"
-PROBE_MARK = "read-only probe reporting what the record currently says"
+PROBE_MARK = "read-only probe reporting what the"
+BLOCK_PROBE_MARK = "You are a DIAGNOSTIC PROBE inside a running Docket wave"
 
-# The step id an agent's bootstrap names, and the cast command the brief hands a
-# judge. BOTH are read on every run, in either mode, because the answer to "did
-# this agent cast?" is what splits the wave between the two modes — one join,
-# one partition, so an agent cannot be emitted twice or fall between them.
-# The proposal id and the seat name come from ONE match on that command, never
-# from two searches: a brief that names a second cast anywhere would otherwise
-# pair one line's proposal with another line's voter.
+# The opening line of wave.js's bootstrap() — the ONE brief that makes an agent
+# a claimant. It is the safety net under RECORD_RE: an agent that opens with
+# this and yet carries no claim/record command means the brief was reworded out
+# from under the join, and every executor in the wave would otherwise fall
+# silently into the overhead bucket, emptying the ledger while exiting 0.
+EXEC_MARK = "You are executing one step of a Docket run"
+
+
+def is_probe(bootstrap: str) -> bool:
+    """Was this agent briefed to READ the record rather than advance it?"""
+    return (PROBE_MARKER in bootstrap
+            or BLOCK_PROBE_MARK in bootstrap
+            or (PROBE_PREFIX in bootstrap and PROBE_MARK in bootstrap))
+
+# The three things a bootstrap brief can say about what its agent is for.
+#
+# CAST_RE and RECORD_RE are the JOINS, and both are read on every run in either
+# mode, because the two answers together are what split the wave into judges,
+# claimants, and overhead — one pass, one partition, so an agent cannot be
+# emitted twice or fall between the modes.
+#
+# Each join reads the very command the agent is REQUIRED to run, so it cannot
+# disagree with what the engine recorded: the seat from `docket vote cast`, the
+# step from `docket step claim`/`record`. The proposal id and the seat name come
+# from ONE match on the cast command, never from two searches: a brief that
+# names a second cast anywhere would otherwise pair one line's proposal with
+# another line's voter.
+#
+# STEP_RE is NOT a join (DOT-994). It is a loose "which step is this agent
+# looking at" read, used only to label an overhead agent in the report — a probe
+# names the step it READS, which is precisely the id that must not be joined on.
 STEP_RE = re.compile(r"STEP-\d+")
 CAST_RE = re.compile(r"docket vote cast\s+(\S+)\s+--voter\s+(\S+)")
+RECORD_RE = re.compile(r"docket step (?:claim|record|complete)\s+(STEP-\d+)")
 
 UNITS = {
     "input_tokens": "input_tokens",
@@ -120,19 +172,24 @@ in <transcript-dir> and deduplicated by message id. Read-only; stdout only.
   --seats           key rows by (proposal, voter), read from each judge's own
                     `docket vote cast <proposal> --voter <seat>` command, for
                     `docket vote backfill-usage --from-json -`. Emits ONLY the
-                    agents that cast. Without it rows are keyed by the STEP-N in
-                    each agent's bootstrap prompt, for `docket dispatch
-                    backfill-usage --from-json -`, and cover ONLY the agents
-                    that never cast — the wave's relays and probes included.
-                    The two modes partition the wave: run both, count each agent
-                    once, and do not `--exclude` vote steps to compensate.
+                    agents briefed to cast. Without it rows are keyed by the step
+                    each agent's own `docket step claim/record STEP-N`
+                    obligation names, for `docket dispatch backfill-usage
+                    --from-json -`, and cover ONLY the agents that were briefed
+                    to record a step. An agent briefed to do neither — every
+                    read-only probe wave.js spawns — is WAVE OVERHEAD: it is
+                    summed and reported on stderr, never keyed to the step it
+                    happened to read (DOT-994). The modes partition the wave:
+                    run both, count each agent once, and do not `--exclude` vote
+                    steps to compensate.
   --exclude VALUE   drop a key a prior back-fill already carries: a STEP-N, or
                     in --seats mode a bare SEAT name, dropped under every
                     proposal. Repeatable.
   -h, --help        print this and exit 0.
 
-Exits 1 if any agent's step cannot be attributed or a dispatched agent carries
-no usage; 2 on a usage error.
+Exits 1 if an agent's bootstrap cannot be read, an agent briefed as a step
+executor names no step to record, or a dispatched agent carries no usage; 2 on a
+usage error.
 """
 
 def main() -> int:
@@ -173,7 +230,8 @@ def main() -> int:
     errors: list[str] = []
     unattributed: list[str] = []
     seated: list[str] = []
-    probes: list[str] = []
+    overhead: list[tuple[str, str]] = []
+    overhead_sums = {u: 0 for u in UNITS.values()}
     for name in sorted(os.listdir(d)):
         if not (name.startswith("agent-") and name.endswith(".jsonl")):
             continue
@@ -233,16 +291,43 @@ def main() -> int:
                 # conductor never has to `--exclude` a vote step to compensate.
                 seated.append(f"{name} ({cast[0]}/{cast[1]})")
                 continue
-            if step is None:
-                if (bootstrap is not None and PROBE_PREFIX in bootstrap
-                        and PROBE_MARK in bootstrap):
-                    # wave.js polling itself — internal machinery, no step to
-                    # attribute to; see module docstring.
-                    probes.append(name)
-                    continue
-                errors.append(f"{name}: no STEP-N found in first user message")
+            if bootstrap is None:
+                errors.append(f"{name}: no user message — cannot classify")
                 continue
-            key = step
+            # THE STEP JOIN (DOT-994). An agent executes a step only if its
+            # brief obliges it to claim/record that step, and the obligation
+            # names the id — so read the id from the obligation rather than
+            # grabbing the first STEP-N in the prose. Read it from the BOOTSTRAP
+            # ONLY, never from later user messages: those carry tool results,
+            # and a probe's own `docket step show` output can quote a step
+            # artifact that names the record command. What briefs the agent is
+            # what decides this; what the agent read back cannot.
+            m = RECORD_RE.search(bootstrap)
+            if m is None:
+                # Briefed neither to cast nor to record: this agent advanced no
+                # step, so its spend is wave overhead — reported below, and NOT
+                # keyed to whatever step its brief happens to mention. Keying on
+                # that mention is what put ~17K tokens apiece on a pending and a
+                # superseded step (DOT-994); a probe names the step it READS.
+                #
+                # The one shape that must never land here is an executor. If a
+                # brief reword ever breaks RECORD_RE, every claimant would fall
+                # into this bucket and the wave would back-fill NOTHING while
+                # exiting 0 — so an agent carrying the executor opening with no
+                # claim/record command is a hard error, not overhead.
+                if EXEC_MARK in bootstrap:
+                    errors.append(f"{name}: opens as a step executor but names "
+                                  f"no `docket step claim/record STEP-N` — the "
+                                  f"bootstrap brief and RECORD_RE have drifted")
+                    continue
+                what = ("read-only probe" if is_probe(bootstrap)
+                        else "not a wave agent")
+                overhead.append(
+                    (name, f"{what}{f', mentions {step}' if step else ''}"))
+                for u, q in agent_sums.items():
+                    overhead_sums[u] += q
+                continue
+            key = m.group(1)
         # In seats mode the key is (proposal, seat) but `--exclude` names a bare
         # SEAT, unchanged from before the proposal half existed: one exclusion
         # drops that seat under every proposal in the directory.
@@ -256,14 +341,20 @@ def main() -> int:
         for u, q in agent_sums.items():
             t[u] += q
     for name in unattributed:
-        print(f"wave-usage: {name}: no seat (never cast) — dropped here, "
-              "carried by plain mode (run without --seats)", file=sys.stderr)
+        print(f"wave-usage: {name}: no seat (never cast) — dropped here; plain "
+              "mode carries it if it recorded a step, and reports it as wave "
+              "overhead if it did not", file=sys.stderr)
     for label in seated:
         print(f"wave-usage: {label}: cast a ballot — skipped here, carried by "
               "seats mode (run with --seats)", file=sys.stderr)
-    for name in probes:
-        print(f"wave-usage: {name}: wave.js internal probe (no step) — "
-              "usage dropped", file=sys.stderr)
+    for name, what in overhead:
+        print(f"wave-usage: {name}: {what} — recorded no step, so its usage is "
+              "wave overhead and is attributed to none", file=sys.stderr)
+    if overhead:
+        print(f"wave-usage: WAVE OVERHEAD: {len(overhead)} agent(s), "
+              + ", ".join(f"{u} {q:,}" for u, q in overhead_sums.items())
+              + " — no step owns this spend; it is reported, not back-filled",
+              file=sys.stderr)
     if errors:
         for e in errors:
             print(f"wave-usage: {e}", file=sys.stderr)

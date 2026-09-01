@@ -1042,9 +1042,8 @@ whole design — the flow never needs another.
 in `wave-usage` output and always refused: (a) vote-kind steps — a vote step
 is never CLAIMED, so its attempt stays 0 and the step ledger has no key to
 hang per-seat rows on; (b) steps outside THIS dispatch's manifest — a gate
-probed in one wave and seated in the next emits usage in both journals, and
-probe agents inherit whatever step id their brief names. Filter both out
-(`wave-usage --exclude STEP-N`, repeatable). If the engine still refuses a row
+probed in one wave and seated in the next emits usage in both journals. Filter
+both out (`wave-usage --exclude STEP-N`, repeatable). If the engine still refuses a row
 as already-recorded, that refusal is AUTHORITATIVE — delete that step's rows
 and resubmit the rest; it is not a discrepancy to report (measured: seven
 whole-batch aborts across three runs, each hand-filtered with ad-hoc python).
@@ -1078,9 +1077,17 @@ resolved the same way as `attach-probe` — `~/.claude/scripts/wave-usage` when
 source path stays runnable; only Workflow scriptPaths are seat-restricted). It emits the backfill rows JSON
 directly: four typed units per step, usage deduplicated by message id
 (streamed assistant messages repeat across lines; a per-line sum
-double-counts, measured 1.65-2.36× on one run), attribution via the bootstrap
-prompt. It exits nonzero when an agent cannot be attributed or carries no
-usage — report that, do not paper over it. Capture ITS exit, not a pipeline's:
+double-counts, measured 1.65-2.36× on one run), each row keyed by the step its
+agent's own `docket step claim/record STEP-N` obligation names. An agent
+briefed to neither cast nor record — every read-only probe the wave spawns —
+is WAVE OVERHEAD: the script sums it onto one stderr line and attributes it to
+no step, because a probe names the step it READ and back-filling that read onto
+that step invents spend for work no one did (DOT-994: ~17K tokens apiece landed
+on a pending and a superseded step before this). That overhead line is a
+report, not a discrepancy — quote its total in the wave report if anything,
+and never try to `--exclude` your way around it. It exits nonzero when an
+executor's brief names no step to record or an agent carries no usage — report
+that, do not paper over it. Capture ITS exit, not a pipeline's:
 `$?` after `script | tail` reports tail's exit, and one conductor's first close
 checked exactly that dead value (redirect to a file, then test). Only if the
 script is absent or refuses do you delegate: ONE `executor-read` agent on the
@@ -1141,8 +1148,19 @@ holds three kinds of file, and only one carries usage:
 
 Attribution is therefore a JOIN on `agentId`, not a lookup by step id: read
 each `agent-<id>.jsonl` for usage, and map its `agentId` to a step through the
-step id in the agent's first `user` message — the bootstrap prompt names the
-step, which is what makes the mapping possible. There is no `label` field.
+agent's first `user` message — the bootstrap prompt. There is no `label` field.
+
+**Join on the OBLIGATION the brief carries, never on the first `STEP-N` in it**
+(DOT-994). An agent owns a step only if its brief tells it to `docket step
+claim`/`record STEP-N` — that id, the one it must pass back to the engine, is
+the key. A brief that merely mentions a step is a READ: every wave spawns
+read-only probes (`docket step show STEP-N --json`, gate tally and record
+reads, the pre-claim probe), and joining on the mention back-filled ~17K
+mostly-cache tokens apiece onto a step that was still pending and one that was
+superseded — steps no agent ever ran. Those agents are wave overhead: sum them,
+report the total separately, and attribute them to nothing. A judge is the
+other exception — it carries `docket vote cast`, not a record, and is keyed by
+seat in the panel back-fill instead.
 
 **If `close` refuses, that is the system working.** It refuses on discrepancies
 — a step claimed but never recorded, or a finished step with no usage row.

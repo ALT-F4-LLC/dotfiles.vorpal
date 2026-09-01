@@ -1,6 +1,6 @@
 ---
 name: refit
-description: Redesign one definition in the shared docket corpus under src/user/docket/config — a workflow, policy.toml, an executor contract, a packet fragment, or a payload schema — through an interactive, capability-checked refactor: sweep the target's blast radius across every consumer, mine run evidence across every project that exercised it to ground optimization proposals, iterate the target spec with the operator, verify every claimed capability against the live docket engine (and wave.js) source, surface each engine-forced deviation as an explicit decision, render the settled design as a visual Artifact for approval before implementing, then land the full co-change closure (workflow TOML, contracts, fragments, policy rows, vote-seat lenses, schemas), lint every consumer, file engine issues for real gaps, and commit. Invoked bare (`/refit` with nothing named) it instead runs corpus mode — review every surface in the corpus (workflows AND policy, contracts, fragments, schemas), mine run evidence triage-then-deep-dive, and interactively suggest (never perform) refits, removals, and additions, ending with an agreed action list. Use on "refit the ui-change workflow", "/refit standard-change", "/refit policy.toml", "tighten the implement contract", "refit the findings schema", "refactor a docket workflow", "optimize the release pipeline", "add a phase to release", "redesign the investigation pipeline", bare "/refit" for a whole-corpus review, or any request to change or improve what any definition under src/user/docket/config does.
+description: Redesign one definition in the shared docket corpus under src/user/docket/config — a workflow, policy.toml, an executor contract, a packet fragment, or a payload schema — through an interactive, capability-checked refactor: sweep the target's blast radius across every consumer, mine run evidence across every project that exercised it to ground optimization proposals, iterate the target spec with the operator, verify every claimed capability against the live docket engine (and wave.js) source, surface each engine-forced deviation as an explicit decision, render the settled design as a visual Artifact for approval before implementing, then land the full co-change closure (workflow TOML, contracts, fragments, policy rows, vote-seat lenses, schemas), lint every consumer, file engine issues for real gaps, and commit. Invoked bare (`/refit` with nothing named) it instead runs corpus mode — mine run evidence across every surface in the corpus (workflows AND policy, contracts, fragments, schemas) triage-then-deep-dive, verdict each one, and carry every refit, removal, and addition the evidence calls for through the same §1–§8 process to a landed commit, target by target, with the same per-target deviation gates and artifact approval as single mode. Use on "refit the ui-change workflow", "/refit standard-change", "/refit policy.toml", "tighten the implement contract", "refit the findings schema", "refactor a docket workflow", "optimize the release pipeline", "add a phase to release", "redesign the investigation pipeline", bare "/refit" to redesign the whole corpus, or any request to change or improve what any definition under src/user/docket/config does.
 model: fable
 context: fork
 ---
@@ -32,8 +32,10 @@ The corpus has five refittable surfaces, all under
 grooming, no executing the pipeline you just changed (`conduct` does that).
 A live run is out of scope unless the operator asks for one afterward.
 
-Two modes, dispatched on the invocation: a named target enters single mode
-(§1–§8); no parameter at all enters corpus mode (next section).
+Two modes, dispatched on the invocation: a named target enters single mode,
+running §1–§8 on that one definition; no parameter at all enters corpus mode
+(next section), which runs the same §1–§8 across the whole corpus, one
+target at a time.
 
 ## Design canon
 
@@ -72,11 +74,15 @@ you make, on any surface — not limited to the five above:
 
 ## Corpus mode (invoked bare)
 
-Invoked with nothing named, review the whole corpus instead of redesigning
-one definition. Suggest-only: corpus mode never edits, removes, or creates
-any file — every accepted change is deferred to a single-mode `refit
-<target>` the operator runs afterward. Sections 1–8 apply only to single
-mode.
+Invoked with nothing named, redesign the whole corpus instead of one
+definition: mine and verdict every surface, then carry every verdict that
+calls for a change through the full §1–§8 process to a landed commit,
+target by target, in the same session. Unconditional — every definition
+gets mined and verdicted and every non-`keep` verdict proceeds straight into
+its own §1–§8 run; there is no upfront action list to approve before work
+starts. The operator checkpoints are the same ones single mode already has —
+§4's deviation gate and §5's artifact approval — hit per target, as each is
+reached, not batched.
 
 **Triage, then deep-dive.** Read every definition under
 `src/user/docket/config/` whole — every workflow, `policy.toml`, every
@@ -89,27 +95,35 @@ cost far off `expected_cost`, executors whose emits chronically fail their
 schema or draw judge rejections, policy rows routing nothing, fragments and
 schemas with zero consumers. §2's evidence rules apply throughout: counts
 over vivid samples, thin evidence said plainly. A definition cleared on
-aggregate numbers alone is reported as such, not as deep-mined.
+aggregate numbers alone is reported as such, not as deep-mined. This pass
+satisfies §2 for every target it deep-dives — don't re-mine a target on
+entry to its own §1–§8 run; carry the evidence forward as the finding.
 
-**Verdicts.** Every surface gets them. Workflows: **keep** (evidence shows
-it earning its shape), **refit** (name what needs changing and why, citing
-numbers — the suggestion is "run `refit <name>`", never an edit here), or
-**remove** (no runs, superseded, or overlapping a sibling that covers it —
-removal too is only proposed). The shared surfaces get the same three
-verdicts with their own evidence: a contract whose emits keep drawing the
-same judge rejection, a fragment duplicated into contract bodies, a policy
-row whose tier the cost data contradicts, an orphaned schema version.
-Alongside the verdicts, propose **additions** for gaps the evidence shows
-the corpus not covering — each a named gap, its evidence, and a
-one-paragraph shape; full design belongs to the follow-up refit.
+**Verdicts drive the target, not a suggestion.** Every definition gets one:
 
-**Interactive review.** Deliver a plain-language chat report — per-target
-verdict with cited evidence, then the addition proposals — and walk the
-operator through it via `AskUserQuestion` rounds, one accept/reject per
-suggestion (batched where they fit), recommended option first. End with the
-agreed action list: which `refit <target>` runs to do, which removals were
-approved (still landed by a follow-up, not by this mode), which additions to
-design. Then stop — corpus mode records nothing and lands nothing.
+- **keep** — evidence shows it earning its shape. Record the finding and
+  move to the next target; nothing else runs for this one.
+- **refit** — name what needs changing and why, citing numbers. That
+  evidence-backed shape IS the target spec for this run — §1's "iterate a
+  vague ask with the operator" is what single mode does when the operator
+  supplies the ask; here the mining already produced one. Run §1's
+  blast-radius sweep, then §2 (already satisfied above) through §8 on this
+  target, landing its own commit before moving to the next.
+- **remove** — no runs, superseded, or overlapping a sibling that already
+  covers it. Confirm via §1's blast-radius sweep that nothing still depends
+  on it, gate the removal through §4 like any other deviation, get §5
+  approval on the blast-radius picture, then execute the removal — delete
+  the file, retire the references that named it — through §7–§8, landing
+  its own commit.
+- **addition** — a named gap the evidence shows the corpus not covering.
+  Design its shape on the surface the gap demands (workflow, contract,
+  fragment, or schema), then run §4 for any deviation the design forces,
+  §5 for approval, and §6–§8 to implement and land it as its own commit.
+
+Report each target's verdict and evidence in plain language as it's reached,
+not held back for an end-of-run summary — the operator sees the corpus-wide
+shape of the sweep as it happens, and the §4/§5 gates are where they weigh
+in on any one target.
 
 ## 1. Intake
 

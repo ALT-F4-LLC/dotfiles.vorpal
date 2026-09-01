@@ -1,6 +1,8 @@
 ---
 name: refit
 description: Redesign one definition in the shared docket corpus under src/user/docket/config — a workflow, policy.toml, an executor contract, a packet fragment, or a payload schema — through an interactive, capability-checked refactor: sweep the target's blast radius across every consumer, mine run evidence across every project that exercised it to ground optimization proposals, iterate the target spec with the operator, verify every claimed capability against the live docket engine (and wave.js) source, surface each engine-forced deviation as an explicit decision, render the settled design as a visual Artifact for approval before implementing, then land the full co-change closure (workflow TOML, contracts, fragments, policy rows, vote-seat lenses, schemas), lint every consumer, file engine issues for real gaps, and commit. Invoked bare (`/refit` with nothing named) it instead runs corpus mode — review every surface in the corpus (workflows AND policy, contracts, fragments, schemas), mine run evidence triage-then-deep-dive, and interactively suggest (never perform) refits, removals, and additions, ending with an agreed action list. Use on "refit the ui-change workflow", "/refit standard-change", "/refit policy.toml", "tighten the implement contract", "refit the findings schema", "refactor a docket workflow", "optimize the release pipeline", "add a phase to release", "redesign the investigation pipeline", bare "/refit" for a whole-corpus review, or any request to change or improve what any definition under src/user/docket/config does.
+model: fable
+context: fork
 ---
 
 # refit

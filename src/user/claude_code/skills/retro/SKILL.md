@@ -2,6 +2,7 @@
 name: retro
 description: Evolve the shared docket corpus (src/user/docket/config/, operator-installed by `just activate`) and a repo's own optional .docket/config/ additions from run evidence — read run reports and the event log, find what recent runs actually cost and caught, and propose versioned config edits for approval. Operator-invoked only; suggest it after about five completed runs.
 model: fable
+context: fork
 ---
 
 # retro

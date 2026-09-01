@@ -1,7 +1,8 @@
 ---
 name: reconcile
-model: fable
 description: Make one Docket project's workflow registry match the installed file corpus exactly — register every version the corpus declares but the registry lacks, restore one that was retired by mistake, retire every other version of that name so the corpus file is the only thing binding, and report orphaned names and frozen-row conflicts it must not fix on its own. Use on "reconcile the workflows", "/reconcile", "make the registry match the corpus", "the workflows are out of date", "register the new workflow versions", "deprecate the old workflows", or after any `just activate` that moved the corpus forward. Read-only until it prints a plan and the operator approves it. Registry-only: it never edits a workflow TOML, and corpus authoring belongs to `refit`.
+model: fable
+context: fork
 ---
 
 # reconcile

@@ -1,6 +1,8 @@
 ---
 name: commit
 description: Turn the working tree into clean conventional commits — survey every change, split unrelated work into separate logical commits, guard against junk and secret-shaped files, and commit immediately without asking. Use on "commit", "commit this", "commit my changes", "make a commit", "/commit". Lands commits only; never pushes.
+model: fable
+context: fork
 ---
 
 # commit

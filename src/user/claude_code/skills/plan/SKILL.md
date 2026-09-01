@@ -148,7 +148,18 @@ issue it omits is blocked and stays out of the batch. Join its ids against the
 before you rank it, ask the operator what "the next batch" should mean this
 time — one `AskUserQuestion` round, the same batching discipline as §1's
 questions, placed here because these answers narrow the CANDIDATE set that
-ranking runs over, not the ACs inside it:
+ranking runs over, not the ACs inside it.
+
+**This round runs BEFORE any candidate batch is built or presented — it is
+not the same round as step 5's confirmation, and a ranked batch offered with
+only a which-variant choice is not this round, it is skipping it.** A live
+bare-`/plan` session (agentic-services, RUN-67) did exactly that: it
+presented a fully-ranked 4-issue batch with one "how to proceed" question and
+never asked kind filter, width, or cap — caught only when the operator asked
+"Aren't you supposed to ask me questions around the scope, etc?" If you reach
+step 5 and these answers do not exist yet, stop and ask them now rather than
+folding them into the proposal round; do not treat a plausible default as
+consent.
 
 - **Kind filter** — which kinds of work belong in this batch: every kind
   (Recommended), bugs only, features only, or a kind/label the operator
@@ -201,7 +212,21 @@ most optimal batch, as the operator settled it ("ready, high-priority, parallel-
    separator, and a leading wildcard collides with everything. A colliding
    issue is deferred with the glob pair named, whatever its priority: a
    batch that serializes against itself is not the optimal one, it is the
-   slow one. But defer only on a REAL collision. Before you drop a candidate,
+   slow one.
+
+   **Worktree isolation is not a reason to skip this check, and an operator
+   invoking it is not grounds to drop the collision.** Every write step runs
+   in its own isolated worktree during implementation, but `conduct` still
+   cherry-picks each write step's commit onto the SAME shared branch, in
+   step-id order, at integration — a real scope collision is still a real
+   conflict risk there, worktrees notwithstanding. A live bare-`/plan`
+   session was told "everything is done in worktrees, collisions shouldn't
+   be an issue" and recorded that without correction; say plainly instead
+   that worktrees isolate the implementation window only, integration is
+   still one shared branch, and ask again rather than let the equivalence
+   stand.
+
+   But defer only on a REAL collision. Before you drop a candidate,
    check whether the overlap is an artifact of an over-broad glob on either
    side — a leading wildcard, a package root where one subdirectory is what
    the ACs actually name, a `**` that predates the work it now describes. If
@@ -360,6 +385,21 @@ request intake are exactly these, and nothing else in §3 relaxes:
 Then present the recorded run per §5 and stop. Invoking this skill bare
 again after this run closes finds the deferred list waiting as next batch's
 ready set — that is the shape, not a shortcoming.
+
+**Reshaping a recorded-but-not-yet-active run never ends on an unanswered
+question.** The operator asking, later in the same conversation, to fix a
+run-readiness blocker on an already-recorded run — relabel an issue, add it
+to the roster, adjust the budget — is legitimate reshaping under this
+section, not an escape from it. Run it, then re-run §5's presentation with
+the run's CURRENT state (roster, budget, First-wave width) before yielding
+the turn, even if a new open item surfaced along the way — name that item as
+a question inside the presentation, not as the last line of the message with
+nothing else restated. A live bare-`/plan` session (agentic-services,
+RUN-67) reshaped a run's roster, fixed a blocking label, raised its budget,
+then ended mid-question about a newly-surfaced scope gap with no restated
+run state and no re-presentation — leaving the operator to infer RUN-67's
+actual status rather than being told it. Trailing off there is the same
+failure §5 exists to prevent for the original recording.
 
 ## 2. Read before you decompose
 

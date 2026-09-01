@@ -77,6 +77,16 @@ one grooming ledger with four kinds of finding:
   uncheckable.
 - **Mis-prioritized:** priority missing, or plainly out of line with the
   issue's content relative to the rest of the backlog.
+- **Stale-binding label:** a label that no longer matches the issue's
+  current content and, in doing so, narrows or zeroes its workflow
+  bindings — check with the same probe `plan`'s bare mode uses (`docket
+  workflow list --json=v2 --limit 0`, then `docket workflow show <name>`
+  per candidate, evaluated against the issue's labels). A label that was
+  accurate when applied but outlived what it described is exactly the kind
+  of drift a content-only pass misses: AGT-602 carried a `retro` label that
+  zeroed every registered workflow match, survived two prior groom passes
+  that fixed its ACs but never touched the label, and silently excluded it
+  from every run-ready batch until caught by hand.
 
 Judge from what the issues and the repo actually say, not from vibes. Read
 the repo (`Read`, `Grep`, `Glob`) only as far as a judgment needs — to
@@ -86,13 +96,17 @@ landed — never to work an issue.
 ## 3. Safe edits, applied now
 
 Non-destructive edits land directly, no questions asked: labels (e.g.
-`stale` on §2's stale findings), priority (except on run-included or
-claimed issues — those route to §4), comments, and field fills. A field
-fill drafts the missing goal or acceptance criteria from the issue's own
-description, comments, and the repo — criteria must be checkable, not
-aspirational — and edits it into the issue with a comment noting groom
-drafted it. Fill what is missing; never rewrite or restyle prose the
-operator already wrote. Record every applied edit for the report.
+`stale` on §2's stale findings, or removing a §2 stale-binding label once
+its workflow-narrowing effect is confirmed), priority (except on
+run-included or claimed issues — those route to §4), comments, and field
+fills. A field fill drafts the missing goal or acceptance criteria from the
+issue's own description, comments, and the repo — criteria must be
+checkable, not aspirational — and edits it into the issue with a comment
+noting groom drafted it. Fill what is missing; never rewrite or restyle
+prose the operator already wrote. A content fill and a stale-binding label
+often belong to the same issue — check the label again after any content
+edit, not only at initial survey, since resolving what made a label accurate
+is exactly what leaves it stale. Record every applied edit for the report.
 
 ## 4. Propose closures and merges
 

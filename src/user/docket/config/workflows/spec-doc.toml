@@ -1,13 +1,27 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by a research step, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec), escalating to the operator."
 name = "spec-doc"
-version = 20
+version = 21  # 21: DOT-997 — reconcile gains the `drain-highs` routing on
+              #   `any(open_severity >= high)` plus the interposed executor
+              #   step it names, which files each still-open high cluster
+              #   (not held, not operator-resolved) as a `--gap-file` backlog
+              #   issue at its completion; see ui-change@22 for the full
+              #   trail. This track's acceptance votes do read
+              #   reconcile.findings, but a vote-record is one decision about
+              #   the doc, not a durable record of each open high — a doc
+              #   accepted with open highs standing evaporated them exactly
+              #   as the change tracks did. `fix-loop` stays first and
+              #   ThresholdOrder evaluates it first, so a round with any open
+              #   blocker still loops; a round with nothing open at high or
+              #   above routes `pass` with the drain step terminalized
+              #   `skipped`, never claimed and never billed.
 
 [match]
 labels_any = ["spec-doc"]
 unless_labels = ["spec-project", "release", "retro"]
 
 [limits]
+"drain-highs" = { max = 16, max_step_duration = "1h" }
 "judge-architecture" = { max = 16, max_step_duration = "1h" }
 "judge-design" = { max = 16, max_step_duration = "1h" }
 "judge-security" = { max = 16, max_step_duration = "1h" }
@@ -140,7 +154,18 @@ max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
 payload = "findings@9"
-threshold = { "fix-loop" = "any(open_severity >= blocker)" }
+threshold = { "fix-loop" = "any(open_severity >= blocker)", "drain-highs" = "any(open_severity >= high)" }
+
+[[step]]
+after = ["reconcile"]
+emits = "drain-report"
+executor = "drain-highs"
+expected_cost = 0.30
+holds_tree = false
+inputs = ["reconcile.findings", "issue.body"]
+name = "drain-highs"
+on_fail = "waiting-human"
+packet = ["contracts/{executor}.md"]
 
 [[step]]
 after_loop = "review"

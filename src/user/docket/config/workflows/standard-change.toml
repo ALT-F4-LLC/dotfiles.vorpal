@@ -1,7 +1,20 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 27  # 27: DOT-811 — `security` joins unless_labels beside
+version = 28  # 28: DOT-997 — reconcile gains the `drain-highs` routing on
+              #   `any(open_severity >= high)` plus the interposed executor
+              #   step it names, which files each still-open high cluster
+              #   (not held, not operator-resolved) as a `--gap-file` backlog
+              #   issue at its completion; see ui-change@22 for the full
+              #   trail (open highs completed rounds recorded only in
+              #   reconcile artifacts nothing downstream reads — the fix-loop
+              #   threshold worked as configured, but an open high had no
+              #   drain path at all). `fix-loop` stays first and
+              #   ThresholdOrder evaluates it first, so a round with any open
+              #   blocker still loops; a round with nothing open at high or
+              #   above routes `pass` with the drain step terminalized
+              #   `skipped`, never claimed and never billed.
+              # 27: DOT-811 — `security` joins unless_labels beside
               #   `security-change` and `security-load-bearing`, because
               #   security-change@26 now matches that label too. Without this
               #   the two workflows would both match an issue labelled only
@@ -35,6 +48,7 @@ unless_labels = [
 ]
 
 [limits]
+"drain-highs" = { max = 16, max_step_duration = "1h" }
 "judge-architecture" = { max = 16, max_step_duration = "1h" }
 "judge-correctness" = { max = 16, max_step_duration = "1h" }
 "judge-security" = { max = 16, max_step_duration = "1h" }
@@ -98,7 +112,18 @@ max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
 payload = "findings@9"
-threshold = { "fix-loop" = "any(open_severity >= blocker)" }
+threshold = { "fix-loop" = "any(open_severity >= blocker)", "drain-highs" = "any(open_severity >= high)" }
+
+[[step]]
+after = ["reconcile"]
+emits = "drain-report"
+executor = "drain-highs"
+expected_cost = 0.30
+holds_tree = false
+inputs = ["reconcile.findings", "issue.body"]
+name = "drain-highs"
+on_fail = "waiting-human"
+packet = ["contracts/{executor}.md"]
 
 [[step]]
 after_loop = "review"

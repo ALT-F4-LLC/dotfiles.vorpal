@@ -1,6 +1,6 @@
 ---
 node: synthesize-findings
-version: 9
+version: 10
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -119,12 +119,14 @@ five-value ladder. A settling ruling is a `prior_disposition` whose `ruling` is
 `follow_up_issue` named; a cluster so ruled omits `open_severity` entirely (never null,
 never a floor value). A deferral with no follow-up issue is not settled: the cluster
 keeps its `open_severity`, which is what keeps an evaporated deferral visible. This one
-field is what the fix-loop thresholds read: spec-doc's
-(`any(open_severity >= high)`) and the reconcile thresholds of standard-change,
-ui-change, and spec-project (`any(open_severity >= blocker)`). Present-and-past-the-bar
-routes a fix round, absent means the ground is settled and cannot re-fire the loop. Emitting it on settled ground re-opens a
+field is what the reconcile thresholds read, in every multi-judge track
+(standard-change, ui-change, spec-doc, spec-project): `any(open_severity >= blocker)`
+routes a fix round, and `any(open_severity >= high)` routes the drain-highs step that
+files each still-open high as a backlog issue. Present-and-past-a-bar routes; absent
+means the ground is settled and can re-fire neither the loop nor the drain. Emitting it
+on settled ground re-opens a
 decision an operator or panel already made; omitting it on an open cluster hides an open
-defect from the loop. Both are payload defects, not style choices.
+defect from the loop and the drain alike. Both are payload defects, not style choices.
 
 The body is where uncertainty
 and reasoning live; the payload is what the engine computes over, so its cluster

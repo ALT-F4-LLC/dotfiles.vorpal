@@ -1,5 +1,5 @@
 [policy]
-version = 18
+version = 19
 
 [variants]
 fable-high = { model = "fable", effort = "high" }
@@ -19,6 +19,10 @@ sonnet-xhigh = { model = "sonnet", effort = "xhigh", escalate_to = "opus-xhigh" 
 adr-author = { variant = "fable-max" }
 design-qa = { variant = "opus-high" }
 dispose = { variant = "opus-high" }
+# DOT-997: seat for the reconcile drain-highs routing — files each still-open
+# high cluster as a --gap-file backlog issue. Mechanical selection and faithful
+# copying, no judgment over severities; same tier as synthesize-findings.
+drain-highs = { variant = "sonnet-medium" }
 fix = { variant = "sonnet-xhigh" }
 implement = { variant = "sonnet-high" }
 investigate = { variant = "fable-xhigh" }

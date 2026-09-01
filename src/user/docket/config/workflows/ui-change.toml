@@ -1,6 +1,28 @@
 [pipeline]
 name = "ui-change"
-version = 21  # 21: DOT-811 — `security` joins unless_labels beside
+version = 22  # 22: DOT-997 — reconcile gains a second routing, `drain-highs`
+              #   on `any(open_severity >= high)`, interposing a new executor
+              #   step that files each still-open high cluster (not held, not
+              #   operator-resolved) as a `--gap-file` backlog issue at its
+              #   completion — two durable homes in one transaction, the
+              #   gap-file precedent. Before this, a run completed round 0
+              #   with several open HIGH clusters recorded only in reconcile
+              #   artifacts nothing downstream reads: the fix-loop threshold
+              #   worked as configured, but an open high had no drain path at
+              #   all, while severity-ladder-general promises a Concern
+              #   "lands in the run record and backlog the operator reviews
+              #   before publishing". Routing highs into the fix loop instead
+              #   would repeat the route security-change@23 reverted (only a
+              #   Blocker opens a fix round). Blocker routing is unchanged:
+              #   `fix-loop` stays first and ThresholdOrder evaluates it
+              #   first, so a round with any open blocker still loops and
+              #   highs drain only once blockers are cleared; a round with
+              #   nothing open at high or above routes `pass` and the drain
+              #   step is terminalized `skipped` — never claimed, no cost
+              #   accrued. Same change: standard-change@28, spec-doc@21,
+              #   spec-project@15; new contracts/drain-highs.md; policy@19
+              #   seats the executor.
+              # 21: DOT-811 — `security` joins unless_labels beside
               #   `security-change` and `security-load-bearing`, which this
               #   list already excludes. security-change@26 now matches
               #   `security`, so without this an issue labelled `ui` +
@@ -32,6 +54,7 @@ unless_labels = [
 
 [limits]
 "design-qa" = { max = 16, max_step_duration = "1h" }
+"drain-highs" = { max = 16, max_step_duration = "1h" }
 "judge-architecture" = { max = 16, max_step_duration = "1h" }
 "judge-correctness" = { max = 16, max_step_duration = "1h" }
 "judge-design" = { max = 16, max_step_duration = "1h" }
@@ -83,7 +106,18 @@ max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
 payload = "findings@9"
-threshold = { "fix-loop" = "any(open_severity >= blocker)" }
+threshold = { "fix-loop" = "any(open_severity >= blocker)", "drain-highs" = "any(open_severity >= high)" }
+
+[[step]]
+after = ["reconcile"]
+emits = "drain-report"
+executor = "drain-highs"
+expected_cost = 0.30
+holds_tree = false
+inputs = ["reconcile.findings", "issue.body"]
+name = "drain-highs"
+on_fail = "waiting-human"
+packet = ["contracts/{executor}.md"]
 
 [[step]]
 after_loop = "review"

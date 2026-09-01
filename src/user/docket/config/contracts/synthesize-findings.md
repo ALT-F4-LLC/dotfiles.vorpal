@@ -1,6 +1,6 @@
 ---
 node: synthesize-findings
-version: 8
+version: 9
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -54,7 +54,9 @@ discovery. WHERE YOUR INPUTS CARRY an earlier round's dispositions (a cluster ma
 as), a re-occurrence at that same locus is annotated as one: say "previously ruled,
 round N", name the ruling and who made it, and set `prior_disposition` on the cluster
 you emit ({round, ruling, ruled_by, follow_up_issue}, as much of it as your inputs
-actually tell you). Presenting settled ground as new is how one decision gets spent
+actually tell you). When `ruled_by` names `panel <proposal-id>`, `docket vote show
+<proposal-id>` returns the panel's own vote-cast summaries — the reasoning behind the
+ruling you are annotating, not just its outcome. Presenting settled ground as new is how one decision gets spent
 twice: one accepted locus, tracked and closed at round 0, came back as a fresh high at
 round 1 and was held again at round 2, and 9 of that round's 19 clusters restated
 round 0's deferred items, 3 of them byte-identical in the title.

@@ -5,7 +5,7 @@ across Claude Code sessions in ~/.claude/projects.
 Exists because "it feels like everything is over-thought" is unfalsifiable until
 someone counts. This counts. Run it before a change and after, and diff the JSON.
 
-Key correctness rules, learned the hard way (2026-08-19 census):
+Key correctness rules, learned the hard way running this census:
 
   * MAIN vs SUBAGENT are measured separately and never pooled. Subagents take
     their model/effort from docket policy.toml, so they cannot measure a change
@@ -15,17 +15,18 @@ Key correctness rules, learned the hard way (2026-08-19 census):
     sizeable minority of messages. Absent is NOT zero: a message missing the
     field may still carry thinking blocks. Counting absent as zero biases
     think% LOW, so such messages are excluded from token metrics and their
-    count is reported. Measured 2026-08-19, the excluded set split ~evenly
-    between messages that did and did not contain thinking blocks (3014 vs
-    2965), so the exclusion is close to unbiased -- but think:text chars, which
-    is computable on every message, is the metric to trust when they disagree.
+    count is reported. A direct measurement found the excluded set split
+    ~evenly between messages that did and did not contain thinking blocks
+    (3014 vs 2965), so the exclusion is close to unbiased -- but think:text
+    chars, which is computable on every message, is the metric to trust when
+    they disagree.
   * Most user-role messages are not the operator: task notifications, teammate
     messages, and isMeta skill-body injections all arrive as role=user. Only
     typed prose, slash commands, and !bash count as operator input.
   * Character counts (thinking chars vs visible text chars) work on every
     version and are the version-independent cross-check on think%.
   * The "do not narrate things that need no action" rule in CLAUDE.md is
-    measurable, and until 2026-08-25 nothing measured it — the
+    measurable, and until this script existed nothing measured it — the
     working agreement quoted a 152/766 figure that no script here computed.
     It is computed structurally now, with no wording heuristic: a teammate
     idle notification arrives as a role=user message carrying
@@ -33,7 +34,7 @@ Key correctness rules, learned the hard way (2026-08-19 census):
     exactly when it emits visible text and zero tool_use blocks. Both halves
     are structural. Note that tool_result rows are role=user too, which is
     precisely what makes the NEXT user-role row the correct turn boundary.
-    Measured over the 7 days to 2026-08-25: 150 of 276 pings (54%) drew a
+    Measured over a 7-day window: 150 of 276 pings (54%) drew a
     text-only turn; hand-reading all 150 put 142 of the 143 model-authored
     ones in the pure-narration class ("no action needed", median 82 chars),
     7 being harness session-limit artifacts rather than model output. Silence

@@ -80,8 +80,8 @@ silent on a behavior the change decides, emit your findings plus a `gap` naming 
 missing coverage. Judging a change against a spec that does not govern it produces
 findings that are really reviewer preference; say which you are holding.
 
-**Expect to gap on roughly one run in three, and gap anyway.** Measured over the 7 days
-to 2026-08-25: 26 gaps beside 65 findings artifacts, 29% of this seat's recorded
+**Expect to gap on roughly one run in three, and gap anyway.** Measured across a
+recent run sample: 26 gaps beside 65 findings artifacts, 29% of this seat's recorded
 outputs, four times the next judge's rate, and intended. You are the only judge whose
 governing input is a document nobody upstream is obliged to have written: ui-change puts
 you in the review fanout for every `ui` issue with no precondition that an accepted

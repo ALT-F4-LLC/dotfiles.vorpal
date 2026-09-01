@@ -36,7 +36,7 @@ become payload entries at all:
 | Question   | body, or a `gap` | not a defect; see below                          |
 | Praise     | body only | a payload entry is a defect record                      |
 
-**Only a Blocker opens a fix round** (operator convergence policy, 2026-08-10). The
+**Only a Blocker opens a fix round** (operator convergence policy). The
 fix loop's question is "may this change ship?", and a loop keyed on anything judges
 can produce indefinitely never closes (measured: three rounds and a growing findings
 payload on a five-line change). So `blocker` is the loop's whole fuel, and a Blocker

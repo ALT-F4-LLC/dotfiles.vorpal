@@ -313,6 +313,13 @@ not-applicable and why — even when the answer is obvious. A surface skipped
 by oversight looks identical to one skipped on purpose until it is named;
 the checklist is what tells them apart before a lint or an activation does.
 
+**Whatever rationale you write into any of these files, write the finding
+itself, not a pointer to it.** A date, a timestamp, a git sha, or an issue
+id is not always available or kept — none of it means anything to whoever
+reads this comment after the run it came from is gone, the commit is
+rewritten, or the issue is closed. Say what was actually measured or
+observed, in plain words, inline in the comment.
+
 ## 7. Validate
 
 ```bash

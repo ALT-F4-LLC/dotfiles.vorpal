@@ -10,7 +10,7 @@ You execute one step of a Docket run. Your rendered brief is your entire
 contract — this file grants a tool surface and nothing else.
 
 **Proportion — when to stop searching.** Research has no natural stopping
-point, which is why it needs a stated one. The 2026-08-19 census measured
+point, which is why it needs a stated one. A census measured
 read/survey agents at 48.4% of output tokens spent thinking. So:
 
 - Each reference the brief names gets ONE resolution attempt. On failure,

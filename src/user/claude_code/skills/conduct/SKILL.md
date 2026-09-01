@@ -31,7 +31,7 @@ serve a step, you have left this skill's contract: that resolution is
 When a failure quotes brief content back at you, `grep` the installed
 `wave.js` for the quoted strings and name the file and line in your
 escalation. A read costs one call and turns "unknown cause" into a filed
-defect; on 2026-08-17 a conductor declined that grep as out of scope and
+defect; a conductor once declined that grep as out of scope and
 escalated a total blocker with no cause attached.
 
 **You size no panels and reconcile nothing.** Fan-out widths, thresholds,
@@ -158,7 +158,7 @@ scope because the immediate request text stopped repeating the id.
 actually use, yours and the wave's, before the first dispatch.** Every command
 opens `~/.docket/issues.db` read-write and migrates forward first; there is no
 read-only open. Where the sandbox write-allows `~/.docket` the verbs run fine
-sandboxed (measured 2026-08-10); where it does not, every verb fails `unable
+sandboxed (confirmed by direct measurement); where it does not, every verb fails `unable
 to open database file (14)` (`--help` alone is safe). Run one read verb —
 `docket run status` — and believe that result over any remembered rule: the
 failure reads like a docket bug and is not one, and the fix is the seat's
@@ -215,8 +215,8 @@ security gates especially. Never rediscover it per step.
 **Warm the Go module cache before dispatching into a Go repo.** Sandboxed Go
 cannot verify TLS on this machine at all — the trust daemon is blocked under
 Seatbelt, so a stdlib HTTPS fetch fails `x509: OSStatus -26276` even in this
-session's own sandbox while `curl` to the same host returns 200 (probe-proven
-2026-08-20). The shared `GOMODCACHE` is the entire defense: an executor whose
+session's own sandbox while `curl` to the same host returns 200 (probe-proven).
+The shared `GOMODCACHE` is the entire defense: an executor whose
 gate needs even ONE uncached module downloads, hits the wall, and fails all
 three gates with a TLS error that reads like an environment defect (a past
 run parked a clean step exactly this way, and the out-of-band repro passed
@@ -233,7 +233,7 @@ the missing module and redispatch instead of parking the step for review.
 **A safety-classifier block is not a flake, and a retry is not the answer.**
 The classifier screens a rendered brief before any agent exists, so a block is
 a verdict on brief CONTENT and a retry re-renders that content (measured
-2026-08-17: three dispatch cycles, three identical refusals). Reconcile
+across three dispatch cycles, three identical refusals). Reconcile
 and close the dispatch as usual, then escalate ONCE, quoting the refusal
 verbatim and the `wave.js` line it names. Never offer a retry as an option,
 and never reword a brief to get it accepted — the fix is a definition edit the
@@ -241,7 +241,7 @@ operator installs, outside this run, and the sanctioned unblock in-session is
 the operator's own explicit confirmation.
 
 **A run still in `planning` is not yours to activate alone.** Activation is a
-gate — a PANEL one since 2026-08-11, per **Gates** below, EXCEPT on a run
+gate — a PANEL gate, per **Gates** below, EXCEPT on a run
 `bootstrap` created and has not yet activated: that first activation is the
 operator's alone and no panel stands in for it (bootstrap §5), so if the
 operator has already declined it once, ask them rather than convening — and it
@@ -407,7 +407,7 @@ Do NOT substitute `docket step render` for this check: it returned exit 0 with
 full packets on that run while the mismatch was already present.
 
 **The hook now DENIES the launch, so pin drift is not survivable.** Since a
-fix landed on 2026-08-20, the policy-guard hook resolves the launching cwd's ACTIVE
+fix landed, the policy-guard hook resolves the launching cwd's ACTIVE
 runs on every `Workflow` PreToolUse, asks `docket run verify-pins` about each,
 and exits 2 — before any seat or executor spawns — if `policy.toml` drifted.
 Live output reads like this:
@@ -533,7 +533,7 @@ you create anything — exactly two outcomes, and say aloud which you chose:
   verdict.
 
 Skip this and the ballots accumulate silently. Three open activation proposals
-for one run once stood at the same time (RUN-66, 2026-08-31 — one two days old,
+for one run once stood at the same time (RUN-66 — one two days old,
 one twelve minutes old from a parallel session, plus the fresh one), and the
 only thing that surfaced them was a tribunal seat noticing mid-panel, which is
 not a mechanism. Both stale rows then took `vote close --reason "Superseded by
@@ -570,7 +570,7 @@ VERBATIM, beside the scope warnings, so every seat weighs it. This check is
 worth its cost precisely here: before the gate the fix is one `docket issue
 label add` plus a fresh dry-run; after it, activation has frozen both the
 binding and the body snapshot for the whole run, and re-planning is the only
-exit. A past harness incident (2026-08-16) is the lesson: a TUI issue with `labels=[]`
+exit. A past harness incident is the lesson: a TUI issue with `labels=[]`
 and scope `internal/tui/**` bound `standard-change`, dropping judge-design
 from the fanout and skipping the terminal design-qa/render-verify step — one
 seat caught it and rejected, the tally approved anyway, and the mis-binding
@@ -795,9 +795,9 @@ actually invokes), not in the live checkout. Read that base rather than
 assuming it is the shared HEAD — `git worktree list --porcelain` for a
 checkout that already exists, the row's target sha otherwise, and where they
 disagree resolve against the OLDEST of them. The live checkout is a FALSE
-PASS: `fix@2`'s worktree was cut at `0de2a41`, the three stub targets landed
-55 minutes later in `5b12f79`, and a probe of the shared tree taken any time
-after that commit would have passed every gate the worktree was about to fail.
+PASS: a fix round's worktree was once cut before the three stub targets it
+needed landed 55 minutes later, and a probe of the shared tree taken any time
+after that landing would have passed every gate the worktree was about to fail.
 A target missing at the base is a pre-dispatch stop-and-report, not a mid-wave
 discovery.
 
@@ -816,7 +816,7 @@ was installed, one activation gate had the installed path and then the source
 path refused back to back, verbatim; the first launch after `just activate`
 landed it succeeded from the same seat), and the source file is the wrong
 bytes even where it happens to be readable: every `~/.claude` definition
-surface — workflows included since 2026-08-11 — is a store symlink from the
+surface — workflows included — is a store symlink from the
 last `just activate`, nothing links into the source tree, and a source file
 edited since the last activation is bytes no session runs. A missing
 installed file is the attach-probe's own workflow-check FAIL — stop and
@@ -845,7 +845,7 @@ carries a fix round's review fanout (its own rule below). wave.js always RECEIVE
 decodes it as normal transport (proven by a controlled probe), so
 the decode line in its log is never a finding. But do not read that as "the
 string in your transcript is the harness's doing, not yours" — this skill said
-exactly that until 2026-08-20 and it is FALSE. Across 347 launches in one week
+exactly that and it is FALSE. Across 347 launches in one week
 the recorded args split three ways by formatting: 124 canonical-compact
 (consistent with the harness stringifying an object you emitted), 221 with a
 space after each colon, and 2 with newlines and indentation — formats no single
@@ -870,8 +870,8 @@ still carries the literal pinned text built from `policy-escaped-chunks`
 length/hash comparison there and stays SILENT on a clean launch, so any
 policyText advisory it emits on a tribunal launch is a REAL condensation:
 TaskStop it, re-run `policy-escaped-chunks`, relaunch from its output. Never
-read it as ambient noise — on 2026-08-17 three governance panels and two
-waves ran condensed while the advisory scrolled past.
+read it as ambient noise — three governance panels and two
+waves once ran condensed while the advisory scrolled past.
 
 **A policy-guard deny on a wave launch now means something is wrong with the
 sentinel, not that you need to retype anything.** `docket-policy-guard-hook`
@@ -967,7 +967,7 @@ it denies, one deny per turn-end is expected noise — the retry passes. Do not
 busy-wait, do not poll in sleep loops, and do not treat the guard's deny as an
 instruction to keep working. Do not reach for `ScheduleWakeup` as a heartbeat
 either — it belongs to /loop sessions and rejects these calls (two fleet
-conductors burned turns discovering that, 2026-08-17); the completion
+conductors burned turns discovering that); the completion
 notification at your turn boundary is the only wait mechanism this contract
 uses. The session is
 free meanwhile — the operator can do other things, and so can you.
@@ -993,7 +993,7 @@ completed wave is also a milestone point for any standing external-tracker
 obligation project memory carries (**Before the loop**) — sync it on this same
 notification.
 
-Two ways the back-fill gets skipped, both measured 2026-08-17, both losing the
+Two ways the back-fill gets skipped, both measured directly, both losing the
 run's only record of its spend:
 
 - **"Nothing was claimed" is not a reason to skip it.** A wave whose spawns all
@@ -1116,7 +1116,7 @@ false` for the join; it is short and you need the result to proceed.
 **TaskStop a delegate the moment its report is in hand.** Stopping it is the
 last step of using it, not end-of-run housekeeping: a helper that has already
 reported — by SendMessage or by finishing — and sits registered becomes the
-operator's cleanup (2026-08-20: a scope-read agent killed by hand two minutes
+operator's cleanup (a scope-read agent was once killed by hand two minutes
 after it delivered). This holds for every agent you spawn, not just the usage
 join.
 
@@ -1214,8 +1214,8 @@ judgment call.
 archetypes included — runs in a private worktree; a write executor's
 deliverable is a COMMIT there, its sha on the first line of the change-summary
 and in the report. It records with `--worktree <its checkout>` so the engine
-computes the recorded diff where the work happened and —
-since 2026-08-16 — spawns the step's completion gates and verify's
+computes the recorded diff where the work happened and spawns the
+step's completion gates and verify's
 ac-commands pre-gate with that checkout as cwd, so gate evidence measures the
 work rather than the shared checkout's HEAD. The record does NOT wait on
 integration, and the old cherry-pick-first ordering is gone. **The empty-`issue.diff` packet defect is FIXED** (diff base pinned to
@@ -1352,7 +1352,7 @@ preserve first, as a real object:
     git tag preserved/<run>-<wfid> <that sha>
     git tag -l 'preserved/*'    # READ IT BACK — an untagged sha is dangling
 
-THE TRAP, measured 2026-08-20 on git 2.50.1: `git stash create` alone captures
+THE TRAP, measured on git 2.50.1: `git stash create` alone captures
 only TRACKED modifications and silently drops untracked files, and `git stash
 create -u` is ACCEPTED — it returns a sha and no error — while still dropping
 them. Both leave you holding a sha that looks like a successful preservation
@@ -1379,7 +1379,7 @@ checkouts are not yours.
 
 Foreign `wf_*` entries are still worth NAMING: list them in the close report
 as operator-cleanup candidates — abandoned runs sweep nothing, and five repos
-carried a prior fleet's debris unmentioned through a full day (2026-08-17).
+carried a prior fleet's debris unmentioned through a full day.
 The close report also names every tribunal convocation this session ran, with
 proposal ids: panel cost lives entirely outside the run ledger (wave-usage
 attributes by step id; panels carry vote ids), and on re-plan-heavy runs it
@@ -1420,7 +1420,7 @@ that would have swept is the thing that died.
 **`--ack-reap`.** This flag tells the engine "I have established that the
 crashed writer is gone." The engine cannot check that — it takes your word. So
 you never pass it on your own initiative, no matter how obvious the situation
-looks; since 2026-08-11 the word it takes is the PANEL's, and an ack is a
+looks; the word it takes is the PANEL's, and an ack is a
 conversational gate put to a proposal per **Gates** below.
 
 The evidence bar comes FIRST and did not move. Establish that the holder is
@@ -1561,7 +1561,7 @@ operator (**Gates**), so never convene a tribunal to bless one.
 
 **A gap filed by a wave lands in this run's project even when the work it
 names does not belong here — re-home it at the same close.** (Operator
-ruling, 2026-08-16: gaps belong to their respective projects — an engine
+ruling: gaps belong to their respective projects — an engine
 problem is the docket repo's, a definition problem the dotfiles repo's,
 whichever repo owns the fix owns the issue.) Gap files carry their home on
 the SECOND line — `Home: <repo>` or `Home: THIS repository` — with the first
@@ -1587,7 +1587,7 @@ conductor filed its own gate-failure fix under `-l shadow`).
 
 Under zsh, QUOTE every glob-shaped `--scope` value (`--scope 'src/**'`) or run
 `set -f` first — an unquoted `path/**` is glob-mangled by the shell and the
-scopes are silently dropped from the created issue (2026-08-25: an issue was
+scopes are silently dropped from the created issue (an issue was once
 created with all three of its scopes missing, repaired only by a later edit).
 
 ## Gates
@@ -1600,7 +1600,7 @@ short reserved list the panel never touches. A `human:*` step parks the run in
 the question tool. The engine has already opened its proposal; the row carries
 the seats in `voters` and the proposal id. You convene the panel, and the engine
 tallies and routes. Declared `type = "human"` steps no longer exist in the
-shared corpus (the last four converted to vote gates 2026-08-11) — a
+shared corpus (the last four converted to vote gates) — a
 `kind: "human"` row reaching you is an engine-minted held cluster (hold-vote
 config unset) or a repo's own `.docket` addition, and the operator verbs below
 still answer it.
@@ -1616,7 +1616,7 @@ reconcile the expiry per step 1 — accepted cost, not a reason to delay the ask
 
 ### The panel
 
-**Engine vote steps ride the wave.** Since the staged closure (2026-08-15) a
+**Engine vote steps ride the wave.** Since the staged closure, a
 `kind: "vote"` row — held clusters the engine minted as vote steps included —
 is dispatched and handed to wave.js with the rest of the manifest, and the
 WAVE seats the panel: it polls the row's proposal off `step show` (the
@@ -1748,9 +1748,9 @@ question.
 **A required gate with no trust entry is a PARK, never a stub.** Never propose,
 and never accept without saying so plainly, an argv that cannot fail — `true`,
 `:`, `echo` — to satisfy a gate. It records `pass` in `gate_results` forever,
-in milliseconds, and the gap becomes invisible to everyone downstream: on
-2026-08-17 a repo whose own security spec had found cleartext private keys
-took a `/usr/bin/true` secret-scan and now reports green. Present the gap as
+in milliseconds, and the gap becomes invisible to everyone downstream: a repo
+whose own security spec had found cleartext private keys once took a
+`/usr/bin/true` secret-scan and reported green. Present the gap as
 what it is and let the operator decide. If they direct a stub anyway, file the
 removal issue in the SAME turn and name the stubbed gate in every subsequent
 status report until it is gone.
@@ -1931,7 +1931,7 @@ a second read of a row whose `output_tail` already held 461 characters of the
 exact failure. `step show` and
 `step artifacts` do not, and the event stream renders a pass and a failure
 identically, so a conductor reading either surface reports failures as passes
-(measured 2026-08-17: three gates at exit 1 reported green to the operator).
+(measured: three gates at exit 1 reported green to the operator).
 Read the exits too, not just the verdicts: a gate that "fails" in
 milliseconds naming `operation not permitted` or a denied socket measured the
 sandbox, not the code, and presenting it as a code failure invites an
@@ -1978,7 +1978,7 @@ failure), present the new park WITH the standing precedent and ask once
 whether it extends: "apply the same resolution to identical repeats for the
 rest of this run" / "keep deciding each". Record each step's resolution note
 naming the precedent answer, or the class-scoped answer that covered it.
-One conductor asked four separate times for one verbatim-identical gap (2026-08-17)
+One conductor asked four separate times for one verbatim-identical gap
 and the operator's answer never changed — which is an argument for offering
 the class option up front, never for taking it unasked.
 
@@ -2003,7 +2003,7 @@ phrasing should not need a second.
 **Scope and what-next questions go through the same tool.** "Want me to pick up
 X, or leave it for now?" tacked onto a status report is a decision, not
 narration: ask it with the question tool, recommended option first, exactly as
-you would a gate (2026-08-20: a conductor's scope question rode a report as
+you would a gate (a conductor's scope question once rode a report as
 prose while every gate question that same session used the tool correctly).
 
 On their answer:

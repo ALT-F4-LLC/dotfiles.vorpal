@@ -38,7 +38,7 @@ the fenced AC commands as *pre-gates at claim*; until the packet carries a gate-
 section, read the recorded output with `docket step gates <STEP> --json=v2`, which
 carries verdict, exit code, captured output, and pre:true, rather than re-running what
 you cannot observe.
-Sunset: the packet gap is fixed in docket.git 7a2cbff [resolveGateResults now admits
+Sunset: the packet gap is fixed in docket's engine [resolveGateResults now admits
 the requesting step]; once a rebuilt binary is installed and the workflow's verify step
 declares `verify.gate-results` as an input, the packet carries `== INPUT gate-results`
 at claim and this line reverts to "read them from your bundle"), statically

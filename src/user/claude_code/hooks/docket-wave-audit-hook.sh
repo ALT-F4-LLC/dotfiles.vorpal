@@ -70,7 +70,7 @@ if [ -n "$HOOK_INPUT" ] && [ -f "$HOME/.docket/config/policy.toml" ] \
     WANT=$(jq -Rs 'length' < "$HOME/.docket/config/policy.toml" 2>/dev/null)
     # $(cat file) strips the trailing newline, so a byte-for-byte launch
     # legitimately arrives one char short. Warning on that fired on every
-    # CLEAN launch (19+ false positives across the 2026-08-17 fleet), and
+    # CLEAN launch (19+ false positives across one fleet), and
     # the noise trained conductors to ignore the REAL condensation warnings
     # in the same pile (several real governance panels and waves in that same
     # fleet). Exact and exact-minus-one are silent; anything else
@@ -89,7 +89,7 @@ command -v docket >/dev/null 2>&1 || exit 0
 # the harness parses stdout as JSON, and `✔ allowed` is not JSON. The guard's
 # reason travels on stderr either way. The no-database case stays silent: exit 2
 # with "no docket database found" is the engine's NOT_FOUND riding the deny
-# channel ([MEASURED 2026-08-06]), not a discrepancy — advisory noise about a
+# channel (measured directly), not a discrepancy — advisory noise about a
 # repo that is not docket's business helps nobody.
 ERR=$(docket guard record 2>&1 >/dev/null)
 if [ "$?" -eq 2 ]; then

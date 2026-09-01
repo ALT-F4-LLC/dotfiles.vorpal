@@ -1,8 +1,8 @@
 # Docket — complete command & flag reference
 
-Split out of SKILL.md on 2026-08-19. It was 2,371 of that file's 4,022 lines
-and loaded in full on every invocation, while agents ran `docket <verb> --help`
-1,226 times in the same week and used only 72 distinct flags across 14,648
+Split out of SKILL.md once it grew to 2,371 of that file's 4,022 lines
+and was loaded in full on every invocation, while agents ran `docket <verb> --help`
+1,226 times in a measured week and used only 72 distinct flags across 14,648
 invocations. The CLI's own `--help` is authoritative and cheaper than this
 file; reach here for the exhaustive per-flag semantics `--help` does not carry.
 
@@ -12,8 +12,7 @@ Every `--json` response is `{"ok": <bool>, "data": <verb-specific>}` (errors are
 `{"ok": false, "error": "...", "code": "..."}` with no `data` key at all). The
 envelope is stable; the shape of `data` is NOT, and guessing it is what crashes
 hand-rolled parsers. Every row below was run against the live binary —
-**verified against `docket version nightly-11-gb8aeb64` (commit `b8aeb64`,
-built 2026-08-21T21:22:22Z) on 2026-08-21**, in the `dotfiles.vorpal.git`
+**verified against the installed nightly build of `docket`**, in the `dotfiles.vorpal.git`
 project. No row is inherited or assumed.
 
 | Verb | `data` under `--json` (v1) | `data` under `--json=v2` / `--format json` |
@@ -1739,8 +1738,8 @@ spending a more expensive variant.
 `step show` renders a **gate summary** when the step has recorded gate results — a verdict, the gate name, an exit code, and a pointer to
 `step gates` when something did not pass. It used to print no gate section at
 all, so the surface an operator reaches for to ask "why is this step parked" was
-silent about the gates that parked it; a conductor read it and the event feed on
-2026-08-16 and reported three failing gates as passes. It is a summary, not a
+silent about the gates that parked it; a conductor once read it and the event feed
+and reported three failing gates as passes. It is a summary, not a
 copy of `step gates`: that verb owns the reasons and the output tails.
 
 `step artifact ARTIFACT-N` fetches one in full. `--payload` narrows to the
@@ -1837,7 +1836,7 @@ interprets what the gap says. The success message names the issues it filed —
 the RUN'S OWN project unconditionally — `--gap-file` has no cross-project
 routing — so a gap whose problem lives in another repository's project gets
 re-homed by whoever reads the completion: `docket issue move <id> --project
-<target>` (operator ruling, 2026-08-16: gaps belong to their respective
+<target>` (operator ruling: gaps belong to their respective
 projects).
 
 **A gap-only completion PARKS instead of passing.** When the declared
@@ -2117,7 +2116,7 @@ stop interferes with.
 It also does not block on a run **nothing has ever happened to**:
 never dispatched, and no step ever out of `pending`. `bootstrap`'s contractual
 terminal state is exactly that — an activated, never-dispatched run — and all
-six bootstraps measured on 2026-08-16 were denied a turn-end over it, twice
+six bootstraps measured were denied a turn-end over it, twice
 pushing the operator into starting work nobody had asked for. Nothing was handed
 to anything, so there is nothing for a stop to interrupt. The exemption ends at
 the first dispatch, or at the first step that leaves `pending`: a run that

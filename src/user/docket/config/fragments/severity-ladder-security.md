@@ -35,7 +35,7 @@ The rungs already carry the payload's semantics: Critical is the fix-before-merg
 and `blocker` is the value that always routes there. High and above route to the HUMAN
 security vote, which converges by decision; Medium's "real concern with a workaround"
 is recorded and surfaces at the gates and in the backlog. The automatic fix loop is
-retired for this track too (operator convergence policy, 2026-08-10), because a loop
+retired for this track too (operator convergence policy), because a loop
 keyed on values judges can produce indefinitely never closes, and on the security
 track the serious findings were already the vote's to arbitrate.
 

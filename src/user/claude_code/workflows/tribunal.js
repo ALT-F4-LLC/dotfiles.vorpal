@@ -1,7 +1,7 @@
 export const meta = {
     name: 'tribunal',
     description: 'Spawn a judge panel that decides one gated proposal by each seat casting a real `docket vote cast`. This script never casts, approves, or tallies — the engine\'s vote machinery tallies. Invoke by scriptPath ONLY, with args {voteId, voters, policyText, context, gateKind, cwd} — policy.toml is passed as TEXT, never a path; the script cannot read files.',
-    whenToUse: 'Invoked on a CONVERSATIONAL gate the conduct skill routes to a panel (ack-reap, activation, budget, fix-batch), always as Workflow({scriptPath}) — never by name. Engine `type = "vote"` step rows ride the wave since the staged closure (2026-08-15): wave.js seats their panels itself with the same seat contract as this script. The CALLER creates the proposal and passes its id; tribunal.js only fills an open one.',
+    whenToUse: 'Invoked on a CONVERSATIONAL gate the conduct skill routes to a panel (ack-reap, activation, budget, fix-batch), always as Workflow({scriptPath}) — never by name. Engine `type = "vote"` step rows ride the wave since the staged closure: wave.js seats their panels itself with the same seat contract as this script. The CALLER creates the proposal and passes its id; tribunal.js only fills an open one.',
     phases: ['Judge', 'Verify'],
 }
 
@@ -414,7 +414,7 @@ exist, and pre-reviewing the codebase here duplicates them. A budget gate
 decides a number against evidence of spend; an ack-reap gate decides whether a
 holder is gone. Depth belongs to gates whose SUBJECT is the work.
 
-BOUND YOUR INVESTIGATION — then vote. Measured 2026-08-19 across seven days:
+BOUND YOUR INVESTIGATION — then vote. Measured across seven days:
 189 tribunal seats spent 5,309,378 output tokens, 68.7% of it on private
 deliberation — the highest ratio of any role in this fleet — over 36 votes
 and 12 decided proposals in which ZERO verdicts were overturned. That is not

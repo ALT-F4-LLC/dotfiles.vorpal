@@ -35,7 +35,7 @@ Three rules you must not fight:
   template-rendered and tokenless — which is how you evidence the known packet
   defects (§3). It does NOT, however, stand in for a pin check: this text used
   to claim it "refuses on a pin mismatch rather than re-pinning", and on a past
-  run (2026-08-19) it returned exit 0 with full packets for two steps while
+  run it returned exit 0 with full packets for two steps while
   `contracts/synthesize-findings.md` was already mismatched against its pin —
   a mismatch that then made every `synthesize` step in the run unclaimable.
   To check pins, ask the engine: `docket run verify-pins RUN-N --json`. It is
@@ -73,14 +73,14 @@ Three rules you must not fight:
   into a repo the observed run is still mutating — and because a finding
   filed before the run's full arc could falsify it is a claim published
   unverified. The findings log is the buffer that makes waiting cheap.
-- **Every finding files to its OWNING project** (operator ruling,
-  2026-08-16: gaps belong to their respective projects). File from the
+- **Every finding files to its OWNING project** (operator ruling: gaps
+  belong to their respective projects). File from the
   owning repo's own checkout (`docket issue create`), which is also what
   routes it: the store is machine-global, a project is a checkout's git
   identity, and `issue create` takes no project flag — the checkout IS the
   router. Any seat can reach one: `docket project list --json` names every
   project's `identity`, its absolute repo path (store-global, answers from
-  an unregistered directory — probe-proven 2026-08-20), and the working
+  an unregistered directory — probe-proven), and the working
   checkout is that identity's primary worktree — `<identity>/main` on this
   machine; `ls` the identity when in doubt. So filing is a one-call
   subshell, `cd <checkout> && docket issue create …`, from wherever you
@@ -241,7 +241,7 @@ above:
   discipline still goes in the brief VERBATIM, because a helper cannot
   infer the seat it serves (rule 1).
 - **The target**: this session's id and main transcript path. Your
-  scratchpad directory's UUID segment is the id (probe-proven 2026-08-20);
+  scratchpad directory's UUID segment is the id (probe-proven);
   verify by content before briefing — the transcript at
   `~/.claude/projects/<flattened-cwd>/<id>.jsonl` must contain this
   conversation's own `/shadow` invocation. A wrong id seats the agent on
@@ -256,7 +256,7 @@ above:
   it arms keeps collecting — journal results, gate rows, docket events — and
   delivers NOTHING until something gives the agent a turn, and the only
   thing that does is an inbound `SendMessage`, which then flushes the whole
-  backlog at once (measured on an earlier live self-shadow run, 2026-08-23:
+  backlog at once (measured on an earlier live self-shadow run:
   ~200 monitor events over ~100 minutes produced zero turns, and the entire
   backlog arrived in one batch on the conductor's first message — after the
   run had already ended). So this agent's turns ARE the dispatch-boundary pings below and
@@ -284,7 +284,7 @@ above:
   never hand it yours — and writes there with `Bash`, not the `Write` tool.
   The harness refuses a subagent's `Write` of report-file `.md` content
   outright ("Subagents should return findings as text, not write report
-  files." — observed on this exact spawn path, 2026-08-20), so `mkdir -p
+  files." — observed on this exact spawn path), so `mkdir -p
   <its own scratchpad>/shadow-findings` plus appended heredocs (`cat >>
   <that dir>/findings.md <<'EOF' … EOF`) is this mode's PRIMARY surface, not
   a fallback after a denial. §5's `/tmp/claude/shadow/<session-id>/` path
@@ -302,7 +302,7 @@ above:
   final review — the severity ranking, its evidence, and the ids of every
   issue just filed — to the findings log above BEFORE sending it**, so the log
   alone is always sufficient. `SendMessage` is one delivery path through one
-  seat that can die mid-relay: measured (RUN-66, 2026-09-01) the review
+  seat that can die mid-relay: measured (RUN-66) the review
   arrived at 05:12:37.277Z and a monthly spend limit froze the conductor at
   05:12:38.270Z, one second later, so it was never relayed; a later kill and
   `/compact` buried it in the dead transcript, and it survived only because
@@ -324,7 +324,7 @@ monitor backlog, lets the agent log against it, and lets an interrupt come
 back BEFORE the next wave dispatches, which is exactly where §5's conditions
 1 and 3 have to land (stale bytes about to be dispatched, an `--ack-reap`
 about to be granted on bad information). Drop the pings and the seat is a
-post-mortem with earlier setup — the 2026-08-23 failure measured above, and
+post-mortem with earlier setup — the failure measured above, and
 the difference between that and an honest post-mortem is only that the brief
 said otherwise. A run whose
 conductor will not carry that obligation should be told so at spawn time,
@@ -371,7 +371,7 @@ its live edge is dispatch-paced at best and post-mortem if the pings stop. Orien
 any repository, the observed one or not, and the job is identical: the
 store is machine-global, id-addressed verbs resolve store-wide from
 anywhere (ids are a store-wide sequence; `issue show` and `run status
-RUN-N` probe-proven from an unregistered directory, 2026-08-20), and every
+RUN-N` probe-proven from an unregistered directory), and every
 LISTING verb gets an explicit anchor — a one-call subshell into the
 checkout it should answer for, resolved by rule 3's `project list` route
 (`cd <checkout> && docket events list …`). Anchoring is load-bearing
@@ -388,7 +388,7 @@ hooks cannot tell a shadow from a conductor — but
 never wait on output from one that is not:** read the settings builder's hook
 block (the `with_hook` chain in `claude_code.rs`, beside `$SRC`) against the built
 `~/.claude/settings.json` — all five docket hooks are LIVE today (verified
-firing 2026-08-11). Where they run, expect these and use them instead
+firing). Where they run, expect these and use them instead
 of fighting them:
 
 - **run-guard** denies your turn-end while the machine half of the run is in
@@ -457,7 +457,7 @@ Before reading one transcript line:
    this line: `ls -ld ~/.claude/{agents,skills,workflows,scripts,hooks}`
    against the builder's symlink vec (`claude_code.rs:300-325`, beside `$SRC`).
    All five come back as live symlinks into the content-addressed vorpal
-   store — from the first `just activate` after 2026-08-11, when `workflows`
+   store — from the first `just activate` after `workflows`
    joined the builder; before that activation it is still a real directory
    holding the retired hand-made `wave.js` symlink, which you flag as
    transition debris, not normal. **No definition
@@ -510,7 +510,7 @@ the definitions assume. By layer:
 live-verified — do not expect them, and re-file nothing against them.**
 (a) `issue.diff` rendering EMPTY for `--worktree`-recorded steps: fixed by
 rebasing the diff off the run's recorded exec root;
-first real diffs confirmed in production on an earlier run, 2026-08-11. (b) A review
+first real diffs confirmed in production on an earlier run. (b) A review
 round inputting the PRIOR step's change-summary: fixed by rebinding loop
 inputs to the loop's latest emit; verified live on the same run
 (`step context` showed review@1's change-summary AND diff both from fix@1).
@@ -618,8 +618,7 @@ Measured limits of these surfaces (from earlier shadow runs):
   stream is a guess.
 - **Transcripts flush lazily — but question flushing changed.** A pending
   question to the operator was measured hitting disk only WITH its answer;
-  current harness builds flush an open question at ask time (re-measured
-  2026-08-16), so a gate MAY be watchable live. Verify which behavior your
+  current harness builds flush an open question at ask time (re-measured), so a gate MAY be watchable live. Verify which behavior your
   session shows before keying a watch on it, and still catch
   interrupt-condition 3 from your own cross-checks rather than from seeing
   the question.
@@ -650,21 +649,20 @@ Measured limits of these surfaces (from earlier shadow runs):
   `~/.claude/projects/<flattened-cwd-dir>/<session-id>/subagents/agent-a<name>-<hash>.jsonl`.
   And a named background agent's final text is delivered to NOBODY — its
   spawner gets a content-free idle ping — so "went idle, no report" means finished
-  work sitting in that file, recoverable (measured twice, 2026-08-10; one
+  work sitting in that file, recoverable (measured twice; one
   such loss stalled the observed run nine minutes and was then misreported
   as "report received" in its recap). Even a SENT report (SendMessage,
   success acknowledged) waits for the spawner's next turn BOUNDARY: a spawner
   that keeps probing inside one turn blocks its own delivery, and "no report
   landed" from such a session indicts the session, not the delegate
-  (measured 2026-08-11: 94s queued, delivered the same second the turn
+  (measured: 94s queued, delivered the same second the turn
   ended). **The queue runs INBOUND too, and that is the sharper trap:** a
   background agent takes a turn only when a message arrives for it, so its
   own `Monitor` events — and any other notification it armed — pile up
   undelivered until one does, then arrive as a single batch. A live
   self-shadow observed this directly: it collected ~200 events across ~100
   minutes without a single turn, and processed all of them the moment its
-  spawner's first `SendMessage` landed, by which time the run was over
-  (2026-08-23). A
+  spawner's first `SendMessage` landed, by which time the run was over. A
   background watcher nobody pings is a post-mortem watcher, whatever its
   monitors say (§1b).
 - **An artifact listing's `sha256`/`bytes` describe a short summary BODY, not
@@ -674,15 +672,15 @@ Measured limits of these surfaces (from earlier shadow runs):
   not hashes.
 - **`events list --limit N` windows from the OLDEST end**, so a bigger `--limit`
   buys more history, never more recency. Use `--tail N` for the newest events;
-  this text advised "pass an explicit `--limit` post-mortem" until 2026-08-20,
-  which is backwards. Measured on one run's 2,851 events: `--limit 400` returned
+  this text advised "pass an explicit `--limit` post-mortem", which is
+  backwards. Measured on one run's 2,851 events: `--limit 400` returned
   seq ≤ 2760 and silently omitted everything after the dispatch opened, while
   `--tail 60` returned 2757→2851. The default is 100, and it truncates either
-  way (a 194-event run lost its head, 2026-08-17).
+  way (a 194-event run lost its head).
 - **Naive per-line summation over `agent-*.jsonl` OVER-counts input/cache
   units** vs wave-usage's message-id dedup — never call a backfill lossy from
-  a naive sum; recompute with the script's own method first (measured
-  2026-08-17: 73,195 naive vs 38,576 deduped cache-creation on one wave).
+  a naive sum; recompute with the script's own method first (measured: 73,195 naive
+  vs 38,576 deduped cache-creation on one wave).
 
 Cross-check the engine whenever the store is reachable, anchoring each verb
 per §1: resolution runs `$DOCKET_PATH` → a repo-local `.docket/issues.db`
@@ -798,7 +796,7 @@ Then:
      touches when you know them. Under zsh, QUOTE every glob-shaped
      `--scope` value (`--scope 'src/**'`) or run `set -f` first — an
      unquoted `path/**` is glob-mangled by the shell and the scopes are
-     silently dropped (2026-08-25: an issue was created with all three of
+     silently dropped (an issue was once created with all three of
      its scopes missing, repaired only by a later edit).
 
    A finding whose remedy would add a trust entry, widen a sandbox
@@ -897,7 +895,7 @@ Pre-derived because conduct is the richest target. The conductor:
 - **Row hygiene.** Filter OUT only `kind: "human"` rows; executor, vote, and
   action rows all ride the wave — action rows keep stage numbering
   transparent (the wave spawns nothing for them), vote rows ride because the
-  wave seats their panel itself since the staged closure (2026-08-15). A
+  wave seats their panel itself since the staged closure. A
   passed-through `kind: "human"` row is the one mistake the wave still
   refuses (backstop, not the plan). Rows otherwise untouched — no reordering,
   no dropping, no sequencing to dodge claim conflicts.
@@ -926,7 +924,7 @@ Pre-derived because conduct is the richest target. The conductor:
 
 And the wave:
 
-- **Staging.** Stage-label-driven (2026-08-08 rewrite; the old
+- **Staging.** Stage-label-driven (a rewrite; the old
   writers-serial interim is retired): rows sharing an engine `stage` value
   run fully parallel, stages ascend with an await between, and a stage-less
   row is stage 0. A stage-0 set offered together IS engine-certified

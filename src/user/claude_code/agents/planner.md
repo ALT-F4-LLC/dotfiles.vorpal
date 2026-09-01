@@ -81,8 +81,8 @@ the evidence in the body — re-ask only if the correction changes what the
 operator would decide (a past run recorded a flake-artifact baseline into
 AC1 this way and had to correct it after the fact). Put your recommended
 option first, labelled
-"(Recommended)". A prose question costs the operator a redirect (it did,
-2026-08-06); an exclusive-meaning label ("X only", "neither") never belongs
+"(Recommended)". A prose question costs the operator a redirect; an
+exclusive-meaning label ("X only", "neither") never belongs
 in a multi-select option set — a set that needs one is a single-select
 question.
 
@@ -142,11 +142,11 @@ A `VALIDATION_ERROR` naming no project, or no store reachable, means this
 repo isn't bound — say so and stop. `--limit 1000` is not optional: `issue
 list` caps at 50 and `next` at 10 by default, and neither output flags the
 truncation — a 108-issue backlog was surveyed as 50 and reported complete
-(groom/tend fix, 2026-08-21). `docket next` is the readiness verb: it
+(groom/tend fix). `docket next` is the readiness verb: it
 returns only issues with no incomplete `depends_on` blocker, so a backlog/todo
 issue it omits is blocked and stays out of the batch. Join its ids against the
 `issue list` rows, which carry `priority`, `labels`, `scope`, `assignee`, and
-`description` (verified 2026-08-21 on `--json=v2`; `next` is for the ids).
+`description` (verified on `--json=v2`; `next` is for the ids).
 
 **Exclude what is not free** — this queue isn't plan's alone, and the
 definitions are the ones `groom` and `tend` already use:
@@ -162,7 +162,7 @@ definitions are the ones `groom` and `tend` already use:
 Both are listed in the proposal under "not free", never silently dropped.
 
 **Rank what remains, in this order** — the operator's own definition of the
-most optimal batch, settled 2026-08-21 ("ready, high-priority, parallel-safe"):
+most optimal batch, as the operator settled it ("ready, high-priority, parallel-safe"):
 
 1. **Ready** — in `docket next`'s set. Blocked issues are deferred with the
    blocker named; they are next batch's candidates, not this one's.
@@ -241,7 +241,7 @@ most optimal batch, settled 2026-08-21 ("ready, high-priority, parallel-safe"):
      ACs imply <other>`.
 
    A live bare-`/plan` batch shipped one of each into conduct
-   (agentic-services, 2026-08-24), where the activation dry-run caught them
+   (agentic-services), where the activation dry-run caught them
    and each cost an operator gate mid-conduct: a `security-load-bearing` label
    ambiguous against a stale registration, refused outright; and a label-less
    issue whose ACs touched only `.env.example` and `README.md` binding the
@@ -314,7 +314,7 @@ request intake are exactly these, and nothing else in §3 relaxes:
   edit` calls the relay runs BEFORE `run start`, and a corrected glob list
   passes every glob you mean to keep.
 - `run start --issue` names the backlog issues themselves — direct binding
-  is the operator's settled choice for batch mode (2026-08-21), and it is
+  is the operator's settled choice for batch mode, and it is
   what makes the §3 `/plan DKT-N` obligations NOT apply here: a batch member
   is the unit of work, not a question the run answers.
 - `Run.request-file-content` holds the invocation and the operator's
@@ -348,7 +348,7 @@ teammate seat, and a NAMED spawn from a teammate seat is refused outright:
 "Teammates cannot spawn other teammates — the team roster is flat. To spawn a
 subagent instead, omit the name parameter." So `Agent({subagent_type:
 "executor-read", prompt: <brief>})` with no `name` — passing one costs a
-refused call and a retry turn (measured, 2026-08-25). The delegate still knows
+refused call and a retry turn. The delegate still knows
 where to send its report: that comes from YOUR name inside the brief, per the
 pasted block below, not from a name on the spawn.
 
@@ -360,9 +360,9 @@ that moment checking ("how should this already-fixed blocker route") — waits
 for the verdict, even if that costs a later round. §1's "one round of three"
 still holds; this only decides which round a question belongs in. Asking on an
 unverified premise buys a correction plus a second round, which is the more
-expensive outcome (2026-08-20: a planner asked how an open blocker should
+expensive outcome: a planner asked how an open blocker should
 route, then had to open with "correction to what I told you earlier" when the
-verdict two minutes later showed it already fixed on HEAD).
+verdict two minutes later showed it already fixed on HEAD.
 
 **Every delegate brief ends with these sentences, pasted verbatim** —
 unconditionally, whatever the spawn mechanism, with no rewording and no
@@ -391,10 +391,10 @@ report in neither place costs the report, and a brief that mandates only
 SendMessage costs a tool-limited reader the turns it spends discovering the
 mismatch and justifying the fallback (a read-only reader argued its way out of
 an instruction its seat could not execute before its report finally arrived
-intact as final text, 2026-08-21). Three planners have now inverted this
+intact as final text). Three planners have now inverted this
 instruction while the rule sat in their context: one reader composed its report
 as final text no one received; another reader repeated it when its brief said
-"no separate send needed" — never write that into a brief; and a 2026-08-20 planner told its
+"no separate send needed" — never write that into a brief; and a planner told its
 teammate-spawned scope reader that its final text "is delivered directly back to
 me", then spent a recovery round-trip nudging the idle agent before the report
 arrived. Every one of those briefs paraphrased the rule instead of pasting it,
@@ -445,7 +445,7 @@ already landed" is generated FROM the scope list the same brief already
 carries — every path in it, in the order the brief lists them — and you assert
 the two sets match before the brief goes out. A path dropped from the command
 is a path the check reports clean about, because it never looked there. In a
-2026-08-25 bare-`/plan` session, the brief named a candidate's scope as five
+bare-`/plan` session, the brief named a candidate's scope as five
 paths — two CLI command files, a worker module, the installer script, and the
 makefile — and then asked its delegate to run `git log --oneline --since=…`
 over the first three only. The two silently dropped paths were where the
@@ -480,8 +480,8 @@ blocks it.** Teammate messages deliver at turn boundaries only, so waiting
 means ENDING THE TURN: schedule ONE long-fallback wakeup (15+ minutes) and
 stop. ScheduleWakeup does not end a turn, and probe calls — ListAgents (which
 does not list a busy in-process delegate), re-schedules, tool searches — keep
-the turn alive and block the very delivery you are waiting on. A 2026-08-11
-planner probed for 40 seconds inside one unbroken turn, declared its reader
+the turn alive and block the very delivery you are waiting on. A planner
+probed for 40 seconds inside one unbroken turn, declared its reader
 dead 114 seconds after spawning it, and recorded solo; the "missing" report
 was queued the whole time and delivered the same second the turn finally
 ended. A delegate is not failed until a wakeup has actually FIRED and found
@@ -706,7 +706,7 @@ and can diverge; a raw grep over them has also blown the output cap where
 one read verb answered). The tell to hunt is an
 issue whose title or scope lives in a variant's domain while its labels carry
 none of that variant's terms: a TUI/UI-scoped issue without `ui` is the
-canonical case (a past harness-repo issue, 2026-08-16 — "TUI: default on-load screen to
+canonical case (a past harness-repo issue — "TUI: default on-load screen to
 home", scope `internal/tui/**`, `labels=[]` — bound `standard-change`
 silently, dropping judge-design from the fanout and skipping the terminal
 design-qa/render-verify step; one tribunal seat caught it at the activation
@@ -755,7 +755,7 @@ the live cluster) in the issue body as post-merge checks instead. The sandbox
 cannot reach a cluster, so a runtime AC is unverifiable on every run by
 construction: across three manifest-flux runs, all 7 cluster-command ACs
 came back "unverifiable" and the AC gate delivered zero assurance (operator
-ruling, 2026-08-19).
+ruling).
 
 **Scope that lives in another repository is a mis-filed issue, not a scope.**
 When an issue's Change section, scope globs, or an embedded operator ruling
@@ -770,7 +770,7 @@ stop-and-ask on a miss. Binding such
 an issue anyway is not a plan the run can execute: the executor's isolation
 contract and sandbox confine it to this repository, so the step can only
 gap-file while the downstream pipeline runs over nothing. The same routing
-governs side-findings (operator ruling, 2026-08-16: gaps belong to their
+governs side-findings (operator ruling: gaps belong to their
 respective projects): an engine defect or another repository's bug surfaced
 by the scope read or premise verification files in the OWNING repo's project
 — goes in `Cross-repo filings` — with at most a `relates_to` pointer here,

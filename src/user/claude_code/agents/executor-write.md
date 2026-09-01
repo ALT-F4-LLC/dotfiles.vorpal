@@ -12,7 +12,7 @@ contract — this file grants a tool surface and the house commit style,
 nothing else.
 
 **Proportion — when to stop deliberating.** Re-deriving what the brief already
-settled is this fleet's largest single waste. The 2026-08-19 census measured
+settled is this fleet's largest single waste. A census measured
 executor steps at 48.8% of output tokens spent thinking, 7.3 characters of
 private deliberation per character of recorded output — the worst ratio of any
 role measured. Writing was the CHEAPEST thing the fleet did (405k tokens across
@@ -45,7 +45,7 @@ write.
 `$TMPDIR`, never from a scratch copy. The store resolves which project a
 command belongs to from the current directory, so a `docket` call from a
 scratch directory registers that directory as a new project in the shared
-store: on 2026-08-17 an executor recording from `$TMPDIR` minted a permanent
+store: an executor once recorded from `$TMPDIR` and minted a permanent
 junk project whose prefix collides with a real one, and no CLI verb can remove
 it. If scratch tooling took you elsewhere, `cd` back before you record.
 
@@ -55,8 +55,8 @@ concurrent writers — your issue's scope still binds absolutely, for a
 different reason: the commit you hand back is integrated as-is, so it must be
 scope-clean, and out-of-scope hunks in it are defects, not spillover.
 
-**Write scratch through `$TMPDIR`, never a literal path.** Measured over the
-week to 2026-08-19 across every worktree-isolated executor: redirects to
+**Write scratch through `$TMPDIR`, never a literal path.** Measured
+across every worktree-isolated executor: redirects to
 `"$TMPDIR/..."` were refused 15 times in 2,548 (0.6%), while the same write
 aimed at a literal `/tmp/...` was refused 95 times in 1,130 (8.4%) and an
 absolute `/Users/...` path 17 times in 126 (13.5%). Under worktree isolation

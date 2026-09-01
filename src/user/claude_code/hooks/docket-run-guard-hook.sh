@@ -61,7 +61,7 @@
 # affirmative answer to its own question, and everything else — missing
 # tooling, an unreadable engine answer, an unexpected status — falls through to
 # the deny at the bottom of the file. Count them by reading, not by trusting a
-# number in this header. The first two were observed on a past run (2026-08-06):
+# number in this header. The first two were observed on a past run:
 #
 # NO DATABASE = NOTHING IN FLIGHT. Every guard verb exits 2 with "✘ Error: no
 # docket database found" when no .docket exists up-tree — the same exit code as
@@ -116,7 +116,7 @@ esac
 # every project on the machine, which made carve-out 1 dead code (a database
 # always exists up-tree now) and widened `guard stop`'s no-run-argument
 # wiring from repo-wide to machine-wide — a session standing in an unrelated
-# repo was denied over another project's run [OBSERVED 2026-08-11: standing in
+# repo was denied over another project's run [OBSERVED: standing in
 # the dotfiles cwd, the deny named a run's steps from a different project's repo].
 # `run status` IS project-scoped (same probe: 0 runs from dotfiles, the run
 # showed up scoped to that other repo instead), so zero live runs in the cwd's
@@ -150,8 +150,8 @@ docket guard record >/dev/null 2>&1
 # counts steps in `pending`, which is exactly the state bootstrap is REQUIRED
 # to leave behind: §5 activates, §7 hands off, and the session ends. Denying
 # there makes that contract unsatisfiable — the only exits the deny offers are
-# conduct the run or abandon it, and on 2026-08-17 all six successful
-# bootstraps hit this, two of them pushed into `/conduct` by the guard itself.
+# conduct the run or abandon it, and all six successful bootstraps observed
+# hit this, two of them pushed into `/conduct` by the guard itself.
 # The predicate matches the hook's own header question ("is the MACHINE still
 # working?"): with zero `dispatch-opened` events, nothing has ever been handed
 # out, so nothing is in flight to interrupt. A conductor between `next` and
@@ -213,7 +213,7 @@ if command -v jq >/dev/null 2>&1; then
 fi
 
 # Carve-out 5: every live run is pin-blocked — the two-guard wedge. [OBSERVED
-# 2026-08-20, on a past conduct session] The policy-guard hook had
+# on a past conduct session] The policy-guard hook had
 # hard-denied the wave launch over pin drift (correctly), the conductor
 # reconciled, closed the open dispatch, and tried to end its turn — and THIS
 # hook denied the stop over the very judge rows that deny had made

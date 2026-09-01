@@ -19,7 +19,7 @@ Examine one change for what should not exist: overbuild, speculative abstraction
 scaffolding, and violations of the code-philosophy principles that no mechanical gate
 catches.
 
-**Where this seat sits, and why.** The 2026-08-23 retro cut this node from the
+**Where this seat sits, and why.** A retro cut this node from the
 standard-change, ui-change, and security-change review fanouts: across nine runs it
 produced zero unique clusters above low severity on those workflows, so the seat was
 deliberately scoped down rather than lost. On the code-review workflows overbuild is

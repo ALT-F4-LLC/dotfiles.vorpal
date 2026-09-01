@@ -12,7 +12,7 @@
 # structural stop for that case: an unattended executor has no human at a
 # terminal to answer an ask, so under this fleet's `auto` permission default
 # the decision falls to the same classifier already measured approving
-# sandbox bypasses a brief forbade (2026-08-19 fleet review, see the removed
+# sandbox bypasses a brief forbade (a fleet review found this, see the removed
 # sandbox-bypass-ask-hook.sh). This hook re-keys the decision away from that
 # classifier for exactly the callers who must never win it.
 #

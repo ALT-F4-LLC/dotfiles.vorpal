@@ -38,21 +38,21 @@ version = 26  # 26: `security` joins labels_any, so all three of
               #   distinction this relies on.
               # 23: `reconcile` sends High and above to the human
               #   `security-vote` again, and the `fix-loop` route added at
-              #   22 is removed. The trail: b51e498 raised this threshold
-              #   from `>= high` to `>= blocker`, which left a high-
+              #   22 is removed. The trail: an earlier commit raised this
+              #   threshold from `>= high` to `>= blocker`, which left a high-
               #   severity finding with no route at all and no vote; that gap
-              #   was read as a missing fix round, and commit 2201b41
-              #   closed it at 22 by adding `fix-loop = any(severity ==
+              #   was read as a missing fix round, and the fix at 22
+              #   closed it by adding `fix-loop = any(severity ==
               #   high)` beside the blocker-only vote. A later review then found
               #   that route contradicts both ladders the corpus ships:
               #   `fragments/severity-ladder-security.md` says High and
               #   above route to the HUMAN security vote and that the
               #   automatic fix loop is retired for this track, and
               #   `fragments/severity-ladder-general.md` says only a
-              #   Blocker opens a fix round. So this bump keeps 2201b41's
+              #   Blocker opens a fix round. So this bump keeps that earlier
               #   diagnosis and reverts its routing: the fix-loop key goes,
               #   and the vote fires on `>= high` — where it sat before
-              #   b51e498 — so every high and every blocker convenes the
+              #   the threshold was raised — so every high and every blocker convenes the
               #   vote and nothing falls through unrouted. With `fix-loop`
               #   no longer a key on this step, the `ThresholdOrder`
               #   precedence that forced `== high` at 22 no longer bears on

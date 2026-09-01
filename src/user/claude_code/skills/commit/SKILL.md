@@ -96,6 +96,13 @@ vocabulary (wave, executor, shadow, conductor, agent names), no "operator
 policy" citations. Say what changed and why in ordinary words — the tracker
 knows its IDs; the log should not need them.
 
+**No evidence-only citations.** A date, a timestamp, or a git sha is never
+the reason a change is right — none of them are guaranteed to stay
+available or meaningful (a sha can be rewritten away, a date tells a future
+reader nothing about why). If a past incident motivates the change, say what
+happened in plain words, inline, rather than pointing at when it happened or
+which commit found it.
+
 ## 5. Commit
 
 Per group, in dependency order:

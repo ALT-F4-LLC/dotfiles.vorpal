@@ -3,7 +3,7 @@
 # sandbox-bypass-ask — PreToolUse: Bash.
 #
 # A Bash call carrying dangerouslyDisableSandbox=true runs OUTSIDE the
-# sandbox. The 2026-08-19 fleet review measured the auto-mode classifier
+# sandbox. A fleet review measured the auto-mode classifier
 # approving twenty such calls from wave executors in one run while their
 # briefs prohibited the bypass outright — the prohibition had no mechanical
 # backing. This hook gives it one: every bypass request becomes an explicit

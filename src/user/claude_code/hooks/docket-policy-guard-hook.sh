@@ -1,16 +1,16 @@
 #!/bin/bash
 
-# policy-guard (operator-approved 2026-08-17, added after wave-audit's advisory
+# policy-guard (operator-approved, added after wave-audit's advisory
 # alone proved insufficient) — PreToolUse:
 # Workflow. DENIES a Workflow launch whose args.policyText does not carry
 # ~/.docket/config/policy.toml byte-for-byte (modulo the trailing newline that
 # $(cat …) strips). The PostToolUse wave-audit advisory proved insufficient
-# alone: on 2026-08-17 three governance panels and two waves ran on a
+# alone: three governance panels and two waves once ran on a
 # ~76%-condensed policy while the advisory scrolled past unread. This is the
 # containment half — it refuses BEFORE any seat or executor spawns; the
 # wave-audit advisory remains the after-the-fact narrator.
 #
-# Second check (operator-approved 2026-08-20): the run pinned
+# Second check (operator-approved): the run pinned
 # policy.toml at activation, and a mid-run `just activate` can drift disk away
 # from that pin. The content check ties the launch to DISK; nothing tied disk
 # to the PIN — a 33-agent wave once routed on a policy its run never pinned,
@@ -42,7 +42,7 @@
 # the decoded string as UTF-8 — the same bytes the file holds — so both
 # sides feed shasum an identical stream whenever the text is clean.
 # The same-length-substitution limit formerly accepted here was CLOSED
-# (operator-approved 2026-08-21): the disk comparison is now
+# (operator-approved): the disk comparison is now
 # SHA-256 content equality — args.policyText must hash-match the file's
 # bytes as-is, or the file minus the trailing newline that $(cat …) strips.
 # Evidence forcing the change: a conductor twice dropped the IDENTICAL
@@ -51,7 +51,7 @@
 # substitution, transposition, or balanced drop-and-duplicate would have
 # sailed through onto the file that routes and judges every launch.
 #
-# Operator-approved 2026-09-01: making the model the copy machine
+# Operator-approved: making the model the copy machine
 # for ~28k bytes that must be exact was itself the residual failure mode —
 # every dispatch re-ran an error-prone hand-copy whose only outcome on a slip
 # was deny-and-retype (measured cost ~90s + a full args retype). A launch

@@ -789,7 +789,7 @@ pub struct ClaudeCodeSettings {
 
     // ================================================================
     // Keys documented on the latest published settings reference
-    // (code.claude.com/docs/en/settings-reference, synced 2026-08-31) that
+    // (code.claude.com/docs/en/settings-reference) that
     // this builder could not previously express. Every one is Option/Vec/
     // BTreeMap and skipped when empty, so adding them changes no emitted
     // settings file until something sets one. Coverage note: the reference

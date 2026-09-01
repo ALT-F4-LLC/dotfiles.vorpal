@@ -89,7 +89,7 @@ on_failure = "one-hop"
 # the per-round re-runs that share the ordinal (review@N judges, synthesize@N,
 # verify@N) are deliberately NOT listed and keep their standing variants.
 on_round = "one-hop"
-# Retro, 2026-08-26: DECLINED — `fix` does not start one hop up on
+# Retro: DECLINED — `fix` does not start one hop up on
 # security-labelled issues. Measured across 19 fix-loop runs (15 security-flavored:
 # RUN-25/29/30/34/35/36/38/48/49/50/51/52/58/59/60; 4 contrast: RUN-32/53/56/61):
 # round-1 fixers that already served opus-medium reproduced the just-closed-class

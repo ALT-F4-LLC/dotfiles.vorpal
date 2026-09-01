@@ -273,7 +273,7 @@ function resolve(row, policy) {
     }
 
     // Executor hints are CONCRETE [executors] names. The label-keyed
-    // [[resolve]] tables are retired (2026-08-13): label routing is when-gated
+    // [[resolve]] tables are retired: label routing is when-gated
     // sibling steps in the workflow files, each declaring its concrete
     // executor, so the engine's own packet substitution renders the right
     // contract and no harness-side hint rewrite exists anymore. The guard at
@@ -427,13 +427,13 @@ function archetype(row, hint) {
 // executor the moment a record or fail exits 0. Before this, tokens (0600) and
 // packets/claims (0644, world-readable) accumulated unbounded at the shared
 // TMPDIR root — 911 stale tokens and 139 world-readable packets measured on one
-// machine (2026-08-25). Step ids are engine-minted and monotonic, so a fresh
+// machine. Step ids are engine-minted and monotonic, so a fresh
 // run cannot inherit stale files; the interrupted path (executor dies holding a
 // claim) is swept by the conductor at reap — see conduct/SKILL.md, "A dead
 // spawn is reaped, not waited out."
 //
 // Replay of a stale token is refused by the engine either way (verified
-// read-only against docket.git @ b50e049: record/fail/heartbeat
+// read-only against docket.git: record/fail/heartbeat
 // all authorize through authorizeLease(), which refuses when owner/token_hash
 // are NULL; completion and reap NULL them (RetireStepTokenTx/ReapStepTx), and
 // a re-claim mints a fresh token the old one cannot match). The dir sweep is
@@ -906,7 +906,7 @@ const policyVersion = assertPolicyShape(policy, 'Refusing to route.')
 if (policy.resolve) {
     throw new Error(
         'wave.js: policy.toml still carries [[resolve]] tables, but label-keyed ' +
-        'hint resolution is retired (2026-08-13) — label routing lives in ' +
+        'hint resolution is retired — label routing lives in ' +
         'when-gated workflow steps declaring concrete executors, and silently ' +
         'ignoring a table would mis-route the very steps it named. Update the ' +
         'installed corpus (policy.toml + workflow files move together). ' +
@@ -970,7 +970,7 @@ function runParked(res) {
 // as "never started" but actually means ALREADY CLAIMED — routinely by a
 // PREDECESSOR OF THE VERY AGENT that just reported it.
 //
-// RUN-61 DISPATCH-332 (2026-08-25) is the fixture: the operator interrupted
+// RUN-61 DISPATCH-332 is the fixture: the operator interrupted
 // the fix@1 executor mid-step, harness resume relaunched the identical agent
 // spec (none of wave.js's own retry paths fired — resume is invisible from
 // inside this script), the relaunched agent's claim was refused with that
@@ -1532,8 +1532,8 @@ ${heldCluster.clusterCount} in ${heldCluster.artifact} (produced by ${heldCluste
 only: is the held remedy right, and should it block? The other clusters are
 other seats' or already decided.` : ''
     // Seats used to vote on a tree their own checkout did not contain — one
-    // judge reported "fix@1 commit 5b05f86, not an ancestor of this judge
-    // worktree HEAD 4d83ae0" and rejected on evidence grounds, because the
+    // judge reported that the fix commit was not an ancestor of the judge
+    // worktree's own HEAD, and rejected on evidence grounds, because the
     // correctness lens asks whether you could reproduce it FROM WHAT IS IN
     // FRONT OF YOU — no code edit answers that reject, since the fix loop
     // cannot move a judge's HEAD. The engine lifts the resolved `issue.diff`
@@ -1629,7 +1629,7 @@ payloads are the evidence. Read what the claims rest on. Do not write, edit,
 commit, or run anything that mutates state — the ONE state change you are
 authorized to make is your own cast, below.
 
-BOUND YOUR INVESTIGATION — then vote. Measured 2026-08-19 across seven days:
+BOUND YOUR INVESTIGATION — then vote. Measured across seven days:
 189 tribunal seats spent 5,309,378 output tokens, 68.7% of it on private
 deliberation — the highest ratio of any role in this fleet — over 36 votes
 and 12 decided proposals in which ZERO verdicts were overturned. That is not
@@ -2178,7 +2178,7 @@ function ancestryParkReport(step, broken) {
 }
 // TEST-END fix-round-ancestry
 
-// GLOBAL STAGE BARRIERS (2026-08-15, superseding the earlier per-issue
+// GLOBAL STAGE BARRIERS (superseding the earlier per-issue
 // lanes). Lanes existed because engine stages only ordered SAME-ISSUE work,
 // so a global barrier made one issue's re-review wait on another issue's
 // slowest row for nothing. The staged closure changed what a stage MEANS:

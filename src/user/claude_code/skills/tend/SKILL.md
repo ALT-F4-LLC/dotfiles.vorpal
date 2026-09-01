@@ -34,7 +34,7 @@ Project resolves from cwd's git identity, same as every other docket verb
 reachable, means this repo isn't bound — say so and stop. The queue is
 everything sitting in `backlog` or `todo` — the pre-existing backlog is fair
 game, not just issues that show up after you started watching (operator
-ruling, 2026-08-20). Ignore issues already `in-progress` or `review` — you
+ruling). Ignore issues already `in-progress` or `review` — you
 put them there yourself in a prior tick (see §2's blocked case).
 
 Exclude two more kinds before picking — this queue isn't tend's alone:
@@ -94,7 +94,7 @@ Exclude two more kinds before picking — this queue isn't tend's alone:
 ## 3. Seat and spawn a worker
 
 One worker at a time, ever — no parallel workers within an issue, no
-parallel work across issues (operator ruling, 2026-08-20: keep it simple).
+parallel work across issues (operator ruling: keep it simple).
 The worker spawns into this working tree (no worktree isolation); strict
 sequence is what makes that safe. Built-in agent types only —
 `general-purpose` to implement, `Explore` when the issue is a pure
@@ -129,7 +129,7 @@ seats" creates is exactly how seats get mis-sized.
    mechanism for every seat makes reflexively seating everything
    `fable`/`max` exactly as easy as inheriting the default used to be (two
    issues in a row went out at `fable`/`max` with no per-issue
-   justification, 2026-08-21), and stating the reason is what forces the
+   justification), and stating the reason is what forces the
    judgment to actually happen.
 
 2. **Spawn through `Workflow`**, the worker brief embedded in the script.

@@ -14,7 +14,7 @@
 #
 # E1's MEASUREMENT (recorded here so the reason travels with the artifact).
 # Method per §6 E1: two concurrent subagents, each writing to $TMPDIR and
-# listing it. Result, 2026-08-05:
+# listing it. Result:
 #
 #   subagent A: TMPDIR=/tmp/claude-501   wrote e1-probe-A.txt
 #   subagent B: TMPDIR=/tmp/claude-501   wrote e1-probe-B.txt
@@ -37,7 +37,7 @@
 #
 # CORROBORATING FINDING: the shim's verb does not exist either. TDD §4.5 and
 # 03 §5 both specify `docket step heartbeat --from-marker`; the engine reports
-# `unknown flag: --from-marker` ([OBSERVED] 2026-08-05, docket version dev).
+# `unknown flag: --from-marker` ([OBSERVED], docket version dev).
 # `docket step heartbeat STEP-N` exists but "Requires the capability token from
 # `docket step claim`, supplied via DOCKET_TOKEN or on stdin" — which is the
 # marker mechanism under another name, and a PostToolUse hook holds neither the

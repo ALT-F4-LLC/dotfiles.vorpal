@@ -27,8 +27,8 @@ or one per run when runs are many), each briefed with the corpus contract
 checkout: `src/user/docket/config/contracts/retro-analyst.md`) — the node the
 corpus already defines for exactly this — plus §2's table verbatim.
 `retro-analyst` carries no `policy.toml` row: the retro pipeline that once
-dispatched it through the wave was removed (`retro.toml`, commit `87713f8`,
-2026-08-22 — deliberate and permanent, not an accident: "no issue ever carried
+dispatched it through the wave was removed (`retro.toml` — deliberate and
+permanent, not an accident: "no issue ever carried
 the retro label, so no run ever bound it" and this skill "covers the same
 analyze/vote/apply loop on its own"), and the row went with it. The skill-side
 spawn below is the only path this node has, so seat each analyst through the
@@ -161,6 +161,15 @@ defend — and give every one of them, before anything is written:
 - the version bump it carries
 - what it costs if you are wrong
 
+The proposal packet is allowed to cite run IDs — the panel is deciding NOW,
+against a store that still holds them. The DIFF is not: whatever comment or
+rationale lands in the file is read years later by someone with no run
+history, no git log, and no tracker open. A date, a timestamp, a sha, or an
+issue id in that comment is a pointer that may already be dead by the time
+anyone reads it. Write what was actually found, in plain words, in the
+comment itself — the file has to justify itself without you standing next
+to it.
+
 That packet is the panel's entire input, so it travels to them whole rather
 than summarized. A batch nobody can evaluate line by line gets approved
 blindly — which is exactly why the line-by-line burden is the PANEL's now,
@@ -284,7 +293,7 @@ watch. A declined proposal with accumulating evidence is the first thing to
 re-raise, and a panel that split is worth naming as such: the disagreement is
 evidence about the proposal. A finding that belongs upstream (an engine limitation, a
 design deviation) gets filed as an issue, not bent into config — and filed in
-its OWNING project (operator ruling, 2026-08-16: gaps belong to their
+its OWNING project (operator ruling: gaps belong to their
 respective projects): engine findings from the docket repo's checkout,
 definition findings from the dotfiles checkout — cwd picks the project —
 never into whichever project this retro read its runs from. `docket issue

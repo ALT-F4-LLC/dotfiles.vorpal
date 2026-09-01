@@ -60,9 +60,9 @@ identity and `DKT-` always parses whatever the prefix.
 
 ## The verbs you will actually use
 
-Ranked by real usage — 14,648 `docket` invocations across the week to
-2026-08-19. These twenty are 62% of every call made. Each line is the verb's
-own `--help` summary, verified against the installed binary on 2026-08-19, so
+Ranked by real usage — 14,648 `docket` invocations across a measured week.
+These twenty are 62% of every call made. Each line is the verb's
+own `--help` summary, verified against the installed binary, so
 this table cannot drift into verbs that do not exist. For anything not here,
 `docket <verb> --help`; for exhaustive per-flag semantics, `reference.md`.
 
@@ -620,6 +620,15 @@ read from stdin; if omitted and stdin is a TTY (human mode only), `$EDITOR`
 (default `vi`) is opened. In `--json` mode, `-m` (or piped stdin) is
 required — there is no editor fallback.
 
+**Write the evidence into the comment, not a pointer to it.** A date, a
+timestamp, a git sha, or another issue's id is not always available or
+kept — a rewritten history drops the sha, an issue gets closed or merged
+away, nobody remembers the date, and none of them mean anything to a reader
+who cannot go look. State what was found or what happened directly, in the
+comment body, so it stands on its own. (A `RUN-N`/`STEP-N` naming the
+execution something happened IN is not this — it is not evidence FOR a
+claim, just which run the comment is about.)
+
 ---
 
 ## Workflow: Labels & Relations
@@ -679,7 +688,7 @@ On docket.git itself (the engine repo), backlog defect sweeps run directly
 in-session — plain edits, tests, commits — unless the operator asks for a
 run: the plan/conduct pipeline is for corpus-governed work, and routing an
 engine-repo sweep into `run start` has cost an operator interrupt and an
-abandoned run (2026-08-17).
+abandoned run.
 
 ---
 

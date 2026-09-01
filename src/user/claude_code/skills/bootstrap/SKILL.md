@@ -23,8 +23,8 @@ Three rules you must not fight:
   say yes; then you run `trust add --yes`. The human, specifically: no panel of
   agents can approve a trust entry, and no trust entry is ever one item among
   several in a single question (§5).
-- **A defect you surface files in its OWNING project** (operator ruling,
-  2026-08-16: gaps belong to their respective projects). An engine gap —
+- **A defect you surface files in its OWNING project** (operator ruling:
+  gaps belong to their respective projects). An engine gap —
   anything "owed upstream" below — is the docket repo's: `docket issue
   create` from THAT checkout, cwd picks the project, never an issue in the
   repo you are binding. A corpus or definition gap is the dotfiles repo's,
@@ -64,7 +64,7 @@ failure mode that outlives the run.
 (`~/.docket/config/contracts/spec-author.md`, plus every fragment that file's
 frontmatter declares) and tell it to Read them first. That is not a paraphrase
 — the agent reads the same bytes — and pasting instead is the single largest
-avoidable cost in this section: on 2026-08-17 seven briefs carried ~18.9KB of
+avoidable cost in this section: seven briefs once carried ~18.9KB of
 inlined corpus each, about 29K output tokens of pure copying, and those bytes
 are also what staggered the spawns.
 
@@ -89,8 +89,8 @@ deliberate the question independently and reach the same answer anyway.
 
 Skim siblings already on disk only if any exist — and finding none is the
 normal case, not a problem to wait out. Spawns start serially even from one
-message, so the first authors reliably find an empty directory (2026-08-17: six
-of seven did). Deconfliction is carried by the contract's axis boundaries, not
+message, so the first authors reliably find an empty directory (six
+of seven did, once measured). Deconfliction is carried by the contract's axis boundaries, not
 by reading siblings, and no author ever blocks on one.
 
 **Route each spawn the way the wave would.** Read
@@ -100,15 +100,15 @@ rows there already, and a row's constraints travel with it (`spec-author-securit
 carries `never = ["fable"]`, so honor the pin, not just the model). Hints with
 no row — §2's miners, the verification and probe agents — read and report
 rather than design: route those `sonnet`. Left unrouted the harness serves every
-teammate from the top model regardless of the work, which on 2026-08-17 put a
+teammate from the top model regardless of the work, which once put a
 100-second checklist agent on the most expensive tier available.
 
 These are leaf agents. They must not spawn, form a team, or call `Skill()`.
 ONE message means one response carrying all seven Agent calls — one-spawn-per-
-message staggers starts for nothing and was the 2026-08-10 deviation, twice.
+message staggers starts for nothing and has been a repeated deviation.
 (One message does not make the starts simultaneous: its tool_use blocks
-dispatch as they stream, so seven briefs still began 77 seconds apart on
-2026-08-17. Keeping briefs small — by path, not paste — is what shrinks that.
+dispatch as they stream, so seven briefs once still began 77 seconds apart.
+Keeping briefs small — by path, not paste — is what shrinks that.
 When auditing a past run for this rule, compare `requestId`s rather than
 timestamps: seven blocks of one message look exactly like seven turns.)
 `executor-write`/`executor-read` name the archetypes the settings builder
@@ -120,9 +120,9 @@ brief, and say in §5 that archetype containment ran prompt-only. And every agen
 way: **write your report to `$TMPDIR/report-<your-name>.md` AND deliver it by
 calling SendMessage to `team-lead` BEFORE ending your turn** — a background
 agent's final text is delivered to nobody, the idle ping that replaces it is
-content-free, and on 2026-08-10 two of five agents finished silently exactly
-this way, one stalling the run nine minutes. The file is the recovery path for
-when delivery lags rather than fails: on 2026-08-17 all eleven reports were
+content-free, and two of five agents have finished silently exactly
+this way, once stalling the run nine minutes. The file is the recovery path for
+when delivery lags rather than fails: once all eleven reports were
 withheld 44 minutes, and a warning about work about to be destroyed arrived
 after the deletion. Do not tell an archetype agent to `ToolSearch` for
 SendMessage: `executor-read` and `executor-write` carry it preloaded and have
@@ -138,12 +138,12 @@ what breaks that circle.
 (ToolSearch `select:Monitor` first) with a 15+ minute timeout whose until-loop
 counts the REPORTS you have received — never the files on disk, because a file
 appears the moment its author opens it and keeps changing for minutes after
-(2026-08-17: a verifier read a spec 46 seconds before its author stopped
+(once measured: a verifier read a spec 46 seconds before its author stopped
 editing it). Then end the turn with a one-line status and NO further tool call.
 Reports arrive as new turns; nothing you run meanwhile makes them arrive
 sooner.
 
-Three ways that goes wrong, all measured 2026-08-17:
+Three ways that goes wrong, all measured in practice:
 
 - **Do not follow the Monitor with a blocking call** — `TaskOutput(block: true)`
   or anything like it. An unyielded turn withholds your own agents' reports:
@@ -163,8 +163,8 @@ Three ways that goes wrong, all measured 2026-08-17:
 
 Spawn the verifier only after all seven have REPORTED. And note that a finished
 agent stays registered until the session ends — "background agents still
-running" at handoff is not evidence of pending work, and on 2026-08-17 every
-fleet session's kill message named agents that had delivered 30-50 minutes
+running" at handoff is not evidence of pending work, and every
+fleet session's kill message has named agents that had delivered 30-50 minutes
 earlier.
 
 **Verify before moving on — with an agent, not your own eyes.** Take the
@@ -177,7 +177,7 @@ git status --porcelain --untracked-files=all > "$SNAP" \
 echo "snapshot: $SNAP"
 ```
 
-Three things in that block are load-bearing, each measured 2026-08-17.
+Three things in that block are load-bearing, each measured in practice.
 `$TMPDIR` is ONE directory shared by every concurrent session on this machine,
 so the fixed name `$TMPDIR/pre-fanout` is another repo's file: seven bootstraps
 wrote it at once, one verifier read a sibling's sandbox error as its baseline,
@@ -209,7 +209,7 @@ the checklist — respawn a stalled axis, revert a stray — you do not perform
 the reading. You are an orchestrator; the whole of this skill's hands-on work
 belongs to agents. Anything else is a collateral write, and it happens: the
 `executor-write` archetype grants a full write surface, so the contract's
-prose is the only containment — and on the 2026-08-06 run prose did not hold:
+prose is the only containment — and on one run prose did not hold:
 an author left a non-compiling Go file in `internal/engine/`, breaking test
 compilation for the whole package the run was about to gate. On a hit, revert
 the stray (`rm` an untracked file, `git checkout --` a modified one) and tell
@@ -221,8 +221,8 @@ respawn that one axis. Say plainly in §5 that these specs are seeded rather
 than gate-validated: `doc-validate` and `reserved-name-check` run under
 `spec-project`, not here, so their structural guarantees do not apply yet. If
 the repo ships those gates itself, have the verification agent run them
-against the seven directly; a real exit 0 beats a predicted one, and the
-2026-08-06 run got both green this way. Diff a shipped gate's expectations
+against the seven directly; a real exit 0 beats a predicted one, and one
+run got both green this way. Diff a shipped gate's expectations
 against the contract's Emit section only when running it is not possible.
 
 One staleness trap these specs carry, and §5a is what bounds it: they describe
@@ -246,7 +246,7 @@ allowlist today, so read verbs — `project list`, `issue list`, `config get`,
 `run status`, `events list`, `step show`, `trust list` — generally succeed
 sandboxed: try one sandboxed FIRST and escalate only on that error. Escalating
 by default costs a permission prompt or a classifier block on every call and
-buys nothing (2026-08-17: 53 escalations in one session, one of them blocked,
+buys nothing (once measured: 53 escalations in one session, one of them blocked,
 none of them required). Also safe sandboxed regardless: anything that opens no
 DB at all (`--help`, `workflow init`) and anything aimed by `DOCKET_PATH` at a
 store inside the sandbox write root (§4a's scratch probe).
@@ -256,7 +256,7 @@ scoped to THIS repo, and the store is user-global: an entry another repo owns
 is invisible to the scoped view yet surfaces as `unmatched` on your first real
 run, naming the repo it is bound to. That difference decides what §5 tells the
 operator — "no such tool exists here" versus "an entry exists one repo over,
-and here is its argv to approve". On 2026-08-17 the scoped view reported no
+and here is its argv to approve". The scoped view has reported no
 secret scanner in a repo whose own security spec had just found cleartext
 private keys, while a `secret-scan` entry sat in the store bound elsewhere.
 
@@ -407,13 +407,13 @@ things the miner never sees can decide its verdict:
 
 - **A toolchain cache outside the sandbox write root.** The denial wears a
   compile error's clothes: `mkdir …: operation not permitted` on a module or
-  package cache reads as a broken build. (Measured 2026-08-17 against Go's
+  package cache reads as a broken build. (Measured against Go's
   `~/go/pkg/mod`, since added to the allowlist — the class outlives the
   example, so check rather than assume.)
 - **Anything your checkout carries that a fresh worktree does not** — an
   untracked file, or an uncommitted edit. A gate registered against an
   uncommitted `justfile` recipe can never pass, because every executor
-  worktree checks out committed HEAD (measured the same day). Commit a
+  worktree checks out committed HEAD (measured). Commit a
   gate-enabling edit BEFORE registering trust against it, or verify the
   command against `git archive HEAD` rather than the dirty tree.
 - **A daemon or socket the sandbox denies** — the docker socket is the
@@ -424,8 +424,8 @@ So brief the miner to run each check TWICE — once in the checkout, once in a
 throwaway `git worktree add` copy — and to grep both transcripts for
 `operation not permitted` and `permission denied` before certifying "no
 environment-caused failures". Where the two disagree, the worktree's verdict is
-the gate's real one. This is the difference between a gate and a tripwire: on
-2026-08-17 all ten gate failures across four repos were environment denials,
+the gate's real one. This is the difference between a gate and a tripwire: in
+one sample, all ten gate failures across four repos were environment denials,
 not one was a real defect, and three runs override-passed them — one reaching
 `done` with build, tests, and lint all failing.
 
@@ -529,7 +529,7 @@ toml and take EVERY name — including pre-gate rows written
 `standard-change` requires `secret-scan` on its write steps and an
 `ac-commands` pre-gate on `verify`; propose an entry for each, or carry it into
 §5's table as an explicit `NO GATE` row. What you must never do is let a
-required gate reach §5 unmentioned: on 2026-08-17 seven of eight repos were
+required gate reach §5 unmentioned: seven of eight repos have been
 bound to a workflow requiring `secret-scan` with no entry anywhere, and every
 one of them first learned about it when a real run refused at completion.
 
@@ -559,8 +559,8 @@ was approved in unless `--global` is given, which authorizes the argv in every
 repo on the machine. Propose `--prefix` only when the argv genuinely varies, and
 say plainly that it over-authorizes.
 
-The verb's real shape — stated because both wrong shapes got tried on
-2026-08-10: `docket trust add <name> [--re-runnable] [--tree] [--flaky] --yes
+The verb's real shape — stated because both wrong shapes have been tried
+before: `docket trust add <name> [--re-runnable] [--tree] [--flaky] --yes
 -- /abs/path/script` — entry flags BEFORE the `--`. Everything after `--` is
 stored verbatim as the argv, so a flag placed there becomes an argument your
 gate script gets executed with (the engine's `trusting …` echo is where that
@@ -623,7 +623,7 @@ and unlike §4a′ it has no escape hatch. Its subject is a workflow the corpus
 registers at every activation, so `doc-record` resolves through the trust store
 the first time anyone files a `doc-`labelled issue in this repo, whether or not
 today's run touches docs. Skipping it leaves that future run stranded on an
-`unmatched` action with nobody watching (2026-08-17: skipped silently in one
+`unmatched` action with nobody watching (skipped silently once in one
 repo, which now carries the landmine). If you reach §5 with no `doc-record` row
 in your gate table, you skipped this section.
 
@@ -686,7 +686,7 @@ read-only install), then feed it a synthetic context bundle on stdin and check
 it exits 0 printing one parseable reply. Feed it the same bundle twice: the
 second run replaying the same DOC-N instead of minting another is the
 measured basis for `--re-runnable`, which beats arguing it from prose — the
-2026-08-06 authoring-era probes caught three real bugs this way, which is why
+authoring-era probes once caught three real bugs this way, which is why
 the ritual survives the script moving into the corpus. The agent returns both
 probe transcripts; that evidence is what you attach to the proposal. Probe
 against a SCRATCH store, not the shared one, and brief the sequence exactly:
@@ -697,7 +697,7 @@ mkdir -p "$SCRATCH" || exit 1
 export DOCKET_PATH="$SCRATCH"
 ```
 
-Three details that each cost a real attempt on 2026-08-17. Bare `mktemp -d`
+Three details that each cost a real attempt once. Bare `mktemp -d`
 targets the OS temp dir and is refused under the sandbox — template it into
 `$TMPDIR` or build the path yourself as above. `DOCKET_PATH` names the store
 DIRECTORY, never a path ending in `issues.db` (docket appends the filename;
@@ -712,7 +712,7 @@ its own scratch dir, re-export `DOCKET_PATH` from that file at the top of EVERY
 call, and assert before any verb that it is non-empty and not `$HOME/.docket`.
 Then `docket init` and both probes, reporting every exit code and transcript
 verbatim. A probe that loses the export writes real DOC/issue rows into shared
-history — the 2026-08-10 run needed an operator-approved destructive delete to
+history — one run needed an operator-approved destructive delete to
 clean up, and the id sequence keeps the scar either way.
 
 Registering `spec-doc.toml` into that throwaway store is the ONE exception to
@@ -731,7 +731,7 @@ agent signing key), and only push and PR stay the operator's. This
 section applies ONLY if a repo-local workflow YOU wrote declares a
 commit-terminal ACTION step; skip it otherwise, and do not invent a
 commit-exec entry nothing consumes. Where it does apply, the history in one
-line: the 2026-08-06 run (pre-refactor corpus) shipped without the script and
+line: an early run (pre-refactor corpus) shipped without the script and
 completed with an approved message and a dirty tree, leaving its conductor to
 commit by hand under the approved gate.
 
@@ -803,8 +803,8 @@ margin — a doc is accepted when most reviewers say yes, and the lower bar
 reflects that a doc's cost of being wrong is a revision, not an incident.
 `tribunal` is the rule the four converted workflow acceptance gates tally
 under — investigation's read-gate, spec-doc's PRD/ux acceptance, spec-project's
-and retro's accepts, operator questions until 2026-08-11 (free-standing
-fix-batch proposals carry their own `--threshold` and name no rule) — and
+and retro's accepts, previously operator questions (free-standing
+fix-batch proposals now carry their own `--threshold` and name no rule) — and
 it takes `0.67` for the same arithmetic as the security rule: two of three, so
 no single seat passes a gate or vetoes one alone. All three are provisional;
 the first retro with five runs of vote data should revisit them.
@@ -826,7 +826,7 @@ to a clock. Size the TTL for the working case; the other two cover the failures.
 nothing refuses for want of a sized TTL — the 15m default applies — so there is
 no reason to write before approval, and §1's narrow "safe to set now" carve-out
 does not reach this section. Run these after §5's yes, in the same breath as
-`trust add`. (Measured 2026-08-17: set here unapproved, then presented in §5 as
+`trust add`. (Measured once: set here unapproved, then presented in §5 as
 "already set", which is not a proposal.)
 
 ```bash
@@ -888,8 +888,8 @@ from evidence.
 A virgin repo has no issue yet, and this skill does not say where the first one
 comes from unless you make it say: take the issue the operator named; if none
 was named, propose ONE drawn from the specs' gap sections and offer the swap
-explicitly — never activate work the operator has not seen named. (The
-2026-08-06 run's conductor improvised exactly this, well; now it is the
+explicitly — never activate work the operator has not seen named. (An
+early run's conductor improvised exactly this, well; now it is the
 contract.) One smoke
 issue is this skill's ceiling: anything larger is `/plan`'s to structure
 BEFORE conducting — plan-up-front is the default, single-issue improvisation
@@ -922,7 +922,7 @@ a payload schema — `` `payload` names "findings@1", which is not registered ``
 refusal is the empty registry, not the file: lint your additions for grammar,
 expect the unresolved-schema refusals, and let the dry-run's registration report
 stand in for them (it validates schemas before workflows; all 12 proved clean
-this way on 2026-08-10). Lint resolving refs across the registered roots is the
+this way once). Lint resolving refs across the registered roots is the
 engine fix, owed upstream; until it lands, this is the expected path.
 
 ```bash
@@ -1003,7 +1003,7 @@ single click, which is what a bundle does to the one item in it that authorizes
 execution. If that means four questions in a row, ask four questions in a row —
 and that means four separate CALLS. Several questions inside ONE question-tool
 call render as a single dialog the operator advances through in one motion,
-which is the bundle the audit measured, not the remedy for it (2026-08-17: one
+which is the bundle the audit measured, not the remedy for it (once measured: one
 call carrying four questions, letter-compliant and functionally a bundle).
 
 On the yeses, run `trust add --yes` for each entry that got its own yes, re-run
@@ -1027,8 +1027,8 @@ Two facts about the store that surface exactly here, at the moment of adding:
   unlike §1's read verbs a trust WRITE genuinely needs an unsandboxed shell.
   Since the first sandboxed attempt always fails, go unsandboxed on the first
   one and tell the operator the permission prompt is coming — discovering the
-  denial costs a round-trip every time, and on 2026-08-17 the surprise prompt
-  was declined once before being approved on a retry. This is a legitimate
+  denial costs a round-trip every time, and the surprise prompt has been
+  declined once before being approved on a retry. This is a legitimate
   moment for one, because the operator just approved these exact entries. Each
   entry binds to this repository unless it was added `--global`.
 - **The store survives un-bootstraps and earlier sessions**, so proposed names
@@ -1075,7 +1075,7 @@ Two mechanics worth knowing before you run it. The auto-mode classifier reads
 this deletion as destructive, so put the named paths and the reason in front of
 the operator BEFORE the `rm` rather than discovering the block. And issue the
 `rm` as its own uncompounded call — no `cd`, no chained `rmdir`, no trailing
-`git status`: on 2026-08-17 compounds containing a deletion drew a block three
+`git status`: compounds containing a deletion have drawn a block three
 times while the same commands issued singly passed. Process substitution
 (`diff <(…)`) is also refused under the sandbox, so compare with two temp
 files if you want a before/after confirmation.
@@ -1130,7 +1130,7 @@ exist, there is no corpus to read — say so, and fall back to `workflow init
 
 **Before you report, stop every agent you spawned.** §0's authors and §2's
 miners have no work after §3, and a finished agent stays registered until
-somebody kills it — on 2026-08-17 each fleet session left eleven idle agents
+somebody kills it — each fleet session has left eleven idle agents
 standing for the better part of an hour.
 
 Report the config files you wrote, the trust entries they approved, and the run
@@ -1142,7 +1142,7 @@ to survive.
 gate, the steps that declare it, and the consequence in plain words: the first
 dispatch will do the work and then be refused at completion. A conductor that
 learns this from a panel fifteen minutes into the run has already paid for it
-(measured 2026-08-17, twice).
+(measured twice).
 
 Name the next move plainly: real work beyond the smoke issue
 goes through `/plan` (issues, phases, gates placed deliberately), then
@@ -1155,8 +1155,8 @@ not an instruction: bootstrap's correct terminal state IS an activated,
 undispatched run. Say so, put the choice to the operator through the question
 tool — `/conduct` now, leave it parked for later, or `docket run abandon` and
 re-plan — and wait for their answer. Never dispatch to satisfy a hook, and
-never abandon a run just to clear one. (All six successful bootstraps hit this
-on 2026-08-17; two operators were pushed into `/conduct` by it.) Say plainly that this
+never abandon a run just to clear one. (All six successful bootstraps have hit
+this; two operators were pushed into `/conduct` by it.) Say plainly that this
 repo materializes no corpus of its own: the engine reads `~/.docket/config`
 directly, a fresh clone needs no setup step, and shared bytes change only
 through `src/user/docket/` and a version bump — the blast radius being every

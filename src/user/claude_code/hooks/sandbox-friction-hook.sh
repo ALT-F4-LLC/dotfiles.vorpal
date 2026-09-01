@@ -2,8 +2,8 @@
 
 # sandbox-friction — PostToolUse: Bash.
 #
-# The evidence half of the sandbox self-improving loop (operator ruling,
-# 2026-08-20). The allowlist is EVIDENCE-ONLY, which is only honest if evidence
+# The evidence half of the sandbox self-improving loop (operator ruling).
+# The allowlist is EVIDENCE-ONLY, which is only honest if evidence
 # reaches the operator faster than a weekly shadow sweep: the wrong Go module
 # cache path cost ~1,650 sandbox lifts over sixteen days before anybody looked,
 # and the only reason it surfaced at all was a post-mortem nobody had scheduled.
@@ -18,7 +18,7 @@
 #      configuration exists to avoid.
 #   2. It must never print on the happy path. A PostToolUse hook that narrates
 #      becomes noise on thousands of calls and gets ignored exactly when it
-#      matters (measured 2026-08-17: a condensed-policy advisory scrolled past
+#      matters (measured directly: a condensed-policy advisory scrolled past
 #      unread through three panels and two waves).
 #   3. It must be cheap. One grep against the output, an early exit, and no
 #      work at all for the overwhelming majority of calls that are fine.
@@ -38,7 +38,7 @@
 #                           Evidence for `autoMode.allow` / `autoMode.environment`
 #                           — which are unset today precisely because nothing was
 #                           recording this and there was nothing to write them
-#                           from (7-day census 2026-08-20: zero observed).
+#                           from (a 7-day census found zero observed).
 
 set -uo pipefail
 

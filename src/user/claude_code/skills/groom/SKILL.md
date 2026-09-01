@@ -1,92 +1,144 @@
 ---
 name: groom
-description: Run one full grooming pass over every open issue in the current Docket project — dedupe overlapping issues, flag stale ones, re-prioritize, and fill missing goals and acceptance criteria so issues are run-ready. Safe edits (labels, priority, comments, field fills) apply directly; closures and merges are proposed and land only on operator approval. One-shot with no parameter: a single pass over the project resolved from cwd, then stop — no loop, no watch, and it never implements an issue (that is tend's job). The survey, the judgment, and the safe edits are done by a dedicated seat (the groomer agent); this session only relays the approval gate and runs the approved closures and merges. Use on "groom the backlog", "/groom", "clean up the backlog", "tidy the issues", "make the backlog run-ready", or any request to improve issue quality without working the issues themselves.
+description: Run one full grooming pass over every open issue in the current Docket project — dedupe overlapping issues, flag stale ones, re-prioritize, and fill missing goals and acceptance criteria so issues are run-ready. Safe edits (labels, priority, comments, field fills) apply directly; closures and merges are proposed to the operator via AskUserQuestion and land only on approval. One-shot with no parameter: a single pass over the project resolved from cwd, then stop — no loop, no watch, and it never implements an issue (that is tend's job). Use on "groom the backlog", "/groom", "clean up the backlog", "tidy the issues", "make the backlog run-ready", or any request to improve issue quality without working the issues themselves.
 argument-hint: "[stale window, e.g. 14d]"
+model: fable
+context: fork
 ---
 
 # groom
 
-You are the relay. Judging a backlog — what is a duplicate, what is stale,
-what is not run-ready — belongs to a dedicated seat, the `groomer` agent,
-using `fable`, so this conversation orchestrates only: spawn the seat, carry
-its proposals to the operator and the answers back, and run the approved
-closures and merges it hands over. Nothing else — no surveying, no judging
-clusters, no drafting field fills, no second-guessing or rewriting the
-seat's ledger. The seat's working contract (the survey, the four kinds of
-finding, the safe-edit rules, the proposal shape) lives in its own
-definition, `agents/groomer.md`; this file governs only the relay around it.
+You run one grooming pass over the current project's open issues as an
+editor, not an implementer: read everything, fix what is safely fixable in
+place, and put anything destructive in front of the operator before it
+happens. Do this all in this same conversation — no spawn, no relay; the
+frontmatter `model: fable` already puts this pass on the strongest tier.
 
-Rules you must not fight, same as the seat's own:
+One pass, then stop — groom takes no parameter beyond an optional stale
+window, has no loop, schedules no wakeups, and never touches the code the
+issues describe.
+
+Rules you must not fight:
 
 - **Never invoke `plan`, `conduct`, or `tend`, and never create, activate,
   or advance a docket run.** Grooming is issue hygiene only. The only
-  custom skill in play is `docket` (issue verbs — exact flags via that
-  skill's reference or `docket <verb> --help`).
-- **Closures and merges land only on operator approval.** The seat never
-  runs `docket issue close`; you run it, and only for proposals the
-  operator picked in §2.
-- **One pass, then stop.** No loop, no wakeup, no follow-up pass; the next
-  groom happens when the operator invokes it again.
+  verbs in play are `docket issue …` (exact flags via `docket <verb>
+  --help`).
+- **Safe edits are yours; destructive edits are not.** Labels, priority,
+  comments, and field fills apply directly (§3). Closures and merges — and
+  any safe-shaped edit that §1's exclusions reroute — go through the
+  operator as proposals (§4); only run `docket issue close` for a proposal
+  the operator approved there.
+- **Judge from evidence.** A duplicate call you cannot defend in one
+  sentence is not a duplicate, it is two issues that share a noun. When a
+  cluster is genuinely ambiguous, leave it out of the proposals and name
+  the ambiguity in the report instead.
 
-## 1. Spawn the seat
+## 1. Survey
 
-`Agent({model: "fable", subagent_type: "groomer", name: "groomer", prompt:
-<see below>})`. If the name is taken, suffix it (`groomer-2`); the name is
-how `SendMessage` addresses the relay.
+```bash
+docket issue list --json --limit 1000 -s backlog -s todo -s in-progress -s review
+docket run status --active --json
+```
 
-The prompt carries two things and paraphrases neither:
+Project resolves from cwd's git identity, same as every other docket verb.
+A `VALIDATION_ERROR` naming no project, or no store reachable, means this
+repo isn't bound — say so and stop. Scope is every open issue: everything
+not closed, all statuses, the whole backlog.
 
-- the operator's invocation VERBATIM — the full text after `/groom`,
-  untouched, including an empty invocation as such (the seat reads a
-  stale window from it if one was named, else defaults to 30 days);
-- a one-line reminder that its reports must follow its contract's
-  PROPOSALS / FINAL shapes.
+Two kinds of issue are in scope to read but not yours to freely edit — this
+queue isn't groom's alone:
 
-## 2. Relay the approval gate
+- **Run-included.** For each run `docket run status --active --json`
+  returns, `docket issue list --run <ref> --json --limit 1000` names that
+  run's roster. An open issue on any of those rosters belongs to a
+  plan/conduct session, even while the run is parked.
+- **Claimed.** Any issue with a non-empty `assignee` — someone or something
+  else already has it.
 
-The seat cannot face the operator — `AskUserQuestion` is removed from every
-subagent — so its reports come to you and you carry them across, unedited:
+Both still get comments and labels (§3); every other edit to them travels
+through the proposal gate (§4) instead of applying directly, because a
+priority or content change under a live run or an active claimant changes
+work mid-flight.
 
-- **PROPOSALS report** — the numbered ledger plus a question array. Show
-  the numbered list in chat verbatim when it has more than four entries
-  (the operator needs to see the numbers to name a subset), then run ONE
-  `AskUserQuestion` round passing the seat's question array unchanged: its
-  options, its defenses, its multiSelect setting. Do not answer for the
-  operator, drop or reword a proposal, or add your own. Then go to §3.
-- **FINAL report** — the pass summary. Go to §4.
+## 2. Read and judge
 
-If the operator raises something new at the gate — a different stale
-window, "leave that cluster alone" — relay it to the seat with
-`SendMessage` and wait for its next report; do not patch the ledger
-yourself.
+`docket issue show <id> --json` for every surveyed issue — description,
+acceptance criteria, comments, labels, relations. From the full set, build
+one grooming ledger with four kinds of finding:
 
-## 3. Apply what was approved
+- **Duplicates:** issues asking for the same outcome, clustered, with one
+  canonical pick per cluster (oldest issue with the best-written contract
+  wins; note anything unique the others carry).
+- **Stale:** no activity — no comment, edit, or status change — for 30
+  days. That default stands unless the operator named a different window
+  in the invocation, in which case use it and say so in the report.
+- **Not run-ready:** goal unclear or missing, acceptance criteria absent or
+  uncheckable.
+- **Mis-prioritized:** priority missing, or plainly out of line with the
+  issue's content relative to the rest of the backlog.
 
-For each approved proposal, run exactly the `Commands:` lines the seat
-listed for it, in order — comment first, then `docket issue close <id>` —
-and nothing for a declined one. Do not re-derive a merge, add a closure the
-seat did not propose, or skip a command it listed. Then message the seat
-with `SendMessage`: which proposal numbers were approved, which declined,
-and which commands ran (with any failure output verbatim). Wait for its
-FINAL. Waiting means ENDING YOUR TURN — the seat's report is queued and
-delivers only at your next turn boundary. Do not probe the seat's
-transcript in the same turn, and ignore any idle_notification timestamped
-BEFORE your own message: it is stale. Reconstruct from the transcript only
-if a FRESH idle arrives after your message with no report following.
+Judge from what the issues and the repo actually say, not from vibes. Read
+the repo (`Read`, `Grep`, `Glob`) only as far as a judgment needs — to
+confirm a referenced path exists, or that a described change already
+landed — never to work an issue.
 
-## 4. Report and stop
+## 3. Safe edits, applied now
 
-Present the seat's FINAL summary verbatim — issues surveyed, stale window,
-automatic edits by kind with ids, what was proposed, approved, declined,
-and applied, and anything judged too ambiguous to propose. Then stop.
+Non-destructive edits land directly, no questions asked: labels (e.g.
+`stale` on §2's stale findings), priority (except on run-included or
+claimed issues — those route to §4), comments, and field fills. A field
+fill drafts the missing goal or acceptance criteria from the issue's own
+description, comments, and the repo — criteria must be checkable, not
+aspirational — and edits it into the issue with a comment noting groom
+drafted it. Fill what is missing; never rewrite or restyle prose the
+operator already wrote. Record every applied edit for the report.
 
-## If the seat fails
+## 4. Propose closures and merges
 
-A failed spawn or a dead seat — the `groomer` type is unknown to the Agent
-tool until the operator's `just activate` installs it, or the agent dies
-mid-run — doesn't cancel the pass. Say what happened in one line, read the
-seat's contract at `~/.claude/agents/groomer.md` (it installs alongside
-this skill; fall back to the repo source under
-`src/user/claude_code/agents/groomer.md` if absent), and run that contract
-yourself in this session — same survey, same safe edits, same approval
-gate before any closure or merge.
+Closures and merges are destructive and never apply without the operator's
+say-so. Batch every proposal from §2 — stale closures, duplicate merges,
+and any §3-shaped edit that §1's exclusions rerouted here — each with its
+one-sentence defense:
+
+- a **merge** carries anything unique from the duplicate into the
+  canonical issue first (a comment or field edit on the canonical), then
+  comments `duplicate of <id>` on the duplicate, then `docket issue close
+  <id>`;
+- a **stale closure** comments `stale since <date>` then closes;
+- a **rerouted safe edit** is the single `docket issue edit …` it would
+  have been in §3.
+
+If there is nothing to propose, skip straight to §5. Otherwise, show the
+numbered ledger in chat verbatim when it has more than four entries (the
+operator needs the numbers to name a subset), then run ONE
+`AskUserQuestion` round:
+
+- **Four or fewer proposals:** one question with `multiSelect: true`, one
+  option per proposal (label `#<n> <kind> <ids>`, description the
+  defense), so the operator picks exactly which land.
+- **More than four:** one question with `multiSelect: false`, options
+  `Apply all` / `Apply none`, and the question text naming that a subset
+  goes through Other as proposal numbers.
+
+If the operator raises something new instead — a different stale window,
+"leave that cluster alone" — fold it in and re-derive the ledger entries it
+affects; never restart the survey.
+
+For each approved proposal, run exactly its `Commands:` — comment first,
+then `docket issue close <id>` — and nothing for a declined one. Do not
+re-derive a merge, add a closure that wasn't proposed, or skip a listed
+command.
+
+## 5. Report and stop
+
+Before reporting, check the summary and each proposal's one-sentence
+defense against §2's evidence: no hedged claim standing without the
+duplicate, staleness, or priority fact behind it, no vague label ("seems
+off") standing in for the reason.
+
+One summary, plain language: how many issues surveyed, the stale window
+used, what was edited automatically (by kind, with ids), what was
+proposed, what the operator approved or declined, and what was applied.
+Name anything judged too ambiguous to propose. Then stop — no wakeup, no
+follow-up pass; the next groom happens when the operator invokes it again.

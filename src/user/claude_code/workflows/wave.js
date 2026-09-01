@@ -5,12 +5,11 @@ export const meta = {
 }
 
 // ---------------------------------------------------------------------------
-// TOML subset parser — byte-identical to tribunal.js's, deliberately
-// duplicated. A workflow script has no file access and no module resolution:
-// it cannot import a sibling, so the only alternatives are this copy or a
-// second parser that drifts. tests/workflow-sync.test.sh diffs every
-// SYNC-marked region between the two files (self-names normalized) and fails
-// on drift.
+// TOML subset parser, byte-identical to tribunal.js's. A workflow script has
+// no file access or module resolution, so this is either a duplicate or a
+// second parser that drifts; tests/workflow-sync.test.sh diffs every
+// SYNC-marked region between the two files (self-names normalized) and
+// fails on drift.
 // ---------------------------------------------------------------------------
 
 // SYNC-BEGIN policy-parser
@@ -155,21 +154,15 @@ function parseToml(text) {
 // SYNC-END policy-parser
 
 // SYNC-BEGIN policy-shape
-// What this script reads out of policy.toml is a SHAPE, not a version number:
-// [executors].<seat>.variant naming a [variants] row, and [variants] rows
-// carrying model/effort/escalate_to. That shape has not moved since v2 —
-// every bump since is a normal retro commit against tables this file never
-// reads (v15, for one, added [escalation].on_round/round_executors, which
-// seat and step routing both ignore). An exact-match check on the current
-// number therefore refuses HEALTHY policy the first retro after it is
-// written: pinned at 15, it refused the corpus's v16 and blocked every
-// dispatch wave and every conversational gate fleet-wide (DOT-746).
-//
-// So this mirrors the conduct skill's own [policy] gate — the field must be
-// PRESENT and an INTEGER — replaces the equality with a documented floor, and
-// then checks the tables the routing actually depends on. A version ABOVE the
-// floor is not an "unknown schema"; a policy.toml with no [variants] table
-// is, and that is what gets caught here.
+// What this reads out of policy.toml is a SHAPE, not a version number: a
+// [executors].<seat>.variant naming a [variants] row, carrying model/effort/
+// escalate_to. That shape hasn't moved since v2, so an exact-match check on
+// the current version refuses healthy policy the moment it bumps — pinned at
+// 15, it refused v16 and blocked every dispatch wave and gate fleet-wide
+// (DOT-746). So this mirrors the conduct skill's own [policy] gate (present,
+// integer) against a documented floor, then checks the tables routing
+// actually depends on: a version above the floor is fine, a missing
+// [variants]/[executors] table is not.
 const POLICY_VERSION_FLOOR = 2   // first version carrying the [executors].variant -> [variants]/escalate_to shape this file routes on
 
 function assertPolicyShape(policy, refusal) {
@@ -328,20 +321,16 @@ function resolve(row, policy) {
     }
 
     const standing = variant
-    // Escalation: one escalate_to hop per prior claim — row.attempt counts
-    // claims-so-far, whatever ended each one (gate failure or lease reap; the
-    // row exposes no split) — from the standing variant, PLUS one
-    // hop per prior fix-loop round for the executors [escalation] opts in
-    // (roundHops above): a loop round is a fresh step id at attempt
-    // 0, so without the round term the walk restarted from standing every
-    // round. The walk stops at the chain's end or at the security ceiling. A
-    // hop whose model is never-listed is REDIRECTED through
-    // [escalation.fallback] rather than ended there: the non-pinned path
-    // enters the fable variant, fails fableEligible(), and lands on the
-    // fallback, so breaking here once stranded a pinned step one hop BELOW
-    // where an unpinned one reaches. The redirect is itself a hop, is
-    // bounded by the ceiling like any other, and the walk ends only when the
-    // fallback is missing, never-listed, or a no-op.
+    // Escalation: one escalate_to hop per prior claim (row.attempt counts
+    // claims-so-far, whatever ended each one) from the standing variant, PLUS
+    // one hop per prior fix-loop round for opted-in executors (roundHops
+    // above) — a loop round is a fresh step id at attempt 0, so without the
+    // round term the walk restarted from standing every round. The walk
+    // stops at the chain's end or the security ceiling. A hop whose model is
+    // never-listed REDIRECTS through [escalation.fallback] rather than
+    // ending there — the non-pinned path enters the fable variant, fails
+    // fableEligible(), and lands on the fallback — and the redirect is
+    // itself a ceiling-bounded hop.
     const hops = (row.attempt > 0 ? row.attempt : 0) + roundHops(policy, found.key, row)
     if (hops > 0) {
         for (let hop = 0; hop < hops; hop++) {
@@ -433,80 +422,64 @@ function archetype(row, hint) {
 }
 
 // SCRATCH HYGIENE (DOT-834, tribunal-security condition on DKT-V284): every
-// file an executor writes — claim.json, token, packet.md, artifact/payload/
-// gap bodies, a judge's reconstructed target tree — lives in a private
-// per-step directory <TMP>/<step>.d, mode 0700, built fresh at claim
-// (rm -rf then mkdir -m 700, so a re-attempt of the same step id never
-// inherits a predecessor's leftovers) and removed by the executor in the
-// same breath as a record or fail that exits 0. Before this, tokens (0600)
-// and packets/claims (0644, world-readable) accumulated unbounded at the
-// shared TMPDIR root across runs and sessions — 911 stale tokens and 139
-// world-readable packets measured on one machine on 2026-08-25. A fresh run
-// cannot inherit stale files by construction: step ids are engine-minted and
-// monotonic, so a new run's dirs are new paths, and the old flat-root paths
-// are never read again. The interrupted path (executor dies holding a
+// file an executor writes lives in a private per-step directory <TMP>/<step>.d,
+// mode 0700, built fresh at claim (rm -rf then mkdir -m 700) and removed by the
+// executor the moment a record or fail exits 0. Before this, tokens (0600) and
+// packets/claims (0644, world-readable) accumulated unbounded at the shared
+// TMPDIR root — 911 stale tokens and 139 world-readable packets measured on one
+// machine (2026-08-25). Step ids are engine-minted and monotonic, so a fresh
+// run cannot inherit stale files; the interrupted path (executor dies holding a
 // claim) is swept by the conductor at reap — see conduct/SKILL.md, "A dead
 // spawn is reaped, not waited out."
 //
-// REPLAY OF A STALE TOKEN IS REFUSED BY THE ENGINE EITHER WAY — verified
-// read-only against docket.git @ b50e049 (DOT-834 acceptance criterion 1):
-// record/fail/heartbeat all authorize through the single predicate
-// authorizeLease() (internal/db/leases.go), which returns ErrNotHolder when
-// the lease's owner/token_hash are NULL. Completion NULLs them
-// (RetireStepTokenTx -> clearLeaseTx, internal/db/steps.go: "After this
-// commits, `complete` is AUTH_ERROR (R9)"), a reap NULLs them the same way
-// (ReapStepTx, internal/db/steps.go), and a re-claim mints a fresh random
-// token whose sha256 hash the old token cannot match (TokenMatches,
-// internal/model/lease.go, constant-time). The dir sweep is therefore
-// defense against exposure and accumulation of spent credentials and
-// rendered briefs, not the revocation mechanism itself.
+// Replay of a stale token is refused by the engine either way (verified
+// read-only against docket.git @ b50e049, DOT-834 AC1: record/fail/heartbeat
+// all authorize through authorizeLease(), which refuses when owner/token_hash
+// are NULL; completion and reap NULL them (RetireStepTokenTx/ReapStepTx), and
+// a re-claim mints a fresh token the old one cannot match). The dir sweep is
+// defense against exposure and accumulation, not the revocation mechanism.
 //
 // HOW THIS BRIEF IS WORDED, and it is load-bearing: state the required form,
-// omit the defense. A brief never addresses the safety classifier, never names
-// a technique by what it gets past, and never pre-argues its own
-// authorization — that wording is itself screened: a self-justifying brief
-// once cost an entire dispatch every executor spawn across three dispatch
-// cycles, each spawn refused, zero steps claimed. Say what to do and what
-// containment binds; a rule needs no argument for why it is allowed.
+// omit the defense. A brief never addresses the safety classifier, names a
+// technique by what it gets past, or pre-argues its own authorization — a
+// self-justifying brief once cost an entire dispatch every executor spawn
+// (three cycles, every spawn refused, zero steps claimed). Say what to do and
+// what containment binds; a rule needs no argument for why it is allowed.
 function bootstrap(row, r, isolated, isWrite) {
+    // The TMPDIR pin paragraph appears once per brief — in bootstrap (a) for
+    // isolated executors, in pinNote for everyone else. The two renderings
+    // are deliberate near-mirrors of one rule; a wording change lands in
+    // BOTH or the two executor classes drift apart on the same hazard.
     const isolationNote = isolated ? `
 
-0. YOU ARE IN A PRIVATE WORKTREE of the repository, AND YOUR BASH CALLS MAY
-   BE SCREENED BY A GUARD — every rule below binds you identically whether
-   or not one is active. The worktree protects your SIBLINGS from you — it does
-   not change your own discipline: your archetype's byte-identical rule still
-   holds, and any probe that must modify files still runs on a COPY under
-   <TMP>, never on this checkout. (Never reach for the revert verbs — git
-   restore, checkout --, reset, clean: probing on copies means never needing
-   them, and this protocol has no undo step.) Never cd out to the shared
+0. YOU ARE IN A PRIVATE WORKTREE, and your Bash calls may be guard-screened —
+   every rule below binds you either way. The worktree protects your
+   SIBLINGS from you — it does not change your own discipline: any probe
+   that must modify files still runs on a COPY under <TMP>, never on this
+   checkout (never reach for git restore/checkout --/reset/clean — probing
+   on copies means never needing them). Never cd out to the shared
    repository tree. Command discipline, non-negotiable — every call you make
    must be obvious at a glance, exactly what it says and nothing more:
 
    - ONE action per Bash call: no \`&&\` chains, no \`$(...)\` substitution
      around git. Run every command PLAIN and SEPARATE.
-   - Spell every redirect target as a LITERAL absolute path. (Shell
-     variables do not survive between your calls anyway — see the token
-     protocol below.)
-   - Run git against YOUR OWN tree only — never \`git -C\` or \`--git-dir\`
-     aimed at another checkout, never cd-then-git elsewhere. Pipes are fine.
+   - Spell every redirect target as a LITERAL absolute path (shell variables
+     do not survive between your calls — see the token protocol below).
+   - Run git against YOUR OWN tree only — never \`git -C\`/\`--git-dir\` at
+     another checkout, never cd-then-git elsewhere. Pipes are fine.
 
-   RUN \`docket\` BARE — no DOCKET_PATH prefix, ever. The store resolves from
-   anywhere inside the repository, this worktree included: nothing to probe
-   for, nothing to prepend.
+   RUN \`docket\` BARE — no DOCKET_PATH prefix; the store resolves from
+   anywhere inside the repository, this worktree included.
 
    Bootstrap, one plain command at a time:
 
    a. \`printenv TMPDIR\` — your literal scratch root. Call it <TMP>;
       substitute its literal value wherever <TMP> or \`$TMPDIR\` appears in
       this brief. (Use \`printenv\`, not \`echo\` — no variable expansion
-      anywhere in your calls, this one included.)
-
-      PIN IT ONCE AND REUSE THE LITERAL. \`$TMPDIR\` is not guaranteed to
-      resolve to the same root in every call, so a path written as the
-      variable can name one directory when you create it and a different one
-      when you read it back — files and directories alike, both of which
-      persist perfectly well under whichever root actually received them.
-      The literal is what makes "I wrote it, therefore I can read it" true.
+      anywhere in your calls.) PIN IT ONCE AND REUSE THE LITERAL: \`$TMPDIR\`
+      is not guaranteed to resolve to the same root on a later call, so a
+      path written as the variable can name one directory when you create it
+      and a different one when you read it back.
    b. \`git worktree list --porcelain\` — every checkout's path and HEAD sha.
    c. Compare \`git rev-parse HEAD\` in your tree to the HEAD of the shared
       checkout from (b) — the one NOT under \`.claude/worktrees\`. If they
@@ -517,17 +490,17 @@ function bootstrap(row, r, isolated, isWrite) {
    If any of these is DENIED by the guard or the permission system, say
    \`BOOTSTRAP DENIED\`, quote the denial verbatim, and STOP — that is an
    operator permission gap, not a repository-state problem. If a command
-   fails on its own output instead, report that verbatim and STOP. Either
-   way, do not hunt, do not guess, and NEVER claim after a failed
-   bootstrap: an unclaimed step re-dispatches for free; a claimed one
-   strands a token. Success binds the same way: once (c) passes, your NEXT
-   command is the claim in 1' — no exploratory docket verbs first (no
-   --help, no step list/show, no run status/report, no next, nothing under
-   dispatch). The brief and the packet carry everything a claim needs.
+   fails on its own output instead, report that verbatim and STOP either way;
+   do not hunt, do not guess, and NEVER claim after a failed bootstrap — an
+   unclaimed step re-dispatches for free, a claimed one strands a token. Once
+   (c) passes, your NEXT command is the claim in 1' — no exploratory docket
+   verbs first (no --help, no step list/show, no run status/report, no next,
+   nothing under dispatch). The brief and the packet carry everything a
+   claim needs.
 
    TRANSLATION RULES — obligations 1 and 3 below print code blocks written
-   for the shared tree; run their ISOLATED forms instead, everything else
-   in their prose still binding:
+   for the shared tree; run their ISOLATED forms instead, everything else in
+   their prose still binding:
 
    1'. Claim, as separate plain commands, literal paths throughout — the
        first two build your PRIVATE STEP SCRATCH DIR (obligation 1's
@@ -544,10 +517,10 @@ function bootstrap(row, r, isolated, isWrite) {
        being truncated by the harness's inline-output cap.
        If the claim itself errors naming a packet file ("pinned by this run
        but is no longer on disk"), report the error verbatim and STOP — the
-       ref came from a REPO-ADDITION config layer, which is repo-root-relative
-       and absent from your worktree (shared-corpus refs resolve from any cwd);
-       the claim already recorded and the token is gone; a re-claim burns an
-       attempt on the same wall, and the relay's reap is the only way out.
+       ref came from a REPO-ADDITION config layer, repo-root-relative and
+       absent from your worktree (shared-corpus refs resolve from any cwd);
+       the claim already recorded and the token is gone, so a re-claim just
+       burns another attempt — the relay's reap is the only way out.
    3'. Record with the token fed to stdin from its literal path:
        \`docket step record ${row.step} ... < <TMP>/${row.step}.d/${row.step}.token\`
 
@@ -557,15 +530,11 @@ function bootstrap(row, r, isolated, isWrite) {
 
 0. FIRST, before the claim: \`printenv TMPDIR\` — your literal scratch root.
    Call it <TMP>; substitute its literal value wherever <TMP> appears below.
-   (Use \`printenv\`, not \`echo\`.)
-
-   PIN IT ONCE AND REUSE THE LITERAL. \`$TMPDIR\` is not guaranteed to resolve
-   to the same root in every call, so a path written as the variable can name
-   one directory when you create it and a different one when you read it
-   back — files persist perfectly well under whichever root actually received
-   them. The literal is what makes "I wrote it, therefore I can read it"
-   true, and the claim token you park in obligation 1 depends on exactly
-   that.`
+   (Use \`printenv\`, not \`echo\`.) PIN IT ONCE AND REUSE THE LITERAL:
+   \`$TMPDIR\` is not guaranteed to resolve to the same root on a later call,
+   so a path written as the variable can name one directory when you create
+   it and a different one when you read it back — and the claim token you
+   park in obligation 1 depends on exactly that.`
     return `You are executing one step of a Docket run. Follow these obligations exactly.
 
 YOUR ASSIGNMENT: step ${row.step} (issue ${row.issue}, run ${row.run}). This
@@ -589,43 +558,40 @@ read STEP-N or \${row.step}, and this one does not.${isolationNote}${pinNote}
      cat /dev/null > <TMP>/${row.step}.d/${row.step}.claim.json
    \`\`\`
 
-   The last command TRUNCATES the claim file rather than deleting it. Its
-   contents are spent the moment the packet above is printed, so emptying it
-   is enough. Same rule at step 3.
+   The last command TRUNCATES the claim file rather than deleting it — its
+   contents are spent the moment the packet above is printed. Same rule at
+   step 3.
 
-   Every path is spelled out because YOUR SCRATCH ROOT <TMP> IS SHARED BY EVERY
-   EXECUTOR IN THE WAVE (measured: concurrent subagents all get the same
-   directory) — and it OUTLIVES the wave: the same root is handed to later
-   runs and sessions. That is why EVERYTHING you write goes inside
-   <TMP>/${row.step}.d — your PRIVATE STEP SCRATCH DIR, mode 0700, built
-   fresh by the rm/mkdir pair above (the \`rm -rf\` clears any stale
-   leftover from a prior attempt of this same step; never skip it, and
-   never aim it anywhere but that literal step-id path). Your step id is
-   what makes the dir and these filenames yours; do not shorten them to
-   \`claim.json\` or \`token\`, or a sibling's claim overwrites yours.
+   Every path is spelled out because YOUR SCRATCH ROOT <TMP> IS SHARED BY
+   EVERY EXECUTOR IN THE WAVE (concurrent subagents all get the same
+   directory) and OUTLIVES the wave. That is why EVERYTHING you write goes
+   inside <TMP>/${row.step}.d — your PRIVATE STEP SCRATCH DIR, mode 0700,
+   built fresh by the rm/mkdir pair above (the \`rm -rf\` clears any stale
+   leftover from a prior attempt; never skip it, and never aim it anywhere
+   but that literal step-id path). Your step id is what makes the dir and
+   these filenames yours; do not shorten them to \`claim.json\` or \`token\`,
+   or a sibling's claim overwrites yours.
 
    THE TOKEN IS RETURNED EXACTLY ONCE, in that response body — re-claiming is
-   refused while you hold the lease, so there is NO second chance to capture it.
-   SHELL VARIABLES DO NOT SURVIVE BETWEEN BASH CALLS and your work in step 2
-   will take many calls, so a variable is useless here. The file is the only
-   channel that reaches step 3.
+   refused while you hold the lease, so there is NO second chance to capture
+   it. SHELL VARIABLES DO NOT SURVIVE BETWEEN BASH CALLS and step 2 takes
+   many calls, so a variable is useless here — the file is the only channel
+   that reaches step 3.
 
    WRITING THE TOKEN TO THIS FILE IS REQUIRED AND AUTHORIZED — it is the
    designed mechanism, not a leak. It is mode 0600 inside your own 0700 step
    scratch dir, you remove that dir the moment your record lands (obligation
    3), and the engine retires the token in the same instant. Do not skip the
-   file write to be cautious: skipping it strands the step and is the WORSE
-   outcome.
+   write to be cautious: skipping it strands the step, the worse outcome.
 
    The last command prints your rendered brief. Read it — it is your contract.
 
    IF THE HARNESS REPLIES \`<persisted-output> Output too large\`, WHAT YOU SEE
-   INLINE IS NOT YOUR BRIEF. It is the first 2KB of it, and the cut lands inside
-   the REQUEST section — everything that actually binds you sits BELOW it: your
-   contract file, every fragment, PINNED, and OUTPUT. Read the named file with
-   the Read tool before doing anything else. A 30KB brief is the normal case for
-   a step carrying several pinned files, not an anomaly (one observed brief ran
-   30,697 bytes, of which only the first ~2,000 were shown inline).
+   INLINE IS NOT YOUR BRIEF — it is the first 2KB, and the cut lands inside
+   the REQUEST section; everything that actually binds you (contract file,
+   every fragment, PINNED, OUTPUT) sits BELOW it. Read the named file with
+   the Read tool before doing anything else. A 30KB brief is the normal case
+   for a step carrying several pinned files, not an anomaly.
 
    On CONFLICT: stop immediately and report AT MOST three lines: your step id,
    the word CONFLICT, and the engine's error line verbatim. Do not investigate
@@ -635,53 +601,40 @@ read STEP-N or \${row.step}, and this one does not.${isolationNote}${pinNote}
 2. Execute the brief you were handed. It is your entire contract.${isWrite ? `
    Ship the issue's declared change list and NOTHING beyond it: unrequested
    hardening, extra controls, and adjacent cleanups go into gap files
-   (obligation 3), never into the diff. Reviewers reject what nobody asked
-   for — one measured run spent a third of its budget removing an executor's
-   unrequested additions. The one exception to the quiet-gap rule: a defect
-   you find that is actively exploitable is REPORTED in your return
-   immediately, not merely gap-filed.` : ''}
+   (obligation 3), never into the diff — reviewers reject what nobody asked
+   for. The one exception: a defect you find that is actively exploitable is
+   REPORTED in your return immediately, not merely gap-filed.` : ''}
 ${!isWrite ? `
 2r. THE CHECKOUT YOU STAND IN MAY PREDATE THE CHANGE YOUR BRIEF DESCRIBES.
-   Write-class siblings work in PRIVATE worktrees and hand their work back as
-   a COMMIT — nothing merges those commits into this shared checkout, so HEAD
-   here can be a round or more behind the change-summary and issue.diff your
-   packet renders (measured twice on one run: judges read a pre-fix tree and
-   re-filed findings the fix had already closed). Before reading ANY file by
-   path to evaluate the change:
+   Write-class siblings work in PRIVATE worktrees and hand work back as a
+   COMMIT that nothing merges into this shared checkout, so HEAD here can be
+   a round or more behind the change-summary and issue.diff your packet
+   renders. Before reading ANY file by path to evaluate the change:
 
    - FIRST: if the packet's issue.diff is EMPTY and the change-summary
      records a gap-only outcome (no commit, no files changed), there is
      nothing to evaluate. Confirm that pair in ONE read-only pass and record
-     immediately, saying exactly that and naming which half was
-     engine-computed (the empty issue.diff) vs self-reported (the summary);
-     do NOT investigate repositories to re-prove a non-change, and do NOT
-     file a duplicate gap — the upstream record already carries it
-     (measured: four judges each re-proved one empty diff).
+     immediately, naming which half was engine-computed (the empty
+     issue.diff) vs self-reported (the summary); do NOT investigate
+     repositories to re-prove a non-change, and do NOT file a duplicate gap —
+     the upstream record already carries it.
    - Find the target sha — the change-summary's FIRST LINE carries it.
    - Reconstruct the target read-only, ALWAYS — do not first probe whether
      your checkout contains the change: integration cherry-picks, so the
      writer's sha is never an ancestor of the shared branch even after its
-     content lands, and proving tree-equivalence burns budget the brief does
-     not ask for (measured). Extract:
-     TWO plain calls, and \`<TMP>\` is the LITERAL from bootstrap (a), never
-     the words \`$TMPDIR\`:
+     content lands. TWO plain calls, and \`<TMP>\` is the LITERAL from
+     bootstrap (a), never the words \`$TMPDIR\`:
 
        mkdir -p <TMP>/${row.step}.d/target
        git archive <sha> | tar -x -C <TMP>/${row.step}.d/target
 
      The \`mkdir\` is not optional: \`tar -x -C\` on a directory that does not
-     exist fails \`could not chdir\` and extracts NOTHING, so a single-call
-     form without it reports a failure you then have to diagnose.
-
-     The literal is not optional either, and this is the half that bites
-     silently. \`$TMPDIR\` does not resolve to the same root in every call —
-     the same hazard the artifact-file rule below records for the Write tool,
-     one call apart instead of one tool apart. Extract under
-     one root and read under another and you get "no such file or directory"
-     against a tree you just built successfully, or worse, fall back to
-     reading the shared checkout — a judge reviewing a tree a round behind the
-     change, which is exactly what this obligation exists to prevent (this has
-     been observed in practice).
+     exist fails \`could not chdir\` and extracts NOTHING. The literal is not
+     optional either — the same \`$TMPDIR\` hazard the printenv note above
+     records: extracting under one root and reading under another gets "no
+     such file or directory" against a tree you just built, or worse falls
+     back to reading the shared checkout: a judge reviewing a tree a round
+     behind the change, exactly what this obligation prevents.
 
      The sha resolves even when no branch of yours carries it, because every
      worktree shares one object store. Read, build, and probe THERE, and
@@ -695,29 +648,27 @@ ${!isWrite ? `
    commit is the hand-back channel: worktrees share the repository's object
    database, so once committed your sha is reachable from every checkout, and
    the conductor integrates it. Two SEPARATE plain calls, exactly this shape
-   (two SEPARATE plain calls exactly as shown — no compounds, and no global
-   options before \`add\`/\`commit\`):
+   (no compounds, no global options before \`add\`/\`commit\`):
 
    git add -A
    git commit -m "type(scope): summary"
 
    The subject is a CONVENTIONAL COMMIT, whatever the repo's history does:
-   "type(scope): summary" — type one of feat|fix|docs|refactor|test|perf|
-   build|ci|chore, scope named for the area you touched, summary imperative
-   plain language, 72 chars max, no trailing period. No body paragraphs —
-   most commits are a subject alone; when the subject cannot carry the why,
-   short "- " bullets. Never step, issue, or run ids (no STEP-N, DKT-N, RUN-N in
-   subject or body): ids already live in your change-summary artifact and
-   the engine record, and an id-bearing subject forces a hand-amend at
-   integration.
+   type one of feat|fix|docs|refactor|test|perf|build|ci|chore, scope named
+   for the area you touched, summary imperative plain language, 72 chars max,
+   no trailing period. No body paragraphs — most commits are a subject alone;
+   when the subject cannot carry the why, short "- " bullets. Never step,
+   issue, or run ids (no STEP-N, DKT-N, RUN-N in subject or body): ids
+   already live in your change-summary artifact and the engine record, and
+   an id-bearing subject forces a hand-amend at integration.
 
    Then \`git rev-parse HEAD\` and put that sha ON THE FIRST LINE of your
    change-summary artifact AND in your final report. The commit signs
    non-interactively with the dedicated agent signing key the harness
    injects (ssh-format, \`~/.ssh/agent-signing.pub\`) — never pass
-   \`--no-gpg-sign\` and never touch signing config. It is still integration
-   plumbing on a throwaway worktree branch; publishing remains the
-   operator's alone. Do NOT push, and do not touch any other checkout.
+   \`--no-gpg-sign\` and never touch signing config. This is integration
+   plumbing on a throwaway worktree branch; publishing stays the operator's
+   alone. Do NOT push, and do not touch any other checkout.
 
    IF THE COMMIT IS REFUSED (guard or permission), do not fight it: leave the
    worktree exactly as it is, and report COMMIT BLOCKED with the refusal's
@@ -734,9 +685,9 @@ ${!isWrite ? `
 
    \`docket step record ${row.step}${isWrite ? ' --worktree <YOUR CHECKOUT>' : ''} --artifact-file <TMP>/${row.step}.d/${row.step}-<kind>.md --metadata '{"model_requested":"${r.model_requested}","effort_requested":"${r.effort_requested}","model_resolved":"<model that served you>","effort_resolved":"<effort you ran at>"}' < <TMP>/${row.step}.d/${row.step}.token\`
 
-   \`record\` is an exact alias of \`step complete\` — identical saga, identical
-   flags — and it is the verb to use: some shells parse the bare word
-   \`complete\` as their own builtin and refuse the line before docket sees it.
+   \`record\` is an exact alias of \`step complete\` — use it, since some
+   shells parse the bare word \`complete\` as their own builtin and refuse
+   the line before docket sees it.
 
    Run this command SANDBOXED, same as everything else — do NOT pass
    dangerouslyDisableSandbox. Only the operator can grant that, and never
@@ -746,54 +697,46 @@ ${!isWrite ? `
    IF a gate genuinely needs network access and the sandbox denies it —
    record exits non-zero and the error names a DNS failure, a TLS handshake
    failure, or a blocked host — do not retry with the sandbox disabled and
-   do not treat it as a normal step failure (the code may be fine; the
-   infrastructure isn't reachable). Attempt once, then STOP and report
-   \`NETWORK GATE BLOCKED\`: the gate name, the exact host/domain the error
-   names, and the error verbatim. Leave your token intact, exactly as an
+   do not treat it as a normal step failure. Attempt once, then STOP and
+   report \`NETWORK GATE BLOCKED\`: the gate name, the exact host/domain the
+   error names, and the error verbatim. Leave your token intact, as an
    unresolved record refusal below. The fix is a named domain added to
-   \`sandbox_network_allowed_domains\` in \`src/user/claude_code.rs\` (see the
-   \`vuln.go.dev\` entry there for precedent) through the operator's own
-   \`just activate\` — never a live bypass, and never on your say-so.
+   \`sandbox_network_allowed_domains\` in \`src/user/claude_code.rs\` through
+   the operator's own \`just activate\` — never a live bypass, never on your
+   say-so.
 ${isWrite ? `
    \`--worktree\` names the checkout the work happened in. The engine
-   computes the recorded diff THERE, and — since a past engine change —
-   spawns your step's completion gates and the downstream
-   verify pre-gate with that checkout as cwd too. Get its literal path once
-   with \`git rev-parse --show-toplevel\` and paste that in; without it the
-   engine diffs the wrong tree and its gates measure the shared checkout
-   instead of your work, because your edits live in your own worktree.
+   computes the recorded diff THERE, and spawns your step's completion gates
+   and the downstream verify pre-gate with that checkout as cwd too. Get its
+   literal path once with \`git rev-parse --show-toplevel\` and paste that
+   in; without it the engine diffs the wrong tree.
 ` : ''}
    \`model_resolved\` is the exact model id your environment reports (e.g.
    \`claude-sonnet-5\`), never a branding form — a "[1m]" suffix in the ledger
-   fragments every routing-drift query that reads it (measured on a past run).
+   fragments every routing-drift query that reads it.
 
    or on failure:
 
    \`docket step fail ${row.step} --note '<why>' < <TMP>/${row.step}.d/${row.step}.token\`
 
    \`fail\` takes ONLY --note and --metadata — there is no --artifact-file on
-   it. What you learned goes in the note (or the metadata bag); do not try to
-   attach an artifact to a failure. \`--artifact-file\` exists on \`record\`
-   alone, where it is MANDATORY. Reach for \`fail\` only when a retry might
-   redeem the attempt.
+   it; \`--artifact-file\` exists on \`record\` alone, where it is MANDATORY.
+   Reach for \`fail\` only when a retry might redeem the attempt.
 
    AN OUT-OF-SCOPE PROBLEM YOUR WORK SURFACED IS NEITHER A FAILURE NOR YOUR
    DECLARED ARTIFACT. Write each one to its own file and pass \`--gap-file
    <path>\` (repeatable) on the record: every gap file lands as a \`gap\`
-   artifact beside your declared emit AND files a related backlog issue in the
-   SAME transaction, so the residue cannot evaporate — no workflow declaration
-   needed, that channel is always open. Your contract's Stuck clause is a
-   SUCCESS recorded this way, never a \`fail\`.
+   artifact beside your declared emit AND files a related backlog issue in
+   the SAME transaction — no workflow declaration needed, that channel is
+   always open. Your contract's Stuck clause is a SUCCESS recorded this way,
+   never a \`fail\`.
 
    A gap file's FIRST LINE becomes the filed issue's TITLE: one line naming
-   the defect itself, readable on a board. Its SECOND LINE is the home
-   declaration, ALWAYS: \`Home: <repo/checkout>\` — the other repository when
-   the problem lives elsewhere, or \`Home: THIS repository\` when it is local
-   (operator ruling 2026-08-16: gaps belong to their respective projects —
-   the engine files yours HERE and the conductor re-homes it from your
-   Home: line; a gap that leads with routing preamble buries the defect in
-   every listing, and one that hides its home strands the work in the wrong
-   backlog).
+   the defect itself. Its SECOND LINE is the home declaration, ALWAYS:
+   \`Home: <repo/checkout>\` — the other repository when the problem lives
+   elsewhere, or \`Home: THIS repository\` when it is local (gaps belong to
+   their respective projects; the engine files yours HERE and the conductor
+   re-homes it from your Home: line).
 ${isolated ? `
    IF THE RECORD IS REFUSED (guard or permission), attempt it ONCE and STOP
    TRYING FORMS. Leave your deliverables parked where the brief already has
@@ -803,26 +746,24 @@ ${isolated ? `
      <TMP>/${row.step}.d/${row.step}-<kind>.md   (your artifact body)
      <TMP>/${row.step}.d/${row.step}-payload.json (your payload, when the contract has one)
 
-   (the WHOLE step scratch dir stays intact in this case; the conductor
-   records from it on your behalf and sweeps it after)
+   (the WHOLE step scratch dir stays intact; the conductor records from it
+   on your behalf and sweeps it after)
 
    — and report RECORD BLOCKED: your step id, the refusal's first line
    verbatim, and every parked path including the token's. ONE refusal is an
    instruction, not a wall: "the lease has expired; claim it again to
    continue" means run the claim from 1' again for a FRESH token and record
-   immediately — your finished work is still valid and the re-claim costs
-   seconds (measured twice; the agent that parked instead cost a duplicate
-   run). Park and report only when the re-claim or the record refuses for
-   any OTHER reason; the conductor is not isolated and records the step from
-   your parked state. NEVER record \`fail\` for work that succeeded — a
-   false failure burns an attempt and re-runs the whole step to relearn what
-   your parked artifacts already hold (measured: one past run paid for a full re-judging this way).
+   immediately — your finished work is still valid. Park and report only
+   when the re-claim or the record refuses for any OTHER reason; the
+   conductor is not isolated and records the step from your parked state.
+   NEVER record \`fail\` for work that succeeded — a false failure burns an
+   attempt and re-runs the whole step to relearn what your parked artifacts
+   already hold.
 ` : ''}
 
-   The CLI reads the token from DOCKET_TOKEN or, when that is unset, from stdin
-   (\`internal/cli/token.go\`; engine-spec.md §4, "Tokens pass via env/stdin,
-   never argv"). NOTHING SETS DOCKET_TOKEN FOR YOU — a claim cannot export
-   into your shell. Redirecting the file into stdin is the channel.
+   The CLI reads the token from DOCKET_TOKEN or, when that is unset, from
+   stdin. NOTHING SETS DOCKET_TOKEN FOR YOU — a claim cannot export into
+   your shell. Redirecting the file into stdin is the channel.
 
    Never \`cat\` the file, echo its contents, paste it into a command line, or
    reproduce it in your reply. There is deliberately no \`--token\` flag on any
@@ -830,38 +771,35 @@ ${isolated ? `
 
    After the record command exits 0, REMOVE YOUR STEP SCRATCH DIR in one
    plain call — \`rm -rf <TMP>/${row.step}.d\` — token, packet, and all. The
-   engine retires the token the moment the record lands (a replay is refused
-   as an auth error) and copies your artifact, payload, and gap files into
-   its store during the record itself, so nothing in the dir will ever be
-   read again. The sweep is part of the record, not optional tidying: a
-   leftover dir parks a spent credential and your full rendered brief in a
-   scratch root that later agents, runs, and sessions all share. The same
-   sweep follows a \`fail\` that exits 0. If \`record\` or
-   \`fail\` errored, KEEP the dir and its token file INTACT and stop — the
-   token is the only
-   thing that can still drive this step, and losing it after a failed record
-   turns a routine step failure into a zombie claim the lease must reap.
+   engine retires the token the moment the record lands and copies your
+   artifact, payload, and gap files into its store during the record itself,
+   so nothing in the dir will ever be read again. The sweep is part of the
+   record, not optional tidying — a leftover dir parks a spent credential
+   and your full rendered brief in a scratch root later agents, runs, and
+   sessions all share. The same sweep follows a \`fail\` that exits 0. If
+   \`record\` or \`fail\` errored, KEEP the dir and its token file INTACT and
+   stop — the token is the only thing that can still drive this step, and
+   losing it after a failed record turns a routine step failure into a
+   zombie claim the lease must reap.
 
    If the token file is missing or empty, or a record is refused for a missing
    or invalid token, say so plainly and stop. Do not reconstruct or guess it.
 
    EVERY record carries an artifact file. The engine refuses a record without
-   \`--artifact-file\` before it validates anything else — "a step completes by
-   recording what it produced" — so the file is never optional. Create it WITH
-   BASH (a heredoc: \`cat > <TMP>/${row.step}.d/${row.step}-<kind>.md <<'EOF' ... EOF\`)
+   \`--artifact-file\` before it validates anything else, so the file is
+   never optional. Create it WITH BASH
+   (a heredoc: \`cat > <TMP>/${row.step}.d/${row.step}-<kind>.md <<'EOF' ... EOF\`)
    as a FRESH file whose name starts with your step id, then pass that path as
    \`--artifact-file\`. NEVER create this file with the Write tool: under the
-   sandbox the Write tool materializes files at a DIFFERENT physical path
-   than the <TMP> root your Bash commands use, and the record then
-   fails "no such file or directory" against a file you just wrote
-   (this has been observed in practice).
+   sandbox it materializes files at a DIFFERENT physical path than the <TMP>
+   root your Bash commands use, and the record then fails "no such file or
+   directory" against a file you just wrote.
 
    ARTIFACT FILES: THREE AUTHORING RULES. A large or brace-heavy heredoc
-   body fails in an isolated shell. Author files these ways from the start
+   body fails in an isolated shell; author files these ways from the start
    and that failure never arises. Every form below writes ONLY to targets
    under your <TMP> or your own worktree — that containment is the rule
-   itself, not a detail of it, and a write aimed anywhere else is out of
-   bounds whatever form it takes.
+   itself.
 
    - SIZE: never write a large body in one heredoc. Write the file as an
      initial \`cat > <path> <<'EOF'\` of a few KB at most, followed by
@@ -880,20 +818,17 @@ ${isolated ? `
    when your brief requires one, goes in \`--payload-file <path>\` — and you
    BUILD that JSON with \`jq -n\`, never as a JSON literal in a heredoc or
    command: an isolated shell's guard refuses any heredoc body carrying \`{\`
-   immediately followed by \`"\` — which is every JSON object literal, compact
-   or pretty, so no formatting gets a literal past it. \`jq -n --arg id AC1
-   --arg status met '{id: $id, status: $status}' > "$path"\` is the honest
-   shape: the command text carries only \`{id:\` (which the guard allows) and
-   jq writes the real JSON to the file. Keys needing quotes go as
-   \`{("kebab-key"): $v}\`; arrays as \`jq -n '[ ... ]'\` or by \`jq -s\` over
-   per-element files.) Never
-   write to or reuse a shared filename like \`change-summary.md\`: executors in
-   one wave share the <TMP> root — your private step dir exists precisely so
-   your bytes cannot collide, so write inside it —
-   and under a shared name a racing sibling's bytes
-   — or a predecessor's leftover when your own write silently fails — get
-   recorded as YOUR artifact (this has happened in practice: one step
-   recorded another step's summary exactly this way).
+   immediately followed by \`"\` — which is every JSON object literal, so no
+   formatting gets a literal past it. \`jq -n --arg id AC1 --arg status met
+   '{id: $id, status: $status}' > "$path"\` is the honest shape: the command
+   text carries only \`{id:\` (which the guard allows) and jq writes the real
+   JSON to the file. Keys needing quotes go as \`{("kebab-key"): $v}\`;
+   arrays as \`jq -n '[ ... ]'\` or by \`jq -s\` over per-element files.)
+   Never write to or reuse a shared filename like \`change-summary.md\`:
+   executors in one wave share the <TMP> root — write inside your private
+   step dir so your bytes cannot collide, and under a shared name a racing
+   sibling's bytes, or a predecessor's leftover, get recorded as YOUR
+   artifact.
 
    If a write is refused, triage the refusal before anything else. One that
    names the body's SIZE OR CONTENT, on a target under <TMP> or your own
@@ -902,19 +837,17 @@ ${isolated ? `
    the worktree names the command's SHAPE, not its body: reissue the same
    work as single plain commands — ONE redirection or ONE heredoc each, no
    \`&&\`, no pipes, no \`;\`, no command substitution — and run them
-   separately. Its closing line about git operations is boilerplate; it fires
-   on non-git commands too (a bare \`cat > <TMP>/x.txt <<'EOF'\` of two
-   words has drawn it), so do NOT read it as a claim that you touched git,
-   and do not go hunting for a git mistake you did not make. This is the same
-   guard as the brace-then-quote rule above, refusing on a different axis.
-   One that names ANYTHING ELSE — the target path, a permission, a policy
-   concern — is a real BLOCKED condition on the spot, exactly like a refused
-   record, and so is one that survives the three forms: report \`WRITE
-   BLOCKED\`, the refusal's first line, and every path involved, then stop
-   that path and record what you can. Use those three forms and nothing
-   else. Never devise an encoding, a substitution, or a staged rewrite to
-   get refused content through: content that will not go through in the
-   plain forms is a BLOCKED report, always.
+   separately. Its closing line about git operations is boilerplate that
+   fires on non-git commands too, so do NOT read it as a claim that you
+   touched git. This is the same guard as the brace-then-quote rule above,
+   refusing on a different axis. One that names ANYTHING ELSE — the target
+   path, a permission, a policy concern — is a real BLOCKED condition on the
+   spot, exactly like a refused record, and so is one that survives the
+   three forms: report \`WRITE BLOCKED\`, the refusal's first line, and every
+   path involved, then stop that path and record what you can. Never devise
+   an encoding, a substitution, or a staged rewrite to get refused content
+   through: content that will not go through in the plain forms is a
+   BLOCKED report, always.
 
    Copy model_requested and effort_requested EXACTLY as written above — they are
    the harness's record of its own intent, not yours to adjust. Fill the two
@@ -1009,37 +942,30 @@ function runParked(res) {
 // TEST-END park-signals
 
 // ---------------------------------------------------------------------------
-// ORPHANED CLAIM (DOT-864). One claim refusal inverts its own meaning when it
-// is relayed at face value: `not ready to claim: the step is not pending`.
-// Read literally it says the step never started; what it actually says is that
-// the step is ALREADY CLAIMED — routinely by a PREDECESSOR OF THE VERY AGENT
-// that just reported it.
+// ORPHANED CLAIM (DOT-864). One claim refusal inverts its own meaning when
+// relayed at face value: `not ready to claim: the step is not pending` reads
+// as "never started" but actually means ALREADY CLAIMED — routinely by a
+// PREDECESSOR OF THE VERY AGENT that just reported it.
 //
-// RUN-61 DISPATCH-332 (wave wf_289fc41a-863, 2026-08-25) is the fixture. The
-// operator interrupted the fix@1 executor mid-step (its transcript ends
-// "[Request interrupted by user]"; the journal has a `started` with no
-// `result`). On workflow resume the HARNESS relaunched the identical agent
-// spec — a second `started` under the same idempotency key, a new agentId, the
-// same worktreePath. None of wave.js's own retry paths fired, and none could:
-// harness resume is invisible from inside this script. The relaunched agent
-// claimed, was refused with that sentence, and the wave reported the sentence
-// as STEP-2760's outcome before chain-killing nine downstream rows. The truth
-// was the opposite of the report — claimed, holder dead, reap needed — and the
-// conductor had to reconstruct it from the journal.
+// RUN-61 DISPATCH-332 (2026-08-25) is the fixture: the operator interrupted
+// the fix@1 executor mid-step, harness resume relaunched the identical agent
+// spec (none of wave.js's own retry paths fired — resume is invisible from
+// inside this script), the relaunched agent's claim was refused with that
+// sentence, and the wave reported it as STEP-2760's outcome before
+// chain-killing nine downstream rows. The truth was the opposite — claimed,
+// holder dead, reap needed — and the conductor had to reconstruct it from
+// the journal.
 //
-// THE CAVEAT THIS FIX CARRIES, because it bounds what the fix can see: on a
-// harness resume an interrupted executor's brief re-executes with IDENTICAL
-// BYTES. The docket claim is the ONLY thing standing between that and silent
-// duplicate work — and it stands only for WRITE-class work, which claims. A
-// READ-class brief that never claims re-runs INVISIBLY: no conflict, no
-// second record, no trace but the tokens. So this branch diagnoses the
-// write-class case alone; the read-class one leaves nothing here to detect.
+// THE CAVEAT: on a harness resume an interrupted executor's brief re-executes
+// with IDENTICAL BYTES, and the docket claim is the only thing standing
+// between that and silent duplicate work — but only for WRITE-class work,
+// which claims. A READ-class brief that never claims re-runs INVISIBLY, so
+// this branch diagnoses the write-class case alone.
 //
-// The remedy is REPORT-ONLY. The chain-kill is correct either way (nothing
-// downstream of an unrecorded step becomes claimable this wave), so it is
-// preserved exactly — via the explicit `claim-conflict` status in chainDead(),
-// which does not depend on the report staying inside isConflictReport()'s
-// line budget.
+// The remedy is REPORT-ONLY: the chain-kill is correct either way (nothing
+// downstream of an unrecorded step becomes claimable this wave), preserved
+// via the explicit `claim-conflict` status in chainDead(), independent of
+// isConflictReport()'s line budget.
 // TEST-BEGIN orphaned-claim — extracted and exercised by
 // tests/wave-orphaned-claim.test.sh, which concatenates the park-signals
 // region ahead of it (isConflictReport) and the chain-dead region after it.
@@ -1151,44 +1077,33 @@ function orphanedClaimReport(step, conflict, show) {
 }
 // TEST-END orphaned-claim
 
-// The safety classifier runs PRE-SPAWN, and it fails CLOSED: when its stage-2
+// The safety classifier runs PRE-SPAWN and fails CLOSED: when its stage-2
 // check errors out, it blocks the launch and says so in its own reason text.
-// One past run lost 3 of 24 executor spawns to ONE such error, verbatim and
-// byte-identical across all three:
+// One past run lost 3 of 24 executor spawns to the SAME error, verbatim,
+// across three different issues/classes/models — infra, not content, since
+// all three later recorded `done` on redispatch from the identical brief
+// bytes, direct proof that resubmission succeeds.
 //
-//   [STEP-N · judge-simplicity] blocked by safety classifier: Stage 2
-//   classifier error - blocking based on stage 1 assessment (usually
-//   transient — retrying often succeeds)
-//
-// The other two steps (judge-testing on opus, synthesize-findings on sonnet)
-// carried the same sentence — different issues, different classes, different
-// models. That is infra, not content: all three later recorded `done` on
-// redispatch from the SAME rendered brief bytes, which is direct proof that
-// an identical resubmission succeeds.
-//
-// So the retry is gated on the classifier's own transient admission and on
-// nothing else, and it resubmits the SAME BYTES — same brief, same opts. A
-// REWORDED resubmission is the one thing never to do: to the classifier it
-// reads as an obfuscated retry of blocked content. A content-based block
-// (any reason WITHOUT this signature) is a real refusal, is deterministic on
-// identical bytes anyway, and stays operator-escalated on the first failure.
+// So the retry is gated on the classifier's own transient admission alone,
+// and it resubmits the SAME BYTES — same brief, same opts. A REWORDED
+// resubmission is the one thing never to do: to the classifier it reads as
+// an obfuscated retry of blocked content. A content-based block (any reason
+// without this signature) is a real refusal, deterministic on identical
+// bytes anyway, and stays operator-escalated on the first failure.
 //
 // TEST-BEGIN classifier-retry — extracted and exercised by
 // tests/wave-classifier-retry.test.sh against the verbatim reason text
 // captured from that run. Keep everything between the markers free of
-// workflow globals (agent, log,
-// args) so it stays evaluable on its own.
+// workflow globals (agent, log, args) so it stays evaluable on its own.
 //
 // Both regexes must hit. CLASSIFIER_BLOCK is the harness's own wrapper —
 // `[${label}] blocked by safety classifier: ${reason}` — which keeps the
 // predicate off every other spawn error; TRANSIENT_CLASSIFIER is the
 // classifier's admission that its own stage 2 broke. A content-based reason
 // names the content, never its own machinery, so it matches neither phrase.
-// The input domain is BLOCK-REASON AND ERROR STRINGS ONLY — never an agent
-// reply. (The park-signal lesson above is the standing example one field
-// over: a body scan over agent prose parked a wave on a judge who merely
-// QUOTED the phrase it scanned for. A judge reviewing this very retry will
-// quote these sentences.)
+// Domain is BLOCK-REASON AND ERROR STRINGS ONLY, never an agent reply — the
+// park-signal lesson one field over: a judge reviewing this retry will quote
+// these sentences, and a body scan would misread the quote as the real thing.
 const CLASSIFIER_BLOCK = /blocked by safety classifier/i
 const TRANSIENT_CLASSIFIER = /Stage 2 classifier error|usually transient/i
 
@@ -1208,18 +1123,16 @@ function transientClassifierBlock(e) {
 // TEST-END classifier-retry
 
 // A pre-spawn classifier block resolves agent() to a BARE null: the reason
-// goes only to the harness's progress stream, which this script cannot
-// read. But the harness PERSISTS that stream — verified against a captured
-// run's own file — as JSON at
+// goes only to the harness's progress stream, which this script cannot read.
+// The harness PERSISTS that stream as JSON at
 // ~/.claude/projects/<flattened-cwd>/<session-id>/[subagents/]workflows/<wfId>.json,
 // each workflowProgress entry carrying `label`, `blocked`, and the verbatim
-// `error`. A read-only probe agent CAN read that file, so the null branch
+// `error` — a read-only probe agent CAN read that file, so the null branch
 // recovers the reason out-of-band instead of guessing. Killed waves persist
-// partial progress (measured 2026-08-23), so the file is not completion-only;
-// whether every mid-run block is flushed by the time the probe looks is
-// UNVERIFIED — if it is not, the probe finds nothing and the branch degrades
-// to exactly its old conservative behavior. That limitation is real and, as
-// of this writing, unresolved.
+// partial progress, so the file is not completion-only; whether every
+// mid-run block is flushed by the time the probe looks is UNVERIFIED — if
+// not, the probe finds nothing and the branch degrades to its old
+// conservative behavior.
 const PROBE_SCHEMA = {
     type: 'object',
     properties: {
@@ -1237,45 +1150,40 @@ const PROBE_SCHEMA = {
 function blockProbeBrief(label) {
     return [
         'You are a DIAGNOSTIC PROBE inside a running Docket wave (wave.js). A',
-        'step\'s agent launch just resolved to null: the launch may have been',
-        'blocked by the pre-spawn safety classifier, skipped by the operator,',
-        'lost to an unavailable model, or died mid-flight. The harness records',
-        'which — but only in its own wave state file, which the workflow script',
-        'cannot read. Your ONLY job is to recover that record VERBATIM so the',
-        'wave can tell a transient infra block (sanctioned to resubmit the',
-        'IDENTICAL brief once) from everything else (which stays',
-        'operator-escalated). You change nothing and rephrase nothing.',
+        'step\'s agent launch just resolved to null — blocked by the pre-spawn',
+        'safety classifier, skipped by the operator, an unavailable model, or a',
+        'mid-flight death. The harness records which, but only in its own wave',
+        'state file, unreadable to the workflow script. Your ONLY job is to',
+        'recover that record VERBATIM so the wave can tell a transient infra',
+        'block (sanctioned to resubmit the IDENTICAL brief once) from everything',
+        'else (operator-escalated). Change nothing, rephrase nothing.',
         '',
         `TARGET LABEL (match byte-for-byte): ${label}`,
         '',
         'WHERE: the harness persists each workflow run as JSON at',
         '  ~/.claude/projects/*/workflows/wf_*.json',
         '  ~/.claude/projects/*/subagents/workflows/wf_*.json',
-        '(one level of session-id directory between the project dir and',
+        '(one session-id directory between the project dir and',
         '`workflows`/`subagents`). Each file has a top-level `status` and a',
         '`workflowProgress` array whose entries carry `label`, `state`,',
         '`blocked`, and `error`.',
         '',
-        'HOW — parse the JSON (python3 or jq); never raw-grep for the answer,',
-        'because other fields such as promptPreview quote labels too:',
+        'HOW — parse the JSON (python3 or jq); never raw-grep, since other',
+        'fields such as promptPreview quote labels too:',
         '1. Consider only files modified within the last 12 hours whose',
-        '   top-level status is NOT "completed", "failed", or "killed" — the',
-        '   wave you sit inside is still running, so a terminal-status file is',
-        '   some OTHER, older run of the same step.',
-        '2. In those, find workflowProgress entries whose `label` field equals',
-        '   the target label EXACTLY. Ignore your own entry (its label ends in',
-        '   "block-probe") and NEVER read agent-*.jsonl transcripts — agents',
-        '   quote classifier text in prose, and prose is out of domain.',
+        '   top-level status is NOT "completed", "failed", or "killed" — a',
+        '   terminal-status file is some OTHER, older run of the same step.',
+        '2. Find workflowProgress entries whose `label` field equals the',
+        '   target EXACTLY. Ignore your own entry (label ends "block-probe")',
+        '   and NEVER read agent-*.jsonl transcripts — agents quote classifier',
+        '   text in prose, out of domain.',
         '3. If exactly one live-wave entry matches, report its fields',
-        '   verbatim. If none match, or more than one candidate remains, or',
-        '   anything is ambiguous, report found: false. Uncertainty is a',
-        '   found: false, never a guess.',
+        '   verbatim. If none match, more than one candidate remains, or',
+        '   anything is ambiguous, report found: false — never a guess.',
         '',
-        'Return via the structured output: found (did you locate exactly one',
-        'match in a live wave), label (the entry\'s label field, verbatim),',
-        'blocked (its blocked field), state (its state field), error (its',
-        'error field, byte-for-byte — never trimmed, rewrapped, or',
-        'paraphrased), file (the path you read it from).',
+        'Return via the structured output: found (exactly one match in a live',
+        'wave), label (verbatim), blocked, state, error (byte-for-byte, never',
+        'trimmed/rewrapped/paraphrased), file (the path you read it from).',
     ].join('\n')
 }
 
@@ -1303,14 +1211,12 @@ function probeRecovered(p, label) {
 function spawn(row, phaseLabel) {
     const r = resolve(row, policy)
     const type = archetype(row, r.hint)
-    // Only writers get a worktree. Isolation exists
-    // so parallel WRITERS cannot cross-contaminate the shared tree; read-class
-    // steps never mutate it. And the harness guard that polices an isolated
-    // shell refuses any heredoc body carrying `{` immediately followed by `"`
-    // — every JSON object literal, compact or pretty — so isolating readers
-    // taxed exactly the steps whose payloads are JSON: 89 refusals across 21
-    // agents in 6 waves, including one that evaded the guard and tripped
-    // the security classifier.
+    // Only writers get a worktree, so parallel WRITERS cannot cross-
+    // contaminate the shared tree (read-class steps never mutate it). The
+    // harness guard that polices an isolated shell also refuses any heredoc
+    // body carrying `{` immediately followed by `"` — every JSON object
+    // literal — so isolating readers taxed exactly the steps whose payloads
+    // are JSON (89 refusals across 21 agents in 6 waves).
     const isWrite = type === 'executor-write'
     const isolated = isWrite
     log(`${row.step}: ${r.hint} -> ${type} @ ${r.model}/${r.effort} (variant ${r.variant})` +
@@ -1345,12 +1251,10 @@ function spawn(row, phaseLabel) {
             const returned = { step: row.step, status: 'returned', text }
             // DOT-864: the ONE refusal whose face value inverts the truth.
             // "not ready to claim: the step is not pending" reads as "never
-            // started" and means "already claimed" — so ask the engine what
-            // the step's row actually says and report THAT, with the refusal
-            // kept verbatim underneath. One cheap read-only probe, the same
-            // one the gate and pre-claim paths spend, and only on this exact
-            // conflict shape. See the ORPHANED CLAIM note above for the
-            // caveat this cannot see: a read-class brief re-runs invisibly on
+            // started" and means "already claimed" — ask the engine what the
+            // step's row actually says and report THAT, refusal kept verbatim
+            // underneath. See the ORPHANED CLAIM note above for the caveat
+            // this cannot see: a read-class brief re-runs invisibly on
             // harness resume, since only a claim refuses the duplicate.
             if (!isOrphanedClaimConflict(text)) return returned
             log(`${row.step}: claim refused "the step is not pending" — probing ` +
@@ -1369,24 +1273,20 @@ function spawn(row, phaseLabel) {
                     return diagnosed
                 }, () => returned)
         }
-        // A bare null is still NEVER retried blind: agent() resolves
-        // to `null` for a pre-spawn classifier block, an operator SKIP, an
-        // unavailable model, and a mid-flight death alike — measured in the
-        // harness (2.1.241): the block path is `if (await <preflight>(...))
-        // return null`, and the reason string goes only onto the progress
-        // stream, as workflowProgress[].error, which this script cannot read
-        // (`Date.now()` is unavailable too, so not even elapsed time
-        // discriminates). A blind retry here would relaunch agents the
-        // operator had just skipped. Instead, a read-only probe
-        // recovers the harness's own persisted record of THIS label from the
-        // wave state file, and the identical-bytes resubmission fires only on
-        // a probe-recovered, label-matched, blocked === true entry whose
-        // reason carries the transient signature. Every other outcome — probe
-        // found nothing, probe itself blocked or skipped, content block,
-        // operator skip, dead agent — escalates exactly as before the probe
-        // existed. The probe inherits the session model (nulls are rare, and
-        // a wrong extraction here is the one thing that could relaunch a
-        // skipped agent) at low effort; a null probe result is a found-nothing.
+        // A bare null is still NEVER retried blind: agent() resolves to
+        // `null` for a pre-spawn classifier block, an operator SKIP, an
+        // unavailable model, and a mid-flight death alike, and the reason
+        // string goes only onto the progress stream (workflowProgress[].error)
+        // which this script cannot read. A blind retry here would relaunch
+        // agents the operator had just skipped. Instead, a read-only probe
+        // recovers the harness's own persisted record of THIS label, and the
+        // identical-bytes resubmission fires only on a probe-recovered,
+        // label-matched, blocked === true entry whose reason carries the
+        // transient signature. Every other outcome escalates exactly as
+        // before the probe existed. The probe deliberately inherits the
+        // session model (no model override below): nulls are rare, and a
+        // wrong extraction here is the one thing that could relaunch an
+        // agent the operator skipped. A null probe result is a found-nothing.
         if (retried) return escalate()
         return agent(blockProbeBrief(stepLabel), {
             label: `${row.step} · block-probe`,
@@ -1451,15 +1351,13 @@ function spawn(row, phaseLabel) {
 
 // ---------------------------------------------------------------------------
 // Vote rows: the in-wave panel. A `kind:"vote"` row rides the manifest —
-// ready, or STAGED behind the work it judges (the engine's dependency
-// closure) — and the wave seats the panel itself: it cannot nest tribunal.js
-// (workflow nesting is one level, and the wave IS the child), so the seat
-// contract lives here too, adapted from tribunal.js. The engine remains the
-// only authority: `step record` on the gate's last predecessor opens the
-// proposal (record-driving, engine drive.go), each seat casts a REAL
-// `docket vote cast`, the engine tallies, and the quorum-reaching cast
-// routes the gate — by the time the seats settle, downstream staged rows are
-// claimable. This script never casts, approves, or tallies.
+// ready, or STAGED behind the work it judges — and the wave seats the panel
+// itself: it cannot nest tribunal.js (workflow nesting is one level, and the
+// wave IS the child), so the seat contract lives here too, adapted from
+// tribunal.js. The engine remains the only authority: `step record` on the
+// gate's last predecessor opens the proposal, each seat casts a REAL
+// `docket vote cast`, the engine tallies, and the quorum-reaching cast routes
+// the gate. This script never casts, approves, or tallies.
 //
 // Seat routing mirrors tribunal.js's resolveSeat: no attempt chain, no fable
 // gates (a seat's variant is its standing home); the [security] node pins
@@ -1530,24 +1428,23 @@ function resolveSeat(seat, policy, labels = []) {
     return { seat, variant, model: spec.model, effort: spec.effort }
 }
 
-// A seat's lens is its trailing name segment: `tribunal-security` -> security.
-// An unrecognised seat gets the whole-system lens rather than a throw — a gate
-// decided by a generically-briefed judge is still decided; a thrown panel
-// leaves the gate undecidable.
+// A seat's lens is its trailing name segment (`tribunal-security` -> security);
+// an unrecognised seat gets the whole-system lens below rather than a throw, so
+// a generically-briefed judge still decides instead of leaving the gate
+// undecidable.
 //
-// A lens is the seat's VOTER brief only. The same trailing names also exist
-// as review-executor contracts (contracts/judge-<name>.md), which govern the
-// seat when a workflow fans it out as a reviewer — one name, two remits,
-// resolved by row kind. architecture and security broadly agree across the
-// two; correctness deliberately does not: the contract hunts logic defects in
-// a diff, while the lens below interrogates the evidence behind what the gate
-// is asked to accept (DOT-792; the contract carries the mirror note).
+// A lens is the seat's VOTER brief only — the same trailing names also exist as
+// review-executor contracts (contracts/judge-<name>.md) governing the seat when
+// a workflow fans it out as a reviewer: one name, two remits, resolved by row
+// kind. architecture and security broadly agree across the two; correctness
+// deliberately does not, since the contract hunts logic defects while this lens
+// interrogates the evidence behind the gate's ask (DOT-792; the contract
+// carries the mirror note).
 //
 // Only lenses reachable from a current workflow's voter names are kept
-// (architecture, security, correctness, design). completeness, feasibility,
-// and risk went with the workflows that named them (release, retro,
-// security-load-bearing); a seat re-adding one must re-add its lens or it
-// falls to the whole-system brief below.
+// (architecture, security, correctness, design); a seat re-adding a retired one
+// (completeness, feasibility, risk) must re-add its lens or it falls to the
+// whole-system brief below.
 const LENSES = {
     architecture:
         'DESIGN, COUPLING, AND PRECEDENT. Does this fit the shape of the system it ' +
@@ -1607,20 +1504,17 @@ ${heldCluster.clusterCount} in ${heldCluster.artifact} (produced by ${heldCluste
 \`docket step artifact ${heldCluster.artifact} --payload\` and judge that cluster
 only: is the held remedy right, and should it block? The other clusters are
 other seats' or already decided.` : ''
-    // Seats used to keep voting on a tree their own checkout did not contain
-    // — one judge reported "fix@1 commit 5b05f86, not an ancestor of this
-    // judge worktree HEAD 4d83ae0" — and then rejected on evidence grounds
-    // ("reject on evidence-versus-assertion grounds, not on the fix's
-    // substance"), because the correctness lens asks whether you could
-    // reproduce it FROM WHAT IS IN FRONT OF YOU. No code edit answers that
-    // reject: the fix loop cannot move a judge's HEAD. The engine already
-    // lifts the resolved `issue.diff` round record onto the context bundle as
-    // `target_sha` / `target_worktree`, so NAME the round's target here and
-    // say how to read a commit that is not an ancestor of this HEAD. Either
-    // half may be missing — a bundle carries both or neither per the engine,
-    // but a swept worktree or an older manifest can leave one — and with
-    // NEITHER this renders NOTHING, leaving the brief byte-for-byte what it
-    // was before this fix.
+    // Seats used to vote on a tree their own checkout did not contain — one
+    // judge reported "fix@1 commit 5b05f86, not an ancestor of this judge
+    // worktree HEAD 4d83ae0" and rejected on evidence grounds, because the
+    // correctness lens asks whether you could reproduce it FROM WHAT IS IN
+    // FRONT OF YOU — no code edit answers that reject, since the fix loop
+    // cannot move a judge's HEAD. The engine lifts the resolved `issue.diff`
+    // round record onto the context bundle as `target_sha`/`target_worktree`,
+    // so NAME the round's target here. Either half may be missing — a bundle
+    // carries both or neither per the engine, but a swept worktree or an
+    // older manifest can leave one — and with NEITHER this renders NOTHING,
+    // leaving the brief byte-for-byte as before.
     const targetSha = (target && target.sha) || ''
     const targetWorktree = (target && target.worktree) || ''
     const targetLines = []
@@ -1658,6 +1552,10 @@ the artifacts of record with a LOW \`--confidence\` (and a low
 or \`approve-with-concerns\` naming precisely what you could not verify. Reject
 when the evidence you DID read says the change must not proceed.` : ''
 
+    // The TMPDIR pin and BOUND YOUR INVESTIGATION paragraphs below are
+    // hand-mirrored with tribunal.js's judgeBrief — outside SYNC coverage,
+    // so the sync test cannot catch drift. Update both files together,
+    // especially the measured fleet stats.
     return `You are ONE SEAT of a tribunal deciding a gate step MID-WAVE in a Docket run.
 You decide alone. You cannot see the other seats, you do not coordinate with
 them, and your vote is recorded on its own merits — the engine tallies the
@@ -1674,10 +1572,9 @@ brief. (Use \`printenv\`, not \`echo\`.)
 
 PIN IT ONCE AND REUSE THE LITERAL. \`$TMPDIR\` is not guaranteed to resolve to
 the same root in every call, so a path written as the variable can name one
-directory when you create it and a different one when you read it back — files
-persist perfectly well under whichever root actually received them. The literal
-is what makes "I wrote it, therefore I can read it" true, and the summary file
-your cast reads back below depends on exactly that.${heldClusterNote}
+directory when you create it and a different one when you read it back — the
+summary file your cast reads back below depends on exactly
+that.${heldClusterNote}
 
 Run \`docket\` BARE from your working directory — the store resolves from
 anywhere inside the repository; nothing to probe for, nothing to prepend.
@@ -1707,12 +1604,11 @@ authorized to make is your own cast, below.
 
 BOUND YOUR INVESTIGATION — then vote. Measured 2026-08-19 across seven days:
 189 tribunal seats spent 5,309,378 output tokens, 68.7% of it on private
-deliberation — the highest ratio of any role in this fleet — over an epoch of
-36 votes and 12 decided proposals in which ZERO verdicts were overturned. That
-is not a panel that needed to think harder; it is a panel that was already
-right and kept going. You are seated MID-WAVE, so the cost is paid in wall
-clock every other row in this stage waits out. Read what the claims rest on,
-then decide:
+deliberation — the highest ratio of any role in this fleet — over 36 votes
+and 12 decided proposals in which ZERO verdicts were overturned. That is not
+a panel that needed to think harder; it was already right and kept going. You
+are seated MID-WAVE, so the cost is paid in wall clock every other row in
+this stage waits out. Read what the claims rest on, then decide:
 
   - A handful of targeted reads settles a typical gate. If your next read is
     not answering a question you can NAME, you are past the point of value.
@@ -1886,18 +1782,16 @@ function parseHeldCluster(show) {
     }
 }
 
-// The round's target ref, for the seat brief. Context assembly lifts
-// the resolved `issue.diff` artifact's round record onto the bundle as
+// The round's target ref, for the seat brief. Context assembly lifts the
+// resolved `issue.diff` artifact's round record onto the bundle as
 // `target_sha` (the commit the diff's tree stood at) and `target_worktree`
-// (the producing record's declared checkout). Both are omitted when the
-// resolved diff carries no round record — and a vote step that does not
-// declare `issue.diff` among its inputs has no diff to lift from at all — so
-// ABSENCE IS NORMAL here and yields null rather than a throw.
+// (the producing record's declared checkout); both are omitted when the
+// resolved diff carries no round record, so ABSENCE IS NORMAL and yields
+// null rather than a throw.
 //
-// The probe below greps rather than dumping the bundle: `step context` inlines
-// every recorded input artifact, and a findings artifact runs to 1MiB. This
-// matches the two fields wherever they sit in the envelope, in the compact and
-// the pretty-printed form alike.
+// The probe below greps rather than dumping the bundle: `step context`
+// inlines every recorded input artifact, and a findings artifact runs to
+// 1MiB. This matches both fields wherever they sit, compact or pretty.
 const TARGET_REF_GREP =
     `grep -Eo '"target_(sha|worktree)"[[:space:]]*:[[:space:]]*"[^"]*"'`
 
@@ -1933,17 +1827,15 @@ function parseVoteShow(text) {
     }
 }
 
-// Assemble a gate's SUCCESS result. A vote row whose tally succeeds
-// after agent-level noise (a seat re-spawn, a probe resubmission, a dead
-// probe) must not read as failed: one past run's completion notification
-// carried "[STEP-N · gate:tally] failed: API Error: Connection lost
-// mid-response" BESIDE the same step's trusted gate-passed verdict — exactly
-// the shape a conductor misreads as a failed gate — and the 8-spawns-for-3-
-// seats cost was visible nowhere. So the success result carries the
-// spawn/seat/retry accounting explicitly, and every absorbed agent-level
-// error as a NOTE naming the tally's success — never as a failure. Failure
-// outcomes (gate-rejected / gate-blocked / gate-parked) deliberately do NOT
-// come through here: their errors are real and stay failures.
+// Assemble a gate's SUCCESS result. A vote row whose tally succeeds after
+// agent-level noise (a seat re-spawn, a probe resubmission, a dead probe)
+// must not read as failed: one past run's completion notification carried
+// "[STEP-N · gate:tally] failed: ..." BESIDE the same step's trusted
+// gate-passed verdict — exactly the shape a conductor misreads as a failed
+// gate. So the success result carries spawn/seat/retry accounting
+// explicitly, and every absorbed error as a NOTE naming the tally's
+// success — never as a failure. Failure outcomes (gate-rejected/-blocked/
+// -parked) deliberately do NOT come through here: their errors are real.
 function gateSuccess(step, text, acct) {
     const n = (count, one, many) => `${count} ${count === 1 ? one : many}`
     const res = {
@@ -2136,31 +2028,28 @@ async function runGate(row, phaseLabel) {
 // cherry-picking the sha on the change-summary's first line onto the shared
 // branch; the next round's fix worktree is cut from that branch's HEAD, so
 // the tree the next review fanout judges must DESCEND from the integrated
-// commit. Nothing verified that, and twice the hand-off broke with a judge
-// fanout paying to discover it one round late: RUN-35 (VPL-160) round 2 —
-// all five judges recorded that round-1's commit was not an ancestor of the
-// judged commit (`git merge-base --is-ancestor` non-zero, `git branch -a
-// --contains` empty) and re-filed two defects round 1 had closed, one
-// 17.37M-token round re-finding closed work; RUN-51 (AGT-643) rounds 5-6 —
-// fix@5's worktree was a SIBLING of round 4's commit, and two full review
-// rounds went to detecting and repairing the fork.
+// commit. Nothing verified that, and twice the hand-off broke a round late:
+// RUN-35 (VPL-160) round 2 — all five judges found round-1's commit was not
+// an ancestor of the judged commit and re-filed two defects round 1 had
+// closed (17.37M tokens re-finding closed work); RUN-51 (AGT-643) rounds 5-6
+// — fix@5's worktree was a SIBLING of round 4's commit, two full review
+// rounds spent detecting and repairing the fork.
 //
-// So the wave asserts the ancestry BEFORE the fanout spawns — the exact
-// check the judges already ran one round too late — and parks the round as a
-// RELAY finding ('parked-base-ancestry', chain-dead for the issue) instead
-// of seating judges on a tree that cannot contain the prior round's fix.
+// So the wave asserts the ancestry BEFORE the fanout spawns — the same check
+// the judges already ran one round too late — and parks the round as a RELAY
+// finding ('parked-base-ancestry', chain-dead for the issue) instead of
+// seating judges on a tree that cannot contain the prior round's fix.
 //
-// THE SHA IS THE INTEGRATED ONE, AND ONLY THE CONDUCTOR HOLDS IT:
-// integration cherry-picks, so the WRITER's sha (the change-summary's first
-// line) is never an ancestor of the shared branch even after its content
-// lands — asserting on it would park every healthy round. The conductor
-// therefore passes `args.integrated`, mapping each issue with a fix round in
-// this dispatch to the sha of its most recent integration commit
-// (conduct/SKILL.md, "Worktree writers"). Absent map, absent entry, non-sha
-// entry, no round fanout, round 1, missing target on the bundle, dead or
-// unparseable probe — every one of these FAILS OPEN to the old behavior: the
-// guard exists to stop a measured waste, never to add a new way for a
-// healthy round to stall.
+// THE SHA IS THE INTEGRATED ONE, AND ONLY THE CONDUCTOR HOLDS IT: integration
+// cherry-picks, so the WRITER's sha is never an ancestor of the shared branch
+// even after its content lands — asserting on it would park every healthy
+// round. The conductor passes `args.integrated`, mapping each issue with a
+// fix round in this dispatch to the sha of its most recent integration
+// commit (conduct/SKILL.md, "Worktree writers" — the other half of this
+// contract). Absent map, absent entry, non-sha entry, no round fanout, round 1,
+// missing target on the bundle, dead or unparseable probe — every one of
+// these FAILS OPEN to the old behavior: the guard exists to stop a measured
+// waste, never to add a new way for a healthy round to stall.
 // TEST-BEGIN fix-round-ancestry — extracted and exercised by
 // tests/wave-fix-round-ancestry.test.sh (and concatenated ahead of the
 // stage-ladder region by tests/wave-chain-dead-ladder.test.sh, whose ladder
@@ -2260,17 +2149,14 @@ function ancestryParkReport(step, broken) {
 // TEST-END fix-round-ancestry
 
 // GLOBAL STAGE BARRIERS (2026-08-15, superseding the earlier per-issue
-// lanes). The lanes existed because engine stages only ordered SAME-ISSUE
-// work, so a global barrier made one issue's re-review wait on another
-// issue's slowest row for nothing. The staged closure changed what a stage
-// MEANS: the engine now also packs CROSS-ISSUE cohort constraints into stage
-// numbers — two issues' writers sharing one bounded class slot, or one
-// scope, are placed in DIFFERENT stages, and per-issue lanes would run them
-// concurrently and bounce the later one off `claim` (the exact corpse-spawn
-// waste this measured). Stages are one schedule now; the wave runs them as
-// one ladder.
-// The residual cross-issue wait is the price of that schedule being honored —
-// rows the engine certifies concurrent share a stage and still run together.
+// lanes). Lanes existed because engine stages only ordered SAME-ISSUE work,
+// so a global barrier made one issue's re-review wait on another issue's
+// slowest row for nothing. The staged closure changed what a stage MEANS:
+// the engine now also packs CROSS-ISSUE cohort constraints into stage
+// numbers, and per-issue lanes would run those concurrently and bounce the
+// later one off `claim` (the exact corpse-spawn waste this measured). Stages
+// are one schedule now; the wave runs them as one ladder. The residual
+// cross-issue wait is the price of that schedule being honored.
 // TEST-BEGIN stage-ladder — extracted and exercised by
 // tests/wave-chain-dead-ladder.test.sh and
 // tests/wave-fix-round-ancestry.test.sh, which wrap this whole region in an
@@ -2324,12 +2210,11 @@ function needsClaimProbe(row) {
 
 // DOT-871: the fix-round base-ancestry guard (helpers above the ladder). One
 // verdict per issue-round, shared by every fanout sibling: two cheap
-// read-only probes — the round's target sha off the bundle, then the
-// merge-base check — decide whether the fanout spawns at all. The probes run
-// AT THE ROW'S OWN STAGE, after its earlier stages settled, so the bundle's
-// round record is live (a fix@N recorded earlier this wave is already on
-// it). Every uncertain outcome resolves null (fail-open: spawn as before);
-// only a positively parsed non-zero merge-base exit parks.
+// read-only probes decide whether the fanout spawns — the round's target sha
+// off the bundle, then the merge-base check. The probes run AT THE ROW'S OWN
+// STAGE, after its earlier stages settled, so the bundle's round record is
+// live. Every uncertain outcome resolves null (fail-open); only a positively
+// parsed non-zero merge-base exit parks.
 const ancestryVerdicts = new Map()
 function ancestryVerdict(row, phaseLabel) {
     const round = fixRoundFanoutRound(row)
@@ -2435,18 +2320,15 @@ for (const k of stageKeys) {
             if (needsClaimProbe(row)) {
                 return probe(`docket step show ${row.step} --json`,
                     `${row.step} · pre-claim`, label, row.step).then((show) => {
-                    // Skip only on a positively recognized status the wave cannot
-                    // act on; empty output, prose, and anything unrecognized all
-                    // spawn (fail-open).
-                    //
-                    // `pending` belongs in that set HERE and only here.
-                    // This probe runs after the row's earlier stages have been
-                    // awaited and settled — the stage barrier already passed — so
-                    // nothing left in this wave can advance the step to `ready`.
-                    // A pending row is dead for the wave: spawning it burns an
-                    // executor (~17K tokens) that dies on claim CONFLICT with "an
-                    // `after` predecessor is not done". The engine re-offers the
-                    // step at the next dispatch, so skipping loses nothing.
+                    // Skip only on a positively recognized status the wave
+                    // cannot act on; empty output, prose, and anything
+                    // unrecognized all spawn (fail-open). `pending` belongs
+                    // in that set HERE and only here: this probe runs after
+                    // the row's earlier stages have been awaited and
+                    // settled, so nothing left in this wave can advance the
+                    // step to `ready`. A pending row is dead for the wave —
+                    // spawning it burns an executor that dies on claim
+                    // CONFLICT, and the engine re-offers it next dispatch.
                     const term = show.match(/"status"\s*:\s*"(done|superseded|skipped|failed|pending)"/)
                     if (!term) return spawn(row, label)
                     log(`${row.step}: not claimable (${term[1]}) — a same-issue ` +

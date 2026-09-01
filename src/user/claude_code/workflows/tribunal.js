@@ -6,11 +6,11 @@ export const meta = {
 }
 
 // ---------------------------------------------------------------------------
-// TOML subset parser — byte-identical to wave.js's, deliberately duplicated.
-// A workflow script has no file access and no module resolution: it cannot
-// import a sibling, so the only alternatives are this copy or a second parser
-// that drifts. tests/workflow-sync.test.sh diffs every SYNC-marked region
-// between the two files (self-names normalized) and fails on drift.
+// TOML subset parser, byte-identical to wave.js's. A workflow script has no
+// file access or module resolution, so this is either a duplicate or a
+// second parser that drifts; tests/workflow-sync.test.sh diffs every
+// SYNC-marked region between the two files (self-names normalized) and
+// fails on drift.
 // ---------------------------------------------------------------------------
 
 // SYNC-BEGIN policy-parser
@@ -155,21 +155,15 @@ function parseToml(text) {
 // SYNC-END policy-parser
 
 // SYNC-BEGIN policy-shape
-// What this script reads out of policy.toml is a SHAPE, not a version number:
-// [executors].<seat>.variant naming a [variants] row, and [variants] rows
-// carrying model/effort/escalate_to. That shape has not moved since v2 —
-// every bump since is a normal retro commit against tables this file never
-// reads (v15, for one, added [escalation].on_round/round_executors, which
-// seat and step routing both ignore). An exact-match check on the current
-// number therefore refuses HEALTHY policy the first retro after it is
-// written: pinned at 15, it refused the corpus's v16 and blocked every
-// dispatch wave and every conversational gate fleet-wide (DOT-746).
-//
-// So this mirrors the conduct skill's own [policy] gate — the field must be
-// PRESENT and an INTEGER — replaces the equality with a documented floor, and
-// then checks the tables the routing actually depends on. A version ABOVE the
-// floor is not an "unknown schema"; a policy.toml with no [variants] table
-// is, and that is what gets caught here.
+// What this reads out of policy.toml is a SHAPE, not a version number: a
+// [executors].<seat>.variant naming a [variants] row, carrying model/effort/
+// escalate_to. That shape hasn't moved since v2, so an exact-match check on
+// the current version refuses healthy policy the moment it bumps — pinned at
+// 15, it refused v16 and blocked every dispatch wave and gate fleet-wide
+// (DOT-746). So this mirrors the conduct skill's own [policy] gate (present,
+// integer) against a documented floor, then checks the tables routing
+// actually depends on: a version above the floor is fine, a missing
+// [variants]/[executors] table is not.
 const POLICY_VERSION_FLOOR = 2   // first version carrying the [executors].variant -> [variants]/escalate_to shape this file routes on
 
 function assertPolicyShape(policy, refusal) {
@@ -204,17 +198,15 @@ function assertPolicyShape(policy, refusal) {
 // ---------------------------------------------------------------------------
 // Seat routing. A seat is not a step: there is no attempt chain and no
 // label-keyed [[resolve]] table. resolveSeat DOES take an issue-labels list
-// (so wave.js — which seats vote rows off the same per-issue
-// manifest row resolve() reads — can apply [security].labels the way resolve
-// does); this file's own args {voteId, voters, policyText, context, gateKind,
-// cwd} carry no issue, so every call here resolves labels to the default []
-// and only [security].nodes ever fires. [escalation].fable_gates gate a
-// step's chain-walk into a fable variant after failures; a seat's variant is
-// its declared standing home, so a fable-max seat resolves to fable-max.
-// What still binds: the [security] node pins — the never-list, and the
-// ceiling as a chain-derived bound: everything reachable FROM
-// [security].ceiling by escalate_to lies beyond it, and a pinned seat
-// standing there is clamped back to the ceiling.
+// (so wave.js, which seats vote rows off the same manifest row resolve()
+// reads, can apply [security].labels the way resolve does); this file's own
+// args carry no issue, so every call here resolves labels to [] and only
+// [security].nodes ever fires. [escalation].fable_gates gate a step's
+// chain-walk into a fable variant after failures; a seat's variant is its
+// declared standing home, so a fable-max seat resolves to fable-max. What
+// still binds: the [security] node pins — the never-list, and the ceiling as
+// a chain-derived bound: everything reachable FROM it by escalate_to lies
+// beyond it, and a pinned seat standing there is clamped back.
 // ---------------------------------------------------------------------------
 
 // SYNC-BEGIN seat-contract
@@ -279,24 +271,23 @@ function resolveSeat(seat, policy, labels = []) {
     return { seat, variant, model: spec.model, effort: spec.effort }
 }
 
-// A seat's lens is its trailing name segment: `tribunal-security` -> security.
-// An unrecognised seat gets the whole-system lens rather than a throw — a gate
-// decided by a generically-briefed judge is still decided; a thrown panel
-// leaves the gate undecidable.
+// A seat's lens is its trailing name segment (`tribunal-security` -> security);
+// an unrecognised seat gets the whole-system lens below rather than a throw, so
+// a generically-briefed judge still decides instead of leaving the gate
+// undecidable.
 //
-// A lens is the seat's VOTER brief only. The same trailing names also exist
-// as review-executor contracts (contracts/judge-<name>.md), which govern the
-// seat when a workflow fans it out as a reviewer — one name, two remits,
-// resolved by row kind. architecture and security broadly agree across the
-// two; correctness deliberately does not: the contract hunts logic defects in
-// a diff, while the lens below interrogates the evidence behind what the gate
-// is asked to accept (DOT-792; the contract carries the mirror note).
+// A lens is the seat's VOTER brief only — the same trailing names also exist as
+// review-executor contracts (contracts/judge-<name>.md) governing the seat when
+// a workflow fans it out as a reviewer: one name, two remits, resolved by row
+// kind. architecture and security broadly agree across the two; correctness
+// deliberately does not, since the contract hunts logic defects while this lens
+// interrogates the evidence behind the gate's ask (DOT-792; the contract
+// carries the mirror note).
 //
 // Only lenses reachable from a current workflow's voter names are kept
-// (architecture, security, correctness, design). completeness, feasibility,
-// and risk went with the workflows that named them (release, retro,
-// security-load-bearing); a seat re-adding one must re-add its lens or it
-// falls to the whole-system brief below.
+// (architecture, security, correctness, design); a seat re-adding a retired one
+// (completeness, feasibility, risk) must re-add its lens or it falls to the
+// whole-system brief below.
 const LENSES = {
     architecture:
         'DESIGN, COUPLING, AND PRECEDENT. Does this fit the shape of the system it ' +
@@ -362,14 +353,18 @@ silently — end with the verbatim error as instructed below.` : ''
 BIND-THEN-PIN (read before you cite a registry gap as provenance drift):
 \`docket run activate\` registers the source-config version at BIND TIME, as
 part of the same transaction that pins it to the run (documented in \`docket
-run activate --help\`). That means the to-be-activated name@version is
-EXPECTED to be ABSENT from \`docket workflow show\`'s registry right up until
-activation runs — absence pre-activation is the normal, designed state, not
-evidence of anything wrong. A provenance objection must diff the source-config
-BYTES against the proposal (or, post-activation, compare the registered
-version's hash to the run's pins) — never treat registry absence alone as
-proof of drift.` : ''
+run activate --help\`). That means the
+to-be-activated name@version is EXPECTED to be ABSENT from \`docket workflow
+show\`'s registry right up until activation runs — absence pre-activation is
+normal, not evidence of anything wrong. A provenance objection must diff the
+source-config BYTES against the proposal (or, post-activation, compare the
+registered version's hash to the run's pins) — never treat registry absence
+alone as proof of drift.` : ''
 
+    // The TMPDIR pin and BOUND YOUR INVESTIGATION paragraphs below are
+    // hand-mirrored with wave.js's seatBrief — outside SYNC coverage, so the
+    // sync test cannot catch drift. Update both files together, especially
+    // the measured fleet stats.
     return `You are ONE SEAT of a tribunal deciding a gated proposal in a Docket run.
 You decide alone. You cannot see the other seats, you do not coordinate with
 them, and your vote is recorded on its own merits — the engine tallies the
@@ -415,18 +410,16 @@ SCOPE YOUR INVESTIGATION TO WHAT THIS GATE DECIDES. An activation gate decides
 whether the run may START: verify the binding against the routing rules, the
 budget against the expected cost, the scope warnings, and the corpus/trust
 state — the merits of the work itself get their own gates once artifacts
-exist, and pre-reviewing the codebase here duplicates them (one activation
-seat spent 6.5 minutes re-deriving the very investigation the run was being
-activated to perform). A budget gate decides a number against evidence of
-spend; an ack-reap gate decides whether a holder is gone. Depth belongs to
-gates whose SUBJECT is the work.
+exist, and pre-reviewing the codebase here duplicates them. A budget gate
+decides a number against evidence of spend; an ack-reap gate decides whether a
+holder is gone. Depth belongs to gates whose SUBJECT is the work.
 
 BOUND YOUR INVESTIGATION — then vote. Measured 2026-08-19 across seven days:
 189 tribunal seats spent 5,309,378 output tokens, 68.7% of it on private
-deliberation — the highest ratio of any role in this fleet — over an epoch of
-36 votes and 12 decided proposals in which ZERO verdicts were overturned. That
-is not a panel that needed to think harder; it is a panel that was already
-right and kept going. Read what the claims rest on, then decide:
+deliberation — the highest ratio of any role in this fleet — over 36 votes
+and 12 decided proposals in which ZERO verdicts were overturned. That is not
+a panel that needed to think harder; it was already right and kept going.
+Read what the claims rest on, then decide:
 
   - A handful of targeted reads settles a typical gate. If your next read is
     not answering a question you can NAME, you are past the point of value.

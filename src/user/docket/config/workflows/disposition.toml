@@ -1,7 +1,13 @@
 [pipeline]
 description = "Cross-issue disposition: write the verdict comment and close the carrier, gated on the build/test sanity check and AC verification with a bounded revise loop; no code-review machinery."
 name = "disposition"
-version = 3  # 3: `security` joins unless_labels beside
+version = 4  # 4: no behavior change — bumped only because the version-3
+             #   comment below was edited (issue-citation scrubbing) without
+             #   a version bump, splitting registries that already held the
+             #   old comment bytes at version 3 from ones that hadn't seen
+             #   the edit yet. This bump makes the file's current bytes the
+             #   unique source of truth for version 4.
+             # 3: `security` joins unless_labels beside
              #   `security-change` and `security-load-bearing`, which this
              #   list already excludes. security-change@26 now matches
              #   `security`, so without this an issue labelled `disposition` +

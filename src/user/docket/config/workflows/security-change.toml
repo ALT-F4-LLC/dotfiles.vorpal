@@ -1,7 +1,14 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 26  # 26: `security` joins labels_any, so all three of
+version = 27  # 27: no behavior change — bumped only because the version-26
+              #   comment block below was edited twice (issue-citation and
+              #   evidence-date scrubbing) without a version bump, splitting
+              #   registries that already held the old comment bytes at
+              #   version 26 from ones that hadn't seen the edits yet. This
+              #   bump makes the file's current bytes the unique source of
+              #   truth for version 27.
+              # 26: `security` joins labels_any, so all three of
               #   policy.toml's [security].labels route to this track. The two
               #   vocabularies had diverged: policy named three labels, this
               #   [match] named two, so an issue labelled only `security` took

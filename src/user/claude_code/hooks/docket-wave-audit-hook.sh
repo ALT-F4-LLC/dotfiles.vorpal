@@ -45,6 +45,21 @@ if [ -n "$HOOK_INPUT" ] && [ -f "$HOME/.docket/config/policy.toml" ] \
     .tool_input.args
     | if type == "string" then (try fromjson catch {}) else (. // {}) end
     | .policyText // "" | length' 2>/dev/null)
+  # DOT-998: a wave launch now legitimately carries the fixed sentinel
+  # `__USE_PINNED_POLICY__` instead of the file — docket-policy-guard-hook.sh
+  # (PreToolUse) substitutes the canonical bytes via updatedInput before the
+  # tool runs. If this PostToolUse hook ever sees the PRE-substitution args
+  # (harness ordering quirk) the sentinel is 25 chars against a ~28k-char
+  # file — exactly the alarm-fatigue false positive this hook's own history
+  # warns against — so treat the sentinel, and only the sentinel, as clean
+  # rather than condensed.
+  IS_SENTINEL=$(printf '%s' "$HOOK_INPUT" | jq -r '
+    .tool_input.args
+    | if type == "string" then (try fromjson catch {}) else (. // {}) end
+    | .policyText // "" | if . == "__USE_PINNED_POLICY__" then "yes" else "no" end' 2>/dev/null)
+  if [ "$IS_SENTINEL" = "yes" ]; then
+    GOT=""
+  fi
   if [ -n "$GOT" ] && [ "$GOT" -gt 0 ] 2>/dev/null; then
     # Measure the file with jq too, so BOTH sides count Unicode codepoints:
     # `wc -m` counts bytes under a non-UTF-8 locale, and policy.toml carries

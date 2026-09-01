@@ -50,6 +50,22 @@
 # caught that only because it was a pure deletion — an equal-length
 # substitution, transposition, or balanced drop-and-duplicate would have
 # sailed through onto the file that routes and judges every launch.
+#
+# DOT-998 (operator-approved 2026-09-01): making the model the copy machine
+# for ~28k bytes that must be exact was itself the residual failure mode —
+# every dispatch re-ran an error-prone hand-copy whose only outcome on a slip
+# was deny-and-retype (measured cost ~90s + a full args retype). A launch
+# whose policyText is the fixed sentinel below is now substituted with the
+# canonical file's bytes here, via the PreToolUse `updatedInput` response, so
+# the wave never runs on a value any caller typed. This is additive, not a
+# widening: a literal byte-perfect policyText still passes as before (hashed
+# below, same as ever), a hash mismatch that is NOT the sentinel is still
+# DENIED, and if the substitution below fails to construct for any reason
+# this falls through and denies on mismatch too — the sentinel string itself
+# is not valid TOML, so an un-substituted launch cannot silently route on
+# wrong bytes; wave.js also asserts the sentinel never reaches it unresolved
+# (DOT-998 note there). The guarantee is unchanged: what launches is either
+# the pinned bytes or nothing.
 
 set -uo pipefail
 
@@ -163,8 +179,44 @@ GOT_NL_HASH=$(printf '%s' "$HOOK_INPUT" | jq -r '
   | awk '{print $1}') || GOT_NL_HASH=""
 { [ -n "$GOT_HASH" ] && [ -n "$GOT_NL_HASH" ]; } || exit 0
 
-if [ "$GOT_HASH" != "$WANT_HASH" ] && [ "$GOT_NL_HASH" != "$WANT_HASH" ]; then
-  echo "policy-guard: LAUNCH DENIED — args.policyText does not match $POLICY byte-for-byte (modulo the trailing newline). Length alone no longer clears a launch: a same-size substitution or transposition hashes differently. A wave or panel launched on altered text routes and judges on the wrong tables. Re-run \`~/.claude/scripts/policy-escaped-chunks\` and rebuild policyText by copying its chunk lines verbatim — never by re-emitting the file from memory." >&2
-  exit 2
+if [ "$GOT_HASH" = "$WANT_HASH" ] || [ "$GOT_NL_HASH" = "$WANT_HASH" ]; then
+  exit 0
 fi
-exit 0
+
+# ---- Sentinel substitution (DOT-998) ----
+# Not a byte match. Before denying, check whether this is the fixed sentinel
+# a dispatch is now allowed to pass instead of the file — same hash
+# machinery, no separate decode of a (possibly large) policyText.
+POLICY_SENTINEL='__USE_PINNED_POLICY__'
+SENTINEL_HASH=$(printf '%s' "$POLICY_SENTINEL" | shasum -a 256 2>/dev/null | awk '{print $1}') \
+  || SENTINEL_HASH=""
+if [ -n "$SENTINEL_HASH" ] && [ "$GOT_HASH" = "$SENTINEL_HASH" ]; then
+  CANON_TEXT=$(cat "$POLICY" 2>/dev/null) || CANON_TEXT=""
+  if [ -n "$CANON_TEXT" ]; then
+    UPDATED_TI=$(printf '%s' "$HOOK_INPUT" | jq --arg canon "$CANON_TEXT" '
+      .tool_input as $ti
+      | ($ti.args | if type == "string" then (try fromjson catch {}) else (. // {}) end) as $args
+      | ($args + {policyText: $canon}) as $newargs
+      | if ($ti.args | type) == "string"
+        then ($ti + {args: ($newargs | tojson)})
+        else ($ti + {args: $newargs})
+        end' 2>/dev/null) || UPDATED_TI=""
+    if [ -n "$UPDATED_TI" ] && [ "$UPDATED_TI" != "null" ]; then
+      jq -n --argjson ti "$UPDATED_TI" '{
+        hookSpecificOutput: {
+          hookEventName: "PreToolUse",
+          permissionDecision: "allow",
+          permissionDecisionReason: "policy-guard: substituted canonical policy.toml bytes for the PINNED sentinel (DOT-998)",
+          updatedInput: $ti
+        }
+      }' 2>/dev/null && exit 0
+    fi
+  fi
+  # Substitution could not be constructed (unreadable file, jq failure). Fall
+  # through to the deny below rather than allow the un-substituted sentinel
+  # through silently — wave.js additionally refuses to route on a bare
+  # sentinel if this somehow still allows.
+fi
+
+echo "policy-guard: LAUNCH DENIED — args.policyText does not match $POLICY byte-for-byte (modulo the trailing newline), and is not the '__USE_PINNED_POLICY__' sentinel either. Length alone no longer clears a launch: a same-size substitution or transposition hashes differently. A wave or panel launched on altered text routes and judges on the wrong tables. Pass policyText as the literal sentinel '__USE_PINNED_POLICY__' and let this hook substitute the pinned bytes itself — do not hand-copy the file." >&2
+exit 2

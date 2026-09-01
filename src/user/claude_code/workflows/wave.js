@@ -876,6 +876,29 @@ if (!input || typeof input !== 'object') throw new Error(
 )
 
 const rows = input.rows || []
+
+// DOT-998: a conductor no longer hand-copies policy.toml into policyText.
+// It passes this sentinel instead; docket-policy-guard-hook.sh (PreToolUse)
+// substitutes the canonical ~/.docket/config/policy.toml bytes via
+// updatedInput before this script ever runs, so `input.policyText` should
+// never actually BE the sentinel by the time it reaches here. If it is, the
+// hook's substitution did not apply (harness quirk, missing tooling, or
+// the hook fell through to fail-open on a construction error) — surface
+// that plainly rather than let the TOML parser bail on an opaque 25-char
+// string. This is defense-in-depth, not the primary mechanism: the guard
+// substituting or denying is what actually enforces "the wave runs exactly
+// the pinned policy bytes."
+const POLICY_SENTINEL = '__USE_PINNED_POLICY__'
+if ((input.policyText || '').trim() === POLICY_SENTINEL) {
+    throw new Error(
+        `wave.js: policyText arrived as the unresolved "${POLICY_SENTINEL}" sentinel — ` +
+        `docket-policy-guard-hook.sh was supposed to substitute the canonical ` +
+        `policy.toml bytes before this launch and did not. Do not retry with the ` +
+        `sentinel and do not paste policy.toml text by hand as a workaround. Report ` +
+        `this verbatim; the hook or its registration needs attention. Refusing to route.`
+    )
+}
+
 const policy = parseToml(input.policyText || '')
 
 const policyVersion = assertPolicyShape(policy, 'Refusing to route.')

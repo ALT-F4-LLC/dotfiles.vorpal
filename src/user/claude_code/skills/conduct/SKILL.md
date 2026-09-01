@@ -733,49 +733,28 @@ remains the mistake above.
 
 ```bash
 docket dispatch open --run $RUN --json
-~/.claude/scripts/policy-escaped-chunks
-                                 # policyText, escaped and chunked — run it
-                                 # fresh EVERY dispatch. Do not reuse a prior
-                                 # iteration's text, and do not substitute a
-                                 # hash check for the re-read (one conductor
-                                 # "verified" against a hash it had
-                                 # never recorded). The version grep below is
-                                 # a CHECK, not the re-read: this run IS how
-                                 # policyText gets produced, in the same
-                                 # iteration as the launch it feeds (another
-                                 # run drifted to grep-only by dispatch 3)
+cat ~/.docket/config/policy.toml   # read-only sanity check, see version grep below
 ```
 
-**Build `policyText` from that script's output on the FIRST attempt — it is
-the mechanism, not a recovery move.** Resolve it as you resolve every other
-shipped script: `~/.claude/scripts/policy-escaped-chunks` when `test -f`
-passes, else `$CC_SRC/scripts/policy-escaped-chunks`, where `$CC_SRC` is
-`<...>/dotfiles.vorpal.git/main/src/user/claude_code` — a script added since
-the last `just activate` resolves ONLY at that source path, same install lag
-as every other definition here. It reads the live
-`~/.docket/config/policy.toml`, JSON-escapes it (surrounding quotes included),
-and prints it as fixed 2000-char chunks — one marker line, then that chunk on
-a line of its own, so the payload is every second line — closing with a line
-that names the chunk count, the escaped length, and the DECODED length. That
-decoded number is exactly what policy-guard compares your `policyText`
-against (28,064 as of this writing). Copy the chunk lines verbatim out of the
-output, concatenated in order with nothing between them and no reflowing, as
-the value of `policyText`. Copy THIS iteration's chunk lines: a fresh emit
-whose closing summary — chunk count, escaped length, decoded length — matches
-the last one has not verified a single byte between them, and that equality is
-exactly what talked one conductor into launching dispatch 2 on dispatch 1's
-captured text.
+**`policyText` for a wave launch is the literal sentinel string
+`__USE_PINNED_POLICY__` — never the file (DOT-998).** `docket-policy-guard-hook.sh`
+(PreToolUse:Workflow) substitutes the canonical `~/.docket/config/policy.toml`
+bytes for that exact sentinel via the harness's `updatedInput` before wave.js
+ever runs, so wave.js still receives the pinned bytes byte-for-byte — the
+substitution happens between the launch you emit and the script that reads it,
+not in anything you copy. Do not run `policy-escaped-chunks` or paste
+policy.toml content into `policyText` for a wave dispatch: that used to be the
+mechanism (a ~28k-char hand-copy every dispatch, whose only failure mode was
+deny-and-retype) and is now retired for waves — pass the sentinel and let the
+hook do the substitution. `~/.claude/scripts/policy-escaped-chunks` still
+exists for tribunal launches (unchanged by this issue) and as a manual
+fallback if the hook or its registration is ever unavailable; do not reach for
+it on a normal wave dispatch.
 
-**Never reproduce policy.toml from your own context.** Emitting ~28k
-characters verbatim from memory is a DETERMINISTIC failure, not a risky one:
-one conductor dropped the identical 44 characters on two consecutive attempts,
-~100s of wasted generation each, and having verified a byte-perfect scratch
-copy beforehand changed nothing — the omission happens in the *next* emission,
-not in whether the file can be reproduced once. Copying opaque
-blocks out of visible tool output has no such failure mode, which is the whole
-reason the script exists. `cat ~/.docket/config/policy.toml` is still fine for
-reading the file and for the version grep below; it is not how the argument
-gets built.
+**A byte-perfect literal policyText still works too** — the hook hashes it and
+allows silently, same as before DOT-998 — but there is no reason to build one
+for a wave launch now, and doing so reintroduces the exact hand-copy risk the
+sentinel exists to remove.
 
 **Read `dispatch open`'s answer before you launch anything, and a
 `stale_targets` row in it is STOP-AND-VERIFY.** The engine emits one when a
@@ -871,48 +850,40 @@ the recorded args split three ways by formatting: 124 canonical-compact
 (consistent with the harness stringifying an object you emitted), 221 with a
 space after each colon, and 2 with newlines and indentation — formats no single
 encoder produces. The transcript therefore does show what you emitted, two of
-those 347 launches recorded args that were not valid JSON at all, and one
-recorded a policyText one character too long. EMIT the object as a literal JSON
-value in the tool call — do not hand-stringify it into a quoted string.
-Self-check if you are unsure which you did: your emitted args, re-encoded
-canonically, should equal itself. The transport
-converges either way, but hand-escaping a multi-KB policy text into a JSON
-string is an escaping error waiting to happen, and the harness's own encoder
-never makes one (observed twice by a shadow review). There is no
-`policyPath` parameter: the script cannot read files, so policy.toml travels
-as TEXT in `policyText`. And policyText is the file BYTE-FOR-BYTE —
-never a condensation, however faithful the tables look. (No contradiction with
-the chunk script: `policy-escaped-chunks` output IS the JSON string literal
-that the `policyText` field of that literal object takes, escaped
-mechanically rather than by hand. What you must never do is stringify the
-whole `args` object yourself.) One conductor
-cat'd the 16.9KB file six times and emitted a ~4.7KB condensed rendering into
-six of eight launches and a 791-byte splice into the two panel launches —
-the splice dropped `[escalation]` and `[[resolve]]` entirely (tribunal.js
-reads `escalation.fallback`), and nothing logged the difference. wave.js and
-tribunal.js log `policy <N> chars` at startup — the faithful number is `wc -m
-~/.docket/config/policy.toml` MINUS ONE (`$(cat …)` strips the file's trailing
-newline; matching either is fine, anything else is a condensation — the chunk
-script keeps the trailing newline, so its output decodes to the un-decremented
-count). The
-wave-audit hook runs this same comparison on every Workflow launch that
-carries policyText — tribunal.js launches identically, not just wave
-dispatches — and stays SILENT on a clean launch, so any policyText advisory
-it emits is a REAL condensation: TaskStop the launch, re-run
-`policy-escaped-chunks`, relaunch from its output.
-Never read it as ambient noise — on 2026-08-17 three governance panels and
-two waves ran condensed while the advisory scrolled past.
+those 347 launches recorded args that were not valid JSON at all. EMIT the
+object as a literal JSON value in the tool call — do not hand-stringify it
+into a quoted string. Self-check if you are unsure which you did: your
+emitted args, re-encoded canonically, should equal itself. The transport
+converges either way, but hand-escaping a multi-KB string into a JSON string
+is an escaping error waiting to happen, and the harness's own encoder never
+makes one (observed twice by a shadow review). There is no `policyPath`
+parameter: the script cannot read files. For a wave launch `policyText` is
+now the fixed sentinel `__USE_PINNED_POLICY__` (DOT-998, see step 2 above) —
+a five-word literal, not the file — so the historical hazard this paragraph
+used to warn about (a hand-copied ~28k-char policy silently condensed:
+one conductor cat'd the file six times and still emitted a ~4.7KB condensed
+rendering into six of eight launches, dropping `[escalation]` and
+`[[resolve]]` entirely with nothing logging the difference) no longer applies
+to wave dispatches. It still applies verbatim to a tribunal.js launch, which
+still carries the literal pinned text built from `policy-escaped-chunks`
+(below) — the wave-audit hook (PostToolUse) still runs the same
+length/hash comparison there and stays SILENT on a clean launch, so any
+policyText advisory it emits on a tribunal launch is a REAL condensation:
+TaskStop it, re-run `policy-escaped-chunks`, relaunch from its output. Never
+read it as ambient noise — on 2026-08-17 three governance panels and two
+waves ran condensed while the advisory scrolled past.
 
-**A policy-guard length denial is answered by re-running the script — never by
-re-typing.** When `docket-policy-guard-hook` denies with `args.policyText is N
-chars but …/policy.toml is M chars`, the only correct response is to run
-`policy-escaped-chunks` again and copy its chunk lines afresh. Do NOT
-re-transcribe the file from context, and do not "try harder" at the same
-emission: free re-emission reproduces the SAME omission — measured twice, the
-identical 44 characters both times — so a retyped retry buys another ~100s of
-generation and a second denial. (A denial naming a PIN drift instead of a
-length is a different animal entirely and has no relaunch at all: it is the
-stop-and-report above.)
+**A policy-guard deny on a wave launch now means something is wrong with the
+sentinel, not that you need to retype anything.** `docket-policy-guard-hook`
+denies a wave launch only when `policyText` is neither the pinned bytes nor
+the literal sentinel `__USE_PINNED_POLICY__` — re-check you emitted that exact
+string (not a paraphrase, not policy.toml text) and relaunch. A denial naming
+a PIN drift instead is a different animal entirely and has no relaunch at
+all: it is the stop-and-report above. (On a tribunal.js launch, which still
+carries literal policy.toml text, a length/hash denial is still answered by
+re-running `policy-escaped-chunks` and copying its chunk lines afresh — never
+by re-transcribing the file from context, which reproduces the SAME omission
+free re-emission always has.)
 
 **A dispatch carrying a fix round's review fanout also carries `integrated`.**
 When the rows include a review fanout for a fix round — instances `name@N#k`
@@ -951,11 +922,12 @@ judges → gate → reconcile → report end to end. A `kind: "human"` row passe
 through is the one mistake the wave still refuses; filtering here is the
 primary control, the wave's refusal the backstop.
 
-**Your entire involvement with policy is three mechanical acts:**
+**Your entire involvement with policy, for a wave dispatch, is two mechanical
+acts (DOT-998):**
 
-1. Run `policy-escaped-chunks` to get policy.toml as escaped text.
-2. Pass its concatenated chunks through as `policyText`, unread.
-3. Confirm the `[policy]` table declares an integer `version` field. The table
+1. Pass the literal sentinel `__USE_PINNED_POLICY__` as `policyText`, unread —
+   docket-policy-guard-hook.sh substitutes the real bytes before wave.js runs.
+2. Confirm the `[policy]` table declares an integer `version` field. The table
    header and the key sit on SEPARATE lines, so this is `grep -A1
    '^\[policy\]'` and NEVER a substring search for a literal like `[policy]
    version = 15` — that string occurs nowhere in the file, and a conductor

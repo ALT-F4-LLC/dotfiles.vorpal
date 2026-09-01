@@ -4,21 +4,19 @@ use vorpal_sdk::{api::artifact::ArtifactSystem, artifact::get_env_key, context::
 
 mod settings;
 
+const GIT_ALLOWED_SIGNERS_CONFIG_PATH: &str = "~/.config/git/allowed_signers";
+const GIT_ALLOWED_SIGNERS_INSTALL_PATH: &str = "${HOME}/.config/git/allowed_signers";
 const OTEL_LOGS_ENDPOINT_LOKI: &str = "https://loki.bulbasaur.altf4.domains/otlp/v1/logs";
 const OTEL_METRICS_ENDPOINT_MIMIR: &str = "https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics";
 const OTEL_OTLP_PROTOCOL: &str = "http/protobuf";
-
-// Where the allowed-signers roster installs, and the same path as git itself
-// has to be told about it. It lives under git's own config directory rather
-// than ~/.claude because git is what reads it, and the operator's own shell
-// must be able to point `gpg.ssh.allowedSignersFile` at the same file.
-//
-// The two spellings are NOT interchangeable: activation expands `${HOME}`
-// when it makes the symlink, while git expands only a leading `~/` in a
-// path-valued config and would take `${HOME}` literally -- the same trap that
-// broke user.signingkey in 51185c9.
-const GIT_ALLOWED_SIGNERS_INSTALL_PATH: &str = "${HOME}/.config/git/allowed_signers";
-const GIT_ALLOWED_SIGNERS_CONFIG_PATH: &str = "~/.config/git/allowed_signers";
+const SANDBOX_AGENT_MEMORY_PATH: &str = "~/.claude/agent-memory";
+const SANDBOX_BARE_REPO_ROOT: &str = "~/Development/repository/github.com/ALT-F4-LLC";
+const SANDBOX_DARWIN_TEMP_ROOT: &str = "/var/folders";
+const SANDBOX_DOCKET_STORE_PATH: &str = "~/.docket";
+const SANDBOX_DOCKET_TRUST_LOCK_PATH: &str = "~/.config/docket/trust.toml.lock";
+const SANDBOX_DOCS_CACHE_PATH: &str = "~/.claude/cache/docs";
+const SANDBOX_FRICTION_LEDGER_PATH: &str = "~/.claude/friction";
+const SENSITIVE_PATHS_DENY_READ_ONLY: &[&str] = &["~/.aws/**"];
 
 const SENSITIVE_PATHS: &[&str] = &[
     "~/.claude.json",
@@ -32,138 +30,47 @@ const SENSITIVE_PATHS: &[&str] = &[
     "~/Desktop/**",
     "~/Downloads/**",
 ];
-// The docket trust store itself (DOT-812). Edit-only, not read-denied: the
-// Edit/Write TOOLS have no legitimate reason to touch trust.toml (the
-// sanctioned write path is the `docket trust add/rm` CLI verb, gated by the
-// ask rule below and by docket-trust-guard-hook.sh for the executor
-// archetypes), while `docket trust list` and anything else that reads the
-// file must keep working. Read alongside SANDBOX_DOCKET_TRUST_LOCK_PATH
-// above, which closes the same file to a sandboxed Bash write.
+
 const SENSITIVE_PATHS_DENY_EDIT_ONLY: &[&str] = &[
     "/Applications/**",
     "/Library/**",
     "/System/**",
     "~/.config/docket/trust.toml",
 ];
-const SENSITIVE_PATHS_DENY_READ_ONLY: &[&str] = &["~/.aws/**"];
 
-const SANDBOX_AGENT_MEMORY_PATH: &str = "~/.claude/agent-memory";
-// Bare-repo layouts keep the git common dir (objects/, refs/, worktrees/)
-// BESIDE each checkout, outside its sandbox write allowlist — so index
-// writes, `git worktree remove`, and branch cleanup were all denied from
-// checkout and subdirectory seats, and executors responded by disabling the
-// sandbox themselves (2026-08-18/19 fleet review). Allowing the org root
-// closes that gap; permission rules and hooks still gate every write.
-const SANDBOX_BARE_REPO_ROOT: &str = "~/Development/repository/github.com/ALT-F4-LLC";
-const SANDBOX_DOCS_CACHE_PATH: &str = "~/.claude/cache/docs";
-// Ledger for sandbox-friction-hook.sh. The excluded-command and allowWrite
-// lists are EVIDENCE-ONLY by operator ruling (2026-08-20), which is only
-// honest if evidence arrives faster than the weekly sweep that has been
-// finding it: the wrong Go module-cache path went unnoticed for sixteen days
-// and ~1,650 lifts. The hook appends here from every session in every project;
-// `sandbox-friction-report` ranks it and files DOT issues. It must be writable
-// from inside the sandbox or the loop records nothing.
-const SANDBOX_FRICTION_LEDGER_PATH: &str = "~/.claude/friction";
-// The docket global store: every docket verb opens ~/.docket/issues.db
-// read-write (WAL + auto-migrate), so without this every sandboxed docket
-// invocation fails with "unable to open database file (14)". The corpus
-// symlink targets stay in the read-only Vorpal store and are not covered.
-const SANDBOX_DOCKET_STORE_PATH: &str = "~/.docket";
-// The docket trust store LOCK ONLY (DOT-812) -- NOT the directory. `docket
-// trust` verbs take a lock at ~/.config/docket/trust.toml.lock and fail
-// sandboxed without this, forcing a lift per invocation. This grant used to
-// cover the whole ~/.config/docket directory, which meant trust.toml -- the
-// file that authorizes every gate an executor's own steps complete against --
-// was ALSO sandbox-writable by any means at all: a raw `echo >>` or `sed -i`
-// never goes near the `docket trust add/rm` CLI verb the ask rules below
-// pattern-match, so it left the whole ask-rule gate a no-op for a sandboxed
-// write that skips the CLI. Narrowed to the lock file alone: `docket trust
-// list` and every other sandboxed docket verb still only need to read
-// trust.toml (unrestricted; see sandbox_filesystem_deny_read_paths, which
-// does not name this path) and take the lock, so nothing sandboxed regresses
-// -- trust.toml itself becomes unwritable from inside the sandbox, full stop.
-// Read alongside deny_sensitive_paths' new `Edit(~/.config/docket/trust.toml)`
-// entry below, which closes the same file to the Edit/Write TOOLS the way
-// this closes it to a sandboxed Bash write, and the trust-guard hook
-// registered further down, which closes the `docket trust add/rm` CLI verb
-// itself for the executor archetypes even on an unsandboxed retry -- no one
-// mechanism here is sufficient alone; see docket-trust-guard-hook.sh for the
-// full argument.
-const SANDBOX_DOCKET_TRUST_LOCK_PATH: &str = "~/.config/docket/trust.toml.lock";
-// macOS `mktemp(1)` does NOT honour $TMPDIR: it targets the per-user Darwin
-// temp root (`getconf DARWIN_USER_TEMP_DIR`, /var/folders/<hash>/T), which no
-// allowWrite entry covered, so every bare `mktemp` was denied from inside the
-// sandbox. Probed 2026-08-25 from a sandboxed seat: $TMPDIR read
-// /tmp/claude-501 while `mktemp` still failed "mkstemp failed on
-// /var/folders/.../T/tmp.XXXX: Operation not permitted" — both directly and
-// inside a make recipe, so the variable is not a workaround. This blocked
-// agentic-services' newly-real `secret-scan` gate, whose recipe opens its
-// file list with `mktemp`: it failed exit 2 on CLEAN HEAD in RUN-60's
-// pre-dispatch gate probe and passed exit 0 unsandboxed. That gate gates
-// every implement and fix step of security-change and standard-change, so
-// without it the whole run parks on an environment fault. Granting the root
-// rather than one hashed subdirectory keeps it portable across machines and
-// users; the OS already scopes everything beneath it per-uid, and no
-// credential store lives there.
-const SANDBOX_DARWIN_TEMP_ROOT: &str = "/var/folders";
-// Bash process substitution — `diff <(a) <(b)` — hands the tool a /dev/fd/N
-// path, and a `-` operand resolves the same way. Both are denied: probed
-// 2026-08-20, `diff <(echo a) <(echo b)` returns "diff: /dev/fd/11: Operation
-// not permitted" and `diff -` returns the same for `-`. A grant on this path
-// was tried and re-probed live (2026-08-20, DOT-299): still denied — /dev/fd
-// is a synthetic per-process directory and an allowWrite entry does not cover
-// it (the idiom opens the fd for reading, not writing, so the grant could not
-// have helped either way). Dropped rather than left in place buying nothing;
-// the idiom degrades to an unsandboxed retry, so nothing loses a way out.
-// `~/go/pkg/mod` is NOT this toolchain's module cache and never was: `go env
-// GOMODCACHE` reports ~/Development/language/go/pkg/mod (5.6 GB, populated),
-// while ~/go/pkg/mod holds a stale 1.5 GB nothing reads. Probed from a
-// sandboxed seat 2026-08-20: a write to the real cache is denied, a write to
-// the allowlisted one succeeds — so every sandboxed Go build was being denied
-// its own cache. Agents worked around it with GOMODCACHE="$TMPDIR/...", which
-// is empty, so an offline build turned into a full module download and then
-// died on the Go TLS wall (see allow_mach_lookup below) — the chain behind
-// ~1,650 sandbox lifts in seven days. With the real cache writable,
-// `GOPROXY=off go build ./...` succeeds sandboxed with no network at all.
-// The stale entry is kept only so an older GOPATH layout does not regress.
-// Auto mode classifier context. A 7-day census (through the comment this
-// replaced, kept in git history) found ZERO classifier denials, so this was
-// deliberately left unset — any `autoMode.allow` entry would have described
-// actions nothing had ever blocked. The operator reversed that call
-// (2026-08-31) after `/config` (or auto mode's own onboarding) populated this
-// block in the live settings.json; captured verbatim here so `just activate`
-// stops overwriting it back to unset. It describes the org/repo/tooling
-// context the classifier weighs, not credentials or secret values — but the
-// repo is PUBLIC, so nothing sensitive-VALUED belongs in either list below.
 const AUTO_MODE_ENVIRONMENT_CONTEXT: &[&str] = &[
     "### Org-wide",
-    "**Organization**: None configured",
-    "**Cloud provider(s)**: None configured",
-    "**Repository visibility**: PUBLIC — ALT-F4-LLC/dotfiles.vorpal (github.com:ALT-F4-LLC/dotfiles.vorpal.git); any push here is publishing",
+    "**Organization**: ALT-F4 LLC (solo operator)",
+    "**Cloud provider(s)**: none — self-hosted Talos homelab (the bulbasaur cluster)",
+    "**Repository visibility**: ALT-F4-LLC repositories are mostly public — treat any push as publishing unless the working repo is confirmed private",
     "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
-    "**Secrets management**: Doppler CLI observed in project tooling and shell history (config-derived, not usage-corroborated as a secret store beyond CLI invocation)",
-    "**Default / protected branches**: `main` (protected, per gh); rulesets: none listed",
+    "**Secrets management**: Doppler and 1Password are the secret stores — secrets live there and are injected via `doppler run` / `op run` / `op read`; never copy a secret out of them into repos, files, or external destinations",
     "**CI/CD deploy targets**: None configured",
     "**Network posture**: None configured",
-    "**Source control**: The trusted repo (ALT-F4-LLC/dotfiles.vorpal) and its origin remote only — public repo, so only this repo's own work should be pushed there",
-    "**Trusted internal domains**: None configured",
+    "**Source control**: All repositories under the github.com/ALT-F4-LLC organization — many are public, so only a repo's own work should be pushed to it and public visibility never clears sensitive data into it",
+    "**Trusted internal domains**: *.altf4.domains (the bulbasaur homelab services) and vorpal.build",
     "**Trusted cloud buckets**: None configured",
-    "**Key internal services**: None configured",
-    "**Internal package registry**: None configured",
-    "**Sensitive data locations & audiences**: any file or store holding personal data, confidential business data, credentials, regulated data, or similarly sensitive material; preserve exact handles when known and share only with audiences cleared at the [named+specifics] bar; repo has `.env` in .gitignore and a `.docket/bin/secret-scan` tool and `.envrc` — treat these paths as sensitive-data locations",
+    "**Key internal services**: bulbasaur cluster services under *.altf4.domains — mimir, loki, coder, argocd, knative, agentgateway — plus registry.altf4.domains",
+    "**Internal package registry**: registry.altf4.domains",
+    "**Sensitive data locations & audiences**: any file or store holding personal data, confidential business data, credentials, regulated data, or similarly sensitive material; preserve exact handles when known and share only with audiences cleared at the [named+specifics] bar; treat `.env` files, `.envrc`, and anything a repo's secret-scan tooling flags as sensitive-data locations",
     "**Data retention / declassification**: None configured",
-    "**Sensitive remote targets**: any namespace, host, or container whose name carries `prod` or `production` as a whole word or name segment (hyphen/underscore/dot-delimited)",
+    "**Sensitive remote targets**: the bulbasaur Kubernetes cluster (Talos/flux-managed homelab) is production — deploys, remote shells, and destructive operations against it require the operator's explicit ask; also any namespace, host, or container whose name carries `prod` or `production` as a whole word or name segment (hyphen/underscore/dot-delimited)",
     "**Protected deployment namespaces / environments**: None configured — fall back to the Sensitive remote targets heuristic",
     "**Protected IaC scopes**: IAM, RBAC, networking, quota, and node-pool resources; anything whose name or tag carries `prod` or `production` as a whole word or name segment",
     "### User-specific",
-    "**Primary use of Claude Code**: software development (dotfiles/Vorpal build tooling and Claude Code agent configuration in this repo)",
-    "**Trusted repo**: ALT-F4-LLC/dotfiles.vorpal (public) — the working directory and its origin remote; since it's public, only this repo's own work should be committed/pushed there, and secrets/sensitive data are never cleared into it by visibility alone",
-    "**Org-specific CLIs**: docket (422× in-project usage; also present in shell history and as a Makefile/justfile-adjacent tool with a bundled secret-scan script) — routine under this repo",
+    "**Primary use of Claude Code**: software development across ALT-F4-LLC projects (Vorpal build tooling, Claude Code agent configuration, homelab GitOps)",
+    "**Trusted repos**: any github.com/ALT-F4-LLC repository checked out as the working directory, with its origin remote; most are public, so only a repo's own work is committed/pushed there and secrets/sensitive data are never cleared into it by visibility alone",
+    "**Org-specific CLIs**: docket (high-frequency usage across projects; also present in shell history with a bundled secret-scan script) — routine under ALT-F4-LLC repos",
     "**routine under ~/.claude/ prefix**: fixes and edits under `~/.claude` are governed by the working agreement there (source-only edits, install via `just activate`, never edit installed tree directly)",
 ];
+
 const AUTO_MODE_ALLOW_RULES: &[&str] = &[
     "$defaults",
-    "Bash(docket:*) in ALT-F4-LLC/dotfiles.vorpal — high-frequency project CLI (422 uses)",
+    "Bash(docket:*) in ALT-F4-LLC repositories — high-frequency org CLI",
+    "Bash(cargo:*) in ALT-F4-LLC repositories — build/test/fmt/check/clippy, including invocations prefixed with CARGO_HOME/CARGO_TARGET_DIR/GOCACHE-style cache overrides; writes only to build caches",
+    "Local git operations in trusted repositories — add, commit, worktree, cherry-pick, cat-file, rev-parse, and other repo-local verbs; `git push` publishes and stays outside this rule",
+    "Bash(vorpal:*) in ALT-F4-LLC repositories — the org's own build tool, same standing as docket",
+    "Read-only cluster reads against bulbasaur — kubectl get/describe/logs, flux get; mutations against the cluster stay outside this rule (production)",
 ];
 
 const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
@@ -171,30 +78,12 @@ const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
     "~/.cache/uv",
     "~/.cargo/git",
     "~/.cargo/registry",
-    // buildx's whole state directory, not one subpath of it. Granting only
-    // `buildx/activity` was the earlier narrow fix for "failed to update
-    // builder last activity time: ... operation not permitted", and the same
-    // failure class returned one subpath over: under OrbStack `docker buildx
-    // build` also stages through `buildx/refs/<builder>/<node>/.tmp-*`, so the
-    // build gate's `make build-docker` parked twice on "failed to build: open
-    // ~/.docker/buildx/refs/orbstack/orbstack/.tmp-<random>: operation not
-    // permitted" (RUN-38, 2026-08-21, DOT-466). Probed 2026-08-21: with
-    // `activity` allowed, writes to `refs/orbstack/orbstack` AND to the buildx
-    // root were both still denied — so adding `refs` alone would have left
-    // `.lock`, `current`, and `instances` to fail next. Credentials live in
-    // `~/.docker/config.json`, a sibling of this directory, so it stays denied.
     "~/.docker/buildx",
     "~/Development/language/go/pkg/mod",
     "~/Library/Application Support/go",
     "~/Library/Caches/go-build",
     "~/Library/Caches/golangci-lint",
     "~/Library/Caches/pip",
-    // pip-audit's own HTTP cache — a different tool's cache from pip's above,
-    // so that entry does not cover it. The vuln-scan gate's `uv run pip-audit`
-    // failed sandboxed (exit 1) after "Failed to write to cache directory,
-    // performance may be degraded: Operation not permitted" on this path,
-    // blocking the gate on every write step declaring it (RUN-38 isolated
-    // write executors, 2026-08-20, DOT-439).
     "~/Library/Caches/pip-audit",
     "~/Library/Caches/staticcheck",
     "~/go/pkg/mod",
@@ -205,20 +94,14 @@ pub struct ClaudeCode {
     systems: Vec<ArtifactSystem>,
 }
 
-/// Artifact name for one Claude Code component. `FileCreate` writes its single
-/// file under the artifact name, so the same string names the artifact and the
-/// file a symlink has to point at.
 fn component_name(user: &str, component: &str) -> String {
     format!("{user}-claude-code-{component}")
 }
 
-/// Install destination for one entry under the user's Claude Code directory.
 fn claude_home(entry: &str) -> String {
     format!("${{HOME}}/.claude/{entry}")
 }
 
-/// Permission patterns in a stable order, so the generated settings file does
-/// not churn when a path is added in the middle of a list.
 fn sorted_permission_patterns(
     wrap: impl Fn(&str) -> String,
     paths: impl IntoIterator<Item = &'static str>,
@@ -281,11 +164,6 @@ impl ClaudeCode {
             .with_always_thinking_enabled(true)
             .with_attribution_commit("")
             .with_attribution_pr("")
-            // Defaults to true upstream, which appends a `Claude-Session`
-            // trailer to commits and a session link to PR descriptions from
-            // cloud and Remote Control sessions. Both attribution strings above
-            // are deliberately empty; a session trailer would put harness
-            // vocabulary back into commit messages by the side door.
             .with_attribution_session_url(false)
             .with_auto_memory_enabled(false)
             .with_auto_updates_channel("latest")
@@ -323,10 +201,6 @@ impl ClaudeCode {
             .with_env("CLAUDE_CODE_ENABLE_TELEMETRY", "1")
             .with_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1")
             .with_env("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", "0") // REASON: Must be 0 for 'with_permission_default_mode('auto')'
-            // KEY_3 is what makes the signatures KEY_0 produces auditable:
-            // without an allowed-signers file git refuses to verify at all,
-            // renders %G? as N on every agent-signed commit, and prints an
-            // error while doing it -- so "signed" was unfalsifiable (DOT-563).
             .with_env("GIT_CONFIG_COUNT", "4")
             .with_env("GIT_CONFIG_KEY_0", "user.signingkey")
             .with_env("GIT_CONFIG_KEY_1", "gpg.ssh.program")
@@ -389,24 +263,6 @@ impl ClaudeCode {
                 "bash ~/.claude/hooks/docket-commit-guard-hook.sh",
                 "command",
             )
-            // sandbox-bypass-ask-hook.sh is NOT registered any more, and the
-            // reason is autonomy rather than noise. It turned every
-            // `dangerouslyDisableSandbox` retry into a question for a human —
-            // ~1,650 of them in seven days — and an unattended wave executor
-            // has no human to answer, so the hook did not gate those calls so
-            // much as stall them. Auto mode already routes an unsandboxed retry
-            // to the classifier instead of to a person, which is the same
-            // review without the stall.
-            // The concern that put this hook here is real and is answered
-            // elsewhere: the 2026-08-19 fleet review saw the classifier approve
-            // twenty bypasses whose briefs forbade them. That is a brief being
-            // unenforceable, and it is fixed in the brief and by removing the
-            // REASON to lift (the module-cache and excluded_commands repairs
-            // below), not by asking a person to hold the line by hand.
-            // The script itself is left on disk. If it is ever re-registered,
-            // pair it with an operator who is actually watching — or use the
-            // supported equivalent, an ask rule on
-            // `Bash(dangerouslyDisableSandbox:true)`, which needs no hook.
             .with_hook(
                 "SessionStart",
                 None,
@@ -416,30 +272,16 @@ impl ClaudeCode {
             .with_hook_timeout(
                 "SessionStart",
                 Some("*"),
-                &format!(
-                    "bash '{}' session",
-                    claude_home("hooks/herdr-agent-state.sh")
-                ),
+                "bash ~/.claude/hooks/herdr-agent-state.sh session",
                 "command",
                 10,
             )
-            // The evidence half of the sandbox self-improving loop. Records a
-            // line per sandbox denial or unsandboxed retry and does nothing
-            // else — no verdict, no output, exit 0 on every path — so it can
-            // sit on PostToolUse:Bash, the hottest hook point in the fleet,
-            // without ever being able to stall an unattended executor.
             .with_hook(
                 "PostToolUse",
                 Some("Bash"),
                 "bash ~/.claude/hooks/sandbox-friction-hook.sh",
                 "command",
             )
-            // Same script, second event. A classifier denial stops the command
-            // before it runs, so PostToolUse never sees it — yet those denials
-            // are what accumulate toward auto mode's pause threshold (3 in a
-            // row or 20 total, not configurable), and the pause is what turns
-            // an unattended executor into a stalled one. This hook is what
-            // gives `auto_mode` below something real to say.
             .with_hook(
                 "PermissionDenied",
                 Some("Bash"),
@@ -447,20 +289,18 @@ impl ClaudeCode {
                 "command",
             );
 
-        // See AUTO_MODE_ENVIRONMENT_CONTEXT above for why this exists despite
-        // the zero-denial census that once argued against it.
         let settings_builder = settings_builder.with_auto_mode(settings::AutoMode {
-            environment: AUTO_MODE_ENVIRONMENT_CONTEXT
-                .iter()
-                .map(|s| s.to_string())
-                .collect(),
             allow: AUTO_MODE_ALLOW_RULES
                 .iter()
                 .map(|s| s.to_string())
                 .collect(),
-            soft_deny: Vec::new(),
-            hard_deny: Vec::new(),
+            environment: AUTO_MODE_ENVIRONMENT_CONTEXT
+                .iter()
+                .map(|s| s.to_string())
+                .collect(),
             classify_all_shell: None,
+            hard_deny: Vec::new(),
+            soft_deny: Vec::new(),
         });
 
         let settings_builder = settings_builder
@@ -479,7 +319,9 @@ impl ClaudeCode {
             .with_permission_allow("Bash(docket vote show:*)")
             .with_permission_allow("Bash(docket workflow list:*)")
             .with_permission_allow("Bash(docket workflow show:*)")
+            .with_permission_allow("Bash(git add:*)")
             .with_permission_allow("Bash(git branch:*)")
+            .with_permission_allow("Bash(git commit:*)")
             .with_permission_allow("Bash(git diff:*)")
             .with_permission_allow("Bash(git log:*)")
             .with_permission_allow("Bash(git show:*)")
@@ -490,9 +332,8 @@ impl ClaudeCode {
             .with_permission_allow("Bash(go tool golangci-lint:*)")
             .with_permission_allow("Bash(go vet:*)")
             .with_permission_allow("Bash(gofmt:*)")
-            .with_permission_allow("Bash(~/.claude/scripts/attach-probe:*)")
-            .with_permission_allow("Bash(~/.claude/scripts/shadow-transcript-summary.sh:*)")
-            .with_permission_allow("Bash(~/.claude/scripts/wave-usage:*)")
+            .with_permission_allow("Bash(~/.claude/scripts/*)")
+            .with_permission_allow("Bash(~/.claude/workflows/*)")
             .with_permission_allow("WebFetch(domain:api.github.com)")
             .with_permission_allow("WebFetch(domain:claude.ai)")
             .with_permission_allow("WebFetch(domain:code.claude.com)")
@@ -502,14 +343,6 @@ impl ClaudeCode {
             .with_permission_allow("WebFetch(domain:mimir.bulbasaur.altf4.domains)")
             .with_permission_allow("WebFetch(domain:raw.githubusercontent.com)")
             .with_permission_allow("WebSearch")
-            // The conduct loop's own mandated launches (wave.js, tribunal.js):
-            // the auto-mode classifier denied these after ~15 identical
-            // approvals and stalled a run 3.7 hours (2026-08-19 fleet review).
-            // There is no documented per-script specifier for this tool, so
-            // the rule is tool-wide; launch CONTENT is still screened by the
-            // always-on harness spawn classifier and the docket spawn-guard /
-            // policy-guard / wave-audit hooks, and every subagent's own tool
-            // calls remain individually permission-gated.
             .with_permission_allow("Workflow");
 
         let settings_builder = settings_builder
@@ -536,87 +369,13 @@ impl ClaudeCode {
         );
 
         let settings = settings_builder
-            // TRUE, and this is a HARD CONSTRAINT, not a default anyone should
-            // tighten later. Strict sandbox mode (`false`) was tried and is
-            // WRONG here: it does not make an agent safer, it makes it brittle.
-            // With the escape hatch gone, any sandbox denial nobody predicted —
-            // an uncached Go module, a synthetic path like /dev/fd, a tool that
-            // simply does not sandbox — stops being a recoverable retry and
-            // becomes a hard failure inside a wave executor, with no human
-            // present to unstick it. Executors run unattended by design, so a
-            // failure that cannot be worked around does not fail one step; it
-            // wedges the run.
-            // Safety here comes from making the lift RARE and REVIEWED, never
-            // from making it impossible:
-            //   - the module-cache and excluded_commands repairs below remove
-            //     the reason for the overwhelming majority of lifts,
-            //   - auto mode routes each remaining retry to the classifier
-            //     rather than to a person, so the boundary is still judged,
-            //   - permission DENY rules are respected even outside the sandbox,
-            //     so the paths that must never be reachable stay unreachable.
             .with_sandbox_allow_unsandboxed_commands(true)
             .with_sandbox_auto_allow_bash(true)
             .with_sandbox_fail_if_unavailable(true)
-            // GLOB FORM, and the trailing ` *` is load-bearing. These were
-            // bare names and therefore excluded NOTHING: probed 2026-08-20,
-            // `git` — on the list — was still sandboxed and still denied a
-            // write outside the allowlist, identically to an unlisted control.
-            // The list stated an intent the sandbox never implemented, and
-            // agents supplied the difference by hand with
-            // dangerouslyDisableSandbox, which the bypass-ask hook prompts on:
-            // vorpal 145 lifts vs 24 sandboxed, gh 62 vs 10, ~1,650 lifts in
-            // seven days. The documented spelling is `["docker *"]`.
-            // This was also long the only remedy for the Go TLS failure: Go
-            // CLIs verify certificates through Security.framework, which
-            // Seatbelt blocks, so `gh` and friends fail on every host —
-            // including hosts already in allowed_domains (measured: 58
-            // proxy.golang.org, 16 api.github.com, 14 vuln.go.dev, oldest
-            // 2026-08-04). The root cause is now diagnosed and granted
-            // narrowly instead — see allow_mach_lookup below (DOT-617). The
-            // `gh *` and `vorpal *` entries stay on their own lift evidence;
-            // once post-activation runs show them passing sandboxed, they are
-            // candidates for removal.
-            // `go` is deliberately absent: with its real module cache writable
-            // (above) a Go build needs no network at all, so excluding the
-            // whole toolchain would grant far more than the evidence asks for —
-            // `go test` runs arbitrary module code, and outside the sandbox
-            // that is unbounded. The fleet's usual spelling is
-            // `vorpal run go:<v> …`, which `vorpal *` already covers.
-            // A build needing a module the cache does not hold still has the
-            // unsandboxed retry to fall back on, which is exactly why that
-            // escape hatch stays enabled: the rare cold-cache case degrades to
-            // a classifier-reviewed retry instead of wedging the executor.
-            // If such retries turn out to be common rather than rare, warm the
-            // cache or add `go *` here — on evidence, not pre-emptively.
-            // EVIDENCE-ONLY. An entry here is a STANDING grant to run wholly
-            // outside the sandbox, and it is stronger than it looks: the
-            // sandbox's denyRead is the only thing stopping a Bash command
-            // reading ~/.aws or ~/.kube, because a `Read(...)` deny rule scopes
-            // to the Read TOOL and never sees `cat`. So `aws *` and `kubectl *`
-            // would have silently repealed those deny-reads — they did not
-            // before only because the bare names matched nothing. Dropped, with
-            // `uv *` (measured running fine sandboxed) and `xcrun *` (no
-            // evidence at all). Each still keeps the unsandboxed retry, so
-            // nothing loses a way out; it just stops being unconditional.
-            // Every entry that remains cites why:
             .with_sandbox_excluded_commands(vec![
-                // Docs, verbatim: "docker is incompatible with the sandbox.
-                // Add `docker *` to excludedCommands to run it outside".
-                // Matches DIRECT invocations only: a wrapped one like `make
-                // build-docker` has `make` as its top-level command, so the
-                // whole tree stays sandboxed — the daemon-socket grant in
-                // allow_unix_sockets below is what lets that case connect.
                 "docker *".to_string(),
-                // Go-based, so it cannot verify TLS under Seatbelt: 62 lifts
-                // vs 10 sandboxed runs, failing on api.github.com — a host
-                // already in allowed_domains.
                 "gh *".to_string(),
-                // Bare-repo layouts keep the common dir beside the checkout;
-                // `git worktree remove`, branch cleanup, and config locks were
-                // denied there (measured 2026-08-19, wave worktree teardown).
                 "git *".to_string(),
-                // Shells out to Go toolchains that hit the same TLS wall as
-                // gh, and to its own registry: 145 lifts.
                 "vorpal *".to_string(),
             ])
             .with_sandbox_filesystem_allow_write(
@@ -633,75 +392,18 @@ impl ClaudeCode {
                     .collect(),
             )
             .with_sandbox_filesystem_deny_read(sandbox_filesystem_deny_read_paths())
-            // Kept alphabetical, and every entry carries the gate it unblocks:
-            // a domain whose reason is not written down is one nobody can
-            // safely remove later. Both Go entries were added after a sandboxed
-            // gate DNS-failed and was misread as a code finding — the failure
-            // mode this list exists to prevent.
             .with_sandbox_network_allowed_domains(vec![
                 "api.github.com".to_string(),
                 "crates.io".to_string(),
                 "github.com".to_string(),
-                // The Go module proxy. `go tool <x>` resolves from GOMODCACHE
-                // with no network only once that module is already there; an
-                // executor whose cache is cold downloads instead, and the
-                // self-hygiene gate then fails on `lookup proxy.golang.org: no
-                // such host` rather than on the code. Measured 4x in one run
-                // before this entry, each costing a manual override-pass
-                // (DOT-173). The cache itself is shared, not per-agent — see
-                // SANDBOX_TOOLCHAIN_CACHE_PATHS above, and note that allowing
-                // this domain is NOT sufficient on its own: a Go binary cannot
-                // verify any certificate without the trust-service lookup
-                // granted below.
                 "proxy.golang.org".to_string(),
                 "static.crates.io".to_string(),
-                // govulncheck's vulnerability DB — without it, sandboxed
-                // vuln-scan gates DNS-fail and misread as findings (RUN-2: 25
-                // starved spawns).
                 "vuln.go.dev".to_string(),
             ])
             .with_sandbox_network_allow_unix_sockets(vec![
-                // The OrbStack docker daemon socket. `docker *` in
-                // excluded_commands above covers only direct invocations; the
-                // build gate's `make build-docker` -> `docker buildx build`
-                // runs with `make` on top, matches nothing, and the sandboxed
-                // client is denied connecting to the docker API at this socket
-                // while `docker version` from an unsandboxed seat succeeds
-                // (RUN-38 isolated write executors, 2026-08-20/21, DOT-439).
-                // Excluding `make *` instead would let every Makefile target
-                // run wholly outside the sandbox; this grants the one socket
-                // the evidence names — no more than the docker exclusion
-                // already concedes — and only helps once the daemon is up: a
-                // cold daemon is "no such file or directory", not a denial.
                 "~/.orbstack/run/docker.sock".to_string(),
                 "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock".to_string(),
             ])
-            // THE Go-TLS-wall fix (DOT-617, diagnosed 2026-08-24). Root cause,
-            // proven twice over: Go's crypto/x509 on darwin verifies every
-            // chain through Security.framework, whose SecTrustEvaluateWithError
-            // asks trustd over XPC — and the Seatbelt profile denies the mach
-            // bootstrap look-up for `com.apple.trustd.agent`. Client-side
-            // unified log from a sandboxed evaluation: "failed to do a
-            // bootstrap look-up: xpc_error=[159]" then "Failed to talk to
-            // trustd after 4 attempts" then errSecInternalComponent (-26276).
-            // Controlled A/B under sandbox-exec: a profile whose ONLY deny is
-            // this one mach-lookup reproduces -26276 exactly; allowing it,
-            // same binary same certs, verifies. Why every earlier probe
-            // misled: `curl` verifies against the file /etc/ssl/cert.pem
-            // (LibreSSL, no trustd), `security verify-cert` silently falls
-            // back to in-process legacy evaluation Go does not have, and
-            // GODEBUG=x509usefallbackroots=1 is a no-op unless the binary
-            // imports x509roots/fallback (govulncheck does not); SSL_CERT_FILE
-            // is ignored on darwin. So no env var can save a stock Go binary —
-            // only this grant can. It is byte-for-byte what
-            // enableWeakerNetworkIsolation would emit (`(allow mach-lookup
-            // (global-name "com.apple.trustd.agent"))`, confirmed in the
-            // 2.1.242 profile template), minus that flag's misleading
-            // MITM-only doc scoping. The documented cost — trustd fetches
-            // OCSP/AIA on the process's behalf outside the proxy allowlist, a
-            // narrow exfiltration channel — is accepted knowingly: the status
-            // quo it replaces is the DOT-617 standing disposition of re-running
-            // entire vuln scans unsandboxed, which concedes strictly more.
             .with_sandbox_network_allow_mach_lookup(vec!["com.apple.trustd.agent".to_string()])
             .with_sandbox_network_allow_local_binding(true)
             .build(context)
@@ -723,8 +425,6 @@ impl ClaudeCode {
         .build(context)
         .await?;
 
-        // Declared before `statusline` because that binding moves `self.systems`;
-        // every FileSource above clones it and this one must too.
         let workflows = FileSource::new(
             &component_name(&self.name, "workflows"),
             "src/user/claude_code/workflows",
@@ -733,12 +433,6 @@ impl ClaudeCode {
         .build(context)
         .await?;
 
-        // The main conversation was the one surface with no definition at all:
-        // agents/, skills/, and workflows/ all govern spawned work, while the
-        // session the operator actually talks to had nothing. That is where the
-        // 2026-08-19 census found the unaddressed half of the cost -- 82
-        // interrupts and 217 stopped agents in a week, none of which any
-        // subagent brief can reach.
         let memory = FileCreate::new(
             &component_name(&self.name, "memory"),
             self.systems.clone(),
@@ -747,9 +441,6 @@ impl ClaudeCode {
         .build(context)
         .await?;
 
-        // Trust roster for `gpg.ssh.allowedSignersFile` above. Declared here,
-        // beside the settings that inject the signing key, because the same
-        // module owns both halves of the signing story.
         let allowed_signers = FileCreate::new(
             &component_name(&self.name, "allowed-signers"),
             self.systems.clone(),

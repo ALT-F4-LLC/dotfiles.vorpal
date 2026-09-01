@@ -1,7 +1,28 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by a research step, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec), escalating to the operator."
 name = "spec-doc"
-version = 21  # 21: reconcile gains the `drain-highs` routing on
+version = 22  # 22: a third TDD security lane pair, `author-tdd-security-slb`
+              #   and `revise-tdd-security-slb`, for an issue labelled
+              #   `doc:tdd` + `security-load-bearing` with neither
+              #   `security-change` nor `security`. policy.toml's [security]
+              #   table names all three labels as security labels and its
+              #   comment says every one must ROUTE, not only pin the model;
+              #   until this version the TDD lanes routed the first and third
+              #   and let the second fall through to `author-tdd`. The wave
+              #   still applied the `never = fable` pin by label, so the model
+              #   was right and the contract was wrong: the general TDD
+              #   charter, without the threat-model-method and
+              #   security-review-dimensions fragments, would have written a
+              #   security design. No run had hit it (3 spec-doc runs in the
+              #   ledger: two ux-spec, one tdd-security-alt); this closes it on
+              #   design judgment, not measurement. It costs a whole lane pair
+              #   because a step-level `when` admits only conjunctions — the
+              #   engine splits on ` and ` and knows no `or` — which is also
+              #   why the `-alt` lane exists. `author-tdd` and `revise-tdd`
+              #   add `labels != security-load-bearing` so the lanes stay
+              #   disjoint. An engine issue asks for an any-of connective so
+              #   the three security lanes can collapse to one later.
+              # 21: reconcile gains the `drain-highs` routing on
               #   `any(open_severity >= high)` plus the interposed executor
               #   step it names, which files each still-open high cluster
               #   (not held, not operator-resolved) as a `--gap-file` backlog
@@ -72,6 +93,20 @@ when = "labels contains doc:tdd and labels contains security and labels != secur
 after = ["research"]
 class = "write"
 emits = "doc"
+executor = "tdd-author-security"
+expected_cost = 1.20
+gates = ["doc-validate", "tdd-preflight", "reserved-name-check"]
+inputs = ["research.*", "issue.body"]
+max_attempts = 2
+name = "author-tdd-security-slb"
+on_fail = "waiting-human"
+packet = ["contracts/{executor}.md"]
+when = "labels contains doc:tdd and labels contains security-load-bearing and labels != security-change and labels != security"
+
+[[step]]
+after = ["research"]
+class = "write"
+emits = "doc"
 executor = "tdd-author"
 expected_cost = 1.20
 gates = ["doc-validate", "tdd-preflight", "reserved-name-check"]
@@ -80,7 +115,7 @@ max_attempts = 2
 name = "author-tdd"
 on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
-when = "labels contains doc:tdd and labels != security-change and labels != security"
+when = "labels contains doc:tdd and labels != security-change and labels != security and labels != security-load-bearing"
 
 [[step]]
 after = ["research"]
@@ -125,7 +160,7 @@ packet = ["contracts/{executor}.md"]
 when = "labels != doc:tdd and labels != doc:adr and labels != doc:ux-spec"
 
 [[step]]
-after = ["author-tdd-security", "author-tdd-security-alt", "author-tdd", "author-adr", "author-ux-spec", "author-prd"]
+after = ["author-tdd-security", "author-tdd-security-alt", "author-tdd-security-slb", "author-tdd", "author-adr", "author-ux-spec", "author-prd"]
 emits = "findings"
 expected_cost = 0.60
 fanout = ["judge-architecture", "judge-security", "judge-design"]
@@ -197,6 +232,19 @@ when = "labels contains doc:tdd and labels contains security and labels != secur
 after_loop = "review"
 class = "write"
 emits = "doc"
+executor = "tdd-author-security"
+expected_cost = 1.50
+gates = ["doc-validate", "reserved-name-check"]
+inputs = ["reconcile.findings", "issue.latest.doc", "accept-vote-tdd.vote-record", "research.*"]
+loop = true
+name = "revise-tdd-security-slb"
+packet = ["contracts/{executor}.md"]
+when = "labels contains doc:tdd and labels contains security-load-bearing and labels != security-change and labels != security"
+
+[[step]]
+after_loop = "review"
+class = "write"
+emits = "doc"
 executor = "tdd-author"
 expected_cost = 1.50
 gates = ["doc-validate", "reserved-name-check"]
@@ -204,7 +252,7 @@ inputs = ["reconcile.findings", "issue.latest.doc", "accept-vote-tdd.vote-record
 loop = true
 name = "revise-tdd"
 packet = ["contracts/{executor}.md"]
-when = "labels contains doc:tdd and labels != security-change and labels != security"
+when = "labels contains doc:tdd and labels != security-change and labels != security and labels != security-load-bearing"
 
 [[step]]
 after_loop = "review"

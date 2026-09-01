@@ -54,6 +54,27 @@ me="doc-record"
 log() { printf '%s: %s\n' "$me" "$*" >&2; }
 die() { log "$*"; exit 1; }
 
+case "${1:-}" in
+--help | -h)
+	cat <<-EOF
+	$me — trusted ACTION behind spec-doc.toml's \`record\` step.
+
+	Usage: $me < context.json
+
+	Reads exactly ONE JSON document from stdin — the §11.4 context bundle as
+	\`docket step context --json\` emits it, shaped as
+	{"step": {"run": ..., "instance": ..., "step": ...},
+	 "issue": {"id": ..., "title": ..., "labels": [...]},
+	 "inputs": [ {"artifact": ..., "kind": ..., "producer_step": ..., "body": ...}, ... ]}.
+	It records the last artifact input with a body as a doc via \`docket doc
+	create\` and links it to the issue, then writes one JSON document to
+	stdout: {"body": <string>, "payload": [ <object>, ... ]}. Not meant to be
+	run by hand — the engine pipes the bundle at claim time.
+	EOF
+	exit 0
+	;;
+esac
+
 command -v jq >/dev/null 2>&1 || die "jq is required but not on PATH"
 command -v docket >/dev/null 2>&1 || die "docket is required but not on PATH"
 

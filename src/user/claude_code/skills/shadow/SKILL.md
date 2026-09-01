@@ -818,7 +818,12 @@ Pre-derived because conduct is the richest target. The conductor:
 - **No cached run state.** Any "I remember step N…" reasoning instead of
   re-asking the engine.
 - **Wave invocation.** By `scriptPath` only — the installed
-  `~/.claude/workflows/wave.js` if it exists, else `$SRC/workflows/wave.js`.
+  `~/.claude/workflows/wave.js`, never `$SRC/workflows/wave.js`: the settings
+  corpus adds only `~/.claude/workflows` to a session's directories
+  (`permissions.additionalDirectories`, DOT-952), so the Workflow tool refuses
+  the source path from a normal conduct seat, and a conductor falling back to
+  it — or copying the script somewhere launchable to get past the refusal —
+  is a finding, not an accommodation.
   The installed one is a vorpal-store symlink now rather than the source file,
   so the two spellings are NO LONGER the same bytes: source edited since the
   last `just activate` means the wave is dispatching stale bytes, which is

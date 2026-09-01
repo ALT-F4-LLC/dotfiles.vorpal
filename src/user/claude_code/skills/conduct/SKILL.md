@@ -771,22 +771,29 @@ after that commit would have passed every gate the worktree was about to fail.
 A target missing at the base is a pre-dispatch stop-and-report, not a mid-wave
 discovery.
 
-Then invoke the wave **by scriptPath, always** — with the ABSOLUTE path: the
-Workflow tool does not expand `~` and resolves relative paths against the
-observed repo's cwd (two conductor sessions on one run both lost their first
-launch to the tilde form). RESOLVE it, never assume it: `test -f
-~/.claude/workflows/wave.js` and use that path when the test passes, otherwise
-`$CC_SRC/workflows/wave.js` where `$CC_SRC` is
-`<...>/dotfiles.vorpal.git/main/src/user/claude_code`. Every `~/.claude`
-definition surface — workflows included since 2026-08-11 — is a store symlink
-from the last `just activate`; nothing links into the source tree, so the two
-paths are NOT the same bytes. Prefer the installed path: it is what every
-session executes, and a source file edited since the last activation is bytes
-no session runs. Run the test instead of assuming a default either way, and
-expand the `~` to a literal path yourself.
+Then invoke the wave **by scriptPath, always** — the installed
+`~/.claude/workflows/wave.js`, as an ABSOLUTE path with the `~` expanded to a
+literal path yourself: the Workflow tool does not expand `~` and resolves
+relative paths against the observed repo's cwd (two conductor sessions on one
+run both lost their first launch to the tilde form). The installed path is
+the ONLY launchable one, not merely the preferred one: the tool accepts a
+scriptPath only under the session's cwd or a directory added to the session,
+and the settings corpus adds exactly `~/.claude/workflows`
+(`permissions.additionalDirectories`, DOT-952). A conductor's normal seat is
+the target repo's own worktree, where the dotfiles source tree is neither —
+so `$CC_SRC/workflows/wave.js` is NOT a fallback (before that settings entry
+was installed, one activation gate had the installed path and then the source
+path refused back to back, verbatim; the first launch after `just activate`
+landed it succeeded from the same seat), and the source file is the wrong
+bytes even where it happens to be readable: every `~/.claude` definition
+surface — workflows included since 2026-08-11 — is a store symlink from the
+last `just activate`, nothing links into the source tree, and a source file
+edited since the last activation is bytes no session runs. A missing
+installed file is the attach-probe's own workflow-check FAIL — stop and
+report it; never hunt for another copy to launch.
 
 ```
-Workflow({ scriptPath: "<resolved absolute path to wave.js>", args: {rows, policyText} })
+Workflow({ scriptPath: "<absolute installed path to wave.js>", args: {rows, policyText} })
 ```
 
 `scriptPath` and `args` are the ONLY parameters. There is no
@@ -1055,8 +1062,9 @@ engine, ≤32 per call. The config key `budget.unit` names the one unit the
 run's cap counts; every other unit is ledger only.
 
 **The join is a script, not a judgment: run `wave-usage <transcript-dir>`**,
-resolved the same way as wave.js — `~/.claude/scripts/wave-usage` when `test
--f` passes, else `$CC_SRC/scripts/wave-usage`. It emits the backfill rows JSON
+resolved the same way as `attach-probe` — `~/.claude/scripts/wave-usage` when
+`test -f` passes, else `$CC_SRC/scripts/wave-usage` (a Bash script, so the
+source path stays runnable; only Workflow scriptPaths are seat-restricted). It emits the backfill rows JSON
 directly: four typed units per step, usage deduplicated by message id
 (streamed assistant messages repeat across lines; a per-line sum
 double-counts, measured 1.65-2.36× on one run), attribution via the bootstrap
@@ -1605,13 +1613,16 @@ one run's first gate linked an empty id doing exactly that.
 Then tribunal.js with the id it returns as `voteId`:
 
 ```
-Workflow({ scriptPath: "<absolute path to tribunal.js>",
+Workflow({ scriptPath: "<absolute installed path to tribunal.js>",
            args: {voteId, voters, policyText, context, gateKind, cwd} })
 ```
 
-Resolve the path and emit `args` exactly as you do for wave.js — absolute,
-`test -f ~/.claude/workflows/tribunal.js` else `$CC_SRC/workflows/tribunal.js`,
-`args` a REAL object the harness stringifies for you. `policyText` is the
+Resolve the path and emit `args` exactly as you do for wave.js — the
+installed `~/.claude/workflows/tribunal.js`, absolute, `~` expanded, and no
+source-tree fallback: it is the only path the Workflow tool will launch from
+a conductor's seat (step 2's DOT-952 rule), and an absent installed file is
+stop-and-report, not a path hunt. `args` is a REAL object the harness
+stringifies for you. `policyText` is the
 literal pinned policy.toml text, re-read in the same iteration as the launch
 it feeds and passed byte-for-byte — built by copying `policy-escaped-chunks`
 output, never re-typed from context, and a length denial here is answered

@@ -184,10 +184,18 @@ Workflow({scriptPath: "<home>/.claude/workflows/tribunal.js", args: {
 ```
 
 By `scriptPath` only and never by name, `args` a real object, policy passed as
-TEXT rather than as a path — the script reads no files. Resolve the path before
-you call it: the installed `~/.claude/workflows/tribunal.js` where one exists,
-else the source at `src/user/claude_code/workflows/tribunal.js` in the dotfiles
-checkout, since that install lags source until the operator's `just activate`.
+TEXT rather than as a path — the script reads no files. The path is the
+installed `<home>/.claude/workflows/tribunal.js` with `<home>` expanded to a
+literal absolute path (the tool expands no `~`), and there is no source-tree
+fallback: the Workflow tool launches
+only a scriptPath under the session's cwd or a directory added to the session,
+and the settings corpus adds exactly `~/.claude/workflows`
+(`permissions.additionalDirectories`, DOT-952) — the source copy in the
+dotfiles checkout is refused verbatim from any other seat, and since the
+install lags source until the operator's `just activate`, un-activated source
+bytes are bytes no session runs anyway. An absent installed file means the
+corpus was never activated here: stop and report it rather than hunting for
+another copy.
 Then `docket vote
 result <id>`: **approved is the authority to apply, and §4 runs immediately** —
 there is no follow-up question about whether to apply now or later. A rejection

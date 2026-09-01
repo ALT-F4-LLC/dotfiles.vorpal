@@ -319,6 +319,13 @@ conductor will not carry that obligation should be told so at spawn time,
 in the brief's own words, so the review does not claim a live watch that
 never happened.
 
+Between pings, the shadow seat goes idle BY DESIGN — that is the whole point
+of a seat whose only turns are the pings you send it. The harness delivers
+an idle notification for that back to you, the conductor, after every ping;
+it is expected noise, not a signal. Absorb it silently: no turn text saying
+nothing was needed, no wakeup-cancel call. Speak only when the agent's own
+message carries content — an interrupt, a log entry, the final review.
+
 Then one line to the operator naming the spawn, and the conversation goes
 back to being a conductor. Beyond the boundary pings, do not poll the agent;
 its completion notifies. One boundary: the agent lives inside this session,

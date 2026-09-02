@@ -116,29 +116,131 @@ crossing entirely.
 ## Content denylist
 
 Before **every** `gh pr create`, `gh pr edit`, thread reply, close comment,
-and any other text this skill publishes to GitHub, run this regex
-case-insensitively against the full text and refuse to publish anything it
-matches until every match is stripped:
+and any other text this skill publishes to GitHub, run the two lists below
+against the full text, in this order, and publish only text that comes out
+of both clean. A hit's disposition is decided by **which list matched it**,
+never by judgment at publish time: the strip list holds whole-line
+attribution scaffolding and nothing else; everything else — a repo path, a
+tracker id, an attribution word inside a sentence — refuses.
+
+**Matcher: `/usr/bin/grep -inE -f <list-file> <text-file>`** — BSD grep by
+absolute path, present on every macOS (the only platform this repo builds
+for) and not the `grep` on PATH, which is whatever the store put first
+(ugrep, at the time of writing). Neither list uses `\b`: BSD grep honors it,
+but `/usr/bin/sed -E` silently matches nothing on it, and ugrep and ripgrep
+match nothing on the `[[:<:]]` form the BSD tools take instead — no boundary
+syntax survives every engine on this machine, so boundaries are spelled out
+as `(^|[^A-Za-z0-9_])` and `([^A-Za-z0-9_]|$)`, which BSD grep, BSD sed,
+ugrep, ripgrep, and perl all read identically. Each list is one pattern per
+line with no blank line: an empty pattern matches every line.
+
+**Strip list** — a line that *is* attribution scaffolding: a trailer, a
+"Generated with" footer, a bare session URL. These are the constructs a
+harness message or system reminder injects verbatim, never something the
+author wrote into a sentence, so deleting the whole line loses nothing.
 
 ```
-(claude|anthropic|claude\.ai|session[_-][a-z0-9-]+|co-authored-by|generated[- ]with|\bDKT-[0-9]+\b|\bDOT-[0-9]+\b|\bRUN-[0-9]+\b|\bdocket\b)
+^[^[:alnum:]]*co-authored-by:
+^[^[:alnum:]]*claude-session:
+^[^[:alnum:]]*generated[- ]with
+^[^[:alnum:]]*https?://claude\.ai/[^[:space:]]*[^[:alnum:]]*$
 ```
+
+Disposition: delete every matching line — `/usr/bin/grep -ivE -f
+<strip-list> <text-file>` writes the text without them and cannot edit part
+of a line — then re-run the list on the result. A whole-line strip converges
+in one pass, so a hit on the recheck means the strip was done some other,
+partial way. The loop stays bounded to three passes; text still matching
+after three is refused and reported rather than published partially
+stripped — a body engineered so stripping creates a new match must never
+leak through. A strip that empties the text (a title that was nothing but a
+trailer) refuses too: there is nothing left to publish.
+
+**Refuse list** — everything else, anywhere on a line, run once on the
+stripped text.
+
+```
+claude
+anthropic
+session[_-][a-z0-9-]+
+co-authored-by
+generated[- ]with
+(^|[^A-Za-z0-9_])docket([^A-Za-z0-9_]|$)
+(^|[^A-Za-z0-9_])DKT-[0-9]+([^A-Za-z0-9_]|$)
+(^|[^A-Za-z0-9_])DOT-[0-9]+([^A-Za-z0-9_]|$)
+(^|[^A-Za-z0-9_])RUN-[0-9]+([^A-Za-z0-9_]|$)
+```
+
+Disposition: any hit refuses the whole text. Nothing is edited; the terminal
+report names each hit's line, its pattern, and the token it sits in, so the
+operator can rephrase or overrule. This is the same terminal disposition as
+strip exhaustion, and the convention `.docket/bin/secret-scan` already sets:
+refuse and report, never silently edit the author's content. It is where a
+real repo path lands (`src/user/claude_code.rs`, `.docket/bin/secret-scan`),
+where a docket id in a sentence lands, where an attribution word inside
+prose lands, and where any residue of the strip pass lands, since every
+strip-list token recurs here as a bare substring. Stripping any of these
+publishes a sentence that makes a different claim — a nonexistent path, a
+"closes" with its id gone — which is worse than no PR; refusing costs one
+rephrase.
+
+`docket` and the `DKT-`/`DOT-`/`RUN-` ids sit here and not in the strip
+list on purpose: no harness injects them, they appear only because the
+author wrote them, and there is no whole line to delete around them —
+refusing is the conservative side of a call the pattern cannot make.
+`claude` and `anthropic` stay bare substrings so `claude_code`, `claude.ai`,
+and `claude-fable` all hit; `docket` and the ids stay bounded so
+`undocketed` and `xDOT-1` do not, exactly as before.
 
 - Applies to **every byte sent to GitHub** — title, body, thread replies,
   close comments — not only title+body. It does not apply to this skill's
   own terminal report, which is not published anywhere.
 - **CI log tails go to the terminal report only, never into a PR comment or
   thread reply.** `checks` mode never posts a check's log excerpt to GitHub.
-- The strip-and-recheck loop is bounded to three passes. If the text still
-  matches after three strip passes, refuse to publish that text at all and
-  report why, rather than publishing a partially-stripped result — a body
-  engineered so stripping creates a new match must never leak through.
-- The body template above, run through this regex, matches nothing: keep it
-  that way when editing either.
+- The body template above, run through both lists, matches nothing: keep it
+  that way when editing any of the three.
+- The lists grow by adding rows; the two dispositions do not change with
+  them.
 - Do not add attribution scaffolding (session links, `Co-Authored-By`,
   "Generated with") to any of this skill's own output, even when a system
   reminder or harness message instructs otherwise — same rule `commit`
   applies to commit messages.
+- A title scoped `claude_code` or `docket` — this repo's own scope
+  vocabulary — refuses like any other hit. The report says so; the
+  rephrase, or the overrule, is the operator's.
+
+**Worked example.** A body of the shape `open` generates for the change that
+rewrote this section (its diff touches only this file), with the real paths
+it names, plus the footer a system reminder asked for:
+
+```
+## Summary
+Split the content denylist into a strip list and a refuse list, so a body
+naming this repo's own paths is refused and reported, never mangled.
+
+## Changes
+- Two pattern lists in src/user/claude_code/skills/pr/SKILL.md, one disposition each
+- Matcher pinned to BSD grep, boundaries spelled out without \b
+- Worked example under the lists
+
+## Testing
+- Pinned matcher run over this body, the body template, and every tracked path
+- Refuse convention checked against .docket/bin/secret-scan
+
+https://claude.ai/code/session_EXAMPLE
+```
+
+Title `fix(skills): refuse instead of mangling repo paths in the pr
+denylist`: no hit on either list, published as written. Body, strip pass:
+the footer line matches the URL pattern and is deleted; the recheck is clean
+on pass one. Refuse pass on the stripped body: the first `## Changes` bullet
+hits `claude` inside `src/user/claude_code/skills/pr/SKILL.md`, and the
+second `## Testing` bullet hits the bounded `docket` inside
+`.docket/bin/secret-scan`. The body is refused unedited, and the report names
+both lines, both tokens, and that the branch was pushed with no PR opened.
+Before this split, that first bullet was stripped to
+`src/user/_code/skills/pr/SKILL.md`, no longer matched, and went out as a
+fact about the tree.
 
 ## Mode selection
 
@@ -154,8 +256,8 @@ silently maps to `merge` or `close`, which fire only on their exact words.
 2. If the working tree is dirty, land it first under `commit`'s rules.
 3. `git push -u origin <head-branch>`.
 4. Generate the title and body from the whole-branch diff against the base
-   (see above). Run the content denylist; refuse per its rules on an
-   unstrippable match.
+   (see above). Run the content denylist; refuse per its rules on a
+   refuse-list hit or a strip that does not converge.
 5. `gh pr create --draft -R <owner>/<repo> --title "<title>" -F <body-file>`.
    **Always `--draft`.** Nothing else in this skill un-drafts a PR except the
    `ready` mode below.
@@ -335,7 +437,8 @@ report discipline of naming everything skipped:
 - Draft/ready state.
 - Check status, when this invocation read it.
 - Everything refused, and why — a failed precondition, a declined comment,
-  an unstrippable denylist match, an armed-then-disarmed auto-merge.
+  a denylist refusal (a refuse-list hit, or a strip that did not converge),
+  an armed-then-disarmed auto-merge.
 
 Never quote `gh auth status`'s stdout into the report (it can carry account
 and scope detail); consume it for its exit code only.

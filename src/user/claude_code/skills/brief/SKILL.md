@@ -3,7 +3,6 @@ name: brief
 description: Turn a freeform work request into a standardized brief — frontier-by-frontier rounds of AskUserQuestion, as many as the ask genuinely needs, for whatever's underdetermined — then route it: hand off to /plan for docket-tracked work, /loop for work that repeats until a condition holds, another orchestration skill when one fits better, or proceed straight into the work for anything small and non-sensitive, confirmed with you either way. Runs on `fable` so distillation quality rides the strongest tier without a subagent spawn. The front door for a fuzzy ask you'd rather not prompt-engineer yourself. Trigger on "brief this", "help me think this through", "brief this request", or any new freeform ask before you've decided whether it needs a plan.
 argument-hint: "<freeform work request>"
 model: fable
-context: fork
 ---
 
 # brief

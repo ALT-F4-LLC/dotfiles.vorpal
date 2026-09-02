@@ -1,0 +1,264 @@
+#!/usr/bin/env bash
+#
+# vuln-scan — known-vulnerability scan of Cargo.lock.
+#
+# Wired as the `vuln-scan` gate on the `implement` and `fix` steps of
+# standard-change.toml and security-change.toml (src/user/docket/config/workflows).
+# A hash-pinned lockfile buys integrity, not vulnerability freedom: nothing else
+# in either pipeline asks whether a crate this tree already carries, or one a
+# step just added, has a published advisory against it.
+#
+# WHAT IT QUERIES. Every crate in Cargo.lock is looked up by name and exact
+# version against OSV (https://osv.dev): the whole RustSec advisory database (the
+# corpus `cargo audit` reads, under the same RUSTSEC-* ids) plus the GHSA
+# advisories filed against crates.io. Version matching happens server-side
+# against each advisory's own ranges, so this script parses no semver.
+#
+# WHY OSV AND NOT `cargo audit`. cargo-audit is not installed: the Rust toolchain
+# on a gate host is a vorpal artifact that ships no cargo-audit, and `cargo
+# install` would write a binary into ~/.cargo/bin, outside this repository, which
+# is not how anything here gets installed. OSV needs only curl and jq, its
+# crates.io corpus is a superset of cargo-audit's default database, and the whole
+# query is a couple of HTTP round trips. What this loses against cargo-audit:
+# yanked-crate detection (that needs the crates.io index) and an offline mode.
+#
+# VERDICTS mirror cargo-audit's defaults, so the gate is neither stricter nor
+# looser than the tool it stands in for:
+#   - an advisory carrying no `informational` marker is a vulnerability:
+#     FAIL, exit 1;
+#   - an informational advisory (unmaintained, unsound, notice) is a WARNING,
+#     exit 0. Failing on those would make the gate unclearable for every step
+#     after a transitive dependency goes unmaintained, however unrelated the
+#     step's own change;
+#   - OSV unreachable, or answering in a shape this script cannot read: exit 2,
+#     labelled INFRASTRUCTURE. Still a failure (a scan that did not run has
+#     scanned nothing, and passing would make the control decorative), but the
+#     message says to fix the network path, not to hunt for a CVE. The Go
+#     scanner in docket.git once reported three one-second non-scans as
+#     reachable vulnerabilities, and an operator went looking for a finding
+#     that never existed.
+#
+# There is no ignore list, on purpose. An advisory the issue rules acceptable is
+# recorded on the issue, where a reviewer sees the ruling; a file in the tree that
+# silences the gate is an opt-out any step could write.
+#
+# SCOPE. Cargo.lock only. Vorpal.lock pins the tool artifacts the user
+# environment installs, and no advisory database indexes those; they are outside
+# this gate's reach, stated here rather than implied by silence. Path packages
+# (this workspace's own crates, which carry no `source`) are skipped: they are
+# the code under review, not a dependency, and a crates.io crate that happens to
+# share a name would be a false match. Git-sourced crates ARE queried at their
+# lockfile version, with the source printed beside any hit: a fork at the
+# upstream version usually carries the upstream code, and a reader disposes of
+# the exception with the source in view.
+
+set -euo pipefail
+
+# Anchored to this script's own repository, not the caller's cwd — the anchor
+# secret-scan uses, for the same reason: a gate reporting on the wrong tree is
+# worse than one that refuses.
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+if ! repo_root="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null)"; then
+  echo "vuln-scan FAILED: $script_dir is not inside a git repository." >&2
+  exit 1
+fi
+cd "$repo_root"
+
+readonly OSV_HOST="api.osv.dev"
+readonly OSV_BATCH_URL="https://${OSV_HOST}/v1/querybatch"
+readonly OSV_VULN_URL="https://${OSV_HOST}/v1/vulns"
+# OSV refuses a batch above 1000 queries; stay well under it.
+readonly BATCH_SIZE=500
+
+for tool in curl jq; do
+  if ! command -v "$tool" >/dev/null 2>&1; then
+    echo "vuln-scan FAILED: $tool is required and is not on PATH." >&2
+    exit 1
+  fi
+done
+
+if [ ! -f Cargo.lock ]; then
+  echo "vuln-scan FAILED: no Cargo.lock at $repo_root; nothing to scan." >&2
+  exit 1
+fi
+
+work="$(mktemp -d "${TMPDIR:-/tmp}/vuln-scan.XXXXXX")"
+trap 'rm -rf "$work"' EXIT
+
+# INFRASTRUCTURE failures exit 2 and never mention a vulnerability (header).
+infra() {
+  {
+    echo
+    echo "vuln-scan FAILED: INFRASTRUCTURE — $1"
+    echo "No scan completed, so nothing is known about vulnerabilities either way."
+    echo "Do NOT go hunting for a finding: fix the path to ${OSV_HOST} (sandbox egress"
+    echo "allowlist, DNS, TLS interception) and re-run the gate."
+  } >&2
+  exit 2
+}
+
+# Cargo.lock is generated, never hand-written: one [[package]] table per crate,
+# one key per line, values double-quoted. `[metadata]`, when present, ends the
+# package tables.
+awk -F'"' '
+  function flush() {
+    if (name != "") printf "%s\t%s\t%s\n", name, version, source
+    name = ""; version = ""; source = ""
+  }
+  /^\[\[package\]\]/      { flush(); in_pkg = 1; next }
+  /^\[/                   { flush(); in_pkg = 0; next }
+  in_pkg && /^name = /    { name = $2 }
+  in_pkg && /^version = / { version = $2 }
+  in_pkg && /^source = /  { source = $2 }
+  END { flush() }
+' Cargo.lock >"$work/packages.tsv"
+
+awk -F'\t' '$3 != ""' "$work/packages.tsv" >"$work/deps.tsv"
+skipped="$(awk -F'\t' '$3 == "" { printf "%s %s  ", $1, $2 }' "$work/packages.tsv")"
+dep_count="$(wc -l <"$work/deps.tsv" | tr -d ' ')"
+
+# A lockfile that parses to nothing is a parser that no longer reads cargo's
+# format, and a clean verdict over zero crates would be the vacuous pass this
+# gate must never produce.
+if [ "$dep_count" -eq 0 ]; then
+  echo "vuln-scan FAILED: Cargo.lock parsed to zero dependencies; refusing to report clean over an empty scan." >&2
+  exit 1
+fi
+
+echo "vuln-scan: ${dep_count} crate(s) from Cargo.lock to check against OSV (crates.io)"
+if [ -n "$skipped" ]; then
+  echo "vuln-scan: skipping path package(s): ${skipped}"
+fi
+
+jq -Rn '[inputs | split("\t") | {package: {name: .[0], ecosystem: "crates.io"}, version: .[1]}]' \
+  "$work/deps.tsv" >"$work/queries.json"
+
+# hits.tsv: crate name, crate version, advisory id — one row per match.
+: >"$work/hits.tsv"
+offset=0
+while [ "$offset" -lt "$dep_count" ]; do
+  chunk="$work/chunk_${offset}.json"
+  resp="$work/resp_${offset}.json"
+  jq -c --argjson s "$offset" --argjson n "$BATCH_SIZE" '{queries: .[$s:$s+$n]}' \
+    "$work/queries.json" >"$chunk"
+  chunk_len="$(jq '.queries | length' "$chunk")"
+
+  http_code=""
+  if ! http_code="$(curl -sS --max-time 90 -o "$resp" -w '%{http_code}' \
+    -H 'Content-Type: application/json' -H 'Accept: application/json' \
+    --data-binary @"$chunk" "$OSV_BATCH_URL" 2>"$work/curl.err")"; then
+    infra "could not reach ${OSV_HOST}: $(tr '\n' ' ' <"$work/curl.err")"
+  fi
+  if [ "$http_code" != "200" ]; then
+    infra "${OSV_BATCH_URL} answered HTTP ${http_code}: $(head -c 300 "$resp" 2>/dev/null | tr '\n' ' ')"
+  fi
+
+  # One result per query, in order, is the only thing that ties a hit back to
+  # the crate that produced it. A different count is a response this script
+  # cannot read, and reading it anyway would misattribute every hit.
+  jq -e --argjson n "$chunk_len" \
+    '(.results | type) == "array" and (.results | length) == $n' "$resp" >/dev/null ||
+    infra "${OSV_BATCH_URL} answered in a shape this script cannot read (expected ${chunk_len} results)"
+  # A paginated result means one crate has more advisories than a page holds.
+  # Reading only the first page would be a silent truncation, so refuse instead.
+  jq -e '[.results[] | select(.next_page_token != null)] | length == 0' "$resp" >/dev/null ||
+    infra "${OSV_BATCH_URL} paginated a result and this script does not page; refusing to truncate"
+
+  jq -r --slurpfile q "$chunk" '
+    [$q[0].queries, .results] | transpose[]
+    | .[0] as $query | (.[1].vulns // [])[]
+    | [$query.package.name, $query.version, .id] | @tsv' "$resp" >>"$work/hits.tsv"
+
+  offset=$((offset + BATCH_SIZE))
+done
+
+if [ ! -s "$work/hits.tsv" ]; then
+  echo "vuln-scan: clean — no advisory matches any of the ${dep_count} crate(s)"
+  exit 0
+fi
+
+sort -u "$work/hits.tsv" >"$work/hits.sorted.tsv"
+
+# Fetch each advisory once, RUSTSEC ids first, so the GHSA mirror of an advisory
+# already printed is recognized through its aliases and folded into that row
+# rather than counted as a second finding.
+awk -F'\t' '{ print $3 }' "$work/hits.sorted.tsv" | sort -u |
+  awk '/^RUSTSEC-/ { print "0\t" $0; next } { print "1\t" $0 }' | sort | cut -f2 >"$work/ids.txt"
+
+vulns=0
+warnings=0
+seen_ids=""
+echo
+while IFS= read -r id; do
+  [ -n "$id" ] || continue
+  if printf '%s\n' "$seen_ids" | grep -qxF "$id"; then
+    continue
+  fi
+
+  detail="$work/vuln_${id}.json"
+  http_code=""
+  if ! http_code="$(curl -sS --max-time 60 -o "$detail" -w '%{http_code}' \
+    "${OSV_VULN_URL}/${id}" 2>"$work/curl.err")"; then
+    infra "could not fetch advisory ${id} from ${OSV_HOST}: $(tr '\n' ' ' <"$work/curl.err")"
+  fi
+  if [ "$http_code" != "200" ]; then
+    infra "${OSV_VULN_URL}/${id} answered HTTP ${http_code}"
+  fi
+  jq -e --arg id "$id" '.id == $id' "$detail" >/dev/null ||
+    infra "advisory ${id} came back in a shape this script cannot read"
+
+  aliases="$(jq -r '(.aliases // [])[]' "$detail")"
+  seen_ids="$(printf '%s\n%s\n%s' "$seen_ids" "$id" "$aliases")"
+  alias_list="$(printf '%s' "$aliases" | tr '\n' ',' | sed 's/,$//; s/,/, /g')"
+  summary="$(jq -r '.summary // ((.details // "") | split("\n")[0])' "$detail")"
+  withdrawn="$(jq -r '.withdrawn // ""' "$detail")"
+
+  while IFS=$'\t' read -r name version hit_id; do
+    [ "$hit_id" = "$id" ] || continue
+    source="$(awk -F'\t' -v n="$name" -v v="$version" '$1 == n && $2 == v { print $3; exit }' "$work/deps.tsv")"
+    case "$source" in
+      registry+*) origin="crates.io" ;;
+      *) origin="$source" ;;
+    esac
+    # RustSec marks unmaintained/unsound/notice advisories per affected package;
+    # anything without the marker (every GHSA record included) is a vulnerability.
+    kind="$(jq -r --arg name "$name" '
+      [ .affected[]? | select(.package.ecosystem == "crates.io" and .package.name == $name)
+        | .database_specific.informational // empty ] | first // "vulnerability"' "$detail")"
+    if [ -n "$withdrawn" ]; then
+      kind="withdrawn"
+    fi
+    printf '  %-20s %s %s (%s)  %s  %s' "$id" "$name" "$version" "$origin" "$kind" "$summary"
+    if [ -n "$alias_list" ]; then
+      printf '  [%s]' "$alias_list"
+    fi
+    echo
+    case "$kind" in
+      vulnerability) vulns=$((vulns + 1)) ;;
+      withdrawn) ;;
+      *) warnings=$((warnings + 1)) ;;
+    esac
+  done <"$work/hits.sorted.tsv"
+done <"$work/ids.txt"
+
+echo
+if [ "$vulns" -gt 0 ]; then
+  cat >&2 <<EOF
+vuln-scan FAILED: ${vulns} vulnerability match(es) in Cargo.lock.
+
+Each row above names the crate, the version the lockfile pins, and the advisory.
+Move past the advisory's fixed version (cargo update -p <crate>, or bump the
+requirement in Cargo.toml when the fix is a new major), or, where the issue
+rules the exposure acceptable, record that ruling on the issue — this gate
+holds no ignore list on purpose.
+EOF
+  exit 1
+fi
+
+if [ "$warnings" -gt 0 ]; then
+  echo "vuln-scan: ok — ${warnings} informational advisory(ies) above (unmaintained, unsound, or notice); none is a vulnerability"
+  exit 0
+fi
+
+echo "vuln-scan: clean — the only matches were withdrawn advisories"
+exit 0

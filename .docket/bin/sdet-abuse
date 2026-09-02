@@ -1,0 +1,261 @@
+#!/usr/bin/env bash
+#
+# sdet-abuse — every enforcement point this repository installs has an
+# abuse-case suite, and the suites pass.
+#
+# Wired as the `sdet-abuse` gate on the `implement` and `fix` steps of
+# security-change.toml (src/user/docket/config/workflows): the track whose
+# threat-model step ends in one row per control — what it enforces, the
+# chokepoint that enforces it, and the abuse case that proves it fires. This
+# gate is the mechanical half of that last column.
+#
+# WHAT AN ENFORCEMENT POINT IS HERE. This repository ships no service. The
+# controls it installs are Claude Code hooks (src/user/claude_code/hooks/,
+# registered from src/user/claude_code.rs) standing between an agent and a
+# privileged verb: repointing a gate through the trust store, committing on a
+# run's behalf, spawning past the permission surface, launching a wave on a
+# drifted policy. Each is the chokepoint for one abuse case, and each is tested
+# the way this repository tests a refusal — a bash suite under tests/ that feeds
+# the hook hostile and benign stdin and reads the verdict off its exit code,
+# organized around the two failure directions that are silent in production,
+# FALSE ALLOW and FALSE DENY. The other security surface, the sandbox and
+# permission lists in src/user/claude_code.rs, asserts its own invariants in
+# cargo unit tests, which the `tests` gate runs; they are not re-run here.
+#
+# WHAT THIS GATE CHECKS
+#   1. Every hook on disk is classified below as ENFORCING, ADVISORY, or
+#      UNWIRED. An unclassified hook fails: a new control has to say which it
+#      is, in a diff a reviewer sees.
+#   2. An ENFORCING hook is registered in src/user/claude_code.rs (a guard on
+#      disk that settings never invoke enforces nothing), carries a deny path in
+#      its code, has tests/<hook>.test.sh, and that suite passes with at least
+#      MIN_CASES cases — the anti-vacuity floor, so a suite that exits 0 having
+#      run nothing cannot pass.
+#   3. An ADVISORY hook has no deny in its code — no `exit 2`, no deny or ask
+#      permissionDecision. One that grew a deny has become an enforcement point
+#      without a suite.
+#   4. An UNWIRED hook — deny-capable, kept on disk, deliberately not
+#      registered — stays unregistered. Re-wiring it means moving it to
+#      ENFORCING, which demands its suite.
+#   5. KNOWN_UNVERIFIED lists the enforcing hooks that predate this gate with
+#      no suite. Each prints a warning on every run, and a stale entry (the
+#      suite now exists, or the hook is gone) fails, so the list cannot outlive
+#      its gap.
+#
+# WHAT IT CANNOT CHECK, STATED PLAINLY. It cannot verify that the abuse cases
+# NAMED BY THIS RUN'S THREAT MODEL are the ones the suites exercise: a gate
+# child gets an allowlisted environment and no run, issue, or step identity, so
+# it cannot find the threat-model artifact to read the case names out of. The
+# security judge holds that half; this gate guarantees the chokepoints have
+# suites and the suites still fire.
+#
+# SCOPING follows secret-scan's reasoning. The suites run unconditionally: a
+# control that regressed is a finding whatever the step touched. The "has a
+# suite" requirement is enforced against the whole tree, less the baseline of
+# gaps that predate the gate, so a step cannot add an unverified control and no
+# step is blocked by a gap it did not create.
+
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+if ! repo_root="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null)"; then
+  echo "sdet-abuse FAILED: $script_dir is not inside a git repository." >&2
+  exit 1
+fi
+cd "$repo_root"
+
+readonly HOOKS_DIR="src/user/claude_code/hooks"
+readonly REGISTRATION="src/user/claude_code.rs"
+readonly SUITES_DIR="tests"
+
+# A suite that passes fewer cases than this has not exercised its hook. The
+# smallest suite in the tree runs nineteen cases and the largest over eighty;
+# a count under ten means the suite ran nothing or stopped printing one PASS
+# line per case, and either way the gate must not pass on it.
+readonly MIN_CASES=10
+
+# THE REGISTRY. Classify by what the hook DOES, read from its source, not by
+# its name. ENFORCING hooks decide (exit 2, or a deny/ask permissionDecision)
+# and are registered; ADVISORY hooks observe, inject, or record and always
+# allow; UNWIRED hooks can decide but are deliberately not registered.
+ENFORCING=(
+  docket-commit-guard-hook.sh
+  docket-policy-guard-hook.sh
+  docket-run-guard-hook.sh
+  docket-spawn-guard-hook.sh
+  docket-trust-guard-hook.sh
+)
+ADVISORY=(
+  docket-session-start-hook.sh
+  docket-wave-audit-hook.sh
+  sandbox-friction-hook.sh
+)
+# sandbox-bypass-ask turned every unsandboxed retry into a question an
+# unattended executor cannot answer, so it was unregistered; auto mode's
+# classifier reviews those calls instead. The file stays so the decision is
+# visible in the tree.
+UNWIRED=(
+  sandbox-bypass-ask-hook.sh
+)
+# Enforcing hooks that predate this gate with no suite. policy-guard denies a
+# wave launch whose policy text drifted from the pinned file; a suite for it
+# needs a stand-in `docket` on PATH for the pin comparison and a policy
+# fixture, and nobody has written one. Listed so the gap prints on every run,
+# and so the gate fails the moment the suite lands without this line going.
+KNOWN_UNVERIFIED=(
+  docket-policy-guard-hook.sh
+)
+
+in_list() {
+  local needle="$1"
+  shift
+  local item
+  for item in "$@"; do
+    [ "$item" = "$needle" ] && return 0
+  done
+  return 1
+}
+
+# Both matchers below read their whole input rather than using `grep -q`. Under
+# `pipefail`, a `-q` that exits on the first match sends the comment-stripping
+# grep in front of it SIGPIPE, and the pipeline reports failure for a hook that
+# matched — measured on the commit guard, registered a third of the way into
+# the settings source, which this gate then reported as never registered.
+
+# Registered means a code line (not a `//` comment) of the settings source
+# names the installed hook path, as `bash ~/.claude/hooks/<name>` does.
+is_registered() {
+  grep -vE '^[[:space:]]*//' "$REGISTRATION" |
+    grep -E "hooks/$1(\"|[[:space:]])" >/dev/null
+}
+
+# A deny path is a code line (comments stripped) that hard-stops with exit 2,
+# emits a deny/ask decision, or hands the verdict to the engine with
+# `exec docket guard …` — whose own exit 2 then IS the hook's refusal, the way
+# the spawn guard denies. A hook that merely runs a guard verb and exits 0
+# afterwards, as the wave audit does, has no deny path.
+has_deny_path() {
+  grep -vE '^[[:space:]]*#' "$HOOKS_DIR/$1" |
+    grep -E '(^|[^[:alnum:]_-])exit 2([^[:digit:]]|$)|permissionDecision:[[:space:]]*"(deny|ask)"|(^[[:space:]]*|[;&|][[:space:]]*|then[[:space:]]+)exec[[:space:]]+docket[[:space:]]+guard([[:space:]]|$)' >/dev/null
+}
+
+status=0
+fail() {
+  printf 'sdet-abuse: %s\n' "$*" >&2
+  status=1
+}
+warn() {
+  printf 'sdet-abuse WARNING: %s\n' "$*" >&2
+}
+
+work="$(mktemp -d "${TMPDIR:-/tmp}/sdet-abuse.XXXXXX")"
+trap 'rm -rf "$work"' EXIT
+
+echo "=== sdet-abuse: enforcement points and their abuse-case suites ==="
+
+# 1. Classification is total over the hooks on disk.
+hook_count=0
+for path in "$HOOKS_DIR"/*.sh; do
+  [ -f "$path" ] || continue
+  hook_count=$((hook_count + 1))
+  name="${path##*/}"
+  if ! in_list "$name" "${ENFORCING[@]}" "${ADVISORY[@]}" ${UNWIRED[@]+"${UNWIRED[@]}"}; then
+    fail "$name is not classified; add it to ENFORCING, ADVISORY, or UNWIRED in .docket/bin/sdet-abuse"
+  fi
+done
+if [ "$hook_count" -eq 0 ]; then
+  fail "no hooks found under $HOOKS_DIR; the enforcement points this gate checks are gone"
+fi
+
+# 2. Every registry entry names a hook that exists.
+for name in "${ENFORCING[@]}" "${ADVISORY[@]}" ${UNWIRED[@]+"${UNWIRED[@]}"}; do
+  [ -f "$HOOKS_DIR/$name" ] || fail "$name is in the registry but not in $HOOKS_DIR; remove the stale entry"
+done
+
+# 3. ENFORCING: registered, deny-capable, and covered by a suite.
+suites=()
+for name in "${ENFORCING[@]}"; do
+  [ -f "$HOOKS_DIR/$name" ] || continue
+  is_registered "$name" ||
+    fail "$name is ENFORCING but $REGISTRATION never registers it — a guard settings do not invoke enforces nothing"
+  has_deny_path "$name" ||
+    fail "$name is ENFORCING but its code has no deny path (no exit 2, no deny/ask decision); reclassify it or restore the deny"
+  suite="$SUITES_DIR/${name%.sh}.test.sh"
+  if [ -f "$suite" ]; then
+    if in_list "$name" ${KNOWN_UNVERIFIED[@]+"${KNOWN_UNVERIFIED[@]}"}; then
+      fail "$name has a suite at $suite now; remove it from KNOWN_UNVERIFIED"
+    fi
+    suites+=("$name")
+    printf '  %-34s ENFORCING  suite %s\n' "$name" "$suite"
+  elif in_list "$name" ${KNOWN_UNVERIFIED[@]+"${KNOWN_UNVERIFIED[@]}"}; then
+    printf '  %-34s ENFORCING  NO SUITE (baselined gap)\n' "$name"
+    warn "$name enforces with no abuse-case suite; a change to it cannot be checked here until $suite exists"
+  else
+    fail "$name enforces but has no abuse-case suite at $suite"
+  fi
+done
+
+# 4. ADVISORY hooks never decide.
+for name in "${ADVISORY[@]}"; do
+  [ -f "$HOOKS_DIR/$name" ] || continue
+  if has_deny_path "$name"; then
+    fail "$name is ADVISORY but its code carries a deny path; it is an enforcement point now and needs a suite — move it to ENFORCING"
+  else
+    printf '  %-34s ADVISORY   no deny path\n' "$name"
+  fi
+done
+
+# 5. UNWIRED hooks stay unregistered.
+for name in ${UNWIRED[@]+"${UNWIRED[@]}"}; do
+  [ -f "$HOOKS_DIR/$name" ] || continue
+  if is_registered "$name"; then
+    fail "$name is UNWIRED but $REGISTRATION registers it; move it to ENFORCING and give it a suite"
+  else
+    printf '  %-34s UNWIRED    not registered\n' "$name"
+  fi
+done
+
+# 6. The baseline names enforcing hooks that still exist.
+for name in ${KNOWN_UNVERIFIED[@]+"${KNOWN_UNVERIFIED[@]}"}; do
+  in_list "$name" "${ENFORCING[@]}" || fail "$name is in KNOWN_UNVERIFIED but not ENFORCING; remove the stale entry"
+  [ -f "$HOOKS_DIR/$name" ] || fail "$name is in KNOWN_UNVERIFIED but no longer on disk; remove the stale entry"
+done
+
+echo
+echo "--- running the abuse-case suites ---"
+total_cases=0
+for name in ${suites[@]+"${suites[@]}"}; do
+  suite="$SUITES_DIR/${name%.sh}.test.sh"
+  out="$work/${name%.sh}.out"
+  rc=0
+  bash "$suite" >"$out" 2>&1 || rc=$?
+  cases="$(grep -c '^PASS' "$out" || true)"
+  if [ "$rc" -ne 0 ]; then
+    cat "$out"
+    fail "$suite failed (exit $rc) — the abuse case named above is the signal this gate exists for"
+    continue
+  fi
+  if [ "$cases" -lt "$MIN_CASES" ]; then
+    cat "$out"
+    fail "$suite passed only $cases case(s), under the floor of $MIN_CASES: it ran nothing, or stopped printing one PASS line per case"
+    continue
+  fi
+  printf '  %-40s %s cases passed\n' "$suite" "$cases"
+  total_cases=$((total_cases + cases))
+done
+
+echo
+if [ "$status" -ne 0 ]; then
+  cat >&2 <<'EOF'
+sdet-abuse FAILED.
+
+An enforcement point without a passing abuse-case suite is a control whose
+verification is unwritten — the threat model's last column, left blank. Fix
+the named item rather than the gate: a classification changed to make this
+pass is the vacuous pass this gate exists to refuse.
+EOF
+  exit 1
+fi
+
+echo "sdet-abuse: ok — ${#suites[@]} suite(s), ${total_cases} abuse cases passed"
+exit 0

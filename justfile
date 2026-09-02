@@ -36,6 +36,12 @@ self-hygiene:
 secret-scan:
     .docket/bin/secret-scan
 
+vuln-scan:
+    .docket/bin/vuln-scan
+
+sdet-abuse:
+    .docket/bin/sdet-abuse
+
 doc-validate:
     .docket/bin/doc-validate
 

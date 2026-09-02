@@ -888,9 +888,11 @@ free re-emission always has.)
 **A dispatch carrying a fix round's review fanout also carries `integrated`.**
 When the rows include a review fanout for a fix round — instances `name@N#k`
 with N ≥ 2 — add a third `args` field, `integrated`, mapping each such issue
-to the sha of the INTEGRATION COMMIT you landed for its most recent fix round
-(the cherry-pick of the sha on that round's change-summary first line —
-Worktree writers below). wave.js asserts, before seating the fanout, that the
+to the sha of the INTEGRATION COMMIT OF THE WRITE STEP THE JUDGED TREE WAS
+BUILT ON. For a `review@N#k` fanout that is round N-1's integration:
+fix@(N-1)'s, or the implement round's when N-1 IS the implement round. It is
+**never fix@N's own** — fix@N is the write step that PRODUCED the tree these
+judges are about to read. wave.js asserts, before seating the fanout, that the
 round's judged tree descends from that commit (`git merge-base --is-ancestor
 <integrated sha> <target sha>`) and parks the round as a
 `parked-base-ancestry` relay finding when it does not — the check five judges
@@ -899,14 +901,34 @@ per round used to run one round too late (RUN-35 round 2 spent a
 rounds 5-6 detecting a forked fix worktree). The sha must be the INTEGRATED
 one, never the writer's: integration cherry-picks, so the writer's sha is
 never an ancestor of the shared branch even after its content lands, and
-passing it would park every healthy round. You hold no run state, so derive
-it fresh at dispatch time: the writer sha is the change-summary's first line,
-and the integration commit that carried it is `git log --format='%H %s'
---grep="cherry picked from commit <writer sha>"` on the shared branch (the
-`-x` at integration wrote that trailer exactly so this mapping survives). No
-fix-round fanout in the rows, or no integration yet for an issue — omit the
-field or that entry; wave.js fails open and dispatches exactly as before. An
-entry you cannot re-derive is omitted, never guessed.
+passing it would park every healthy round.
+
+**The round-off-by-one trap: if fix@N has already been integrated before its
+fanout dispatches (a `/pause`, a wave that ended between the fix and the
+fanout, a budget stop), fix@N's own integration commit is the WRONG sha — it
+post-dates the judged tree and will park every healthy round.** In that split
+shape "the most recent fix round" IS fix@N, and its integration commit is the
+cherry-pick OF the judged tree; a cherry-pick can never be an ancestor of its
+source, so the merge-base exits 1 on a perfectly healthy tree. RUN-66
+DISPATCH-360 lost 18 of 28 rows to exactly this — 8 fanout rows parked
+`parked-base-ancestry`, 10 downstream "skipped — chain died" — and the
+identical dispatch with round N-1's shas seated all 8 judges and converged
+both issues. Ask "which write step built the tree these judges will read?" and
+pass the integration of the one BEFORE it. (wave.js now self-checks the entry
+and fails open when it detects this, but it costs a probe and the map should
+be right.)
+
+You hold no run state, so derive it fresh at dispatch time: the writer sha for
+round N-1 is that round's change-summary first line, and the integration
+commit that carried it is `git log --format='%H %s' --grep="cherry picked from
+commit <writer sha>"` on the shared branch (the `-x` at integration wrote that
+trailer exactly so this mapping survives). Confirm the direction before you
+pass it: `git log -1 --format=%B <the sha you are about to pass>` must NOT end
+in `(cherry picked from commit <the round's own writer sha>)` — if it does,
+you picked fix@N and need the round before. No fix-round fanout in the rows,
+or no integration yet for an issue — omit the field or that entry; wave.js
+fails open and dispatches exactly as before. An entry you cannot re-derive is
+omitted, never guessed.
 
 **Keep human rows; hand the wave everything else.** Filter OUT only
 `kind: "human"` rows — those are the operator's — and pass every other row

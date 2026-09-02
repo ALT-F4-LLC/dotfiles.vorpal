@@ -2074,12 +2074,26 @@ async function runGate(row, phaseLabel) {
 // cherry-picks, so the WRITER's sha is never an ancestor of the shared branch
 // even after its content lands — asserting on it would park every healthy
 // round. The conductor passes `args.integrated`, mapping each issue with a
-// fix round in this dispatch to the sha of its most recent integration
-// commit (conduct/SKILL.md, "Worktree writers" — the other half of this
-// contract). Absent map, absent entry, non-sha entry, no round fanout, round 1,
-// missing target on the bundle, dead or unparseable probe — every one of
-// these FAILS OPEN to the old behavior: the guard exists to stop a measured
-// waste, never to add a new way for a healthy round to stall.
+// fix round in this dispatch to the sha of the PRIOR round's integration
+// commit — the integration of the write step the judged tree was BUILT ON,
+// which for a review@N fanout is fix@(N-1)'s integration (or implement's when
+// N-1 is the implement round), NEVER fix@N's own (conduct/SKILL.md,
+// "Worktree writers" — the other half of this contract). Absent map, absent
+// entry, non-sha entry, no round fanout, round 1, missing target on the
+// bundle, dead or unparseable probe — every one of these FAILS OPEN to the
+// old behavior: the guard exists to stop a measured waste, never to add a new
+// way for a healthy round to stall.
+//
+// AND THE MAP ITSELF CAN NAME THE WRONG ROUND (DOT-1022). When fix@N and its
+// review@N#k fanout are SPLIT across dispatches — a /pause, a wave that ended
+// between them, a budget stop — fix@N is already integrated by the time the
+// conductor derives the map, and "most recent integration" reads as fix@N's
+// own commit: the cherry-pick OF the judged tree. A cherry-pick can never be
+// an ancestor of its source, so the merge-base exits 1 on every HEALTHY round
+// in that shape (RUN-66 DISPATCH-360: 18 of 28 rows lost to it). So before
+// parking, self-check the map entry — if `prior` carries a `cherry picked
+// from commit <target>` trailer it IS the judged round's own integration and
+// the verdict is worthless: fail open and dispatch.
 // TEST-BEGIN fix-round-ancestry — extracted and exercised by
 // tests/wave-fix-round-ancestry.test.sh (and concatenated ahead of the
 // stage-ladder region by tests/wave-chain-dead-ladder.test.sh, whose ladder
@@ -2142,6 +2156,27 @@ function ancestryProbeCommand(prior, target) {
 
 function parseAncestryExit(text) {
     const m = (text || '').match(/ancestry-exit=(\d+)/)
+    return m ? parseInt(m[1], 10) : null
+}
+
+// SELF-CHECK ON THE MAP ENTRY (DOT-1022). A non-zero merge-base is only
+// evidence of a broken hand-off if `prior` is the round BEFORE the one being
+// judged. When the conductor derived the map after fix@N had already been
+// integrated (the fanout split off into a later dispatch), `prior` is the
+// cherry-pick OF `target` — it post-dates the judged tree by construction and
+// no healthy tree can ever contain it. Integration cherry-picks with `-x`, so
+// that relationship is readable straight off the commit message trailer. Grep
+// is `-q`, so the exit marker alone carries the answer: 0 = `prior` is the
+// cherry-pick of `target` = wrong round in the map. Both shas are already
+// hex-shape-checked before they reach a command line.
+function cherryPickOfTargetCommand(prior, target) {
+    return `git log -1 --format=%B ${prior} | ` +
+        `grep -q "cherry picked from commit ${target}"; ` +
+        `echo "cherrypick-of-target-exit=$?"`
+}
+
+function parseCherryPickOfTargetExit(text) {
+    const m = (text || '').match(/cherrypick-of-target-exit=(\d+)/)
     return m ? parseInt(m[1], 10) : null
 }
 
@@ -2274,6 +2309,24 @@ function ancestryVerdict(row, phaseLabel) {
                 log(`${row.step}: round ${round} judged tree ${target} ` +
                     `contains the prior round's integrated ${prior} — ` +
                     `ancestry holds`)
+                return null
+            }
+            // Before parking: is the map entry even the right round? A
+            // `prior` that is the cherry-pick OF `target` is fix@N's own
+            // integration, which cannot be an ancestor of the tree it was
+            // taken from — the verdict says nothing about the hand-off.
+            // Unparseable or dead self-check probe keeps the park (the
+            // original evidence still stands).
+            const selfCheck = await probe(
+                cherryPickOfTargetCommand(prior, target),
+                `${row.step} · ancestry:self-check`, phaseLabel, row.step)
+            if (parseCherryPickOfTargetExit(selfCheck) === 0) {
+                log(`${row.step}: integrated map carries the judged round's ` +
+                    `OWN integration commit — wrong round, fail-open. ` +
+                    `${prior} is the cherry-pick of the judged tree ` +
+                    `${target}, so it post-dates it and no healthy round ` +
+                    `could contain it; dispatching round ${round} and ` +
+                    `spending no park on it`)
                 return null
             }
             log(`${row.step}: BASE ANCESTRY BROKEN — merge-base ` +

@@ -1,5 +1,5 @@
 [policy]
-version = 20
+version = 21
 
 [variants]
 fable-high = { model = "fable", effort = "high" }
@@ -16,24 +16,90 @@ sonnet-medium = { model = "sonnet", effort = "medium", escalate_to = "opus-mediu
 sonnet-xhigh = { model = "sonnet", effort = "xhigh", escalate_to = "opus-xhigh" }
 
 [executors]
-adr-author = { variant = "fable-max" }
+# Policy 21 — model/effort re-derived from Anthropic's official documentation
+# (fetched 2026-09-02), fit to each seat's role and cost-aware. Cited below as D1-D7:
+#   D1 code.claude.com/docs/en/model-config — aliases resolve fable → Fable 5.1,
+#      opus → Opus 5, sonnet → Sonnet 5, haiku → Haiku 4.5; effort is
+#      low|medium|high|xhigh|max with `high` "The default on every model except
+#      Opus 4.7"; `max` "may show diminishing returns and is prone to overthinking.
+#      Test before adopting broadly"; Fable: "root-cause investigations, outage
+#      debugging, and architecture decisions are where the extra investigation and
+#      verification pay off".
+#   D2 platform.claude.com/docs/en/build-with-claude/effort — xhigh: "Long-running
+#      agentic and coding tasks (over 30 minutes) with token budgets in the
+#      millions"; Fable 5.1: "Start with `high`, the default. Step up to `xhigh` or
+#      `max` for the most capability-sensitive agentic and coding work, and step down
+#      to `medium` or `low` for routine or latency-sensitive work once your evals
+#      show quality holds"; Opus 5: "use `low` and `medium` liberally as your primary
+#      control for token cost and response time wherever your evals show quality
+#      holds"; Sonnet 5 medium: "Comparable to Claude Sonnet 4.6 at high effort";
+#      max (Opus 4.7 table): "Reserve for frontier problems".
+#   D3 platform.claude.com/docs/en/about-claude/models/overview — "start with
+#      Claude Opus 5 for most workloads. Use Claude Fable 5.1 for demanding reasoning
+#      and long-horizon agentic work, or when your evals on Claude Opus 5 at higher
+#      effort still fall short"; Haiku 4.5 effort: "Not supported" (so no haiku
+#      variant here).
+#   D4 platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence
+#      — SWE-bench Pro: "Claude Opus 5 at its default remains the cheaper way to the
+#      top score"; Opus 5 at `low` 84.0% for $0.25 per solved task against Sonnet 5 at
+#      default 77.4% for $0.84; "Claude Opus 5 gave up about 2 points at `medium` for
+#      half the cost and about 8 points at `low` for a quarter of it"; `low` plus
+#      re-running failures at the default gave "the same pass rate for half the
+#      cost"; knowledge work: "`medium` matched the default's accuracy at about 70% to
+#      87% of its cost, and the default bought nothing measurable over `medium`";
+#      DeepResearch Bench II: Fable 5.1 "scored nearly the same at `low`, `medium`,
+#      and `high` while the cost per task rose".
+#   D5 platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5-1
+#      — "At `medium`, results roughly match Claude Fable 5 at lower cost"; "At `low`,
+#      Claude Fable 5.1 is often competitive with Claude Opus and Claude Sonnet models
+#      on cost per task while scoring higher, so include it in the comparison wherever
+#      you'd otherwise run a smaller model at a higher effort level"; at `low` it
+#      "calls search and retrieval tools less often".
+#   D6 claude.com/blog/claude-model-and-effort-level-in-claude-code — routine edits
+#      and mechanical changes: Sonnet at default; code review and verification:
+#      Sonnet→Opus at high; "for most tasks you should use the model's default effort
+#      level".
+#   D7 code.claude.com/docs/en/model-config#automatic-model-fallback — see [security].
+# The re-run-failures pattern in D4 is what [escalation] already implements: a
+# non-gated opus-medium seat that fails hops to fable-medium, misses the fable gate,
+# and lands on [escalation.fallback] opus-high — the model's default effort. Rows
+# without a comment are confirmed at their prior tier under D1-D6.
+# fable-high, down from fable-max: D1 names architecture decisions as Fable's
+# ground; D1 and D2 contraindicate max without evals showing headroom at high.
+adr-author = { variant = "fable-high" }
 design-qa = { variant = "opus-high" }
 dispose = { variant = "opus-high" }
 # Seat for the reconcile drain-highs routing — files each still-open
 # high cluster as a --gap-file backlog issue. Mechanical selection and faithful
 # copying, no judgment over severities; same tier as synthesize-findings.
 drain-highs = { variant = "sonnet-medium" }
-fix = { variant = "sonnet-xhigh" }
-implement = { variant = "sonnet-high" }
-investigate = { variant = "fable-xhigh" }
+# opus-medium, down from sonnet-xhigh: D4 has Opus 5 at low/medium beating Sonnet 5
+# at default per solved task, D5 warns off a smaller model at a higher effort, and D2
+# reserves xhigh for 30-minute-plus agentic runs, which a scoped repair of reconciled
+# findings is not. Round 2 onward lands on opus-high through the fallback.
+fix = { variant = "opus-medium" }
+# opus-medium, from sonnet-high: D4 — medium gives up about 2 points for half the
+# cost and re-running failures at the default recovers the pass rate; judges and
+# verify-ac are the failure detector here, fix rounds the re-run at opus-high.
+implement = { variant = "opus-medium" }
+# fable-high, down from fable-xhigh: D1 names root-cause investigation as Fable's
+# ground; D2 starts at high and reserves xhigh for 30-minute-plus agentic coding
+# with evals showing the gain, which no run here has produced.
+investigate = { variant = "fable-high" }
 judge-architecture = { variant = "opus-high" }
 judge-correctness = { variant = "opus-high" }
 judge-design = { variant = "opus-high" }
 judge-security = { variant = "opus-high", never = ["fable"], reason = "security-classifier-reroute" }
 judge-simplicity = { variant = "opus-medium" }
 judge-testing = { variant = "opus-high" }
-prd-author = { variant = "fable-max" }
-research = { variant = "fable-xhigh" }
+# fable-medium, down from fable-max: a requirements document is the knowledge-work
+# deliverable class D4 measured — medium matched the default at 70-87% of its cost —
+# and D5 has Fable at medium matching Fable 5; max is contraindicated by D1.
+prd-author = { variant = "fable-medium" }
+# fable-medium, down from fable-xhigh: D4 — DeepResearch Bench II scored the same at
+# low, medium, and high while cost rose; D5 — at low Fable calls retrieval less
+# often, so medium is the floor for a seat whose whole job is retrieval.
+research = { variant = "fable-medium" }
 spec-author-architecture = { variant = "opus-high" }
 spec-author-code-quality = { variant = "opus-high" }
 spec-author-operations = { variant = "opus-high" }
@@ -42,8 +108,13 @@ spec-author-review-strategy = { variant = "opus-high" }
 spec-author-security = { variant = "opus-high", never = ["fable"], reason = "security-classifier-reroute" }
 spec-author-testing = { variant = "opus-high" }
 synthesize-findings = { variant = "sonnet-medium" }
-tdd-author = { variant = "fable-xhigh" }
-tdd-author-security = { variant = "opus-xhigh", never = ["fable"], reason = "security-classifier-reroute" }
+# fable-high, down from fable-xhigh: D1 puts architecture decisions on Fable; D2
+# starts at high and reserves xhigh for long agentic coding, not authoring.
+tdd-author = { variant = "fable-high" }
+# opus-high, down from opus-xhigh: D2 places Opus 5 xhigh on demanding coding and
+# agentic work, not a design document; parity with threat-model and
+# spec-author-security. A retry lands on opus-xhigh through the fallback.
+tdd-author-security = { variant = "opus-high", never = ["fable"], reason = "security-classifier-reroute" }
 # opus-high, down from opus-xhigh (policy 20). The threat model is the single
 # longest serial stage of the security track: across every security-track
 # issue on this machine (52 issues, 24 timed threat-model steps, all at
@@ -59,11 +130,18 @@ tdd-author-security = { variant = "opus-xhigh", never = ["fable"], reason = "sec
 # [escalation.fallback] to opus-xhigh — the escalation path lands where the
 # standing tier used to be. Re-open with runs that pair tier and outcome.
 threat-model = { variant = "opus-high", never = ["fable"], reason = "security-classifier-reroute" }
-tribunal-architecture = { variant = "fable-xhigh" }
-tribunal-correctness = { variant = "fable-xhigh" }
-tribunal-design = { variant = "fable-xhigh" }
-tribunal-security = { variant = "opus-xhigh", never = ["fable"], reason = "security-classifier-reroute" }
-ux-spec-author = { variant = "fable-max" }
+# fable-high, down from fable-xhigh: a vote is a short judgment over a proposal, not
+# the 30-minute-plus agentic run D2 reserves xhigh for; D1 keeps architecture and
+# precedent judgment on Fable; D2 starts at high.
+tribunal-architecture = { variant = "fable-high" }
+tribunal-correctness = { variant = "fable-high" }
+tribunal-design = { variant = "fable-high" }
+# opus-high, down from opus-xhigh: same reasoning as its siblings; judge-security,
+# the review-executor face of the same lens, already sits at opus-high.
+tribunal-security = { variant = "opus-high", never = ["fable"], reason = "security-classifier-reroute" }
+# fable-medium, down from fable-max: same knowledge-work deliverable class as
+# prd-author (D4, D5); max is contraindicated by D1.
+ux-spec-author = { variant = "fable-medium" }
 verify-ac = { variant = "opus-high" }
 
 [security]
@@ -87,7 +165,14 @@ ceiling = "opus-max"
 labels = ["security-change", "security-load-bearing", "security"]
 never = ["fable"]
 nodes = ["judge-security", "threat-model", "tdd-author-security", "spec-author-security", "tribunal-security"]
-reason = "Fable screens cyber/bio content and silently serves Opus when a request trips those screens, which security review does by its nature. The ledger would then credit a model that never ran. Name Opus up front so recorded and executing model agree."
+# D7 (code.claude.com/docs/en/model-config#automatic-model-fallback, 2026-09-02):
+# "Fable models and Opus 5 run with safety classifiers, which most often flag
+# cybersecurity and biology content. When a classifier flags a request and the
+# flagged category has a fallback model, Claude Code re-runs the request on that
+# model and shows a notice in the transcript." Fable 5.1: cyber → Opus 4.8, bio →
+# Opus 5. Opus 5: cyber → Opus 4.8. Fable's classifier set is "a broader set than
+# Claude Opus 5's cybersecurity-only classifiers" (Fable 5.1 migration guide).
+reason = "Fable's safety classifiers cover more categories than Opus 5's cyber-only set and flag security review by its nature; Claude Code then re-runs the request on the fallback model (cyber → Opus 4.8), so a Fable seat here pays Fable's rate for an Opus 4.8 run and the ledger credits a model that never ran. Name Opus up front. Residual: Opus 5 itself re-runs cyber-flagged requests on Opus 4.8; only the model_resolved metadata each executor records catches that hop."
 
 [escalation]
 on_failure = "one-hop"

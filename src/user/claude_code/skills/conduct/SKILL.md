@@ -1081,17 +1081,12 @@ against a dispatch being abandoned, explain why back-fill had to happen
 first and include the refusal verbatim in the abandon `--reason`.
 
 ```bash
-# 1. the join is a script (below) — it emits the rows JSON; you check the shape
+# 1. the join is a script (below) — it writes the rows JSON to a file; you check the shape
 # 2. back-fill BEFORE the close. One transaction, whole batch or nothing: four
-#    TYPED rows per step, --source naming the wave (an established convention, keep it):
-docket dispatch backfill-usage --run $RUN --source "wave-journal:<wfId>" --from-json - <<'JSON'
-[
-  {"step": "STEP-12", "unit": "input_tokens",          "quantity": 146},
-  {"step": "STEP-12", "unit": "output_tokens",         "quantity": 30275},
-  {"step": "STEP-12", "unit": "cache_creation_tokens", "quantity": 170967},
-  {"step": "STEP-12", "unit": "cache_read_tokens",     "quantity": 4614079}
-]
-JSON
+#    TYPED rows per step, --source naming the wave (an established convention, keep it).
+#    Never retype the rows — the script's file IS the input:
+~/.claude/scripts/wave-usage <transcript-dir> > "$TMPDIR/wave-<wfId>.json"   # check $?
+docket dispatch backfill-usage --run $RUN --source "wave-journal:<wfId>" --from-json - < "$TMPDIR/wave-<wfId>.json"
 # 2b. integration check — when this dispatch carried write steps, every
 #     recorded sha must be ON the shared branch before the close:
 #     ~/.claude/scripts/integration-check   (else $CC_SRC/scripts/integration-check)

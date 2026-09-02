@@ -3,7 +3,6 @@ name: groom
 description: Run one full grooming pass over every open issue in the current Docket project — dedupe overlapping issues, flag stale ones, re-prioritize, and fill missing goals and acceptance criteria so issues are run-ready. Safe edits (labels, priority, comments, field fills) apply directly; closures and merges are proposed to the operator via AskUserQuestion and land only on approval. One-shot with no parameter: a single pass over the project resolved from cwd, then stop — no loop, no watch, and it never implements an issue (that is tend's job). Use on "groom the backlog", "/groom", "clean up the backlog", "tidy the issues", "make the backlog run-ready", or any request to improve issue quality without working the issues themselves.
 argument-hint: "[stale window, e.g. 14d]"
 model: fable
-context: fork
 ---
 
 # groom

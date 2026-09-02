@@ -3,7 +3,6 @@ name: pr
 description: Open, maintain, and merge a GitHub pull request for the current branch with `gh` — pushes the branch and opens a DRAFT PR in the same invocation (no approval step), then keeps it in sync as commits land, watches CI, handles review comments, and merges once every precondition is green. Use on "open a PR", "create a pull request", "/pr", "update the PR", "sync the PR", "address review comments", "watch checks", "merge the PR", "close the PR".
 argument-hint: "[open|ready|update|sync|review|checks|merge|close] [args]"
 model: fable
-context: fork
 ---
 
 # pr

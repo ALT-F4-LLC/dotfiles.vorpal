@@ -496,7 +496,11 @@ function bootstrap(row, r, isolated, isWrite) {
    (c) passes, your NEXT command is the claim in 1' — no exploratory docket
    verbs first (no --help, no step list/show, no run status/report, no next,
    nothing under dispatch). The brief and the packet carry everything a
-   claim needs.
+   claim needs. The one standing exception, once you hold the packet: when a
+   routed finding's evidence body is not there, \`docket step artifact
+   ARTIFACT-N --payload\` on an artifact id the packet itself names is the
+   one sanctioned read — never run reports, step lists, \`--help\`, or the
+   store's database.
 
    TRANSLATION RULES — obligations 1 and 3 below print code blocks written
    for the shared tree; run their ISOLATED forms instead, everything else in

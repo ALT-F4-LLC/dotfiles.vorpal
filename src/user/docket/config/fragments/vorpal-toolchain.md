@@ -1,6 +1,6 @@
 ---
 fragment: vorpal-toolchain
-version: 4
+version: 5
 ---
 # Vorpal toolchain
 
@@ -27,24 +27,46 @@ tool or to a covering vorpal tool: e.g. `gofmt` has no standalone alias, so use
 ## Building and testing inside a sandboxed step
 
 **There is no bare `go` on PATH**: only `go1.26.5`, natively. Use
-`vorpal run go:1.26.0 <args>`; the `1.26.0` alias resolves to a binary that reports
-`go1.26.5`, which is expected and not a mismatch to chase. Do **not** go hunting for a
-binary with `find`, and never `find /`: an earlier executor did exactly that and landed on
-the identical artifact the alias resolves to, having paid a filesystem-wide scan for it.
+`vorpal run go:1.26.0 <args>`; the patch level the alias reports and the native binary's
+differ (`go1.26.0` against `go1.26.5` at last measurement), which is expected and not a
+mismatch to chase. Do **not** go hunting for a binary with `find`, and never `find /`: an
+earlier executor did exactly that and landed on the artifact the alias resolves to, having
+paid a filesystem-wide scan for it.
 
-Two denials are normal here and neither means you are doing it wrong:
-
-- A first `go build`/`go test` **downloads modules**, and the sandbox denies the network.
-- A **cold** `vorpal run` alias resolves against the registry, which the sandbox also denies.
-
-So run build and test steps with `dangerouslyDisableSandbox: true`, `cd` to the repo root
-explicitly in the same call (the tool does not inherit your cwd), redirect `GOCACHE` and
-`GOPATH` under `$TMPDIR`, and allow about 300s; a cold build of a real module graph does
-not finish in the default timeout. Expect roughly:
+Build and test SANDBOXED, the same as every other command in your brief: the lift is the
+operator's to grant, never through a brief and never on your say-so. Leave the module
+cache at its default (no `GOMODCACHE` override, no private module root under `$TMPDIR`):
+the conductor runs `go mod download` in the checkout before the first dispatch, so the
+shared `GOMODCACHE` is already warm and on the sandbox write allowlist, and a cold module
+is the conductor's problem, not a reason to lift the sandbox. Put `GOCACHE` alone under
+your step's private directory, the `<TMP>/<STEP-N>.d` your brief had you create (`<TMP>`
+is the literal you pinned from `printenv TMPDIR`), per rerun-discipline: build caches live
+in a fresh subdirectory unique to your step, never a shared path. A cache under the bare
+`$TMPDIR` root belongs to every session on the machine; a past executor found one half
+filled by a sibling mid-download and wiped it. `cd` to the repo root explicitly in the
+same call (the tool does not inherit your cwd), and allow about 300s: a cold `GOCACHE`
+compile of a real module graph does not finish in the default timeout. Expect roughly:
 
 ```
-cd <repo-root> && GOCACHE="$TMPDIR/gocache" GOPATH="$TMPDIR/gopath" go build ./...
+cd <repo-root> && GOCACHE="<TMP>/<STEP-N>.d/gocache" vorpal run go:1.26.0 build ./...
 ```
+
+Two denials remain possible, and neither is a reason to retry unsandboxed:
+
+- **A module the conductor did not warm.** `go: downloading ...` followed by a DNS, TLS
+  handshake, or blocked-host error, or by `verifying go.mod: ... pkg/sumdb/...: operation
+  not permitted` (the checksum database sits outside the allowlisted module cache), is
+  NETWORK GATE BLOCKED per your brief: attempt once, then STOP and report the module `go`
+  was fetching, the exact host or path the error names, and the error verbatim. The
+  conductor reads that as a cold cache, warms it, and redispatches; it is never a code
+  finding, and never yours to fix by deleting a module cache: the shared one is every
+  session's, and the only directory you may wipe is your own step's.
+- **A cold `vorpal run` alias** resolves against the registry, which the sandbox denies.
+  That is the fallback rule at the top of this fragment: use the native tool (`go1.26.5`
+  for `go`) and report the real command you ran; a tool with no native cover is the same
+  NETWORK GATE BLOCKED stop.
+
+Two more pitfalls, neither about the network:
 
 - **Process substitution is denied**: `diff <(...) <(...)` fails with "Operation not
   permitted" on `/dev/fd/N`; diff temp files under `$TMPDIR` instead.

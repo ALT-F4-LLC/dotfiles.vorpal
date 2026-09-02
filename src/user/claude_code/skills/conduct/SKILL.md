@@ -773,25 +773,35 @@ docket dispatch open --run $RUN --json
 cat ~/.docket/config/policy.toml   # read-only sanity check, see version grep below
 ```
 
-**`policyText` for a wave launch is the literal sentinel string
-`__USE_PINNED_POLICY__` — never the file.** `docket-policy-guard-hook.sh`
-(PreToolUse:Workflow) substitutes the canonical `~/.docket/config/policy.toml`
-bytes for that exact sentinel via the harness's `updatedInput` before wave.js
-ever runs, so wave.js still receives the pinned bytes byte-for-byte — the
-substitution happens between the launch you emit and the script that reads it,
-not in anything you copy. Do not run `policy-escaped-chunks` or paste
-policy.toml content into `policyText` for a wave dispatch: that used to be the
-mechanism (a ~28k-char hand-copy every dispatch, whose only failure mode was
-deny-and-retype) and is now retired for waves — pass the sentinel and let the
-hook do the substitution. `~/.claude/scripts/policy-escaped-chunks` still
-exists for tribunal launches (unchanged by this issue) and as a manual
-fallback if the hook or its registration is ever unavailable; do not reach for
-it on a normal wave dispatch.
+**`policyText` is the literal sentinel string `__USE_PINNED_POLICY__` for
+EVERY Workflow launch you make — wave.js and tribunal.js alike — never the
+file.** `docket-policy-guard-hook.sh` (PreToolUse:Workflow) substitutes the
+canonical `~/.docket/config/policy.toml` bytes for that exact sentinel via the
+harness's `updatedInput` before the script ever runs, so the script still
+receives the pinned bytes byte-for-byte — the substitution happens between the
+launch you emit and the script that reads it, not in anything you copy. The
+hook is script-agnostic: it branches on `sha256(args.policyText)` alone and
+tests no scriptPath anywhere, so a tribunal panel gets the same substitution a
+wave does. Do not paste policy.toml content into `policyText` for either: that
+used to be the mechanism (a ~28k-char hand-copy every dispatch, whose only
+failure mode was deny-and-retype) and is retired — pass the sentinel and let
+the hook do the substitution. A conductor who hand-copied it for a tribunal
+launch anyway spent five tool calls building an 8.4KB args string the hook
+would have built for free, on a run whose three waves paid none of that.
+
+**The one fallback is a machine where the hook is not installed** — check it
+with `test -f ~/.claude/hooks/docket-policy-guard-hook.sh` before concluding
+that, and only then build a literal `policyText` from
+`~/.claude/scripts/policy-escaped-chunks` (the WHOLE file, escaped, chunked,
+fresh; copy its chunks, never retype them). Nothing substitutes and nothing
+denies without the hook, so the sentinel would reach the script raw — wave.js
+refuses it by name, tribunal.js's TOML parser bails on it as neither a table
+header nor a key/value pair. Both fail closed; neither routes on it.
 
 **A byte-perfect literal policyText still works too** — the hook hashes it and
-allows silently, same as before — but there is no reason to build one
-for a wave launch now, and doing so reintroduces the exact hand-copy risk the
-sentinel exists to remove.
+allows silently, same as before — but with the hook installed there is no
+reason to build one for any launch, and doing so reintroduces the exact
+hand-copy risk the sentinel exists to remove.
 
 **Read `dispatch open`'s answer before you launch anything, and a
 `stale_targets` row in it is STOP-AND-VERIFY.** The engine emits one when a
@@ -894,33 +904,31 @@ emitted args, re-encoded canonically, should equal itself. The transport
 converges either way, but hand-escaping a multi-KB string into a JSON string
 is an escaping error waiting to happen, and the harness's own encoder never
 makes one (observed twice by a shadow review). There is no `policyPath`
-parameter: the script cannot read files. For a wave launch `policyText` is
+parameter: the script cannot read files. `policyText` is
 now the fixed sentinel `__USE_PINNED_POLICY__` (see step 2 above) —
 a five-word literal, not the file — so the historical hazard this paragraph
 used to warn about (a hand-copied ~28k-char policy silently condensed:
 one conductor cat'd the file six times and still emitted a ~4.7KB condensed
 rendering into six of eight launches, dropping `[escalation]` and
 `[[resolve]]` entirely with nothing logging the difference) no longer applies
-to wave dispatches. It still applies verbatim to a tribunal.js launch, which
-still carries the literal pinned text built from `policy-escaped-chunks`
-(below) — the wave-audit hook (PostToolUse) still runs the same
-length/hash comparison there and stays SILENT on a clean launch, so any
-policyText advisory it emits on a tribunal launch is a REAL condensation:
-TaskStop it, re-run `policy-escaped-chunks`, relaunch from its output. Never
-read it as ambient noise — three governance panels and two
-waves once ran condensed while the advisory scrolled past.
+to anything you launch — the tribunal path is not carved out of this, because
+the guard hook that substitutes the bytes never looks at which script is being
+launched. The wave-audit hook (PostToolUse) reads the sentinel the same
+script-agnostic way and treats it as clean, so a policyText advisory from it
+now means exactly one thing: something built a LITERAL policyText — the
+hook-absent fallback of step 2, presumably — and condensed it. TaskStop that
+launch and rebuild it from a fresh run of the fallback script, never from
+context. Never read the advisory as ambient noise — three governance panels
+and two waves once ran condensed while it scrolled past.
 
-**A policy-guard deny on a wave launch now means something is wrong with the
-sentinel, not that you need to retype anything.** `docket-policy-guard-hook`
-denies a wave launch only when `policyText` is neither the pinned bytes nor
+**A policy-guard deny now means something is wrong with the sentinel, not that
+you need to retype anything.** `docket-policy-guard-hook`
+denies a launch — wave or tribunal, it does not distinguish — only when
+`policyText` is neither the pinned bytes nor
 the literal sentinel `__USE_PINNED_POLICY__` — re-check you emitted that exact
 string (not a paraphrase, not policy.toml text) and relaunch. A denial naming
 a PIN drift instead is a different animal entirely and has no relaunch at
-all: it is the stop-and-report above. (On a tribunal.js launch, which still
-carries literal policy.toml text, a length/hash denial is still answered by
-re-running `policy-escaped-chunks` and copying its chunk lines afresh — never
-by re-transcribing the file from context, which reproduces the SAME omission
-free re-emission always has.)
+all: it is the stop-and-report above.
 
 **A dispatch carrying a fix round's review fanout also carries `integrated`.**
 When the rows include a review fanout for a fix round — instances `name@N#k`
@@ -1750,9 +1758,6 @@ each open activation ballot for this run, per **Before the loop**; only then
 does the create below run.
 
 ```bash
-~/.claude/scripts/policy-escaped-chunks   # policyText — the WHOLE file, escaped,
-                                          # chunked, fresh (step 2's script;
-                                          # copy its chunks, never retype them)
 docket vote create -d "<the decision, stated plainly>" -r "<evidence summary>" \
   -n 3 -c <low|medium|high|critical> --threshold 0.67 --created-by conductor
 docket vote link <proposal-id> --issue <ID>   # where a relevant issue exists
@@ -1778,7 +1783,8 @@ Then tribunal.js with the id it returns as `voteId`:
 
 ```
 Workflow({ scriptPath: "<absolute installed path to tribunal.js>",
-           args: {voteId, voters, policyText, context, gateKind, cwd} })
+           args: {voteId, voters, "policyText": "__USE_PINNED_POLICY__",
+                  context, gateKind, cwd} })
 ```
 
 Resolve the path and emit `args` exactly as you do for wave.js — the
@@ -1787,11 +1793,13 @@ source-tree fallback: it is the only path the Workflow tool will launch from
 a conductor's seat (step 2's installed-path rule), and an absent installed file is
 stop-and-report, not a path hunt. `args` is a REAL object the harness
 stringifies for you. `policyText` is the
-literal pinned policy.toml text, re-read in the same iteration as the launch
-it feeds and passed byte-for-byte — built by copying `policy-escaped-chunks`
-output, never re-typed from context, and a length denial here is answered
-exactly as it is on a wave (see step 2 — that same run condensed it in all
-eight launches); `context` is the decision's rendered evidence, verbatim;
+same literal sentinel `__USE_PINNED_POLICY__` a wave launch carries, for the
+same reason: the policy-guard hook branches on the text's hash and tests no
+scriptPath, so it substitutes the pinned bytes here exactly as it does for
+wave.js. Step 2's rule holds verbatim — including its hook-absent fallback and
+its reading of a deny (wrong sentinel string, or a pin drift), which is what a
+denial on THIS launch means too; there is nothing to hand-copy and nothing to
+retype. `context` is the decision's rendered evidence, verbatim;
 `cwd` is the repo the run belongs to. A conversational gate has no row, so
 the seats are a constant this contract fixes, like the proposal shape:
 `voters: ["tribunal-architecture", "tribunal-security",

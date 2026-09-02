@@ -1,5 +1,5 @@
 [policy]
-version = 19
+version = 20
 
 [variants]
 fable-high = { model = "fable", effort = "high" }
@@ -44,7 +44,21 @@ spec-author-testing = { variant = "opus-high" }
 synthesize-findings = { variant = "sonnet-medium" }
 tdd-author = { variant = "fable-xhigh" }
 tdd-author-security = { variant = "opus-xhigh", never = ["fable"], reason = "security-classifier-reroute" }
-threat-model = { variant = "opus-xhigh", never = ["fable"], reason = "security-classifier-reroute" }
+# opus-high, down from opus-xhigh (policy 20). The threat model is the single
+# longest serial stage of the security track: across every security-track
+# issue on this machine (52 issues, 24 timed threat-model steps, all at
+# opus-xhigh) it ran a median 8.0 minutes and a p90 of 10.3, emitting a median
+# 26k output tokens — the largest output of any step in the pipeline — and it
+# spent 10 minutes on a single advisory markdown file. No tier-differentiated
+# observation exists, so this is design judgment stated as such: the contract
+# already asks for effort proportional to what an attacker gains rather than to
+# the diff, and the read-only security siblings (judge-security,
+# spec-author-security) sit at opus-high. `never` and the [security] ceiling
+# still bind because the node stays in [security].nodes; a retry escalates
+# opus-high -> fable-high, which `never` redirects through
+# [escalation.fallback] to opus-xhigh — the escalation path lands where the
+# standing tier used to be. Re-open with runs that pair tier and outcome.
+threat-model = { variant = "opus-high", never = ["fable"], reason = "security-classifier-reroute" }
 tribunal-architecture = { variant = "fable-xhigh" }
 tribunal-correctness = { variant = "fable-xhigh" }
 tribunal-design = { variant = "fable-xhigh" }

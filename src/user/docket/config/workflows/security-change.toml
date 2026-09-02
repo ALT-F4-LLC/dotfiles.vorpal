@@ -1,7 +1,42 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 28  # 28: three input edits, no topology change. (1) `fix` adds
+version = 29  # 29: no step edits — bumped to carry the panel-depth refit's
+              #   findings, with the one behavior change landing in
+              #   policy.toml (20): `threat-model` routes at opus-high instead
+              #   of opus-xhigh. Measured across every security-track run on
+              #   this machine (15 runs in four projects, 52 issues, 57 review
+              #   rounds, 74 security-vote panels, 41 held-cluster panels):
+              #   - threat-model: median 8.0 min, p90 10.3, 26k output tokens
+              #     median, opus-xhigh in all 24 timed steps — the longest
+              #     serial stage on the happy path. Lowered; see policy.toml.
+              #   - review fanout width: KEPT at four. Each seat is the sole
+              #     finder of high-or-above clusters no other seat raised
+              #     (testing 60, architecture 23, correctness 16, security 9;
+              #     the security seat's are the security-specific catches: a
+              #     missing auth interceptor, a missing authorization call, no
+              #     pre-push secret scan). Seats run in parallel at medians of
+              #     7.5-9.7 min, so dropping one saves at most two minutes of
+              #     wall-clock. A size-keyed narrower lane is not expressible:
+              #     the engine's `when` reads issue kind and labels only, and
+              #     one single-file run is not a basis for a label lane.
+              #   - judge-security / tribunal-security tier: KEPT. Every judge
+              #     round ran at opus-high or xhigh, so no tier comparison
+              #     exists. judge-security is never the lone rejecter on
+              #     security-vote (correctness 6, architecture 2, security 0);
+              #     tribunal-security is the most-rejecting held-panel seat.
+              #   - verify-tribunal: KEPT as is. Already gated on
+              #     `any(status == unverifiable)`; it fired 4 times in 52
+              #     issues (3 approved, 1 rejected, all unanimous).
+              #   - reconcile `hold_spread = 3`: KEPT. 41 held panels: 36
+              #     approved, 5 rejected, 39 unanimous, 7.8 min median. Every
+              #     held cluster observed had a spread of exactly 3, so a
+              #     spread of 4 would disable holds in practice, and the 5
+              #     rejections were real catches by seats the security-vote
+              #     does not seat.
+              #   - security-vote itself: 27 approved / 47 rejected, 56 of 74
+              #     unanimous; a working gate, not a rubber stamp.
+              # 28: three input edits, no topology change. (1) `fix` adds
               #   `synthesize.findings` beside `reconcile.findings`: the
               #   aggregate reaches the fixer as cluster titles and member ids
               #   with no evidence, while the synthesize artifact's body lists

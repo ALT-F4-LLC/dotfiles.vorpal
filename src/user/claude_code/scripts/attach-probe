@@ -50,6 +50,27 @@
 #                  (and reported so) in a repo with no .docket at all, which is
 #                  the normal case.
 #
+# And one REPORT, which is not a check and cannot fail the probe:
+#
+#   stragglers   — detached worktree registrations homed under a session
+#                  scratch path (`*/scratchpad/*`, the harness scratch root
+#                  `/tmp/claude-*`, or a `gate-probe*` scratch dir). A probe or
+#                  investigation worktree is a registration in the SHARED repo
+#                  that outlives the session that made it: it sits at a
+#                  detached head with no `worktree-wf_*` branch, so no
+#                  branch-derived close sweep can see it, and when the
+#                  scratchpad is cleaned the DIRECTORY goes and the
+#                  REGISTRATION stays. Measured: three at once from three
+#                  different sessions, two of them outliving their sessions'
+#                  close-outs, while this probe reported 8/8 OK — because it
+#                  did not look. It looks now, and only reports: printing them
+#                  at ATTACH puts them in front of a live conductor instead of
+#                  in a dead session's notes. Nothing here removes anything —
+#                  removal is the close sweep's, by literal path, for the one
+#                  carrying THIS session's id, and only once `git -C <wt>
+#                  status --porcelain` comes back empty. Silent when there are
+#                  none, and it never moves the exit code.
+#
 # Usage:  attach-probe [RUN-N]
 #
 #   Run it from the repository root of the run's repo. RUN-N is optional only
@@ -88,6 +109,10 @@ say() {
     ran=$((ran + 1))
     printf '%-5s %-10s %s\n' "$1" "$2" "$3"
 }
+# A report line, in the same columns as `say` but counting as no check: it
+# touches neither `ran`, `bad` nor `skipped`, so nothing it prints can move the
+# exit code.
+warn() { printf '%-5s %-10s %s\n' "$1" "$2" "$3"; }
 detail() { sed 's/^/                 /'; }
 
 if [ ! -d "$DOCKET_SRC" ] || [ ! -d "$CC_SRC" ]; then
@@ -274,6 +299,82 @@ else
         say DRIFT debris "retired link-farm symlinks present — a dangling one refuses activation by name"
         printf '%s\n' "$links" | detail
         bad=1
+    fi
+fi
+
+# ---- scratch-path stragglers (a report; never a verdict) --------------------
+# Read-only twice over: `git worktree list --porcelain` is the only command
+# here, and nothing below removes, prunes or even enters a worktree. A
+# straggler is somebody's to remove BY LITERAL PATH at close-out, after
+# `git -C <wt> status --porcelain` comes back empty; naming it here is the
+# whole job.
+
+# The paths a session's throwaway worktrees are homed at: a session scratchpad
+# (the legacy hand-rolled `gate-probe-wt` lived there), the harness scratch
+# root `/tmp/claude-<uid>` (where `gate-probe` puts `gate-probe.<run>.<pid>/wt`
+# when TMPDIR points there), and any `gate-probe*` scratch dir wherever TMPDIR
+# actually resolved. A worktree of the run's own checkout matches none of them.
+scratch_shaped() {
+    case "$1" in
+        */scratchpad|*/scratchpad/*) return 0 ;;
+        /tmp/claude-*|/private/tmp/claude-*) return 0 ;;
+        */gate-probe*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# The session id is a path component, because that is where the harness puts
+# it: .../claude-<uid>/<project-slug>/<session uuid>/scratchpad/... A path
+# carrying no uuid component (gate-probe's own scratch dir is labelled by run
+# and pid, not session) reports `unknown` rather than guessing.
+session_of() {
+    rest=$1
+    while [ -n "$rest" ]; do
+        part=${rest%%/*}
+        if [ "$part" = "$rest" ]; then rest=''; else rest=${rest#*/}; fi
+        case "$part" in
+            ????????-????-????-????-????????????) printf '%s' "$part"; return 0 ;;
+        esac
+    done
+    printf 'unknown'
+}
+
+if [ -n "$top" ]; then
+    wt_list=$(git -C "$top" worktree list --porcelain 2>/dev/null)
+    wt_path=''
+    wt_sha=''
+    wt_detached=0
+    n_strag=0
+    # One record per worktree, blank-line separated. A record with a `branch`
+    # line is NOT detached and is left entirely alone here: those are the
+    # wave's `worktree-wf_*` checkouts, which the close sweep already derives
+    # from their branch names.
+    while IFS= read -r line; do
+        case "$line" in
+            'worktree '*) wt_path=${line#worktree }; wt_sha=''; wt_detached=0 ;;
+            'HEAD '*)     wt_sha=${line#HEAD } ;;
+            detached)     wt_detached=1 ;;
+            '')
+                if [ -n "$wt_path" ] && [ "$wt_detached" -eq 1 ] &&
+                   scratch_shaped "$wt_path"; then
+                    n_strag=$((n_strag + 1))
+                    warn WARN straggler \
+                        "$wt_path ${wt_sha:-unknown} (session $(session_of "$wt_path"))"
+                fi
+                wt_path=''; wt_sha=''; wt_detached=0
+                ;;
+        esac
+    done <<EOF
+$wt_list
+
+EOF
+    if [ "$n_strag" -gt 0 ]; then
+        { echo 'detached, no worktree-wf_* branch — invisible to a branch-derived close sweep.'
+          echo 'Not a failure and NOT removed here. Name every one of these in the close report,'
+          echo 'and remove only the one whose path carries THIS session id, by its literal path,'
+          echo 'once `git -C <path> status --porcelain` is empty. Every other one belongs to'
+          echo 'another session: leave it registered, and name it for the operator.'
+        } | detail
     fi
 fi
 

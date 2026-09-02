@@ -1402,6 +1402,9 @@ and leaves the REGISTRATION behind in the shared repo, dangling and prunable
 that way, back when the probe was prose).
 If your notes and `git worktree list` disagree, the list is the authority for
 what still exists and your notes are the authority for what is YOURS.
+Name every straggler `attach-probe` reported at attach — its `WARN straggler
+<path> <sha> (session <uuid>)` lines — in the close report, and remove the one
+whose path carries THIS session's id.
 
 A worktree's COMMIT being integrated does not clear its WORKING TREE, and
 nothing above covers what is uncommitted. An integration check that

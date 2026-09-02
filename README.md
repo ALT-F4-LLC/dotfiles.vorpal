@@ -65,17 +65,7 @@ Skills support the team:
 
 | Skill | Location | Purpose |
 |-------|----------|---------|
-| **adr** | `src/user/claude-code/skills/adr/` | Authors an Architecture Decision Record as a Docket doc |
 | **docket-bootstrap** | `src/user/claude_code/skills/docket-bootstrap/` | Binds a repo to the shared Docket corpus, writing throwaway `docs/spec/` working specs it mines during setup and removes before hand-off |
-| **code-review-verdict** | `src/user/claude-code/skills/code-review-verdict/` | Conducts a scoped code review (general 6-dimension or security playbook) |
-| **design-qa** | `src/user/claude-code/skills/design-qa/` | Post-implementation QA of a shipped UX surface against its spec |
-| **design-review** | `src/user/claude-code/skills/design-review/` | Peer design review of a UX spec across six dimensions |
-| **prd** | `src/user/claude-code/skills/prd/` | Authors a Product Requirements Document as a Docket doc |
-| **simplify-scout** | `src/user/claude-code/skills/simplify-scout/` | Scouts code for simplification/refactor opportunities (report-only) |
-| **tdd** | `src/user/claude-code/skills/tdd/` | Authors a Technical Design Document as a Docket doc |
-| **ux-spec** | `src/user/claude-code/skills/ux-spec/` | Authors a UX design spec as a Docket doc |
-| **verify-ac** | `src/user/claude-code/skills/verify-ac/` | Verifies a Docket issue's acceptance criteria against the diff |
-| **vote** | `src/user/claude-code/skills/vote/` | Multi-agent consensus voting protocol |
 
 ## Symlinks
 

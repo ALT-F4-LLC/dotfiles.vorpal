@@ -29,6 +29,19 @@
 # retries"), and the seats clause is omitted entirely when no panel was
 # seated. Cases C and D pin both halves.
 #
+# DOT-1041 then cut the vote-show reads from two per gate to one, and shrank
+# what the probe relays. `gate:record` and `gate:tally` each spawned a haiku
+# seat to RETYPE the full ~10.6KB `docket vote show --json` envelope verbatim;
+# on RUN-63 one copy lost its closing brace and another lost 81 chars
+# mid-body, so both gates fell back to matching raw text. The probe now pipes
+# the envelope through jq to {status, final_outcome, votes[].{voter_name,
+# verdict}} — under 300 bytes for a 3-seat proposal — and the gate reads it
+# ONCE, the tally reusing the record probe's result whenever that read was
+# conclusive. Cases E and F pin both halves: E that a healthy gate spends one
+# vote-show probe and logs no fallback, F that a deliberately corrupted relay
+# still lands on the regex/substring fallback and is logged as a WARNING
+# naming the reply length.
+#
 # HOW. wave.js fences the gate machinery (probeBrief, probe, parseHeldCluster,
 # parseTargetRef, parseVoteShow, gateSuccess, runGate) in TEST-BEGIN/TEST-END
 # `gate-vote` markers. This suite extracts that region, prepends the
@@ -250,6 +263,98 @@ ok(LOG.some((l) => l.startsWith('STEP-2493: 3 seats, 4 probes, 0 retries')),
     `D: the real-panel log line separates seats from probes (got ${JSON.stringify(LOG)})`)
 ok(Array.isArray(D.notes) && D.notes.length === 1 && D.notes[0].includes('blocked by safety classifier'),
     'D: the block is still noted on the success result')
+
+// ---- DOT-1041: ONE small vote-show read per gate ----
+
+// The command the probe is told to run relays a projection, not the envelope.
+ok(voteShowCommand('DKT-V260').startsWith('docket vote show DKT-V260 --json |'),
+    'the vote probe still reads the engine record')
+ok(/jq -c/.test(voteShowCommand('DKT-V260')) &&
+   ['status', 'final_outcome', 'voter_name', 'verdict']
+       .every((f) => voteShowCommand('DKT-V260').includes(f)),
+    'the vote probe pipes through jq and keeps exactly the fields the gate reads')
+
+// What that command answers with: the projection, BARE (no {ok, data} wrapper).
+const SHRUNK =
+    '{"status":"approved","final_outcome":"approved","votes":[' +
+    '{"voter_name":"judge-architecture","verdict":"approve"},' +
+    '{"voter_name":"judge-security","verdict":"approve"},' +
+    '{"voter_name":"judge-correctness","verdict":"approve"}]}'
+ok(SHRUNK.length < 1024,
+    `AC: the probe reply for a 3-seat proposal is under 1KB (got ${SHRUNK.length} chars)`)
+ok(SHRUNK.length < APPROVED.length,
+    'the projection is smaller than the envelope it replaces')
+ok(parseVoteShow(SHRUNK) !== null && parseVoteShow(SHRUNK).status === 'approved',
+    'parseVoteShow reads the BARE jq projection')
+ok(parseVoteShow(APPROVED) !== null && parseVoteShow(APPROVED).status === 'approved',
+    'parseVoteShow still reads the raw {ok, data} envelope')
+ok(parseVoteShow('{"ok":false,"error":"no such proposal"}') === null,
+    'a non-vote object is not mistaken for a tally')
+
+// ---- E: the healthy gate. Every seat cast and the proposal is decided, so
+// the ONE vote-show read (spawned as gate:record) serves the tally too: no
+// second probe, and no fallback line anywhere in the log.
+const E = await run({
+    'STEP-2493 · gate:show':    { text: SHOW_READY },
+    'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
+    'STEP-2493 · seat:judge-security':     { text: 'cast recorded' },
+    'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
+    'STEP-2493 · gate:record':  { text: SHRUNK },
+    'STEP-2493 · gate:outcome': { text: SHOW_DONE },
+    'STEP-2493 · gate:tally':   { text: SHRUNK },
+})
+ok(E.status === 'gate-passed', 'E: the healthy gate passes')
+ok(calls('STEP-2493 · gate:record') + calls('STEP-2493 · gate:tally') === 1,
+    `AC: exactly ONE docket vote show probe per gate (got record=${calls('STEP-2493 · gate:record')}, tally=${calls('STEP-2493 · gate:tally')})`)
+ok(E.spawn_accounting === '3 seats, 3 probes, 0 retries',
+    `E: show + one vote-show + outcome (got ${JSON.stringify(E.spawn_accounting)})`)
+ok(!LOG.some((l) => l.includes('did not parse')),
+    `AC: no "did not parse" line on a healthy tally (got ${JSON.stringify(LOG)})`)
+ok(LOG.some((l) => l.includes('no second probe spawned')),
+    `E: the log says the tally reused the single read (got ${JSON.stringify(LOG)})`)
+
+// A REJECTED proposal is equally conclusive — one read decides it.
+const E2 = await run({
+    'STEP-2493 · gate:show':    { text: SHOW_READY },
+    'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
+    'STEP-2493 · seat:judge-security':     { text: 'cast recorded' },
+    'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
+    'STEP-2493 · gate:record':  { text: SHRUNK.replace(/approved/g, 'rejected') },
+    'STEP-2493 · gate:outcome': { text: SHOW_DONE },
+})
+ok(E2.status === 'gate-rejected' && calls('STEP-2493 · gate:tally') === 0,
+    'E2: a rejection is read off the same single probe')
+
+// ---- F: the RUN-63 corruption, replayed. The gate:record relay loses its
+// closing brace and the gate:tally relay loses 81 chars mid-body. Both
+// fallbacks must still fire, and each must be logged as a WARNING naming the
+// reply length so a recurrence is visible.
+const MANGLED_TAIL = SHRUNK.slice(0, -1)
+const CUT = SHRUNK.indexOf('"votes"') + 10
+const MANGLED_BODY = SHRUNK.slice(0, CUT) + SHRUNK.slice(CUT + 81)
+ok(parseVoteShow(MANGLED_TAIL) === null && parseVoteShow(MANGLED_BODY) === null,
+    'F: both mangled relays genuinely fail the structural read')
+const F = await run({
+    'STEP-2493 · gate:show':    { text: SHOW_READY },
+    'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
+    'STEP-2493 · seat:judge-security':     { text: 'cast recorded' },
+    'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
+    'STEP-2493 · gate:record':  { text: MANGLED_TAIL },
+    'STEP-2493 · gate:outcome': { text: SHOW_DONE },
+    'STEP-2493 · gate:tally':   { text: MANGLED_BODY },
+})
+ok(F.status === 'gate-passed',
+    'AC: the regex/substring fallback still decides the gate on a mangled relay')
+ok(calls('STEP-2493 · seat:judge-security (retry)') === 0,
+    'F: the substring fallback still finds every seat name, so nobody is re-seated')
+ok(LOG.some((l) => l.startsWith('WARNING ') && l.includes('gate:record JSON did not parse') &&
+   l.includes(`${MANGLED_TAIL.length} chars`)),
+    `AC: the record fallback is a WARNING naming the reply length (got ${JSON.stringify(LOG)})`)
+ok(LOG.some((l) => l.startsWith('WARNING ') && l.includes('gate:tally JSON did not parse') &&
+   l.includes(`${MANGLED_BODY.length} chars`)),
+    `AC: the tally fallback is a WARNING naming the reply length (got ${JSON.stringify(LOG)})`)
+ok(calls('STEP-2493 · gate:tally') === 1,
+    'F: an unparseable record read is NOT reused — the tally re-reads once')
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)

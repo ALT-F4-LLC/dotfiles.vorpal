@@ -1944,21 +1944,50 @@ function corroboratedTarget(target, held) {
 // `docket vote show <id> --json` answers with the standard envelope
 //   {ok: true, data: {id, status, final_outcome?, weighted_score,
 //                     votes: [{voter_name, verdict, summary, ...}], ...}}
+//
+// NEVER MAKE A SEAT RETYPE 10KB (DOT-1041). A probe is told to relay its
+// command's output VERBATIM, and that envelope is ~10.6KB on a 3-seat
+// proposal — every seat's free-text summary, weighted scores, timestamps —
+// none of which the gate reads. On RUN-63 two haiku probes on the same wave
+// corrupted the copy: agent abe4d65165cdfcc51 (gate:record) received 10,664
+// chars and replied with 10,663 (the closing brace dropped, so
+// `jq: Unfinished JSON term at EOF`), and agent aa3daf9483a9cdb65
+// (gate:tally) dropped 81 chars out of the middle. Both gates then fell back
+// to matching raw text — precisely the failure mode the structural read was
+// introduced to remove. So the probe pipes the envelope through jq and only
+// the three fields the gate actually reads come back: under 300 bytes for a
+// 3-seat proposal, which a model copies exactly.
+const VOTE_SHOW_JQ =
+    `jq -c '{status: .data.status, final_outcome: .data.final_outcome, ` +
+    `votes: [.data.votes[]? | {voter_name, verdict}]}'`
+
+function voteShowCommand(voteId) {
+    return `docket vote show ${voteId} --json | ${VOTE_SHOW_JQ}`
+}
+
 // A probe's text can carry a harness banner AHEAD of that JSON (seen on two
-// probes), so slice from the first `{` before parsing. Returns the `data`
-// object, or null when the text will not parse — callers then fall back to
-// matching the raw text, and say so in the log.
+// probes), so slice from the first `{` before parsing. Returns the vote's own
+// object — the jq projection above answers it BARE, the raw engine envelope
+// wraps it in {ok, data}, and both are accepted so a probe that relayed the
+// unfiltered envelope still reads structurally. Returns null when the text
+// will not parse or is not vote-shaped — callers then fall back to matching
+// the raw text, and say so in the log as a WARNING.
 function parseVoteShow(text) {
     const s = text || ''
     const i = s.indexOf('{')
     if (i < 0) return null
+    let parsed
     try {
-        const parsed = JSON.parse(s.slice(i))
-        const data = parsed && typeof parsed === 'object' ? parsed.data : null
-        return data && typeof data === 'object' ? data : null
+        parsed = JSON.parse(s.slice(i))
     } catch {
         return null
     }
+    if (!parsed || typeof parsed !== 'object') return null
+    const data = (parsed.data && typeof parsed.data === 'object')
+        ? parsed.data : parsed
+    const shaped = typeof data.status === 'string' ||
+        typeof data.final_outcome === 'string' || Array.isArray(data.votes)
+    return shaped ? data : null
 }
 
 // Assemble a gate's SUCCESS result. A vote row whose tally succeeds after
@@ -2028,25 +2057,50 @@ async function runGate(row, phaseLabel) {
     // REJECTED vote as `done` when its on_fail routes machine-side (measured
     // three runs: 0-3-0 tallies rendered "gate-passed" and the conductor
     // believed it). The TALLY is the outcome; read it from the proposal.
+    //
+    // ONE VOTE-SHOW READ PER GATE (DOT-1041). The missing-seat check and the
+    // tally want the same three fields off the same proposal, and each used
+    // to spawn its own probe — two ~12-13k-token relays per vote row, five
+    // vote rows on RUN-63, one corrupted copy. `voteRead` caches the first
+    // read; the tally reuses it when it is CONCLUSIVE (parsed, and the
+    // proposal already decided) and spawns nothing. A read that is stale
+    // (seats were re-spawned after it), inconclusive (the proposal was still
+    // open when the roster was checked) or unparseable is dropped, and only
+    // then does a second probe cost anything.
+    let voteRead = null
+    const readVote = async (voteId, label) => {
+        if (voteRead) return voteRead
+        const text = await probe(voteShowCommand(voteId),
+            `${row.step} · ${label}`, phaseLabel, row.step, acct)
+        voteRead = { text, data: parseVoteShow(text) }
+        return voteRead
+    }
+    // Read the verdict STRUCTURALLY. The regex fallback below matches
+    // anywhere in the text — including inside a seat's free-text summary, so a
+    // rationale quoting `"status": "rejected"` while explaining why it did NOT
+    // reject flipped an approved gate to gate-rejected (rejected is tested
+    // first). Parsing reads only the tally's own field.
+    const verdictOf = (data) => {
+        const verdicts = [data.status, data.final_outcome]
+            .filter((v) => typeof v === 'string')
+            .map((v) => v.toLowerCase())
+        if (verdicts.includes('rejected')) return 'rejected'
+        if (verdicts.includes('approved')) return 'approved'
+        return 'unknown'
+    }
     const tallyOutcome = async (voteId) => {
-        const t = await probe(`docket vote show ${voteId} --json`,
-            `${row.step} · gate:tally`, phaseLabel, row.step, acct)
-        // Read the verdict STRUCTURALLY. The regex below matches
-        // anywhere in the text — including inside a seat's free-text summary,
-        // so a rationale quoting `"status": "rejected"` while explaining why it
-        // did NOT reject flipped an approved gate to gate-rejected (rejected is
-        // tested first). Parsing the envelope reads only the tally's own field.
-        const data = parseVoteShow(t)
-        if (data) {
-            const verdicts = [data.status, data.final_outcome]
-                .filter((v) => typeof v === 'string')
-                .map((v) => v.toLowerCase())
-            if (verdicts.includes('rejected')) return { outcome: 'rejected', tally: t }
-            if (verdicts.includes('approved')) return { outcome: 'approved', tally: t }
-            return { outcome: 'unknown', tally: t }
+        if (voteRead && voteRead.data && verdictOf(voteRead.data) !== 'unknown') {
+            log(`${row.step}: tally read from this gate's single vote-show ` +
+                `probe — no second probe spawned`)
+        } else {
+            voteRead = null
         }
-        log(`${row.step}: gate:tally JSON did not parse — falling back to a ` +
-            `regex match on the raw probe text`)
+        const { text: t, data } = await readVote(voteId, 'gate:tally')
+        if (data) return { outcome: verdictOf(data), tally: t }
+        log(`WARNING ${row.step}: gate:tally JSON did not parse (probe reply ` +
+            `${t.length} chars) — falling back to a regex match on the raw ` +
+            `probe text; the probe is meant to relay a few hundred bytes, so ` +
+            `a recurrence means the relay itself is corrupting`)
         if (/"(status|final_outcome)"\s*:\s*"rejected"/i.test(t)) return { outcome: 'rejected', tally: t }
         if (/"(status|final_outcome)"\s*:\s*"approved"/i.test(t)) return { outcome: 'approved', tally: t }
         return { outcome: 'unknown', tally: t }
@@ -2139,23 +2193,24 @@ async function runGate(row, phaseLabel) {
     }))
 
     // One re-spawn for seats whose cast never landed — tribunal.js's rule.
-    // This reads the SAME `--json` envelope the tally does and takes
-    // the roster from `.data.votes[].voter_name`. It used to spend a separate
-    // human-format probe (~12-13k tokens, 35-60s) to substring-match seat
-    // names out of prose — the JSON read already carries that structurally.
-    const record = await probe(`docket vote show ${voteId} --json`,
-        `${row.step} · gate:record`, phaseLabel, row.step, acct)
-    const recorded = parseVoteShow(record)
+    // This is the gate's ONE vote-show read (DOT-1041): the same projection
+    // the tally reads, taking the roster from `votes[].voter_name`. It used to
+    // spend a separate human-format probe (~12-13k tokens, 35-60s) to
+    // substring-match seat names out of prose, and then a THIRD probe for the
+    // tally; the read below serves both.
+    const record = await readVote(voteId, 'gate:record')
     let missing
-    if (recorded && Array.isArray(recorded.votes)) {
-        const cast = recorded.votes
+    if (record.data && Array.isArray(record.data.votes)) {
+        const cast = record.data.votes
             .map((v) => (v && typeof v.voter_name === 'string') ? v.voter_name : '')
             .filter(Boolean)
         missing = seats.filter((s) => !cast.some((n) => n.includes(s.seat)))
     } else {
-        log(`${row.step}: gate:record JSON did not parse — falling back to a ` +
-            `substring match on the raw probe text`)
-        missing = seats.filter((s) => !record.includes(s.seat))
+        log(`WARNING ${row.step}: gate:record JSON did not parse (probe reply ` +
+            `${record.text.length} chars) — falling back to a substring match ` +
+            `on the raw probe text; the probe is meant to relay a few hundred ` +
+            `bytes, so a recurrence means the relay itself is corrupting`)
+        missing = seats.filter((s) => !record.text.includes(s.seat))
     }
     if (missing.length > 0) {
         log(`${row.step}: ${missing.length} seat(s) returned without a recorded ` +
@@ -2176,6 +2231,9 @@ async function runGate(row, phaseLabel) {
                 return null
             })
         }))
+        // The record moved underneath the cached read — those re-seated casts
+        // postdate it — so the tally must re-read rather than reuse it.
+        voteRead = null
     }
 
     // `done` says only that the step COMPLETED — a rejection whose on_fail

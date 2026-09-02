@@ -229,8 +229,13 @@ ok(seatBriefs().every((b) => !/TARGET SHA:/.test(b)),
     'AC: and not one brief carries a TARGET SHA: line')
 ok(seatBriefs().every((b) => !/[0-9a-f]{40}/.test(b)),
     'AC: no 40-hex sha appears anywhere in any brief')
-ok(A.status === 'gate-passed' && A.spawn_accounting === '3 seats, 4 probes, 0 retries',
-    `AC: the gate still passes, one probe cheaper than before (got ${JSON.stringify(A.spawn_accounting)})`)
+// 3 probes: gate:show, ONE vote-show (labelled gate:record, reused by the
+// tally under DOT-1041), gate:outcome. gate:target is skipped by DOT-1040 and
+// gate:tally spawns nothing because the record read was already conclusive.
+ok(A.status === 'gate-passed' && A.spawn_accounting === '3 seats, 3 probes, 0 retries',
+    `AC: the gate still passes, two probes cheaper than before (got ${JSON.stringify(A.spawn_accounting)})`)
+ok(calls('STEP-3187 · gate:tally') === 0,
+    'AC: a conclusive gate:record read serves the tally too — one vote-show probe per gate')
 
 // ================= NET 3: nothing unvouched reaches a judge ================
 

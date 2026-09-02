@@ -1,7 +1,31 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 29  # 29: no step edits — bumped to carry the panel-depth refit's
+version = 30  # 30: one topology change — a `drain-highs` step lands after
+              #   `security-vote`, `after = ["security-vote"]`, reading
+              #   `reconcile.findings` and `issue.body`, same executor, cost,
+              #   `on_fail` and limits row as standard-change's drain step.
+              #   Measured across every security-change run on this machine
+              #   (28 runs, 56 issues, 114 reconciled rounds in five projects):
+              #   the security vote approved 33 final rounds, 19 of them with
+              #   open, unheld, unresolved high-or-above clusters still in the
+              #   reconcile payload — 59 clusters in all — and nothing filed
+              #   them; one run's conductor noticed 12 of them after the run
+              #   was already done and hand-filed four follow-ups. Placement
+              #   is deliberate: the engine's threshold is first-match in
+              #   sorted order, so `drain-highs` beside `security-vote` on
+              #   reconcile would fire first and terminalize the vote as
+              #   skipped; and draining before the vote would file issues a
+              #   rejected vote's fix round then fixes. After approval is the
+              #   first moment the open highs are known to stay open. Accepted
+              #   deviation: a skipped interposed gate is terminal to the
+              #   readiness join, so on a round where reconcile found no high
+              #   (3 of 81 vote instances) the drain still runs and reports
+              #   nothing to drain; the engine has no "only if the gate fired"
+              #   edge, filed as an engine gap. On a rejected vote the fix
+              #   loop's supersede sweep clears the pending drain and the next
+              #   ordinal re-instantiates it after the new vote.
+              # 29: no step edits — bumped to carry the panel-depth refit's
               #   findings, with the one behavior change landing in
               #   policy.toml (20): `threat-model` routes at opus-high instead
               #   of opus-xhigh. Measured across every security-track run on
@@ -145,6 +169,7 @@ unless_labels = [
 ]
 
 [limits]
+"drain-highs" = { max = 16, max_step_duration = "1h" }
 "judge-architecture" = { max = 16, max_step_duration = "1h" }
 "judge-correctness" = { max = 16, max_step_duration = "1h" }
 "judge-security" = { max = 16, max_step_duration = "1h" }
@@ -234,6 +259,17 @@ vote_rule = "security-acceptance"
 # As voters these seats are briefed by the workflow scripts' LENSES table, not
 # by contracts/judge-*.md — one name, two remits.
 voters = ["judge-security", "judge-architecture", "judge-correctness"]
+
+[[step]]
+after = ["security-vote"]
+emits = "drain-report"
+executor = "drain-highs"
+expected_cost = 0.30
+holds_tree = false
+inputs = ["reconcile.findings", "issue.body"]
+name = "drain-highs"
+on_fail = "waiting-human"
+packet = ["contracts/{executor}.md"]
 
 [[step]]
 after = ["reconcile"]

@@ -1,6 +1,6 @@
 ---
 node: drain-highs
-version: 1
+version: 2
 archetype: executor-read
 packet_includes:
   - fragments/truth-first.md
@@ -10,13 +10,21 @@ emits: drain-report
 ---
 # Charter
 Give every still-open high-severity cluster a durable home before the run moves on. You
-run only when the reconcile step routed here: its payload carries at least one cluster
-with `open_severity >= high` and no open blocker (an open blocker matches `fix-loop`
-first, so blocker rounds loop and never reach you). For each cluster still open at high
-or above — `open_severity` present and `>= high`, `held` not true, `operator_resolved`
-not true — write one gap file and pass it with `--gap-file` when you record your
-completion: each lands as a `gap` artifact beside your report AND files a backlog issue
-related to this step's own, in the same transaction. That backlog issue is the drain.
+run at the point the pipeline has decided the remaining open highs will not be fixed in
+this run. In the standard tracks that is the reconcile step routing here: its payload
+carries at least one cluster with `open_severity >= high` and no open blocker (an open
+blocker matches `fix-loop` first, so blocker rounds loop and never reach you). In the
+security track that is the security vote approving a round: highs and blockers alike
+convene that vote, a rejection enters the fix loop instead of reaching you, and an
+approval means the panel accepted the change with those clusters still open — blockers
+included, so the selection below is the same there. About one security-track round in
+twenty-five reaches you with no qualifying cluster at all (reconcile found no high, the
+vote was skipped, and the engine cannot skip you with it): report that nothing
+qualified and stop. For each cluster still open at high or above — `open_severity`
+present and `>= high`, `held` not true, `operator_resolved` not true — write one gap
+file and pass it with `--gap-file` when you record your completion: each lands as a
+`gap` artifact beside your report AND files a backlog issue related to this step's own,
+in the same transaction. That backlog issue is the drain.
 The severity ladder promises a Concern "lands in the run record and backlog the
 operator reviews before publishing"; this step is the machinery that makes it true. It
 exists because open highs used to complete a round recorded only in reconcile artifacts
@@ -54,8 +62,8 @@ alone: its reader arrives from the backlog weeks later, not from this run.
 (the completion's success message pairs those with the filed issue ids), one line per
 `>= high` cluster you skipped and why (held, operator-resolved, already filed as
 issue N), and the round this drain ran on. The report body must be non-empty even when
-every qualifying cluster was skipped — an empty emit beside recorded gaps parks the
-step as a gap-only completion, which is the Stuck path, not success.
+every qualifying cluster was skipped or none qualified — an empty emit beside recorded
+gaps parks the step as a gap-only completion, which is the Stuck path, not success.
 
 # Stuck
 A findings input you cannot read as clusters at all, or a qualifying cluster you could

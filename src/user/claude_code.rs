@@ -356,6 +356,9 @@ impl ClaudeCode {
         let settings_builder = settings_builder
             .with_permission_ask("Bash(docket trust add:*)")
             .with_permission_ask("Bash(docket trust rm:*)")
+            .with_permission_ask("Bash(gh api:*)")
+            .with_permission_ask("Bash(gh pr create:*)")
+            .with_permission_ask("Bash(gh pr merge:*)")
             .with_permission_ask("Bash(git push:*)");
 
         let settings_builder = deny_sensitive_paths(

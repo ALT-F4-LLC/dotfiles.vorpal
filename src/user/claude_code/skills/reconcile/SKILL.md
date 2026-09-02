@@ -50,12 +50,35 @@ absent, and only then reach for `docket schema register <ref> <file>` or
 `docket config set vote.rule.<name>.threshold <n>` — scoped to this project,
 not `--global`, unless the operator says every project should get it.
 
-## Parse the TOML, never grep it
+## Let the engine parse the TOML
 
-Read `[pipeline].name` and `[pipeline].version` with a real TOML parser. A
-`grep -m1 version` over these files silently concatenates digits from unrelated
-keys and reports `security-change@2525792` for what is actually `@25`. The
-planner below uses `tomllib`; keep it that way.
+Never `grep` a version out of these files: a `grep -m1 version` silently
+concatenates digits from unrelated keys and reports `security-change@2525792`
+for what is actually `@25`. Never hand-parse them either. The planner used to
+import `tomllib`, which needs Python 3.11+ and is simply absent where `python3`
+is 3.9 — as it is here.
+
+`docket workflow lint <file> --json=v2` is the parser, and it is the same parse
+`docket workflow register` runs:
+
+```json
+{"ok":true,"data":{"name":"docs-only","version":19,
+ "sha256":"1b4969…","registration":"unchanged"},"message":"…"}
+```
+
+`registration` is the engine's own verdict on what a register would do: `new`,
+`unchanged`, or a failure carrying `"code":"CONFLICT"` whose error names the
+frozen `name@version` and both hashes. That is precisely the REGISTER /
+CONFLICT decision, decided by the engine rather than by a hash comparison in
+the planner — so the planner needs no TOML library and no `sha256` of its own.
+
+One thing lint does *not* tell you: a registered-but-retired version still
+lints `unchanged`, because retiring a row does not change its bytes. RESTORE is
+therefore still read from `deprecated_at_ms` on the registry row, which the
+planner fetches anyway.
+
+A file that fails lint for any other reason has no name the planner can trust,
+so it is reported as INVALID and left out of the target binding set entirely.
 
 ## Step 1 — plan (read-only)
 
@@ -63,38 +86,51 @@ Run from the checkout. This mutates nothing; it prints the actions and stops.
 
 ```python
 # reconcile-plan.py — run with cwd set to the checkout being reconciled
-import glob, hashlib, json, os, subprocess, sys, tomllib
+import glob, json, os, re, subprocess, sys
 
 repo = os.getcwd()
 roots = [os.path.expanduser("~/.docket/config/workflows"),
          os.path.join(repo, ".docket/config/workflows")]
 
-disk = {}
+def docket(*args):                     # always cwd=repo -- see "Cwd discipline" above
+    p = subprocess.run(["docket", *args], capture_output=True, text=True, cwd=repo)
+    try:
+        return json.loads(p.stdout)
+    except ValueError:
+        return {"ok": False, "error": (p.stderr or p.stdout).strip() or f"exit {p.returncode}"}
+
+disk, bad = {}, []
 for root in roots:                     # later root wins -- see "Two roots" below
     for f in sorted(glob.glob(os.path.join(root, "*.toml"))):
-        b = open(f, "rb").read()
-        p = tomllib.loads(b.decode())["pipeline"]
-        disk[p["name"]] = {"v": p["version"], "f": f,
-                           "sha": hashlib.sha256(b).hexdigest()}
+        r = docket("workflow", "lint", f, "--json=v2")
+        if r.get("ok"):
+            d = r["data"]
+            disk[d["name"]] = {"v": d["version"], "f": f, "reg": d["registration"]}
+            continue
+        err = str(r.get("error", ""))
+        m = re.match(r"([^\s@]+)@(\d+) is registered with different bytes", err)
+        if r.get("code") == "CONFLICT" and m:      # the frozen row the engine named
+            disk[m.group(1)] = {"v": int(m.group(2)), "f": f, "reg": "conflict"}
+        else:
+            bad.append((f, err.splitlines()[0] if err else "lint failed"))
 
-out = subprocess.run(["docket", "workflow", "list", "--deprecated",
-                      "--limit", "500", "--json=v2"],
-                     capture_output=True, text=True, cwd=repo)
-if out.returncode != 0:
-    sys.exit("registry read failed: " + out.stderr.strip())
+out = docket("workflow", "list", "--deprecated", "--limit", "500", "--json=v2")
+if not out.get("ok"):
+    sys.exit("registry read failed: " + str(out.get("error")))
 reg = {}
-for r in json.loads(out.stdout)["data"]["items"]:
+for r in out["data"]["items"]:
     reg.setdefault(r["name"], {})[r["version"]] = r
 
-plan = []
+plan = [("INVALID", f"# {f} fails lint: {err} -- fix in SOURCE (refit), never here")
+        for f, err in bad]
+
 for name, d in sorted(disk.items()):
     rows = reg.get(name, {})
-    cur = rows.get(d["v"])
-    if cur is None:
-        plan.append(("REGISTER", f"docket workflow lint {d['f']} && docket workflow register {d['f']}"))
-    elif cur["source_sha256"] != d["sha"]:
+    if d["reg"] == "conflict":
         plan.append(("CONFLICT", f"# {name}@{d['v']} registered bytes != {d['f']} -- bump [pipeline].version in SOURCE, never force"))
-    elif cur.get("deprecated_at_ms"):
+    elif d["reg"] == "new":
+        plan.append(("REGISTER", f"docket workflow lint {d['f']} && docket workflow register {d['f']}"))
+    elif rows.get(d["v"], {}).get("deprecated_at_ms"):
         plan.append(("RESTORE", f"docket workflow deprecate {name}@{d['v']} --restore"))
     for ov, row in sorted(rows.items()):
         if ov != d["v"] and not row.get("deprecated_at_ms"):
@@ -110,6 +146,8 @@ for name, rows in sorted(reg.items()):
 for kind, cmd in plan:
     print(f"{kind:9} {cmd}")
 print(f"\n{len(plan)} action(s); target binding set = {len(disk)} workflows")
+if bad:
+    print(f"{len(bad)} file(s) failed lint and are absent from that set -- an ORPHAN line may be one of them")
 ```
 
 `--deprecated` on that listing is load-bearing. Without it, retired rows are
@@ -118,9 +156,10 @@ trap in the next section.
 
 ## Step 2 — read the plan before running it
 
-**REGISTER** — the corpus is ahead. Lint, then register. Lint first every time:
-a definition that fails validation must not reach the registry, and the lint is
-free.
+**REGISTER** — the corpus is ahead; the engine already called this file `new`.
+Lint, then register anyway. Lint first every time: the registry may have moved
+between planning and approval, a definition that fails validation must not reach
+the registry, and the lint is free.
 
 **DEPRECATE** — a version other than the corpus file's is still binding. Retire
 it. Retirement is a binding-time filter and never a retraction: the row stays
@@ -134,12 +173,22 @@ it will report success and leave the wrong version binding. `--restore` is the
 only verb that fixes it.
 
 **CONFLICT** — the registry holds this exact `name@version` with different
-bytes than the file. A registered `name@version` is frozen so a run that pinned
-it cannot have the definition swapped underneath it. **Stop.** There is no
+bytes than the file. This is the engine's own verdict, not an inference: the
+lint failed with `"code":"CONFLICT"` and printed both hashes. A registered
+`name@version` is frozen so a run that pinned it cannot have the definition
+swapped underneath it. **Stop.** There is no
 force flag worth reaching for here. Someone edited the corpus file without
 bumping `[pipeline].version`; the fix is a version bump in source, committed,
 then `just activate`, then reconcile again. Report it and move on to the other
 names — one conflict does not block the rest.
+
+**INVALID** — the file does not lint at all: bad TOML, a step rule it breaks, a
+schema or `vote_rule` it references that is not registered here. Suspect your
+cwd first (above), then re-run the single lint by hand to read the whole error.
+A genuinely broken definition is `refit`'s to fix, in source — you cannot
+register it and must not paper over it. Note that the file contributes no name
+to the target set while it fails, so a name it would have claimed can also show
+up on an ORPHAN line; that pairing is the same fault reported twice, not two.
 
 **ORPHAN** — a registered name that no file in any root declares. Cross-check
 with `docket workflow list --orphans`, which is the engine's own filesystem

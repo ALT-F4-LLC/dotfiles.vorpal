@@ -241,9 +241,26 @@ possibly a genuine PRE-EXISTING DEFECT. Surface it to the operator ONCE,
 before any step pays for it, and record the agreed disposition: fix the
 environment, a named override policy, or FIX-FIRST where the failure is
 itself a defect — a standing override is never assumed for one of those,
-security gates especially. Never rediscover it per step — and the way you stop
-the rediscovery is to WRITE THE RULING INTO THE RUN, before the first
-`dispatch open` of the wave that will meet the gate:
+security gates especially.
+
+The `<issue>` the ruling cites is FILED FIRST — a note pointing at nothing
+tracks nothing. It is an ordinary conductor filing and takes the full shape
+under **3. Close the dispatch**: the type flag is `-T` (there is no `-k`;
+`docket issue create -k bug` dies `unknown shorthand flag: 'k'`), `-l conduct`
+is the provenance label, every `--scope` glob is QUOTED against zsh, and the
+body goes in on stdin through a quoted heredoc because it quotes gate argv and
+log output:
+
+```bash
+docket issue create -t "<gate> fails on clean HEAD" -T bug -p medium \
+  -l conduct --scope 'internal/routing/**' -d - <<'DESC'
+<what fails, its exit, the gate-probe log path, and why it is pre-existing>
+DESC
+```
+
+Never rediscover it per step — and the way you stop the rediscovery is to
+WRITE THE RULING INTO THE RUN, before the first `dispatch open` of the wave
+that will meet the gate:
 
 ```bash
 docket run note add $RUN --text "Gate tests fails on clean HEAD \
@@ -381,10 +398,20 @@ run report $RUN --json` carries the same mapping in its `attempts[]` table
 with the routing beside it (`{step, instance, status, attempts, routing}`).
 Do not hand the instance to `step show`: that verb takes a STEP-N id or a bare
 N and refuses anything else — `docket step show implement@0` returns `invalid
-step ID "implement@0": want STEP-N or N` (VALIDATION_ERROR). Nor is there an
-`issue list --run` or an `issue list --query`; one conductor burned calls
-inventing them, then grepped the event stream for what these two verbs answer
-directly.
+step ID "implement@0": want STEP-N or N` (VALIDATION_ERROR). One conductor
+burned calls inventing flags around these two verbs rather than using them,
+then grepped the event stream for what they answer directly.
+
+**There is no full-text search anywhere in `docket`.** `issue list` takes
+`--all`, `-a`, `-l`, `--limit`, `--parent`, `-p`, `--project`, `--roots`,
+`--run`, `--sort`, `-s`, `--tree`, `-T` and `--with-body` — and nothing else.
+`--search` and `--query` do not exist and never did; both die `unknown flag`.
+The dangerous one is `-q`: it is the GLOBAL `--quiet`, so
+`docket issue list -q "routing sweep"` does not error — it silently drops the
+term as an ignored positional and prints the whole list, a wrong answer
+wearing the shape of a right one. Filter with the flags above (`issue list
+--run RUN-N` DOES exist, and returns that run's whole roster, done ones
+included), or take `--json` and match client-side.
 
 **Resuming or attaching to a run this session did not activate: check for a
 resume prompt before you touch it.** `/pause` records the halted session's
@@ -1607,6 +1634,28 @@ recount or a paraphrase:**
   a report that happens not to mention it. If the script was genuinely
   inapplicable (no write steps this dispatch), say that in its place; do not
   leave the section out silently.
+
+**A disposition is reported only where one was actually taken — and a
+`pre = true` gate can never be one.** A pre-gate (`gates = [{ name =
+"ac-commands", pre = true }]` on `verify`, `render-verify`/`copy-verify` on
+`design-qa`) runs at CLAIM and its rows ride in under `context.pre_gates`. A
+failing one does NOT refuse the claim, does not park the step, and is never
+resolved: it is a MEASUREMENT the declaring step consumes, and the judging is
+that step's job (`~/.claude/skills/docket/SKILL.md` §11.4). So it cannot have
+been override-passed — there was no park to answer and no `step resolve` to
+record. Report it as what it is: an advisory input the step weighed, named
+with the step that weighed it. Only a gate you actually resolved — a real
+`docket step resolve STEP-N --as override-pass` carrying an operator
+disposition — is described that way, with its step id beside it. RUN-70's
+close report said "`tests`/`ac-commands` failed on a pre-existing gap —
+override-passed per your standing disposition" when only `tests` on STEP-3286
+had been override-passed at all; `ac-commands` was `verify@0`'s pre-gate on
+STEP-3293, which recorded no resolve because none was possible — that step
+went `done` with the gate row still at `verdict: fail`. The sentence credited
+an authorization the operator never gave, and bundled it with one they did.
+The two surfaces settle it before you write the line: `docket step gates
+STEP-N --json` carries `pre` on every row, and `docket run report $RUN --json`
+carries the resolutions that actually happened.
 
 **A dead spawn is reaped, not waited out.** When the wave reports
 `spawn-failed`, or an agent dies still holding a claim, reconcile first

@@ -1650,6 +1650,16 @@ to the CAST command below, where it means the verdict, and reaching for it
 while reading is the one confusion to avoid. If you want a flag that is not
 listed here, run that verb's \`--help\` and read it; never guess one.
 
+AND KNOW \`step artifact\`'S TWO JSON SHAPES BEFORE YOU PARSE ONE. With
+\`--payload --json\`, the envelope's \`.data\` IS THE PAYLOAD ITSELF — an ARRAY
+for a findings or cluster payload, so \`.data[0]\` is the first entry and
+\`.data.get(...)\` raises. Without \`--payload\`, \`--json\` returns the artifact
+RECORD and the payload hangs off \`.data.payload\` as a JSON STRING you must
+parse a second time. Two seats on one wave lost their whole turn to
+\`AttributeError: 'list' object has no attribute 'get'\` on \`d['data'].get('payload')\`
+against the first shape. Pick one and match it: \`--payload --json | jq '.data'\`
+for the payload, or plain \`--json | jq -r '.data.payload' | jq .\` for the record.
+
 plus reading any file those name. The gate sits downstream of the work it
 judges — its issue's earlier steps recorded THIS wave, and their artifacts and
 payloads are the evidence. Read what the claims rest on. Do not write, edit,

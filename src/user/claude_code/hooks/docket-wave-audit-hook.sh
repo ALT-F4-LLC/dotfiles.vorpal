@@ -91,11 +91,32 @@ command -v docket >/dev/null 2>&1 || exit 0
 # with "no docket database found" is the engine's NOT_FOUND riding the deny
 # channel (measured directly), not a discrepancy — advisory noise about a
 # repo that is not docket's business helps nobody.
+#
+# `guard record` denies on exactly TWO states, and this hook must not treat them
+# alike (DOT-1072). The engine computes both in one function shared with `next`
+# (internal/engine/dispatch.go refuseIfUnreconciledTx), so the reason text below
+# is the engine's own words rather than a paraphrase this file could drift from:
+#
+#   open dispatch  -> "RUN-N has an open dispatch: DISPATCH-M expiring at ..."
+#   discrepancy    -> "RUN-N has N unreconciled discrepancy(s) and will not be
+#                      offered new work until they are resolved: ..."
 ERR=$(docket guard record 2>&1 >/dev/null)
 if [ "$?" -eq 2 ]; then
   case "$ERR" in
     *'no docket database found'*) : ;;
-    *) echo "wave-audit (advisory): dispatch open or discrepancy standing — normal mid-wave; the engine refuses 'next' if real drift persists" >&2 ;;
+    # AN OPEN DISPATCH IS SILENT. Workflow returns at wave LAUNCH, and a wave is
+    # launched against an open dispatch BY DEFINITION — so this branch fired on
+    # every legitimate wave launch (three for three on one measured run) while
+    # telling the conductor nothing it could act on. That is the same alarm
+    # fatigue the policyText block above was rewritten to kill, and it made the
+    # conduct skill's "wave-audit stays silent on a clean launch" false.
+    *'has an open dispatch:'*) : ;;
+    # EVERYTHING ELSE IS SURFACED, WITH THE GUARD'S OWN REASON. A standing
+    # discrepancy is a property of the RUN, not of the manifest: it survives the
+    # dispatch close and `next` refuses while it stands. Anything unexpected
+    # (a missing run, a failed read) lands here too, so the line quotes the
+    # engine rather than asserting which of the two it is.
+    *) echo "wave-audit (advisory): \`docket guard record\` denies, and NOT for the normal open-dispatch reason — read it: $ERR" >&2 ;;
   esac
 fi
 exit 0

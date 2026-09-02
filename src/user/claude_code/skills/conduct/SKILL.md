@@ -597,7 +597,8 @@ shares a tool call with another:**
    commands, nothing new:
 
    ```bash
-   wave-usage --seats <tribunal-transcript-dir> > "$TMPDIR/panel.json"   # check $?
+   # stdout is the JSON batch, stderr is diagnostics: NEVER merge them (no 2>&1).
+   wave-usage --seats <tribunal-transcript-dir> > "$TMPDIR/panel.json" 2>"$TMPDIR/panel.stderr"   # check $?
    docket vote backfill-usage <proposal-id> --source "tribunal:<wfId>" \
      --from-json - < "$TMPDIR/panel.json"
    ```
@@ -965,6 +966,16 @@ launch and rebuild it from a fresh run of the fallback script, never from
 context. Never read the advisory as ambient noise — three governance panels
 and two waves once ran condensed while it scrolled past.
 
+**Nor is wave-audit's OTHER line noise any more.** The same hook relays
+`docket guard record`, and it used to print a "dispatch open or discrepancy
+standing" advisory on EVERY wave launch — a wave launches against an open
+dispatch by definition, so the line fired three for three on one run and meant
+nothing. It is now silent on an open dispatch (and on a repo with no docket
+database) and speaks only when the guard denies for some OTHER reason, quoting
+the engine's own text. A clean launch produces no stderr from this hook at
+all, so any line it does print is a standing discrepancy or something
+unexpected: read it, do not scroll past it.
+
 **A policy-guard deny now means something is wrong with the sentinel, not that
 you need to retype anything.** `docket-policy-guard-hook`
 denies a launch — wave or tribunal, it does not distinguish — only when
@@ -1154,8 +1165,9 @@ first and include the refusal verbatim in the abandon `--reason`.
 # 1. the join is a script (below) — it writes the rows JSON to a file; you check the shape
 # 2. back-fill BEFORE the close. One transaction, whole batch or nothing: four
 #    TYPED rows per step, --source naming the wave (an established convention, keep it).
-#    Never retype the rows — the script's file IS the input:
-~/.claude/scripts/wave-usage <transcript-dir> > "$TMPDIR/wave-<wfId>.json"   # check $?
+#    Never retype the rows — the script's file IS the input.
+#    stdout is the JSON batch, stderr is diagnostics: NEVER merge them (no 2>&1).
+~/.claude/scripts/wave-usage <transcript-dir> > "$TMPDIR/wave-<wfId>.json" 2>"$TMPDIR/wave-<wfId>.stderr"   # check $?
 docket dispatch backfill-usage --run $RUN --source "wave-journal:<wfId>" --from-json - < "$TMPDIR/wave-<wfId>.json"
 # 2b. integration check — when this dispatch carried write steps, every
 #     recorded sha must be ON the shared branch before the close:
@@ -1226,7 +1238,14 @@ on a pending and a superseded step before this defect was found). That overhead 
 report, not a discrepancy — quote its total in the wave report if anything,
 and never try to `--exclude` your way around it. It exits nonzero when an
 executor's brief names no step to record or an agent carries no usage — report
-that, do not paper over it. Capture ITS exit, not a pipeline's:
+that, do not paper over it. **Its two streams are different things and are
+never merged: stdout is the back-fill batch, stderr is diagnostics (the
+wave-overhead line above, the named silent seats), so the redirect is
+`> "$TMPDIR/wave-<wfId>.json" 2>"$TMPDIR/wave-<wfId>.stderr"` and NEVER `2>&1`.**
+A `2>&1` into the JSON file put the overhead line at the top of the batch and
+`backfill-usage` refused the whole transaction — `✘ Error: reading the
+back-fill batch: invalid character 'w' looking for beginning of value` — costing
+a retry on RUN-68. Capture ITS exit, not a pipeline's:
 `$?` after `script | tail` reports tail's exit, and one conductor's first close
 checked exactly that dead value (redirect to a file, then test). Only if the
 script is absent or refuses do you delegate: ONE `executor-read` agent on the
@@ -1255,7 +1274,8 @@ mode and pipe it to the vote-scoped verb, once per panel, right after you read
 the tally:
 
 ```bash
-wave-usage --seats <tribunal-transcript-dir> > "$TMPDIR/panel.json"   # check $?
+# stdout is the JSON batch, stderr is diagnostics: NEVER merge them (no 2>&1).
+wave-usage --seats <tribunal-transcript-dir> > "$TMPDIR/panel.json" 2>"$TMPDIR/panel.stderr"   # check $?
 docket vote backfill-usage <proposal-id> --source "tribunal:<wfId>" \
   --from-json - < "$TMPDIR/panel.json"
 ```
@@ -2197,6 +2217,27 @@ X, or leave it for now?" tacked onto a status report is a decision, not
 narration: ask it with the question tool, recommended option first, exactly as
 you would a gate (a conductor's scope question once rode a report as
 prose while every gate question that same session used the tool correctly).
+
+**A count you state to the operator is READ OFF A SURFACE, never recalled.**
+This is the same rule the close report's pasted literal output carries (**3.
+Close the dispatch**), and it governs the answers you give mid-run too. For
+Workflow launches — "how many waves so far?" — the surface is the session's own
+journal:
+
+```bash
+ls ~/.claude/projects/<cwd-slug>/<session-id>/workflows/*.json | wc -l
+```
+
+one file per launch, wave.js and tribunal.js alike, `<cwd-slug>` flattened as
+**Project memory** above spells out. **A panel seated INSIDE a wave is not a
+launch**: wave.js seats every engine `type = "vote"` row itself, so those
+panels have a proposal id and a `spawn_accounting` line but no `workflows/`
+entry of their own — only a panel you convened yourself through a separate
+`Workflow({scriptPath: …tribunal.js})` call is a launch. RUN-68's conductor
+reported "5 Workflow launches total" from memory — 3 waves plus two panels it
+called activation gates — where the directory held 4, because DKT-V310 was the
+held-cluster panel seated inside wave `wf_365a81b0` and had never been launched
+at all. Read the count and paste the number the `ls` gives you.
 
 On their answer:
 

@@ -2,7 +2,6 @@
 name: plan
 description: Turn a work request into an activatable Docket run — converse until the request is unambiguous, then record the request, a plan artifact, and issues with kinds, labels, scopes, depends_on relations, and verbatim acceptance criteria. Invoked bare (`/plan` with no request and no issue id) it instead surveys the current Docket project's open backlog, aligns with the operator on what this batch should cover (which kinds of work, how aggressively to parallelize), and proposes the most optimal next batch — ready, highest-priority, parallel-safe, run-ready, within a stated budget — then on confirmation records that batch as a run binding the backlog issues directly. Records and stops; never runs the work. Use at the start of a piece of work, to pick the next batch off the backlog, or to extend a run's later phase after execution has learned something. Runs entirely in this conversation on `model: fable` — no dedicated seat, no subagent spawn; the intake conversation, the repo read, the decomposition, and the recording all happen here.
 model: fable
-context: fork
 ---
 
 # plan

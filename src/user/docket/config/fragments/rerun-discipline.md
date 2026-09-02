@@ -1,6 +1,6 @@
 ---
 fragment: rerun-discipline
-version: 3
+version: 4
 ---
 # Re-run discipline
 
@@ -29,3 +29,10 @@ private copy of the tree (`git worktree add` under your $TMPDIR subdirectory, re
 after), never in the shared checkout. In a concurrent fanout your scratch edit becomes
 a sibling's input: in an earlier run, one judge's leaked planted-mutant hunk reached
 another judge's diff.
+
+`git stash` is never how you get a clean tree, there or anywhere. The stash stack is the
+repository's, not your worktree's: a push from an isolated worktree lands on the same
+stack the main checkout and every concurrent session share, and the pop that follows can
+return a sibling's entry instead of yours. To run a command against the base rather than
+your tree, `git worktree add <TMP>/<STEP-N>.d/base HEAD` under your step's private
+directory, run it there, and remove the worktree after.

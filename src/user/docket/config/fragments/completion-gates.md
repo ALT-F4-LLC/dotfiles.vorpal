@@ -1,6 +1,6 @@
 ---
 fragment: completion-gates
-version: 1
+version: 2
 ---
 # Completion gates
 
@@ -19,3 +19,13 @@ linter never, recorded, and failed self-hygiene at record on a single line one c
 over the limit: the run parked, the operator was asked, the conductor hand-patched, and a
 fix round followed, for a check that takes seconds. A gate that fails before record is
 yours to fix in your worktree; a gate that fails at record is everyone's.
+
+Never `git stash` to establish that a failing gate pre-dated your change. The stash stack
+is the repository's, not your worktree's: a push from an isolated worktree lands on the
+same stack the main checkout and every concurrent session share, and the pop that follows
+can return a sibling's entry instead of yours. A write executor did exactly this to prove
+a test failure pre-existing, and then needed `git checkout -- go.sum` to undo the drift
+the round-trip left behind. To test a gate against the base, build a clean tree beside
+yours instead: `git worktree add <TMP>/<STEP-N>.d/base HEAD` under your step's private
+directory, run the gate there, remove the worktree after. Your own tree is never disturbed
+and the shared stack is never written.

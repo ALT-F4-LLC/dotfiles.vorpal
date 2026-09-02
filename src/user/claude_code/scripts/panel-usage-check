@@ -1,0 +1,43 @@
+#!/bin/sh
+# panel-usage-check — read-only. Name every vote seat in a run whose spend
+# never reached a ledger, so a conductor cannot report the run done over an
+# unpaid panel back-fill. One read, no writes (`run report`, which mutates
+# nothing). Exit 0 when every cast reported spend, 1 when any seat is silent,
+# 2 on a usage error, 3 when the read itself failed.
+# Usage: panel-usage-check RUN-N
+#
+# THE SOURCE IS `run report --json`, NOT `vote show --json`. A proposal's own
+# show carries description, votes and linked issues and NO usage rows in either
+# json version — there is nothing there to find a zero in. The engine does the
+# join itself and publishes it as `silent_vote_seats[]` (proposal, voter, role,
+# path) beside `vote_usage_coverage {casts, reported}`, which is the same pair
+# the human report prints as its `Coverage:`/`Silent:` lines. This script is
+# those lines with an exit status attached; it discovers nothing the engine did
+# not already say, which is the whole point — the miss it nets was a report
+# nobody ran (RUN-68: reported done carrying three silent DKT-V309 seats).
+#
+# `path` says WHY a seat is silent and therefore who owed the back-fill:
+# "conversational-gate" is a panel the conductor convened itself (tribunal.js —
+# `wave-usage --seats <dir>` piped to `docket vote backfill-usage <proposal>`),
+# anything else is an in-wave vote row's seats. Both are printed and neither is
+# filtered, because a silent seat is missing spend either way.
+set -eu
+[ $# -eq 1 ] || { echo "usage: panel-usage-check RUN-N" >&2; exit 2; }
+run=$1
+report=$(docket run report "$run" --json) || {
+    echo "panel-usage-check: \`docket run report $run --json\` failed" >&2
+    exit 3
+}
+printf '%s\n' "$report" | jq -r --arg run "$run" '
+    .data as $d
+    | ($d.silent_vote_seats // []) as $silent
+    | ($d.vote_usage_coverage // {casts: 0, reported: 0}) as $cov
+    | "\($run): \($cov.reported) of \($cov.casts) seat cast(s) reported spend",
+      ($silent[] | "  SILENT: \(.proposal) seat \"\(.voter)\" as \"\(.role)\"  (\(.path))"),
+      (if ($silent | length) == 0
+       then "coverage complete — no panel back-fill owed"
+       else "\($silent | length) seat(s) owe a back-fill: wave-usage --seats <tribunal-transcript-dir> | docket vote backfill-usage <proposal>"
+       end)'
+# The exit status is a second read of the same captured JSON, not a parse of the
+# text above: a formatting change must never be able to move the verdict.
+[ "$(printf '%s\n' "$report" | jq '.data.silent_vote_seats // [] | length')" -eq 0 ]

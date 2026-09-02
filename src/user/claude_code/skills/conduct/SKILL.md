@@ -583,14 +583,41 @@ issues bound, steps, pins, any lint (the dry-run JSON's `scope_warnings`,
 VERBATIM — one gate once dropped all five warnings behind the generic word
 "lint"), plus what the three checks said — including which standing proposal
 you adopted or closed — all of it as the proposal's context.
-Activate only on a clean dry-run and an approved tally, and pass
-`--reason "approved by <proposal-id>"` so the run-activated event carries the
-citation in the engine ledger — the activation's rationale belongs on the
-engine record first, with your own activation report repeating it as the
-secondary copy. Anything short of approval goes to the operator
-with the full tally, per **Gates**. A successful activation is the FIRST
-milestone point of any standing external-tracker obligation project memory
-carries (above) — post it before the first dispatch.
+
+**When the panel returns it is THREE separate calls, in this order — the seat
+back-fill sits BETWEEN the tally and the activation, and none of the three
+shares a tool call with another:**
+
+1. **Read the tally** — `docket vote show <proposal-id>`, read by you, per
+   **Gates**. Anything short of approval goes to the operator with the full
+   tally instead of going on to step 2.
+2. **Back-fill the panel's seat usage.** This is a panel you convened, so it is
+   the `--seats` case of **A panel you convened yourself gets the same
+   treatment** (loop step 3), where the whole explanation lives — the two
+   commands, nothing new:
+
+   ```bash
+   wave-usage --seats <tribunal-transcript-dir> > "$TMPDIR/panel.json"   # check $?
+   docket vote backfill-usage <proposal-id> --source "tribunal:<wfId>" \
+     --from-json - < "$TMPDIR/panel.json"
+   ```
+
+   The transcript dir is `<session>/subagents/workflows/<wfId>/`, with `<wfId>`
+   from the tribunal launch's own result. Activation is exactly where this gets
+   skipped, because `run activate` is sitting right there: one conductor read
+   the DKT-V309 tally and ran `run activate` in the SAME Bash call, and RUN-68's
+   report still names all three of that panel's seats as silent. No engine verb
+   refuses on it — this step and the `run report` check before you report done
+   (loop step 1) are the only two nets there are.
+3. **Activate**, only on a clean dry-run and an approved tally, passing
+   `--reason "approved by <proposal-id>"` so the run-activated event carries the
+   citation in the engine ledger — the activation's rationale belongs on the
+   engine record first, with your own activation report repeating it as the
+   secondary copy.
+
+A successful activation is the FIRST milestone point of any standing
+external-tracker obligation project memory carries (above) — post it before the
+first dispatch.
 
 **Hand-check every binding for wrong-one routing, and put what you find in the
 proposal.** The dry-run refuses zero matches and several; it structurally
@@ -725,9 +752,9 @@ docket next --run $RUN --limit 500 --json
 
 - **Rows returned** → step 2.
 - **Empty, nothing running** → run the roster-coverage check (termination
-  condition 3 above): covered → report done; uncovered → report PHASE
-  QUIESCED and surface the re-activation gate. Either way the report reads
-  from `docket run status $RUN`, then stop.
+  condition 3 above): covered → the SEAT-COVERAGE check below, then report
+  done; uncovered → report PHASE QUIESCED and surface the re-activation gate.
+  Either way the report reads from `docket run status $RUN`, then stop.
 - **A dispatch is already open** → `next --run` REFUSES rather than returning
   empty, so that refusal IS the signal. Reconcile before anything else — in
   step 3's binding order, not a shortened one: BACK-FILL usage first (step 3),
@@ -743,6 +770,23 @@ docket next --run $RUN --limit 500 --json
   landed this is a missed step in your own loop, not a wedge to work around.
 
 Any other refusal from `next` is a real stall — report it verbatim and stop.
+
+**Before you report a run done, run `docket run report $RUN` and read its
+`Coverage:` line.** The engine has been printing what a skipped panel back-fill
+costs the whole time; what was missing was anyone reading it. Every `Silent:`
+line names a proposal and a seat whose spend reached no ledger at all, and each
+one is a back-fill you still owe: run the `--seats` join for THAT proposal's
+tribunal transcript dir — `wave-usage --seats
+<session>/subagents/workflows/<wfId>/` piped to `docket vote backfill-usage
+<proposal>`, per **A panel you convened yourself gets the same treatment** in
+step 3 — BEFORE the done report, never after. The done report is the last turn
+anyone spends on this run, and a silent seat outlives it permanently.
+`~/.claude/scripts/panel-usage-check $RUN` (else
+`$CC_SRC/scripts/panel-usage-check`, resolved like `wave-usage`) is that same
+read as one read-only command: it names every silent seat and exits 1, or
+reports full coverage and exits 0. This nets a miss the contract already
+forbade — RUN-68 was reported done carrying three silent DKT-V309 seats, and
+the `Silent:` lines naming them were sitting in a report nobody ran.
 
 **`--json` suppresses every stderr diagnostic** — reap notices and
 held-headroom reasons ride there only, so under `--json` the payload is
@@ -1479,7 +1523,11 @@ proposal ids: panel cost lives entirely outside the run ledger (wave-usage
 attributes by step id; panels carry vote ids), and on re-plan-heavy runs it
 has equalled the run's whole tracked spend (one run: 185,673 untracked output
 tokens vs 186,606 tracked), so a close report that omits it understates the
-session by up to half. It names the issues filed for seat conditions, by id
+session by up to half. Each convocation it names is a panel whose seats owe a
+`--seats` back-fill, so `run report`'s `Coverage:` line (step 1) is the check on
+this list as much as on the ledger: a proposal you list here and a `Silent:`
+line naming that same proposal cannot both be right.
+It names the issues filed for seat conditions, by id
 (**Escalating to the operator** — a gate that passed over a reject on a
 condition), so the promise and the issue keeping it are legible in the same
 place. Name

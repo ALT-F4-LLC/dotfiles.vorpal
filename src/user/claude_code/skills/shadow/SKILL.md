@@ -215,8 +215,9 @@ which is a post-mortem from birth exactly like a terminal run. Then branch:
 - **Run still active, wave still moving** (docket-run skills) — the live
   brief below, ping contract and all.
 - **`/loop /tend`, wakeup still armed** — the live brief below, tick-paced:
-  one ping when a tick claims an issue, one when it commits and closes,
-  none on an empty tick.
+  one ping when a tick picks an issue (`issue move in-progress`), one when
+  it lands and closes it (`issue close`), none on an empty tick — a quiet
+  tick is not a finding.
 - **Run terminal, or its final wave finished** (docket-run skills) — brief a
   POST-MORTEM. There are no dispatch boundaries left to ping, so a live-watch
   contract is unfulfillable from birth: all three of §5's interrupt
@@ -250,11 +251,41 @@ Agent({subagent_type: "general-purpose", model: "fable",
 
 One tool, one call — a lone background observer is not orchestration, and
 the `Workflow` tool is not the way to start one however tempting its
-`agent()` opts look. `Agent` exposes no effort tier, so this seat runs at
-the session default; that is an accepted limitation, not a reason to reach
-for another tool. The `name` matters: it is what makes the agent
-addressable by `SendMessage` in both directions — the address your
-dispatch-boundary pings go to, and the return path for §5's interrupts.
+`agent()` opts look. The `name` is why, and it is load-bearing: it is what
+makes the agent addressable by `SendMessage` in both directions for the
+seat's whole life — the address every boundary ping below goes to, and the
+return path for §5's interrupts — and a `Workflow` `agent()` seat never
+has one. That is a capability gap, verified rather than assumed, and it is
+specifically the inbound half. `agent()`'s opts are `label`, `phase`,
+`schema`, `model`, `effort`, `isolation`, and `agentType`: `label` is a
+display string, not an address, and there is no `name` (the
+workflow-authoring reference; the official workflows doc says nothing about
+messaging a run's agents at all). The `Workflow` tool's launch result hands
+the conductor a task id, a run id, a transcript directory, and a script
+path — never an agent to message (read off a tend session's own launch
+results) — and the seat's `agentId` surfaces only in `journal.jsonl` once
+it starts, while `SendMessage` takes a raw id only "from its spawn
+result". No transcript on this machine has ever sent to a `Workflow` seat
+(every raw-`agentId` send in the fleet went to an `Agent`-tool subagent),
+so whether a journal-scraped id would resolve mid-script is untested
+either way — and a seat whose address is untested is not one you can owe
+pings to. After the script returns the seat is gone regardless — tend's
+own §3: "a `Workflow` seat cannot be messaged after its script returns",
+which is why a bad worker report gets a fresh `agent()` spawn there rather
+than a follow-up message — whereas a named `Agent` seat stays reachable
+even after it completes (a send resumes it from its transcript). The
+outbound half is not the gap: a running `agent()` seat is offered
+`SendMessage` with `main` in its sibling roster (observed from a tend
+worker seat), so §5's interrupts could leave a `Workflow` seat; it is the
+pings that could never arrive. Hence the deliberate asymmetry with tend's
+seating rule (its §3 bans `Agent` for workers): a tend worker is one-shot
+and disposable — spawn, implement, report, done — and is never messaged,
+so `Workflow`'s explicit `model`/`effort` opts are exactly what it needs;
+this watcher must be reachable by name at every boundary for the run's
+entire length, and only `Agent` offers that. The price is the effort tier:
+`Agent` exposes none, so this seat runs at the session default. That is
+the stated cost of staying addressable, not an oversight, and not a reason
+to reach for another tool.
 
 The brief stays short because the contract already exists — it seats the
 agent on this skill in single-session mode. Three of its five parts read the
@@ -349,10 +380,13 @@ owe the agent nothing after the spawn.) Having spawned it, you owe it one
 STEP-8"})`, `"dispatch 3 closed — STEP-7 recorded, STEP-8 gate-failed"` —
 plus one at each operator gate and one when the run ends. **For `/loop
 /tend`, the boundaries are ticks, not dispatches**: one ping when a tick
-claims an issue (`"tick claimed DKT-N — seating a worker"`), one when it
-commits and closes (`"tick closed DKT-N — commit <sha>"`), and one when the
-loop stops — but none on an empty tick, mirroring tend's own rule that a
-quiet poll gets no message (§1). A ping is not a poll: one line, sent as you
+picks an issue — the `docket issue move <id> in-progress` of tend's §2
+step 3 (`"tick claimed DKT-N — seating a worker"`), one when it lands and
+closes it — the `commit` skill, the close comment, and the `docket issue
+close` of tend's §2 step 5 (`"tick closed DKT-N — commit <sha>"`), and one
+when the loop stops — but none on an empty tick, mirroring tend's own rule
+that a quiet poll gets no message (its §1: "a quiet tick is not an
+event"). A ping is not a poll: one line, sent as you
 pass the boundary anyway, no reply awaited and never waited on. Each ping is
 the agent's only turn — it flushes the queued monitor backlog, lets the
 agent log against it, and lets an interrupt come back BEFORE the next wave
@@ -366,22 +400,6 @@ post-mortem is only that the brief said otherwise. A run — or loop — whose
 conductor will not carry that obligation should be told so at spawn time,
 in the brief's own words, so the review does not claim a live watch that
 never happened.
-
-**Why this seat still uses `Agent`, not `Workflow`, even when the target is
-`/loop /tend` (which itself bans `Agent` for its own workers, §3 there):**
-the two seats need different things from their tool. A tend worker is
-one-shot and disposable — spawn, implement, report, done — so `Workflow`'s
-explicit `model`/`effort` opts are exactly what it needs and nothing more.
-This watcher is the opposite: it must stay addressable by `SendMessage` in
-both directions for the seat's ENTIRE life — the dispatch/tick-boundary pings
-in, and §5's interrupts back out — and tend's own text is the evidence that
-a `Workflow`-seated `agent()` call cannot do that: "a `Workflow` seat cannot
-be messaged after its script returns" (tend §3, on why a bad worker report
-gets a fresh `agent()` spawn rather than a follow-up message to the first
-one). `Agent`'s lost effort tier (line 226 above) is the stated price of
-staying addressable; it is not an oversight parallel to tend's own
-Agent-for-workers mistake, because the two seats are not doing the same
-job.
 
 Between pings, the shadow seat goes idle BY DESIGN — that is the whole point
 of a seat whose only turns are the pings you send it. The harness delivers
@@ -655,14 +673,24 @@ with the same `journal.jsonl` / `agent-<agentId>.meta.json` /
 `agent-<agentId>.jsonl` trio as a wave. The join differs, though: there is no
 step id, because tend has no docket run — the attribution key is the
 **Docket issue id**, and it is in the worker's first `user` message the same
-way a step id is (tend's brief opens `Implement Docket issue DKT-N: …`, its
-own §3). And `agent-<agentId>.meta.json` carries `model` but **no
-`effort`** — tend requires effort explicit in every `agent()` call (its own
-§3), but that opt, and the one-line tier ruling that justifies it, are
-visible only in the ORCHESTRATOR's own transcript, as the `log()` call
-immediately before `agent()` (tend's §3 step 2 shows the shape) — checking
-tend's seating rule (appendix) means reading the main transcript, not the
-worker's `meta.json`.
+way a step id is, because tend's brief "carries the whole contract: the
+repo's absolute path, the issue id, title, description, and acceptance
+criteria verbatim" (its own §3). The opening phrase is NOT fixed — tend
+prescribes the contents, not the wording — so match the id pattern
+(`[A-Z]+-[0-9]+`) rather than a phrase: measured briefs open `Implement
+Docket issue DKT-N: "…"` in one repo's tend sessions and `You are
+implementing Docket issue DOT-N in this repo` in another's. And
+`agent-<agentId>.meta.json` carries `model` but **no `effort`** — tend
+requires effort explicit in every `agent()` call (its own §3), but that
+opt, and the one-line tier ruling that justifies it, are visible only in
+the ORCHESTRATOR's own transcript, in the `Workflow` tool call's `script`
+input as the `log()` call immediately before `agent()` (tend's §3 step 2
+shows the shape) — checking tend's seating rule (appendix) means reading
+the main transcript, not the worker's `meta.json`. The harness also
+persists every launched script as
+`<session-id>/workflows/scripts/<meta.name>-<wfId>.js` (the launch result
+names the path), which joins the tier line and the `model`/`effort` opts to
+a `wfId` without parsing the main transcript at all.
 
 Tail on a cadence, from your last offset —
 `$SRC/scripts/shadow-transcript-summary.sh <transcript.jsonl> [from-line]`
@@ -871,20 +899,24 @@ Then:
      its scopes missing, repaired only by a later edit).
    - **Never `--assignee`.** Shadow files findings; it never claims them. An
      assignee is what tells a `/loop /tend` session to skip an issue as
-     already claimed (tend's own §1: any issue with a non-empty `assignee`
-     is someone or something else's) — setting one on a filed finding would
-     hide it from the exact drain named at §5/§6's own review line.
+     already claimed — tend's own §1 excludes any issue with a non-empty
+     `assignee`: "tend never sets one on the issues it works, so a populated
+     `assignee` means someone or something else already has it. Skip it."
+     Setting one on a filed finding would hide it from the exact drain step
+     3's review names.
 
    A finding whose remedy would add a trust entry, widen a sandbox
    allowlist, change what a hook permits, or destroy uncommitted work still
    files — an issue is a request, not an authorization — but its description
    must name the trust boundary in its FIRST line. That line exists to fire
-   the WORKER's own security gate — for a `/loop /tend` drain, tend's own §2
-   step 2, which pauses via `AskUserQuestion` before touching anything a
-   filed issue touches on authn/authz, secrets, crypto, sandbox/permissions,
-   a trust boundary, supply chain, or untrusted input at a privilege
-   boundary; name the same trigger set here so a finding tend's gate would
-   catch is never phrased around it by accident. The review calls the finding
+   the WORKER's own security gate — for a `/loop /tend` drain, the
+   security-sensitive gate of tend's own §2 step 2, which asks the operator
+   via `AskUserQuestion` "before touching anything" when an issue "touches
+   authn/authz, secrets, crypto, sandbox/permissions, a trust boundary,
+   supply chain, or untrusted input at a privilege boundary". Name the same
+   trigger set here, in those words, so a finding tend's gate would catch is
+   never phrased around it by accident — and so the two stay coupled if
+   either changes. The review calls the finding
    out separately either way. Findings that point at instance config rather
    than at a definition — thresholds, TTLs, tiers, the corpus's own
    workflows, a repo's additions — are `/retro`'s to evolve from engine
@@ -1044,59 +1076,104 @@ And the wave:
 ## Appendix: the tend checklist
 
 Pre-derived because a `/loop /tend` session is the other recurring target
-(§1b, §4). The loop:
+(§1b, §4). Every quoted phrase below is tend/SKILL.md's own wording, so a
+drift between the two files reads as a diff against the quote. The loop:
 
-- **Never `plan`/`conduct`/a docket run.** No `/plan` or `/conduct`
-  invocation, no docket run created or activated — ever, for this loop
-  (tend's own §1). A tend session doing any of these has stopped being
-  tend; treat it as load-bearing.
-- **Loop-wrapped, not self-pacing.** `tend` supplies no watch loop of its
-  own; `/loop /tend` (or `/loop 20m /tend`) is what re-enters it each tick.
-  Invoked bare with no loop wrapper, one pass and say so — there is no next
-  tick to watch, and a shadow briefed for a live watch against a bare
-  invocation is briefed wrong (§1b's branch).
-- **One issue, one worker, ever.** Strictly one issue in flight; workers
-  share the tend session's own working tree (no worktree isolation), so two
-  issues' workers alive at once is a **load-bearing** finding (tend's own
-  §1: "never have two issues' workers alive at once").
-- **Queue exclusions.** Run-included issues (on any active/planning/paused
-  run's roster) and claimed issues (non-empty `assignee`) are skipped —
-  tend itself never sets an assignee on what it works, so a populated one
-  means another skill already has the issue (tend's own §1).
-- **Empty tick is silent.** `ScheduleWakeup` at 150-180s, `noop: true`, and
-  no "nothing to do" message — a quiet tick is not a finding, the same as
-  §5's "a quiet transcript is a run working."
-- **Security gate before touching anything.** An issue in authn/authz,
-  secrets, crypto, sandbox/permissions, a trust boundary, supply chain, or
-  untrusted input at a privilege boundary pauses for `AskUserQuestion` —
-  proceed, skip, or the operator takes it themselves — before any edit
-  (tend's own §2 step 2). Working one blind is a finding, and it is the
-  same gate §6 asks a shadow's own filed findings to fire.
+- **Never `plan`/`conduct`/a docket run.** "Never invoke the `plan` or
+  `conduct` skills, and never create or activate a docket run" — "ever, for
+  this loop" (tend's own preamble). A tend session doing any of these has
+  stopped being tend; treat it as load-bearing.
+- **Loop-wrapped, not self-pacing.** "`tend` has no watch loop of its own —
+  `/loop /tend` (self-pacing) or `/loop 20m /tend` supplies the recurring
+  wake-up; each firing re-enters this skill from §1. Invoked bare with no
+  loop wrapping it, do one pass and say so — there will be no next tick."
+  A bare invocation is a post-mortem from birth, and a shadow briefed for a
+  live watch against one is briefed wrong (§1b's branch).
+- **One issue, one worker, ever.** "Strictly one issue in flight at a time:
+  workers share this working tree, so never have two issues' workers alive
+  at once" (tend's own §1); "One worker at a time, ever — no parallel
+  workers within an issue, no parallel work across issues" (its §3). Two
+  tend workers alive at once — in §4's files, two `wfId`s whose
+  `agent-<agentId>.jsonl` timestamps overlap (`journal.jsonl` carries no
+  clock) — is a **load-bearing** finding on §5's scale: the workers share
+  one working tree, so the run can do the wrong thing, not merely pay for
+  it.
+- **Queue exclusions.** Run-included issues — on the roster of any run
+  `docket run status --active --json` returns, "planning, active, or paused
+  — anything not done or abandoned" — and claimed issues are skipped:
+  "Any issue with a non-empty `assignee` — tend never sets one on the
+  issues it works, so a populated `assignee` means someone or something
+  else already has it. Skip it." (tend's own §1). Issues already
+  `in-progress` or `review` are ignored too — tend put them there itself.
+  Lowest id first among what remains.
+- **Empty tick is silent; a queue drains without pausing.** Empty poll:
+  `ScheduleWakeup({delaySeconds: 150-180, noop: true, ...})` and stop, with
+  no "no new issues" message — "a quiet tick is not an event" (tend's own
+  §1) — so a quiet tick is not a finding, the same as §4's "a quiet
+  transcript is a run working." Non-empty poll: tend one, then "loop back
+  to re-poll immediately — don't schedule a wakeup between queued issues";
+  a wakeup scheduled with issues still queued is friction.
+- **Security gate before touching anything.** An issue that "touches
+  authn/authz, secrets, crypto, sandbox/permissions, a trust boundary,
+  supply chain, or untrusted input at a privilege boundary" is not
+  attempted blind: "Ask the operator via `AskUserQuestion` — proceed
+  anyway, skip it, or take it themselves — before touching anything"
+  (tend's own §2 step 2). Working one without the question is a finding,
+  and it is the same gate §6 asks a shadow's own filed findings to fire.
+  It is also the ONLY deferral: "Everything else, any kind, any size, gets
+  tended" — hesitating on size alone is the finding the other way.
+- **Orchestrates, never implements.** "You orchestrate; you do not
+  implement. Read or grep in this conversation only as far as seating the
+  worker requires — the moment you are editing files or chasing the fix
+  yourself, you have taken the worker's job" (tend's own §2 step 3). An
+  `Edit` or `Write` on repo files from the loop's own seat, or a fix
+  debugged in the main transcript, is a finding against the loop, not the
+  worker.
 - **Blocked, not retried.** An ask too unclear to brief, a missing
-  prerequisite, or a worker that still can't show its verification after one
-  follow-up round moves the issue to `review` with a comment naming the
-  blocker, told to the operator in the next visible turn, and is not
-  retried the same way next tick (tend's own §2 steps 4 and 3's
-  follow-up-round rule).
+  prerequisite, or a worker that still can't show its verification after
+  one follow-up round moves the issue to `review` with a comment naming the
+  blocker (`docket issue move <id> review`, then `docket issue comment
+  add`), is told to the operator "in your next visible turn", and "the same
+  blocked issue does not get retried every tick" (tend's own §2 step 4; the
+  one follow-up round is §3's). A blocked issue re-picked on a later tick
+  is a finding.
 - **Seating.** `Workflow`'s `agent()` only, never the plain `Agent` tool —
-  tend's own §3 bans it outright, since `Agent` carries no effort parameter
-  and would seat a worker at whatever the loop's own default happens to be;
-  both `model` and `effort` set explicitly in the opts; a `log()` line
-  carrying the tier ruling (mechanical / ordinary / gnarly, plus why) sits
-  immediately before the `agent()` call (tend's own §3, and §4 above for
-  where to find it — a tend worker's own `meta.json` carries `model` but no
-  `effort`). A spawn missing the tier line, or either opt, is mis-seated
-  regardless of which tier it picked.
-- **Landing.** `commit` skill once per issue, never batched across issues
-  (skip only when the issue changed no files); the close comment cites the
-  commit hash(es) (tend's own §2 step 5). A close with no commit hash in
-  the comment is a **load-bearing** finding — it breaks the one thing that
-  lets a later reader verify what actually landed.
-- **Report per tended issue.** One line — issue id, title, commit hash(es)
-  — every tended issue is a state change and always gets said, never
-  absorbed silently (tend's own §2 step 6).
-- **Stop condition.** The loop ends only when the operator stops it
-  (`ScheduleWakeup({stop: true})` or telling it to stop) or ends the
-  `/loop`; an empty queue is a rest, not a finish (tend's own "Stop"
-  section). A tend session that treats an empty queue as done, or that
-  stops narrating on its own, is a finding.
+  tend's own §3: "The plain `Agent` tool has no place here at any size: it
+  carries no effort parameter, so a worker seated through it runs at
+  whatever this session's default happens to be — an inherited accident,
+  not a decision." Built-in agent types only: "`general-purpose` to
+  implement, `Explore` when the issue is a pure read-only investigation —
+  never a custom agent definition." Every seat sets "**both `model` and
+  `effort` explicitly**, whatever the tier", and inside `agent()`'s opts
+  specifically — "Setting either on a `meta.phases` entry instead is
+  display-only for the progress UI — it silently seats the session
+  default, with no error" — so a `model` or `effort` that appears only on a
+  phase entry is a mis-seat the progress view will not show. "The
+  statement immediately before the `agent()` call is a `log()` line
+  carrying step 1's ruling verbatim": the tier named (mechanical /
+  ordinary / gnarly) plus why THIS issue fits it, read from the
+  orchestrator transcript or the persisted script, never the worker's
+  `meta.json`, which carries `model` but no `effort` (§4 above). "A spawn
+  missing the tier line, or missing either opt, is mis-seated regardless
+  of which tier it picked". And "A report with no verification evidence
+  gets one follow-up round, not a commit" — "a fresh `agent()` spawn (same
+  tier, same explicit opts, same tier line)", never a message to the first
+  seat.
+- **Landing.** The `commit` skill (`Skill({skill: "commit"})`), "one
+  commit-cycle per issue, never batched across issues; skip it only when
+  the issue changed no files"; then the close comment "citing the commit
+  hash(es)"; then `docket issue close` (tend's own §2 step 5, in that
+  order). An issue closed with no commit hash in its close comment is a
+  **load-bearing** finding on §5's scale — it breaks the one thing that
+  lets a later reader verify what actually landed — and so is a close
+  with no commit at all when files changed, or one commit landing several
+  issues.
+- **Report per tended issue.** "Report the tend in one line — issue id,
+  title, commit hash(es). A tended issue is a state change; it always gets
+  said, never absorbed silently" (tend's own §2 step 6). A tend with no
+  visible line, or a line missing the hash, is a finding.
+- **Stop condition.** "The loop ends when the operator stops it
+  (`ScheduleWakeup({stop: true})`, or simply telling you to stop) or ends
+  the `/loop`. There is no other terminal condition — an empty queue is a
+  rest, not a finish" (tend's own Stop section). A tend session that
+  treats an empty queue as done, or that stops on its own, is a finding.

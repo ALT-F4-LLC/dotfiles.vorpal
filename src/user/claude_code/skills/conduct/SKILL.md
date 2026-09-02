@@ -1270,11 +1270,14 @@ steps first, in step-id order:
    (ssh-format, `~/.ssh/agent-signing.pub`) — never pass `--no-gpg-sign`.
    It is still relay plumbing; PUBLISHING — push, PR, release — remains
    the operator's alone, and nothing you do pushes.
-3. If a resolution comment or deliverable already cites the writer's sha
-   (the change-summary from record does — see above), update it, or add a
-   follow-up, with the integrated sha at this same integration point: the
-   writer's sha lives only until its worktree branch is swept, and a
-   permanent record needs an anchor that still resolves once it is.
+3. `docket step annotate STEP-N --metadata
+   '{"integrated_sha":"<new sha>","writer_sha":"<sha>"}'` — mandatory, right
+   here, not deferred. This is the durable anchor: the writer's sha lives
+   only until its worktree branch is swept, and `run report`/`step show`
+   need a citation that still resolves once it is. If a resolution comment
+   or deliverable already cites the writer's sha (the change-summary from
+   record does — see above), update it, or add a follow-up, pointing at
+   this annotation rather than re-typing the sha.
 
 A cherry-pick whose diff touches `.claude/skills/**` fails under the sandbox
 on the unlink (`Operation not permitted` — the write-deny, not the content).

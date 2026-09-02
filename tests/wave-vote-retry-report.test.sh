@@ -42,6 +42,13 @@
 # still lands on the regex/substring fallback and is logged as a WARNING
 # naming the reply length.
 #
+# DOT-1050 then asked for the surviving cost to be VISIBLE without reading the
+# source: five to eight probes per gate was the number in the shadow report,
+# and after DOT-1040/1041 it is three. The counts this suite measures (2 on an
+# already-decided gate, 3 healthy, 4 with a re-read, 5 with re-seats) are the
+# authority, and `meta.description` in wave.js must state them; the postscript
+# below cross-checks the prose against the cases so the two cannot drift.
+#
 # HOW. wave.js fences the gate machinery (probeBrief, probe, parseHeldCluster,
 # parseTargetRef, parseVoteShow, gateSuccess, runGate) in TEST-BEGIN/TEST-END
 # `gate-vote` markers. This suite extracts that region, prepends the
@@ -361,3 +368,35 @@ process.exit(fail === 0 ? 0 : 1)
 JS
 
 node "${WORK}/suite.mjs"
+rc=$?
+
+# ---- DOT-1050 item 2: the per-vote-row probe cost is DOCUMENTED ----
+# The counts above are measured; this asserts wave.js's own meta.description
+# states them, so a conductor sizing a dispatch sees the gate overhead without
+# reading the gate path. Numbers are matched literally against the cases:
+#   C = 2 probes (already-decided), E = 3 (healthy), D = 4, A = 5 (re-seats).
+DESC=$(awk '/^    description: /{print; exit}' "$WAVE")
+dpass=0
+dfail=0
+dok() { # <cond-exit> <label>
+    if [ "$1" -eq 0 ]; then dpass=$((dpass + 1)); printf 'PASS: %s\n' "$2"
+    else dfail=$((dfail + 1)); printf 'FAIL: %s\n' "$2" >&2; fi
+}
+[ -n "$DESC" ]; dok $? 'DOT-1050: wave.js meta.description line is readable'
+printf '%s' "$DESC" | grep -qi 'probe'; dok $? \
+    'DOT-1050: meta.description mentions the probe cost per vote row at all'
+printf '%s' "$DESC" | grep -q '3 read-only haiku probes'; dok $? \
+    'DOT-1050: it names the 3-probe normal path (case E measured 3 probes)'
+printf '%s' "$DESC" | grep -q '2 on a gate that was already decided'; dok $? \
+    'DOT-1050: it names the 2-probe already-decided path (case C measured 2 probes)'
+printf '%s' "$DESC" | grep -q 'up to 5'; dok $? \
+    'DOT-1050: it names the 5-probe worst case (case A measured 5 probes)'
+printf '%s' "$DESC" | grep -q 'gate:show'; dok $? \
+    'DOT-1050: it names the probes by label so the count can be audited'
+# The old, pre-DOT-1040/1041 number must not be restated as current.
+printf '%s' "$DESC" | grep -qE 'five to eight|5-8 probes'; [ $? -ne 0 ]; dok $? \
+    'DOT-1050: and it does NOT restate the pre-reduction 5-8 figure'
+
+printf '\n%s passed, %s failed (meta.description probe accounting)\n' "$dpass" "$dfail"
+[ "$dfail" -eq 0 ] || rc=1
+exit "$rc"

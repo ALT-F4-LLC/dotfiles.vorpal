@@ -191,6 +191,116 @@ ok(statusOf(out, 'STEP-1550') === 'skipped-chain-dead' &&
    statusOf(out, 'STEP-2002') === 'returned',
     'gate-rejected still kills its own chain and only its own')
 
+// ---- DOT-1050: "died" is reserved for a predecessor that actually failed ----
+// RUN-63's shape, four waves running: the engine minted a held-cluster panel
+// step between a gate and its `after` predecessor, so the gate had no proposal
+// to seat on and settled gate-blocked — while that predecessor was recording,
+// holding its step and opening its vote, exactly as designed. The ladder's
+// DECISION is unchanged (the later rows still do not launch, still settle
+// skipped-chain-dead); only the wording moves, because "chain died" sends an
+// operator hunting a failure that does not exist. The engine's own
+// `blocked_reason` on the gate's `step show --json` payload is the evidence.
+const blockedPayload = (reason) =>
+    `{"data":{"step":"STEP-1547","status":"pending","blocked_reason":"${reason}"}}`
+// The engine's CondPredecessors, verbatim (docket internal/engine/ready.go),
+// backticks and all.
+const AFTER_PRED = 'an `after` predecessor is not done'
+
+out = await run(RUN43(), {
+    'STEP-1547': { step: 'STEP-1547', status: 'gate-blocked',
+                   text: blockedPayload(AFTER_PRED) },
+})
+ok(statusOf(out, 'STEP-1550') === 'skipped-chain-dead' &&
+   statusOf(out, 'STEP-1563') === 'skipped-chain-dead' &&
+   !SPAWNED.includes('STEP-1550') && !SPAWNED.includes('STEP-1563'),
+    'DOT-1050: a progressing predecessor still stops the lane — the decision is unchanged')
+ok(LOG.some((l) => l.startsWith('STEP-1550: later stages deferred — predecessor ' +
+                               'STEP-1547 is gate-blocked') && l.includes('ask next after close')),
+    `DOT-1050: the skipped row logs the DEFERRED wording naming the predecessor and its status (got ${JSON.stringify(LOG)})`)
+ok(!LOG.some((l) => l.includes('chain died')),
+    'DOT-1050: and nothing in the wave log says the chain died')
+ok(LOG.some((l) => l.includes('STEP-1547: settled gate-blocked') &&
+                   l.includes('progressing, NOT failed')),
+    'DOT-1050: the settling row itself reports a deferral, not a kill')
+ok(statusOf(out, 'STEP-2002') === 'returned',
+    'DOT-1050: the other issue is untouched, as always')
+
+// Every OTHER progressing readiness clause the engine can report reads the
+// same way — this is the set in PROGRESSING_BLOCKS, kept honest against
+// docket's internal/engine/ready.go.
+for (const reason of [
+    'no threshold has routed to this interposed step',
+    'an interposed gate on a predecessor has not resolved',
+    'the issue\'s dependencies are not satisfied',
+    'its scope conflicts with a claimed or running step',
+    'no concurrency headroom in its class',
+    'no budget headroom',
+]) {
+    out = await run(RUN43(), {
+        'STEP-1547': { step: 'STEP-1547', status: 'gate-blocked', text: blockedPayload(reason) },
+    })
+    ok(LOG.some((l) => l.includes('later stages deferred')) &&
+       !LOG.some((l) => l.includes('chain died')),
+        `DOT-1050: "${reason}" is a deferral, not a death`)
+}
+
+// THE FENCE. A genuine failure keeps "died" whatever the payload says — the
+// status decides eligibility first, the reason only confirms it.
+for (const status of ['gate-rejected', 'spawn-failed', 'claim-conflict',
+                      'parked-base-ancestry', 'gate-parked']) {
+    out = await run(RUN43(), {
+        'STEP-1547': { step: 'STEP-1547', status, text: blockedPayload(AFTER_PRED) },
+    })
+    ok(LOG.some((l) => l.includes('chain died')) &&
+       !LOG.some((l) => l.includes('later stages deferred')),
+        `DOT-1050 fence: ${status} still says the chain died, even carrying a progressing blocked_reason`)
+}
+
+// And a blocked_reason the list does NOT name — a failure-adjacent clause, or
+// one the engine adds later — falls back to the old wording. Under-claiming a
+// deferral costs one imprecise line; over-claiming one tells the operator to
+// wait for a close that is never coming.
+for (const reason of ['run is not active', 'the step is not pending',
+                      'some clause invented after this list was written']) {
+    out = await run(RUN43(), {
+        'STEP-1547': { step: 'STEP-1547', status: 'gate-blocked', text: blockedPayload(reason) },
+    })
+    ok(LOG.some((l) => l.includes('chain died')) &&
+       !LOG.some((l) => l.includes('later stages deferred')),
+        `DOT-1050 fence: an unlisted blocked_reason ("${reason}") keeps the died wording`)
+}
+
+// A gate-blocked with NO blocked_reason at all (an absent field, a dead probe,
+// prose) is the same fail-safe.
+for (const text of ['{"data":{"step":"STEP-1547","status":"pending"}}', '', null,
+                    'docket: could not reach the database']) {
+    out = await run(RUN43(), {
+        'STEP-1547': { step: 'STEP-1547', status: 'gate-blocked', text },
+    })
+    ok(LOG.some((l) => l.includes('chain died')) &&
+       !LOG.some((l) => l.includes('later stages deferred')),
+        `DOT-1050 fence: gate-blocked with no readable blocked_reason (${JSON.stringify(text)}) keeps the died wording`)
+}
+
+// The pre-claim probe's own skip reaches the same wording, since it settles
+// skipped-not-claimable carrying the payload it read. (Same shape the DOT-560
+// block below uses: an ACTION at stage 0 so the chain is not dead, executors
+// behind it at stages 1 and 2.)
+const DEFER43 = () => [
+    { step: 'STEP-1540', issue: 'HRN-30', stage: 0, kind: 'action' },
+    ex('STEP-1563', 'HRN-30', 1),
+    ex('STEP-1572', 'HRN-30', 2),
+]
+out = await run(DEFER43(), {}, {
+    'STEP-1563': `{"data":{"step":"STEP-1563","status":"pending","blocked_reason":"${AFTER_PRED}"}}`,
+})
+ok(statusOf(out, 'STEP-1563') === 'skipped-not-claimable' &&
+   statusOf(out, 'STEP-1572') === 'skipped-chain-dead',
+    'DOT-1050: a pending pre-claim probe still skips and still stops the lane')
+ok(LOG.some((l) => l.startsWith('STEP-1572: later stages deferred — predecessor ' +
+                               'STEP-1563 is skipped-not-claimable')),
+    `DOT-1050: and it too reads as deferred, not dead (got ${JSON.stringify(LOG)})`)
+
 // ---- A park stops LATER stages of every issue, not just one ----
 out = await run(RUN43(), {
     'STEP-1547': { step: 'STEP-1547', status: 'returned',

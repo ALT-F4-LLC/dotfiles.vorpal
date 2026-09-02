@@ -1,6 +1,6 @@
 export const meta = {
     name: 'wave',
-    description: 'Run one dispatched manifest end to end: spawn one executor per executor row (routed by policy.toml), seat a judge panel on each vote row, and skip action rows (engine-run at record time). Stages run as awaited groups per issue lane, with the cross-issue cohorts the manifest certifies honored — the staged closure means one wave can carry judges -> gate -> reconcile -> report, and no issue idles behind the slower stages of another. Invoke by scriptPath ONLY, with args {rows, policyText} as a real object — policy.toml is passed as TEXT, never a path; the script cannot read files.',
+    description: 'Run one dispatched manifest end to end: spawn one executor per executor row (routed by policy.toml), seat a judge panel on each vote row, and skip action rows (engine-run at record time). Stages run as awaited groups per issue lane, with the cross-issue cohorts the manifest certifies honored — the staged closure means one wave can carry judges -> gate -> reconcile -> report, and no issue idles behind the slower stages of another. PROBE COST PER VOTE ROW: 3 read-only haiku probes on the normal path — gate:show, ONE vote-show serving both the missing-seat check and the tally, and gate:outcome — 2 on a gate that was already decided before the wave reached it, and up to 5 when a re-seat or an inconclusive read forces a second vote-show and the gate payload carries a target ref worth a gate:target probe. Each probe relays a few hundred bytes; the per-gate count is reported verbatim in that row\'s spawn_accounting. Invoke by scriptPath ONLY, with args {rows, policyText} as a real object — policy.toml is passed as TEXT, never a path; the script cannot read files.',
     whenToUse: 'Invoked by the conduct skill on an open dispatch, always as Workflow({scriptPath}) — never by name. args is {rows, policyText}: `next` rows verbatim (executor, vote, and action rows; human rows stay with the conductor) plus the literal TEXT of policy.toml. On a dispatch carrying a fix round\'s review fanout, args also carries `integrated` — a map from each such issue to the sha of its prior round\'s INTEGRATION commit — so the wave can assert base ancestry before seating the fanout. There is no policyPath and no file access.',
 }
 
@@ -2041,9 +2041,14 @@ async function runGate(row, phaseLabel) {
     // The ballot: record-driving opened the proposal when the gate's last
     // predecessor recorded — an earlier stage this wave already awaited — so
     // one probe normally finds it. A gate with NO proposal means the
-    // predecessors did not all record (a failure upstream): the gate is
-    // blocked, its issue's later rows are dead for this wave, and the next
-    // round routes whatever on_fail produced.
+    // predecessors have not all recorded: the gate is blocked, its issue's
+    // later rows do not launch this wave, and the next round routes whatever
+    // on_fail produced. That is NOT necessarily a failure upstream — the
+    // engine can mint a held-cluster panel step between the gate and its
+    // `after` predecessor, leaving a healthy predecessor mid-progress
+    // (DOT-1050). The `show` payload the probe returns carries the engine's
+    // own `blocked_reason`, and the ladder reads it off this result to pick
+    // "deferred" over "died"; keep returning `show` as the result text.
     let show = await probe(`docket step show ${row.step} --json`,
         `${row.step} · gate:show`, phaseLabel, undefined, acct)
     // Proposal ids are project-prefixed: 1-8 upcased letters, "-V", digits
@@ -2125,8 +2130,9 @@ async function runGate(row, phaseLabel) {
         return early
     }
     if (!m) {
-        log(`${row.step}: gate has no proposal — its predecessors did not all ` +
-            `record, so the panel cannot seat; skipping this issue's later stages`)
+        log(`${row.step}: gate has no proposal — its predecessors have not all ` +
+            `recorded, so the panel cannot seat; skipping this issue's later ` +
+            `stages this wave`)
         return { step: row.step, status: 'gate-blocked', text: show }
     }
     const voteId = m[1]
@@ -2640,7 +2646,11 @@ const byStep = new Map()
 // later rows — the chain behind it cannot become claimable this wave, and
 // spawning it anyway boots corpses.
 let parked = false
-const deadIssues = new Set()
+// issue -> { step, status, deferral }: WHICH row stopped the lane, and whether
+// the engine said the lane is merely waiting (deferral is the blocked_reason
+// text) or something actually failed (deferral null). The skip log picks its
+// wording off this — see chainDeferral below.
+const deadIssues = new Map()
 
 // TEST-BEGIN chain-dead — see the park-signals note above.
 function chainDead(res) {
@@ -2667,6 +2677,60 @@ function chainDead(res) {
     // Same body-scan trap as runParked: `includes('CONFLICT')` would kill an
     // issue's whole remaining chain on a judge that merely REPORTED one.
     return res.status === 'returned' && isConflictReport(res.text)
+}
+
+// A CHAIN-DEAD LANE IS NOT THE SAME AS A DEAD CHAIN (DOT-1050). chainDead()
+// answers one question — do NOT launch this issue's later rows this wave — and
+// two very different situations answer it yes. Something failed (a spawn that
+// produced no agent, a claim CONFLICT, a rejected gate, a broken base
+// ancestry); or nothing failed at all and the engine has simply not made the
+// row claimable yet, because a predecessor is still progressing. RUN-63 hit
+// the second shape four waves running: the engine minted a held-cluster panel
+// step between a gate and its `after` predecessor, the gate had no proposal to
+// seat on, and the wave logged "this wave's chain died at an earlier stage" —
+// while that predecessor was recording, holding its step and opening its vote,
+// exactly as designed. An operator reading "died" reaches for a repair that
+// does not exist.
+//
+// The engine already distinguishes the two and says so in the row it hands
+// back: `blocked_reason` on `step show --json` names the §6.3 readiness clause
+// holding a `pending` step back (docket internal/engine/next.go BlockedReason,
+// internal/engine/ready.go ReadyCondition). Every clause below describes a step
+// that is WAITING; the engine re-offers it at the next dispatch untouched. The
+// two conditions deliberately NOT listed are failure-adjacent and keep the
+// "died" wording: `run is not active` (the run parked — the wave's own park
+// path owns that) and `the step is not pending` (the row is already terminal,
+// so nothing is coming).
+const PROGRESSING_BLOCKS = [
+    'an `after` predecessor is not done',
+    'no threshold has routed to this interposed step',
+    'an interposed gate on a predecessor has not resolved',
+    "the issue's dependencies are not satisfied",
+    'its scope conflicts with a claimed or running step',
+    'no concurrency headroom in its class',
+    'no budget headroom',
+]
+
+// Returns the engine's blocked_reason when the result carries one naming a
+// still-progressing predecessor, else null. Null is the SAFE answer: an absent
+// field, an unparseable payload, a reason the engine added after this list was
+// written, or a status that is genuinely a failure all fall back to the
+// original "chain died" wording. Under-claiming a deferral costs an operator
+// one imprecise line; over-claiming one tells them to wait for a close that is
+// never coming.
+function blockedReason(res) {
+    // Only statuses that can be reached with NOTHING having failed are
+    // eligible. gate-rejected, spawn-failed, claim-conflict,
+    // parked-base-ancestry and a CONFLICT report are failures whatever the
+    // payload says; gate-parked is an uncleared gate the conductor escalates.
+    if (res == null) return null
+    if (res.status !== 'gate-blocked' && res.status !== 'skipped-not-claimable' &&
+        res.status !== 'skipped-not-ready') return null
+    if (typeof res.text !== 'string') return null
+    const m = res.text.match(/"blocked_reason"\s*:\s*"((?:[^"\\]|\\.)*)"/)
+    if (!m) return null
+    const reason = m[1].replace(/\\(.)/g, '$1')
+    return PROGRESSING_BLOCKS.includes(reason) ? reason : null
 }
 // TEST-END chain-dead
 
@@ -2864,8 +2928,17 @@ async function runLane(name, laneRows) {
         const group = byStage.get(k).filter((row) => {
             if (row.issue && deadIssues.has(row.issue)) {
                 byStep.set(row.step, { step: row.step, status: 'skipped-chain-dead', text: null })
-                log(`${row.step}: skipped — this wave's chain died at an earlier ` +
-                    `stage (the issue itself is untouched)`)
+                // Same settle either way — the row is not launched this wave and
+                // the engine re-offers it — but say WHICH of the two it is.
+                // "Died" is reserved for a predecessor that actually failed.
+                const d = deadIssues.get(row.issue)
+                log(d.deferral
+                    ? `${row.step}: later stages deferred — predecessor ${d.step} is ` +
+                      `${d.status} ("${d.deferral}"); ask next after close. Nothing ` +
+                      `failed: the predecessor is progressing and the engine re-offers ` +
+                      `this row (the issue itself is untouched)`
+                    : `${row.step}: skipped — this wave's chain died at an earlier ` +
+                      `stage (the issue itself is untouched)`)
                 return false
             }
             return true
@@ -2909,9 +2982,15 @@ async function runLane(name, laneRows) {
             const out = res || { step: row.step, status: 'spawn-failed', text: null }
             byStep.set(row.step, out)
             if (chainDead(out) && row.issue) {
-                deadIssues.add(row.issue)
-                log(`${row.step}: settled ${out.status} — issue ${row.issue}'s later ` +
-                    `stages will not be launched this wave`)
+                const deferral = blockedReason(out)
+                deadIssues.set(row.issue, { step: row.step, status: out.status, deferral })
+                log(deferral
+                    ? `${row.step}: settled ${out.status}, but the engine reports ` +
+                      `"${deferral}" — its predecessor is progressing, NOT failed, so ` +
+                      `issue ${row.issue}'s later stages are deferred to the next ` +
+                      `dispatch rather than dead`
+                    : `${row.step}: settled ${out.status} — issue ${row.issue}'s later ` +
+                      `stages will not be launched this wave`)
             }
         })
     }

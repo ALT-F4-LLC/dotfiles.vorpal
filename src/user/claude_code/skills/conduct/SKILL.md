@@ -1750,6 +1750,28 @@ Under zsh, QUOTE every glob-shaped `--scope` value (`--scope 'src/**'`) or run
 scopes are silently dropped from the created issue (an issue was once
 created with all three of its scopes missing, repaired only by a later edit).
 
+**The description goes in on STDIN, through a quoted heredoc — inline `-d
+"…"` is never used for multi-line or markdown text, because backticks
+execute and quotes mangle.** A gap body is exactly the text that breaks
+this: it quotes command names, argv, and other agents' output.
+
+```bash
+docket issue create -t "<title>" -T <type> -p <priority> -l conduct -d - <<'DESC'
+<markdown body — backticks, $(…), and quotes all land verbatim>
+DESC
+```
+
+Filing DOT-1063 took three attempts without it: the first stored a body
+with two words missing (zsh had run the backticked `` `/retro` `` and
+`` `/refit` `` as commands), the second stored `operator'\''s` where an
+apostrophe had been, and the third had to go through a `python3 -c
+"import subprocess …"` wrapper to escape the shell entirely. Pick a
+delimiter the body cannot contain — `DESC`, not `EOF`, since a body
+quoting a heredoc or a shell script has a bare `EOF` line of its own that
+closes the heredoc early (this issue's own filing hit that). Everything
+under "Free-text flags" in `~/.claude/skills/docket/SKILL.md` applies to
+`-m`, `--summary`, and `--note` the same way.
+
 ## Gates
 
 A gate is any decision the run cannot make for itself, and there are two paths.
@@ -2067,7 +2089,17 @@ owns the work, per the gap-routing rule, and ALWAYS carrying `-l tribunal`,
 the provenance label for a panel-condition filing — BEFORE `dispatch close`,
 with the proposal linked to it (`docket vote link <proposal> --issue <new>`);
 the new id goes in the close report and in any plan prompt you hand the
-operator. That label is required, not decorative: it is what lets a later
+operator. The body is the seat's own rationale, verbatim — so it rides in on
+stdin through a quoted heredoc, never inline `-d "…"` (the filing rule under
+**3. Close the dispatch**):
+
+```bash
+docket issue create -t "<condition>" -T task -p high -l tribunal -d - <<'DESC'
+<the seat's rationale, verbatim — backticks and quotes intact>
+DESC
+```
+
+That label is required, not decorative: it is what lets a later
 census separate conditions a panel imposed from every other issue in the
 project. `-l shadow` is NEVER it — that one marks what the `shadow` skill
 itself filed, and a panel condition wearing it inflates every count of

@@ -161,7 +161,10 @@ boundary, not cosmetics.
 Safe forms, either one:
 
 - a single-quoted argument (when the text contains no single quotes);
-- stdin via a QUOTED heredoc delimiter: `docket … -d - <<'EOF'` … `EOF`.
+- stdin via a QUOTED heredoc delimiter: `docket … -d - <<'DESC'` … `DESC`
+  (pick a delimiter the body cannot contain — text quoting a shell snippet
+  has a bare `EOF` line of its own, which closes an `EOF` heredoc early and
+  runs the remainder as commands).
 
 Not safe, despite looking it: any double-quoted inline argument, a
 double-quoted `echo "…" | docket … -d -` (the pipe changes nothing — the
@@ -531,29 +534,37 @@ interactive form; missing required fields are always a hard
 
 ## Workflow: Issue Creation & Editing
 
-Create an issue (only `--title` is required in JSON mode):
-
-```bash
-docket issue create --json \
-  -t "Add rate limiting to API" \
-  -d "Prevent abuse on public endpoints" \
-  -s todo -p high -T feature \
-  -l backend -l must-have \
-  -f internal/api/router.go \
-  -a "@alice"
-```
-
-Description can be piped from stdin with `-d -` — through a QUOTED heredoc
+Create an issue (only `--title` is required in JSON mode). The description
+always arrives on stdin with `-d -`, through a QUOTED heredoc
 delimiter, so the shell cannot run anything embedded in the text (see
 "Free-text flags" under Global Flags; a double-quoted `echo "…" |` pipe does
 NOT protect it):
 
 ```bash
-docket issue create --json -t "Title" -d - <<'EOF'
-Long description — `just build` and $(go test ./...) arrive intact because
-the quoted EOF delimiter stops the shell expanding them.
-EOF
+docket issue create --json \
+  -t "Add rate limiting to API" \
+  -s todo -p high -T feature \
+  -l backend -l must-have \
+  -f internal/api/router.go \
+  -a "@alice" \
+  -d - <<'DESC'
+Prevent abuse on public endpoints — `just build` and $(go test ./...) arrive
+intact because the quoted DESC delimiter stops the shell expanding them.
+DESC
 ```
+
+**Inline `-d "…"` is never used for multi-line or markdown text — backticks
+execute and quotes mangle.** One filing took three attempts that way: zsh ran
+the backticked command names in the body and the words vanished from the
+stored text, the retry stored `operator'\''s` where an apostrophe had been,
+and the third attempt had to bypass the shell through a `python3` subprocess
+wrapper. A single-line, single-quoted `-d 'no specials here'` is still fine;
+anything you did not type character-by-character goes on stdin.
+
+Pick a delimiter the body cannot contain. `EOF` is the wrong default for
+descriptions quoting shell snippets — a body with a bare `EOF` line of its
+own closes the heredoc early and the rest of the text is executed as
+commands. `DESC` (or a uniquely-named one) is the habit.
 
 Edit only the fields you pass — `issue edit` uses `cmd.Flags().Changed(...)`
 so omitted flags are left untouched, not reset to zero values:

@@ -2516,6 +2516,27 @@ log(`wave: ${rows.length} row(s) across stage(s) ${stageKeys.join('→')}`)
         log(`wave: fix-round ancestry guard armed for ${issues.join(', ')} ` +
             `(${guarded.length} fanout row(s))`)
     }
+    // ...and name the ones it is NOT armed for (DOT-1048). Fail-open is
+    // right, silence is not: a round-2 fanout with no `integrated` entry
+    // used to leave NO line in the log, so the guard's absence looked
+    // identical to a wave that had no fix round in it. RUN-63 DISPATCH-364
+    // read the skill's carve-out ("no integration yet for an issue") as "no
+    // integration window yet for THIS round", omitted the map on a round-2
+    // fanout whose round 1 HAD been integrated, and nothing said so. One
+    // line per issue, at the top of the wave, so the omission is visible at
+    // close.
+    const unguarded = new Map()
+    for (const r of rows) {
+        if (!r || r.kind !== 'executor' || !r.issue) continue
+        const round = fixRoundFanoutRound(r)
+        if (round < 2) continue
+        if (integratedShaFor(r, input.integrated) !== '') continue
+        if (!unguarded.has(r.issue)) unguarded.set(r.issue, round)
+    }
+    for (const [issue, round] of unguarded) {
+        log(`wave: fix-round fanout for ${issue} round ${round} dispatched ` +
+            `UNGUARDED — no integrated entry for it`)
+    }
 }
 
 // Executor rows staged BEHIND a same-issue action or vote row can be

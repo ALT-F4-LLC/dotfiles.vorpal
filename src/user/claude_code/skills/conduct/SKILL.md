@@ -962,10 +962,24 @@ commit <writer sha>"` on the shared branch (the `-x` at integration wrote that
 trailer exactly so this mapping survives). Confirm the direction before you
 pass it: `git log -1 --format=%B <the sha you are about to pass>` must NOT end
 in `(cherry picked from commit <the round's own writer sha>)` — if it does,
-you picked fix@N and need the round before. No fix-round fanout in the rows,
-or no integration yet for an issue — omit the field or that entry; wave.js
-fails open and dispatches exactly as before. An entry you cannot re-derive is
-omitted, never guessed.
+you picked fix@N and need the round before.
+
+Omit the whole FIELD only when the rows carry no fix-round fanout at all. Omit
+an issue's ENTRY **only when its PREVIOUS fix round was never integrated** —
+that is, no commit on the shared branch carries `cherry picked from commit
+<round N-1's writer sha>`. "No integration yet" is a claim about round N-1 and
+nothing else; it is never a claim about round N. **A fanout for round N
+dispatched in the SAME wave as fix@N still needs the entry** — the sha is
+round N-1's integration commit, which already exists on the branch, and the
+in-flight fix@N is exactly the write step whose tree those judges will read.
+Reading the carve-out as "no integration window exists yet for round N"
+disarms the guard for the very shape it was built for (RUN-63 DISPATCH-364:
+round 2's fanout dispatched with no `integrated`, the wave log carried no
+ancestry line at all, and the same run's round 3 — map supplied — armed
+normally). wave.js still fails open on a missing entry, but it now logs
+`fix-round fanout for <issue> round N dispatched UNGUARDED — no integrated
+entry for it` once per issue, so a wrongly omitted entry is visible in the
+wave log at close. An entry you cannot re-derive is omitted, never guessed.
 
 **Keep human rows; hand the wave everything else.** Filter OUT only
 `kind: "human"` rows — those are the operator's — and pass every other row

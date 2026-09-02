@@ -283,6 +283,56 @@ out = await run(RUN35(), undefined, CTX_HIT, 'ancestry-exit=1\n')
 ok(CTX_PROBES === 0 && GIT_PROBES === 0 && SPAWNED.length === 5,
     'no `integrated` in args: zero probes, old behavior byte-for-byte')
 
+// ---- DOT-1048: the fail-open must SAY SO ----
+// RUN-63 DISPATCH-364 dispatched a round-2 fanout with no `integrated` map at
+// all — the conductor read the skill's carve-out as "no integration window
+// exists yet for round 2" when round 1 HAD been integrated — and the wave log
+// carried no ancestry line whatsoever. Fail-open stays; silence does not.
+const unguardedLine = (issue, round) =>
+    `wave: fix-round fanout for ${issue} round ${round} dispatched ` +
+    'UNGUARDED — no integrated entry for it'
+ok(LOG.includes(unguardedLine('VPL-160', 2)) &&
+   LOG.includes(unguardedLine('HRN-99', 2)),
+    `DOT-1048: no map at all — one UNGUARDED line per issue (got ${JSON.stringify(LOG)})`)
+ok(LOG.filter((l) => l.includes('dispatched UNGUARDED')).length === 2,
+    'DOT-1048: once per ISSUE, not once per fanout row (three VPL-160 siblings, one line)')
+ok(!LOG.some((l) => l.includes('ancestry guard armed')),
+    'DOT-1048: and nothing claims the guard is armed')
+
+// A map that covers one issue and not the other: armed line for the covered
+// one, UNGUARDED line for the uncovered one, in the same wave.
+out = await run(RUN35(), { 'VPL-160': PRIOR }, CTX_HIT, 'ancestry-exit=0\n* main\n')
+ok(LOG.some((l) => l.includes('ancestry guard armed for VPL-160')) &&
+   LOG.includes(unguardedLine('HRN-99', 2)) &&
+   !LOG.some((l) => l.includes('VPL-160 round 2 dispatched UNGUARDED')),
+    'DOT-1048: a partial map arms the covered issue and names the uncovered one')
+
+// A non-sha entry is treated as absent by the guard, so it is UNGUARDED too —
+// otherwise a typo'd sha would read as covered.
+out = await run(RUN35(), { 'VPL-160': 'HEAD~2' }, CTX_HIT, 'ancestry-exit=1\n')
+ok(LOG.includes(unguardedLine('VPL-160', 2)),
+    'DOT-1048: an entry the guard rejects as non-sha is reported UNGUARDED')
+
+// Rows the guard never covers must NOT produce the line: round 1 has no prior
+// fix round, and a write row (fix@2, no #k) CREATES the tree.
+out = await run([ex('STEP-701', 'VPL-160', 0, 'judge-correctness', 'review@1#1'),
+                 ex('STEP-702', 'VPL-160', 0, 'fix', 'fix@2')],
+    undefined, CTX_HIT, 'ancestry-exit=1\n')
+ok(!LOG.some((l) => l.includes('dispatched UNGUARDED')),
+    'DOT-1048: round-1 fanout and non-fanout write rows are silent, not UNGUARDED')
+
+// A wave carrying no fix-round fanout at all says nothing either way.
+out = await run([ex('STEP-100', 'VPL-160', 0, 'implement', 'implement')],
+    undefined, CTX_HIT, 'ancestry-exit=1\n')
+ok(!LOG.some((l) => l.includes('UNGUARDED') || l.includes('guard armed')),
+    'DOT-1048: an ordinary wave logs neither line')
+
+// The round number in the line is the ROW's round, not a constant.
+out = await run([ex('STEP-950', 'VPL-160', 0, 'judge-correctness', 'review@4#2')],
+    undefined, CTX_HIT, 'ancestry-exit=1\n')
+ok(LOG.includes(unguardedLine('VPL-160', 4)),
+    'DOT-1048: the line names the row\'s own round')
+
 out = await run([ex('STEP-701', 'VPL-160', 0, 'judge-correctness', 'review@1#1')],
     { 'VPL-160': PRIOR }, CTX_HIT, 'ancestry-exit=1\n')
 ok(CTX_PROBES === 0 && SPAWNED.includes('STEP-701'),

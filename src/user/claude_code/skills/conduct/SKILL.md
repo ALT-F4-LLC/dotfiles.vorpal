@@ -1038,7 +1038,9 @@ the `.with_hook(...)` calls that install the docket guards live in
 fires at all. Where one does, an open dispatch makes it allow, and even where
 it denies, one deny per turn-end is expected noise — the retry passes. Do not
 busy-wait, do not poll in sleep loops, and do not treat the guard's deny as an
-instruction to keep working. Do not reach for `ScheduleWakeup` as a heartbeat
+instruction to keep working. A teammate idle notification is not an event —
+no turn text, no wakeup-cancel; speak only when the message carries content.
+Do not reach for `ScheduleWakeup` as a heartbeat
 either — it belongs to /loop sessions and rejects these calls (two fleet
 conductors burned turns discovering that); the completion
 notification at your turn boundary is the only wait mechanism this contract
@@ -1053,7 +1055,9 @@ On the wave's completion notification:
 is what triggers the engine's discrepancy probe; usage that arrives after the
 close is usage the probe never saw, and each subsequent close then re-reports the
 same stranded set. Back-fill, integration check, verify, close — in that
-order, every iteration, as SEPARATE calls: chaining close unconditionally behind the back-fill
+order, every iteration, as SEPARATE calls, and close first, then next: do not
+issue `docket next --run` while this dispatch is still open, it only refuses
+the call. Chaining close unconditionally behind the back-fill
 in one compound command closes on stranded usage the moment the back-fill
 fails (one run's last iteration ran the chain and got lucky). (Shell
 paper-cut, four hits in one fleet: never separate compound output with an

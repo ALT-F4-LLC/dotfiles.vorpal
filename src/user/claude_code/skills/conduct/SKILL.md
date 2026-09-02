@@ -178,30 +178,61 @@ recognize instantly: every agent in a fanout returns `BOOTSTRAP DENIED` or a
 quoted permission refusal, at near-zero tokens, having claimed nothing.
 
 **Probe the completion gates against a clean scratch worktree before the
-first dispatch.** Take the roster from `docket trust list` — the entries bound
-to this repo are what the workflow's gate names resolve to, and argv some
-earlier step happened to record is a subset of it, never the list — and run
-every one of those commands once in a throwaway worktree of clean HEAD (`git
-worktree add <tmp> HEAD`, run them,
-`git worktree remove <tmp>`). Spell `<tmp>` as a path under this session's
-scratchpad directory written out LITERALLY — the absolute path the harness
-named, never `$TMPDIR` or any other environment expansion — because that
-expansion has been observed resolving to two DIFFERENT directories across
-consecutive `Bash` calls in one session: one conductor created the probe worktree
-under `$TMPDIR`, and the very next call could not `cd` into it, costing four
-calls (create, two failed `cd`s, remove) before recreating it under the
-literal path. **Write the path of every worktree YOU register into your own
-notes the moment you create it** — this probe (which the Go-cache warm below
-reuses) and any worktree you add mid-investigation. Each is a registration in
-the SHARED repo
-that outlives the `Bash` call that made it, and each sits at a DETACHED head
-with no `worktree-wf_*` branch, so the close sweep's branch-derived set below
-cannot see it: the tracked path is the ONLY thing that puts it back in the
-sweep. Remove it as soon as you are done with it, and carry any that survive to
-close-out into the close sweep. Measured: a conductor's `gate-probe-wt`, homed
-in a session scratchpad, was still registered in the shared repo at close-out —
-the scratchpad was then cleaned, leaving a prunable-but-dangling registration
-the run never named. A gate that fails on clean HEAD is not caused
+first dispatch — by running the script, not by hand.** Run `gate-probe $RUN`
+and read its EXIT CODE: 0 every gate on the roster passed on clean HEAD, 1 at
+least one FAILED (or the probe could not run at all — no roster, no worktree,
+cwd outside a work tree), 130 interrupted with the roster not fully probed,
+which is not a pass. Resolve the path the same way as `attach-probe` below:
+`~/.claude/scripts/gate-probe $RUN` when `test -f` passes, else
+`$CC_SRC/scripts/gate-probe $RUN` — a script added since the last `just
+activate` resolves ONLY at its source path.
+
+The script IS the roster rule, which is the whole reason it is a script. It
+takes every entry `docket trust list` returns for this repo — the entries a
+workflow's gate names resolve to, of which argv some earlier step happened to
+record is a subset, never the list — registers ONE throwaway worktree of clean
+HEAD, runs ALL of them there capturing each command's OWN exit status (a plain
+redirect; never a pipe, and never `$PIPESTATUS`, which is bash-only and has
+printed empty under zsh), prints `OK|FAIL <name> exit=<n> log=<path>` per gate
+with `STUB` marking a placeholder whose pass is hollow, and removes the
+worktree on every path — clean, failed, or interrupted. Nothing
+short-circuits, so a vacuous pass is visible in the output rather than
+inferred from silence. **Never narrow that roster by what the remaining steps
+look like** — not on a resume whose leftovers are vote, verify and action
+rows, not on a run whose recorded gate failures were all write-class. That
+narrowing is exactly what moving the probe into code was for: a resume once
+ran `make format` alone and skipped build, tests and four more on that
+reasoning. The script does not know what rows you expect, and neither,
+reliably, do you: you hold no run state, which rows come next is the engine's
+answer to `next`, and a vote's `on_fail`, an `--as retry` or a fix batch puts a
+write-class step in front of you one dispatch after you judged there were none.
+
+The probe's worktree is the SCRIPT's to track, not yours: it registers it and
+removes it in the same process, on success, on failure and on a signal, and
+says so if a removal ever fails. **Every OTHER worktree you register is still
+yours to write down the moment you create it** — any you add
+mid-investigation, and the one for the Go-cache warm below. Each is a
+registration in the SHARED repo that outlives the `Bash` call that made it,
+and each sits at a DETACHED head with no `worktree-wf_*` branch, so the close
+sweep's branch-derived set below cannot see it: the tracked path is the ONLY
+thing that puts it back in the sweep. Spell that path under this session's
+scratchpad LITERALLY — the absolute path the harness named, never `$TMPDIR` or
+any other environment expansion, which has been observed resolving to two
+DIFFERENT directories across consecutive `Bash` calls in one session (one
+conductor's next call could not `cd` into the directory it had just made). A
+single script creating, using and removing a path in one process is not
+exposed to that; a path you carry across calls is. Remove yours as soon as you
+are done with it, and carry any that survive to close-out into the close
+sweep. Measured: a conductor's hand-rolled `gate-probe-wt`, homed in a session
+scratchpad, was still registered in the shared repo at close-out — the
+scratchpad was then cleaned, leaving a prunable-but-dangling registration the
+run never named.
+
+One roster entry class fails the probe by construction: an engine ACTION the
+engine feeds a JSON bundle on stdin (`doc-record` here) gets `/dev/null` from
+the probe and exits non-zero. The script names that possibility in its own
+failure block. It is a disposition to record once like any other, not a
+finding to re-derive per run. A gate that fails on clean HEAD is not caused
 by this run's changes — commonly ENVIRONMENTAL, an untracked toolchain that
 never materializes in a fresh worktree (a direnv-provisioned
 `.env/bin/protoc` cost one run five parks and eleven override rituals before
@@ -222,8 +253,9 @@ three gates with a TLS error that reads like an environment defect (a past
 run parked a clean step exactly this way, and the out-of-band repro passed
 only because the conductor's cache was already warm). So when the target repo has
 a `go.mod`, run `go mod download` in it from THIS session before the first
-dispatch — the gate-probe worktree above is a fine place, the repo's own
-toolchain spelling is (`go`, a `just` recipe, a `vorpal run go:` shim), and
+dispatch — the live checkout is the place to do it now that `gate-probe` owns
+and removes its own worktree, what fills is the SHARED `GOMODCACHE` either way,
+the repo's own toolchain spelling is (`go`, a `just` recipe, a `vorpal run go:` shim), and
 the unsandboxed retry is the sanctioned path when the sandboxed attempt hits
 the wall; that retry existing HERE and not in executors is the whole reason
 this step is the conductor's. And read the signature correctly ever after:
@@ -279,8 +311,11 @@ wave.js and tribunal.js against their source, `run verify-pins`, and the
 section.** The permission-surface check, the DENY-list read-class check, the
 completion-gate probe against a clean scratch worktree, and the Go module
 cache warmup are all pre-dispatch obligations of this section and NOT ONE of
-them is in the script: a clean probe says nothing whatever about them, and you
-still run each yourself before the first dispatch. One conductor read the probe's six
+them is in THIS script: a clean `attach-probe` says nothing whatever about
+them. The completion-gate probe has a script of ITS own — `gate-probe $RUN`,
+above — so that is two scripts and two exit codes, and neither answers for the
+other; the permission-surface read, the DENY-list read and the cache warm stay
+yours to run by hand before the first dispatch. One conductor read the probe's six
 as the pre-loop checklist, never ran the gate probe, and both its dispatched
 waves then parked write steps `waiting-human` on the same two environmental
 gate failures — a docker-socket build, pre-existing vuln-scan CVEs — that the
@@ -1353,15 +1388,18 @@ the sha in your close report — it stays reachable in the object database until
 gc, and naming it is what keeps it recoverable.
 
 The sweep set ALSO carries every worktree THIS SESSION registered itself — the
-gate probe, and any worktree you added mid-investigation — matched by the paths
-you wrote down at creation (see **Probe the completion gates** above), because
+Go-cache warm, and any worktree you added mid-investigation; NOT the gate
+probe, which `gate-probe` registers and removes inside one process and never
+hands you — matched by the paths you wrote down at creation (see **Probe the
+completion gates** above), because
 such a worktree is DETACHED, carries no `worktree-wf_*` branch, and neither the
 branch pattern nor a path glob will surface it. Those take `git worktree remove
 <path>` alone: there is no paired branch to `git branch -D`, and inventing one
 force-deletes something else. One homed under this session's scratchpad still
 needs the explicit remove — the scratchpad's own cleanup deletes the DIRECTORY
 and leaves the REGISTRATION behind in the shared repo, dangling and prunable
-(measured: a `gate-probe-wt` detached probe survived its whole run that way).
+(measured: a hand-rolled `gate-probe-wt` detached probe survived its whole run
+that way, back when the probe was prose).
 If your notes and `git worktree list` disagree, the list is the authority for
 what still exists and your notes are the authority for what is YOURS.
 

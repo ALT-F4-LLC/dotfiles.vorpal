@@ -1,6 +1,6 @@
 export const meta = {
     name: 'wave',
-    description: 'Run one dispatched manifest end to end: spawn one executor per executor row (routed by policy.toml), seat a judge panel on each vote row, and skip action rows (engine-run at record time). Stages run as awaited groups — the staged closure means one wave can carry judges -> gate -> reconcile -> report. Invoke by scriptPath ONLY, with args {rows, policyText} as a real object — policy.toml is passed as TEXT, never a path; the script cannot read files.',
+    description: 'Run one dispatched manifest end to end: spawn one executor per executor row (routed by policy.toml), seat a judge panel on each vote row, and skip action rows (engine-run at record time). Stages run as awaited groups per issue lane, with the cross-issue cohorts the manifest certifies honored — the staged closure means one wave can carry judges -> gate -> reconcile -> report, and no issue idles behind the slower stages of another. Invoke by scriptPath ONLY, with args {rows, policyText} as a real object — policy.toml is passed as TEXT, never a path; the script cannot read files.',
     whenToUse: 'Invoked by the conduct skill on an open dispatch, always as Workflow({scriptPath}) — never by name. args is {rows, policyText}: `next` rows verbatim (executor, vote, and action rows; human rows stay with the conductor) plus the literal TEXT of policy.toml. On a dispatch carrying a fix round\'s review fanout, args also carries `integrated` — a map from each such issue to the sha of its prior round\'s INTEGRATION commit — so the wave can assert base ancestry before seating the fanout. There is no policyPath and no file access.',
 }
 
@@ -2234,26 +2234,70 @@ function ancestryParkReport(step, broken) {
 }
 // TEST-END fix-round-ancestry
 
-// GLOBAL STAGE BARRIERS (superseding the earlier per-issue
-// lanes). Lanes existed because engine stages only ordered SAME-ISSUE work,
-// so a global barrier made one issue's re-review wait on another issue's
-// slowest row for nothing. The staged closure changed what a stage MEANS:
-// the engine now also packs CROSS-ISSUE cohort constraints into stage
-// numbers, and per-issue lanes would run those concurrently and bounce the
-// later one off `claim` (the exact corpse-spawn waste this measured). Stages
-// are one schedule now; the wave runs them as one ladder. The residual
-// cross-issue wait is the price of that schedule being honored.
+// PER-ISSUE LANES, WITH THE ENGINE'S CROSS-ISSUE COHORTS HONORED FROM THE
+// MANIFEST ITSELF. The engine's `stage` labels carry two different things at
+// once (engine lookahead.go):
+//
+//   1. DEPENDENCY ORDER, which is SAME-ISSUE ONLY. `after` predecessors,
+//      loop re-entry (precedesInSet refuses a cross-issue pair outright)
+//      and open interposed gates all live inside one issue's workflow. A
+//      cross-issue `depends_on` never reaches a manifest at all: the closure
+//      stops at an unsatisfied one ("cross-issue edges resolve at issue
+//      completion, which is rollup work no single wave owns"), so a row is
+//      offered only once its issue's dependencies are already met, and no
+//      manifest row carries a dependency field to inspect.
+//   2. COHORT PACKING, which IS cross-issue. Within one stage a bounded
+//      class holds at most `[limits] max` rows and tree-holding steps of
+//      different issues must have disjoint scopes; a staged row that does
+//      not fit its earliest legal stage is bumped later. That coupling is
+//      what the first per-issue lanes broke — they ran the bumped row
+//      concurrently with the writer it was bumped away from and bounced it
+//      off `claim` — and why a global ladder replaced them.
+//
+// The global ladder honored (2) by making every issue wait for every other
+// issue at every stage: measured on one run as an issue's judges idling
+// ~12 minutes behind two unrelated implements and a park. This ladder keeps
+// (1) per issue — a LANE ascends its own stage labels with an await between
+// — and honors (2) from what the manifest proves:
+//
+//   - CLASS HEADROOM. The engine put at most `max` rows of a bounded class
+//     into any one stage (ClaimablePrefix for ready rows, cohortFits for
+//     staged ones), so the largest same-stage count of a class in this
+//     manifest is a proven lower bound on its limit. The wave never has more
+//     rows of a class in flight than that count, whichever stages they came
+//     from. An unbounded class is under-used by the rule, never
+//     over-committed.
+//   - SCOPE. Two writers the engine co-staged were checked against each
+//     other, and scope is a property of the ISSUE, so one co-staged writer
+//     pair proves the two issues' scopes disjoint (or empty) for every
+//     writer either issue owns. A writer launches ahead of another issue's
+//     in-flight writer only on that proof; without it the pair keeps the
+//     engine's stage order between them, and the log says so. "Writer" is
+//     `class: "write"` — the corpus's tree-holding class; every other
+//     executor step in the corpus declares `holds_tree = false` and is exempt
+//     from R4 engine-side. This is the one place the ladder leans on corpus
+//     convention rather than engine data: a step holding a tree under some
+//     other class would be scope-serialized by the engine and not by the
+//     wave, and would bounce on claim.
+//
+// A park is still RUN-WIDE: the engine refuses every claim while the run is
+// not active (R1 is the first readiness clause and `claim` re-checks it), so
+// once a park is observed no lane launches anything further — rows waiting
+// for admission settle `not-launched-run-parked`, in-flight rows finish. A
+// CONFLICT, a failed spawn, or an uncleared gate still kills only its own
+// issue's later rows.
 // TEST-BEGIN stage-ladder — extracted and exercised by
-// tests/wave-chain-dead-ladder.test.sh and
-// tests/wave-fix-round-ancestry.test.sh, which wrap this whole region in an
+// tests/wave-chain-dead-ladder.test.sh, tests/wave-fix-round-ancestry.test.sh
+// and tests/wave-issue-lanes.test.sh, which wrap this whole region in an
 // async function and feed it stub `parallel`/`spawn`/`runGate`/`probe`/`log`
 // globals. Everything the ladder itself needs must stay INSIDE the markers;
 // the only workflow globals it may reach for are those stubs, `rows`,
-// `input`, and the fix-round-ancestry region's helpers (both suites
+// `input`, and the fix-round-ancestry region's helpers (the suites
 // concatenate that region ahead of this one).
+const stageOf = (row) => (Number.isInteger(row.stage) ? row.stage : 0)
 const stages = new Map()
 for (const row of rows) {
-    const s = Number.isInteger(row.stage) ? row.stage : 0
+    const s = stageOf(row)
     if (!stages.has(s)) stages.set(s, [])
     stages.get(s).push(row)
 }
@@ -2282,25 +2326,24 @@ log(`wave: ${rows.length} row(s) across stage(s) ${stageKeys.join('→')}`)
 const gateStageByIssue = new Map()
 for (const row of rows) {
     if ((row.kind === 'action' || row.kind === 'vote') && row.issue) {
-        const s = Number.isInteger(row.stage) ? row.stage : 0
+        const s = stageOf(row)
         const cur = gateStageByIssue.get(row.issue)
         if (cur === undefined || s < cur) gateStageByIssue.set(row.issue, s)
     }
 }
 function needsClaimProbe(row) {
     if (row.kind !== 'executor' || !row.issue) return false
-    const s = Number.isInteger(row.stage) ? row.stage : 0
     const g = gateStageByIssue.get(row.issue)
-    return g !== undefined && g < s
+    return g !== undefined && g < stageOf(row)
 }
 
 // The fix-round base-ancestry guard (helpers above the ladder). One
 // verdict per issue-round, shared by every fanout sibling: two cheap
 // read-only probes decide whether the fanout spawns — the round's target sha
 // off the bundle, then the merge-base check. The probes run AT THE ROW'S OWN
-// STAGE, after its earlier stages settled, so the bundle's round record is
-// live. Every uncertain outcome resolves null (fail-open); only a positively
-// parsed non-zero merge-base exit parks.
+// STAGE, after its lane's earlier stages settled, so the bundle's round
+// record is live. Every uncertain outcome resolves null (fail-open); only a
+// positively parsed non-zero merge-base exit parks.
 const ancestryVerdicts = new Map()
 function ancestryVerdict(row, phaseLabel) {
     const round = fixRoundFanoutRound(row)
@@ -2361,11 +2404,11 @@ function ancestryVerdict(row, phaseLabel) {
 }
 
 const byStep = new Map()
-// A park observed anywhere stops every LATER stage (in-flight groups finish;
-// the engine re-offers unlaunched steps after the park lifts). A CONFLICT, a
-// failed spawn, or an uncleared gate kills only its own ISSUE's later rows —
-// the chain behind it cannot become claimable this wave, and spawning it
-// anyway boots corpses.
+// A park observed anywhere stops every lane's LATER launches (in-flight rows
+// finish; the engine re-offers unlaunched steps after the park lifts). A
+// CONFLICT, a failed spawn, or an uncleared gate kills only its own ISSUE's
+// later rows — the chain behind it cannot become claimable this wave, and
+// spawning it anyway boots corpses.
 let parked = false
 const deadIssues = new Set()
 
@@ -2397,81 +2440,254 @@ function chainDead(res) {
 }
 // TEST-END chain-dead
 
-for (const k of stageKeys) {
-    if (parked) break
-    const group = stages.get(k).filter((row) => {
-        if (row.issue && deadIssues.has(row.issue)) {
-            byStep.set(row.step, { step: row.step, status: 'skipped-chain-dead', text: null })
-            log(`${row.step}: skipped — this wave's chain died at an earlier ` +
-                `stage (the issue itself is untouched)`)
-            return false
-        }
-        return true
-    })
-    if (group.length === 0) continue
-    const label = `stage ${k} (${group.length} row${group.length === 1 ? '' : 's'})`
-    const settled = await parallel(group.map((row) => () => {
-        if (row.kind === 'action') {
-            // Engine-run, and normally already DONE: the record of its last
-            // predecessor drove it (engine drive.go) before that record
-            // returned. Nothing to spawn; the row is in the manifest so the
-            // stage numbering stays transparent.
-            log(`${row.step}: action step — engine-run at record time, no spawn`)
-            return Promise.resolve({ step: row.step, status: 'engine-run', text: null })
-        }
-        if (row.kind === 'vote') return runGate(row, label)
-        const launchRow = () => {
-            if (needsClaimProbe(row)) {
-                return probe(`docket step show ${row.step} --json`,
-                    `${row.step} · pre-claim`, label, row.step).then((show) => {
-                    // Skip only on a positively recognized status the wave
-                    // cannot act on; empty output, prose, and anything
-                    // unrecognized all spawn (fail-open). `pending` belongs
-                    // in that set HERE and only here: this probe runs after
-                    // the row's earlier stages have been awaited and
-                    // settled, so nothing left in this wave can advance the
-                    // step to `ready`. A pending row is dead for the wave —
-                    // spawning it burns an executor that dies on claim
-                    // CONFLICT, and the engine re-offers it next dispatch.
-                    const term = show.match(/"status"\s*:\s*"(done|superseded|skipped|failed|pending)"/)
-                    if (!term) return spawn(row, label)
-                    log(`${row.step}: not claimable (${term[1]}) — a same-issue ` +
-                        `gate or action upstream left it unreachable for this ` +
-                        `wave; skipping the spawn`)
-                    return { step: row.step, status: 'skipped-not-claimable', text: show }
-                })
-            }
-            return spawn(row, label)
-        }
-        // A fix round's review fanout is asserted against the prior
-        // round's integrated commit BEFORE the judges spawn (ancestryVerdict
-        // above; one shared verdict per issue-round). A broken ancestry parks
-        // the round as a relay finding; anything short of a positively
-        // broken read launches exactly as before.
-        if (needsAncestryCheck(row, input.integrated)) {
-            return ancestryVerdict(row, label).then((broken) =>
-                broken ? ancestryParkReport(row.step, broken) : launchRow())
-        }
-        return launchRow()
-    }))
-    settled.forEach((res, i) => {
-        const row = group[i]
-        // Normalize BEFORE the chain test: a missing settle is recorded as
-        // spawn-failed, so it has to be read as one too.
-        const out = res || { step: row.step, status: 'spawn-failed', text: null }
-        byStep.set(row.step, out)
-        if (chainDead(out) && row.issue) {
-            deadIssues.add(row.issue)
-            log(`${row.step}: settled ${out.status} — issue ${row.issue}'s later ` +
-                `stages will not be launched this wave`)
-        }
-    })
-    if (settled.some(runParked)) {
-        parked = true
-        log('wave: run parked mid-wave — later stages not launched; the ' +
-            'engine re-offers their steps after the park lifts')
+// ---- lanes: one per issue, an issue-less row riding a lane of its own ----
+const laneOf = (row) => (row.issue ? String(row.issue) : `row:${row.step}`)
+const lanes = new Map()
+for (const row of rows) {
+    const l = laneOf(row)
+    if (!lanes.has(l)) lanes.set(l, [])
+    lanes.get(l).push(row)
+}
+log(`wave: ${lanes.size} issue lane(s): ` + [...lanes.entries()].map(([name, laneRows]) => {
+    const ks = [...new Set(laneRows.map(stageOf))].sort((a, b) => a - b)
+    return `${name}×${laneRows.length}${ks.length > 1 ? ` (stages ${ks.join('→')})` : ''}`
+}).join(', '))
+
+// ---- what the manifest certifies about cross-issue concurrency ----
+// The launch path treats every row that is neither an action nor a vote as
+// an executor; the cohort arithmetic reads the same set, so a row without
+// `kind` is reserved exactly as it is spawned. The engine keys class headroom
+// on the row's `class`, defaulted to the executor hint at expansion (workflow
+// validate.go) — mirror that default so a row rendered without the field
+// lands in the bucket the engine actually counted.
+const isExecutorRow = (row) => row.kind !== 'action' && row.kind !== 'vote'
+const classOf = (row) => (typeof row.class === 'string' && row.class !== '')
+    ? row.class
+    : (typeof row.executor === 'string' ? row.executor : '')
+const isWriter = (row) => isExecutorRow(row) && classOf(row) === 'write'
+const pairKey = (a, b) => (a < b ? `${a} ${b}` : `${b} ${a}`)
+const certifiedClass = new Map()   // class -> largest same-stage count
+const scopePairs = new Set()       // lane pairs with writers co-staged
+for (const group of stages.values()) {
+    const perClass = new Map()
+    const writerLanes = new Set()
+    for (const row of group) {
+        if (!isExecutorRow(row)) continue
+        const c = classOf(row)
+        perClass.set(c, (perClass.get(c) || 0) + 1)
+        if (isWriter(row) && row.issue) writerLanes.add(laneOf(row))
+    }
+    for (const [c, n] of perClass) {
+        if (n > (certifiedClass.get(c) || 0)) certifiedClass.set(c, n)
+    }
+    const ws = [...writerLanes]
+    for (let i = 0; i < ws.length; i++) {
+        for (let j = i + 1; j < ws.length; j++) scopePairs.add(pairKey(ws[i], ws[j]))
     }
 }
+const scopeCertified = (a, b) => a === b || scopePairs.has(pairKey(a, b))
+if (lanes.size > 1) {
+    log(`wave: lanes run concurrently; the manifest certifies class headroom ` +
+        [...certifiedClass.entries()].map(([c, n]) => `${c || '(no class)'}≤${n}`).join(', '))
+    const writerLanes = [...new Set(rows.filter((r) => isWriter(r) && r.issue).map(laneOf))]
+    const unproven = []
+    for (let i = 0; i < writerLanes.length; i++) {
+        for (let j = i + 1; j < writerLanes.length; j++) {
+            if (!scopeCertified(writerLanes[i], writerLanes[j])) {
+                unproven.push(`${writerLanes[i]}/${writerLanes[j]}`)
+            }
+        }
+    }
+    if (unproven.length > 0) {
+        log(`wave: cross-issue coupling — the engine never co-staged writers of ` +
+            `${unproven.join(', ')}, so their scopes are unproven disjoint; those ` +
+            `writers keep the global stage order between them`)
+    }
+}
+
+// ---- admission: a row launches only when the in-flight set plus the row is
+// a cohort the manifest certifies. Nothing here is a claim: the engine's own
+// `claim` re-checks R1-R7 and stays the authority; this rule exists so the
+// wave never spawns an executor INTO a refusal it can foresee. ----
+const inFlight = new Map()   // step -> row, executor rows launched and unsettled
+const waiting = []           // { row, seq, resolve, held }
+let submitted = 0
+function blocker(row) {
+    if (!isExecutorRow(row)) return null
+    const c = classOf(row)
+    let live = 0
+    for (const other of inFlight.values()) {
+        if (classOf(other) === c) live++
+        if (isWriter(row) && isWriter(other) && !scopeCertified(laneOf(row), laneOf(other))) {
+            return `writer ${other.step} (${laneOf(other)}, stage ${stageOf(other)}) is ` +
+                `in flight and the engine never co-staged writers of ${laneOf(row)} ` +
+                `and ${laneOf(other)} — scopes unproven disjoint, holding to the ` +
+                `engine's stage order`
+        }
+    }
+    const cap = certifiedClass.get(c) || 1
+    if (live >= cap) {
+        return `${live} row(s) of class ${c || '(no class)'} in flight — the manifest ` +
+            `certifies at most ${cap} concurrent`
+    }
+    return null
+}
+// Deterministic and synchronous: lowest stage first (the engine's own order,
+// so the global ladder is what falls out wherever nothing is certified), then
+// submission order. Every admission changes the in-flight set, so the scan
+// restarts from the top. Single-threaded event loop; nothing here awaits.
+function pump() {
+    waiting.sort((a, b) => stageOf(a.row) - stageOf(b.row) || a.seq - b.seq)
+    let i = 0
+    while (i < waiting.length) {
+        const w = waiting[i]
+        if (parked) {
+            waiting.splice(i, 1)
+            w.resolve(false)
+            continue
+        }
+        const why = blocker(w.row)
+        if (why) {
+            if (!w.held) {
+                w.held = true
+                log(`${w.row.step}: waiting — ${why}`)
+            }
+            i++
+            continue
+        }
+        waiting.splice(i, 1)
+        if (isExecutorRow(w.row)) inFlight.set(w.row.step, w.row)
+        if (w.held) log(`${w.row.step}: released — launching`)
+        w.resolve(true)
+        i = 0
+    }
+}
+// Resolves true to launch, false when the run parked while the row waited.
+function admission(row) {
+    return new Promise((resolve) => {
+        waiting.push({ row, seq: submitted++, resolve, held: false })
+        pump()
+    })
+}
+function release(row) {
+    if (inFlight.delete(row.step)) pump()
+}
+function observePark(res) {
+    if (parked || !runParked(res)) return
+    parked = true
+    log('wave: run parked mid-wave — no lane launches a later stage; the ' +
+        'engine refuses every claim until the park lifts, then re-offers ' +
+        'their steps')
+    pump()
+}
+
+// One row's launch, once admitted: the gate path for a vote row, else the
+// fix-round ancestry guard and the pre-claim probe ahead of the spawn.
+function startRow(row, label) {
+    if (row.kind === 'vote') return runGate(row, label)
+    const launchRow = () => {
+        if (needsClaimProbe(row)) {
+            return probe(`docket step show ${row.step} --json`,
+                `${row.step} · pre-claim`, label, row.step).then((show) => {
+                // Skip only on a positively recognized status the wave
+                // cannot act on; empty output, prose, and anything
+                // unrecognized all spawn (fail-open). `pending` belongs
+                // in that set HERE and only here: this probe runs after
+                // the row's lane awaited and settled its earlier stages,
+                // and admission excludes this wave's own cohort pressure,
+                // so nothing left in this wave can advance the step to
+                // `ready`. A pending row is dead for the wave — spawning
+                // it burns an executor that dies on claim CONFLICT, and
+                // the engine re-offers it next dispatch.
+                const term = show.match(/"status"\s*:\s*"(done|superseded|skipped|failed|pending)"/)
+                if (!term) return spawn(row, label)
+                log(`${row.step}: not claimable (${term[1]}) — a same-issue ` +
+                    `gate or action upstream left it unreachable for this ` +
+                    `wave; skipping the spawn`)
+                return { step: row.step, status: 'skipped-not-claimable', text: show }
+            })
+        }
+        return spawn(row, label)
+    }
+    // A fix round's review fanout is asserted against the prior
+    // round's integrated commit BEFORE the judges spawn (ancestryVerdict
+    // above; one shared verdict per issue-round). A broken ancestry parks
+    // the round as a relay finding; anything short of a positively
+    // broken read launches exactly as before.
+    if (needsAncestryCheck(row, input.integrated)) {
+        return ancestryVerdict(row, label).then((broken) =>
+            broken ? ancestryParkReport(row.step, broken) : launchRow())
+    }
+    return launchRow()
+}
+
+async function runLane(name, laneRows) {
+    const byStage = new Map()
+    for (const row of laneRows) {
+        const s = stageOf(row)
+        if (!byStage.has(s)) byStage.set(s, [])
+        byStage.get(s).push(row)
+    }
+    const keys = [...byStage.keys()].sort((a, b) => a - b)
+    for (const k of keys) {
+        if (parked) break
+        const group = byStage.get(k).filter((row) => {
+            if (row.issue && deadIssues.has(row.issue)) {
+                byStep.set(row.step, { step: row.step, status: 'skipped-chain-dead', text: null })
+                log(`${row.step}: skipped — this wave's chain died at an earlier ` +
+                    `stage (the issue itself is untouched)`)
+                return false
+            }
+            return true
+        })
+        if (group.length === 0) continue
+        const label = `${name} stage ${k} (${group.length} row${group.length === 1 ? '' : 's'})`
+        const settled = await parallel(group.map((row) => () => {
+            if (row.kind === 'action') {
+                // Engine-run, and normally already DONE: the record of its
+                // last predecessor drove it (engine drive.go) before that
+                // record returned. Nothing to spawn; the row is in the
+                // manifest so the stage numbering stays transparent.
+                log(`${row.step}: action step — engine-run at record time, no spawn`)
+                return Promise.resolve({ step: row.step, status: 'engine-run', text: null })
+            }
+            return admission(row).then((go) => {
+                if (!go) {
+                    log(`${row.step}: not launched — the run parked while it waited`)
+                    return { step: row.step, status: 'not-launched-run-parked', text: null }
+                }
+                return Promise.resolve()
+                    .then(() => startRow(row, label))
+                    .then((res) => {
+                        // Read the park signal PER ROW, the moment it lands,
+                        // and BEFORE the row's slot is released: releasing
+                        // first would admit a waiter into a run the engine
+                        // already refuses claims on.
+                        observePark(res)
+                        release(row)
+                        return res
+                    }, (err) => {
+                        release(row)
+                        throw err
+                    })
+            })
+        }))
+        settled.forEach((res, i) => {
+            const row = group[i]
+            // Normalize BEFORE the chain test: a missing settle is recorded as
+            // spawn-failed, so it has to be read as one too.
+            const out = res || { step: row.step, status: 'spawn-failed', text: null }
+            byStep.set(row.step, out)
+            if (chainDead(out) && row.issue) {
+                deadIssues.add(row.issue)
+                log(`${row.step}: settled ${out.status} — issue ${row.issue}'s later ` +
+                    `stages will not be launched this wave`)
+            }
+        })
+    }
+}
+
+await parallel([...lanes.entries()].map(([name, laneRows]) => () => runLane(name, laneRows)))
 
 return rows.map((row) => byStep.get(row.step) ||
     { step: row.step, status: parked ? 'not-launched-run-parked' : 'spawn-failed' })

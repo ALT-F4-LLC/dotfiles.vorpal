@@ -241,7 +241,42 @@ possibly a genuine PRE-EXISTING DEFECT. Surface it to the operator ONCE,
 before any step pays for it, and record the agreed disposition: fix the
 environment, a named override policy, or FIX-FIRST where the failure is
 itself a defect — a standing override is never assumed for one of those,
-security gates especially. Never rediscover it per step.
+security gates especially. Never rediscover it per step — and the way you stop
+the rediscovery is to WRITE THE RULING INTO THE RUN, before the first
+`dispatch open` of the wave that will meet the gate:
+
+```bash
+docket run note add $RUN --text "Gate tests fails on clean HEAD \
+  (routing_sweep_test.go), pre-existing and tracked as <issue>; \
+  disposition: override-pass. Do not re-derive it and do not file a gap."
+```
+
+Four things belong in it and nothing else: the GATE, WHY its failure is
+pre-existing, the ISSUE tracking it, and the DISPOSITION already given. The
+note is capped at 16 KiB because it rides every packet, so the detail stays on
+the issue it cites; `--file F` (or `--file -` for stdin) takes one too long for
+a shell argument. Every packet the run renders AFTERWARDS — every step, every
+issue, every round — carries it verbatim as a `== RUN NOTE N` section right
+after `== REQUEST`, and `step context` exposes it as `notes` for a contract to
+name. It is legal while the run is planning, active or parked and refused on a
+done or abandoned one, and it is append-only: a ruling that changes is a SECOND
+note rendering after the first, never an edit, because a packet is the record
+of what a worker was told. `docket run note list $RUN` reads back what the
+workers have already been told — run it on a resume, before deciding whether
+this ruling still needs saying. The channel exists because a conductor once
+could not say any of it: it filed the tracking issue carrying the operator's
+override-pass ruling, its implement executor re-proved the same clean-HEAD
+`tests` failure with a stash round-trip twelve minutes later and filed a
+duplicate gap, and the conductor then spent a slice of the next dispatch
+deduping (docket-repo DKT-1079 added the verb).
+
+A duplicate should now be rare, not routine — but it is still possible, since a
+note added mid-wave reaches only packets rendered after it landed, and an
+executor on a docket without the verb sees nothing. When one arrives anyway,
+dedupe it in two calls: `docket issue comment add <dup> -m "Duplicate of
+<tracking>"`, then `docket issue close <dup>`. `issue close` carries no
+`--note` (only `--if-version`), so the comment is the ONLY place that pointer
+lands.
 
 **Warm the Go module cache before dispatching into a Go repo.** Sandboxed Go
 cannot verify TLS on this machine at all — the trust daemon is blocked under

@@ -22,6 +22,7 @@ const SENSITIVE_PATHS_DENY_READ_ONLY: &[&str] = &["~/.aws/**"];
 
 const SENSITIVE_PATHS: &[&str] = &[
     "~/.claude.json",
+    "~/.config/gh/**",
     "~/.doppler/**",
     "~/.gemini/**",
     "~/.gnupg/**",

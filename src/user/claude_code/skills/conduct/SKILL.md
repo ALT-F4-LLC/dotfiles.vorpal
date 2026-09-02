@@ -2139,6 +2139,47 @@ expecting the override to carry into them, and read `docket next` / `step show`
 on the interposed rows after any override-pass to see which of them the engine
 actually left standing.
 
+**A gate that failed on the executor's OWN commit is answered with `retry`;
+`override-pass` leaves the step's recorded diff on the FAILING sha.** The diff
+artifact is written at record time and no resolution re-records it — the verb
+writes a pass beside the step, it does not re-point the step at a tree fixed
+afterwards. So a conductor patch under an override-pass is invisible
+downstream: every review packet renders from that recorded artifact, the next
+dispatch carries the pre-patch sha as the fanout's target (a `stale_targets`
+row above is where that surfaces, when it surfaces at all), and the panel reads
+the failing tree. Measured: an implement step recorded a sha that failed its
+self-hygiene gate on one over-long line; the operator ruled "override-pass, fix
+it now as a patch commit then continue"; the conductor patched, committed,
+cherry-picked and resolved; all three judges then reviewed the PRE-PATCH sha,
+synthesize returned exactly one blocker — that same line-length violation —
+reconcile routed `fix-loop` on it alone, and the fix round's own fixer reported
+"no action, ruff is clean now" after ~21.6k output and ~11.2M cache-read
+tokens. The question you put to the operator carries this in its OPTION TEXT:
+`retry` is the only resolution that produces a clean RECORDED sha and is
+therefore the recommended option (its own precondition is the rendered-brief
+check above), and the override-pass option states that the review fanout will
+re-find the gate failure on the pre-patch sha and open a fix round on a defect
+already fixed.
+
+**If the operator rules the conductor patch anyway**, land it as its own commit
+(the operator-ruling paragraph below) and owe two things past the resolve verb.
+First, annotate the step so the record carries the shas the diff artifact does
+not — the same call the integration procedure requires (**Worktree writers**
+above), run right here, not deferred:
+
+```bash
+docket step annotate STEP-N --metadata '{"integrated_sha":"<new sha>","writer_sha":"<sha>"}'
+```
+
+— `writer_sha` the step's failing recorded sha, `integrated_sha` the patch's
+commit on the shared branch, and the resolve note naming both plus what the
+patch changed. Second, SAY IT in the ruling exchange, before they answer: the
+fanout will review the pre-patch tree, so the round it opens re-reports the
+defect and that cost is part of what they are buying. No resolve path
+re-records a step's diff artifact after an out-of-band patch — a known engine
+gap, filed — so the annotation and that sentence are the whole mitigation until
+it closes.
+
 **A gate that failed on a broken check is settled on evidence, not overridden
 blind.** When a gate's output shows it never actually ran (one case: govulncheck
 DNS-failing in the sandbox, then reporting "a reachable vulnerability"),
@@ -2189,7 +2230,11 @@ all the same: conductor-landed work returns through a review fanout before
 the affected issue is called done. Name every ruling-driven conductor
 commit in the close report (measured twice in one run; both worked and both
 deserved sanction rather than improvisation). The question that elicits such
-a ruling names WHO will make the edit.
+a ruling names WHO will make the edit. And where the ruling PATCHES a write
+step whose own gate failed, the rule above (**A gate that failed on the
+executor's OWN commit**) governs the same commit: the step's recorded diff
+stays on the failing sha, so the `step annotate` call and the statement it
+requires are part of landing it.
 
 **A re-review round rebinds to the fix.** Loop inputs re-render from the loop's
 latest emit (verified in production). The cheap discipline that remains:

@@ -1,6 +1,6 @@
 ---
 name: shadow
-description: Observe Claude Code sessions — live, or post-mortem — and find friction across every layer they cross: harness, skills, workflows, loops, agents, hooks, config, the models themselves, and the Docket engine. Strictly read-only — it fixes nothing, anywhere, and investigation may read every project's checkout and all of ~/.claude. Runs from ANY repository — the store is machine-global and filing anchors itself to each owning checkout. Log findings with evidence as they land; once the run ends, file EVERY finding as an issue in its owning Docket project — the intake of the funnel a `tend` loop (or a plan → conduct run) drains — then deliver a severity-ranked review naming what was filed. Invoked bare it sweeps EVERY project under ~/.claude/projects for the past 7 days of sessions — unless THIS session is itself running an execution skill — plan, conduct, retro, or any other — in which case it spawns one background shadow agent (Fable) over this very session, pings it at each dispatch boundary because that seat takes no turns of its own, and hands the turn back to the run; pass a session id to observe just that one — a conduct run, any other skill's run, or a finished session worth learning from.
+description: Observe Claude Code sessions — live, or post-mortem — and find friction across every layer they cross: harness, skills, workflows, loops, agents, hooks, config, the models themselves, and the Docket engine. Strictly read-only — it fixes nothing, anywhere, and investigation may read every project's checkout and all of ~/.claude. Runs from ANY repository — the store is machine-global and filing anchors itself to each owning checkout. Log findings with evidence as they land; once the run ends, file EVERY finding as an issue in its owning Docket project — the intake of the funnel a `tend` loop (or a plan → conduct run) drains — then deliver a severity-ranked review naming what was filed. Invoked bare it sweeps EVERY project under ~/.claude/projects for the past 7 days of sessions — unless THIS session is itself running an execution skill — plan, conduct, retro, a `/loop /tend` session, or any other — in which case it spawns one background shadow agent (Fable) over this very session, pings it at each boundary — a dispatch for a docket-run skill, a tick for `/loop /tend` — because that seat takes no turns of its own, and hands the turn back to the run; pass a session id to observe just that one — a conduct run, any other skill's run, or a finished session worth learning from.
 argument-hint: "[session-id]"
 ---
 
@@ -108,13 +108,15 @@ Three modes. An explicit argument always wins; bare, the session decides:
   flattens `/`, `.`, and `_` identically and cannot be decoded back into a
   path.
 - **Bare, with an execution skill active in THIS session** (`plan`,
-  `conduct`, `retro`, or any other) — the live
+  `conduct`, `retro`, a `/loop /tend` session, or any other) — the live
   self-shadow: spawn one background shadow agent over this very session,
   seated `fable` via the `Agent` tool, hand the turn straight back to the
-  run, and — where the engine says the run is still moving — ping the agent
-  at every dispatch boundary, because that seat wakes on nothing else; against
-  an already-terminal run the same spawn goes out briefed post-mortem, with no
-  ping contract at all (§1b).
+  run, and — where the engine (or, for `/loop /tend`, the loop's own
+  schedule) says work is still moving — ping the agent at every boundary
+  (a dispatch for a docket-run skill, a tick for `/loop /tend`), because that
+  seat wakes on nothing else; against an already-terminal run, or a stopped
+  loop, the same spawn goes out briefed post-mortem, with no ping contract at
+  all (§1b).
 - **Bare, anywhere else** — the fleet sweep, and the default: mine EVERY
   project under `~/.claude/projects` for the past 7 days of sessions,
   post-mortem. No candidate list, no which-one question — enumerate and go
@@ -171,36 +173,61 @@ owning project, then one review naming what was filed.
 ### 1b. The live self-shadow (bare, any execution skill active in this session)
 
 A bare invocation landing in a session that has itself run an execution
-skill — `plan`, `conduct`, `retro`, or any other — is not asking for a fleet
-sweep — the operator wants THIS session's run watched while it happens. The conversation seat cannot be the
+skill — `plan`, `conduct`, `retro`, a `/loop /tend` session, or any other —
+is not asking for a fleet sweep — the operator wants THIS session's run (or
+loop) watched while it happens. The conversation seat cannot be the
 watcher: it is the conductor, and a conductor narrating itself is neither
 independent nor quiet. So the move here is a delegation with one continuing
 duty attached: spawn one background shadow agent over this very session, hand
-the turn straight back to the run, and ping that agent at every dispatch
-boundary — it takes no turns of its own, and the pings are the only thing
-separating a live watch from a post-mortem that merely started early. That
-whole shape assumes the run is still moving, which is why the first move is
-checking that it is. Skip
+the turn straight back to the run, and ping that agent at every boundary — it
+takes no turns of its own, and the pings are the only thing separating a live
+watch from a post-mortem that merely started early. That whole shape assumes
+work is still moving, which is why the first move is checking that it is. Skip
 §1's questions round — the active run IS the goal, and the seat that goes
 quiet after attaching is the spawned one, not you.
 
-**Before composing the brief, re-check that there is still a run to watch.**
-The conductor is the last seat to learn its own run ended — a wave-completion
-notification can sit queued while you compose, so your own belief about the
-phase is the one thing you may not brief from. Immediately before writing the
-brief, not at invocation and not from the last dispatch you remember, ask the
-engine twice: the run's state (`docket run status RUN-N`, anchored per rule 3)
-and whether the outstanding wave's task has actually completed. Then branch:
+**A `/loop /tend` session is not a docket run — it is a loop.** `tend` runs
+no `/plan`, no `/conduct`, and no docket run, ever (its own §1); it has no
+dispatch, no wave, and no `docket run status` to ask. Its boundary is a
+tick — one pass through `/loop`'s wrapper, either finding the queue empty
+(a quiet tick, not a finding — tend's own §1 says the same: no message on
+an empty poll) or tending exactly one issue end to end (claim, delegate,
+land, close) before the next tick starts. Everywhere below that reads "run"
+or "dispatch," read "loop" or "tick" for this target; everywhere it reads
+`docket run status`, read the loop's own schedule state instead (§1's
+branch below says how).
 
-- **Run still active, wave still moving** — the live brief below, ping
-  contract and all.
-- **Run terminal, or its final wave finished** — brief a POST-MORTEM. There
-  are no dispatch boundaries left to ping, so a live-watch contract is
-  unfulfillable from birth: all three of §5's interrupt conditions assume a run
-  that can still change, and against a finished run they are unreachable, not
-  merely slow (§5). Promising pings anyway buys nothing and costs the review
-  its honesty — the seat claims a live watch it never had. Say post-mortem in
-  the one line you give the operator too.
+**Before composing the brief, re-check that there is still a run — or loop —
+to watch.** The conductor is the last seat to learn its own run ended — a
+wave-completion notification can sit queued while you compose, so your own
+belief about the phase is the one thing you may not brief from. Immediately
+before writing the brief, not at invocation and not from the last dispatch
+you remember, ask the engine twice: the run's state (`docket run status
+RUN-N`, anchored per rule 3) and whether the outstanding wave's task has
+actually completed. **For `/loop /tend`, there is no engine run to ask** —
+check instead whether the loop's own schedule is still armed: a live
+`/loop` wrapper carries a standing `ScheduleWakeup` that has not been
+stopped, so the equivalent question is whether that wakeup is still pending
+rather than `stop: true`'d, and whether tend was invoked under `/loop` at
+all — bare with no wrapper, tend's own §1 says one pass and no next tick,
+which is a post-mortem from birth exactly like a terminal run. Then branch:
+
+- **Run still active, wave still moving** (docket-run skills) — the live
+  brief below, ping contract and all.
+- **`/loop /tend`, wakeup still armed** — the live brief below, tick-paced:
+  one ping when a tick claims an issue, one when it commits and closes,
+  none on an empty tick.
+- **Run terminal, or its final wave finished** (docket-run skills) — brief a
+  POST-MORTEM. There are no dispatch boundaries left to ping, so a live-watch
+  contract is unfulfillable from birth: all three of §5's interrupt
+  conditions assume a run that can still change, and against a finished run
+  they are unreachable, not merely slow (§5). Promising pings anyway buys
+  nothing and costs the review its honesty — the seat claims a live watch it
+  never had. Say post-mortem in the one line you give the operator too.
+- **`/loop /tend`, wakeup stopped or never present** — brief a POST-MORTEM,
+  same reasoning: no tick boundaries left (or ever coming) to ping, so say
+  post-mortem plainly rather than promise a live watch this seat cannot
+  keep.
 
 Measured (agentic-services, RUN-62): `/shadow` at 20:52:54Z, run-done event at
 20:53:13Z, the `Agent` spawn at 20:53:49Z — a "live" seat born 36s after the
@@ -246,11 +273,13 @@ above:
   `~/.claude/projects/<flattened-cwd>/<id>.jsonl` must contain this
   conversation's own `/shadow` invocation. A wrong id seats the agent on
   someone else's session. Name the observed skill (whichever execution
-  skill is active — `plan`, `conduct`, `retro`, or another) and the repo
-  from your own cwd — the agent should not re-derive what you already know.
+  skill is active — `plan`, `conduct`, `retro`, `/loop /tend`, or another)
+  and the repo from your own cwd — the agent should not re-derive what you
+  already know.
 - **Watch rules, and this seat's real cadence.** Live branch: read the arc so
-  far once to orient — run id, phase, what already landed — then watch from
-  the live edge. But the brief must say plainly what this seat is, in these
+  far once to orient — run id, phase, what already landed (for `/loop /tend`:
+  the tick history so far — what's been tended, what's queued) — then watch
+  from the live edge. But the brief must say plainly what this seat is, in these
   words:
   **an `Agent`-spawned background agent does not wake itself.** A `Monitor`
   it arms keeps collecting — journal results, gate rows, docket events — and
@@ -291,7 +320,8 @@ above:
   belongs to the conversation-seat modes and does not apply here.
 - **The ending**: §6 runs inside the agent, and the severity-ranked review
   naming what was filed is its final message. Live, that is once the observed
-  run ends; post-mortem, the run has already ended, so §6 runs directly —
+  run ends (for `/loop /tend`, once the loop stops); post-mortem, the run has
+  already ended, so §6 runs directly —
   there is nothing to wait for and no end-of-run ping to wait for it with, and
   a seat told otherwise will sit idle until the conductor kills it. Demand the
   review by `SendMessage` either way: a named background agent's final text is
@@ -310,26 +340,48 @@ above:
   contractual — the log is what makes the review recoverable without the
   conductor.
 
-**Then, on the live branch, ping it at every dispatch boundary — that
-obligation is what makes this seat live at all, and it is yours, not the
-agent's.** (Post-mortem there are no boundaries and this whole obligation is
-void; you owe the agent nothing after the spawn.) Having spawned it,
-you owe it one `SendMessage` at each dispatch OPEN and each dispatch CLOSE —
+**Then, on the live branch, ping it at every boundary — that obligation is
+what makes this seat live at all, and it is yours, not the agent's.**
+(Post-mortem there are no boundaries and this whole obligation is void; you
+owe the agent nothing after the spawn.) Having spawned it, you owe it one
+`SendMessage` at each dispatch OPEN and each dispatch CLOSE —
 `SendMessage({to: "shadow-live", message: "dispatch 3 open — STEP-7,
 STEP-8"})`, `"dispatch 3 closed — STEP-7 recorded, STEP-8 gate-failed"` —
-plus one at each operator gate and one when the run ends. A ping is not a
-poll: one line, sent as you pass the boundary anyway, no reply awaited and
-never waited on. Each ping is the agent's only turn — it flushes the queued
-monitor backlog, lets the agent log against it, and lets an interrupt come
-back BEFORE the next wave dispatches, which is exactly where §5's conditions
-1 and 3 have to land (stale bytes about to be dispatched, an `--ack-reap`
-about to be granted on bad information). Drop the pings and the seat is a
-post-mortem with earlier setup — the failure measured above, and
-the difference between that and an honest post-mortem is only that the brief
-said otherwise. A run whose
+plus one at each operator gate and one when the run ends. **For `/loop
+/tend`, the boundaries are ticks, not dispatches**: one ping when a tick
+claims an issue (`"tick claimed DKT-N — seating a worker"`), one when it
+commits and closes (`"tick closed DKT-N — commit <sha>"`), and one when the
+loop stops — but none on an empty tick, mirroring tend's own rule that a
+quiet poll gets no message (§1). A ping is not a poll: one line, sent as you
+pass the boundary anyway, no reply awaited and never waited on. Each ping is
+the agent's only turn — it flushes the queued monitor backlog, lets the
+agent log against it, and lets an interrupt come back BEFORE the next wave
+dispatches or the next issue is claimed, which is exactly where §5's
+conditions 1 and 3 have to land (stale bytes about to be dispatched, an
+`--ack-reap` about to be granted on bad information; for tend, a second
+issue about to be claimed while a worker from the last tick might still be
+alive). Drop the pings and the seat is a post-mortem with earlier setup — the
+failure measured above, and the difference between that and an honest
+post-mortem is only that the brief said otherwise. A run — or loop — whose
 conductor will not carry that obligation should be told so at spawn time,
 in the brief's own words, so the review does not claim a live watch that
 never happened.
+
+**Why this seat still uses `Agent`, not `Workflow`, even when the target is
+`/loop /tend` (which itself bans `Agent` for its own workers, §3 there):**
+the two seats need different things from their tool. A tend worker is
+one-shot and disposable — spawn, implement, report, done — so `Workflow`'s
+explicit `model`/`effort` opts are exactly what it needs and nothing more.
+This watcher is the opposite: it must stay addressable by `SendMessage` in
+both directions for the seat's ENTIRE life — the dispatch/tick-boundary pings
+in, and §5's interrupts back out — and tend's own text is the evidence that
+a `Workflow`-seated `agent()` call cannot do that: "a `Workflow` seat cannot
+be messaged after its script returns" (tend §3, on why a bad worker report
+gets a fresh `agent()` spawn rather than a follow-up message to the first
+one). `Agent`'s lost effort tier (line 226 above) is the stated price of
+staying addressable; it is not an oversight parallel to tend's own
+Agent-for-workers mistake, because the two seats are not doing the same
+job.
 
 Between pings, the shadow seat goes idle BY DESIGN — that is the whole point
 of a seat whose only turns are the pings you send it. The harness delivers
@@ -442,7 +494,9 @@ Before reading one transcript line:
    `$SRC/skills/<target>/SKILL.md`; every bold absolute, ordering constraint,
    stop condition, and never-reach-for in it becomes a watch item. The
    conduct checklist is pre-derived in the appendix because it is the richest
-   target; any other target gets the same treatment fresh.
+   target, and the tend checklist alongside it because a `/loop /tend`
+   session is the other recurring one; any other target gets the same
+   treatment fresh.
 2. **Skim every surface the run will cross.** `$SRC/workflows/wave.js`,
    `$SRC/agents/executor-*.md`, `$SRC/hooks/`, and the docket config source —
    not under `$SRC` but beside it at `$SRC/../docket/config/` (`contracts/`,
@@ -592,6 +646,23 @@ and holds three kinds of file, of which only one carries usage:
 Step attribution is a JOIN on `agentId`: the step id is in the agent's first
 `user` message, because the bootstrap prompt names it. Do not look for a
 `label` field.
+
+**A `/loop /tend` session's workers land in this exact same layout** —
+tend seats every worker through `Workflow`'s `agent()` (its own §3), never
+the plain `Agent` tool, so a tend worker's transcript directory is
+`~/.claude/projects/<flattened-cwd>/<session-id>/subagents/workflows/<wfId>/`
+with the same `journal.jsonl` / `agent-<agentId>.meta.json` /
+`agent-<agentId>.jsonl` trio as a wave. The join differs, though: there is no
+step id, because tend has no docket run — the attribution key is the
+**Docket issue id**, and it is in the worker's first `user` message the same
+way a step id is (tend's brief opens `Implement Docket issue DKT-N: …`, its
+own §3). And `agent-<agentId>.meta.json` carries `model` but **no
+`effort`** — tend requires effort explicit in every `agent()` call (its own
+§3), but that opt, and the one-line tier ruling that justifies it, are
+visible only in the ORCHESTRATOR's own transcript, as the `log()` call
+immediately before `agent()` (tend's §3 step 2 shows the shape) — checking
+tend's seating rule (appendix) means reading the main transcript, not the
+worker's `meta.json`.
 
 Tail on a cadence, from your last offset —
 `$SRC/scripts/shadow-transcript-summary.sh <transcript.jsonl> [from-line]`
@@ -798,16 +869,27 @@ Then:
      unquoted `path/**` is glob-mangled by the shell and the scopes are
      silently dropped (an issue was once created with all three of
      its scopes missing, repaired only by a later edit).
+   - **Never `--assignee`.** Shadow files findings; it never claims them. An
+     assignee is what tells a `/loop /tend` session to skip an issue as
+     already claimed (tend's own §1: any issue with a non-empty `assignee`
+     is someone or something else's) — setting one on a filed finding would
+     hide it from the exact drain named at §5/§6's own review line.
 
    A finding whose remedy would add a trust entry, widen a sandbox
    allowlist, change what a hook permits, or destroy uncommitted work still
    files — an issue is a request, not an authorization — but its description
-   must name the trust boundary in its FIRST line, so the worker's own
-   security gate fires and routes it to the operator, and the review calls
-   it out separately. Findings that point at instance config rather than at
-   a definition — thresholds, TTLs, tiers, the corpus's own workflows, a
-   repo's additions — are `/retro`'s to evolve from engine evidence: name
-   them in the review and point at retro instead of filing them.
+   must name the trust boundary in its FIRST line. That line exists to fire
+   the WORKER's own security gate — for a `/loop /tend` drain, tend's own §2
+   step 2, which pauses via `AskUserQuestion` before touching anything a
+   filed issue touches on authn/authz, secrets, crypto, sandbox/permissions,
+   a trust boundary, supply chain, or untrusted input at a privilege
+   boundary; name the same trigger set here so a finding tend's gate would
+   catch is never phrased around it by accident. The review calls the finding
+   out separately either way. Findings that point at instance config rather
+   than at a definition — thresholds, TTLs, tiers, the corpus's own
+   workflows, a repo's additions — are `/retro`'s to evolve from engine
+   evidence: name them in the review and point at retro instead of filing
+   them.
 3. **Deliver the review.** Before sending it, scan your own draft for the
    same friction you'd flag in an observed session's output: a hedged claim
    with no evidence behind it, a restated obviousness, padding that adds no
@@ -958,3 +1040,63 @@ And the wave:
   load-bearing.
 - **Journal completeness.** Every spawned `agentId` with its meta and
   transcript; usage present where the back-fill will look for it.
+
+## Appendix: the tend checklist
+
+Pre-derived because a `/loop /tend` session is the other recurring target
+(§1b, §4). The loop:
+
+- **Never `plan`/`conduct`/a docket run.** No `/plan` or `/conduct`
+  invocation, no docket run created or activated — ever, for this loop
+  (tend's own §1). A tend session doing any of these has stopped being
+  tend; treat it as load-bearing.
+- **Loop-wrapped, not self-pacing.** `tend` supplies no watch loop of its
+  own; `/loop /tend` (or `/loop 20m /tend`) is what re-enters it each tick.
+  Invoked bare with no loop wrapper, one pass and say so — there is no next
+  tick to watch, and a shadow briefed for a live watch against a bare
+  invocation is briefed wrong (§1b's branch).
+- **One issue, one worker, ever.** Strictly one issue in flight; workers
+  share the tend session's own working tree (no worktree isolation), so two
+  issues' workers alive at once is a **load-bearing** finding (tend's own
+  §1: "never have two issues' workers alive at once").
+- **Queue exclusions.** Run-included issues (on any active/planning/paused
+  run's roster) and claimed issues (non-empty `assignee`) are skipped —
+  tend itself never sets an assignee on what it works, so a populated one
+  means another skill already has the issue (tend's own §1).
+- **Empty tick is silent.** `ScheduleWakeup` at 150-180s, `noop: true`, and
+  no "nothing to do" message — a quiet tick is not a finding, the same as
+  §5's "a quiet transcript is a run working."
+- **Security gate before touching anything.** An issue in authn/authz,
+  secrets, crypto, sandbox/permissions, a trust boundary, supply chain, or
+  untrusted input at a privilege boundary pauses for `AskUserQuestion` —
+  proceed, skip, or the operator takes it themselves — before any edit
+  (tend's own §2 step 2). Working one blind is a finding, and it is the
+  same gate §6 asks a shadow's own filed findings to fire.
+- **Blocked, not retried.** An ask too unclear to brief, a missing
+  prerequisite, or a worker that still can't show its verification after one
+  follow-up round moves the issue to `review` with a comment naming the
+  blocker, told to the operator in the next visible turn, and is not
+  retried the same way next tick (tend's own §2 steps 4 and 3's
+  follow-up-round rule).
+- **Seating.** `Workflow`'s `agent()` only, never the plain `Agent` tool —
+  tend's own §3 bans it outright, since `Agent` carries no effort parameter
+  and would seat a worker at whatever the loop's own default happens to be;
+  both `model` and `effort` set explicitly in the opts; a `log()` line
+  carrying the tier ruling (mechanical / ordinary / gnarly, plus why) sits
+  immediately before the `agent()` call (tend's own §3, and §4 above for
+  where to find it — a tend worker's own `meta.json` carries `model` but no
+  `effort`). A spawn missing the tier line, or either opt, is mis-seated
+  regardless of which tier it picked.
+- **Landing.** `commit` skill once per issue, never batched across issues
+  (skip only when the issue changed no files); the close comment cites the
+  commit hash(es) (tend's own §2 step 5). A close with no commit hash in
+  the comment is a **load-bearing** finding — it breaks the one thing that
+  lets a later reader verify what actually landed.
+- **Report per tended issue.** One line — issue id, title, commit hash(es)
+  — every tended issue is a state change and always gets said, never
+  absorbed silently (tend's own §2 step 6).
+- **Stop condition.** The loop ends only when the operator stops it
+  (`ScheduleWakeup({stop: true})` or telling it to stop) or ends the
+  `/loop`; an empty queue is a rest, not a finish (tend's own "Stop"
+  section). A tend session that treats an empty queue as done, or that
+  stops narrating on its own, is a finding.

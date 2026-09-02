@@ -1,7 +1,35 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 30  # 30: one topology change — a `drain-highs` step lands after
+version = 31  # 31: one edge, no topology change — `drain-highs` declares
+              #   `after_fired = ["security-vote"]` beside its unchanged
+              #   `after`. This closes the deviation accepted at 30: the
+              #   engine treated a skipped interposed gate as terminal, so on
+              #   a round where reconcile found no open high and never routed
+              #   to the vote (3 of 81 vote instances measured across every
+              #   project on this machine) the drain still ran — one sonnet
+              #   spawn to report that nothing qualified. The engine now
+              #   carries `after_fired`: a step naming a predecessor there is
+              #   terminalized skipped in the same transaction that skips the
+              #   predecessor, cascading through any step that names it in
+              #   turn. "Skipped" is read literally — a vote that ended
+              #   failed-routed on rejection counts as fired — so the rejected
+              #   round is untouched: the fix loop's supersede sweep still
+              #   clears the pending drain and the next ordinal re-instantiates
+              #   it after the new vote, resolved against that ordinal's own
+              #   vote instance. Every `after_fired` entry must also be in
+              #   `after` (lint rule V39a); it already is. Approved rounds are
+              #   byte-identical in behavior. Co-change: contracts/drain-highs
+              #   (3) drops its sentence promising a no-high round still
+              #   reaches the executor. Sweep of the other seven corpus
+              #   workflows for the same shape — a successor ordered after a
+              #   step that can end skipped, where running on the skip is
+              #   wrong — found none: standard-change, ui-change, spec-doc,
+              #   spec-project and docs-only end their chains at the gate;
+              #   investigation, spec-doc and spec-project have joins that
+              #   MUST release when a `when` lane is skipped, the opposite
+              #   need.
+              # 30: one topology change — a `drain-highs` step lands after
               #   `security-vote`, `after = ["security-vote"]`, reading
               #   `reconcile.findings` and `issue.body`, same executor, cost,
               #   `on_fail` and limits row as standard-change's drain step.
@@ -262,6 +290,7 @@ voters = ["judge-security", "judge-architecture", "judge-correctness"]
 
 [[step]]
 after = ["security-vote"]
+after_fired = ["security-vote"]
 emits = "drain-report"
 executor = "drain-highs"
 expected_cost = 0.30

@@ -1,6 +1,6 @@
 ---
 node: drain-highs
-version: 2
+version: 3
 archetype: executor-read
 packet_includes:
   - fragments/truth-first.md
@@ -17,10 +17,10 @@ blocker matches `fix-loop` first, so blocker rounds loop and never reach you). I
 security track that is the security vote approving a round: highs and blockers alike
 convene that vote, a rejection enters the fix loop instead of reaching you, and an
 approval means the panel accepted the change with those clusters still open — blockers
-included, so the selection below is the same there. About one security-track round in
-twenty-five reaches you with no qualifying cluster at all (reconcile found no high, the
-vote was skipped, and the engine cannot skip you with it): report that nothing
-qualified and stop. For each cluster still open at high or above — `open_severity`
+included, so the selection below is the same there. A round where the vote never
+convened does not reach you: the workflow declares you run only if the vote fired, and
+the engine skips you in the same transaction it skips the vote. For each cluster still
+open at high or above — `open_severity`
 present and `>= high`, `held` not true, `operator_resolved` not true — write one gap
 file and pass it with `--gap-file` when you record your completion: each lands as a
 `gap` artifact beside your report AND files a backlog issue related to this step's own,

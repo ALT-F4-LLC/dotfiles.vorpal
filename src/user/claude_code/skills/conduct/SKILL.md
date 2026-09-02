@@ -1061,7 +1061,10 @@ JSON
 #     walks the wave worktrees and exits 1 on any unintegrated tip; on a
 #     failure, integrate NOW (Worktree writers below), then re-run it. A close
 #     that verified steps RECORDED but never steps INTEGRATED once shipped a
-#     run whose shared branch never advanced — found 19 hours later.
+#     run whose shared branch never advanced — found 19 hours later. Capture
+#     its output (redirect to a file, or copy the terminal text) — the close
+#     report pastes it VERBATIM (below), so an omitted or paraphrased check
+#     ("integration verified") is as visible as a skipped one.
 # 3. reconcile before closing — verify writes NOTHING, it only compares:
 docket dispatch verify --run $RUN
 # 4. only now:
@@ -1419,6 +1422,24 @@ place. Name
 any stash your own integration or diagnosis created too — a close report
 that said "working tree clean" over a stashed operator draft hid exactly the
 state the next session tripped on (measured).
+
+**Two more pieces of the close report are pasted literal output, never a
+recount or a paraphrase:**
+
+- **The landed-commit list is `git log --format='%h %s' <shared-branch tip
+  when this run activated>..HEAD`, pasted verbatim** — not "N commits
+  landed" from memory or from eyeballing `git log --oneline`. A conductor
+  that had just run `git log --oneline -8` still miscounted by eye (RUN-67:
+  reported 6 against a range that held 5). Conductor patch commits (**If the
+  operator rules the conductor patch anyway** above) are named by sha
+  within that same pasted range, not folded into an executor count or
+  described separately from it — one list, one source, sha by sha.
+- **`integration-check`'s output (2b above) is pasted into the close report
+  in full**, not summarized as "integration verified" or "ran clean" — so a
+  close report that skipped the script reads as missing that section, not as
+  a report that happens not to mention it. If the script was genuinely
+  inapplicable (no write steps this dispatch), say that in its place; do not
+  leave the section out silently.
 
 **A dead spawn is reaped, not waited out.** When the wave reports
 `spawn-failed`, or an agent dies still holding a claim, reconcile first

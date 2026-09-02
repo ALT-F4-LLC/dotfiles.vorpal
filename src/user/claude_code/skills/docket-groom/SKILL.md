@@ -1,11 +1,11 @@
 ---
-name: groom
-description: Run one full grooming pass over every open issue in the current Docket project — dedupe overlapping issues, flag stale ones, re-prioritize, and fill missing goals and acceptance criteria so issues are run-ready. Safe edits (labels, priority, comments, field fills) apply directly; closures and merges are proposed to the operator via AskUserQuestion and land only on approval. One-shot with no parameter: a single pass over the project resolved from cwd, then stop — no loop, no watch, and it never implements an issue (that is tend's job). Use on "groom the backlog", "/groom", "clean up the backlog", "tidy the issues", "make the backlog run-ready", or any request to improve issue quality without working the issues themselves.
+name: docket-groom
+description: Run one full grooming pass over every open issue in the current Docket project — dedupe overlapping issues, flag stale ones, re-prioritize, and fill missing goals and acceptance criteria so issues are run-ready. Safe edits (labels, priority, comments, field fills) apply directly; closures and merges are proposed to the operator via AskUserQuestion and land only on approval. One-shot with no parameter is a single pass over the project resolved from cwd, then stop — no loop, no watch, and it never implements an issue (that is tend's job). Use on "groom the backlog", "/groom", "clean up the backlog", "tidy the issues", "make the backlog run-ready", or any request to improve issue quality without working the issues themselves.
 argument-hint: "[stale window, e.g. 14d]"
 model: fable
 ---
 
-# groom
+# docket-groom
 
 You run one grooming pass over the current project's open issues as an
 editor, not an implementer: read everything, fix what is safely fixable in
@@ -13,13 +13,13 @@ place, and put anything destructive in front of the operator before it
 happens. Do this all in this same conversation — no spawn, no relay; the
 frontmatter `model: fable` already puts this pass on the strongest tier.
 
-One pass, then stop — groom takes no parameter beyond an optional stale
+One pass, then stop — docket-groom takes no parameter beyond an optional stale
 window, has no loop, schedules no wakeups, and never touches the code the
 issues describe.
 
 Rules you must not fight:
 
-- **Never invoke `plan`, `conduct`, or `tend`, and never create, activate,
+- **Never invoke `docket-plan`, `docket-run`, or `tend`, and never create, activate,
   or advance a docket run.** Grooming is issue hygiene only. The only
   verbs in play are `docket issue …` (exact flags via `docket <verb>
   --help`).
@@ -46,12 +46,12 @@ repo isn't bound — say so and stop. Scope is every open issue: everything
 not closed, all statuses, the whole backlog.
 
 Two kinds of issue are in scope to read but not yours to freely edit — this
-queue isn't groom's alone:
+queue isn't docket-groom's alone:
 
 - **Run-included.** For each run `docket run status --active --json`
   returns, `docket issue list --run <ref> --json --limit 1000` names that
   run's roster. An open issue on any of those rosters belongs to a
-  plan/conduct session, even while the run is parked.
+  docket-plan/docket-run session, even while the run is parked.
 - **Claimed.** Any issue with a non-empty `assignee` — someone or something
   else already has it.
 
@@ -78,12 +78,12 @@ one grooming ledger with four kinds of finding:
   issue's content relative to the rest of the backlog.
 - **Stale-binding label:** a label that no longer matches the issue's
   current content and, in doing so, narrows or zeroes its workflow
-  bindings — check with the same probe `plan`'s bare mode uses (`docket
+  bindings — check with the same probe `docket-plan`'s bare mode uses (`docket
   workflow list --json=v2 --limit 0`, then `docket workflow show <name>`
   per candidate, evaluated against the issue's labels). A label that was
   accurate when applied but outlived what it described is exactly the kind
   of drift a content-only pass misses: AGT-602 carried a `retro` label that
-  zeroed every registered workflow match, survived two prior groom passes
+  zeroed every registered workflow match, survived two prior docket-groom passes
   that fixed its ACs but never touched the label, and silently excluded it
   from every run-ready batch until caught by hand.
 
@@ -101,7 +101,7 @@ run-included or claimed issues — those route to §4), comments, and field
 fills. A field fill drafts the missing goal or acceptance criteria from the
 issue's own description, comments, and the repo — criteria must be
 checkable, not aspirational — and edits it into the issue with a comment
-noting groom drafted it. Fill what is missing; never rewrite or restyle
+noting docket-groom drafted it. Fill what is missing; never rewrite or restyle
 prose the operator already wrote. A content fill and a stale-binding label
 often belong to the same issue — check the label again after any content
 edit, not only at initial survey, since resolving what made a label accurate
@@ -154,4 +154,4 @@ One summary, plain language: how many issues surveyed, the stale window
 used, what was edited automatically (by kind, with ids), what was
 proposed, what the operator approved or declined, and what was applied.
 Name anything judged too ambiguous to propose. Then stop — no wakeup, no
-follow-up pass; the next groom happens when the operator invokes it again.
+follow-up pass; the next docket-groom happens when the operator invokes it again.

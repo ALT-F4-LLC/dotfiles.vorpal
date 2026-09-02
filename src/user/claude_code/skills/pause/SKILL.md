@@ -1,18 +1,18 @@
 ---
 name: pause
-description: Halt a Docket run that a conduct session is driving, mid-progress, and leave behind a resume prompt sufficient for a brand-new session to pick the run back up without reading this session's transcript. Use on "pause", "pause the run", "pause this run", "halt the run", "pause now, kill the wave", "stop for now, I'll resume later", or any operator request to walk away from a driven run without abandoning it. Distinct from the bare engine verb `docket run pause`, which only parks the run and captures none of this session's state — this skill is the sanctioned way to invoke it.
+description: Halt a Docket run that a docket-run session is driving, mid-progress, and leave behind a resume prompt sufficient for a brand-new session to pick the run back up without reading this session's transcript. Use on "pause", "pause the run", "pause this run", "halt the run", "pause now, kill the wave", "stop for now, I'll resume later", or any operator request to walk away from a driven run without abandoning it. Distinct from the bare engine verb `docket run pause`, which only parks the run and captures none of this session's state — this skill is the sanctioned way to invoke it.
 ---
 
 # pause
 
-You halt a run `conduct` is driving and leave a trail a stranger session can
+You halt a run `docket-run` is driving and leave a trail a stranger session can
 follow. `docket run pause RUN-N` alone parks the run — it does nothing about
 everything that lives only in THIS session's head. This skill is what makes a
 pause resumable rather than just stopped.
 
-**Not a replacement for `conduct`.** You run inside or alongside a conduct
+**Not a replacement for `docket-run`.** You run inside or alongside a docket-run
 session that is already driving RUN-N. Nothing here schedules steps, dispatches
-waves, or makes routing decisions — that is conduct's contract, untouched.
+waves, or makes routing decisions — that is docket-run's contract, untouched.
 
 ## Choosing a halt mode
 
@@ -28,7 +28,7 @@ tone alone, and say which mode you are using before you act.
    immediately. This moves the run to `waiting-human` and blocks new claims,
    but "honors in-flight completes" — nothing about it interrupts a step
    already claimed.
-2. If a wave is in flight, keep awaiting it exactly as conduct normally does;
+2. If a wave is in flight, keep awaiting it exactly as docket-run normally does;
    do not busy-wait and do not abandon the dispatch. Let it finish.
 
    **Know what "finish" means after a pause.** Readiness requires the run to
@@ -38,8 +38,8 @@ tone alone, and say which mode you are using before you act.
    stage of a staged wave, and any lane that had not started — is refused
    with `run is not active` and comes back unclaimed. That is the price of
    pausing first, and it is the intended trade: no new work starts.
-3. Reconcile and close the dispatch through conduct's normal path
-   (`docket dispatch close --run RUN-N`), the same step conduct would take
+3. Reconcile and close the dispatch through docket-run's normal path
+   (`docket dispatch close --run RUN-N`), the same step docket-run would take
    whether or not a pause were in progress. `dispatch close` refuses while a
    discrepancy stands, so resolve the refused steps in the manifest first —
    they are unclaimed, not failed. Do not reach for `dispatch abandon` here;
@@ -100,7 +100,7 @@ stop it.
 
 ## Building the resume snapshot
 
-The snapshot exists because a huge amount of what a conduct session knows
+The snapshot exists because a huge amount of what a docket-run session knows
 lives ONLY in this session's own context — the engine cannot answer it, and a
 transcript nobody but this session can read is not a handoff. Capture exactly
 what the engine cannot reconstruct; do not restate what it can.
@@ -114,7 +114,7 @@ checkout, never a wave worktree.
 **Session-only state — write all of it down, or it is gone:**
 
 - **Every wave this session launched**: its `wfId`, and the journal/transcript
-  directory path conduct used for `wave-usage`. Without both, usage for that
+  directory path docket-run used for `wave-usage`. Without both, usage for that
   wave can never be back-filled (`docket dispatch backfill-usage --source
   "wave-journal:<wfId>"`), and the worktree sweep set for that wave
   (`worktree-wf_<id>-*` branches) cannot be told apart from a foreign entry.
@@ -151,7 +151,7 @@ checkout, never a wave worktree.
   prefixed with the literal label **`DISPOSITION REQUIRED:`**, and say what
   the concrete next check would be (the verb to run, the artifact or step id
   to look at, the id of anything already filed). The label is not decoration:
-  `conduct`'s attach procedure requires the resuming session to answer every
+  `docket-run`'s attach procedure requires the resuming session to answer every
   note carrying it — investigate now, file it as an issue, or decline it with
   a stated reason — and an unlabelled lead is one it may silently drop. In an
   earlier pause, a resume prompt relayed such a lead as ordinary prose instead
@@ -165,7 +165,7 @@ checkout, never a wave worktree.
 - Dispatch existence, step/gate states, budget position: `docket run status
   RUN-N`, `docket step list --run RUN-N`, `docket run report RUN-N`.
 - Crashed-relay reconciliation and the attach-preflight a new session runs on
-  arrival: conduct's own sections cover this; do not duplicate its procedure
+  arrival: docket-run's own sections cover this; do not duplicate its procedure
   in the prompt, just point at it.
 
 **Must be re-done fresh in the new session, never carried forward:** seat
@@ -208,7 +208,7 @@ explicit that both are required, not either:
 The prompt itself, in both places, should read as a short brief a stranger
 session can act on directly: an opening state-check line — "run `docket run
 status RUN-N` first; if the state has advanced past this prompt, discard it
-silently" (stale resume nudges have fired mid-conduct and cost a question
+silently" (stale resume nudges have fired mid-docket-run and cost a question
 round each; the check makes any late fire a no-op) — then run id, the
 absolute checkout path and branch to
 work from, why it was paused, the halt mode used, a one-paragraph state
@@ -216,7 +216,7 @@ summary (where the run stands, what is unfinished), `docket run resume RUN-N
 --reason '<why>'` as the first action, then the session-only state above in
 full — including whether a live shadow was watching and was told to wind
 down, so the resuming session knows to seat a fresh one via `/shadow` —
-then a pointer to `conduct`'s own SKILL.md for everything
+then a pointer to `docket-run`'s own SKILL.md for everything
 engine-recoverable.
 
 **Permission and classifier denials are session-scoped, never standing.** A
@@ -242,11 +242,11 @@ background and dropped.
 ## Resuming
 
 **In the same session** (operator says resume, no new session involved):
-run `docket run resume RUN-N --reason '<why>'` and hand back to `conduct` —
+run `docket run resume RUN-N --reason '<why>'` and hand back to `docket-run` —
 nothing else is needed, since the session still holds everything the snapshot
 above exists to preserve.
 
 **In a new session**: read the resume prompt (doc or pasted text), run `run
-resume` as its first action, then follow it into `conduct`'s own attach
+resume` as its first action, then follow it into `docket-run`'s own attach
 procedure — seat preflight, stale-install diff, and a fresh policy re-cat all
 happen there, not from anything carried in the prompt.

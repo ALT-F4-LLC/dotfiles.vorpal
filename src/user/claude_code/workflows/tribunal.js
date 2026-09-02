@@ -1,7 +1,7 @@
 export const meta = {
     name: 'tribunal',
     description: 'Spawn a judge panel that decides one gated proposal by each seat casting a real `docket vote cast`. This script never casts, approves, or tallies — the engine\'s vote machinery tallies. Invoke by scriptPath ONLY, with args {voteId, voters, policyText, context, gateKind, cwd} — policy.toml is passed as TEXT, never a path; the script cannot read files.',
-    whenToUse: 'Invoked on a CONVERSATIONAL gate the conduct skill routes to a panel (ack-reap, activation, budget, fix-batch), always as Workflow({scriptPath}) — never by name. Engine `type = "vote"` step rows ride the wave since the staged closure: wave.js seats their panels itself with the same seat contract as this script. The CALLER creates the proposal and passes its id; tribunal.js only fills an open one.',
+    whenToUse: 'Invoked on a CONVERSATIONAL gate the docket-run skill routes to a panel (ack-reap, activation, budget, fix-batch), always as Workflow({scriptPath}) — never by name. Engine `type = "vote"` step rows ride the wave since the staged closure: wave.js seats their panels itself with the same seat contract as this script. The CALLER creates the proposal and passes its id; tribunal.js only fills an open one.',
     phases: ['Judge', 'Verify'],
 }
 
@@ -160,7 +160,7 @@ function parseToml(text) {
 // escalate_to. That shape hasn't moved since v2, so an exact-match check on
 // the current version refuses healthy policy the moment it bumps — pinned at
 // 15, it refused v16 and blocked every dispatch wave and gate fleet-wide.
-// So this mirrors the conduct skill's own [policy] gate (present,
+// So this mirrors the docket-run skill's own [policy] gate (present,
 // integer) against a documented floor, then checks the tables routing
 // actually depends on: a version above the floor is fine, a missing
 // [variants]/[executors] table is not.

@@ -697,7 +697,7 @@ docket next --json -s todo -p high -p critical -l must-have --limit 5
 
 On docket.git itself (the engine repo), backlog defect sweeps run directly
 in-session — plain edits, tests, commits — unless the operator asks for a
-run: the plan/conduct pipeline is for corpus-governed work, and routing an
+run: the docket-plan/docket-run pipeline is for corpus-governed work, and routing an
 engine-repo sweep into `run start` has cost an operator interrupt and an
 abandoned run.
 

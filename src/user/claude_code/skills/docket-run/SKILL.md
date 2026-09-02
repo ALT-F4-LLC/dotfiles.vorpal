@@ -1,10 +1,10 @@
 ---
-name: conduct
-description: Drive an activated Docket run to completion — ask the engine what is ready, dispatch it (the manifest carries the staged closure, whole dependency chains per wave), invoke the wave workflow, close the dispatch, repeat. Vote gates ride the wave (it seats the panel mid-wave); conversational gates go to tribunal.js; every non-approval that parks, and every reserved matter, escalates to the operator, and the engine verb runs on the outcome. Invoked as `/conduct RUN-N` it drives that run explicitly; invoked bare it resolves "the next run" itself — the newest active or waiting-human run in the project, else the newest run still in planning, else a plain report that there is nothing to drive — so it chains directly after `/plan`'s own bare mode with no question in between. Holds no run state and makes no routing decisions; the engine schedules and wave.js routes.
+name: docket-run
+description: Drive an activated Docket run to completion — ask the engine what is ready, dispatch it (the manifest carries the staged closure, whole dependency chains per wave), invoke the wave workflow, close the dispatch, repeat. Vote gates ride the wave (it seats the panel mid-wave); conversational gates go to tribunal.js; every non-approval that parks, and every reserved matter, escalates to the operator, and the engine verb runs on the outcome. Invoked as `/docket-run RUN-N` it drives that run explicitly; invoked bare it resolves "the next run" itself — the newest active or waiting-human run in the project, else the newest run still in planning, else a plain report that there is nothing to drive — so it chains directly after `/docket-plan`'s own bare mode with no question in between. Holds no run state and makes no routing decisions; the engine schedules and wave.js routes.
 argument-hint: "[RUN-N]"
 ---
 
-# conduct
+# docket-run
 
 You are the conductor. You are a relay between the engine, the panel, and the
 operator, and that is the whole of it: the engine decides what runs, `wave.js`
@@ -51,12 +51,12 @@ panel, measured).
 
 ## Which run
 
-Two modes, the same split `shadow` and `plan` already use: an explicit
+Two modes, the same split `shadow` and `docket-plan` already use: an explicit
 argument always wins; bare, you resolve it yourself rather than asking.
 
-- **`/conduct RUN-N`** — the operator named the run. `$RUN` is `RUN-N`,
+- **`/docket-run RUN-N`** — the operator named the run. `$RUN` is `RUN-N`,
   verbatim; go straight to **Before the loop** below with it.
-- **Bare `/conduct`** — no run named, so you resolve "the next run" from the
+- **Bare `/docket-run`** — no run named, so you resolve "the next run" from the
   engine, not from a question back to the operator:
 
   ```bash
@@ -72,22 +72,22 @@ argument always wins; bare, you resolve it yourself rather than asking.
      activating something new. More than one: take the highest `RUN-N` (ids
      are a store-wide increasing sequence, so highest is most recent).
   2. **Else, any `planning` run** — nothing in flight, but something
-     recorded and waiting to be activated. This is exactly what `/plan`'s
+     recorded and waiting to be activated. This is exactly what `/docket-plan`'s
      bare mode leaves behind: it records a run and stops without activating
      it. More than one: take the highest `RUN-N`.
   3. **Else, nothing to drive.** Say so plainly — "no non-terminal run in
      this project" — and stop. This is the empty case, not a guess: it is
      not yours to invent a run, and it is not a question back to the
      operator either, since a question here has only one honest answer,
-     "there isn't one" — `/plan` (bare or targeted) is what puts one in
+     "there isn't one" — `/docket-plan` (bare or targeted) is what puts one in
      front of you next.
 
-  Rule 2 is the hinge that makes `/loop /groom /plan /conduct` work as a
-  bare-invoked loop: `/plan`'s bare mode surveys the backlog, records a run,
-  and stops; the next loop iteration's bare `/conduct` is what picks that
+  Rule 2 is the hinge that makes `/loop /docket-groom /docket-plan /docket-run` work as a
+  bare-invoked loop: `/docket-plan`'s bare mode surveys the backlog, records a run,
+  and stops; the next loop iteration's bare `/docket-run` is what picks that
   run up and drives it, with no operator turn in between. Rule 1 keeps a
   run already being driven from being abandoned mid-loop for a fresher one
-  `/plan` just recorded.
+  `/docket-plan` just recorded.
 
   Whichever rule resolves it, treat `$RUN` exactly as the targeted mode
   would from here on — same activation path if `planning`, same "Resuming
@@ -99,7 +99,7 @@ argument always wins; bare, you resolve it yourself rather than asking.
 
 **Permission surface.** Wave executors run engine verbs (`docket step
 claim/record/fail`) inside YOUR session's permission context. In default
-mode their very first Bash call takes a human prompt — an early conduct
+mode their very first Bash call takes a human prompt — an early docket-run
 session died exactly there, orphaning a dispatch and a live wave. Before the
 first dispatch, confirm the session runs a mode that pre-authorizes those
 calls; if not, say so and let the operator switch before you open anything.
@@ -145,7 +145,7 @@ run finishes or is abandoned. It was given operator-side mid-run and missed
 end to end on a later run — that session crossed every one of those milestones with
 zero tracker calls in its transcript — because the obligations this file
 numbers (back-fill, integration, verify, close) do not include it, and an
-un-numbered obligation loses to the checklist every time. **A re-plan hop does
+un-numbered obligation loses to the checklist every time. **A re-docket-plan hop does
 not discharge it.** Where this run continues an earlier one, the external id
 may appear only in the ORIGINAL request — one run's request named the run
 before it and its issue, and the Linear id sat one hop back inside that
@@ -326,8 +326,8 @@ the operator's own explicit confirmation.
 
 **A run still in `planning` is not yours to activate alone.** Activation is a
 gate — a PANEL gate, per **Gates** below, EXCEPT on a run
-`bootstrap` created and has not yet activated: that first activation is the
-operator's alone and no panel stands in for it (bootstrap §5), so if the
+`docket-bootstrap` created and has not yet activated: that first activation is the
+operator's alone and no panel stands in for it (docket-bootstrap §5), so if the
 operator has already declined it once, ask them rather than convening — and it
 PINS config bytes for the whole run — from the shared root
 `~/.docket/config` first, then this repo's `.docket/config/` if it has one.
@@ -551,7 +551,7 @@ drift, so `verify-pins` is not advisory.
   recoverable from the trail. Repinning is all-or-nothing across the run's pins,
   and repinning a run with no drift is a clean no-op that says so.
 - **Pause the run** (`/pause`) and hand the decision back with a resume prompt.
-- **Abandon and re-plan**, which re-pins from scratch on the current disk.
+- **Abandon and re-docket-plan**, which re-pins from scratch on the current disk.
 
 **Present the four; run none of them unprompted.** Pin drift is a
 stop-and-report — the tree and the corpus are the operator's, so which bytes the
@@ -696,7 +696,7 @@ canonical case — is a ROUTING FLAG, and it goes into the proposal context
 VERBATIM, beside the scope warnings, so every seat weighs it. This check is
 worth its cost precisely here: before the gate the fix is one `docket issue
 label add` plus a fresh dry-run; after it, activation has frozen both the
-binding and the body snapshot for the whole run, and re-planning is the only
+binding and the body snapshot for the whole run, and re-docket-planning is the only
 exit. A past harness incident is the lesson: a TUI issue with `labels=[]`
 and scope `internal/tui/**` bound `standard-change`, dropping judge-design
 from the fanout and skipping the terminal design-qa/render-verify step — one
@@ -770,7 +770,7 @@ three things:**
    covered. Before saying "done", compare `run status`'s bound-issue roster
    against issues whose chains reached a terminal step: when the
    done/skipped/superseded counts cannot cover the roster, issues sit
-   unexpanded — original or added alike, as in a tranche-activated re-plan
+   unexpanded — original or added alike, as in a tranche-activated re-docket-plan
    run — and the state is PHASE QUIESCED, not finished (measured: a run
    declared "complete" with 12 of 16 issues never expanded idled 6.5 hours).
    Report it as phase quiesced, name the waiting issues, and surface the
@@ -1131,7 +1131,7 @@ acts:**
    version = 15` — that string occurs nowhere in the file, and a conductor
    checking for it refuses a healthy policy before the first wave. There is no
    single version number baked into this check: the corpus bumps it as policy
-   evolves, and each bump is a normal, attributable retro commit, not a
+   evolves, and each bump is a normal, attributable docket-retro commit, not a
    schema break. If you need to sanity-check the number itself, treat recent
    corpus commit history as the source of truth for what the current version
    should be — not this skill text. Refuse and stop only if the field is
@@ -1602,7 +1602,7 @@ as operator-cleanup candidates — abandoned runs sweep nothing, and five repos
 carried a prior fleet's debris unmentioned through a full day.
 The close report also names every tribunal convocation this session ran, with
 proposal ids: panel cost lives entirely outside the run ledger (wave-usage
-attributes by step id; panels carry vote ids), and on re-plan-heavy runs it
+attributes by step id; panels carry vote ids), and on re-docket-plan-heavy runs it
 has equalled the run's whole tracked spend (one run: 185,673 untracked output
 tokens vs 186,606 tracked), so a close report that omits it understates the
 session by up to half. Each convocation it names is a panel whose seats owe a
@@ -1866,8 +1866,8 @@ DESC
 ```
 
 Filing DOT-1063 took three attempts without it: the first stored a body
-with two words missing (zsh had run the backticked `` `/retro` `` and
-`` `/refit` `` as commands), the second stored `operator'\''s` where an
+with two words missing (zsh had run the backticked `` `/docket-retro` `` and
+`` `/docket-refit` `` as commands), the second stored `operator'\''s` where an
 apostrophe had been, and the third had to go through a `python3 -c
 "import subprocess …"` wrapper to escape the shell entirely. Pick a
 delimiter the body cannot contain — `DESC`, not `EOF`, since a body
@@ -2041,9 +2041,9 @@ what it is and let the operator decide. If they direct a stub anyway, file the
 removal issue in the SAME turn and name the stubbed gate in every subsequent
 status report until it is gone.
 
-Activation sits beside this list with two named carve-outs: bootstrap's
+Activation sits beside this list with two named carve-outs: docket-bootstrap's
 first-activation ceremony is the operator's alone (a trust matter, and
-bootstrap says so), and a direct operator instruction to activate outranks the
+docket-bootstrap says so), and a direct operator instruction to activate outranks the
 panel that would otherwise vote — a tally is never above the operator.
 
 ### Escalating to the operator
@@ -2589,7 +2589,7 @@ turn on a run that still has ready rows, and the continuous-loop obligation
 above is yours alone to keep. Where the guard does fire, its deny is a guard
 answering, not the operator instructing. Do not start driving on its push:
 surface the choice (drive on, park at a gate, abandon) and let the operator
-make it, exactly as one bootstrap session did when the guard demanded a
+make it, exactly as one docket-bootstrap session did when the guard demanded a
 just-activated run be driven. The run record remains the primary handoff — no
 continuity narrative duplicates it. The one sanctioned exception is a
 deliberate mid-progress halt: reach for `~/.claude/skills/pause/SKILL.md`

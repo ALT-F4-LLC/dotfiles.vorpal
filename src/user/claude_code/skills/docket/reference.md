@@ -1073,7 +1073,7 @@ when one no longer matches disk (`ok` / `changed` / `missing` per pin,
 re-pin. Re-activation makes that permanent: it deliberately **inherits** the
 original pin set rather than re-scanning (see `run activate` above). Before
 this verb, a corpus install that replaced a pinned file out from under an
-active or parked run left the only disposition as abandon and a full re-plan.
+active or parked run left the only disposition as abandon and a full re-docket-plan.
 
 `repin` adopts what each drifted ref resolves to **now** as the run's pinned
 bytes, for the steps that have not yet claimed under the old agreement. It
@@ -2114,9 +2114,9 @@ the machine is done working, and a run waiting on a person is not something a
 stop interferes with.
 
 It also does not block on a run **nothing has ever happened to**:
-never dispatched, and no step ever out of `pending`. `bootstrap`'s contractual
+never dispatched, and no step ever out of `pending`. `docket-bootstrap`'s contractual
 terminal state is exactly that — an activated, never-dispatched run — and all
-six bootstraps measured were denied a turn-end over it, twice
+six docket-bootstraps measured were denied a turn-end over it, twice
 pushing the operator into starting work nobody had asked for. Nothing was handed
 to anything, so there is nothing for a stop to interrupt. The exemption ends at
 the first dispatch, or at the first step that leaves `pending`: a run that

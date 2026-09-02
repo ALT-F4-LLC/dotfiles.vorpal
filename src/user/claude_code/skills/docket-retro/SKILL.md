@@ -1,17 +1,17 @@
 ---
-name: retro
+name: docket-retro
 description: Evolve the shared docket corpus (src/user/docket/config/, operator-installed by `just activate`) and a repo's own optional .docket/config/ additions from run evidence — read run reports and the event log, find what recent runs actually cost and caught, and propose versioned config edits for approval. Operator-invoked only; suggest it after about five completed runs.
 model: fable
 ---
 
-# retro
+# docket-retro
 
 You turn what runs actually did into config changes. Evidence first, proposal
 second, write only after the panel says yes — or, where the panel splits and
 where trust is involved, after the operator does (§3).
 
 **Never run automatically.** The operator invokes you. After roughly five
-completed runs a session may *say* "five runs since the last retro — worth
+completed runs a session may *say* "five runs since the last docket-retro — worth
 one?" and stop there. A nudge is a sentence, not an execution.
 
 **Never edit a registered file in place.** Changed bytes at an unchanged
@@ -48,7 +48,7 @@ docket step artifacts STEP-N --json                   # one step's artifact inde
 docket step artifact <id> --json                      # one artifact's body; the report indexes only
 ```
 
-Collect every run since the last retro before concluding anything — one run is
+Collect every run since the last docket-retro before concluding anything — one run is
 an anecdote. The docket events store is machine-global, but `events list` is
 cwd-scoped by default: a run's events may have been recorded from a different
 project's working directory, so a cwd-scoped query — `--run RUN-N` included —
@@ -71,7 +71,7 @@ rather than assuming an unsandboxed shell is needed. Where it is not writable,
 | Intervention profile | `run-paused`, `step-held`, and `step-routed` with destination `waiting-human` — that string is a run/step STATUS, not an event kind, so filtering events on it returns nothing; `lease-reaped` behind the holds — query with `--all-projects`, since the run being investigated may have been driven from another project's cwd | designed gate vs breach vs held — three different fixes; a hold behind a `lease-reaped` carrying `data.forced` was a relay declaring a dead spawn, not a slow step |
 | Attempt pressure | `attempts`, loop ordinals | a step repeatedly at `max_attempts` wants a smaller charter, not a bigger budget |
 | Trust drift (D14) | `trust-added`/`trust-removed` (store-level; query with `--all-projects` — visible either way, but only that flag proves you saw all of them) | **an entry the operator does not recognize is a finding, and you raise it first** |
-| Config churn (D15) | your own proposals per run over time | churn trending up means bootstrap mined the repo wrong; fix the source, not each symptom |
+| Config churn (D15) | your own proposals per run over time | churn trending up means docket-bootstrap mined the repo wrong; fix the source, not each symptom |
 | Routing drift | the four metadata keys (below), read per step with `docket step show` / `step context` — `run report`'s `metadata` is a key → distinct-values rollup that never pairs requested with resolved on one step, so it shows aggregate skew only | requested ≠ resolved across runs means policy asks for a model it does not get |
 | Vote calibration | `vote_rule` outcomes vs the threshold | a rule that never fails, or always fails, is a threshold not doing work |
 | Variant fit | `[executors]` rows vs attempts + cost at that variant | a row failing repeatedly at its variant is mis-sized, not under-budgeted |
@@ -86,7 +86,7 @@ mechanism as everything else — evidence, proposal, approval — but know they 
 yours to propose against:
 
 **`policy.toml`'s tables.** Pinned, not registered, so an edit needs no version
-bump — but note it, because the next retro attributes what followed to it.
+bump — but note it, because the next docket-retro attributes what followed to it.
 
 | Table | A finding that touches it |
 |---|---|
@@ -117,7 +117,7 @@ fails `docket workflow lint` with `vote_rule "<name>" is not registered` until
 the `config set` above runs. Read `docket config get
 vote.rule.<name>.threshold` before assuming a rule exists; empty means the job
 is creating it, not calibrating it. Sizing these from evidence — and creating
-the missing ones — is explicitly retro's job. A rule whose outcome never
+the missing ones — is explicitly docket-retro's job. A rule whose outcome never
 differs from a plain human gate is a rule to question, not tune.
 
 **The four metadata keys.** Every completed step carries
@@ -214,15 +214,15 @@ option first, labelled "(Recommended)" — carrying EVERY judge's verdict,
 confidence, and summary verbatim, because they are ruling on the dispute and a
 tally you have condensed is not one. Only what they approve is applied.
 
-A retro that proposes nothing because five runs went cleanly is a correct
-retro — say so rather than manufacturing work, and convene no panel to hear it.
+A docket-retro that proposes nothing because five runs went cleanly is a correct
+docket-retro — say so rather than manufacturing work, and convene no panel to hear it.
 
 Never propose a change that adds manual upkeep for the developer; that violates
 zero-touch on its face. The answer is config or engine, not a step in someone's
 routine.
 
 **A trust proposal is the operator's alone, and rides no batch.** Follow
-bootstrap's rule — argue `re-runnable`, `tree`, `flaky` per command, default
+docket-bootstrap's rule — argue `re-runnable`, `tree`, `flaky` per command, default
 off, never add before approval — and ask it in its OWN question, never bundled
 with config edits the panel already cleared. Trust authorizes execution; a
 panel of agents cannot grant that, and a trust row inside a four-item bundle is
@@ -259,7 +259,7 @@ A workflow edit stays in the same file with `[pipeline].version = N+1` and its
 mined-facts comment kept current. A schema edit is a new
 `schemas/<name>@N+1.json`, plus a bump to every workflow naming it.
 `policy.toml`, contracts, and fragments are pinned rather than registered —
-edit freely, but note the change so the next retro can attribute what followed.
+edit freely, but note the change so the next docket-retro can attribute what followed.
 Trust the OPERATOR approved goes in with `docket trust add <name> --yes --
 <argv>` — no other approval opens that door.
 
@@ -288,7 +288,7 @@ and renaming a pipeline still loses the version lineage pinning preserves.
 ## 5. Close
 
 Report which proposals were approved and by which authority — the panel, or the
-operator on an escalation — which were declined, and what the next retro should
+operator on an escalation — which were declined, and what the next docket-retro should
 watch. A declined proposal with accumulating evidence is the first thing to
 re-raise, and a panel that split is worth naming as such: the disagreement is
 evidence about the proposal. A finding that belongs upstream (an engine limitation, a
@@ -296,5 +296,5 @@ design deviation) gets filed as an issue, not bent into config — and filed in
 its OWNING project (operator ruling: gaps belong to their
 respective projects): engine findings from the docket repo's checkout,
 definition findings from the dotfiles checkout — cwd picks the project —
-never into whichever project this retro read its runs from. `docket issue
+never into whichever project this docket-retro read its runs from. `docket issue
 move <id> --project <target>` re-homes one that already landed wrong.

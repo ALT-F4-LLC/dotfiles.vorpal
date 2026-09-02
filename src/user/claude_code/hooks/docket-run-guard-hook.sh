@@ -72,7 +72,7 @@
 # with: allow. (The honest fix is engine-side — NOT_FOUND should not share the
 # deny channel — filed; this is the hook-side mitigation.)
 #
-# OPEN DISPATCH = WAVE IN FLIGHT = TURN-END IS THE DESIGN. The conduct skill's
+# OPEN DISPATCH = WAVE IN FLIGHT = TURN-END IS THE DESIGN. The docket-run skill's
 # await pattern ("await the wave's completion notification; the session is
 # free meanwhile") REQUIRES ending the turn — notifications only deliver at
 # turn boundaries. But claimed/running steps made this hook deny every
@@ -147,11 +147,11 @@ docket guard record >/dev/null 2>&1
 [ "$?" -eq 2 ] && allow
 
 # Carve-out 3: a freshly activated run nobody has dispatched. `guard stop`
-# counts steps in `pending`, which is exactly the state bootstrap is REQUIRED
+# counts steps in `pending`, which is exactly the state docket-bootstrap is REQUIRED
 # to leave behind: §5 activates, §7 hands off, and the session ends. Denying
 # there makes that contract unsatisfiable — the only exits the deny offers are
-# conduct the run or abandon it, and all six successful bootstraps observed
-# hit this, two of them pushed into `/conduct` by the guard itself.
+# conduct the run or abandon it, and all six successful docket-bootstraps observed
+# hit this, two of them pushed into `/docket-run` by the guard itself.
 # The predicate matches the hook's own header question ("is the MACHINE still
 # working?"): with zero `dispatch-opened` events, nothing has ever been handed
 # out, so nothing is in flight to interrupt. A conductor between `next` and
@@ -213,7 +213,7 @@ if command -v jq >/dev/null 2>&1; then
 fi
 
 # Carve-out 5: every live run is pin-blocked — the two-guard wedge. [OBSERVED
-# on a past conduct session] The policy-guard hook had
+# on a past docket-run session] The policy-guard hook had
 # hard-denied the wave launch over pin drift (correctly), the conductor
 # reconciled, closed the open dispatch, and tried to end its turn — and THIS
 # hook denied the stop over the very judge rows that deny had made

@@ -1,14 +1,14 @@
 ---
 name: brief
-description: Turn a freeform work request into a standardized brief — frontier-by-frontier rounds of AskUserQuestion, as many as the ask genuinely needs, for whatever's underdetermined — then route it: hand off to /plan for docket-tracked work, /loop for work that repeats until a condition holds, another orchestration skill when one fits better, or proceed straight into the work for anything small and non-sensitive, confirmed with you either way. Runs on `fable` so distillation quality rides the strongest tier without a subagent spawn. The front door for a fuzzy ask you'd rather not prompt-engineer yourself. Trigger on "brief this", "help me think this through", "brief this request", or any new freeform ask before you've decided whether it needs a plan.
-argument-hint: "<freeform work request>"
+description: Turn a freeform work request into a standardized brief — frontier-by-frontier rounds of AskUserQuestion, as many as the ask genuinely needs, for whatever's underdetermined then route it. Hand off to /docket-plan for docket-tracked work, /loop for work that repeats until a condition holds, another orchestration skill when one fits better, or proceed straight into the work for anything small and non-sensitive, confirmed with you either way. Runs on `fable` so distillation quality rides the strongest tier without a subagent spawn. The front door for a fuzzy ask you'd rather not prompt-engineer yourself. Trigger on "brief this", "help me think this through", "brief this request", or any new freeform ask before you've decided whether it needs a plan.
 model: fable
+argument-hint: "<freeform work request>"
 ---
 
 # brief
 
 Take the freeform request in `$ARGUMENTS` and turn it into one standardized
-block, then route the work — to `/plan` for anything docket-tracked, to
+block, then route the work — to `/docket-plan` for anything docket-tracked, to
 `/loop` for anything that repeats until a condition holds, to another
 orchestration skill when the session offers a better fit, or straight into
 execution for anything small enough not to need any of that. Either
@@ -113,25 +113,25 @@ by the ask become an honest "not specified".
 Compute a recommended route from the three fields that decide it —
 Security-sensitive, Shape, and Size hint, in that order:
 
-- **Security-sensitive: yes** → recommend `/plan`, regardless of shape or
+- **Security-sensitive: yes** → recommend `/docket-plan`, regardless of shape or
   size. Docket's security-change workflow is the trust machinery for
   this class of work; every other route skips it entirely.
 - **Shape: iterative** → recommend `/loop` — hand the loop a
   conversation-sized task to repeat on its own cadence, with the block's
   Goal and Acceptance criteria as its stop condition. This fits only when
   each pass is small; if a single pass is itself bounded or needs-design
-  work, the loop belongs inside a docket run — recommend `/plan` instead.
+  work, the loop belongs inside a docket run — recommend `/docket-plan` instead.
 - **Security-sensitive: no, Shape: one-shot, Size hint: trivial** →
   recommend direct — work in-conversation, no orchestration overhead for a
   single-turn edit.
-- **Size hint: bounded or needs-design** → recommend `/plan` — multi-phase
+- **Size hint: bounded or needs-design** → recommend `/docket-plan` — multi-phase
   or architectural work benefits from docket's dependency graph, budget, and
-  verification gates even when nothing about it is sensitive. `/plan` is
+  verification gates even when nothing about it is sensitive. `/docket-plan` is
   also the workflow-backed route: work needing that scale of fan-out reaches
-  workflows through `/plan` — never offer `workflow` as a route of its own.
+  workflows through `/docket-plan` — never offer `workflow` as a route of its own.
 
 These are the standing routes, not a closed world. Check this session's
-listed skills for any other orchestration skill (`plan`, `loop`, and
+listed skills for any other orchestration skill (`docket-plan`, `loop`, and
 whatever else is listed) — only a listed skill qualifies as a route, never
 invent or guess one. When one fits the work's shape materially better than
 the computed route, recommend it instead and name it in the one-line reason.
@@ -165,10 +165,10 @@ Constraints: <no new deps, API freezes, etc.>
 
 ## 4. Handoff
 
-**Route: `/plan`.** Invoke `Skill({skill: "plan", args: "<the confirmed
-block, verbatim>"})`. Plan's own seat reads a supplied brief block as
+**Route: `/docket-plan`.** Invoke `Skill({skill: "docket-plan", args: "<the confirmed
+block, verbatim>"})`. Docket-plan's own seat reads a supplied brief block as
 already-answered input and only asks about what it left open — this skill's
-job ends the moment plan takes the turn.
+job ends the moment docket-plan takes the turn.
 
 **Route: `/loop`.** If `loop` appears in this session's invocable skills,
 invoke `Skill({skill: "loop", args: "<the confirmed block, verbatim>"})`.
@@ -177,7 +177,7 @@ cannot start it yourself — emit a ready-to-paste one-liner (`/loop <goal and
 stop condition, distilled from the block>`), then stop. Either way the block
 travels whole: its Acceptance criteria are the loop's stop condition.
 
-**Route: another orchestration skill.** Same contract as `/plan`: invoke
+**Route: another orchestration skill.** Same contract as `/docket-plan`: invoke
 `Skill({skill: "<name>", args: "<the confirmed block, verbatim>"})` and end
 your involvement the moment it takes the turn.
 

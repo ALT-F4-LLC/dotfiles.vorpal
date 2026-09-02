@@ -4,7 +4,7 @@
 # Without this file configured, `git log --format=%G?` renders N on every
 # ssh-signed commit and prints "gpg.ssh.allowedSignersFile needs to be
 # configured and exist for ssh signature verification" -- so the agent commit
-# signatures the conduct contract mandates were unfalsifiable to every auditor
+# signatures the docket-run contract mandates were unfalsifiable to every auditor
 # on this machine: shadow, the operator, CI, a tribunal seat (DOT-563).
 #
 # Every entry here is a PUBLIC key; nothing secret lives in this file.

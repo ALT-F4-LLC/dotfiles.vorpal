@@ -1,12 +1,12 @@
 ---
 name: tend
-description: Watch the current Docket project's issue queue — the existing backlog and whatever gets added after — and work issues one at a time by delegating each to a right-sized subagent while this conversation orchestrates — no `/plan`, no `/conduct`, no docket run. Spawns a worker seated for the job (stronger models and efforts than the loop itself), lands the result via the `commit` skill, and closes the issue with a summary comment, then goes quiet once the queue is empty until the next issue appears. Meant to run under `/loop` (self-pacing, e.g. `/loop /tend`) so it can wake on its own cadence without the operator re-invoking it. Use on "watch for new issues and work them", "tend the queue", "sweep the backlog", "/tend", or any request to keep grinding through a project's issues without docket's planning/execution machinery.
+description: Watch the current Docket project's issue queue — the existing backlog and whatever gets added after — and work issues one at a time by delegating each to a right-sized subagent while this conversation orchestrates — no `/docket-plan`, no `/docket-run`, no docket run. Spawns a worker seated for the job (stronger models and efforts than the loop itself), lands the result via the `commit` skill, and closes the issue with a summary comment, then goes quiet once the queue is empty until the next issue appears. Meant to run under `/loop` (self-pacing, e.g. `/loop /tend`) so it can wake on its own cadence without the operator re-invoking it. Use on "watch for new issues and work them", "tend the queue", "sweep the backlog", "/tend", or any request to keep grinding through a project's issues without docket's planning/execution machinery.
 ---
 
 # tend
 
 You keep one Docket project's issue queue empty as an orchestrator: no
-`/plan`, no `/conduct`, no docket run — ever, for this loop. You read an
+`/docket-plan`, no `/docket-run`, no docket run — ever, for this loop. You read an
 issue, hand the implementation to a subagent seated for the job, then
 commit, close, and move on. The only custom skills in play are `docket`
 (issue verbs) and `commit` (landing changes) — everything else here is
@@ -14,7 +14,7 @@ built-in Claude Code machinery. Silence is the resting state: report when
 you tend an issue, when one blocks you, or when you must ask; say nothing
 on a tick that found nothing.
 
-**Never invoke the `plan` or `conduct` skills, and never create or activate a
+**Never invoke the `docket-plan` or `docket-run` skills, and never create or activate a
 docket run.** That machinery is exactly what this skill exists to skip.
 
 **Run it under `/loop`.** `tend` has no watch loop of its own — `/loop /tend`
@@ -43,7 +43,7 @@ Exclude two more kinds before picking — this queue isn't tend's alone:
   (planning, active, or paused — anything not done or abandoned),
   `docket issue list --run <ref> --json --limit 1000` names that run's whole
   roster. Any backlog/todo issue sitting on any of those rosters belongs to a
-  plan/conduct session, even while the run is parked — skip it.
+  docket-plan/docket-run session, even while the run is parked — skip it.
 - **Claimed.** Any issue with a non-empty `assignee` — tend never sets one on
   the issues it works, so a populated `assignee` means someone or something
   else already has it. Skip it.
@@ -69,7 +69,7 @@ Exclude two more kinds before picking — this queue isn't tend's alone:
    "work every issue" doesn't override the standing rule that a
    trust-boundary change gets a human look first. Everything else, any kind,
    any size, gets tended — seat a worker (§3) and go; there is no
-   plan/conduct step left to gate it, so don't invent one by hesitating on
+   docket-plan/docket-run step left to gate it, so don't invent one by hesitating on
    size alone.
 3. Otherwise: `docket issue move <id> in-progress`, then delegate the
    implementation (§3). You orchestrate; you do not implement. Read or grep

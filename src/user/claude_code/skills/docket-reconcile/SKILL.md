@@ -1,10 +1,9 @@
 ---
-name: reconcile
-description: Make one Docket project's workflow registry match the installed file corpus exactly — register every version the corpus declares but the registry lacks, restore one that was retired by mistake, retire every other version of that name so the corpus file is the only thing binding, and report orphaned names and frozen-row conflicts it must not fix on its own. Use on "reconcile the workflows", "/reconcile", "make the registry match the corpus", "the workflows are out of date", "register the new workflow versions", "deprecate the old workflows", or after any `just activate` that moved the corpus forward. Read-only until it prints a plan and the operator approves it. Registry-only: it never edits a workflow TOML, and corpus authoring belongs to `refit`.
-model: fable
+name: docket-reconcile
+description: Make one Docket project's workflow registry match the installed file corpus exactly — register every version the corpus declares but the registry lacks, restore one that was retired by mistake, retire every other version of that name so the corpus file is the only thing binding, and report orphaned names and frozen-row conflicts it must not fix on its own. Use on "reconcile the workflows", "/reconcile", "make the registry match the corpus", "the workflows are out of date", "register the new workflow versions", "deprecate the old workflows", or after any `just activate` that moved the corpus forward. Read-only until it prints a plan and the operator approves it. Registry-only. It never edits a workflow TOML, and corpus authoring belongs to `refit`.
 ---
 
-# reconcile
+# docket-reconcile
 
 The corpus on disk is the authority. This skill makes one project's workflow
 registry say the same thing.
@@ -23,9 +22,9 @@ and binding, and every other registered version of that name is retired. After
 a successful pass, `docket workflow list` and the corpus files agree
 name-for-name and version-for-version, with the same count on both sides.
 
-**Not `refit`.** You change registry rows only. You never edit a workflow TOML,
+**Not `docket-refit`.** You change registry rows only. You never edit a workflow TOML,
 never bump a version, never author a definition. When the corpus is what is
-wrong, this skill stops and says so — fixing it is `refit`'s contract, in
+wrong, this skill stops and says so — fixing it is `docket-refit`'s contract, in
 source, committed.
 
 ## Cwd discipline — read this before running anything
@@ -84,7 +83,7 @@ so it is reported as INVALID and left out of the target binding set entirely.
 Run from the checkout. This mutates nothing; it prints the actions and stops.
 
 ```python
-# reconcile-plan.py — run with cwd set to the checkout being reconciled
+# docket-reconcile-plan.py — run with cwd set to the checkout being reconciled
 import glob, json, os, re, subprocess, sys
 
 repo = os.getcwd()
@@ -120,7 +119,7 @@ reg = {}
 for r in out["data"]["items"]:
     reg.setdefault(r["name"], {})[r["version"]] = r
 
-plan = [("INVALID", f"# {f} fails lint: {err} -- fix in SOURCE (refit), never here")
+plan = [("INVALID", f"# {f} fails lint: {err} -- fix in SOURCE (docket-refit), never here")
         for f, err in bad]
 
 for name, d in sorted(disk.items()):
@@ -184,7 +183,7 @@ names — one conflict does not block the rest.
 **INVALID** — the file does not lint at all: bad TOML, a step rule it breaks, a
 schema or `vote_rule` it references that is not registered here. Suspect your
 cwd first (above), then re-run the single lint by hand to read the whole error.
-A genuinely broken definition is `refit`'s to fix, in source — you cannot
+A genuinely broken definition is `docket-refit`'s to fix, in source — you cannot
 register it and must not paper over it. Note that the file contributes no name
 to the target set while it fails, so a name it would have claimed can also show
 up on an ORPHAN line; that pairing is the same fault reported twice, not two.

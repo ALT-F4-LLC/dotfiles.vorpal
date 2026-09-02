@@ -9,7 +9,7 @@
 # WHY THIS EXISTS. Commit 303d8b4 shipped wave.js with two top-level
 # `function probeBrief` declarations. Nothing on the way to the store parses
 # these files — the vorpal "workflows" artifact is a plain file copy — so the
-# defect reached ~/.claude via `just activate` and blocked ALL conduct dispatch
+# defect reached ~/.claude via `just activate` and blocked ALL docket-run dispatch
 # machine-wide until it surfaced live at RUN-45's first dispatch (DOT-608 fixed
 # the syntax; this suite is the net that was missing).
 #

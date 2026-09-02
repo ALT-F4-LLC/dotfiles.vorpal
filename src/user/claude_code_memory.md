@@ -83,8 +83,8 @@ Audited 2026-08-19 across all nine skills and three agent files. Exactly one
 qualified: docket's 2,371-line flag reference, which duplicated a `--help` that
 agents were already invoking 1,226 times a week, and which is now
 `skills/docket/reference.md`. Everything else failed the test and was left
-alone — `conduct` is 1,378 lines of edge-case rulings (the most expensive body
-in the corpus, and still wrong to split), `bootstrap` is a linear procedure
+alone — `docket-run` is 1,378 lines of edge-case rulings (the most expensive body
+in the corpus, and still wrong to split), `docket-bootstrap` is a linear procedure
 whose steps all execute, the agent files are already under 70 lines, and there
 is zero verbatim duplication between skills. Do not re-open this without new
 evidence; the size of a file is not the argument.

@@ -7,7 +7,7 @@
 # the runner needs no engine binary, no database, and no network.
 #
 # FOCUS: the tribunal path (DOT-166). The guard denies every Workflow spawn
-# while a write-class reap is unacknowledged, and the conduct skill's
+# while a write-class reap is unacknowledged, and the docket-run skill's
 # documented remedy for that hold is to seat a panel by launching tribunal.js
 # through the same Workflow tool — so the hold blocked its own resolution. The
 # engine's answer is `guard spawn --deciding-vote PROPOSAL-N` (DKT-236); this

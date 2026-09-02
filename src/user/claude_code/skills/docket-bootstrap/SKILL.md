@@ -1,9 +1,9 @@
 ---
-name: bootstrap
+name: docket-bootstrap
 description: Wire a repo into the shared docket corpus for the first time — seed the seven project specs, mine the repo, and register the repo itself (project prefix, engine config, trust proposals), then surface the whole binding for approval before the first run. The corpus is read straight from ~/.docket/config and nothing is materialized in the repo; no .docket directory is created. Use at project start, or when `docket run activate` reports no workflow matches an issue. The seven docs/spec/ files it writes are working input to its own mining and are deleted again before it hands off, so it is not the way to obtain lasting project specs ("create specs", "generate project specs") — that is the spec-project workflow.
 ---
 
-# bootstrap
+# docket-bootstrap
 
 You bind this repo to the shared corpus. The developer provides work and
 approvals; you do everything else. No corpus file lands in the repo at all: the
@@ -40,9 +40,9 @@ that says "no tests exist" decides, on its own, whether you keep a workflow with
 **They are working artifacts of this run, and that is the whole of their
 contract.** This skill is their reader: §2's miners start from them, §3's scope
 and gate decisions draw on them, and §5's proposed issue can come out of their
-gap sections. Nothing downstream ever opens them again — not `/plan`, not
-`/conduct`, not a retro, not a brief, not a gate — so §5a deletes them once the
-last of those readers is done, and bootstrap leaves no spec file behind at all.
+gap sections. Nothing downstream ever opens them again — not `/docket-plan`, not
+`/docket-run`, not a docket-retro, not a brief, not a gate — so §5a deletes them once the
+last of those readers is done, and docket-bootstrap leaves no spec file behind at all.
 They are consumed, not maintained: nothing regenerates them, and nothing stale
 is left in the tree to tell a later reader something that stopped being true.
 The source tree is the source of truth, before and after. Specs meant to
@@ -288,9 +288,9 @@ local.
 **An existing `.docket/config/` is not a refusal.** Real files there are this
 repo's additions layer: inventory them (`find .docket/config -type f`), report
 what each is, and carry them into §3 and §5 as decisions already made rather
-than facts to re-derive. What bootstrap will not do is re-argue an engine config
-the repo already carries — if the additions read as a previous bootstrap's whole
-output, say so and suggest `/retro`, whose job evolving them is.
+than facts to re-derive. What docket-bootstrap will not do is re-argue an engine config
+the repo already carries — if the additions read as a previous docket-bootstrap's whole
+output, say so and suggest `/docket-retro`, whose job evolving them is.
 
 **SYMLINKS there are transition debris.** The retired model built a link farm
 into `~/.docket` at that path; against the shared root every entry of it now
@@ -491,7 +491,7 @@ not use, a colliding `name@version` or pinned ref refusing activation outright:
   freely; write nothing there.
 
 Head each generated TOML with a comment naming what you mined and the date —
-that is what makes the next retro's diff legible; schemas carry no comment
+that is what makes the next docket-retro's diff legible; schemas carry no comment
 syntax, so their reasoning goes in the header of the workflow consuming them.
 **Do not author a `PROVENANCE.md`.** No copy exists whose origin needs recording:
 the corpus's provenance is `src/user/docket/`'s git history.
@@ -500,7 +500,7 @@ the corpus's provenance is `src/user/docket/`'s git history.
 installed bytes, so an in-place write is refused outright — and it would be the
 wrong edit anyway, since every repo reads exactly those bytes. A shared file
 wrong for everyone is a change proposed against `src/user/docket/` for the
-operator to install — retro's discipline, not a local edit. Wrong for this repo
+operator to install — docket-retro's discipline, not a local edit. Wrong for this repo
 only is an addition in `.docket/config/`, under a name the corpus does not use.
 And a pipeline whose review shape this repo does not practice will be routed
 around: a finding for §5, not a silent local edit.
@@ -807,7 +807,7 @@ and retro's accepts, previously operator questions (free-standing
 fix-batch proposals now carry their own `--threshold` and name no rule) — and
 it takes `0.67` for the same arithmetic as the security rule: two of three, so
 no single seat passes a gate or vetoes one alone. All three are provisional;
-the first retro with five runs of vote data should revisit them.
+the first docket-retro with five runs of vote data should revisit them.
 
 These are **config writes, not trust entries** — they authorize no execution, so
 no `--yes` handshake applies. Surface them for approval anyway: a threshold is
@@ -880,7 +880,7 @@ because the two errors are not symmetric:
 
 So err long. The expensive error is still the short one, and the cheap error is
 cheaper than it was. Say plainly that the number is provisional until real step
-durations exist to size it against — the first thing a retro should re-derive
+durations exist to size it against — the first thing a docket-retro should re-derive
 from evidence.
 
 ## 5. Surface the binding — the approval moment
@@ -891,7 +891,7 @@ was named, propose ONE drawn from the specs' gap sections and offer the swap
 explicitly — never activate work the operator has not seen named. (An
 early run's conductor improvised exactly this, well; now it is the
 contract.) One smoke
-issue is this skill's ceiling: anything larger is `/plan`'s to structure
+issue is this skill's ceiling: anything larger is `/docket-plan`'s to structure
 BEFORE conducting — plan-up-front is the default, single-issue improvisation
 the exception.
 
@@ -916,7 +916,7 @@ is fixed in `src/user/docket/` (§6) rather than around; or your addition
 collides with a shared `name@version`, which is fixed by renaming the addition.
 Say which one it is.
 
-On a FIRST bootstrap the registry is empty, so lint refuses any workflow naming
+On a FIRST docket-bootstrap the registry is empty, so lint refuses any workflow naming
 a payload schema — `` `payload` names "findings@1", which is not registered ``
 — and its remedy line says to `schema register`, which rule 1 forbids. That
 refusal is the empty registry, not the file: lint your additions for grammar,
@@ -1012,7 +1012,7 @@ the dry-run to confirm it still registers clean (a fenced setup must now read
 again, for the activation itself, and run it without `--dry-run`. Two approval
 moments whatever the question count: one for what you wrote, one for what runs
 — and both are the OPERATOR's. No panel stands in for either, and the tribunal
-that clears definition-fix batches elsewhere has no seat here: bootstrap is
+that clears definition-fix batches elsewhere has no seat here: docket-bootstrap is
 where a repo's trust is established, a ceremony rather than a run gate, and the
 authority that establishes trust cannot be delegated to the thing being
 trusted. Every approval, here and everywhere this skill asks, goes through the
@@ -1055,8 +1055,8 @@ literally.
 Everything that reads §0's seven has now read them: §2's miners mined them, §3
 cited them into scopes and gates, and §5's issue may have come out of a gap
 section. They were input to this run rather than output of it, so they go here,
-and bootstrap leaves no spec file in the tree at all. The moment is chosen, not
-incidental: activation creates steps but `/conduct` dispatches them and has not
+and docket-bootstrap leaves no spec file in the tree at all. The moment is chosen, not
+incidental: activation creates steps but `/docket-run` dispatches them and has not
 run, so no executor holds the tree and nothing claimed is reading what you
 remove.
 
@@ -1082,7 +1082,7 @@ files if you want a before/after confirmation.
 
 **A skipped §0 deletes nothing.** Seven specs already on disk when you arrived
 are not yours — a `spec-project` run authored them, or the repo keeps them
-deliberately — and they outlive this bootstrap untouched, as does any file
+deliberately — and they outlive this docket-bootstrap untouched, as does any file
 under `docs/spec/` that git already tracks. Deleting in the operator's repo is
 otherwise not yours to do; §1 hands their symlink debris back to them for
 exactly that reason. The exception here is narrow and it is the whole
@@ -1145,24 +1145,24 @@ learns this from a panel fifteen minutes into the run has already paid for it
 (measured twice).
 
 Name the next move plainly: real work beyond the smoke issue
-goes through `/plan` (issues, phases, gates placed deliberately), then
-`/conduct` drives what plan recorded — do not slide from bootstrapping into
+goes through `/docket-plan` (issues, phases, gates placed deliberately), then
+`/docket-run` drives what docket-plan recorded — do not slide from docket-bootstrapping into
 driving on your own momentum, or on a stop-guard's push.
 
 **Expect the run-guard to block this session's stop**, naming the first pending
 step. That is the guard reading an activated run as unfinished work, and it is
-not an instruction: bootstrap's correct terminal state IS an activated,
+not an instruction: docket-bootstrap's correct terminal state IS an activated,
 undispatched run. Say so, put the choice to the operator through the question
-tool — `/conduct` now, leave it parked for later, or `docket run abandon` and
-re-plan — and wait for their answer. Never dispatch to satisfy a hook, and
-never abandon a run just to clear one. (All six successful bootstraps have hit
-this; two operators were pushed into `/conduct` by it.) Say plainly that this
+tool — `/docket-run` now, leave it parked for later, or `docket run abandon` and
+re-docket-plan — and wait for their answer. Never dispatch to satisfy a hook, and
+never abandon a run just to clear one. (All six successful docket-bootstraps have hit
+this; two operators were pushed into `/docket-run` by it.) Say plainly that this
 repo materializes no corpus of its own: the engine reads `~/.docket/config`
 directly, a fresh clone needs no setup step, and shared bytes change only
 through `src/user/docket/` and a version bump — the blast radius being every
 repo that reads the corpus (§6). Name any additions layer you did create and why
 it exists. Retiring a superseded version is `workflow deprecate` — a
-binding-time filter, never a deletion, and retro's call rather than yours.
+binding-time filter, never a deletion, and docket-retro's call rather than yours.
 
 Activation's refusals name the file and the fix; follow them literally. Two
 worth pre-empting: an issue matching zero workflows is a `[match]` too narrow —

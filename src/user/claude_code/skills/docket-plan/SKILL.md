@@ -1,10 +1,10 @@
 ---
-name: plan
-description: Turn a work request into an activatable Docket run — converse until the request is unambiguous, then record the request, a plan artifact, and issues with kinds, labels, scopes, depends_on relations, and verbatim acceptance criteria. Invoked bare (`/plan` with no request and no issue id) it instead surveys the current Docket project's open backlog, aligns with the operator on what this batch should cover (which kinds of work, how aggressively to parallelize), and proposes the most optimal next batch — ready, highest-priority, parallel-safe, run-ready, within a stated budget — then on confirmation records that batch as a run binding the backlog issues directly. Records and stops; never runs the work. Use at the start of a piece of work, to pick the next batch off the backlog, or to extend a run's later phase after execution has learned something. Runs entirely in this conversation on `model: fable` — no dedicated seat, no subagent spawn; the intake conversation, the repo read, the decomposition, and the recording all happen here.
+name: docket-plan
+description: Turn a work request into an activatable Docket run — converse until the request is unambiguous, then record the request, a plan artifact, and issues with kinds, labels, scopes, depends_on relations, and verbatim acceptance criteria. Invoked bare (`/docket-plan` with no request and no issue id) it instead surveys the current Docket project's open backlog, aligns with the operator on what this batch should cover (which kinds of work, how aggressively to parallelize), and proposes the most optimal next batch — ready, highest-priority, parallel-safe, run-ready, within a stated budget — then on confirmation records that batch as a run binding the backlog issues directly. Records and stops; never runs the work. Use at the start of a piece of work, to pick the next batch off the backlog, or to extend a run's later phase after execution has learned something.
 model: fable
 ---
 
-# plan
+# docket-plan
 
 You decide what the work *is* — directly, in this conversation, on
 `model: fable`. Deciding is a judgment that belongs to a human and to you
@@ -18,11 +18,11 @@ Rules you must not fight:
 
 - **You record; you never execute.** You do not spawn anything that starts
   work, and you never activate unprompted. Activation is a gate you do not
-  hold: approving it is a tribunal vote that `conduct` convenes and
+  hold: approving it is a tribunal vote that `docket-run` convenes and
   surfaces, so what you produce is a recorded run, never a promise that a
   question is waiting for the operator.
 - **You never observe execution.** Once you present the recorded run and
-  stop, you are done. Re-planning is a *fresh* invocation of this skill that
+  stop, you are done. Re-docket-planning is a *fresh* invocation of this skill that
   reads the run record — not this conversation continuing to watch.
 - **Acceptance criteria are copied verbatim.** Whatever the operator states
   as done-ness goes into the issue body word for word. You may add ACs you
@@ -38,7 +38,7 @@ Rules you must not fight:
 
 **Three invocation shapes, picked by the argument you were given.** A
 request or a `DKT-N` issue id enter at §1 — the conversation decides what
-the work is. An empty invocation (bare `/plan`, or the literal word
+the work is. An empty invocation (bare `/docket-plan`, or the literal word
 `backlog`) enters at §1b: the backlog already says what the work is, and
 the conversation decides which of it goes next. Both paths end by recording
 a run (or a documented "nothing to record"); neither activates or executes.
@@ -115,7 +115,7 @@ guessing. It gates an optional `research` step ahead of authoring in
 so a label applied too eagerly costs a skipped step, not a wrong one; a label
 withheld when it was needed costs an author writing on recall.
 
-## 1b. Bare `/plan`: propose the next batch from the backlog
+## 1b. Bare `/docket-plan`: propose the next batch from the backlog
 
 The request here is the backlog itself, so §1's questions are mostly already
 answered — by the issues' own bodies. What you owe the operator instead is a
@@ -137,7 +137,7 @@ A `VALIDATION_ERROR` naming no project, or no store reachable, means this
 repo isn't bound — say so and stop. `--limit 1000` is not optional: `issue
 list` caps at 50 and `next` at 10 by default, and neither output flags the
 truncation — a 108-issue backlog was surveyed as 50 and reported complete
-(groom/tend fix). `docket next` is the readiness verb: it
+(docket-groom/tend fix). `docket next` is the readiness verb: it
 returns only issues with no incomplete `depends_on` blocker, so a backlog/todo
 issue it omits is blocked and stays out of the batch. Join its ids against the
 `issue list` rows, which carry `priority`, `labels`, `scope`, `assignee`, and
@@ -152,7 +152,7 @@ ranking runs over, not the ACs inside it.
 **This round runs BEFORE any candidate batch is built or presented — it is
 not the same round as step 5's confirmation, and a ranked batch offered with
 only a which-variant choice is not this round, it is skipping it.** A live
-bare-`/plan` session (agentic-services, RUN-67) did exactly that: it
+bare-`/docket-plan` session (agentic-services, RUN-67) did exactly that: it
 presented a fully-ranked 4-issue batch with one "how to proceed" question and
 never asked kind filter, width, or cap — caught only when the operator asked
 "Aren't you supposed to ask me questions around the scope, etc?" If you reach
@@ -171,7 +171,7 @@ consent.
   (critical/high only, say), or both.
 
 Skip a question here only when the operator's own invocation already
-answered it (`/plan backlog bugs only` needs no kind-filter question; a
+answered it (`/docket-plan backlog bugs only` needs no kind-filter question; a
 prior answer this session for a re-proposed batch is not re-asked). Fold
 both into the SAME round as the budget question in rule 5 when no cap is
 stated yet either — one round, not two. State the operator's kind filter
@@ -179,8 +179,8 @@ and width preference at the top of the eventual proposal, plainly, so the
 "not ready"/"deferred" reasoning below reads against what was actually
 asked for.
 
-**Exclude what is not free** — this queue isn't plan's alone, and the
-definitions are the ones `groom` and `tend` already use:
+**Exclude what is not free** — this queue isn't docket-plan's alone, and the
+definitions are the ones `docket-groom` and `tend` already use:
 
 - **Off-scope.** Any issue whose kind or labels fall outside the alignment
   round's kind filter (a `feature` issue when "bugs only" was chosen, say)
@@ -190,7 +190,7 @@ definitions are the ones `groom` and `tend` already use:
   status --active --json`, then `docket issue list --run <ref> --limit
   1000` per run —
   planning, active, or paused, anything not done or abandoned) belongs to
-  that run's plan/conduct session, even while the run is parked.
+  that run's docket-plan/docket-run session, even while the run is parked.
 - **Claimed.** Any issue with a non-empty `assignee` — someone or something
   else already has it.
 
@@ -215,10 +215,10 @@ most optimal batch, as the operator settled it ("ready, high-priority, parallel-
 
    **Worktree isolation is not a reason to skip this check, and an operator
    invoking it is not grounds to drop the collision.** Every write step runs
-   in its own isolated worktree during implementation, but `conduct` still
+   in its own isolated worktree during implementation, but `docket-run` still
    cherry-picks each write step's commit onto the SAME shared branch, in
    step-id order, at integration — a real scope collision is still a real
-   conflict risk there, worktrees notwithstanding. A live bare-`/plan`
+   conflict risk there, worktrees notwithstanding. A live bare-`/docket-plan`
    session was told "everything is done in worktrees, collisions shouldn't
    be an issue" and recorded that without correction; say plainly instead
    that worktrees isolate the implementation window only, integration is
@@ -255,7 +255,7 @@ most optimal batch, as the operator settled it ("ready, high-priority, parallel-
    under "not ready" with the missing thing named. The operator may have you
    fill it in this session — `docket issue label add` for labels, `docket
    issue edit --scope`, or a body with ACs in the operator's words, fine until the activate that binds
-   it — or send it to `/groom`; you never fill ACs from your own guess.
+   it — or send it to `/docket-groom`; you never fill ACs from your own guess.
 
    **Probe the binding, and probe it in both directions.** §3's
    labels-confirm-binding rule asks whether an issue's labels produce the
@@ -294,9 +294,9 @@ most optimal batch, as the operator settled it ("ready, high-priority, parallel-
      tell, and an operator decision rather than yours. Not ready: `binds <wf>,
      ACs imply <other>`.
 
-   A live bare-`/plan` batch shipped one of each into conduct
+   A live bare-`/docket-plan` batch shipped one of each into docket-run
    (agentic-services), where the activation dry-run caught them
-   and each cost an operator gate mid-conduct: a `security-load-bearing` label
+   and each cost an operator gate mid-docket-run: a `security-load-bearing` label
    ambiguous against a stale registration, refused outright; and a label-less
    issue whose ACs touched only `.env.example` and `README.md` binding the
    full `standard-change` pipeline. Both were mechanically visible here, one
@@ -358,7 +358,7 @@ question, then ask via one `AskUserQuestion` round:
 
 An empty ready set is a finding, not a failure: say what the survey found —
 nothing open, everything blocked, everything claimed or run-included, nothing
-run-ready — and stop; `/groom` is the skill for a backlog that is full but
+run-ready — and stop; `/docket-groom` is the skill for a backlog that is full but
 not ready, and you name it rather than grooming here.
 
 **On "record", go to §3 with the batch as the roster.** The differences from
@@ -370,7 +370,7 @@ request intake are exactly these, and nothing else in §3 relaxes:
   start`, and a corrected glob list passes every glob you mean to keep.
 - `run start --issue` names the backlog issues themselves — direct binding
   is the operator's settled choice for batch mode, and it is
-  what makes the §3 `/plan DKT-N` obligations NOT apply here: a batch member
+  what makes the §3 `/docket-plan DKT-N` obligations NOT apply here: a batch member
   is the unit of work, not a question the run answers.
 - The request-file content holds the invocation and the operator's
   confirmation verbatim — the option they picked and any text they typed —
@@ -393,7 +393,7 @@ section, not an escape from it. Run it, then re-run §5's presentation with
 the run's CURRENT state (roster, budget, First-wave width) before yielding
 the turn, even if a new open item surfaced along the way — name that item as
 a question inside the presentation, not as the last line of the message with
-nothing else restated. A live bare-`/plan` session (agentic-services,
+nothing else restated. A live bare-`/docket-plan` session (agentic-services,
 RUN-67) reshaped a run's roster, fixed a blocking label, raised its budget,
 then ended mid-question about a newly-surfaced scope gap with no restated
 run state and no re-presentation — leaving the operator to infer RUN-67's
@@ -450,12 +450,12 @@ truth.)
 interesting subset.** The `git log`/diff command that answers "has a fix
 already landed" runs over every path in the candidate's scope list, in
 order — a path you drop from the command is a path the check reports clean
-about, because it never looked there. In a bare-`/plan` session, a
+about, because it never looked there. In a bare-`/docket-plan` session, a
 candidate's scope was five paths — two CLI command files, a worker module,
 the installer script, and the makefile — and the landed-fix check ran over
 the first three only. The two silently dropped paths were where the unfixed
 defect actually lived: the check reported "already landed" with no caveat,
-which is a verdict a later groom or close pass reads as resolved.
+which is a verdict a later docket-groom or close pass reads as resolved.
 
 **Before declaring a candidate "already fixed" or "do not batch," read that
 issue's own history.** `docket issue show <id> --json` carries the issue's
@@ -544,7 +544,7 @@ a figure copied out of this paragraph: these tomls are versioned
 prose goes stale silently. Two bounded greps over one file for one key each
 — not a raw corpus dump, and nothing here binds, so the source tomls are the
 right surface. Never present a floor you did not read this way as corpus
-arithmetic: a live bare-`/plan` session once invented per-issue floors of
+arithmetic: a live bare-`/docket-plan` session once invented per-issue floors of
 6.0 and 7.6, called the total "per the corpus arithmetic," and had a cap of
 75 authorized against a rule-correct 80 (grep for `expected_cost` in that
 transcript: zero hits). If the read did not happen, the number is an
@@ -684,7 +684,7 @@ gate, after which the binding was frozen for the whole run). When a related issu
 rejected security votes — the scope read surfaces both — recommend the
 matching security workflow and make the lighter binding the option that needs
 justifying, never the default (an activation panel rejected a
-`standard-change` recommendation for exactly this, costing a re-plan). Routing
+`standard-change` recommendation for exactly this, costing a re-docket-plan). Routing
 domain-flavored work onto the baseline ON PURPOSE is legitimate, but it is an
 operator decision: elicit it and record it in the issue body and the plan
 artifact — never route by omission.
@@ -802,12 +802,12 @@ are about to record and check the resulting graph's width against the wave
 arithmetic above; a package where every issue depends on the one before it is
 a serial plan wearing a graph's clothes.
 
-**Planning FROM a single existing backlog issue** (`/plan DKT-N`) — four
+**Planning FROM a single existing backlog issue** (`/docket-plan DKT-N`) — four
 obligations, each checked independently before recording (an earlier run's
 first body carried three and dropped the deliverable; a shadow caught it inside the
 planning window). This is the single-issue intake only: DKT-N here is a
 finding or a problem statement the run DECOMPOSES into fresh issues. The
-bare-`/plan` batch (§1b) is the other case — its members have already passed
+bare-`/docket-plan` batch (§1b) is the other case — its members have already passed
 the run-readiness check and ARE the units of work, so §1b binds them with
 `--issue` directly and none of the four obligations below apply to them. The
 two paths do not contradict each other; they answer different questions about
@@ -850,7 +850,7 @@ Otherwise, once the recording commands above have run, present the recorded
 run — the issues, their edges, the scopes, the budget, and the
 `First-wave width` (how many issues carry no incoming edge, so how many run
 concurrently on the first dispatch) — and say plainly where the approval to
-activate lives now: it is a tribunal vote that `conduct` convenes and
+activate lives now: it is a tribunal vote that `docket-run` convenes and
 surfaces when the run is driven. Then stop.
 
 Do not offer to activate it yourself as a convenience. Do not start the run.
@@ -860,7 +860,7 @@ the point.
 If the operator asks for activation in THIS session, that is a direct
 instruction that outranks the panel that would otherwise vote on it: run the
 activate verb on their words (`--dry-run` first — it is the same transaction
-rolled back) and then hand off to `conduct` in-session by invoking the
-skill. The handoff through `conduct` — which surfaces the drive/park/abandon
+rolled back) and then hand off to `docket-run` in-session by invoking the
+skill. The handoff through `docket-run` — which surfaces the drive/park/abandon
 choice to the operator — is the designed path even when you activate
 directly; a silent stop is not permission to skip it.

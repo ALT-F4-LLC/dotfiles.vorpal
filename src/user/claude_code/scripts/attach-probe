@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# attach-probe — the conduct skill's pre-dispatch probe, as one read-only run.
+# attach-probe — the docket-run skill's pre-dispatch probe, as one read-only run.
 #
 # Why: every conductor attaching to an already-active run must clear
 # the same six checks before its first dispatch, and every session used to
@@ -260,7 +260,7 @@ else
             bad=1
             ;;
         *'verify-pins'*'subcommand'* | *'unknown command'*)
-            say FAIL pins "this binary predates \`run verify-pins\` — use the by-hand fallback in the conduct skill"
+            say FAIL pins "this binary predates \`run verify-pins\` — use the by-hand fallback in the docket-run skill"
             printf '%s\n' "$pin_out" | detail
             bad=1
             ;;

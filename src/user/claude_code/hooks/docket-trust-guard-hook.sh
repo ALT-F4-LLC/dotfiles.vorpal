@@ -18,7 +18,7 @@
 #
 # THE SCOPE, and why it is not a blanket deny. `docket trust add/rm` stays a
 # permission ASK for the main conversation — the operator's own path, working
-# as intended per the conduct contract's "Reserved to the operator" list
+# as intended per the docket-run contract's "Reserved to the operator" list
 # (trust-store writes go through a direct question, every time). A deny here
 # that ignored caller identity would block the operator's own ask-confirmed
 # path too, which the issue's acceptance criteria explicitly forbids. The

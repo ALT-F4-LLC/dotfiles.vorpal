@@ -53,7 +53,7 @@ version = 31  # 31: one edge, no topology change — `drain-highs` declares
               #   edge, filed as an engine gap. On a rejected vote the fix
               #   loop's supersede sweep clears the pending drain and the next
               #   ordinal re-instantiates it after the new vote.
-              # 29: no step edits — bumped to carry the panel-depth refit's
+              # 29: no step edits — bumped to carry the panel-depth docket-refit's
               #   findings, with the one behavior change landing in
               #   policy.toml (20): `threat-model` routes at opus-high instead
               #   of opus-xhigh. Measured across every security-track run on

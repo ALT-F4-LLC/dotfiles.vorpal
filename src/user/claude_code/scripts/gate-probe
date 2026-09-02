@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# gate-probe — the conduct skill's completion-gate probe, as one run.
+# gate-probe — the docket-run skill's completion-gate probe, as one run.
 #
 # Why: every conductor must clear the same probe before its first dispatch —
 # run EVERY completion gate this repo's trust roster carries, once, against a

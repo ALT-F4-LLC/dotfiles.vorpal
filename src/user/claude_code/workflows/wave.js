@@ -1,7 +1,7 @@
 export const meta = {
     name: 'wave',
     description: 'Run one dispatched manifest end to end: spawn one executor per executor row (routed by policy.toml), seat a judge panel on each vote row, and skip action rows (engine-run at record time). Stages run as awaited groups per issue lane, with the cross-issue cohorts the manifest certifies honored — the staged closure means one wave can carry judges -> gate -> reconcile -> report, and no issue idles behind the slower stages of another. PROBE COST PER VOTE ROW: 3 read-only haiku probes on the normal path — gate:show, ONE vote-show serving both the missing-seat check and the tally, and gate:outcome — 2 on a gate that was already decided before the wave reached it, and up to 5 when a re-seat or an inconclusive read forces a second vote-show and the gate payload carries a target ref worth a gate:target probe. Each probe relays a few hundred bytes; the per-gate count is reported verbatim in that row\'s spawn_accounting. Invoke by scriptPath ONLY, with args {rows, policyText} as a real object — policy.toml is passed as TEXT, never a path; the script cannot read files.',
-    whenToUse: 'Invoked by the conduct skill on an open dispatch, always as Workflow({scriptPath}) — never by name. args is {rows, policyText}: `next` rows verbatim (executor, vote, and action rows; human rows stay with the conductor) plus the literal TEXT of policy.toml. On a dispatch carrying a fix round\'s review fanout, args also carries `integrated` — a map from each such issue to the sha of its prior round\'s INTEGRATION commit — so the wave can assert base ancestry before seating the fanout. There is no policyPath and no file access.',
+    whenToUse: 'Invoked by the docket-run skill on an open dispatch, always as Workflow({scriptPath}) — never by name. args is {rows, policyText}: `next` rows verbatim (executor, vote, and action rows; human rows stay with the conductor) plus the literal TEXT of policy.toml. On a dispatch carrying a fix round\'s review fanout, args also carries `integrated` — a map from each such issue to the sha of its prior round\'s INTEGRATION commit — so the wave can assert base ancestry before seating the fanout. There is no policyPath and no file access.',
 }
 
 // ---------------------------------------------------------------------------
@@ -159,7 +159,7 @@ function parseToml(text) {
 // escalate_to. That shape hasn't moved since v2, so an exact-match check on
 // the current version refuses healthy policy the moment it bumps — pinned at
 // 15, it refused v16 and blocked every dispatch wave and gate fleet-wide.
-// So this mirrors the conduct skill's own [policy] gate (present,
+// So this mirrors the docket-run skill's own [policy] gate (present,
 // integer) against a documented floor, then checks the tables routing
 // actually depends on: a version above the floor is fine, a missing
 // [variants]/[executors] table is not.
@@ -429,7 +429,7 @@ function archetype(row, hint) {
 // TMPDIR root — 911 stale tokens and 139 world-readable packets measured on one
 // machine. Step ids are engine-minted and monotonic, so a fresh
 // run cannot inherit stale files; the interrupted path (executor dies holding a
-// claim) is swept by the conductor at reap — see conduct/SKILL.md, "A dead
+// claim) is swept by the conductor at reap — see docket-run/SKILL.md, "A dead
 // spawn is reaped, not waited out."
 //
 // Replay of a stale token is refused by the engine either way (verified
@@ -2304,7 +2304,7 @@ async function runGate(row, phaseLabel) {
 // fix round in this dispatch to the sha of the PRIOR round's integration
 // commit — the integration of the write step the judged tree was BUILT ON,
 // which for a review@N fanout is fix@(N-1)'s integration (or implement's when
-// N-1 is the implement round), NEVER fix@N's own (conduct/SKILL.md,
+// N-1 is the implement round), NEVER fix@N's own (docket-run/SKILL.md,
 // "Worktree writers" — the other half of this contract). Absent map, absent
 // entry, non-sha entry, no round fanout, round 1, missing target on the
 // bundle, dead or unparseable probe — every one of these FAILS OPEN to the

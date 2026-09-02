@@ -1,10 +1,10 @@
 ---
-name: refit
-description: Redesign one definition in the shared docket corpus under src/user/docket/config — a workflow, policy.toml, an executor contract, a packet fragment, or a payload schema — through an interactive, capability-checked refactor: sweep the target's blast radius across every consumer, mine run evidence across every project that exercised it to ground optimization proposals, iterate the target spec with the operator, verify every claimed capability against the live docket engine (and wave.js) source, surface each engine-forced deviation as an explicit decision, render the settled design as a visual Artifact for approval before implementing, then land the full co-change closure (workflow TOML, contracts, fragments, policy rows, vote-seat lenses, schemas), lint every consumer, file engine issues for real gaps, and commit. Invoked bare (`/refit` with nothing named) it instead runs corpus mode — mine run evidence across every surface in the corpus (workflows AND policy, contracts, fragments, schemas) triage-then-deep-dive, verdict each one, and carry every refit, removal, and addition the evidence calls for through the same §1–§8 process to a landed commit, target by target, with the same per-target deviation gates and artifact approval as single mode. Use on "refit the ui-change workflow", "/refit standard-change", "/refit policy.toml", "tighten the implement contract", "refit the findings schema", "refactor a docket workflow", "optimize the release pipeline", "add a phase to release", "redesign the investigation pipeline", bare "/refit" to redesign the whole corpus, or any request to change or improve what any definition under src/user/docket/config does.
+name: docket-refit
+description: Redesign one definition in the shared docket corpus under src/user/docket/config — a workflow, policy.toml, an executor contract, a packet fragment, or a payload schema — through an interactive, capability-checked refactor. Sweep the target's blast radius across every consumer, mine run evidence across every project that exercised it to ground optimization proposals, iterate the target spec with the operator, verify every claimed capability against the live docket engine (and wave.js) source, surface each engine-forced deviation as an explicit decision, render the settled design as a visual Artifact for approval before implementing, then land the full co-change closure (workflow TOML, contracts, fragments, policy rows, vote-seat lenses, schemas), lint every consumer, file engine issues for real gaps, and commit. Invoked bare (`/refit` with nothing named) it instead runs corpus mode — mine run evidence across every surface in the corpus (workflows AND policy, contracts, fragments, schemas) triage-then-deep-dive, verdict each one, and carry every refit, removal, and addition the evidence calls for through the same §1–§8 process to a landed commit, target by target, with the same per-target deviation gates and artifact approval as single mode. Use on "refit the ui-change workflow", "/refit standard-change", "/refit policy.toml", "tighten the implement contract", "refit the findings schema", "refactor a docket workflow", "optimize the release pipeline", "add a phase to release", "redesign the investigation pipeline", bare "/refit" to redesign the whole corpus, or any request to change or improve what any definition under src/user/docket/config does.
 model: fable
 ---
 
-# refit
+# docket-refit
 
 You redesign exactly one definition in this repository's shared docket
 corpus, as the engineer who checks the engine before promising it anything:
@@ -28,7 +28,7 @@ The corpus has five refittable surfaces, all under
   threshold predicates agree on.
 
 **You change definitions; you never run them.** No `docket run`, no issue
-grooming, no executing the pipeline you just changed (`conduct` does that).
+grooming, no executing the pipeline you just changed (`docket-run` does that).
 A live run is out of scope unless the operator asks for one afterward.
 
 Two modes, dispatched on the invocation: a named target enters single mode,
@@ -192,10 +192,10 @@ samples. Each optimization you propose cites its numbers ("this fanout row:
 4 planned, 0 executed across every run → drop it at the version bump");
 thin evidence (few runs, young definition) is said plainly and the proposal
 leans on design judgment instead — never dressed as data. Mined findings
-feed §1's iteration as proposal input; when the operator invoked refit as
+feed §1's iteration as proposal input; when the operator invoked docket-refit as
 "optimize <target>" with no spec of their own, they ARE the proposal. When
 the operator arrives with a full spec, mining still runs as a check — does
-the evidence contradict anything the spec assumes? (`retro` sweeps the
+the evidence contradict anything the spec assumes? (`docket-retro` sweeps the
 whole corpus on its own cadence; this mining is scoped to the one
 definition being redesigned.)
 

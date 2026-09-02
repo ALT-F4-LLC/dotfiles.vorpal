@@ -124,7 +124,7 @@ if command -v docket >/dev/null 2>&1; then
       # Tribunal launch: voteId -> linked_issues, intersected with the issues
       # the drifted run holds steps for. A vote linked to an issue the
       # drifted run carries serves that run — an activation vote shared
-      # between a drifted zombie and its re-plan stays denied; that ambiguity
+      # between a drifted zombie and its re-docket-plan stays denied; that ambiguity
       # is the guard working. KNOWN LIMIT, accepted:
       # step list sees only EXPANDED steps, so an issue bound to the drifted
       # run in a not-yet-expanded later phase escapes the intersection.

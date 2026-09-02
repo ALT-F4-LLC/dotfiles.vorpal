@@ -33,7 +33,7 @@ set -uo pipefail
 # THE PANEL DEADLOCK IS THE ENGINE'S TO BREAK, NOT THIS HOOK'S.
 #
 # The reap half denies every Workflow spawn while a write-class reap is
-# unacknowledged -- and the conduct skill's documented remedy for exactly that
+# unacknowledged -- and the docket-run skill's documented remedy for exactly that
 # hold is to open a vote proposal and seat a panel by launching tribunal.js
 # through this same Workflow tool. So the hold blocked its own resolution:
 # reproduced on a past run, where the tribunal launch for the deadlock-breaking

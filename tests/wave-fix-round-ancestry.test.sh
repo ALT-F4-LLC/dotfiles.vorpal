@@ -33,7 +33,7 @@
 #
 # WHAT THIS SUITE CANNOT SEE: the real probes (haiku agents running the
 # docket/git commands), the engine's re-offer of the parked round at the next
-# dispatch, and the conductor's derivation of `args.integrated` (conduct
+# dispatch, and the conductor's derivation of `args.integrated` (docket-run
 # SKILL.md) are all outside the extracted regions and asserted nowhere here.
 
 set -uo pipefail

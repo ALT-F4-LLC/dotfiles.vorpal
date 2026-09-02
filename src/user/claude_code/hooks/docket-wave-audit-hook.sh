@@ -109,7 +109,7 @@ if [ "$?" -eq 2 ]; then
     # every legitimate wave launch (three for three on one measured run) while
     # telling the conductor nothing it could act on. That is the same alarm
     # fatigue the policyText block above was rewritten to kill, and it made the
-    # conduct skill's "wave-audit stays silent on a clean launch" false.
+    # docket-run skill's "wave-audit stays silent on a clean launch" false.
     *'has an open dispatch:'*) : ;;
     # EVERYTHING ELSE IS SURFACED, WITH THE GUARD'S OWN REASON. A standing
     # discrepancy is a property of the RUN, not of the manifest: it survives the

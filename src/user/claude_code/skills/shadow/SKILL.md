@@ -1,6 +1,6 @@
 ---
 name: shadow
-description: Observe Claude Code sessions — live, or post-mortem — and find friction across every layer they cross: harness, skills, workflows, loops, agents, hooks, config, the models themselves, and the Docket engine. Strictly read-only — it fixes nothing, anywhere, and investigation may read every project's checkout and all of ~/.claude. Runs from ANY repository — the store is machine-global and filing anchors itself to each owning checkout. Log findings with evidence as they land; once the run ends, file EVERY finding as an issue in its owning Docket project — the intake of the funnel a `tend` loop (or a plan → conduct run) drains — then deliver a severity-ranked review naming what was filed. Invoked bare it sweeps EVERY project under ~/.claude/projects for the past 7 days of sessions — unless THIS session is itself running an execution skill — plan, conduct, retro, a `/loop /tend` session, or any other — in which case it spawns one background shadow agent (Fable) over this very session, pings it at each boundary — a dispatch for a docket-run skill, a tick for `/loop /tend` — because that seat takes no turns of its own, and hands the turn back to the run; pass a session id to observe just that one — a conduct run, any other skill's run, or a finished session worth learning from.
+description: Observe Claude Code sessions — live, or post-mortem — and find friction across every layer they cross. Harness, skills, workflows, loops, agents, hooks, config, the models themselves, and the Docket engine. Strictly read-only — it fixes nothing, anywhere, and investigation may read every project's checkout and all of ~/.claude. Runs from ANY repository — the store is machine-global and filing anchors itself to each owning checkout. Log findings with evidence as they land; once the run ends, file EVERY finding as an issue in its owning Docket project — the intake of the funnel a `tend` loop (or a docket-plan → docket-run run) drains — then deliver a severity-ranked review naming what was filed. Invoked bare it sweeps EVERY project under ~/.claude/projects for the past 7 days of sessions — unless THIS session is itself running an execution skill — docket-plan, docket-run, docket-retro, a `/loop /tend` session, or any other — in which case it spawns one background shadow agent (Fable) over this very session, pings it at each boundary — a dispatch for a docket-run skill, a tick for `/loop /tend` — because that seat takes no turns of its own, and hands the turn back to the run; pass a session id to observe just that one — a docket-run run, any other skill's run, or a finished session worth learning from.
 argument-hint: "[session-id]"
 ---
 
@@ -10,8 +10,8 @@ You watch a session work; you never work the session — and you never fix what
 you find. Your product is a queue of filed issues: every place the run was
 harder, noisier, or less correct than the definitions assume, with evidence
 and the concrete remedy, filed in the owning Docket project as work for
-someone else. You are the intake of a funnel — a `tend` loop (or a plan →
-conduct run) on the owning repo drains what you file; you never drain it
+someone else. You are the intake of a funnel — a `tend` loop (or a docket-plan →
+docket-run run) on the owning repo drains what you file; you never drain it
 yourself. The definitions live in
 `~/Development/repository/github.com/ALT-F4-LLC/dotfiles.vorpal.git/main/src/user/claude_code`
 — `$SRC` below; note the underscore. The docket corpus source sits beside it
@@ -107,8 +107,8 @@ Three modes. An explicit argument always wins; bare, the session decides:
   from the transcript's own `.cwd` field — the project-directory name
   flattens `/`, `.`, and `_` identically and cannot be decoded back into a
   path.
-- **Bare, with an execution skill active in THIS session** (`plan`,
-  `conduct`, `retro`, a `/loop /tend` session, or any other) — the live
+- **Bare, with an execution skill active in THIS session** (`docket-plan`,
+  `docket-run`, `docket-retro`, a `/loop /tend` session, or any other) — the live
   self-shadow: spawn one background shadow agent over this very session,
   seated `fable` via the `Agent` tool, hand the turn straight back to the
   run, and — where the engine (or, for `/loop /tend`, the loop's own
@@ -173,7 +173,7 @@ owning project, then one review naming what was filed.
 ### 1b. The live self-shadow (bare, any execution skill active in this session)
 
 A bare invocation landing in a session that has itself run an execution
-skill — `plan`, `conduct`, `retro`, a `/loop /tend` session, or any other —
+skill — `docket-plan`, `docket-run`, `docket-retro`, a `/loop /tend` session, or any other —
 is not asking for a fleet sweep — the operator wants THIS session's run (or
 loop) watched while it happens. The conversation seat cannot be the
 watcher: it is the conductor, and a conductor narrating itself is neither
@@ -187,7 +187,7 @@ work is still moving, which is why the first move is checking that it is. Skip
 quiet after attaching is the spawned one, not you.
 
 **A `/loop /tend` session is not a docket run — it is a loop.** `tend` runs
-no `/plan`, no `/conduct`, and no docket run, ever (its own §1); it has no
+no `/docket-plan`, no `/docket-run`, and no docket run, ever (its own §1); it has no
 dispatch, no wave, and no `docket run status` to ask. Its boundary is a
 tick — one pass through `/loop`'s wrapper, either finding the queue empty
 (a quiet tick, not a finding — tend's own §1 says the same: no message on
@@ -304,7 +304,7 @@ above:
   `~/.claude/projects/<flattened-cwd>/<id>.jsonl` must contain this
   conversation's own `/shadow` invocation. A wrong id seats the agent on
   someone else's session. Name the observed skill (whichever execution
-  skill is active — `plan`, `conduct`, `retro`, `/loop /tend`, or another)
+  skill is active — `docket-plan`, `docket-run`, `docket-retro`, `/loop /tend`, or another)
   and the repo from your own cwd — the agent should not re-derive what you
   already know.
 - **Watch rules, and this seat's real cadence.** Live branch: read the arc so
@@ -511,7 +511,7 @@ Before reading one transcript line:
 1. **Derive the contract checklist from the target skill's own text.** Read
    `$SRC/skills/<target>/SKILL.md`; every bold absolute, ordering constraint,
    stop condition, and never-reach-for in it becomes a watch item. The
-   conduct checklist is pre-derived in the appendix because it is the richest
+   docket-run checklist is pre-derived in the appendix because it is the richest
    target, and the tend checklist alongside it because a `/loop /tend`
    session is the other recurring one; any other target gets the same
    treatment fresh.
@@ -567,7 +567,7 @@ the definitions assume. By layer:
 
 | Layer | Friction looks like |
 |---|---|
-| Skill contract | The §2 checklist: a MUST skipped, an ordering inverted, a stop condition ignored, a flag reached for without authorization. Conduct: see the appendix. |
+| Skill contract | The §2 checklist: a MUST skipped, an ordering inverted, a stop condition ignored, a flag reached for without authorization. Docket-run: see the appendix. |
 | wave.js | Staging that disagrees with the rows' engine `stage` labels, routing that disagrees with policy.toml re-derived by hand, empty or misnumbered phase boxes, spawns launched into a parked run, refusals that misname the fault, journal gaps. (The args-string decode is normal harness transport — never a finding.) |
 | Executors | A brief that was not self-sufficient (the agent went hunting), tool churn, permission prompts mid-step, sandbox denials, schema/StructuredOutput retries, wrong archetype or model vs `agent-<id>.meta.json`, token-file misuse, a CONFLICT report longer than three lines. |
 | Model | Mistakes as weather, not exceptions: an invented flag or path, a misquoted verbatim, a transposed id, misread tool output, a confident summary the transcript contradicts, arithmetic that does not check. The mistake is the datum — the finding is whatever let it through (triage below). |
@@ -626,7 +626,7 @@ survivable. So attribute every mistake before proposing anything:
   disagree. The issue targets the definition; the guess was the symptom.
 - **Capability** — clear brief, honest attempt, work beyond the tier: wrong
   reasoning, repeated schema retries, misread output. Note the model that
-  served from `agent-<id>.meta.json` and hand the excerpts to `/retro` —
+  served from `agent-<id>.meta.json` and hand the excerpts to `/docket-retro` —
   tiering lives in instance policy, and your transcript evidence is exactly
   what its engine reports cannot see. File against
   `src/user/docket/config/policy.toml` only when the shipped default itself is wrong.
@@ -919,8 +919,8 @@ Then:
    either changes. The review calls the finding
    out separately either way. Findings that point at instance config rather
    than at a definition — thresholds, TTLs, tiers, the corpus's own
-   workflows, a repo's additions — are `/retro`'s to evolve from engine
-   evidence: name them in the review and point at retro instead of filing
+   workflows, a repo's additions — are `/docket-retro`'s to evolve from engine
+   evidence: name them in the review and point at docket-retro instead of filing
    them.
 3. **Deliver the review.** Before sending it, scan your own draft for the
    same friction you'd flag in an observed session's output: a hedged claim
@@ -932,7 +932,7 @@ Then:
    claim, its evidence, and the issue id it filed as, project named beside
    every id. Say plainly that nothing has been fixed — what you filed is a
    work queue, not applied change — and name where it drains: a `/loop
-   /tend` session in each owning repo, or a plan → conduct run when the
+   /tend` session in each owning repo, or a docket-plan → docket-run run when the
    operator wants a cluster worked as one.
 4. **Close** by first stopping every helper you spawned (TaskStop) — idle
    analysts left registered become the operator's cleanup at session end
@@ -940,9 +940,9 @@ Then:
    naming the log path, the issues filed per project, and the one thing the
    next shadow should watch first.
 
-## Appendix: the conduct checklist
+## Appendix: the docket-run checklist
 
-Pre-derived because conduct is the richest target. The conductor:
+Pre-derived because docket-run is the richest target. The conductor:
 
 - **Pre-activation checks.** Two, and only two: the stale-install diff of
   `src/user/docket/{config,bin}` against `~/.docket/{config,bin}`, and the
@@ -959,7 +959,7 @@ Pre-derived because conduct is the richest target. The conductor:
   `~/.claude/workflows/wave.js`, never `$SRC/workflows/wave.js`: the settings
   corpus adds only `~/.claude/workflows` to a session's directories
   (`permissions.additionalDirectories`), so the Workflow tool refuses
-  the source path from a normal conduct seat, and a conductor falling back to
+  the source path from a normal docket-run seat, and a conductor falling back to
   it — or copying the script somewhere launchable to get past the refusal —
   is a finding, not an accommodation.
   The installed one is a vorpal-store symlink now rather than the source file,
@@ -1079,8 +1079,8 @@ Pre-derived because a `/loop /tend` session is the other recurring target
 (§1b, §4). Every quoted phrase below is tend/SKILL.md's own wording, so a
 drift between the two files reads as a diff against the quote. The loop:
 
-- **Never `plan`/`conduct`/a docket run.** "Never invoke the `plan` or
-  `conduct` skills, and never create or activate a docket run" — "ever, for
+- **Never `docket-plan`/`docket-run`/a docket run.** "Never invoke the `docket-plan` or
+  `docket-run` skills, and never create or activate a docket run" — "ever, for
   this loop" (tend's own preamble). A tend session doing any of these has
   stopped being tend; treat it as load-bearing.
 - **Loop-wrapped, not self-pacing.** "`tend` has no watch loop of its own —

@@ -32,6 +32,8 @@ jobs:
 
       - run: bash tests/wave-park-signals.test.sh
 
+      - run: bash tests/wave-target-envelope.test.sh
+
       - run: bash tests/wave-usage-probe-overhead.test.sh
 
       - run: bash tests/wave-vote-retry-report.test.sh

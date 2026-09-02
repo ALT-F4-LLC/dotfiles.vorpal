@@ -73,6 +73,7 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
 }
 
 extract park-signals       > "${WORK}/park.js"     || fatal "bad or missing TEST markers for park-signals"
+extract target-envelope    > "${WORK}/envelope.js" || fatal "bad or missing TEST markers for target-envelope"
 extract fix-round-ancestry > "${WORK}/ancestry.js" || fatal "bad or missing TEST markers for fix-round-ancestry"
 extract stage-ladder       > "${WORK}/ladder.js"   || fatal "bad or missing TEST markers for stage-ladder"
 [ -s "${WORK}/ladder.js" ] || fatal "extracted stage-ladder region is empty"
@@ -121,6 +122,7 @@ const probe = (_cmd, _label, _phase, step) => {
 const ladder = async () => {
 JS
     cat "${WORK}/park.js"
+    cat "${WORK}/envelope.js"
     cat "${WORK}/ancestry.js"
     cat "${WORK}/ladder.js"
     printf '}\n'

@@ -63,6 +63,9 @@ extract park-signals > "${WORK}/park.js" || fatal "bad or missing TEST markers f
 # in their own region so tests/wave-fix-round-ancestry.test.sh can exercise
 # them alone — concatenate that region ahead of the ladder, same as the
 # orphaned-claim suite does for its neighbours.
+# …which in turn read the target-ref envelope helpers (DOT-1040), shared with
+# the gate path and fenced in their own nested region.
+extract target-envelope > "${WORK}/envelope.js" || fatal "bad or missing TEST markers for target-envelope"
 extract fix-round-ancestry > "${WORK}/ancestry.js" || fatal "bad or missing TEST markers for fix-round-ancestry"
 extract stage-ladder > "${WORK}/ladder.js" || fatal "bad or missing TEST markers for stage-ladder"
 [ -s "${WORK}/ladder.js" ] || fatal "extracted stage-ladder region is empty"
@@ -111,6 +114,7 @@ const probe = (_cmd, _label, _phase, step) => {
 const ladder = async () => {
 JS
     cat "${WORK}/park.js"
+    cat "${WORK}/envelope.js"
     cat "${WORK}/ancestry.js"
     cat "${WORK}/ladder.js"
     printf '}\n'

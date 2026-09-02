@@ -20,8 +20,9 @@
 # FAILS keeps its errors as real failures, un-softened.
 #
 # DOT-1027 then split that accounting in two. The single "N spawns for M
-# seats" total counted the read-only haiku probes (gate:show, gate:target,
-# gate:record, gate:outcome, gate:tally) as members of the panel: a 3-judge
+# seats" total counted the read-only haiku probes (gate:show, gate:record,
+# gate:outcome, gate:tally — and, until DOT-1040 skipped it on a payload with
+# no target field, gate:target) as members of the panel: a 3-judge
 # gate read "8 spawns for 3 seats", and an ALREADY-DECIDED gate, which seats
 # nobody, read "1 spawn for 0 seats" — a judge on an empty panel. Seats and
 # probes are now counted and reported separately ("3 seats, 5 probes, 0
@@ -159,7 +160,6 @@ const calls = (label) => CALLS.filter((c) => c === label).length
 // accounting and the absorbed errors as notes — and nothing failure-shaped.
 const A = await run({
     'STEP-2493 · gate:show':    { text: SHOW_READY },
-    'STEP-2493 · gate:target':  { text: '' },
     'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
     'STEP-2493 · seat:judge-security':     { reject: API_ERR },
     'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
@@ -169,9 +169,12 @@ const A = await run({
     'STEP-2493 · gate:tally':   [{ reject: API_ERR }, { text: APPROVED }],
 })
 ok(A.status === 'gate-passed', 'A: tally succeeded -> status is gate-passed')
-// 3 judges + 6 read-only probes (show, target, record, outcome, tally x2);
-// the two retries are the re-seated judge and the tally resubmission.
-ok(A.spawn_accounting === '3 seats, 6 probes, 2 retries',
+// 3 judges + 5 read-only probes (show, record, outcome, tally x2); the two
+// retries are the re-seated judge and the tally resubmission. The gate:target
+// probe is NOT among them: SHOW_READY carries no target field, so DOT-1040
+// skips that spawn outright rather than handing a seat an empty result to
+// relay.
+ok(A.spawn_accounting === '3 seats, 5 probes, 2 retries',
     `A: seat/probe/retry accounting is explicit and separated (got ${JSON.stringify(A.spawn_accounting)})`)
 ok(!/spawn/.test(A.spawn_accounting),
     'A: probes are never reported as spawns of the panel')
@@ -195,7 +198,6 @@ ok(runParked(A) === false, 'A: the success result does not park the run')
 // exactly what it was before DOT-744.
 const B = await run({
     'STEP-2493 · gate:show':    { text: SHOW_READY },
-    'STEP-2493 · gate:target':  { text: '' },
     'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
     'STEP-2493 · seat:judge-security':     { reject: API_ERR },
     'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
@@ -230,7 +232,6 @@ ok(C.notes === undefined, 'C: no noise, no notes')
 // but still noted on the success result.
 const D = await run({
     'STEP-2493 · gate:show':    { text: SHOW_READY },
-    'STEP-2493 · gate:target':  { text: '' },
     'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
     'STEP-2493 · seat:judge-security':     { text: 'cast recorded' },
     'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
@@ -240,11 +241,12 @@ const D = await run({
 })
 ok(calls('STEP-2493 · gate:tally') === 1, 'D: a content classifier block is NOT resubmitted')
 ok(D.status === 'gate-passed', 'D: unknown tally on a done step still falls through as before')
-// The DOT-1027 shape: 3 judges + 5 probes (show, target, record, outcome,
-// tally), which the old wording rolled up as "8 spawns for 3 seats".
-ok(D.spawn_accounting === '3 seats, 5 probes, 0 retries',
+// The DOT-1027 shape: 3 judges + 4 probes (show, record, outcome, tally),
+// which the old wording rolled up as "8 spawns for 3 seats" back when
+// gate:target was spent unconditionally too.
+ok(D.spawn_accounting === '3 seats, 4 probes, 0 retries',
     `D: no retry counted for the unretried block (got ${JSON.stringify(D.spawn_accounting)})`)
-ok(LOG.some((l) => l.startsWith('STEP-2493: 3 seats, 5 probes, 0 retries')),
+ok(LOG.some((l) => l.startsWith('STEP-2493: 3 seats, 4 probes, 0 retries')),
     `D: the real-panel log line separates seats from probes (got ${JSON.stringify(LOG)})`)
 ok(Array.isArray(D.notes) && D.notes.length === 1 && D.notes[0].includes('blocked by safety classifier'),
     'D: the block is still noted on the success result')

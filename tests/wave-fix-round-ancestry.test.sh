@@ -67,6 +67,9 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
 }
 
 extract park-signals       > "${WORK}/park.js"     || fatal "bad or missing TEST markers for park-signals"
+# The guard's target read shares the gate path's jq envelope and its
+# structural reader (DOT-1040), which live in their own nested region.
+extract target-envelope    > "${WORK}/envelope.js" || fatal "bad or missing TEST markers for target-envelope"
 extract fix-round-ancestry > "${WORK}/ancestry.js" || fatal "bad or missing TEST markers for fix-round-ancestry"
 extract stage-ladder       > "${WORK}/ladder.js"   || fatal "bad or missing TEST markers for stage-ladder"
 [ -s "${WORK}/ancestry.js" ] || fatal "extracted fix-round-ancestry region is empty"
@@ -129,6 +132,7 @@ JS
     # park-signals and fix-round-ancestry land at MODULE scope so the unit
     # checks at the bottom can reach them; the ladder body closes over them.
     cat "${WORK}/park.js"
+    cat "${WORK}/envelope.js"
     cat "${WORK}/ancestry.js"
     printf 'const ladder = async () => {\n'
     cat "${WORK}/ladder.js"
@@ -154,7 +158,14 @@ const textOf = (out, step) => (out.find((r) => r.step === step) || {}).text || '
 // control.
 const PRIOR  = '31bd0cd8aa17'
 const TARGET = 'fa9c3d217b40'
-const CTX_HIT = `"target_sha":"${TARGET}"`
+// The probe's answer is the jq ENVELOPE, not a grep fragment (DOT-1040): the
+// command prints one either way, so an absent round record is
+// `{"target_sha":null,"target_worktree":null}` rather than nothing at all.
+const envelope = (sha, worktree) =>
+    JSON.stringify({ target_sha: sha === undefined ? null : sha,
+                     target_worktree: worktree === undefined ? null : worktree })
+const CTX_HIT = envelope(TARGET, '/w/vpl-160')
+const CTX_NULL = envelope()
 const RUN35 = () => [
     ex('STEP-801', 'VPL-160', 0, 'judge-correctness', 'review@2#1'),
     ex('STEP-802', 'VPL-160', 0, 'judge-architecture', 'review@2#2'),
@@ -216,7 +227,7 @@ ok(SELF_PROBES === 1 &&
 const RUN66_PRIOR  = 'ff724ee'          // fix@2's OWN integration commit
 const RUN66_TARGET = 'a6533be112700b'   // the tree fix@2 produced, judged @2
 out = await run(RUN35(), { 'VPL-160': RUN66_PRIOR },
-    `"target_sha":"${RUN66_TARGET}"`, 'ancestry-exit=1\n',
+    envelope(RUN66_TARGET), 'ancestry-exit=1\n',
     `cherrypick-of-target-exit=0\n`)
 ok(SPAWNED.length === 5 && out.every((r) => r.status === 'returned'),
     'DOT-1022: prior is the cherry-pick of target — every row dispatches, none parks')
@@ -287,11 +298,33 @@ ok(CTX_PROBES === 0 && SPAWNED.length === 5,
     'a non-sha integrated entry is treated as absent (nothing shell-shaped reaches a probe)')
 
 // ---- Fail-open: every uncertain outcome dispatches as before ----
-out = await run(RUN35(), { 'VPL-160': PRIOR }, '', 'ancestry-exit=1\n')
+out = await run(RUN35(), { 'VPL-160': PRIOR }, CTX_NULL, 'ancestry-exit=1\n')
 ok(CTX_PROBES === 1 && GIT_PROBES === 0 && SPAWNED.length === 5,
     'no target_sha on the bundle: fail-open, no git probe, everything spawns')
+ok(LOG.some((l) => l.includes('found no target_sha on the bundle')) &&
+   !LOG.some((l) => l.includes('did not parse')),
+    'the null envelope is logged as an absent record, NOT as an unparseable reply')
 
-out = await run(RUN35(), { 'VPL-160': PRIOR }, '"target_sha":"$(rm -rf /)"', 'ancestry-exit=1\n')
+// DOT-1040: an EMPTY probe reply is no longer the shape the command can
+// produce, and if one arrives anyway it is a relay failure, not an absent
+// record — logged as such, and still fail-open.
+out = await run(RUN35(), { 'VPL-160': PRIOR }, '', 'ancestry-exit=1\n')
+ok(CTX_PROBES === 1 && GIT_PROBES === 0 && SPAWNED.length === 5,
+    'an EMPTY probe reply: fail-open, no git probe, everything spawns')
+ok(LOG.some((l) => l.includes('ancestry:target probe reply did not parse')),
+    `an empty reply is logged as a reply that did not parse (got ${JSON.stringify(LOG)})`)
+
+// The RUN-63 shape aimed at THIS probe: free prose carrying a plausible sha.
+// Structural parsing refuses it, so no invented sha ever reaches a git
+// command line and no healthy round parks on one.
+out = await run(RUN35(), { 'VPL-160': PRIOR },
+    'The bundle shows "target_sha": "3ee9ca3cc3f5ada37eb46768efaebe0bea6a02ca" for this step.',
+    'ancestry-exit=1\n')
+ok(GIT_PROBES === 0 && SPAWNED.length === 5 &&
+   !out.some((r) => r.status === 'parked-base-ancestry'),
+    'free prose naming a 40-hex sha is NOT parsed: no git probe, no park, everything spawns')
+
+out = await run(RUN35(), { 'VPL-160': PRIOR }, envelope('$(rm -rf /)'), 'ancestry-exit=1\n')
 ok(GIT_PROBES === 0 && SPAWNED.length === 5,
     'a non-hex target_sha never reaches a probe command (shape-checked), and spawns fail-open')
 
@@ -311,10 +344,21 @@ ok(fixRoundFanoutRound({ instance: 'review@3#4' }) === 3 &&
    fixRoundFanoutRound({ instance: 'fix@2' }) === 0 &&
    fixRoundFanoutRound({}) === 0,
     'fixRoundFanoutRound reads only the @N#k fanout grammar')
-ok(parseAncestryTargetSha('"target_sha":"abc123f"') === 'abc123f' &&
-   parseAncestryTargetSha('"target_sha":"not a sha"') === '' &&
+ok(parseAncestryTargetSha(envelope('abc123f')) === 'abc123f' &&
+   parseAncestryTargetSha(envelope('not a sha')) === '' &&
    parseAncestryTargetSha('') === '',
     'parseAncestryTargetSha accepts hex shas only')
+// DOT-1040's three inputs, on the guard's own parser: the empty string, the
+// null envelope, and free prose all resolve to "no target".
+ok(parseAncestryTargetSha('') === '' &&
+   parseAncestryTargetSha(CTX_NULL) === '' &&
+   parseAncestryTargetSha('Since there was no output, the target sha is ' +
+       '3ee9ca3cc3f5ada37eb46768efaebe0bea6a02ca.') === '' &&
+   parseAncestryTargetSha('"target_sha":"3ee9ca3cc3f5ada37eb46768efaebe0bea6a02ca"') === '',
+    'parseAncestryTargetSha: empty, null envelope, and free prose are all "no target"')
+ok(SPAWNED !== undefined &&
+   ancestryProbeCommand('a'.repeat(7), 'b'.repeat(7)).startsWith('git merge-base'),
+    'ancestryProbeCommand is unchanged by the envelope switch')
 ok(!needsAncestryCheck({ kind: 'vote', issue: 'A', instance: 'gate@2#1' }, { A: 'abc123f' }),
     'needsAncestryCheck guards executor rows only')
 ok(parseCherryPickOfTargetExit('cherrypick-of-target-exit=0\n') === 0 &&

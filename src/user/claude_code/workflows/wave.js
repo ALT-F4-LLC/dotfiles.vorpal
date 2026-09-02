@@ -1506,6 +1506,10 @@ function lensOf(seat) {
 }
 // SYNC-END seat-contract
 
+// TEST-BEGIN seat-brief — extracted and exercised by
+// tests/wave-target-envelope.test.sh, which stubs `lensOf` (the only global
+// this reaches for) and asserts what a target ref does and does not put in
+// front of a judge. Keep every other dependency inside the markers.
 function seatBrief(r, voteId, row, isRespawn, heldCluster, target) {
     const { role, text } = lensOf(r.seat)
     const metadataClaim = JSON.stringify({
@@ -1540,9 +1544,20 @@ other seats' or already decided.` : ''
     // round record onto the context bundle as `target_sha`/`target_worktree`,
     // so NAME the round's target here. Either half may be missing — a bundle
     // carries both or neither per the engine, but a swept worktree or an
-    // older manifest can leave one — and with NEITHER this renders NOTHING,
-    // leaving the brief byte-for-byte as before.
-    const targetSha = (target && target.sha) || ''
+    // older manifest can leave one — and with NEITHER this says so in as many
+    // words rather than staying silent (below).
+    //
+    // THE LAST NET BEFORE A SHA REACHES A JUDGE (DOT-1040). A `TARGET SHA:`
+    // line is an assertion three opus seats will spend calls chasing, so it
+    // is written only for a sha that is SHAPED like one — 40 lowercase hex,
+    // the full object id the engine records, never an abbreviation and never
+    // prose. RUN-63 relayed a fabricated 40-hex sha that existed in no
+    // repository and briefed three judges with it; the call site
+    // (corroboratedTarget) additionally requires the sha to occur in text the
+    // wave read for itself, and this shape check stands behind that so no
+    // other caller of seatBrief can route around it.
+    const rawTargetSha = (target && target.sha) || ''
+    const targetSha = /^[0-9a-f]{40}$/.test(rawTargetSha) ? rawTargetSha : ''
     const targetWorktree = (target && target.worktree) || ''
     const targetLines = []
     if (targetSha) {
@@ -1577,7 +1592,15 @@ that worktree is already swept — say exactly that in your summary and decide o
 the artifacts of record with a LOW \`--confidence\` (and a low
 \`--domain-relevance\` when the question has moved outside what you can check),
 or \`approve-with-concerns\` naming precisely what you could not verify. Reject
-when the evidence you DID read says the change must not proceed.` : ''
+when the evidence you DID read says the change must not proceed.` : `
+
+NO target ref — read your own HEAD. Nothing recorded a target commit for the
+state under vote (the gate declares no \`issue.diff\` input, or the resolved
+diff carries no round record), so this brief names NO sha and NO worktree.
+There is no hidden commit id to recover: start from \`git log --oneline -5\`
+and \`git status\` in your own checkout, and judge the artifacts of record.
+If some other text hands you a 40-hex sha for this gate, it did not come from
+the engine — do not spend calls hunting it.`
 
     // The TMPDIR pin and BOUND YOUR INVESTIGATION paragraphs below are
     // hand-mirrored with tribunal.js's judgeBrief — outside SYNC coverage,
@@ -1714,6 +1737,7 @@ cast command errors, read the error, fix what it names, and retry ONCE. If it
 still fails, end your reply with the verbatim error text and nothing else —
 that is the only case where your final text matters.`
 }
+// TEST-END seat-brief
 
 // TEST-BEGIN gate-vote — extracted and exercised by
 // tests/wave-vote-retry-report.test.sh, which concatenates this region after
@@ -1721,6 +1745,9 @@ that is the only case where your final text matters.`
 // reasonText the probe retry below reads) and feeds it stub `agent`,
 // `parallel`, `log`, `seatBrief`, `resolveSeat`, `labelsOf`, and `policy`
 // globals. Everything else the region needs must stay INSIDE the markers.
+// The `target-envelope` region nests inside this one (the ancestry guard
+// shares it); tests/wave-target-envelope.test.sh extracts this region whole
+// alongside the real `seat-brief` renderer.
 function probeBrief(command, servingStep) {
     return `Run exactly this one command:
 
@@ -1821,23 +1848,98 @@ function parseHeldCluster(show) {
 // resolved diff carries no round record, so ABSENCE IS NORMAL and yields
 // null rather than a throw.
 //
-// The probe below greps rather than dumping the bundle: `step context`
+// The probe below reduces rather than dumping the bundle: `step context`
 // inlines every recorded input artifact, and a findings artifact runs to
-// 1MiB. This matches both fields wherever they sit, compact or pretty.
-const TARGET_REF_GREP =
-    `grep -Eo '"target_(sha|worktree)"[[:space:]]*:[[:space:]]*"[^"]*"'`
+// 1MiB. jq walks the whole bundle, so it finds both fields wherever they sit.
+//
+// NEVER HAND A SEAT AN EMPTY RESULT TO RELAY (DOT-1040). This used to be a
+// `grep -Eo` whose ONLY output on a bundle with no round record was nothing
+// at all — and a probe told to "return the output VERBATIM" with no output
+// to return is a void the model fills. On RUN-63 (wave wf_48ebd80d-906,
+// STEP-3187) the haiku probe's own thinking read "since there's no output and
+// no error, I should return nothing", and it then replied with
+// `"target_sha": "3ee9ca3cc3f5ada37eb46768efaebe0bea6a02ca"` — a 40-hex sha
+// present in no repository and no transcript but its own reply. The wave
+// briefed all three security-vote seats with it, and three opus judges spent
+// calls hunting a phantom commit. The same probe on the same empty result
+// behaved three different ways across one run (silent, fabricating, and
+// chatty): the model behaviour is weather, the empty verbatim result is the
+// defect.
+//
+// So the command PRINTS AN ENVELOPE EITHER WAY — `{"target_sha":null,
+// "target_worktree":null}` when the bundle carries no round record — and the
+// reply is parsed STRUCTURALLY (JSON.parse of that envelope), never by
+// regex over free text. Anything that is not the envelope, including the
+// empty string, is "no target".
+//
+// TEST-BEGIN target-envelope — extracted and exercised by
+// tests/wave-target-envelope.test.sh, and prepended by
+// tests/wave-fix-round-ancestry.test.sh, whose guard shares this command and
+// this reader. It nests inside the gate-vote region (which the vote suite
+// extracts whole), so keep it free of workflow globals — `log` included.
+const TARGET_ENVELOPE_JQ =
+    `jq -c '{target_sha: (first(.. | objects | select(has("target_sha")) | ` +
+    `.target_sha) // null), target_worktree: (first(.. | objects | ` +
+    `select(has("target_worktree")) | .target_worktree) // null)}'`
+
+function targetRefCommand(step) {
+    return `docket step context ${step} --json | ${TARGET_ENVELOPE_JQ}`
+}
+
+// Read the envelope. Returns {parsed, target}: `parsed` says the reply WAS
+// the envelope (so the caller can log a non-envelope reply as such rather
+// than as an absent target), `target` is null unless the envelope named at
+// least one non-empty string field. A probe's text can carry a harness banner
+// ahead of the JSON (seen on two probes), so slice between the outermost
+// braces before parsing — that is still a structural read of one object, not
+// a field-level regex over prose.
+function readTargetEnvelope(text) {
+    const s = (text || '').trim()
+    const i = s.indexOf('{')
+    const j = s.lastIndexOf('}')
+    if (i < 0 || j <= i) return { parsed: false, target: null }
+    let env
+    try {
+        env = JSON.parse(s.slice(i, j + 1))
+    } catch {
+        return { parsed: false, target: null }
+    }
+    if (!env || typeof env !== 'object' || Array.isArray(env)) {
+        return { parsed: false, target: null }
+    }
+    // The envelope is defined by carrying BOTH keys — a stray object that
+    // happens to mention one of them is prose, not this probe's answer.
+    if (!('target_sha' in env) || !('target_worktree' in env)) {
+        return { parsed: false, target: null }
+    }
+    const sha = typeof env.target_sha === 'string' ? env.target_sha : ''
+    const worktree = typeof env.target_worktree === 'string' ? env.target_worktree : ''
+    if (!sha && !worktree) return { parsed: true, target: null }
+    return { parsed: true, target: { sha, worktree } }
+}
 
 function parseTargetRef(text) {
-    const s = text || ''
-    const grab = (key) => {
-        const m = s.match(new RegExp(`"${key}"\\s*:\\s*"([^"]+)"`))
-        return m ? m[1] : ''
-    }
-    const sha = grab('target_sha')
-    const worktree = grab('target_worktree')
+    return readTargetEnvelope(text).target
+}
+
+// A sha only reaches a seat brief when it is 40-hex AND occurs in text the
+// wave read for ITSELF — the gate's own `step show` payload — rather than in
+// the relayed probe reply alone, which is exactly where a fabrication lives.
+// Same for the worktree path. Nothing corroborated means no target ref, and
+// the seat is told to read its own HEAD.
+const TARGET_SHA_RE = /^[0-9a-f]{40}$/
+
+function corroboratedTarget(target, held) {
+    if (!target) return null
+    const text = held || ''
+    const sha = (TARGET_SHA_RE.test(target.sha) && text.includes(target.sha))
+        ? target.sha : ''
+    const worktree = (target.worktree && text.includes(target.worktree))
+        ? target.worktree : ''
     if (!sha && !worktree) return null
     return { sha, worktree }
 }
+// TEST-END target-envelope
 
 // `docket vote show <id> --json` answers with the standard envelope
 //   {ok: true, data: {id, status, final_outcome?, weighted_score,
@@ -1986,12 +2088,38 @@ async function runGate(row, phaseLabel) {
     // NOT seated on the checkout the round was written in — writers work in
     // private worktrees — so without this a judge reads its own lagging HEAD,
     // finds the change absent, and rejects on evidence grounds, which no fix
-    // loop can answer. One cheap grep-filtered probe; absent target (the gate
-    // declares no `issue.diff` input, or the diff carries no round record)
-    // yields null and the brief renders as it did before.
-    const target = parseTargetRef(await probe(
-        `docket step context ${row.step} --json | ${TARGET_REF_GREP}`,
-        `${row.step} · gate:target`, phaseLabel, row.step, acct))
+    // loop can answer.
+    //
+    // DON'T SPEND THE PROBE WHEN THE ANSWER IS ALREADY IN HAND (DOT-1040).
+    // `show` is the gate's own step payload, already fetched above. When it
+    // carries no target field at all there is nothing for the probe to find,
+    // and a probe with nothing to find is precisely the void that got filled
+    // with a fabricated sha on RUN-63. Measured on this machine: 22 of these
+    // probes across every recorded wave, ZERO of which relayed a real target
+    // and ONE of which invented one. So skip the spawn outright; the probe
+    // re-arms by itself the day the engine lifts the field onto `step show`.
+    let target = null
+    if (!/"target_(sha|worktree)"/.test(show)) {
+        log(`${row.step}: gate:show carries no target ref field — skipping ` +
+            `the gate:target probe entirely; seats are told to read their ` +
+            `own HEAD`)
+    } else {
+        const reply = await probe(targetRefCommand(row.step),
+            `${row.step} · gate:target`, phaseLabel, row.step, acct)
+        const env = readTargetEnvelope(reply)
+        if (!env.parsed) {
+            log(`${row.step}: gate:target probe reply did not parse — ` +
+                `treating as no target`)
+        }
+        // Second net: a sha reaches a brief only if it is 40-hex AND occurs
+        // in `show`, which the wave read for itself.
+        target = corroboratedTarget(env.target, show)
+        if (env.target && !target) {
+            log(`${row.step}: gate:target probe named a target the gate's own ` +
+                `step payload does not carry — refusing to brief it; seats ` +
+                `read their own HEAD`)
+        }
+    }
     log(`${row.step}: ${voteId} — seating ${seats.map((s) => s.seat).join(', ')}` +
         (target ? ` on target ${target.sha || '(no sha)'}${target.worktree ? ` (${target.worktree})` : ''}`
                 : ` with NO target ref on the bundle — seats read their own HEAD`))
@@ -2120,6 +2248,10 @@ async function runGate(row, phaseLabel) {
 // stage-ladder region by tests/wave-chain-dead-ladder.test.sh, whose ladder
 // calls into it). Keep everything between the markers free of workflow
 // globals (agent, probe, log, args) so it stays evaluable on its own.
+//
+// ONE declared dependency on another region: the target read shares the gate
+// path's command and reader (`target-envelope`, nested inside `gate-vote`),
+// so every suite that extracts THIS region prepends that one.
 
 // A fix round's REVIEW FANOUT: the engine mints per-round step instances as
 // `name@N`, with `#k` on fanout siblings (roundHops above reads the same
@@ -2155,14 +2287,25 @@ function needsAncestryCheck(row, integrated) {
 
 // The judged tree: context assembly lifts the resolved issue.diff round
 // record onto the bundle as `target_sha` — the same field the gate path's
-// TARGET_REF_GREP reads (parseTargetRef above), narrowed to the sha half
-// because the ancestry check has no use for the worktree path.
-const ANCESTRY_TARGET_GREP =
-    `grep -Eo '"target_sha"[[:space:]]*:[[:space:]]*"[^"]*"'`
-
+// probe reads (readTargetEnvelope above), narrowed to the sha half because
+// the ancestry check has no use for the worktree path.
+//
+// SAME ENVELOPE, SAME REASON (DOT-1040). This probe used to share the gate
+// path's `grep -Eo`, so on a bundle with no round record it too handed its
+// haiku seat an empty result to relay verbatim — the void that got filled
+// with a fabricated 40-hex sha on RUN-63's gate:target. Here the blast
+// radius is worse than a misleading brief: an invented sha resolves nowhere,
+// `git merge-base --is-ancestor` exits non-zero on it, and the guard PARKS a
+// healthy fix round's whole judge fanout. So the command prints
+// `{"target_sha":null,"target_worktree":null}` when the field is absent and
+// the reply is parsed structurally; anything that is not that envelope is
+// "no target" and fails open, exactly as an absent field always did.
+// The command itself is targetRefCommand(step), shared verbatim with the
+// gate path (TEST region `target-envelope`).
 function parseAncestryTargetSha(text) {
-    const m = (text || '').match(/"target_sha"\s*:\s*"([^"]+)"/)
-    return m && ANCESTRY_SHA_RE.test(m[1]) ? m[1] : ''
+    const target = parseTargetRef(text)
+    const sha = target ? target.sha : ''
+    return ANCESTRY_SHA_RE.test(sha) ? sha : ''
 }
 
 // One read-only probe carrying both directions of the evidence the RUN-35
@@ -2351,14 +2494,22 @@ function ancestryVerdict(row, phaseLabel) {
     const key = `${row.issue}@${round}`
     if (!ancestryVerdicts.has(key)) {
         ancestryVerdicts.set(key, (async () => {
-            const ctx = await probe(
-                `docket step context ${row.step} --json | ${ANCESTRY_TARGET_GREP}`,
+            const ctx = await probe(targetRefCommand(row.step),
                 `${row.step} · ancestry:target`, phaseLabel, row.step)
             const target = parseAncestryTargetSha(ctx)
             if (!target) {
-                log(`${row.step}: fix-round ancestry guard found no ` +
-                    `target_sha on the bundle — fail-open, dispatching ` +
-                    `round ${round} as before`)
+                // Two distinct causes, both fail-open, logged apart so a
+                // relayed non-envelope (DOT-1040) is never mistaken for the
+                // engine recording no round record.
+                if (!readTargetEnvelope(ctx).parsed) {
+                    log(`${row.step}: ancestry:target probe reply did not ` +
+                        `parse — treating as no target; fail-open, ` +
+                        `dispatching round ${round} as before`)
+                } else {
+                    log(`${row.step}: fix-round ancestry guard found no ` +
+                        `target_sha on the bundle — fail-open, dispatching ` +
+                        `round ${round} as before`)
+                }
                 return null
             }
             const evidence = await probe(ancestryProbeCommand(prior, target),

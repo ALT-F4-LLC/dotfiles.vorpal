@@ -1,7 +1,21 @@
 [pipeline]
 description = "Cross-issue disposition: write the verdict comment and close the carrier, gated on the build/test sanity check and AC verification with a bounded revise loop; no code-review machinery."
 name = "disposition"
-version = 4  # 4: no behavior change — bumped only because the version-3
+version = 5  # 5: `docs-only` and `ui` join unless_labels. Neither track
+             #   excludes `disposition`, so an issue labelled `disposition` +
+             #   `docs-only` or `disposition` + `ui` matched two workflows and
+             #   refused activation — the routing sweep in the engine repo
+             #   counts 15 such states across the five kinds. The change-type
+             #   track wins, the same way the security track already does
+             #   (version 3 below): this shape is the verdict-only refinement
+             #   of the standard-change baseline, so it outranks only that
+             #   baseline and yields to every specific track. Yielding the
+             #   other way is not an option: docs-only already outranks
+             #   security-change, which outranks this shape, so making
+             #   docs-only yield here would close the chain into a cycle and
+             #   leave `disposition` + `docs-only` + `security` bound to
+             #   nothing at all.
+             # 4: no behavior change — bumped only because the version-3
              #   comment below was edited (issue-citation scrubbing) without
              #   a version bump, splitting registries that already held the
              #   old comment bytes at version 3 from ones that hadn't seen
@@ -17,7 +31,7 @@ version = 4  # 4: no behavior change — bumped only because the version-3
 
 [match]
 labels_any = ["disposition"]
-unless_labels = ["investigation", "spec-doc", "spec-project", "release", "retro", "security", "security-change", "security-load-bearing"]
+unless_labels = ["docs-only", "investigation", "spec-doc", "spec-project", "release", "retro", "security", "security-change", "security-load-bearing", "ui"]
 
 [limits]
 "dispose" = { max = 16, max_step_duration = "1h" }

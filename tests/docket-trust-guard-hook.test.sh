@@ -15,7 +15,8 @@
 #     whose shape or agent_type the matcher fails to recognize, so the write
 #     that repoints a gate goes through unblocked.
 #   FALSE DENY  - a read, a query, or prose that merely mentions
-#     "docket trust add", or a main-conversation call, denied anyway.
+#     "docket trust add", a help read (`docket trust add --help`, which
+#     opens nothing), or a main-conversation call, denied anyway.
 #
 # SEAM. No engine, no `docket` binary, no filesystem: this hook makes exactly
 # one decision from its stdin JSON and nothing else, so the suite is a single
@@ -104,6 +105,20 @@ assert_verdict_raw() {
     fi
 }
 
+# The one place the suite reads stderr: a deny must carry the hook's fixed
+# reason line, so a narrowing of the matcher cannot silently swap the
+# executor-facing text for a different one.
+DENY_REASON='trust-store write blocked: `docket trust add/rm` is operator-reserved'
+
+assert_deny_reason() {
+    local cmd="$1" agent="$2" label="$3" err
+    err=$(PATH="$TOOLS_DIR" "$BASH_BIN" "$HOOK" 2>&1 >/dev/null <<<"$(build_input "$cmd" "$agent")")
+    case "$err" in
+        "${DENY_REASON}"*) pass "${label} (reason text unchanged)" ;;
+        *) fail "${label} (reason text changed or missing: ${err})" ;;
+    esac
+}
+
 # ---- THE PROPERTY: same command, verdict turns on agent_type alone --------
 
 case_executor_archetypes_deny() {
@@ -170,6 +185,74 @@ case_must_deny_separately_quoted_tokens() {
         "separately-quoted docket/trust/add (bash-unquotes to a real call)"
 }
 
+# ---- MUST ALLOW: the help read, the one exemption, from an executor -------
+#
+# `docket trust add --help` opens nothing. The exemption is exactly: an
+# unquoted, bare `-h`/`--help` as the word directly after a clean `add`/`rm`,
+# with at most a shell operator glued onto its tail. The originating shape
+# piped the help text into grep, so operators and redirects after the flag
+# must not defeat it.
+
+case_help_read_exemption_allows() {
+    assert_verdict "docket trust add --help" executor-read ALLOW \
+        "executor-read: docket trust add --help"
+    assert_verdict "docket trust add -h" executor-read ALLOW \
+        "executor-read: docket trust add -h"
+    assert_verdict "docket trust rm --help" executor-read ALLOW \
+        "executor-read: docket trust rm --help"
+    assert_verdict "docket trust rm -h" executor-write ALLOW \
+        "executor-write: docket trust rm -h"
+    assert_verdict "docket trust add --help 2>&1 | grep -n -i -E 'stub|reason' | head -20" \
+        executor-read ALLOW "help piped into grep (the originating shape)"
+    assert_verdict "docket trust add --help; echo done" executor-read ALLOW \
+        "help with ; glued onto the flag"
+    assert_verdict "(docket trust add --help)" executor-read ALLOW \
+        "help inside a subshell, ) glued onto the flag"
+    assert_verdict "cd /x && docket trust add --help" executor-read ALLOW \
+        "help after &&"
+    assert_verdict "docket trust add --help >/dev/null 2>&1" executor-read ALLOW \
+        "help followed by redirects"
+    assert_verdict "/usr/local/bin/docket trust add --help" executor-research ALLOW \
+        "help via absolute path to docket binary"
+}
+
+# ---- MUST DENY: help lookalikes and help-then-write compounds -------------
+#
+# Every shape here either is a write or cannot be told from one without
+# modelling the CLI: a second occurrence after the exempted one, a flag that
+# turns help OFF (`--help=false`), `--help` as an argv element after `--`, a
+# help flag in any position other than directly after the verb (where an
+# earlier option could swallow it as a value), or a quoted flag.
+
+case_help_lookalikes_and_compounds_deny() {
+    assert_verdict "docket trust add foo --yes -- /bin/sh -c 'x'" executor-read DENY \
+        "executor-read: real add with argv"
+    assert_deny_reason "docket trust add foo --yes -- /bin/sh -c 'x'" executor-read \
+        "executor-read: real add with argv"
+    assert_verdict "docket trust add --help && docket trust add foo --yes -- /bin/sh -c 'x'" \
+        executor-read DENY "help then a real add after && (scan continues past the exemption)"
+    assert_verdict "docket trust add --help; docket trust add erik -- /bin/sh -c 'x'" \
+        executor-read DENY "help then a real add after ;"
+    assert_verdict $'docket trust add --help\ndocket trust add erik -- /bin/sh -c x' \
+        executor-read DENY "help then a real add on the next line"
+    assert_verdict 'docket trust add --help $(docket trust add erik -- /bin/sh -c x)' \
+        executor-read DENY "help with a real add inside a command substitution"
+    assert_verdict "docket trust add --help=false erik -- /bin/sh -c 'x'" executor-read DENY \
+        "--help=false turns the flag off: a real add"
+    assert_verdict "docket trust add -h=false erik -- /bin/sh -c 'x'" executor-read DENY \
+        "-h=false turns the flag off: a real add"
+    assert_verdict "docket trust add -- --help" executor-read DENY \
+        "--help after -- is a positional, not the flag"
+    assert_verdict "docket trust add erik -- --help" executor-read DENY \
+        "--help as an argv element of a real add"
+    assert_verdict "docket trust add --timeout --help erik -- /bin/sh -c 'x'" executor-read DENY \
+        "--help swallowed as the value of --timeout"
+    assert_verdict "docket trust add erik --help" executor-read DENY \
+        "help not directly after the verb: outside the exemption by design"
+    assert_verdict 'docket trust add "--help"' executor-read DENY \
+        "quoted help flag: outside the exemption by design"
+}
+
 # ---- Input edge cases: fail open, never mid-parse --------------------------
 
 case_input_edge_cases() {
@@ -191,6 +274,8 @@ case_ordinary_docket_verbs_allow
 case_must_not_catch_prose_and_reads
 case_must_deny_glued_separator_class
 case_must_deny_separately_quoted_tokens
+case_help_read_exemption_allows
+case_help_lookalikes_and_compounds_deny
 case_input_edge_cases
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"

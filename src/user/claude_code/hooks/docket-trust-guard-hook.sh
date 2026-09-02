@@ -165,6 +165,28 @@ END {
 # or subshell glued directly onto the front with no whitespace), and
 # quote-group-aware on all three words so real prose stays allowed while a
 # trick built from separately-quoted tokens still denies.
+#
+# THE ONE EXEMPTION: `docket trust add --help` (or `-h`, or `rm`) opens
+# nothing -- it is the read a judge seat needs to evaluate a trust entry's
+# flags, and denying it as a write cost a tribunal the one lookup its verdict
+# rested on. The exemption is deliberately the narrowest shape that is a help
+# read by construction rather than by CLI courtesy: the flag must be the word
+# IMMEDIATELY after the verb, unquoted, and exactly `-h` or `--help` with at
+# most a shell operator glued onto its tail (`--help;`, `--help)`, `--help|`
+# all end the segment right after the flag). Directly after the verb no
+# earlier option can swallow the flag as its value and no `--` has been seen,
+# so docket's parser sees the help flag before it validates a single argument
+# -- whereas `docket trust add name -- --help` is a real write with `--help`
+# as an argv element, and `docket trust add --timeout --help -- x` feeds the
+# flag to --timeout, which is why a help flag in any later position stays
+# denied. Exact spelling matters for the same reason: `--help=false` and
+# `-h=false` are pflag's way of turning the flag OFF, so they must not be
+# stripped down to a match. The verb and `trust` must be clean words (nothing
+# glued) -- a glued operator there means the segment ended before the flag.
+#
+# An exempted occurrence `continue`s the scan rather than allowing outright:
+# `docket trust add --help && docket trust add x -- y` still denies on its
+# second occurrence, on this line or a later one.
 MATCH=$(printf '%s' "$STRIPPED" | awk '
 BEGIN { MARK = "\001" }
 function decode(raw,    inner, cpos) {
@@ -194,14 +216,26 @@ function decode(raw,    inner, cpos) {
             tquoted = decode(words[i + 1])
             tgroup = D_GROUP
             tw = D_WORD
+            texact = tw
             sub(/[^A-Za-z0-9_-].*$/, "", tw)
             if (tw != "trust") continue
             vquoted = decode(words[i + 2])
             vgroup = D_GROUP
             vw = D_WORD
+            vexact = vw
             sub(/[^A-Za-z0-9_-].*$/, "", vw)
             if (vw != "add" && vw != "rm") continue
             if (hquoted && tquoted && vquoted && hgroup == tgroup && tgroup == vgroup) continue
+            # Help read: an unquoted, bare -h/--help directly after a clean
+            # verb. Only a glued trailing shell operator is stripped from the
+            # flag (it ends the segment); any other suffix is a different
+            # argument and keeps the deny. See the comment above the block.
+            if (texact == tw && vexact == vw && i + 3 <= n) {
+                pquoted = decode(words[i + 3])
+                pw = D_WORD
+                sub(/[|&;()<>].*$/, "", pw)
+                if (!pquoted && (pw == "-h" || pw == "--help")) continue
+            }
             print "MATCH"
             exit
         }

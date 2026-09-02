@@ -360,12 +360,14 @@ operator remembering to paste it. Do not depend on that. Whenever the run is
 any run this session itself did not activate:
 
 ```bash
-docket doc list -T resume-prompt --json
+docket doc list -T resume-prompt --sort updated_at:desc --limit 20 --json \
+  | jq -r --arg t "Resume $RUN" '.data.docs[] | select(.title==$t) | .id' | head -1
 ```
 
 The doc's title is `Resume RUN-N` for the run you are resuming (`pause`'s own
 convention) — match on that, not on recency, since the store can hold
-resume-prompt docs for other runs. If one matches, read it in full
+resume-prompt docs for other runs; the query above already sorts and matches
+on title so it returns at most one doc id. If one matches, read it in full
 (`docket doc show DOC-N`) and honor its contents before your first mutating
 verb: which steps were mid-execution when the wave was killed, what was
 already integrated onto the shared branch, un-integrated writer shas still

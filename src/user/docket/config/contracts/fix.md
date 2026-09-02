@@ -1,6 +1,6 @@
 ---
 node: fix
-version: 6
+version: 7
 archetype: executor-write
 packet_includes:
   - fragments/code-philosophy.md
@@ -9,6 +9,7 @@ packet_includes:
   - fragments/evidence-rules.md
   - fragments/truth-first.md
   - fragments/vorpal-toolchain.md
+  - fragments/completion-gates.md
 emits: change-summary
 ---
 # Charter
@@ -38,9 +39,14 @@ leave it alone and say in the summary that you did.
 
 Read every routed finding before touching code, and group them by cause rather than by
 file: three findings on three lines are often one defect, and fixing them one at a time
-produces three patches where one belongs. Where findings genuinely conflict (two
-reviewers wanting opposite changes), say so in the summary and fix for the stronger
-argument rather than splitting the difference into something neither asked for.
+produces three patches where one belongs. Your packet carries the reconciled aggregate
+(your work list) and the synthesize clusters beside it, whose body carries each member's
+evidence; when a member body you need is still not in the packet, `docket step artifact
+ARTIFACT-N --payload` on an artifact id the packet names is the one sanctioned read,
+never run reports, step lists, `--help`, or the store's database. Where findings
+genuinely conflict (two reviewers wanting opposite changes), say so in the summary and
+fix for the stronger argument rather than splitting the difference into something
+neither asked for.
 
 Stay inside existing loci. A fix plan that requires NEW files or scripts is
 implement-class construction wearing a fix charter: emit a `gap` recommending
@@ -73,6 +79,36 @@ round's judges will otherwise run it themselves at many times your cost. When yo
 closure takes one branch of a reviewer's stated alternative (the `alternative` field its
 reconciled finding carries), say which half was not taken.
 
+# Entry points
+When your change alters how an executable entry point is invoked, sourced, or gated (a
+shebang, a `BASH_SOURCE`/`$0`/`argv[0]` guard, an `if __name__ == "__main__"` idiom, a
+`main "$@"` dispatch, a subcommand's argument shape, an installer's handling of stdin),
+the build and test commands are not the proof, because a test harness reaches an entry
+point by the forms that are convenient to a test, and the forms a project publishes are
+usually others. Before you emit:
+
+1. Grep the repository's own published invocations of that entry point: README, the docs
+   site, Makefile and justfile targets, CI workflow files, install and release scripts.
+   List every literal form you find: `bash path`, `sh -c`, `source path`, `curl … |
+   bash`, `python -m`, a direct `./path` exec, a `cargo run --` shape.
+2. Run each form VERBATIM against the fixed tree, never a paraphrase and never `make
+   test` as a proxy: a piped form is run piped, and a form that would mutate the tree
+   runs against a copy under your temp directory. Observe the real exit code and output.
+3. Record each command and its outcome in the change-summary under "Entry-point
+   invocations", the same way a finding's proof is recorded. A documented form you cannot
+   run (needs network, needs a host you lack) is listed as NOT RUN with the reason, never
+   silently omitted.
+
+One fix round added a sourceable `[[ "${BASH_SOURCE[0]}" == "$0" ]]` guard to an
+installer so its new tests could source the file. Under the file's own `set -u`,
+`BASH_SOURCE` is empty when bash reads the script from a pipe, so the project's
+documented `curl -fsSL … | bash` install aborted on an unbound variable, while build,
+clippy, every test, and the abuse gate stayed green: the round's six new tests exercised
+the two forms that still worked (`bash path` and `source`) and never the one the README
+publishes. Three judges reproduced it by hand a round later, at many times your cost;
+the piped form was one grep and one command away. This is proof discipline extended to
+invocation, not a new category of obligation.
+
 Prove each finding closed. For a finding with a test-expressible failure, write the test
 that fails against the current code, observe it fail, then fix; the finding's own claim
 is your red. For a finding about a control or a guard, the regression test must drive the
@@ -100,8 +136,10 @@ applied to a defect that does not exist is churn that reviewers must re-review, 
 honest disposition (examined, not reproducible, here is what I traced) is a valid
 outcome that the summary records.
 
-Run the project's build and test commands and include their real output. A finding
-addressed while another test broke is not addressed.
+Before you record, run the repository's completion gates (`docket trust list` is the
+roster; the completion-gates fragment says how), plus the project's build and test
+commands, and include their real output. A finding addressed while another test broke is
+not addressed.
 
 # Emit
 `change-summary` (markdown): FIRST LINE is the worktree commit sha your
@@ -110,7 +148,9 @@ changed → the evidence it is closed, with observed pre-fail and post-pass outp
 test carries it) · Findings not addressed (id → why: not reproducible, disagreed with the
 premise, or out of declared scope; with the evidence, never as a bare assertion) ·
 Files changed (one line of why each) · Class sweeps (pattern searched → loci returned →
-closed here or filed) · Known limits. Do not restate the diff; the engine
+closed here or filed) · Entry-point invocations (each published form run verbatim → exit
+code and output, or NOT RUN with why; "none altered" when no entry point changed) ·
+Known limits. Do not restate the diff; the engine
 snapshots it, and review sees your delta.
 
 # Stuck

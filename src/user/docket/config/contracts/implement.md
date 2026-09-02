@@ -1,6 +1,6 @@
 ---
 node: implement
-version: 5
+version: 6
 archetype: executor-write
 packet_includes:
   - fragments/code-philosophy.md
@@ -10,6 +10,7 @@ packet_includes:
   - fragments/evidence-rules.md
   - fragments/truth-first.md
   - fragments/vorpal-toolchain.md
+  - fragments/completion-gates.md
 emits: change-summary
 ---
 # Charter
@@ -31,9 +32,11 @@ the tree, emit a change-summary naming the pre-existing commit(s) with the AC â†
 mapping, and record it with `step complete`. Re-implementing or gapping an
 already-satisfied issue are both waste; the verify path still feeds the review fanout,
 which can find real defects in the landed fix (an earlier run's did). Implement the
-smallest change that satisfies the ACs under the code-philosophy fragment. Run the
-project's build and test commands and include their real output in the summary. If an AC
-is untestable as written, say so explicitly in the summary rather than approximating it.
+smallest change that satisfies the ACs under the code-philosophy fragment. Before you
+record, run the repository's completion gates (`docket trust list` is the roster; the
+completion-gates fragment says how), plus the project's build and test commands, and
+include their real output in the summary. If an AC is untestable as written, say so
+explicitly in the summary rather than approximating it.
 
 # Emit
 `change-summary` (markdown): FIRST LINE is the worktree commit sha your

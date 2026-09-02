@@ -1,7 +1,31 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 29  # 29: the `review-security` step is removed, with its
+version = 30  # 30: two input edits on `fix`, no topology change. (1)
+              #   `synthesize.findings` joins `reconcile.findings`: the
+              #   aggregate reaches the fixer as cluster titles and member ids
+              #   with no evidence, while the synthesize artifact's body lists
+              #   every member's judge, id, severity and evidence — one fixer
+              #   handed eight title-only clusters spent fourteen calls (run
+              #   reports, step shows, a raw open of the store's database)
+              #   hunting for member bodies. ordinalScoped binds it to the
+              #   round that just judged the fixer's base. (2)
+              #   `issue.latest.change-summary` joins
+              #   `implement.change-summary`: the engine never rebinds a loop
+              #   body's own inputs, so at fix@2 and later the packet carried
+              #   implement@0's account and omitted fix@(N-1)'s, the tree the
+              #   fixer actually stands on (three fix@2 packets in one run all
+              #   bound to implement@0). `issue.latest.<kind>` is the engine's
+              #   named form for exactly this; at fix@1 both entries resolve
+              #   to implement@0 and the bundle de-duplicates them. This track
+              #   has no vote step, so the target-ref change its siblings
+              #   made at the same time does not apply here. NOT changed:
+              #   `synthesize`'s `review.*` already binds to the current round
+              #   only; the previous-round raw judge payloads in a re-review
+              #   synthesize packet come from the engine's previous-round pass
+              #   matching every artifact of the emitted kind, which no input
+              #   edit can scope — engine change, tracked separately.
+              # 29: the `review-security` step is removed, with its
               #   `judge-security` limit row and synthesize's
               #   `review-security.findings` input. Its predicate
               #   (`labels contains security`) has been unsatisfiable since
@@ -132,7 +156,7 @@ emits = "change-summary"
 executor = "fix"
 expected_cost = 1.00
 gates = ["build", "tests", "self-hygiene", "secret-scan", "vuln-scan"]
-inputs = ["reconcile.findings", "implement.change-summary", "issue.latest.ac-report"]
+inputs = ["reconcile.findings", "synthesize.findings", "implement.change-summary", "issue.latest.change-summary", "issue.latest.ac-report"]
 loop = true
 name = "fix"
 packet = ["contracts/{executor}.md"]

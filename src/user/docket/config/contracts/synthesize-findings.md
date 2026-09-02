@@ -1,6 +1,6 @@
 ---
 node: synthesize-findings
-version: 10
+version: 11
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -54,7 +54,11 @@ discovery. WHERE YOUR INPUTS CARRY an earlier round's dispositions (a cluster ma
 as), a re-occurrence at that same locus is annotated as one: say "previously ruled,
 round N", name the ruling and who made it, and set `prior_disposition` on the cluster
 you emit ({round, ruling, ruled_by, follow_up_issue}, as much of it as your inputs
-actually tell you). When `ruled_by` names `panel <proposal-id>`, `docket vote show
+actually tell you: OMIT any key you cannot fill; never write `null`. The schema types
+`round` as an integer and the other three as non-empty strings with no null branch, so a
+null is refused at record and the whole payload re-assembled, and an absent
+`follow_up_issue` is precisely what marks a deferral unsettled, so a null there would
+also misstate the ruling). When `ruled_by` names `panel <proposal-id>`, `docket vote show
 <proposal-id>` returns the panel's own vote-cast summaries — the reasoning behind the
 ruling you are annotating, not just its outcome. Presenting settled ground as new is how one decision gets spent
 twice: one accepted locus, tracked and closed at round 0, came back as a fresh high at
@@ -111,6 +115,18 @@ references that record, not this round's judge payloads. When any member carries
 `alternative`, the cluster carries one too (the most concrete where members differ): the
 fix round is fed your clusters, never the judges' bodies, and an alternative dropped
 here is gone for good.
+
+Every cluster carries `file`, `line`, and `evidence`: the location its members share,
+or the highest-severity member's when they differ, and that member's evidence verbatim,
+copied from the judges' payloads, never paraphrased and never invented. `line` is
+`null` only for a defect whose scope is a whole file or the whole commit, and
+`evidence` then says so. A standing finding carried forward keeps the location and
+evidence the prior aggregate record carried. A cluster with none of these starves the
+fix round two steps downstream: the fixer's work list is your clusters, its contract
+tells it to read every routed finding before touching code, and in one run a fixer
+handed eight title-only clusters spent fourteen calls (run reports, step shows, a raw
+open of the store's database) hunting for member bodies that were sitting in the
+judges' payloads. The evidence exists; carrying it is copying, not judgment.
 
 `open_severity`: on every cluster that carries NO settling ruling, also emit
 `open_severity`, a scalar: the max of the cluster's member severities on the same

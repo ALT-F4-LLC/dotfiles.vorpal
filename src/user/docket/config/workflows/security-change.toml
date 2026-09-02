@@ -1,7 +1,39 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 27  # 27: no behavior change — bumped only because the version-26
+version = 28  # 28: three input edits, no topology change. (1) `fix` adds
+              #   `synthesize.findings` beside `reconcile.findings`: the
+              #   aggregate reaches the fixer as cluster titles and member ids
+              #   with no evidence, while the synthesize artifact's body lists
+              #   every member's judge, id, severity and evidence — one fixer
+              #   handed eight title-only clusters spent fourteen calls (run
+              #   reports, step shows, a raw open of the store's database)
+              #   hunting for member bodies. ordinalScoped binds it to the
+              #   round that just judged the fixer's base. (2) `fix` adds
+              #   `issue.latest.change-summary` beside
+              #   `implement.change-summary`: the engine never rebinds a loop
+              #   body's own inputs, so at fix@2 and later the packet carried
+              #   implement@0's account and omitted fix@(N-1)'s, the tree the
+              #   fixer actually stands on (three fix@2 packets in one run all
+              #   bound to implement@0). `issue.latest.<kind>` is the engine's
+              #   named form for exactly this; at fix@1 both entries resolve
+              #   to implement@0 and the bundle de-duplicates them. (3)
+              #   `issue.diff` joins `security-vote` and `verify-tribunal`:
+              #   without it context assembly lifts no target_sha, wave.js
+              #   seats every panel with "NO target ref — seats read their own
+              #   HEAD", and seats re-derive the judged tree from prose (one
+              #   security-vote panel was briefed a fabricated sha a probe
+              #   invented into that void). With it the bundle and the packet
+              #   header carry target_sha/target_worktree. The wave's own log
+              #   line still needs `step show` to surface the field, which is
+              #   an engine change tracked separately.
+              #   NOT changed here: `synthesize`'s `review.*` already binds to
+              #   the current round only; the previous-round raw judge payloads
+              #   in a re-review synthesize packet (263KB at one round 2) come
+              #   from the engine's previous-round pass matching every artifact
+              #   of the emitted kind, which no input edit can scope — engine
+              #   change, tracked separately.
+              # 27: no behavior change — bumped only because the version-26
               #   comment block below was edited twice (issue-citation and
               #   evidence-date scrubbing) without a version bump, splitting
               #   registries that already held the old comment bytes at
@@ -150,13 +182,13 @@ emits = "change-summary"
 packet = ["contracts/{executor}.md"]
 expected_cost = 1.00
 loop = true
-inputs = ["reconcile.findings", "implement.change-summary", "threat-model.threat-model", "issue.latest.ac-report", "security-vote.vote-record", "verify-tribunal.vote-record"]
+inputs = ["reconcile.findings", "synthesize.findings", "implement.change-summary", "issue.latest.change-summary", "threat-model.threat-model", "issue.latest.ac-report", "security-vote.vote-record", "verify-tribunal.vote-record"]
 gates = ["build", "tests", "self-hygiene", "secret-scan", "vuln-scan", "sdet-abuse"]
 after_loop = "review"
 
 [[step]]
 after = ["reconcile"]
-inputs = ["reconcile.findings"]
+inputs = ["reconcile.findings", "issue.diff"]
 name = "security-vote"
 on_fail = "fix-loop"
 type = "vote"
@@ -183,7 +215,7 @@ threshold = { "fix-loop" = "any(status == unmet)", "verify-tribunal" = "any(stat
 
 [[step]]
 after = ["verify"]
-inputs = ["verify.ac-report", "issue.body"]
+inputs = ["verify.ac-report", "issue.body", "issue.diff"]
 name = "verify-tribunal"
 on_fail = "fix-loop"
 type = "vote"

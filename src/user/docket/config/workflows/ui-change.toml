@@ -1,6 +1,38 @@
 [pipeline]
 name = "ui-change"
-version = 22  # 22: reconcile gains a second routing, `drain-highs`
+version = 23  # 23: three input edits, no topology change. (1) `fix` adds
+              #   `synthesize.findings` beside `reconcile.findings`: the
+              #   aggregate reaches the fixer as cluster titles and member ids
+              #   with no evidence, while the synthesize artifact's body lists
+              #   every member's judge, id, severity and evidence — one fixer
+              #   on this track, handed eight title-only clusters, spent
+              #   fourteen calls (run reports, step shows, a raw open of the
+              #   store's database) hunting for member bodies. ordinalScoped
+              #   binds it to the round that just judged the fixer's base.
+              #   (2) `fix` adds `issue.latest.change-summary` beside
+              #   `implement.change-summary`: the engine never rebinds a loop
+              #   body's own inputs, so at fix@2 and later the packet carried
+              #   implement@0's account and omitted fix@(N-1)'s, the tree the
+              #   fixer actually stands on (three fix@2 packets in one run on
+              #   this track all bound to implement@0). `issue.latest.<kind>`
+              #   is the engine's named form for exactly this; at fix@1 both
+              #   entries resolve to implement@0 and the bundle de-duplicates
+              #   them. (3) `issue.diff` joins `verify-tribunal`: without it
+              #   context assembly lifts no target_sha, wave.js seats the
+              #   panel with "NO target ref — seats read their own HEAD", and
+              #   each seat re-derives the judged tree (one reconstructed it
+              #   under its temp directory via git archive, another diffed two
+              #   shas it found in the ac-report's prose). With it the bundle
+              #   and the packet header carry target_sha/target_worktree. The
+              #   wave's own log line still needs `step show` to surface the
+              #   field, which is an engine change tracked separately.
+              #   NOT changed: `synthesize`'s `review.*` already binds to the
+              #   current round only; previous-round raw judge payloads in a
+              #   re-review synthesize packet come from the engine's
+              #   previous-round pass matching every artifact of the emitted
+              #   kind, which no input edit can scope — engine change, tracked
+              #   separately.
+              # 22: reconcile gains a second routing, `drain-highs`
               #   on `any(open_severity >= high)`, interposing a new executor
               #   step that files each still-open high cluster (not held, not
               #   operator-resolved) as a `--gap-file` backlog issue at its
@@ -126,7 +158,7 @@ emits = "change-summary"
 executor = "fix"
 expected_cost = 1.00
 gates = ["build", "tests", "self-hygiene", "secret-scan"]
-inputs = ["reconcile.findings", "implement.change-summary", "issue.latest.ac-report", "design-qa.findings"]
+inputs = ["reconcile.findings", "synthesize.findings", "implement.change-summary", "issue.latest.change-summary", "issue.latest.ac-report", "design-qa.findings"]
 loop = true
 name = "fix"
 packet = ["contracts/{executor}.md"]
@@ -159,7 +191,7 @@ threshold = { "fix-loop" = "any(status == unmet)", "verify-tribunal" = "any(stat
 
 [[step]]
 after = ["verify"]
-inputs = ["verify.ac-report", "issue.body"]
+inputs = ["verify.ac-report", "issue.body", "issue.diff"]
 name = "verify-tribunal"
 on_fail = "waiting-human"
 type = "vote"

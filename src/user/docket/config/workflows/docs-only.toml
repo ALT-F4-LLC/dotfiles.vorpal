@@ -1,7 +1,27 @@
 [pipeline]
 description = "Documentation change: implement with doc-validate and citation gates, one correctness judge, tribunal-filtered review and AC verification, and a bounded fix-loop re-entering at review; the conductor integrates commits, the operator publishes. Design-heavy doc work routes through spec-doc first."
 name = "docs-only"
-version = 18
+version = 19  # 19: two input edits, no topology change. (1) `fix` adds
+              #   `issue.latest.change-summary` beside
+              #   `implement.change-summary`: the engine never rebinds a loop
+              #   body's own inputs, so at fix@2 and later the packet carried
+              #   implement@0's account and omitted fix@(N-1)'s, the tree the
+              #   fixer actually stands on (three fix@2 packets in one run on
+              #   a sibling track all bound to implement@0).
+              #   `issue.latest.<kind>` is the engine's named form for exactly
+              #   this; at fix@1 both entries resolve to implement@0 and the
+              #   bundle de-duplicates them. The sibling tracks also fed their
+              #   fixers the synthesize clusters for member evidence; this
+              #   track has one judge and no synthesize step, and its
+              #   `review.findings` already carries that judge's evidence, so
+              #   nothing to add. (2) `issue.diff` joins `verify-tribunal`, as
+              #   `review-tribunal` already has it: without it context assembly
+              #   lifts no target_sha, wave.js seats the panel with "NO target
+              #   ref — seats read their own HEAD", and seats re-derive the
+              #   judged tree from the ac-report's prose. With it the bundle
+              #   and the packet header carry target_sha/target_worktree; the
+              #   wave's own log line still needs `step show` to surface the
+              #   field, an engine change tracked separately.
 
 [match]
 labels_any = ["docs-only"]
@@ -53,7 +73,7 @@ emits = "change-summary"
 executor = "fix"
 expected_cost = 0.60
 gates = ["self-hygiene", "doc-validate", "citation-check"]
-inputs = ["review.findings", "implement.change-summary", "issue.latest.ac-report", "review-tribunal.vote-record", "verify-tribunal.vote-record"]
+inputs = ["review.findings", "implement.change-summary", "issue.latest.change-summary", "issue.latest.ac-report", "review-tribunal.vote-record", "verify-tribunal.vote-record"]
 loop = true
 name = "fix"
 packet = ["contracts/{executor}.md"]
@@ -74,7 +94,7 @@ threshold = { "fix-loop" = "any(status == unmet)", "verify-tribunal" = "any(stat
 
 [[step]]
 after = ["verify"]
-inputs = ["verify.ac-report", "issue.body"]
+inputs = ["verify.ac-report", "issue.body", "issue.diff"]
 name = "verify-tribunal"
 on_fail = "fix-loop"
 type = "vote"

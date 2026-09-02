@@ -1740,7 +1740,9 @@ usage join must not attribute your tokens to it` : ''}.`
 
 function probe(command, label, phaseLabel, servingStep, acct) {
     const once = () => {
-        if (acct) acct.spawns++
+        // A probe is wave overhead, NEVER a seat: it lands in its own bucket
+        // so the gate summary can say "3 seats, 5 probes" (DOT-1027).
+        if (acct) acct.probes++
         return agent(probeBrief(command, servingStep), {
             label,
             phase: phaseLabel,
@@ -1862,18 +1864,31 @@ function parseVoteShow(text) {
 // must not read as failed: one past run's completion notification carried
 // "[STEP-N · gate:tally] failed: ..." BESIDE the same step's trusted
 // gate-passed verdict — exactly the shape a conductor misreads as a failed
-// gate. So the success result carries spawn/seat/retry accounting
+// gate. So the success result carries seat/probe/retry accounting
 // explicitly, and every absorbed error as a NOTE naming the tally's
 // success — never as a failure. Failure outcomes (gate-rejected/-blocked/
 // -parked) deliberately do NOT come through here: their errors are real.
+//
+// SEATS AND PROBES ARE COUNTED SEPARATELY (DOT-1027). A single "N spawns for
+// M seats" total conflated the judges with the read-only haiku probes the
+// gate path spends on its own bookkeeping (gate:show, gate:target,
+// gate:record, gate:outcome, gate:tally): a real 3-judge panel logged "8
+// spawns for 3 seats", and an auditor checking the seat count against the
+// row's `voters` saw 8 vs 3. Worse, an ALREADY-DECIDED gate seats no panel
+// at all and logged "1 spawn for 0 seats" — a judge on an empty panel. So
+// the seats clause is emitted ONLY when a panel was actually seated; with no
+// panel the line reports probes and retries alone.
 function gateSuccess(step, text, acct) {
     const n = (count, one, many) => `${count} ${count === 1 ? one : many}`
+    const parts = []
+    if (acct.seats > 0) parts.push(n(acct.seats, 'seat', 'seats'))
+    parts.push(n(acct.probes, 'probe', 'probes'))
+    parts.push(n(acct.retries, 'retry', 'retries'))
     const res = {
         step,
         status: 'gate-passed',
         text,
-        spawn_accounting: `${n(acct.spawns, 'spawn', 'spawns')} for ` +
-            `${n(acct.seats, 'seat', 'seats')}, ${n(acct.retries, 'retry', 'retries')}`,
+        spawn_accounting: parts.join(', '),
     }
     if (acct.absorbed.length > 0) {
         res.notes = acct.absorbed.map((e) =>
@@ -1884,12 +1899,14 @@ function gateSuccess(step, text, acct) {
 }
 
 async function runGate(row, phaseLabel) {
-    // Seat-spawn accounting for THIS gate. Every agent launched on
-    // the row's behalf is a spawn (probes included — one past run's journal
-    // showed 8 spawns for a 3-seat panel with nothing saying why); seat
-    // re-spawns and probe resubmissions are retries; agent-level errors land
-    // in `absorbed` and ride the SUCCESS result as notes (gateSuccess above).
-    const acct = { seats: 0, spawns: 0, retries: 0, absorbed: [] }
+    // Seat/probe accounting for THIS gate, counted in SEPARATE buckets:
+    // `seats` is the judge panel (what the row's `voters` promised), `probes`
+    // is every read-only haiku spawn the gate path spends on its own
+    // bookkeeping. They used to share one `spawns` total, which read as a
+    // panel far larger than the roster (DOT-1027). Seat re-spawns and probe
+    // resubmissions are retries; agent-level errors land in `absorbed` and
+    // ride the SUCCESS result as notes (gateSuccess above).
+    const acct = { seats: 0, probes: 0, retries: 0, absorbed: [] }
     // The ballot: record-driving opened the proposal when the gate's last
     // predecessor recorded — an earlier stage this wave already awaited — so
     // one probe normally finds it. A gate with NO proposal means the
@@ -1943,7 +1960,11 @@ async function runGate(row, phaseLabel) {
         }
         log(`${row.step}: gate already decided — continuing`)
         const early = gateSuccess(row.step, show, acct)
-        log(`${row.step}: ${early.spawn_accounting}` + (early.notes ?
+        // No panel was seated on this row, so the accounting carries no seats
+        // clause at all — reading "0 seats" here (with the probes counted as
+        // spawns) made an already-decided gate look like a judge on an empty
+        // panel (DOT-1027).
+        log(`${row.step}: no panel seated — ${early.spawn_accounting}` + (early.notes ?
             ` — ${early.notes.length} agent-level error(s) absorbed (NOT failures for this step)` : ''))
         return early
     }
@@ -1976,7 +1997,6 @@ async function runGate(row, phaseLabel) {
                 : ` with NO target ref on the bundle — seats read their own HEAD`))
     acct.seats = seats.length
     await parallel(seats.map((r) => () => {
-        acct.spawns++
         return agent(seatBrief(r, voteId, row, false, heldCluster, target), {
             label: `${row.step} · seat:${r.seat}`,
             phase: phaseLabel,
@@ -2013,7 +2033,8 @@ async function runGate(row, phaseLabel) {
         log(`${row.step}: ${missing.length} seat(s) returned without a recorded ` +
             `cast (${missing.map((s) => s.seat).join(', ')}) — re-spawning each ONCE`)
         await parallel(missing.map((r) => () => {
-            acct.spawns++
+            // A re-seated judge is a RETRY of a seat already counted in
+            // acct.seats — never an extra seat, never a probe.
             acct.retries++
             return agent(seatBrief(r, voteId, row, true, heldCluster, target), {
                 label: `${row.step} · seat:${r.seat} (retry)`,

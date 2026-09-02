@@ -15,9 +15,18 @@
 # for the same step is exactly the shape a conductor misreads as a failed
 # gate. The fix: when a vote row's tally SUCCEEDS, absorbed agent-level
 # errors ride the success result as `notes` (each naming the tally's
-# success), spawn/seat/retry accounting is reported explicitly
+# success), seat/probe/retry accounting is reported explicitly
 # (`spawn_accounting`), and nothing failure-shaped is attached; a tally that
 # FAILS keeps its errors as real failures, un-softened.
+#
+# DOT-1027 then split that accounting in two. The single "N spawns for M
+# seats" total counted the read-only haiku probes (gate:show, gate:target,
+# gate:record, gate:outcome, gate:tally) as members of the panel: a 3-judge
+# gate read "8 spawns for 3 seats", and an ALREADY-DECIDED gate, which seats
+# nobody, read "1 spawn for 0 seats" — a judge on an empty panel. Seats and
+# probes are now counted and reported separately ("3 seats, 5 probes, 0
+# retries"), and the seats clause is omitted entirely when no panel was
+# seated. Cases C and D pin both halves.
 #
 # HOW. wave.js fences the gate machinery (probeBrief, probe, parseHeldCluster,
 # parseTargetRef, parseVoteShow, gateSuccess, runGate) in TEST-BEGIN/TEST-END
@@ -160,8 +169,12 @@ const A = await run({
     'STEP-2493 · gate:tally':   [{ reject: API_ERR }, { text: APPROVED }],
 })
 ok(A.status === 'gate-passed', 'A: tally succeeded -> status is gate-passed')
-ok(A.spawn_accounting === '10 spawns for 3 seats, 2 retries',
-    `A: spawn/seat/retry accounting is explicit (got ${JSON.stringify(A.spawn_accounting)})`)
+// 3 judges + 6 read-only probes (show, target, record, outcome, tally x2);
+// the two retries are the re-seated judge and the tally resubmission.
+ok(A.spawn_accounting === '3 seats, 6 probes, 2 retries',
+    `A: seat/probe/retry accounting is explicit and separated (got ${JSON.stringify(A.spawn_accounting)})`)
+ok(!/spawn/.test(A.spawn_accounting),
+    'A: probes are never reported as spawns of the panel')
 ok(Array.isArray(A.notes) && A.notes.length === 2,
     `A: both absorbed errors ride the success result as notes (got ${JSON.stringify(A.notes)})`)
 ok((A.notes || []).every((n) => n.includes('NOT a failure') && n.includes('SUCCEEDED')),
@@ -196,15 +209,20 @@ ok(B.notes === undefined, 'B: a failing gate gets NO absorbed-error notes')
 ok(B.spawn_accounting === undefined, 'B: a failing gate gets NO accounting attachment')
 ok(chainDead(B) === true, 'B: the rejection still kills the issue chain')
 
-// ---- C: gate already decided when the wave arrives (early path). Success
-// still reports accounting — probes only, zero seats.
+// ---- C: gate already decided when the wave arrives (early path). No panel
+// is seated, so the accounting reports probes and retries ONLY — the seats
+// clause is suppressed entirely rather than logging "0 seats" (DOT-1027).
 const C = await run({
     'STEP-2493 · gate:show':  { text: SHOW_DONE },
     'STEP-2493 · gate:tally': { text: APPROVED },
 })
 ok(C.status === 'gate-passed', 'C: already-decided approved gate is gate-passed')
-ok(C.spawn_accounting === '2 spawns for 0 seats, 0 retries',
-    `C: early path reports its probe spawns (got ${JSON.stringify(C.spawn_accounting)})`)
+ok(C.spawn_accounting === '2 probes, 0 retries',
+    `C: early path reports probes only (got ${JSON.stringify(C.spawn_accounting)})`)
+ok(!/seat/.test(C.spawn_accounting),
+    'C: no seats clause at all when no panel was seated')
+ok(LOG.some((l) => l.includes('no panel seated — 2 probes, 0 retries')),
+    `C: the log line names the empty panel instead of "0 seats" (got ${JSON.stringify(LOG)})`)
 ok(C.notes === undefined, 'C: no noise, no notes')
 
 // ---- D: a NON-transient classifier block on the tally probe is
@@ -222,8 +240,12 @@ const D = await run({
 })
 ok(calls('STEP-2493 · gate:tally') === 1, 'D: a content classifier block is NOT resubmitted')
 ok(D.status === 'gate-passed', 'D: unknown tally on a done step still falls through as before')
-ok(D.spawn_accounting === '8 spawns for 3 seats, 0 retries',
+// The DOT-1027 shape: 3 judges + 5 probes (show, target, record, outcome,
+// tally), which the old wording rolled up as "8 spawns for 3 seats".
+ok(D.spawn_accounting === '3 seats, 5 probes, 0 retries',
     `D: no retry counted for the unretried block (got ${JSON.stringify(D.spawn_accounting)})`)
+ok(LOG.some((l) => l.startsWith('STEP-2493: 3 seats, 5 probes, 0 retries')),
+    `D: the real-panel log line separates seats from probes (got ${JSON.stringify(LOG)})`)
 ok(Array.isArray(D.notes) && D.notes.length === 1 && D.notes[0].includes('blocked by safety classifier'),
     'D: the block is still noted on the success result')
 

@@ -302,6 +302,12 @@ impl ClaudeCode {
                 Some("Read|Grep|Glob"),
                 "bash ~/.claude/hooks/sensitive-path-guard-hook.sh",
                 "command",
+            )
+            .with_hook(
+                "PreToolUse",
+                Some("Bash"),
+                "bash ~/.claude/hooks/sandbox-bypass-guard-hook.sh",
+                "command",
             );
 
         let settings_builder = settings_builder.with_auto_mode(settings::AutoMode {

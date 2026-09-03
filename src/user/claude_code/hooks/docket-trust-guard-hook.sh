@@ -12,8 +12,8 @@
 # structural stop for that case: an unattended executor has no human at a
 # terminal to answer an ask, so under this fleet's `auto` permission default
 # the decision falls to the same classifier already measured approving
-# sandbox bypasses a brief forbade (a fleet review found this, see the removed
-# sandbox-bypass-ask-hook.sh). This hook re-keys the decision away from that
+# sandbox bypasses a brief forbade (a fleet review found this; sandbox-bypass-guard-hook.sh
+# now denies the lift for executors outright). This hook re-keys the decision away from that
 # classifier for exactly the callers who must never win it.
 #
 # THE SCOPE, and why it is not a blanket deny. `docket trust add/rm` stays a

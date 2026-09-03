@@ -63,17 +63,23 @@ const AUTO_MODE_ENVIRONMENT_CONTEXT: &[&str] = &[
     "### User-specific",
     "**Primary use of Claude Code**: software development across ALT-F4-LLC projects (Vorpal build tooling, Claude Code agent configuration, homelab GitOps)",
     "**Trusted repos**: any github.com/ALT-F4-LLC repository checked out as the working directory, with its origin remote; most are public, so only a repo's own work is committed/pushed there and secrets/sensitive data are never cleared into it by visibility alone",
+    "**Checkout layout**: every ALT-F4-LLC repository lives as a bare repo at ~/Development/repository/github.com/ALT-F4-LLC/<name>.git with one worktree per branch beneath it (e.g. <name>.git/main, <name>.git/feature/<branch>) plus harness worktrees under <name>.git/<branch>/.claude/worktrees/*; all of these are the same trusted checkout",
+    "**Scratch roots**: /tmp/claude-501, /private/tmp/claude-501, and $TMPDIR are per-session throwaway workspaces — docket steps mirror or copy a trusted checkout into STEP-<n>.d/target, STEP-<n>-target, or STEP-<n>-probe* under them and run builds, tests, and mutations there; nothing under them is a repo of record",
     "**Org-specific CLIs**: docket (high-frequency usage across projects; also present in shell history with a bundled secret-scan script) — routine under ALT-F4-LLC repos",
     "**routine under ~/.claude/ prefix**: fixes and edits under `~/.claude` are governed by the working agreement there (source-only edits, install via `just activate`, never edit installed tree directly)",
 ];
 
 const AUTO_MODE_ALLOW_RULES: &[&str] = &[
     "$defaults",
-    "Bash(docket:*) in ALT-F4-LLC repositories — high-frequency org CLI",
+    "Bash(docket:*) in ALT-F4-LLC repositories — high-frequency org CLI; includes registry and run-state verbs (workflow register --all-projects/--project, run activate, dispatch backfill-usage, issue comment, step claim) and read-only SELECTs against the docket store at ~/.docket/issues.db",
     "Bash(cargo:*) in ALT-F4-LLC repositories — build/test/fmt/check/clippy, including invocations prefixed with CARGO_HOME/CARGO_TARGET_DIR/GOCACHE-style cache overrides; writes only to build caches",
-    "Local git operations in trusted repositories — add, commit, worktree, cherry-pick, cat-file, rev-parse, and other repo-local verbs; `git push` publishes and stays outside this rule",
+    "Local git operations in trusted repositories — add, commit, worktree, cherry-pick, stash, archive, cat-file, rev-parse, and other repo-local verbs, whether run from the checkout or via `git -C <trusted checkout>`, with commit messages passed inline, via a heredoc, or via `-F <file under the scratch root>`; `git push` publishes and stays outside this rule",
     "Bash(vorpal:*) in ALT-F4-LLC repositories — the org's own build tool, same standing as docket",
     "Read-only cluster reads against bulbasaur — kubectl get/describe/logs, flux get; mutations against the cluster stay outside this rule (production)",
+    "Read-only search and inspection inside trusted checkouts and the Claude scratch roots (/tmp/claude-501, /private/tmp/claude-501, $TMPDIR) — grep, rg, find, ls, cat, head, tail, sed -n, wc, diff, strings, jq, and python3/perl one-liners that only read — including a relative path or glob after `cd` into one of those roots; the Read() denies cover only the sensitive home paths (~/.ssh, ~/.aws, ~/.gnupg, credential stores), which the sandbox already refuses at the syscall level and which a relative path under these roots cannot reach",
+    "File operations confined to the Claude scratch roots (/tmp/claude-501, /private/tmp/claude-501, $TMPDIR) — mkdir, cp -R, rm -rf, mv, tar/git-archive mirrors of a trusted checkout, and in-place edits (sed -i, perl -pi, python3 heredocs) of files under them; these are per-session throwaway workspaces the sandbox already lets every session write, so deleting or mutating them affects no repo",
+    "Read-only inspection under ~/.claude — session transcripts and tool-results under ~/.claude/projects, the friction ledger, installed skills, workflows, hooks, and scripts — the operator's own harness state; edits there stay outside this rule (source-only, installed via `just activate`)",
+    "Read-only gh reads against ALT-F4-LLC repositories — gh pr view/checks/list/diff, gh run list/view, gh issue view/list; gh pr create, gh pr merge, and gh api stay on their ask rules",
 ];
 
 const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
@@ -528,8 +534,9 @@ impl ClaudeCode {
 mod tests {
     use super::{
         claude_home, component_name, sandbox_filesystem_deny_read_paths,
-        sorted_permission_patterns, GIT_ALLOWED_SIGNERS_CONFIG_PATH,
-        GIT_ALLOWED_SIGNERS_INSTALL_PATH, SENSITIVE_PATHS, SENSITIVE_PATHS_DENY_EDIT_ONLY,
+        sorted_permission_patterns, AUTO_MODE_ALLOW_RULES, GIT_ALLOWED_SIGNERS_CONFIG_PATH,
+        GIT_ALLOWED_SIGNERS_INSTALL_PATH, SANDBOX_CLAUDE_SCRATCH_ROOT,
+        SANDBOX_CLAUDE_SCRATCH_ROOT_PRIVATE, SENSITIVE_PATHS, SENSITIVE_PATHS_DENY_EDIT_ONLY,
         SENSITIVE_PATHS_DENY_READ_ONLY,
     };
     use crate::file::FileCreate;
@@ -645,6 +652,53 @@ mod tests {
                 !denied.contains(&stripped.to_string()),
                 "{stripped} is edit-denied only and must stay readable"
             );
+        }
+    }
+
+    #[test]
+    fn auto_mode_allow_rules_keep_the_defaults_first_and_stay_unique() {
+        assert_eq!(AUTO_MODE_ALLOW_RULES[0], "$defaults");
+
+        let mut rules: Vec<&str> = AUTO_MODE_ALLOW_RULES.to_vec();
+        rules.sort_unstable();
+        rules.dedup();
+        assert_eq!(rules.len(), AUTO_MODE_ALLOW_RULES.len());
+    }
+
+    #[test]
+    fn auto_mode_allow_rules_name_the_sandbox_scratch_roots() {
+        // The read-only search and scratch-mutation rules are keyed to the
+        // same roots the sandbox lets every session write. If the scratch
+        // roots move, the classifier rules must move with them.
+        let scoped: Vec<&&str> = AUTO_MODE_ALLOW_RULES
+            .iter()
+            .filter(|r| r.contains("scratch roots"))
+            .collect();
+
+        assert_eq!(scoped.len(), 2, "expected the search and file-op rules");
+        for rule in scoped {
+            assert!(rule.contains(SANDBOX_CLAUDE_SCRATCH_ROOT));
+            assert!(rule.contains(SANDBOX_CLAUDE_SCRATCH_ROOT_PRIVATE));
+        }
+    }
+
+    #[test]
+    fn auto_mode_allow_rules_never_clear_publishing_or_secret_verbs() {
+        // Every rule that names a publishing or secret-bearing verb must name
+        // it as excluded. The classifier reads these as prose, so the check is
+        // textual: the verb may appear only alongside "outside" or "ask".
+        for rule in AUTO_MODE_ALLOW_RULES {
+            for verb in ["git push", "gh pr merge", "gh api"] {
+                if rule.contains(verb) {
+                    assert!(
+                        rule.contains("outside") || rule.contains("ask"),
+                        "{verb} is named without an exclusion in: {rule}"
+                    );
+                }
+            }
+            for verb in ["doppler", "op read", "op run"] {
+                assert!(!rule.contains(verb), "{verb} must never be allow-listed");
+            }
         }
     }
 

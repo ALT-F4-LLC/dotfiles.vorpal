@@ -1,6 +1,9 @@
 ---
 name: brief
-description: Turn a freeform work request into a standardized brief — frontier-by-frontier rounds of AskUserQuestion, as many as the ask genuinely needs, for whatever's underdetermined then route it. Hand off to /docket-plan for docket-tracked work, /loop for work that repeats until a condition holds, another orchestration skill when one fits better, or proceed straight into the work for anything small and non-sensitive, confirmed with you either way. Runs on `fable` so distillation quality rides the strongest tier without a subagent spawn. The front door for a fuzzy ask you'd rather not prompt-engineer yourself. Trigger on "brief this", "help me think this through", "brief this request", or any new freeform ask before you've decided whether it needs a plan.
+description: Turn a freeform work request into a standardized brief — frontier-by-frontier rounds of AskUserQuestion, as many as the ask genuinely needs, for whatever's underdetermined then route it. Hand off to /docket-plan for docket-tracked work, /loop for work that repeats until a condition holds, another orchestration skill when one fits better, or proceed straight into the work for anything small and non-sensitive, confirmed with you either way. Runs as a forked `fable` subagent so distillation quality rides the strongest tier on a fresh context. The front door for a fuzzy ask you'd rather not prompt-engineer yourself. Trigger on "brief this", "help me think this through", "brief this request", or any new freeform ask before you've decided whether it needs a plan.
+context: fork
+agent: general-purpose
+background: false
 model: fable
 argument-hint: "<freeform work request>"
 ---
@@ -17,9 +20,23 @@ themselves. This is the front door: hand off a raw ask, work through
 however many rounds of questions it actually takes, and the routing is
 handled — no separate skill to remember, no prompt to engineer.
 
-Do this all in this same conversation — no spawn, no relay. The frontmatter
-`model: fable` already puts distillation on the strongest tier; nothing here
-depends on a dedicated seat.
+You run in a forked subagent dedicated to this brief. `context: fork` spawns
+you fresh on every invocation; `background: false` is load-bearing, not
+optional — a forked skill defaults to a reduced tool set that drops
+`AskUserQuestion`, and without it every question round in §1 and the route
+gate in §3 would have nothing to ask through. With `background: false` you
+keep the full foreground tool set, so nothing about how or when you ask
+changes: run the same frontier-by-frontier `AskUserQuestion` flow exactly as
+written below, as many rounds as the ask needs.
+
+What forking does change is what you already know when you start: you carry
+none of the parent conversation's history — no prior file reads, no earlier
+discussion of the ask — only `$ARGUMENTS`. Treat that as the whole starting
+record. Anything the operator said before invoking you is not available; if
+the ask leans on it ("do the thing we discussed"), that is a grillable
+question for §1, not something to reconstruct. Your final report is the only
+thing that reaches the parent conversation, so it carries the block and the
+outcome of whatever route ran.
 
 ## What a good brief is
 
@@ -122,8 +139,8 @@ Security-sensitive, Shape, and Size hint, in that order:
   each pass is small; if a single pass is itself bounded or needs-design
   work, the loop belongs inside a docket run — recommend `/docket-plan` instead.
 - **Security-sensitive: no, Shape: one-shot, Size hint: trivial** →
-  recommend direct — work in-conversation, no orchestration overhead for a
-  single-turn edit.
+  recommend direct — do the work in this fork, no orchestration overhead for
+  a single-turn edit.
 - **Size hint: bounded or needs-design** → recommend `/docket-plan` — multi-phase
   or architectural work benefits from docket's dependency graph, budget, and
   verification gates even when nothing about it is sensitive. `/docket-plan` is
@@ -170,23 +187,24 @@ block, verbatim>"})`. Docket-plan's own seat reads a supplied brief block as
 already-answered input and only asks about what it left open — this skill's
 job ends the moment docket-plan takes the turn.
 
-**Route: `/loop`.** If `loop` appears in this session's invocable skills,
-invoke `Skill({skill: "loop", args: "<the confirmed block, verbatim>"})`.
-Where the harness offers loop only as a command the operator types, you
-cannot start it yourself — emit a ready-to-paste one-liner (`/loop <goal and
-stop condition, distilled from the block>`), then stop. Either way the block
-travels whole: its Acceptance criteria are the loop's stop condition.
+**Route: `/loop`.** A loop's cadence belongs to the parent session, not to
+this fork — a wakeup scheduled here dies with the fork. So never invoke
+`loop` yourself: emit a ready-to-paste one-liner (`/loop <goal and stop
+condition, distilled from the block>`) as your final report, then stop. The
+block travels whole: its Acceptance criteria are the loop's stop condition.
 
 **Route: another orchestration skill.** Same contract as `/docket-plan`: invoke
 `Skill({skill: "<name>", args: "<the confirmed block, verbatim>"})` and end
 your involvement the moment it takes the turn.
 
-**Route: direct.** No docket issue, no plan artifact, no team spawn —
-proceed in this same conversation using the confirmed block as your working
+**Route: direct.** No docket issue, no plan artifact, no team spawn — do the
+work yourself, here in this fork, using the confirmed block as your working
 contract: Goal is the definition of done, Scope and Out-of-scope bound the
 diff, Constraints and Acceptance criteria are what you check before
-reporting back. This is ordinary conversational work, just executed against
-a spec instead of the raw ask.
+reporting back. The parent conversation sees none of the tool calls, only
+your final report — so that report states what changed, file by file, what
+was verified and how, and anything left undone. This is ordinary work, just
+executed against a spec instead of the raw ask.
 
 **Route: "just give me the block".** Emit the block verbatim and stop. Do
 not continue, execute, or invoke any route skill; the operator carries it

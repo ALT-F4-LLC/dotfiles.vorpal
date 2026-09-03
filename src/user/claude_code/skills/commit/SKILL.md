@@ -1,6 +1,9 @@
 ---
 name: commit
 description: Turn the working tree into clean conventional commits — survey every change, split unrelated work into separate logical commits, guard against junk and secret-shaped files, and commit immediately without asking. Use on "commit", "commit this", "commit my changes", "make a commit", "/commit". Lands commits only; never pushes.
+context: fork
+agent: general-purpose
+background: false
 model: fable
 ---
 
@@ -9,6 +12,16 @@ model: fable
 You turn the current working tree into conventional commits and land them
 without ceremony. Survey, group, guard, commit, report — the tree answers the
 questions, not the operator.
+
+You run in a forked subagent. `context: fork` spawns you fresh on every
+invocation, and `background: false` keeps the full foreground tool set —
+including `AskUserQuestion`, which §1 needs for the one case the tree cannot
+answer alone. You carry none of the parent conversation's history: you do
+not know which files it edited, what it was working on, or what it read.
+Your starting record is `$ARGUMENTS` and the tree itself, so survey the tree
+yourself here rather than assuming anything about it. Your final report is
+the only thing that reaches the parent, so it names every commit landed and
+every path left behind.
 
 **Commit immediately.** No draft-for-approval step. A wrong message is one
 amend away; an ungated commit costs seconds, a gated one costs a round-trip.
@@ -37,17 +50,27 @@ changes are input like everything else; the index is state to incorporate, not
 an instruction to preserve.
 
 Concurrent sessions edit this tree — the normal condition here, not an edge
-case. Yours are the files you changed in this conversation; every other
-modified or staged path is presumed another session's work in progress. A
-presumed-foreign file never enters a commit, however neatly it fits the work
-in front of you, and unclear provenance resolves foreign — exclude it and name
-it rather than guess. Mid-merge, mid-rebase, or mid-cherry-pick: stop and say
-so — finishing that state is not this skill's call. Nothing to commit: say so
-and stop; never manufacture a commit.
+case. Every modified or staged path may be another session's work in
+progress, and as a fork you cannot tell the operator's changes from a
+neighbour's by memory. Ownership is settled in this order:
 
-An argument is an intent hint — `/commit just the parser fix` commits the
-changes matching the hint and leaves the rest in the tree, named in the
-report.
+1. **The invocation text.** An argument is an intent hint — `/commit just
+   the parser fix` commits the changes matching the hint and leaves the rest
+   in the tree, named in the report. Paths or an intent named there are
+   yours; nothing else is.
+2. **A single coherent cluster.** With no argument, if every dirty path
+   reads as one unit of work (one intent, one area, one story in the diffs),
+   the whole tree is yours.
+3. **Ask.** With no argument and a tree that splits into more than one
+   coherent cluster, run one `AskUserQuestion` round listing the clusters by
+   path so the operator marks which are theirs. Ask once; a cluster the
+   operator does not claim is foreign.
+
+A presumed-foreign file never enters a commit, however neatly it fits the
+work in front of you, and unclear provenance resolves foreign — exclude it
+and name it rather than guess. Mid-merge, mid-rebase, or mid-cherry-pick:
+stop and say so — finishing that state is not this skill's call. Nothing to
+commit: say so and stop; never manufacture a commit.
 
 ## 2. Group
 
@@ -111,7 +134,7 @@ which commit found it.
 Per group, in dependency order:
 
 ```bash
-git add <exact paths>        # only paths you changed — never -A, never .
+git add <exact paths>        # only paths §1 settled as yours — never -A, never .
 git diff --cached --stat     # matches the group — nothing foreign or extra
 git commit -m "$(cat <<'EOF'
 type(scope): summary
@@ -137,4 +160,4 @@ Before writing the summary, check it against three things:
 Then one plain-language summary: each commit's hash and subject, what was
 skipped and why, anything flagged by the guard. Name every dirty path left
 behind — each presumed-foreign file individually, so the operator sees what
-this session declined to touch. State that nothing was pushed.
+this fork declined to touch. State that nothing was pushed.

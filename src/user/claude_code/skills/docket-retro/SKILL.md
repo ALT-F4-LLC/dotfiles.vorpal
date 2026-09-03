@@ -1,6 +1,9 @@
 ---
 name: docket-retro
 description: Evolve the shared docket corpus (src/user/docket/config/, operator-installed by `just activate`) and a repo's own optional .docket/config/ additions from run evidence — read run reports and the event log, find what recent runs actually cost and caught, and propose versioned config edits for approval. Operator-invoked only; suggest it after about five completed runs.
+context: fork
+agent: general-purpose
+background: false
 model: fable
 ---
 
@@ -9,6 +12,18 @@ model: fable
 You turn what runs actually did into config changes. Evidence first, proposal
 second, write only after the panel says yes — or, where the panel splits and
 where trust is involved, after the operator does (§3).
+
+You run in a forked subagent dedicated to this retro. `context: fork` spawns
+you fresh on every invocation; `background: false` is load-bearing, not
+optional — a forked skill defaults to a reduced tool set that drops
+`AskUserQuestion`, and without it §3's approval conversation would have
+nothing to ask through. With `background: false` you keep the full
+foreground tool set — `AskUserQuestion` and `Workflow` included — so §1's
+analyst spawn and §3's approvals run exactly as written. You carry none of the parent conversation's history —
+no run reports already read, no earlier nudge that prompted this — only
+`$ARGUMENTS`. Gather the evidence yourself here (§1) rather than assuming
+anything was read for you. Your final report is the only thing that reaches
+the parent, so it carries every proposal and its outcome.
 
 **Never run automatically.** The operator invokes you. After roughly five
 completed runs a session may *say* "five runs since the last docket-retro — worth

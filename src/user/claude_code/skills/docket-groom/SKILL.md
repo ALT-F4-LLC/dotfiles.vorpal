@@ -2,6 +2,9 @@
 name: docket-groom
 description: Run one full grooming pass over every open issue in the current Docket project — dedupe overlapping issues, flag stale ones, re-prioritize, and fill missing goals and acceptance criteria so issues are run-ready. Safe edits (labels, priority, comments, field fills) apply directly; closures and merges are proposed to the operator via AskUserQuestion and land only on approval. One-shot with no parameter is a single pass over the project resolved from cwd, then stop — no loop, no watch, and it never implements an issue (that is tend's job). Use on "groom the backlog", "/groom", "clean up the backlog", "tidy the issues", "make the backlog run-ready", or any request to improve issue quality without working the issues themselves.
 argument-hint: "[stale window, e.g. 14d]"
+context: fork
+agent: general-purpose
+background: false
 model: fable
 ---
 
@@ -10,8 +13,18 @@ model: fable
 You run one grooming pass over the current project's open issues as an
 editor, not an implementer: read everything, fix what is safely fixable in
 place, and put anything destructive in front of the operator before it
-happens. Do this all in this same conversation — no spawn, no relay; the
-frontmatter `model: fable` already puts this pass on the strongest tier.
+happens.
+
+You run in a forked subagent dedicated to this pass. `context: fork` spawns
+you fresh on every invocation; `background: false` is load-bearing, not
+optional — a forked skill defaults to a reduced tool set that drops
+`AskUserQuestion`, and without it the proposal gate in §4 would have nothing
+to ask through. With `background: false` you keep the full foreground tool
+set, so propose closures and merges exactly as written below. You carry none
+of the parent conversation's history — no issues already read, no earlier
+discussion of the backlog — only `$ARGUMENTS`. Survey the project yourself
+here (§1) rather than assuming anything was read for you. Your final report
+is the only thing that reaches the parent, so it carries the whole pass.
 
 One pass, then stop — docket-groom takes no parameter beyond an optional stale
 window, has no loop, schedules no wakeups, and never touches the code the

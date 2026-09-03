@@ -2,6 +2,9 @@
 name: pr
 description: Open, maintain, and merge a GitHub pull request for the current branch with `gh` — pushes the branch and opens a DRAFT PR in the same invocation (no approval step), then keeps it in sync as commits land, watches CI, handles review comments, and merges once every precondition is green. Use on "open a PR", "create a pull request", "/pr", "update the PR", "sync the PR", "address review comments", "watch checks", "merge the PR", "close the PR".
 argument-hint: "[open|ready|update|sync|review|checks|merge|close] [args]"
+context: fork
+agent: general-purpose
+background: false
 model: fable
 ---
 
@@ -16,6 +19,17 @@ unchanged for `commit` itself; the crossing happens only here, and only
 because the operator settled it that way. `pr` never redefines commit
 discipline: where it needs to land a clean commit, it invokes `commit` or
 follows its rules verbatim.
+
+You run in a forked subagent dedicated to this invocation. `context: fork`
+spawns you fresh every time; `background: false` keeps the full foreground
+tool set so the skill returns synchronously and `AskUserQuestion` stays
+available for anything a mode needs to put in front of the operator. You
+carry none of the parent conversation's history — not which commits it just
+landed, not what the branch is for, not what review comments it already
+saw — only `$ARGUMENTS`. Read the branch, the log, and the PR state yourself
+here, starting from the preconditions below, rather than assuming anything
+was read for you. Your final report is the only thing that reaches the
+parent, so it names the PR, what was pushed, and what remains.
 
 **Every rule in this file is advisory.** The real enforcement points for
 what this skill can do — the permission layer, the `PreToolUse` hooks, and

@@ -103,21 +103,45 @@ COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/nul
 # branch below every word of a body reached the matcher unmarked and a scratch
 # file whose text merely described a git write was denied. A quoted-delimiter
 # body (`<<'EOF'`, `<<"EOF"`, `<<\EOF`, and their `<<-` tab-stripping forms)
-# can neither expand nor execute anything by construction, so it is prose and
-# is marked as ONE quote group. An unquoted-delimiter body (`<<EOF`) does
-# expand, so it stays unmarked and reaches the matcher exactly as before.
+# cannot expand or execute anything IN THIS SHELL, so it is prose and is
+# marked as ONE quote group -- but only when the command the body feeds is a
+# text SINK (`cat`, `tee`, `dd`, pathed forms). The quoting says nothing about
+# an inner shell: `bash <<'EOF'` runs its body as a script, so for any other
+# head word the body stays unmarked and reaches the matcher. An
+# unquoted-delimiter body (`<<EOF`) does expand and stays unmarked too.
+#
+# COMMENTS are consumed whole: on a `#` that begins a word, everything to the
+# next newline is one prose quote group, so nothing inside a comment - a
+# heredoc operator, an unbalanced quote - can arm state that swallows the real
+# command on the line after it.
 #
 # The heredoc branch is REDIRECTION-POSITION aware, because `<<` is only a
 # heredoc operator there: it does not fire on a here-string (`<<<WORD`, whose
-# three characters are consumed whole), inside a `#` comment, or inside an
-# arithmetic expansion (`$((1 << 3))`) -- in each of those a firing branch
-# armed a phantom delimiter and swallowed the rest of the command into one
-# prose group. Pending heredocs are a QUEUE, so `cat <<A <<"B"` consumes each
-# body in redirection order with its own quotedness instead of letting the
-# last delimiter overwrite the first and mark an expanding body as prose.
-# Leading tabs are stripped before the terminator comparison only for a `<<-`
-# body, so a tab-indented line inside a plain `<<"EOF"` body no longer ends it
-# early.
+# three characters are consumed whole), inside a comment, or inside an
+# arithmetic expansion (`$((1 << 3))`, `((1 << 3))`, `for ((i = 1 << 2; ;))`)
+# -- in each of those a firing branch armed a phantom delimiter and swallowed
+# the rest of the command into one prose group. Pending heredocs are a QUEUE,
+# so `cat <<A <<"B"` consumes each body in redirection order with its own
+# quotedness instead of letting the last delimiter overwrite the first and
+# mark an expanding body as prose. Leading tabs are stripped before the
+# terminator comparison only for a `<<-` body, so a tab-indented line inside a
+# plain `<<"EOF"` body no longer ends it early.
+#
+# ACCEPTED INACCURACIES, each stated with its failure direction, because this
+# pre-pass models bash rather than parsing it and has no fail-closed default:
+#   - An arithmetic spelling this branch does not count (`$[1 << 3]`, and any
+#     future one) reaches the heredoc arm. A purely NUMERIC delimiter is
+#     therefore refused, since no real script writes `<<3`; a shift by a
+#     variable (`$[1 << k]`) still arms a phantom delimiter and swallows the
+#     following lines - a false DENY.
+#   - `cmd_head` finds the head word by scanning back to the nearest command
+#     separator, so a separator that was escaped or quoted, or a leading
+#     assignment (`LC_ALL=C cat <<"EOF"`), yields a word that is not a sink -
+#     a false DENY.
+#   - A git write passed as a single-quoted ARGUMENT to an interpreter
+#     (`bash -c 'git push'`) is one prose group and is ALLOWED. This predates
+#     the heredoc branch and is the quote-group design's standing tradeoff - a
+#     false ALLOW, tracked separately.
 #
 # The whole COMMAND is buffered into a single blob before scanning (rather
 # than processed line-by-line) so quote-tracking state carries across
@@ -128,6 +152,34 @@ COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/nul
 STRIPPED=$(printf '%s' "$COMMAND" | awk '
 {
     buf = (NR == 1) ? $0 : buf "\n" $0
+}
+# The head word of the simple command a heredoc redirection at POS belongs to,
+# found by scanning back to the nearest command separator. Only a TEXT SINK
+# gets its quoted body marked as prose: a quoted delimiter makes a body inert
+# to the OUTER shell only, so an interpreter still runs every line of it in an
+# inner shell. A head word this scan reads wrong (a leading assignment, a
+# separator that was escaped or quoted) is simply not a sink, so the body stays
+# unmarked -- a false DENY, never a missed invocation.
+function cmd_head(pos,    k, ch, start, w) {
+    start = 1
+    for (k = pos - 1; k >= 1; k--) {
+        ch = substr(line, k, 1)
+        if (ch == ";" || ch == "&" || ch == "|" || ch == "(" || ch == ")" || ch == "\n") {
+            start = k + 1
+            break
+        }
+    }
+    while (start < pos && substr(line, start, 1) ~ /[ \t]/) start++
+    w = ""
+    while (start < pos && substr(line, start, 1) !~ /[ \t]/) {
+        w = w substr(line, start, 1)
+        start++
+    }
+    sub(/^.*\//, "", w)
+    return w
+}
+function is_text_sink(w) {
+    return (w == "cat" || w == "tee" || w == "dd")
 }
 END {
     line = buf
@@ -140,16 +192,17 @@ END {
     GROUP = 0
     HD_N = 0
     ARITH = 0
-    COMMENT = 0
+    WORD_START = 1
     while (i <= n) {
         c = substr(line, i, 1)
         if (c == "\\" && i < n) {
             out = out c substr(line, i + 1, 1)
+            WORD_START = 0
             i += 2
             continue
         }
         if (c == "\n") {
-            COMMENT = 0
+            WORD_START = 1
             if (HD_N == 0) {
                 out = out c
                 i += 1
@@ -188,30 +241,45 @@ END {
             i = j
             continue
         }
-        if (!COMMENT && c == "#" && (i == 1 || substr(line, i - 1, 1) ~ /[ \t\n;&|(]/)) {
-            COMMENT = 1
-            out = out c
-            i += 1
+        if (c == "#" && WORD_START) {
+            j = i + 1
+            content = ""
+            while (j <= n && substr(line, j, 1) != "\n") {
+                content = content substr(line, j, 1)
+                j++
+            }
+            GROUP++
+            m = split(content, qw, /[ \t]+/)
+            for (k = 1; k <= m; k++) {
+                if (qw[k] != "") out = out " " MARK GROUP ":" qw[k] MARK
+            }
+            out = out " "
+            WORD_START = 1
+            i = j
             continue
         }
-        if (c == "$" && substr(line, i + 1, 2) == "((") {
+        if (c == "(" && substr(line, i + 1, 1) == "(") {
             ARITH++
-            out = out substr(line, i, 3)
-            i += 3
+            out = out substr(line, i, 2)
+            WORD_START = 1
+            i += 2
             continue
         }
         if (ARITH > 0 && c == ")" && substr(line, i + 1, 1) == ")") {
             ARITH--
             out = out substr(line, i, 2)
+            WORD_START = 1
             i += 2
             continue
         }
         if (c == "<" && substr(line, i + 1, 2) == "<<") {
             out = out " "
+            WORD_START = 1
             i += 3
             continue
         }
-        if (c == "<" && substr(line, i + 1, 1) == "<" && !COMMENT && ARITH == 0) {
+        if (c == "<" && substr(line, i + 1, 1) == "<" && ARITH == 0) {
+            sink = is_text_sink(cmd_head(i))
             j = i + 2
             dash = 0
             if (substr(line, j, 1) == "-") {
@@ -241,11 +309,12 @@ END {
                 }
             }
             out = out " "
+            WORD_START = 1
             i = j
-            if (delim != "") {
+            if (delim != "" && delim !~ /^[0-9]+$/) {
                 HD_N++
                 HD_DELIM[HD_N] = delim
-                HD_QUOTED[HD_N] = dquoted
+                HD_QUOTED[HD_N] = (dquoted && sink)
                 HD_DASH[HD_N] = dash
             }
             continue
@@ -263,6 +332,7 @@ END {
                 if (qw[k] != "") out = out " " MARK GROUP ":" qw[k] MARK
             }
             out = out " "
+            WORD_START = 0
             i = j + 1
             continue
         }
@@ -290,10 +360,12 @@ END {
                 }
                 out = out " "
             }
+            WORD_START = 0
             i = j + 1
             continue
         }
         out = out c
+        WORD_START = (c ~ /[ \t;&|()<>]/)
         i += 1
     }
     print out

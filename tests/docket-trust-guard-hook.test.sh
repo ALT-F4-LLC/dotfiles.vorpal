@@ -279,6 +279,62 @@ case_heredoc_body_prose() {
         executor-write DENY "unquoted heredoc delimiter: body still reaches the matcher"
     assert_verdict "cat > \"\$TMPDIR/f.txt\" <<'EOF'"$'\n\tEOF\n''docket trust add erik key'$'\nEOF' \
         executor-write ALLOW "tab-indented EOF does not end a plain quoted heredoc body"
+    # The body ends at its own newline, not at a space: a body whose last word
+    # is `docket` must not merge with the words on the line after the
+    # terminator into one record the matcher reads as an invocation.
+    assert_verdict "cat > \"\$TMPDIR/f.txt\" <<'EOF'"$'\n''the rule names docket'$'\nEOF\ntrust add erik key' \
+        executor-write ALLOW "a quoted heredoc body ends at its own line, not at the next one"
+    # Cross-line state must not survive the construct that set it: each of
+    # these opens a real heredoc AFTER a construct the pre-pass tracks.
+    assert_verdict "# a note"$'\n'"cat > \"\$TMPDIR/f.txt\" <<'EOF'"$'\n'"${prose}"$'\nEOF' \
+        executor-write ALLOW "a comment on the line before does not disarm the heredoc after it"
+    assert_verdict 'n=$((1 << 3))'$'\n'"cat > \"\$TMPDIR/f.txt\" <<'EOF'"$'\n'"${prose}"$'\nEOF' \
+        executor-write ALLOW "an arithmetic expansion closes, so the heredoc after it still opens"
+    assert_verdict "cat > notes#1.txt <<'EOF'"$'\n'"${prose}"$'\nEOF' \
+        executor-write ALLOW "a # inside an unquoted word is not a comment, so the heredoc still opens"
+}
+
+# ---- HEREDOC DESTINATION: a quoted delimiter is inert only to THIS shell ----
+#
+# `<<'EOF'` stops the OUTER shell expanding the body; it says nothing about
+# what reads it. `cat` writes the body to a file, so the body is data. `bash`
+# runs it as a script, so the body is code and a guarded invocation in it
+# executes. Only a text sink gets its body marked as prose.
+
+case_heredoc_body_destination() {
+    local inv='docket trust add erik key'
+    assert_verdict "bash <<'EOF'"$'\n'"${inv}"$'\nEOF' \
+        executor-write DENY "quoted heredoc fed to bash: the inner shell runs the body"
+    assert_verdict "sh <<'X'"$'\n'"${inv}"$'\nX' \
+        executor-write DENY "quoted heredoc fed to sh: the inner shell runs the body"
+    assert_verdict "/bin/bash <<'EOF'"$'\n'"${inv}"$'\nEOF' \
+        executor-write DENY "quoted heredoc fed to a pathed interpreter"
+    assert_verdict "tee \"\$TMPDIR/f.txt\" <<'EOF'"$'\n'"the rule says ${inv} is operator-reserved"$'\nEOF' \
+        executor-write ALLOW "quoted heredoc fed to tee: body is prose"
+}
+
+# ---- COMMENTS: inert to bash, so inert here ---------------------------------
+#
+# A comment runs to the end of its line and bash executes none of it. Anything
+# the pre-pass reads inside one -- a quote that would otherwise open a region
+# spanning the newline, a heredoc operator that would otherwise arm a body --
+# is text, so the whole comment is consumed as one prose group and the command
+# on the next line reaches the matcher on its own.
+
+case_comment_regions_are_inert() {
+    local inv='docket trust add erik key'
+    assert_verdict "# it's operator-reserved"$'\n'"${inv}" \
+        executor-write DENY "an apostrophe inside a comment does not swallow the next line"
+    assert_verdict '# the rule says "operator-reserved"'$'\n'"${inv}" \
+        executor-write DENY "a double quote inside a comment does not swallow the next line"
+    assert_verdict "echo hi # don't do that"$'\n'"${inv}" \
+        executor-write DENY "an apostrophe inside a trailing comment does not swallow the next line"
+    assert_verdict "(echo one)#<<'EOF'"$'\n'"${inv}" \
+        executor-write DENY "a comment opened right after ) arms no heredoc"
+    assert_verdict "echo one >#note"$'\n'"${inv}" \
+        executor-write DENY "a comment opened right after > arms no heredoc"
+    assert_verdict "# ${inv} is the rule this hook enforces" \
+        executor-write ALLOW "a comment naming the guarded verb is prose"
 }
 
 # ---- HEREDOC POSITION: `<<` is only a heredoc operator in redirection ------
@@ -305,6 +361,14 @@ case_heredoc_position_edges() {
         executor-write DENY "a tab-indented terminator ends a <<- body, and the next line is code"
     assert_verdict 'n=$((1 << 3))'$'\n''echo "the rule says docket trust add is operator-reserved"' \
         executor-write ALLOW "an arithmetic shift opens no heredoc, so the prose after it stays prose"
+    assert_verdict '((n = 1 << 3))'$'\n''echo "the rule says docket trust add is operator-reserved"' \
+        executor-write ALLOW "a bare arithmetic command opens no heredoc either"
+    assert_verdict 'for ((i = 1 << 2; i > 0; i--)); do echo $i; done'$'\n''echo "the rule says docket trust add is operator-reserved"' \
+        executor-write ALLOW "an arithmetic for header opens no heredoc either"
+    assert_verdict 'n=$[1 << 3]'$'\n''echo "the rule says docket trust add is operator-reserved"' \
+        executor-write ALLOW "a deprecated \$[ ] arithmetic shift opens no heredoc either"
+    assert_verdict 'cat <<<docket trust add erik key' \
+        executor-write DENY "here-string with an unquoted word is not a heredoc"
 }
 
 # ---- Pre-pass drift: the two guard hooks must share one lexer --------------
@@ -313,19 +377,24 @@ case_heredoc_position_edges() {
 # the commit guard, with no sourcing mechanism available (each hook is invoked
 # standalone). A fix applied to one copy and not the other leaves two guards
 # with different notions of inert text, and nothing else in the tree notices.
+#
+# Both sides are read relative to the HOOK UNDER TEST, not from REPO_ROOT, so
+# the check describes the same artifact every other case drives: under a
+# GUARD_HOOK override it compares that copy against the sibling beside it, and
+# reports the region missing when there is no sibling to compare against.
 
 PREPASS_RANGE="/^STRIPPED=/,/^' 2>\/dev\/null) || allow_default\$/p"
 
 case_prepass_copies_identical() {
     local mine sibling
-    mine=$(sed -n "$PREPASS_RANGE" "${REPO_ROOT}/src/user/claude_code/hooks/docket-trust-guard-hook.sh")
-    sibling=$(sed -n "$PREPASS_RANGE" "${REPO_ROOT}/src/user/claude_code/hooks/docket-commit-guard-hook.sh")
+    mine=$(sed -n "$PREPASS_RANGE" "$HOOK")
+    sibling=$(sed -n "$PREPASS_RANGE" "$(dirname "$HOOK")/docket-commit-guard-hook.sh" 2>/dev/null)
     if [ -z "$mine" ] || [ -z "$sibling" ]; then
-        fail "quote-aware pre-pass region not found in one of the guard hooks"
+        fail "quote-aware pre-pass region not found in the hook under test or its sibling"
     elif [ "$mine" = "$sibling" ]; then
-        pass "quote-aware pre-pass is byte-identical in both guard hooks"
+        pass "quote-aware pre-pass is byte-identical in the hook under test and its sibling"
     else
-        fail "quote-aware pre-pass has drifted between the two guard hooks"
+        fail "quote-aware pre-pass has drifted between the hook under test and its sibling"
     fi
 }
 
@@ -353,6 +422,8 @@ case_must_deny_separately_quoted_tokens
 case_help_read_exemption_allows
 case_help_lookalikes_and_compounds_deny
 case_heredoc_body_prose
+case_heredoc_body_destination
+case_comment_regions_are_inert
 case_heredoc_position_edges
 case_prepass_copies_identical
 case_input_edge_cases

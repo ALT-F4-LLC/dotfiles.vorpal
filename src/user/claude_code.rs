@@ -78,7 +78,7 @@ const AUTO_MODE_ALLOW_RULES: &[&str] = &[
     "Read-only cluster reads against bulbasaur — kubectl get/describe/logs, flux get; mutations against the cluster stay outside this rule (production)",
     "Read-only search and inspection inside trusted checkouts and the Claude scratch roots (/tmp/claude-501, /private/tmp/claude-501, $TMPDIR) — grep, rg, find, ls, cat, head, tail, sed -n, wc, diff, strings, jq, and python3/perl one-liners that only read — including a relative path or glob after `cd` into one of those roots; the sensitive home paths (~/.ssh, ~/.aws, ~/.gnupg, credential stores) are refused by the sandbox at the syscall level and by the sensitive-path-guard hook, and a relative path under these roots cannot reach them",
     "File operations confined to the Claude scratch roots (/tmp/claude-501, /private/tmp/claude-501, $TMPDIR) — mkdir, cp -R, rm -rf, mv, tar/git-archive mirrors of a trusted checkout, and in-place edits (sed -i, perl -pi, python3 heredocs) of files under them; these are per-session throwaway workspaces the sandbox already lets every session write, so deleting or mutating them affects no repo",
-    "Read-only inspection under ~/.claude — session transcripts and tool-results under ~/.claude/projects, the friction ledger, installed skills, workflows, hooks, and scripts — the operator's own harness state; edits there stay outside this rule (source-only, installed via `just activate`)",
+    "Read-only inspection under ~/.claude — session transcripts and tool-results under ~/.claude/projects, the friction ledger, installed skills, workflows, and hooks — the operator's own harness state; edits there stay outside this rule (source-only, installed via `just activate`)",
     "Read-only gh reads against ALT-F4-LLC repositories — gh pr view/checks/list/diff, gh run list/view, gh issue view/list; gh pr create, gh pr merge, and gh api stay on their ask rules",
 ];
 
@@ -354,7 +354,6 @@ impl ClaudeCode {
             .with_permission_allow("Bash(go tool golangci-lint:*)")
             .with_permission_allow("Bash(go vet:*)")
             .with_permission_allow("Bash(gofmt:*)")
-            .with_permission_allow("Bash(~/.claude/scripts/*)")
             .with_permission_allow("Bash(~/.claude/workflows/*)")
             .with_permission_allow("Edit(/private/tmp/claude-501/**)")
             .with_permission_allow("Edit(/tmp/claude-501/**)")
@@ -496,14 +495,6 @@ impl ClaudeCode {
             .build(context)
             .await?;
 
-        let scripts = FileSource::new(
-            &component_name(&self.name, "scripts"),
-            "src/user/claude_code/scripts",
-            self.systems.clone(),
-        )
-        .build(context)
-        .await?;
-
         let skills = FileSource::new(
             &component_name(&self.name, "skills"),
             "src/user/claude_code/skills",
@@ -562,7 +553,6 @@ impl ClaudeCode {
                 ),
                 claude_home("CLAUDE.md"),
             ),
-            (get_env_key(&scripts), claude_home("scripts")),
             (
                 FileCreate::output_file_path(
                     &get_env_key(&settings),
@@ -586,7 +576,6 @@ impl ClaudeCode {
             allowed_signers,
             hooks,
             memory,
-            scripts,
             settings,
             skills,
             statusline,

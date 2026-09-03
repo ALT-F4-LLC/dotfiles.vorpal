@@ -170,6 +170,41 @@ four evidence lines, and the recurrence count is its severity argument. Then
 §6 runs once, over the aggregate: one filing pass, every finding to its
 owning project, then one review naming what was filed.
 
+**Two counts ride beside the analysts, as Workflow-tool launches** —
+`Skill({skill: "workflow-authoring"})` first, then each by its installed
+`scriptPath` (absolute, `~` expanded; the tool launches nothing under
+`$SRC`). Both are read-only unless said otherwise, and both return an object
+the review quotes verbatim:
+
+```
+Workflow({ scriptPath: "<absolute installed path to session-census.js>",
+           args: {root: "<absolute $HOME>/.claude/projects",
+                  cutoff: "<ISO-8601 UTC, now minus the window>", days: 7} })
+Workflow({ scriptPath: "<absolute installed path to sandbox-friction.js>",
+           args: {ledger: "<absolute $HOME>/.claude/friction/sandbox.jsonl",
+                  cutoff: "<same ISO-8601, or null>", file: false,
+                  checkout: "<absolute dotfiles checkout>"} })
+```
+
+The census counts what "everything is over-thought" cannot falsify by
+feel: deliberation and course-correction cost, MAIN and SUBAGENT never
+pooled (subagents take their tier from `policy.toml`, so they cannot
+measure a change to the harness setting), thinking share by tokens where
+the field exists and by characters everywhere, operator-typed input against
+everything else that arrives as `role=user`, and idle pings answered by a
+text-only turn — lower is better on every row. Compute `cutoff` yourself:
+the script cannot read a clock. The friction launch ranks the sandbox
+ledger every hook writes — every denial and every unsandboxed retry, from
+every session — by the path or host an allowlist entry would name; a
+classifier denial groups by its reason instead, because that is a different
+fix. Relaunch it with `file: true` only inside §6's filing pass: that mode
+files one `sandbox`-labelled issue per group into the dotfiles project,
+from that checkout's own cwd, skipping subjects it could not classify and
+subjects already filed, and it is the one write either launch ever makes.
+Cost, stated: one low-effort agent per transcript file in the window, so a
+seven-day fleet census is hundreds of small reads; narrow `cutoff` before
+narrowing anything else.
+
 ### 1b. The live self-shadow (bare, any execution skill active in this session)
 
 A bare invocation landing in a session that has itself run an execution
@@ -526,9 +561,9 @@ Before reading one transcript line:
    from the source tree.
 3. **Establish which bytes are actually running — starting with whether an
    installed copy exists at all.** Resolve it at attach rather than trusting
-   this line: `ls -ld ~/.claude/{agents,skills,workflows,scripts,hooks}`
-   against the builder's symlink vec (`claude_code.rs:300-325`, beside `$SRC`).
-   All five come back as live symlinks into the content-addressed vorpal
+   this line: `ls -ld ~/.claude/{agents,skills,workflows,hooks}`
+   against the builder's symlink vec (`claude_code.rs`, beside `$SRC`).
+   All four come back as live symlinks into the content-addressed vorpal
    store — from the first `just activate` after `workflows`
    joined the builder; before that activation it is still a real directory
    holding the retired hand-made `wave.js` symlink, which you flag as
@@ -592,28 +627,35 @@ defect. An empty diff on a NEW record, or a stale summary in a NEW packet,
 is a fresh regression: rule-3 territory, evidence it with `step render`/
 `step context` and file it.
 
-**Repetition becomes a script — when it passes the bar.** Watch for command
+**Repetition becomes a workflow — when it passes the bar.** Watch for command
 shapes the session keeps rebuilding: the journal→usage join before every
 close, the transcript-find, a jq chain every executor re-derives. Each retype
 spends tokens and invites drift — the iteration where the jq path comes out
-wrong is the iteration the ledger lies. The remedy is a script under
-`$SRC/scripts/` — filed as an issue, never written by you — and the issue
-must note the install lag: `~/.claude/scripts` is a live store symlink
-today, but it serves the store's bytes, so a NEW script exists only at its
-source path until the next `just activate`; callers must name whichever path
-will actually resolve when they run (§2.3).
+wrong is the iteration the ledger lies. The remedy is a Workflow-tool script
+under `$SRC/workflows/`, authored to the `workflow-authoring` reference —
+filed as an issue, never written by you — and the issue must note the
+install lag: `~/.claude/workflows` is a live store symlink that serves the
+store's bytes, so a NEW workflow exists only in source until the next `just
+activate`, and the Workflow tool launches only the installed path (§2.3).
 
-The bar is a small function, and it is strict:
+The bar is a small workflow, and it is strict:
 
-- One job, named for that job; arguments in, stdout out, honest exit code.
-- Deterministic: no network, no clock, no randomness — same bytes out.
-- Read-only. A candidate that writes is not a script; file the issue for
-  what it actually is (a hook, an engine action, a workflow edit) or leave it.
-- A dozen-ish lines. Wanting mode flags, config, state, or branching on run
-  content makes it policy escaping the definitions, and policy stays put.
+- One job, named for that job; `args` in, a returned object out, a thrown
+  error when the job could not be done — never a silent empty return.
+- Agents read, the script decides: every join, sum and verdict is plain
+  JavaScript in the script; an agent runs one fixed command (a jq program the
+  script carries as a constant) and returns a schema-validated object.
+- Deterministic in the script: no clock, no randomness (the harness forbids
+  both), no cap that drops an item without a `log()` naming it.
+- Read-only agents. A candidate that writes is not a probe; file the issue
+  for what it actually is (a hook, an engine action, a wave.js edit) or
+  leave it.
+- One scout, one fan-out, one reduction. Wanting mode flags, config, state,
+  or branching on run content makes it policy escaping the definitions, and
+  policy stays put.
 
 The issue (§6) carries the proposed script body, the call sites it replaces,
-and the definition edits that make them call it — a repetition that
+and the definition edits that make them launch it — a repetition that
 originates in a rendered brief is fixed in the definition that renders it,
 never in the executors that obeyed it.
 
@@ -632,7 +674,7 @@ survivable. So attribute every mistake before proposing anything:
   `src/user/docket/config/policy.toml` only when the shipped default itself is wrong.
 - **Unforced** — right model, clear brief, still wrong: a transposed id, a
   wrong jq path, an invented verb. Wishing the model better is not a remedy.
-  The issue moves the work into code — a script past the bar above, a
+  The issue moves the work into code — a workflow past the bar above, a
   schema, a guard — or adds the cheap verification step the contract lacked.
   What must be exact becomes code; that is the house pattern, and wave.js is
   its precedent.
@@ -692,12 +734,27 @@ persists every launched script as
 names the path), which joins the tier line and the `model`/`effort` opts to
 a `wfId` without parsing the main transcript at all.
 
-Tail on a cadence, from your last offset —
-`$SRC/scripts/shadow-transcript-summary.sh <transcript.jsonl> [from-line]`
-renders the compact per-line view; don't retype the jq — the installed
-`~/.claude/scripts/` spelling works too today (§2.3). A quiet transcript is
-a run working, not a run stalled — the wave notifies on completion, and gates
-park runs for hours by design.
+Tail on a cadence, from your last offset. This jq renders the compact
+per-line view — `type ~ HH:MM:SS ~ TEXT:/TOOL:/RESULT: …`, newlines
+flattened — and it is copied from here, never rebuilt from memory:
+
+```bash
+awk -v n="${FROM_LINE:-1}" 'NR>=n' <transcript.jsonl> | jq -rc '
+  [ .type,
+    (.timestamp // "")[11:19],
+    (if .message.content|type == "string" then (.message.content[0:300]|gsub("\n";" ⏎ "))
+     elif .message.content|type == "array" then
+       ([.message.content[] |
+         if .type=="text" then "TEXT:"+(.text[0:300]|gsub("\n";" ⏎ "))
+         elif .type=="tool_use" then "TOOL:"+.name+":"+((.input|tostring)[0:300]|gsub("\n";" ⏎ "))
+         elif .type=="tool_result" then "RESULT:"+((.content|tostring)[0:200]|gsub("\n";" ⏎ "))
+         else .type end] | join(" | "))
+     else (.summary // .subtype // "") end)
+  ] | join(" ~ ")' 2>/dev/null
+```
+
+A quiet transcript is a run working, not a run stalled — the wave notifies
+on completion, and gates park runs for hours by design.
 
 Measured limits of these surfaces (from earlier shadow runs):
 

@@ -12,6 +12,19 @@ decides what each step is routed to, a tribunal panel decides at gates, and the
 operator decides what the panel could not or must not. You carry messages
 between them and run the commands.
 
+**Load the `workflow-authoring` skill first, every time, before anything
+else in this file.** `Skill({skill: "workflow-authoring"})` is your first
+tool call, on a fresh invocation and on a resume alike. Every launch you
+make — the wave, a tribunal panel, the gate probe, the attach probe, the
+usage join, the integration check — is a Workflow-tool script, and that
+reference is the contract for how a launch is shaped, what `args` is, how a
+stopped run resumes, and where a completed run's journal lives. Without it
+loaded you are reading launch results and journal paths from memory, which
+is how a conductor once resumed three panels arg-less and lost all three.
+Loading it is also what makes the launches below sanctioned: the tool's own
+rule admits a launch only when a skill's instructions call for it, and this
+skill does.
+
 **You hold no run state.** Not step ids, not statuses, not usage numbers, and
 never artifact bodies. Every loop iteration asks the engine again. If you ever
 find yourself thinking "I remember that step 4 failed" — you do not; ask.
@@ -185,61 +198,67 @@ switch the session mode) and do not dispatch into it and hope. Symptom to
 recognize instantly: every agent in a fanout returns `BOOTSTRAP DENIED` or a
 quoted permission refusal, at near-zero tokens, having claimed nothing.
 
-**Probe the completion gates against a clean scratch worktree before the
-first dispatch — by running the script, not by hand.** Run `gate-probe $RUN`
-and read its EXIT CODE: 0 every gate on the roster passed on clean HEAD, 1 at
-least one FAILED (or the probe could not run at all — no roster, no worktree,
-cwd outside a work tree), 130 interrupted with the roster not fully probed,
-which is not a pass. Resolve the path the same way as `attach-probe` below:
-`~/.claude/scripts/gate-probe $RUN` when `test -f` passes, else
-`$CC_SRC/scripts/gate-probe $RUN` — a script added since the last `just
-activate` resolves ONLY at its source path.
+**Probe the completion gates against clean HEAD before the first dispatch —
+by launching the gate-probe workflow, not by hand.** It is a Workflow script
+installed beside wave.js, launched the way step 2 launches wave.js: the
+installed `~/.claude/workflows/gate-probe.js` as an absolute path with `~`
+expanded, by `scriptPath` only, and a missing installed file is
+stop-and-report:
 
-The script IS the roster rule, which is the whole reason it is a script. It
-takes every entry `docket trust list` returns for this repo — the entries a
-workflow's gate names resolve to, of which argv some earlier step happened to
-record is a subset, never the list — registers ONE throwaway worktree of clean
-HEAD, runs ALL of them there capturing each command's OWN exit status (a plain
-redirect; never a pipe, and never `$PIPESTATUS`, which is bash-only and has
-printed empty under zsh), prints `OK|FAIL <name> exit=<n> log=<path>` per gate
-with `STUB` marking a placeholder whose pass is hollow, and removes the
-worktree on every path — clean, failed, or interrupted. Nothing
-short-circuits, so a vacuous pass is visible in the output rather than
-inferred from silence. **Never narrow that roster by what the remaining steps
-look like** — not on a resume whose leftovers are vote, verify and action
-rows, not on a run whose recorded gate failures were all write-class. That
-narrowing is exactly what moving the probe into code was for: a resume once
-ran `make format` alone and skipped build, tests and four more on that
-reasoning. The script does not know what rows you expect, and neither,
-reliably, do you: you hold no run state, which rows come next is the engine's
-answer to `next`, and a vote's `on_fail`, an `--as retry` or a fix batch puts a
-write-class step in front of you one dispatch after you judged there were none.
+```
+Workflow({ scriptPath: "<absolute installed path to gate-probe.js>", args: {run: "RUN-N"} })
+```
 
-The probe's worktree is the SCRIPT's to track, not yours: it registers it and
-removes it in the same process, on success, on failure and on a signal, and
-says so if a removal ever fails. **Every OTHER worktree you register is still
-yours to write down the moment you create it** — any you add
-mid-investigation, and the one for the Go-cache warm below. Each is a
-registration in the SHARED repo that outlives the `Bash` call that made it,
-and each sits at a DETACHED head with no `worktree-wf_*` branch, so the close
-sweep's branch-derived set below cannot see it: the tracked path is the ONLY
-thing that puts it back in the sweep. Spell that path under this session's
-scratchpad LITERALLY — the absolute path the harness named, never `$TMPDIR` or
-any other environment expansion, which has been observed resolving to two
-DIFFERENT directories across consecutive `Bash` calls in one session (one
-conductor's next call could not `cd` into the directory it had just made). A
-single script creating, using and removing a path in one process is not
-exposed to that; a path you carry across calls is. Remove yours as soon as you
-are done with it, and carry any that survive to close-out into the close
-sweep. Measured: a conductor's hand-rolled `gate-probe-wt`, homed in a session
+Read its RETURN, which the completion notification carries: `passed` is
+true only when every gate on the roster exited 0 on clean HEAD; `failed`
+names the rest; `gates[]` carries each gate's exit and the tail of its log,
+with `stub` marking a placeholder whose pass is hollow; `head` is the sha
+probed. A workflow that threw instead of returning — an empty roster, no
+`docket` on PATH, a scout that could not read the trust store — is not a
+pass either: report it.
+
+The workflow IS the roster rule, which is the whole reason it is a workflow.
+Its scout agent reads every entry `docket trust list` returns for this repo —
+the entries a workflow's gate names resolve to, of which argv some earlier
+step happened to record is a subset, never the list — and the script fans
+one isolated agent out per entry, each in its own fresh worktree of clean
+HEAD, each running the argv verbatim with stdin from `/dev/null` and
+reporting the command's OWN exit status. Nothing short-circuits, every gate
+gets a verdict line, and a vacuous pass is visible in the return rather than
+inferred from silence. **Never narrow that roster by what the remaining
+steps look like** — not on a resume whose leftovers are vote, verify and
+action rows, not on a run whose recorded gate failures were all write-class.
+That narrowing is exactly what moving the probe out of prose was for: a
+resume once ran `make format` alone and skipped build, tests and four more on
+that reasoning. The workflow does not know what rows you expect, and
+neither, reliably, do you: you hold no run state, which rows come next is
+the engine's answer to `next`, and a vote's `on_fail`, an `--as retry` or a
+fix batch puts a write-class step in front of you one dispatch after you
+judged there were none.
+
+The probe's worktrees are the HARNESS's to track, not yours: each isolated
+agent runs in a worktree the harness registers and removes when the agent
+leaves it unchanged, which the brief makes every gate agent do. **Every
+worktree you register yourself is still yours to write down the moment you
+create it** — any you add mid-investigation, and the one for the Go-cache
+warm below. Each is a registration in the SHARED repo that outlives the
+`Bash` call that made it, and each sits at a DETACHED head with no
+`worktree-wf_*` branch, so the close sweep's branch-derived set below cannot
+see it: the tracked path is the ONLY thing that puts it back in the sweep.
+Spell that path under this session's scratchpad LITERALLY — the absolute
+path the harness named, never `$TMPDIR` or any other environment expansion,
+which has been observed resolving to two DIFFERENT directories across
+consecutive `Bash` calls in one session (one conductor's next call could not
+`cd` into the directory it had just made). Remove yours as soon as you are
+done with it, and carry any that survive to close-out into the close sweep.
+Measured: a conductor's hand-rolled probe worktree, homed in a session
 scratchpad, was still registered in the shared repo at close-out — the
 scratchpad was then cleaned, leaving a prunable-but-dangling registration the
 run never named.
 
 One roster entry class fails the probe by construction: an engine ACTION the
 engine feeds a JSON bundle on stdin (`doc-record` here) gets `/dev/null` from
-the probe and exits non-zero. The script names that possibility in its own
-failure block. It is a disposition to record once like any other, not a
+the probe and exits non-zero. It is a disposition to record once like any other, not a
 finding to re-derive per run. A gate that fails on clean HEAD is not caused
 by this run's changes — commonly ENVIRONMENTAL, an untracked toolchain that
 never materializes in a fresh worktree (a direnv-provisioned
@@ -351,53 +370,65 @@ divergence (a stale pin cannot be fixed mid-run; one run executed the whole
 thing on contracts eight edits behind, and paid in re-review churn an operator
 gate had already ruled on), and keep corpus installs BETWEEN runs — a mid-run `just
 activate` changes what already-pinned refs resolve to, and it changes them for
-every repo at once, since all of them read the same bytes. The `attach-probe`
-script below runs this check too, and at activation time you invoke it with no
-`$RUN` argument — the run holds no pins yet, so its exit 2 ("a check was
+every repo at once, since all of them read the same bytes. The attach-probe
+workflow below runs this check too, and at activation time you launch it with
+no `run` — the run holds no pins yet, so `skipped: true` ("a check was
 skipped") is the expected answer there and only there.
 Attaching to an ALREADY-ACTIVE run skips activation but not the probe, and the
-probe is never the pin check alone. Run it as ONE shipped script instead of
-retyping it: `~/.claude/scripts/attach-probe $RUN` when `test -f` passes, else
-`$CC_SRC/scripts/attach-probe $RUN`, where `$CC_SRC` is
-`<...>/dotfiles.vorpal.git/main/src/user/claude_code` — and a script added
-since the last `just activate` resolves ONLY at that source path, same install
-lag as every other definition here. It is read-only by construction (`git rev-parse`, `diff`,
-`cmp`, `shasum`, and the two write-nothing verbs `run status` and `run
-verify-pins`), and it runs SIX checks without short-circuiting: seat location,
-store access, BOTH `diff -r` staleness trees above (`$DOCKET_SRC/config` and
-`$DOCKET_SRC/bin` against `~/.docket/`), sha256 byte-diffs of the installed
-wave.js and tribunal.js against their source, `run verify-pins`, and the
-`.docket/config` symlink debris check below. **Those six are not this whole
-section.** The permission-surface check, the DENY-list read-class check, the
-completion-gate probe against a clean scratch worktree, and the Go module
-cache warmup are all pre-dispatch obligations of this section and NOT ONE of
-them is in THIS script: a clean `attach-probe` says nothing whatever about
-them. The completion-gate probe has a script of ITS own — `gate-probe $RUN`,
-above — so that is two scripts and two exit codes, and neither answers for the
-other; the permission-surface read, the DENY-list read and the cache warm stay
-yours to run by hand before the first dispatch. One conductor read the probe's six
-as the pre-loop checklist, never ran the gate probe, and both its dispatched
-waves then parked write steps `waiting-human` on the same two environmental
-gate failures — a docker-socket build, pre-existing vuln-scan CVEs — that the
-gate probe exists to surface ONCE. Read its EXIT CODE, not its last line: 0
-clean, 1 drift or failure, 2 "a check was SKIPPED" — which is what you get by
-omitting `$RUN`, meaning the pins were never checked, and 2 is not a pass on
-an active run. Run all four EVERY time, and never narrow them by what the
-remaining steps look like — not on a resume whose leftovers are vote, verify and
-action rows, not on a run whose recorded gate failures were all write-class. You
-hold no run state: which rows come next is the engine's answer to `next`, not a
-shape you can predict, and a vote's `on_fail`, an `--as retry` or a fix batch
-puts a write-class step in front of you one dispatch after you judged there were
-none — at which point the same findings arrive as parked steps instead of as one
-pre-dispatch report. The four are once-per-run and cheap; a run that really does
-stay read-only pays only that. The retyping is
-what the script exists to stop: a hand-rolled version once piped a diff
-through `head -30` and then reported HEAD's exit — always 0 — as the diff's
-verdict, and ran `test -f ~/.claude/workflows/wave.js` where the byte-diff was
+probe is never the pin check alone. Launch it as ONE installed workflow
+instead of retyping it — the installed `~/.claude/workflows/attach-probe.js`,
+resolved and launched exactly as step 2 launches wave.js:
+
+```
+Workflow({ scriptPath: "<absolute installed path to attach-probe.js>",
+           args: {run: "RUN-N", home: "<absolute $HOME>",
+                  checkout: "<absolute dotfiles checkout>", cwd: "<absolute seat>"} })
+```
+
+Every path in `args` is literal and absolute: the workflow expands no `~` and
+reads no environment. `checkout` is the dotfiles checkout whose
+`src/user/docket` and `src/user/claude_code` are the source of every installed
+definition (`~/Development/repository/github.com/ALT-F4-LLC/dotfiles.vorpal.git/main`
+on this machine). It is read-only by construction — its agents run `git
+rev-parse`, `diff -rq`, `find`, `git worktree list`, and the two write-nothing
+verbs `run status` and `run verify-pins` — and it runs SIX checks in one
+parallel without short-circuiting: seat location, store access, BOTH `diff -r`
+staleness trees above (`$DOCKET_SRC/config` and `$DOCKET_SRC/bin` against
+`~/.docket/`), byte-diffs of the installed `~/.claude/workflows` and
+`~/.claude/hooks` trees against their source, `run verify-pins`, and the
+`.docket/config` symlink debris check below, plus a straggler REPORT that can
+never move the verdict. Read its RETURN, not its last log line: `clean` is
+true only when every check is OK; `skipped` is true when the pin check did
+not run because you gave no `run` — which is not a pass on an active run;
+`checks[]` carries each verdict (`OK`, `FAIL`, `DRIFT`, `SKIP`, `WARN`) with
+its detail. **Those six are not this whole section.** The permission-surface
+check, the DENY-list read-class check, the completion-gate probe against
+clean HEAD, and the Go module cache warmup are all pre-dispatch obligations
+of this section and NOT ONE of them is in THIS workflow: a clean attach-probe
+says nothing whatever about them. The completion-gate probe has a workflow of
+ITS own — gate-probe, above — so that is two launches and two returns, and
+neither answers for the other; the permission-surface read, the DENY-list
+read and the cache warm stay yours to run by hand before the first dispatch.
+One conductor read the probe's six as the pre-loop checklist, never ran the
+gate probe, and both its dispatched waves then parked write steps
+`waiting-human` on the same two environmental gate failures — a docker-socket
+build, pre-existing vuln-scan CVEs — that the gate probe exists to surface
+ONCE. Run all four EVERY time, and never narrow them by what the remaining
+steps look like — not on a resume whose leftovers are vote, verify and action
+rows, not on a run whose recorded gate failures were all write-class. You
+hold no run state: which rows come next is the engine's answer to `next`, not
+a shape you can predict, and a vote's `on_fail`, an `--as retry` or a fix
+batch puts a write-class step in front of you one dispatch after you judged
+there were none — at which point the same findings arrive as parked steps
+instead of as one pre-dispatch report. The four are once-per-run and cheap; a
+run that really does stay read-only pays only that. The retyping is what the
+workflow exists to stop: a hand-rolled version once piped a diff through
+`head -30` and then reported HEAD's exit — always 0 — as the diff's verdict,
+and ran `test -f ~/.claude/workflows/wave.js` where the byte-diff was
 mandated. Announcing the probe is not running it. An existence check proves
 nothing about bytes. Divergence mid-run is stop-and-report all the same. The
-prose below says what each verdict MEANS and what to do about it; the script
-only tells you which verdict you have.
+prose below says what each verdict MEANS and what to do about it; the
+workflow only tells you which verdict you have.
 
 **An instance name is not a step id.** Attaching mid-run you will hold an
 instance (`implement@0`, `fix@1`) and need its STEP-N. `docket step list --run
@@ -662,15 +693,18 @@ shares a tool call with another:**
    **Gates**. Anything short of approval goes to the operator with the full
    tally instead of going on to step 2.
 2. **Back-fill the panel's seat usage.** This is a panel you convened, so it is
-   the `--seats` case of **A panel you convened yourself gets the same
-   treatment** (loop step 3), where the whole explanation lives — the two
-   commands, nothing new:
+   the seats-mode case of **A panel you convened yourself gets the same
+   treatment** (loop step 3), where the whole explanation lives — the launch
+   and the verb, nothing new:
+
+   ```
+   Workflow({ scriptPath: "<absolute installed path to wave-usage.js>",
+              args: {dir: "<tribunal-transcript-dir>", mode: "seats", exclude: []} })
+   ```
 
    ```bash
-   # stdout is the JSON batch, stderr is diagnostics: NEVER merge them (no 2>&1).
-   wave-usage --seats <tribunal-transcript-dir> > "$TMPDIR/panel.json" 2>"$TMPDIR/panel.stderr"   # check $?
    docket vote backfill-usage <proposal-id> --source "tribunal:<wfId>" \
-     --from-json - < "$TMPDIR/panel.json"
+     --from-json - < "$TMPDIR/panel.json"   # `rows` from the return, written verbatim
    ```
 
    The transcript dir is `<session>/subagents/workflows/<wfId>/`, with `<wfId>`
@@ -864,18 +898,24 @@ give.
 `Coverage:` line.** The engine has been printing what a skipped panel back-fill
 costs the whole time; what was missing was anyone reading it. Every `Silent:`
 line names a proposal and a seat whose spend reached no ledger at all, and each
-one is a back-fill you still owe: run the `--seats` join for THAT proposal's
-tribunal transcript dir — `wave-usage --seats
-<session>/subagents/workflows/<wfId>/` piped to `docket vote backfill-usage
-<proposal>`, per **A panel you convened yourself gets the same treatment** in
-step 3 — BEFORE the done report, never after. The done report is the last turn
-anyone spends on this run, and a silent seat outlives it permanently.
-`~/.claude/scripts/panel-usage-check $RUN` (else
-`$CC_SRC/scripts/panel-usage-check`, resolved like `wave-usage`) is that same
-read as one read-only command: it names every silent seat and exits 1, or
-reports full coverage and exits 0. This nets a miss the contract already
-forbade — RUN-68 was reported done carrying three silent DKT-V309 seats, and
-the `Silent:` lines naming them were sitting in a report nobody ran.
+one is a back-fill you still owe: run the seats-mode join for THAT proposal's
+tribunal transcript dir — the wave-usage workflow with `mode: "seats"` over
+`<session>/subagents/workflows/<wfId>/`, its rows piped to `docket vote
+backfill-usage <proposal>`, per **A panel you convened yourself gets the same
+treatment** in step 3 — BEFORE the done report, never after. The done report
+is the last turn anyone spends on this run, and a silent seat outlives it
+permanently. The same read as one command, with an exit status attached:
+
+```bash
+docket run report $RUN --json | jq -e '.data.silent_vote_seats // [] | length == 0'
+```
+
+The engine does the join itself and publishes it as `silent_vote_seats[]`
+(proposal, voter, role, path) beside `vote_usage_coverage {casts, reported}` —
+a proposal's own `vote show` carries no usage rows at all, so there is
+nothing there to find a zero in. This nets a miss the contract already
+forbade — a run was reported done carrying three silent seats, and the
+`Silent:` lines naming them were sitting in a report nobody ran.
 
 **`--json` suppresses every stderr diagnostic** — reap notices and
 held-headroom reasons ride there only, so under `--json` the payload is
@@ -922,19 +962,18 @@ the hook do the substitution. A conductor who hand-copied it for a tribunal
 launch anyway spent five tool calls building an 8.4KB args string the hook
 would have built for free, on a run whose three waves paid none of that.
 
-**The one fallback is a machine where the hook is not installed** — check it
-with `test -f ~/.claude/hooks/docket-policy-guard-hook.sh` before concluding
-that, and only then build a literal `policyText` from
-`~/.claude/scripts/policy-escaped-chunks` (the WHOLE file, escaped, chunked,
-fresh; copy its chunks, never retype them). Nothing substitutes and nothing
-denies without the hook, so the sentinel would reach the script raw — wave.js
-refuses it by name, tribunal.js's TOML parser bails on it as neither a table
-header nor a key/value pair. Both fail closed; neither routes on it.
-
-**A byte-perfect literal policyText still works too** — the hook hashes it and
-allows silently, same as before — but with the hook installed there is no
-reason to build one for any launch, and doing so reintroduces the exact
-hand-copy risk the sentinel exists to remove.
+**There is no fallback for a machine where the hook is not installed.** The
+hook ships in the same corpus as wave.js and lands in the same `just
+activate`; attach-probe's install check diffs `~/.claude/hooks` against its
+source, so a missing or stale hook is that check's DRIFT, and DRIFT is
+stop-and-report. Nothing substitutes and nothing denies without the hook, so
+the sentinel would reach the script raw — wave.js refuses it by name,
+tribunal.js's TOML parser bails on it as neither a table header nor a
+key/value pair. Both fail closed; neither routes on it. Never build a literal
+`policyText` by hand instead: the hook would hash it and allow a byte-perfect
+copy, but making the model the copy machine for ~28k bytes is the exact
+failure the sentinel exists to remove — one conductor dropped the same 44
+characters twice in a row.
 
 **Read `dispatch open`'s answer before you launch anything, and a
 `stale_targets` row in it is STOP-AND-VERIFY.** The engine emits one when a
@@ -1232,8 +1271,8 @@ run's only record of its spend:
 
 - **"Nothing was claimed" is not a reason to skip it.** A wave whose spawns all
   failed still burned real tokens — a probe, a partial agent, a blocked spawn's
-  own context. Run `wave-usage` and read ITS answer; skip only when the script
-  itself reports nothing to submit. One run reasoned its way out of three
+  own context. Launch wave-usage and read ITS answer; skip only when the
+  workflow itself returns no rows. One run reasoned its way out of three
   back-fills this way and its ledger reads `Spend: 0` against 15,689 measured
   tokens.
 - **Back-fill BEFORE you read or diagnose the wave's result.** It is one cheap
@@ -1255,24 +1294,36 @@ abandon` too — abandon has no later back-fill window, and one run stranded
 against a dispatch being abandoned, explain why back-fill had to happen
 first and include the refusal verbatim in the abandon `--reason`.
 
+```
+// 1. the join is a workflow (below); its return carries the rows and you check the shape
+Workflow({ scriptPath: "<absolute installed path to wave-usage.js>",
+           args: {dir: "<transcript-dir>", mode: "steps", exclude: []} })
+```
+
 ```bash
-# 1. the join is a script (below) — it writes the rows JSON to a file; you check the shape
 # 2. back-fill BEFORE the close. One transaction, whole batch or nothing: four
 #    TYPED rows per step, --source naming the wave (an established convention, keep it).
-#    Never retype the rows — the script's file IS the input.
-#    stdout is the JSON batch, stderr is diagnostics: NEVER merge them (no 2>&1).
-~/.claude/scripts/wave-usage <transcript-dir> > "$TMPDIR/wave-<wfId>.json" 2>"$TMPDIR/wave-<wfId>.stderr"   # check $?
+#    Land the workflow's `rows` array on disk with the Write tool, copied from
+#    the completion notification byte for byte — never retyped, never
+#    reshaped — then pipe the file. Nothing else goes in that file: the
+#    workflow's overhead and skip lines are in its return, not in `rows`.
 docket dispatch backfill-usage --run $RUN --source "wave-journal:<wfId>" --from-json - < "$TMPDIR/wave-<wfId>.json"
-# 2b. integration check — when this dispatch carried write steps, every
-#     recorded sha must be ON the shared branch before the close:
-#     ~/.claude/scripts/integration-check   (else $CC_SRC/scripts/integration-check)
-#     walks the wave worktrees and exits 1 on any unintegrated tip; on a
-#     failure, integrate NOW (Worktree writers below), then re-run it. A close
-#     that verified steps RECORDED but never steps INTEGRATED once shipped a
-#     run whose shared branch never advanced — found 19 hours later. Capture
-#     its output (redirect to a file, or copy the terminal text) — the close
-#     report pastes it VERBATIM (below), so an omitted or paraphrased check
-#     ("integration verified") is as visible as a skipped one.
+```
+
+```
+// 2b. integration check — when this dispatch carried write steps, every
+//     recorded sha must be ON the shared branch before the close. The
+//     workflow walks the wave worktrees and returns `unintegrated[]`; on a
+//     non-empty one, integrate NOW (Worktree writers below), then relaunch
+//     it. A close that verified steps RECORDED but never steps INTEGRATED
+//     once shipped a run whose shared branch never advanced — found 19
+//     hours later. The close report pastes its return VERBATIM (below), so
+//     an omitted or paraphrased check ("integration verified") is as visible
+//     as a skipped one.
+Workflow({ scriptPath: "<absolute installed path to integration-check.js>", args: {} })
+```
+
+```bash
 # 3. reconcile before closing — verify writes NOTHING, it only compares:
 docket dispatch verify --run $RUN
 # 4. only now:
@@ -1284,11 +1335,11 @@ Rows land against the step's recorded attempt, `--source` defaults to
 whole design — the flow never needs another.
 
 **Drop rows the engine already holds before piping.** Two classes are always
-in `wave-usage` output and always refused: (a) vote-kind steps — a vote step
+in wave-usage's output and always refused: (a) vote-kind steps — a vote step
 is never CLAIMED, so its attempt stays 0 and the step ledger has no key to
 hang per-seat rows on; (b) steps outside THIS dispatch's manifest — a gate
 probed in one wave and seated in the next emits usage in both journals. Filter
-both out (`wave-usage --exclude STEP-N`, repeatable). If the engine still refuses a row
+both out (`exclude: ["STEP-N", ...]` in the launch args). If the engine still refuses a row
 as already-recorded, that refusal is AUTHORITATIVE — delete that step's rows
 and resubmit the rest; it is not a discrepancy to report (measured: seven
 whole-batch aborts across three runs, each hand-filtered with ad-hoc python).
@@ -1316,37 +1367,34 @@ the other channel: units a claimant can measure at source, opaque to the
 engine, ≤32 per call. The config key `budget.unit` names the one unit the
 run's cap counts; every other unit is ledger only.
 
-**The join is a script, not a judgment: run `wave-usage <transcript-dir>`**,
-resolved the same way as `attach-probe` — `~/.claude/scripts/wave-usage` when
-`test -f` passes, else `$CC_SRC/scripts/wave-usage` (a Bash script, so the
-source path stays runnable; only Workflow scriptPaths are seat-restricted). It emits the backfill rows JSON
-directly: four typed units per step, usage deduplicated by message id
-(streamed assistant messages repeat across lines; a per-line sum
-double-counts, measured 1.65-2.36× on one run), each row keyed by the step its
-agent's own `docket step claim/record STEP-N` obligation names. An agent
-briefed to neither cast nor record — every read-only probe the wave spawns —
-is WAVE OVERHEAD: the script sums it onto one stderr line and attributes it to
-no step, because a probe names the step it READ and back-filling that read onto
-that step invents spend for work no one did (~17K tokens apiece landed
-on a pending and a superseded step before this defect was found). That overhead line is a
-report, not a discrepancy — quote its total in the wave report if anything,
-and never try to `--exclude` your way around it. It exits nonzero when an
-executor's brief names no step to record or an agent carries no usage — report
-that, do not paper over it. **Its two streams are different things and are
-never merged: stdout is the back-fill batch, stderr is diagnostics (the
-wave-overhead line above, the named silent seats), so the redirect is
-`> "$TMPDIR/wave-<wfId>.json" 2>"$TMPDIR/wave-<wfId>.stderr"` and NEVER `2>&1`.**
-A `2>&1` into the JSON file put the overhead line at the top of the batch and
-`backfill-usage` refused the whole transaction — `✘ Error: reading the
-back-fill batch: invalid character 'w' looking for beginning of value` — costing
-a retry on RUN-68. Capture ITS exit, not a pipeline's:
-`$?` after `script | tail` reports tail's exit, and one conductor's first close
-checked exactly that dead value (redirect to a file, then test). Only if the
-script is absent or refuses do you delegate: ONE `executor-read` agent on the
-transcript directory, with the **Where the numbers actually are** section
-below — that heading's whole body — verbatim as its brief. Either way
-you check the shape — every dispatched step present, quantities integers — and
-pipe it. Reading agent transcripts yourself is work that belongs below you.
+**The join is a workflow, not a judgment: launch wave-usage over the
+transcript directory**, the installed `~/.claude/workflows/wave-usage.js`,
+resolved and launched exactly as step 2 launches wave.js, with `args: {dir,
+mode: "steps", exclude: []}`. Its scout lists the directory's
+`agent-*.jsonl` files and the script fans one low-effort agent out per file
+to run ONE fixed jq program the script carries; every join and every sum then
+happens in the script, never in an agent. It returns `rows` — four typed
+units per step, usage deduplicated by message id (streamed assistant messages
+repeat across lines; a per-line sum double-counts, measured 1.65-2.36× on one
+run), each row keyed by the step its agent's own `docket step claim/record
+STEP-N` obligation names. An agent briefed to neither cast nor record — every
+read-only probe the wave spawns — is WAVE OVERHEAD: the workflow sums it into
+`overhead` and attributes it to no step, because a probe names the step it
+READ and back-filling that read onto that step invents spend for work no one
+did (~17K tokens apiece landed on a pending and a superseded step before this
+defect was found). That overhead total is a report, not a discrepancy — quote
+it in the wave report if anything, and never try to `exclude` your way around
+it. The workflow throws instead of returning when an executor's brief names
+no step to record or an agent carries no usage — report that, do not paper
+over it. **PROBE COST: one low-effort agent per transcript file, on every
+close.** That is the price of a join no one retypes; a wave of twenty agents
+costs twenty small reads. Only if the installed workflow is absent — which is
+attach-probe's install DRIFT, stop-and-report — do you delegate: ONE
+`executor-read` agent on the transcript directory, with the **Where the
+numbers actually are** section below — that heading's whole body — verbatim
+as its brief. Either way you check the shape — every dispatched step present,
+quantities integers — and pipe it. Reading agent transcripts yourself is work
+that belongs below you.
 
 A background helper you spawned is invisible to `TaskList` and `ListAgents`
 while it runs — its completion notification is the only status surface, and
@@ -1363,20 +1411,24 @@ join.
 **A panel you convened yourself gets the same treatment, keyed by seat.** Every
 tribunal.js launch has its own transcript directory, and its seats' spend has
 no other way in: a seat carries a proposal id and never a step id, so
-`dispatch backfill-usage` cannot receive it. Run the same script in `--seats`
-mode and pipe it to the vote-scoped verb, once per panel, right after you read
-the tally:
+`dispatch backfill-usage` cannot receive it. Launch the same workflow with
+`mode: "seats"` and pipe its rows to the vote-scoped verb, once per panel,
+right after you read the tally:
+
+```
+Workflow({ scriptPath: "<absolute installed path to wave-usage.js>",
+           args: {dir: "<tribunal-transcript-dir>", mode: "seats", exclude: []} })
+```
 
 ```bash
-# stdout is the JSON batch, stderr is diagnostics: NEVER merge them (no 2>&1).
-wave-usage --seats <tribunal-transcript-dir> > "$TMPDIR/panel.json" 2>"$TMPDIR/panel.stderr"   # check $?
+# `rows` landed on disk with the Write tool, copied byte for byte from the return.
 docket vote backfill-usage <proposal-id> --source "tribunal:<wfId>" \
   --from-json - < "$TMPDIR/panel.json"
 ```
 
 It keys rows by the seat name in each judge's own cast command, so the join
 cannot disagree with the cast. An agent that never cast — the silent-seat
-checker is one — is named on stderr and dropped; the engine refuses usage for a
+checker is one — is named in `skipped` and dropped; the engine refuses usage for a
 voter with no cast, and misfiling it onto a seat that did cast is worse than
 losing it. A re-spawned silent seat sums into that seat, which is correct:
 both attempts were spent deciding this proposal.
@@ -1596,8 +1648,8 @@ gc, and naming it is what keeps it recoverable.
 
 The sweep set ALSO carries every worktree THIS SESSION registered itself — the
 Go-cache warm, and any worktree you added mid-investigation; NOT the gate
-probe, which `gate-probe` registers and removes inside one process and never
-hands you — matched by the paths you wrote down at creation (see **Probe the
+probe's, which the harness registers for each isolated agent and removes when
+the agent leaves it unchanged — matched by the paths you wrote down at creation (see **Probe the
 completion gates** above), because
 such a worktree is DETACHED, carries no `worktree-wf_*` branch, and neither the
 branch pattern nor a path glob will surface it. Those take `git worktree remove
@@ -1605,13 +1657,13 @@ branch pattern nor a path glob will surface it. Those take `git worktree remove
 force-deletes something else. One homed under this session's scratchpad still
 needs the explicit remove — the scratchpad's own cleanup deletes the DIRECTORY
 and leaves the REGISTRATION behind in the shared repo, dangling and prunable
-(measured: a hand-rolled `gate-probe-wt` detached probe survived its whole run
+(measured: a hand-rolled detached probe worktree survived its whole run
 that way, back when the probe was prose).
 If your notes and `git worktree list` disagree, the list is the authority for
 what still exists and your notes are the authority for what is YOURS.
-Name every straggler `attach-probe` reported at attach — its `WARN straggler
-<path> <sha> (session <uuid>)` lines — in the close report, and remove the one
-whose path carries THIS session's id.
+Name every straggler attach-probe reported at attach — its `WARN` check's
+detail, one `<path> <sha> (session <uuid>)` per line — in the close report,
+and remove the one whose path carries THIS session's id.
 
 A worktree's COMMIT being integrated does not clear its WORKING TREE, and
 nothing above covers what is uncommitted. An integration check that
@@ -1686,12 +1738,12 @@ recount or a paraphrase:**
   operator rules the conductor patch anyway** above) are named by sha
   within that same pasted range, not folded into an executor count or
   described separately from it — one list, one source, sha by sha.
-- **`integration-check`'s output (2b above) is pasted into the close report
-  in full**, not summarized as "integration verified" or "ran clean" — so a
-  close report that skipped the script reads as missing that section, not as
-  a report that happens not to mention it. If the script was genuinely
-  inapplicable (no write steps this dispatch), say that in its place; do not
-  leave the section out silently.
+- **The integration-check workflow's return (2b above) is pasted into the
+  close report in full**, not summarized as "integration verified" or "ran
+  clean" — so a close report that skipped the launch reads as missing that
+  section, not as a report that happens not to mention it. If the check was
+  genuinely inapplicable (no write steps this dispatch), say that in its
+  place; do not leave the section out silently.
 
 **A disposition is reported only where one was actually taken — and a
 `pre = true` gate can never be one.** A pre-gate (`gates = [{ name =
@@ -1794,21 +1846,16 @@ COMPUTE the projection — never read it off a field. The computation is two
 reads and a subtraction, and it is exactly this:
 
 ```bash
-docket step list --run $RUN --json | jq '[.data.steps[] | select(.status=="pending" or .status=="ready" or .status=="gated") | .expected_cost] | add'
-docket run budget $RUN --json    # headroom = .data.budget minus .data.spend
+# read-only: `step list` and `run budget` with no --set. The pending ROW COUNT
+# prints beside the sum so a status the select misses shows as a short count.
+docket step list --run $RUN --json | jq '[.data.steps[] | select(.status=="pending" or .status=="ready" or .status=="gated")] | {n: length, sum: (map(.expected_cost) | add // 0)}'
+docket run budget $RUN --json | jq '.data | {cap: .budget, spend, headroom: (.budget - .spend)}'
 ```
 
-Fits when that sum is at or under the headroom. `step list --run` IS the
-run-scoped enumeration that was asked for, and it has shipped, so "I could not
-enumerate the steps" is no longer a thing to write in a proposal — write the
-sum and the command that produced it. Run it as ONE shipped script instead of
-retyping the pipeline: `~/.claude/scripts/budget-headroom $RUN` when `test -f`
-passes, else `$CC_SRC/scripts/budget-headroom $RUN`, resolved the same way as
-`attach-probe` above. It is read-only (`step list`, `run budget`, no `--set`),
-prints cap / spend / pending sum / headroom and a one-word verdict, and prints
-the pending ROW COUNT beside the sum so a status name the select does not
-cover shows up as a count that disagrees with the roster instead of as a
-silently short sum.
+Fits when the pending sum is at or under the headroom. `step list --run` IS
+the run-scoped enumeration that was asked for, and it has shipped, so "I
+could not enumerate the steps" is no longer a thing to write in a proposal —
+write the sum and the command that produced it.
 
 **`run activate --dry-run`'s `expected_cost_total` is the run's whole-roster
 total including done and skipped steps, NOT the increment — never put it in a

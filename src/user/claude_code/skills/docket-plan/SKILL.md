@@ -726,6 +726,34 @@ outside five directories plus README.md; seven archival files outside that
 boundary held matches, so the AC was unsatisfiable as worded, and the
 contradiction surfaced only at verification, recorded against it afterward.
 
+**A mechanized check with no written mutant is not mechanized.** For every AC
+you record with a command beside it, write down the MUTANT — the specific edit
+to the file under check that must make that command go red — and show the
+command's pre-fix output red against the tree as it stands. A check whose
+mutant nobody wrote down is a check nobody has falsified, and it passes on
+files that violate the criterion it claims to enforce. If you cannot state the
+mutant, the criterion does not carry a command: mark it **read-verified**
+explicitly in the AC text, so the acceptance record never reads as uniformly
+mechanized when only some of it is. Both halves matter — an AC list where
+every line trails a grep, half of which can never go red, is more misleading
+than one that says plainly which criteria a human must read.
+
+**Prefer the section-anchored form over the whole-file grep.** Extract the
+bullet or block the criterion is about first, then assert on that extract; a
+bare `grep -n 'some string' <file>` over a 750-line document tests only that
+the string exists somewhere in it. Two mutants from a past issue's ACs show
+why. One AC checked `grep -nE 'git (diff|log) <base>'` for a correct revision
+range; the check anchors the revision as the first token after the verb, so
+rewriting `origin/<base>..HEAD` to `<base>..HEAD` — the exact regression the
+AC existed to catch — left the grep silent at exit 1, and flags-before-ref
+sites plus `git rev-list` were invisible to it entirely. Another checked
+`grep -n 'rev-parse HEAD'` for a refusal rule; replacing the refusal clause
+with "note the divergence and continue", and separately deleting the bullet
+while reintroducing the same string as unrelated prose elsewhere, both left it
+at exit 0. Anchoring each check to the section it is about — pull the bullet
+out with `sed`/`awk` by its heading or marker, then grep the extract — kills
+both mutants for the cost of one more pipe stage.
+
 **An AC that needs a live cluster is post-merge by construction, not an AC.**
 On GitOps repos, author acceptance criteria as statically verifiable render
 assertions — a `kustomize build` / manifest-render check the verify step can

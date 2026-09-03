@@ -356,6 +356,8 @@ impl ClaudeCode {
             .with_permission_allow("Bash(gofmt:*)")
             .with_permission_allow("Bash(~/.claude/scripts/*)")
             .with_permission_allow("Bash(~/.claude/workflows/*)")
+            .with_permission_allow("Edit(/private/tmp/claude-501/**)")
+            .with_permission_allow("Edit(/tmp/claude-501/**)")
             .with_permission_allow("WebFetch(domain:api.github.com)")
             .with_permission_allow("WebFetch(domain:claude.ai)")
             .with_permission_allow("WebFetch(domain:code.claude.com)")
@@ -412,15 +414,40 @@ impl ClaudeCode {
             // Commands that need a network the sandbox cannot grant (the
             // bulbasaur cluster, AWS, the Doppler API) run unsandboxed rather
             // than through a per-call lift; the permission rules and the
-            // auto-mode classifier still gate what they do. Prefix-matched:
-            // an env-var or `cd` prefix defeats the match and the call runs
-            // sandboxed.
+            // auto-mode classifier still gate what they do.
+            //
+            // MEASURED (DOT-1263, 2026-09-03, no dangerouslyDisableSandbox,
+            // ~/Desktop deny-read): the match is over TOP-LEVEL simple
+            // commands of the whole Bash call, not the call's first token —
+            // `cd /tmp/claude && git --version && ls ~/Desktop`,
+            // `ls ~/Desktop; git --version`, and `set -e; git --version; ls
+            // ~/Desktop` all ran the ENTIRE call unsandboxed (`ls ~/Desktop`
+            // succeeded) once `git *` was in this list, whichever position
+            // the excluded command sat in and whatever preceded or followed
+            // it. Excluded only when the matching command sits inside a
+            // control-flow construct instead of appearing as a top-level
+            // simple command: `cd /tmp/claude && set -e; for x in 1; do git
+            // --version; done; ls ~/Desktop` ran sandboxed (the loop hid
+            // `git` from the matcher). A `cd`/env-var PREFIX on the matching
+            // command itself, as opposed to a separate command joined by
+            // `&&`/`;`, was not probed. So: any entry in this list makes the
+            // WHOLE call run unsandboxed the moment that command appears
+            // anywhere at top level in it, including alongside unrelated
+            // commands this list was never meant to exempt — an executor
+            // whose sandbox lift was denied can run anything unsandboxed by
+            // appending `; git --version` (or any other listed command) to
+            // its call. `git` is removed below for exactly this reason:
+            // local git needs no network (`github.com`/`api.github.com` are
+            // already in the network allowlist for what does), so nothing
+            // here needed the exclusion. The other entries were not
+            // re-probed and keep the same fail-open exclusion shape —
+            // narrowing this list further, or replacing it with a
+            // command-position-aware mechanism, is unassessed.
             .with_sandbox_excluded_commands(vec![
                 "aws *".to_string(),
                 "docker *".to_string(),
                 "doppler *".to_string(),
                 "gh *".to_string(),
-                "git *".to_string(),
                 "kubectl *".to_string(),
                 "terraform *".to_string(),
                 "vorpal *".to_string(),
@@ -496,7 +523,7 @@ impl ClaudeCode {
         let memory = FileCreate::new(
             &component_name(&self.name, "memory"),
             self.systems.clone(),
-            include_str!("claude_code_memory.md"),
+            include_str!("claude_code/CLAUDE.md"),
         )
         .build(context)
         .await?;
@@ -504,7 +531,7 @@ impl ClaudeCode {
         let allowed_signers = FileCreate::new(
             &component_name(&self.name, "allowed-signers"),
             self.systems.clone(),
-            include_str!("claude_code_allowed_signers"),
+            include_str!("claude_code/allowed_signers"),
         )
         .build(context)
         .await?;
@@ -512,7 +539,7 @@ impl ClaudeCode {
         let statusline = FileCreate::new(
             &component_name(&self.name, "statusline"),
             self.systems,
-            include_str!("claude_code_statusline.sh"),
+            include_str!("claude_code/statusline.sh"),
         )
         .with_executable(true)
         .build(context)
@@ -595,7 +622,7 @@ mod tests {
 
     #[test]
     fn allowed_signers_roster_carries_the_agent_signing_key() {
-        let roster = include_str!("claude_code_allowed_signers");
+        let roster = include_str!("claude_code/allowed_signers");
 
         // The key ~/.ssh/agent-signing.pub holds, scoped to git's namespace.
         // Drop this line and every agent-signed commit verifies as U instead

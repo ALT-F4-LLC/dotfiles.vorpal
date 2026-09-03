@@ -142,12 +142,76 @@ case_deny_reason_is_fixed() {
     esac
 }
 
+# DOT-1262: a Workflow-spawned seat (tribunal.js, wave.js) whose agent_type
+# arrives empty must still be caught, via its own transcript's first
+# message. build_input_with_transcript layers a transcript_path onto
+# build_input's payload; the fixture file under it stands in for that
+# seat's opening brief.
+WORK=$(mktemp -d "${TMPDIR:-/tmp}/sandbox-bypass-guard.XXXXXX")
+trap 'rm -rf "$WORK"' EXIT
+
+build_input_with_transcript() { # <command> <agent_type or ""> <bypass> <transcript-path>
+    build_input "$1" "$2" "$3" | jq -c --arg t "$4" '.transcript_path = $t'
+}
+
+case_transcript_fallback() {
+    local wave_transcript="${WORK}/wave-seat.jsonl"
+    printf '%s\n' '{"role":"user","content":"...docket step claim STEP-42 --owner wave:STEP-42 --render --json > <TMP>/STEP-42.d/STEP-42.claim.json..."}' >"$wave_transcript"
+    got=$(verdict_of "$(build_input_with_transcript "$GOCMD" "" true "$wave_transcript")")
+    [ "$got" = "DENY" ] && pass "wave seat brief in transcript, agent_type absent (DENY)" || fail "wave seat brief in transcript, agent_type absent (want DENY, got ${got})"
+
+    local tribunal_transcript="${WORK}/tribunal-seat.jsonl"
+    printf '%s\n' '{"role":"user","content":"THE PROPOSAL:   DKT-V338\nWORKING DIR:    /repo\n...docket vote cast DKT-V338 --voter judge-security..."}' >"$tribunal_transcript"
+    got=$(verdict_of "$(build_input_with_transcript "$GOCMD" "" true "$tribunal_transcript")")
+    [ "$got" = "DENY" ] && pass "tribunal seat brief in transcript, agent_type absent (DENY)" || fail "tribunal seat brief in transcript, agent_type absent (want DENY, got ${got})"
+
+    # Positive control: agent_type still wins when both are present.
+    got=$(verdict_of "$(build_input_with_transcript "$GOCMD" executor-write true "$wave_transcript")")
+    [ "$got" = "DENY" ] && pass "wave seat brief AND agent_type set (DENY)" || fail "wave seat brief AND agent_type set (want DENY, got ${got})"
+
+    # Negative control: an operator transcript that never mentions a seat
+    # brief must not be caught by the fallback.
+    local operator_transcript="${WORK}/operator.jsonl"
+    printf '%s\n' '{"role":"user","content":"help me debug this docker build, see STEP one of the README"}' >"$operator_transcript"
+    got=$(verdict_of "$(build_input_with_transcript "$GOCMD" "" true "$operator_transcript")")
+    [ "$got" = "ALLOW" ] && pass "ordinary transcript, agent_type absent (ALLOW)" || fail "ordinary transcript, agent_type absent (want ALLOW, got ${got})"
+
+    # Missing/unreadable transcript_path must not itself deny.
+    got=$(verdict_of "$(build_input_with_transcript "$GOCMD" "" true "${WORK}/does-not-exist.jsonl")")
+    [ "$got" = "ALLOW" ] && pass "unreadable transcript_path, agent_type absent (ALLOW)" || fail "unreadable transcript_path, agent_type absent (want ALLOW, got ${got})"
+}
+
+case_friction_log_records_decisions() {
+    local home_dir log_file
+    home_dir=$(mktemp -d "${TMPDIR:-/tmp}/sandbox-bypass-guard-home.XXXXXX")
+    log_file="${home_dir}/.claude/friction/sandbox-bypass-guard.jsonl"
+
+    HOME="$home_dir" "$BASH_BIN" "$HOOK" >/dev/null 2>&1 <<<"$(build_input "$GOCMD" executor-write true)"
+    if [ -s "$log_file" ] && jq -e '.decision == "deny" and .detected_via == "agent_type"' "$log_file" >/dev/null 2>&1; then
+        pass "friction log records an agent_type deny"
+    else
+        fail "friction log missing or wrong shape after an agent_type deny"
+    fi
+
+    : >"$log_file"
+    HOME="$home_dir" "$BASH_BIN" "$HOOK" >/dev/null 2>&1 <<<"$(build_input "$GOCMD" "" true)"
+    if [ -s "$log_file" ] && jq -e '.decision == "allow" and .detected_via == "none"' "$log_file" >/dev/null 2>&1; then
+        pass "friction log records the main-conversation allow"
+    else
+        fail "friction log missing or wrong shape after the main-conversation allow"
+    fi
+
+    rm -rf "$home_dir"
+}
+
 case_executor_lift_denies
 case_executor_sandboxed_allows
 case_other_callers_allow
 case_only_bash_and_only_boolean_true
 case_malformed_input_allows
 case_deny_reason_is_fixed
+case_transcript_fallback
+case_friction_log_records_decisions
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

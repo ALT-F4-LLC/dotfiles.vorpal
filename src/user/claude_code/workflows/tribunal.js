@@ -389,6 +389,13 @@ a file and a different one when you read it back. Pin the literal once and
 reuse it everywhere — the summary file your cast reads back below depends on
 exactly that.
 
+Run every command SANDBOXED, same as an executor step — do NOT pass
+dangerouslyDisableSandbox. Only the operator can grant that, and never
+through a brief. If the sandbox denies a command you need (a blocked host,
+Operation not permitted), that is a finding for your rationale, not a
+retry — attempt it once, note the denial and what it means for the
+question you were asked, and continue with what you could read.
+
 --- WHAT IS BEING DECIDED (verbatim) ---
 ${context}
 --- END OF WHAT IS BEING DECIDED ---
@@ -490,6 +497,10 @@ function checkerBrief(voteId, cwd) {
     return `Run exactly this one command:
 
   cd ${cwd} && docket vote show ${voteId}
+
+Run it SANDBOXED — do NOT pass dangerouslyDisableSandbox. Only the operator
+can grant that, and never through a brief. If the sandbox denies it, return
+the denial text verbatim instead of retrying with the sandbox disabled.
 
 Return its output VERBATIM as your entire final reply — every line, unedited,
 no summary, no commentary, no code fence, nothing added. If the command errors,

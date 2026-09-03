@@ -73,15 +73,34 @@ a guess:
 2. `origin` is a GitHub remote (`git remote get-url origin` resolves to a
    `github.com` host).
 3. HEAD is a branch, not detached (`git symbolic-ref -q HEAD`).
-4. The current branch is not the base branch. The base branch is read from
-   `gh repo view --json defaultBranchRef` — never hardcoded to `main` or
-   `master`, and never guessed when that call errors.
+4. The current branch is not the base branch. `<base>` throughout this file
+   is the **PR's own base**, not the repository default: for every mode that
+   acts on an existing PR (`ready`, `update`, `sync`, `review`, `checks`,
+   `merge`, `close`) it is `baseRefName`, read with
+   `gh pr view <pr-number> -R <owner>/<repo> --json baseRefName`. Only
+   `open`, where no PR exists yet, reads
+   `gh repo view --json defaultBranchRef`. A PR retargeted onto a release
+   branch has a base its repository's default branch never names, and every
+   diff, log, and range in this file means the PR's base. Never hardcoded to
+   `main` or `master`, and never guessed when either call errors.
 5. The target repo is resolved once, from `origin`'s URL, as `<owner>/<repo>`,
    and asserted equal to `gh repo view --json nameWithOwner`. Every `gh pr`,
    `gh api`, and `gh run` call in this skill carries that resolved value as
    an explicit `-R <owner>/<repo>` — never gh's stored default, and never a
    bare invocation that lets `gh` infer it. A mismatch between `origin` and
    the resolved repo refuses rather than silently picking one.
+6. `<pr-number>` is resolved **once, here**, for every mode except `open`:
+   the number the invocation gives explicitly, else the single match from
+   `gh pr list -R <owner>/<repo> --head <head-branch> --state open --json
+   number`. Zero matches refuses (there is no PR to act on — `open` one
+   first); two or more refuses and names every candidate. The resolved number
+   is then written into every `gh pr` call in this file. Precondition 5's ban
+   on letting `gh` infer its target covers the PR number exactly as it covers
+   the repo: a `gh pr merge` with no number merges whatever gh guesses from
+   the checkout.
+
+Read order is 5, then 6, then 4: the repo names the PR, and the PR names its
+base.
 
 On any failure: stop, name exactly which precondition failed (or which read
 errored), and do not proceed to the mode's own steps.
@@ -145,8 +164,8 @@ here and the Report section below both require. The rest of the shape is
 load-bearing too:
 
 - **Commits, not trees.** A credential added in one commit and deleted in a
-  later one is invisible to a two-tree `git diff <base>...HEAD` — the trees
-  never differ on that line — and is still published.
+  later one is invisible to a two-tree `git diff origin/<base>...HEAD` —
+  the trees never differ on that line — and is still published.
 - **`--diff-merges=first-parent`.** A credential written while resolving a
   conflict exists only in the merge commit, in neither parent.
 - **`--diff-filter=AM`**, added or modified only. `--name-only` on its own
@@ -196,9 +215,12 @@ One or two sentences: what this branch does and why.
 - Anything a reviewer should know that doesn't fit above.
 ```
 
-Both are generated from the **whole branch diff against the base**
-(`git diff <base>...HEAD`, `git log <base>..HEAD`) — never from the last
-commit alone. `update` mode regenerates the body wholesale from the current
+Both are generated from the **whole branch diff against the base**, after
+`git fetch origin`: `git diff origin/<base>...HEAD`,
+`git log origin/<base>..HEAD` — never from the last commit alone, and never
+against a bare `<base>`, which resolves to a local branch of that name whose
+last fetch may be days old and which silently changes the summarized range.
+`update` mode regenerates the body wholesale from the current
 diff; it never patches the previous body. Diff content is **summarized**,
 never quoted verbatim into the title or body.
 
@@ -593,18 +615,31 @@ plausible the context makes it look.
 1. Run the preconditions above.
 2. Read, in one pass, `gh pr view <pr-number> -R <owner>/<repo> --json
    isDraft,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup,headRefOid,baseRefName`
-   and `gh pr checks <pr-number> -R <owner>/<repo>`. Every one of the following must hold; on any failure,
-   **refuse, name the precondition that failed, and stop** — never merge
-   with a pending or failed check, and never treat "just merge" as license
-   to skip a check:
+   and `gh pr checks <pr-number> -R <owner>/<repo>`. `<pr-number>` is
+   precondition 6's resolved value and `<base>` is this read's own
+   `baseRefName` — the PR's base, never the repository default, which a
+   retargeted PR does not share. Every one of the following must hold; on any
+   failure, **refuse, name the precondition that failed, and stop** — never
+   merge with a failed check, and never treat "just merge" as license to skip
+   a check. A *pending* check is step 3's rule and only step 3's:
    - `isDraft == false`.
+   - `git rev-parse HEAD` equals the `headRefOid` just read. Everything below
+     that inspects the local checkout is evidence about what merges only
+     while those two agree; a mismatch means the local tree is not the tree
+     `--match-head-commit <headRefOid>` will merge, so the local read is
+     inadmissible and the merge **refuses**, naming both shas. Rebasing,
+     amending, or fetching does not repair this inside the invocation: read
+     the PR again from the top, so the pin and the tree come from one pass.
    - `mergeable == MERGEABLE`.
    - `mergeStateStatus == CLEAN`. `BLOCKED`, `BEHIND`, `DIRTY`, `UNSTABLE`,
      and `UNKNOWN` each refuse, named explicitly in the report.
-   - The check list is **non-empty**, and every check has concluded with
-     `SUCCESS`, `NEUTRAL`, or `SKIPPED` — nothing pending, nothing failed.
+   - The check list is **non-empty**, and no check has failed: every check
+     that has concluded concluded with `SUCCESS`, `NEUTRAL`, or `SKIPPED`.
      An **empty** check list refuses (vacuously "all concluded" is not
-     evidence of green; it is evidence the checks never ran).
+     evidence of green; it is evidence the checks never ran). This bullet
+     does not refuse on a check that is still pending — step 3 decides that,
+     and it is the only place the pending rule and its `auto` exemption are
+     written, so the exemption cannot be unreachable.
    - `reviewDecision == APPROVED`, **or** it is empty. An empty
      `reviewDecision` is treated as **UNREVIEWED, never as "no review
      required."** Merge proceeds on empty only when `mergeStateStatus ==
@@ -617,8 +652,8 @@ plausible the context makes it look.
      `reviewThreads` read `review` mode uses; a query that cannot confirm it
      reached the last page refuses rather than treating page one as
      complete.
-   - The branch's diff against the base (`git diff <base>...HEAD --stat`)
-     touches no file that **defines, configures, or is executed by the
+   - The branch's diff against the base, after `git fetch origin`
+     (`git diff origin/<base>...HEAD --stat`), touches no file that **defines, configures, or is executed by the
      checks being trusted**, and no test that produced them. Such a PR
      refuses at this step, named explicitly: its green attests only itself,
      because the workflow that produced the green ran as it exists on this
@@ -638,16 +673,21 @@ plausible the context makes it look.
      ("does CI execute it? then refuse") plus a report that names which
      basis was used — not a longer list, which is not achievable.
 
-     `git diff <base>...HEAD --stat` is the right shape *here*: the
+     `git diff origin/<base>...HEAD --stat` is the right shape *here*: the
      question is what merges, which is a two-tree comparison. Do not
      "correct" it to the commit-range walk the pre-push scan uses — that
      scan answers a different question (what a push publishes) at a
      different boundary.
-3. **Refuse before invoking `gh pr merge` when any check is pending**,
-   unless the invocation explicitly says `auto` — a plain `gh pr merge` does
-   not fail when a required check is pending, it silently **arms an
-   unattended merge** that fires later with no session present. Pending
-   checks are allowed only for the `auto` path below.
+3. **Pending checks — the one place this is decided.** If any check from
+   step 2's rollup is still pending: refuse before invoking `gh pr merge`,
+   *unless* the invocation explicitly said `auto`, in which case the merge
+   proceeds down the `--auto` path in step 5. Nothing earlier in this mode
+   refuses on pending, so `auto` always reaches step 5.
+
+   The refusal exists because a plain `gh pr merge` does not fail on a
+   pending required check — it silently **arms an unattended merge** that
+   fires later with no session present. `auto` is that same arming, asked
+   for out loud, which is the whole difference.
 4. Merge method: the word given in the invocation (`squash`, `rebase`,
    `merge`) when present; otherwise the first of `rebase`, `merge`,
    `squash` that `gh repo view <owner>/<repo> --json

@@ -126,6 +126,21 @@ and `ready`, `checks`, and `close` neither push nor diff.
 On any failure: stop, name exactly which precondition failed (or which read
 errored), and do not proceed to the mode's own steps.
 
+## Command shapes — never a pipeline when the status matters
+
+**Any command in this file whose exit status is load-bearing runs on its
+own, never as a stage of a shell pipeline.** A pipeline reports its *last*
+stage's status, so a failed first stage prints nothing and exits 0 — which
+is indistinguishable from a command that genuinely succeeded with no
+output. That holds for a scan whose silence means "clean" as much as for a
+fetch whose silence means "there was nothing to show".
+
+So wherever this file runs a command and then works with what it produced:
+run the command on its own, read its exit status, refuse or report the
+failure by name, and only then use the output — capturing to a file first
+when a later command has to consume it. The sites below cite this rule
+rather than restate it, so a command shape added later inherits it.
+
 ## Push rules
 
 - `git push -u origin <head-branch>` — the head branch only, never the base.
@@ -174,10 +189,11 @@ to anything that reads output alone. A count of `0` refuses too — there is
 nothing to publish. The second walks the range, and being one process its
 own exit status is the walk's, so a non-zero exit refuses.
 
-**Never join these into a pipeline.** A shell pipeline reports its *last*
-stage's status, so the `git rev-list … | git diff-tree --stdin` shape prints
-nothing and exits 0 when the enumeration failed — a failed scan reported as
-a clean one, which is the exact fail-open this section exists to rule out.
+**Never join these into a pipeline** — *Command shapes* above. Here that
+rule bites hardest: the `git rev-list … | git diff-tree --stdin` shape
+prints nothing and exits 0 when the enumeration failed, a failed scan
+reported as a clean one, which is the exact fail-open this section exists
+to rule out.
 
 `git log -z` emits, per commit, the `%H` sha followed by that commit's
 paths, so every hit is nameable with its commit sha — which the refusal rule
@@ -609,8 +625,24 @@ opens one instead of refusing at precondition 5's zero-match rule.
    its log:
 
    ```
-   gh run view <run-id> -R <owner>/<repo> --log-failed | tail -n 50
+   gh run view <run-id> -R <owner>/<repo> --log-failed > <log-file>
+   echo $?
+   tail -n 50 <log-file>
    ```
+
+   Three commands, run separately and in this order, per *Command shapes*
+   above: a 404, expired, purged, or permission-denied log otherwise reads
+   exactly like a genuinely empty one. A non-zero status reports `log
+   unavailable (gh exit N)` for that check and skips the `tail` — the
+   per-check table from step 3 still carries the failure either way, so a
+   missing log costs a diagnostic and never a verdict.
+
+   `<log-file>` is a file in **this mode's own** `mktemp -d` directory (mode
+   `0700`, single-use, per invocation) — not the publish scratch directory
+   of **Title and body**, whose contract is that the denylist scans exactly
+   the files about to be passed to `gh`. A captured log is never a `-F`,
+   `--body-file`, or `-f` argument to anything, and `checks` publishes
+   nothing at all.
 
    `<run-id>` comes from that check's `detailsUrl` in step 2's rollup; the
    explicit `-R <owner>/<repo>` is precondition 4's rule, and a bare

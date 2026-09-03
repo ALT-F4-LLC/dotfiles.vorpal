@@ -89,6 +89,7 @@ const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
     "~/.cargo/registry",
     "~/.docker/buildx",
     "~/Development/language/go/pkg/mod",
+    "~/Development/language/go/pkg/sumdb",
     "~/Library/Application Support/go",
     "~/Library/Caches/go-build",
     "~/Library/Caches/golangci-lint",
@@ -438,9 +439,15 @@ impl ClaudeCode {
                 "static.crates.io".to_string(),
                 "vuln.go.dev".to_string(),
             ])
+            // Each entry becomes a seatbelt subpath rule for both bind and
+            // connect. The scratch roots are listed so test suites that listen
+            // on a unix socket under their step directory run sandboxed; with
+            // only the two service sockets below, every such bind was refused.
             .with_sandbox_network_allow_unix_sockets(vec![
                 "~/.orbstack/run/docker.sock".to_string(),
                 "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock".to_string(),
+                SANDBOX_CLAUDE_SCRATCH_ROOT.to_string(),
+                SANDBOX_CLAUDE_SCRATCH_ROOT_PRIVATE.to_string(),
             ])
             .with_sandbox_network_allow_mach_lookup(vec!["com.apple.trustd.agent".to_string()])
             .with_sandbox_network_allow_local_binding(true)

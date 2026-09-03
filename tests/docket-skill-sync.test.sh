@@ -9,7 +9,7 @@
 # The docket CLI's skill lives twice: this repo's corpus copy at
 # src/user/claude_code/skills/docket/SKILL.md (what `just activate` installs
 # and every session executes), and the engine repo's own copy at
-# docket.git/feature/graph-engine/skills/docket/SKILL.md, which the engine's
+# docket.git/main/skills/docket/SKILL.md, which the engine's
 # self-hygiene gate keeps current as verbs change. Drift between them ships
 # stale guidance to every session (2026-08-19 fleet review: 282 lines of
 # drift including a load-bearing conductor caution, installed stale that
@@ -28,7 +28,7 @@ LOCAL="$HERE/src/user/claude_code/skills/docket/SKILL.md"
 # The fallback is a developer's local engine worktree. CI does not use it: the
 # `skill-sync` job in `.github/workflows/vorpal.yaml` checks the engine repo out
 # and sets DOCKET_SKILL_UPSTREAM. Moving one of the two means moving the other.
-UPSTREAM="${DOCKET_SKILL_UPSTREAM:-$HOME/Development/repository/github.com/ALT-F4-LLC/docket.git/feature/graph-engine/skills/docket/SKILL.md}"
+UPSTREAM="${DOCKET_SKILL_UPSTREAM:-$HOME/Development/repository/github.com/ALT-F4-LLC/docket.git/main/skills/docket/SKILL.md}"
 
 if [ ! -f "$UPSTREAM" ]; then
     if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then

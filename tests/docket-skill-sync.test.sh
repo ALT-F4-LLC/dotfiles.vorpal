@@ -2,6 +2,10 @@
 
 # Drift check for the deliberately duplicated docket skill.
 #
+# Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
+# — in the `skill-sync` job, which is `continue-on-error` because the two
+# copies are known to differ today; the drift is reported, not gated.
+#
 # The docket CLI's skill lives twice: this repo's corpus copy at
 # src/user/claude_code/skills/docket/SKILL.md (what `just activate` installs
 # and every session executes), and the engine repo's own copy at
@@ -21,6 +25,9 @@ set -uo pipefail
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 LOCAL="$HERE/src/user/claude_code/skills/docket/SKILL.md"
+# The fallback is a developer's local engine worktree. CI does not use it: the
+# `skill-sync` job in `.github/workflows/vorpal.yaml` checks the engine repo out
+# and sets DOCKET_SKILL_UPSTREAM. Moving one of the two means moving the other.
 UPSTREAM="${DOCKET_SKILL_UPSTREAM:-$HOME/Development/repository/github.com/ALT-F4-LLC/docket.git/feature/graph-engine/skills/docket/SKILL.md}"
 
 if [ ! -f "$UPSTREAM" ]; then
@@ -35,6 +42,11 @@ fi
 if diff -u "$LOCAL" "$UPSTREAM"; then
     echo "PASS: docket skill copies are byte-identical"
 else
-    echo "FAIL: docket skill copies have drifted — land the edit in BOTH copies, same session"
+    echo "FAIL: docket skill copies have drifted"
+    echo "  this repo: $LOCAL ($(wc -l <"$LOCAL" | tr -d ' ') lines)"
+    echo "  engine:    $UPSTREAM ($(wc -l <"$UPSTREAM" | tr -d ' ') lines)"
+    echo "  If you edited either copy, land the edit in BOTH, same session."
+    echo "  If you edited neither, the drift came from the engine copy moving:"
+    echo "  reconcile it there and here, not by patching this PR."
     exit 1
 fi

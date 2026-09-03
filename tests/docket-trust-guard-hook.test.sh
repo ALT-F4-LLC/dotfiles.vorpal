@@ -3,6 +3,8 @@
 # Behavior suite for src/user/claude_code/hooks/docket-trust-guard-hook.sh
 # (DOT-812).
 #
+# Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
+#
 # THE PROPERTY UNDER TEST is caller-scoped, not command-scoped: the same
 # `docket trust add/rm` invocation must DENY when agent_type names an
 # executor archetype and ALLOW when it does not (main conversation, or any

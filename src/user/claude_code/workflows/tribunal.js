@@ -2,7 +2,10 @@ export const meta = {
     name: 'tribunal',
     description: 'Spawn a judge panel that decides one gated proposal by each seat casting a real `docket vote cast`. This script never casts, approves, or tallies — the engine\'s vote machinery tallies. Invoke by scriptPath ONLY, with args {voteId, voters, policyText, context, gateKind, cwd} — policy.toml is passed as TEXT, never a path; the script cannot read files.',
     whenToUse: 'Invoked on a CONVERSATIONAL gate the docket-run skill routes to a panel (ack-reap, activation, budget, fix-batch), always as Workflow({scriptPath}) — never by name. Engine `type = "vote"` step rows ride the wave since the staged closure: wave.js seats their panels itself with the same seat contract as this script. The CALLER creates the proposal and passes its id; tribunal.js only fills an open one.',
-    phases: ['Judge', 'Verify'],
+    phases: [
+        { title: 'Judge', detail: 'one seat per voter, each casting docket vote cast' },
+        { title: 'Verify', detail: 'one haiku probe reads the vote record', model: 'haiku' },
+    ],
 }
 
 // ---------------------------------------------------------------------------
@@ -493,10 +496,19 @@ verbatim error text and nothing else — that is the only case where your final
 text matters.`
 }
 
-function checkerBrief(voteId, cwd) {
-    return `Run exactly this one command:
+// The probe relays a jq projection, never the raw record: the full envelope
+// is ~10KB on a 3-seat proposal and two haiku probes on one wave corrupted
+// verbatim copies of it (a dropped brace, 81 chars lost mid-copy). Under 300
+// bytes of fixed shape copies exactly, and the seat check reads it
+// structurally below.
+const VOTE_SHOW_JQ =
+    `jq -c '{status: .data.status, final_outcome: .data.final_outcome, ` +
+    `votes: [.data.votes[]? | {voter_name, verdict}]}'`
 
-  cd ${cwd} && docket vote show ${voteId}
+function checkerBrief(voteId, cwd) {
+    return `WAVE PROBE: not a step execution. Run exactly this one command:
+
+  cd ${cwd} && docket vote show ${voteId} --json | ${VOTE_SHOW_JQ}
 
 Run it SANDBOXED — do NOT pass dangerouslyDisableSandbox. Only the operator
 can grant that, and never through a brief. If the sandbox denies it, return
@@ -598,17 +610,44 @@ function verify() {
         })
 }
 
-// A seat has cast when its voter name appears in the vote record. The engine
+// A seat has cast when its voter name is in the record's votes[]. The engine
 // enforces one cast per voter name, so a false negative costs one refused
-// re-cast, never a double count.
+// re-cast, never a double count. A probe's text can carry a harness banner
+// ahead of the JSON, so parse from the first `{`; when it will not parse at
+// all, fall back to a substring match on the raw text and say so.
+function castSeats(record) {
+    const i = record.indexOf('{')
+    if (i < 0) return null
+    try {
+        const parsed = JSON.parse(record.slice(i))
+        if (parsed && Array.isArray(parsed.votes)) {
+            return parsed.votes.map((v) => (v && typeof v.voter_name === 'string') ? v.voter_name : '').filter(Boolean)
+        }
+    } catch {
+        // fall through to the raw-text match
+    }
+    return null
+}
+
 function missingSeats(record) {
+    const cast = castSeats(record)
+    if (cast) return seats.filter((s) => !cast.some((n) => n.includes(s.seat)))
+    log(`WARNING tribunal: the vote-show projection did not parse (probe reply ` +
+        `${record.length} chars) — falling back to a substring match on the raw text`)
     return seats.filter((s) => !record.includes(s.seat))
 }
 
 await parallel(seats.map((r) => () => spawnJudge(r, false)))
 
+// An EMPTY probe result says nothing about the casts — treating it as "every
+// seat missing" once re-spawned a whole panel that had already voted. The
+// probe is retried once before any seat is; only a non-empty record is read.
 let outcome = await verify()
-let missing = missingSeats(outcome)
+if (outcome === '') {
+    log(`tribunal: the verify probe returned nothing — retrying the probe ONCE before reading any seat as missing`)
+    outcome = await verify()
+}
+let missing = outcome === '' ? [] : missingSeats(outcome)
 let respawns = 0
 
 if (missing.length > 0) {
@@ -617,7 +656,7 @@ if (missing.length > 0) {
         `(${missing.map((s) => s.seat).join(', ')}) — re-spawning each ONCE`)
     await parallel(missing.map((r) => () => spawnJudge(r, true)))
     outcome = await verify()
-    const stillMissing = missingSeats(outcome)
+    const stillMissing = outcome === '' ? [] : missingSeats(outcome)
     if (stillMissing.length > 0) {
         log(`tribunal: STILL NO CAST from ${stillMissing.map((s) => s.seat).join(', ')} ` +
             `after the one permitted re-spawn. The panel is short a vote and the tally ` +
@@ -628,9 +667,10 @@ if (missing.length > 0) {
 }
 
 if (outcome === '') {
-    log(`tribunal: the verify probe returned nothing — the outcome text is EMPTY, ` +
-        `which says nothing about whether the casts landed. Read the record ` +
-        `directly with \`docket vote show ${voteId}\` before acting on this return.`)
+    log(`tribunal: the verify probe returned nothing twice — the outcome text is EMPTY, ` +
+        `which says nothing about whether the casts landed, and no seat was re-spawned ` +
+        `on that silence. Read the record directly with \`docket vote show ${voteId}\` ` +
+        `before acting on this return.`)
 }
 
 return { voteId, outcome, seatsSpawned: seats.length, respawns }

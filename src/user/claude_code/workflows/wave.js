@@ -2324,6 +2324,24 @@ async function runGate(row, phaseLabel) {
         // postdate it — so the tally must re-read rather than reuse it.
         voteRead = null
     }
+    // A seat still silent after its one retry is named, never absorbed into a
+    // quorum pass or the generic did-not-clear line. It is read off the
+    // tally's own vote-show (no extra probe), so it can only be named on the
+    // path that reads one.
+    const nameStillMissing = () => {
+        if (missing.length === 0 || !voteRead) return
+        const cast = (voteRead.data && Array.isArray(voteRead.data.votes))
+            ? voteRead.data.votes.map((v) => (v && typeof v.voter_name === 'string') ? v.voter_name : '').filter(Boolean)
+            : null
+        const still = missing.filter((s) => cast
+            ? !cast.some((n) => n.includes(s.seat))
+            : !voteRead.text.includes(s.seat))
+        if (still.length > 0) {
+            log(`${row.step}: STILL NO CAST from ${still.map((s) => s.seat).join(', ')} ` +
+                `after the one permitted re-spawn — the panel is short ${still.length} ` +
+                `vote(s); the tally decides on the engine's record as it stands`)
+        }
+    }
 
     // `done` says only that the step COMPLETED — a rejection whose on_fail
     // routes into rework also reads done/superseded. The tally is the verdict.
@@ -2331,6 +2349,7 @@ async function runGate(row, phaseLabel) {
         `${row.step} · gate:outcome`, phaseLabel, undefined, acct)
     if (/"status"\s*:\s*"done"/.test(show)) {
         const { outcome, tally } = await tallyOutcome(voteId)
+        nameStillMissing()
         if (outcome === 'rejected') {
             log(`${row.step}: gate decided REJECTED (${voteId}) — engine ` +
                 `routes on_fail; the conductor verifies the routing; ` +
@@ -2344,6 +2363,7 @@ async function runGate(row, phaseLabel) {
         return res
     }
     log(`${row.step}: gate did NOT clear (${(show.match(/"status"\s*:\s*"([a-z-]+)"/) || [])[1] || 'unknown'}) ` +
+        (missing.length > 0 ? `after re-seating ${missing.map((s) => s.seat).join(', ')} ` : '') +
         `— skipping this issue's later stages; the conductor escalates`)
     return { step: row.step, status: 'gate-parked', text: show }
 }

@@ -255,6 +255,30 @@ case_help_lookalikes_and_compounds_deny() {
         "quoted help flag: outside the exemption by design"
 }
 
+# ---- HEREDOC BODIES: a quoted delimiter makes the body prose ---------------
+#
+# `cat > f <<'EOF'` cannot expand or execute anything in its body, so a body
+# that names the guarded verb is prose - exactly the case the quote-aware
+# pre-pass exists to distinguish, on an input shape it did not cover. An
+# unquoted delimiter (`<<EOF`) does expand, so its body keeps reaching the
+# matcher unmarked and a real invocation there still denies.
+
+case_heredoc_body_prose() {
+    local prose='the rule says docket trust add is operator-reserved'
+    assert_verdict "cat > \"\$TMPDIR/f.txt\" <<'EOF'"$'\n'"${prose}"$'\nEOF' \
+        executor-write ALLOW "single-quoted heredoc delimiter: body is prose"
+    assert_verdict "cat > \"\$TMPDIR/f.txt\" <<\"EOF\""$'\n'"${prose}"$'\nEOF' \
+        executor-write ALLOW "double-quoted heredoc delimiter: body is prose"
+    assert_verdict "cat > \"\$TMPDIR/f.txt\" <<\\EOF"$'\n'"${prose}"$'\nEOF' \
+        executor-write ALLOW "backslash-quoted heredoc delimiter: body is prose"
+    assert_verdict "cat > \"\$TMPDIR/f.txt\" <<-'EOF'"$'\n\t'"${prose}"$'\n\tEOF' \
+        executor-write ALLOW "tab-stripping quoted heredoc delimiter: body is prose"
+    assert_verdict "cat > \"\$TMPDIR/f.txt\" <<'EOF'"$'\n'"${prose}"$'\nEOF\ndocket trust add erik key' \
+        executor-write DENY "real invocation on the line after a quoted heredoc ends"
+    assert_verdict "cat > \"\$TMPDIR/f.txt\" <<EOF"$'\n''docket trust add erik key'$'\nEOF' \
+        executor-write DENY "unquoted heredoc delimiter: body still reaches the matcher"
+}
+
 # ---- Input edge cases: fail open, never mid-parse --------------------------
 
 case_input_edge_cases() {
@@ -278,6 +302,7 @@ case_must_deny_glued_separator_class
 case_must_deny_separately_quoted_tokens
 case_help_read_exemption_allows
 case_help_lookalikes_and_compounds_deny
+case_heredoc_body_prose
 case_input_edge_cases
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"

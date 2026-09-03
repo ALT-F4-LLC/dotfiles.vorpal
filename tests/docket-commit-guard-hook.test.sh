@@ -360,6 +360,28 @@ case_accepted_residual_risks() {
     assert_verdict "timeout 30 bash ${script}" ALLOW "timeout-wrapped script path (accepted residual)"
 }
 
+# ---- HEREDOC BODIES: a quoted delimiter makes the body prose -------------
+#
+# `cat > f <<'EOF'` cannot expand or execute anything in its body, so a body
+# naming a git write is prose. An unquoted delimiter (`<<EOF`) does expand, so
+# its body keeps reaching the matcher unmarked.
+
+case_heredoc_body_prose() {
+    local prose='the summary says git commit -m x was blocked'
+    assert_verdict "cat > \"\$TMPDIR/f.txt\" <<'EOF'"$'\n'"${prose}"$'\nEOF' \
+        ALLOW "single-quoted heredoc delimiter: body is prose"
+    assert_verdict "cat > \"\$TMPDIR/f.txt\" <<\"EOF\""$'\n'"${prose}"$'\nEOF' \
+        ALLOW "double-quoted heredoc delimiter: body is prose"
+    assert_verdict "cat > \"\$TMPDIR/f.txt\" <<\\EOF"$'\n'"${prose}"$'\nEOF' \
+        ALLOW "backslash-quoted heredoc delimiter: body is prose"
+    assert_verdict "cat > \"\$TMPDIR/f.txt\" <<-'EOF'"$'\n\t'"${prose}"$'\n\tEOF' \
+        ALLOW "tab-stripping quoted heredoc delimiter: body is prose"
+    assert_verdict "cat > \"\$TMPDIR/f.txt\" <<'EOF'"$'\n'"${prose}"$'\nEOF\ngit commit -m x' \
+        DENY "real invocation on the line after a quoted heredoc ends"
+    assert_verdict "cat > \"\$TMPDIR/f.txt\" <<EOF"$'\n''git commit -m x'$'\nEOF' \
+        DENY "unquoted heredoc delimiter: body still reaches the matcher"
+}
+
 # ---- Malformed / non-Bash input: fail open, never mid-parse --------------
 
 case_input_edge_cases() {
@@ -388,6 +410,7 @@ case_accepted_false_positive_control
 case_must_not_catch_prose_and_reads
 case_must_not_catch_substitution_reads
 case_accepted_residual_risks
+case_heredoc_body_prose
 case_input_edge_cases
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"

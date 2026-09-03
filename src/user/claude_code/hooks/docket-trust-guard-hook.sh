@@ -90,6 +90,16 @@ COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/nul
 # words (`"docket" "trust" "add"`, three groups). Double-quoted content that
 # could still trigger command/parameter substitution ($(...), backticks,
 # ${...}) is left unmarked so the matcher inspects it directly.
+#
+# HEREDOCS are the third quoting shape. A heredoc body is neither single- nor
+# double-quoted content -- the DELIMITER carries the quoting -- so without the
+# branch below every word of a body reached the matcher unmarked and a scratch
+# file whose text merely described the guarded verb was denied. A
+# quoted-delimiter body (`<<'EOF'`, `<<"EOF"`, `<<\EOF`, and their `<<-`
+# tab-stripping forms) can neither expand nor execute anything by
+# construction, so it is prose and is marked as ONE quote group. An
+# unquoted-delimiter body (`<<EOF`) does expand, so it stays unmarked and
+# reaches the matcher exactly as before.
 STRIPPED=$(printf '%s' "$COMMAND" | awk '
 {
     buf = (NR == 1) ? $0 : buf "\n" $0
@@ -103,11 +113,79 @@ END {
     DQ = "\042"
     MARK = "\001"
     GROUP = 0
+    HD_DELIM = ""
+    HD_QUOTED = 0
     while (i <= n) {
         c = substr(line, i, 1)
         if (c == "\\" && i < n) {
             out = out c substr(line, i + 1, 1)
             i += 2
+            continue
+        }
+        if (c == "\n" && HD_DELIM != "") {
+            j = i + 1
+            body = ""
+            while (j <= n) {
+                eol = index(substr(line, j), "\n")
+                if (eol == 0) {
+                    seg = substr(line, j)
+                    nj = n + 1
+                } else {
+                    seg = substr(line, j, eol - 1)
+                    nj = j + eol
+                }
+                trimmed = seg
+                sub(/^\t+/, "", trimmed)
+                j = nj
+                if (trimmed == HD_DELIM) break
+                body = body "\n" seg
+            }
+            if (HD_QUOTED) {
+                GROUP++
+                m = split(body, qw, /[ \t\n]+/)
+                for (k = 1; k <= m; k++) {
+                    if (qw[k] != "") out = out " " MARK GROUP ":" qw[k] MARK
+                }
+                out = out " "
+            } else {
+                out = out body "\n"
+            }
+            HD_DELIM = ""
+            HD_QUOTED = 0
+            i = j
+            continue
+        }
+        if (c == "<" && substr(line, i + 1, 1) == "<" && substr(line, i + 2, 1) != "<") {
+            j = i + 2
+            if (substr(line, j, 1) == "-") j++
+            while (j <= n && (substr(line, j, 1) == " " || substr(line, j, 1) == "\t")) j++
+            dc = substr(line, j, 1)
+            delim = ""
+            dquoted = 0
+            if (dc == SQ || dc == DQ) {
+                dquoted = 1
+                j++
+                while (j <= n && substr(line, j, 1) != dc) {
+                    delim = delim substr(line, j, 1)
+                    j++
+                }
+                j++
+            } else {
+                if (dc == "\\") {
+                    dquoted = 1
+                    j++
+                }
+                while (j <= n && substr(line, j, 1) ~ /[A-Za-z0-9_.-]/) {
+                    delim = delim substr(line, j, 1)
+                    j++
+                }
+            }
+            out = out " "
+            i = j
+            if (delim != "") {
+                HD_DELIM = delim
+                HD_QUOTED = dquoted
+            }
             continue
         }
         if (c == SQ) {

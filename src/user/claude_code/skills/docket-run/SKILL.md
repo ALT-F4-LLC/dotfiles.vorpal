@@ -199,50 +199,38 @@ recognize instantly: every agent in a fanout returns `BOOTSTRAP DENIED` or a
 quoted permission refusal, at near-zero tokens, having claimed nothing.
 
 **Probe the completion gates against clean HEAD before the first dispatch —
-by launching the gate-probe workflow, not by hand.** It is a Workflow script
-installed beside wave.js, launched the way step 2 launches wave.js: the
-installed `~/.claude/workflows/gate-probe.js` as an absolute path with `~`
-expanded, by `scriptPath` only, and a missing installed file is
-stop-and-report:
+with the engine's own verb, not by hand.** It runs long on a repo with test
+gates, so launch it in the background and wait for its notification:
 
-```
-Workflow({ scriptPath: "<absolute installed path to gate-probe.js>", args: {run: "RUN-N"} })
+```bash
+docket trust probe --run $RUN --json    # run_in_background: true
 ```
 
-Read its RETURN, which the completion notification carries: `passed` is
-true only when every gate on the roster exited 0 on clean HEAD; `failed`
-names the rest; `gates[]` carries each gate's exit and the tail of its log,
-with `stub` marking a placeholder whose pass is hollow; `head` is the sha
-probed. A workflow that threw instead of returning — an empty roster, no
-`docket` on PATH, a scout that could not read the trust store — is not a
-pass either: report it.
+The verb IS the roster rule. It takes every non-action entry the trust
+roster holds for this repo — the entries a workflow's gate names resolve to,
+of which argv some earlier step happened to record is a subset, never the
+list — runs each once in ONE throwaway detached worktree of HEAD with the
+roster's own timeout, and returns a pass/fail row per gate with the exit and
+the log tail. Nothing short-circuits and nothing narrows: `--run` is a label
+on the report and does not filter the roster. An entry a workflow declares
+as `action = "<name>"` (`doc-record` here) is fed a JSON bundle on stdin at
+record time, so the verb skips it by name and says so; a skipped action is
+not a finding and needs no disposition. The worktree is the verb's to
+register and remove, on success, failure and interrupt. A verb that refuses
+outright — an empty roster, cwd outside a work tree — is not a pass: report
+it. **Never narrow that roster yourself by what the remaining steps look
+like** — not on a resume whose leftovers are vote, verify and action rows,
+not on a run whose recorded gate failures were all write-class. A resume
+once ran `make format` alone and skipped build, tests and four more on that
+reasoning. You hold no run state: which rows come next is the engine's answer
+to `next`, and a vote's `on_fail`, an `--as retry` or a fix batch puts a
+write-class step in front of you one dispatch after you judged there were
+none.
 
-The workflow IS the roster rule, which is the whole reason it is a workflow.
-Its scout agent reads every entry `docket trust list` returns for this repo —
-the entries a workflow's gate names resolve to, of which argv some earlier
-step happened to record is a subset, never the list — and the script fans
-one isolated agent out per entry, each in its own fresh worktree of clean
-HEAD, each running the argv verbatim with stdin from `/dev/null` and
-reporting the command's OWN exit status. Nothing short-circuits, every gate
-gets a verdict line, and a vacuous pass is visible in the return rather than
-inferred from silence. **Never narrow that roster by what the remaining
-steps look like** — not on a resume whose leftovers are vote, verify and
-action rows, not on a run whose recorded gate failures were all write-class.
-That narrowing is exactly what moving the probe out of prose was for: a
-resume once ran `make format` alone and skipped build, tests and four more on
-that reasoning. The workflow does not know what rows you expect, and
-neither, reliably, do you: you hold no run state, which rows come next is
-the engine's answer to `next`, and a vote's `on_fail`, an `--as retry` or a
-fix batch puts a write-class step in front of you one dispatch after you
-judged there were none.
-
-The probe's worktrees are the HARNESS's to track, not yours: each isolated
-agent runs in a worktree the harness registers and removes when the agent
-leaves it unchanged, which the brief makes every gate agent do. **Every
-worktree you register yourself is still yours to write down the moment you
-create it** — any you add mid-investigation, and the one for the Go-cache
-warm below. Each is a registration in the SHARED repo that outlives the
-`Bash` call that made it, and each sits at a DETACHED head with no
+**Every worktree you register yourself is yours to write down the moment
+you create it** — any you add mid-investigation, and the one for the
+Go-cache warm below. Each is a registration in the SHARED repo that outlives
+the `Bash` call that made it, and each sits at a DETACHED head with no
 `worktree-wf_*` branch, so the close sweep's branch-derived set below cannot
 see it: the tracked path is the ONLY thing that puts it back in the sweep.
 Spell that path under this session's scratchpad LITERALLY — the absolute
@@ -256,11 +244,7 @@ scratchpad, was still registered in the shared repo at close-out — the
 scratchpad was then cleaned, leaving a prunable-but-dangling registration the
 run never named.
 
-One roster entry class is never run: an engine ACTION the engine feeds a
-JSON bundle on stdin (`doc-record` here) can only fail a stdin-less probe, so
-the workflow skips every entry the installed workflow TOMLs declare as
-`action = "<name>"`, names each in `skipped`, and leaves it out of `gates`.
-A skipped action is not a finding and needs no disposition. A gate that fails on clean HEAD is not caused
+A gate that fails on clean HEAD is not caused
 by this run's changes — commonly ENVIRONMENTAL, an untracked toolchain that
 never materializes in a fresh worktree (a direnv-provisioned
 `.env/bin/protoc` cost one run five parks and eleven override rituals before
@@ -282,7 +266,7 @@ log output:
 ```bash
 docket issue create -t "<gate> fails on clean HEAD" -T bug -p medium \
   -l conduct --scope 'internal/routing/**' -d - <<'DESC'
-<what fails, its exit, the gate-probe log path, and why it is pre-existing>
+<what fails, its exit, the probe's log tail, and why it is pre-existing>
 DESC
 ```
 
@@ -333,7 +317,7 @@ three gates with a TLS error that reads like an environment defect (a past
 run parked a clean step exactly this way, and the out-of-band repro passed
 only because the conductor's cache was already warm). So when the target repo has
 a `go.mod`, run `go mod download` in it from THIS session before the first
-dispatch — the live checkout is the place to do it now that `gate-probe` owns
+dispatch — the live checkout is the place to do it now that `trust probe` owns
 and removes its own worktree, what fills is the SHARED `GOMODCACHE` either way,
 the repo's own toolchain spelling is (`go`, a `just` recipe, a `vorpal run go:` shim), and
 the unsandboxed retry is the sanctioned path when the sandboxed attempt hits
@@ -371,65 +355,51 @@ divergence (a stale pin cannot be fixed mid-run; one run executed the whole
 thing on contracts eight edits behind, and paid in re-review churn an operator
 gate had already ruled on), and keep corpus installs BETWEEN runs — a mid-run `just
 activate` changes what already-pinned refs resolve to, and it changes them for
-every repo at once, since all of them read the same bytes. The attach-probe
-workflow below runs this check too, and at activation time you launch it with
-no `run` — the run holds no pins yet, so `skipped: true` ("a check was
-skipped") is the expected answer there and only there.
+every repo at once, since all of them read the same bytes. `docket doctor`
+runs this check too, and at activation time you run it with no `--run` — the
+run holds no pins yet, so `skipped: true` ("a check was skipped") is the
+expected answer there and only there.
 Attaching to an ALREADY-ACTIVE run skips activation but not the probe, and the
-probe is never the pin check alone. Launch it as ONE installed workflow
-instead of retyping it — the installed `~/.claude/workflows/attach-probe.js`,
-resolved and launched exactly as step 2 launches wave.js:
+probe is never the pin check alone. It is two commands, both read-only:
 
-```
-Workflow({ scriptPath: "<absolute installed path to attach-probe.js>",
-           args: {run: "RUN-N", home: "<absolute $HOME>",
-                  checkout: "<absolute dotfiles checkout>", cwd: "<absolute seat>"} })
+```bash
+docket doctor --run $RUN --source ~/Development/repository/github.com/ALT-F4-LLC/dotfiles.vorpal.git/main --json
+diff -rq "$CC_SRC/workflows" ~/.claude/workflows; diff -rq "$CC_SRC/hooks" ~/.claude/hooks   # $CC_SRC = <that checkout>/src/user/claude_code
 ```
 
-Every path in `args` is literal and absolute: the workflow expands no `~` and
-reads no environment. `checkout` is the dotfiles checkout whose
-`src/user/docket` and `src/user/claude_code` are the source of every installed
-definition (`~/Development/repository/github.com/ALT-F4-LLC/dotfiles.vorpal.git/main`
-on this machine). It is read-only by construction — its agents run `git
-rev-parse`, `diff -rq`, `find`, `git worktree list`, and the two write-nothing
-verbs `run status` and `run verify-pins` — and it runs SIX checks in one
-parallel without short-circuiting: seat location, store access, BOTH `diff -r`
-staleness trees above (`$DOCKET_SRC/config` and `$DOCKET_SRC/bin` against
-`~/.docket/`), byte-diffs of the installed `~/.claude/workflows` and
-`~/.claude/hooks` trees against their source, `run verify-pins`, and the
-`.docket/config` symlink debris check below, plus a straggler REPORT that can
-never move the verdict. Read its RETURN, not its last log line: `clean` is
-true only when every check is OK; `skipped` is true when the pin check did
-not run because you gave no `run` — which is not a pass on an active run;
-`checks[]` carries each verdict (`OK`, `FAIL`, `DRIFT`, `SKIP`, `WARN`) with
-its detail. **Those six are not this whole section.** The permission-surface
-check, the DENY-list read-class check, the completion-gate probe against
-clean HEAD, and the Go module cache warmup are all pre-dispatch obligations
-of this section and NOT ONE of them is in THIS workflow: a clean attach-probe
-says nothing whatever about them. The completion-gate probe has a workflow of
-ITS own — gate-probe, above — so that is two launches and two returns, and
+`doctor` writes nothing — no lease reap, no re-pin — and runs SIX checks
+without short-circuiting: seat location, store access, BOTH staleness trees
+above (`--source`'s `src/user/docket/{config,bin}` against `~/.docket/`),
+`run verify-pins`, the `.docket/config` symlink debris check below, and a
+straggler REPORT that never moves the verdict. Read its RETURN, not its last
+line: `clean` is true only when every check is OK; `skipped` is true when the
+pin check did not run because you gave no `--run` — which is not a pass on an
+active run; `checks[]` carries each verdict (`OK`, `FAIL`, `DRIFT`, `SKIP`,
+`WARN`) with its detail. The `diff -rq` pair is the one check the verb does
+not own: the wave runs the INSTALLED `~/.claude/workflows` bytes and the
+hooks fire from `~/.claude/hooks`, and nothing links either into the source
+tree, so a source edit since the last `just activate` is bytes no session
+runs. Read each diff's own exit — `diff` is bounded and complete, so nothing
+is piped through `head` — and treat any `Files … differ` or `Only in
+<source>` line as DRIFT, stop-and-report; a one-sided directory holding no
+file cannot move a pin and is named, not counted. **Those checks are not
+this whole section.** The permission-surface check, the DENY-list read-class
+check, the completion-gate probe against clean HEAD, and the Go module cache
+warmup are all pre-dispatch obligations of this section and NOT ONE of them
+is in `doctor`: a clean doctor says nothing whatever about them. The
+completion-gate probe is `trust probe`, above — two verbs, two returns, and
 neither answers for the other; the permission-surface read, the DENY-list
 read and the cache warm stay yours to run by hand before the first dispatch.
-One conductor read the probe's six as the pre-loop checklist, never ran the
+One conductor read the attach checks as the pre-loop checklist, never ran the
 gate probe, and both its dispatched waves then parked write steps
 `waiting-human` on the same two environmental gate failures — a docker-socket
 build, pre-existing vuln-scan CVEs — that the gate probe exists to surface
 ONCE. Run all four EVERY time, and never narrow them by what the remaining
-steps look like — not on a resume whose leftovers are vote, verify and action
-rows, not on a run whose recorded gate failures were all write-class. You
-hold no run state: which rows come next is the engine's answer to `next`, not
-a shape you can predict, and a vote's `on_fail`, an `--as retry` or a fix
-batch puts a write-class step in front of you one dispatch after you judged
-there were none — at which point the same findings arrive as parked steps
-instead of as one pre-dispatch report. The four are once-per-run and cheap; a
-run that really does stay read-only pays only that. The retyping is what the
-workflow exists to stop: a hand-rolled version once piped a diff through
-`head -30` and then reported HEAD's exit — always 0 — as the diff's verdict,
-and ran `test -f ~/.claude/workflows/wave.js` where the byte-diff was
-mandated. Announcing the probe is not running it. An existence check proves
-nothing about bytes. Divergence mid-run is stop-and-report all the same. The
-prose below says what each verdict MEANS and what to do about it; the
-workflow only tells you which verdict you have.
+steps look like. They are once-per-run and cheap; a run that really does
+stay read-only pays only that. Announcing the probe is not running it. An
+existence check proves nothing about bytes. Divergence mid-run is
+stop-and-report all the same. The prose below says what each verdict MEANS
+and what to do about it; the verb only tells you which verdict you have.
 
 **An instance name is not a step id.** Attaching mid-run you will hold an
 instance (`implement@0`, `fix@1`) and need its STEP-N. `docket step list --run
@@ -512,7 +482,7 @@ disagree with both: the engine froze them at ITS activation, and every
 `just activate` since has moved the install out from under them. Source and
 install agreeing tells you nothing about that. So on an already-active run, before
 the first dispatch, ask the ENGINE about the pins — do not hand-roll it. This is
-check 5 of `attach-probe` above, which is the whole reason `$RUN` is not
+check 4 of `docket doctor` above, which is the whole reason `--run` is not
 optional there; run it standalone whenever you want the answer on its own:
 
 ```bash
@@ -538,32 +508,15 @@ its cause. This is a real failure mode, not a hypothetical: a mid-run `just
 activate` once replaced `contracts/synthesize-findings.md`, and every
 `synthesize` step across all four issues went structurally unclaimable — after
 a 2.7-hour, 3.5M-token wave had already run. `policy.toml` was mismatched in
-the same run and nothing noticed, because back then the whole dispatch path —
-this skill's own `cat`, and the policy-guard hook — validated against the DISK
-copy, never against what the run pinned. That was the old behavior and it is
-no longer current.
+the same run and nothing noticed, because back then the wave received the
+policy as text the conductor copied from DISK, never from what the run
+pinned. That path is gone: the engine resolves every row's routing from the
+PINNED policy.toml and renders it onto the row, so a drifted policy on disk
+cannot reach a wave at all, and every other drifted ref is refused by the
+engine verb that reads it. There is no route past drift, so `verify-pins` is
+not advisory.
 Do NOT substitute `docket step render` for this check: it returned exit 0 with
 full packets on that run while the mismatch was already present.
-
-**The hook now DENIES the launch, so pin drift is not survivable.** Since a
-fix landed, the policy-guard hook resolves the launching cwd's ACTIVE
-runs on every `Workflow` PreToolUse, asks `docket run verify-pins` about each,
-and exits 2 — before any seat or executor spawns — if `policy.toml` drifted.
-Live output reads like this:
-
-```
-PreToolUse:Workflow hook error: [bash ~/.claude/hooks/docket-policy-guard-hook.sh]:
-policy-guard: LAUNCH DENIED — RUN-N pinned policy.toml at activation and disk no
-longer matches it (…). A mid-run `just activate` is the usual cause. Launching now
-would route and judge on a policy the run never pinned. Stop this dispatch and
-surface the drift to the operator (`docket run verify-pins RUN-N` lists every
-drifted pin); do not relaunch on the disk policy.
-```
-
-Only the `policy.toml` pin is enforced there — it is the one artifact that
-reaches a wave without passing through an engine verb; every OTHER drifted ref
-is refused by the engine verb that reads it. Either way there is no route past
-drift, so `verify-pins` is not advisory.
 
 **Dispositions at a pin-drift stop-and-report — all four are executable:**
 
@@ -944,37 +897,16 @@ remains the mistake above.
 
 ```bash
 docket dispatch open --run $RUN --json
-cat ~/.docket/config/policy.toml   # read-only sanity check, see version grep below
 ```
 
-**`policyText` is the literal sentinel string `__USE_PINNED_POLICY__` for
-EVERY Workflow launch you make — wave.js and tribunal.js alike — never the
-file.** `docket-policy-guard-hook.sh` (PreToolUse:Workflow) substitutes the
-canonical `~/.docket/config/policy.toml` bytes for that exact sentinel via the
-harness's `updatedInput` before the script ever runs, so the script still
-receives the pinned bytes byte-for-byte — the substitution happens between the
-launch you emit and the script that reads it, not in anything you copy. The
-hook is script-agnostic: it branches on `sha256(args.policyText)` alone and
-tests no scriptPath anywhere, so a tribunal panel gets the same substitution a
-wave does. Do not paste policy.toml content into `policyText` for either: that
-used to be the mechanism (a ~28k-char hand-copy every dispatch, whose only
-failure mode was deny-and-retype) and is retired — pass the sentinel and let
-the hook do the substitution. A conductor who hand-copied it for a tribunal
-launch anyway spent five tool calls building an 8.4KB args string the hook
-would have built for free, on a run whose three waves paid none of that.
-
-**There is no fallback for a machine where the hook is not installed.** The
-hook ships in the same corpus as wave.js and lands in the same `just
-activate`; attach-probe's install check diffs `~/.claude/hooks` against its
-source, so a missing or stale hook is that check's DRIFT, and DRIFT is
-stop-and-report. Nothing substitutes and nothing denies without the hook, so
-the sentinel would reach the script raw — wave.js refuses it by name,
-tribunal.js's TOML parser bails on it as neither a table header nor a
-key/value pair. Both fail closed; neither routes on it. Never build a literal
-`policyText` by hand instead: the hook would hash it and allow a byte-perfect
-copy, but making the model the copy machine for ~28k bytes is the exact
-failure the sentinel exists to remove — one conductor dropped the same 44
-characters twice in a row.
+**No policy crosses a launch.** Every executor row `next` returns, and every
+voter on a vote row, carries `model`, `effort` and `variant` resolved by the
+engine from the run's PINNED policy.toml — attempt escalation and security
+bindings included. wave.js and tribunal.js read routing off the row and
+parse nothing. Do not `cat` policy.toml, do not pass it, do not check its
+version: the last conductor-side copy of it was a ~28k-char hand-copy every
+dispatch whose only failure mode was deny-and-retype, and the engine now
+holds the only bytes that route.
 
 **Read `dispatch open`'s answer before you launch anything, and a
 `stale_targets` row in it is STOP-AND-VERIFY.** The engine emits one when a
@@ -1039,11 +971,11 @@ bytes even where it happens to be readable: every `~/.claude` definition
 surface — workflows included — is a store symlink from the
 last `just activate`, nothing links into the source tree, and a source file
 edited since the last activation is bytes no session runs. A missing
-installed file is the attach-probe's own workflow-check FAIL — stop and
+installed file is the attach-time install diff's DRIFT — stop and
 report it; never hunt for another copy to launch.
 
 ```
-Workflow({ scriptPath: "<absolute installed path to wave.js>", args: {rows, policyText} })
+Workflow({ scriptPath: "<absolute installed path to wave.js>", args: {rows} })
 ```
 
 `scriptPath` and `args` are the ONLY parameters. There is no
@@ -1060,7 +992,7 @@ disk, and nothing in the transcript said so. `scriptPath` is the only invocation
 that provably runs the file that is there now. This is not a preference; a
 by-name invocation is a defect regardless of how convenient it looks.
 
-Pass `args` as `{rows, policyText}` — plus `integrated` when the dispatch
+Pass `args` as `{rows}` — plus `integrated` when the dispatch
 carries a fix round's review fanout (its own rule below). wave.js always RECEIVES a string and
 decodes it as normal transport (proven by a controlled probe), so
 the decode line in its log is never a finding. But do not read that as "the
@@ -1076,25 +1008,13 @@ into a quoted string. Self-check if you are unsure which you did: your
 emitted args, re-encoded canonically, should equal itself. The transport
 converges either way, but hand-escaping a multi-KB string into a JSON string
 is an escaping error waiting to happen, and the harness's own encoder never
-makes one (observed twice by a shadow review). There is no `policyPath`
-parameter: the script cannot read files. `policyText` is
-now the fixed sentinel `__USE_PINNED_POLICY__` (see step 2 above) —
-a five-word literal, not the file — so the historical hazard this paragraph
-used to warn about (a hand-copied ~28k-char policy silently condensed:
-one conductor cat'd the file six times and still emitted a ~4.7KB condensed
-rendering into six of eight launches, dropping `[escalation]` and
-`[[resolve]]` entirely with nothing logging the difference) no longer applies
-to anything you launch — the tribunal path is not carved out of this, because
-the guard hook that substitutes the bytes never looks at which script is being
-launched. The wave-audit hook (PostToolUse) reads the sentinel the same
-script-agnostic way and treats it as clean, so a policyText advisory from it
-now means exactly one thing: something built a LITERAL policyText — the
-hook-absent fallback of step 2, presumably — and condensed it. TaskStop that
-launch and rebuild it from a fresh run of the fallback script, never from
-context. Never read the advisory as ambient noise — three governance panels
-and two waves once ran condensed while it scrolled past.
+makes one (observed twice by a shadow review). There is no `policyPath` and
+no `policyText`: the script cannot read files and needs no policy, since
+routing is on the rows. Pass the rows VERBATIM as `next` returned them — a
+row re-typed without its `model`, `effort` and `variant` fields is a row the
+wave refuses to route.
 
-**Nor is wave-audit's OTHER line noise any more.** The same hook relays
+**wave-audit's line is not noise.** The hook relays
 `docket guard record`, and it used to print a "dispatch open or discrepancy
 standing" advisory on EVERY wave launch — a wave launches against an open
 dispatch by definition, so the line fired three for three on one run and meant
@@ -1103,15 +1023,6 @@ database) and speaks only when the guard denies for some OTHER reason, quoting
 the engine's own text. A clean launch produces no stderr from this hook at
 all, so any line it does print is a standing discrepancy or something
 unexpected: read it, do not scroll past it.
-
-**A policy-guard deny now means something is wrong with the sentinel, not that
-you need to retype anything.** `docket-policy-guard-hook`
-denies a launch — wave or tribunal, it does not distinguish — only when
-`policyText` is neither the pinned bytes nor
-the literal sentinel `__USE_PINNED_POLICY__` — re-check you emitted that exact
-string (not a paraphrase, not policy.toml text) and relaunch. A denial naming
-a PIN drift instead is a different animal entirely and has no relaunch at
-all: it is the stop-and-report above.
 
 **A dispatch carrying a fix round's review fanout also carries `integrated`.**
 When the rows include a review fanout for a fix round — instances `name@N#k`
@@ -1186,27 +1097,10 @@ judges → gate → reconcile → report end to end. A `kind: "human"` row passe
 through is the one mistake the wave still refuses; filtering here is the
 primary control, the wave's refusal the backstop.
 
-**Your entire involvement with policy, for a wave dispatch, is two mechanical
-acts:**
-
-1. Pass the literal sentinel `__USE_PINNED_POLICY__` as `policyText`, unread —
-   docket-policy-guard-hook.sh substitutes the real bytes before wave.js runs.
-2. Confirm the `[policy]` table declares an integer `version` field. The table
-   header and the key sit on SEPARATE lines, so this is `grep -A1
-   '^\[policy\]'` and NEVER a substring search for a literal like `[policy]
-   version = 15` — that string occurs nowhere in the file, and a conductor
-   checking for it refuses a healthy policy before the first wave. There is no
-   single version number baked into this check: the corpus bumps it as policy
-   evolves, and each bump is a normal, attributable docket-retro commit, not a
-   schema break. If you need to sanity-check the number itself, treat recent
-   corpus commit history as the source of truth for what the current version
-   should be — not this skill text. Refuse and stop only if the field is
-   missing, non-numeric, or the table is otherwise structurally malformed; do
-   not refuse merely because the version differs from one you saw before, and
-   do not guess at a schema that fails this shape check.
-
-You do not parse policy.toml. You do not interpret it, summarize it, or act on
-anything in it. It is a payload you carry, and `wave.js` is what reads it.
+**Your involvement with policy, for a wave dispatch, is none.** You do not
+read policy.toml, check its version, interpret it, or carry it. The engine
+resolved it onto the rows at `next`; a row's `model`, `effort` and `variant`
+are engine facts you pass through like its step id.
 
 Beyond that kind filter, pass the rows through unchanged. Do not reorder them,
 drop one that looks redundant, or add one. The manifest is hashed; what you were
@@ -1311,24 +1205,19 @@ Workflow({ scriptPath: "<absolute installed path to wave-usage.js>",
 docket dispatch backfill-usage --run $RUN --source "wave-journal:<wfId>" --from-json - < "$TMPDIR/wave-<wfId>.json"
 ```
 
-```
-// 2b. integration check — when this dispatch carried write steps, every
-//     recorded sha must be ON the shared branch before the close. The
-//     workflow walks the wave worktrees and returns `unintegrated[]`; on a
-//     non-empty one, integrate NOW (Worktree writers below), then relaunch
-//     it. A close that verified steps RECORDED but never steps INTEGRATED
-//     once shipped a run whose shared branch never advanced — found 19
-//     hours later. The close report pastes its return VERBATIM (below), so
-//     an omitted or paraphrased check ("integration verified") is as visible
-//     as a skipped one.
-Workflow({ scriptPath: "<absolute installed path to integration-check.js>", args: {} })
-```
-
 ```bash
 # 3. reconcile before closing — verify writes NOTHING, it only compares:
 docket dispatch verify --run $RUN
-# 4. only now:
-docket dispatch close --run $RUN
+# 4. only now. close verifies integration itself: every write-class step's
+#    recorded commit must be on the shared branch — an ancestor of HEAD, or
+#    patch-equivalent after a cherry-pick — and an unintegrated one refuses
+#    CONFLICT naming the step, its sha and its worktree. On that refusal,
+#    integrate NOW (Worktree writers below) and close again. A close that
+#    verified steps RECORDED but never steps INTEGRATED once shipped a run
+#    whose shared branch never advanced — found 19 hours later.
+#    --skip-integration-check REASON is the operator's override, recorded on
+#    the close event; it is never yours to pass.
+docket dispatch close --run $RUN --json
 ```
 
 Rows land against the step's recorded attempt, `--source` defaults to
@@ -1390,7 +1279,7 @@ no step to record or an agent carries no usage — report that, do not paper
 over it. **PROBE COST: one low-effort agent per transcript file, on every
 close.** That is the price of a join no one retypes; a wave of twenty agents
 costs twenty small reads. Only if the installed workflow is absent — which is
-attach-probe's install DRIFT, stop-and-report — do you delegate: ONE
+the attach-time install diff's DRIFT, stop-and-report — do you delegate: ONE
 `executor-read` agent on the transcript directory, with the **Where the
 numbers actually are** section below — that heading's whole body — verbatim
 as its brief. Either way you check the shape — every dispatched step present,
@@ -1662,7 +1551,7 @@ and leaves the REGISTRATION behind in the shared repo, dangling and prunable
 that way, back when the probe was prose).
 If your notes and `git worktree list` disagree, the list is the authority for
 what still exists and your notes are the authority for what is YOURS.
-Name every straggler attach-probe reported at attach — its `WARN` check's
+Name every straggler `docket doctor` reported at attach — its `WARN` check's
 detail, one `<path> <sha> (session <uuid>)` per line — in the close report,
 and remove the one whose path carries THIS session's id.
 
@@ -1739,12 +1628,12 @@ recount or a paraphrase:**
   operator rules the conductor patch anyway** above) are named by sha
   within that same pasted range, not folded into an executor count or
   described separately from it — one list, one source, sha by sha.
-- **The integration-check workflow's return (2b above) is pasted into the
-  close report in full**, not summarized as "integration verified" or "ran
-  clean" — so a close report that skipped the launch reads as missing that
-  section, not as a report that happens not to mention it. If the check was
-  genuinely inapplicable (no write steps this dispatch), say that in its
-  place; do not leave the section out silently.
+- **`dispatch close`'s own JSON is pasted into the close report in full**,
+  including its integration outcome and, on a refusal, the step, sha and
+  worktree it named — not summarized as "integration verified" or "ran
+  clean" — so a close report that paraphrased the verb reads as missing that
+  section, not as a report that happens not to mention it. If the dispatch
+  carried no write steps, the verb's output says so; paste that.
 
 **A disposition is reported only where one was actually taken — and a
 `pre = true` gate can never be one.** A pre-gate (`gates = [{ name =
@@ -2070,8 +1959,7 @@ Then tribunal.js with the id it returns as `voteId`:
 
 ```
 Workflow({ scriptPath: "<absolute installed path to tribunal.js>",
-           args: {voteId, voters, "policyText": "__USE_PINNED_POLICY__",
-                  context, gateKind, cwd} })
+           args: {voteId, voters, context, gateKind, cwd} })
 ```
 
 Resolve the path and emit `args` exactly as you do for wave.js — the
@@ -2079,18 +1967,29 @@ installed `~/.claude/workflows/tribunal.js`, absolute, `~` expanded, and no
 source-tree fallback: it is the only path the Workflow tool will launch from
 a conductor's seat (step 2's installed-path rule), and an absent installed file is
 stop-and-report, not a path hunt. `args` is a REAL object the harness
-stringifies for you. `policyText` is the
-same literal sentinel `__USE_PINNED_POLICY__` a wave launch carries, for the
-same reason: the policy-guard hook branches on the text's hash and tests no
-scriptPath, so it substitutes the pinned bytes here exactly as it does for
-wave.js. Step 2's rule holds verbatim — including its hook-absent fallback and
-its reading of a deny (wrong sentinel string, or a pin drift), which is what a
-denial on THIS launch means too; there is nothing to hand-copy and nothing to
-retype. `context` is the decision's rendered evidence, verbatim;
+stringifies for you. `context` is the decision's rendered evidence, verbatim;
 `cwd` is the repo the run belongs to. A conversational gate has no row, so
-the seats are a constant this contract fixes, like the proposal shape:
-`voters: ["tribunal-architecture", "tribunal-security",
-"tribunal-correctness"]` — and `gateKind` names the gate class, `"ack-reap"`,
+the seats are a constant this contract fixes, like the proposal shape —
+`tribunal-architecture`, `tribunal-security`, `tribunal-correctness` — and,
+because the engine renders routing only onto step rows, each `voters` entry
+carries its own `{seat, model, effort, variant}`. That triple is a LOOKUP,
+never a choice: the seat's standing variant in the pinned policy's
+`[executors]` table and that variant's model and effort in `[variants]`.
+Produce the array with this and paste its output verbatim as `voters`:
+
+```bash
+python3 - <<'PY'
+import json, os, tomllib
+p = tomllib.load(open(os.path.expanduser("~/.docket/config/policy.toml"), "rb"))
+seats = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
+print(json.dumps([{"seat": s, "variant": p["executors"][s]["variant"], **p["variants"][p["executors"][s]["variant"]]} for s in seats]))
+PY
+```
+
+`verify-pins` (above) is what makes the disk copy the pinned copy; run it
+first on an active run. tribunal.js refuses a voter missing any of the three
+fields, so a re-typed or trimmed entry fails closed rather than seating a
+guessed tier. `gateKind` names the gate class, `"ack-reap"`,
 `"activation"`, `"budget"`, or `"fix-batch"`, never a label invented per gate
 (that same run once sent `"activation"` to a held-cluster panel). Then `docket vote result
 <proposal-id>`: approved → run the underlying verb, citing the proposal id in

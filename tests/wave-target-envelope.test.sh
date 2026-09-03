@@ -1,21 +1,18 @@
 #!/bin/bash
 
-# Behavior suite for wave.js's gate:target probe and the seat brief it feeds
-# (DOT-1040).
+# Behavior suite for the target ref a judge is briefed with, and for the
+# envelope the fix-round ancestry guard reads it through.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
 # and this one is in that list. It needs only `node` and `awk` — no engine, no
 # database, no network, and it spawns no agent.
 #
-# WHY THIS EXISTS. RUN-63 (vorpal.git, DISPATCH-363, wave wf_48ebd80d-906,
-# STEP-3187). The gate path's target read was `docket step context … | grep
+# WHY THIS EXISTS. One wave's target read was `docket step context … | grep
 # -Eo '"target_(sha|worktree)"…'`, whose ONLY output on a bundle carrying no
 # round record is nothing at all — and the probe brief tells its haiku seat to
 # "return its output VERBATIM as your entire final reply". The seat's own
 # thinking read "since there's no output and no error, I should return
-# nothing", and its reply then carried
-# `"target_sha": "3ee9ca3cc3f5ada37eb46768efaebe0bea6a02ca"` /
-# `"target_worktree": "feature/parallelism"` — a 40-hex sha that exists in no
+# nothing", and its reply then carried a 40-hex sha that exists in no
 # repository and in no transcript except that reply and the three judge briefs
 # rendered from it. wave.js briefed all three security-vote seats with it as
 # "TARGET SHA: … — the commit the diff under this gate stood at", and three
@@ -24,30 +21,30 @@
 # (silent, fabricating, and chatty): THE EMPTY VERBATIM VOID IS THE DEFECT,
 # the model behaviour is weather.
 #
-# Measured on the machine that filed it: 22 gate:target probes across every
+# Measured on the machine that filed it: 22 target probes across every
 # recorded wave, ZERO of which relayed a real target and ONE of which invented
 # one.
 #
-# THE THREE NETS, one case group each below:
-#   1. The probe command prints a deterministic envelope either way — jq emits
-#      {"target_sha":null,"target_worktree":null} when the field is absent —
-#      and the reply is read STRUCTURALLY (JSON.parse of that envelope), never
-#      by regex over free text.
-#   2. The spawn is skipped outright when the gate's own `step show` payload,
-#      already in hand, carries no target field at all.
-#   3. Nothing writes `TARGET SHA:` into a seat brief unless the sha is 40-hex
-#      AND occurs in text the wave read for itself; otherwise the brief says
-#      "NO target ref" in as many words.
+# THE NETS, one case group each below:
+#   1. The ancestry guard's probe command prints a deterministic envelope
+#      either way — jq emits {"target_sha":null,"target_worktree":null} when
+#      the field is absent — and the reply is read STRUCTURALLY (JSON.parse
+#      of that envelope), never by regex over free text.
+#   2. The gate path spends NO target probe at all: `docket gate status`
+#      carries the target on the same schema-validated envelope the gate
+#      already reads, and a gate without one briefs "NO target ref".
+#   3. Nothing writes `TARGET SHA:` into a seat brief unless the sha is the
+#      full 40-hex object id; otherwise the brief says "NO target ref" in as
+#      many words.
 #
-# HOW. wave.js fences the shared helpers in TEST-BEGIN/TEST-END
-# `target-envelope` (nested inside `gate-vote`, and prepended by the
-# fix-round-ancestry suites, which share the same command), the brief renderer
-# in `seat-brief`, and the gate driver in `gate-vote`. This suite extracts all
-# three, stubs the agent per spawn label, and asserts on the probes spent, the
-# log, and the literal brief text handed to each seat.
+# HOW. wave.js fences the ancestry helpers in TEST-BEGIN/TEST-END
+# `target-envelope`, the brief renderer in `seat-brief`, and the gate driver
+# in `gate-vote`. This suite extracts all three, stubs the agent per spawn
+# label, and asserts on the probes spent, the log, and the literal brief text
+# handed to each seat.
 #
 # WHAT THIS SUITE CANNOT SEE: the real haiku probe (whether jq is installed on
-# the machine it runs on, and what a model does with the envelope once it HAS
+# the machine it runs on, and what a model does with an envelope once it HAS
 # one to relay) is outside wave.js. What wave.js controls, and what this pins,
 # is the command it asks for, what it will accept back, and what reaches a
 # judge.
@@ -85,22 +82,22 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
 extract classifier-retry > "${WORK}/classifier.js" || fatal "bad or missing TEST markers for classifier-retry"
 extract seat-brief       > "${WORK}/brief.js"      || fatal "bad or missing TEST markers for seat-brief"
 extract gate-vote        > "${WORK}/gate.js"       || fatal "bad or missing TEST markers for gate-vote"
+extract target-envelope  > "${WORK}/envelope.js"   || fatal "bad or missing TEST markers for target-envelope"
 [ -s "${WORK}/brief.js" ] || fatal "extracted seat-brief region is empty"
-grep -q 'seatBrief'          "${WORK}/brief.js" || fatal "seat-brief region does not contain seatBrief"
-grep -q 'readTargetEnvelope' "${WORK}/gate.js"  || fatal "gate-vote region does not carry the target-envelope helpers"
+grep -q 'seatBrief'          "${WORK}/brief.js"    || fatal "seat-brief region does not contain seatBrief"
+grep -q 'readTargetEnvelope' "${WORK}/envelope.js" || fatal "target-envelope region does not carry readTargetEnvelope"
+grep -q 'gateTarget'         "${WORK}/gate.js"     || fatal "gate-vote region does not contain gateTarget"
 
 {
     cat <<'JS'
 const LOG = []
 const log = (m) => LOG.push(String(m))
 const parallel = (fns) => Promise.all(fns.map((f) => f()))
-const policy = {}
-const labelsOf = () => []
 const resolveSeat = (seat) => ({ seat, variant: 'std', model: 'stub-model', effort: 'low' })
 // The only global the brief renderer reaches for.
 const lensOf = (seat) => ({ role: 'stub', text: 'STUB LENS.' })
 // Every brief handed to a seat, by spawn label — this is the surface a judge
-// actually reads, and the one DOT-1040 is about.
+// actually reads.
 let BRIEFS = {}
 let SCRIPT = {}
 let CALLS = []
@@ -109,7 +106,7 @@ const agent = (brief, opts) => {
     CALLS.push(opts.label)
     const entry = SCRIPT[opts.label]
     const item = Array.isArray(entry) ? entry.shift() : entry
-    if (item === undefined) return Promise.resolve('')
+    if (item === undefined) return Promise.resolve(opts.schema ? null : '')
     if (item.reject !== undefined) return Promise.reject(new Error(item.reject))
     return Promise.resolve(item.text)
 }
@@ -117,6 +114,7 @@ JS
     cat "${WORK}/classifier.js"
     cat "${WORK}/brief.js"
     cat "${WORK}/gate.js"
+    cat "${WORK}/envelope.js"
 } > "${WORK}/suite.mjs"
 
 cat >> "${WORK}/suite.mjs" <<'JS'
@@ -128,30 +126,33 @@ const ok = (cond, label) => {
     else { fail++; console.error(`FAIL: ${label}`) }
 }
 
-// RUN-63's own numbers, so a reader can chase them.
+// The run's own numbers, so a reader can chase them.
 const PHANTOM = '3ee9ca3cc3f5ada37eb46768efaebe0bea6a02ca'
 const REAL    = 'a6533be112700bd1c5e0e7c5f0d4a53a4b2c7f19'
+const VOTERS = ['judge-security', 'judge-architecture', 'judge-correctness']
 const ROW = {
     step: 'STEP-3187', kind: 'vote', issue: 'VPL-711', run: 'RUN-63',
     instance: 'security-vote@1', stage: 1,
-    voters: ['judge-security', 'judge-architecture', 'judge-correctness'],
+    voters: VOTERS,
+    voter_assignments: VOTERS.map((voter) => ({ voter, model: 'opus', effort: 'high', variant: 'opus-high' })),
 }
 const SEAT = { seat: 'judge-security', variant: 'std', model: 'm', effort: 'low' }
 const envelope = (sha, worktree) => JSON.stringify({
     target_sha: sha === undefined ? null : sha,
     target_worktree: worktree === undefined ? null : worktree,
 })
-const showWith = (extra) =>
-    `{"ok":true,"data":{"step":"STEP-3187","status":"ready",` +
-    `"proposal":"DKT-V304"${extra ? ',' + extra : ''}}}`
-const SHOW_NO_TARGET = showWith('')
-const SHOW_WITH_TARGET =
-    showWith(`"target_sha":"${REAL}","target_worktree":"/w/vpl-711"`)
-const APPROVED =
-    '{"ok":true,"data":{"id":"DKT-V304","status":"approved","final_outcome":"approved",' +
-    '"votes":[{"voter_name":"judge-security"},{"voter_name":"judge-architecture"},' +
-    '{"voter_name":"judge-correctness"}]}}'
-const SHOW_DONE = '{"ok":true,"data":{"step":"STEP-3187","status":"done","proposal":"DKT-V304"}}'
+// `docket gate status` envelopes, before and after the panel.
+const open = (target) => ({
+    step_status: 'ready', proposal: 'DKT-V304', outcome: 'open',
+    missing_seats: VOTERS, ...(target ? { target } : {}),
+})
+const APPROVED = { step_status: 'done', proposal: 'DKT-V304', outcome: 'approved', missing_seats: [] }
+const CAST = {
+    'STEP-3187 · seat:judge-security':     { text: 'cast recorded' },
+    'STEP-3187 · seat:judge-architecture': { text: 'cast recorded' },
+    'STEP-3187 · seat:judge-correctness':  { text: 'cast recorded' },
+    'STEP-3187 · gate:outcome': { text: APPROVED },
+}
 
 const run = async (script) => {
     SCRIPT = script
@@ -165,9 +166,8 @@ const seatBriefs = () => Object.keys(BRIEFS)
     .filter((k) => k.includes('seat:'))
     .map((k) => BRIEFS[k])
 
-// ================= NET 1: the envelope, read structurally =================
+// ======= NET 1: the ancestry guard's envelope, read structurally =======
 
-// The three inputs the acceptance names, on the gate path's own parser.
 ok(parseTargetRef('') === null, 'parseTargetRef("") is no target')
 ok(parseTargetRef(envelope()) === null,
     'parseTargetRef({"target_sha":null,"target_worktree":null}) is no target')
@@ -175,10 +175,10 @@ ok(parseTargetRef(
        'Since there was no output and no error, the target sha is ' +
        `${PHANTOM} on worktree feature/parallelism.`) === null,
     'parseTargetRef(free prose naming a 40-hex sha) is no target')
-// The RUN-63 reply verbatim: a bare pair of JSON-ish lines, no object at all.
+// The fabricated reply verbatim: a bare pair of JSON-ish lines, no object at all.
 ok(parseTargetRef(
        `"target_sha": "${PHANTOM}"\n"target_worktree": "feature/parallelism"`) === null,
-    "parseTargetRef refuses RUN-63's actual fabricated reply — no object, no parse")
+    'parseTargetRef refuses the actual fabricated reply — no object, no parse')
 ok(parseTargetRef(null) === null && parseTargetRef(undefined) === null,
     'parseTargetRef survives a dead probe (null/undefined)')
 
@@ -204,24 +204,19 @@ ok(/jq -c/.test(targetRefCommand('STEP-3187')) &&
    !/grep/.test(targetRefCommand('STEP-3187')),
     'targetRefCommand is the jq envelope with null defaults — no grep, no empty output')
 
-// ================= NET 2: don't spend the probe at all =================
+// ======= NET 2: the gate path spends no target probe at all =======
 
-// AC: a vote row whose bundle carries no target_sha. `show` carries no target
-// field, so the probe is never spawned, the log says so, and the seats are
-// briefed with the NO-target wording.
+// AC: a vote row whose gate envelope carries no target. Nothing else is
+// probed for one, the log says so, and the seats are briefed with the
+// NO-target wording.
 const A = await run({
-    'STEP-3187 · gate:show':    { text: SHOW_NO_TARGET },
-    'STEP-3187 · seat:judge-security':     { text: 'cast recorded' },
-    'STEP-3187 · seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-3187 · seat:judge-correctness':  { text: 'cast recorded' },
-    'STEP-3187 · gate:record':  { text: APPROVED },
-    'STEP-3187 · gate:outcome': { text: SHOW_DONE },
-    'STEP-3187 · gate:tally':   { text: APPROVED },
+    'STEP-3187 · gate:status': { text: open(null) },
+    ...CAST,
 })
-ok(calls('STEP-3187 · gate:target') === 0,
-    'AC: no target field on the gate payload -> the gate:target probe is never spawned')
-ok(LOG.some((l) => l.includes('skipping the gate:target probe entirely')),
-    `AC: the wave log says the probe was skipped (got ${JSON.stringify(LOG)})`)
+ok(!CALLS.some((c) => /target/.test(c)),
+    `AC: no target probe of any kind is spawned on the gate path (got ${JSON.stringify(CALLS)})`)
+ok(LOG.some((l) => l.includes('NO target ref on the gate')),
+    `AC: the wave log says the gate carried no target (got ${JSON.stringify(LOG)})`)
 ok(seatBriefs().length === 3 &&
    seatBriefs().every((b) => b.includes('NO target ref')),
     'AC: every seat brief carries the NO target ref wording')
@@ -229,109 +224,63 @@ ok(seatBriefs().every((b) => !/TARGET SHA:/.test(b)),
     'AC: and not one brief carries a TARGET SHA: line')
 ok(seatBriefs().every((b) => !/[0-9a-f]{40}/.test(b)),
     'AC: no 40-hex sha appears anywhere in any brief')
-// 3 probes: gate:show, ONE vote-show (labelled gate:record, reused by the
-// tally under DOT-1041), gate:outcome. gate:target is skipped by DOT-1040 and
-// gate:tally spawns nothing because the record read was already conclusive.
-ok(A.status === 'gate-passed' && A.spawn_accounting === '3 seats, 3 probes, 0 retries',
-    `AC: the gate still passes, two probes cheaper than before (got ${JSON.stringify(A.spawn_accounting)})`)
-ok(calls('STEP-3187 · gate:tally') === 0,
-    'AC: a conclusive gate:record read serves the tally too — one vote-show probe per gate')
+ok(A.status === 'gate-passed' && A.spawn_accounting === '3 seats, 2 probes, 0 retries',
+    `AC: the gate passes on two reads — status and outcome (got ${JSON.stringify(A.spawn_accounting)})`)
 
-// ================= NET 3: nothing unvouched reaches a judge ================
+// ======= NET 3: nothing unvouched reaches a judge =======
 
-// The RUN-63 fabrication, replayed end to end against a gate whose payload
-// DOES carry a target: the probe relays a different 40-hex sha, and the brief
-// refuses it because `show` does not carry it.
+// A target the engine carries on the envelope reaches the seats.
 const B = await run({
-    'STEP-3187 · gate:show':   { text: SHOW_WITH_TARGET },
-    'STEP-3187 · gate:target': { text: envelope(PHANTOM, 'feature/parallelism') },
-    'STEP-3187 · seat:judge-security':     { text: 'cast recorded' },
-    'STEP-3187 · seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-3187 · seat:judge-correctness':  { text: 'cast recorded' },
-    'STEP-3187 · gate:record':  { text: APPROVED },
-    'STEP-3187 · gate:outcome': { text: SHOW_DONE },
-    'STEP-3187 · gate:tally':   { text: APPROVED },
-})
-ok(calls('STEP-3187 · gate:target') === 1,
-    'a payload that DOES carry a target still spends the probe')
-ok(seatBriefs().every((b) => !b.includes(PHANTOM)),
-    'the fabricated sha never reaches a seat: it is absent from the text the wave holds')
-ok(LOG.some((l) => l.includes("step payload does not carry")),
-    `the wave logs the refusal (got ${JSON.stringify(LOG)})`)
-ok(seatBriefs().every((b) => b.includes('NO target ref')),
-    'and the seats are briefed to read their own HEAD instead')
-ok(B.status === 'gate-passed', 'the refusal does not disturb the gate outcome')
-
-// A CORROBORATED target still reaches the seats exactly as before.
-const C = await run({
-    'STEP-3187 · gate:show':   { text: SHOW_WITH_TARGET },
-    'STEP-3187 · gate:target': { text: envelope(REAL, '/w/vpl-711') },
-    'STEP-3187 · seat:judge-security':     { text: 'cast recorded' },
-    'STEP-3187 · seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-3187 · seat:judge-correctness':  { text: 'cast recorded' },
-    'STEP-3187 · gate:record':  { text: APPROVED },
-    'STEP-3187 · gate:outcome': { text: SHOW_DONE },
-    'STEP-3187 · gate:tally':   { text: APPROVED },
+    'STEP-3187 · gate:status': { text: open({ sha: REAL, worktree: '/w/vpl-711' }) },
+    ...CAST,
 })
 ok(seatBriefs().length === 3 &&
    seatBriefs().every((b) => b.includes(`TARGET SHA:     ${REAL}`)),
-    'a sha the wave can vouch for is still named in every brief')
+    'a sha the engine carries is named in every brief')
 ok(seatBriefs().every((b) => b.includes('/w/vpl-711') && !b.includes('NO target ref')),
     'the worktree rides with it, and the NO-target wording is suppressed')
-ok(LOG.some((l) => l.includes(`seating`) && l.includes(REAL)),
+ok(LOG.some((l) => l.includes('seating') && l.includes(REAL)),
     'the wave log names the target it seated on')
-ok(C.status === 'gate-passed', 'the corroborated path is unchanged')
+ok(B.status === 'gate-passed' && B.spawn_accounting === '3 seats, 2 probes, 0 retries',
+    'the target costs no extra probe')
 
-// A non-envelope reply is logged as such and treated as no target — never
-// regex-scraped for a sha.
+// A sha that is not the full object id is refused, whatever the envelope
+// says — an abbreviation, uppercase hex, prose.
+for (const [label, sha] of [
+    ['abbreviated', REAL.slice(0, 12)],
+    ['uppercase', REAL.toUpperCase()],
+    ['prose', `the commit is ${REAL}`],
+]) {
+    const R = await run({
+        'STEP-3187 · gate:status': { text: open({ sha, worktree: '' }) },
+        ...CAST,
+    })
+    ok(seatBriefs().every((b) => !b.includes(sha) && b.includes('NO target ref')) && R.status === 'gate-passed',
+        `a ${label} sha on the envelope never reaches a seat, and the gate still passes`)
+}
+
+// The worktree half stands alone when only it is carried.
 const D = await run({
-    'STEP-3187 · gate:show':   { text: SHOW_WITH_TARGET },
-    'STEP-3187 · gate:target': { text:
-        `"target_sha": "${PHANTOM}"\n"target_worktree": "feature/parallelism"` },
-    'STEP-3187 · seat:judge-security':     { text: 'cast recorded' },
-    'STEP-3187 · seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-3187 · seat:judge-correctness':  { text: 'cast recorded' },
-    'STEP-3187 · gate:record':  { text: APPROVED },
-    'STEP-3187 · gate:outcome': { text: SHOW_DONE },
-    'STEP-3187 · gate:tally':   { text: APPROVED },
+    'STEP-3187 · gate:status': { text: open({ sha: '', worktree: '/w/vpl-711' }) },
+    ...CAST,
 })
-ok(LOG.some((l) => l.includes('gate:target probe reply did not parse — treating as no target')),
-    `a non-envelope reply is logged verbatim as unparseable (got ${JSON.stringify(LOG)})`)
-ok(seatBriefs().every((b) => !b.includes(PHANTOM) && b.includes('NO target ref')),
-    'and nothing from it reaches a seat')
-ok(D.status === 'gate-passed', 'the unparseable reply does not disturb the gate outcome')
+ok(seatBriefs().every((b) => b.includes('TARGET WORKTREE:/w/vpl-711') && !/TARGET SHA:/.test(b)),
+    'a worktree-only target names the worktree and no sha')
+ok(D.status === 'gate-passed', 'and does not disturb the gate outcome')
 
-// A DEAD gate:target probe (empty reply) is the same story.
-const E = await run({
-    'STEP-3187 · gate:show':   { text: SHOW_WITH_TARGET },
-    'STEP-3187 · gate:target': { text: '' },
-    'STEP-3187 · seat:judge-security':     { text: 'cast recorded' },
-    'STEP-3187 · seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-3187 · seat:judge-correctness':  { text: 'cast recorded' },
-    'STEP-3187 · gate:record':  { text: APPROVED },
-    'STEP-3187 · gate:outcome': { text: SHOW_DONE },
-    'STEP-3187 · gate:tally':   { text: APPROVED },
-})
-ok(seatBriefs().every((b) => b.includes('NO target ref')) && E.status === 'gate-passed',
-    'an empty gate:target reply briefs NO target ref and passes the gate')
-
-// ---- corroboratedTarget, on its own ----
-const held = `…"target_sha":"${REAL}","target_worktree":"/w/vpl-711"…`
-ok(corroboratedTarget(null, held) === null, 'corroboratedTarget(null) is no target')
-ok(corroboratedTarget({ sha: REAL, worktree: '/w/vpl-711' }, held).sha === REAL,
-    'a 40-hex sha present in the held text survives')
-ok(corroboratedTarget({ sha: PHANTOM, worktree: '' }, held) === null,
-    'a 40-hex sha ABSENT from the held text is refused')
-ok(corroboratedTarget({ sha: REAL.slice(0, 12), worktree: '' }, held) === null,
-    'an abbreviated sha is refused even when the held text contains it')
-ok(corroboratedTarget({ sha: REAL.toUpperCase(), worktree: '' },
-       held + REAL.toUpperCase()) === null,
-    'an uppercase sha is refused — the engine records lowercase hex')
-ok(corroboratedTarget({ sha: '', worktree: '/w/vpl-711' }, held).worktree === '/w/vpl-711' &&
-   corroboratedTarget({ sha: '', worktree: '/w/vpl-711' }, held).sha === '',
-    'the worktree half stands alone when only it is corroborated')
-ok(corroboratedTarget({ sha: REAL, worktree: '/gone' }, held).worktree === '',
-    'an uncorroborated worktree is dropped while the vouched sha stays')
+// ---- gateTarget, on its own ----
+ok(gateTarget({}) === null && gateTarget({ target: null }) === null &&
+   gateTarget({ target: 'x' }) === null,
+    'gateTarget: no target field, a null one, and a non-object are no target')
+ok(gateTarget({ target: { sha: '', worktree: '' } }) === null,
+    'gateTarget: an envelope naming neither half is no target')
+ok(gateTarget({ target: { sha: REAL, worktree: '/w' } }).sha === REAL,
+    'gateTarget: a 40-hex sha survives')
+ok(gateTarget({ target: { sha: PHANTOM.slice(0, 12), worktree: '/w' } }).sha === '' &&
+   gateTarget({ target: { sha: PHANTOM.slice(0, 12), worktree: '/w' } }).worktree === '/w',
+    'gateTarget: an abbreviated sha is dropped while the worktree stays')
+ok(gateTarget({ target: { sha: REAL.toUpperCase(), worktree: '' } }) === null,
+    'gateTarget: an uppercase sha is refused — the engine records lowercase hex')
 
 // ---- seatBrief's own shape check, behind the call site ----
 const briefWith = (t) => seatBrief(SEAT, 'DKT-V304', ROW, false, null, t)

@@ -79,8 +79,7 @@ grep -q 'needsAncestryCheck' "${WORK}/ancestry.js" || fatal "fix-round-ancestry 
     # --- stub workflow globals the ladder reaches for ---
     cat <<'JS'
 let rows = []
-let input = { policyText: '' }
-const policyVersion = 16
+let input = {}
 const LOG = []
 const log = (m) => LOG.push(String(m))
 const parallel = (fns) => Promise.all(fns.map((f) => f()))
@@ -176,7 +175,7 @@ const RUN35 = () => [
 
 const run = async (theRows, integrated, ctx, git, self) => {
     rows = theRows
-    input = { policyText: '' }
+    input = {}
     if (integrated !== undefined) input.integrated = integrated
     SPAWNED = []; GIT_CMDS = []; SELF_CMDS = []
     CTX_PROBES = 0; GIT_PROBES = 0; SELF_PROBES = 0

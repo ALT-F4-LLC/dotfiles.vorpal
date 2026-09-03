@@ -198,14 +198,15 @@ then convene the judges on it:
 ```
 Workflow({scriptPath: "<home>/.claude/workflows/tribunal.js", args: {
   voteId: "<id>",
-  voters: ["tribunal-architecture", "tribunal-security", "tribunal-correctness"],
-  policyText: <literal text of ~/.docket/config/policy.toml>,
+  voters: [{seat: "tribunal-architecture", model, effort, variant}, {seat: "tribunal-security", ...}, {seat: "tribunal-correctness", ...}],
   context: "<every proposal with its evidence, its diff, and its bump>",
   gateKind: "fix-batch", cwd: "<the repo the edits target>"}})
 ```
 
-By `scriptPath` only and never by name, `args` a real object, policy passed as
-TEXT rather than as a path — the script reads no files. The path is the
+By `scriptPath` only and never by name, `args` a real object, each voter
+carrying the routing triple looked up from the pinned policy exactly as
+docket-run's tribunal launch does (its python lookup, pasted verbatim) — the
+script reads no files and parses no policy. The path is the
 installed `<home>/.claude/workflows/tribunal.js` with `<home>` expanded to a
 literal absolute path (the tool expands no `~`), and there is no source-tree
 fallback: the Workflow tool launches

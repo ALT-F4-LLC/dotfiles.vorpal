@@ -577,8 +577,11 @@ Before reading one transcript line:
    `~/.docket/config/`, which the engine reads directly as the first of its
    ordered roots, the observed repo's own `.docket/config/` layering second when
    it exists. So the stale-install audit is the whole audit, and the source
-   mirrors the install tree for tree: `diff -r` source `config` against
-   `~/.docket/config` and source `bin` against `~/.docket/bin`, then inventory
+   mirrors the install tree for tree: `docket doctor --source <dotfiles
+   checkout> --json` answers it (its install-drift check is that `diff -r`,
+   disregarding and naming file-free directories) alongside seat, store and
+   debris; the conductor runs the same verb at attach, so a disagreement
+   between its answer and yours is itself a finding. Then inventory
    the repo's additions layer if there is one —
    real tracked files there are legitimate, while SYMLINKS are link-farm debris
    from the retired model, each entry either duplicating the shared root or
@@ -1026,8 +1029,8 @@ Pre-derived because docket-run is the richest target. The conductor:
   again before flagging either. A by-name invocation is a defect even
   when it works (in one observed run the name registry served pre-edit,
   stale bytes). `args` is
-  a real object `{rows, policyText}`, policy as TEXT, `cat`-ed fresh from
-  `~/.docket/config/policy.toml` every dispatch. (wave.js's args-decode
+  a real object `{rows}`, the rows verbatim from `next` with the engine's
+  `model`/`effort`/`variant` on each; no policy text crosses a launch. (wave.js's args-decode
   log line is normal harness transport — the harness stringifies args
   regardless of the caller; proven by a controlled probe on an earlier run.
   Never count it as a finding.)

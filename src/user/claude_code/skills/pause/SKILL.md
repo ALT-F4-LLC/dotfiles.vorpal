@@ -131,11 +131,11 @@ checkout, never a wave worktree.
   wave can never be back-filled (`docket dispatch backfill-usage --source
   "wave-journal:<wfId>"`), and the worktree sweep set for that wave
   (`worktree-wf_<id>-*` branches) cannot be told apart from a foreign entry.
-- **The FULL original `Workflow` args** — the literal `rows` JSON and the
-  literal `policyText` (the whole cat'd `policy.toml`, byte-for-byte, never a
-  condensation) — for any wave or tribunal a later session might need to
-  resume with `resumeFromRunId`. The harness does not restore these; an
-  arg-less resume dies at startup.
+- **The FULL original `Workflow` args** — the literal `rows` JSON exactly as
+  `next` returned it, routing fields included, and any `integrated` map —
+  for any wave or tribunal a later session might need to resume with
+  `resumeFromRunId`. The harness does not restore these; an arg-less resume
+  dies at startup.
 - **Un-integrated writer shas**: any executor sha that was recorded but never
   cherry-picked into the shared checkout, with its worktree path and branch.
   Integration is never automatic. A worktree removed without naming its sha
@@ -182,9 +182,8 @@ checkout, never a wave worktree.
   in the prompt, just point at it.
 
 **Must be re-done fresh in the new session, never carried forward:** seat
-preflight, stale-install diffs against the last `just activate`, and a fresh
-`cat` of `policy.toml` (never trust a prior session's re-cat — the file may
-have changed).
+preflight (`docket doctor`), the stale-install diffs against the last `just
+activate`, and the completion-gate probe.
 
 **Before writing the prompt, check it against this list — each item filled in
 or explicitly marked not applicable, never silently dropped:** absolute cwd

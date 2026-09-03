@@ -82,8 +82,7 @@ grep -q 'runLane' "${WORK}/ladder.js" || fatal "stage-ladder region does not con
 {
     cat <<'JS'
 let rows = []
-let input = { policyText: '' }
-const policyVersion = 16
+let input = {}
 const LOG = []
 const log = (m) => LOG.push(String(m))
 const parallel = (fns) => Promise.all(fns.map((f) => f()))
@@ -147,7 +146,7 @@ const finish = async (step) => {
 }
 const start = (theRows, opts) => {
     rows = theRows
-    input = { policyText: '' }
+    input = {}
     SPAWNED = []; GATES = []; PROBED = []; LOG.length = 0
     RESULTS = new Map(Object.entries((opts && opts.results) || {}))
     HOLD = new Set((opts && opts.hold) || [])

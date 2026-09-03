@@ -1,229 +1,18 @@
 export const meta = {
     name: 'wave',
-    description: 'Run one dispatched manifest end to end: spawn one executor per executor row (routed by policy.toml), seat a judge panel on each vote row, and skip action rows (engine-run at record time). Stages run as awaited groups per issue lane, with the cross-issue cohorts the manifest certifies honored — the staged closure means one wave can carry judges -> gate -> reconcile -> report, and no issue idles behind the slower stages of another. PROBE COST PER VOTE ROW: 3 read-only haiku probes on the normal path — gate:show, ONE vote-show serving both the missing-seat check and the tally, and gate:outcome — 2 on a gate that was already decided before the wave reached it, and up to 5 when a re-seat or an inconclusive read forces a second vote-show and the gate payload carries a target ref worth a gate:target probe. Each probe relays a few hundred bytes; the per-gate count is reported verbatim in that row\'s spawn_accounting. Invoke by scriptPath ONLY, with args {rows, policyText} as a real object — policy.toml is passed as TEXT, never a path; the script cannot read files.',
-    whenToUse: 'Invoked by the docket-run skill on an open dispatch, always as Workflow({scriptPath}) — never by name. args is {rows, policyText}: `next` rows verbatim (executor, vote, and action rows; human rows stay with the conductor) plus the literal TEXT of policy.toml. On a dispatch carrying a fix round\'s review fanout, args also carries `integrated` — a map from each such issue to the sha of its prior round\'s INTEGRATION commit — so the wave can assert base ancestry before seating the fanout. There is no policyPath and no file access.',
+    description: 'Run one dispatched manifest end to end: spawn one executor per executor row at the model/effort the engine rendered on it, seat a judge panel on each vote row from its routed roster, and skip action rows (engine-run at record time). Stages run as awaited groups per issue lane, with the cross-issue cohorts the manifest certifies honored — the staged closure means one wave can carry judges -> gate -> reconcile -> report, and no issue idles behind the slower stages of another. PROBE COST PER VOTE ROW: 2 read-only haiku probes of `docket gate status` on the normal path — one before the panel seats (decided yet, which proposal, which target) and one after it returns (missing seats and the tally) — 1 on a gate that was already decided before the wave reached it, and 3 when a re-seat forces a re-read; a gate with no proposal yet spends a `step show` for the engine\'s blocked_reason instead of a panel, and an engine-minted held-cluster gate spends one more read to name its cluster. Each probe answers through a schema, under 1 KB; the per-gate count is reported verbatim in that row\'s spawn_accounting. Invoke by scriptPath ONLY, with args {rows} as a real object — every row carries model/effort/variant resolved by the engine, and the script reads no policy and cannot read files.',
+    whenToUse: 'Invoked by the docket-run skill on an open dispatch, always as Workflow({scriptPath}) — never by name. args is {rows}: `next` rows VERBATIM (executor, vote, and action rows; human rows stay with the conductor), each executor row carrying the model/effort/variant the engine resolved from the run\'s pinned policy.toml and each vote row carrying the same per voter in `voter_assignments` — a row re-typed without those fields is refused. On a dispatch carrying a fix round\'s review fanout, args also carries `integrated` — a map from each such issue to the sha of its prior round\'s INTEGRATION commit — so the wave can assert base ancestry before seating the fanout. There is no policy argument of any kind and no file access.',
 }
 
 // ---------------------------------------------------------------------------
-// TOML subset parser, byte-identical to tribunal.js's. A workflow script has
-// no file access or module resolution, so this is either a duplicate or a
-// second parser that drifts; tests/workflow-sync.test.sh diffs every
-// SYNC-marked region between the two files (self-names normalized) and
-// fails on drift.
+// Routing rides the row. The engine resolves {model, effort, variant} for
+// every executor row and every voter from the run's PINNED policy.toml —
+// attempt and round escalation, the [security] never-lists and ceiling, the
+// fallback redirects — and renders the answer onto `next`'s rows. This
+// script re-derives none of it: the last harness-side copy of that walk was
+// a second parser fed a ~28k-char hand-copy of policy.toml every dispatch,
+// whose only failure mode was deny-and-retype.
 // ---------------------------------------------------------------------------
-
-// SYNC-BEGIN policy-parser
-const SUBSET = 'tables, array-of-tables, inline tables, quoted strings, integers, arrays of strings, # comments outside quotes'
-
-function bail(line, n, why) {
-    throw new Error(
-        `wave.js policy parser: ${why} (line ${n}: ${JSON.stringify(line)}). ` +
-        `This is NOT a general TOML parser — it accepts only: ${SUBSET}. ` +
-        `Fix policy.toml or widen the parser deliberately; do not parse partially.`
-    )
-}
-
-function decomment(s) {
-    let q = false
-    for (let i = 0; i < s.length; i++) {
-        const c = s[i]
-        if (c === '"' && s[i - 1] !== '\\') q = !q
-        else if (c === '#' && !q) return s.slice(0, i)
-    }
-    return s
-}
-
-function scalar(v, line, n) {
-    v = v.trim()
-    if (/^"(?:[^"\\]|\\.)*"$/.test(v)) return JSON.parse(v)
-    if (/^-?\d+$/.test(v)) return parseInt(v, 10)
-    if (/^'/.test(v)) bail(line, n, 'literal (single-quoted) strings are out of subset')
-    if (/^(true|false)$/.test(v)) bail(line, n, 'booleans are out of subset')
-    if (/^-?\d+\./.test(v)) bail(line, n, 'floats are out of subset')
-    bail(line, n, `unsupported value ${JSON.stringify(v)}`)
-}
-
-function arrayOfStrings(v, line, n) {
-    const inner = v.trim().slice(1, -1).trim()
-    if (inner === '') return []
-    if (inner.includes('[')) bail(line, n, 'nested arrays are out of subset')
-    return splitTop(inner).map((e) => {
-        const s = scalar(e, line, n)
-        if (typeof s !== 'string') bail(line, n, 'only arrays OF STRINGS are in subset')
-        return s
-    })
-}
-
-function splitTop(s) {
-    const out = []
-    let cur = '', q = false
-    for (let i = 0; i < s.length; i++) {
-        const c = s[i]
-        if (c === '"' && s[i - 1] !== '\\') { q = !q; cur += c }
-        else if (c === ',' && !q) { out.push(cur); cur = '' }
-        else cur += c
-    }
-    if (cur.trim() !== '') out.push(cur)
-    return out.map((e) => e.trim()).filter((e) => e !== '')
-}
-
-function inlineTable(v, line, n) {
-    const obj = {}
-    for (const pair of splitTop(v.trim().slice(1, -1))) {
-        const eq = pair.indexOf('=')
-        if (eq < 0) bail(line, n, 'inline-table entry without `=`')
-        const k = pair.slice(0, eq).trim()
-        const raw = pair.slice(eq + 1).trim()
-        obj[k] = raw.startsWith('[') ? arrayOfStrings(raw, line, n) : scalar(raw, line, n)
-    }
-    return obj
-}
-
-function parseToml(text) {
-    const root = {}
-    let cur = root
-    let pendingKey = null, pendingBuf = '', pendingLine = 0
-
-    const lines = text.split('\n')
-    for (let i = 0; i < lines.length; i++) {
-        const rawLine = lines[i]
-        const n = i + 1
-        let line = decomment(rawLine).trim()
-        if (line === '') continue
-
-        if (pendingKey !== null) {
-            pendingBuf += ' ' + line
-            if (!line.includes(']')) continue
-            cur[pendingKey] = arrayOfStrings(pendingBuf, pendingBuf, pendingLine)
-            pendingKey = null; pendingBuf = ''
-            continue
-        }
-
-        let m = line.match(/^\[\[([A-Za-z0-9_.-]+)\]\]$/)
-        if (m) {
-            const path = m[1].split('.')
-            let node = root
-            for (let j = 0; j < path.length - 1; j++) {
-                const seg = path[j]
-                if (Array.isArray(node[seg])) node = node[seg][node[seg].length - 1]
-                else node = (node[seg] = node[seg] || {})
-            }
-            const leaf = path[path.length - 1]
-            if (!Array.isArray(node[leaf])) node[leaf] = []
-            const entry = {}
-            node[leaf].push(entry)
-            cur = entry
-            continue
-        }
-
-        m = line.match(/^\[([A-Za-z0-9_.-]+)\]$/)
-        if (m) {
-            const path = m[1].split('.')
-            let node = root
-            for (const seg of path) {
-                if (Array.isArray(node[seg])) node = node[seg][node[seg].length - 1]
-                else node = (node[seg] = node[seg] || {})
-            }
-            cur = node
-            continue
-        }
-
-        if (line.startsWith('[')) bail(rawLine, n, 'malformed table header')
-
-        const eq = line.indexOf('=')
-        if (eq < 0) bail(rawLine, n, 'line is neither a table header nor a key/value pair')
-        const key = line.slice(0, eq).trim()
-        if (!/^[A-Za-z0-9_-]+$/.test(key)) bail(rawLine, n, `unsupported key ${JSON.stringify(key)} (dotted/quoted keys are out of subset)`)
-        const val = line.slice(eq + 1).trim()
-
-        if (val === '') bail(rawLine, n, 'empty value (multi-line strings are out of subset)')
-        if (val.startsWith('"""') || val.startsWith("'''")) bail(rawLine, n, 'multi-line strings are out of subset')
-        if (val.startsWith('{')) {
-            if (!val.endsWith('}')) bail(rawLine, n, 'multi-line inline tables are out of subset')
-            cur[key] = inlineTable(val, rawLine, n)
-        } else if (val.startsWith('[')) {
-            if (val.endsWith(']')) cur[key] = arrayOfStrings(val, rawLine, n)
-            else { pendingKey = key; pendingBuf = val; pendingLine = n }   // wraps
-        } else {
-            cur[key] = scalar(val, rawLine, n)
-        }
-    }
-    if (pendingKey !== null) bail('', pendingLine, 'unterminated array')
-    return root
-}
-// SYNC-END policy-parser
-
-// SYNC-BEGIN policy-shape
-// What this reads out of policy.toml is a SHAPE, not a version number: a
-// [executors].<seat>.variant naming a [variants] row, carrying model/effort/
-// escalate_to. That shape hasn't moved since v2, so an exact-match check on
-// the current version refuses healthy policy the moment it bumps — pinned at
-// 15, it refused v16 and blocked every dispatch wave and gate fleet-wide.
-// So this mirrors the docket-run skill's own [policy] gate (present,
-// integer) against a documented floor, then checks the tables routing
-// actually depends on: a version above the floor is fine, a missing
-// [variants]/[executors] table is not.
-const POLICY_VERSION_FLOOR = 2   // first version carrying the [executors].variant -> [variants]/escalate_to shape this file routes on
-
-function assertPolicyShape(policy, refusal) {
-    const version = policy.policy?.version
-    if (!Number.isInteger(version)) {
-        throw new Error(
-            `wave.js: policy.toml [policy] version is ${JSON.stringify(version)} — the ` +
-            `[policy] table must declare an integer version field. ${refusal}`
-        )
-    }
-    if (version < POLICY_VERSION_FLOOR) {
-        throw new Error(
-            `wave.js: policy.toml [policy] version is ${version}, below the floor ` +
-            `${POLICY_VERSION_FLOOR} — the [executors].variant -> [variants]/escalate_to ` +
-            `routing shape this script reads dates from v${POLICY_VERSION_FLOOR}. ${refusal}`
-        )
-    }
-    for (const table of ['executors', 'variants']) {
-        const t = policy[table]
-        if (!t || typeof t !== 'object' || Array.isArray(t) || Object.keys(t).length === 0) {
-            throw new Error(
-                `wave.js: policy.toml (version ${version}) carries no non-empty [${table}] ` +
-                `table — that is the shape this script routes against, whatever the version ` +
-                `number says. ${refusal}`
-            )
-        }
-    }
-    return version
-}
-// SYNC-END policy-shape
-
-const INVESTIGATOR_CLASS = ['investigate', 'research']
-
-function executorRow(policy, hint) {
-    const row = (policy.executors || {})[hint]
-    return row ? { key: hint, row } : null
-}
-
-function variantSpec(policy, name) {
-    return (policy.variants || {})[name]
-}
-
-// Entering a fable-model variant BY CHAIN-WALK needs a gate; rows STANDING on
-// a fable variant need none — resolve() consults this only when the walk
-// actually moved the variant, so a standing home declared in policy.toml is
-// honored without a hardcoded roster. The failed-top-opus-round gate is
-// structural, not name-matched: work whose standing variant is already at the
-// top Opus efforts (xhigh/max) has nowhere left in Opus to earn.
-function fableEligible(policy, hint, row, standingVariant) {
-    const gates = (policy.escalation && policy.escalation.fable_gates) || []
-    const labels = labelsOf(row)
-    const standing = variantSpec(policy, standingVariant) || {}
-    for (const g of gates) {
-        if (g === 'investigator-class' && INVESTIGATOR_CLASS.includes(hint)) return true
-        if (g === 'novel-architecture' && labels.includes('novel-architecture')) return true
-        if (g === 'failed-top-opus-round' && row.attempt > 0 &&
-            standing.model === 'opus' &&
-            (standing.effort === 'xhigh' || standing.effort === 'max')) return true
-    }
-    return false
-}
 
 function labelsOf(row) {
     if (Array.isArray(row.labels)) return row.labels
@@ -231,33 +20,7 @@ function labelsOf(row) {
     return []
 }
 
-// Round-based escalation hops. A fix-loop round is a FRESH step id:
-// `docket step resolve --as fix-round` mints fix@N+1 at attempt 0, so the
-// attempt walk in resolve() never sees a loop's failure history — one past
-// run had its fixer burn nine fix rounds pinned at its standing variant
-// while every judge reviewing it stood at opus-high. The engine
-// encodes the round ordinal in the manifest row's instance name — `name@N`,
-// with `#k` for fanout siblings, and a loop step's first entry minted at @1 —
-// and [escalation] on_round = "one-hop" + round_executors opts an executor
-// into counting each round AFTER its first as one escalate_to hop. Scoping by
-// executor name is deliberate: EVERY per-round step shares the ordinal
-// (review@N judge fanouts, synthesize@N, verify@N), and only the listed
-// loop-workers should climb — the workflow's own `loop = true` marker never
-// reaches the manifest row, so policy.toml is the only conduit this routing
-// can read it from.
-function roundHops(policy, hint, row) {
-    const esc = policy.escalation || {}
-    if (esc.on_round !== 'one-hop') return 0
-    if (!(esc.round_executors || []).includes(hint)) return 0
-    const m = /@(\d+)(?:#\d+)?$/.exec(row.instance || '')
-    if (!m) return 0
-    const round = parseInt(m[1], 10)
-    return round > 1 ? round - 1 : 0
-}
-
-function resolve(row, policy) {
-    const labels = labelsOf(row)
-
+function resolve(row) {
     if (row.kind !== 'executor') {
         // action and vote rows never reach resolve(): the stage loop below
         // handles both natively (skip / seat a panel). Anything else here is
@@ -272,137 +35,12 @@ function resolve(row, policy) {
         )
     }
 
-    // Executor hints are CONCRETE [executors] names. The label-keyed
-    // [[resolve]] tables are retired: label routing is when-gated
-    // sibling steps in the workflow files, each declaring its concrete
-    // executor, so the engine's own packet substitution renders the right
-    // contract and no harness-side hint rewrite exists anymore. The guard at
-    // module load refuses a policy that still carries tables.
     const hint = row.executor
-    const found = executorRow(policy, hint)
-    if (!found) {
-        throw new Error(
-            `wave.js: executor hint ${JSON.stringify(hint)} has no [executors] row ` +
-            `(step ${row.step}). Coverage invariant violated — policy.toml and the ` +
-            `workflow corpus have drifted. Refusing to route.`
-        )
-    }
-    const rowPolicy = found.row
-    let variant = rowPolicy.variant
-    let never = (rowPolicy.never || []).slice()
-
-    const sec = policy.security || {}
-    const sensitive =
-        (sec.nodes || []).includes(found.key) ||
-        (sec.labels || []).some((l) => labels.includes(l))
-    if (sensitive) never = never.concat(sec.never || [])
-
-    // The security ceiling is a TRUE BOUND without needing a variant ordering:
-    // everything reachable FROM the ceiling by escalate_to chain lies beyond
-    // it. A sensitive row standing beyond the ceiling is clamped back to it,
-    // and the walk below never enters the beyond set — so a ceiling off a
-    // row's chain path still binds instead of being skipped as a waypoint.
-    const ceiling = sensitive ? sec.ceiling : null
-    const beyond = new Set()
-    if (ceiling) {
-        let c = variantSpec(policy, ceiling)
-        if (!c) {
-            throw new Error(
-                `wave.js: [security].ceiling ${JSON.stringify(ceiling)} has no ` +
-                `[variants] row (step ${row.step}) — a mistyped ceiling would ` +
-                `silently stop binding. Fix policy.toml. Refusing to route.`
-            )
-        }
-        while (c && c.escalate_to && !beyond.has(c.escalate_to)) {
-            beyond.add(c.escalate_to)
-            c = variantSpec(policy, c.escalate_to)
-        }
-        if (beyond.has(variant)) variant = ceiling
-    }
-
-    const standing = variant
-    // Escalation: one escalate_to hop per prior claim (row.attempt counts
-    // claims-so-far, whatever ended each one) from the standing variant, PLUS
-    // one hop per prior fix-loop round for opted-in executors (roundHops
-    // above) — a loop round is a fresh step id at attempt 0, so without the
-    // round term the walk restarted from standing every round. The walk
-    // stops at the chain's end or the security ceiling. A hop whose model is
-    // never-listed REDIRECTS through [escalation.fallback] rather than
-    // ending there — the non-pinned path enters the fable variant, fails
-    // fableEligible(), and lands on the fallback — and the redirect is
-    // itself a ceiling-bounded hop.
-    const hops = (row.attempt > 0 ? row.attempt : 0) + roundHops(policy, found.key, row)
-    if (hops > 0) {
-        for (let hop = 0; hop < hops; hop++) {
-            if (ceiling && variant === ceiling) break
-            const cur = variantSpec(policy, variant)
-            if (!cur || !cur.escalate_to) break
-            const next = variantSpec(policy, cur.escalate_to)
-            if (!next) {
-                throw new Error(
-                    `wave.js: variant ${JSON.stringify(variant)} escalates to ` +
-                    `${JSON.stringify(cur.escalate_to)}, which has no [variants] row ` +
-                    `(step ${row.step}). Fix policy.toml. Refusing to route.`
-                )
-            }
-            if (ceiling && beyond.has(cur.escalate_to)) {
-                // A chain hop that would overshoot the ceiling clamps UP to
-                // it rather than stranding the step below its permitted top.
-                variant = ceiling
-                break
-            }
-            if (never.includes(next.model)) {
-                const fb = ((policy.escalation || {}).fallback || {})[cur.escalate_to]
-                const fbSpec = fb ? variantSpec(policy, fb) : null
-                if (!fbSpec || never.includes(fbSpec.model) || fb === variant) break
-                if (ceiling && beyond.has(fb)) {
-                    variant = ceiling
-                    break
-                }
-                variant = fb
-                continue
-            }
-            variant = cur.escalate_to
-        }
-    }
-
-    let spec = variantSpec(policy, variant)
-    if (!spec) {
-        throw new Error(
-            `wave.js: executor ${JSON.stringify(found.key)} names variant ` +
-            `${JSON.stringify(variant)}, which has no [variants] row ` +
-            `(step ${row.step}). Fix policy.toml. Refusing to route.`
-        )
-    }
-
-    if (spec.model === 'fable' && variant !== standing &&
-        !fableEligible(policy, found.key, row, standing)) {
-        variant = ((policy.escalation || {}).fallback || {})[variant]
-        spec = variantSpec(policy, variant)
-        if (!spec) {
-            throw new Error(
-                `wave.js: fable gate unmet for step ${row.step} and ` +
-                `[escalation.fallback] names no usable variant. Refusing to route.`
-            )
-        }
-    }
-
-    if (never.includes(spec.model)) {
-        variant = ((policy.escalation || {}).fallback || {})[variant]
-        spec = variantSpec(policy, variant)
-        if (!spec || never.includes(spec.model)) {
-            throw new Error(
-                `wave.js: no permitted model for step ${row.step} — fallback variant ` +
-                `${JSON.stringify(variant)} is missing or also names a never-listed ` +
-                `model. Refusing to route.`
-            )
-        }
-    }
-
+    assertRouted(`executor ${JSON.stringify(hint)} (step ${row.step})`, row, 'Refusing to route.')
     return {
-        hint: found.key, variant,
-        model: spec.model, effort: spec.effort,
-        model_requested: spec.model, effort_requested: spec.effort,
+        hint, variant: row.variant,
+        model: row.model, effort: row.effort,
+        model_requested: row.model, effort_requested: row.effort,
     }
 }
 
@@ -876,47 +514,10 @@ if (typeof input === 'string') {
     }
 }
 if (!input || typeof input !== 'object') throw new Error(
-    `wave.js: args is ${typeof input}, expected {rows, policyText}. Refusing to route.`
+    `wave.js: args is ${typeof input}, expected {rows}. Refusing to route.`
 )
 
 const rows = input.rows || []
-
-// A conductor no longer hand-copies policy.toml into policyText.
-// It passes this sentinel instead; docket-policy-guard-hook.sh (PreToolUse)
-// substitutes the canonical ~/.docket/config/policy.toml bytes via
-// updatedInput before this script ever runs, so `input.policyText` should
-// never actually BE the sentinel by the time it reaches here. If it is, the
-// hook's substitution did not apply (harness quirk, missing tooling, or
-// the hook fell through to fail-open on a construction error) — surface
-// that plainly rather than let the TOML parser bail on an opaque 25-char
-// string. This is defense-in-depth, not the primary mechanism: the guard
-// substituting or denying is what actually enforces "the wave runs exactly
-// the pinned policy bytes."
-const POLICY_SENTINEL = '__USE_PINNED_POLICY__'
-if ((input.policyText || '').trim() === POLICY_SENTINEL) {
-    throw new Error(
-        `wave.js: policyText arrived as the unresolved "${POLICY_SENTINEL}" sentinel — ` +
-        `docket-policy-guard-hook.sh was supposed to substitute the canonical ` +
-        `policy.toml bytes before this launch and did not. Do not retry with the ` +
-        `sentinel and do not paste policy.toml text by hand as a workaround. Report ` +
-        `this verbatim; the hook or its registration needs attention. Refusing to route.`
-    )
-}
-
-const policy = parseToml(input.policyText || '')
-
-const policyVersion = assertPolicyShape(policy, 'Refusing to route.')
-
-if (policy.resolve) {
-    throw new Error(
-        'wave.js: policy.toml still carries [[resolve]] tables, but label-keyed ' +
-        'hint resolution is retired — label routing lives in ' +
-        'when-gated workflow steps declaring concrete executors, and silently ' +
-        'ignoring a table would mis-route the very steps it named. Update the ' +
-        'installed corpus (policy.toml + workflow files move together). ' +
-        'Refusing to route.'
-    )
-}
 
 // An agent's reply is PROSE. Read only the two shapes the brief actually
 // mandates — never a substring of the body.
@@ -1252,7 +853,7 @@ function probeRecovered(p, label) {
 let nullBurstTripped = false
 
 function spawn(row, phaseLabel) {
-    const r = resolve(row, policy)
+    const r = resolve(row)
     const type = archetype(row, r.hint)
     // Only writers get a worktree, so parallel WRITERS cannot cross-
     // contaminate the shared tree (read-class steps never mutate it). The
@@ -1459,73 +1060,39 @@ function spawn(row, phaseLabel) {
 // `docket vote cast`, the engine tallies, and the quorum-reaching cast routes
 // the gate. This script never casts, approves, or tallies.
 //
-// Seat routing mirrors tribunal.js's resolveSeat: no attempt chain, no fable
-// gates (a seat's variant is its standing home); the [security] node pins
-// still bind, and — unlike tribunal.js, whose caller has no issue to read
-// labels from — this call site passes the row's issue labels, so
-// [security].labels also binds here.
+// Seat routing is the engine's: each `voter_assignments` entry carries the
+// seat's {model, effort, variant} — its standing variant with the [security]
+// pins applied and the row's issue labels already weighed — so the wave reads
+// it and re-derives nothing, the same contract tribunal.js holds its caller to.
 // ---------------------------------------------------------------------------
 
 // SYNC-BEGIN seat-contract
-function resolveSeat(seat, policy, labels = []) {
-    const row = (policy.executors || {})[seat]
-    if (!row) {
-        throw new Error(
-            `wave.js: seat ${JSON.stringify(seat)} has no [executors] row. ` +
-            `Every voter named by a vote gate must be routable — policy.toml and ` +
-            `the workflow corpus have drifted. Refusing to seat the panel.`
-        )
-    }
-
-    let variant = row.variant
-    let never = (row.never || []).slice()
-
-    const sec = policy.security || {}
-    const sensitive =
-        (sec.nodes || []).includes(seat) ||
-        (sec.labels || []).some((l) => labels.includes(l))
-    if (sensitive) {
-        never = never.concat(sec.never || [])
-        if (sec.ceiling) {
-            const beyond = new Set()
-            let c = (policy.variants || {})[sec.ceiling]
-            if (!c) {
-                throw new Error(
-                    `wave.js: [security].ceiling ${JSON.stringify(sec.ceiling)} ` +
-                    `has no [variants] row — a mistyped ceiling would silently stop ` +
-                    `binding. Fix policy.toml. Refusing to seat the panel.`
-                )
-            }
-            while (c && c.escalate_to && !beyond.has(c.escalate_to)) {
-                beyond.add(c.escalate_to)
-                c = (policy.variants || {})[c.escalate_to]
-            }
-            if (beyond.has(variant)) variant = sec.ceiling
-        }
-    }
-
-    let spec = (policy.variants || {})[variant]
-    if (!spec) {
-        throw new Error(
-            `wave.js: seat ${JSON.stringify(seat)} names variant ${JSON.stringify(variant)}, ` +
-            `which has no [variants] row. Refusing to seat the panel.`
-        )
-    }
-
-    if (never.includes(spec.model)) {
-        const fallback = (policy.escalation || {}).fallback || {}
-        variant = fallback[variant]
-        spec = (policy.variants || {})[variant]
-        if (!spec || never.includes(spec.model)) {
+// A seat missing any of the triple was never routed — the run pins no
+// policy.toml, or the roster was re-typed without its fields — and a panel
+// seated on a guessed tier is the drift a harness-side policy parser used
+// to cause.
+function assertRouted(who, entry, refusal) {
+    for (const k of ['model', 'effort', 'variant']) {
+        if (!entry || typeof entry[k] !== 'string' || entry[k] === '') {
             throw new Error(
-                `wave.js: no permitted model for seat ${JSON.stringify(seat)} — ` +
-                `fallback variant ${JSON.stringify(variant)} is missing or also names a ` +
-                `never-listed model. Refusing to seat the panel.`
+                `wave.js: ${who} carries no ${k} (got ${JSON.stringify(entry && entry[k])}) — ` +
+                `the engine renders model/effort/variant from the run's pinned ` +
+                `policy.toml, so this was never routed or was re-typed without ` +
+                `its fields. ${refusal}`
             )
         }
     }
+}
 
-    return { seat, variant, model: spec.model, effort: spec.effort }
+function resolveSeat(seat, routing) {
+    if (typeof seat !== 'string' || seat === '') {
+        throw new Error(
+            `wave.js: a voter carries no seat name (got ${JSON.stringify(seat)}). ` +
+            `Refusing to seat the panel.`
+        )
+    }
+    assertRouted(`seat ${JSON.stringify(seat)}`, routing, 'Refusing to seat the panel.')
+    return { seat, variant: routing.variant, model: routing.model, effort: routing.effort }
 }
 
 // A seat's lens is its trailing name segment (`tribunal-security` -> security);
@@ -1620,15 +1187,14 @@ other seats' or already decided.` : ''
     // older manifest can leave one — and with NEITHER this says so in as many
     // words rather than staying silent (below).
     //
-    // THE LAST NET BEFORE A SHA REACHES A JUDGE (DOT-1040). A `TARGET SHA:`
-    // line is an assertion three opus seats will spend calls chasing, so it
-    // is written only for a sha that is SHAPED like one — 40 lowercase hex,
-    // the full object id the engine records, never an abbreviation and never
-    // prose. RUN-63 relayed a fabricated 40-hex sha that existed in no
-    // repository and briefed three judges with it; the call site
-    // (corroboratedTarget) additionally requires the sha to occur in text the
-    // wave read for itself, and this shape check stands behind that so no
-    // other caller of seatBrief can route around it.
+    // THE LAST NET BEFORE A SHA REACHES A JUDGE. A `TARGET SHA:` line is an
+    // assertion three opus seats will spend calls chasing, so it is written
+    // only for a sha that is SHAPED like one — 40 lowercase hex, the full
+    // object id the engine records, never an abbreviation and never prose.
+    // One wave relayed a fabricated 40-hex sha that existed in no repository
+    // and briefed three judges with it; the gate path (gateTarget) applies
+    // the same shape check, and this one stands behind it so no other caller
+    // of seatBrief can route around it.
     const rawTargetSha = (target && target.sha) || ''
     const targetSha = /^[0-9a-f]{40}$/.test(rawTargetSha) ? rawTargetSha : ''
     const targetWorktree = (target && target.worktree) || ''
@@ -1826,11 +1392,9 @@ that is the only case where your final text matters.`
 // tests/wave-vote-retry-report.test.sh, which concatenates this region after
 // the classifier-retry region (whose CLASSIFIER_BLOCK / TRANSIENT_CLASSIFIER /
 // reasonText the probe retry below reads) and feeds it stub `agent`,
-// `parallel`, `log`, `seatBrief`, `resolveSeat`, `labelsOf`, and `policy`
-// globals. Everything else the region needs must stay INSIDE the markers.
-// The `target-envelope` region nests inside this one (the ancestry guard
-// shares it); tests/wave-target-envelope.test.sh extracts this region whole
-// alongside the real `seat-brief` renderer.
+// `parallel`, `log`, `seatBrief`, and `resolveSeat` globals. Everything else
+// the region needs must stay INSIDE the markers; tests/wave-target-envelope.test.sh
+// extracts it whole alongside the real `seat-brief` renderer.
 function probeBrief(command, servingStep) {
     return `Run exactly this one command:
 
@@ -1848,10 +1412,47 @@ read serves ${servingStep}, which is the step it READS, not a step you run — t
 usage join must not attribute your tokens to it` : ''}.`
 }
 
+// A GATE probe that dies at the agent level (one past run hit this on its
+// tally read: "API Error: Connection lost mid-response") used to degrade
+// straight to an empty answer — the wave then judged the gate on an empty
+// read, and the completion notification carried the corpse as a failures
+// entry BESIDE the same step's gate-passed verdict. A probe is one read-only,
+// idempotent command, so the IDENTICAL brief is resubmitted once — except on
+// a non-transient classifier block, which is deterministic on identical
+// bytes. The absorbed error and the retry land in `acct`, so a SUCCEEDING
+// gate reports them as notes instead of leaving them to read as failures
+// (gateSuccess below). Accounting — and with it the retry — rides only the
+// gate path: call sites that pass no acct keep the single-shot fail-open
+// behavior.
+function retrying(label, acct, once, empty) {
+    return once().catch((err) => {
+        if (!acct) {
+            log(`${label}: probe spawn error: ${err}`)
+            return empty
+        }
+        const reason = reasonText(err) || String(err)
+        acct.absorbed.push(`[${label}] ${reason}`)
+        if (CLASSIFIER_BLOCK.test(reason) && !TRANSIENT_CLASSIFIER.test(reason)) {
+            log(`${label}: probe blocked on content (${reason}) — deterministic ` +
+                `on identical bytes, not retried`)
+            return empty
+        }
+        log(`${label}: probe spawn error (${reason}) — retrying the identical ` +
+            `read-only probe once`)
+        acct.retries++
+        return once().catch((err2) => {
+            const reason2 = reasonText(err2) || String(err2)
+            acct.absorbed.push(`[${label} (retry)] ${reason2}`)
+            log(`${label}: probe spawn error on retry: ${reason2}`)
+            return empty
+        })
+    })
+}
+
 function probe(command, label, phaseLabel, servingStep, acct) {
     const once = () => {
         // A probe is wave overhead, NEVER a seat: it lands in its own bucket
-        // so the gate summary can say "3 seats, 5 probes" (DOT-1027).
+        // so the gate summary can say "3 seats, 2 probes".
         if (acct) acct.probes++
         return agent(probeBrief(command, servingStep), {
             label,
@@ -1861,93 +1462,398 @@ function probe(command, label, phaseLabel, servingStep, acct) {
             effort: 'low',
         }).then((text) => text == null ? '' : text)
     }
-    return once().catch((err) => {
-        // A GATE probe that dies at the agent level (one past run hit this on
-        // its gate:tally probe: "API Error: Connection lost mid-response")
-        // used to degrade straight to '' — the wave then judged the gate on
-        // an empty read, and the completion notification carried the corpse
-        // as a failures entry BESIDE the same step's gate-passed verdict. A
-        // probe is one read-only, idempotent command, so resubmit the
-        // IDENTICAL brief once — except on a non-transient classifier block,
-        // which is deterministic on identical bytes. The absorbed error and
-        // the retry land in `acct`, so a SUCCEEDING tally reports them as
-        // notes instead of leaving them to read as failures (gateSuccess
-        // below). Accounting — and with it the retry — rides only the gate
-        // path: call sites that pass no acct keep the old single-shot
-        // fail-open behavior.
-        if (!acct) {
-            log(`${label}: probe spawn error: ${err}`)
-            return ''
-        }
-        const reason = reasonText(err) || String(err)
-        acct.absorbed.push(`[${label}] ${reason}`)
-        if (CLASSIFIER_BLOCK.test(reason) && !TRANSIENT_CLASSIFIER.test(reason)) {
-            log(`${label}: probe blocked on content (${reason}) — deterministic ` +
-                `on identical bytes, not retried`)
-            return ''
-        }
-        log(`${label}: probe spawn error (${reason}) — retrying the identical ` +
-            `read-only probe once`)
-        acct.retries++
-        return once().catch((err2) => {
-            const reason2 = reasonText(err2) || String(err2)
-            acct.absorbed.push(`[${label} (retry)] ${reason2}`)
-            log(`${label}: probe spawn error on retry: ${reason2}`)
-            return ''
-        })
-    })
+    return retrying(label, acct, once, '')
 }
 
-// Some gate steps decide ONE held finding cluster out of several, and their
-// `step show --json` carries the assignment as a flat four-field object:
-//   "held_cluster":{"cluster_index":0,"cluster_count":10,
-//                   "artifact":"ARTIFACT-1251","producer_step":"reconcile@3"}
-// Parse it out of the probe text (which may wrap the JSON in banner prose) so
-// the seat brief can NAME the cluster on trial — without this, seats grep the
-// repo and the event log to learn which cluster they are deciding. Ordinary
-// gates carry no such field; they yield null and the brief renders unchanged.
-function parseHeldCluster(show) {
-    const m = show.match(/"held_cluster"\s*:\s*(\{[^{}]*\})/)
-    if (!m) return null
-    try {
-        const hc = JSON.parse(m[1])
-        if (typeof hc.cluster_index !== 'number' || typeof hc.cluster_count !== 'number' ||
-            typeof hc.artifact !== 'string' || typeof hc.producer_step !== 'string') return null
-        return {
-            clusterIndex: hc.cluster_index,
-            clusterCount: hc.cluster_count,
-            artifact: hc.artifact,
-            producerStep: hc.producer_step,
-        }
-    } catch {
-        return null
+// `docket gate status STEP-N --json` answers a gate's whole decision state in
+// one envelope — {step_status, proposal?, outcome, tally?, seats?,
+// missing_seats, target?} — so one read replaces the step-show / vote-show /
+// outcome scatter that cost three to five relays per vote row, and the roster
+// check reads the engine's own `missing_seats` instead of matching seat names
+// out of a relayed record.
+//
+// THE PROBE ANSWERS THROUGH A SCHEMA, NEVER AS TEXT. A haiku seat told to
+// retype a 10 KB vote record verbatim corrupted two copies on one wave (a
+// dropped closing brace; 81 chars lost mid-body), and the regex fallbacks
+// that rescued those reads could equally match a verdict quoted inside a
+// seat's free-text summary — one did, flipping an approved gate. The
+// envelope is under 1 KB and the harness validates the shape, so a reply is
+// the envelope or it is nothing.
+const GATE_STATUS_SCHEMA = {
+    type: 'object',
+    properties: {
+        step_status: { type: 'string' },
+        proposal: { type: 'string' },
+        outcome: { type: 'string', enum: ['approved', 'rejected', 'open'] },
+        tally: { type: 'object' },
+        seats: {
+            type: 'array',
+            items: {
+                type: 'object',
+                properties: {
+                    voter: { type: 'string' },
+                    cast: { type: 'boolean' },
+                    verdict: { type: 'string' },
+                },
+                required: ['voter', 'cast'],
+            },
+        },
+        missing_seats: { type: 'array', items: { type: 'string' } },
+        target: {
+            type: 'object',
+            properties: { sha: { type: 'string' }, worktree: { type: 'string' } },
+        },
+        error: { type: 'string' },
+    },
+}
+
+function gateStatusBrief(step) {
+    return `Run exactly this one command:
+
+  docket gate status ${step} --json
+
+Return the command's \`data\` object through the structured output, field for
+field and value for value — copy, never summarize; add no field the output did
+not carry and fill none in. If the command errors or prints no \`data\` object,
+return {error: <the error text verbatim>} and nothing else.
+
+Do not cast a vote, do not investigate, do not run anything else. You are a
+read-only probe reporting what the record currently says.
+
+WAVE PROBE: not a step execution. Your usage is wave overhead. This read serves
+${step}, which is the step it READS, not a step you run — the usage join must
+not attribute your tokens to it.`
+}
+
+// The envelope, or null when the probe died, the command errored, or the
+// reply is not one. Null means UNKNOWN to every caller — never "every seat
+// missing": an empty read once re-spawned a whole panel that had already
+// voted.
+function gateStatus(step, label, phaseLabel, acct) {
+    const once = () => {
+        acct.probes++
+        return agent(gateStatusBrief(step), {
+            label,
+            phase: phaseLabel,
+            agentType: 'executor-read',
+            model: 'haiku',
+            effort: 'low',
+            schema: GATE_STATUS_SCHEMA,
+        }).then((g) => {
+            if (g && typeof g.step_status === 'string' && typeof g.outcome === 'string') return g
+            if (g && typeof g.error === 'string') log(`${label}: engine error — ${g.error}`)
+            return null
+        })
+    }
+    return retrying(label, acct, once, null)
+}
+
+// A gate the engine has settled one way or the other. `outcome` is the
+// proposal's tally; a step already done/skipped/superseded with the outcome
+// still "open" is a gate decided some other way (a closed ballot, an
+// operator verb) — continue, as before.
+const GATE_SETTLED = ['done', 'skipped', 'superseded']
+const gateDecided = (g) => g.outcome !== 'open' || GATE_SETTLED.includes(g.step_status)
+
+// The round's target ref off the envelope, for the seat brief. A sha reaches
+// a brief only when it is SHAPED like the full object id the engine records
+// — 40 lowercase hex, never an abbreviation, never prose: one relayed
+// fabrication once sent three opus judges hunting a phantom commit, and
+// seatBrief re-checks the shape so no caller can route around this.
+const TARGET_SHA_RE = /^[0-9a-f]{40}$/
+
+function gateTarget(g) {
+    const t = g.target
+    if (!t || typeof t !== 'object') return null
+    const sha = (typeof t.sha === 'string' && TARGET_SHA_RE.test(t.sha)) ? t.sha : ''
+    const worktree = typeof t.worktree === 'string' ? t.worktree : ''
+    if (!sha && !worktree) return null
+    return { sha, worktree }
+}
+
+// Some gate steps decide ONE held finding cluster out of several, and only
+// `step show` names which — `gate status` does not carry it. The engine
+// mints those rows as `<name>-held@N#k`, so the instance grammar says when
+// the read is worth spending; ordinary gates never pay for it. The
+// assignment is a flat four-field object, projected by jq and returned
+// through a schema; anything short of all four fields yields null and the
+// brief renders unchanged — without the note, seats grep the repo and the
+// event log to learn which cluster they are deciding.
+const HELD_INSTANCE_RE = /-held@\d+#\d+$/
+const HELD_CLUSTER_SCHEMA = {
+    type: 'object',
+    properties: {
+        cluster_index: { type: 'number' },
+        cluster_count: { type: 'number' },
+        artifact: { type: 'string' },
+        producer_step: { type: 'string' },
+        error: { type: 'string' },
+    },
+}
+
+function heldClusterBrief(step) {
+    return `Run exactly this one command:
+
+  docket step show ${step} --json | jq -c '.data.held_cluster // {}'
+
+Return the printed object through the structured output, field for field —
+copy, never summarize; add no field the output did not carry and fill none
+in. If the command errors, return {error: <the error text verbatim>} and
+nothing else.
+
+Do not cast a vote, do not investigate, do not run anything else. You are a
+read-only probe reporting what the record currently says.
+
+WAVE PROBE: not a step execution. Your usage is wave overhead. This read serves
+${step}, which is the step it READS, not a step you run — the usage join must
+not attribute your tokens to it.`
+}
+
+function parseHeldCluster(hc) {
+    if (!hc || typeof hc.cluster_index !== 'number' || typeof hc.cluster_count !== 'number' ||
+        typeof hc.artifact !== 'string' || typeof hc.producer_step !== 'string') return null
+    return {
+        clusterIndex: hc.cluster_index,
+        clusterCount: hc.cluster_count,
+        artifact: hc.artifact,
+        producerStep: hc.producer_step,
     }
 }
 
-// The round's target ref, for the seat brief. Context assembly lifts the
-// resolved `issue.diff` artifact's round record onto the bundle as
-// `target_sha` (the commit the diff's tree stood at) and `target_worktree`
-// (the producing record's declared checkout); both are omitted when the
-// resolved diff carries no round record, so ABSENCE IS NORMAL and yields
-// null rather than a throw.
+function heldCluster(step, label, phaseLabel, acct) {
+    const once = () => {
+        acct.probes++
+        return agent(heldClusterBrief(step), {
+            label,
+            phase: phaseLabel,
+            agentType: 'executor-read',
+            model: 'haiku',
+            effort: 'low',
+            schema: HELD_CLUSTER_SCHEMA,
+        }).then(parseHeldCluster)
+    }
+    return retrying(label, acct, once, null)
+}
+
+// Assemble a gate's SUCCESS result. A vote row whose tally succeeds after
+// agent-level noise (a seat re-spawn, a probe resubmission, a dead probe)
+// must not read as failed: one past run's completion notification carried
+// "[STEP-N · gate:tally] failed: ..." BESIDE the same step's trusted
+// gate-passed verdict — exactly the shape a conductor misreads as a failed
+// gate. So the success result carries seat/probe/retry accounting
+// explicitly, and every absorbed error as a NOTE naming the tally's
+// success — never as a failure. Failure outcomes (gate-rejected/-blocked/
+// -parked) deliberately do NOT come through here: their errors are real.
 //
-// The probe below reduces rather than dumping the bundle: `step context`
-// inlines every recorded input artifact, and a findings artifact runs to
-// 1MiB. jq walks the whole bundle, so it finds both fields wherever they sit.
+// SEATS AND PROBES ARE COUNTED SEPARATELY. A single "N spawns for M seats"
+// total conflated the judges with the read-only haiku probes the gate path
+// spends on its own bookkeeping: a real 3-judge panel logged "8 spawns for 3
+// seats", and an auditor checking the seat count against the row's roster
+// saw 8 vs 3. Worse, an ALREADY-DECIDED gate seats no panel at all and
+// logged "1 spawn for 0 seats" — a judge on an empty panel. So the seats
+// clause is emitted ONLY when a panel was actually seated; with no panel the
+// line reports probes and retries alone.
+function gateSuccess(step, text, acct) {
+    const n = (count, one, many) => `${count} ${count === 1 ? one : many}`
+    const parts = []
+    if (acct.seats > 0) parts.push(n(acct.seats, 'seat', 'seats'))
+    parts.push(n(acct.probes, 'probe', 'probes'))
+    parts.push(n(acct.retries, 'retry', 'retries'))
+    const res = {
+        step,
+        status: 'gate-passed',
+        text,
+        spawn_accounting: parts.join(', '),
+    }
+    if (acct.absorbed.length > 0) {
+        res.notes = acct.absorbed.map((e) =>
+            `absorbed agent-level error (superseded in-wave; the tally ` +
+            `SUCCEEDED — NOT a failure of this step): ${e}`)
+    }
+    return res
+}
+
+async function runGate(row, phaseLabel) {
+    // Seat/probe accounting for THIS gate, counted in SEPARATE buckets:
+    // `seats` is the judge panel (what the row's roster promised), `probes`
+    // is every read-only haiku spawn the gate path spends on its own
+    // bookkeeping. Seat re-spawns and probe resubmissions are retries;
+    // agent-level errors land in `absorbed` and ride the SUCCESS result as
+    // notes (gateSuccess above).
+    const acct = { seats: 0, probes: 0, retries: 0, absorbed: [] }
+    const status = (label) => gateStatus(row.step, `${row.step} · ${label}`, phaseLabel, acct)
+    const asText = (g) => JSON.stringify(g)
+
+    // The ballot: record-driving opened the proposal when the gate's last
+    // predecessor recorded — an earlier stage this wave already awaited — so
+    // one read normally finds it, and says at once whether the gate was
+    // decided before the wave reached it.
+    const gate = await status('gate:status')
+    if (!gate) {
+        log(`${row.step}: gate:status probe returned nothing — the gate's state ` +
+            `is UNKNOWN; skipping this issue's later stages this wave, and the ` +
+            `conductor reads \`docket gate status ${row.step}\` itself`)
+        return { step: row.step, status: 'gate-blocked', text: '' }
+    }
+    // A vote step's STATUS cannot carry the verdict: the engine records a
+    // REJECTED vote as `done` when its on_fail routes machine-side (measured
+    // three runs: 0-3-0 tallies rendered "gate-passed" and the conductor
+    // believed it). The envelope's `outcome` IS the tally.
+    if (gateDecided(gate)) {
+        if (gate.outcome === 'rejected') {
+            log(`${row.step}: gate already decided REJECTED (${gate.proposal}) — ` +
+                `engine routes on_fail; skipping this issue's later stages`)
+            return { step: row.step, status: 'gate-rejected', text: asText(gate) }
+        }
+        log(`${row.step}: gate already decided — continuing`)
+        const early = gateSuccess(row.step, asText(gate), acct)
+        // No panel was seated on this row, so the accounting carries no seats
+        // clause at all — reading "0 seats" here made an already-decided gate
+        // look like a judge on an empty panel.
+        log(`${row.step}: no panel seated — ${early.spawn_accounting}` + (early.notes ?
+            ` — ${early.notes.length} agent-level error(s) absorbed (NOT failures for this step)` : ''))
+        return early
+    }
+    // A gate with NO proposal means the predecessors have not all recorded:
+    // the gate is blocked, its issue's later rows do not launch this wave,
+    // and the next round routes whatever on_fail produced. That is NOT
+    // necessarily a failure upstream — the engine can mint a held-cluster
+    // panel step between the gate and its `after` predecessor, leaving a
+    // healthy predecessor mid-progress. Only `step show` carries the engine's
+    // own `blocked_reason`, which the ladder reads off this result to pick
+    // "deferred" over "died"; that read is spent here alone, on the one path
+    // that needs it.
+    if (!gate.proposal) {
+        const show = await probe(`docket step show ${row.step} --json`,
+            `${row.step} · gate:blocked`, phaseLabel, undefined, acct)
+        log(`${row.step}: gate has no proposal — its predecessors have not all ` +
+            `recorded, so the panel cannot seat; skipping this issue's later ` +
+            `stages this wave`)
+        return { step: row.step, status: 'gate-blocked', text: show }
+    }
+    const voteId = gate.proposal
+    const roster = Array.isArray(row.voter_assignments) ? row.voter_assignments : []
+    if (roster.length === 0) {
+        log(`${row.step}: vote row carries no voter_assignments — the engine ` +
+            `renders the routed roster on vote rows, so this manifest predates ` +
+            `the contract or the run pins no policy.toml; escalate instead of ` +
+            `guessing a panel`)
+        return { step: row.step, status: 'gate-blocked', text: asText(gate) }
+    }
+    const seats = roster.map((a) => resolveSeat(a && a.voter, a))
+    const held = HELD_INSTANCE_RE.test(row.instance || '')
+        ? await heldCluster(row.step, `${row.step} · gate:held-cluster`, phaseLabel, acct)
+        : null
+    // Name the round's target ref in every seat's brief. Seats are NOT seated
+    // on the checkout the round was written in — writers work in private
+    // worktrees — so without this a judge reads its own lagging HEAD, finds
+    // the change absent, and rejects on evidence grounds, which no fix loop
+    // can answer. The envelope carries it, or nothing does.
+    const target = gateTarget(gate)
+    log(`${row.step}: ${voteId} — seating ${seats.map((s) => s.seat).join(', ')}` +
+        (target ? ` on target ${target.sha || '(no sha)'}${target.worktree ? ` (${target.worktree})` : ''}`
+                : ` with NO target ref on the gate — seats read their own HEAD`))
+    acct.seats = seats.length
+    await parallel(seats.map((r) => () => {
+        return agent(seatBrief(r, voteId, row, false, held, target), {
+            label: `${row.step} · seat:${r.seat}`,
+            phase: phaseLabel,
+            agentType: 'executor-read',
+            model: r.model,
+            effort: r.effort,
+        }).catch((err) => {
+            log(`${row.step} seat ${r.seat}: spawn error: ${err}`)
+            acct.absorbed.push(`[${row.step} · seat:${r.seat}] ${reasonText(err) || String(err)}`)
+            return null
+        })
+    }))
+
+    // One re-spawn for seats whose cast never landed — tribunal.js's rule.
+    // The same read answers the roster and the tally; the engine names the
+    // missing seats itself, so no name is matched out of prose here.
+    let after = await status('gate:outcome')
+    const missingIn = (g) => seats.filter((s) => (g.missing_seats || []).includes(s.seat))
+    const missing = after ? missingIn(after) : []
+    if (missing.length > 0) {
+        log(`${row.step}: ${missing.length} seat(s) returned without a recorded ` +
+            `cast (${missing.map((s) => s.seat).join(', ')}) — re-spawning each ONCE`)
+        await parallel(missing.map((r) => () => {
+            // A re-seated judge is a RETRY of a seat already counted in
+            // acct.seats — never an extra seat, never a probe.
+            acct.retries++
+            return agent(seatBrief(r, voteId, row, true, held, target), {
+                label: `${row.step} · seat:${r.seat} (retry)`,
+                phase: phaseLabel,
+                agentType: 'executor-read',
+                model: r.model,
+                effort: r.effort,
+            }).catch((err) => {
+                log(`${row.step} seat ${r.seat}: respawn error: ${err}`)
+                acct.absorbed.push(`[${row.step} · seat:${r.seat} (retry)] ${reasonText(err) || String(err)}`)
+                return null
+            })
+        }))
+        // The record moved underneath the first read — those re-seated casts
+        // postdate it — so the tally re-reads rather than reusing it.
+        after = await status('gate:outcome')
+        // A seat still silent after its one retry is named, never absorbed
+        // into a quorum pass or the generic did-not-clear line.
+        const still = after ? missingIn(after) : []
+        if (still.length > 0) {
+            log(`${row.step}: STILL NO CAST from ${still.map((s) => s.seat).join(', ')} ` +
+                `after the one permitted re-spawn — the panel is short ${still.length} ` +
+                `vote(s); the tally decides on the engine's record as it stands`)
+        }
+    }
+    if (!after) {
+        log(`${row.step}: gate:outcome probe returned nothing — the tally is ` +
+            `UNKNOWN; skipping this issue's later stages; the conductor escalates`)
+        return { step: row.step, status: 'gate-parked', text: '' }
+    }
+    if (after.outcome === 'rejected') {
+        log(`${row.step}: gate decided REJECTED (${voteId}) — engine ` +
+            `routes on_fail; the conductor verifies the routing; ` +
+            `skipping this issue's later stages`)
+        return { step: row.step, status: 'gate-rejected', text: asText(after) }
+    }
+    // `done` says only that the step COMPLETED — a rejection whose on_fail
+    // routes into rework also reads done/superseded — and the rejected case
+    // was read off the tally above, so what remains is a pass.
+    if (gateDecided(after)) {
+        log(`${row.step}: gate passed — continuing`)
+        const res = gateSuccess(row.step, asText(after), acct)
+        log(`${row.step}: ${res.spawn_accounting}` + (res.notes ?
+            ` — ${res.notes.length} agent-level error(s) absorbed (NOT failures for this step)` : ''))
+        return res
+    }
+    log(`${row.step}: gate did NOT clear (${after.step_status}, tally ${after.outcome}) ` +
+        (missing.length > 0 ? `after re-seating ${missing.map((s) => s.seat).join(', ')} ` : '') +
+        `— skipping this issue's later stages; the conductor escalates`)
+    return { step: row.step, status: 'gate-parked', text: asText(after) }
+}
+// TEST-END gate-vote
+
+// The round's target ref for the fix-round ancestry guard below. Context
+// assembly lifts the resolved `issue.diff` artifact's round record onto the
+// bundle as `target_sha` (the commit the diff's tree stood at) and
+// `target_worktree` (the producing record's declared checkout); both are
+// omitted when the resolved diff carries no round record, so ABSENCE IS
+// NORMAL and yields null rather than a throw.
 //
-// NEVER HAND A SEAT AN EMPTY RESULT TO RELAY (DOT-1040). This used to be a
-// `grep -Eo` whose ONLY output on a bundle with no round record was nothing
-// at all — and a probe told to "return the output VERBATIM" with no output
-// to return is a void the model fills. On RUN-63 (wave wf_48ebd80d-906,
-// STEP-3187) the haiku probe's own thinking read "since there's no output and
-// no error, I should return nothing", and it then replied with
-// `"target_sha": "3ee9ca3cc3f5ada37eb46768efaebe0bea6a02ca"` — a 40-hex sha
-// present in no repository and no transcript but its own reply. The wave
-// briefed all three security-vote seats with it, and three opus judges spent
-// calls hunting a phantom commit. The same probe on the same empty result
-// behaved three different ways across one run (silent, fabricating, and
-// chatty): the model behaviour is weather, the empty verbatim result is the
-// defect.
+// The probe reduces rather than dumping the bundle: `step context` inlines
+// every recorded input artifact, and a findings artifact runs to 1MiB. jq
+// walks the whole bundle, so it finds both fields wherever they sit.
+//
+// NEVER HAND A SEAT AN EMPTY RESULT TO RELAY. This used to be a `grep -Eo`
+// whose ONLY output on a bundle with no round record was nothing at all — and
+// a probe told to "return the output VERBATIM" with no output to return is a
+// void the model fills. On one run the haiku probe's own thinking read "since
+// there's no output and no error, I should return nothing", and it then
+// replied with a 40-hex sha present in no repository and no transcript but
+// its own reply; three opus judges spent calls hunting the phantom commit.
+// The same probe on the same empty result behaved three different ways
+// across one run (silent, fabricating, and chatty): the model behaviour is
+// weather, the empty verbatim result is the defect.
 //
 // So the command PRINTS AN ENVELOPE EITHER WAY — `{"target_sha":null,
 // "target_worktree":null}` when the bundle carries no round record — and the
@@ -1957,9 +1863,8 @@ function parseHeldCluster(show) {
 //
 // TEST-BEGIN target-envelope — extracted and exercised by
 // tests/wave-target-envelope.test.sh, and prepended by
-// tests/wave-fix-round-ancestry.test.sh, whose guard shares this command and
-// this reader. It nests inside the gate-vote region (which the vote suite
-// extracts whole), so keep it free of workflow globals — `log` included.
+// tests/wave-fix-round-ancestry.test.sh and the ladder suites, whose guard
+// reads through it. Keep it free of workflow globals — `log` included.
 const TARGET_ENVELOPE_JQ =
     `jq -c '{target_sha: (first(.. | objects | select(has("target_sha")) | ` +
     `.target_sha) // null), target_worktree: (first(.. | objects | ` +
@@ -2004,370 +1909,7 @@ function readTargetEnvelope(text) {
 function parseTargetRef(text) {
     return readTargetEnvelope(text).target
 }
-
-// A sha only reaches a seat brief when it is 40-hex AND occurs in text the
-// wave read for ITSELF — the gate's own `step show` payload — rather than in
-// the relayed probe reply alone, which is exactly where a fabrication lives.
-// Same for the worktree path. Nothing corroborated means no target ref, and
-// the seat is told to read its own HEAD.
-const TARGET_SHA_RE = /^[0-9a-f]{40}$/
-
-function corroboratedTarget(target, held) {
-    if (!target) return null
-    const text = held || ''
-    const sha = (TARGET_SHA_RE.test(target.sha) && text.includes(target.sha))
-        ? target.sha : ''
-    const worktree = (target.worktree && text.includes(target.worktree))
-        ? target.worktree : ''
-    if (!sha && !worktree) return null
-    return { sha, worktree }
-}
 // TEST-END target-envelope
-
-// `docket vote show <id> --json` answers with the standard envelope
-//   {ok: true, data: {id, status, final_outcome?, weighted_score,
-//                     votes: [{voter_name, verdict, summary, ...}], ...}}
-//
-// NEVER MAKE A SEAT RETYPE 10KB (DOT-1041). A probe is told to relay its
-// command's output VERBATIM, and that envelope is ~10.6KB on a 3-seat
-// proposal — every seat's free-text summary, weighted scores, timestamps —
-// none of which the gate reads. On RUN-63 two haiku probes on the same wave
-// corrupted the copy: agent abe4d65165cdfcc51 (gate:record) received 10,664
-// chars and replied with 10,663 (the closing brace dropped, so
-// `jq: Unfinished JSON term at EOF`), and agent aa3daf9483a9cdb65
-// (gate:tally) dropped 81 chars out of the middle. Both gates then fell back
-// to matching raw text — precisely the failure mode the structural read was
-// introduced to remove. So the probe pipes the envelope through jq and only
-// the three fields the gate actually reads come back: under 300 bytes for a
-// 3-seat proposal, which a model copies exactly.
-const VOTE_SHOW_JQ =
-    `jq -c '{status: .data.status, final_outcome: .data.final_outcome, ` +
-    `votes: [.data.votes[]? | {voter_name, verdict}]}'`
-
-function voteShowCommand(voteId) {
-    return `docket vote show ${voteId} --json | ${VOTE_SHOW_JQ}`
-}
-
-// A probe's text can carry a harness banner AHEAD of that JSON (seen on two
-// probes), so slice from the first `{` before parsing. Returns the vote's own
-// object — the jq projection above answers it BARE, the raw engine envelope
-// wraps it in {ok, data}, and both are accepted so a probe that relayed the
-// unfiltered envelope still reads structurally. Returns null when the text
-// will not parse or is not vote-shaped — callers then fall back to matching
-// the raw text, and say so in the log as a WARNING.
-function parseVoteShow(text) {
-    const s = text || ''
-    const i = s.indexOf('{')
-    if (i < 0) return null
-    let parsed
-    try {
-        parsed = JSON.parse(s.slice(i))
-    } catch {
-        return null
-    }
-    if (!parsed || typeof parsed !== 'object') return null
-    const data = (parsed.data && typeof parsed.data === 'object')
-        ? parsed.data : parsed
-    const shaped = typeof data.status === 'string' ||
-        typeof data.final_outcome === 'string' || Array.isArray(data.votes)
-    return shaped ? data : null
-}
-
-// Assemble a gate's SUCCESS result. A vote row whose tally succeeds after
-// agent-level noise (a seat re-spawn, a probe resubmission, a dead probe)
-// must not read as failed: one past run's completion notification carried
-// "[STEP-N · gate:tally] failed: ..." BESIDE the same step's trusted
-// gate-passed verdict — exactly the shape a conductor misreads as a failed
-// gate. So the success result carries seat/probe/retry accounting
-// explicitly, and every absorbed error as a NOTE naming the tally's
-// success — never as a failure. Failure outcomes (gate-rejected/-blocked/
-// -parked) deliberately do NOT come through here: their errors are real.
-//
-// SEATS AND PROBES ARE COUNTED SEPARATELY (DOT-1027). A single "N spawns for
-// M seats" total conflated the judges with the read-only haiku probes the
-// gate path spends on its own bookkeeping (gate:show, gate:target,
-// gate:record, gate:outcome, gate:tally): a real 3-judge panel logged "8
-// spawns for 3 seats", and an auditor checking the seat count against the
-// row's `voters` saw 8 vs 3. Worse, an ALREADY-DECIDED gate seats no panel
-// at all and logged "1 spawn for 0 seats" — a judge on an empty panel. So
-// the seats clause is emitted ONLY when a panel was actually seated; with no
-// panel the line reports probes and retries alone.
-function gateSuccess(step, text, acct) {
-    const n = (count, one, many) => `${count} ${count === 1 ? one : many}`
-    const parts = []
-    if (acct.seats > 0) parts.push(n(acct.seats, 'seat', 'seats'))
-    parts.push(n(acct.probes, 'probe', 'probes'))
-    parts.push(n(acct.retries, 'retry', 'retries'))
-    const res = {
-        step,
-        status: 'gate-passed',
-        text,
-        spawn_accounting: parts.join(', '),
-    }
-    if (acct.absorbed.length > 0) {
-        res.notes = acct.absorbed.map((e) =>
-            `absorbed agent-level error (superseded in-wave; the tally ` +
-            `SUCCEEDED — NOT a failure of this step): ${e}`)
-    }
-    return res
-}
-
-async function runGate(row, phaseLabel) {
-    // Seat/probe accounting for THIS gate, counted in SEPARATE buckets:
-    // `seats` is the judge panel (what the row's `voters` promised), `probes`
-    // is every read-only haiku spawn the gate path spends on its own
-    // bookkeeping. They used to share one `spawns` total, which read as a
-    // panel far larger than the roster (DOT-1027). Seat re-spawns and probe
-    // resubmissions are retries; agent-level errors land in `absorbed` and
-    // ride the SUCCESS result as notes (gateSuccess above).
-    const acct = { seats: 0, probes: 0, retries: 0, absorbed: [] }
-    // The ballot: record-driving opened the proposal when the gate's last
-    // predecessor recorded — an earlier stage this wave already awaited — so
-    // one probe normally finds it. A gate with NO proposal means the
-    // predecessors have not all recorded: the gate is blocked, its issue's
-    // later rows do not launch this wave, and the next round routes whatever
-    // on_fail produced. That is NOT necessarily a failure upstream — the
-    // engine can mint a held-cluster panel step between the gate and its
-    // `after` predecessor, leaving a healthy predecessor mid-progress
-    // (DOT-1050). The `show` payload the probe returns carries the engine's
-    // own `blocked_reason`, and the ladder reads it off this result to pick
-    // "deferred" over "died"; keep returning `show` as the result text.
-    let show = await probe(`docket step show ${row.step} --json`,
-        `${row.step} · gate:show`, phaseLabel, undefined, acct)
-    // Proposal ids are project-prefixed: 1-8 upcased letters, "-V", digits
-    // (docket's FormatProposalID / project set-prefix grammar), e.g. DKT-V29.
-    const m = show.match(/"proposal"\s*:\s*"([A-Z]{1,8}-V\d+)"/)
-    // A held-cluster gate decides ONE cluster of findings, not the
-    // whole gate — pass the assignment into every seat's brief (null on the
-    // ordinary gates whose show text carries no held_cluster field).
-    const heldCluster = parseHeldCluster(show)
-    // A vote step's STATUS cannot carry the verdict: the engine records a
-    // REJECTED vote as `done` when its on_fail routes machine-side (measured
-    // three runs: 0-3-0 tallies rendered "gate-passed" and the conductor
-    // believed it). The TALLY is the outcome; read it from the proposal.
-    //
-    // ONE VOTE-SHOW READ PER GATE (DOT-1041). The missing-seat check and the
-    // tally want the same three fields off the same proposal, and each used
-    // to spawn its own probe — two ~12-13k-token relays per vote row, five
-    // vote rows on RUN-63, one corrupted copy. `voteRead` caches the first
-    // read; the tally reuses it when it is CONCLUSIVE (parsed, and the
-    // proposal already decided) and spawns nothing. A read that is stale
-    // (seats were re-spawned after it), inconclusive (the proposal was still
-    // open when the roster was checked) or unparseable is dropped, and only
-    // then does a second probe cost anything.
-    let voteRead = null
-    const readVote = async (voteId, label) => {
-        if (voteRead) return voteRead
-        const text = await probe(voteShowCommand(voteId),
-            `${row.step} · ${label}`, phaseLabel, row.step, acct)
-        voteRead = { text, data: parseVoteShow(text) }
-        return voteRead
-    }
-    // Read the verdict STRUCTURALLY. The regex fallback below matches
-    // anywhere in the text — including inside a seat's free-text summary, so a
-    // rationale quoting `"status": "rejected"` while explaining why it did NOT
-    // reject flipped an approved gate to gate-rejected (rejected is tested
-    // first). Parsing reads only the tally's own field.
-    const verdictOf = (data) => {
-        const verdicts = [data.status, data.final_outcome]
-            .filter((v) => typeof v === 'string')
-            .map((v) => v.toLowerCase())
-        if (verdicts.includes('rejected')) return 'rejected'
-        if (verdicts.includes('approved')) return 'approved'
-        return 'unknown'
-    }
-    const tallyOutcome = async (voteId) => {
-        if (voteRead && voteRead.data && verdictOf(voteRead.data) !== 'unknown') {
-            log(`${row.step}: tally read from this gate's single vote-show ` +
-                `probe — no second probe spawned`)
-        } else {
-            voteRead = null
-        }
-        const { text: t, data } = await readVote(voteId, 'gate:tally')
-        if (data) return { outcome: verdictOf(data), tally: t }
-        log(`WARNING ${row.step}: gate:tally JSON did not parse (probe reply ` +
-            `${t.length} chars) — falling back to a regex match on the raw ` +
-            `probe text; the probe is meant to relay a few hundred bytes, so ` +
-            `a recurrence means the relay itself is corrupting`)
-        if (/"(status|final_outcome)"\s*:\s*"rejected"/i.test(t)) return { outcome: 'rejected', tally: t }
-        if (/"(status|final_outcome)"\s*:\s*"approved"/i.test(t)) return { outcome: 'approved', tally: t }
-        return { outcome: 'unknown', tally: t }
-    }
-    if (/"status"\s*:\s*"(done|skipped|superseded)"/.test(show)) {
-        if (m) {
-            const { outcome, tally } = await tallyOutcome(m[1])
-            if (outcome === 'rejected') {
-                log(`${row.step}: gate already decided REJECTED (${m[1]}) — ` +
-                    `engine routes on_fail; skipping this issue's later stages`)
-                return { step: row.step, status: 'gate-rejected', text: tally }
-            }
-        }
-        log(`${row.step}: gate already decided — continuing`)
-        const early = gateSuccess(row.step, show, acct)
-        // No panel was seated on this row, so the accounting carries no seats
-        // clause at all — reading "0 seats" here (with the probes counted as
-        // spawns) made an already-decided gate look like a judge on an empty
-        // panel (DOT-1027).
-        log(`${row.step}: no panel seated — ${early.spawn_accounting}` + (early.notes ?
-            ` — ${early.notes.length} agent-level error(s) absorbed (NOT failures for this step)` : ''))
-        return early
-    }
-    if (!m) {
-        log(`${row.step}: gate has no proposal — its predecessors have not all ` +
-            `recorded, so the panel cannot seat; skipping this issue's later ` +
-            `stages this wave`)
-        return { step: row.step, status: 'gate-blocked', text: show }
-    }
-    const voteId = m[1]
-    const voters = Array.isArray(row.voters) ? row.voters : []
-    if (voters.length === 0) {
-        log(`${row.step}: vote row carries no voters — the engine renders the ` +
-            `roster on vote rows, so this manifest predates the contract; ` +
-            `escalate instead of guessing a panel`)
-        return { step: row.step, status: 'gate-blocked', text: show }
-    }
-    const seats = voters.map((v) => resolveSeat(v, policy, labelsOf(row)))
-    // Name the round's target ref in every seat's brief. Seats are
-    // NOT seated on the checkout the round was written in — writers work in
-    // private worktrees — so without this a judge reads its own lagging HEAD,
-    // finds the change absent, and rejects on evidence grounds, which no fix
-    // loop can answer.
-    //
-    // DON'T SPEND THE PROBE WHEN THE ANSWER IS ALREADY IN HAND (DOT-1040).
-    // `show` is the gate's own step payload, already fetched above. When it
-    // carries no target field at all there is nothing for the probe to find,
-    // and a probe with nothing to find is precisely the void that got filled
-    // with a fabricated sha on RUN-63. Measured on this machine: 22 of these
-    // probes across every recorded wave, ZERO of which relayed a real target
-    // and ONE of which invented one. So skip the spawn outright; the probe
-    // re-arms by itself the day the engine lifts the field onto `step show`.
-    let target = null
-    if (!/"target_(sha|worktree)"/.test(show)) {
-        log(`${row.step}: gate:show carries no target ref field — skipping ` +
-            `the gate:target probe entirely; seats are told to read their ` +
-            `own HEAD`)
-    } else {
-        const reply = await probe(targetRefCommand(row.step),
-            `${row.step} · gate:target`, phaseLabel, row.step, acct)
-        const env = readTargetEnvelope(reply)
-        if (!env.parsed) {
-            log(`${row.step}: gate:target probe reply did not parse — ` +
-                `treating as no target`)
-        }
-        // Second net: a sha reaches a brief only if it is 40-hex AND occurs
-        // in `show`, which the wave read for itself.
-        target = corroboratedTarget(env.target, show)
-        if (env.target && !target) {
-            log(`${row.step}: gate:target probe named a target the gate's own ` +
-                `step payload does not carry — refusing to brief it; seats ` +
-                `read their own HEAD`)
-        }
-    }
-    log(`${row.step}: ${voteId} — seating ${seats.map((s) => s.seat).join(', ')}` +
-        (target ? ` on target ${target.sha || '(no sha)'}${target.worktree ? ` (${target.worktree})` : ''}`
-                : ` with NO target ref on the bundle — seats read their own HEAD`))
-    acct.seats = seats.length
-    await parallel(seats.map((r) => () => {
-        return agent(seatBrief(r, voteId, row, false, heldCluster, target), {
-            label: `${row.step} · seat:${r.seat}`,
-            phase: phaseLabel,
-            agentType: 'executor-read',
-            model: r.model,
-            effort: r.effort,
-        }).catch((err) => {
-            log(`${row.step} seat ${r.seat}: spawn error: ${err}`)
-            acct.absorbed.push(`[${row.step} · seat:${r.seat}] ${reasonText(err) || String(err)}`)
-            return null
-        })
-    }))
-
-    // One re-spawn for seats whose cast never landed — tribunal.js's rule.
-    // This is the gate's ONE vote-show read (DOT-1041): the same projection
-    // the tally reads, taking the roster from `votes[].voter_name`. It used to
-    // spend a separate human-format probe (~12-13k tokens, 35-60s) to
-    // substring-match seat names out of prose, and then a THIRD probe for the
-    // tally; the read below serves both.
-    const record = await readVote(voteId, 'gate:record')
-    let missing
-    if (record.data && Array.isArray(record.data.votes)) {
-        const cast = record.data.votes
-            .map((v) => (v && typeof v.voter_name === 'string') ? v.voter_name : '')
-            .filter(Boolean)
-        missing = seats.filter((s) => !cast.some((n) => n.includes(s.seat)))
-    } else {
-        log(`WARNING ${row.step}: gate:record JSON did not parse (probe reply ` +
-            `${record.text.length} chars) — falling back to a substring match ` +
-            `on the raw probe text; the probe is meant to relay a few hundred ` +
-            `bytes, so a recurrence means the relay itself is corrupting`)
-        missing = seats.filter((s) => !record.text.includes(s.seat))
-    }
-    if (missing.length > 0) {
-        log(`${row.step}: ${missing.length} seat(s) returned without a recorded ` +
-            `cast (${missing.map((s) => s.seat).join(', ')}) — re-spawning each ONCE`)
-        await parallel(missing.map((r) => () => {
-            // A re-seated judge is a RETRY of a seat already counted in
-            // acct.seats — never an extra seat, never a probe.
-            acct.retries++
-            return agent(seatBrief(r, voteId, row, true, heldCluster, target), {
-                label: `${row.step} · seat:${r.seat} (retry)`,
-                phase: phaseLabel,
-                agentType: 'executor-read',
-                model: r.model,
-                effort: r.effort,
-            }).catch((err) => {
-                log(`${row.step} seat ${r.seat}: respawn error: ${err}`)
-                acct.absorbed.push(`[${row.step} · seat:${r.seat} (retry)] ${reasonText(err) || String(err)}`)
-                return null
-            })
-        }))
-        // The record moved underneath the cached read — those re-seated casts
-        // postdate it — so the tally must re-read rather than reuse it.
-        voteRead = null
-    }
-    // A seat still silent after its one retry is named, never absorbed into a
-    // quorum pass or the generic did-not-clear line. It is read off the
-    // tally's own vote-show (no extra probe), so it can only be named on the
-    // path that reads one.
-    const nameStillMissing = () => {
-        if (missing.length === 0 || !voteRead) return
-        const cast = (voteRead.data && Array.isArray(voteRead.data.votes))
-            ? voteRead.data.votes.map((v) => (v && typeof v.voter_name === 'string') ? v.voter_name : '').filter(Boolean)
-            : null
-        const still = missing.filter((s) => cast
-            ? !cast.some((n) => n.includes(s.seat))
-            : !voteRead.text.includes(s.seat))
-        if (still.length > 0) {
-            log(`${row.step}: STILL NO CAST from ${still.map((s) => s.seat).join(', ')} ` +
-                `after the one permitted re-spawn — the panel is short ${still.length} ` +
-                `vote(s); the tally decides on the engine's record as it stands`)
-        }
-    }
-
-    // `done` says only that the step COMPLETED — a rejection whose on_fail
-    // routes into rework also reads done/superseded. The tally is the verdict.
-    show = await probe(`docket step show ${row.step} --json`,
-        `${row.step} · gate:outcome`, phaseLabel, undefined, acct)
-    if (/"status"\s*:\s*"done"/.test(show)) {
-        const { outcome, tally } = await tallyOutcome(voteId)
-        nameStillMissing()
-        if (outcome === 'rejected') {
-            log(`${row.step}: gate decided REJECTED (${voteId}) — engine ` +
-                `routes on_fail; the conductor verifies the routing; ` +
-                `skipping this issue's later stages`)
-            return { step: row.step, status: 'gate-rejected', text: tally }
-        }
-        log(`${row.step}: gate passed — continuing`)
-        const res = gateSuccess(row.step, show, acct)
-        log(`${row.step}: ${res.spawn_accounting}` + (res.notes ?
-            ` — ${res.notes.length} agent-level error(s) absorbed (NOT failures for this step)` : ''))
-        return res
-    }
-    log(`${row.step}: gate did NOT clear (${(show.match(/"status"\s*:\s*"([a-z-]+)"/) || [])[1] || 'unknown'}) ` +
-        (missing.length > 0 ? `after re-seating ${missing.map((s) => s.seat).join(', ')} ` : '') +
-        `— skipping this issue's later stages; the conductor escalates`)
-    return { step: row.step, status: 'gate-parked', text: show }
-}
-// TEST-END gate-vote
 
 // ---------------------------------------------------------------------------
 // FIX-ROUND BASE ANCESTRY. The conductor integrates a fix round by
@@ -2453,22 +1995,17 @@ function needsAncestryCheck(row, integrated) {
 }
 
 // The judged tree: context assembly lifts the resolved issue.diff round
-// record onto the bundle as `target_sha` — the same field the gate path's
-// probe reads (readTargetEnvelope above), narrowed to the sha half because
-// the ancestry check has no use for the worktree path.
+// record onto the bundle as `target_sha`, read through the envelope above
+// (readTargetEnvelope), narrowed to the sha half because the ancestry check
+// has no use for the worktree path.
 //
-// SAME ENVELOPE, SAME REASON (DOT-1040). This probe used to share the gate
-// path's `grep -Eo`, so on a bundle with no round record it too handed its
-// haiku seat an empty result to relay verbatim — the void that got filled
-// with a fabricated 40-hex sha on RUN-63's gate:target. Here the blast
-// radius is worse than a misleading brief: an invented sha resolves nowhere,
-// `git merge-base --is-ancestor` exits non-zero on it, and the guard PARKS a
-// healthy fix round's whole judge fanout. So the command prints
-// `{"target_sha":null,"target_worktree":null}` when the field is absent and
-// the reply is parsed structurally; anything that is not that envelope is
-// "no target" and fails open, exactly as an absent field always did.
-// The command itself is targetRefCommand(step), shared verbatim with the
-// gate path (TEST region `target-envelope`).
+// An empty relay here has a worse blast radius than a misleading brief: an
+// invented sha resolves nowhere, `git merge-base --is-ancestor` exits
+// non-zero on it, and the guard PARKS a healthy fix round's whole judge
+// fanout. So the command prints `{"target_sha":null,"target_worktree":null}`
+// when the field is absent and the reply is parsed structurally; anything
+// that is not that envelope is "no target" and fails open, exactly as an
+// absent field always did.
 function parseAncestryTargetSha(text) {
     const target = parseTargetRef(text)
     const sha = target ? target.sha : ''
@@ -2613,7 +2150,7 @@ for (const row of rows) {
 }
 const stageKeys = [...stages.keys()].sort((a, b) => a - b)
 
-log(`wave: ${rows.map((r) => `${r.step}·${r.kind === 'executor' ? r.executor : r.kind}`).join(', ')} — policy v${policyVersion}, ${(input.policyText || '').length} chars`)
+log(`wave: ${rows.map((r) => `${r.step}·${r.kind === 'executor' ? r.executor : r.kind}`).join(', ')}`)
 log(`wave: ${rows.length} row(s) across stage(s) ${stageKeys.join('→')}`)
 {
     // Say up front which issues the fix-round ancestry guard is
@@ -2687,8 +2224,8 @@ function ancestryVerdict(row, phaseLabel) {
             const target = parseAncestryTargetSha(ctx)
             if (!target) {
                 // Two distinct causes, both fail-open, logged apart so a
-                // relayed non-envelope (DOT-1040) is never mistaken for the
-                // engine recording no round record.
+                // relayed non-envelope is never mistaken for the engine
+                // recording no round record.
                 if (!readTargetEnvelope(ctx).parsed) {
                     log(`${row.step}: ancestry:target probe reply did not ` +
                         `parse — treating as no target; fail-open, ` +

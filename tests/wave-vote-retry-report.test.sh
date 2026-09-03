@@ -1,62 +1,48 @@
 #!/bin/bash
 
-# Behavior suite for wave.js's vote-gate retry reporting (DOT-744).
+# Behavior suite for wave.js's vote-gate path: what a vote row costs in
+# read-only probes, and how the wave reports the noise it absorbed.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
 # and this one is in that list. It needs only `node` and `awk` — no engine, no
 # database, no network, and it spawns no agent.
 #
-# WHY THIS EXISTS. RUN-52 (wave wf_3461bca8-48c, DISPATCH-302): STEP-2493's
-# vote gate tallied APPROVED 3/3, yet the completion notification carried a
-# failures entry — "[STEP-2493 · gate:tally] failed: API Error: Connection
-# lost mid-response" — beside the same step's gate-passed verdict, and the
-# 8-spawns-for-3-seats cost was visible nowhere. The failure was retry noise
-# the script had already absorbed; a failure entry beside a success verdict
-# for the same step is exactly the shape a conductor misreads as a failed
-# gate. The fix: when a vote row's tally SUCCEEDS, absorbed agent-level
-# errors ride the success result as `notes` (each naming the tally's
-# success), seat/probe/retry accounting is reported explicitly
-# (`spawn_accounting`), and nothing failure-shaped is attached; a tally that
-# FAILS keeps its errors as real failures, un-softened.
+# WHY THIS EXISTS. One run's vote gate tallied APPROVED 3/3, yet the
+# completion notification carried a failures entry — "[STEP-N · gate:tally]
+# failed: API Error: Connection lost mid-response" — beside the same step's
+# gate-passed verdict, and the 8-spawns-for-3-seats cost was visible nowhere.
+# The failure was retry noise the script had already absorbed; a failure
+# entry beside a success verdict for the same step is exactly the shape a
+# conductor misreads as a failed gate. So when a vote row's tally SUCCEEDS,
+# absorbed agent-level errors ride the success result as `notes` (each
+# naming the tally's success), seat/probe/retry accounting is reported
+# explicitly (`spawn_accounting`) with seats and probes in SEPARATE buckets,
+# and nothing failure-shaped is attached; a tally that FAILS keeps its errors
+# as real failures, un-softened.
 #
-# DOT-1027 then split that accounting in two. The single "N spawns for M
-# seats" total counted the read-only haiku probes (gate:show, gate:record,
-# gate:outcome, gate:tally — and, until DOT-1040 skipped it on a payload with
-# no target field, gate:target) as members of the panel: a 3-judge
-# gate read "8 spawns for 3 seats", and an ALREADY-DECIDED gate, which seats
-# nobody, read "1 spawn for 0 seats" — a judge on an empty panel. Seats and
-# probes are now counted and reported separately ("3 seats, 5 probes, 0
-# retries"), and the seats clause is omitted entirely when no panel was
-# seated. Cases C and D pin both halves.
+# THE ONE-VERB READ. A vote row used to cost three to five relayed probes —
+# step show, a vote-show projection, a second step show for the outcome, a
+# tally re-read, a target read — each retyped by a haiku seat and rescued by
+# regex when the retype was corrupt (one relay lost its closing brace,
+# another 81 chars mid-body). `docket gate status STEP-N --json` answers all
+# of it in one envelope under 1 KB, returned through a StructuredOutput
+# schema the harness validates, so the gate path holds NO regex over relayed
+# engine JSON at all. The counts this suite measures are the authority, and
+# `meta.description` in wave.js must state them; the postscript below
+# cross-checks the prose against the cases so the two cannot drift:
+#   1 probe on a gate already decided when the wave reaches it (case C),
+#   2 on the normal path — one before the panel seats, one after (case E),
+#   3 when a re-seat forces a re-read (case A's healthy re-seat).
 #
-# DOT-1041 then cut the vote-show reads from two per gate to one, and shrank
-# what the probe relays. `gate:record` and `gate:tally` each spawned a haiku
-# seat to RETYPE the full ~10.6KB `docket vote show --json` envelope verbatim;
-# on RUN-63 one copy lost its closing brace and another lost 81 chars
-# mid-body, so both gates fell back to matching raw text. The probe now pipes
-# the envelope through jq to {status, final_outcome, votes[].{voter_name,
-# verdict}} — under 300 bytes for a 3-seat proposal — and the gate reads it
-# ONCE, the tally reusing the record probe's result whenever that read was
-# conclusive. Cases E and F pin both halves: E that a healthy gate spends one
-# vote-show probe and logs no fallback, F that a deliberately corrupted relay
-# still lands on the regex/substring fallback and is logged as a WARNING
-# naming the reply length.
-#
-# DOT-1050 then asked for the surviving cost to be VISIBLE without reading the
-# source: five to eight probes per gate was the number in the shadow report,
-# and after DOT-1040/1041 it is three. The counts this suite measures (2 on an
-# already-decided gate, 3 healthy, 4 with a re-read, 5 with re-seats) are the
-# authority, and `meta.description` in wave.js must state them; the postscript
-# below cross-checks the prose against the cases so the two cannot drift.
-#
-# HOW. wave.js fences the gate machinery (probeBrief, probe, parseHeldCluster,
-# parseTargetRef, parseVoteShow, gateSuccess, runGate) in TEST-BEGIN/TEST-END
+# HOW. wave.js fences the gate machinery (probeBrief, probe, gateStatus,
+# gateTarget, heldCluster, gateSuccess, runGate) in TEST-BEGIN/TEST-END
 # `gate-vote` markers. This suite extracts that region, prepends the
 # classifier-retry region (reasonText and the block regexes the probe retry
-# reads) and stub `agent`/`parallel`/`log`/`seatBrief`/`resolveSeat`/
-# `labelsOf`/`policy` globals, scripts the agent per spawn label, and asserts
-# on the result runGate returns. park-signals and chain-dead are extracted too
-# so the suite can prove the success result does not trip either predicate.
+# reads) and stub `agent`/`parallel`/`log`/`seatBrief`/`resolveSeat` globals,
+# scripts the agent per spawn label, and asserts on the result runGate
+# returns. park-signals and chain-dead are extracted too so the suite can
+# prove the success result does not trip either predicate, and that the
+# blocked path still hands the ladder the engine's blocked_reason.
 #
 # WHAT THIS SUITE CANNOT SEE: the harness's own per-agent failure accounting
 # in the completion notification (agents_error and the "[label] failed: ..."
@@ -109,20 +95,22 @@ grep -q 'gateSuccess' "${WORK}/gate.js" || fatal "gate-vote region does not cont
 const LOG = []
 const log = (m) => LOG.push(String(m))
 const parallel = (fns) => Promise.all(fns.map((f) => f()))
-const policy = {}
-const labelsOf = () => []
 const resolveSeat = (seat) => ({ seat, variant: 'std', model: 'stub-model', effort: 'low' })
 const seatBrief = () => 'seat brief (stub)'
 // The scripted agent: SCRIPT maps a spawn label to one response or an array
-// of responses consumed in order — {text: ...} resolves, {reject: ...}
-// rejects with an Error carrying that message. An unlisted label resolves ''.
+// of responses consumed in order — {text: ...} resolves with that value (a
+// string for a text probe, an object for a schema probe), {reject: ...}
+// rejects with an Error carrying that message. An unlisted label resolves
+// '' for a text probe and null for a schema probe — a dead spawn either way.
 let SCRIPT = {}
 let CALLS = []
+let SCHEMAS = {}
 const agent = (brief, opts) => {
     CALLS.push(opts.label)
+    if (opts.schema) SCHEMAS[opts.label] = opts.schema
     const entry = SCRIPT[opts.label]
     const item = Array.isArray(entry) ? entry.shift() : entry
-    if (item === undefined) return Promise.resolve('')
+    if (item === undefined) return Promise.resolve(opts.schema ? null : '')
     if (item.reject !== undefined) return Promise.reject(new Error(item.reject))
     return Promise.resolve(item.text)
 }
@@ -142,59 +130,59 @@ const ok = (cond, label) => {
     else { fail++; console.error(`FAIL: ${label}`) }
 }
 
+const VOTERS = ['judge-architecture', 'judge-security', 'judge-correctness']
+const routed = (voter) => ({ voter, model: 'opus', effort: 'high', variant: 'opus-high' })
 const ROW = {
     step: 'STEP-2493', kind: 'vote', issue: 'DOT-1', run: 'RUN-52',
     instance: 'gate@1', stage: 1,
-    voters: ['judge-architecture', 'judge-security', 'judge-correctness'],
+    voters: VOTERS,
+    voter_assignments: VOTERS.map(routed),
 }
-const APPROVED =
-    '{"ok":true,"data":{"id":"DKT-V260","status":"approved","final_outcome":"approved",' +
-    '"weighted_score":1.0,"votes":[{"voter_name":"judge-architecture","verdict":"approve"},' +
-    '{"voter_name":"judge-security","verdict":"approve"},' +
-    '{"voter_name":"judge-correctness","verdict":"approve"}]}}'
-const REJECTED =
-    '{"ok":true,"data":{"id":"DKT-V260","status":"rejected","final_outcome":"rejected",' +
-    '"weighted_score":0.0,"votes":[{"voter_name":"judge-architecture","verdict":"reject"}]}}'
-const RECORD_TWO =
-    '{"ok":true,"data":{"id":"DKT-V260","status":"open","votes":[' +
-    '{"voter_name":"judge-architecture"},{"voter_name":"judge-correctness"}]}}'
-const RECORD_ALL =
-    '{"ok":true,"data":{"id":"DKT-V260","status":"open","votes":[' +
-    '{"voter_name":"judge-architecture"},{"voter_name":"judge-security"},' +
-    '{"voter_name":"judge-correctness"}]}}'
-const SHOW_READY = '{"ok":true,"data":{"id":"STEP-2493","status":"ready","proposal":"DKT-V260"}}'
-const SHOW_DONE  = '{"ok":true,"data":{"id":"STEP-2493","status":"done","proposal":"DKT-V260"}}'
+// `docket gate status` envelopes, as the schema probe hands them back.
+const envelope = (step_status, outcome, missing, extra) => ({
+    step_status, outcome,
+    proposal: 'DKT-V260',
+    tally: { weighted_score: outcome === 'open' ? null : 1.0, threshold: 0.67 },
+    seats: VOTERS.map((v) => ({ voter: v, cast: !missing.includes(v), verdict: missing.includes(v) ? undefined : 'approve' })),
+    missing_seats: missing,
+    ...(extra || {}),
+})
+const OPEN_NOBODY   = envelope('ready', 'open', VOTERS)
+const OPEN_ONE_MISSING = envelope('ready', 'open', ['judge-security'])
+const APPROVED = envelope('done', 'approved', [])
+const REJECTED = envelope('done', 'rejected', [])
+const NO_PROPOSAL = { step_status: 'pending', outcome: 'open', missing_seats: [] }
+const SHOW_BLOCKED = '{"ok":true,"data":{"id":"STEP-2493","status":"pending",' +
+    '"blocked_reason":"an `after` predecessor is not done"}}'
 const API_ERR = 'API Error: Connection lost mid-response'
 
-const run = async (script) => {
+const run = async (script, row) => {
     SCRIPT = script
     CALLS = []
+    SCHEMAS = {}
     LOG.length = 0
-    return runGate(ROW, 'stage 1 (1 row)')
+    return runGate(row || ROW, 'stage 1 (1 row)')
 }
 const calls = (label) => CALLS.filter((c) => c === label).length
+const probes = () => CALLS.filter((c) => !c.includes('seat:')).length
 
-// ---- A: the DOT-744 case. One seat's first spawn dies at the agent level
-// and its re-spawn casts; the tally probe dies once and its identical
-// resubmission reads APPROVED. The gate SUCCEEDS: the result must carry the
-// accounting and the absorbed errors as notes — and nothing failure-shaped.
+// ---- A: one seat's first spawn dies at the agent level and its re-spawn
+// casts; the outcome probe dies once and its identical resubmission reads
+// the record. The gate SUCCEEDS: the result must carry the accounting and
+// the absorbed errors as notes — and nothing failure-shaped.
 const A = await run({
-    'STEP-2493 · gate:show':    { text: SHOW_READY },
+    'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
     'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
     'STEP-2493 · seat:judge-security':     { reject: API_ERR },
     'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
-    'STEP-2493 · gate:record':  { text: RECORD_TWO },
+    'STEP-2493 · gate:outcome': [{ reject: API_ERR }, { text: OPEN_ONE_MISSING }, { text: APPROVED }],
     'STEP-2493 · seat:judge-security (retry)': { text: 'cast recorded' },
-    'STEP-2493 · gate:outcome': { text: SHOW_DONE },
-    'STEP-2493 · gate:tally':   [{ reject: API_ERR }, { text: APPROVED }],
 })
 ok(A.status === 'gate-passed', 'A: tally succeeded -> status is gate-passed')
-// 3 judges + 5 read-only probes (show, record, outcome, tally x2); the two
-// retries are the re-seated judge and the tally resubmission. The gate:target
-// probe is NOT among them: SHOW_READY carries no target field, so DOT-1040
-// skips that spawn outright rather than handing a seat an empty result to
-// relay.
-ok(A.spawn_accounting === '3 seats, 5 probes, 2 retries',
+// 3 judges + 4 read-only probes (status, outcome x2 — one died — and the
+// re-read after the re-seat); the two retries are the re-seated judge and
+// the probe resubmission.
+ok(A.spawn_accounting === '3 seats, 4 probes, 2 retries',
     `A: seat/probe/retry accounting is explicit and separated (got ${JSON.stringify(A.spawn_accounting)})`)
 ok(!/spawn/.test(A.spawn_accounting),
     'A: probes are never reported as spawns of the panel')
@@ -202,166 +190,232 @@ ok(Array.isArray(A.notes) && A.notes.length === 2,
     `A: both absorbed errors ride the success result as notes (got ${JSON.stringify(A.notes)})`)
 ok((A.notes || []).every((n) => n.includes('NOT a failure') && n.includes('SUCCEEDED')),
     'A: every note names the tally success and disclaims failure')
-ok((A.notes || []).some((n) => n.includes('[STEP-2493 · gate:tally]') && n.includes(API_ERR)),
-    'A: the RUN-52 tally-probe error is a note, attributed to its spawn label')
+ok((A.notes || []).some((n) => n.includes('[STEP-2493 · gate:outcome]') && n.includes(API_ERR)),
+    'A: the dead outcome probe is a note, attributed to its spawn label')
 ok((A.notes || []).some((n) => n.includes('[STEP-2493 · seat:judge-security]')),
     'A: the dead seat spawn is a note, attributed to its seat label')
 ok(A.failures === undefined, 'A: no failures field on the success result')
 ok(!/fail/.test(A.status), 'A: nothing failure-shaped in the status')
-ok(calls('STEP-2493 · gate:tally') === 2, 'A: the tally probe was resubmitted exactly once')
+ok(calls('STEP-2493 · gate:outcome') === 3,
+    `A: the outcome probe was resubmitted once and re-read once after the re-seat (got ${calls('STEP-2493 · gate:outcome')})`)
 ok(calls('STEP-2493 · seat:judge-security (retry)') === 1, 'A: the missing seat was re-spawned once')
+ok(calls('STEP-2493 · seat:judge-architecture (retry)') === 0 &&
+   calls('STEP-2493 · seat:judge-correctness (retry)') === 0,
+    'A: seats the engine lists as cast are never re-spawned')
 ok(chainDead(A) === false, 'A: the success result does not kill the issue chain')
 ok(runParked(A) === false, 'A: the success result does not park the run')
 
-// ---- B: the SAME noise, but the tally REJECTS. The fix must not soften a
-// real failure: no notes, no accounting cushion — the rejected result is
-// exactly what it was before DOT-744.
+// ---- A2: the healthy re-seat — no probe noise — is exactly THREE probes.
+const A2 = await run({
+    'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
+    'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
+    'STEP-2493 · seat:judge-security':     { text: 'returned without casting' },
+    'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
+    'STEP-2493 · gate:outcome': [{ text: OPEN_ONE_MISSING }, { text: APPROVED }],
+    'STEP-2493 · seat:judge-security (retry)': { text: 'cast recorded' },
+})
+ok(A2.status === 'gate-passed' && A2.spawn_accounting === '3 seats, 3 probes, 1 retry',
+    `AC: a re-seat adds exactly one probe (got ${JSON.stringify(A2.spawn_accounting)})`)
+ok(LOG.some((l) => l.includes('1 seat(s) returned without a recorded cast (judge-security)')),
+    `A2: the log names the seat the engine listed as missing (got ${JSON.stringify(LOG)})`)
+
+// ---- A3: a seat STILL silent after its retry is named, and the gate is
+// decided on the engine's record as it stands.
+await run({
+    'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
+    'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
+    'STEP-2493 · seat:judge-security':     { text: 'nothing' },
+    'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
+    'STEP-2493 · gate:outcome': [{ text: OPEN_ONE_MISSING }, { text: envelope('done', 'approved', ['judge-security']) }],
+    'STEP-2493 · seat:judge-security (retry)': { text: 'nothing again' },
+})
+ok(LOG.some((l) => l.includes('STILL NO CAST from judge-security')),
+    `A3: a seat silent after its one re-spawn is named (got ${JSON.stringify(LOG)})`)
+
+// ---- B: the SAME noise as A, but the tally REJECTS. Nothing softens a real
+// failure: no notes, no accounting cushion.
 const B = await run({
-    'STEP-2493 · gate:show':    { text: SHOW_READY },
+    'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
     'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
     'STEP-2493 · seat:judge-security':     { reject: API_ERR },
     'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
-    'STEP-2493 · gate:record':  { text: RECORD_TWO },
+    'STEP-2493 · gate:outcome': [{ reject: API_ERR }, { text: OPEN_ONE_MISSING }, { text: REJECTED }],
     'STEP-2493 · seat:judge-security (retry)': { text: 'cast recorded' },
-    'STEP-2493 · gate:outcome': { text: SHOW_DONE },
-    'STEP-2493 · gate:tally':   { text: REJECTED },
 })
 ok(B.status === 'gate-rejected', 'B: rejected tally -> status is gate-rejected')
 ok(B.notes === undefined, 'B: a failing gate gets NO absorbed-error notes')
 ok(B.spawn_accounting === undefined, 'B: a failing gate gets NO accounting attachment')
 ok(chainDead(B) === true, 'B: the rejection still kills the issue chain')
 
-// ---- C: gate already decided when the wave arrives (early path). No panel
-// is seated, so the accounting reports probes and retries ONLY — the seats
-// clause is suppressed entirely rather than logging "0 seats" (DOT-1027).
+// ---- C: gate already decided when the wave arrives (early path). ONE
+// probe, no panel, so the accounting reports probes and retries ONLY — the
+// seats clause is suppressed rather than logging "0 seats".
 const C = await run({
-    'STEP-2493 · gate:show':  { text: SHOW_DONE },
-    'STEP-2493 · gate:tally': { text: APPROVED },
+    'STEP-2493 · gate:status': { text: APPROVED },
 })
 ok(C.status === 'gate-passed', 'C: already-decided approved gate is gate-passed')
-ok(C.spawn_accounting === '2 probes, 0 retries',
-    `C: early path reports probes only (got ${JSON.stringify(C.spawn_accounting)})`)
+ok(C.spawn_accounting === '1 probe, 0 retries',
+    `AC: a vote row that decides on the first read spawns exactly one probe (got ${JSON.stringify(C.spawn_accounting)})`)
+ok(CALLS.length === 1, `C: nothing but that one probe was spawned (got ${JSON.stringify(CALLS)})`)
 ok(!/seat/.test(C.spawn_accounting),
     'C: no seats clause at all when no panel was seated')
-ok(LOG.some((l) => l.includes('no panel seated — 2 probes, 0 retries')),
+ok(LOG.some((l) => l.includes('no panel seated — 1 probe, 0 retries')),
     `C: the log line names the empty panel instead of "0 seats" (got ${JSON.stringify(LOG)})`)
 ok(C.notes === undefined, 'C: no noise, no notes')
 
-// ---- D: a NON-transient classifier block on the tally probe is
-// deterministic on identical bytes — never resubmitted (DOT-558 doctrine),
-// but still noted on the success result.
-const D = await run({
-    'STEP-2493 · gate:show':    { text: SHOW_READY },
-    'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-2493 · seat:judge-security':     { text: 'cast recorded' },
-    'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
-    'STEP-2493 · gate:record':  { text: RECORD_ALL },
-    'STEP-2493 · gate:outcome': { text: SHOW_DONE },
-    'STEP-2493 · gate:tally':   { reject: '[STEP-2493 · gate:tally] blocked by safety classifier: the brief was refused on content' },
+const C2 = await run({
+    'STEP-2493 · gate:status': { text: REJECTED },
 })
-ok(calls('STEP-2493 · gate:tally') === 1, 'D: a content classifier block is NOT resubmitted')
-ok(D.status === 'gate-passed', 'D: unknown tally on a done step still falls through as before')
-// The DOT-1027 shape: 3 judges + 4 probes (show, record, outcome, tally),
-// which the old wording rolled up as "8 spawns for 3 seats" back when
-// gate:target was spent unconditionally too.
-ok(D.spawn_accounting === '3 seats, 4 probes, 0 retries',
-    `D: no retry counted for the unretried block (got ${JSON.stringify(D.spawn_accounting)})`)
-ok(LOG.some((l) => l.startsWith('STEP-2493: 3 seats, 4 probes, 0 retries')),
-    `D: the real-panel log line separates seats from probes (got ${JSON.stringify(LOG)})`)
-ok(Array.isArray(D.notes) && D.notes.length === 1 && D.notes[0].includes('blocked by safety classifier'),
-    'D: the block is still noted on the success result')
+ok(C2.status === 'gate-rejected' && CALLS.length === 1,
+    'C2: an already-REJECTED gate is read off the same single probe — a done step is not a pass')
 
-// ---- DOT-1041: ONE small vote-show read per gate ----
+// A step settled some other way — done, ballot never tallied — continues.
+const C3 = await run({
+    'STEP-2493 · gate:status': { text: envelope('skipped', 'open', []) },
+})
+ok(C3.status === 'gate-passed' && CALLS.length === 1,
+    'C3: a skipped step with an untallied ballot is decided ground, not a gate to seat')
 
-// The command the probe is told to run relays a projection, not the envelope.
-ok(voteShowCommand('DKT-V260').startsWith('docket vote show DKT-V260 --json |'),
-    'the vote probe still reads the engine record')
-ok(/jq -c/.test(voteShowCommand('DKT-V260')) &&
-   ['status', 'final_outcome', 'voter_name', 'verdict']
-       .every((f) => voteShowCommand('DKT-V260').includes(f)),
-    'the vote probe pipes through jq and keeps exactly the fields the gate reads')
-
-// What that command answers with: the projection, BARE (no {ok, data} wrapper).
-const SHRUNK =
-    '{"status":"approved","final_outcome":"approved","votes":[' +
-    '{"voter_name":"judge-architecture","verdict":"approve"},' +
-    '{"voter_name":"judge-security","verdict":"approve"},' +
-    '{"voter_name":"judge-correctness","verdict":"approve"}]}'
-ok(SHRUNK.length < 1024,
-    `AC: the probe reply for a 3-seat proposal is under 1KB (got ${SHRUNK.length} chars)`)
-ok(SHRUNK.length < APPROVED.length,
-    'the projection is smaller than the envelope it replaces')
-ok(parseVoteShow(SHRUNK) !== null && parseVoteShow(SHRUNK).status === 'approved',
-    'parseVoteShow reads the BARE jq projection')
-ok(parseVoteShow(APPROVED) !== null && parseVoteShow(APPROVED).status === 'approved',
-    'parseVoteShow still reads the raw {ok, data} envelope')
-ok(parseVoteShow('{"ok":false,"error":"no such proposal"}') === null,
-    'a non-vote object is not mistaken for a tally')
-
-// ---- E: the healthy gate. Every seat cast and the proposal is decided, so
-// the ONE vote-show read (spawned as gate:record) serves the tally too: no
-// second probe, and no fallback line anywhere in the log.
-const E = await run({
-    'STEP-2493 · gate:show':    { text: SHOW_READY },
+// ---- D: a NON-transient classifier block on the outcome probe is
+// deterministic on identical bytes — never resubmitted. The tally is then
+// UNKNOWN, which is a park for the conductor, not a pass on the step's
+// status alone.
+const D = await run({
+    'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
     'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
     'STEP-2493 · seat:judge-security':     { text: 'cast recorded' },
     'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
-    'STEP-2493 · gate:record':  { text: SHRUNK },
-    'STEP-2493 · gate:outcome': { text: SHOW_DONE },
-    'STEP-2493 · gate:tally':   { text: SHRUNK },
+    'STEP-2493 · gate:outcome': { reject: '[STEP-2493 · gate:outcome] blocked by safety classifier: the brief was refused on content' },
+})
+ok(calls('STEP-2493 · gate:outcome') === 1, 'D: a content classifier block is NOT resubmitted')
+ok(D.status === 'gate-parked' && D.notes === undefined,
+    `D: an unreadable tally parks the gate for the conductor, un-softened (got ${D.status})`)
+ok(calls('STEP-2493 · seat:judge-security (retry)') === 0 &&
+   calls('STEP-2493 · seat:judge-architecture (retry)') === 0,
+    'D: an unreadable record re-spawns NOBODY — silence is not "every seat missing"')
+ok(LOG.some((l) => l.includes('probe blocked on content')),
+    `D: the block is logged as deterministic (got ${JSON.stringify(LOG)})`)
+
+// ---- E: the healthy gate. One read before the panel, one after: TWO probes,
+// no re-seat, no fallback line anywhere in the log.
+const E = await run({
+    'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
+    'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
+    'STEP-2493 · seat:judge-security':     { text: 'cast recorded' },
+    'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
+    'STEP-2493 · gate:outcome': { text: APPROVED },
 })
 ok(E.status === 'gate-passed', 'E: the healthy gate passes')
-ok(calls('STEP-2493 · gate:record') + calls('STEP-2493 · gate:tally') === 1,
-    `AC: exactly ONE docket vote show probe per gate (got record=${calls('STEP-2493 · gate:record')}, tally=${calls('STEP-2493 · gate:tally')})`)
-ok(E.spawn_accounting === '3 seats, 3 probes, 0 retries',
-    `E: show + one vote-show + outcome (got ${JSON.stringify(E.spawn_accounting)})`)
-ok(!LOG.some((l) => l.includes('did not parse')),
-    `AC: no "did not parse" line on a healthy tally (got ${JSON.stringify(LOG)})`)
-ok(LOG.some((l) => l.includes('no second probe spawned')),
-    `E: the log says the tally reused the single read (got ${JSON.stringify(LOG)})`)
+ok(E.spawn_accounting === '3 seats, 2 probes, 0 retries',
+    `E: status + outcome (got ${JSON.stringify(E.spawn_accounting)})`)
+ok(probes() === 2, `AC: exactly TWO gate status probes on the normal path (got ${JSON.stringify(CALLS)})`)
+ok(!LOG.some((l) => l.includes('did not parse') || l.includes('falling back')),
+    `AC: no parse-fallback line on a healthy tally (got ${JSON.stringify(LOG)})`)
+ok(SCHEMAS['STEP-2493 · gate:status'] && SCHEMAS['STEP-2493 · gate:status'] === SCHEMAS['STEP-2493 · gate:outcome'],
+    'AC: both reads go through the same StructuredOutput schema')
+ok(SCHEMAS['STEP-2493 · gate:status'].properties.outcome.enum.join() === 'approved,rejected,open',
+    'the schema pins the three-state outcome the engine documents')
+ok(LOG.some((l) => l.includes('seating judge-architecture, judge-security, judge-correctness')),
+    `E: the panel is seated from the row's routed roster (got ${JSON.stringify(LOG)})`)
+ok(calls('STEP-2493 · gate:held-cluster') === 0,
+    'E: an ordinary gate never spends the held-cluster read')
 
-// A REJECTED proposal is equally conclusive — one read decides it.
+// A REJECTED proposal is equally conclusive — one read after the panel.
 const E2 = await run({
-    'STEP-2493 · gate:show':    { text: SHOW_READY },
+    'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
     'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
     'STEP-2493 · seat:judge-security':     { text: 'cast recorded' },
     'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
-    'STEP-2493 · gate:record':  { text: SHRUNK.replace(/approved/g, 'rejected') },
-    'STEP-2493 · gate:outcome': { text: SHOW_DONE },
+    'STEP-2493 · gate:outcome': { text: REJECTED },
 })
-ok(E2.status === 'gate-rejected' && calls('STEP-2493 · gate:tally') === 0,
-    'E2: a rejection is read off the same single probe')
+ok(E2.status === 'gate-rejected' && probes() === 2,
+    'E2: a rejection is read off the same single post-panel probe')
 
-// ---- F: the RUN-63 corruption, replayed. The gate:record relay loses its
-// closing brace and the gate:tally relay loses 81 chars mid-body. Both
-// fallbacks must still fire, and each must be logged as a WARNING naming the
-// reply length so a recurrence is visible.
-const MANGLED_TAIL = SHRUNK.slice(0, -1)
-const CUT = SHRUNK.indexOf('"votes"') + 10
-const MANGLED_BODY = SHRUNK.slice(0, CUT) + SHRUNK.slice(CUT + 81)
-ok(parseVoteShow(MANGLED_TAIL) === null && parseVoteShow(MANGLED_BODY) === null,
-    'F: both mangled relays genuinely fail the structural read')
-const F = await run({
-    'STEP-2493 · gate:show':    { text: SHOW_READY },
+// A gate that did not clear — every seat cast, the ballot still open.
+const E3 = await run({
+    'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
     'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
     'STEP-2493 · seat:judge-security':     { text: 'cast recorded' },
     'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
-    'STEP-2493 · gate:record':  { text: MANGLED_TAIL },
-    'STEP-2493 · gate:outcome': { text: SHOW_DONE },
-    'STEP-2493 · gate:tally':   { text: MANGLED_BODY },
+    'STEP-2493 · gate:outcome': { text: envelope('ready', 'open', []) },
 })
-ok(F.status === 'gate-passed',
-    'AC: the regex/substring fallback still decides the gate on a mangled relay')
-ok(calls('STEP-2493 · seat:judge-security (retry)') === 0,
-    'F: the substring fallback still finds every seat name, so nobody is re-seated')
-ok(LOG.some((l) => l.startsWith('WARNING ') && l.includes('gate:record JSON did not parse') &&
-   l.includes(`${MANGLED_TAIL.length} chars`)),
-    `AC: the record fallback is a WARNING naming the reply length (got ${JSON.stringify(LOG)})`)
-ok(LOG.some((l) => l.startsWith('WARNING ') && l.includes('gate:tally JSON did not parse') &&
-   l.includes(`${MANGLED_BODY.length} chars`)),
-    `AC: the tally fallback is a WARNING naming the reply length (got ${JSON.stringify(LOG)})`)
-ok(calls('STEP-2493 · gate:tally') === 1,
-    'F: an unparseable record read is NOT reused — the tally re-reads once')
+ok(E3.status === 'gate-parked' && LOG.some((l) => l.includes('gate did NOT clear (ready, tally open)')),
+    `E3: an undecided ballot parks the gate and the log names the engine's state (got ${JSON.stringify(LOG)})`)
+
+// ---- F: a reply that is not the envelope. The old relays lost a brace or
+// 81 chars mid-body and were rescued by regex; a schema reply carries no
+// text to regex, so a non-envelope object is UNKNOWN and nothing is
+// re-seated off it.
+const F = await run({
+    'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
+    'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
+    'STEP-2493 · seat:judge-security':     { text: 'cast recorded' },
+    'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
+    'STEP-2493 · gate:outcome': { text: {} },
+})
+ok(F.status === 'gate-parked' && !CALLS.some((c) => c.includes('(retry)')),
+    'F: a non-envelope reply parks the gate and re-spawns nobody')
+const F2 = await run({
+    'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
+    'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
+    'STEP-2493 · seat:judge-security':     { text: 'cast recorded' },
+    'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
+    'STEP-2493 · gate:outcome': { text: { error: 'Error: STEP-2493 is a "executor" step, not a gate' } },
+})
+ok(F2.status === 'gate-parked' && LOG.some((l) => l.includes('engine error — Error: STEP-2493 is a')),
+    `F2: an engine error relayed through the schema is logged verbatim (got ${JSON.stringify(LOG)})`)
+const F3 = await run({
+    'STEP-2493 · gate:status': { text: null },
+})
+ok(F3.status === 'gate-blocked' && CALLS.length === 1 &&
+   LOG.some((l) => l.includes('gate:status probe returned nothing')),
+    'F3: a dead first read seats nobody and blocks the lane with the state UNKNOWN')
+
+// ---- G: no proposal yet — the predecessors have not all recorded. The one
+// read that carries the engine's blocked_reason is `step show`, spent here
+// alone so the ladder can say "deferred" instead of "died".
+const G = await run({
+    'STEP-2493 · gate:status':  { text: NO_PROPOSAL },
+    'STEP-2493 · gate:blocked': { text: SHOW_BLOCKED },
+})
+ok(G.status === 'gate-blocked' && probes() === 2 && !CALLS.some((c) => c.includes('seat:')),
+    `G: a gate with no proposal spends status + step show and seats nobody (got ${JSON.stringify(CALLS)})`)
+ok(blockedReason(G) === 'an `after` predecessor is not done',
+    `G: the ladder still reads the engine's blocked_reason off the result (got ${JSON.stringify(blockedReason(G))})`)
+ok(chainDead(G) === true, 'G: and the lane still stops this wave')
+
+// ---- H: a vote row whose roster carries no routing — the run pins no
+// policy.toml, or the row was re-typed — is escalated, never guessed.
+const H = await run({
+    'STEP-2493 · gate:status': { text: OPEN_NOBODY },
+}, { ...ROW, voter_assignments: undefined })
+ok(H.status === 'gate-blocked' && CALLS.length === 1 &&
+   LOG.some((l) => l.includes('carries no voter_assignments')),
+    'H: no voter_assignments -> gate-blocked after the one read, no panel')
+
+// ---- I: an engine-minted held-cluster gate (`<name>-held@N#k`) spends one
+// more read to name its cluster; an ordinary gate never does.
+const HELD = {
+    ...ROW, instance: 'review-held@2#0',
+}
+const I = await run({
+    'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
+    'STEP-2493 · gate:held-cluster': { text: { cluster_index: 0, cluster_count: 10, artifact: 'ARTIFACT-1251', producer_step: 'reconcile@2' } },
+    'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
+    'STEP-2493 · seat:judge-security':     { text: 'cast recorded' },
+    'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
+    'STEP-2493 · gate:outcome': { text: APPROVED },
+}, HELD)
+ok(I.status === 'gate-passed' && calls('STEP-2493 · gate:held-cluster') === 1 &&
+   I.spawn_accounting === '3 seats, 3 probes, 0 retries',
+    `I: a held-cluster gate spends exactly one extra read (got ${JSON.stringify(I.spawn_accounting)})`)
+ok(calls('STEP-2493 · gate:held-cluster') === 1 && !CALLS.some((c) => c.includes('held') && c !== 'STEP-2493 · gate:held-cluster'),
+    'I: the cluster read goes through its own schema probe')
+ok(SCHEMAS['STEP-2493 · gate:held-cluster'].properties.cluster_index.type === 'number',
+    'I: the held-cluster reply is schema-validated, never regexed out of step show')
+ok(parseHeldCluster({ cluster_index: 0, cluster_count: 10, artifact: 'A', producer_step: 'p' }).clusterCount === 10 &&
+   parseHeldCluster({ cluster_index: 0 }) === null && parseHeldCluster(null) === null && parseHeldCluster({}) === null,
+    'parseHeldCluster accepts the four-field object and nothing less')
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)
@@ -370,11 +424,22 @@ JS
 node "${WORK}/suite.mjs"
 rc=$?
 
-# ---- DOT-1050 item 2: the per-vote-row probe cost is DOCUMENTED ----
+# ---- AC: no regex over relayed engine JSON remains in the gate path ----
+# Every field-level regex this path ever carried had the shape `"key"\s*:\s*`;
+# the schema reads leave no text to match.
+if grep -q '\\s\*:\\s\*' "${WORK}/gate.js"; then
+    printf 'FAIL: the gate-vote region still carries a regex over relayed engine JSON:\n' >&2
+    grep -n '\\s\*:\\s\*' "${WORK}/gate.js" >&2
+    rc=1
+else
+    printf 'PASS: AC: no regex over relayed engine JSON in the gate-vote region\n'
+fi
+
+# ---- the per-vote-row probe cost is DOCUMENTED ----
 # The counts above are measured; this asserts wave.js's own meta.description
 # states them, so a conductor sizing a dispatch sees the gate overhead without
 # reading the gate path. Numbers are matched literally against the cases:
-#   C = 2 probes (already-decided), E = 3 (healthy), D = 4, A = 5 (re-seats).
+#   C = 1 probe (already-decided), E = 2 (normal), A2 = 3 (re-seat).
 DESC=$(awk '/^    description: /{print; exit}' "$WAVE")
 dpass=0
 dfail=0
@@ -382,20 +447,20 @@ dok() { # <cond-exit> <label>
     if [ "$1" -eq 0 ]; then dpass=$((dpass + 1)); printf 'PASS: %s\n' "$2"
     else dfail=$((dfail + 1)); printf 'FAIL: %s\n' "$2" >&2; fi
 }
-[ -n "$DESC" ]; dok $? 'DOT-1050: wave.js meta.description line is readable'
+[ -n "$DESC" ]; dok $? 'wave.js meta.description line is readable'
 printf '%s' "$DESC" | grep -qi 'probe'; dok $? \
-    'DOT-1050: meta.description mentions the probe cost per vote row at all'
-printf '%s' "$DESC" | grep -q '3 read-only haiku probes'; dok $? \
-    'DOT-1050: it names the 3-probe normal path (case E measured 3 probes)'
-printf '%s' "$DESC" | grep -q '2 on a gate that was already decided'; dok $? \
-    'DOT-1050: it names the 2-probe already-decided path (case C measured 2 probes)'
-printf '%s' "$DESC" | grep -q 'up to 5'; dok $? \
-    'DOT-1050: it names the 5-probe worst case (case A measured 5 probes)'
-printf '%s' "$DESC" | grep -q 'gate:show'; dok $? \
-    'DOT-1050: it names the probes by label so the count can be audited'
-# The old, pre-DOT-1040/1041 number must not be restated as current.
-printf '%s' "$DESC" | grep -qE 'five to eight|5-8 probes'; [ $? -ne 0 ]; dok $? \
-    'DOT-1050: and it does NOT restate the pre-reduction 5-8 figure'
+    'meta.description mentions the probe cost per vote row at all'
+printf '%s' "$DESC" | grep -q '2 read-only haiku probes'; dok $? \
+    'it names the 2-probe normal path (case E measured 2 probes)'
+printf '%s' "$DESC" | grep -q '1 on a gate that was already decided'; dok $? \
+    'it names the 1-probe already-decided path (case C measured 1 probe)'
+printf '%s' "$DESC" | grep -q '3 when a re-seat'; dok $? \
+    'it names the 3-probe re-seat path (case A2 measured 3 probes)'
+printf '%s' "$DESC" | grep -q 'gate status'; dok $? \
+    'it names the verb so the count can be audited'
+# The pre-collapse numbers must not be restated as current.
+printf '%s' "$DESC" | grep -qE 'five to eight|5-8 probes|3 read-only haiku|up to 5|gate:show'; [ $? -ne 0 ]; dok $? \
+    'and it does NOT restate the pre-collapse figures'
 
 printf '\n%s passed, %s failed (meta.description probe accounting)\n' "$dpass" "$dfail"
 [ "$dfail" -eq 0 ] || rc=1

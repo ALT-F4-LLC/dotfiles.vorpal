@@ -212,15 +212,14 @@ if command -v jq >/dev/null 2>&1; then
         && allow
 fi
 
-# Carve-out 5: every live run is pin-blocked — the two-guard wedge. [OBSERVED
-# on a past docket-run session] The policy-guard hook had
-# hard-denied the wave launch over pin drift (correctly), the conductor
-# reconciled, closed the open dispatch, and tried to end its turn — and THIS
-# hook denied the stop over the very judge rows that deny had made
-# undispatchable. Pending steps whose dispatch the engine and policy-guard
-# refuse are not abandonable work; they are a blocked run, and holding the
-# session open cannot advance them (there is no repin verb — drift is the
-# operator's to resolve; filed engine-side).
+# Carve-out 5: every live run is pin-blocked — the drift wedge. [OBSERVED
+# on a past docket-run session] A wave launch had been refused over pin
+# drift (correctly), the conductor reconciled, closed the open dispatch, and
+# tried to end its turn — and THIS hook denied the stop over the very judge
+# rows that refusal had made undispatchable. Pending steps whose dispatch
+# the engine refuses are not abandonable work; they are a blocked run, and
+# holding the session open cannot advance them (there is no repin verb —
+# drift is the operator's to resolve; filed engine-side).
 #
 # The probe is the engine's own whole-run pin comparator, `docket run
 # verify-pins` — read-only, writes nothing, not even a re-pin. Its contract
@@ -230,8 +229,8 @@ fi
 # non-zero": exit 2 doubles as the CLI's generic error code ("✘ Error: run not
 # found" exits 2 [OBSERVED]), so a bare non-zero check would read an engine
 # hiccup as drift and fail toward a silent ALLOW. Exit 4 is also exactly the
-# class the policy-guard hard-blocks dispatch on ("policy.toml changed:"),
-# keeping the two hooks' judgments consistent.
+# class every engine verb that reads the drifted ref refuses on, so this
+# hook's judgment and the engine's stay consistent.
 #
 # FAILS CLOSED, same shape as 1b/3/4: missing jq, an unreadable run list, and
 # any live run whose verify-pins answers 0, 2, or anything but 4 all fall

@@ -3,8 +3,8 @@
 # Drift check for the deliberately duplicated code in wave.js and tribunal.js.
 #
 # A workflow script has no module resolution and no file access at run time,
-# so the TOML policy parser and the seat contract cannot live in a shared
-# module — each script carries its own copy, fenced by
+# so the seat contract cannot live in a shared module — each script carries
+# its own copy, fenced by
 # `// SYNC-BEGIN <region>` / `// SYNC-END <region>` markers. This suite
 # extracts every fenced region from both files, normalizes the one legitimate
 # difference (each copy names its own file in error messages), and diffs.
@@ -22,7 +22,7 @@ WORKFLOWS="${WORKFLOWS_DIR:-${SCRIPT_DIR}/../src/user/claude_code/workflows}"
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/workflow-sync.XXXXXX")
 trap 'rm -rf "$WORK"' EXIT
 
-REGIONS=(policy-parser policy-shape seat-contract)
+REGIONS=(seat-contract)
 
 extract() { # <file> <region> — fenced region body, self-names normalized
     awk -v r="$2" '

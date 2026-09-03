@@ -317,7 +317,7 @@ case_regression_never_dispatched_allows() {
 }
 
 # ---- CARVE-OUT 5: every live run pin-blocked (verify-pins exit 4) ----------
-# The two-guard wedge: policy-guard denies the dispatch over pin drift while
+# The drift wedge: the engine refuses the dispatch over pin drift while
 # this hook denies the stop over the same pending rows. Only the engine's
 # affirmative CHANGED verdict (exit 4) allows; exit 2 — which doubles as the
 # CLI's generic error code — and every other non-4 answer stay a deny.

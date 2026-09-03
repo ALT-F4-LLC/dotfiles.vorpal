@@ -1,277 +1,50 @@
 export const meta = {
     name: 'tribunal',
-    description: 'Spawn a judge panel that decides one gated proposal by each seat casting a real `docket vote cast`. This script never casts, approves, or tallies — the engine\'s vote machinery tallies. PROBE COST PER PANEL: one read-only haiku probe of the vote record after the seats return (two when the first returns nothing), plus one more after any re-seat; each relays a jq projection of a few hundred bytes. Invoke by scriptPath ONLY, with args {voteId, voters, policyText, context, gateKind, cwd} — policy.toml is passed as TEXT, never a path; the script cannot read files.',
-    whenToUse: 'Invoked on a CONVERSATIONAL gate the docket-run skill routes to a panel (ack-reap, activation, budget, fix-batch), always as Workflow({scriptPath}) — never by name. Engine `type = "vote"` step rows ride the wave since the staged closure: wave.js seats their panels itself with the same seat contract as this script. The CALLER creates the proposal and passes its id; tribunal.js only fills an open one.',
+    description: 'Spawn a judge panel that decides one gated proposal by each seat casting a real `docket vote cast`. This script never casts, approves, or tallies — the engine\'s vote machinery tallies. PROBE COST PER PANEL: one read-only haiku probe of the vote record after the seats return (two when the first returns nothing), plus one more after any re-seat; each answers a jq projection of a few hundred bytes through a schema. A conversational proposal has no step, so `docket gate status` cannot address it and the probe reads `docket vote show`. Invoke by scriptPath ONLY, with args {voteId, voters, context, gateKind, cwd} — `voters` is an array of {seat, model, effort, variant} objects, each seat\'s routing already resolved by the caller from the run\'s pinned policy.toml, since the engine renders routing only onto step rows and a conversational gate has none. The script reads no policy and cannot read files.',
+    whenToUse: 'Invoked on a CONVERSATIONAL gate the docket-run skill routes to a panel (ack-reap, activation, budget, fix-batch), always as Workflow({scriptPath}) — never by name. Engine `type = "vote"` step rows ride the wave since the staged closure: wave.js seats their panels itself from the row\'s `voter_assignments`, with the same seat contract as this script. The CALLER creates the proposal, passes its id, and passes every voter WITH its {model, effort, variant}; tribunal.js only fills an open one.',
     phases: [
         { title: 'Judge', detail: 'one seat per voter, each casting docket vote cast' },
-        { title: 'Verify', detail: 'one haiku probe reads the vote record', model: 'haiku' },
+        { title: 'Verify', detail: 'one haiku probe reads the vote record through a schema', model: 'haiku' },
     ],
 }
 
 // ---------------------------------------------------------------------------
-// TOML subset parser, byte-identical to wave.js's. A workflow script has no
-// file access or module resolution, so this is either a duplicate or a
-// second parser that drifts; tests/workflow-sync.test.sh diffs every
-// SYNC-marked region between the two files (self-names normalized) and
-// fails on drift.
-// ---------------------------------------------------------------------------
-
-// SYNC-BEGIN policy-parser
-const SUBSET = 'tables, array-of-tables, inline tables, quoted strings, integers, arrays of strings, # comments outside quotes'
-
-function bail(line, n, why) {
-    throw new Error(
-        `tribunal.js policy parser: ${why} (line ${n}: ${JSON.stringify(line)}). ` +
-        `This is NOT a general TOML parser — it accepts only: ${SUBSET}. ` +
-        `Fix policy.toml or widen the parser deliberately; do not parse partially.`
-    )
-}
-
-function decomment(s) {
-    let q = false
-    for (let i = 0; i < s.length; i++) {
-        const c = s[i]
-        if (c === '"' && s[i - 1] !== '\\') q = !q
-        else if (c === '#' && !q) return s.slice(0, i)
-    }
-    return s
-}
-
-function scalar(v, line, n) {
-    v = v.trim()
-    if (/^"(?:[^"\\]|\\.)*"$/.test(v)) return JSON.parse(v)
-    if (/^-?\d+$/.test(v)) return parseInt(v, 10)
-    if (/^'/.test(v)) bail(line, n, 'literal (single-quoted) strings are out of subset')
-    if (/^(true|false)$/.test(v)) bail(line, n, 'booleans are out of subset')
-    if (/^-?\d+\./.test(v)) bail(line, n, 'floats are out of subset')
-    bail(line, n, `unsupported value ${JSON.stringify(v)}`)
-}
-
-function arrayOfStrings(v, line, n) {
-    const inner = v.trim().slice(1, -1).trim()
-    if (inner === '') return []
-    if (inner.includes('[')) bail(line, n, 'nested arrays are out of subset')
-    return splitTop(inner).map((e) => {
-        const s = scalar(e, line, n)
-        if (typeof s !== 'string') bail(line, n, 'only arrays OF STRINGS are in subset')
-        return s
-    })
-}
-
-function splitTop(s) {
-    const out = []
-    let cur = '', q = false
-    for (let i = 0; i < s.length; i++) {
-        const c = s[i]
-        if (c === '"' && s[i - 1] !== '\\') { q = !q; cur += c }
-        else if (c === ',' && !q) { out.push(cur); cur = '' }
-        else cur += c
-    }
-    if (cur.trim() !== '') out.push(cur)
-    return out.map((e) => e.trim()).filter((e) => e !== '')
-}
-
-function inlineTable(v, line, n) {
-    const obj = {}
-    for (const pair of splitTop(v.trim().slice(1, -1))) {
-        const eq = pair.indexOf('=')
-        if (eq < 0) bail(line, n, 'inline-table entry without `=`')
-        const k = pair.slice(0, eq).trim()
-        const raw = pair.slice(eq + 1).trim()
-        obj[k] = raw.startsWith('[') ? arrayOfStrings(raw, line, n) : scalar(raw, line, n)
-    }
-    return obj
-}
-
-function parseToml(text) {
-    const root = {}
-    let cur = root
-    let pendingKey = null, pendingBuf = '', pendingLine = 0
-
-    const lines = text.split('\n')
-    for (let i = 0; i < lines.length; i++) {
-        const rawLine = lines[i]
-        const n = i + 1
-        let line = decomment(rawLine).trim()
-        if (line === '') continue
-
-        if (pendingKey !== null) {
-            pendingBuf += ' ' + line
-            if (!line.includes(']')) continue
-            cur[pendingKey] = arrayOfStrings(pendingBuf, pendingBuf, pendingLine)
-            pendingKey = null; pendingBuf = ''
-            continue
-        }
-
-        let m = line.match(/^\[\[([A-Za-z0-9_.-]+)\]\]$/)
-        if (m) {
-            const path = m[1].split('.')
-            let node = root
-            for (let j = 0; j < path.length - 1; j++) {
-                const seg = path[j]
-                if (Array.isArray(node[seg])) node = node[seg][node[seg].length - 1]
-                else node = (node[seg] = node[seg] || {})
-            }
-            const leaf = path[path.length - 1]
-            if (!Array.isArray(node[leaf])) node[leaf] = []
-            const entry = {}
-            node[leaf].push(entry)
-            cur = entry
-            continue
-        }
-
-        m = line.match(/^\[([A-Za-z0-9_.-]+)\]$/)
-        if (m) {
-            const path = m[1].split('.')
-            let node = root
-            for (const seg of path) {
-                if (Array.isArray(node[seg])) node = node[seg][node[seg].length - 1]
-                else node = (node[seg] = node[seg] || {})
-            }
-            cur = node
-            continue
-        }
-
-        if (line.startsWith('[')) bail(rawLine, n, 'malformed table header')
-
-        const eq = line.indexOf('=')
-        if (eq < 0) bail(rawLine, n, 'line is neither a table header nor a key/value pair')
-        const key = line.slice(0, eq).trim()
-        if (!/^[A-Za-z0-9_-]+$/.test(key)) bail(rawLine, n, `unsupported key ${JSON.stringify(key)} (dotted/quoted keys are out of subset)`)
-        const val = line.slice(eq + 1).trim()
-
-        if (val === '') bail(rawLine, n, 'empty value (multi-line strings are out of subset)')
-        if (val.startsWith('"""') || val.startsWith("'''")) bail(rawLine, n, 'multi-line strings are out of subset')
-        if (val.startsWith('{')) {
-            if (!val.endsWith('}')) bail(rawLine, n, 'multi-line inline tables are out of subset')
-            cur[key] = inlineTable(val, rawLine, n)
-        } else if (val.startsWith('[')) {
-            if (val.endsWith(']')) cur[key] = arrayOfStrings(val, rawLine, n)
-            else { pendingKey = key; pendingBuf = val; pendingLine = n }   // wraps
-        } else {
-            cur[key] = scalar(val, rawLine, n)
-        }
-    }
-    if (pendingKey !== null) bail('', pendingLine, 'unterminated array')
-    return root
-}
-// SYNC-END policy-parser
-
-// SYNC-BEGIN policy-shape
-// What this reads out of policy.toml is a SHAPE, not a version number: a
-// [executors].<seat>.variant naming a [variants] row, carrying model/effort/
-// escalate_to. That shape hasn't moved since v2, so an exact-match check on
-// the current version refuses healthy policy the moment it bumps — pinned at
-// 15, it refused v16 and blocked every dispatch wave and gate fleet-wide.
-// So this mirrors the docket-run skill's own [policy] gate (present,
-// integer) against a documented floor, then checks the tables routing
-// actually depends on: a version above the floor is fine, a missing
-// [variants]/[executors] table is not.
-const POLICY_VERSION_FLOOR = 2   // first version carrying the [executors].variant -> [variants]/escalate_to shape this file routes on
-
-function assertPolicyShape(policy, refusal) {
-    const version = policy.policy?.version
-    if (!Number.isInteger(version)) {
-        throw new Error(
-            `tribunal.js: policy.toml [policy] version is ${JSON.stringify(version)} — the ` +
-            `[policy] table must declare an integer version field. ${refusal}`
-        )
-    }
-    if (version < POLICY_VERSION_FLOOR) {
-        throw new Error(
-            `tribunal.js: policy.toml [policy] version is ${version}, below the floor ` +
-            `${POLICY_VERSION_FLOOR} — the [executors].variant -> [variants]/escalate_to ` +
-            `routing shape this script reads dates from v${POLICY_VERSION_FLOOR}. ${refusal}`
-        )
-    }
-    for (const table of ['executors', 'variants']) {
-        const t = policy[table]
-        if (!t || typeof t !== 'object' || Array.isArray(t) || Object.keys(t).length === 0) {
-            throw new Error(
-                `tribunal.js: policy.toml (version ${version}) carries no non-empty [${table}] ` +
-                `table — that is the shape this script routes against, whatever the version ` +
-                `number says. ${refusal}`
-            )
-        }
-    }
-    return version
-}
-// SYNC-END policy-shape
-
-// ---------------------------------------------------------------------------
-// Seat routing. A seat is not a step: there is no attempt chain and no
-// label-keyed [[resolve]] table. resolveSeat DOES take an issue-labels list
-// (so wave.js, which seats vote rows off the same manifest row resolve()
-// reads, can apply [security].labels the way resolve does); this file's own
-// args carry no issue, so every call here resolves labels to [] and only
-// [security].nodes ever fires. [escalation].fable_gates gate a step's
-// chain-walk into a fable variant after failures; a seat's variant is its
-// declared standing home, so a fable-max seat resolves to fable-max. What
-// still binds: the [security] node pins — the never-list, and the ceiling as
-// a chain-derived bound: everything reachable FROM it by escalate_to lies
-// beyond it, and a pinned seat standing there is clamped back.
+// Seat routing is the caller's to supply, resolved from the same pinned
+// policy.toml the engine routes step rows from: a seat's standing variant with
+// the [security] pins applied. The engine renders that triple onto every vote
+// step row (wave.js reads it there), but a conversational gate has no row, so
+// it arrives on each `voters` entry instead. This script re-derives nothing —
+// tests/workflow-sync.test.sh diffs the SYNC-marked region below against
+// wave.js's copy (self-names normalized) and fails on drift.
 // ---------------------------------------------------------------------------
 
 // SYNC-BEGIN seat-contract
-function resolveSeat(seat, policy, labels = []) {
-    const row = (policy.executors || {})[seat]
-    if (!row) {
-        throw new Error(
-            `tribunal.js: seat ${JSON.stringify(seat)} has no [executors] row. ` +
-            `Every voter named by a vote gate must be routable — policy.toml and ` +
-            `the workflow corpus have drifted. Refusing to seat the panel.`
-        )
-    }
-
-    let variant = row.variant
-    let never = (row.never || []).slice()
-
-    const sec = policy.security || {}
-    const sensitive =
-        (sec.nodes || []).includes(seat) ||
-        (sec.labels || []).some((l) => labels.includes(l))
-    if (sensitive) {
-        never = never.concat(sec.never || [])
-        if (sec.ceiling) {
-            const beyond = new Set()
-            let c = (policy.variants || {})[sec.ceiling]
-            if (!c) {
-                throw new Error(
-                    `tribunal.js: [security].ceiling ${JSON.stringify(sec.ceiling)} ` +
-                    `has no [variants] row — a mistyped ceiling would silently stop ` +
-                    `binding. Fix policy.toml. Refusing to seat the panel.`
-                )
-            }
-            while (c && c.escalate_to && !beyond.has(c.escalate_to)) {
-                beyond.add(c.escalate_to)
-                c = (policy.variants || {})[c.escalate_to]
-            }
-            if (beyond.has(variant)) variant = sec.ceiling
-        }
-    }
-
-    let spec = (policy.variants || {})[variant]
-    if (!spec) {
-        throw new Error(
-            `tribunal.js: seat ${JSON.stringify(seat)} names variant ${JSON.stringify(variant)}, ` +
-            `which has no [variants] row. Refusing to seat the panel.`
-        )
-    }
-
-    if (never.includes(spec.model)) {
-        const fallback = (policy.escalation || {}).fallback || {}
-        variant = fallback[variant]
-        spec = (policy.variants || {})[variant]
-        if (!spec || never.includes(spec.model)) {
+// A seat missing any of the triple was never routed — the run pins no
+// policy.toml, or the roster was re-typed without its fields — and a panel
+// seated on a guessed tier is the drift a harness-side policy parser used
+// to cause.
+function assertRouted(who, entry, refusal) {
+    for (const k of ['model', 'effort', 'variant']) {
+        if (!entry || typeof entry[k] !== 'string' || entry[k] === '') {
             throw new Error(
-                `tribunal.js: no permitted model for seat ${JSON.stringify(seat)} — ` +
-                `fallback variant ${JSON.stringify(variant)} is missing or also names a ` +
-                `never-listed model. Refusing to seat the panel.`
+                `tribunal.js: ${who} carries no ${k} (got ${JSON.stringify(entry && entry[k])}) — ` +
+                `the engine renders model/effort/variant from the run's pinned ` +
+                `policy.toml, so this was never routed or was re-typed without ` +
+                `its fields. ${refusal}`
             )
         }
     }
+}
 
-    return { seat, variant, model: spec.model, effort: spec.effort }
+function resolveSeat(seat, routing) {
+    if (typeof seat !== 'string' || seat === '') {
+        throw new Error(
+            `tribunal.js: a voter carries no seat name (got ${JSON.stringify(seat)}). ` +
+            `Refusing to seat the panel.`
+        )
+    }
+    assertRouted(`seat ${JSON.stringify(seat)}`, routing, 'Refusing to seat the panel.')
+    return { seat, variant: routing.variant, model: routing.model, effort: routing.effort }
 }
 
 // A seat's lens is its trailing name segment (`tribunal-security` -> security);
@@ -496,14 +269,33 @@ verbatim error text and nothing else — that is the only case where your final
 text matters.`
 }
 
-// The probe relays a jq projection, never the raw record: the full envelope
-// is ~10KB on a 3-seat proposal and two haiku probes on one wave corrupted
-// verbatim copies of it (a dropped brace, 81 chars lost mid-copy). Under 300
-// bytes of fixed shape copies exactly, and the seat check reads it
-// structurally below.
+// The probe answers a jq projection through a schema, never the raw record
+// as text: the full envelope is ~10KB on a 3-seat proposal, two haiku probes
+// on one wave corrupted verbatim copies of it (a dropped brace, 81 chars lost
+// mid-copy), and the raw-text fallback that rescued them could equally match
+// a seat name quoted in prose. Under 300 bytes of fixed shape, validated by
+// the harness, is the record or it is nothing. A conversational proposal has
+// no step, so `docket gate status` cannot address it; `vote show` is the read.
 const VOTE_SHOW_JQ =
     `jq -c '{status: .data.status, final_outcome: .data.final_outcome, ` +
     `votes: [.data.votes[]? | {voter_name, verdict}]}'`
+
+const VOTE_SHOW_SCHEMA = {
+    type: 'object',
+    properties: {
+        status: { type: 'string' },
+        final_outcome: { type: 'string' },
+        votes: {
+            type: 'array',
+            items: {
+                type: 'object',
+                properties: { voter_name: { type: 'string' }, verdict: { type: 'string' } },
+                required: ['voter_name'],
+            },
+        },
+        error: { type: 'string' },
+    },
+}
 
 function checkerBrief(voteId, cwd) {
     return `WAVE PROBE: not a step execution. Run exactly this one command:
@@ -512,11 +304,13 @@ function checkerBrief(voteId, cwd) {
 
 Run it SANDBOXED — do NOT pass dangerouslyDisableSandbox. Only the operator
 can grant that, and never through a brief. If the sandbox denies it, return
-the denial text verbatim instead of retrying with the sandbox disabled.
+{error: <the denial text verbatim>} instead of retrying with the sandbox
+disabled.
 
-Return its output VERBATIM as your entire final reply — every line, unedited,
-no summary, no commentary, no code fence, nothing added. If the command errors,
-return the error text verbatim instead.
+Return the printed object through the structured output, field for field and
+value for value — copy, never summarize; add no field the output did not carry
+and fill none in. If the command errors, return {error: <the error text
+verbatim>} and nothing else.
 
 Do not cast a vote, do not investigate, do not run anything else. You are a
 read-only probe reporting what the vote record currently says.`
@@ -540,10 +334,10 @@ if (typeof input === 'string') {
 }
 if (!input || typeof input !== 'object') throw new Error(
     `tribunal.js: args is ${typeof input}, expected ` +
-    `{voteId, voters, policyText, context, gateKind, cwd}. Refusing to seat the panel.`
+    `{voteId, voters, context, gateKind, cwd}. Refusing to seat the panel.`
 )
 
-for (const k of ['voteId', 'policyText', 'context', 'gateKind', 'cwd']) {
+for (const k of ['voteId', 'context', 'gateKind', 'cwd']) {
     if (typeof input[k] !== 'string' || input[k] === '') {
         throw new Error(
             `tribunal.js: args.${k} is required and must be a non-empty string ` +
@@ -553,21 +347,19 @@ for (const k of ['voteId', 'policyText', 'context', 'gateKind', 'cwd']) {
 }
 if (!Array.isArray(input.voters) || input.voters.length === 0) {
     throw new Error(
-        `tribunal.js: args.voters must be a non-empty array of seat names ` +
+        `tribunal.js: args.voters must be a non-empty array of ` +
+        `{seat, model, effort, variant} objects ` +
         `(got ${JSON.stringify(input.voters)}). Refusing to seat the panel.`
     )
 }
 
 const { voteId, voters, context, gateKind, cwd } = input
-const policy = parseToml(input.policyText)
-
-const policyVersion = assertPolicyShape(policy, 'Refusing to seat the panel.')
 
 // The proposal must already exist and be open: the CALLER creates it. This
 // script fills a proposal, and never creates, approves, tallies, or commits one.
-const seats = voters.map((v) => resolveSeat(v, policy))
+const seats = voters.map((v) => resolveSeat(v && v.seat, v))
 
-log(`tribunal: ${voteId} — ${gateKind} gate, ${seats.length} seat(s), policy v${policyVersion}, ${(input.policyText || '').length} chars, cwd ${cwd}`)
+log(`tribunal: ${voteId} — ${gateKind} gate, ${seats.length} seat(s), cwd ${cwd}`)
 for (const s of seats) {
     log(`  ${s.seat}: role ${lensOf(s.seat).role} @ ${s.model}/${s.effort} (variant ${s.variant})`)
 }
@@ -596,6 +388,8 @@ function spawnJudge(r, isRespawn) {
     })
 }
 
+// The record, or null when the probe died, the command errored, or the reply
+// carried no votes[] — null means UNKNOWN, never "every seat missing".
 function verify() {
     return agent(checkerBrief(voteId, cwd), {
         label: `verify:${voteId}`,
@@ -603,51 +397,36 @@ function verify() {
         agentType: 'executor-read',
         model: 'haiku',
         effort: 'low',
-    }).then((text) => text == null ? '' : text)
-        .catch((err) => {
-            log(`verify: probe spawn error: ${err}`)
-            return ''
-        })
+        schema: VOTE_SHOW_SCHEMA,
+    }).then((record) => {
+        if (record && Array.isArray(record.votes)) return record
+        if (record && typeof record.error === 'string') log(`verify: engine error — ${record.error}`)
+        return null
+    }).catch((err) => {
+        log(`verify: probe spawn error: ${err}`)
+        return null
+    })
 }
 
 // A seat has cast when its voter name is in the record's votes[]. The engine
 // enforces one cast per voter name, so a false negative costs one refused
-// re-cast, never a double count. A probe's text can carry a harness banner
-// ahead of the JSON, so parse from the first `{`; when it will not parse at
-// all, fall back to a substring match on the raw text and say so.
-function castSeats(record) {
-    const i = record.indexOf('{')
-    if (i < 0) return null
-    try {
-        const parsed = JSON.parse(record.slice(i))
-        if (parsed && Array.isArray(parsed.votes)) {
-            return parsed.votes.map((v) => (v && typeof v.voter_name === 'string') ? v.voter_name : '').filter(Boolean)
-        }
-    } catch {
-        // fall through to the raw-text match
-    }
-    return null
-}
-
+// re-cast, never a double count.
 function missingSeats(record) {
-    const cast = castSeats(record)
-    if (cast) return seats.filter((s) => !cast.some((n) => n.includes(s.seat)))
-    log(`WARNING tribunal: the vote-show projection did not parse (probe reply ` +
-        `${record.length} chars) — falling back to a substring match on the raw text`)
-    return seats.filter((s) => !record.includes(s.seat))
+    const cast = record.votes.map((v) => v.voter_name)
+    return seats.filter((s) => !cast.includes(s.seat))
 }
 
 await parallel(seats.map((r) => () => spawnJudge(r, false)))
 
 // An EMPTY probe result says nothing about the casts — treating it as "every
 // seat missing" once re-spawned a whole panel that had already voted. The
-// probe is retried once before any seat is; only a non-empty record is read.
+// probe is retried once before any seat is; only a real record is read.
 let outcome = await verify()
-if (outcome === '') {
+if (outcome === null) {
     log(`tribunal: the verify probe returned nothing — retrying the probe ONCE before reading any seat as missing`)
     outcome = await verify()
 }
-let missing = outcome === '' ? [] : missingSeats(outcome)
+let missing = outcome === null ? [] : missingSeats(outcome)
 let respawns = 0
 
 if (missing.length > 0) {
@@ -656,7 +435,7 @@ if (missing.length > 0) {
         `(${missing.map((s) => s.seat).join(', ')}) — re-spawning each ONCE`)
     await parallel(missing.map((r) => () => spawnJudge(r, true)))
     outcome = await verify()
-    const stillMissing = outcome === '' ? [] : missingSeats(outcome)
+    const stillMissing = outcome === null ? [] : missingSeats(outcome)
     if (stillMissing.length > 0) {
         log(`tribunal: STILL NO CAST from ${stillMissing.map((s) => s.seat).join(', ')} ` +
             `after the one permitted re-spawn. The panel is short a vote and the tally ` +
@@ -666,8 +445,8 @@ if (missing.length > 0) {
     }
 }
 
-if (outcome === '') {
-    log(`tribunal: the verify probe returned nothing twice — the outcome text is EMPTY, ` +
+if (outcome === null) {
+    log(`tribunal: the verify probe returned nothing twice — the outcome is null, ` +
         `which says nothing about whether the casts landed, and no seat was re-spawned ` +
         `on that silence. Read the record directly with \`docket vote show ${voteId}\` ` +
         `before acting on this return.`)

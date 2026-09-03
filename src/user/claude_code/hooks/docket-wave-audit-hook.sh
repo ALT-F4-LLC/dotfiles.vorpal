@@ -26,62 +26,8 @@
 
 set -uo pipefail
 
-# The harness hands PostToolUse hooks the tool call as JSON on stdin. Drain it
-# once up front — the policyText check below reads it, and it must be consumed
-# before any subprocess could swallow it.
-HOOK_INPUT=$(cat 2>/dev/null || true)
-
-# --- policyText integrity (advisory) ---
-# Conductors hand-carry policy.toml into Workflow launches as args.policyText,
-# and models have repeatedly emitted a condensed rendering straight through an
-# explicit byte-for-byte contract line — re-reading the file immediately
-# before the launch did not stop it (measured on two consecutive runs). This
-# hook is the one seat that sees both sides at launch time, so the comparison
-# lives here as code. Advisory like everything else in this file: warn loudly,
-# never block. Launches whose args carry no policyText (other workflows) skip.
-if [ -n "$HOOK_INPUT" ] && [ -f "$HOME/.docket/config/policy.toml" ] \
-   && command -v jq >/dev/null 2>&1; then
-  GOT=$(printf '%s' "$HOOK_INPUT" | jq -r '
-    .tool_input.args
-    | if type == "string" then (try fromjson catch {}) else (. // {}) end
-    | .policyText // "" | length' 2>/dev/null)
-  # A wave launch now legitimately carries the fixed sentinel
-  # `__USE_PINNED_POLICY__` instead of the file — docket-policy-guard-hook.sh
-  # (PreToolUse) substitutes the canonical bytes via updatedInput before the
-  # tool runs. If this PostToolUse hook ever sees the PRE-substitution args
-  # (harness ordering quirk) the sentinel is 25 chars against a ~28k-char
-  # file — exactly the alarm-fatigue false positive this hook's own history
-  # warns against — so treat the sentinel, and only the sentinel, as clean
-  # rather than condensed.
-  IS_SENTINEL=$(printf '%s' "$HOOK_INPUT" | jq -r '
-    .tool_input.args
-    | if type == "string" then (try fromjson catch {}) else (. // {}) end
-    | .policyText // "" | if . == "__USE_PINNED_POLICY__" then "yes" else "no" end' 2>/dev/null)
-  if [ "$IS_SENTINEL" = "yes" ]; then
-    GOT=""
-  fi
-  if [ -n "$GOT" ] && [ "$GOT" -gt 0 ] 2>/dev/null; then
-    # Measure the file with jq too, so BOTH sides count Unicode codepoints:
-    # `wc -m` counts bytes under a non-UTF-8 locale, and policy.toml carries
-    # multi-byte chars (20932 bytes vs 20834 chars today), which would make
-    # the loud message below fire on every clean launch in a C-locale hook
-    # environment — recreating the exact alarm fatigue this block kills
-    # (a locale-counting false alarm a prior security review had flagged).
-    WANT=$(jq -Rs 'length' < "$HOME/.docket/config/policy.toml" 2>/dev/null)
-    # $(cat file) strips the trailing newline, so a byte-for-byte launch
-    # legitimately arrives one char short. Warning on that fired on every
-    # CLEAN launch (19+ false positives across one fleet), and
-    # the noise trained conductors to ignore the REAL condensation warnings
-    # in the same pile (several real governance panels and waves in that same
-    # fleet). Exact and exact-minus-one are silent; anything else
-    # says so loudly, with numbers.
-    if [ -n "$WANT" ] && [ "$GOT" -ne "$WANT" ] 2>/dev/null && [ "$GOT" -ne "$((WANT - 1))" ]; then
-      DELTA=$((WANT - GOT)); [ "$DELTA" -lt 0 ] && DELTA=$((0 - DELTA))
-      PCT=$((DELTA * 100 / WANT))
-      echo "wave-audit: POLICY CONDENSED — this launch carried policyText of $GOT chars but ~/.docket/config/policy.toml is $WANT chars (off by $DELTA, ~$PCT%). The wave or panel just launched is routing/judging on an INCOMPLETE policy: TaskStop it, re-cat the file, and relaunch byte-for-byte. This defect class has previously reached live governance votes before being caught." >&2
-    fi
-  fi
-fi
+# Drain the harness's JSON on stdin so `guard record` below cannot inherit it.
+cat >/dev/null 2>&1 || true
 
 command -v docket >/dev/null 2>&1 || exit 0
 
@@ -107,8 +53,8 @@ if [ "$?" -eq 2 ]; then
     # AN OPEN DISPATCH IS SILENT. Workflow returns at wave LAUNCH, and a wave is
     # launched against an open dispatch BY DEFINITION — so this branch fired on
     # every legitimate wave launch (three for three on one measured run) while
-    # telling the conductor nothing it could act on. That is the same alarm
-    # fatigue the policyText block above was rewritten to kill, and it made the
+    # telling the conductor nothing it could act on. That alarm fatigue trains
+    # conductors to ignore the real warnings in the same pile, and it made the
     # docket-run skill's "wave-audit stays silent on a clean launch" false.
     *'has an open dispatch:'*) : ;;
     # EVERYTHING ELSE IS SURFACED, WITH THE GUARD'S OWN REASON. A standing

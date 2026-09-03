@@ -1,5 +1,5 @@
 [policy]
-version = 21
+version = 22
 
 [variants]
 fable-high = { model = "fable", effort = "high" }
@@ -175,6 +175,36 @@ nodes = ["judge-security", "threat-model", "tdd-author-security", "spec-author-s
 reason = "Fable's safety classifiers cover more categories than Opus 5's cyber-only set and flag security review by its nature; Claude Code then re-runs the request on the fallback model (cyber → Opus 4.8), so a Fable seat here pays Fable's rate for an Opus 4.8 run and the ledger credits a model that never ran. Name Opus up front. Residual: Opus 5 itself re-runs cyber-flagged requests on Opus 4.8; only the model_resolved metadata each executor records catches that hop."
 
 [escalation]
+# DOT-1266 (RUN-80, 2026-09-03): on_failure's attempt-keyed hop does not
+# distinguish a reaped attempt from a genuinely FAILED one. RUN-80's
+# DISPATCH-400 was killed by a session usage limit; the engine reaped 10
+# leases (not quality failures), and on re-dispatch those steps ran at
+# attempt 1 with on_failure walking them straight to [escalation.fallback]
+# on the very next miss — e.g. judge-correctness/judge-security opus-high ->
+# fable-high -> (never fable, security-change) -> opus-xhigh, on rows that
+# had done nothing wrong. The xhigh tier bought nothing there: STEP-3668 ran
+# 17.9k output tokens, STEP-3670 43 tool calls, for a kill that was pure
+# infrastructure, not a quality signal.
+#
+# DKT-1279 (schema v27, docket engine) now adds `prior_attempt_end` —
+# "reaped" | "failed", omitempty — to every next/dispatch-open/step-show/
+# step-list row, so a hop-worthy failure and a lease reap are finally
+# distinguishable at the SAME row this escalation logic already reads. As of
+# this comment the engine binary this repo installs has not yet picked up
+# v27 (feature/engine-improvements, commits 4942039/77c9a5c, not yet
+# pushed/installed via `just activate`), so on_failure/on_round still cannot
+# read the field and still hop on a reaped attempt exactly as RUN-80 did.
+# Once v27 is installed, teach the escalation walk to skip the hop (or reset
+# to base tier) for an attempt whose prior_attempt_end == "reaped" — that is
+# an engine-side change to the walk itself, not a value this TOML can
+# express, so it is tracked separately from this comment, not inline here.
+#
+# Until then: an acknowledged reap that gets re-dispatched still re-runs ONE
+# TIER UP under on_failure's ordinary walk, same as any other retry —
+# acknowledging a reap (docket-run SKILL.md's ack-reap ruling) buys that
+# tier cost knowingly, not a free re-run at the standing tier. docket-retro
+# should weigh in on whether the shipped default should change once v27's
+# distinction is actually available to route on.
 on_failure = "one-hop"
 # Round-based escalation. A fix-loop round is a FRESH step id —
 # `docket step resolve --as fix-round` mints fix@N+1 at attempt 0 — so

@@ -94,6 +94,14 @@ and `ready`, `checks`, and `close` neither push nor diff.
    covers the PR number exactly as it covers the repo: a `gh pr merge` with
    no number merges whatever gh guesses from the checkout.
 
+   **Mode selection's intent-hint resolution is the one other caller of this
+   exact query**, run before any mode is chosen rather than as this
+   precondition. There, zero matches resolves the hint to `open` instead of
+   refusing — an unrecognized word with no open PR yet is exactly the case
+   `open` handles — and a mode reached that way never runs this precondition
+   a second time. Every other caller of precondition 5 (every mode below
+   that lists it) keeps the refusal above unchanged.
+
    **An explicitly given number is not trusted to be this branch's PR.** Read
    `headRefName` for it (`gh pr view <pr-number> -R <owner>/<repo> --json
    headRefName`, folded into precondition 6's read where that precondition
@@ -181,6 +189,11 @@ their **exit status** and not only their output:
 git rev-list --count origin/<base>..HEAD
 git log --format=%H --name-only --no-renames \
   --diff-merges=first-parent --diff-filter=AM -z origin/<base>..HEAD
+# NUL-split the second command's output. Each sha field is followed by a
+# field starting with a literal newline glued to that commit's first path
+# (<sha>\0\n<first-path>\0<second-path>\0<next-sha>\0\n...) — strip exactly
+# one leading \n from any field that starts with one before matching it
+# against commit's .env*/*.pem guard; no other field ever starts with \n.
 ```
 
 The first decides the range. A non-zero exit refuses: an unresolvable base
@@ -195,10 +208,10 @@ prints nothing and exits 0 when the enumeration failed, a failed scan
 reported as a clean one, which is the exact fail-open this section exists
 to rule out.
 
-`git log -z` emits, per commit, the `%H` sha followed by that commit's
-paths, so every hit is nameable with its commit sha — which the refusal rule
-here and the Report section below both require. The rest of the shape is
-load-bearing too:
+`git log -z` emits, per commit, the `%H` sha followed by a literal newline
+and then that commit's paths, so every hit is nameable with its commit sha —
+which the refusal rule here and the Report section below both require. The
+rest of the shape is load-bearing too:
 
 - **Commits, not trees.** A credential added in one commit and deleted in a
   later one is invisible to a two-tree `git diff origin/<base>...HEAD` —
@@ -216,6 +229,19 @@ load-bearing too:
 - **`-z`.** A path containing a tab, a newline, or a non-ASCII byte comes
   back quoted and escaped otherwise, and a glob run against the quoted form
   names no real file.
+- **The newline before each commit's `%H` and its first path is not a
+  separator; strip it before matching.** Git's record format puts a newline
+  between the `%H` line and the diff listing that follows it, and with `-z`
+  that byte lands glued to the first NUL-delimited field of each commit's
+  own path list: `<sha>\0\n<first-path>\0<second-path>\0…<next-sha>\0\n…` —
+  never on any later path in the same commit, and never on a sha field.
+  Measured here on a throwaway commit whose first tree-ordered path was
+  `.env.local`: `od -c` on this exact command's output showed
+  `…\0 \n . e n v . l o c a l \0…`. Comparing `commit`'s `.env*`/`*.pem`
+  guard against that field unstripped never matches — `\n.env.local` does
+  not start with `.env` — so before applying the guard, strip exactly one
+  leading `\n` from any NUL-delimited field that starts with one; no other
+  field in this command's output ever does.
 - **From the repository toplevel, with no pathspec.** A `-- .` scopes the
   walk to the current directory, so an invocation from a subdirectory misses
   a `.env` at the root.
@@ -279,6 +305,17 @@ mechanism, and nothing else**: `gh api` with file-valued fields. This is the
 single authoritative copy of the publish command; `open` and `update` point
 here rather than restating it.
 
+**This rule covers every byte this skill publishes, not only the title and
+body.** `review`'s thread replies and `close`'s comment are generated text
+too — the former drafted from third-party, untrusted comment bodies, which
+makes it the higher-value target of the two — and each names its own
+file-valued `gh api` call at its own step below, built the same way: write
+the text with the file-write tool, verify the readback, run the **Content
+denylist**, then publish with `-F 'body=@<file>'`. `gh pr comment … --body
+"<text>"` is never used anywhere in this skill: `--body` there is a shell
+argument, and a generated value landing in it is exactly the crossing this
+rule exists to close.
+
 ```
 gh api --method POST repos/<owner>/<repo>/pulls \
   -F 'title=@<title-file>' -F 'body=@<body-file>' \
@@ -315,15 +352,39 @@ wrapper therefore removes the ask instead of preserving it. (`xargs -0 -a
 <file>` also cannot run here at all: `-a` is a GNU flag, and BSD `xargs` —
 the only one on this machine — exits 1 on it.)
 
-**Write both files with the file-write tool, never with a shell command.**
-The writer is the one crossing every control below sits downstream of: a
-shell writer puts the generated text back into command source, where an
-apostrophe in a commit subject closes the quote and a `$(...)` after it runs
-while the command line is parsed — before the file exists, so the denylist
-scan and the title validation inspect a file that looks entirely ordinary.
-No quoting rule repairs that; only a channel that never hands the bytes to a
-shell does. The file-write tool and `Bash` resolve the same path, so the
-scratch directory below works for both.
+**The ban is on the crossing, not the tool: no generated byte ever appears
+in command TEXT.** A shell writer that puts the generated text into command
+source — an argument, a heredoc body, a substitution — hands it to the
+shell to parse as code: an apostrophe in a commit subject closes the quote
+and a `$(...)` after it runs while the command line is parsed, before the
+file exists, so the denylist scan and the title validation inspect a file
+that looks entirely ordinary. No quoting rule repairs that; only a channel
+that never hands the bytes to argv does. **Write both title and body files
+with the file-write tool** for exactly that reason.
+
+This does not ban every shell redirect. The strip pass below (**Content
+denylist**) writes the published text with `/usr/bin/grep -ivE -f
+<strip-list> <text-file> > <stripped-file>`, and that redirect is permitted:
+the generated bytes travel from `grep`'s stdout into the redirect target,
+never through command text and never through argv, which is the crossing
+this rule exists to close — a shell REDIRECT of one file's bytes to another
+is not the same operation as interpolating those bytes into a command
+string.
+
+**Do not assume the file-write tool and `Bash` resolve the scratch directory
+to the same physical path.** Under the sandbox this harness runs, that
+equality does not hold everywhere — `executor-write.md` and `wave.js` both
+carry it as a standing caveat for the isolated executors they address, and
+this skill's own `fork` context is not proven to share their sandbox
+profile. So after writing a file with the file-write tool, verify `Bash` can
+read it back before any command depends on it: read the file's byte count
+back through `Bash` (`wc -c <path>`) and compare it against what was
+written. If the file-write tool cannot write, or `Bash`'s readback comes back
+empty, errors, or does not match, **refuse the publish and report** —
+never fall back to a shell writer to route around it; that is exactly the
+crossing **Explicitly forbidden** below rules out. When the readback
+confirms the same bytes, the scratch directory works for both, verified for
+this invocation rather than assumed for every one.
 
 **Both files are plain text**: no trailing
 newline, and no NUL byte anywhere in them. `gh api` sends a file's bytes
@@ -397,6 +458,16 @@ after three is refused and reported rather than published partially
 stripped — a body engineered so stripping creates a new match must never
 leak through. A strip that empties the text (a title that was nothing but a
 trailer) refuses too: there is nothing left to publish.
+
+**The strip pass's output is the file that gets validated and published.**
+Nothing regenerates either file after this point: the refuse-list pass above
+runs on the stripped file, not the original, and that same stripped file —
+byte-identical to what the refuse-list scan just cleared — is what `-F
+'title=@<file>'` / `-F 'body=@<file>'`, a thread reply, or a close comment
+then sends. So the scan-what-you-send rule below ("never regenerate either
+file after the scan") is never read as forbidding the strip pass itself: the
+strip pass is what PRODUCES the file that rule protects, run once, before
+that file is scanned and passed on unchanged.
 
 **Refuse list** — everything else, anywhere on a line, run once on the
 stripped text.
@@ -492,11 +563,32 @@ The invocation's first word selects the mode: `open`, `ready`, `update`,
 `open`/`update`, the way `commit` treats its own argument — it never
 silently maps to `merge` or `close`, which fire only on their exact words.
 
-**The mode is decided before any precondition runs**, because the
-preconditions a mode needs depend on which mode it is. An intent hint
-resolves to `update` when the head branch already has an open PR and to
-`open` when it has none, so the invocation that used to open a PR still
-opens one instead of refusing at precondition 5's zero-match rule.
+**An explicit mode word needs no precondition to be selected** — it names
+its own mode outright, and that mode's own step 1 runs whichever
+preconditions it lists, exactly as written below.
+
+**An intent hint cannot be resolved that cheaply**, because resolving it
+means asking whether the head branch already has an open PR — precondition
+5's own query — which needs `<owner>/<repo>` resolved first (precondition 4)
+and a real head branch to ask about (precondition 3). So on an intent hint,
+and only then: run preconditions 1-4, then run precondition 5's `gh pr list
+-R <owner>/<repo> --head <head-branch> --state open --json number` query
+once. Zero matches resolves the hint to `open`; exactly one resolves it to
+`update`, carrying that match forward as precondition 5's already-resolved
+value — the mode this reaches does not run preconditions 1-5 again, and
+this resolution is the only place that query runs. Two or more matches is
+precondition 5's own refusal, reached here rather than skipped.
+
+An errored read anywhere in this resolution — the repo read, the branch
+read, or the `gh pr list` query itself — is refused exactly as the
+preconditions rule above requires (an errored read is refused identically to
+a negative one): it never resolves to `open`, because a hint that could not
+actually be checked is not evidence the branch has no PR.
+
+No `gh pr` call anywhere in this file, including the one this resolution
+runs, executes before precondition 4 has resolved `<owner>/<repo>` — every
+`gh pr` invocation in this skill carries that resolved value as an explicit
+`-R <owner>/<repo>`.
 
 ## open (default)
 
@@ -622,8 +714,23 @@ opens one instead of refusing at precondition 5's zero-match rule.
      scan** above, then push (`git push -u origin <head-branch>`, no force).
      This is the push that publishes comment-derived commits, so the scan
      matters here most.
-   - Reply on each addressed thread with what changed (through the content
-     denylist first), then resolve it.
+   - Reply on each addressed thread with what changed. Write the reply text
+     with the file-write tool to its own scratch file, verify the readback
+     (**Title and body**'s rule, same failure branch), run it through the
+     **Content denylist**, then publish:
+
+     ```
+     gh api --method POST repos/<owner>/<repo>/pulls/<pr-number>/comments/<comment-id>/replies \
+       -F 'body=@<reply-file>'
+     ```
+
+     `<comment-id>` is the addressed thread's own review-comment id from
+     step 2's `reviewThreads` read, and `<pr-number>` is precondition 5's
+     resolved value; both are required on this endpoint. Never `gh pr
+     comment`, whose `--body` is a shell argument. Then resolve the thread
+     with the `resolveReviewThread` GraphQL mutation, over the same `gh api
+     graphql` connection step 2 already used to read it — a resolution
+     carries no generated text, so it needs no file and no denylist run.
    - A comment declined for any other reason is answered in the thread with
      why, and left unresolved.
 4. Re-request review (`gh pr edit <pr-number> -R <owner>/<repo>
@@ -646,17 +753,26 @@ opens one instead of refusing at precondition 5's zero-match rule.
    its log:
 
    ```
-   gh run view <run-id> -R <owner>/<repo> --log-failed > <log-file>
-   echo $?
+   gh run view <run-id> -R <owner>/<repo> --log-failed > <log-file> || echo "log unavailable (gh exit $?)"
+   ```
+
+   Capture and disposition are one command — `$?` is read inside the same
+   shell invocation that ran `gh run view`, not a later one, so it is never
+   the cross-shell `echo $?` this used to be. If that command's own output
+   is the `log unavailable (gh exit N)` line, report exactly that for this
+   check and **stop — do not run the next command**; the per-check table
+   from step 3 still carries the failure either way, so a missing log costs
+   a diagnostic and never a verdict. Otherwise (the command produced no
+   output, per *Command shapes* above — its exit status decides, never its
+   output alone), run the tail as its own, separate command:
+
+   ```
    tail -n 50 <log-file>
    ```
 
-   Three commands, run separately and in this order, per *Command shapes*
-   above: a 404, expired, purged, or permission-denied log otherwise reads
-   exactly like a genuinely empty one. A non-zero status reports `log
-   unavailable (gh exit N)` for that check and skips the `tail` — the
-   per-check table from step 3 still carries the failure either way, so a
-   missing log costs a diagnostic and never a verdict.
+   A 404, expired, purged, or permission-denied log otherwise reads exactly
+   like a genuinely empty one, which is what keeping capture, disposition,
+   and tail as one unconditional block would still do.
 
    `<log-file>` is a file in **this mode's own** `mktemp -d` directory (mode
    `0700`, single-use, per invocation) — not the publish scratch directory
@@ -725,14 +841,29 @@ plausible the context makes it look.
      `merge` again. The refusal states both shas and that instruction, so it
      names a way out rather than looping.
    - `mergeable == MERGEABLE`.
-   - `mergeStateStatus == CLEAN`, with exactly one exception: when the
-     invocation said `auto`, a `BLOCKED` or `UNSTABLE` whose **only** cause
-     is a check that has not concluded is accepted here and handed to step 3,
-     which owns the pending rule — this is the carve-out that makes step 3's
-     `auto` path reachable rather than dead. `BEHIND`, `DIRTY`, and `UNKNOWN`
-     refuse unconditionally, as do `BLOCKED` and `UNSTABLE` from any other
-     cause (a failed check, a missing approval, an unsatisfied protection
-     rule). Every refusal names the status in the report.
+   - `mergeStateStatus == CLEAN`, with exactly one exception, and this
+     step's single read (`isDraft,mergeable,mergeStateStatus,reviewDecision,
+     statusCheckRollup,headRefOid,baseRefName`) cannot by itself tell a
+     pending-required-check `BLOCKED`/`UNSTABLE` apart from one caused by a
+     failed check, a missing approval, or an unsatisfied protection rule —
+     both surface the same status. So when the invocation said `auto` and
+     `mergeStateStatus` is `BLOCKED` or `UNSTABLE`, read `gh api
+     repos/<owner>/<repo>/branches/<base>/protection -R <owner>/<repo>` (the
+     branch-protection rule this same question already needs) and accept the
+     PR here — handed to step 3, which owns the pending rule — **only when**
+     that read confirms every requirement the protection rule states is
+     independently satisfied except a required status check still pending:
+     every required context is either concluded `SUCCESS`/`NEUTRAL`/
+     `SKIPPED` in `statusCheckRollup` or not yet concluded — none failed,
+     none missing — and every non-check requirement the rule states
+     (required reviews, and any other rule it names) is met by this step's
+     own fields. This is the carve-out that makes step 3's `auto` path
+     reachable rather than dead. Refuse unconditionally, whatever the
+     invocation says: `BEHIND`, `DIRTY`, `UNKNOWN`; a protection read that
+     errors, or names no rule for `<base>`; and a `BLOCKED`/`UNSTABLE` the
+     protection read does not affirmatively confirm this way — an
+     undeterminable cause refuses rather than guesses. Every refusal names
+     the status in the report.
    - The check list is **non-empty**, and no check has failed: every check
      that has concluded concluded with `SUCCESS`, `NEUTRAL`, or `SKIPPED`.
      An **empty** check list refuses (vacuously "all concluded" is not
@@ -824,8 +955,20 @@ other mode.
 
 1. Run preconditions 1-5. This mode neither pushes nor diffs, so it does not
    read a base.
-2. `gh pr close <pr-number> -R <owner>/<repo>`, adding a comment (through
-   the content denylist) only when the invocation gives a reason.
+2. `gh pr close <pr-number> -R <owner>/<repo>`, adding a comment only when
+   the invocation gives a reason: write the comment text with the
+   file-write tool to its own scratch file, verify the readback (**Title
+   and body**'s rule), run it through the **Content denylist**, then
+   publish:
+
+   ```
+   gh api --method POST repos/<owner>/<repo>/issues/<pr-number>/comments \
+     -F 'body=@<comment-file>'
+   ```
+
+   The issue-comments endpoint — a PR is an issue for this API. Never `gh pr
+   comment` or `gh pr close --comment "<text>"`, whose text is a shell
+   argument.
 3. Never delete the branch unless the invocation explicitly says so.
 4. Report the PR closed, the comment (if any), and whether the branch was
    deleted.

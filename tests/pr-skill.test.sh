@@ -26,6 +26,14 @@
 #   (c)  refusal  delete src/user/claude_code/skills/** from the review-mode
 #                 refusal list (it still occurs elsewhere in the file)
 #   (d)  title    reintroduce the forbidden literal --title "<title>"
+#   (e)  status   reintroduce a standalone "echo $?" line in the checks
+#                 step 4 log-fetch block (DOT-1130)
+#   (f)  tail     rejoin the checks step 4 capture and tail commands into
+#                 one fenced block with no conditional between them
+#                 (DOT-1131)
+#   (g)  reply    rewrite the review-thread-reply or close-comment
+#                 instruction to "gh pr comment <n> ... --body \"$text\""
+#                 (DOT-1149)
 #
 # A missing input file fails; it never skips green.
 
@@ -50,7 +58,7 @@ bad() { echo "FAIL $1"; fail=1; }
 # Every fenced block body, one file per block, continuation lines joined so a
 # command that wraps across physical lines is asserted on as one command.
 awk -v out="$WORK" '
-    /^```/ { inside = !inside; if (inside) { n++ }; next }
+    /^[[:space:]]*```/ { inside = !inside; if (inside) { n++ }; next }
     inside { print > (out "/block." n) }
 ' "$SKILL"
 
@@ -173,6 +181,66 @@ if grep -qF -- '--title "<title>"' "$SKILL"; then
     bad "forbidden form: --title \"<title>\" appears in ${SKILL}"
 else
     ok "forbidden form: --title \"<title>\" appears nowhere"
+fi
+
+# (e) checks step 4 never reads $? in a separate shell from the one that
+# ran gh: no fenced block contains a standalone "echo $?" line.
+status_hits=0
+for b in "$WORK"/block.*.joined; do
+    if grep -qxE '[[:space:]]*echo[[:space:]]+\$\?[[:space:]]*' "$b"; then
+        bad "checks step 4: a fenced block contains a standalone 'echo \$?' line: $b"
+        status_hits=1
+    fi
+done
+[ "$status_hits" -eq 0 ] && ok "checks step 4: no fenced block reads \$? on its own line"
+
+# (f) checks step 4's log capture and its tail are never the same fenced
+# block: a reader copying one fence must not be able to tail an unfetched
+# log past a failed capture with no conditional in between.
+if capture=$(find_block 'gh run view <run-id>'); then
+    ok "checks step 4: gh run view <run-id> capture block found"
+    if grep -qF -- 'tail -n 50' "$capture"; then
+        bad "checks step 4: the gh run view capture and 'tail -n 50' share one fenced block with no conditional between them"
+    else
+        ok "checks step 4: gh run view capture and tail are separate fenced blocks"
+    fi
+else
+    bad "checks step 4: no fenced block runs gh run view <run-id>"
+fi
+if ! find_block 'tail -n 50 <log-file>' >/dev/null; then
+    bad "checks step 4: no fenced block runs tail -n 50 <log-file>"
+else
+    ok "checks step 4: tail -n 50 <log-file> is its own fenced block"
+fi
+
+# (g) review-thread replies and close comments publish through the same
+# file-field gh api mechanism as the title/body, never gh pr comment.
+if reply=$(find_block 'pulls/<pr-number>/comments/<comment-id>/replies'); then
+    ok "review reply block: gh api ... pulls/<pr-number>/comments/<comment-id>/replies"
+    if grep -qF -- "-F 'body=@" "$reply"; then
+        ok "review reply block: carries -F 'body=@"
+    else
+        bad "review reply block: missing -F 'body=@ — reply text must reach gh as a file"
+    fi
+else
+    bad "review reply block: no fenced block runs gh api ... pulls/<pr-number>/comments/<comment-id>/replies"
+fi
+
+if close_comment=$(find_block 'issues/<pr-number>/comments'); then
+    ok "close comment block: gh api ... issues/<pr-number>/comments"
+    if grep -qF -- "-F 'body=@" "$close_comment"; then
+        ok "close comment block: carries -F 'body=@"
+    else
+        bad "close comment block: missing -F 'body=@ — comment text must reach gh as a file"
+    fi
+else
+    bad "close comment block: no fenced block runs gh api ... issues/<pr-number>/comments"
+fi
+
+if grep -qE 'gh pr comment [^\n]*--body "' "$SKILL"; then
+    bad "forbidden form: gh pr comment ... --body \"<text>\" appears in ${SKILL}"
+else
+    ok "forbidden form: gh pr comment ... --body \"<text>\" appears nowhere"
 fi
 
 if [ "$fail" -ne 0 ]; then

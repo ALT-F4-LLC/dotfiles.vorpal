@@ -256,10 +256,11 @@ scratchpad, was still registered in the shared repo at close-out — the
 scratchpad was then cleaned, leaving a prunable-but-dangling registration the
 run never named.
 
-One roster entry class fails the probe by construction: an engine ACTION the
-engine feeds a JSON bundle on stdin (`doc-record` here) gets `/dev/null` from
-the probe and exits non-zero. It is a disposition to record once like any other, not a
-finding to re-derive per run. A gate that fails on clean HEAD is not caused
+One roster entry class is never run: an engine ACTION the engine feeds a
+JSON bundle on stdin (`doc-record` here) can only fail a stdin-less probe, so
+the workflow skips every entry the installed workflow TOMLs declare as
+`action = "<name>"`, names each in `skipped`, and leaves it out of `gates`.
+A skipped action is not a finding and needs no disposition. A gate that fails on clean HEAD is not caused
 by this run's changes — commonly ENVIRONMENTAL, an untracked toolchain that
 never materializes in a fresh worktree (a direnv-provisioned
 `.env/bin/protoc` cost one run five parks and eleven override rituals before

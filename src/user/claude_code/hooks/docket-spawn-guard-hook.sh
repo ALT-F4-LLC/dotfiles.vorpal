@@ -2,31 +2,41 @@
 
 # spawn-guard (03 §5, TDD §4.5) — PreToolUse: Workflow/Agent.
 #
-# One-line shim over `docket guard spawn`. The predicate is the engine's: the
-# proposed rows must byte-match the open dispatch and no write-class reap may be
-# unacknowledged. This file contains no policy, no branching on run content, and
-# no state (AC-4.1). The tribunal path below decides nothing either — it reads
-# one id out of the harness's tool_input and hands it to the engine, which owns
-# the verdict. Behavior is pinned by tests/docket-spawn-guard-hook.test.sh.
+# Shim over `docket guard spawn --active`. The predicate is the engine's: no
+# write-class reap may be unacknowledged on any active run of the project.
+# This file contains no policy, no branching on run content, and no state
+# (AC-4.1). The tribunal path below decides nothing either — it reads one id
+# out of the harness's tool_input and hands it, with the run the engine itself
+# named, back to the engine, which owns the verdict. Behavior is pinned by
+# tests/docket-spawn-guard-hook.test.sh.
 #
 # Exit 0 allow / exit 2 deny with the engine's reason on stderr (engine-spec §2).
 # PreToolUse honors exit 2 as a pre-permission hard stop, which is why the guard
 # family's native exit contract is passed straight through rather than being
 # translated into a permissionDecision envelope.
 #
-# NO --rows, DELIBERATELY. The engine's documented semantics: with no open
-# dispatch and no --rows the row half is "vacuously satisfied and the reap half
-# still answers", so a relay batching its own way still gets the reap check.
-# The hook cannot supply rows honestly -- it sees the harness's Workflow/Agent
-# tool_input, not wave.js's canonical manifest bytes, and a re-serialization
-# from tool_input would byte-mismatch a CORRECT dispatch and deny every legit
-# spawn. Row matching is wave.js's to assert at the point it holds the real
-# bytes; the hook's job here is the reap half plus the no-dispatch case.
+# --active, NOT --run. An earlier version resolved "the active run" as
+# `runs[0]` of `docket run status --active`, which is the newest run, so with
+# two concurrent active runs the older run's reap hold went unasked: measured
+# with an older run holding and a newer run clean, this hook allowed while
+# wave-audit's `guard record`, which answers over every run, denied naming the
+# older one. The engine now walks every active run oldest-first itself, so the
+# hook carries no run id (a cached or resolved id is exactly the drift hooks
+# exist to prevent) and spends no subprocess on one. No active run is the
+# engine's allow over an empty set: this session is not its business, which is
+# what "hooks are global to the session tree" requires.
+#
+# NO --rows, DELIBERATELY. The hook cannot supply rows honestly -- it sees the
+# harness's Workflow/Agent tool_input, not wave.js's canonical manifest bytes,
+# and a re-serialization from tool_input would byte-mismatch a CORRECT dispatch
+# and deny every legit spawn. Row matching is wave.js's to assert at the point
+# it holds the real bytes; the hook's job here is the reap half.
 #
 # Fail-toward-safety on engine-state uncertainty (03 §5) is the engine's own
-# behavior: an unresolvable/missing run is exit 2, not exit 0. The one fail-OPEN
-# path is a missing `docket` binary -- a hook that hard-blocked every spawn on a
-# tooling gap would take the session down rather than protect it.
+# behavior. The one fail-OPEN path is a missing `docket` binary -- a hook that
+# hard-blocked every spawn on a tooling gap would take the session down rather
+# than protect it. A missing `jq` only loses the tribunal carve-out below; the
+# plain question still reaches the engine.
 
 set -uo pipefail
 
@@ -40,13 +50,16 @@ set -uo pipefail
 # vote was refused with the identical guard message before tribunal.js's own
 # code ran.
 #
-# `guard spawn --deciding-vote PROPOSAL-N` is the sanctioned exit (filed from
-# that same deadlock and shipped engine-side). All this hook does is notice a
-# tribunal.js launch, lift the proposal id out of its args, and pass it along.
-# Every judgement stays with the engine: the proposal must EXIST and be OPEN,
-# only the REAP half is relaxed, nothing is acknowledged, and the admission is
-# logged as `spawn-admitted` naming the proposal and the hold -- because a
-# spawn let past a hold must not read like a spawn nothing was holding.
+# `guard spawn --run RUN-N --deciding-vote PROPOSAL-N` is the sanctioned exit
+# (filed from that same deadlock and shipped engine-side). The engine refuses
+# to compose it with --active, because the carve-out is admitted onto ONE run's
+# spawn. So a tribunal launch asks the plain --active question first, and only
+# when that denies does the hook re-ask about the run the engine named in its
+# denial, with the proposal attached. Every judgement stays with the engine:
+# the proposal must EXIST and be OPEN, only the REAP half is relaxed, nothing
+# is acknowledged, and the admission is logged as `spawn-admitted` naming the
+# proposal and the hold -- because a spawn let past a hold must not read like a
+# spawn nothing was holding.
 #
 # An earlier version of this hook exited 0 here instead. That was worse in
 # three ways at once and is deliberately not what this does: it admitted a
@@ -61,13 +74,13 @@ set -uo pipefail
 # documented fallback deadlocked. `Agent` calls and every other workflow carry no
 # scriptPath and fall straight through unchanged.
 #
-# The id is read through the same shape the policy-guard uses, because the
-# harness stringifies `args`: a JSON string that must be re-parsed, or an
-# object already. It is then matched against docket's proposal-id grammar with
-# a bash builtin -- never a `grep`, which would add a PATH dependency to a hook
-# whose whole job is to run before anything else does. Anything that is not a
-# well-formed id is dropped and the guard is asked the ordinary question, so a
-# malformed launch is denied by the engine rather than waved through here.
+# The harness stringifies `args`, so the id is read from either shape: a JSON
+# string that must be re-parsed, or an object already. It is then matched
+# against docket's proposal-id grammar with a bash builtin -- never a `grep`,
+# which would add a PATH dependency to a hook whose whole job is to run before
+# anything else does. Anything that is not a well-formed id is dropped and the
+# guard is asked the ordinary question, so a malformed launch is denied by the
+# engine rather than waved through here.
 DECIDING_VOTE=""
 HOOK_INPUT=$(cat 2>/dev/null || true)
 if [ -n "$HOOK_INPUT" ] && command -v jq >/dev/null 2>&1; then
@@ -84,41 +97,25 @@ fi
 
 command -v docket >/dev/null 2>&1 || exit 0
 
-# $RUN resolution per invocation, never cached (TDD §4.5): "a cached run id is
-# exactly the drift hooks exist to prevent." Unlike run-guard and wave-audit,
-# whose verbs answer over all active runs and so need no id, `guard spawn`
-# requires --run.
-#
-# A missing `jq` leaves RUN empty and the hook allows below — the same fail-OPEN
-# direction as a missing `docket`, stated here because the pipe hides it.
-#
-# LIMITATION, recorded rather than papered over: `runs[0]` is the most recently
-# activated run ([OBSERVED] `--active` sorts newest-first), so with TWO
-# concurrent active runs this hook asks about only one of them. Scope of the
-# gap: the reap half goes unasked for the older run. It is narrow because the
-# row half is vacuous here anyway (no --rows, see above), and because
-# `wave-audit`'s `guard record` DOES answer over every non-terminal run —
-# verified: with an older run holding an open dispatch and a newer run clean,
-# this hook allowed (since it asks only about the newest) while wave-audit
-# denied and named the older run. Closing it properly
-# needs an engine-side `--active` mode on `guard spawn` (TDD §4.5's own stated
-# fallback for $RUN cost) rather than a hook-side loop over runs, which would
-# reintroduce policy into a shim.
-RUN=$(docket run status --active --json 2>/dev/null \
-    | jq -r '.data.runs[0].run // empty' 2>/dev/null) || RUN=""
-
-# No active run means no graph dispatch to drift from: this session is not the
-# engine's business. Both the operator's own sessions and the old fleet's land
-# here, which is what "hooks are global to the session tree" requires.
-[ -n "$RUN" ] || exit 0
-
 # stdout is dropped, stderr is not. On exit 0 the harness "parses stdout for JSON
 # output fields", and the engine's human-mode `✔ allowed` is not JSON — so
 # forwarding it would hand a parse failure to the debug log on every spawn while
 # adding nothing the exit code doesn't already say. The deny path's reason goes
 # to stderr, which exit 2 surfaces, so it must stay.
 if [ -n "$DECIDING_VOTE" ]; then
-    exec docket guard spawn --run "$RUN" --deciding-vote "$DECIDING_VOTE" >/dev/null
+    # The engine's --active denial leads with the oldest run that holds
+    # ("RUN-N: ..."); that run is the one the carve-out is admitted onto. The
+    # --json deny envelope is {ok, error, code} with no field for the run, so
+    # the id is read off the front of the reason text; the prefix is the
+    # engine's own format for naming the run, not a paraphrase. An allow, or
+    # an answer with no run in it, falls through to the plain question so the
+    # verdict arrives in the engine's own words.
+    HELD=$(docket guard spawn --active --json 2>/dev/null \
+        | jq -r 'select(.ok == false) | .error // ""' 2>/dev/null)
+    if [[ "$HELD" =~ ^(RUN-[0-9]+): ]]; then
+        exec docket guard spawn --run "${BASH_REMATCH[1]}" \
+            --deciding-vote "$DECIDING_VOTE" >/dev/null
+    fi
 fi
 
-exec docket guard spawn --run "$RUN" >/dev/null
+exec docket guard spawn --active >/dev/null

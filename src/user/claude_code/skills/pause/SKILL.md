@@ -98,6 +98,19 @@ a later turn boundary, and the resume snapshot does not wait on it.
 A pause with no live shadow skips this section; do not spawn one just to
 stop it.
 
+## Leave the TodoWrite list resolved
+
+If the docket-run session driving this run has been keeping a live
+`TodoWrite` checklist (its own standing rule), refresh it once more before
+you hand off — never clear it and never leave it mid-refresh. Steps the
+pause refused (unclaimed, already listed in the resume snapshot below) go
+back to `pending`; a step genuinely orphaned mid-execution (hard halt) stays
+`in_progress`, its content appending "orphaned — outcome unknown until
+reconciled"; the run itself is the one item that reads `in_progress` for
+"parked (waiting-human)", naming the reason. This is a last refresh of the
+CURRENT session's list, not a handoff artifact — a resuming session rebuilds
+its own from `docket run status`, per docket-run's own rule.
+
 ## Building the resume snapshot
 
 The snapshot exists because a huge amount of what a docket-run session knows

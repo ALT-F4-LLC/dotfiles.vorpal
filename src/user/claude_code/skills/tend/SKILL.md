@@ -57,6 +57,14 @@ Exclude two more kinds before picking — this queue isn't tend's alone:
   comes back empty. Strictly one issue in flight at a time: workers share
   this working tree, so never have two issues' workers alive at once.
 
+**TodoWrite gives the operator a standing view of the issue in flight.**
+Before moving the chosen issue (§2 step 3), call `TodoWrite` with one parent
+item — `content: "<id>: <title>"`, `status: "in_progress"` — and its known
+sub-steps nested under it as `  ↳ <step>` rows (`  ↳ delegate to worker`,
+`  ↳ land & close`), all `pending`. Refresh it at each step in §2 as it
+starts and completes; on the empty-queue tick, leave it exactly where §2's
+close left it — a quiet tick is not a state change, so it needs no refresh.
+
 ## 2. Tend one issue
 
 1. `docket issue show <id> --json` — full detail: description, acceptance
@@ -72,22 +80,26 @@ Exclude two more kinds before picking — this queue isn't tend's alone:
    docket-plan/docket-run step left to gate it, so don't invent one by hesitating on
    size alone.
 3. Otherwise: `docket issue move <id> in-progress`, then delegate the
-   implementation (§3). You orchestrate; you do not implement. Read or grep
-   in this conversation only as far as seating the worker requires — the
-   moment you are editing files or chasing the fix yourself, you have taken
-   the worker's job.
+   implementation (§3), flipping TodoWrite's `↳ delegate to worker` child to
+   `in_progress` in the same beat. You orchestrate; you do not implement. Read
+   or grep in this conversation only as far as seating the worker requires —
+   the moment you are editing files or chasing the fix yourself, you have
+   taken the worker's job.
 4. **Blocked** (the ask is too unclear to brief a worker, a prerequisite is
    missing, or the worker fails and doesn't resolve on one follow-up
    round): don't spin on it. `docket issue move <id> review` with a comment
    naming the blocker (`docket issue comment add <id> -m "..."`), tell the
    operator in your next visible turn, and move on to the next queued
-   issue — the same blocked issue does not get retried every tick.
+   issue — the same blocked issue does not get retried every tick. Mark its
+   TodoWrite parent `completed` too — content noting `(blocked)` — since this
+   loop is done with it for now.
 5. **Done:** when the worker's report is in and checks out, invoke the
    `commit` skill to land the change (`Skill({skill: "commit"})`) — one
    commit-cycle per issue, never batched across issues; skip it only when
    the issue changed no files. Then `docket issue comment add <id> --json
    -m "<what changed, plainly, citing the commit hash(es)>"`, then
-   `docket issue close <id> --json`.
+   `docket issue close <id> --json`. Flip every remaining TodoWrite child and
+   the parent item to `completed`.
 6. Report the tend in one line — issue id, title, commit hash(es). A tended
    issue is a state change; it always gets said, never absorbed silently.
 

@@ -504,6 +504,15 @@ issue whose implement step exists to discover the work is done (in a past
 run, a fix was committed nine minutes before `run start` recorded it as
 work to do).
 
+**Track the batch in TodoWrite as it records.** Once the issue set for this
+run is settled — the decomposition from §1, or the batch from §1b — call
+`TodoWrite` once with one `pending` item per issue about to be created,
+`content` the working title. Flip each to `in_progress` right before its own
+`issue create` call and to `completed` once the id comes back, updating the
+content to the real `DKT-N: <title>`. This is a display for the operator
+watching the batch land; it is never where you read the roster back from —
+the roster is what the create/link calls themselves returned.
+
 Run these, in this order, once you know what shape they take:
 
 ```bash

@@ -16,6 +16,14 @@ between them and run the commands.
 never artifact bodies. Every loop iteration asks the engine again. If you ever
 find yourself thinking "I remember that step 4 failed" — you do not; ask.
 
+**TodoWrite is a projection, never a source.** Alongside the engine reads,
+keep a live `TodoWrite` checklist so the operator sees the run's state at a
+glance — but it is written to on every refresh and never read back to decide
+anything. Rebuild each item's status from the same fresh engine reads this
+loop already makes; if the list and the engine ever disagree, the engine is
+right and the list was stale. This is the state rule above, restated for the
+one piece of state you do produce.
+
 *(A note on the anecdotes throughout this file: each names a failure worth not
 repeating, and not one of them is a fact about the run you are driving. They
 are lore from past runs, never a record of the run in front of you, however
@@ -742,6 +750,16 @@ a direct operator instruction outranks the panel, per **Gates**. If
 `next` goes empty while added issues sit unexpanded, that belongs in your stop
 report — it is not a finished run.
 
+**Seed the TodoWrite list before the first `next`.** Before the loop's first
+`docket next`, call `TodoWrite` once from `docket run status $RUN --json`
+(and `docket step list --run $RUN --json` if steps already exist): one
+parent item per bound issue — `content: "ISSUE-N: <title>"` — all `pending`
+except any already in flight. TodoWrite has no native nesting, so represent a
+step under its issue by ordering: the step's item immediately follows its
+issue's, as `content: "  ↳ <step>"`. This is the list you refresh at every
+iteration below — create it once here, never re-create it from scratch
+mid-run.
+
 ## The loop
 
 Run it from the top each time. Do not cache anything between iterations. And
@@ -833,6 +851,14 @@ docket next --run $RUN --limit 500 --json
   landed this is a missed step in your own loop, not a wedge to work around.
 
 Any other refusal from `next` is a real stall — report it verbatim and stop.
+
+**Refresh TodoWrite on this answer.** Rows returned → append any new step as
+a `pending` child under its issue (add the issue itself if this is its first
+appearance). Empty and covered → mark every remaining item `completed` before
+you write the done report. Empty and uncovered → leave the unexpanded issues'
+items `pending`, their content naming the wait (`ISSUE-N: phase quiesced —
+awaiting re-activation`), matching the PHASE QUIESCED report you are about to
+give.
 
 **Before you report a run done, run `docket run report $RUN` and read its
 `Coverage:` line.** The engine has been printing what a skipped panel back-fill
@@ -1152,6 +1178,12 @@ claimable when their stage arrives) and that staging is code, not your
 judgment. Never drop a `staged` row because it "isn't ready" — offering it
 ahead of readiness is the entire mechanism.
 
+**Mark the dispatch in TodoWrite before you end the turn.** For every
+executor and vote row you are handing the wave, set its step item to
+`in_progress` (adding it under its issue first, if step 1 had not yet). One
+call, right here — do not touch the list again until the wave's completion
+notification.
+
 Then await the wave's completion notification — which means END YOUR TURN.
 Notifications only deliver at turn boundaries: a turn held open "waiting" is a
 turn that starves itself of the very signal it waits for (one session queued a
@@ -1354,6 +1386,12 @@ each, against a run budget that never sees them. `run report` now prints
 `Coverage: N of M seat(s) reported spend`, so the gap is legible after the fact
 instead of reading as "no panels ran".
 
+**Refresh TodoWrite on close, before returning to step 1.** A step that
+recorded → `completed`. A step that parked `waiting-human` stays
+`in_progress` — or becomes the one open item naming the gate, per **Gates**
+below — never marked done. An issue whose whole chain just reached a
+terminal step → mark its parent item `completed` too.
+
 Surface any `waiting-human` steps (below), then go back to step 1.
 
 **Where the numbers actually are** (E2, measured in G5). The journal directory
@@ -1441,11 +1479,31 @@ consumes its emit, re-review rounds included; reconcile is the backstop, not
 the schedule. (When the engine offers a write step and its consumers in ONE
 dispatch, the wave's internal stage barrier leaves no window — expect the
 judges to reconstruct the target from the shared object DB, and know the
-packet's issue.diff is issue-cumulative.) At each integration point, write
-steps first, in step-id order:
+packet's issue.diff is issue-cumulative.)
 
-1. Verify the sha exists: `git cat-file -e <sha>^{commit}`.
-2. `git cherry-pick -x <sha>` — a REAL COMMIT on the shared
+**Integrate only a write step whose status is `done`.** A step parked
+`waiting-human` — most often on a failed completion gate — has not
+finished: `retry` re-records its work on a FRESH sha, and `override-pass`
+is the only ruling that makes the PARKED sha the one to integrate. Picking
+a parked step's sha before that ruling lands risks integrating a sha the
+operator is about to retry past. The tell that a pick already happened too
+early: `docket step annotate STEP-N` refuses on a live step ("a live
+step's metadata lands with its record") — a `done` step never refuses
+that way, so seeing it here means the sha you just cherry-picked was not
+ready. Recover by reverting the pick from the shared branch before
+presenting the ruling (the clean recovery), or, when reverting is not
+practical in the moment, present the ruling together with the fact that
+the sha is already integrated, so the operator's decision accounts for it
+rather than being made blind to it.
+
+At each integration point, write steps first, in step-id order, each one
+checked against that precondition before anything else runs:
+
+1. Confirm the step's status is `done` (`docket step show STEP-N`). A
+   `waiting-human` write step is not integrated here — it waits for its
+   ruling, per the precondition above.
+2. Verify the sha exists: `git cat-file -e <sha>^{commit}`.
+3. `git cherry-pick -x <sha>` — a REAL COMMIT on the shared
    branch, `-x` appending "(cherry picked from commit <sha>)" to the message
    so the mapping from writer sha to integrated sha survives in history even
    after the worktree branch is gone. (Operator policy since
@@ -1457,7 +1515,7 @@ steps first, in step-id order:
    (ssh-format, `~/.ssh/agent-signing.pub`) — never pass `--no-gpg-sign`.
    It is still relay plumbing; PUBLISHING — push, PR, release — remains
    the operator's alone, and nothing you do pushes.
-3. `docket step annotate STEP-N --metadata
+4. `docket step annotate STEP-N --metadata
    '{"integrated_sha":"<new sha>","writer_sha":"<sha>"}'` — mandatory, right
    here, not deferred. This is the durable anchor: the writer's sha lives
    only until its worktree branch is swept, and `run report`/`step show`
@@ -1899,6 +1957,13 @@ collect the answer whenever it comes, but run the engine verb per the ordering
 rule below, and when the verb must wait say so ("your answer applies after the
 current wave closes"). If a pending question outlives an open dispatch's TTL,
 reconcile the expiry per step 1 — accepted cost, not a reason to delay the ask.
+
+**A parked gate does not clear the TodoWrite list.** When a gate parks the
+run (`waiting-human`) or a conversational gate goes to a panel, leave the
+list standing — do not clear or reset it. Represent the blocking gate itself
+as the one open item: `in_progress`, or a pending item whose content names
+what it is waiting on (`ISSUE-N: waiting-human — <gate>`), so the list shows
+exactly what's stuck and why until the operator or panel answers it.
 
 ### The panel
 
@@ -2599,6 +2664,14 @@ session-only state the engine cannot reconstruct (in-flight wave ids, un-
 integrated shas, Workflow args for a resume, budget-raise usage, and the
 like) — never a restatement of anything `run status` or this section already
 answers.
+
+**A resumed session rebuilds TodoWrite from scratch.** Todo lists are
+session-local and do not survive into a new session, whatever the transcript
+or a resume prompt says. Whether resuming in the same session or attaching
+fresh to a run this session did not activate, rebuild the list from a fresh
+`docket run status $RUN` (plus `docket step list --run $RUN` for anything
+already claimed or parked) before your first mutating verb — never assume a
+prior session's list, and never derive it from resume-prompt prose.
 
 **A session that walks away from a conversational gate closes its own
 proposal.** Pausing, abandoning the attempt, or handing the run back with the

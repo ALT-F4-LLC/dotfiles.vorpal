@@ -46,6 +46,95 @@
 # the session. There is no `docket`-binary fail-open branch here, unlike
 # commit-guard — this hook never shells out to `docket` itself.
 
+# DOT-1123 REDESIGN, replacing a hand-rolled AWK shell lexer that re-scanned
+# raw command bytes for heredocs, comments, arithmetic expansions, and
+# separators with no notion of bash's actual grammar. Three fix-loop rounds
+# on that lexer (RUN-76) EACH found a live, reproduced bypass or false-DENY
+# regression in what the PRIOR round had just landed:
+#   CL9  (survived all 3 rounds): a quoted heredoc's body, once marked
+#        prose because its immediate destination (cat/tee/dd) was on a
+#        short allowlist, still executes for real when that destination is
+#        piped into an interpreter — `cat <<'EOF' | sh` with the guarded
+#        invocation in the body ran it, live: PWNED_VIA_PIPE. A one-hop
+#        "is the destination safe" test can never be complete: a pipe, a
+#        command substitution, or a process substitution moves the same
+#        bytes to a consumer the allowlist never saw.
+#   CL16 (round 2): the lexer's head-word scan re-derived a fact bash's own
+#        parser already knows (where a simple command starts) by walking
+#        raw bytes for `;`/`&`/`|`/`(`/`)`, with no notion of quoting — a
+#        separator INSIDE a quoted argument spoofed it into a false ALLOW
+#        (`bash -s "a;cat " <<'EOF'` with the guarded invocation in the
+#        body ran it, live), and the round's own fix for that broke
+#        ordinary heredocs inside `for`/`if`/`{ }` (false DENY regression).
+#   CL17 (round 3, NEW): the lexer's comment-boundary rule for a bare `#`
+#        misfired on `$(...)`/`$((...))`/`=(...)` closes, so a real
+#        invocation after a `;` on the same line as one of those got
+#        swallowed into the "comment" and ALLOWED — a regression this
+#        round introduced while trying to close CL9's class.
+#
+# Three independent bypasses in three rounds, each a NEW shape of the SAME
+# defect (a hand-rolled model of bash's grammar is not bash's grammar), is
+# the signature of the wrong tool for the job, not a bug count to keep
+# whittling down. This redesign does not re-implement heredocs, comments,
+# arithmetic, quoting, pipes, or command substitution AT ALL: it asks bash
+# itself what it would run, using bash's own DEBUG trap with `extdebug` and
+# `functrace` (`set -T`, which makes DEBUG traps propagate into subshells,
+# command substitutions, and function bodies — without it, `(docket trust
+# add …)` in a bare subshell ran unobserved, verified live here). The trap
+# fires once per SIMPLE COMMAND bash's real parser is about to execute; it
+# ALWAYS vetoes that command (returns non-zero, which `extdebug` treats as
+# "skip it") rather than letting anything actually run, except for a small
+# fixed set of purely structural constructs (`eval`, loop/conditional
+# keywords, and names bash already knows as functions) — those are allowed
+# through so the trap gets to see what is genuinely INSIDE them, without
+# ever letting a real leaf command (an external program or a builtin with a
+# side effect) execute. Verified with a filesystem marker across pipes,
+# subshells, command substitutions, `eval`, loops, conditionals, function
+# calls, and backgrounded jobs: nothing the probe walks ever runs for real.
+#
+# What this closes, by construction rather than by patching a symptom:
+#   - CL16's class cannot recur: there is no separator re-scan of any kind
+#     — bash's own parser is what decided where each simple command starts.
+#   - CL17's class cannot recur: there is no comment-boundary rule of any
+#     kind — bash's own parser is what decided what is a comment.
+#   - CL9's class is closed differently, because it is a genuinely
+#     different problem (not a parsing bug — a semantic one, about where
+#     data ends up): every leaf this probe records is inspected, and if ANY
+#     of them names a program that can interpret arbitrary input as code
+#     (INTERPRETER_WORDS below), every heredoc body in the WHOLE command is
+#     scanned for the guarded verb too, not exempted as it would be for a
+#     command with no interpreter anywhere in it. This does not try to
+#     prove which specific pipe or substitution carries the bytes to that
+#     interpreter — CL9 is exactly the finding that a one-hop version of
+#     that proof is unsound — it widens instead, which is this hook's
+#     established direction for an unresolvable case (a false DENY over a
+#     missed invocation).
+#
+# The final MATCH step below — is "docket trust add" or "docket trust rm"
+# present as three separately-resolved words versus one prose span, and is
+# a bare -h/--help present right after a clean verb — is UNCHANGED from the
+# pre-redesign hook, including its own quote-GROUP marking for single- and
+# double-quoted arguments: that logic was never implicated in any of the
+# three findings above, which were all about recognizing where a simple
+# command begins and what is data versus code BEFORE that step ever runs.
+# What is gone is the heredoc/comment/arithmetic re-scanning this file used
+# to do to feed that step a stream of words; bash's own grammar does that
+# now, on every leaf it hands back.
+#
+# ONE ACCEPTED INACCURACY, stated with its failure direction: bash's own
+# $BASH_COMMAND reconstruction MOVES a here-string redirect (`<<<word`) to
+# the end of the line, so `cat <<<docket trust add erik key` reconstructs
+# as `cat trust add erik key <<< docket` — "docket" no longer sits next to
+# "trust add", and the MATCH step's word-adjacency scan misses it. This is
+# a false ALLOW, but not a missed dispatch: bash treats "trust", "add",
+# "erik", "key" as cat's file arguments and "docket" as cat's stdin source,
+# so nothing here ever runs `docket trust add` as its own command — the
+# words are merely adjacent-looking text this scan no longer catches. Fixing
+# it would mean tracking each redirect operand's original source position
+# through bash's reconstruction, which this redesign deliberately does not
+# do (that is exactly the kind of re-derivation of what bash already knows
+# that produced CL16). Left open rather than patched around.
+
 set -uo pipefail
 
 allow_default() {
@@ -57,9 +146,6 @@ deny() {
     exit 2
 }
 
-# Only these three: the graph-fleet executor archetypes this issue names. Any
-# other agent_type (or none, i.e. the main conversation) falls through to the
-# existing ask rule.
 is_executor_archetype() {
     case "$1" in
         executor-read | executor-write | executor-research) return 0 ;;
@@ -82,90 +168,191 @@ is_executor_archetype "$AGENT_TYPE" || allow_default
 COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null) || allow_default
 [ -n "$COMMAND" ] || allow_default
 
-# Quote-aware pre-pass, lifted byte-identical from docket-commit-guard-hook.sh
-# (see that file's header for the full rationale): marks every word that came
-# from inside a quoted string with a sentinel plus a quote-GROUP id, so the
-# matcher below can tell real prose (`-m "... docket trust add ..."`, one
-# group) apart from a bash-unquoted invocation built from separately-quoted
-# words (`"docket" "trust" "add"`, three groups). Double-quoted content that
-# could still trigger command/parameter substitution ($(...), backticks,
-# ${...}) is left unmarked so the matcher inspects it directly.
+# --- Leaf enumeration: ask bash, don't re-derive it. ---------------------
 #
-# HEREDOCS are the third quoting shape. A heredoc body is neither single- nor
-# double-quoted content -- the DELIMITER carries the quoting -- so without the
-# branch below every word of a body reached the matcher unmarked and a scratch
-# file whose text merely described the guarded verb was denied. A
-# quoted-delimiter body (`<<'EOF'`, `<<"EOF"`, `<<\EOF`, and their `<<-`
-# tab-stripping forms) cannot expand or execute anything IN THIS SHELL, so it
-# is prose and is marked as ONE quote group -- but only when the command the
-# body feeds is a text SINK (`cat`, `tee`, `dd`, pathed forms). The quoting
-# says nothing about an inner shell: `bash <<'EOF'` runs its body as a script,
-# so for any other head word the body stays unmarked and reaches the matcher.
-# An unquoted-delimiter body (`<<EOF`) does expand and stays unmarked too.
+# LEAVES holds every simple command bash's own grammar would dispatch,
+# `\036` (RS)-separated, each possibly itself multi-line when it embeds a
+# heredoc (the heredoc's body arrives as part of that ONE leaf's text,
+# exactly as bash reconstructs $BASH_COMMAND). CAP_HIT is set when the
+# 2000-command ceiling below fires — a circuit breaker against a crafted or
+# pathological input driving this into a long-running loop, not a bound
+# expected to matter for an ordinary executor call (empirically, hundreds
+# of simple commands enumerate in well under a second).
 #
-# COMMENTS are consumed whole: on a `#` that begins a word, everything to the
-# next newline is one prose quote group, so nothing inside a comment -- a
-# heredoc operator, an unbalanced quote -- can arm state that swallows the
-# real command on the line after it.
+# `eval "$COMMAND"` is how the untrusted text reaches bash as SOURCE rather
+# than as a re-quoted argument: COMMAND travels via the environment, never
+# through string interpolation into this script's own source, so nothing
+# about the outer invocation's quoting can be confused by what the inner
+# text contains — it is parsed exactly once, by bash, exactly as it would
+# be if the real Bash tool ran it. `eval` itself is on the structural
+# allowlist below (it is a control mechanism, not a leaf) so the trap sees
+# straight through it to what is actually inside.
+# No `mktemp`: this hook's dependency set is deliberately fixed at
+# bash/cat/jq/awk (tests/docket-trust-guard-hook.test.sh runs it with PATH
+# restricted to exactly those), and `$$` is unique enough for a file this
+# process creates, writes, reads, and deletes within its own lifetime.
+PROBE_OUT="${TMPDIR:-/tmp}/docket-trust-guard-hook.$$"
+: >"$PROBE_OUT" 2>/dev/null || allow_default
+trap 'rm -f "$PROBE_OUT"' EXIT
+
+PROBE_ERR=$(COMMAND="$COMMAND" PROBE_OUT="$PROBE_OUT" bash -c '
+    shopt -s extdebug
+    set -T
+    n=0
+    _guard_probe() {
+        n=$((n + 1))
+        if [ "$n" -gt 2000 ]; then
+            printf "__CAP_HIT__\036" >> "$PROBE_OUT"
+            trap - DEBUG
+            return 1
+        fi
+        local head="${BASH_COMMAND%%[ $'"'"'\t\n'"'"']*}"
+        head="${head##*/}"
+        case "$head" in
+            eval | for | while | until | if | elif | else | fi | then | do | done | \
+            case | esac | select | function | time | "{" | "}" | "[" | "[[" | : | \
+            true | false)
+                return 0 ;;
+        esac
+        if declare -F "$head" >/dev/null 2>&1; then
+            return 0
+        fi
+        printf "%s\036" "$BASH_COMMAND" >> "$PROBE_OUT"
+        return 1
+    }
+    # WHY true/false/: RUN FOR REAL rather than vetoed like every other
+    # leaf: a vetoed command is always reported to bash as SUCCEEDED
+    # (verified live: `extdebug`s trap-skip has no way to report failure,
+    # whatever the trap itself returns) -- so `false || git commit ...`
+    # never even reached the right side of || for this probe to see it,
+    # a real gap this fix closes. Letting true/false/: run instead of
+    # skipping them is safe FOR THE SAME REASON eval is on the structural
+    # list: `set -T` (functrace) gives every command substitution its own
+    # independent DEBUG-trap pass, so an argument like `: $(docket trust
+    # add erik key)` still gets its OWN trap firing for the embedded
+    # substitution before true/false/: ever runs -- verified live, the
+    # inner `touch` fired as its own leaf and was vetoed even though the
+    # outer `:` was allowed through. No other builtin is added here: `test`/
+    # `[`/`[[` share the same argument-expansion exposure but are already
+    # structural (their own condition-only role), and anything else
+    # (echo, printf, cd, …) can have a real side effect true/false/: never
+    # do.
+    trap _guard_probe DEBUG
+    eval "$COMMAND"
+' 2>&1 >/dev/null)
+# Nothing runs after eval returns, deliberately: any command here would
+# ALSO be a leaf the still-armed trap intercepts (including a bare
+# "trap - DEBUG" itself, which the trap would veto exactly like any other
+# command, so it would never actually take effect and disarm anything) —
+# proven live: this hook's own attempt at a "trap - DEBUG; exit 0" wrap-up
+# logged ITSELF as two bogus leaves instead of running, which on an eval
+# that failed outright was the only thing that made PROBE_OUT non-empty,
+# masking the failure as an ordinary (and wrong) ALLOW. `trap - DEBUG`
+# inside `_guard_probe` above is a different case: bash suspends a trap
+# while its own handler runs, so that call executes normally and is not
+# itself re-intercepted. The script just ends here; the subshell's own
+# exit status is unused, only $PROBE_OUT is read below.
+
+PROBE_TEXT=$(<"$PROBE_OUT") 2>/dev/null
+
+if [ -z "$PROBE_TEXT" ]; then
+    # No leaf dispatched at all: either the command is genuinely inert (all
+    # comment, all whitespace — safe to allow) or `eval` never got past a
+    # syntax error, in which case bash never reached ANY command including
+    # a guarded one — but this probe could not confirm which, so it is
+    # "could not analyze", not "nothing here", and this hook's own direction
+    # on an unresolvable case is a false DENY over a missed invocation.
+    case "$PROBE_ERR" in
+        *"syntax error"*)
+            deny "trust-store write blocked: the trust-guard hook could not parse this command to check it (bash reported a syntax error while analyzing it) and refuses rather than guessing. Fix the command's syntax; if it is not actually invalid, that is a hook defect to report separately." ;;
+    esac
+    allow_default
+fi
+
+case "$PROBE_TEXT" in
+    *__CAP_HIT__*)
+        deny "trust-store write blocked: this command has too many parts (over 2000) for the trust-guard hook to finish checking it. Split it into smaller Bash calls; a single call this large is refused rather than passed through unchecked." ;;
+esac
+
+# --- Widening: where a heredoc's body stops being inert data. ------------
 #
-# The heredoc branch is REDIRECTION-POSITION aware, because `<<` is only a
-# heredoc operator there: it does not fire on a here-string (`<<<WORD`, whose
-# three characters are consumed whole), inside a comment, or inside an
-# arithmetic expansion (`$((1 << 3))`, `((1 << 3))`, `for ((i = 1 << 2; ;))`)
-# -- in each of those a firing branch armed a phantom delimiter and swallowed
-# the rest of the command into one prose group. Pending heredocs are a QUEUE,
-# so `cat <<A <<"B"` consumes each body in redirection order with its own
-# quotedness instead of letting the last delimiter overwrite the first and
-# mark an expanding body as prose. Leading tabs are stripped before the
-# terminator comparison only for a `<<-` body, so a tab-indented line inside a
-# plain `<<"EOF"` body no longer ends it early.
+# Two independent triggers, either one widening a leaf's scan from its
+# first physical line to its whole text (heredoc body included) rather
+# than exempted as prose:
 #
-# ACCEPTED INACCURACIES, each stated with its failure direction, because this
-# pre-pass models bash rather than parsing it and has no fail-closed default:
-#   - An arithmetic spelling this branch does not count (`$[1 << 3]`, and any
-#     future one) reaches the heredoc arm. A purely NUMERIC delimiter is
-#     therefore refused, since no real script writes `<<3`; a shift by a
-#     variable (`$[1 << k]`) still arms a phantom delimiter and swallows the
-#     following lines -- a false DENY.
-#   - `cmd_head` finds the head word by scanning back to the nearest command
-#     separator, so a separator that was escaped or quoted, or a leading
-#     assignment (`LC_ALL=C cat <<"EOF"`), yields a word that is not a sink --
-#     a false DENY.
-#   - A guarded invocation passed as a single-quoted ARGUMENT to an
-#     interpreter (`bash -c 'docket ...'`) is one prose group and is ALLOWED.
-#     This predates the heredoc branch and is the quote-group design's
-#     standing tradeoff -- a false ALLOW, tracked separately.
-STRIPPED=$(printf '%s' "$COMMAND" | awk '
-{
-    buf = (NR == 1) ? $0 : buf "\n" $0
-}
-# The head word of the simple command a heredoc redirection at POS belongs to,
-# found by scanning back to the nearest command separator. Only a TEXT SINK
-# gets its quoted body marked as prose: a quoted delimiter makes a body inert
-# to the OUTER shell only, so an interpreter still runs every line of it in an
-# inner shell. A head word this scan reads wrong (a leading assignment, a
-# separator that was escaped or quoted) is simply not a sink, so the body stays
-# unmarked -- a false DENY, never a missed invocation.
-function cmd_head(pos,    k, ch, start, w) {
-    start = 1
-    for (k = pos - 1; k >= 1; k--) {
-        ch = substr(line, k, 1)
-        if (ch == ";" || ch == "&" || ch == "|" || ch == "(" || ch == ")" || ch == "\n") {
-            start = k + 1
-            break
+#   1. INTERPRETER (CL9's fix, whole-command scope). If ANY leaf names a
+#      program that reads arbitrary input as code, no heredoc body
+#      anywhere in the WHOLE command is treated as inert data — this does
+#      not try to prove which specific pipe or substitution carries the
+#      bytes to that interpreter (CL9 is exactly the finding that a
+#      one-hop version of that proof is unsound), it widens instead.
+#   2. UNQUOTED DELIMITER (per leaf). A heredoc with an unquoted (or
+#      backslash-quoted-per-character, which is the same case) delimiter
+#      undergoes parameter/command/arithmetic expansion on its body BEFORE
+#      it ever reaches its consumer — `cat > f <<EOF` with a body
+#      containing `$(docket trust add …)` runs that substitution as bash
+#      prepares the heredoc, independent of what cat does with the result.
+#      A quoted delimiter (`<<'EOF'`, `<<"EOF"`, `<<\EOF`) suppresses all of
+#      that, which is the ONLY case this hook exempts as prose (AC1/AC2).
+#
+# With neither trigger, only each leaf's FIRST physical line is scanned: a
+# genuine invocation's verb is always on that first line by construction
+# (bash resolves `\`-continuations before setting $BASH_COMMAND, verified
+# live; only a heredoc body or a literal newline inside a quoted argument
+# adds further lines, and neither can move the verb off line one).
+INTERPRETER_RE='(^|[^A-Za-z0-9_])(sh|bash|dash|zsh|ksh|mksh|csh|tcsh|python[0-9.]*|perl|ruby|node|nodejs|php|lua[0-9.]*|tclsh|expect|osascript|env)([^A-Za-z0-9_]|$)'
+WIDEN=0
+if [[ "$PROBE_TEXT" =~ $INTERPRETER_RE ]]; then
+    WIDEN=1
+fi
+
+SCAN_TEXT=$(awk -v RS='\036' -v widen="$WIDEN" '
+    BEGIN { out = "" }
+    {
+        leaf = $0
+        if (leaf == "") next
+        eol = index(leaf, "\n")
+        line1 = (eol == 0 ? leaf : substr(leaf, 1, eol - 1))
+        leaf_widen = (widen == "1")
+        # A heredoc operator on this leafs own first line whose delimiter
+        # is NOT quoted. Checked as a positive is-it-quoted test, not a
+        # negated one: << or <<-, optional spaces, then immediately a
+        # quote or backslash (a backslash-quoted delimiter is quoted too).
+        # POSIX ERE leftmost-longest matching makes the optional dash
+        # ambiguous in a NEGATED class here -- for a tab-stripping quoted
+        # delimiter it can match either by consuming the dash and landing
+        # on the quote, or by NOT consuming it and landing on the dash
+        # itself, which a negated class excluding only quotes and
+        # backslash would wrongly accept. A positive quote check has no
+        # such second reading: only consuming the dash and then finding a
+        # quote ever satisfies it.
+        if (!leaf_widen && line1 ~ /<</ && line1 !~ /<<-?[ \t]*[\x27\x22\\]/) {
+            leaf_widen = 1
+        }
+        if (leaf_widen) {
+            out = out leaf "\n"
+        } else {
+            out = out line1 "\n"
         }
     }
-    while (start < pos && substr(line, start, 1) ~ /[ \t]/) start++
-    w = ""
-    while (start < pos && substr(line, start, 1) !~ /[ \t]/) {
-        w = w substr(line, start, 1)
-        start++
-    }
-    sub(/^.*\//, "", w)
-    return w
-}
-function is_text_sink(w) {
-    return (w == "cat" || w == "tee" || w == "dd")
+    END { printf "%s", out }
+' "$PROBE_OUT")
+
+# --- Quote-group marking, unchanged from the pre-redesign pass. ----------
+#
+# Marks every word that came from inside a single- or double-quoted string
+# with a sentinel plus a quote-GROUP id, so the MATCH step below can tell
+# real prose (`-m "... docket trust add ..."`, one group) apart from a
+# bash-unquoted invocation built from separately-quoted words (`"docket"
+# "trust" "add"`, three groups). Double-quoted content that could still
+# trigger command/parameter substitution ($(...), backticks, ${...}) is
+# left unmarked so the matcher inspects it directly. No heredoc, comment,
+# or arithmetic handling here: SCAN_TEXT above is already, by construction,
+# one or more complete simple-command lines with no unresolved separators
+# — there is nothing of that shape left for this pass to get wrong.
+STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk '
+{
+    buf = (NR == 1) ? $0 : buf "\n" $0
 }
 END {
     line = buf
@@ -176,133 +363,11 @@ END {
     DQ = "\042"
     MARK = "\001"
     GROUP = 0
-    HD_N = 0
-    ARITH = 0
-    WORD_START = 1
     while (i <= n) {
         c = substr(line, i, 1)
         if (c == "\\" && i < n) {
             out = out c substr(line, i + 1, 1)
-            WORD_START = 0
             i += 2
-            continue
-        }
-        if (c == "\n") {
-            WORD_START = 1
-            if (HD_N == 0) {
-                out = out c
-                i += 1
-                continue
-            }
-            j = i + 1
-            for (h = 1; h <= HD_N; h++) {
-                body = ""
-                while (j <= n) {
-                    eol = index(substr(line, j), "\n")
-                    if (eol == 0) {
-                        seg = substr(line, j)
-                        nj = n + 1
-                    } else {
-                        seg = substr(line, j, eol - 1)
-                        nj = j + eol
-                    }
-                    trimmed = seg
-                    if (HD_DASH[h]) sub(/^\t+/, "", trimmed)
-                    j = nj
-                    if (trimmed == HD_DELIM[h]) break
-                    body = body "\n" seg
-                }
-                if (HD_QUOTED[h]) {
-                    GROUP++
-                    m = split(body, qw, /[ \t\n]+/)
-                    for (k = 1; k <= m; k++) {
-                        if (qw[k] != "") out = out " " MARK GROUP ":" qw[k] MARK
-                    }
-                    out = out "\n"
-                } else {
-                    out = out body "\n"
-                }
-            }
-            HD_N = 0
-            i = j
-            continue
-        }
-        if (c == "#" && WORD_START) {
-            j = i + 1
-            content = ""
-            while (j <= n && substr(line, j, 1) != "\n") {
-                content = content substr(line, j, 1)
-                j++
-            }
-            GROUP++
-            m = split(content, qw, /[ \t]+/)
-            for (k = 1; k <= m; k++) {
-                if (qw[k] != "") out = out " " MARK GROUP ":" qw[k] MARK
-            }
-            out = out " "
-            WORD_START = 1
-            i = j
-            continue
-        }
-        if (c == "(" && substr(line, i + 1, 1) == "(") {
-            ARITH++
-            out = out substr(line, i, 2)
-            WORD_START = 1
-            i += 2
-            continue
-        }
-        if (ARITH > 0 && c == ")" && substr(line, i + 1, 1) == ")") {
-            ARITH--
-            out = out substr(line, i, 2)
-            WORD_START = 1
-            i += 2
-            continue
-        }
-        if (c == "<" && substr(line, i + 1, 2) == "<<") {
-            out = out " "
-            WORD_START = 1
-            i += 3
-            continue
-        }
-        if (c == "<" && substr(line, i + 1, 1) == "<" && ARITH == 0) {
-            sink = is_text_sink(cmd_head(i))
-            j = i + 2
-            dash = 0
-            if (substr(line, j, 1) == "-") {
-                dash = 1
-                j++
-            }
-            while (j <= n && (substr(line, j, 1) == " " || substr(line, j, 1) == "\t")) j++
-            dc = substr(line, j, 1)
-            delim = ""
-            dquoted = 0
-            if (dc == SQ || dc == DQ) {
-                dquoted = 1
-                j++
-                while (j <= n && substr(line, j, 1) != dc) {
-                    delim = delim substr(line, j, 1)
-                    j++
-                }
-                j++
-            } else {
-                if (dc == "\\") {
-                    dquoted = 1
-                    j++
-                }
-                while (j <= n && substr(line, j, 1) ~ /[A-Za-z0-9_.-]/) {
-                    delim = delim substr(line, j, 1)
-                    j++
-                }
-            }
-            out = out " "
-            WORD_START = 1
-            i = j
-            if (delim != "" && delim !~ /^[0-9]+$/) {
-                HD_N++
-                HD_DELIM[HD_N] = delim
-                HD_QUOTED[HD_N] = (dquoted && sink)
-                HD_DASH[HD_N] = dash
-            }
             continue
         }
         if (c == SQ) {
@@ -318,7 +383,6 @@ END {
                 if (qw[k] != "") out = out " " MARK GROUP ":" qw[k] MARK
             }
             out = out " "
-            WORD_START = 0
             i = j + 1
             continue
         }
@@ -346,20 +410,20 @@ END {
                 }
                 out = out " "
             }
-            WORD_START = 0
             i = j + 1
             continue
         }
         out = out c
-        WORD_START = (c ~ /[ \t;&|()<>]/)
         i += 1
     }
     print out
 }
 ' 2>/dev/null) || allow_default
 
-# THE MATCH: three consecutive words `docket trust (add|rm)`, head-normalized
-# on `docket` the same way commit-guard normalizes `git` (closes a delimiter
+# --- THE MATCH, unchanged from the pre-redesign hook. ---------------------
+#
+# Three consecutive words `docket trust (add|rm)`, head-normalized on
+# `docket` the same way commit-guard normalizes `git` (closes a delimiter
 # or subshell glued directly onto the front with no whitespace), and
 # quote-group-aware on all three words so real prose stays allowed while a
 # trick built from separately-quoted tokens still denies.

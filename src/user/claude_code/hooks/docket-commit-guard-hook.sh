@@ -15,11 +15,8 @@
 # session, because the engine correctly denies when the gate is merely ABSENT
 # ([OBSERVED] `no type="human" step named "commit-gate" in any active run`
 # → exit 2). The matcher is what decides whether the engine is even the right
-# question to ask. Everything between the `set -uo pipefail` below and the
-# `[ "$MATCH" = "MATCH" ]` guard was lifted byte-identical from the retired
-# fleet's claude-code/hooks/guard-no-commit-hook.sh (since deleted). This
-# file is now that matcher's only home; its behavior is pinned
-# by tests/docket-commit-guard-hook.test.sh.
+# question to ask. This file's behavior is pinned by
+# tests/docket-commit-guard-hook.test.sh.
 #
 # THE DECISION, and how it differs from the old fleet's. The old hook resolves
 # on permission_mode: interactive modes get an `ask`, non-interactive modes get
@@ -38,6 +35,17 @@
 # Fail-OPEN on a missing `docket` binary, fail-CLOSED on everything the engine
 # itself judges. A tooling gap must not brick every Bash call in the session;
 # an unapproved or absent gate must.
+#
+# THE MATCHER — leaf enumeration, widening, and quote-group marking below —
+# is shared byte-for-byte with docket-trust-guard-hook.sh; see that file's
+# header for the DOT-1123 redesign rationale (CL9/CL16/CL17) this replaces.
+# Only what comes after quote-group marking differs: this file's MATCH step
+# looks for `git commit`/`push`/`add`, with git's own `-C`/`-c`/`--git-dir`
+# global-option skipping and its option-before-subcommand help exemption,
+# where the trust-guard's looks for `docket trust add`/`rm`. This hook also
+# carries no `agent_type` scoping — unlike the executor-only trust-guard, a
+# git write needs an approved gate from ANY caller, main conversation
+# included, matching the old fleet's own scope.
 
 set -uo pipefail
 
@@ -67,119 +75,190 @@ TOOL_NAME=$(printf '%s' "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null) || a
 COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null) || allow_default
 [ -n "$COMMAND" ] || allow_default
 
-# Quote-aware pre-pass: distinguishes prose that merely *mentions* a
-# git-write command (e.g. inside a docket comment's -m body) from an actual
-# invocation, without discarding quoted subcommand names outright - deleting
-# them entirely would let a form like `git "commit"` (which bash unquotes to
-# a real `git commit` at execution) slip past the matcher unnoticed.
+# --- Leaf enumeration: ask bash, don't re-derive it. ---------------------
 #
-# Every word found inside a quoted string is preserved but wrapped with a
-# sentinel marker (ASCII 0x01) that also encodes a QUOTE-GROUP id, e.g.
-# 0x01<n>:word0x01, where every word originating from the SAME quoted
-# string (one opening/closing quote pair) shares one group number and each
-# successive quoted string gets a new, distinct number. Group identity -
-# not just "was this word quoted at all" - is what lets the matcher below
-# tell a single quoted phrase like `-m "... git commit ..."` (one group,
-# prose, allow) apart from two separately-quoted words like
-# `"git" "commit"` (two groups, a real bash-unquoted invocation, deny).
-# Single-quoted content is always marked (bash performs no expansion inside
-# single quotes, so it can never itself execute, but the same marking is
-# still required so `git 'commit'` is recognized as a real invocation, not
-# discarded). Double-quoted content is marked the same way UNLESS it
-# contains `$(`, a backtick, or `${` - that content can still trigger
-# command/parameter substitution despite the surrounding quotes, so it is
-# left bare/unmarked for the matcher to inspect. A command-substitution
-# capture shape like `echo "$(git commit -m x)"` is closed by the head-
-# normalization step in the matcher below, which resolves a token's head
-# past a preceding `$(`, backtick, `(`, `;`, `|`, or `&` before testing it
-# against `git`. The matcher applies the same normalization to the
-# subcommand token, so a delimiter glued directly AFTER the subcommand with
-# nothing else following (`$(git push)`, `` `git push` ``, `(git commit)`,
-# bare `git push;`/`git push&`/`git push|cat`) is also closed, not just the
-# medial forms with trailing content.
+# LEAVES holds every simple command bash's own grammar would dispatch,
+# `\036` (RS)-separated, each possibly itself multi-line when it embeds a
+# heredoc (the heredoc's body arrives as part of that ONE leaf's text,
+# exactly as bash reconstructs $BASH_COMMAND). CAP_HIT is set when the
+# 2000-command ceiling below fires — a circuit breaker against a crafted or
+# pathological input driving this into a long-running loop, not a bound
+# expected to matter for an ordinary call (empirically, hundreds of simple
+# commands enumerate in well under a second).
 #
-# HEREDOCS are the third quoting shape. A heredoc body is neither single- nor
-# double-quoted content - the DELIMITER carries the quoting - so without the
-# branch below every word of a body reached the matcher unmarked and a scratch
-# file whose text merely described a git write was denied. A quoted-delimiter
-# body (`<<'EOF'`, `<<"EOF"`, `<<\EOF`, and their `<<-` tab-stripping forms)
-# cannot expand or execute anything IN THIS SHELL, so it is prose and is
-# marked as ONE quote group -- but only when the command the body feeds is a
-# text SINK (`cat`, `tee`, `dd`, pathed forms). The quoting says nothing about
-# an inner shell: `bash <<'EOF'` runs its body as a script, so for any other
-# head word the body stays unmarked and reaches the matcher. An
-# unquoted-delimiter body (`<<EOF`) does expand and stays unmarked too.
+# `eval "$COMMAND"` is how the untrusted text reaches bash as SOURCE rather
+# than as a re-quoted argument: COMMAND travels via the environment, never
+# through string interpolation into this script's own source, so nothing
+# about the outer invocation's quoting can be confused by what the inner
+# text contains — it is parsed exactly once, by bash, exactly as it would
+# be if the real Bash tool ran it. `eval` itself is on the structural
+# allowlist below (it is a control mechanism, not a leaf) so the trap sees
+# straight through it to what is actually inside.
+# No `mktemp`: this hook's dependency set is deliberately fixed at
+# bash/cat/jq/awk (tests/docket-commit-guard-hook.test.sh runs it with PATH
+# restricted to exactly those), and `$$` is unique enough for a file this
+# process creates, writes, reads, and deletes within its own lifetime.
+PROBE_OUT="${TMPDIR:-/tmp}/docket-commit-guard-hook.$$"
+: >"$PROBE_OUT" 2>/dev/null || allow_default
+trap 'rm -f "$PROBE_OUT"' EXIT
+
+PROBE_ERR=$(COMMAND="$COMMAND" PROBE_OUT="$PROBE_OUT" bash -c '
+    shopt -s extdebug
+    set -T
+    n=0
+    _guard_probe() {
+        n=$((n + 1))
+        if [ "$n" -gt 2000 ]; then
+            printf "__CAP_HIT__\036" >> "$PROBE_OUT"
+            trap - DEBUG
+            return 1
+        fi
+        local head="${BASH_COMMAND%%[ $'"'"'\t\n'"'"']*}"
+        head="${head##*/}"
+        case "$head" in
+            eval | for | while | until | if | elif | else | fi | then | do | done | \
+            case | esac | select | function | time | "{" | "}" | "[" | "[[" | : | \
+            true | false)
+                return 0 ;;
+        esac
+        if declare -F "$head" >/dev/null 2>&1; then
+            return 0
+        fi
+        printf "%s\036" "$BASH_COMMAND" >> "$PROBE_OUT"
+        return 1
+    }
+    # WHY true/false/: RUN FOR REAL rather than vetoed like every other
+    # leaf: a vetoed command is always reported to bash as SUCCEEDED
+    # (verified live: `extdebug`s trap-skip has no way to report failure,
+    # whatever the trap itself returns) -- so `false || git commit ...`
+    # never even reached the right side of || for this probe to see it,
+    # a real gap this fix closes. Letting true/false/: run instead of
+    # skipping them is safe FOR THE SAME REASON eval is on the structural
+    # list: `set -T` (functrace) gives every command substitution its own
+    # independent DEBUG-trap pass, so an argument like `: $(git commit -m
+    # x)` still gets its OWN trap firing for the embedded substitution
+    # before true/false/: ever runs -- verified live, the inner leaf fired
+    # on its own and was vetoed even though the outer `:` was allowed
+    # through. No other builtin is added here: `test`/`[`/`[[` share the
+    # same argument-expansion exposure but are already structural (their
+    # own condition-only role), and anything else (echo, printf, cd, …)
+    # can have a real side effect true/false/: never do.
+    trap _guard_probe DEBUG
+    eval "$COMMAND"
+' 2>&1 >/dev/null)
+# Nothing runs after eval returns, deliberately: any command here would
+# ALSO be a leaf the still-armed trap intercepts (including a bare
+# "trap - DEBUG" itself, which the trap would veto exactly like any other
+# command, so it would never actually take effect and disarm anything) —
+# proven live: this hook's own attempt at a "trap - DEBUG; exit 0" wrap-up
+# logged ITSELF as two bogus leaves instead of running, which on an eval
+# that failed outright was the only thing that made PROBE_OUT non-empty,
+# masking the failure as an ordinary (and wrong) ALLOW. `trap - DEBUG`
+# inside `_guard_probe` above is a different case: bash suspends a trap
+# while its own handler runs, so that call executes normally and is not
+# itself re-intercepted. The script just ends here; the subshell's own
+# exit status is unused, only $PROBE_OUT is read below.
+
+PROBE_TEXT=$(<"$PROBE_OUT") 2>/dev/null
+
+if [ -z "$PROBE_TEXT" ]; then
+    # No leaf dispatched at all: either the command is genuinely inert (all
+    # comment, all whitespace — safe to allow) or `eval` never got past a
+    # syntax error, in which case bash never reached ANY command including
+    # a guarded one — but this probe could not confirm which, so it is
+    # "could not analyze", not "nothing here", and this hook's own direction
+    # on an unresolvable case is a false DENY over a missed invocation.
+    case "$PROBE_ERR" in
+        *"syntax error"*)
+            deny "git write blocked: the commit-guard hook could not parse this command to check it (bash reported a syntax error while analyzing it) and refuses rather than guessing. Fix the command's syntax; if it is not actually invalid, that is a hook defect to report separately." ;;
+    esac
+    allow_default
+fi
+
+case "$PROBE_TEXT" in
+    *__CAP_HIT__*)
+        deny "git write blocked: this command has too many parts (over 2000) for the commit-guard hook to finish checking it. Split it into smaller Bash calls; a single call this large is refused rather than passed through unchecked." ;;
+esac
+
+# --- Widening: where a heredoc's body stops being inert data. ------------
 #
-# COMMENTS are consumed whole: on a `#` that begins a word, everything to the
-# next newline is one prose quote group, so nothing inside a comment - a
-# heredoc operator, an unbalanced quote - can arm state that swallows the real
-# command on the line after it.
+# Two independent triggers, either one widening a leaf's scan from its
+# first physical line to its whole text (heredoc body included) rather
+# than exempted as prose:
 #
-# The heredoc branch is REDIRECTION-POSITION aware, because `<<` is only a
-# heredoc operator there: it does not fire on a here-string (`<<<WORD`, whose
-# three characters are consumed whole), inside a comment, or inside an
-# arithmetic expansion (`$((1 << 3))`, `((1 << 3))`, `for ((i = 1 << 2; ;))`)
-# -- in each of those a firing branch armed a phantom delimiter and swallowed
-# the rest of the command into one prose group. Pending heredocs are a QUEUE,
-# so `cat <<A <<"B"` consumes each body in redirection order with its own
-# quotedness instead of letting the last delimiter overwrite the first and
-# mark an expanding body as prose. Leading tabs are stripped before the
-# terminator comparison only for a `<<-` body, so a tab-indented line inside a
-# plain `<<"EOF"` body no longer ends it early.
+#   1. INTERPRETER (CL9's fix, whole-command scope). If ANY leaf names a
+#      program that reads arbitrary input as code, no heredoc body
+#      anywhere in the WHOLE command is treated as inert data — this does
+#      not try to prove which specific pipe or substitution carries the
+#      bytes to that interpreter (CL9 is exactly the finding that a
+#      one-hop version of that proof is unsound), it widens instead.
+#   2. UNQUOTED DELIMITER (per leaf). A heredoc with an unquoted (or
+#      backslash-quoted-per-character, which is the same case) delimiter
+#      undergoes parameter/command/arithmetic expansion on its body BEFORE
+#      it ever reaches its consumer — `cat > f <<EOF` with a body
+#      containing `$(git commit -m …)` runs that substitution as bash
+#      prepares the heredoc, independent of what cat does with the result.
+#      A quoted delimiter (`<<'EOF'`, `<<"EOF"`, `<<\EOF`) suppresses all of
+#      that, which is the ONLY case this hook exempts as prose.
 #
-# ACCEPTED INACCURACIES, each stated with its failure direction, because this
-# pre-pass models bash rather than parsing it and has no fail-closed default:
-#   - An arithmetic spelling this branch does not count (`$[1 << 3]`, and any
-#     future one) reaches the heredoc arm. A purely NUMERIC delimiter is
-#     therefore refused, since no real script writes `<<3`; a shift by a
-#     variable (`$[1 << k]`) still arms a phantom delimiter and swallows the
-#     following lines - a false DENY.
-#   - `cmd_head` finds the head word by scanning back to the nearest command
-#     separator, so a separator that was escaped or quoted, or a leading
-#     assignment (`LC_ALL=C cat <<"EOF"`), yields a word that is not a sink -
-#     a false DENY.
-#   - A git write passed as a single-quoted ARGUMENT to an interpreter
-#     (`bash -c 'git push'`) is one prose group and is ALLOWED. This predates
-#     the heredoc branch and is the quote-group design's standing tradeoff - a
-#     false ALLOW, tracked separately.
-#
-# The whole COMMAND is buffered into a single blob before scanning (rather
-# than processed line-by-line) so quote-tracking state carries across
-# embedded newlines - otherwise a multi-line quoted argument (e.g. a
-# multi-paragraph docket comment body) would have its quote state reset at
-# each line boundary and a git-write phrase on line 2+ would false-positive
-# as if it were bare/unquoted.
-STRIPPED=$(printf '%s' "$COMMAND" | awk '
-{
-    buf = (NR == 1) ? $0 : buf "\n" $0
-}
-# The head word of the simple command a heredoc redirection at POS belongs to,
-# found by scanning back to the nearest command separator. Only a TEXT SINK
-# gets its quoted body marked as prose: a quoted delimiter makes a body inert
-# to the OUTER shell only, so an interpreter still runs every line of it in an
-# inner shell. A head word this scan reads wrong (a leading assignment, a
-# separator that was escaped or quoted) is simply not a sink, so the body stays
-# unmarked -- a false DENY, never a missed invocation.
-function cmd_head(pos,    k, ch, start, w) {
-    start = 1
-    for (k = pos - 1; k >= 1; k--) {
-        ch = substr(line, k, 1)
-        if (ch == ";" || ch == "&" || ch == "|" || ch == "(" || ch == ")" || ch == "\n") {
-            start = k + 1
-            break
+# With neither trigger, only each leaf's FIRST physical line is scanned: a
+# genuine invocation's verb is always on that first line by construction
+# (bash resolves `\`-continuations before setting $BASH_COMMAND, verified
+# live; only a heredoc body or a literal newline inside a quoted argument
+# adds further lines, and neither can move the verb off line one).
+INTERPRETER_RE='(^|[^A-Za-z0-9_])(sh|bash|dash|zsh|ksh|mksh|csh|tcsh|python[0-9.]*|perl|ruby|node|nodejs|php|lua[0-9.]*|tclsh|expect|osascript|env)([^A-Za-z0-9_]|$)'
+WIDEN=0
+if [[ "$PROBE_TEXT" =~ $INTERPRETER_RE ]]; then
+    WIDEN=1
+fi
+
+SCAN_TEXT=$(awk -v RS='\036' -v widen="$WIDEN" '
+    BEGIN { out = "" }
+    {
+        leaf = $0
+        if (leaf == "") next
+        eol = index(leaf, "\n")
+        line1 = (eol == 0 ? leaf : substr(leaf, 1, eol - 1))
+        leaf_widen = (widen == "1")
+        # A heredoc operator on this leafs own first line whose delimiter
+        # is NOT quoted. Checked as a positive is-it-quoted test, not a
+        # negated one: << or <<-, optional spaces, then immediately a
+        # quote or backslash (a backslash-quoted delimiter is quoted too).
+        # POSIX ERE leftmost-longest matching makes the optional dash
+        # ambiguous in a NEGATED class here -- for a tab-stripping quoted
+        # delimiter it can match either by consuming the dash and landing
+        # on the quote, or by NOT consuming it and landing on the dash
+        # itself, which a negated class excluding only quotes and
+        # backslash would wrongly accept. A positive quote check has no
+        # such second reading: only consuming the dash and then finding a
+        # quote ever satisfies it.
+        if (!leaf_widen && line1 ~ /<</ && line1 !~ /<<-?[ \t]*[\x27\x22\\]/) {
+            leaf_widen = 1
+        }
+        if (leaf_widen) {
+            out = out leaf "\n"
+        } else {
+            out = out line1 "\n"
         }
     }
-    while (start < pos && substr(line, start, 1) ~ /[ \t]/) start++
-    w = ""
-    while (start < pos && substr(line, start, 1) !~ /[ \t]/) {
-        w = w substr(line, start, 1)
-        start++
-    }
-    sub(/^.*\//, "", w)
-    return w
-}
-function is_text_sink(w) {
-    return (w == "cat" || w == "tee" || w == "dd")
+    END { printf "%s", out }
+' "$PROBE_OUT")
+
+# --- Quote-group marking, unchanged from the pre-redesign pass. ----------
+#
+# Marks every word that came from inside a single- or double-quoted string
+# with a sentinel plus a quote-GROUP id, so the MATCH step below can tell
+# real prose (`-m "... git commit ..."`, one group) apart from a
+# bash-unquoted invocation built from separately-quoted words (`"git"
+# "commit"`, two groups). Double-quoted content that could still trigger
+# command/parameter substitution ($(...), backticks, ${...}) is left
+# unmarked so the matcher inspects it directly. No heredoc, comment, or
+# arithmetic handling here: SCAN_TEXT above is already, by construction,
+# one or more complete simple-command lines with no unresolved separators
+# — there is nothing of that shape left for this pass to get wrong.
+STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk '
+{
+    buf = (NR == 1) ? $0 : buf "\n" $0
 }
 END {
     line = buf
@@ -190,133 +269,11 @@ END {
     DQ = "\042"
     MARK = "\001"
     GROUP = 0
-    HD_N = 0
-    ARITH = 0
-    WORD_START = 1
     while (i <= n) {
         c = substr(line, i, 1)
         if (c == "\\" && i < n) {
             out = out c substr(line, i + 1, 1)
-            WORD_START = 0
             i += 2
-            continue
-        }
-        if (c == "\n") {
-            WORD_START = 1
-            if (HD_N == 0) {
-                out = out c
-                i += 1
-                continue
-            }
-            j = i + 1
-            for (h = 1; h <= HD_N; h++) {
-                body = ""
-                while (j <= n) {
-                    eol = index(substr(line, j), "\n")
-                    if (eol == 0) {
-                        seg = substr(line, j)
-                        nj = n + 1
-                    } else {
-                        seg = substr(line, j, eol - 1)
-                        nj = j + eol
-                    }
-                    trimmed = seg
-                    if (HD_DASH[h]) sub(/^\t+/, "", trimmed)
-                    j = nj
-                    if (trimmed == HD_DELIM[h]) break
-                    body = body "\n" seg
-                }
-                if (HD_QUOTED[h]) {
-                    GROUP++
-                    m = split(body, qw, /[ \t\n]+/)
-                    for (k = 1; k <= m; k++) {
-                        if (qw[k] != "") out = out " " MARK GROUP ":" qw[k] MARK
-                    }
-                    out = out "\n"
-                } else {
-                    out = out body "\n"
-                }
-            }
-            HD_N = 0
-            i = j
-            continue
-        }
-        if (c == "#" && WORD_START) {
-            j = i + 1
-            content = ""
-            while (j <= n && substr(line, j, 1) != "\n") {
-                content = content substr(line, j, 1)
-                j++
-            }
-            GROUP++
-            m = split(content, qw, /[ \t]+/)
-            for (k = 1; k <= m; k++) {
-                if (qw[k] != "") out = out " " MARK GROUP ":" qw[k] MARK
-            }
-            out = out " "
-            WORD_START = 1
-            i = j
-            continue
-        }
-        if (c == "(" && substr(line, i + 1, 1) == "(") {
-            ARITH++
-            out = out substr(line, i, 2)
-            WORD_START = 1
-            i += 2
-            continue
-        }
-        if (ARITH > 0 && c == ")" && substr(line, i + 1, 1) == ")") {
-            ARITH--
-            out = out substr(line, i, 2)
-            WORD_START = 1
-            i += 2
-            continue
-        }
-        if (c == "<" && substr(line, i + 1, 2) == "<<") {
-            out = out " "
-            WORD_START = 1
-            i += 3
-            continue
-        }
-        if (c == "<" && substr(line, i + 1, 1) == "<" && ARITH == 0) {
-            sink = is_text_sink(cmd_head(i))
-            j = i + 2
-            dash = 0
-            if (substr(line, j, 1) == "-") {
-                dash = 1
-                j++
-            }
-            while (j <= n && (substr(line, j, 1) == " " || substr(line, j, 1) == "\t")) j++
-            dc = substr(line, j, 1)
-            delim = ""
-            dquoted = 0
-            if (dc == SQ || dc == DQ) {
-                dquoted = 1
-                j++
-                while (j <= n && substr(line, j, 1) != dc) {
-                    delim = delim substr(line, j, 1)
-                    j++
-                }
-                j++
-            } else {
-                if (dc == "\\") {
-                    dquoted = 1
-                    j++
-                }
-                while (j <= n && substr(line, j, 1) ~ /[A-Za-z0-9_.-]/) {
-                    delim = delim substr(line, j, 1)
-                    j++
-                }
-            }
-            out = out " "
-            WORD_START = 1
-            i = j
-            if (delim != "" && delim !~ /^[0-9]+$/) {
-                HD_N++
-                HD_DELIM[HD_N] = delim
-                HD_QUOTED[HD_N] = (dquoted && sink)
-                HD_DASH[HD_N] = dash
-            }
             continue
         }
         if (c == SQ) {
@@ -332,7 +289,6 @@ END {
                 if (qw[k] != "") out = out " " MARK GROUP ":" qw[k] MARK
             }
             out = out " "
-            WORD_START = 0
             i = j + 1
             continue
         }
@@ -360,17 +316,30 @@ END {
                 }
                 out = out " "
             }
-            WORD_START = 0
             i = j + 1
             continue
         }
         out = out c
-        WORD_START = (c ~ /[ \t;&|()<>]/)
         i += 1
     }
     print out
 }
 ' 2>/dev/null) || allow_default
+
+# THE MATCH: `git (commit|push|add)`, head-normalized on `git` and skipping
+# git's own global options (`-C`, `-c`, `--git-dir`, …) that may precede the
+# subcommand, quote-group-aware on the head and subcommand so real prose
+# stays allowed while a trick built from separately-quoted tokens still
+# denies. Unchanged from the pre-redesign hook — this step was never
+# implicated in CL9/CL16/CL17, which were all about recognizing where a
+# simple command begins and what is data versus code BEFORE this step
+# ever runs.
+#
+# THE ONE EXEMPTION: `git --help commit` (option BEFORE the subcommand)
+# opens nothing. `git commit --help` (subcommand before the flag) stays
+# denied — an accepted false positive, since git's own option parsing
+# would need modeling to tell that case apart from `git commit
+# --help-me-a-message-file`-shaped real writes reliably.
 MATCH=$(printf '%s' "$STRIPPED" | awk '
 BEGIN { MARK = "\001" }
 function decode(raw,    inner, cpos) {
@@ -393,15 +362,6 @@ function decode(raw,    inner, cpos) {
         hquoted = decode(words[i])
         hgroup = D_GROUP
         w = D_WORD
-        # Resolve the token head past a preceding command-substitution,
-        # subshell, or separator prefix (`X=$(`, backtick, `(`, `;`, `|`, `&`)
-        # before testing it against `git`. This is what closes a
-        # capture-output shape like `X=$(git commit -m y)` - the assignment
-        # and `$(` are glued onto the same whitespace-delimited token as
-        # `git`, so without this the head never equals "git" at all. It does
-        # not touch how a matched *subcommand* is judged, so substitution-READ
-        # shapes (`SHA=$(git log -1)`, `$(git remote add ...)`) are unaffected
-        # since their subcommand still is not commit/push/add.
         hw = w
         sub(/^.*(\$\(|\140|\(|;|\||&)/, "", hw)
         if (hw == "git" || hw ~ /\/git$/) {
@@ -411,10 +371,6 @@ function decode(raw,    inner, cpos) {
                 decode(words[j])
                 opt = D_WORD
                 if (opt !~ /^-/) break
-                # Option-before-subcommand help exemption only (`git --help
-                # commit`) - see header for why the subcommand-before-flag
-                # form (`git commit --help`) is an accepted false positive
-                # instead.
                 if (opt == "--help" || opt == "-h") helped = 1
                 if (opt == "-C" || opt == "-c" || opt == "--git-dir" || opt == "--work-tree" || opt == "--exec-path" || opt == "--namespace" || opt == "--super-prefix" || opt == "--config-env" || opt == "--attr-source") {
                     j += 2
@@ -426,14 +382,6 @@ function decode(raw,    inner, cpos) {
                 squoted = decode(words[j])
                 sgroup = D_GROUP
                 s = D_WORD
-                # Symmetric to the head normalization above: strip a
-                # trailing delimiter glued directly onto the subcommand
-                # (closing paren/backtick, `;`, `|`, `&`) before comparing
-                # it. This closes the terminal-position counterpart of the
-                # head fix (`$(git push)`, `` `git push` ``, `(git commit)`,
-                # bare `git push;`/`git push&`/`git push|cat`) without
-                # affecting multi-word subcommand names like `commit-tree`/
-                # `commit-graph` (hyphen stays part of the identifier).
                 sw = s
                 sub(/[^A-Za-z0-9_-].*$/, "", sw)
                 if (sw == "commit" || sw == "push" || sw == "add") {

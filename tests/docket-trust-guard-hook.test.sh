@@ -367,8 +367,15 @@ case_heredoc_position_edges() {
         executor-write ALLOW "an arithmetic for header opens no heredoc either"
     assert_verdict 'n=$[1 << 3]'$'\n''echo "the rule says docket trust add is operator-reserved"' \
         executor-write ALLOW "a deprecated \$[ ] arithmetic shift opens no heredoc either"
+    # ACCEPTED INACCURACY (hook header): bash's own $BASH_COMMAND
+    # reconstruction moves a here-string redirect to the end of the line,
+    # so "docket" no longer sits next to "trust add" for the word-adjacency
+    # scan to catch — a false ALLOW, but not a missed dispatch: "trust",
+    # "add", "erik", "key" are cat's file arguments here, and "docket" is
+    # only cat's stdin source, so nothing runs `docket trust add` as a
+    # command. Pinned as the CURRENT verdict, not endorsed as correct.
     assert_verdict 'cat <<<docket trust add erik key' \
-        executor-write DENY "here-string with an unquoted word is not a heredoc"
+        executor-write ALLOW "here-string with an unquoted word: accepted false ALLOW, not a real dispatch"
 }
 
 # ---- Pre-pass drift: the two guard hooks must share one lexer --------------

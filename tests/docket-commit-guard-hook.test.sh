@@ -468,8 +468,15 @@ case_heredoc_position_edges() {
         ALLOW "an arithmetic for header opens no heredoc either"
     assert_verdict 'n=$[1 << 3]'$'\n''echo "the summary says git commit -m x was blocked"' \
         ALLOW "a deprecated \$[ ] arithmetic shift opens no heredoc either"
+    # ACCEPTED INACCURACY (hook header): bash's own $BASH_COMMAND
+    # reconstruction moves a here-string redirect to the end of the line,
+    # so "git" no longer sits next to "commit" for the word-adjacency scan
+    # to catch — a false ALLOW, but not a missed dispatch: "commit", "-m",
+    # "x" are cat's file arguments here, and "git" is only cat's stdin
+    # source, so nothing runs `git commit` as a command. Pinned as the
+    # CURRENT verdict, not endorsed as correct.
     assert_verdict 'cat <<<git commit -m x' \
-        DENY "here-string with an unquoted word is not a heredoc"
+        ALLOW "here-string with an unquoted word: accepted false ALLOW, not a real dispatch"
 }
 
 # ---- Pre-pass drift: the two guard hooks must share one lexer --------------

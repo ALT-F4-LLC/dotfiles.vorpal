@@ -13,8 +13,10 @@
 # convergence means an edit lands in BOTH, in the same session.
 #
 # DOCKET_SKILL_UPSTREAM overrides the engine-copy path. An absent engine
-# checkout is a SKIP, not a failure, so machines without the sibling repo
-# stay green.
+# checkout is a SKIP on a developer machine, so machines without the sibling
+# repo stay green. Under CI it is a FAILURE: a skip there would make this
+# suite green-by-default and catch no drift at all, which is the one place
+# the check has to bite.
 set -uo pipefail
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
@@ -22,6 +24,10 @@ LOCAL="$HERE/src/user/claude_code/skills/docket/SKILL.md"
 UPSTREAM="${DOCKET_SKILL_UPSTREAM:-$HOME/Development/repository/github.com/ALT-F4-LLC/docket.git/feature/graph-engine/skills/docket/SKILL.md}"
 
 if [ ! -f "$UPSTREAM" ]; then
+    if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
+        echo "FAIL: engine checkout not present at $UPSTREAM — CI must provide it"
+        exit 1
+    fi
     echo "SKIP: engine checkout not present at $UPSTREAM"
     exit 0
 fi

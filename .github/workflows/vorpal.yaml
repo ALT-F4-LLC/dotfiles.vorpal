@@ -16,7 +16,22 @@ jobs:
 
       - run: bash tests/docket-run-guard-hook.test.sh
 
+      # The engine copy of the docket skill is what skill-sync diffs against;
+      # without it that suite has nothing to compare and fails.
+      - uses: actions/checkout@v7
+        with:
+          path: .docket-upstream
+          ref: feature/graph-engine
+          repository: ALT-F4-LLC/docket
+          token: ${{ secrets.DOCKET_UPSTREAM_TOKEN || github.token }}
+
+      - run: bash tests/docket-skill-sync.test.sh
+        env:
+          DOCKET_SKILL_UPSTREAM: ${{ github.workspace }}/.docket-upstream/skills/docket/SKILL.md
+
       - run: bash tests/docket-spawn-guard-hook.test.sh
+
+      - run: bash tests/docket-trust-guard-hook.test.sh
 
       - run: bash tests/wave-chain-dead-ladder.test.sh
 

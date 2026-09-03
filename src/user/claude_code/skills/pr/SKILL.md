@@ -306,7 +306,17 @@ wrapper therefore removes the ask instead of preserving it. (`xargs -0 -a
 <file>` also cannot run here at all: `-a` is a GNU flag, and BSD `xargs` —
 the only one on this machine — exits 1 on it.)
 
-**Both files are plain text**, written with `printf '%s'`: no trailing
+**Write both files with the file-write tool, never with a shell command.**
+The writer is the one crossing every control below sits downstream of: a
+shell writer puts the generated text back into command source, where an
+apostrophe in a commit subject closes the quote and a `$(...)` after it runs
+while the command line is parsed — before the file exists, so the denylist
+scan and the title validation inspect a file that looks entirely ordinary.
+No quoting rule repairs that; only a channel that never hands the bytes to a
+shell does. The file-write tool and `Bash` resolve the same path, so the
+scratch directory below works for both.
+
+**Both files are plain text**: no trailing
 newline, and no NUL byte anywhere in them. `gh api` sends a file's bytes
 verbatim, so a trailing newline would be published inside the title; and a
 NUL makes `/usr/bin/grep` treat the file as binary, which costs the denylist
@@ -315,14 +325,16 @@ below its line, pattern, and token attribution (it prints only `Binary file
 The denylist scans exactly the bytes `gh` sends.
 
 **Explicitly forbidden**, because each is the same crossing wearing a
-different hat: `--title "$(cat <title-file>)"` and every other command
+different hat: `printf '%s' '<title>' > <file>` and every other shell writer,
+`--title "$(cat <title-file>)"` and every other command
 substitution, a heredoc carrying diff or log text, `-b "<body>"` or
 `-t`/`--title` with a generated value as a shell string, and `--fill*`
 (already ruled out above).
 
 **The title file is validated before it is used**, and a failure refuses the
 publish rather than repairing it: exactly one line, no embedded newline,
-non-empty after the denylist's strip pass, ≤ 72 characters, and matching the
+contains no NUL byte, non-empty after the denylist's strip pass,
+≤ 72 characters, and matching the
 conventional-commit shape above (`type(scope): summary`). A leading `-`
 cannot parse as a flag under `-F 'title=@<file>'` — the file's bytes are a
 field value, never argv — so the shape check is style and length, not the

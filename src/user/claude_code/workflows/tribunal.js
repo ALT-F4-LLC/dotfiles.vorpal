@@ -1,6 +1,6 @@
 export const meta = {
     name: 'tribunal',
-    description: 'Spawn a judge panel that decides one gated proposal by each seat casting a real `docket vote cast`. This script never casts, approves, or tallies — the engine\'s vote machinery tallies. Invoke by scriptPath ONLY, with args {voteId, voters, policyText, context, gateKind, cwd} — policy.toml is passed as TEXT, never a path; the script cannot read files.',
+    description: 'Spawn a judge panel that decides one gated proposal by each seat casting a real `docket vote cast`. This script never casts, approves, or tallies — the engine\'s vote machinery tallies. PROBE COST PER PANEL: one read-only haiku probe of the vote record after the seats return (two when the first returns nothing), plus one more after any re-seat; each relays a jq projection of a few hundred bytes. Invoke by scriptPath ONLY, with args {voteId, voters, policyText, context, gateKind, cwd} — policy.toml is passed as TEXT, never a path; the script cannot read files.',
     whenToUse: 'Invoked on a CONVERSATIONAL gate the docket-run skill routes to a panel (ack-reap, activation, budget, fix-batch), always as Workflow({scriptPath}) — never by name. Engine `type = "vote"` step rows ride the wave since the staged closure: wave.js seats their panels itself with the same seat contract as this script. The CALLER creates the proposal and passes its id; tribunal.js only fills an open one.',
     phases: [
         { title: 'Judge', detail: 'one seat per voter, each casting docket vote cast' },

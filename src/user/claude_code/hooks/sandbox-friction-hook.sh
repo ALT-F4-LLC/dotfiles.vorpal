@@ -73,11 +73,18 @@ else
         BYPASSED=true
         KIND="unsandboxed-retry"
     fi
-    if printf '%s' "$RESPONSE" | grep -qE "$DENIAL_RE"; then
+    # Quoted spans are prose, not errors: a brief that says `bind: operation
+    # not permitted`, or a source comment that says fails with "unable to open
+    # database file", is printed by cat/grep/sed dozens of times a day and
+    # was two thirds of one day's "sandbox-denial" rows. An errno line from a
+    # real denial is never quoted. tool_response is JSON here, so an inner
+    # double quote arrives as \".
+    CLEAN=$(printf '%s' "$RESPONSE" | sed -E 's/`[^`]*`//g; s/\\"[^"]*\\"//g' 2>/dev/null || printf '%s' "$RESPONSE")
+    if printf '%s' "$CLEAN" | grep -qE "$DENIAL_RE"; then
         [ -n "$KIND" ] || KIND="sandbox-denial"
         # The denied path or host is the actionable part — it is what an
         # allowlist entry would name. Keep a bounded excerpt, not a build log.
-        EVIDENCE=$(printf '%s' "$RESPONSE" | grep -oE ".{0,120}(${DENIAL_RE}).{0,60}" 2>/dev/null | head -3 | tr '\n' ' ' | cut -c1-600)
+        EVIDENCE=$(printf '%s' "$CLEAN" | grep -oE ".{0,120}(${DENIAL_RE}).{0,60}" 2>/dev/null | head -3 | tr '\n' ' ' | cut -c1-600)
     fi
     [ -n "$KIND" ] || exit 0
 fi

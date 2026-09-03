@@ -24,6 +24,8 @@ jobs:
 
       - run: bash tests/sandbox-bypass-guard-hook.test.sh
 
+      - run: bash tests/sandbox-friction-hook.test.sh
+
       - run: bash tests/sensitive-path-guard-hook.test.sh
 
       - run: bash tests/wave-chain-dead-ladder.test.sh

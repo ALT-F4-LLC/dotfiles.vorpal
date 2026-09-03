@@ -360,12 +360,20 @@ impl ClaudeCode {
         let settings_builder = settings_builder
             .with_permission_additional_directories(vec!["~/.claude/workflows".to_string()]);
 
+        // Every `gh` verb that publishes text or changes who can act on a PR asks
+        // first, so the human sees the bytes before they are public. `gh run view`
+        // is deliberately absent: it only reads CI logs, and the `pr` skill already
+        // treats that output as untrusted data rather than instructions.
         let settings_builder = settings_builder
             .with_permission_ask("Bash(docket trust add:*)")
             .with_permission_ask("Bash(docket trust rm:*)")
             .with_permission_ask("Bash(gh api:*)")
+            .with_permission_ask("Bash(gh pr close:*)")
+            .with_permission_ask("Bash(gh pr comment:*)")
             .with_permission_ask("Bash(gh pr create:*)")
+            .with_permission_ask("Bash(gh pr edit:*)")
             .with_permission_ask("Bash(gh pr merge:*)")
+            .with_permission_ask("Bash(gh pr ready:*)")
             .with_permission_ask("Bash(git push:*)");
 
         let settings_builder = deny_sensitive_paths(

@@ -1,6 +1,6 @@
 ---
 fragment: rerun-discipline
-version: 4
+version: 5
 ---
 # Re-run discipline
 
@@ -23,6 +23,11 @@ Whatever you do run executes isolated from sibling executors: build/test artifac
 caches (GOCACHE included) under a fresh subdirectory of $TMPDIR unique to your step,
 never a shared path. A failure carrying an environment signature is triaged per the
 evidence rules before any attribution.
+
+When you compare two outputs, write both to files under that subdirectory and diff the
+files. Process substitution (`diff <(...) <(...)`) and a diff read from stdin are refused
+under the sandbox ("Operation not permitted" on `/dev/fd/N`), and a lift is never the
+answer; the refusal is the environment, not a finding.
 
 A probe that mutates code (a positive control, a planted mutant) runs only in a
 private copy of the tree (`git worktree add` under your $TMPDIR subdirectory, removed

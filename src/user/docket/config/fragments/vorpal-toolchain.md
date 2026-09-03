@@ -1,6 +1,6 @@
 ---
 fragment: vorpal-toolchain
-version: 5
+version: 6
 ---
 # Vorpal toolchain
 
@@ -54,9 +54,7 @@ cd <repo-root> && GOCACHE="<TMP>/<STEP-N>.d/gocache" vorpal run go:1.26.0 build 
 Two denials remain possible, and neither is a reason to retry unsandboxed:
 
 - **A module the conductor did not warm.** `go: downloading ...` followed by a DNS, TLS
-  handshake, or blocked-host error, or by `verifying go.mod: ... pkg/sumdb/...: operation
-  not permitted` (the checksum database sits outside the allowlisted module cache), is
-  NETWORK GATE BLOCKED per your brief: attempt once, then STOP and report the module `go`
+  handshake, or blocked-host error is NETWORK GATE BLOCKED per your brief: attempt once, then STOP and report the module `go`
   was fetching, the exact host or path the error names, and the error verbatim. The
   conductor reads that as a cold cache, warms it, and redispatches; it is never a code
   finding, and never yours to fix by deleting a module cache: the shared one is every

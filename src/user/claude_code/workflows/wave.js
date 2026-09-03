@@ -1239,6 +1239,18 @@ function probeRecovered(p, label) {
 }
 // TEST-END null-probe
 
+// DOT-1265: once a null-recovery probe (either kind below) comes back with
+// nothing itself, a burst of nulls across many rows is a session/rate-limit
+// event, not N independent dead spawns — measured: a mid-wave 429 nulled 22
+// of 26 agent() calls, and the block-probe this file already spawns per
+// null is an agent() call too, so probing every one of them just adds more
+// corpses to the same storm (11 extra, on that run, all also null). Module
+// state, not per-row: `spawn()` runs once per row and shares this flag
+// across every row this wave. Date.now() is unavailable in a workflow
+// script, so the trip is "a probe itself returned nothing", not a time
+// window.
+let nullBurstTripped = false
+
 function spawn(row, phaseLabel) {
     const r = resolve(row, policy)
     const type = archetype(row, r.hint)
@@ -1309,44 +1321,101 @@ function spawn(row, phaseLabel) {
         // unavailable model, and a mid-flight death alike, and the reason
         // string goes only onto the progress stream (workflowProgress[].error)
         // which this script cannot read. A blind retry here would relaunch
-        // agents the operator had just skipped. Instead, a read-only probe
-        // recovers the harness's own persisted record of THIS label, and the
-        // identical-bytes resubmission fires only on a probe-recovered,
-        // label-matched, blocked === true entry whose reason carries the
-        // transient signature. Every other outcome escalates exactly as
-        // before the probe existed. The probe deliberately inherits the
-        // session model (no model override below): nulls are rare, and a
-        // wrong extraction here is the one thing that could relaunch an
-        // agent the operator skipped. A null probe result is a found-nothing.
-        if (retried) return escalate()
-        return agent(blockProbeBrief(stepLabel), {
-            label: `${row.step} · block-probe`,
-            phase: phaseLabel,
-            agentType: 'executor-read',
-            effort: 'low',
-            schema: PROBE_SCHEMA,
-        }).then((p) => probeRecovered(p, stepLabel), () => null)
-            .then((reason) => {
-                if (reason && transientClassifierBlock(reason)) {
-                    log(`${row.step}: probe recovered the harness's block record and ` +
-                        `it admits its own transience (${reason}) — resubmitting the ` +
-                        `IDENTICAL brief once (never reworded); a second null is ` +
-                        `spawn-failed`)
-                    return launch(isolated, true).catch((err2) => {
-                        log(`${row.step}: spawn error on transient-classifier retry: ${err2}`)
-                        return failed()
-                    })
+        // agents the operator had just skipped.
+        //
+        // DOT-1265: a null does not mean nothing happened — the record can
+        // complete and the very API turn that would have returned the
+        // agent's final text can still die (a rate limit, a dropped
+        // connection) afterward, which reads identically to a dead spawn
+        // unless something checks. So before any attribution attempt, ask
+        // the engine directly with the same read-only probe the
+        // claim-conflict path above uses: if the step's own row already
+        // reads `done`, the record landed and this lane is alive, whatever
+        // this particular agent() call returned.
+        if (nullBurstTripped) {
+            log(`${row.step}: agent() returned null and this wave already ` +
+                `tripped the null-burst breaker (a recovery probe came back ` +
+                `empty earlier) — settling directly as a session/rate-limit ` +
+                `event rather than spawning another probe`)
+            return escalate()
+        }
+        return probe(`docket step show ${row.step} --json`,
+            `${row.step} · null-recovery`, phaseLabel, row.step)
+            .then((show) => {
+                const st = parseStepShow(show)
+                if (st.status === 'done') {
+                    log(`${row.step}: agent() returned null, but \`docket step ` +
+                        `show\` reads done (attempt=${st.attempt || '?'}) — the ` +
+                        `record landed; treating this as returned rather than ` +
+                        `settling a dead spawn`)
+                    return {
+                        step: row.step,
+                        status: 'returned',
+                        text: `${row.step}: agent() returned null after the ` +
+                            `record completed (docket step show: status=done, ` +
+                            `attempt=${st.attempt || '?'}). Treated as ` +
+                            `returned — the lane continues.`,
+                    }
                 }
-                if (reason) {
-                    log(`${row.step}: probe recovered a NON-transient classifier block ` +
-                        `(${reason}) — a content refusal stays operator-escalated, and ` +
-                        `identical bytes would be refused deterministically anyway`)
-                } else {
-                    log(`${row.step}: probe could not attribute the null to a ` +
-                        `classifier block — leaving it operator-escalated`)
+                if (show === '') {
+                    // The recovery probe's own agent() call came back with
+                    // nothing — the same failure the row it was checking
+                    // just had. One probe is enough evidence of a storm.
+                    nullBurstTripped = true
+                    log(`${row.step}: the null-recovery probe itself returned ` +
+                        `nothing — treating this as a session/rate-limit event; ` +
+                        `no further per-row recovery probes this wave`)
+                    return escalate()
                 }
+                return notRecorded()
+            }, () => {
+                nullBurstTripped = true
                 return escalate()
             })
+
+        // The record did not land (or the probe found nothing conclusive,
+        // never a storm signature). Fall back to the pre-existing
+        // classifier-block attribution, unchanged: identical-bytes
+        // resubmission fires only on a probe-recovered, label-matched,
+        // blocked === true entry whose reason carries the transient
+        // signature. Every other outcome escalates exactly as before. The
+        // probe deliberately inherits the session model (no model override
+        // below): nulls are rare, and a wrong extraction here is the one
+        // thing that could relaunch an agent the operator skipped.
+        function notRecorded() {
+            if (retried) return escalate()
+            return agent(blockProbeBrief(stepLabel), {
+                label: `${row.step} · block-probe`,
+                phase: phaseLabel,
+                agentType: 'executor-read',
+                effort: 'low',
+                schema: PROBE_SCHEMA,
+            }).then((p) => probeRecovered(p, stepLabel), () => {
+                nullBurstTripped = true
+                return null
+            })
+                .then((reason) => {
+                    if (reason && transientClassifierBlock(reason)) {
+                        log(`${row.step}: probe recovered the harness's block record and ` +
+                            `it admits its own transience (${reason}) — resubmitting the ` +
+                            `IDENTICAL brief once (never reworded); a second null is ` +
+                            `spawn-failed`)
+                        return launch(isolated, true).catch((err2) => {
+                            log(`${row.step}: spawn error on transient-classifier retry: ${err2}`)
+                            return failed()
+                        })
+                    }
+                    if (reason) {
+                        log(`${row.step}: probe recovered a NON-transient classifier block ` +
+                            `(${reason}) — a content refusal stays operator-escalated, and ` +
+                            `identical bytes would be refused deterministically anyway`)
+                    } else {
+                        log(`${row.step}: probe could not attribute the null to a ` +
+                            `classifier block — leaving it operator-escalated`)
+                    }
+                    return escalate()
+                })
+        }
     }
     const launch = (iso, retried) =>
         agent(bootstrap(row, r, iso, isWrite), opts(iso)).then((text) => handle(text, retried))

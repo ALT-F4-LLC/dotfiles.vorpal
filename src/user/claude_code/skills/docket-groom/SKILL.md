@@ -4,7 +4,6 @@ description: Run one full grooming pass over every open issue in the current Doc
 argument-hint: "[stale window, e.g. 14d]"
 context: fork
 agent: general-purpose
-background: false
 model: fable
 ---
 
@@ -16,12 +15,9 @@ place, and put anything destructive in front of the operator before it
 happens.
 
 You run in a forked subagent dedicated to this pass. `context: fork` spawns
-you fresh on every invocation; `background: false` is load-bearing, not
-optional — a forked skill defaults to a reduced tool set that drops
-`AskUserQuestion`, and without it the proposal gate in §4 would have nothing
-to ask through. With `background: false` you keep the full foreground tool
-set, so propose closures and merges exactly as written below. You carry none
-of the parent conversation's history — no issues already read, no earlier
+you fresh on every invocation, and the proposal gate in §4 runs exactly as
+written below, through `AskUserQuestion`. You carry none of the parent
+conversation's history — no issues already read, no earlier
 discussion of the backlog — only `$ARGUMENTS`. Survey the project yourself
 here (§1) rather than assuming anything was read for you. Your final report
 is the only thing that reaches the parent, so it carries the whole pass.

@@ -3,7 +3,6 @@ name: commit
 description: Turn the working tree into clean conventional commits — survey every change, split unrelated work into separate logical commits, guard against junk and secret-shaped files, and commit immediately without asking. Use on "commit", "commit this", "commit my changes", "make a commit", "/commit". Lands commits only; never pushes.
 context: fork
 agent: general-purpose
-background: false
 model: fable
 ---
 
@@ -14,9 +13,9 @@ without ceremony. Survey, group, guard, commit, report — the tree answers the
 questions, not the operator.
 
 You run in a forked subagent. `context: fork` spawns you fresh on every
-invocation, and `background: false` keeps the full foreground tool set —
-including `AskUserQuestion`, which §1 needs for the one case the tree cannot
-answer alone. You carry none of the parent conversation's history: you do
+invocation, and `AskUserQuestion` stays available for the one case in §1
+the tree cannot answer alone. You carry none of the parent conversation's
+history: you do
 not know which files it edited, what it was working on, or what it read.
 Your starting record is `$ARGUMENTS` and the tree itself, so survey the tree
 yourself here rather than assuming anything about it. Your final report is

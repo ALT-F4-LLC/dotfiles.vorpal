@@ -3,7 +3,6 @@ name: brief
 description: Turn a freeform work request into a standardized brief — frontier-by-frontier rounds of AskUserQuestion, as many as the ask genuinely needs, for whatever's underdetermined then route it. Hand off to /docket-plan for docket-tracked work, /loop for work that repeats until a condition holds, another orchestration skill when one fits better, or proceed straight into the work for anything small and non-sensitive, confirmed with you either way. Runs as a forked `fable` subagent so distillation quality rides the strongest tier on a fresh context. The front door for a fuzzy ask you'd rather not prompt-engineer yourself. Trigger on "brief this", "help me think this through", "brief this request", or any new freeform ask before you've decided whether it needs a plan.
 context: fork
 agent: general-purpose
-background: false
 model: fable
 argument-hint: "<freeform work request>"
 ---
@@ -21,11 +20,7 @@ however many rounds of questions it actually takes, and the routing is
 handled — no separate skill to remember, no prompt to engineer.
 
 You run in a forked subagent dedicated to this brief. `context: fork` spawns
-you fresh on every invocation; `background: false` is load-bearing, not
-optional — a forked skill defaults to a reduced tool set that drops
-`AskUserQuestion`, and without it every question round in §1 and the route
-gate in §3 would have nothing to ask through. With `background: false` you
-keep the full foreground tool set, so nothing about how or when you ask
+you fresh on every invocation, and nothing about how or when you ask
 changes: run the same frontier-by-frontier `AskUserQuestion` flow exactly as
 written below, as many rounds as the ask needs.
 

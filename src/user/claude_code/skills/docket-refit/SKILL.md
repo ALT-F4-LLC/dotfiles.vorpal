@@ -3,7 +3,6 @@ name: docket-refit
 description: Redesign one definition in the shared docket corpus under src/user/docket/config — a workflow, policy.toml, an executor contract, a packet fragment, or a payload schema — through an interactive, capability-checked refactor. Sweep the target's blast radius across every consumer, mine run evidence across every project that exercised it to ground optimization proposals, iterate the target spec with the operator, verify every claimed capability against the live docket engine (and wave.js) source, surface each engine-forced deviation as an explicit decision, render the settled design as a visual Artifact for approval before implementing, then land the full co-change closure (workflow TOML, contracts, fragments, policy rows, vote-seat lenses, schemas), lint every consumer, file engine issues for real gaps, and commit. Invoked bare (`/refit` with nothing named) it instead runs corpus mode — mine run evidence across every surface in the corpus (workflows AND policy, contracts, fragments, schemas) triage-then-deep-dive, verdict each one, and carry every refit, removal, and addition the evidence calls for through the same §1–§8 process to a landed commit, target by target, with the same per-target deviation gates and artifact approval as single mode. Use on "refit the ui-change workflow", "/refit standard-change", "/refit policy.toml", "tighten the implement contract", "refit the findings schema", "refactor a docket workflow", "optimize the release pipeline", "add a phase to release", "redesign the investigation pipeline", bare "/refit" to redesign the whole corpus, or any request to change or improve what any definition under src/user/docket/config does.
 context: fork
 agent: general-purpose
-background: false
 model: fable
 ---
 
@@ -18,13 +17,9 @@ commit. Source only: nothing under `~/.claude` or `~/.docket` is edited, and
 the operator's `just activate` is the only installer.
 
 You run in a forked subagent dedicated to this refit. `context: fork` spawns
-you fresh on every invocation; `background: false` is load-bearing, not
-optional — a forked skill defaults to a reduced tool set that drops
-`AskUserQuestion`, and without it the deviation decisions, the spec
-iteration, and the artifact approval gate below would have nothing to ask
-through. With `background: false` you keep the full foreground tool set —
-`AskUserQuestion` and `Artifact` included — so every gate runs exactly as
-written. You carry none of the parent
+you fresh on every invocation, and the deviation decisions, the spec
+iteration, and the artifact approval gate below run exactly as written,
+through `AskUserQuestion` and `Artifact`. You carry none of the parent
 conversation's history — no consumer sweep, no run evidence, no earlier
 discussion of the target — only `$ARGUMENTS` (the named target, or nothing
 for corpus mode). Read the corpus and the engine source yourself here rather

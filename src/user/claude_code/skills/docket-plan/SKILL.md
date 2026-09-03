@@ -1,17 +1,27 @@
 ---
 name: docket-plan
 description: Turn a work request into an activatable Docket run — converse until the request is unambiguous, then record the request, a plan artifact, and issues with kinds, labels, scopes, depends_on relations, and verbatim acceptance criteria. Invoked bare (`/docket-plan` with no request and no issue id) it instead surveys the current Docket project's open backlog, aligns with the operator on what this batch should cover (which kinds of work, how aggressively to parallelize), and proposes the most optimal next batch — ready, highest-priority, parallel-safe, run-ready, within a stated budget — then on confirmation records that batch as a run binding the backlog issues directly. Records and stops; never runs the work. Use at the start of a piece of work, to pick the next batch off the backlog, or to extend a run's later phase after execution has learned something.
+context: fork
+agent: general-purpose
 model: fable
 ---
 
 # docket-plan
 
-You decide what the work *is* — directly, in this conversation. Deciding is a
-judgment that belongs to a human and to you together, before any executor
-exists; now that the frontmatter already puts this conversation on the
-strongest tier, there is no need to spawn a dedicated seat just to reach it.
-You never spawn anything that starts work, and reading the repo, asking the
-operator, and recording the run are all yours to do here.
+You decide what the work *is* — in a forked subagent dedicated to that
+decision. `context: fork` spawns you fresh on every invocation, and nothing
+about how or when you ask changes: run the same multi-round
+`AskUserQuestion` flow exactly as written below, batched the same way, as
+many rounds as the ambiguity needs.
+
+What forking does change is what you already know when you start: you carry
+none of the parent conversation's history — no prior file reads, no context
+gathered before this invocation — only the operator's invocation text and any
+`brief` block it carries. Treat that as the whole starting record. Deciding
+what the work is stays a judgment for a human and you together, so read the
+repo yourself here (§2) rather than assuming anything was read for you
+already. You never spawn anything that starts work, and reading the repo,
+asking the operator, and recording the run are all yours to do here.
 
 Rules you must not fight:
 

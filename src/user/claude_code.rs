@@ -15,7 +15,7 @@ const SANDBOX_CLAUDE_SCRATCH_ROOT: &str = "/tmp/claude-501";
 const SANDBOX_CLAUDE_SCRATCH_ROOT_PRIVATE: &str = "/private/tmp/claude-501";
 const SANDBOX_DARWIN_TEMP_ROOT: &str = "/var/folders";
 const SANDBOX_DOCKET_STORE_PATH: &str = "~/.docket";
-const SANDBOX_DOCKET_TRUST_LOCK_PATH: &str = "~/.config/docket/trust.toml.lock";
+const SANDBOX_DOCKET_CONFIG_PATH: &str = "~/.config/docket";
 const SANDBOX_DOCS_CACHE_PATH: &str = "~/.claude/cache/docs";
 const SANDBOX_FRICTION_LEDGER_PATH: &str = "~/.claude/friction";
 const SENSITIVE_PATHS_DENY_READ_ONLY: &[&str] = &["~/.aws/**"];
@@ -409,10 +409,20 @@ impl ClaudeCode {
             .with_sandbox_allow_unsandboxed_commands(true)
             .with_sandbox_auto_allow_bash(true)
             .with_sandbox_fail_if_unavailable(true)
+            // Commands that need a network the sandbox cannot grant (the
+            // bulbasaur cluster, AWS, the Doppler API) run unsandboxed rather
+            // than through a per-call lift; the permission rules and the
+            // auto-mode classifier still gate what they do. Prefix-matched:
+            // an env-var or `cd` prefix defeats the match and the call runs
+            // sandboxed.
             .with_sandbox_excluded_commands(vec![
+                "aws *".to_string(),
                 "docker *".to_string(),
+                "doppler *".to_string(),
                 "gh *".to_string(),
                 "git *".to_string(),
+                "kubectl *".to_string(),
+                "terraform *".to_string(),
                 "vorpal *".to_string(),
             ])
             .with_sandbox_filesystem_allow_write(
@@ -425,7 +435,12 @@ impl ClaudeCode {
                     .chain(std::iter::once(&SANDBOX_DARWIN_TEMP_ROOT))
                     .chain(std::iter::once(&SANDBOX_DOCS_CACHE_PATH))
                     .chain(std::iter::once(&SANDBOX_DOCKET_STORE_PATH))
-                    .chain(std::iter::once(&SANDBOX_DOCKET_TRUST_LOCK_PATH))
+                    // The whole config directory, not just trust.toml.lock:
+                    // `docket trust add` writes a temp file beside trust.toml
+                    // and renames it, so a lock-only allowance failed every
+                    // sandboxed trust write. The Edit() deny on trust.toml
+                    // and the trust-guard hook still hold the executor line.
+                    .chain(std::iter::once(&SANDBOX_DOCKET_CONFIG_PATH))
                     .chain(std::iter::once(&SANDBOX_FRICTION_LEDGER_PATH))
                     .map(|p| p.to_string())
                     .collect(),

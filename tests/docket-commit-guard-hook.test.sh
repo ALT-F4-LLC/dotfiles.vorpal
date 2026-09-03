@@ -380,6 +380,56 @@ case_heredoc_body_prose() {
         DENY "real invocation on the line after a quoted heredoc ends"
     assert_verdict "cat > \"\$TMPDIR/f.txt\" <<EOF"$'\n''git commit -m x'$'\nEOF' \
         DENY "unquoted heredoc delimiter: body still reaches the matcher"
+    assert_verdict "cat > \"\$TMPDIR/f.txt\" <<'EOF'"$'\n\tEOF\n''git commit -m x'$'\nEOF' \
+        ALLOW "tab-indented EOF does not end a plain quoted heredoc body"
+}
+
+# ---- HEREDOC POSITION: `<<` is only a heredoc operator in redirection ------
+#
+# The two characters `<<` also appear in a here-string, in a comment, and in
+# an arithmetic shift, where they open no body at all. A branch that arms a
+# pending delimiter in those positions swallows everything after it into one
+# prose group, which turns a real invocation into an ALLOW; the arithmetic
+# case fails the other way, denying prose that was allowed before. Every case
+# below is DENY except the arithmetic one, and each pins one position.
+
+case_heredoc_position_edges() {
+    assert_verdict "grep foo <<<\"bar\""$'\n''git commit -m x' \
+        DENY "here-string with a double-quoted word is not a heredoc"
+    assert_verdict "grep foo <<<'bar'"$'\n''git commit -m x' \
+        DENY "here-string with a single-quoted word is not a heredoc"
+    assert_verdict "cat <<A <<'B'"$'\n''$(git commit -m x)'$'\nA\nB' \
+        DENY "two heredocs on one line keep their own quotedness in order"
+    assert_verdict "# a note about <<'EOF' bodies"$'\n''git commit -m x' \
+        DENY "a heredoc operator inside a whole-line comment opens no body"
+    assert_verdict "echo hi  # uses <<'EOF' style"$'\n''git commit -m x' \
+        DENY "a heredoc operator inside a trailing comment opens no body"
+    assert_verdict "cat > \"\$TMPDIR/f.txt\" <<-'EOF'"$'\n\tprose\n\tEOF\n''git commit -m x' \
+        DENY "a tab-indented terminator ends a <<- body, and the next line is code"
+    assert_verdict 'n=$((1 << 3))'$'\n''echo "the summary says git commit -m x was blocked"' \
+        ALLOW "an arithmetic shift opens no heredoc, so the prose after it stays prose"
+}
+
+# ---- Pre-pass drift: the two guard hooks must share one lexer --------------
+#
+# The quote-aware pre-pass is duplicated byte-for-byte in the commit guard and
+# the trust guard, with no sourcing mechanism available (each hook is invoked
+# standalone). A fix applied to one copy and not the other leaves two guards
+# with different notions of inert text, and nothing else in the tree notices.
+
+PREPASS_RANGE="/^STRIPPED=/,/^' 2>\/dev\/null) || allow_default\$/p"
+
+case_prepass_copies_identical() {
+    local mine sibling
+    mine=$(sed -n "$PREPASS_RANGE" "${REPO_ROOT}/src/user/claude_code/hooks/docket-commit-guard-hook.sh")
+    sibling=$(sed -n "$PREPASS_RANGE" "${REPO_ROOT}/src/user/claude_code/hooks/docket-trust-guard-hook.sh")
+    if [ -z "$mine" ] || [ -z "$sibling" ]; then
+        fail "quote-aware pre-pass region not found in one of the guard hooks"
+    elif [ "$mine" = "$sibling" ]; then
+        pass "quote-aware pre-pass is byte-identical in both guard hooks"
+    else
+        fail "quote-aware pre-pass has drifted between the two guard hooks"
+    fi
 }
 
 # ---- Malformed / non-Bash input: fail open, never mid-parse --------------
@@ -411,6 +461,8 @@ case_must_not_catch_prose_and_reads
 case_must_not_catch_substitution_reads
 case_accepted_residual_risks
 case_heredoc_body_prose
+case_heredoc_position_edges
+case_prepass_copies_identical
 case_input_edge_cases
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"

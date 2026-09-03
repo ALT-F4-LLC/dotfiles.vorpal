@@ -107,6 +107,18 @@ COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/nul
 # is marked as ONE quote group. An unquoted-delimiter body (`<<EOF`) does
 # expand, so it stays unmarked and reaches the matcher exactly as before.
 #
+# The heredoc branch is REDIRECTION-POSITION aware, because `<<` is only a
+# heredoc operator there: it does not fire on a here-string (`<<<WORD`, whose
+# three characters are consumed whole), inside a `#` comment, or inside an
+# arithmetic expansion (`$((1 << 3))`) -- in each of those a firing branch
+# armed a phantom delimiter and swallowed the rest of the command into one
+# prose group. Pending heredocs are a QUEUE, so `cat <<A <<"B"` consumes each
+# body in redirection order with its own quotedness instead of letting the
+# last delimiter overwrite the first and mark an expanding body as prose.
+# Leading tabs are stripped before the terminator comparison only for a `<<-`
+# body, so a tab-indented line inside a plain `<<"EOF"` body no longer ends it
+# early.
+#
 # The whole COMMAND is buffered into a single blob before scanning (rather
 # than processed line-by-line) so quote-tracking state carries across
 # embedded newlines - otherwise a multi-line quoted argument (e.g. a
@@ -126,8 +138,9 @@ END {
     DQ = "\042"
     MARK = "\001"
     GROUP = 0
-    HD_DELIM = ""
-    HD_QUOTED = 0
+    HD_N = 0
+    ARITH = 0
+    COMMENT = 0
     while (i <= n) {
         c = substr(line, i, 1)
         if (c == "\\" && i < n) {
@@ -135,42 +148,76 @@ END {
             i += 2
             continue
         }
-        if (c == "\n" && HD_DELIM != "") {
+        if (c == "\n") {
+            COMMENT = 0
+            if (HD_N == 0) {
+                out = out c
+                i += 1
+                continue
+            }
             j = i + 1
-            body = ""
-            while (j <= n) {
-                eol = index(substr(line, j), "\n")
-                if (eol == 0) {
-                    seg = substr(line, j)
-                    nj = n + 1
+            for (h = 1; h <= HD_N; h++) {
+                body = ""
+                while (j <= n) {
+                    eol = index(substr(line, j), "\n")
+                    if (eol == 0) {
+                        seg = substr(line, j)
+                        nj = n + 1
+                    } else {
+                        seg = substr(line, j, eol - 1)
+                        nj = j + eol
+                    }
+                    trimmed = seg
+                    if (HD_DASH[h]) sub(/^\t+/, "", trimmed)
+                    j = nj
+                    if (trimmed == HD_DELIM[h]) break
+                    body = body "\n" seg
+                }
+                if (HD_QUOTED[h]) {
+                    GROUP++
+                    m = split(body, qw, /[ \t\n]+/)
+                    for (k = 1; k <= m; k++) {
+                        if (qw[k] != "") out = out " " MARK GROUP ":" qw[k] MARK
+                    }
+                    out = out "\n"
                 } else {
-                    seg = substr(line, j, eol - 1)
-                    nj = j + eol
+                    out = out body "\n"
                 }
-                trimmed = seg
-                sub(/^\t+/, "", trimmed)
-                j = nj
-                if (trimmed == HD_DELIM) break
-                body = body "\n" seg
             }
-            if (HD_QUOTED) {
-                GROUP++
-                m = split(body, qw, /[ \t\n]+/)
-                for (k = 1; k <= m; k++) {
-                    if (qw[k] != "") out = out " " MARK GROUP ":" qw[k] MARK
-                }
-                out = out " "
-            } else {
-                out = out body "\n"
-            }
-            HD_DELIM = ""
-            HD_QUOTED = 0
+            HD_N = 0
             i = j
             continue
         }
-        if (c == "<" && substr(line, i + 1, 1) == "<" && substr(line, i + 2, 1) != "<") {
+        if (!COMMENT && c == "#" && (i == 1 || substr(line, i - 1, 1) ~ /[ \t\n;&|(]/)) {
+            COMMENT = 1
+            out = out c
+            i += 1
+            continue
+        }
+        if (c == "$" && substr(line, i + 1, 2) == "((") {
+            ARITH++
+            out = out substr(line, i, 3)
+            i += 3
+            continue
+        }
+        if (ARITH > 0 && c == ")" && substr(line, i + 1, 1) == ")") {
+            ARITH--
+            out = out substr(line, i, 2)
+            i += 2
+            continue
+        }
+        if (c == "<" && substr(line, i + 1, 2) == "<<") {
+            out = out " "
+            i += 3
+            continue
+        }
+        if (c == "<" && substr(line, i + 1, 1) == "<" && !COMMENT && ARITH == 0) {
             j = i + 2
-            if (substr(line, j, 1) == "-") j++
+            dash = 0
+            if (substr(line, j, 1) == "-") {
+                dash = 1
+                j++
+            }
             while (j <= n && (substr(line, j, 1) == " " || substr(line, j, 1) == "\t")) j++
             dc = substr(line, j, 1)
             delim = ""
@@ -196,8 +243,10 @@ END {
             out = out " "
             i = j
             if (delim != "") {
-                HD_DELIM = delim
-                HD_QUOTED = dquoted
+                HD_N++
+                HD_DELIM[HD_N] = delim
+                HD_QUOTED[HD_N] = dquoted
+                HD_DASH[HD_N] = dash
             }
             continue
         }

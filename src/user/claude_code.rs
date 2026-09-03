@@ -76,7 +76,7 @@ const AUTO_MODE_ALLOW_RULES: &[&str] = &[
     "Local git operations in trusted repositories — add, commit, worktree, cherry-pick, stash, archive, cat-file, rev-parse, and other repo-local verbs, whether run from the checkout or via `git -C <trusted checkout>`, with commit messages passed inline, via a heredoc, or via `-F <file under the scratch root>`; `git push` publishes and stays outside this rule",
     "Bash(vorpal:*) in ALT-F4-LLC repositories — the org's own build tool, same standing as docket",
     "Read-only cluster reads against bulbasaur — kubectl get/describe/logs, flux get; mutations against the cluster stay outside this rule (production)",
-    "Read-only search and inspection inside trusted checkouts and the Claude scratch roots (/tmp/claude-501, /private/tmp/claude-501, $TMPDIR) — grep, rg, find, ls, cat, head, tail, sed -n, wc, diff, strings, jq, and python3/perl one-liners that only read — including a relative path or glob after `cd` into one of those roots; the Read() denies cover only the sensitive home paths (~/.ssh, ~/.aws, ~/.gnupg, credential stores), which the sandbox already refuses at the syscall level and which a relative path under these roots cannot reach",
+    "Read-only search and inspection inside trusted checkouts and the Claude scratch roots (/tmp/claude-501, /private/tmp/claude-501, $TMPDIR) — grep, rg, find, ls, cat, head, tail, sed -n, wc, diff, strings, jq, and python3/perl one-liners that only read — including a relative path or glob after `cd` into one of those roots; the sensitive home paths (~/.ssh, ~/.aws, ~/.gnupg, credential stores) are refused by the sandbox at the syscall level and by the sensitive-path-guard hook, and a relative path under these roots cannot reach them",
     "File operations confined to the Claude scratch roots (/tmp/claude-501, /private/tmp/claude-501, $TMPDIR) — mkdir, cp -R, rm -rf, mv, tar/git-archive mirrors of a trusted checkout, and in-place edits (sed -i, perl -pi, python3 heredocs) of files under them; these are per-session throwaway workspaces the sandbox already lets every session write, so deleting or mutating them affects no repo",
     "Read-only inspection under ~/.claude — session transcripts and tool-results under ~/.claude/projects, the friction ledger, installed skills, workflows, hooks, and scripts — the operator's own harness state; edits there stay outside this rule (source-only, installed via `just activate`)",
     "Read-only gh reads against ALT-F4-LLC repositories — gh pr view/checks/list/diff, gh run list/view, gh issue view/list; gh pr create, gh pr merge, and gh api stay on their ask rules",
@@ -296,6 +296,12 @@ impl ClaudeCode {
                 Some("Bash"),
                 "bash ~/.claude/hooks/sandbox-friction-hook.sh",
                 "command",
+            )
+            .with_hook(
+                "PreToolUse",
+                Some("Read|Grep|Glob"),
+                "bash ~/.claude/hooks/sensitive-path-guard-hook.sh",
+                "command",
             );
 
         let settings_builder = settings_builder.with_auto_mode(settings::AutoMode {
@@ -385,14 +391,12 @@ impl ClaudeCode {
                 .copied(),
         );
 
-        let settings_builder = deny_sensitive_paths(
-            settings_builder,
-            |p| format!("Read({p})"),
-            SENSITIVE_PATHS
-                .iter()
-                .chain(SENSITIVE_PATHS_DENY_READ_ONLY)
-                .copied(),
-        );
+        // No Read() deny rules on purpose. With any Read() deny configured the
+        // harness turns every `cd <dir> && grep <relative path>` into a hard
+        // ask the auto-mode classifier may not answer (its
+        // deniedPathInsideDirectory circuit breaker); the sensitive roots are
+        // refused instead by the sandbox denyRead list for Bash and by the
+        // sensitive-path-guard hook for Read/Grep/Glob.
 
         let settings = settings_builder
             .with_sandbox_allow_unsandboxed_commands(true)
@@ -708,6 +712,44 @@ mod tests {
                 assert!(!rule.contains(verb), "{verb} must never be allow-listed");
             }
         }
+    }
+
+    #[test]
+    fn sensitive_path_guard_hook_roster_matches_the_sensitive_read_set() {
+        // The hook stands in for the Read() deny rules, so its embedded list
+        // must be exactly the set the sandbox denies reads of. Drift either
+        // way is a silent hole: a root the hook lacks is readable through the
+        // Read tool, a root only the hook has is readable through Bash.
+        let hook = include_str!("claude_code/hooks/sensitive-path-guard-hook.sh");
+        let start = hook
+            .find("SENSITIVE_ROOTS='")
+            .expect("hook declares SENSITIVE_ROOTS");
+        let body = &hook[start + "SENSITIVE_ROOTS='".len()..];
+        let end = body.find('\'').expect("SENSITIVE_ROOTS is closed");
+        let mut roster: Vec<&str> = body[..end].lines().filter(|l| !l.is_empty()).collect();
+        roster.sort_unstable();
+
+        let mut expected: Vec<&str> = SENSITIVE_PATHS
+            .iter()
+            .chain(SENSITIVE_PATHS_DENY_READ_ONLY)
+            .copied()
+            .collect();
+        expected.sort_unstable();
+
+        assert_eq!(roster, expected);
+    }
+
+    #[test]
+    fn no_read_permission_deny_rules_are_emitted() {
+        // A single Read() deny rule re-arms the harness's compound-cd ask
+        // (see the comment where the Edit() denies are built). Guard the
+        // source text: the only deny wrappers may be Edit().
+        let source = include_str!("claude_code.rs");
+        let body = &source[..source.find("#[cfg(test)]").expect("tests follow the impl")];
+        assert!(
+            !body.contains("format!(\"Read({p})\")"),
+            "a Read() permission deny wrapper is back"
+        );
     }
 
     #[test]

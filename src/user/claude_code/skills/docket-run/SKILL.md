@@ -1161,6 +1161,18 @@ completed wave is also a milestone point for any standing external-tracker
 obligation project memory carries (**Before the loop**) — sync it on this same
 notification.
 
+**The order above binds one dispatch's own sequence, not the relationship
+between DIFFERENT dispatches.** A `wave-usage.js` join reads one wave's own
+transcript directory (read-only) and writes to one dispatch or proposal id;
+nothing shared makes a join for one dispatch conflict with a join for
+another. So when more than one dispatch or panel is genuinely in flight —
+this run's own wave still running while a tribunal panel is being back-filled,
+or two waves from separate runs — launch their `wave-usage.js` joins
+concurrently rather than waiting on one before starting the next. Each join
+still precedes its OWN dispatch's write, and each write still precedes that
+SAME dispatch's verify and close; parallelizing across dispatches saves
+wall-clock and changes no ordering this section requires.
+
 Two ways the back-fill gets skipped, both measured directly, both losing the
 run's only record of its spend:
 

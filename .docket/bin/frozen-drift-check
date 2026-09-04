@@ -42,11 +42,15 @@
 #   - Requires `docket` and `jq` and fails loudly without them — a freshness
 #     gate that silently passes when its tools are missing is worse than none.
 #
-# Out of scope: contract/policy files (contracts/*.md, policy.toml). Workflow
-# registrations record no per-contract hashes — packets are templates
+# Contracts and fragments (contracts/*.md, fragments/*.md) carry no frozen
+# registration to diff against — packets are templates
 # ("contracts/{executor}.md") resolved and pinned per-run at activation — so
-# there is no global last-registered hash to diff those files against;
-# `docket run verify-pins` remains the (per-run) check for them.
+# git HEAD is the reference instead: the front-matter `version` must move in
+# lockstep with the body. A changed body demands a strictly greater version, a
+# changed version demands a changed body, and either half alone is drift the
+# next run's `docket run verify-pins` would otherwise discover. Files absent
+# from HEAD (new contracts) have no prior version and are skipped. policy.toml
+# stays out of scope: it carries no version field.
 #
 # Exit codes: 0 clean, 1 drift found, 2 environment failure (not a git repo,
 # or docket/jq/shasum unavailable, or the engine returned an error).
@@ -191,11 +195,67 @@ while IFS=$'\t' read -r name version reg_sha source_path; do
   fi
 done <<< "$workflow_rows"
 
+# --- contracts and fragments: front-matter version tracks the body ---------
+# Reference is git HEAD, not a frozen record (see header). Both readers take
+# the file's bytes on stdin so the working copy and `git show HEAD:` go
+# through the same parse.
+
+body_sha_without_version() {
+  awk '!/^version:[[:space:]]*[0-9]+[[:space:]]*$/' | shasum -a 256 | cut -d' ' -f1
+}
+
+frontmatter_version() {
+  awk '/^version:[[:space:]]*[0-9]+/{match($0,/[0-9]+/); print substr($0,RSTART,RLENGTH); exit}'
+}
+
+report_version_drift() {
+  # $1 file, $2 HEAD version, $3 working version, $4 reason
+  echo "frozen-drift-check: DRIFT contract $1" >&2
+  echo "  HEAD version:    $2" >&2
+  echo "  working version: $3" >&2
+  echo "  note:            $4" >&2
+  failed=1
+}
+
+versioned=0
+head_docs="$(git -C "$repo_root" ls-tree -r --name-only HEAD -- \
+  src/user/docket/config/contracts src/user/docket/config/fragments)"
+
+while IFS= read -r rel; do
+  [ -n "$rel" ] || continue
+  case "$rel" in *.md) ;; *) continue ;; esac
+  if [ ! -f "$repo_root/$rel" ]; then
+    echo "frozen-drift-check: skip  contract $rel (deleted in working tree)"
+    continue
+  fi
+  versioned=$((versioned + 1))
+  head_body="$(git -C "$repo_root" show "HEAD:$rel" | body_sha_without_version)"
+  head_version="$(git -C "$repo_root" show "HEAD:$rel" | frontmatter_version)"
+  cur_body="$(body_sha_without_version < "$repo_root/$rel")"
+  cur_version="$(frontmatter_version < "$repo_root/$rel")"
+  if [ -z "$cur_version" ]; then
+    report_version_drift "$rel" "${head_version:-<none>}" "<none>" \
+      "front matter declares no numeric 'version:' field"
+  elif [ "$cur_body" = "$head_body" ]; then
+    if [ "$cur_version" = "${head_version:-}" ]; then
+      echo "frozen-drift-check: ok    contract $rel (unchanged at v${cur_version})"
+    else
+      report_version_drift "$rel" "${head_version:-<none>}" "$cur_version" \
+        "version changed but the body is identical to HEAD; revert the bump or make the edit"
+    fi
+  elif [ -n "$head_version" ] && [ "$cur_version" -gt "$head_version" ]; then
+    echo "frozen-drift-check: ok    contract $rel (body changed, v${head_version} -> v${cur_version})"
+  else
+    report_version_drift "$rel" "${head_version:-<none>}" "$cur_version" \
+      "body changed but the version is not above HEAD's; bump it"
+  fi
+done <<< "$head_docs"
+
 echo ""
 if [ "$failed" -ne 0 ]; then
-  echo "frozen-drift-check FAILED: a registered (frozen) definition's file was edited without a version bump." >&2
+  echo "frozen-drift-check FAILED: a frozen definition or a versioned contract was edited without a matching version bump." >&2
   echo "The engine will refuse activation (CONFLICT) or fail run verify-pins against these bytes." >&2
-  echo "Fix: bump the definition's version (schemas: add a new <name>@<n+1>.json; workflows: raise [pipeline].version), or revert the edit." >&2
+  echo "Fix: bump the definition's version (schemas: add a new <name>@<n+1>.json; workflows: raise [pipeline].version; contracts and fragments: raise the front-matter version), or revert the edit." >&2
   exit 1
 fi
-echo "frozen-drift-check: ok ($records frozen records checked, $files files compared)"
+echo "frozen-drift-check: ok ($records frozen records checked, $files files compared, $versioned versioned contracts checked)"

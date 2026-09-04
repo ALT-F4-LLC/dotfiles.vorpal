@@ -1,12 +1,13 @@
 ---
 node: dispose
-version: 2
+version: 3
 archetype: executor-write
 packet_includes:
   - fragments/truth-first.md
   - fragments/evidence-rules.md
   - fragments/writing-for-humans.md
   - fragments/scope-discipline.md
+  - fragments/completion-gates.md
 emits: disposition
 ---
 # Charter

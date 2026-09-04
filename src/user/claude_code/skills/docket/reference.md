@@ -1359,6 +1359,18 @@ likely to have been tampered with.
 |---|---|---|---|
 | `--run` | string | — | **required** |
 | `--accept-missing-usage` | bool | `false` | close despite `usage-rows-missing`, recording the acceptance |
+| `--backfill-from` | string | — | a JSON array of `{step, unit, quantity}` (`-` reads stdin): back-fill, verify, then close in one invocation |
+| `--source` | string | `backfilled` | with `--backfill-from`: who measured it, recorded on every row |
+| `--on-duplicate` | string | `refuse` | with `--backfill-from`: `refuse` the batch or `skip` a row whose (step, attempt, unit) is already recorded, reporting it |
+| `--skip-integration-check` | string | — | close without verifying integration, recording this REASON on the close event; the operator's override, never a relay's |
+
+**Close verifies integration.** Every write-class step recorded in the
+dispatch must have its commit on the shared branch — an ancestor of HEAD, or
+patch-equivalent (`git cherry`; a cherry-pick mints a new sha for identical
+content). An unintegrated commit refuses `CONFLICT` naming the step, its sha
+and its worktree; a cherry that errors counts as unintegrated. Integrate, then
+close again. The close event records `integration: verified|skipped` and the
+shas checked, which `run report` shows.
 
 Refuses `CONFLICT` while any discrepancy exists, enumerating each with its
 resolution (the table under `docket next` above). `--accept-missing-usage`
@@ -2091,6 +2103,7 @@ Deterministic predicates over engine state, for hooks.
 | `guard gate --step NAME` | a **passed** `type="human"` **or** `type="vote"` step of that name exists for an active run — an approval on the one, a tallied approval on the other. Both kinds answer, so converting a gate to a vote does not silently stop the hooks that check it; a vote still being cast reads as undecided and denies |
 | `guard record [--run RUN-N]` | no unreconciled dispatch exists — no open manifest, and no discrepancy |
 | `guard spawn --run RUN-N` | the proposed rows byte-match the open dispatch **and** no write-class reap is unacknowledged (or `--deciding-vote PROPOSAL-N` names the open proposal this batch exists to decide — the reap half only) |
+| `guard spawn --active` | the reap half over **every** active run of the project: denies on the oldest run that would deny, its reason prefixed `RUN-N: `. Mutually exclusive with `--run`, and it does not take `--deciding-vote` — the carve-out admits a batch onto one run, so name that run with `--run`. The `--json` deny envelope is `{ok:false, error, code}` with no run field; the id is the reason's prefix |
 
 **Exit 0 = allow, exit 2 = deny with a reason.** That contract is independent of
 the error-code table above: a guard's caller tests a boolean, so exit 2 here
@@ -2300,7 +2313,26 @@ and the `--prefix` warning print on every add and ride in the JSON response.
 | `--all` | bool | every repository's entries, not just this one's |
 
 A `Collection`, so `--json=v2` renders `{items, total, truncated}`. Argvs print
-with control characters escaped.
+with control characters escaped. Every item carries `class`: `gate` for an
+entry a workflow names in `gates`, `action` for one a workflow declares via
+`action = "<name>"` — an engine ACTION fed a JSON bundle on stdin at record
+time, which nothing but the engine can run.
+
+#### `docket trust probe [--run RUN-N]`
+
+Runs every `class = "gate"` entry of this repository's roster once, in ONE
+throwaway detached worktree of the repository's current HEAD, with each
+entry's own `--timeout`, and returns a row per gate. A gate that fails here
+fails on CLEAN HEAD, so no step's changes caused it: run it once before a
+run's first dispatch instead of rediscovering the same failure as a parked
+step per issue. `--run` labels the report and **does not narrow the roster**.
+Action-class entries are skipped by name, never failed. The worktree is
+removed on success, failure and interrupt.
+
+`--json` data: `{head, passed, failed: [name], skipped: [{name, reason}],
+gates: [{name, stub, exit, log_tail}]}`. `passed` is true only when every
+gate exited 0; a `stub` entry's pass is hollow and marked. Refuses outright
+(not a pass) on an empty roster or a cwd outside a work tree.
 
 #### `docket trust rm <name>`
 
@@ -2373,6 +2405,51 @@ at the resolved path, the change is applied and a **warning** says it was not
 recorded and that nothing will show it later. The warning prints on stderr and
 rides in the JSON response's `warnings` array; like the argv disclosure, it is
 not suppressible.
+
+### `docket gate` — `gate.go`
+
+#### `docket gate status STEP-N`
+
+One gate step's whole decision state in one small envelope, replacing the
+scatter of `step show`, `vote show` and a re-derived outcome that wave.js's
+probes used to relay round trip by round trip. READ-ONLY; writes nothing.
+STEP-N must be a `type="human"` or `type="vote"` step — any other kind is
+`VALIDATION_ERROR`.
+
+`--json` data: `step_status` (the step's effective status); `proposal` (the
+vote this gate opened; absent on a human gate or before the proposal opens);
+`outcome` — `approved` | `rejected` | `open`, where a proposal retired without
+a tally reads `open`; `tally` `{weighted_score, threshold}` (absent without a
+proposal); `seats` — every DECLARED voter with `cast` and, once cast, its
+`verdict` (absent on a human gate); `missing_seats` — the voters in `seats`
+who have not cast, always present once a proposal exists; `target`
+`{sha, worktree}` the gate judges, absent when the packet names none. The
+whole envelope is under 1 KB for a five-seat panel, so a relay copies it
+exactly.
+
+### `docket doctor` — `doctor.go`
+
+#### `docket doctor [--run RUN-N] [--source PATH]`
+
+The six checks a conductor clears before the first dispatch of an attach, in
+one call. READ-ONLY; no lease reap, no re-pin, no migration beyond what any
+read verb performs. Every check ALWAYS RUNS and the return carries one row
+per check: `{check, verdict, detail}`, verdict `OK` | `FAIL` | `DRIFT` |
+`SKIP` | `WARN`.
+
+| Check | What it answers |
+|---|---|
+| `seat` | cwd is the git toplevel, not a subdirectory |
+| `store` | the store opens read-write from this seat |
+| `install-drift` | `--source`'s `src/user/docket/{config,bin}` match `~/.docket/{config,bin}`; SKIP without `--source` |
+| `pins` | `run verify-pins` for `--run`; SKIP without it |
+| `link-farm` | no symlinks under `<cwd>/.docket/config` (retired link-farm debris, resolving or not) |
+| `stragglers` | a REPORT of detached worktrees homed under scratch-shaped paths; WARN or OK, never moves `clean` |
+
+`--json` data: `{clean, skipped, checks}`. `clean` is true only when every
+check is OK; `skipped` is true when any check is SKIP, and a `--run` omitted
+on an active run reads `clean: false, skipped: true` rather than a clean
+report that quietly checked five things.
 
 ### `docket vote` (alias `v`) — `vote.go`
 

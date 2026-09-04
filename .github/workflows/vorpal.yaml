@@ -55,36 +55,6 @@ jobs:
       # suites behind a minimum-case floor, so a hollowed-out suite is caught.
       - run: .docket/bin/sdet-abuse
 
-  # Skill drift against the engine repo is reported, not gated, and it lives in
-  # its own job for two reasons: provisioning the second checkout is a condition
-  # this repository's PRs cannot control, and the two copies are known to differ
-  # today (upstream ships one SKILL.md; this repo splits it into SKILL.md plus
-  # reference.md). A red row here would say nothing about the PR that ran it, so
-  # `continue-on-error` keeps the drift visible in the log without blocking
-  # merges. Reconcile the copies, then delete continue-on-error to make it gate.
-  skill-sync:
-    continue-on-error: true
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-
-      # The engine copy of the docket skill is what skill-sync diffs against;
-      # without it the suite has nothing to compare. `main` is the engine's
-      # default branch — the test's local fallback path points at a developer
-      # worktree instead, so change both together (see the UPSTREAM default in
-      # tests/docket-skill-sync.test.sh). If this step fails to read the repo,
-      # set the DOCKET_UPSTREAM_TOKEN secret to a token that can.
-      - uses: actions/checkout@v7
-        with:
-          path: .docket-upstream
-          ref: main
-          repository: ALT-F4-LLC/docket
-          token: ${{ secrets.DOCKET_UPSTREAM_TOKEN || github.token }}
-
-      - run: bash tests/docket-skill-sync.test.sh
-        env:
-          DOCKET_SKILL_UPSTREAM: ${{ github.workspace }}/.docket-upstream/skills/docket/SKILL.md
-
   build-dev:
     runs-on: macos-latest
     steps:

@@ -12,6 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - run: bash tests/ci-suite-wiring.test.sh
+
       - run: bash tests/docket-commit-guard-hook.test.sh
 
       - run: bash tests/docket-run-guard-hook.test.sh

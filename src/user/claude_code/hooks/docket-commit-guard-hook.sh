@@ -80,7 +80,7 @@ COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/nul
 # LEAVES holds every simple command bash's own grammar would dispatch,
 # `\036` (RS)-separated, each possibly itself multi-line when it embeds a
 # heredoc (the heredoc's body arrives as part of that ONE leaf's text,
-# exactly as bash reconstructs $BASH_COMMAND). CAP_HIT is set when the
+# exactly as bash reconstructs $BASH_COMMAND). PROBE_CAP is written when the
 # 2000-command ceiling below fires — a circuit breaker against a crafted or
 # pathological input driving this into a long-running loop, not a bound
 # expected to matter for an ordinary call (empirically, hundreds of simple
@@ -99,17 +99,22 @@ COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/nul
 # restricted to exactly those), and `$$` is unique enough for a file this
 # process creates, writes, reads, and deletes within its own lifetime.
 PROBE_OUT="${TMPDIR:-/tmp}/docket-commit-guard-hook.$$"
+# The cap hit travels in its own file rather than as a token inside
+# PROBE_OUT: that buffer holds the caller's own leaf text, so an in-band
+# marker lets any command that merely quotes it be refused as oversized.
+PROBE_CAP="${PROBE_OUT}.cap"
 : >"$PROBE_OUT" 2>/dev/null || allow_default
-trap 'rm -f "$PROBE_OUT"' EXIT
+: >"$PROBE_CAP" 2>/dev/null || allow_default
+trap 'rm -f "$PROBE_OUT" "$PROBE_CAP"' EXIT
 
-PROBE_ERR=$(COMMAND="$COMMAND" PROBE_OUT="$PROBE_OUT" bash -c '
+PROBE_ERR=$(COMMAND="$COMMAND" PROBE_OUT="$PROBE_OUT" PROBE_CAP="$PROBE_CAP" bash -c '
     shopt -s extdebug
     set -T
     n=0
     _guard_probe() {
         n=$((n + 1))
         if [ "$n" -gt 2000 ]; then
-            printf "__CAP_HIT__\036" >> "$PROBE_OUT"
+            printf 1 >> "$PROBE_CAP"
             trap - DEBUG
             return 1
         fi
@@ -175,10 +180,9 @@ if [ -z "$PROBE_TEXT" ]; then
     allow_default
 fi
 
-case "$PROBE_TEXT" in
-    *__CAP_HIT__*)
-        deny "git write blocked: this command has too many parts (over 2000) for the commit-guard hook to finish checking it. Split it into smaller Bash calls; a single call this large is refused rather than passed through unchecked." ;;
-esac
+if [ -s "$PROBE_CAP" ]; then
+    deny "git write blocked: this command has too many parts (over 2000) for the commit-guard hook to finish checking it. Split it into smaller Bash calls; a single call this large is refused rather than passed through unchecked."
+fi
 
 # --- Widening: where a heredoc's body stops being inert data. ------------
 #
@@ -280,24 +284,43 @@ STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk '
 # The look-behind stops at a newline. Leaves are newline-separated in this
 # buffer, so the last words of one leaf must not qualify a quoted group that
 # opens the next one.
-function code_argument(sofar,   tail, p, k, m, w, head) {
-    p = 0
-    for (k = length(sofar); k >= 1; k--) {
-        if (substr(sofar, k, 1) == "\n") { p = k; break }
+# The current line is carried forward as the buffer is emitted rather than
+# recovered by scanning back over it: one backwards rescan per quoted group is
+# quadratic in the leaf length, and a single-line command with a few hundred
+# quoted arguments then outruns the hook timeout. Only two facts about the
+# line are ever needed -- its last word, and whether any earlier word is an
+# interpreter -- and both survive as scalars.
+function is_interpreter(word,   head) {
+    head = word
+    sub(/^.*\//, "", head)
+    sub(/[^A-Za-z0-9_.]+$/, "", head)
+    return head ~ /^(sh|bash|dash|zsh|ksh|mksh|csh|tcsh|python[0-9.]*|perl|ruby|node|nodejs|php|lua[0-9.]*|expect|osascript)$/
+}
+function emit(chunk,   base, q, k, c) {
+    base = length(out)
+    out = out chunk
+    q = length(chunk)
+    for (k = 1; k <= q; k++) {
+        c = substr(chunk, k, 1)
+        if (c == " " || c == "\t" || c == "\n") {
+            if (in_word) { word_end = base + k - 1; in_word = 0 }
+            if (c == "\n") { words = 0; saw_interpreter = 0 }
+            continue
+        }
+        if (!in_word) {
+            if (words >= 1 && is_interpreter(substr(out, word_start, word_end - word_start + 1))) {
+                saw_interpreter = 1
+            }
+            words++
+            word_start = base + k
+            in_word = 1
+        }
     }
-    tail = substr(sofar, p + 1)
-    sub(/^[ \t]+/, "", tail)
-    sub(/[ \t]+$/, "", tail)
-    m = split(tail, w, /[ \t]+/)
-    if (m < 2) return 0
-    if (w[m] !~ /^(-[A-Za-z]*c|-[eEpr]|--eval|--print)$/) return 0
-    for (k = 1; k < m; k++) {
-        head = w[k]
-        sub(/^.*\//, "", head)
-        sub(/[^A-Za-z0-9_.]+$/, "", head)
-        if (head ~ /^(sh|bash|dash|zsh|ksh|mksh|csh|tcsh|python[0-9.]*|perl|ruby|node|nodejs|php|lua[0-9.]*|expect|osascript)$/) return 1
-    }
-    return 0
+}
+function code_argument(   last) {
+    if (words < 2 || !saw_interpreter) return 0
+    last = in_word ? substr(out, word_start) : substr(out, word_start, word_end - word_start + 1)
+    return last ~ /^(-[A-Za-z]*c|-[eEpr]|--eval|--print)$/
 }
 {
     buf = (NR == 1) ? $0 : buf "\n" $0
@@ -314,7 +337,7 @@ END {
     while (i <= n) {
         c = substr(line, i, 1)
         if (c == "\\" && i < n) {
-            out = out c substr(line, i + 1, 1)
+            emit(c substr(line, i + 1, 1))
             i += 2
             continue
         }
@@ -325,18 +348,18 @@ END {
                 content = content substr(line, j, 1)
                 j++
             }
-            if (code_argument(out)) {
+            if (code_argument()) {
                 # Inner quotes are the code arguments own syntax, not prose
                 # glue: spacing them keeps a verb reachable as its own word.
                 gsub(/[\047\042]/, " ", content)
-                out = out " " content " "
+                emit(" " content " ")
             } else {
                 GROUP++
                 m = split(content, qw, /[ \t\n]+/)
                 for (k = 1; k <= m; k++) {
-                    if (qw[k] != "") out = out " " MARK GROUP ":" qw[k] MARK
+                    if (qw[k] != "") emit(" " MARK GROUP ":" qw[k] MARK)
                 }
-                out = out " "
+                emit(" ")
             }
             i = j + 1
             continue
@@ -355,23 +378,23 @@ END {
                 content = content cc
                 j++
             }
-            if (code_argument(out)) {
+            if (code_argument()) {
                 gsub(/[\047\042]/, " ", content)
-                out = out " " content " "
+                emit(" " content " ")
             } else if (content ~ /\$\(|`|\$\{/) {
-                out = out " " content " "
+                emit(" " content " ")
             } else {
                 GROUP++
                 m = split(content, qw, /[ \t\n]+/)
                 for (k = 1; k <= m; k++) {
-                    if (qw[k] != "") out = out " " MARK GROUP ":" qw[k] MARK
+                    if (qw[k] != "") emit(" " MARK GROUP ":" qw[k] MARK)
                 }
-                out = out " "
+                emit(" ")
             }
             i = j + 1
             continue
         }
-        out = out c
+        emit(c)
         i += 1
     }
     print out

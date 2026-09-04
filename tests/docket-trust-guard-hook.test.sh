@@ -471,6 +471,51 @@ case_heredoc_position_edges() {
         executor-write ALLOW "here-string with an unquoted word: accepted false ALLOW, not a real dispatch"
 }
 
+# ---- Circuit breaker: a cap hit is the probe's finding, not the caller's ---
+#
+# The 2000-leaf ceiling reaches the script through a marker the probe writes
+# beside the leaf buffer, never through a token inside it, so caller text
+# cannot counterfeit one. A command that merely quotes the marker is an
+# ordinary command; only a command that really enumerates past the ceiling is
+# refused for size, and it must still say so.
+
+case_leaf_cap_is_out_of_band() {
+    local marker cmd i err
+    marker='__CAP_HIT__'
+    assert_verdict "echo ${marker}" executor-write ALLOW \
+        "a single leaf whose text is the cap marker is not a cap hit"
+    assert_verdict "cat <<'EOF'"$'\n'"prose naming ${marker} inline"$'\n'"EOF" \
+        executor-write ALLOW "a heredoc quoting the cap marker is not a cap hit"
+    cmd="echo 0"
+    for ((i = 1; i <= 2100; i++)); do cmd="${cmd}; echo ${i}"; done
+    assert_verdict "$cmd" executor-write DENY "over 2000 leaves still hits the cap"
+    err=$(PATH="$TOOLS_DIR" "$BASH_BIN" "$HOOK" 2>&1 >/dev/null <<<"$(build_input "$cmd" executor-write)")
+    case "$err" in
+        *"too many parts (over 2000)"*) pass "a real cap hit still explains itself as size" ;;
+        *) fail "cap deny reason changed or missing: ${err}" ;;
+    esac
+}
+
+# ---- One long line of quoted groups ---------------------------------------
+#
+# The quote-group pass carries the current line's state forward as it emits
+# rather than rescanning what it has already emitted. This pins the verdict
+# half of that: group numbering and the code-argument look-behind must read
+# the same on the four-hundredth group as on the first. The cost half has no
+# assertion here, since a rescan regression is slow rather than wrong; it
+# shows up as this row taking seconds.
+
+case_many_quoted_groups_on_one_line() {
+    local pad groups i
+    pad=$(printf 'a%.0s' {1..70})
+    groups=""
+    for ((i = 0; i < 400; i++)); do groups="${groups} '${pad}'"; done
+    assert_verdict "echo${groups} 'never run docket trust add here'" \
+        executor-write ALLOW "400 quoted groups then one prose group stays prose"
+    assert_verdict "echo${groups}; docket trust add erik key" \
+        executor-write DENY "the verb after 400 quoted groups is still caught"
+}
+
 # ---- Pre-pass drift: the two guard hooks must share one lexer --------------
 #
 # The quote-aware pre-pass is duplicated byte-for-byte in the trust guard and
@@ -529,6 +574,8 @@ case_heredoc_body_prose
 case_heredoc_body_destination
 case_comment_regions_are_inert
 case_heredoc_position_edges
+case_leaf_cap_is_out_of_band
+case_many_quoted_groups_on_one_line
 case_prepass_copies_identical
 case_input_edge_cases
 

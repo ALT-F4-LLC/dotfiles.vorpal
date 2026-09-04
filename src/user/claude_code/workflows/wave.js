@@ -1279,8 +1279,7 @@ read what is being decided yourself before you vote —
 
   docket vote show ${voteId}          (the proposal body: the question)
   docket run status ${row.run} --json (this run's state; there is no \`run show\`)
-  docket run activate ${row.run} --dry-run --json
-      \`--dry-run\` IS LOAD-BEARING — without it the verb ACTIVATES the run
+  docket run activate ${row.run} --dry-run --json   (--dry-run is load-bearing: without it this ACTIVATES the run)
   docket step show ${row.step} / docket step context ${row.step} --json
   git log --oneline -20 / git diff / git show <sha>
 

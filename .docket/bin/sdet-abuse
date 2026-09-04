@@ -80,31 +80,22 @@ readonly MIN_CASES=10
 # allow; UNWIRED hooks can decide but are deliberately not registered.
 ENFORCING=(
   docket-commit-guard-hook.sh
-  docket-policy-guard-hook.sh
   docket-run-guard-hook.sh
   docket-spawn-guard-hook.sh
   docket-trust-guard-hook.sh
+  sandbox-bypass-guard-hook.sh
+  sensitive-path-guard-hook.sh
 )
 ADVISORY=(
   docket-session-start-hook.sh
   docket-wave-audit-hook.sh
   sandbox-friction-hook.sh
 )
-# sandbox-bypass-ask turned every unsandboxed retry into a question an
-# unattended executor cannot answer, so it was unregistered; auto mode's
-# classifier reviews those calls instead. The file stays so the decision is
-# visible in the tree.
-UNWIRED=(
-  sandbox-bypass-ask-hook.sh
-)
-# Enforcing hooks that predate this gate with no suite. policy-guard denies a
-# wave launch whose policy text drifted from the pinned file; a suite for it
-# needs a stand-in `docket` on PATH for the pin comparison and a policy
-# fixture, and nobody has written one. Listed so the gap prints on every run,
-# and so the gate fails the moment the suite lands without this line going.
-KNOWN_UNVERIFIED=(
-  docket-policy-guard-hook.sh
-)
+UNWIRED=()
+# Enforcing hooks that predate this gate with no suite. Each entry prints a
+# warning on every run, and the gate fails the moment its suite lands without
+# the entry going.
+KNOWN_UNVERIFIED=()
 
 in_list() {
   local needle="$1"

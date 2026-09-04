@@ -18,6 +18,8 @@ jobs:
 
       - run: bash tests/docket-run-guard-hook.test.sh
 
+      - run: bash tests/docket-run-skill.test.sh
+
       - run: bash tests/docket-spawn-guard-hook.test.sh
 
       - run: bash tests/docket-trust-guard-hook.test.sh

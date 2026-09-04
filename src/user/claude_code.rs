@@ -89,6 +89,20 @@ const AUTO_MODE_ALLOW_RULES: &[&str] = &[
     "Read-only gh reads against ALT-F4-LLC repositories — gh pr view/checks/list/diff, gh run list/view, gh issue view/list; every other gh verb, including every one on an ask rule, stays outside this rule",
 ];
 
+/// Verbs that publish or read secrets: they ask before running, and no
+/// auto-mode allow rule may clear them. One list keeps the ask rules and the
+/// guard test from drifting apart when a verb is added.
+const PUBLISHING_ASK_VERBS: &[&str] = &[
+    "gh api",
+    "gh pr close",
+    "gh pr comment",
+    "gh pr create",
+    "gh pr edit",
+    "gh pr merge",
+    "gh pr ready",
+    "git push",
+];
+
 const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
     "~/.cache/golangci-lint-harness",
     "~/.cache/uv",
@@ -388,17 +402,12 @@ impl ClaudeCode {
         // first, so the human sees the bytes before they are public. `gh run view`
         // is deliberately absent: it only reads CI logs, and the `pr` skill already
         // treats that output as untrusted data rather than instructions.
-        let settings_builder = settings_builder
-            .with_permission_ask("Bash(docket trust add:*)")
-            .with_permission_ask("Bash(docket trust rm:*)")
-            .with_permission_ask("Bash(gh api:*)")
-            .with_permission_ask("Bash(gh pr close:*)")
-            .with_permission_ask("Bash(gh pr comment:*)")
-            .with_permission_ask("Bash(gh pr create:*)")
-            .with_permission_ask("Bash(gh pr edit:*)")
-            .with_permission_ask("Bash(gh pr merge:*)")
-            .with_permission_ask("Bash(gh pr ready:*)")
-            .with_permission_ask("Bash(git push:*)");
+        let settings_builder = PUBLISHING_ASK_VERBS.iter().fold(
+            settings_builder
+                .with_permission_ask("Bash(docket trust add:*)")
+                .with_permission_ask("Bash(docket trust rm:*)"),
+            |builder, verb| builder.with_permission_ask(&format!("Bash({verb}:*)")),
+        );
 
         let settings_builder = deny_sensitive_paths(
             settings_builder,
@@ -602,7 +611,7 @@ mod tests {
     use super::{
         claude_home, component_name, sandbox_filesystem_allow_read_paths,
         sandbox_filesystem_deny_read_paths, sorted_permission_patterns, AUTO_MODE_ALLOW_RULES,
-        GIT_ALLOWED_SIGNERS_CONFIG_PATH, GIT_ALLOWED_SIGNERS_INSTALL_PATH,
+        GIT_ALLOWED_SIGNERS_CONFIG_PATH, GIT_ALLOWED_SIGNERS_INSTALL_PATH, PUBLISHING_ASK_VERBS,
         SANDBOX_CLAUDE_SCRATCH_ROOT, SANDBOX_CLAUDE_SCRATCH_ROOT_PRIVATE, SENSITIVE_PATHS,
         SENSITIVE_PATHS_DENY_EDIT_ONLY, SENSITIVE_PATHS_DENY_READ_ONLY,
     };
@@ -767,7 +776,7 @@ mod tests {
         // it as excluded. The classifier reads these as prose, so the check is
         // textual: the verb may appear only alongside "outside" or "ask".
         for rule in AUTO_MODE_ALLOW_RULES {
-            for verb in ["git push", "gh pr merge", "gh api"] {
+            for verb in PUBLISHING_ASK_VERBS {
                 if rule.contains(verb) {
                     assert!(
                         rule.contains("outside") || rule.contains("ask"),

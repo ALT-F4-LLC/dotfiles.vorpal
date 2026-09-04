@@ -225,12 +225,20 @@ case_interpreter_code_argument_deny() {
 #
 # Quoting, escaping or splitting a word across a quote boundary changes what
 # the hook's lexer sees and nothing about what bash executes: `bash "-"c` runs
-# the code argument exactly as `bash -c` does. Every spelling below cost the
-# attacker one pair of quotes and bought a trust-store write, so each is its
-# own row.
+# the code argument exactly as `bash -c` does. Every attack spelling below cost
+# the attacker one pair of quotes and bought a trust-store write, so each is
+# its own row. Single and double quotes are SEPARATE branches of the lexer, so
+# a split word is pinned in both styles: with one style unpinned, a one-line
+# regression in the other branch reopens the bypass with the suite green.
+# The last two rows are the price of reading words as bash builds them: a word
+# that decodes to a code flag or to an interpreter name without being meant as
+# either. Pinned DENY as a decision, on this file's stated direction of a
+# false DENY over a missed invocation.
 
 case_code_flag_and_interpreter_spellings_deny() {
     local inv='docket trust add erik ssh-ed25519 AAAA'
+    assert_verdict "$inv" executor-write DENY \
+        "bare invocation (positive control for this group)"
     assert_verdict "bash '-c' '${inv}'" executor-write DENY \
         "single-quoted code flag"
     assert_verdict "bash \"-c\" '${inv}'" executor-write DENY \
@@ -239,14 +247,32 @@ case_code_flag_and_interpreter_spellings_deny() {
         "code flag split across a quote boundary (-\"c\")"
     assert_verdict "bash \"-\"c '${inv}'" executor-write DENY \
         "code flag split across a quote boundary (\"-\"c)"
+    assert_verdict "bash -'c' '${inv}'" executor-write DENY \
+        "code flag split across a single-quote boundary (-'c')"
+    assert_verdict "bash '-'c '${inv}'" executor-write DENY \
+        "code flag split across a single-quote boundary ('-'c)"
     assert_verdict "bash \\-c '${inv}'" executor-write DENY \
         "backslash-escaped code flag"
+    assert_verdict "bash \\"$'\n'"-c '${inv}'" executor-write DENY \
+        "code flag reached across a line continuation"
     assert_verdict "'bash' -c '${inv}'" executor-write DENY \
         "single-quoted interpreter word"
+    assert_verdict "\"bash\" -c '${inv}'" executor-write DENY \
+        "double-quoted interpreter word"
     assert_verdict "ba\"sh\" -c '${inv}'" executor-write DENY \
         "interpreter word split across a quote boundary"
+    assert_verdict "ba'sh' -c '${inv}'" executor-write DENY \
+        "interpreter word split across a single-quote boundary"
+    assert_verdict "/bin/ba'sh' -c '${inv}'" executor-write DENY \
+        "pathed interpreter word split across a single-quote boundary"
     assert_verdict "\\bash -c '${inv}'" executor-write DENY \
         "backslash-escaped interpreter word"
+    assert_verdict "bash script.sh '-c' 'the rule says docket trust add is reserved'" \
+        executor-write DENY \
+        "a quoted -c argv element of a script qualifies the next group as code"
+    assert_verdict "grep 'sh' -c 'the rule says docket trust add is reserved' notes.md" \
+        executor-write DENY \
+        "a quoted data word decoding to an interpreter name qualifies the next group as code"
 }
 
 # ---- ACCEPTED: prose naming the verb, carried inside a code argument ------
@@ -268,13 +294,6 @@ case_interpreter_code_argument_prose_deny() {
         "node -e: a logged sentence naming the verb, no invocation"
     assert_deny_reason "node -e 'console.log(\"never run docket trust add here\")'" \
         executor-write "prose-in-code-argument escape hatch is named"
-    # The cost of reading the flag as bash builds it: a quoted `-c` that is
-    # really an argv element of a script, with an interpreter word earlier on
-    # the line, now qualifies the group after it as code. Pinned DENY as a
-    # decision, on the same direction as the rows above it.
-    assert_verdict "bash script.sh '-c' 'the rule says docket trust add is reserved'" \
-        executor-write DENY \
-        "a quoted -c argv element of a script qualifies the next group as code"
 }
 
 # ---- MUST NOT CATCH: the code-argument rule's false-DENY floor ------------
@@ -313,6 +332,16 @@ case_interpreter_carriers_residual_allow() {
         "ssh remote command: no code flag (accepted residual)"
     assert_verdict "C=\"${inv}\"; bash -c \"\$C\"" executor-write ALLOW \
         "verb reached through a variable (accepted residual)"
+    # The look-behind word is read as bash builds it from LITERAL text, so a
+    # flag or an interpreter that only exists after an expansion is invisible
+    # here. Denying every word carrying a `$` would close the first row alone
+    # and deny ordinary `bash "$SCRIPT" ...` calls, so all three stay ALLOW.
+    assert_verdict "F=-c; bash \$F '${inv}'" executor-write ALLOW \
+        "code flag reached through a variable (accepted residual)"
+    assert_verdict "I=bash; \$I -c '${inv}'" executor-write ALLOW \
+        "interpreter reached through a variable (accepted residual)"
+    assert_verdict "bash \$(printf -- -c) '${inv}'" executor-write ALLOW \
+        "code flag reached through a substitution (accepted residual)"
 }
 
 # ---- MUST ALLOW: the help read, the one exemption, from an executor -------
@@ -558,23 +587,26 @@ case_many_quoted_groups_on_one_line() {
 # standalone). A fix applied to one copy and not the other leaves two guards
 # with different notions of inert text, and nothing else in the tree notices.
 #
-# Both sides are read relative to the HOOK UNDER TEST, not from REPO_ROOT, so
-# the check describes the same artifact every other case drives: under a
-# GUARD_HOOK override it compares that copy against the sibling beside it, and
-# reports the region missing when there is no sibling to compare against.
+# Both sides are read from REPO_ROOT rather than from the hook under test: the
+# claim is about the pair that ships, and a GUARD_HOOK override points at a
+# scratch copy. Anchored to the override, this row reported the pre-pass
+# identical while both shipped hooks were untouched and both scratch copies
+# carried the same mutation -- true of the wrong pair, and the only check
+# standing between a fix applied to one hook and a half-closed bypass.
 
 PREPASS_RANGE="/^STRIPPED=/,/^' 2>\/dev\/null) || allow_default\$/p"
+SHIPPED_HOOKS="${REPO_ROOT}/src/user/claude_code/hooks"
 
 case_prepass_copies_identical() {
-    local mine sibling
-    mine=$(sed -n "$PREPASS_RANGE" "$HOOK")
-    sibling=$(sed -n "$PREPASS_RANGE" "$(dirname "$HOOK")/docket-commit-guard-hook.sh" 2>/dev/null)
-    if [ -z "$mine" ] || [ -z "$sibling" ]; then
-        fail "quote-aware pre-pass region not found in the hook under test or its sibling"
-    elif [ "$mine" = "$sibling" ]; then
-        pass "quote-aware pre-pass is byte-identical in the hook under test and its sibling"
+    local trust commit
+    trust=$(sed -n "$PREPASS_RANGE" "${SHIPPED_HOOKS}/docket-trust-guard-hook.sh" 2>/dev/null)
+    commit=$(sed -n "$PREPASS_RANGE" "${SHIPPED_HOOKS}/docket-commit-guard-hook.sh" 2>/dev/null)
+    if [ -z "$trust" ] || [ -z "$commit" ]; then
+        fail "quote-aware pre-pass region not found in one of the shipped hooks"
+    elif [ "$trust" = "$commit" ]; then
+        pass "quote-aware pre-pass is byte-identical in the two shipped hooks"
     else
-        fail "quote-aware pre-pass has drifted between the hook under test and its sibling"
+        fail "quote-aware pre-pass has drifted between the two shipped hooks"
     fi
 }
 

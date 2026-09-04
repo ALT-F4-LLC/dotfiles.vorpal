@@ -376,6 +376,16 @@ STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk '
 # reached through a variable (C="..." on one leaf, an interpreter reading $C
 # on the next) leaves no literal run of words behind a flag. Those stay
 # ALLOW and are pinned as such in both suites.
+# A flag or an interpreter reached through an unresolved expansion is the
+# same residual one step earlier: F=-c on one leaf and bash $F on the next,
+# I=bash with $I -c, or bash $(printf -- -c) all leave a look-behind word
+# this pass cannot evaluate, so the group after it stays prose and ALLOWs.
+# Deciding those words the other way (DENY on any word carrying $ or a
+# backtick) closes only the flag half -- an interpreter reached through an
+# expansion is never recognized as an interpreter in the first place -- while
+# denying every ordinary bash "$SCRIPT" ... form, so they stay ALLOW and are
+# pinned as such in both suites. The words below are what bash builds from
+# LITERAL text, never what an expansion would produce.
 # env and tclsh are deliberately absent from the interpreter list here: env
 # carries no code flag of its own (env bash -c still matches on bash) and
 # tclsh has none, so listing them would only widen the false-DENY surface.
@@ -395,10 +405,23 @@ STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk '
 # reach the interpreter test as bash. Reading the emitted buffer instead tests
 # a word this pass has already rewritten -- a MARK-wrapped token, or the
 # literal \-c -- and one pair of quotes around the flag then bought a bypass.
-# The direction here is DENY: a word that decodes to a code flag after an
-# interpreter qualifies the next quoted group as code even where the flag is
-# really an argv element of a script (`bash script.sh '-c' 'prose'`), an
-# accepted false DENY pinned as its own row in both suites.
+# A backslash-newline is a line boundary here, not the word joiner bash makes
+# of it: leaves reach this pass with continuations already resolved, so the
+# byte only ever appears mid-word in a hand-fed buffer, and resetting is the
+# safe reading of it.
+# The direction here is DENY, in two classes, both accepted false DENYs
+# pinned as their own rows in both suites: a word that decodes to a code flag
+# after an interpreter qualifies the next quoted group as code even where the
+# flag is really an argv element of a script (`bash script.sh '-c' 'prose'`),
+# and a data word that merely decodes to an interpreter name qualifies the
+# same way (`grep 'sh' -c 'prose'`), because a word bash builds carries no
+# record of whether it was meant as a program name.
+# Two writes, one chokepoint: consume() is the only way a byte that belongs
+# to a word enters the buffer, and it feeds the word model in the same call.
+# emit() writes boundary bytes alone -- whitespace, newline, an escaped
+# newline -- which by definition carry no word text. A branch that wrote the
+# buffer without the word model would leave the tests reading a stale word,
+# which is the bypass this shape exists to prevent.
 function is_interpreter(word,   head) {
     head = word
     sub(/^.*\//, "", head)
@@ -408,17 +431,30 @@ function is_interpreter(word,   head) {
 function emit(chunk) {
     out = out chunk
 }
-function word_text(t) {
+function consume(chunk, text) {
+    out = out chunk
     if (!in_word) {
-        if (words >= 1 && is_interpreter(prev_word)) saw_interpreter = 1
         words++
         in_word = 1
         cur_word = ""
     }
-    cur_word = cur_word t
+    cur_word = cur_word text
 }
 function end_word() {
-    if (in_word) { prev_word = cur_word; in_word = 0 }
+    if (in_word) {
+        prev_word = cur_word
+        if (is_interpreter(prev_word)) saw_interpreter = 1
+        in_word = 0
+    }
+}
+function marked_group(content,   chunk, m, k) {
+    GROUP++
+    chunk = ""
+    m = split(content, qw, /[ \t\n]+/)
+    for (k = 1; k <= m; k++) {
+        if (qw[k] != "") chunk = chunk " " MARK GROUP ":" qw[k] MARK
+    }
+    return chunk " "
 }
 function end_line() {
     end_word()
@@ -447,8 +483,8 @@ END {
         c = substr(line, i, 1)
         if (c == "\\" && i < n) {
             esc = substr(line, i + 1, 1)
-            emit(c esc)
-            if (esc == "\n") end_line(); else word_text(esc)
+            if (esc == "\n") { emit(c esc); end_line() }
+            else consume(c esc, esc)
             i += 2
             continue
         }
@@ -463,16 +499,11 @@ END {
                 # Inner quotes are the code arguments own syntax, not prose
                 # glue: spacing them keeps a verb reachable as its own word.
                 gsub(/[\047\042]/, " ", content)
-                emit(" " content " ")
+                chunk = " " content " "
             } else {
-                GROUP++
-                m = split(content, qw, /[ \t\n]+/)
-                for (k = 1; k <= m; k++) {
-                    if (qw[k] != "") emit(" " MARK GROUP ":" qw[k] MARK)
-                }
-                emit(" ")
+                chunk = marked_group(content)
             }
-            word_text(content)
+            consume(chunk, content)
             i = j + 1
             continue
         }
@@ -492,25 +523,19 @@ END {
             }
             if (code_argument()) {
                 gsub(/[\047\042]/, " ", content)
-                emit(" " content " ")
+                chunk = " " content " "
             } else if (content ~ /\$\(|`|\$\{/) {
-                emit(" " content " ")
+                chunk = " " content " "
             } else {
-                GROUP++
-                m = split(content, qw, /[ \t\n]+/)
-                for (k = 1; k <= m; k++) {
-                    if (qw[k] != "") emit(" " MARK GROUP ":" qw[k] MARK)
-                }
-                emit(" ")
+                chunk = marked_group(content)
             }
-            word_text(content)
+            consume(chunk, content)
             i = j + 1
             continue
         }
-        emit(c)
-        if (c == "\n") end_line()
-        else if (c == " " || c == "\t") end_word()
-        else word_text(c)
+        if (c == "\n") { emit(c); end_line() }
+        else if (c == " " || c == "\t") { emit(c); end_word() }
+        else consume(c, c)
         i += 1
     }
     print out

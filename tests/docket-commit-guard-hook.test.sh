@@ -357,6 +357,17 @@ case_accepted_residual_risks() {
     assert_verdict "bash ${script}" ALLOW "bash <script path> (interpreter-prefixed, accepted residual)"
     assert_verdict "./${script}" ALLOW "./<script path> (direct exec, accepted residual)"
     assert_verdict "timeout 30 bash ${script}" ALLOW "timeout-wrapped script path (accepted residual)"
+    # The look-behind word of the code-argument rule is read as bash builds it
+    # from LITERAL text, so a flag or an interpreter that only exists after an
+    # expansion is invisible here. Denying every word carrying a `$` would close
+    # the first row alone and deny ordinary `bash "$SCRIPT" ...` calls, so all
+    # three stay ALLOW.
+    assert_verdict "F=-c; bash \$F 'git commit -m x'" ALLOW \
+        "code flag reached through a variable (accepted residual)"
+    assert_verdict "I=bash; \$I -c 'git commit -m x'" ALLOW \
+        "interpreter reached through a variable (accepted residual)"
+    assert_verdict "bash \$(printf -- -c) 'git commit -m x'" ALLOW \
+        "code flag reached through a substitution (accepted residual)"
 }
 
 # ---- MUST DENY: the write carried as an interpreter's code argument -------
@@ -384,27 +395,44 @@ case_interpreter_code_argument_deny() {
 #
 # Quoting, escaping or splitting a word across a quote boundary changes what
 # the hook's lexer sees and nothing about what bash executes: `bash "-"c` runs
-# the code argument exactly as `bash -c` does. Each spelling is its own row.
+# the code argument exactly as `bash -c` does. Each attack spelling is its own
+# row. Single and double quotes are SEPARATE branches of the lexer, so a split
+# word is pinned in both styles: with one style unpinned, a one-line regression
+# in the other branch reopens the bypass with the suite green.
+# The last two rows are the price of reading words as bash builds them: a word
+# that decodes to a code flag or to an interpreter name without being meant as
+# either. Pinned DENY as a decision, on this hook's stated direction for an
+# unresolvable case.
 
 case_code_flag_and_interpreter_spellings_deny() {
     local inv='git commit -m x'
+    assert_verdict "$inv" DENY "bare write (positive control for this group)"
     assert_verdict "bash '-c' '${inv}'" DENY "single-quoted code flag"
     assert_verdict "bash \"-c\" '${inv}'" DENY "double-quoted code flag"
     assert_verdict "bash -\"c\" '${inv}'" DENY \
         "code flag split across a quote boundary (-\"c\")"
     assert_verdict "bash \"-\"c '${inv}'" DENY \
         "code flag split across a quote boundary (\"-\"c)"
+    assert_verdict "bash -'c' '${inv}'" DENY \
+        "code flag split across a single-quote boundary (-'c')"
+    assert_verdict "bash '-'c '${inv}'" DENY \
+        "code flag split across a single-quote boundary ('-'c)"
     assert_verdict "bash \\-c '${inv}'" DENY "backslash-escaped code flag"
+    assert_verdict "bash \\"$'\n'"-c '${inv}'" DENY \
+        "code flag reached across a line continuation"
     assert_verdict "'bash' -c '${inv}'" DENY "single-quoted interpreter word"
+    assert_verdict "\"bash\" -c '${inv}'" DENY "double-quoted interpreter word"
     assert_verdict "ba\"sh\" -c '${inv}'" DENY \
         "interpreter word split across a quote boundary"
+    assert_verdict "ba'sh' -c '${inv}'" DENY \
+        "interpreter word split across a single-quote boundary"
+    assert_verdict "/bin/ba'sh' -c '${inv}'" DENY \
+        "pathed interpreter word split across a single-quote boundary"
     assert_verdict "\\bash -c '${inv}'" DENY "backslash-escaped interpreter word"
-    # The cost of reading the flag as bash builds it: a quoted `-c` that is
-    # really an argv element of a script, with an interpreter word earlier on
-    # the line, now qualifies the group after it as code. Pinned DENY as a
-    # decision, on this hook's stated direction for an unresolvable case.
     assert_verdict "bash deploy.sh '-c' 'the summary says git commit -m x was blocked'" \
         DENY "a quoted -c argv element of a script qualifies the next group as code"
+    assert_verdict "grep 'sh' -c 'the summary says git commit -m x was blocked' notes.md" \
+        DENY "a quoted data word decoding to an interpreter name qualifies the next group as code"
 }
 
 # ---- HEREDOC BODIES: a quoted delimiter makes the body prose -------------
@@ -578,23 +606,26 @@ case_many_quoted_groups_on_one_line() {
 # standalone). A fix applied to one copy and not the other leaves two guards
 # with different notions of inert text, and nothing else in the tree notices.
 #
-# Both sides are read relative to the HOOK UNDER TEST, not from REPO_ROOT, so
-# the check describes the same artifact every other case drives: under a
-# GUARD_HOOK override it compares that copy against the sibling beside it, and
-# reports the region missing when there is no sibling to compare against.
+# Both sides are read from REPO_ROOT rather than from the hook under test: the
+# claim is about the pair that ships, and a GUARD_HOOK override points at a
+# scratch copy. Anchored to the override, this row reported the pre-pass
+# identical while both shipped hooks were untouched and both scratch copies
+# carried the same mutation -- true of the wrong pair, and the only check
+# standing between a fix applied to one hook and a half-closed bypass.
 
 PREPASS_RANGE="/^STRIPPED=/,/^' 2>\/dev\/null) || allow_default\$/p"
+SHIPPED_HOOKS="${REPO_ROOT}/src/user/claude_code/hooks"
 
 case_prepass_copies_identical() {
-    local mine sibling
-    mine=$(sed -n "$PREPASS_RANGE" "$HOOK")
-    sibling=$(sed -n "$PREPASS_RANGE" "$(dirname "$HOOK")/docket-trust-guard-hook.sh" 2>/dev/null)
-    if [ -z "$mine" ] || [ -z "$sibling" ]; then
-        fail "quote-aware pre-pass region not found in the hook under test or its sibling"
-    elif [ "$mine" = "$sibling" ]; then
-        pass "quote-aware pre-pass is byte-identical in the hook under test and its sibling"
+    local trust commit
+    trust=$(sed -n "$PREPASS_RANGE" "${SHIPPED_HOOKS}/docket-trust-guard-hook.sh" 2>/dev/null)
+    commit=$(sed -n "$PREPASS_RANGE" "${SHIPPED_HOOKS}/docket-commit-guard-hook.sh" 2>/dev/null)
+    if [ -z "$trust" ] || [ -z "$commit" ]; then
+        fail "quote-aware pre-pass region not found in one of the shipped hooks"
+    elif [ "$trust" = "$commit" ]; then
+        pass "quote-aware pre-pass is byte-identical in the two shipped hooks"
     else
-        fail "quote-aware pre-pass has drifted between the hook under test and its sibling"
+        fail "quote-aware pre-pass has drifted between the two shipped hooks"
     fi
 }
 

@@ -34,6 +34,21 @@
 #   (g)  reply    rewrite the review-thread-reply or close-comment
 #                 instruction to "gh pr comment <n> ... --body \"$text\""
 #                 (DOT-1149)
+#   (h)  auto     MA: inside merge step 2's mergeStateStatus bullet, rewrite
+#                 "accept the PR here — handed to step 3" to "refuse here as
+#                 well, which keeps step 3 unreachable"
+#                 MB: delete the exception clause (the whole "So when the
+#                 invocation said auto ..." sentence)
+#                 MF (must stay GREEN): insert an unrelated earlier line
+#                 containing "mergeStateStatus == CLEAN" above merge step 2
+#   (i)  headref  MC: replace "and assert it equals <head-branch>; a mismatch
+#                 refuses, naming both branches" with "and note it in the
+#                 report"
+#                 MD: drop only the refusal verb from that sentence
+#
+# (h) and (i) assert the ruling, not a token count: a count of "auto" over
+# the bullet, or of "headRefName" over the file, survives MA, MC and MD
+# unchanged, and a first-match extraction turns MF into a false red.
 #
 # A missing input file fails; it never skips green.
 
@@ -83,6 +98,17 @@ join_continuations() { # <file> — trailing-backslash lines folded onto one lin
 for b in "${BLOCKS[@]}"; do
     join_continuations "$b" > "${b}.joined"
 done
+
+sentences() { # <file> — prose sentences, one per line, fenced blocks dropped
+    awk '
+        /^[[:space:]]*```/     { fenced = !fenced; next }
+        fenced                 { next }
+        /^[[:space:]]*$/       { if (para != "") print para; para = ""; next }
+        { sub(/^[[:space:]]+/, ""); para = (para == "" ? $0 : para " " $0) }
+        END { if (para != "") print para }
+    ' "$1" | sed -E 's/([.!?][*`")]*) +/\1\
+/g'
+}
 
 find_block() { # <literal> — path of the joined block containing it
     local b
@@ -241,6 +267,67 @@ if grep -qE 'gh pr comment [^\n]*--body "' "$SKILL"; then
     bad "forbidden form: gh pr comment ... --body \"<text>\" appears in ${SKILL}"
 else
     ok "forbidden form: gh pr comment ... --body \"<text>\" appears nowhere"
+fi
+
+# (h) merge step 2's mergeStateStatus bullet keeps step 3's `auto` path
+# reachable: the pending-required-check case is ACCEPTED here and handed on,
+# never refused. The bullet is taken by its position inside merge step 2, and
+# a second matching region — or a second step 2 — refuses rather than
+# guessing, so a `mergeStateStatus == CLEAN` line elsewhere in the file
+# cannot be extracted in its place.
+awk '
+    /^## merge /  { in_merge = 1; next }
+    /^## /        { in_merge = 0 }
+    !in_merge     { next }
+    /^2\. /       { in_step = 1; steps++ }
+    /^3\. /       { in_step = 0; in_bullet = 0 }
+    in_step && /^   - .*mergeStateStatus == CLEAN/ { in_bullet = 1; regions++; print; next }
+    in_bullet && /^   - / { in_bullet = 0 }
+    in_bullet     { print }
+    END { exit (regions == 1 && steps == 1) ? 0 : 1 }
+' "$SKILL" > "${WORK}/auto-bullet"
+auto_region=$?
+
+if [ "$auto_region" -ne 0 ] || [ ! -s "${WORK}/auto-bullet" ]; then
+    bad "auto carve-out: merge step 2 does not hold exactly one mergeStateStatus bullet"
+else
+    ok "auto carve-out: exactly one mergeStateStatus bullet inside merge step 2"
+    sentences "${WORK}/auto-bullet" > "${WORK}/auto-sentences"
+
+    if grep -qF -- 'auto' "${WORK}/auto-bullet"; then
+        ok "auto carve-out: the bullet names the auto invocation"
+    else
+        bad "auto carve-out: the bullet never names auto — step 3's auto path is dead"
+    fi
+
+    if grep -F -- 'step 3' "${WORK}/auto-sentences" | grep -Ei 'accept' | grep -qEiv 'refus'; then
+        ok "auto carve-out: the pending case is accepted here and handed to step 3"
+    else
+        bad "auto carve-out: no sentence hands the pending case to step 3 with an acceptance verb free of a refusal verb"
+    fi
+fi
+
+# (i) An explicitly given PR number is checked against the checked-out
+# branch, and a mismatch refuses. Anchored on the sentence that carries the
+# assertion, not on how often headRefName is written.
+sentences "$SKILL" > "${WORK}/skill-sentences"
+head_hits=$(grep -cF -- 'assert it equals' "${WORK}/skill-sentences")
+
+if [ "$head_hits" -ne 1 ]; then
+    bad "head-branch assertion: expected exactly one sentence carrying 'assert it equals', found ${head_hits}"
+else
+    ok "head-branch assertion: one sentence asserts the PR's head branch equals the checkout's"
+    head_sentence=$(grep -F -- 'assert it equals' "${WORK}/skill-sentences")
+
+    case "$head_sentence" in
+        *refus*) ok "head-branch assertion: a mismatch refuses" ;;
+        *) bad "head-branch assertion: no refusal governs the mismatch — it is then merely reported" ;;
+    esac
+
+    case "$head_sentence" in
+        *'<head-branch>'*) ok "head-branch assertion: the sentence names <head-branch>" ;;
+        *) bad "head-branch assertion: the sentence does not name <head-branch>" ;;
+    esac
 fi
 
 if [ "$fail" -ne 0 ]; then

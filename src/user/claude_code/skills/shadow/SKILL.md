@@ -939,10 +939,11 @@ Then:
    - **Description**: the evidence verbatim (transcript excerpt or
      file:line, enough to re-find it), the remedy with its SOURCE path — as
      a diff when small — and acceptance criteria a worker can check without
-     this session's context; a criterion trailing a command carries the
-     written mutant `docket-plan`'s mutant rule requires, or says
-     **read-verified** instead. Session ids, run refs, and transcript paths go
-     here, never in the title. A finding sourced from a memory entry (§3's
+     this session's context; a criterion either trails a command AND
+     carries the written mutant `docket-plan`'s mutant rule requires, or
+     carries no command and says **read-verified**. Session ids, run refs,
+     and transcript paths go here, never in the title. A finding sourced
+     from a memory entry (§3's
      Memory row) also names that entry on its own line — `Memory ref:
      <path under ~/.claude/projects/…/memory/> — <name: slug>` — precise
      enough that the fixer can find and delete the entry once the issue is

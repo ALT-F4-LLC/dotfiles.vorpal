@@ -115,10 +115,11 @@ scope from the issue's own description, comments, and the repo — files land
 via `docket issue file add` (appends), scope via `docket issue edit --scope`
 (replaces), one entry per file the description or a gap's `Files:` and
 `Scope:` header lines name, each matching a file in the checkout; criteria must be
-checkable, not aspirational, and a drafted criterion trailing a command
-carries the written mutant `docket-plan`'s mutant rule requires, or says
-**read-verified** instead — and edits it into the issue with a comment
-noting docket-groom drafted it. Fill what is missing; never rewrite or restyle
+checkable, not aspirational, and a drafted criterion either trails a
+command AND carries the written mutant `docket-plan`'s mutant rule
+requires, or carries no command and says **read-verified** — and edits it
+into the issue with a comment noting docket-groom drafted it. Fill what is
+missing; never rewrite or restyle
 prose the operator already wrote. A content fill and a stale-binding label
 often belong to the same issue — check the label again after any content
 edit, not only at initial survey, since resolving what made a label accurate

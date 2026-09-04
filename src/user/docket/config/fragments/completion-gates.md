@@ -1,6 +1,6 @@
 ---
 fragment: completion-gates
-version: 3
+version: 4
 ---
 # Completion gates
 
@@ -41,6 +41,8 @@ same stack the main checkout and every concurrent session share, and the pop tha
 can return a sibling's entry instead of yours. A write executor did exactly this to prove
 a test failure pre-existing, and then needed `git checkout -- go.sum` to undo the drift
 the round-trip left behind. To test a gate against the base, build a clean tree beside
-yours instead: `git worktree add <TMP>/<STEP-N>.d/base HEAD` under your step's private
-directory, run the gate there, remove the worktree after. Your own tree is never disturbed
-and the shared stack is never written.
+yours instead: `mkdir -p <TMP>/<STEP-N>.d/base && git archive HEAD | tar -x -C
+<TMP>/<STEP-N>.d/base` under your step's private directory, and run the gate there. Not
+`git worktree add`: its admin entry lives in the shared repository, which is write-denied
+to you, so the worktree can never be removed and one entry leaks per step. Your own tree
+is never disturbed and the shared stack is never written.

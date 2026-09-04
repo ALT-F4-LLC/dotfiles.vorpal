@@ -113,15 +113,34 @@ in_list() {
 # matched — measured on the commit guard, registered a third of the way into
 # the settings source, which this gate then reported as never registered.
 
-# Registered means a code line (not a `//` comment) before the test module
-# carries the installed command the settings builder emits, verbatim:
-# `"bash ~/.claude/hooks/<name>"`. Matching the path anywhere instead let a
-# test-only `include_str!("claude_code/hooks/<name>")` stand in for a
-# registration the settings never make.
+# Registered means a `.with_hook(`/`.with_hook_timeout(` call before the test
+# module carries the installed command the settings builder emits,
+# `"bash ~/.claude/hooks/<name>"`, as an argument. Matching the path anywhere
+# instead let a test-only `include_str!("claude_code/hooks/<name>")` stand in
+# for a registration the settings never make; matching the literal anywhere in
+# the impl region let a dead `let _cmd = "bash ~/.claude/hooks/<name>";` do the
+# same. The name is compared with awk's `index`, not a regex, so a hook name
+# carrying regex metacharacters cannot widen the match, and the character after
+# the name must end it (a closing quote or the space before an argument), so
+# `foo.sh` neither matches `foo.sh.dropped` nor misses `foo.sh session`.
+#
+# The test-module cut is mirrored in Rust at src/user/claude_code.rs:824
+# (`source.find("#[cfg(test)]")`); both sites assume the test module is last.
 is_registered() {
-  sed '/^#\[cfg(test)\]/,$d' "$REGISTRATION" |
+  sed '/^[[:space:]]*#\[cfg(test)\]/,$d' "$REGISTRATION" |
     grep -vE '^[[:space:]]*//' |
-    grep -F "\"bash ~/.claude/hooks/$1\"" >/dev/null
+    awk -v prefix="\"bash ~/.claude/hooks/$1" '
+      /\.with_hook(_timeout)?\(/ { in_call = 1 }
+      /^[[:space:]]*\)/ { in_call = 0 }
+      in_call {
+        at = index($0, prefix)
+        if (at > 0) {
+          after = substr($0, at + length(prefix), 1)
+          if (after == "\"" || after == " " || after == "\t") { found = 1 }
+        }
+      }
+      END { exit found ? 0 : 1 }
+    '
 }
 
 # A deny path is a code line (comments stripped) that hard-stops with exit 2,

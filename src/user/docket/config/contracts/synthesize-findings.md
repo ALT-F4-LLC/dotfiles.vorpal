@@ -1,6 +1,6 @@
 ---
 node: synthesize-findings
-version: 12
+version: 13
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -108,15 +108,25 @@ also how a standing finding carried forward from an earlier round is emitted; se
 Rounds). Each cluster carries its
 members' finding `id`s in `member_ids`, in the same order as an array severity's
 values. `member_ids` is the ONE linkage key; the older spellings (`members`,
-`cluster_members`, `member_findings`) are retired, and the payload validates against
-`findings-cluster@2`: every element REQUIRES `id`, `title`, and `severity`, and the
-keys this contract also expects you to fill are `file`, `line`, `evidence`,
-`member_ids`, and `open_severity`; `alternative` and `prior_disposition` are carried
-when they apply. Write the required three on every cluster before anything else — a
+`cluster_members`, `member_findings`) are retired. The payload validates against
+`findings-cluster@2`, which REQUIRES `id`, `title`, and `severity` on every element and
+declares `file`, `line`, `evidence`, `member_ids`, `alternative`, and
+`prior_disposition` as optional; carry each of those on the conditions stated below.
+That list is MIRRORED here for reading convenience and `findings-cluster@2` is
+authoritative: `docket schema show findings-cluster@2 --body` settles any disagreement
+between the two, and DOT-1316 (render a step's declared schema keys into the packet) is
+the change that removes the mirror. `open_severity` is NOT a schema key — the schema
+neither declares nor validates it — and is required by THIS contract on the condition
+its own paragraph below states; the schema will catch neither a missing one nor a
+wrongly-emitted one. Write the required three on every cluster before anything else — a
 payload missing `title` or `id` is refused at record, which is a whole re-assembly for
-a key you already had. `id` takes ONE form: `<issue-id>-C<n>`, numbered from 1 in the
-order the clusters appear in your body (`DOT-42-C1`, `DOT-42-C2`), so a cluster id
-names the issue it came from and two runs' ids never collide. A standing finding
+a key you already had. `id` takes ONE form: `<issue-id>-C<n>` (`DOT-42-C1`,
+`DOT-42-C2`), so a cluster id names the issue it came from. NUMBER IT AT FIRST EMISSION
+AND NEVER RENUMBER: a cluster carried forward keeps the id the round that first raised
+it gave it, and this round's new clusters take the numbers above the highest `<n>` any
+earlier round used. The standing-set rules key re-occurrence and disposition on `id`, so
+a cluster renumbered to this round's body order unlinks the ruling recorded against it
+and spends that decision twice. A standing finding
 carried forward from a prior round's aggregate record may omit `member_ids`; it
 references that record, not this round's judge payloads. When any member carries an
 `alternative`, the cluster carries one too (the most concrete where members differ): the

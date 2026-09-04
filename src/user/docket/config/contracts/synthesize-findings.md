@@ -1,6 +1,6 @@
 ---
 node: synthesize-findings
-version: 11
+version: 12
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -109,7 +109,14 @@ Rounds). Each cluster carries its
 members' finding `id`s in `member_ids`, in the same order as an array severity's
 values. `member_ids` is the ONE linkage key; the older spellings (`members`,
 `cluster_members`, `member_findings`) are retired, and the payload validates against
-`findings-cluster@2`, which is where these shapes are written down. A standing finding
+`findings-cluster@2`: every element REQUIRES `id`, `title`, and `severity`, and the
+keys this contract also expects you to fill are `file`, `line`, `evidence`,
+`member_ids`, and `open_severity`; `alternative` and `prior_disposition` are carried
+when they apply. Write the required three on every cluster before anything else — a
+payload missing `title` or `id` is refused at record, which is a whole re-assembly for
+a key you already had. `id` takes ONE form: `<issue-id>-C<n>`, numbered from 1 in the
+order the clusters appear in your body (`DOT-42-C1`, `DOT-42-C2`), so a cluster id
+names the issue it came from and two runs' ids never collide. A standing finding
 carried forward from a prior round's aggregate record may omit `member_ids`; it
 references that record, not this round's judge payloads. When any member carries an
 `alternative`, the cluster carries one too (the most concrete where members differ): the

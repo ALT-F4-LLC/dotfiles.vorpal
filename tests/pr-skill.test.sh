@@ -52,6 +52,13 @@
 #                 refuses, naming both branches" with "and note it in the
 #                 report"
 #                 MD: drop only the refusal verb from that sentence
+#   (j)  eol      MI: revert the title-validation paragraph to "exactly one
+#                 line, no embedded newline", dropping the trailing-newline
+#                 item and its tail -c1 mechanism
+#                 MJ (must stay GREEN): delete the writer paragraph's
+#                 "trailing newline" prose, which the region excludes
+#   (k)  determ   MK: delete the fenced /usr/bin/head -c de-terminate
+#                 command, leaving the check with no producer
 #
 # (h) and (i) assert the ruling, not a token count: a count of "auto" over
 # the bullet, or of "headRefName" over the file, survives MA, MC and MD
@@ -337,6 +344,47 @@ else
         *'<head-branch>'*) ok "head-branch assertion: the sentence names <head-branch>" ;;
         *) bad "head-branch assertion: the sentence does not name <head-branch>" ;;
     esac
+fi
+
+# (j) The title-validation paragraph carries the trailing-newline item and a
+# mechanism that can see a terminator. "trailing newline" also occurs in the
+# writer prose above, so the paragraph is extracted before it is searched.
+awk '
+    index($0, "**The title file is validated before it is used**") { open = 1; begins++ }
+    open && /^[[:space:]]*$/ { open = 0 }
+    open { print }
+    END { exit (begins == 1) ? 0 : 1 }
+' "$SKILL" > "${WORK}/title-validation"
+validation_region=$?
+
+if [ "$validation_region" -ne 0 ] || [ ! -s "${WORK}/title-validation" ]; then
+    bad "title validation: expected exactly one paragraph opening 'The title file is validated before it is used'"
+else
+    ok "title validation: exactly one validation paragraph"
+    if grep -qF -- 'trailing newline' "${WORK}/title-validation"; then
+        ok "title validation: the list refuses a trailing newline"
+    else
+        bad "title validation: no trailing-newline item — gh publishes the terminator inside the title"
+    fi
+    if grep -qF -- 'tail -c1' "${WORK}/title-validation"; then
+        ok "title validation: the item names a mechanism that can see a terminator"
+    else
+        bad "title validation: no tail -c1 mechanism — a wc -l count cannot see a terminator"
+    fi
+fi
+
+# (k) The de-terminate step exists to PRODUCE that property: BSD grep's strip
+# pass always terminates its output, so without this the check refuses every
+# title.
+if determinate=$(find_block '/usr/bin/head -c'); then
+    ok "de-terminate: a fenced block cuts the terminator with /usr/bin/head -c"
+    if grep -qF -- '> <final-file>' "$determinate"; then
+        ok "de-terminate: it redirects into the file that gets scanned and sent"
+    else
+        bad "de-terminate: the head -c command does not redirect into <final-file>"
+    fi
+else
+    bad "de-terminate: no fenced block runs /usr/bin/head -c — the strip pass's terminator has no remover"
 fi
 
 if [ "$fail" -ne 0 ]; then

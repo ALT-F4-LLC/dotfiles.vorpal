@@ -1489,7 +1489,9 @@ A signed pick or commit signs INSIDE the sandbox: the settings re-open
 `git commit` and `git cherry-pick` need no lift for the signature. If one
 still fails with `error: Couldn't load public key
 /Users/<you>/.ssh/agent-signing.pub: No such file or directory?`, the
-installed settings predate that allowance — `git cherry-pick --abort`, then
+installed settings predate that allowance — `git cherry-pick --abort` if a
+pick is in progress, and nothing at all if it was a plain `git commit`, which
+leaves no pick to abort and its staged work intact, so leave it staged; then
 stop and tell the operator to run `just activate`; do not lift the sandbox
 around it and never inspect `~/.ssh` (one run paid an aborted pick, a
 permission prompt, and twelve ad-hoc lifts on the old behavior).

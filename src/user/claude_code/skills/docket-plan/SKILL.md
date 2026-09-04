@@ -771,7 +771,15 @@ with "note the divergence and continue", and separately deleting the bullet
 while reintroducing the same string as unrelated prose elsewhere, both left it
 at exit 0. Anchoring each check to the section it is about — pull the bullet
 out with `sed`/`awk` by its heading or marker, then grep the extract — kills
-both mutants for the cost of one more pipe stage.
+the second pair: neither the reworded refusal nor the string reintroduced as
+unrelated prose survives an extract scoped to the bullet. It does nothing for
+the first. Anchoring narrows WHERE a pattern looks; the revision-range mutant
+escapes on WHAT the pattern says, so that one is killed only by rewriting the
+pattern to state the property — flags allowed between verb and ref, and
+`git rev-list` counted alongside `diff` and `log`:
+`grep -nE 'git (diff|log|rev-list)( +-[^ ]+)* +origin/<base>\.\.HEAD'` goes
+red on `<base>..HEAD`, where the original stayed silent at exit 1. Split the
+remedy by failure mode: anchor for scope, restate the pattern for property.
 
 **An AC that needs a live cluster is post-merge by construction, not an AC.**
 On GitOps repos, author acceptance criteria as statically verifiable render

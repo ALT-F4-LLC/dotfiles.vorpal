@@ -23,6 +23,11 @@
 #   (a2) xargs    wrap the publish call in "xargs -0 -a <title-file>"
 #   (b)  scan     join the two scan commands with a pipe, and drop
 #                 --diff-merges=first-parent from the walk
+#   (b2) prefix   MG: drop the origin/ prefix at both scan command sites,
+#                 leaving a bare "<base>..HEAD" in the rev-list count and in
+#                 the log walk
+#                 MH: drop it at the walk alone, which keeps the count
+#                 command — and so the block anchor — intact
 #   (c)  refusal  delete src/user/claude_code/skills/** from the review-mode
 #                 refusal list (it still occurs elsewhere in the file)
 #   (d)  title    reintroduce the forbidden literal --title "<title>"
@@ -33,7 +38,9 @@
 #                 (DOT-1131)
 #   (g)  reply    rewrite the review-thread-reply or close-comment
 #                 instruction to "gh pr comment <n> ... --body \"$text\""
-#                 (DOT-1149)
+#                 (DOT-1149); the same rewrite also leaves a
+#                 gh pr comment ... --body "<text>" line in the file, which
+#                 the forbidden-form check rejects on its own
 #   (h)  auto     MA: inside merge step 2's mergeStateStatus bullet, rewrite
 #                 "accept the PR here — handed to step 3" to "refuse here as
 #                 well, which keeps step 3 unreachable"
@@ -263,7 +270,9 @@ else
     bad "close comment block: no fenced block runs gh api ... issues/<pr-number>/comments"
 fi
 
-if grep -qE 'gh pr comment [^\n]*--body "' "$SKILL"; then
+# `[^\n]` here would be a bracket expression excluding the letter n, not a
+# "not a newline" class, and every real call names <pr-number>.
+if grep -qE 'gh pr comment .*--body "' "$SKILL"; then
     bad "forbidden form: gh pr comment ... --body \"<text>\" appears in ${SKILL}"
 else
     ok "forbidden form: gh pr comment ... --body \"<text>\" appears nowhere"

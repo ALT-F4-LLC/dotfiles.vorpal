@@ -742,8 +742,10 @@ command's pre-fix output red against the tree as it stands. A check whose
 mutant nobody wrote down is a check nobody has falsified, and it passes on
 files that violate the criterion it claims to enforce. If you cannot state the
 mutant, the criterion does not carry a command: mark it **read-verified**
-explicitly in the AC text, so the acceptance record never reads as uniformly
-mechanized when only some of it is. Both halves matter — an AC list where
+explicitly. For an AC you derived, the marking goes in the AC text. For an
+operator-stated one, which is copied verbatim, the marking is recorded beside
+the criterion and never inside its wording. Either way the acceptance record
+never reads as uniformly mechanized when only some of it is. Both halves matter — an AC list where
 every line trails a grep, half of which can never go red, is more misleading
 than one that says plainly which criteria a human must read.
 

@@ -1,6 +1,6 @@
 ---
 fragment: vorpal-toolchain
-version: 6
+version: 7
 ---
 # Vorpal toolchain
 
@@ -64,13 +64,18 @@ Two denials remain possible, and neither is a reason to retry unsandboxed:
   for `go`) and report the real command you ran; a tool with no native cover is the same
   NETWORK GATE BLOCKED stop.
 
-Three more pitfalls, none about the network:
+Four more pitfalls, none about the network:
 
 - **Process substitution is denied**: `diff <(...) <(...)` fails with "Operation not
   permitted" on `/dev/fd/N`; diff temp files under `$TMPDIR` instead.
+- **There is no `timeout` on this host**: macOS ships none, so `timeout 300 <cmd>` dies
+  with "command not found: timeout" before the command runs; give the tool call itself
+  the longer timeout instead.
 - **No PyYAML in the executor environment**: `python3 -c "import yaml"` raises
   `ModuleNotFoundError: No module named 'yaml'`; parse YAML with `yq` or Go tooling instead.
-- **`grep` in this shell is a ugrep shim** whose ERE semantics differ from GNU grep's:
-  `grep -icE '(^|[^0-9])AB11([^0-9]|$)'` returns 0 on a line `/usr/bin/grep` counts as 1.
-  For anything counted or gated, run `/usr/bin/grep` — that is what the Makefile gates
-  run, so the shim's count is not the gate's count.
+- **`grep` in this shell is a ugrep shim** that diverges from GNU grep two ways: its ERE
+  semantics differ (`grep -icE '(^|[^0-9])AB11([^0-9]|$)'` returns 0 on a line
+  `/usr/bin/grep` counts as 1) and its recursive search honors ignore files, so even a
+  plain-literal `grep -r` count misses matches in gitignored files. For anything counted
+  or gated, run `/usr/bin/grep` — that is what the Makefile gates run, so the shim's
+  count is not the gate's count.

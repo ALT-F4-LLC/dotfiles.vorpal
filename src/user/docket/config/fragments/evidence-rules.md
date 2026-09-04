@@ -1,6 +1,6 @@
 ---
 fragment: evidence-rules
-version: 2
+version: 3
 ---
 # Evidence rules
 
@@ -19,6 +19,9 @@ negative result is worth more than an unexamined positive one.
 - **Empty-diff triage.** An empty diff on files whose content demonstrably changed means
   staged or committed, not "no changes"; check the staged and committed views before
   concluding anything from emptiness.
+- **A shimmed `grep` undercounts.** `grep` in this shell is a ugrep shim whose ERE
+  semantics differ from GNU grep's and whose recursive search skips gitignored files, so
+  run `/usr/bin/grep` for any count an evidence claim or a gate rests on.
 - **Hollow green.** A green build proves a criterion only if the tests actually RAN.
   Verify that any artifact a ruling depends on is really present and not excluded, and
   treat skip-gated suites as hollow-green hazards.

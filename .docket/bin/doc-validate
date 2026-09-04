@@ -17,6 +17,12 @@
 # Scope is CHANGED docs only — staged, unstaged, and untracked — because a
 # gate runs while a step holds the tree, and a malformed doc that predates
 # the step is not the step's doing.
+#
+# Scope covers docs/ and src/user/claude_code/skills/. Skill prose is the
+# largest documentation surface this repo ships and used to sit outside every
+# gate: a one-file SKILL.md change ran nine gates green with none of them
+# reading the changed bytes. The two trees carry different header shapes, so
+# the check below branches on the file name rather than the tree.
 
 set -euo pipefail
 
@@ -27,9 +33,9 @@ if ! repo_root="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null)"; 
 fi
 cd "$repo_root"
 
-changed=$( { git diff --cached --name-only -- 'docs/*.md'
-             git diff --name-only -- 'docs/*.md'
-             git ls-files --others --exclude-standard -- 'docs/*.md'
+changed=$( { git diff --cached --name-only -- 'docs/*.md' 'src/user/claude_code/skills/*.md'
+             git diff --name-only -- 'docs/*.md' 'src/user/claude_code/skills/*.md'
+             git ls-files --others --exclude-standard -- 'docs/*.md' 'src/user/claude_code/skills/*.md'
            } | sort -u )
 
 if [ -z "$changed" ]; then
@@ -47,15 +53,36 @@ while IFS= read -r f; do
   [ -n "$f" ] || continue
   [ -f "$f" ] || continue
 
-  if ! head -1 "$f" | grep -q '^# '; then
-    echo "doc-validate: $f does not open with a '# ' title" >&2
-    failed=1
-  fi
+  # Naming each file read is what lets a reader tell a gate that passed from
+  # a gate that never saw the change, the failure this scope widening fixes.
+  echo "doc-validate: checking $f"
+
+  case "$f" in
+    */SKILL.md)
+      # A skill is loaded through its YAML frontmatter block, so the header
+      # shape a skill carries is that block, not a '# ' title. An unterminated
+      # block swallows the whole file and the skill silently stops loading.
+      if ! head -1 "$f" | grep -q '^---$'; then
+        echo "doc-validate: $f does not open with a '---' frontmatter fence" >&2
+        failed=1
+      elif ! awk 'NR > 1 && $0 == "---" { found = 1; exit } END { exit !found }' "$f"; then
+        echo "doc-validate: $f has an unterminated frontmatter block" >&2
+        failed=1
+      fi
+      ;;
+    *)
+      if ! head -1 "$f" | grep -q '^# '; then
+        echo "doc-validate: $f does not open with a '# ' title" >&2
+        failed=1
+      fi
+      ;;
+  esac
 done <<< "$changed"
 
 if [ "$failed" -ne 0 ]; then
   echo "" >&2
-  echo "doc-validate FAILED. Existing docs under docs/ show the shape." >&2
+  echo "doc-validate FAILED. Existing docs under docs/ and existing" >&2
+  echo "src/user/claude_code/skills/*/SKILL.md files show the shape." >&2
   exit 1
 fi
 

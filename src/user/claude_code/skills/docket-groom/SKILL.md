@@ -109,7 +109,9 @@ its workflow-narrowing effect is confirmed), priority (except on
 run-included or claimed issues — those route to §4), comments, and field
 fills. A field fill drafts the missing goal or acceptance criteria from the
 issue's own description, comments, and the repo — criteria must be
-checkable, not aspirational — and edits it into the issue with a comment
+checkable, not aspirational, and a drafted criterion trailing a command
+carries the written mutant `docket-plan`'s mutant rule requires, or says
+**read-verified** instead — and edits it into the issue with a comment
 noting docket-groom drafted it. Fill what is missing; never rewrite or restyle
 prose the operator already wrote. A content fill and a stale-binding label
 often belong to the same issue — check the label again after any content

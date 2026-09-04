@@ -269,12 +269,14 @@ const C2 = await run({
 ok(C2.status === 'gate-rejected' && CALLS.length === 1,
     'C2: an already-REJECTED gate is read off the same single probe — a done step is not a pass')
 
-// A step settled some other way — done, ballot never tallied — continues.
+// A step the engine skipped with no tally ever run reports gate-skipped, not
+// gate-passed — the exact misread a conductor once made on a security
+// tribunal that never sat.
 const C3 = await run({
-    'STEP-2493 · gate:status': { text: envelope('skipped', 'open', []) },
+    'STEP-2493 · gate:status': { text: envelope('skipped', 'open', VOTERS) },
 })
-ok(C3.status === 'gate-passed' && CALLS.length === 1,
-    'C3: a skipped step with an untallied ballot is decided ground, not a gate to seat')
+ok(C3.status === 'gate-skipped' && CALLS.length === 1,
+    'C3: a skipped step with an untallied ballot reports gate-skipped, not gate-passed')
 
 // ---- D: a NON-transient classifier block on the outcome probe is
 // deterministic on identical bytes — never resubmitted. The tally is then

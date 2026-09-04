@@ -9,9 +9,18 @@
 #
 # The row scan reads workflow STRUCTURE, not text: a commented-out row, or a
 # row under an `if:`-gated job or step, does not run in CI and so does not
-# count as wiring. A gated row is treated as absent whatever its condition
-# says — evaluating GitHub expressions here would be a second, worse parser,
-# and "the suite runs on every CI run" is the invariant worth holding.
+# count as wiring. Gating is a property of the whole job, so a job's rows are
+# buffered and emitted only after the job has been read out; YAML puts no
+# ordering constraint on a job's keys, and an `if:` written below `steps:`
+# gates the job exactly as one written above it. A gated row is treated as
+# absent whatever its condition says — evaluating GitHub expressions here
+# would be a second, worse parser, and "the suite runs on every CI run" is the
+# invariant worth holding.
+#
+# A row counts only when its whole `run:` command, trimmed, is exactly
+# `bash tests/<name>.test.sh`. A suite merely named inside a larger command
+# (an echo, a conditional) is deliberately read as unwired: such a command may
+# never execute the suite, and under-reporting wiring is the safe direction.
 #
 # Boundary with `.docket/bin/sdet-abuse`: that gate re-runs the HOOK suites
 # behind a minimum-case floor, so it catches a hook suite that has stopped
@@ -44,14 +53,22 @@ suite_names() { # <tests-dir>
 
 # Suite basenames invoked by a step that CI will run, sorted and deduplicated.
 # The awk pass walks the workflow's indentation so that comments, gated jobs
-# and gated steps drop out; only a single-line `run:` on an ungated step in an
-# ungated job reaches the grep.
+# and gated steps drop out; rows are held per job and released only once the
+# whole job has been seen, so a late `if:` still gates them.
 wired_suites() { # <workflow-file>
     awk '
         function flush_step() {
-            if (step_run != "" && !job_gated && !step_gated) print step_run
+            if (step_run != "" && !step_gated) pending[++npending] = step_run
             step_run = ""
             step_gated = 0
+        }
+        function flush_job(   i) {
+            flush_step()
+            if (!job_gated)
+                for (i = 1; i <= npending; i++) print pending[i]
+            npending = 0
+            job_gated = 0
+            in_steps = 0
         }
         /^[[:space:]]*#/ { next }
         {
@@ -60,9 +77,9 @@ wired_suites() { # <workflow-file>
             rest = substr($0, ind + 1)
             if (rest == "") next
 
-            if (ind == 0) { flush_step(); job_gated = 0; in_steps = 0; next }
+            if (ind == 0) { flush_job(); next }
             if (ind == 2 && rest ~ /^[A-Za-z0-9_.-]+:[[:space:]]*$/) {
-                flush_step(); job_gated = 0; in_steps = 0; next
+                flush_job(); next
             }
             if (ind == 4) {
                 flush_step()
@@ -77,33 +94,42 @@ wired_suites() { # <workflow-file>
             else next
 
             if (key ~ /^if:/) step_gated = 1
-            if (key ~ /^run:/) step_run = substr(key, 5)
+            if (key ~ /^run:/) {
+                step_run = substr(key, 5)
+                sub(/^[[:space:]]+/, "", step_run)
+                sub(/[[:space:]]+$/, "", step_run)
+            }
         }
-        END { flush_step() }
+        END { flush_job() }
     ' "$1" |
-        grep -oE 'bash tests/[A-Za-z0-9._-]+\.test\.sh' |
-        sed -e 's|^bash tests/||' | sort -u
+        sed -n 's|^bash tests/\([A-Za-z0-9._-]*\.test\.sh\)$|\1|p' | sort -u
 }
 
 # Compare one tests directory against one workflow, printing a FAIL line per
-# disagreement. Returns 1 when the two sets differ, 0 when they match.
+# disagreement. Returns 0 when the sets match and 1 when they differ; 2 means
+# an input made the comparison impossible, which a caller must never read as a
+# trustworthy disagreement.
 compare_wiring() { # <tests-dir> <workflow-file>
     local tests="$1" workflow="$2" cmp status=0 suite
-    cmp=$(mktemp -d "${WORK}/cmp.XXXXXX") || return 2
 
     if [ ! -d "$tests" ]; then
         echo "FAIL: no tests directory at ${tests}"
-        return 1
+        return 2
     fi
     if [ ! -f "$workflow" ]; then
         echo "FAIL: no workflow at ${workflow}"
-        return 1
+        return 2
     fi
+
+    cmp=$(mktemp -d "${WORK}/cmp.XXXXXX") || {
+        echo "FAIL: no scratch directory under ${WORK}"
+        return 2
+    }
 
     suite_names "$tests" > "${cmp}/suites"
     if [ ! -s "${cmp}/suites" ]; then
         echo "FAIL: no *.test.sh suites found under ${tests}"
-        return 1
+        return 2
     fi
     wired_suites "$workflow" > "${cmp}/rows"
 
@@ -135,9 +161,12 @@ fi
 # pinned here against fixtures: without this, deleting either `comm` line
 # leaves half the guard dead and CI green.
 FIX="${WORK}/fixtures"
-mkdir -p "${FIX}/tests"
+mkdir -p "${FIX}/tests" "${FIX}/spaced" "${FIX}/empty"
 : > "${FIX}/tests/alpha.test.sh"
 : > "${FIX}/tests/beta.test.sh"
+: > "${FIX}/spaced/alpha.test.sh"
+: > "${FIX}/spaced/beta.test.sh"
+: > "${FIX}/spaced/two words.test.sh"
 
 cat > "${FIX}/matched.yaml" <<'YAML'
 jobs:
@@ -166,13 +195,26 @@ jobs:
       - run: bash tests/deleted.test.sh
 YAML
 
-cat > "${FIX}/commented.yaml" <<'YAML'
+cat > "${FIX}/commented-row.yaml" <<'YAML'
 jobs:
   test-hooks:
     runs-on: ubuntu-latest
     steps:
       - run: bash tests/alpha.test.sh
       # - run: bash tests/beta.test.sh
+YAML
+
+# A comment is legal at any column, including inside a steps list. This one
+# sits at column zero, where only the comment rule can drop it: the shape test
+# that catches the fixture above never sees it.
+cat > "${FIX}/comment-column-zero.yaml" <<'YAML'
+jobs:
+  test-hooks:
+    runs-on: ubuntu-latest
+    steps:
+      - run: bash tests/alpha.test.sh
+# a note parked at column zero, still inside the steps list
+      - run: bash tests/beta.test.sh
 YAML
 
 cat > "${FIX}/gated-job.yaml" <<'YAML'
@@ -188,6 +230,19 @@ jobs:
       - run: bash tests/beta.test.sh
 YAML
 
+cat > "${FIX}/gated-job-late-if.yaml" <<'YAML'
+jobs:
+  test-hooks:
+    runs-on: ubuntu-latest
+    steps:
+      - run: bash tests/alpha.test.sh
+  dead:
+    runs-on: ubuntu-latest
+    steps:
+      - run: bash tests/beta.test.sh
+    if: false
+YAML
+
 cat > "${FIX}/gated-step.yaml" <<'YAML'
 jobs:
   test-hooks:
@@ -198,34 +253,65 @@ jobs:
         run: bash tests/beta.test.sh
 YAML
 
-expect_wiring() { # <label> <agree|disagree> <workflow-fixture>
-    local label="$1" want="$2" out got
-    out=$(compare_wiring "${FIX}/tests" "$3")
-    if [ $? -eq 0 ]; then got=agree; else got=disagree; fi
-    if [ "$got" = "$want" ]; then
-        echo "ok   self-check ${label}: ${want}"
+cat > "${FIX}/mention-only.yaml" <<'YAML'
+jobs:
+  test-hooks:
+    runs-on: ubuntu-latest
+    steps:
+      - run: bash tests/alpha.test.sh
+      - run: echo "to reproduce locally, run bash tests/beta.test.sh"
+YAML
+
+# Assert both halves of compare_wiring's answer: the status AND the exact FAIL
+# lines. Asserting the status alone would leave the two `comm` directions
+# interchangeable, so a suite naming every real failure as its own inverse
+# would still read green.
+expect_wiring() { # <label> <status> <tests-dir> <workflow> [<expected line>...]
+    local label="$1" want_status="$2" tests="$3" workflow="$4"
+    shift 4
+    local out got want_out=''
+    if [ "$#" -gt 0 ]; then
+        want_out=$(printf '%s\n' "$@")
+    fi
+    out=$(compare_wiring "$tests" "$workflow")
+    got=$?
+    if [ "$got" = "$want_status" ] && [ "$out" = "$want_out" ]; then
+        echo "ok   self-check ${label}"
         return 0
     fi
-    echo "FAIL self-check ${label}: expected ${want}, got ${got}"
-    printf '%s\n' "$out" | sed 's/^/     /'
+    echo "FAIL self-check ${label}: expected status ${want_status}, got ${got}"
+    echo "     expected output:"
+    printf '%s\n' "$want_out" | sed 's/^/       /'
+    echo "     actual output:"
+    printf '%s\n' "$out" | sed 's/^/       /'
     return 1
 }
 
-expect_wiring "matched sets" agree "${FIX}/matched.yaml" || fail=1
-expect_wiring "suite with no row" disagree "${FIX}/unwired.yaml" || fail=1
-expect_wiring "row naming a missing suite" disagree "${FIX}/orphaned.yaml" || fail=1
-expect_wiring "commented-out row" disagree "${FIX}/commented.yaml" || fail=1
-expect_wiring "row in an if-gated job" disagree "${FIX}/gated-job.yaml" || fail=1
-expect_wiring "if-gated step" disagree "${FIX}/gated-step.yaml" || fail=1
+UNWIRED_BETA="FAIL beta.test.sh: suite is not invoked by any step the workflow runs"
 
-# An empty tests directory must fail loudly rather than report a vacuous pass.
-mkdir -p "${FIX}/empty"
-if compare_wiring "${FIX}/empty" "${FIX}/matched.yaml" > /dev/null; then
-    echo "FAIL self-check empty tests directory: reported agreement on an empty suite set"
-    fail=1
-else
-    echo "ok   self-check empty tests directory: disagree"
-fi
+expect_wiring "matched sets" 0 "${FIX}/tests" "${FIX}/matched.yaml" || fail=1
+expect_wiring "suite with no row" 1 "${FIX}/tests" "${FIX}/unwired.yaml" \
+    "$UNWIRED_BETA" || fail=1
+expect_wiring "row naming a missing suite" 1 "${FIX}/tests" "${FIX}/orphaned.yaml" \
+    "FAIL deleted.test.sh: workflow row names a suite that does not exist" || fail=1
+expect_wiring "commented-out row" 1 "${FIX}/tests" "${FIX}/commented-row.yaml" \
+    "$UNWIRED_BETA" || fail=1
+expect_wiring "column-zero comment between rows" 0 "${FIX}/tests" \
+    "${FIX}/comment-column-zero.yaml" || fail=1
+expect_wiring "job gated before steps" 1 "${FIX}/tests" "${FIX}/gated-job.yaml" \
+    "$UNWIRED_BETA" || fail=1
+expect_wiring "job gated after steps" 1 "${FIX}/tests" "${FIX}/gated-job-late-if.yaml" \
+    "$UNWIRED_BETA" || fail=1
+expect_wiring "if-gated step" 1 "${FIX}/tests" "${FIX}/gated-step.yaml" \
+    "$UNWIRED_BETA" || fail=1
+expect_wiring "suite named but not run" 1 "${FIX}/tests" "${FIX}/mention-only.yaml" \
+    "$UNWIRED_BETA" || fail=1
+expect_wiring "suite name holding a space" 1 "${FIX}/spaced" "${FIX}/matched.yaml" \
+    "FAIL two words.test.sh: suite is not invoked by any step the workflow runs" || fail=1
+expect_wiring "empty tests directory" 2 "${FIX}/empty" "${FIX}/matched.yaml" \
+    "FAIL: no *.test.sh suites found under ${FIX}/empty" || fail=1
+expect_wiring "missing tests directory" 2 "${FIX}/absent" "${FIX}/matched.yaml" \
+    "FAIL: no tests directory at ${FIX}/absent" || fail=1
 
 if [ "$fail" -ne 0 ]; then
     echo "ci-suite-wiring: FAIL — tests/ and the workflow disagree." >&2

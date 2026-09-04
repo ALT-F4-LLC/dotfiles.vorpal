@@ -1,6 +1,6 @@
 ---
 node: implement
-version: 6
+version: 7
 archetype: executor-write
 packet_includes:
   - fragments/code-philosophy.md
@@ -37,6 +37,14 @@ record, run the repository's completion gates (`docket trust list` is the roster
 completion-gates fragment says how), plus the project's build and test commands, and
 include their real output in the summary. If an AC is untestable as written, say so
 explicitly in the summary rather than approximating it.
+
+A command the permission system or the auto-mode classifier refuses ("denied by the
+Claude Code auto mode classifier") is reported in your step's return, on the same terms
+your obligations impose for a sandbox denial: the exact command, the refusal's reason
+verbatim, and the gate or purpose it served. If you then re-issue the call in any altered
+form and it runs, disclose the retry BESIDE the denial, never in place of it — a control
+fired, and a return that shows only the successful second attempt reads as a run where
+nothing was ever refused.
 
 # Emit
 `change-summary` (markdown): FIRST LINE is the worktree commit sha your

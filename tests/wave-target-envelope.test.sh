@@ -268,6 +268,46 @@ ok(seatBriefs().every((b) => b.includes('TARGET WORKTREE:/w/vpl-711') && !/TARGE
     'a worktree-only target names the worktree and no sha')
 ok(D.status === 'gate-passed', 'and does not disturb the gate outcome')
 
+// A worktree the conductor already swept: the status probe's `test -d`
+// answered no, so the path never reaches a seat and no `git -C` is offered
+// against it.
+const E = await run({
+    'STEP-3187 · gate:status': {
+        text: { ...open({ sha: REAL, worktree: '/w/vpl-711' }), target_worktree_exists: false },
+    },
+    ...CAST,
+})
+ok(seatBriefs().every((b) => !b.includes('/w/vpl-711') && !/TARGET WORKTREE:/.test(b)),
+    'a swept worktree is dropped from every brief')
+ok(seatBriefs().every((b) => b.includes(`TARGET SHA:     ${REAL}`) && !b.includes('git -C ')),
+    'the sha survives the sweep — the object store outlives the checkout')
+ok(E.status === 'gate-passed' && E.spawn_accounting === '3 seats, 2 probes, 0 retries',
+    'and the sweep costs no extra probe')
+
+// Sha-less and swept is no target at all.
+const F = await run({
+    'STEP-3187 · gate:status': {
+        text: { ...open({ sha: '', worktree: '/w/vpl-711' }), target_worktree_exists: false },
+    },
+    ...CAST,
+})
+ok(seatBriefs().every((b) => b.includes('NO target ref') && !b.includes('/w/vpl-711')),
+    'a swept worktree with no sha briefs NO target ref')
+ok(F.status === 'gate-passed', 'and still does not disturb the gate outcome')
+
+ok(gateTarget({ target: { sha: REAL, worktree: '/w' }, target_worktree_exists: false }).worktree === '',
+    'gateTarget: target_worktree_exists false drops the worktree')
+ok(gateTarget({ target: { sha: '', worktree: '/w' }, target_worktree_exists: false }) === null,
+    'gateTarget: swept and sha-less is no target')
+ok(gateTarget({ target: { sha: REAL, worktree: '/w' } }).worktree === '/w' &&
+   gateTarget({ target: { sha: REAL, worktree: '/w' }, target_worktree_exists: true }).worktree === '/w',
+    'gateTarget: an unprobed worktree is UNKNOWN, not gone — it is kept')
+
+// The probe is what asks. Without `test -d` in its brief nothing above can fire.
+ok(/test -d/.test(gateStatusBrief('STEP-3187')) &&
+   gateStatusBrief('STEP-3187').includes('target_worktree_exists'),
+    'the gate status probe tests the worktree and reports target_worktree_exists')
+
 // ---- gateTarget, on its own ----
 ok(gateTarget({}) === null && gateTarget({ target: null }) === null &&
    gateTarget({ target: 'x' }) === null,

@@ -259,9 +259,16 @@ ${!isWrite ? `
      repositories to re-prove a non-change, and do NOT file a duplicate gap —
      the upstream record already carries it.
    - Find the target sha — the change-summary's FIRST LINE carries it.
-   - Reconstruct the target read-only, ALWAYS — do not first probe whether
-     your checkout contains the change: integration cherry-picks, so the
-     writer's sha is never an ancestor of the shared branch even after its
+   - IF THAT FIRST LINE CARRIES NO SHA, or reports COMMIT BLOCKED, the
+     packet's target_sha is NOT the change. A blocked commit leaves the
+     worktree's BASE HEAD standing in that field, so archiving it rebuilds
+     the tree as it stood BEFORE the work. Say exactly that in your record,
+     evaluate the packet's rendered issue.diff as the change, and file NO
+     finding against a file you read from that sha — each would be a false
+     blocker against work that is present but uncommitted.
+   - OTHERWISE reconstruct the target read-only, ALWAYS — do not first probe
+     whether your checkout contains the change: integration cherry-picks, so
+     the writer's sha is never an ancestor of the shared branch even after its
      content lands. TWO plain calls, and \`<TMP>\` is the LITERAL from
      bootstrap (a), never the words \`$TMPDIR\`:
 
@@ -1270,9 +1277,20 @@ THE CASE IS IN THE RECORD, not in this brief: this gate readied mid-wave, so
 read what is being decided yourself before you vote —
 
   docket vote show ${voteId}          (the proposal body: the question)
-  docket step show ${row.step} / docket step context ${row.step}
-  docket step artifacts ${row.step}   (then \`docket step artifact ARTIFACT-N\`)
+  docket run status ${row.run} --json (this run's state; there is no \`run show\`)
+  docket run activate ${row.run} --dry-run --json
+      \`--dry-run\` IS LOAD-BEARING — without it the verb ACTIVATES the run
+  docket step show ${row.step} / docket step context ${row.step} --json
   git log --oneline -20 / git diff / git show <sha>
+
+THE EVIDENCE HANGS OFF THE CONTEXT BUNDLE, NOT OFF THE GATE STEP. A vote step
+produces no artifacts of its own, so \`docket step artifacts\` aimed at the
+GATE answers "produced no artifacts" and costs you the turn. The bundle
+carries the gate's INPUTS at \`.data.context.inputs[]\` — one entry per
+upstream artifact, each naming \`.artifact\` (the ARTIFACT-N id), \`.kind\`
+(threat-model, change-summary, issue.diff, findings), \`.producer_step\`, and
+its \`.body\` and \`.payload\` in full. Read there, and spend
+\`docket step artifact ARTIFACT-N --payload\` only on an id the bundle named.
 
 THEIR FLAGS, since guessing one costs you a turn and teaches you nothing:
 \`step context\` takes \`--meta\` and NOTHING else; \`step artifact\` takes
@@ -1501,12 +1519,13 @@ const GATE_STATUS_SCHEMA = {
             type: 'object',
             properties: { sha: { type: 'string' }, worktree: { type: 'string' } },
         },
+        target_worktree_exists: { type: 'boolean' },
         error: { type: 'string' },
     },
 }
 
 function gateStatusBrief(step) {
-    return `Run exactly this one command:
+    return `Run this command first:
 
   docket gate status ${step} --json
 
@@ -1514,6 +1533,15 @@ Return the command's \`data\` object through the structured output, field for
 field and value for value — copy, never summarize; add no field the output did
 not carry and fill none in. If the command errors or prints no \`data\` object,
 return {error: <the error text verbatim>} and nothing else.
+
+THEN, only when that \`data\` carries a non-empty \`target.worktree\`, run one
+more command against that literal path:
+
+  test -d <that path> && echo yes || echo no
+
+and report \`target_worktree_exists\`: true for yes, false for no. That single
+field is the one thing you add; omit it entirely when there was no worktree to
+test, and copy everything else.
 
 Do not cast a vote, do not investigate, do not run anything else. You are a
 read-only probe reporting what the record currently says.
@@ -1564,7 +1592,14 @@ function gateTarget(g) {
     const t = g.target
     if (!t || typeof t !== 'object') return null
     const sha = (typeof t.sha === 'string' && TARGET_SHA_RE.test(t.sha)) ? t.sha : ''
-    const worktree = typeof t.worktree === 'string' ? t.worktree : ''
+    // The conductor sweeps a write-class worktree once its round integrates,
+    // so the path the engine recorded is routinely gone by the time a panel
+    // seats on it — and every `git -C <path>` the brief then hands a judge
+    // dies with "cannot change to … No such file or directory". Only a probe
+    // that answered "gone" drops the path: an absent field is UNKNOWN, and
+    // the brief keeps what the engine recorded.
+    const swept = g.target_worktree_exists === false
+    const worktree = (!swept && typeof t.worktree === 'string') ? t.worktree : ''
     if (!sha && !worktree) return null
     return { sha, worktree }
 }

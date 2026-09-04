@@ -284,42 +284,53 @@ STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk '
 # The look-behind stops at a newline. Leaves are newline-separated in this
 # buffer, so the last words of one leaf must not qualify a quoted group that
 # opens the next one.
-# The current line is carried forward as the buffer is emitted rather than
-# recovered by scanning back over it: one backwards rescan per quoted group is
-# quadratic in the leaf length, and a single-line command with a few hundred
-# quoted arguments then outruns the hook timeout. Only two facts about the
-# line are ever needed -- its last word, and whether any earlier word is an
-# interpreter -- and both survive as scalars.
+# The current line is carried forward as the input is consumed rather than
+# recovered by scanning back over the emitted buffer: one backwards rescan per
+# quoted group is quadratic in the leaf length, and a single-line command with
+# a few hundred quoted arguments then outruns the hook timeout. Only two facts
+# about the line are ever needed -- its last word, and whether any earlier word
+# is an interpreter -- and both survive as scalars.
+# Words are tracked from the SOURCE text in the form bash would build them:
+# quote and backslash characters drop out and the fragments they separate
+# accumulate into ONE word, so `-c`, `'-c'`, `"-c"`, `-"c"`, `"-"c` and `\-c`
+# all reach the flag test as -c, and `bash`, `'bash'`, `ba"sh"` and `\bash` all
+# reach the interpreter test as bash. Reading the emitted buffer instead tests
+# a word this pass has already rewritten -- a MARK-wrapped token, or the
+# literal \-c -- and one pair of quotes around the flag then bought a bypass.
+# The direction here is DENY: a word that decodes to a code flag after an
+# interpreter qualifies the next quoted group as code even where the flag is
+# really an argv element of a script (`bash script.sh '-c' 'prose'`), an
+# accepted false DENY pinned as its own row in both suites.
 function is_interpreter(word,   head) {
     head = word
     sub(/^.*\//, "", head)
     sub(/[^A-Za-z0-9_.]+$/, "", head)
     return head ~ /^(sh|bash|dash|zsh|ksh|mksh|csh|tcsh|python[0-9.]*|perl|ruby|node|nodejs|php|lua[0-9.]*|expect|osascript)$/
 }
-function emit(chunk,   base, q, k, c) {
-    base = length(out)
+function emit(chunk) {
     out = out chunk
-    q = length(chunk)
-    for (k = 1; k <= q; k++) {
-        c = substr(chunk, k, 1)
-        if (c == " " || c == "\t" || c == "\n") {
-            if (in_word) { word_end = base + k - 1; in_word = 0 }
-            if (c == "\n") { words = 0; saw_interpreter = 0 }
-            continue
-        }
-        if (!in_word) {
-            if (words >= 1 && is_interpreter(substr(out, word_start, word_end - word_start + 1))) {
-                saw_interpreter = 1
-            }
-            words++
-            word_start = base + k
-            in_word = 1
-        }
+}
+function word_text(t) {
+    if (!in_word) {
+        if (words >= 1 && is_interpreter(prev_word)) saw_interpreter = 1
+        words++
+        in_word = 1
+        cur_word = ""
     }
+    cur_word = cur_word t
+}
+function end_word() {
+    if (in_word) { prev_word = cur_word; in_word = 0 }
+}
+function end_line() {
+    end_word()
+    words = 0
+    saw_interpreter = 0
+    prev_word = ""
 }
 function code_argument(   last) {
     if (words < 2 || !saw_interpreter) return 0
-    last = in_word ? substr(out, word_start) : substr(out, word_start, word_end - word_start + 1)
+    last = in_word ? cur_word : prev_word
     return last ~ /^(-[A-Za-z]*c|-[eEpr]|--eval|--print)$/
 }
 {
@@ -337,7 +348,9 @@ END {
     while (i <= n) {
         c = substr(line, i, 1)
         if (c == "\\" && i < n) {
-            emit(c substr(line, i + 1, 1))
+            esc = substr(line, i + 1, 1)
+            emit(c esc)
+            if (esc == "\n") end_line(); else word_text(esc)
             i += 2
             continue
         }
@@ -361,6 +374,7 @@ END {
                 }
                 emit(" ")
             }
+            word_text(content)
             i = j + 1
             continue
         }
@@ -391,10 +405,14 @@ END {
                 }
                 emit(" ")
             }
+            word_text(content)
             i = j + 1
             continue
         }
         emit(c)
+        if (c == "\n") end_line()
+        else if (c == " " || c == "\t") end_word()
+        else word_text(c)
         i += 1
     }
     print out

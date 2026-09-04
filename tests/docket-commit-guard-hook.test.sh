@@ -380,6 +380,33 @@ case_interpreter_code_argument_deny() {
         "prose quoted after a non-interpreter word"
 }
 
+# ---- MUST DENY: the same call with the flag or interpreter spelled oddly --
+#
+# Quoting, escaping or splitting a word across a quote boundary changes what
+# the hook's lexer sees and nothing about what bash executes: `bash "-"c` runs
+# the code argument exactly as `bash -c` does. Each spelling is its own row.
+
+case_code_flag_and_interpreter_spellings_deny() {
+    local inv='git commit -m x'
+    assert_verdict "bash '-c' '${inv}'" DENY "single-quoted code flag"
+    assert_verdict "bash \"-c\" '${inv}'" DENY "double-quoted code flag"
+    assert_verdict "bash -\"c\" '${inv}'" DENY \
+        "code flag split across a quote boundary (-\"c\")"
+    assert_verdict "bash \"-\"c '${inv}'" DENY \
+        "code flag split across a quote boundary (\"-\"c)"
+    assert_verdict "bash \\-c '${inv}'" DENY "backslash-escaped code flag"
+    assert_verdict "'bash' -c '${inv}'" DENY "single-quoted interpreter word"
+    assert_verdict "ba\"sh\" -c '${inv}'" DENY \
+        "interpreter word split across a quote boundary"
+    assert_verdict "\\bash -c '${inv}'" DENY "backslash-escaped interpreter word"
+    # The cost of reading the flag as bash builds it: a quoted `-c` that is
+    # really an argv element of a script, with an interpreter word earlier on
+    # the line, now qualifies the group after it as code. Pinned DENY as a
+    # decision, on this hook's stated direction for an unresolvable case.
+    assert_verdict "bash deploy.sh '-c' 'the summary says git commit -m x was blocked'" \
+        DENY "a quoted -c argv element of a script qualifies the next group as code"
+}
+
 # ---- HEREDOC BODIES: a quoted delimiter makes the body prose -------------
 #
 # `cat > f <<'EOF'` cannot expand or execute anything in its body, so a body
@@ -600,6 +627,7 @@ case_must_not_catch_prose_and_reads
 case_must_not_catch_substitution_reads
 case_accepted_residual_risks
 case_interpreter_code_argument_deny
+case_code_flag_and_interpreter_spellings_deny
 case_heredoc_body_prose
 case_heredoc_body_destination
 case_comment_regions_are_inert

@@ -221,6 +221,34 @@ case_interpreter_code_argument_deny() {
         "interpreter-carried invocation"
 }
 
+# ---- MUST DENY: the same call with the flag or interpreter spelled oddly --
+#
+# Quoting, escaping or splitting a word across a quote boundary changes what
+# the hook's lexer sees and nothing about what bash executes: `bash "-"c` runs
+# the code argument exactly as `bash -c` does. Every spelling below cost the
+# attacker one pair of quotes and bought a trust-store write, so each is its
+# own row.
+
+case_code_flag_and_interpreter_spellings_deny() {
+    local inv='docket trust add erik ssh-ed25519 AAAA'
+    assert_verdict "bash '-c' '${inv}'" executor-write DENY \
+        "single-quoted code flag"
+    assert_verdict "bash \"-c\" '${inv}'" executor-write DENY \
+        "double-quoted code flag"
+    assert_verdict "bash -\"c\" '${inv}'" executor-write DENY \
+        "code flag split across a quote boundary (-\"c\")"
+    assert_verdict "bash \"-\"c '${inv}'" executor-write DENY \
+        "code flag split across a quote boundary (\"-\"c)"
+    assert_verdict "bash \\-c '${inv}'" executor-write DENY \
+        "backslash-escaped code flag"
+    assert_verdict "'bash' -c '${inv}'" executor-write DENY \
+        "single-quoted interpreter word"
+    assert_verdict "ba\"sh\" -c '${inv}'" executor-write DENY \
+        "interpreter word split across a quote boundary"
+    assert_verdict "\\bash -c '${inv}'" executor-write DENY \
+        "backslash-escaped interpreter word"
+}
+
 # ---- ACCEPTED: prose naming the verb, carried inside a code argument ------
 #
 # The code-argument rule reads a whole quoted code argument unmarked, so
@@ -240,6 +268,13 @@ case_interpreter_code_argument_prose_deny() {
         "node -e: a logged sentence naming the verb, no invocation"
     assert_deny_reason "node -e 'console.log(\"never run docket trust add here\")'" \
         executor-write "prose-in-code-argument escape hatch is named"
+    # The cost of reading the flag as bash builds it: a quoted `-c` that is
+    # really an argv element of a script, with an interpreter word earlier on
+    # the line, now qualifies the group after it as code. Pinned DENY as a
+    # decision, on the same direction as the rows above it.
+    assert_verdict "bash script.sh '-c' 'the rule says docket trust add is reserved'" \
+        executor-write DENY \
+        "a quoted -c argv element of a script qualifies the next group as code"
 }
 
 # ---- MUST NOT CATCH: the code-argument rule's false-DENY floor ------------
@@ -565,6 +600,7 @@ case_must_not_catch_prose_and_reads
 case_must_deny_glued_separator_class
 case_must_deny_separately_quoted_tokens
 case_interpreter_code_argument_deny
+case_code_flag_and_interpreter_spellings_deny
 case_interpreter_code_argument_prose_deny
 case_interpreter_code_argument_allows
 case_interpreter_carriers_residual_allow

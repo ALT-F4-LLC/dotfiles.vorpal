@@ -394,7 +394,10 @@ verbatim, so a trailing newline would be published inside the title; and a
 NUL makes `/usr/bin/grep` treat the file as binary, which costs the denylist
 below its line, pattern, and token attribution (it prints only `Binary file
 … matches`) and can substitute that literal string for the operator's title.
-The denylist scans exactly the bytes `gh` sends.
+The denylist scans exactly the bytes `gh` sends. The file-write tool is not
+documented to leave the bytes it was given unterminated, and no shell writer
+may stand in for it here, so the trailing-newline check in the validation
+list below is the sole guarantor of this property — not the writer.
 
 **Explicitly forbidden**, because each is the same crossing wearing a
 different hat: `printf '%s' '<title>' > <file>` and every other shell writer,
@@ -404,8 +407,11 @@ substitution, a heredoc carrying diff or log text, `-b "<body>"` or
 (already ruled out above).
 
 **The title file is validated before it is used**, and a failure refuses the
-publish rather than repairing it: exactly one line, no embedded newline,
-contains no NUL byte, non-empty after the denylist's strip pass,
+publish rather than repairing it: one line with no embedded newline, ends
+without a trailing newline (`tail -c1 <file> | od -An -c` shows no `\n`; a
+`wc -l` count cannot see this, since it reports `0` for the correct file and
+`1` for the defective one), contains no NUL byte, non-empty after the
+denylist's strip pass,
 ≤ 72 characters, and matching the
 conventional-commit shape above (`type(scope): summary`). A leading `-`
 cannot parse as a flag under `-F 'title=@<file>'` — the file's bytes are a

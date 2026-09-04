@@ -113,11 +113,15 @@ in_list() {
 # matched — measured on the commit guard, registered a third of the way into
 # the settings source, which this gate then reported as never registered.
 
-# Registered means a code line (not a `//` comment) of the settings source
-# names the installed hook path, as `bash ~/.claude/hooks/<name>` does.
+# Registered means a code line (not a `//` comment) before the test module
+# carries the installed command the settings builder emits, verbatim:
+# `"bash ~/.claude/hooks/<name>"`. Matching the path anywhere instead let a
+# test-only `include_str!("claude_code/hooks/<name>")` stand in for a
+# registration the settings never make.
 is_registered() {
-  grep -vE '^[[:space:]]*//' "$REGISTRATION" |
-    grep -E "hooks/$1(\"|[[:space:]])" >/dev/null
+  sed '/^#\[cfg(test)\]/,$d' "$REGISTRATION" |
+    grep -vE '^[[:space:]]*//' |
+    grep -F "\"bash ~/.claude/hooks/$1\"" >/dev/null
 }
 
 # A deny path is a code line (comments stripped) that hard-stops with exit 2,

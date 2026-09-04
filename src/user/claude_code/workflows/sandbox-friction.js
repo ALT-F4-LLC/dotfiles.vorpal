@@ -189,7 +189,7 @@ else
   cat > "$TMPDIR/sandbox-friction-issue.md" <<'ISSUE_BODY_EOF'
 ${description(g)}
 ISSUE_BODY_EOF
-  docket issue create --title ${shq(title)} --description "$(cat "$TMPDIR/sandbox-friction-issue.md")" --label sandbox
+  docket issue create --title ${shq(title)} --description "$(cat "$TMPDIR/sandbox-friction-issue.md")" --label sandbox -f src/user/claude_code.rs --scope src/user/claude_code.rs
   echo "exit=$?"
 fi
 \`\`\`

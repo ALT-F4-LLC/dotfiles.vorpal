@@ -1859,7 +1859,12 @@ copying the gap body verbatim, then link the pair and close the local copy
 (`docket issue move done < /dev/null`; `issue close` hangs on stdin) with a
 note naming the new id. The engine has no cross-project routing on
 `--gap-file` (filed as an engine issue); until it does, this migration is
-the conductor's, at the same close that reconciles the wave. The same
+the conductor's, at the same close that reconciles the wave. Whether a gap
+moves or stays, promote its header at the same close: the engine files a
+gap issue with neither `-f` nor `--scope`, so `docket issue file add <id>
+<files>` from its `Files:` line and `docket issue edit <id> --scope` from
+its `Scope:` line (or from the same files when it carries no `Scope:`), and
+a re-filed copy takes them as `-f` and `--scope` on the create. The same
 routing governs everything YOU file — an engine defect, a definition gap, a
 follow-on issue: file it in its owning project from the start, never into
 this run's project because this is where you happen to sit. Everything YOU
@@ -1868,10 +1873,14 @@ file carries `-l conduct`, the provenance label for a conductor's own filing:
 condition (**Gates**), so borrowing either miscounts that skill's yield (one
 conductor filed its own gate-failure fix under `-l shadow`).
 
-Under zsh, QUOTE every glob-shaped `--scope` value (`--scope 'src/**'`) or run
-`set -f` first — an unquoted `path/**` is glob-mangled by the shell and the
-scopes are silently dropped from the created issue (an issue was once
-created with all three of its scopes missing, repaired only by a later edit).
+Everything you file carries `-f` for each concrete file the fix will touch
+and `--scope` for the globs that bound it — `docket plan` splits colliding
+work on the files, the scheduler excludes on the scope, and an issue missing
+either runs beside anything. Under zsh, QUOTE every glob-shaped `--scope` value
+(`--scope 'src/**'`) or run `set -f` first — an unquoted `path/**` is
+glob-mangled by the shell and the scopes are silently dropped from the
+created issue (an issue was once created with all three of its scopes
+missing, repaired only by a later edit).
 
 **The description goes in on STDIN, through a quoted heredoc — inline `-d
 "…"` is never used for multi-line or markdown text, because backticks
@@ -1879,10 +1888,18 @@ execute and quotes mangle.** A gap body is exactly the text that breaks
 this: it quotes command names, argv, and other agents' output.
 
 ```bash
-docket issue create -t "<title>" -T <type> -p <priority> -l conduct -d - <<'DESC'
+docket issue create -t "<title>" -T <type> -p <priority> -l conduct \
+  -f <file the fix touches> --scope '<glob bounding it>' -d - <<'DESC'
 <markdown body — backticks, $(…), and quotes all land verbatim>
 DESC
 ```
+
+**A scope correction on an issue already in this run is two acts.** `docket
+issue edit --scope` moves the live column the scheduler reads and warns
+naming the run; the frozen snapshot every remaining packet renders from moves
+only on `docket run refresh-scope RUN-N --issue DKT-M --reason R`, which is
+refused while a dispatch is open. Run it before the next `dispatch open`, or
+the widened scope reaches no step of this run.
 
 Filing DOT-1063 took three attempts without it: the first stored a body
 with two words missing (zsh had run the backticked `` `/docket-retro` `` and
@@ -1962,9 +1979,14 @@ does the create below run.
 
 ```bash
 docket vote create -d "<the decision, stated plainly>" -r "<evidence summary>" \
+  --files-changed "<comma-separated paths the decision covers>" \
   -n 3 -c <low|medium|high|critical> --threshold 0.67 --created-by conductor
 docket vote link <proposal-id> --issue <ID>   # where a relevant issue exists
 ```
+
+`--files-changed` renders to every seat: the batch's files on a fix-batch,
+the union of the bound issues' files on activation, the files the reaped
+step held on an ack-reap.
 
 **On an ack-reap, add `--idempotency-key reap-ack:<run>:<seq>`** — the run's
 NUMBER and the seq of the `lease-reaped` event you are deciding, e.g.
@@ -2232,12 +2254,14 @@ owns the work, per the gap-routing rule, and ALWAYS carrying `-l tribunal`,
 the provenance label for a panel-condition filing — BEFORE `dispatch close`,
 with the proposal linked to it (`docket vote link <proposal> --issue <new>`);
 the new id goes in the close report and in any plan prompt you hand the
-operator. The body is the seat's own rationale, verbatim — so it rides in on
-stdin through a quoted heredoc, never inline `-d "…"` (the filing rule under
+operator. It carries `-f` and `--scope` for the files the condition's work
+touches, like every other filing. The body is the seat's own rationale, verbatim —
+so it rides in on stdin through a quoted heredoc, never inline `-d "…"` (the filing rule under
 **3. Close the dispatch**):
 
 ```bash
-docket issue create -t "<condition>" -T task -p high -l tribunal -d - <<'DESC'
+docket issue create -t "<condition>" -T task -p high -l tribunal \
+  -f <file the condition touches> --scope '<glob bounding it>' -d - <<'DESC'
 <the seat's rationale, verbatim — backticks and quotes intact>
 DESC
 ```

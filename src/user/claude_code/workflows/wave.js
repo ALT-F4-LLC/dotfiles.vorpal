@@ -379,7 +379,12 @@ ${isWrite ? `
    \`Home: <repo/checkout>\` — the other repository when the problem lives
    elsewhere, or \`Home: THIS repository\` when it is local (gaps belong to
    their respective projects; the engine files yours HERE and the conductor
-   re-homes it from your Home: line).
+   re-homes it from your Home: line). Its THIRD LINE is \`Files: <path>,
+   <path>\` — every concrete file the fix will touch, comma-separated —
+   with a \`Scope: <glob>, <glob>\` line after it only when a glob bounds
+   the fix wider than those files. The engine files the issue with neither
+   \`-f\` nor \`--scope\`, and the conductor promotes these lines into
+   both at close so planning can keep the gap apart from colliding work.
 ${isolated ? `
    IF THE RECORD IS REFUSED (guard or permission), attempt it ONCE and STOP
    TRYING FORMS. Leave your deliverables parked where the brief already has

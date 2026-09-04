@@ -1,6 +1,6 @@
 ---
 node: drain-highs
-version: 3
+version: 4
 archetype: executor-read
 packet_includes:
   - fragments/truth-first.md
@@ -51,7 +51,10 @@ backlog issue.
 One gap file per cluster. FIRST LINE: the defect itself in one line — the cluster's
 `title` where it has one, otherwise the defect stated from its evidence; this becomes
 the filed issue's title. SECOND LINE: `Home: THIS repository` — these are review
-findings about this run's own change. Then the body: the cluster's `open_severity`,
+findings about this run's own change. THIRD LINE: `Files:` followed by every distinct
+file the cluster's `file:line` evidence names, comma-separated — the engine files the
+issue with neither `-f` nor `--scope`, and the conductor promotes this line into both at
+close so planning can keep colliding work apart. Then the body: the cluster's `open_severity`,
 each member (judge, severity, `file:line`, evidence) copied faithfully under
 evidence-rules, the `alternative` where the cluster carries one, and provenance (run,
 issue, round) so the reader can find the review that produced it. The issue must stand

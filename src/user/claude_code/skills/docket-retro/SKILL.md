@@ -190,6 +190,7 @@ could not settle. Open the proposal from the repo the edits target:
 ```bash
 docket vote create -d "<what the batch changes, plainly>" \
   -r "<the evidence: the numbers, the run IDs>" \
+  --files-changed "<the config files the batch edits, comma-separated>" \
   -n 3 -c medium --threshold 0.67 --created-by retro
 ```
 

@@ -953,9 +953,12 @@ Then:
    - `-T`: `bug` for defects (an engine refusal, a guard misfire, a
      definition that is wrong), `task` for edits and script extractions,
      `chore` for a paper-cut batch.
-   - `-l shadow` for provenance, plus `--scope` on the paths the remedy
-     touches when you know them. Under zsh, QUOTE every glob-shaped
-     `--scope` value (`--scope 'src/**'`) or run `set -f` first — an
+   - `-l shadow` for provenance, plus `-f` for each file the remedy
+     touches and `--scope` on the globs bounding them — both required on
+     every filing, never omitted; the remedy's SOURCE path is the floor,
+     since `docket plan` splits collisions on the files and the scheduler
+     excludes on the scope. Under zsh,
+     QUOTE every glob-shaped `--scope` value (`--scope 'src/**'`) or run `set -f` first — an
      unquoted `path/**` is glob-mangled by the shell and the scopes are
      silently dropped (an issue was once created with all three of
      its scopes missing, repaired only by a later edit).

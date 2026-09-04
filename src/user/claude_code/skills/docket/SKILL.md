@@ -44,7 +44,7 @@ parsing — the examples below show both.
 ```bash
 docket init                                   # initialize the resolved store (~/.docket by default)
 docket init --local                           # opt out: create a repo-local .docket store in the cwd
-docket issue create -t "Fix login bug" --json # create an issue, get its ID back
+docket issue create -t "Fix login bug" -f src/auth/login.go --scope src/auth/login.go --json # create an issue (files + scope name what it touches), get its ID back
 docket issue list --json                      # list open issues
 docket issue show DKT-1 --json                # show full detail incl. comments/activity
 docket next --json                            # what's ready to work on right now?
@@ -554,6 +554,7 @@ docket issue create --json \
   -s todo -p high -T feature \
   -l backend -l must-have \
   -f internal/api/router.go \
+  --scope 'internal/api/**' \
   -a "@alice" \
   -d - <<'DESC'
 Prevent abuse on public endpoints — `just build` and $(go test ./...) arrive

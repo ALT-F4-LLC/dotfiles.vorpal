@@ -220,7 +220,10 @@ most optimal batch, as the operator settled it ("ready, high-priority, parallel-
    separator, and a leading wildcard collides with everything. A colliding
    issue is deferred with the glob pair named, whatever its priority: a
    batch that serializes against itself is not the optimal one, it is the
-   slow one.
+   slow one. The engine keeps a second collision key beside scope — the
+   concrete `-f` files, which `docket plan --json` splits into sub-phases
+   when two issues name the same path — so read that output over the
+   candidates too, and treat any two it separates as colliding.
 
    **Worktree isolation is not a reason to skip this check, and an operator
    invoking it is not grounds to drop the collision.** Every write step runs
@@ -258,12 +261,13 @@ most optimal batch, as the operator settled it ("ready, high-priority, parallel-
 4. **Run-ready** — every §3 recording obligation the bound workflow will
    check at activation, checked here first: the body carries acceptance
    criteria (at least one checkable item, not a restated title); `--scope` is
-   set when the bound workflow holds the tree, and every glob matches at
-   least one file in this checkout; plus the binding probe and the scope-vs-AC
+   set and every glob matches at least one file in this checkout; the row's
+   `files` list is non-empty, naming the concrete files the change touches;
+   plus the binding probe and the scope-vs-AC
    lint below. An issue that fails any of them is not run-ready: list it
    under "not ready" with the missing thing named. The operator may have you
    fill it in this session — `docket issue label add` for labels, `docket
-   issue edit --scope`, or a body with ACs in the operator's words, fine until the activate that binds
+   issue edit --scope`, `docket issue file add` for files, or a body with ACs in the operator's words, fine until the activate that binds
    it — or send it to `/docket-groom`; you never fill ACs from your own guess.
 
    **Probe the binding, and probe it in both directions.** §3's
@@ -517,7 +521,7 @@ Run these, in this order, once you know what shape they take:
 
 ```bash
 docket issue create -t "<title>" -T <kind> --idempotency-key <key> \
-  -l <label> --scope '<glob>' -d - < <body-file>  # one per unit of work
+  -l <label> -f <file> -f <file> --scope '<glob>' -d - < <body-file>  # one per unit of work; -f and --scope are never omitted
 docket issue link add DKT-<n> depends_on DKT-<m>  # the graph's edges
 docket run start --request-file <path> \
   --budget <cap> --issue DKT-<n> --issue DKT-<m>  # request verbatim; issues must exist first
@@ -707,7 +711,12 @@ domain-flavored work onto the baseline ON PURPOSE is legitimate, but it is an
 operator decision: elicit it and record it in the issue body and the plan
 artifact — never route by omission.
 
-**Every issue whose workflow binds a tree-holding step carries `--scope`.** The
+**Every issue carries both file surfaces the engine keys collision on: `-f`
+for each concrete file its change will touch, and `--scope` for the globs
+that bound it.** `docket plan` splits colliding work into sub-phases on `-f`
+(an issue with no files never collides there), and this skill's batch ranking
+and the scheduler's mutual exclusion read `--scope`; an issue missing either
+is not run-ready and is never recorded. The
 engine keys exclusion and the lint on `holds_tree`, not on write-ness, and reads
 an unset `holds_tree` as TRUE — "does it hold the tree" is the question, and it
 is answered yes by default. A scope-less issue is treated as NEVER
@@ -715,9 +724,8 @@ conflicting (S1 is permissive, not conservative); activation emits a scope
 warning for it and then activates anyway — the only lint that refuses is a graph
 cycle. So under scope-parallel execution its holder runs beside anything and
 ships regardless, unless you act on the warning here: a past run shipped its
-verify-everything-and-commit issue scopeless and only a shadow noticed. A
-tree-holding issue without scope globs is a planning defect, caught here or
-nowhere.
+verify-everything-and-commit issue scopeless and only a shadow noticed. An
+issue without scope globs is a planning defect, caught here or nowhere.
 
 **An AC that ranges wider than the issue's own scope is the same defect in a
 different shape.** Before recording an issue, check every acceptance
@@ -821,7 +829,8 @@ everything and nothing warns you. Write prefix-disjoint globs (one owner per
 directory prefix), never lead with a wildcard, and check the partition against
 the matcher's own rules before recording it. A glob you correct
 later goes through `issue edit --scope`, which REPLACES the whole list rather
-than appending — pass every glob you mean to keep. Prefer
+than appending — pass every glob you mean to keep; `issue edit -f` replaces
+the file list the same way, and `issue file add` appends to it. Prefer
 `internal/engine/dispatch/**` over `internal/engine/**`, and several narrow globs
 over one wide one. Widen only when the change genuinely spans that much — an
 honest wide glob is fine, a lazy one costs the whole run. An issue that holds the

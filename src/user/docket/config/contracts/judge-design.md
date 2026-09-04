@@ -1,6 +1,6 @@
 ---
 node: judge-design
-version: 8
+version: 9
 archetype: executor-read
 packet_includes:
   - fragments/hig-principles.md
@@ -97,5 +97,7 @@ to this one, inside the completion's own transaction, so the missing coverage ou
 run. What it does not do is get the spec written: the filed issue carries no labels, and
 nothing routes it to the ux-spec pipeline on its own. So name the surface and each
 undecided behavior precisely enough that whoever grooms that issue can label it for the
-spec track and hand it to an author without re-deriving what was missing. That issue, not
+spec track and hand it to an author without re-deriving what was missing, and put a
+`Files:` line naming the surface's files, comma-separated, beside the gap's `Home:`
+line, so the conductor can promote it into the issue's `-f` and `--scope`. That issue, not
 this step, is where the spec gets written.

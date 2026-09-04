@@ -82,7 +82,10 @@ one grooming ledger with four kinds of finding:
   days. That default stands unless the operator named a different window
   in the invocation, in which case use it and say so in the report.
 - **Not run-ready:** goal unclear or missing, acceptance criteria absent or
-  uncheckable.
+  uncheckable, no scope declared (the `issue list` row carries no `scope`
+  key), or no files (its `files` list is empty) — every issue names the
+  files its change touches on both keys, since `docket plan` splits
+  collisions on files and the scheduler excludes on scope.
 - **Mis-prioritized:** priority missing, or plainly out of line with the
   issue's content relative to the rest of the backlog.
 - **Stale-binding label:** a label that no longer matches the issue's
@@ -107,8 +110,11 @@ Non-destructive edits land directly, no questions asked: labels (e.g.
 `stale` on §2's stale findings, or removing a §2 stale-binding label once
 its workflow-narrowing effect is confirmed), priority (except on
 run-included or claimed issues — those route to §4), comments, and field
-fills. A field fill drafts the missing goal or acceptance criteria from the
-issue's own description, comments, and the repo — criteria must be
+fills. A field fill drafts the missing goal, acceptance criteria, files, or
+scope from the issue's own description, comments, and the repo — files land
+via `docket issue file add` (appends), scope via `docket issue edit --scope`
+(replaces), one entry per file the description or a gap's `Files:` and
+`Scope:` header lines name, each matching a file in the checkout; criteria must be
 checkable, not aspirational, and a drafted criterion trailing a command
 carries the written mutant `docket-plan`'s mutant rule requires, or says
 **read-verified** instead — and edits it into the issue with a comment

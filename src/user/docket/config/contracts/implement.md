@@ -1,6 +1,6 @@
 ---
 node: implement
-version: 7
+version: 8
 archetype: executor-write
 packet_includes:
   - fragments/code-philosophy.md
@@ -38,20 +38,15 @@ completion-gates fragment says how), plus the project's build and test commands,
 include their real output in the summary. If an AC is untestable as written, say so
 explicitly in the summary rather than approximating it.
 
-A command the permission system or the auto-mode classifier refuses ("denied by the
-Claude Code auto mode classifier") is reported in your step's return, on the same terms
-your obligations impose for a sandbox denial: the exact command, the refusal's reason
-verbatim, and the gate or purpose it served. If you then re-issue the call in any altered
-form and it runs, disclose the retry BESIDE the denial, never in place of it — a control
-fired, and a return that shows only the successful second attempt reads as a run where
-nothing was ever refused.
-
 # Emit
 `change-summary` (markdown): FIRST LINE is the worktree commit sha your
 obligations require (the conductor integrates by that sha; a summary without it
 strands your work in the worktree) · Files changed (with one-line why each) · ACs addressed
 (AC → test/evidence mapping, with observed pre-fail and post-pass output) · Decisions
-made where the issue left latitude · Known limits (anything a reviewer should probe).
+made where the issue left latitude · Denials (every command the permission system or the
+auto-mode classifier refused and every re-issue of one, on the completion-gates fragment's
+terms, in your step's return AND here; "none" when there were none) · Known limits
+(anything a reviewer should probe).
 Do not restate the diff; the engine snapshots it.
 
 # Stuck

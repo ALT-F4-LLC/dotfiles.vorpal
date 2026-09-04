@@ -56,11 +56,11 @@ LEDGER="${SANDBOX}/.claude/friction/sandbox.jsonl"
 # run_hook <input json>; prints the kind of the row written, or NONE.
 run_hook() {
     local input="$1" before after rc
-    before=$(wc -l <"$LEDGER" 2>/dev/null || echo 0)
+    before=$({ wc -l <"$LEDGER"; } 2>/dev/null || echo 0)
     HOME="$SANDBOX" "$BASH_BIN" "$HOOK" >/dev/null 2>&1 <<<"$input"
     rc=$?
     [ "$rc" -eq 0 ] || { printf 'EXIT%s' "$rc"; return; }
-    after=$(wc -l <"$LEDGER" 2>/dev/null || echo 0)
+    after=$({ wc -l <"$LEDGER"; } 2>/dev/null || echo 0)
     if [ "$after" -gt "$before" ]; then
         tail -n 1 "$LEDGER" | jq -r '.kind'
     else

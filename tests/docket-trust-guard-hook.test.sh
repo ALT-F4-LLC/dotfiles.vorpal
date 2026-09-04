@@ -221,6 +221,27 @@ case_interpreter_code_argument_deny() {
         "interpreter-carried invocation"
 }
 
+# ---- ACCEPTED: prose naming the verb, carried inside a code argument ------
+#
+# The code-argument rule reads a whole quoted code argument unmarked, so
+# prose that merely NAMES "docket trust add/rm" there (a replacement string,
+# a logged sentence) denies exactly like a real invocation would — no
+# invocation runs in either case below. Pinned DENY, not a miss: this file's
+# stated direction for an unresolvable case is a false DENY over a missed
+# invocation, and the deny message's escape hatch (Read/Grep, or write the
+# prose to a file) is how a step recovers from it.
+
+case_interpreter_code_argument_prose_deny() {
+    assert_verdict "perl -pi -e 's/old/docket trust add is reserved/' notes.md" \
+        executor-write DENY \
+        "perl -pi -e: a substitution naming the verb as replacement text, no invocation"
+    assert_verdict "node -e 'console.log(\"never run docket trust add here\")'" \
+        executor-write DENY \
+        "node -e: a logged sentence naming the verb, no invocation"
+    assert_deny_reason "node -e 'console.log(\"never run docket trust add here\")'" \
+        executor-write "prose-in-code-argument escape hatch is named"
+}
+
 # ---- MUST NOT CATCH: the code-argument rule's false-DENY floor ------------
 #
 # The rule fires only on a code FLAG directly before the quoted group with an
@@ -499,6 +520,7 @@ case_must_not_catch_prose_and_reads
 case_must_deny_glued_separator_class
 case_must_deny_separately_quoted_tokens
 case_interpreter_code_argument_deny
+case_interpreter_code_argument_prose_deny
 case_interpreter_code_argument_allows
 case_interpreter_carriers_residual_allow
 case_help_read_exemption_allows

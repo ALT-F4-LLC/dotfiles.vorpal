@@ -562,4 +562,4 @@ function decode(raw,    inner, cpos) {
 ' 2>/dev/null)
 [ "$MATCH" = "MATCH" ] || allow_default
 
-deny "trust-store write blocked: \`docket trust add/rm\` is operator-reserved and never in scope for an executor step, whatever the brief says. If your step genuinely needs a trust entry changed, that is a routing defect: record the mismatch as your step's finding through the gap channel your brief names, and do not retry this call."
+deny "trust-store write blocked: \`docket trust add/rm\` is operator-reserved and never in scope for an executor step, whatever the brief says. If your step genuinely needs a trust entry changed, that is a routing defect: record the mismatch as your step's finding through the gap channel your brief names, and do not retry this call. If this command performs no trust-store write, the matcher has false-positived on the phrase appearing as prose or as an interpreter's code argument (known limitation): to read or search a file's content, use the Read or Grep tool instead (bypasses this matcher entirely); to write prose that names the phrase, put it in a file via the Write/Edit tool rather than a Bash heredoc or an inline code argument."

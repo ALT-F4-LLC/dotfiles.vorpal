@@ -26,8 +26,17 @@ activate force="":
 build:
     cargo build --locked --offline --all-targets
 
+# The shell suites under tests/ are the guards for hooks, skills and workflow
+# wiring; running them here keeps this gate asserting what CI asserts, instead
+# of catching a relaxed guard only on the pull request.
 tests:
+    #!/usr/bin/env bash
+    set -euo pipefail
     cargo test --locked --offline
+    for suite in tests/*.test.sh; do
+        echo "==> $suite"
+        bash "$suite"
+    done
 
 self-hygiene:
     cargo fmt --all -- --check

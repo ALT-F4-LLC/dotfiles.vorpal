@@ -12,7 +12,9 @@
 # count as wiring. Gating is a property of the whole job, so a job's rows are
 # buffered and emitted only after the job has been read out; YAML puts no
 # ordering constraint on a job's keys, and an `if:` written below `steps:`
-# gates the job exactly as one written above it. A gated row is treated as
+# gates the job exactly as one written above it. Gating rides down `needs:`
+# too: Actions skips a job whose needed job was skipped, so a job needing a
+# gated job is itself gated, transitively. A gated row is treated as
 # absent whatever its condition says — evaluating GitHub expressions here
 # would be a second, worse parser, and "the suite runs on every CI run" is the
 # invariant worth holding.
@@ -54,21 +56,29 @@ suite_names() { # <tests-dir>
 # Suite basenames invoked by a step that CI will run, sorted and deduplicated.
 # The awk pass walks the workflow's indentation so that comments, gated jobs
 # and gated steps drop out; rows are held per job and released only once the
-# whole job has been seen, so a late `if:` still gates them.
+# whole workflow has been read, so a late `if:` still gates them and gating
+# can ride down `needs:` edges before anything is printed.
 wired_suites() { # <workflow-file>
     awk '
         function flush_step() {
-            if (step_run != "" && !step_gated) pending[++npending] = step_run
+            if (step_run != "" && !step_gated) {
+                rowjob[++nrows] = job
+                rowcmd[nrows] = step_run
+            }
             step_run = ""
             step_gated = 0
         }
-        function flush_job(   i) {
+        function flush_job() {
             flush_step()
-            if (!job_gated)
-                for (i = 1; i <= npending; i++) print pending[i]
-            npending = 0
+            if (job != "") {
+                gated[job] = job_gated
+                needs[job] = job_needs
+            }
+            job = ""
             job_gated = 0
+            job_needs = ""
             in_steps = 0
+            in_needs = 0
         }
         /^[[:space:]]*#/ { next }
         {
@@ -79,12 +89,25 @@ wired_suites() { # <workflow-file>
 
             if (ind == 0) { flush_job(); next }
             if (ind == 2 && rest ~ /^[A-Za-z0-9_.-]+:[[:space:]]*$/) {
-                flush_job(); next
+                flush_job()
+                job = rest
+                sub(/:[[:space:]]*$/, "", job)
+                next
             }
             if (ind == 4) {
                 flush_step()
                 in_steps = (rest ~ /^steps:/)
+                in_needs = (rest ~ /^needs:/)
                 if (rest ~ /^if:/) job_gated = 1
+                if (in_needs) {
+                    dep_list = substr(rest, 7)
+                    gsub(/[][,]/, " ", dep_list)
+                    job_needs = job_needs " " dep_list
+                }
+                next
+            }
+            if (in_needs && ind == 6 && rest ~ /^- /) {
+                job_needs = job_needs " " substr(rest, 3)
                 next
             }
             if (!in_steps) next
@@ -100,7 +123,23 @@ wired_suites() { # <workflow-file>
                 sub(/[[:space:]]+$/, "", step_run)
             }
         }
-        END { flush_job() }
+        END {
+            flush_job()
+            do {
+                spread = 0
+                for (j in needs) {
+                    if (gated[j]) continue
+                    n = split(needs[j], dep, /[[:space:]]+/)
+                    for (i = 1; i <= n; i++)
+                        if (dep[i] != "" && gated[dep[i]]) {
+                            gated[j] = 1
+                            spread = 1
+                        }
+                }
+            } while (spread)
+            for (i = 1; i <= nrows; i++)
+                if (!gated[rowjob[i]]) print rowcmd[i]
+        }
     ' "$1" |
         sed -n 's|^bash tests/\([A-Za-z0-9._-]*\.test\.sh\)$|\1|p' | sort -u
 }
@@ -243,6 +282,60 @@ jobs:
     if: false
 YAML
 
+# Actions skips a job whose needed job was skipped, so gating rides down the
+# `needs:` edges. Inline list form here, block form below.
+cat > "${FIX}/needs-gated-job.yaml" <<'YAML'
+jobs:
+  gate:
+    if: false
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo gate
+  test-hooks:
+    needs: [gate]
+    runs-on: ubuntu-latest
+    steps:
+      - run: bash tests/alpha.test.sh
+      - run: bash tests/beta.test.sh
+YAML
+
+cat > "${FIX}/needs-gated-transitive.yaml" <<'YAML'
+jobs:
+  gate:
+    if: false
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo gate
+  middle:
+    needs:
+      - gate
+    runs-on: ubuntu-latest
+    steps:
+      - run: bash tests/alpha.test.sh
+  test-hooks:
+    needs:
+      - middle
+    runs-on: ubuntu-latest
+    steps:
+      - run: bash tests/beta.test.sh
+YAML
+
+# The control for the two above: a `needs:` on an ungated job gates nothing.
+cat > "${FIX}/needs-ungated-job.yaml" <<'YAML'
+jobs:
+  build-dev:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo build
+  test-hooks:
+    needs:
+      - build-dev
+    runs-on: ubuntu-latest
+    steps:
+      - run: bash tests/alpha.test.sh
+      - run: bash tests/beta.test.sh
+YAML
+
 cat > "${FIX}/gated-step.yaml" <<'YAML'
 jobs:
   test-hooks:
@@ -287,6 +380,7 @@ expect_wiring() { # <label> <status> <tests-dir> <workflow> [<expected line>...]
     return 1
 }
 
+UNWIRED_ALPHA="FAIL alpha.test.sh: suite is not invoked by any step the workflow runs"
 UNWIRED_BETA="FAIL beta.test.sh: suite is not invoked by any step the workflow runs"
 
 expect_wiring "matched sets" 0 "${FIX}/tests" "${FIX}/matched.yaml" || fail=1
@@ -302,6 +396,12 @@ expect_wiring "job gated before steps" 1 "${FIX}/tests" "${FIX}/gated-job.yaml" 
     "$UNWIRED_BETA" || fail=1
 expect_wiring "job gated after steps" 1 "${FIX}/tests" "${FIX}/gated-job-late-if.yaml" \
     "$UNWIRED_BETA" || fail=1
+expect_wiring "job needing a gated job" 1 "${FIX}/tests" "${FIX}/needs-gated-job.yaml" \
+    "$UNWIRED_ALPHA" "$UNWIRED_BETA" || fail=1
+expect_wiring "job needing a job that needs a gated job" 1 "${FIX}/tests" \
+    "${FIX}/needs-gated-transitive.yaml" "$UNWIRED_ALPHA" "$UNWIRED_BETA" || fail=1
+expect_wiring "job needing an ungated job" 0 "${FIX}/tests" \
+    "${FIX}/needs-ungated-job.yaml" || fail=1
 expect_wiring "if-gated step" 1 "${FIX}/tests" "${FIX}/gated-step.yaml" \
     "$UNWIRED_BETA" || fail=1
 expect_wiring "suite named but not run" 1 "${FIX}/tests" "${FIX}/mention-only.yaml" \

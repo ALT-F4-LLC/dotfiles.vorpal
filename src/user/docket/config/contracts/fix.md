@@ -1,6 +1,6 @@
 ---
 node: fix
-version: 7
+version: 8
 archetype: executor-write
 packet_includes:
   - fragments/code-philosophy.md
@@ -116,7 +116,11 @@ real entry point rather than the guard function in isolation, and you falsify it
 a COPY: mirror the tree (or its smallest testable subset) under your temp directory,
 neuter the call site in the mirror, and observe the new test fail there: your checkout
 never holds the neutered state, so no revert step exists, and none is permitted: a test
-that pins a function nobody calls proves nothing about the wiring. For a finding you
+that pins a function nobody calls proves nothing about the wiring. That falsification arm
+is the only thing the mirror is for. A pinned test otherwise runs from the worktree,
+never from a copy: a hand-rolled tree lacks the project files the runner resolves against,
+and a past fix round spent most of a step building one before it died on a missing
+`pyproject.toml`. For a finding you
 cannot express as a test, cite the file:line and the reasoning that shows it addressed,
 and label the claim OBSERVED or INFERRED.
 

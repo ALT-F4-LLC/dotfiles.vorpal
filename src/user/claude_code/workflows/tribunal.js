@@ -181,6 +181,8 @@ the whole record, and a vote cast on the summary alone is worth little. You
 have read-only tools; use them. Useful and safe from ${cwd}:
 
   cd ${cwd} && docket vote show ${voteId}
+  cd ${cwd} && docket run status RUN-N --json   (there is no \`run show\`)
+  cd ${cwd} && docket run activate RUN-N --dry-run --json
   cd ${cwd} && docket step show STEP-N / step context STEP-N / step render STEP-N
   cd ${cwd} && docket step artifacts STEP-N   (then \`docket step artifact ARTIFACT-N\`)
   cd ${cwd} && git log --oneline -20 / git diff / git show <sha>

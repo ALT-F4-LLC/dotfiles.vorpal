@@ -85,8 +85,15 @@ argument always wins; bare, you resolve it yourself rather than asking.
   ```
 
   This lists every non-terminal run (`planning`, `active`, `waiting-human`)
-  in the current project — one read, no run state kept. Resolve `$RUN` by
-  this precedence, applied once:
+  in the current project — one read, no run state kept. In this payload
+  `.data.steps` is a list of status/count BUCKETS, not step rows, so nothing
+  here answers "which step" — `docket step list --run $RUN` does:
+
+  ```bash
+  docket run status RUN-N --json | jq '.data.run.status, .data.steps'
+  ```
+
+  Resolve `$RUN` by this precedence, applied once:
 
   1. **Any `active` or `waiting-human` run** — a run already under way
      outranks one not yet started; finishing it is closer to done than
@@ -564,7 +571,10 @@ relies on, which is exactly why adoption shipped as its own gated verb rather
 than as a flag on activation.
 
 **Fallback only — for a seat whose binary predates `run verify-pins`** (the verb
-is absent from `docket run --help`). Walk the pins by hand:
+is absent from `docket run --help`). Walk the pins by hand — the pins live at
+`.data.pins`, and `.data.steps` in the same payload is a status/count bucket
+list rather than step rows (`docket run status RUN-N --json | jq '.data.run.status, .data.steps'`
+shows both shapes at a glance):
 
 ```bash
 docket run status $RUN --json | python3 -c '
@@ -1622,8 +1632,12 @@ create and cannot match to a path you wrote down is somebody else's; other
 checkouts are not yours.
 
 Foreign `wf_*` entries are still worth NAMING: list them in the close report
-as operator-cleanup candidates — abandoned runs sweep nothing, and five repos
-carried a prior fleet's debris unmentioned through a full day.
+as operator-cleanup candidates, each as `<path> <sha>` — the unintegrated sha
+the integration check printed for it, beside its path, exactly as a straggler
+of this run's own is named. A path alone leaves the operator with a directory
+and no way back to the work; the sha is what keeps it recoverable. Abandoned
+runs sweep nothing, and five repos carried a prior fleet's debris unmentioned
+through a full day.
 The close report also names every tribunal convocation this session ran, with
 proposal ids: panel cost lives entirely outside the run ledger (wave-usage
 attributes by step id; panels carry vote ids), and on re-docket-plan-heavy runs it

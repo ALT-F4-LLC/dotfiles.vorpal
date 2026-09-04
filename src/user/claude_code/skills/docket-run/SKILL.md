@@ -1484,16 +1484,15 @@ Verify the sha as always AND that the touched `.claude/skills` paths are ones
 this run's steps produced, then retry that pick with the sandbox lifted
 instead of diagnosing the diff (one run lost a round-trip to exactly this).
 
-A signed pick or commit fails under the sandbox on the SIGNING KEY read:
-`error: Couldn't load public key /Users/<you>/.ssh/agent-signing.pub: No such
-file or directory?`. The settings inject that path as the signing key and put
-`~/.ssh/**` in sandbox deny-read, so the key is unreadable and the pick aborts
-mid-way — `git cherry-pick --abort`, then verify the sha as always and retry
-THAT ONE call with the sandbox lifted. This is the only path for a signed
-pick: the `git *` sandbox exclusion is gone, so a top-level `git cherry-pick`
-is sandboxed exactly like one inside a `for` loop. It is not a key-management
-problem and never a reason to inspect `~/.ssh` (one run paid an aborted pick,
-a permission prompt, and twelve ad-hoc lifts learning this).
+A signed pick or commit signs INSIDE the sandbox: the settings re-open
+`~/.ssh/agent-signing` and its `.pub` through the `~/.ssh` read-deny, so
+`git commit` and `git cherry-pick` need no lift for the signature. If one
+still fails with `error: Couldn't load public key
+/Users/<you>/.ssh/agent-signing.pub: No such file or directory?`, the
+installed settings predate that allowance — `git cherry-pick --abort`, then
+stop and tell the operator to run `just activate`; do not lift the sandbox
+around it and never inspect `~/.ssh` (one run paid an aborted pick, a
+permission prompt, and twelve ad-hoc lifts on the old behavior).
 
 Because integrations commit immediately, a later write step's worktree —
 based on the shared checkout's HEAD at its spawn — already contains every

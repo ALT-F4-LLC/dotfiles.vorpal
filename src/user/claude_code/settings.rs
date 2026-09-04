@@ -1415,7 +1415,6 @@ impl ClaudeCodeSettings {
         self
     }
 
-    #[allow(dead_code)]
     pub fn with_sandbox_filesystem_allow_read(mut self, paths: Vec<String>) -> Self {
         let mut sandbox = self.sandbox.unwrap_or_default();
         let mut fs = sandbox.filesystem.unwrap_or_default();

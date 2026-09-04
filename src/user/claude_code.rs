@@ -6,6 +6,13 @@ mod settings;
 
 const GIT_ALLOWED_SIGNERS_CONFIG_PATH: &str = "~/.config/git/allowed_signers";
 const GIT_ALLOWED_SIGNERS_INSTALL_PATH: &str = "${HOME}/.config/git/allowed_signers";
+// The agent signing key is a plain file pair on purpose: it lives outside
+// 1Password so an executor's commit never waits on the operator approving a
+// signature. ssh-keygen resolves the .pub through SSH_AUTH_SOCK first and,
+// finding no agent, falls back to the private key beside it, so both halves
+// must be readable through the ~/.ssh read-deny.
+const GIT_AGENT_SIGNING_KEY_PATH: &str = "~/.ssh/agent-signing";
+const GIT_AGENT_SIGNING_KEY_PUBLIC_PATH: &str = "~/.ssh/agent-signing.pub";
 const OTEL_LOGS_ENDPOINT_LOKI: &str = "https://loki.bulbasaur.altf4.domains/otlp/v1/logs";
 const OTEL_METRICS_ENDPOINT_MIMIR: &str = "https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics";
 const OTEL_OTLP_PROTOCOL: &str = "http/protobuf";
@@ -141,6 +148,15 @@ fn sandbox_filesystem_deny_read_paths() -> Vec<String> {
     paths
 }
 
+// Re-opens only the signing key pair inside the ~/.ssh read-deny; every
+// other sensitive path stays unreadable.
+fn sandbox_filesystem_allow_read_paths() -> Vec<String> {
+    vec![
+        GIT_AGENT_SIGNING_KEY_PATH.to_string(),
+        GIT_AGENT_SIGNING_KEY_PUBLIC_PATH.to_string(),
+    ]
+}
+
 impl ClaudeCode {
     pub fn new(name: &str, systems: Vec<ArtifactSystem>) -> Self {
         Self {
@@ -216,7 +232,7 @@ impl ClaudeCode {
             .with_env("GIT_CONFIG_KEY_1", "gpg.ssh.program")
             .with_env("GIT_CONFIG_KEY_2", "gpg.format")
             .with_env("GIT_CONFIG_KEY_3", "gpg.ssh.allowedSignersFile")
-            .with_env("GIT_CONFIG_VALUE_0", "~/.ssh/agent-signing.pub")
+            .with_env("GIT_CONFIG_VALUE_0", GIT_AGENT_SIGNING_KEY_PUBLIC_PATH)
             .with_env("GIT_CONFIG_VALUE_1", "ssh-keygen")
             .with_env("GIT_CONFIG_VALUE_2", "ssh")
             .with_env("GIT_CONFIG_VALUE_3", GIT_ALLOWED_SIGNERS_CONFIG_PATH)
@@ -466,6 +482,7 @@ impl ClaudeCode {
                     .collect(),
             )
             .with_sandbox_filesystem_deny_read(sandbox_filesystem_deny_read_paths())
+            .with_sandbox_filesystem_allow_read(sandbox_filesystem_allow_read_paths())
             .with_sandbox_network_allowed_domains(vec![
                 "api.github.com".to_string(),
                 "crates.io".to_string(),
@@ -583,11 +600,11 @@ impl ClaudeCode {
 #[cfg(test)]
 mod tests {
     use super::{
-        claude_home, component_name, sandbox_filesystem_deny_read_paths,
-        sorted_permission_patterns, AUTO_MODE_ALLOW_RULES, GIT_ALLOWED_SIGNERS_CONFIG_PATH,
-        GIT_ALLOWED_SIGNERS_INSTALL_PATH, SANDBOX_CLAUDE_SCRATCH_ROOT,
-        SANDBOX_CLAUDE_SCRATCH_ROOT_PRIVATE, SENSITIVE_PATHS, SENSITIVE_PATHS_DENY_EDIT_ONLY,
-        SENSITIVE_PATHS_DENY_READ_ONLY,
+        claude_home, component_name, sandbox_filesystem_allow_read_paths,
+        sandbox_filesystem_deny_read_paths, sorted_permission_patterns, AUTO_MODE_ALLOW_RULES,
+        GIT_ALLOWED_SIGNERS_CONFIG_PATH, GIT_ALLOWED_SIGNERS_INSTALL_PATH,
+        SANDBOX_CLAUDE_SCRATCH_ROOT, SANDBOX_CLAUDE_SCRATCH_ROOT_PRIVATE, SENSITIVE_PATHS,
+        SENSITIVE_PATHS_DENY_EDIT_ONLY, SENSITIVE_PATHS_DENY_READ_ONLY,
     };
     use crate::file::FileCreate;
 
@@ -679,6 +696,18 @@ mod tests {
                 "sandbox read denials are missing {expected}"
             );
         }
+    }
+
+    #[test]
+    fn sandbox_read_allowances_reopen_only_the_agent_signing_key_pair() {
+        assert_eq!(
+            sandbox_filesystem_allow_read_paths(),
+            vec![
+                "~/.ssh/agent-signing".to_string(),
+                "~/.ssh/agent-signing.pub".to_string(),
+            ]
+        );
+        assert!(sandbox_filesystem_deny_read_paths().contains(&"~/.ssh".to_string()));
     }
 
     #[test]

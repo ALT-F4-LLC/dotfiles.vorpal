@@ -17,5 +17,7 @@
 
 # Agent signing key -- ~/.ssh/agent-signing.pub, injected as user.signingkey
 # for every agent shell by the GIT_CONFIG_* settings env in claude_code.rs
-# (ea400f3).
+# (ea400f3). Its private half is a plain file beside it, deliberately outside
+# 1Password so no signature waits on operator approval; the sandbox re-opens
+# exactly that pair inside the ~/.ssh read-deny.
 4638629+erikreinert@users.noreply.github.com namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDAUWPpoXS64HKvi6LIuEdhWkmAaMBB7XNB8QGmfYejg

@@ -187,6 +187,78 @@ case_must_deny_separately_quoted_tokens() {
         "separately-quoted docket/trust/add (bash-unquotes to a real call)"
 }
 
+# ---- MUST DENY: the verb carried as an interpreter's code argument --------
+#
+# A quoted string is prose everywhere except one position: the code argument
+# of an interpreter, where it is executed verbatim. Treating that position as
+# prose let an executor write the trust store at the cost of one extra word.
+# Both quote styles carry it, and the code flag may be bundled with other
+# short flags (`-lc`), so each of those is its own row.
+
+case_interpreter_code_argument_deny() {
+    local inv='docket trust add erik ssh-ed25519 AAAA'
+    assert_verdict "$inv" executor-write DENY \
+        "bare invocation (positive control for this group)"
+    assert_verdict "bash -c '${inv}'" executor-write DENY \
+        "bash -c with a single-quoted code argument"
+    assert_verdict "bash -c \"${inv}\"" executor-write DENY \
+        "bash -c with a double-quoted code argument"
+    assert_verdict "sh -c '${inv}'" executor-write DENY \
+        "sh -c with a code argument"
+    assert_verdict "bash -lc '${inv}'" executor-write DENY \
+        "code flag bundled with another short flag (-lc)"
+    assert_verdict "env bash -c '${inv}'" executor-write DENY \
+        "interpreter behind an env pass-through"
+    assert_verdict "/bin/bash -c '${inv}'" executor-write DENY \
+        "pathed interpreter with a code argument"
+    assert_verdict "python3 -c 'import os; os.system(\"${inv}\")'" executor-write DENY \
+        "python3 -c: the verb inside a nested double-quoted string"
+    assert_verdict "perl -e 'system(\"${inv}\")'" executor-write DENY \
+        "perl -e code argument"
+    assert_verdict "node -e 'require(\"child_process\").execSync(\"${inv}\")'" \
+        executor-write DENY "node -e code argument"
+    assert_deny_reason "bash -c '${inv}'" executor-write \
+        "interpreter-carried invocation"
+}
+
+# ---- MUST NOT CATCH: the code-argument rule's false-DENY floor ------------
+#
+# The rule fires only on a code FLAG directly before the quoted group with an
+# interpreter word earlier on the same leaf. Everything else keeps its old
+# verdict: an interpreter given a script path, a code argument with no
+# guarded verb in it, and prose quoted after any other flag.
+
+case_interpreter_code_argument_allows() {
+    assert_verdict "bash -c 'echo hi'" executor-write ALLOW \
+        "code argument naming no guarded verb"
+    assert_verdict "bash script.sh" executor-write ALLOW \
+        "interpreter given a script path, no code flag"
+    assert_verdict 'docket issue comment add D-1 -m "never run docket trust add"' \
+        executor-write ALLOW "prose after -m stays prose (no code flag)"
+    assert_verdict "echo 'never run docket trust add here'" executor-write ALLOW \
+        "prose quoted after a non-interpreter word"
+    # The look-behind must not cross a leaf boundary: the words that end one
+    # leaf cannot qualify a quoted group that opens the next one.
+    assert_verdict "echo bash -c"$'\n'"'the rule says docket trust add is reserved'" \
+        executor-write ALLOW "a code flag ending one leaf does not reach the next leaf's quotes"
+}
+
+# ---- ACCEPTED RESIDUALS of the code-argument rule ------------------------
+#
+# Carriers with no code flag at all, and verbs reached through a variable,
+# stay ALLOW. Pinned so the omission reads as a decision rather than a miss;
+# the pre-pass comment in the hook states the same list.
+
+case_interpreter_carriers_residual_allow() {
+    local inv='docket trust add erik key'
+    assert_verdict "awk 'BEGIN { system(\"${inv}\") }'" executor-write ALLOW \
+        "awk program text: no code flag (accepted residual)"
+    assert_verdict "ssh host '${inv}'" executor-write ALLOW \
+        "ssh remote command: no code flag (accepted residual)"
+    assert_verdict "C=\"${inv}\"; bash -c \"\$C\"" executor-write ALLOW \
+        "verb reached through a variable (accepted residual)"
+}
+
 # ---- MUST ALLOW: the help read, the one exemption, from an executor -------
 #
 # `docket trust add --help` opens nothing. The exemption is exactly: an
@@ -426,6 +498,9 @@ case_ordinary_docket_verbs_allow
 case_must_not_catch_prose_and_reads
 case_must_deny_glued_separator_class
 case_must_deny_separately_quoted_tokens
+case_interpreter_code_argument_deny
+case_interpreter_code_argument_allows
+case_interpreter_carriers_residual_allow
 case_help_read_exemption_allows
 case_help_lookalikes_and_compounds_deny
 case_heredoc_body_prose

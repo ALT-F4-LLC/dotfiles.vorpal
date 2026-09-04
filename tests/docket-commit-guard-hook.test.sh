@@ -353,11 +353,31 @@ case_must_not_catch_substitution_reads() {
 
 case_accepted_residual_risks() {
     local script="src/user/claude_code/hooks/docket-commit-guard-hook.sh"
-    assert_verdict 'bash -c "git commit -m x"' ALLOW "bash -c indirection (accepted residual)"
     assert_verdict "./deploy.sh" ALLOW "wrapper-script invocation (accepted residual)"
     assert_verdict "bash ${script}" ALLOW "bash <script path> (interpreter-prefixed, accepted residual)"
     assert_verdict "./${script}" ALLOW "./<script path> (direct exec, accepted residual)"
     assert_verdict "timeout 30 bash ${script}" ALLOW "timeout-wrapped script path (accepted residual)"
+}
+
+# ---- MUST DENY: the write carried as an interpreter's code argument -------
+#
+# `bash -c "git commit …"` was pinned above as an accepted residual until the
+# quote-group pass learned that a code argument is executed verbatim rather
+# than being prose. It is a real dispatch of a guarded write, so it denies
+# now; the rows above it stay ALLOW because an interpreter given a script
+# path carries no code flag.
+
+case_interpreter_code_argument_deny() {
+    assert_verdict 'git commit -m x' DENY "bare write (positive control for this group)"
+    assert_verdict 'bash -c "git commit -m x"' DENY "bash -c with a double-quoted code argument"
+    assert_verdict "bash -c 'git commit -m x'" DENY "bash -c with a single-quoted code argument"
+    assert_verdict "bash -lc 'git push origin main'" DENY "bundled short flags (-lc)"
+    assert_verdict "env bash -c 'git commit -m x'" DENY "interpreter behind an env pass-through"
+    assert_verdict "python3 -c 'import os; os.system(\"git commit -m x\")'" DENY \
+        "python3 -c: the write inside a nested double-quoted string"
+    assert_verdict "bash -c 'git status --short'" ALLOW "code argument naming only a read"
+    assert_verdict "echo 'the phrase git commit appears here'" ALLOW \
+        "prose quoted after a non-interpreter word"
 }
 
 # ---- HEREDOC BODIES: a quoted delimiter makes the body prose -------------
@@ -534,6 +554,7 @@ case_accepted_false_positive_control
 case_must_not_catch_prose_and_reads
 case_must_not_catch_substitution_reads
 case_accepted_residual_risks
+case_interpreter_code_argument_deny
 case_heredoc_body_prose
 case_heredoc_body_destination
 case_comment_regions_are_inert

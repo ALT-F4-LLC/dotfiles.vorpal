@@ -244,19 +244,61 @@ SCAN_TEXT=$(awk -v RS='\036' -v widen="$WIDEN" '
     END { printf "%s", out }
 ' "$PROBE_OUT")
 
-# --- Quote-group marking, unchanged from the pre-redesign pass. ----------
+# --- Quote-group marking. ------------------------------------------------
 #
 # Marks every word that came from inside a single- or double-quoted string
 # with a sentinel plus a quote-GROUP id, so the MATCH step below can tell
 # real prose (`-m "... git commit ..."`, one group) apart from a
 # bash-unquoted invocation built from separately-quoted words (`"git"
-# "commit"`, two groups). Double-quoted content that could still trigger
+# "commit"`, two groups). A quoted group that is an interpreter's code
+# argument (`bash -c "git commit -m x"`) is emitted unmarked instead: that is
+# the one position where a quoted string is executed verbatim, so it was a
+# bypass of this guard rather than prose, and it is no longer an accepted
+# residual in either hook. Double-quoted content that could still trigger
 # command/parameter substitution ($(...), backticks, ${...}) is left
 # unmarked so the matcher inspects it directly. No heredoc, comment, or
 # arithmetic handling here: SCAN_TEXT above is already, by construction,
 # one or more complete simple-command lines with no unresolved separators
 # — there is nothing of that shape left for this pass to get wrong.
 STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk '
+# A quoted group in ONE position is code rather than prose: the argument an
+# interpreter executes verbatim. True when the word immediately before the
+# group is a code flag AND some earlier word on the SAME leaf line is an
+# interpreter. The flags that count are the union of every listed
+# interpreters own: -c and any short bundle ending in c (the shells,
+# python, expect), -e, -E, -p, -r, --eval, --print. A union rather than a
+# per-interpreter map errs toward DENY, the direction this file takes for
+# an unresolvable case.
+# KNOWN RESIDUALS, listed so a reader can tell a decision from a miss: awk,
+# ssh, xargs and find -exec carry code with no code flag at all, and a verb
+# reached through a variable (C="..." on one leaf, an interpreter reading $C
+# on the next) leaves no literal run of words behind a flag. Those stay
+# ALLOW and are pinned as such in both suites.
+# env and tclsh are deliberately absent from the interpreter list here: env
+# carries no code flag of its own (env bash -c still matches on bash) and
+# tclsh has none, so listing them would only widen the false-DENY surface.
+# The look-behind stops at a newline. Leaves are newline-separated in this
+# buffer, so the last words of one leaf must not qualify a quoted group that
+# opens the next one.
+function code_argument(sofar,   tail, p, k, m, w, head) {
+    p = 0
+    for (k = length(sofar); k >= 1; k--) {
+        if (substr(sofar, k, 1) == "\n") { p = k; break }
+    }
+    tail = substr(sofar, p + 1)
+    sub(/^[ \t]+/, "", tail)
+    sub(/[ \t]+$/, "", tail)
+    m = split(tail, w, /[ \t]+/)
+    if (m < 2) return 0
+    if (w[m] !~ /^(-[A-Za-z]*c|-[eEpr]|--eval|--print)$/) return 0
+    for (k = 1; k < m; k++) {
+        head = w[k]
+        sub(/^.*\//, "", head)
+        sub(/[^A-Za-z0-9_.]+$/, "", head)
+        if (head ~ /^(sh|bash|dash|zsh|ksh|mksh|csh|tcsh|python[0-9.]*|perl|ruby|node|nodejs|php|lua[0-9.]*|expect|osascript)$/) return 1
+    }
+    return 0
+}
 {
     buf = (NR == 1) ? $0 : buf "\n" $0
 }
@@ -283,12 +325,19 @@ END {
                 content = content substr(line, j, 1)
                 j++
             }
-            GROUP++
-            m = split(content, qw, /[ \t\n]+/)
-            for (k = 1; k <= m; k++) {
-                if (qw[k] != "") out = out " " MARK GROUP ":" qw[k] MARK
+            if (code_argument(out)) {
+                # Inner quotes are the code arguments own syntax, not prose
+                # glue: spacing them keeps a verb reachable as its own word.
+                gsub(/[\047\042]/, " ", content)
+                out = out " " content " "
+            } else {
+                GROUP++
+                m = split(content, qw, /[ \t\n]+/)
+                for (k = 1; k <= m; k++) {
+                    if (qw[k] != "") out = out " " MARK GROUP ":" qw[k] MARK
+                }
+                out = out " "
             }
-            out = out " "
             i = j + 1
             continue
         }
@@ -306,7 +355,10 @@ END {
                 content = content cc
                 j++
             }
-            if (content ~ /\$\(|`|\$\{/) {
+            if (code_argument(out)) {
+                gsub(/[\047\042]/, " ", content)
+                out = out " " content " "
+            } else if (content ~ /\$\(|`|\$\{/) {
                 out = out " " content " "
             } else {
                 GROUP++

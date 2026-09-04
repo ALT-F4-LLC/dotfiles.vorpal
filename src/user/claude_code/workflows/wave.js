@@ -193,14 +193,14 @@ read STEP-N or \${row.step}, and this one does not.${isolationNote}${pinNote}
      docket step claim ${row.step} --owner wave:${row.step} --render --json > <TMP>/${row.step}.d/${row.step}.claim.json &&
      jq -r '.data.token'  < <TMP>/${row.step}.d/${row.step}.claim.json > <TMP>/${row.step}.d/${row.step}.token &&
      chmod 600 <TMP>/${row.step}.d/${row.step}.token &&
-     jq -r '.data.packet' < <TMP>/${row.step}.d/${row.step}.claim.json &&
+     jq -r '.data.packet' <TMP>/${row.step}.d/${row.step}.claim.json > <TMP>/${row.step}.d/${row.step}.packet.md &&
      cat /dev/null > <TMP>/${row.step}.d/${row.step}.claim.json
    \`\`\`
 `}
 
    The last command TRUNCATES the claim file rather than deleting it — its
-   contents are spent the moment the packet above is printed. Same rule at
-   step 3.
+   contents are spent the moment the packet file above is written. Same rule
+   at step 3.
 
    Every path is spelled out because YOUR SCRATCH ROOT <TMP> IS SHARED BY
    EVERY EXECUTOR IN THE WAVE (concurrent subagents all get the same
@@ -224,14 +224,10 @@ read STEP-N or \${row.step}, and this one does not.${isolationNote}${pinNote}
    3), and the engine retires the token in the same instant. Do not skip the
    write to be cautious: skipping it strands the step, the worse outcome.
 
-   The last command prints your rendered brief. Read it — it is your contract.
-
-   IF THE HARNESS REPLIES \`<persisted-output> Output too large\`, WHAT YOU SEE
-   INLINE IS NOT YOUR BRIEF — it is the first 2KB, and the cut lands inside
-   the REQUEST section; everything that actually binds you (contract file,
-   every fragment, PINNED, OUTPUT) sits BELOW it. Read the named file with
-   the Read tool before doing anything else. A 30KB brief is the normal case
-   for a step carrying several pinned files, not an anomaly.
+   Then open <TMP>/${row.step}.d/${row.step}.packet.md with the Read tool — it
+   is your contract. The packet goes to a FILE, not stdout, so a large brief
+   is never truncated by the harness's inline-output cap; a 30KB brief is the
+   normal case for a step carrying several pinned files, not an anomaly.
 
    On CONFLICT: stop immediately and report AT MOST three lines: your step id,
    the word CONFLICT, and the engine's error line verbatim. Do not investigate

@@ -64,9 +64,13 @@ Two denials remain possible, and neither is a reason to retry unsandboxed:
   for `go`) and report the real command you ran; a tool with no native cover is the same
   NETWORK GATE BLOCKED stop.
 
-Two more pitfalls, neither about the network:
+Three more pitfalls, none about the network:
 
 - **Process substitution is denied**: `diff <(...) <(...)` fails with "Operation not
   permitted" on `/dev/fd/N`; diff temp files under `$TMPDIR` instead.
 - **No PyYAML in the executor environment**: `python3 -c "import yaml"` raises
   `ModuleNotFoundError: No module named 'yaml'`; parse YAML with `yq` or Go tooling instead.
+- **`grep` in this shell is a ugrep shim** whose ERE semantics differ from GNU grep's:
+  `grep -icE '(^|[^0-9])AB11([^0-9]|$)'` returns 0 on a line `/usr/bin/grep` counts as 1.
+  For anything counted or gated, run `/usr/bin/grep` — that is what the Makefile gates
+  run, so the shim's count is not the gate's count.

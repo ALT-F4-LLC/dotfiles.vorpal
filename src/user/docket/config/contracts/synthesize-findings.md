@@ -1,6 +1,6 @@
 ---
 node: synthesize-findings
-version: 13
+version: 14
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -123,8 +123,14 @@ payload missing `title` or `id` is refused at record, which is a whole re-assemb
 a key you already had. `id` takes ONE form: `<issue-id>-C<n>` (`DOT-42-C1`,
 `DOT-42-C2`), so a cluster id names the issue it came from. NUMBER IT AT FIRST EMISSION
 AND NEVER RENUMBER: a cluster carried forward keeps the id the round that first raised
-it gave it, and this round's new clusters take the numbers above the highest `<n>` any
-earlier round used. The standing-set rules key re-occurrence and disposition on `id`, so
+it gave it, and this round's new clusters take numbers above every `<n>` this issue has
+ever used. Never reuse one, a retired one included: read the ceiling as the highest `<n>`
+appearing in ANY input, ids named only inside a `prior_disposition` and those in the prior
+round's aggregate record included, because a finding that was fixed, ruled on, or filed as
+a gap leaves the standing set and takes its id out of the record you read. Where no
+earlier round's record is among your inputs on a re-review round, say so in the body
+rather than restarting the numbering.
+The standing-set rules key re-occurrence and disposition on `id`, so
 a cluster renumbered to this round's body order unlinks the ruling recorded against it
 and spends that decision twice. A standing finding
 carried forward from a prior round's aggregate record may omit `member_ids`; it

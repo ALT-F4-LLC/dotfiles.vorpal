@@ -140,29 +140,16 @@ function bootstrap(row, r, isolated, isWrite) {
    one sanctioned read — never run reports, step lists, \`--help\`, or the
    store's database.
 
-   TRANSLATION RULES — obligations 1 and 3 below print code blocks written
-   for the shared tree; run their ISOLATED forms instead, everything else in
-   their prose still binding:
+   TRANSLATION RULES — obligation 3 below prints a code block written for the
+   shared tree; run its ISOLATED form instead, everything else in its prose
+   still binding. Obligation 1 already renders your claim form directly below.
 
-   1'. Claim, as separate plain commands, literal paths throughout — the
-       first two build your PRIVATE STEP SCRATCH DIR (obligation 1's
-       rationale below explains it):
-       \`rm -rf <TMP>/${row.step}.d\`
-       \`mkdir -m 700 <TMP>/${row.step}.d\`
-       \`docket step claim ${row.step} --owner wave:${row.step} --render --json > <TMP>/${row.step}.d/${row.step}.claim.json\`
-       \`jq -r '.data.token' <TMP>/${row.step}.d/${row.step}.claim.json > <TMP>/${row.step}.d/${row.step}.token\`
-       \`chmod 600 <TMP>/${row.step}.d/${row.step}.token\`
-       \`jq -r '.data.packet' <TMP>/${row.step}.d/${row.step}.claim.json > <TMP>/${row.step}.d/${row.step}.packet.md\`
-       \`cat /dev/null > <TMP>/${row.step}.d/${row.step}.claim.json\`
-       Then open <TMP>/${row.step}.d/${row.step}.packet.md with the Read tool — the packet
-       goes to a FILE here, not stdout, which also keeps a large brief from
-       being truncated by the harness's inline-output cap.
-       If the claim itself errors naming a packet file ("pinned by this run
-       but is no longer on disk"), report the error verbatim and STOP — the
-       ref came from a REPO-ADDITION config layer, repo-root-relative and
-       absent from your worktree (shared-corpus refs resolve from any cwd);
-       the claim already recorded and the token is gone, so a re-claim just
-       burns another attempt — the relay's reap is the only way out.
+   If the claim itself errors naming a packet file ("pinned by this run but is
+   no longer on disk"), report the error verbatim and STOP — the ref came from
+   a REPO-ADDITION config layer, repo-root-relative and absent from your
+   worktree (shared-corpus refs resolve from any cwd); the claim already
+   recorded and the token is gone, so a re-claim just burns another attempt —
+   the relay's reap is the only way out.
    3'. Record with the token fed to stdin from its literal path:
        \`docket step record ${row.step} ... < <TMP>/${row.step}.d/${row.step}.token\`
 
@@ -185,10 +172,20 @@ is your real, already-substituted step id, NOT a template placeholder. ${row.ste
 is the id you claim in obligation 1; a brief with an unfilled placeholder would
 read STEP-N or \${row.step}, and this one does not.${isolationNote}${pinNote}
 
-1. Claim it AND PARK THE TOKEN ON DISK${isolated ? ` — ISOLATED: run form 1' from
-   obligation 0 (separate plain commands, literal paths) instead of the block
-   below — the one-shot block violates your one-action-per-call discipline.
-   Every rule after the block still binds you.` : ', in ONE Bash call, exactly this:'}
+1. Claim it AND PARK THE TOKEN ON DISK${isolated ? ` — run these as separate
+   plain Bash calls, literal paths throughout (form 1' from obligation 0):
+
+   \`rm -rf <TMP>/${row.step}.d\`
+   \`mkdir -m 700 <TMP>/${row.step}.d\`
+   \`docket step claim ${row.step} --owner wave:${row.step} --render --json > <TMP>/${row.step}.d/${row.step}.claim.json\`
+   \`jq -r '.data.token' <TMP>/${row.step}.d/${row.step}.claim.json > <TMP>/${row.step}.d/${row.step}.token\`
+   \`chmod 600 <TMP>/${row.step}.d/${row.step}.token\`
+   \`jq -r '.data.packet' <TMP>/${row.step}.d/${row.step}.claim.json > <TMP>/${row.step}.d/${row.step}.packet.md\`
+   \`cat /dev/null > <TMP>/${row.step}.d/${row.step}.claim.json\`
+   Then open <TMP>/${row.step}.d/${row.step}.packet.md with the Read tool — the
+   packet goes to a FILE here, not stdout, which also keeps a large brief from
+   being truncated by the harness's inline-output cap.
+` : `, in ONE Bash call, exactly this:
 
    \`\`\`
    rm -rf <TMP>/${row.step}.d &&
@@ -199,6 +196,7 @@ read STEP-N or \${row.step}, and this one does not.${isolationNote}${pinNote}
      jq -r '.data.packet' < <TMP>/${row.step}.d/${row.step}.claim.json &&
      cat /dev/null > <TMP>/${row.step}.d/${row.step}.claim.json
    \`\`\`
+`}
 
    The last command TRUNCATES the claim file rather than deleting it — its
    contents are spent the moment the packet above is printed. Same rule at
@@ -1704,6 +1702,15 @@ async function runGate(row, phaseLabel) {
             log(`${row.step}: gate already decided REJECTED (${gate.proposal}) — ` +
                 `engine routes on_fail; skipping this issue's later stages`)
             return { step: row.step, status: 'gate-rejected', text: asText(gate) }
+        }
+        if (gate.step_status === 'skipped' || gate.step_status === 'superseded') {
+            // No proposal was ever tallied here — the engine bypassed voting
+            // entirely, so `gate-passed` would read as an approval that never
+            // happened (the exact misread a conductor made on a security
+            // tribunal that never sat).
+            log(`${row.step}: gate step ${gate.step_status} by the engine, no ` +
+                `tally — reporting gate-skipped`)
+            return { step: row.step, status: 'gate-skipped', text: asText(gate) }
         }
         log(`${row.step}: gate already decided — continuing`)
         const early = gateSuccess(row.step, asText(gate), acct)

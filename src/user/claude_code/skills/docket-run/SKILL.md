@@ -1943,7 +1943,10 @@ have run `docket vote show <proposal>` for each and read the TALLY yourself:
 a step the engine marked `done` after a REJECTED tally has rendered as
 "gate-passed" in wave output (three runs measured; one conductor trusted the
 label for ten hours over a 3/3 rejection). One read verb per vote row, every
-wave, before you trust any label. If a vote row somehow reaches you OUTSIDE a manifest (a resumed run
+wave, before you trust any label. A row the engine marked `skipped` or
+`superseded` — no panel ever seated, no tally ever ran — renders as
+"gate-skipped", never "gate-passed"; read it as "no vote happened", not as an
+approval. If a vote row somehow reaches you OUTSIDE a manifest (a resumed run
 with a gate already sitting ready), just dispatch it — it is a row like any
 other now.
 

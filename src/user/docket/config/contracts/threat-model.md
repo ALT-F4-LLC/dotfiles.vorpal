@@ -1,6 +1,6 @@
 ---
 node: threat-model
-version: 2
+version: 3
 archetype: executor-read
 packet_includes:
   - fragments/threat-model-method.md
@@ -64,9 +64,10 @@ implementer cannot act on without asking you a question is not yet specified.
 
 Id every abuse case `AB-<N>`: a bare integer, unique within the model, one id per case
 (`AB-1`, `AB-2`, …). No prefixes, suffixes, or letters inside the number (`AB-R1` and
-`AB-named` are not ids). Downstream gates and the acceptance verifier match this literal
-form, and a case they cannot match is a case they treat as absent. Cite the id wherever a
-control names the abuse case that verifies it.
+`AB-named` are not ids). Nothing in this repository checks the form: the only matcher is
+the agentic-services regex over the bare form, and wiring an equivalent check here is
+deferred to AGT-1194/AGT-1221. A case that matcher cannot match is a case it treats as
+absent. Cite the id wherever a control names the abuse case that verifies it.
 
 # Stuck
 If the adversary, the asset, or the boundary cannot be established from the issue and the

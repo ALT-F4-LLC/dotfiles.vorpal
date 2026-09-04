@@ -55,12 +55,18 @@ specified without its verification is an unfinished row, and you mark it so.
 # Emit
 `threat-model` (markdown): Frame (adversary, capabilities, assets, acceptable residual
 risk, out-of-scope threats stated explicitly) · Trust boundaries (what crosses each, what
-parses it) · Abuse cases (attacker action → what they gain → severity from the security
-ladder fragment) · Required controls (one row per control: what, the chokepoint enforcing
+parses it) · Abuse cases (id → attacker action → what they gain → severity from the
+security ladder fragment) · Required controls (one row per control: what, the chokepoint enforcing
 it, the abuse case that verifies it) · Inherited exclusions, where a control derives from
 an existing tool · Residual risk (what remains unmitigated and why that is acceptable).
 Every claim labeled OBSERVED or INFERRED. Write for the implementer: a control the
 implementer cannot act on without asking you a question is not yet specified.
+
+Id every abuse case `AB-<N>`: a bare integer, unique within the model, one id per case
+(`AB-1`, `AB-2`, …). No prefixes, suffixes, or letters inside the number (`AB-R1` and
+`AB-named` are not ids). Downstream gates and the acceptance verifier match this literal
+form, and a case they cannot match is a case they treat as absent. Cite the id wherever a
+control names the abuse case that verifies it.
 
 # Stuck
 If the adversary, the asset, or the boundary cannot be established from the issue and the

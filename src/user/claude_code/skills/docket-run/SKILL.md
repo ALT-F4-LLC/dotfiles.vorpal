@@ -162,7 +162,23 @@ too, but a fork cannot message its parent, and the reporting is the point.
      sent, put the questions through `AskUserQuestion` exactly as framed —
      reworded by nobody, one gate per question — and reply `answer:` with
      each question's chosen label and any note the operator typed,
-     verbatim. The conductor runs the verb; you never do.
+     verbatim. The conductor runs the verb; you never do. A `question:`
+     whose first line carries `blocking: no` is NOT put through
+     `AskUserQuestion`: that tool freezes this conversation until the
+     operator answers, and RUN-90's parent sat inside it from 00:22 to
+     07:22 local while every relay for the run queued behind it. Render
+     the accompanying text and the questions as plain text with their
+     labels, load `PushNotification` through `ToolSearch` and send one
+     naming the run and the gate, and end the turn; the conductor keeps
+     driving what the park does not touch. Hold at most one open question
+     per conductor. The answer is the operator's next typed message that
+     names a rendered label (or `other: ...`); relay that as `answer:`,
+     verbatim. Any other message — "status update", a new instruction —
+     is not an answer and is never relayed as one. `blocking: yes`, or no
+     such line, keeps the `AskUserQuestion` path.
+   - **An idle notification** — not a message: no reply, no text, end the
+     turn. RUN-90's parent answered 68 of them, each a turn and a run-guard
+     deny.
    - **`done:`** — the run reached a terminal state, or parked with nothing
      the machine can advance. Render it, then `TaskStop` the conductor by
      name: a delegate that has reported and sits registered is the
@@ -183,6 +199,21 @@ too, but a fork cannot message its parent, and the reporting is the point.
    naming pending work. That deny is expected while a conductor is seated:
    say which conductor holds the run and end the turn again; the second
    attempt is allowed. Never start driving on its push.
+
+**Progress checks.** An operator who wants a periodic report runs
+`/loop 5m <prompt>` with the interval FIRST: a bare "check every 5 min ..."
+sentence matches neither of the loop skill's parse rules and self-paces at
+20 to 25 minutes, the cadence RUN-90's parent kept for three hours while its
+conductor was stalled. A check is an engine read, not a roster read —
+`ListAgents` says only that the seat exists. Each tick: `docket run status
+$RUN --json` for the status and the open dispatch; the tasks of this session
+still running; and the mtime of the conductor's transcript under this
+session's `subagents/` directory. An open dispatch with no task of this
+session running and a conductor transcript untouched for 10 minutes is a
+STALL: say so, name the conductor's last tool call from that transcript,
+send it one check-in, and when the next tick finds the same state, load
+`PushNotification` and page the operator. "Conductor still running" is
+never a status.
 
 ### The conductor
 
@@ -213,7 +244,17 @@ conductor on another run, and route nothing by assumption.
   language this file demands. Then end your turn; `answer:` carries the
   operator's choice verbatim, and you run the verb on it. Everything this
   file says about what a question presents, one gate per question, and the
-  premise check before asking is unchanged; only the carrier differs.
+  premise check before asking is unchanged; only the carrier differs. The
+  first line of every `question:` is `blocking: yes` or `blocking: no`. It
+  is `no` whenever this run has work the answer does not gate — a launch of
+  yours still in flight, or `next` still offering rows on issues the park
+  does not touch — and `yes` only when nothing can move until the operator
+  rules. On `blocking: no` do not wait: send the question, end the turn, and
+  keep dispatching on the next `returned:` or `launched:` as if no question
+  were out. A further gate that parks while a question is open joins that
+  SAME question at the next status boundary rather than opening a second;
+  the `answer:` you read back carries the operator's ruling per labelled
+  gate.
 - **Nothing background, nothing awaited but a message.** No
   `run_in_background`, no `Monitor`, no `ScheduleWakeup`: a task
   notification does not wake this seat. The trust probe and every other
@@ -1036,7 +1077,11 @@ filter or regex you write here. `STEP-`/`RUN-` are reserved and safe.
 
 **Never open a dispatch while the run is parked.** If the run is in
 `waiting-human`, or you have nothing ready to hand the wave, do not open a
-dispatch to "check". An opened-and-immediately-closed empty dispatch is pure
+dispatch to "check". A park on one step parks its ISSUE (the engine's R2b):
+the run stays `active`, `next` keeps offering every other issue's rows, and
+the run itself reads `waiting-human` only once nothing else can move — so an
+`active` run with parked steps and a non-empty offer is the ordinary case,
+not a stall. An opened-and-immediately-closed empty dispatch is pure
 audit noise — one run produced two rounds of it before retiring the habit. Open
 only when you have executor rows to dispatch.
 
@@ -2232,6 +2277,14 @@ agents' own authority or on the operator's own machine, and a panel ruling on
 its own permissions is grading its own paper. **A trust proposal is NEVER
 bundled into a batch with other approvals** — it goes alone, as its own
 question.
+
+**A seated conductor never runs a trust verb itself, `--help` included.**
+`docket trust add/rm` is denied outright for the `docket-conductor-RUN-N`
+seat by the trust-guard hook, because the ask rule that would otherwise catch
+it has no operator at a background seat's terminal: RUN-90's conductor issued
+`docket trust add --help` at 14:52Z and the whole run waited behind that
+unanswered prompt until 18:00Z. Read the verb's usage from this file, not
+from the binary, and put the trust matter to `main` as its own `question:`.
 
 **A required gate with no trust entry is a PARK, never a stub.** Never propose,
 and never accept without saying so plainly, an argv that cannot fail — `true`,

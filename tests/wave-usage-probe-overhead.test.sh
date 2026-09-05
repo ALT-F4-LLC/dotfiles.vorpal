@@ -188,9 +188,12 @@ function write(name, bootstrap, outDir = d, listed = false) {
     const lines = [{ type: 'user', message: { content } }]
     // msg-a is written twice with a GROWING output count: the dedup keeps the
     // last, so this agent's output total is 100 + 250, not 40 + 250.
-    lines.push({ type: 'assistant', message: { id: 'msg-a', usage: usage(40) } })
-    lines.push({ type: 'assistant', message: { id: 'msg-a', usage: usage(100) } })
-    lines.push({ type: 'assistant', message: { id: 'msg-b', usage: usage(250) } })
+    const model = name === 'agent-aexec2.jsonl' ? undefined : 'claude-opus-5'
+    const firstModel = name === 'agent-aexec.jsonl' ? 'stale-stream-model' : model
+    const finalModel = name === 'agent-aexec.jsonl' ? 'claude-fable-5-1' : model
+    lines.push({ type: 'assistant', message: { id: 'msg-a', model: firstModel, usage: usage(40) } })
+    lines.push({ type: 'assistant', message: { id: 'msg-a', model: finalModel, usage: usage(100) } })
+    lines.push({ type: 'assistant', message: { id: 'msg-b', model, usage: usage(250) } })
     fs.writeFileSync(path.join(outDir, name), lines.map((o) => JSON.stringify(o)).join('\n') + '\n')
 }
 
@@ -243,6 +246,24 @@ function load(sub) {
 }
 const wave = load('wave')
 const drift = load('drift')
+
+// Exercise missing and synthetic model fields through the actual jq extractor,
+// not only the reducer. Bootstrap prose cannot supply runtime observations.
+const { spawnSync } = require('child_process')
+const partialTranscript = [
+    { type:'user', message:{content:'You are executing one step of a Docket run. docket step claim STEP-99 --owner wave. Requested model: claude-fable-5-1, effort: max.'} },
+    { type:'assistant', message:{id:'known', model:'claude-opus-5', usage:{output_tokens:1}} },
+    { type:'assistant', message:{id:'missing', usage:{output_tokens:1}} },
+    { type:'assistant', message:{id:'synthetic', model:'<synthetic>', usage:{output_tokens:0}} },
+].map(JSON.stringify).join('\n')
+const partialRun = spawnSync('jq', ['-c', '-n', '-R', EXTRACT_JQ], {
+    input:partialTranscript, encoding:'utf8',
+})
+ok(partialRun.status === 0, 'partial model observations parse without changing usage extraction')
+const partialExtract = JSON.parse(partialRun.stdout)
+ok(partialExtract.models_observed.join(',') === 'claude-opus-5'
+    && partialExtract.model_observation_complete === false,
+    'only actual model fields are observed; missing fields and synthetic messages keep coverage incomplete')
 
 const by = (list, file) => list.find((r) => r.file === file)
 const overheadLabel = (out, file) => (out.overhead.agents.find((a) => a.file === file) || {}).label || ''
@@ -307,6 +328,22 @@ ok(steps.rows.filter((r) => r.step === 'STEP-3156').map((r) => r.unit).join(',')
     'input_tokens,output_tokens,cache_creation_tokens,cache_read_tokens',
     'the four unit rows come out in the ledger\'s order, named exactly as the engine wants them')
 
+// Serving models are observed message fields, separate from requested routing.
+const observed = steps.model_observations.find((o) => o.key === 'STEP-3156')
+ok(observed.models.join(',') === 'claude-fable-5-1,claude-opus-5' && observed.complete,
+    'a fallback run reports both serving models from deduplicated messages')
+ok(!observed.models.includes('stale-stream-model'),
+    'a superseded stream record cannot add a serving model')
+ok(observed.source === 'assistant.message.model' && observed.effort_resolved === 'unknown',
+    'attribution names its source and does not infer an unobserved effort')
+const absent = steps.model_observations.find((o) => o.key === 'STEP-3150')
+ok(absent.models.length === 0 && absent.complete === false,
+    'a transcript without model fields keeps attribution unknown')
+ok(steps.model_observations.filter((o) => o.kind === 'overhead').length === 4,
+    'probe observations remain overhead rather than being credited to a step')
+ok(!steps.rows.some((r) => 'model' in r || 'effort' in r),
+    'model observations do not change the engine token back-fill row contract')
+
 // ---- exclude: a key a prior back-fill already carries ----
 const excluded = reduceRows(wave, 'steps', ['STEP-3156'])
 ok(!excluded.rows.some((r) => r.step === 'STEP-3156') && excluded.rows.some((r) => r.step === 'STEP-3150'),
@@ -332,6 +369,16 @@ ok(seats.overhead.agents.length === 0, 'seats mode reports no overhead of its ow
 const seatEx = reduceRows(wave, 'seats', ['reviewer'])
 ok(seatEx.rows.length === 0 && seatEx.skipped.some((s) => s.reason === 'excluded' && s.key[1] === 'reviewer'),
     'a bare seat name in exclude drops that seat and reports it')
+
+ok(seats.model_observations.length === 1 && seats.model_observations[0].kind === 'seat'
+    && seats.model_observations[0].key.join('/') === 'PROP-77/reviewer',
+    'seat mode carries judge observations separately from step mode')
+const partialObservation = reduceRows([{ file:'partial', extract: {
+    ...by(wave, 'agent-aexec.jsonl').extract,
+    models_observed:['claude-opus-5'], model_observation_complete:false,
+}}], 'steps', []).model_observations[0]
+ok(partialObservation.models[0] === 'claude-opus-5' && !partialObservation.complete,
+    'a known model does not establish complete attribution when other messages lack it')
 
 // ---- Seats mode sort order: grouped by proposal, then seat ----
 const twoPanels = [

@@ -73,7 +73,8 @@ export const meta = {
 //         dir      absolute path of the wave's transcript directory
 //         mode     'steps' (default) or 'seats'
 //         exclude  [STEP-N...] in steps mode, [seat...] in seats mode; [] default
-// return: {rows, overhead: {agents: [{file, label}], sums}, skipped, errors}
+// return: {rows, overhead: {agents: [{file, label}], sums}, skipped, errors,
+//          model_observations}
 //         rows     [{step, unit, quantity}] or [{proposal, voter, unit, quantity}],
 //                  four unit rows per key, sorted numerically by step or
 //                  lexicographically by (proposal, voter)
@@ -82,6 +83,15 @@ export const meta = {
 //         skipped  [{file, reason: 'seated'|'unattributed'|'excluded', key, label}]
 //         errors   [string]; when non-empty the script throws after logging
 //                  each one, because silence must not look like success
+//         model_observations [{file, kind, key, models, complete, source,
+//                              effort_resolved}]
+//                  serving models from assistant.message.model, separately
+//                  from routing requests and token rows. Multiple models can
+//                  serve one agent after fallback. Missing fields stay unknown;
+//                  neither routing settings nor model self-reports fill them.
+//                  Effective effort is not exposed by this transcript shape.
+//                  complete covers parsed, deduplicated usage-bearing messages;
+//                  it does not certify that the transcript or task finished.
 // Throws when the directory holds no agent transcripts, when an agent's
 // bootstrap cannot be read, when an executor brief names no step to record,
 // or when a dispatched agent carries no usage.
@@ -136,6 +146,9 @@ const EXTRACT_JQ = `[inputs | fromjson? | select(type == "object")] as $lines
 | (if $first == null then null
    else ($first.message.content | if type == "string" then . else tojson end) end) as $boot
 | ($boot // "") as $b
+| (reduce ($lines[] | select(.type == "assistant") | .message
+            | select((.usage // {}) != {} and (.id // "") != "")) as $m
+        ({}; .[$m.id] = $m) | [.[]]) as $messages
 | {
     bootstrap: ($boot != null),
     cast: (($b | capture("docket vote cast\\\\s+(?<proposal>\\\\S+)\\\\s+--voter\\\\s+(?<voter>\\\\S+)")) // null),
@@ -147,11 +160,11 @@ const EXTRACT_JQ = `[inputs | fromjson? | select(type == "object")] as $lines
         or test("Run exactly this one command:(?:\\\\\\\\n|\\\\s)+\`?docket\\\\s+(?:[a-z-]+\\\\s+)?(?:show|context|list|tally|next|log)\\\\b"))),
     exec: ($b | contains("You are executing one step of a Docket run")),
     step_mention: (($b | [match("STEP-\\\\d+")][0].string) // null),
+    models_observed: ([$messages[].model | select(type == "string" and . != "" and . != "<synthetic>")] | unique),
+    model_observation_complete: ($messages | length > 0 and all(.[];
+        (.model | type) == "string" and .model != "" and .model != "<synthetic>")),
     usage: (
-        reduce ($lines[] | select(.type == "assistant") | .message
-                | select((.usage // {}) != {} and (.id // "") != "")) as $m
-            ({}; .[$m.id] = $m.usage)
-        | [.[]]
+        $messages | map(.usage)
         | {
             input_tokens:          (map(.input_tokens // 0) | add // 0),
             output_tokens:         (map(.output_tokens // 0) | add // 0),
@@ -212,6 +225,7 @@ function reduceRows(results, mode, exclude) {
     const overhead = { agents: [], sums: zeroSums() }
     const skipped = []
     const errors = []
+    const model_observations = []
     const excluded = new Set(exclude || [])
     for (const { file, extract } of results) {
         const c = classify(extract, mode, file)
@@ -220,6 +234,19 @@ function reduceRows(results, mode, exclude) {
             skipped.push({ file, reason: c.bucket, key: c.key, label: c.label })
             continue
         }
+        const models = Array.isArray(extract.models_observed)
+            ? [...new Set(extract.models_observed.filter((m) =>
+                typeof m === 'string' && m !== '' && m !== '<synthetic>'))].sort()
+            : []
+        model_observations.push({
+            file,
+            kind: c.bucket === 'overhead' ? 'overhead' : mode === 'seats' ? 'seat' : 'step',
+            key: c.key,
+            models,
+            complete: extract.model_observation_complete === true && models.length > 0,
+            source: 'assistant.message.model',
+            effort_resolved: 'unknown',
+        })
         if (c.bucket === 'overhead') {
             overhead.agents.push({ file, label: c.label })
             for (const u of UNITS) overhead.sums[u] += extract.usage[u] || 0
@@ -251,7 +278,7 @@ function reduceRows(results, mode, exclude) {
                 : { step: key, unit, quantity: sums[unit] })
         }
     }
-    return { rows, overhead, skipped, errors }
+    return { rows, overhead, skipped, errors, model_observations }
 }
 // TEST-END wave-usage-classify
 
@@ -287,6 +314,8 @@ const EXTRACT_SCHEMA = {
         probe: { type: 'boolean' },
         exec: { type: 'boolean' },
         step_mention: { type: ['string', 'null'] },
+        models_observed: { type: 'array', items: { type: 'string' } },
+        model_observation_complete: { type: 'boolean' },
         usage: usageSchema,
     },
 }
@@ -307,7 +336,7 @@ ${EXTRACT_JQ}JQ
 jq -c -n -R -f "\${TMPDIR:-/tmp}/wave-usage-$$.jq" ${sq(file)}; echo "exit=$?"
 \`\`\`
 
-jq prints exactly one JSON object. Return it as the structured output with ok:true and every field copied verbatim — bootstrap, cast, record, probe, exec, step_mention, usage — including every number exactly as printed. Do not compute, estimate, round, or adjust anything, and do not read the transcript by any other means. If jq exits non-zero or prints nothing, return ok:false with the error text in \`error\`.`
+jq prints exactly one JSON object. Return it as the structured output with ok:true and every field copied verbatim — bootstrap, cast, record, probe, exec, step_mention, models_observed, model_observation_complete, usage — including every number exactly as printed. Do not compute, estimate, round, or adjust anything, and do not read the transcript by any other means. Model names come only from the extracted message fields; missing observations remain empty. If jq exits non-zero or prints nothing, return ok:false with the error text in \`error\`.`
 
 phase('Scout')
 const listing = await agent(scoutBrief, { label: 'scout', phase: 'Scout', schema: FILES_SCHEMA, effort: 'low' })
@@ -352,6 +381,13 @@ extracted.forEach((r, i) => {
 
 const reduced = reduceRows(results, mode, exclude)
 reduced.errors.unshift(...errors)
+
+for (const observation of reduced.model_observations) {
+    log(`wave-usage: ${observation.file}: serving models ` +
+        `${observation.models.join(', ') || 'unknown'} ` +
+        `(${observation.complete ? 'all parsed response model fields present' : 'model fields missing'}); ` +
+        'effective effort unknown')
+}
 
 for (const s of reduced.skipped) {
     if (s.reason === 'unattributed') {

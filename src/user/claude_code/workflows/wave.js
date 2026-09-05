@@ -84,6 +84,17 @@ function archetype(row, hint) {
 // (three cycles, every spawn refused, zero steps claimed). Say what to do and
 // what containment binds; a rule needs no argument for why it is allowed.
 function bootstrap(row, r, isolated, isWrite) {
+    // Routing is known before execution; recording it at claim preserves it
+    // when the executor fails. Clear prior-attempt observations at the same
+    // boundary. A requested alias is not evidence of the serving model.
+    const claimMetadata = JSON.stringify({
+        variant: r.variant,
+        model_requested: r.model_requested,
+        effort_requested: r.effort_requested,
+        model_resolved: 'unknown',
+        effort_resolved: 'unknown',
+    })
+    const claimMetadataArg = "'" + claimMetadata.replace(/'/g, "'\\''") + "'"
     // The TMPDIR pin paragraph appears once per brief — in bootstrap (a) for
     // isolated executors, in pinNote for everyone else. The two renderings
     // are deliberate near-mirrors of one rule; a wording change lands in
@@ -177,7 +188,7 @@ read STEP-N or \${row.step}, and this one does not.${isolationNote}${pinNote}
 
    \`rm -rf <TMP>/${row.step}.d\`
    \`mkdir -m 700 <TMP>/${row.step}.d\`
-   \`docket step claim ${row.step} --owner wave:${row.step} --render --json > <TMP>/${row.step}.d/${row.step}.claim.json\`
+   \`docket step claim ${row.step} --owner wave:${row.step} --render --metadata ${claimMetadataArg} --json > <TMP>/${row.step}.d/${row.step}.claim.json\`
    \`jq -r '.data.token' <TMP>/${row.step}.d/${row.step}.claim.json > <TMP>/${row.step}.d/${row.step}.token\`
    \`chmod 600 <TMP>/${row.step}.d/${row.step}.token\`
    \`jq -r '.data.packet' <TMP>/${row.step}.d/${row.step}.claim.json > <TMP>/${row.step}.d/${row.step}.packet.md\`
@@ -190,7 +201,7 @@ read STEP-N or \${row.step}, and this one does not.${isolationNote}${pinNote}
    \`\`\`
    rm -rf <TMP>/${row.step}.d &&
      mkdir -m 700 <TMP>/${row.step}.d &&
-     docket step claim ${row.step} --owner wave:${row.step} --render --json > <TMP>/${row.step}.d/${row.step}.claim.json &&
+     docket step claim ${row.step} --owner wave:${row.step} --render --metadata ${claimMetadataArg} --json > <TMP>/${row.step}.d/${row.step}.claim.json &&
      jq -r '.data.token'  < <TMP>/${row.step}.d/${row.step}.claim.json > <TMP>/${row.step}.d/${row.step}.token &&
      chmod 600 <TMP>/${row.step}.d/${row.step}.token &&
      jq -r '.data.packet' <TMP>/${row.step}.d/${row.step}.claim.json > <TMP>/${row.step}.d/${row.step}.packet.md &&
@@ -326,7 +337,7 @@ ${!isWrite ? `
    STDIN${isolated ? ` — ISOLATED: run form 3' from obligation 0 (literal
    token path) in place of the command below; everything else still binds you.` : ':'}
 
-   \`docket step record ${row.step}${isWrite ? ' --worktree <YOUR CHECKOUT>' : ''} --artifact-file <TMP>/${row.step}.d/${row.step}-<kind>.md --metadata '{"model_requested":"${r.model_requested}","effort_requested":"${r.effort_requested}","model_resolved":"<model that served you>","effort_resolved":"<effort you ran at>"}' < <TMP>/${row.step}.d/${row.step}.token\`
+   \`docket step record ${row.step}${isWrite ? ' --worktree <YOUR CHECKOUT>' : ''} --artifact-file <TMP>/${row.step}.d/${row.step}-<kind>.md --metadata '{"model_resolved":"unknown","effort_resolved":"unknown"}' < <TMP>/${row.step}.d/${row.step}.token\`
 
    \`record\` is an exact alias of \`step complete\` — use it, since some
    shells parse the bare word \`complete\` as their own builtin and refuse
@@ -354,9 +365,19 @@ ${isWrite ? `
    literal path once with \`git rev-parse --show-toplevel\` and paste that
    in; without it the engine diffs the wrong tree.
 ` : ''}
-   \`model_resolved\` is the exact model id your environment reports (e.g.
-   \`claude-sonnet-5\`), never a branding form — a "[1m]" suffix in the ledger
-   fragments every routing-drift query that reads it.
+   Leave \`model_resolved\` and \`effort_resolved\` as \`unknown\` unless the
+   runtime directly supplies an observation for this execution. Requested
+   routing, aliases, settings, and your own identity claim are not observations:
+   the harness may substitute a model or cap effort. Do not infer either value.
+   When an observation is available, use its exact model ID and effort, and
+   identify the source in the artifact. If multiple serving models are observed,
+   report them there and keep the single \`model_resolved\` value unknown.
+
+   Native workflow \`agent()\` returns an answer or null, not SDK
+   \`modelUsage\` telemetry. After the wave, \`wave-usage.js\` reads serving
+   models from assistant-message \`model\` fields in the actual transcripts.
+   It reports all observed models separately from requested routing; it cannot
+   recover an effective effort that the transcript does not expose.
 
    or on failure:
 
@@ -497,9 +518,10 @@ ${isolated ? `
    through: content that will not go through in the plain forms is a
    BLOCKED report, always.
 
-   Copy model_requested and effort_requested EXACTLY as written above — they are
-   the harness's record of its own intent, not yours to adjust. Fill the two
-   resolved values with what actually served you.
+   Keep the claim's requested model, effort, and variant unchanged. They record
+   the engine's routing decision even when execution fails or is interrupted.
+   Do not calculate a cost multiplier from model names or token prices; the
+   engine's declared cost and supplied routing remain authoritative.
 
 4. End your reply with exactly this line, filled in from the record
    response: <step-id> recorded (<status>) — for example "STEP-12 recorded
@@ -1385,10 +1407,11 @@ of being re-parsed as shell syntax:
   --domain-relevance how much of this decision falls inside YOUR lens. A seat
                     with little purchase on the question says so with a low
                     number rather than inflating one — the tally weighs it.
-  --metadata        pre-filled above with your seat's routing claim (seat,
-                    variant, model, effort) so the ledger records what cast
-                    this vote. Pass it VERBATIM — do not edit it, and add
-                    nothing to it: it is unverified, stored as-is, and public.
+  --metadata        pre-filled with requested seat routing (seat, variant,
+                    model, effort), not observed serving-model telemetry.
+                    Pass it unchanged. It is unverified, stored as-is, and
+                    public. The relay measures observed models from the
+                    completed transcript; do not infer them from this routing.
   --summary         ONE paragraph: your verdict's reasoning and the specific
                     evidence behind it. Write it to the scratch file EXACTLY as
                     above — NEVER type the paragraph inline in double quotes:

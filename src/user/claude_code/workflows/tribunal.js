@@ -251,10 +251,11 @@ of being re-parsed as shell syntax:
   --domain-relevance how much of this decision falls inside YOUR lens. A seat
                     with little purchase on the question says so with a low
                     number rather than inflating one — the tally weighs it.
-  --metadata        pre-filled above with your seat's routing claim (seat,
-                    variant, model, effort) so the ledger records what cast
-                    this vote. Pass it VERBATIM — do not edit it, and add
-                    nothing to it: it is unverified, stored as-is, and public.
+  --metadata        pre-filled with requested seat routing (seat, variant,
+                    model, effort), not observed serving-model telemetry.
+                    Pass it unchanged. It is unverified, stored as-is, and
+                    public. The relay measures observed models from the
+                    completed transcript; do not infer them from this routing.
   --summary         ONE paragraph: your verdict's reasoning and the specific
                     evidence behind it. Write it to the scratch file EXACTLY as
                     above — NEVER type the paragraph inline in double quotes:

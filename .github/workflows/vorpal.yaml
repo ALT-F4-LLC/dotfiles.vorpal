@@ -14,6 +14,10 @@ jobs:
 
       - run: bash tests/ci-suite-wiring.test.sh
 
+      - run: bash tests/docket-cli-inventory.test.sh
+
+      - run: bash tests/docket-evaluations.test.sh
+
       - run: bash tests/docket-commit-guard-hook.test.sh
 
       - run: bash tests/docket-run-guard-hook.test.sh
@@ -39,6 +43,8 @@ jobs:
       - run: bash tests/wave-fix-round-ancestry.test.sh
 
       - run: bash tests/wave-issue-lanes.test.sh
+
+      - run: bash tests/wave-model-attribution.test.sh
 
       - run: bash tests/wave-orphaned-claim.test.sh
 

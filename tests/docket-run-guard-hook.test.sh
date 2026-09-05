@@ -1,31 +1,8 @@
 #!/bin/bash
 
-# Behavior suite for src/user/claude_code/hooks/docket-run-guard-hook.sh.
-#
-# Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
-# and this one is in that list, beside the commit-guard suite. The seam below
-# is a fake `docket` on PATH, so the runner needs no engine binary, no
-# database, and no network.
-#
-# FOCUS: carve-out 4 — a project whose every live run is waiting on a person
-# (waiting-human) or not yet activated (planning) is a sanctioned stop,
-# restated from the hook's own header (a step in waiting-human already does not
-# block; carve-out 4 makes the RUN-level equivalent hold even though
-# `run pause` leaves the run's STEPS in pending, which is what defeats
-# `guard stop`/`guard record` and carve-out 3's dispatch check). The
-# pre-existing carve-outs are pinned too, so an edit cannot delete one of them
-# while carve-out 4 masks the loss.
-#
-# WHAT THIS SUITE CANNOT SEE: every carve-out is a pure ALLOW short-circuit, so
-# reordering them changes only how many subprocesses run, never a verdict — no
-# case here detects a reordering, and none claims to. Carve-out 4's PRESENCE is
-# pinned by its ALLOW cases alone: a fail-closed case denies with or without
-# it, so those cases pin the chain as a whole, not any one block.
-#
-# SEAM: PATH holds a fake `docket` whose answers to `guard stop`, `run
-# status --json`, `guard record`, `run verify-pins <id>` (carve-out 5), and
-# `events list --run <id> --json` are all driven by env vars set per case — a
-# small test, single process, no network, no real .docket database or run.
+# Exercise stop decisions with a fake engine, including complete run
+# enumeration, asynchronous yields, paused runs, and uncertain responses.
+# No real Docket store or model calls are used.
 
 set -uo pipefail
 
@@ -73,23 +50,15 @@ for tool in bash cat; do
     ln -s "$tool_path" "${TOOLS_DIR_NO_JQ}/${tool}"
 done
 
-# Fake engine. RUN_NAMES / RUN_STATUSES are parallel space-separated lists
-# consulted by both `run status --json` (carve-outs 1b, 3's run list, and 4)
-# and, via DISPATCH_OPENED_DEFAULT, by `events list` (carve-out 3). GUARD_
-# prefixed vars drive the two direct guard verbs.
+# Fake engine with the real default run page limit. Keeping the
+# pagination here makes omitted flags change behavior rather than only text.
 cat >"${STUB_DIR}/docket" <<'STUB'
 #!/bin/bash
 build_runs_json() {
-    names=(${RUN_NAMES:-})
-    statuses=(${RUN_STATUSES:-})
-    json="[]"
-    i=0
-    for n in "${names[@]}"; do
-        s="${statuses[$i]}"
-        json=$(printf '%s' "$json" | jq -c --arg run "$n" --arg status "$s" '. + [{"run":$run,"status":$status}]')
-        i=$((i + 1))
-    done
-    printf '%s' "$json"
+    jq -cn --arg names "${RUN_NAMES:-}" --arg statuses "${RUN_STATUSES:-}" '
+        ($names | split(" ") | map(select(. != ""))) as $names
+        | ($statuses | split(" ")) as $statuses
+        | [range(0; $names | length) | {run:$names[.], status:$statuses[.]}]'
 }
 
 case "${1:-}" in
@@ -103,6 +72,7 @@ case "${1:-}" in
                 exit 0
                 ;;
             record)
+                printf '%s' "${GUARD_RECORD_REASON:-}" >&2
                 exit "${GUARD_RECORD_EXIT:-0}"
                 ;;
             *)
@@ -114,14 +84,34 @@ case "${1:-}" in
     run)
         case "${2:-}" in
             status)
+                if [ -n "${RUN_STATUS_JSON:-}" ]; then
+                    printf '%s' "$RUN_STATUS_JSON"
+                    exit "${RUN_STATUS_EXIT:-0}"
+                fi
                 if [ -n "${RUN_STATUS_UNREADABLE:-}" ]; then
                     # The hook's other named fail-closed input: an answer that
                     # is not JSON at all (engine crash, truncated pipe).
                     printf 'panic: engine unavailable'
                     exit 0
                 fi
+                limit=50
+                active=false
+                shift 2
+                while [ "$#" -gt 0 ]; do
+                    case "$1" in
+                        --active) active=true ;;
+                        --limit) shift; limit="$1" ;;
+                        --json) ;;
+                        *) exit 64 ;;
+                    esac
+                    shift
+                done
                 RUNS=$(build_runs_json)
-                printf '{"ok":true,"data":{"runs":%s}}' "$RUNS"
+                printf '%s' "$RUNS" | jq -c --argjson active "$active" --argjson limit "$limit" '
+                    (if $active then map(select(.status != "done" and .status != "abandoned")) else . end) as $runs
+                    | {ok:true, data:{total:($runs | length),
+                        runs:(if $limit > 0 then $runs[:$limit] else $runs end)}}'
+                exit "${RUN_STATUS_EXIT:-0}"
                 ;;
             verify-pins)
                 # VERIFY_PINS_EXITS is parallel to RUN_NAMES, like
@@ -146,20 +136,11 @@ case "${1:-}" in
         esac
         ;;
     events)
-        case "${2:-}" in
-            list)
-                OPENED="${DISPATCH_OPENED_DEFAULT:-0}"
-                if [ "$OPENED" -gt 0 ] 2>/dev/null; then
-                    printf '{"ok":true,"data":{"events":[{"kind":"dispatch-opened"}]}}'
-                else
-                    printf '{"ok":true,"data":{"events":[{"kind":"run-activated"}]}}'
-                fi
-                ;;
-            *)
-                printf 'fake docket: unexpected events subcommand: %s\n' "$*" >&2
-                exit 64
-                ;;
-        esac
+        # Legacy event absence is deliberately available to a buggy hook:
+        # the direct-step-history regression must retain the engine denial
+        # even when no dispatch event exists.
+        [ "${2:-}" = "list" ] || exit 64
+        printf '%s' '{"ok":true,"data":{"events":[],"total":0}}'
         ;;
     *)
         printf 'fake docket: unexpected invocation: %s\n' "$*" >&2
@@ -177,9 +158,10 @@ PATH_NO_JQ="${STUB_DIR}:${TOOLS_DIR_NO_JQ}"
 # broken hook, not an allow. Folding those into ALLOW let a hook whose entire
 # body was `exit 127` score six passes.
 verdict_of() {
-    local path_value="$1" rc
+    local path_value="$1" rc stop_input="${STOP_INPUT_JSON:-}"
+    [ -n "$stop_input" ] || stop_input='{}'
     export PATH="$path_value"
-    printf '{}' | "$BASH_BIN" "$HOOK" >/dev/null 2>"$STDERR_FILE"
+    printf '%s' "$stop_input" | "$BASH_BIN" "$HOOK" >/dev/null 2>"$STDERR_FILE"
     rc=$?
     case "$rc" in
         0) printf 'ALLOW' ;;
@@ -199,7 +181,8 @@ run_case() {
 }
 
 reset_env() {
-    unset GUARD_STOP_REASON GUARD_RECORD_EXIT RUN_NAMES RUN_STATUSES DISPATCH_OPENED_DEFAULT RUN_STATUS_UNREADABLE VERIFY_PINS_EXITS
+    unset GUARD_STOP_REASON GUARD_RECORD_EXIT GUARD_RECORD_REASON RUN_NAMES RUN_STATUSES RUN_STATUS_UNREADABLE VERIFY_PINS_EXITS
+    unset RUN_STATUS_JSON RUN_STATUS_EXIT STOP_INPUT_JSON
 }
 
 # ---- CARVE-OUT 4: every live run paused (waiting-human) allows the stop ----
@@ -209,7 +192,6 @@ case_carveout4_single_run_paused_allows() {
     export GUARD_RECORD_EXIT=1
     export RUN_NAMES="RUN-1"
     export RUN_STATUSES="waiting-human"
-    export DISPATCH_OPENED_DEFAULT=1
     run_case "single live run, waiting-human, dispatch was opened earlier" ALLOW
 }
 
@@ -219,7 +201,6 @@ case_carveout4_one_active_run_denies() {
     export GUARD_RECORD_EXIT=1
     export RUN_NAMES="RUN-1 RUN-2"
     export RUN_STATUSES="waiting-human active"
-    export DISPATCH_OPENED_DEFAULT=1
     run_case "one of two live runs is active, not waiting-human" DENY
 }
 
@@ -229,7 +210,6 @@ case_carveout4_two_runs_both_paused_allows() {
     export GUARD_RECORD_EXIT=1
     export RUN_NAMES="RUN-1 RUN-2"
     export RUN_STATUSES="waiting-human waiting-human"
-    export DISPATCH_OPENED_DEFAULT=1
     run_case "two live runs, both waiting-human" ALLOW
 }
 
@@ -239,7 +219,6 @@ case_carveout4_planning_run_allows() {
     export GUARD_RECORD_EXIT=1
     export RUN_NAMES="RUN-1 RUN-2"
     export RUN_STATUSES="waiting-human planning"
-    export DISPATCH_OPENED_DEFAULT=1
     run_case "paused run plus an unactivated (planning) run" ALLOW
 }
 
@@ -249,7 +228,6 @@ case_carveout4_terminal_run_ignored_allows() {
     export GUARD_RECORD_EXIT=1
     export RUN_NAMES="RUN-1 RUN-2"
     export RUN_STATUSES="waiting-human done"
-    export DISPATCH_OPENED_DEFAULT=1
     run_case "paused run plus a done run (terminal filter drops the done one)" ALLOW
 }
 
@@ -259,7 +237,6 @@ case_carveout4_unknown_status_denies() {
     export GUARD_RECORD_EXIT=1
     export RUN_NAMES="RUN-1 RUN-2"
     export RUN_STATUSES="waiting-human cancelled"
-    export DISPATCH_OPENED_DEFAULT=1
     run_case "paused run plus a status this hook does not know -> deny" DENY
 }
 
@@ -292,28 +269,29 @@ case_regression_guard_stop_success_allows() {
     run_case "guard stop itself succeeds -> allow before any carve-out" ALLOW
 }
 
-case_regression_no_live_runs_allows() {
+case_regression_empty_list_cannot_override_engine_denial() {
     reset_env
     export GUARD_STOP_REASON="work is still pending"
-    run_case "zero live runs in project -> allow (carve-out 1b)" ALLOW
+    run_case "empty list cannot override the project-scoped engine's denial" DENY
 }
 
 case_regression_open_dispatch_allows() {
     reset_env
     export GUARD_STOP_REASON="work is still pending"
     export GUARD_RECORD_EXIT=2
+    export GUARD_RECORD_REASON='Error: RUN-1 has an open dispatch: DISPATCH-1 expiring at 123456789 — reconcile with `docket dispatch close --run RUN-1`, give up on it with `docket dispatch abandon --run RUN-1`, or wait for the TTL to auto-abandon it'
     export RUN_NAMES="RUN-1"
     export RUN_STATUSES="active"
-    run_case "dispatch open (guard record exits 2) -> allow (carve-out 2)" ALLOW
+    run_case "guard record confirms an open dispatch -> allow asynchronous yield" ALLOW
 }
 
-case_regression_never_dispatched_allows() {
+case_regression_never_dispatched_engine_contract() {
     reset_env
-    export GUARD_STOP_REASON="work is still pending"
-    export GUARD_RECORD_EXIT=1
     export RUN_NAMES="RUN-1"
     export RUN_STATUSES="active"
-    run_case "never dispatched, run still active -> allow (carve-out 3)" ALLOW
+    run_case "engine exempts fresh never-dispatched run with every step pending" ALLOW
+    export GUARD_STOP_REASON="work is still pending: [implement@0 (claimed)]"
+    run_case "undispatched run with direct step history retains the engine denial" DENY
 }
 
 # ---- CARVE-OUT 5: every live run pin-blocked (verify-pins exit 4) ----------
@@ -328,7 +306,6 @@ case_carveout5_drifted_pins_allow() {
     export GUARD_RECORD_EXIT=1
     export RUN_NAMES="RUN-1"
     export RUN_STATUSES="active"
-    export DISPATCH_OPENED_DEFAULT=1
     export VERIFY_PINS_EXITS="4"
     run_case "active run, pending steps, pins drifted (verify-pins exit 4)" ALLOW
 
@@ -345,7 +322,6 @@ case_carveout5_clean_pins_deny_unchanged() {
     export GUARD_RECORD_EXIT=1
     export RUN_NAMES="RUN-1"
     export RUN_STATUSES="active"
-    export DISPATCH_OPENED_DEFAULT=1
     export VERIFY_PINS_EXITS="0"
     run_case "same shape with sound pins (verify-pins exit 0) -> deny unchanged" DENY
 }
@@ -356,7 +332,6 @@ case_carveout5_exit2_is_not_drift_denies() {
     export GUARD_RECORD_EXIT=1
     export RUN_NAMES="RUN-1"
     export RUN_STATUSES="active"
-    export DISPATCH_OPENED_DEFAULT=1
     export VERIFY_PINS_EXITS="2"
     run_case "verify-pins exit 2 (missing pin / generic error) -> deny, not drift" DENY
 }
@@ -367,7 +342,6 @@ case_carveout5_mixed_drift_denies() {
     export GUARD_RECORD_EXIT=1
     export RUN_NAMES="RUN-1 RUN-2"
     export RUN_STATUSES="active active"
-    export DISPATCH_OPENED_DEFAULT=1
     export VERIFY_PINS_EXITS="4 0"
     run_case "one drifted run beside a clean one -> deny (clean work is advanceable)" DENY
 }
@@ -378,7 +352,6 @@ case_full_denial_baseline() {
     export GUARD_RECORD_EXIT=1
     export RUN_NAMES="RUN-1"
     export RUN_STATUSES="active"
-    export DISPATCH_OPENED_DEFAULT=1
     run_case "active run, dispatch open earlier, none of the carve-outs fire" DENY
 
     # The deny text is the only thing an operator reads, and it used to tell
@@ -394,6 +367,85 @@ case_full_denial_baseline() {
     fi
 }
 
+case_complete_run_enumeration() {
+    reset_env
+    export GUARD_STOP_REASON="work is still pending"
+    export GUARD_RECORD_EXIT=1
+    local i
+    RUN_NAMES="RUN-1"
+    RUN_STATUSES="waiting-human"
+    for ((i=2; i<=50; i++)); do
+        RUN_NAMES+=" RUN-$i"
+        RUN_STATUSES+=" waiting-human"
+    done
+    RUN_NAMES+=" RUN-51"
+    RUN_STATUSES+=" active"
+    export RUN_NAMES RUN_STATUSES
+    run_case "active run beyond the default 50 results still blocks" DENY
+    RUN_STATUSES="${RUN_STATUSES%active}waiting-human"
+    run_case "all 51 paused runs allow stopping" ALLOW
+    RUN_STATUSES="active"
+    for ((i=2; i<=51; i++)); do RUN_STATUSES+=" done"; done
+    run_case "terminal history cannot hide live work" DENY
+}
+
+case_uncertain_run_responses() {
+    reset_env
+    export GUARD_STOP_REASON="work is still pending"
+    export GUARD_RECORD_EXIT=1
+    local payload
+    for payload in \
+        '{"ok":false,"error":"unavailable"}' \
+        '{"ok":true,"data":{}}' \
+        '{"ok":true,"data":{"runs":null,"total":0}}' \
+        '{"ok":true,"data":{"runs":[],"total":1}}' \
+        '{"ok":true,"data":{"runs":[{"run":"RUN-1","status":"waiting-human"}],"total":2}}' \
+        '{"ok":true,"data":{"runs":[{"status":"waiting-human"}],"total":1}}' \
+        '{"ok":true,"data":{"runs":[{"run":"RUN-1","status":"waiting-human"},{"run":"RUN-1","status":"waiting-human"}],"total":2}}' \
+        '{"ok":true,"data":{"runs":[{"run":"RUN-1","status":"active"}],"total":1}} {"ok":true,"data":{"runs":[{"run":"RUN-2","status":"waiting-human"}],"total":1}}'; do
+        export RUN_STATUS_JSON="$payload"
+        run_case "incomplete or invalid run envelope cannot establish an exception: $payload" DENY
+    done
+    export RUN_STATUS_JSON='{"ok":true,"data":{"runs":[{"run":"RUN-1","status":"waiting-human"}],"total":1}}'
+    export RUN_STATUS_EXIT=2
+    run_case "successful-looking run JSON from a failed command stays unknown" DENY
+}
+
+case_uncertain_guard_record_responses() {
+    reset_env
+    export GUARD_STOP_REASON="work is still pending"
+    export GUARD_RECORD_EXIT=2
+    export RUN_NAMES="RUN-1"
+    export RUN_STATUSES="active"
+    local reason
+    for reason in '' 'Error: database is locked' 'Error: RUN-1 not found' \
+        '{"ok":false,"error":"unavailable"}' \
+        'Error: RUN-1 has an open dispatch:' \
+        'Error: RUN-1 has 0 unreconciled discrepancy(s) and will not be offered new work until they are resolved: none'; do
+        export GUARD_RECORD_REASON="$reason"
+        run_case "guard record exit 2 without affirmative asynchronous state stays unknown: $reason" DENY
+    done
+    export GUARD_RECORD_REASON='Error: RUN-1 has 1 unreconciled discrepancy(s) and will not be offered new work until they are resolved: reconcile the missing usage'
+    run_case "affirmative outstanding reconciliation permits yielding" ALLOW
+    export GUARD_RECORD_EXIT=1
+    run_case "asynchronous-looking text on an unexpected exit stays unknown" DENY
+}
+
+case_engine_and_session_contracts() {
+    reset_env
+    export GUARD_STOP_REASON="no docket database found"
+    export GUARD_RECORD_EXIT=1
+    run_case "historical database error text cannot override a current engine denial" DENY
+    export STOP_INPUT_JSON='{"stop_hook_active":true}'
+    run_case "a repeated Stop-hook block allows the turn to end" ALLOW
+    unset STOP_INPUT_JSON
+    export GUARD_RECORD_EXIT=2
+    export GUARD_RECORD_REASON='Error: RUN-1 has an open dispatch: DISPATCH-1 expiring at 123456789 — reconcile with `docket dispatch close --run RUN-1`, give up on it with `docket dispatch abandon --run RUN-1`, or wait for the TTL to auto-abandon it'
+    run_case "async dispatch still permits yielding without jq" ALLOW "$PATH_NO_JQ"
+    export GUARD_RECORD_REASON='Error: database is locked'
+    run_case "generic exit 2 remains unknown without jq" DENY "$PATH_NO_JQ"
+}
+
 case_carveout4_single_run_paused_allows
 case_carveout4_one_active_run_denies
 case_carveout4_two_runs_both_paused_allows
@@ -403,14 +455,19 @@ case_carveout4_unknown_status_denies
 case_chain_fails_closed_without_jq
 case_chain_fails_closed_on_unreadable_run_list
 case_regression_guard_stop_success_allows
-case_regression_no_live_runs_allows
+case_regression_empty_list_cannot_override_engine_denial
 case_regression_open_dispatch_allows
-case_regression_never_dispatched_allows
+case_regression_never_dispatched_engine_contract
 case_carveout5_drifted_pins_allow
 case_carveout5_clean_pins_deny_unchanged
 case_carveout5_exit2_is_not_drift_denies
 case_carveout5_mixed_drift_denies
 case_full_denial_baseline
+
+case_complete_run_enumeration
+case_uncertain_run_responses
+case_uncertain_guard_record_responses
+case_engine_and_session_contracts
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
 

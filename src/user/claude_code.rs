@@ -200,6 +200,7 @@ impl ClaudeCode {
         .await?;
 
         let settings_builder = settings::ClaudeCodeSettings::new(&self.name, self.systems.clone())
+            .with_advisor_model("fable")
             .with_agent_push_notif_enabled(true)
             .with_always_thinking_enabled(true)
             .with_attribution_commit("")
@@ -209,7 +210,7 @@ impl ClaudeCode {
             .with_auto_updates_channel("latest")
             .with_away_summary_enabled(false)
             .with_cleanup_period_days(7)
-            .with_effort_level("high")
+            .with_effort_level("xhigh")
             .with_feedback_survey_rate(0.0)
             .with_include_git_instructions(false)
             .with_input_needed_notif_enabled(true)
@@ -426,7 +427,7 @@ impl ClaudeCode {
         // sensitive-path-guard hook for Read/Grep/Glob.
 
         let settings = settings_builder
-            .with_sandbox_allow_unsandboxed_commands(true)
+            .with_sandbox_allow_unsandboxed_commands(false)
             .with_sandbox_auto_allow_bash(true)
             .with_sandbox_fail_if_unavailable(true)
             // Commands that need a network the sandbox cannot grant (the

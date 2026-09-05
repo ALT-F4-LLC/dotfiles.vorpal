@@ -14,6 +14,18 @@ pause resumable rather than just stopped.
 session that is already driving RUN-N. Nothing here schedules steps, dispatches
 waves, or makes routing decisions — that is docket-run's contract, untouched.
 
+**When a `docket-conductor-RUN-N` agent drives the run, it runs this skill,
+not you.** docket-run seats one conductor per run as a named background
+agent and the invoking conversation only relays for it (its **Seating**
+section). A pause asked for in that conversation is forwarded to that run's
+conductor by `SendMessage`, in the operator's words — a pause naming no run
+while several conductors are seated is asked back first, never guessed —
+together with every workflow task id and transcript directory the
+conversation handed out for that run as `launched:` replies: the conductor
+never saw those ids, and the resume snapshot below needs them. The conductor then follows this file from **Choosing a halt
+mode** on; its snapshot comes back as a `done:` message, and the live-shadow
+wind-down stays with the conversation that spawned the shadow.
+
 ## Choosing a halt mode
 
 **Graceful is the default and covers every ask that does not name urgency.**
@@ -97,19 +109,6 @@ a later turn boundary, and the resume snapshot does not wait on it.
 
 A pause with no live shadow skips this section; do not spawn one just to
 stop it.
-
-## Leave the TodoWrite list resolved
-
-If the docket-run session driving this run has been keeping a live
-`TodoWrite` checklist (its own standing rule), refresh it once more before
-you hand off — never clear it and never leave it mid-refresh. Steps the
-pause refused (unclaimed, already listed in the resume snapshot below) go
-back to `pending`; a step genuinely orphaned mid-execution (hard halt) stays
-`in_progress`, its content appending "orphaned — outcome unknown until
-reconciled"; the run itself is the one item that reads `in_progress` for
-"parked (waiting-human)", naming the reason. This is a last refresh of the
-CURRENT session's list, not a handoff artifact — a resuming session rebuilds
-its own from `docket run status`, per docket-run's own rule.
 
 ## Building the resume snapshot
 
@@ -256,7 +255,11 @@ background and dropped.
 **In the same session** (operator says resume, no new session involved):
 run `docket run resume RUN-N --reason '<why>'` and hand back to `docket-run` —
 nothing else is needed, since the session still holds everything the snapshot
-above exists to preserve.
+above exists to preserve. When a conductor agent paused the run, the parent
+messages that conductor to resume — a named agent stays addressable after
+it completes, and its transcript still holds the args files and ids — or,
+if it was stopped, invokes `/docket-run RUN-N`, which seats a fresh one that
+attaches from the snapshot like a new session would.
 
 **In a new session**: read the resume prompt (doc or pasted text), run `run
 resume` as its first action, then follow it into `docket-run`'s own attach

@@ -211,8 +211,10 @@ A bare invocation landing in a session that has itself run an execution
 skill — `docket-plan`, `docket-run`, `docket-retro`, a `/loop /tend` session, or any other —
 is not asking for a fleet sweep — the operator wants THIS session's run (or
 loop) watched while it happens. The conversation seat cannot be the
-watcher: it is the conductor, and a conductor narrating itself is neither
-independent nor quiet. So the move here is a delegation with one continuing
+watcher: it is the conductor — or, under docket-run, the parent relaying
+for one or more `docket-conductor-RUN-N` agents (docket-run's **Seating**)
+— and a seat narrating itself is neither independent nor quiet. So the
+move here is a delegation with one continuing
 duty attached: spawn one background shadow agent over this very session, hand
 the turn straight back to the run, and ping that agent at every boundary — it
 takes no turns of its own, and the pings are the only thing separating a live
@@ -338,7 +340,12 @@ above:
   verify by content before briefing — the transcript at
   `~/.claude/projects/<flattened-cwd>/<id>.jsonl` must contain this
   conversation's own `/shadow` invocation. A wrong id seats the agent on
-  someone else's session. Name the observed skill (whichever execution
+  someone else's session. Under docket-run the main transcript holds only
+  the relay — launches, gates, forwarded status — and the run itself is in
+  each conductor's own transcript,
+  `<session>/subagents/agent-adocket-conductor-RUN-N-<hash>.jsonl`, one per
+  seated run: name those too, or the watch sees the messages and never the
+  loop. Name the observed skill (whichever execution
   skill is active — `docket-plan`, `docket-run`, `docket-retro`, `/loop /tend`, or another)
   and the repo from your own cwd — the agent should not re-derive what you
   already know.
@@ -436,6 +443,13 @@ conductor will not carry that obligation should be told so at spawn time,
 in the brief's own words, so the review does not claim a live watch that
 never happened.
 
+When docket-run has seated its conductors as `docket-conductor-RUN-N`
+agents — one per run, and there may be several — the boundaries are their
+`status:` messages to this conversation, one per dispatch open, close, and
+gate outcome by the conductor's own cadence rule, each leading with its run
+id; forwarding each to `shadow-live` verbatim is the ping. A conductor does
+not message the shadow itself.
+
 Between pings, the shadow seat goes idle BY DESIGN — that is the whole point
 of a seat whose only turns are the pings you send it. The harness delivers
 an idle notification for that back to you, the conductor, after every ping;
@@ -451,7 +465,8 @@ the path the brief named, which the brief required it be written to before it
 was sent. Say so if you are recovering one.
 
 Then one line to the operator naming the spawn, and the conversation goes
-back to being a conductor. Beyond the boundary pings, do not poll the agent;
+back to being a conductor, or the parent relaying for one. Beyond the
+boundary pings, do not poll the agent;
 its completion notifies. One boundary: the agent lives inside this session,
 so a run expected to outlive this conversation belongs to a separate
 `/shadow <session-id>` seat instead — say so rather than spawn. That seat is
@@ -1019,6 +1034,10 @@ Pre-derived because docket-run is the richest target. The conductor:
   is the classic failure (one observed run executed its entire run as a
   single wave); so is
   stopping to report, or asking permission to continue, between iterations.
+  A conductor agent ending its turn to await the parent's `returned:` or
+  `answer:` is the designed wait, not a stop; a conductor that ends its turn
+  with no message outstanding, or a parent that starts driving instead of
+  relaying, is.
 - **No cached run state.** Any "I remember step N…" reasoning instead of
   re-asking the engine.
 - **Wave invocation.** By `scriptPath` only — the installed
@@ -1027,7 +1046,10 @@ Pre-derived because docket-run is the richest target. The conductor:
   (`permissions.additionalDirectories`), so the Workflow tool refuses
   the source path from a normal docket-run seat, and a conductor falling back to
   it — or copying the script somewhere launchable to get past the refusal —
-  is a finding, not an accommodation.
+  is a finding, not an accommodation. The launch itself is the parent's, on
+  the conductor's `launch:` request: a parent that reshapes the `args` file
+  it was handed, or a conductor that attempts `Workflow` (it has no such
+  tool) instead of requesting, is a finding of the same class.
   The installed one is a vorpal-store symlink now rather than the source file,
   so the two spellings are NO LONGER the same bytes: source edited since the
   last `just activate` means the wave is dispatching stale bytes, which is

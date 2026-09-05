@@ -1,6 +1,6 @@
 ---
 name: docket-run
-description: Drive an activated Docket run to completion — ask the engine what is ready, dispatch it (the manifest carries the staged closure, whole dependency chains per wave), invoke the wave workflow, close the dispatch, repeat. Vote gates ride the wave (it seats the panel mid-wave); conversational gates go to tribunal.js; every non-approval that parks, and every reserved matter, escalates to the operator, and the engine verb runs on the outcome. Invoked as `/docket-run RUN-N` it drives that run explicitly; invoked bare it resolves "the next run" itself — the newest active or waiting-human run in the project, else the newest run still in planning, else a plain report that there is nothing to drive — so it chains directly after `/docket-plan`'s own bare mode with no question in between. Holds no run state and makes no routing decisions; the engine schedules and wave.js routes.
+description: Drive an activated Docket run to completion — ask the engine what is ready, dispatch it (the manifest carries the staged closure, whole dependency chains per wave), invoke the wave workflow, close the dispatch, repeat. Vote gates ride the wave (it seats the panel mid-wave); conversational gates go to tribunal.js; every non-approval that parks, and every reserved matter, escalates to the operator, and the engine verb runs on the outcome. Invoked as `/docket-run RUN-N` it drives that run explicitly; invoked bare it resolves "the next run" itself — the newest active or waiting-human run in the project, else the newest run still in planning, else a plain report that there is nothing to drive — so it chains directly after `/docket-plan`'s own bare mode with no question in between. Holds no run state and makes no routing decisions; the engine schedules and wave.js routes. Seats the conductor as a named background agent (`docket-conductor-RUN-N`) that reports status by SendMessage, while the invoking conversation launches its workflows and puts its gates to the operator; invoked again for another run it seats a second conductor beside the first, so one conversation drives several runs at once.
 argument-hint: "[RUN-N]"
 ---
 
@@ -12,30 +12,27 @@ decides what each step is routed to, a tribunal panel decides at gates, and the
 operator decides what the panel could not or must not. You carry messages
 between them and run the commands.
 
-**Load the `workflow-authoring` skill first, every time, before anything
-else in this file.** `Skill({skill: "workflow-authoring"})` is your first
-tool call, on a fresh invocation and on a resume alike. Every launch you
-make — the wave, a tribunal panel, the gate probe, the attach probe, the
-usage join, the integration check — is a Workflow-tool script, and that
-reference is the contract for how a launch is shaped, what `args` is, how a
-stopped run resumes, and where a completed run's journal lives. Without it
-loaded you are reading launch results and journal paths from memory, which
-is how a conductor once resumed three panels arg-less and lost all three.
-Loading it is also what makes the launches below sanctioned: the tool's own
-rule admits a launch only when a skill's instructions call for it, and this
-skill does.
+**Two seats drive a run, and which one you are decides your first call.**
+`/docket-run` lands in the operator's conversation; that conversation is the
+PARENT, and it does not drive the run — it seats a background conductor
+agent and relays for it (**Seating** below). The agent it seats is the
+CONDUCTOR, and everything from **Which run** onward is the conductor's
+contract. The parent's first tool call is `Skill({skill:
+"workflow-authoring"})`: every launch in this file — the wave, a tribunal
+panel, the usage join — is a Workflow-tool script, and only the parent holds
+that tool, so the reference is the parent's contract for how a launch is
+shaped, what `args` is, how a stopped run resumes, and where a completed
+run's journal lives. Without it loaded the parent is reading launch results
+and journal paths from memory, which is how a conductor once resumed three
+panels arg-less and lost all three. Loading it is also what makes the
+launches below sanctioned: the tool's own rule admits a launch only when a
+skill's instructions call for it, and this skill does. The conductor never
+loads it and never calls Workflow; it requests each launch through the
+parent.
 
 **You hold no run state.** Not step ids, not statuses, not usage numbers, and
 never artifact bodies. Every loop iteration asks the engine again. If you ever
 find yourself thinking "I remember that step 4 failed" — you do not; ask.
-
-**TodoWrite is a projection, never a source.** Alongside the engine reads,
-keep a live `TodoWrite` checklist so the operator sees the run's state at a
-glance — but it is written to on every refresh and never read back to decide
-anything. Rebuild each item's status from the same fresh engine reads this
-loop already makes; if the list and the engine ever disagree, the engine is
-right and the list was stale. This is the state rule above, restated for the
-one piece of state you do produce.
 
 *(A note on the anecdotes throughout this file: each names a failure worth not
 repeating, and not one of them is a fact about the run you are driving. They
@@ -70,6 +67,169 @@ finds nothing, and the dangling id then lives in the audit trail forever (a
 vote rationale citing one drew a "does not resolve" concern from its own
 panel, measured).
 
+## Seating
+
+The conductor runs as a named background agent so the run's engine reads,
+manifests, and gate text stay out of the operator's conversation, and the
+operator hears from it by message. Two harness facts fix the split, both
+measured on this machine: a `general-purpose` subagent has `Skill`, `Agent`,
+`SendMessage`, `Monitor`, and the file and shell tools, and has NO
+`Workflow`, `AskUserQuestion`, or `TaskOutput` — `ToolSearch` loads none of
+them; and a background agent takes no turn on its own — a
+completion notification, a `Monitor` event, and a background Bash exit all
+wait until an inbound `SendMessage` gives it one. So the parent launches
+and asks, the conductor decides and runs the verbs, and messages carry the
+rest. A `context: fork` skill would put the conductor on a fresh context
+too, but a fork cannot message its parent, and the reporting is the point.
+
+### The parent
+
+1. `Skill({skill: "workflow-authoring"})`.
+2. Resolve `$RUN`. Named, it is the argument verbatim. Bare, apply **Which
+   run**'s precedence yourself — the seat's name needs the id before the
+   agent exists — and skip any run whose conductor this conversation has
+   already seated, so a second bare `/docket-run` takes the next run down
+   the precedence rather than doubling the first. A run already seated here
+   and named again is a report, not a second spawn: say which conductor
+   holds it.
+3. Spawn the conductor — one tool, one call, and the `name` is load-bearing:
+   it is the address every message below goes to, a `Workflow` `agent()`
+   seat has none, and the run id in it is what keeps two conductors apart
+   (a name reused is taken over — latest wins — and the first seat goes
+   unreachable).
+
+   ```
+   Agent({subagent_type: "general-purpose", model: "fable",
+          name: "docket-conductor-RUN-N",
+          description: "docket-run conductor for RUN-N",
+          prompt: "<the brief>"})
+   ```
+
+   The brief is short because the contract is this file. It carries: the
+   installed path `~/.claude/skills/docket-run/SKILL.md`, which the agent
+   reads IN FULL before its first engine verb; `RUN-N`, always explicit;
+   the agent's own name; the repo it is seated in; and, in
+   these words, that it is **The conductor** of this file's **Seating**
+   section, that its parent is addressed as `main`, and that the four
+   substitutions under that heading are its tool surface — restated because
+   a helper cannot infer the seat it serves.
+
+   A spawn-guard deny on this call is the reap hold: a write-class reap is
+   unacknowledged on an active run, and no agent — this one included —
+   spawns until it is decided. The ack-reap gate is conversational
+   (**Gates**), so it is yours to run here, with the same proposal, panel
+   (you hold `Workflow`), and operator escalation the conductor would use —
+   unless the run the deny names already has a conductor seated here, in
+   which case the gate is that conductor's and you forward the deny to it;
+   then spawn again.
+
+4. End the turn. From here the parent acts only on the conductors'
+   messages, each named by its first line. Every reply goes to the `from`
+   name of the message it answers, never to a remembered conductor: with
+   two seated, a `returned:` sent to the wrong one hands a wave's rows to a
+   run that never dispatched them. Keep the `launched:` ids and transcript
+   directories per conductor, since a pause or a resume needs only its own.
+
+   - **`status:`** — render it to the operator as sent, and forward it
+     verbatim to `shadow-live` when the `shadow` skill has seated one: its boundary
+     pings are these messages, and the parent is the conductor's voice to a
+     sibling. End the turn.
+   - **`launch:`** — a Workflow launch request: the script's basename, the
+     absolute path of a JSON file holding `args` as the conductor wrote it,
+     and `resumeFromRunId` on a resume. Resolve the script to the installed
+     `~/.claude/workflows/<basename>`, `~` expanded, no source-tree
+     fallback; read the file; launch `Workflow({scriptPath, args})` with
+     `args` as the object the file holds, byte-exact. Reply `launched:`
+     with the task id, run id, and transcript directory from the launch
+     result — the conductor needs the directory for the usage join — and
+     end the turn. A launch the tool refuses (spawn-guard, wave-audit, a
+     validation error) is replied as `refused:` with the refusal text
+     verbatim; what it means is the conductor's to decide. A spawn-guard
+     refusal names the run holding the reap, and that hold blocks every
+     conductor's launches, not only the requester's: when the named run has
+     its own conductor seated here, forward the refusal to it too, because
+     the ack-reap gate is its.
+   - **A launch's completion notification** — write the workflow's return
+     value to a file in your scratchpad with the Write tool, copied byte for
+     byte, never retyped, and reply `returned:` with the task id, the file
+     path, and the notification's status line. That file IS the "rows
+     landed on disk" the close procedure pipes.
+   - **`question:`** — an operator gate. The message carries the
+     accompanying text (the diff, the tally, the finding summary — the
+     actual thing being decided) and one to four questions, each with its
+     header, its options in order (recommended first, labelled), and each
+     option's description. Render the accompanying text to the operator as
+     sent, put the questions through `AskUserQuestion` exactly as framed —
+     reworded by nobody, one gate per question — and reply `answer:` with
+     each question's chosen label and any note the operator typed,
+     verbatim. The conductor runs the verb; you never do.
+   - **`done:`** — the run reached a terminal state, or parked with nothing
+     the machine can advance. Render it, then `TaskStop` the conductor by
+     name: a delegate that has reported and sits registered is the
+     operator's cleanup otherwise.
+
+   An operator instruction that belongs to a conductor — "pause", a
+   budget raise, "abandon DKT-N" — is forwarded to that run's conductor by
+   message in the operator's own words; one that names no run while more
+   than one conductor is seated is a question to the operator first, not a
+   guess. A `pause:` message also carries every `launched:` id and
+   transcript directory the parent has handed out for that run: the
+   `pause` skill's resume snapshot needs them, and only the parent holds
+   them. Two conductors share one operator: gates are put in the order
+   their `question:` messages arrive, each naming its run, and a conductor
+   whose gate is queued behind another's waits at its turn boundary as it
+   would for any answer. The run-guard Stop hook fires on the parent's
+   turn-end, and between a dispatch close and the next open it denies once,
+   naming pending work. That deny is expected while a conductor is seated:
+   say which conductor holds the run and end the turn again; the second
+   attempt is allowed. Never start driving on its push.
+
+### The conductor
+
+Everything from **Which run** to the end of this file is yours, read with
+four substitutions. Each names a tool this seat does not have; none changes
+what is decided or in what order.
+
+Your run is `RUN-N` from the brief, and your name carries it; lead every
+message with that id, because the parent may be relaying for another
+conductor on another run, and route nothing by assumption.
+
+- **`Workflow({...})` means a `launch:` request to `main`.** Write `args` to
+  a JSON file in your own scratchpad with a quoted heredoc — the `{rows}`
+  for wave.js verbatim from `next`, the tribunal `args` you resolved, the
+  wave-usage `dir` and `mode` — send `launch:` naming the script's basename
+  and that path (and `resumeFromRunId` with the FULL original args file on
+  a resume), and END YOUR TURN. `launched:` brings the ids and the
+  transcript directory; `returned:` brings the path of the return value,
+  which you read and pipe as the close procedure says. "Await the
+  completion notification" reads, for you, "await `returned:`". A
+  `refused:` reply is the launch failing at the tool, presented and
+  escalated as this file already says for that refusal.
+- **The question tool means a `question:` message to `main`.** Every gate,
+  reserved matter, scope question, and what-next question in this file goes
+  as one message carrying the accompanying text in full and the questions
+  as the parent renders them — header, options with the recommended one
+  first and each answer's real routing in its description, in the plain
+  language this file demands. Then end your turn; `answer:` carries the
+  operator's choice verbatim, and you run the verb on it. Everything this
+  file says about what a question presents, one gate per question, and the
+  premise check before asking is unchanged; only the carrier differs.
+- **Nothing background, nothing awaited but a message.** No
+  `run_in_background`, no `Monitor`, no `ScheduleWakeup`: a task
+  notification does not wake this seat. The trust probe and every other
+  long verb run in the foreground. A helper you spawn with `Agent` must
+  `SendMessage` its report to your name before it ends, because its
+  completion is not a turn for you either; `TaskStop` it once the report is
+  in hand, as the close procedure already requires.
+
+**Cadence.** Send `status:` on activation, each dispatch open (the steps
+handed to the wave), each dispatch close (how each step ended, the ids
+filed), and each gate outcome (the tally and every verdict, as **Gates**
+requires of a report); send `done:` once, at the end. Every other iteration
+is silent — the operator reads the run, not the loop. A message is the only
+thing the operator sees of you: your plain text output reaches nobody, so a
+report that was not a message was never delivered.
+
 ## Which run
 
 Two modes, the same split `shadow` and `docket-plan` already use: an explicit
@@ -77,8 +237,11 @@ argument always wins; bare, you resolve it yourself rather than asking.
 
 - **`/docket-run RUN-N`** — the operator named the run. `$RUN` is `RUN-N`,
   verbatim; go straight to **Before the loop** below with it.
-- **Bare `/docket-run`** — no run named, so you resolve "the next run" from the
-  engine, not from a question back to the operator:
+- **Bare `/docket-run`** — no run named, so "the next run" is resolved from
+  the engine, not from a question back to the operator. The parent does
+  this read before it seats the conductor (**Seating**), so a conductor
+  always holds an explicit `RUN-N`; the precedence is stated here because
+  it is the run's contract, whichever seat applies it:
 
   ```bash
   docket run status --active --json
@@ -748,16 +911,6 @@ a direct operator instruction outranks the panel, per **Gates**. If
 `next` goes empty while added issues sit unexpanded, that belongs in your stop
 report — it is not a finished run.
 
-**Seed the TodoWrite list before the first `next`.** Before the loop's first
-`docket next`, call `TodoWrite` once from `docket run status $RUN --json`
-(and `docket step list --run $RUN --json` if steps already exist): one
-parent item per bound issue — `content: "ISSUE-N: <title>"` — all `pending`
-except any already in flight. TodoWrite has no native nesting, so represent a
-step under its issue by ordering: the step's item immediately follows its
-issue's, as `content: "  ↳ <step>"`. This is the list you refresh at every
-iteration below — create it once here, never re-create it from scratch
-mid-run.
-
 ## The loop
 
 Run it from the top each time. Do not cache anything between iterations. And
@@ -849,14 +1002,6 @@ docket next --run $RUN --limit 500 --json
   landed this is a missed step in your own loop, not a wedge to work around.
 
 Any other refusal from `next` is a real stall — report it verbatim and stop.
-
-**Refresh TodoWrite on this answer.** Rows returned → append any new step as
-a `pending` child under its issue (add the issue itself if this is its first
-appearance). Empty and covered → mark every remaining item `completed` before
-you write the done report. Empty and uncovered → leave the unexpanded issues'
-items `pending`, their content naming the wait (`ISSUE-N: phase quiesced —
-awaiting re-activation`), matching the PHASE QUIESCED report you are about to
-give.
 
 **Before you report a run done, run `docket run report $RUN` and read its
 `Coverage:` line.** The engine has been printing what a skipped panel back-fill
@@ -1122,12 +1267,6 @@ claimable when their stage arrives) and that staging is code, not your
 judgment. Never drop a `staged` row because it "isn't ready" — offering it
 ahead of readiness is the entire mechanism.
 
-**Mark the dispatch in TodoWrite before you end the turn.** For every
-executor and vote row you are handing the wave, set its step item to
-`in_progress` (adding it under its issue first, if step 1 had not yet). One
-call, right here — do not touch the list again until the wave's completion
-notification.
-
 Then await the wave's completion notification — which means END YOUR TURN.
 Notifications only deliver at turn boundaries: a turn held open "waiting" is a
 turn that starves itself of the very signal it waits for (one session queued a
@@ -1308,7 +1447,7 @@ as its brief. Either way you check the shape — every dispatched step present,
 quantities integers — and pipe it. Reading agent transcripts yourself is work
 that belongs below you.
 
-A background helper you spawned is invisible to `TaskList` and `ListAgents`
+A background helper you spawned is invisible to `ListAgents`
 while it runs — its completion notification is the only status surface, and
 `SendMessage` to its name is the only nudge lever. Prefer `run_in_background:
 false` for the join; it is short and you need the result to proceed.
@@ -1349,12 +1488,6 @@ Skip this and the panel is not free, only invisible — roughly 40k output token
 each, against a run budget that never sees them. `run report` now prints
 `Coverage: N of M seat(s) reported spend`, so the gap is legible after the fact
 instead of reading as "no panels ran".
-
-**Refresh TodoWrite on close, before returning to step 1.** A step that
-recorded → `completed`. A step that parked `waiting-human` stays
-`in_progress` — or becomes the one open item naming the gate, per **Gates**
-below — never marked done. An issue whose whole chain just reached a
-terminal step → mark its parent item `completed` too.
 
 Surface any `waiting-human` steps (below), then go back to step 1.
 
@@ -1679,7 +1812,8 @@ recount or a paraphrase:**
 `design-qa`) runs at CLAIM and its rows ride in under `context.pre_gates`. A
 failing one does NOT refuse the claim, does not park the step, and is never
 resolved: it is a MEASUREMENT the declaring step consumes, and the judging is
-that step's job (`~/.claude/skills/docket/SKILL.md` §11.4). So it cannot have
+that step's job (see "Gates — what actually runs" in
+`~/.claude/skills/docket/references/workflows.md`). So it cannot have
 been override-passed — there was no park to answer and no `step resolve` to
 record. Report it as what it is: an advisory input the step weighed, named
 with the step that weighed it. Only a gate you actually resolved — a real
@@ -1923,7 +2057,7 @@ apostrophe had been, and the third had to go through a `python3 -c
 delimiter the body cannot contain — `DESC`, not `EOF`, since a body
 quoting a heredoc or a shell script has a bare `EOF` line of its own that
 closes the heredoc early (this issue's own filing hit that). Everything
-under "Free-text flags" in `~/.claude/skills/docket/SKILL.md` applies to
+under "Free-text flags" in `~/.claude/skills/docket/references/transport.md` applies to
 `-m`, `--summary`, and `--note` the same way.
 
 ## Gates
@@ -1949,13 +2083,6 @@ collect the answer whenever it comes, but run the engine verb per the ordering
 rule below, and when the verb must wait say so ("your answer applies after the
 current wave closes"). If a pending question outlives an open dispatch's TTL,
 reconcile the expiry per step 1 — accepted cost, not a reason to delay the ask.
-
-**A parked gate does not clear the TodoWrite list.** When a gate parks the
-run (`waiting-human`) or a conversational gate goes to a panel, leave the
-list standing — do not clear or reset it. Represent the blocking gate itself
-as the one open item: `in_progress`, or a pending item whose content names
-what it is waiting on (`ISSUE-N: waiting-human — <gate>`), so the list shows
-exactly what's stuck and why until the operator or panel answers it.
 
 ### The panel
 
@@ -2676,14 +2803,6 @@ session-only state the engine cannot reconstruct (in-flight wave ids, un-
 integrated shas, Workflow args for a resume, budget-raise usage, and the
 like) — never a restatement of anything `run status` or this section already
 answers.
-
-**A resumed session rebuilds TodoWrite from scratch.** Todo lists are
-session-local and do not survive into a new session, whatever the transcript
-or a resume prompt says. Whether resuming in the same session or attaching
-fresh to a run this session did not activate, rebuild the list from a fresh
-`docket run status $RUN` (plus `docket step list --run $RUN` for anything
-already claimed or parked) before your first mutating verb — never assume a
-prior session's list, and never derive it from resume-prompt prose.
 
 **A session that walks away from a conversational gate closes its own
 proposal.** Pausing, abandoning the attempt, or handing the run back with the

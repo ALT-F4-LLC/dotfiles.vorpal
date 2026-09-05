@@ -1,7 +1,20 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 30  # 30: two input edits on `fix`, no topology change. (1)
+version = 31  # 31: `verify` routes `unverifiable` to an interposed
+              #   `verify-tribunal` vote instead of `waiting-human`, the
+              #   step security-change@31 already carries (same seats, same
+              #   `on_fail = "fix-loop"`, `vote_rule = "tribunal"`), and
+              #   `fix` reads its vote-record. RUN-90 measured the old
+              #   routing: 20 of its 21 parks were a verify reporting an AC
+              #   `unverifiable` because the `ac-commands` gate is a stub
+              #   (AGT-271); every one parked the whole run and every one
+              #   the operator resolved `override-pass`. A vote rides the
+              #   wave and parks nothing; a below-threshold tally still
+              #   routes to the fixer, never to a silent pass. Cost: three
+              #   seats per verify that reports an unverifiable AC — most of
+              #   them while the gate stays a stub. `unmet` still loops.
+              # 30: two input edits on `fix`, no topology change. (1)
               #   `synthesize.findings` joins `reconcile.findings`: the
               #   aggregate reaches the fixer as cluster titles and member ids
               #   with no evidence, while the synthesize artifact's body lists
@@ -156,7 +169,7 @@ emits = "change-summary"
 executor = "fix"
 expected_cost = 1.00
 gates = ["build", "tests", "self-hygiene", "secret-scan", "vuln-scan"]
-inputs = ["reconcile.findings", "synthesize.findings", "implement.change-summary", "issue.latest.change-summary", "issue.latest.ac-report"]
+inputs = ["reconcile.findings", "synthesize.findings", "implement.change-summary", "issue.latest.change-summary", "issue.latest.ac-report", "verify-tribunal.vote-record"]
 loop = true
 name = "fix"
 packet = ["contracts/{executor}.md"]
@@ -172,4 +185,13 @@ inputs = ["issue.body", "issue.diff", "implement.change-summary", "verify.gate-r
 name = "verify"
 packet = ["contracts/{executor}.md"]
 payload = "ac-report@1"
-threshold = { "fix-loop" = "any(status == unmet)", "waiting-human" = "any(status == unverifiable)" }
+threshold = { "fix-loop" = "any(status == unmet)", "verify-tribunal" = "any(status == unverifiable)" }
+
+[[step]]
+after = ["verify"]
+inputs = ["verify.ac-report", "issue.body", "issue.diff"]
+name = "verify-tribunal"
+on_fail = "fix-loop"
+type = "vote"
+vote_rule = "tribunal"
+voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]

@@ -1,76 +1,151 @@
 ---
 node: drain-highs
-version: 4
+version: 5
 archetype: executor-read
 packet_includes:
-  - fragments/truth-first.md
   - fragments/evidence-rules.md
   - fragments/writing-for-humans.md
 emits: drain-report
 ---
 # Charter
-Give every still-open high-severity cluster a durable home before the run moves on. You
-run at the point the pipeline has decided the remaining open highs will not be fixed in
-this run. In the standard tracks that is the reconcile step routing here: its payload
-carries at least one cluster with `open_severity >= high` and no open blocker (an open
-blocker matches `fix-loop` first, so blocker rounds loop and never reach you). In the
-security track that is the security vote approving a round: highs and blockers alike
-convene that vote, a rejection enters the fix loop instead of reaching you, and an
-approval means the panel accepted the change with those clusters still open — blockers
-included, so the selection below is the same there. A round where the vote never
-convened does not reach you: the workflow declares you run only if the vote fired, and
-the engine skips you in the same transaction it skips the vote. For each cluster still
-open at high or above — `open_severity`
-present and `>= high`, `held` not true, `operator_resolved` not true — write one gap
-file and pass it with `--gap-file` when you record your completion: each lands as a
-`gap` artifact beside your report AND files a backlog issue related to this step's own,
-in the same transaction. That backlog issue is the drain.
-The severity ladder promises a Concern "lands in the run record and backlog the
-operator reviews before publishing"; this step is the machinery that makes it true. It
-exists because open highs used to complete a round recorded only in reconcile artifacts
-nobody downstream reads — no gap, no loop entry, no line the operator sees.
+
+Give every remaining open cluster at `high` or `blocker` a durable backlog
+home. Success means every such cluster is accounted for and every cluster
+requiring a new issue is filed through completion's `--gap-file` transaction.
+Each attached file becomes a `gap` artifact and a backlog issue related to
+this step's issue. Writing a scratch file alone does not drain a cluster.
+
+The workflow controls entry. In standard tracks, reconcile routes here when
+open highs remain and no open blocker matches `fix-loop` first. In the
+security track, an approved security vote routes here; drain any remaining
+open blockers as well as highs. Rejection enters the fix loop. If the vote
+never convened, the engine skips this step in the same transaction as the
+vote. Draining records unresolved work; publishing remains subject to the
+applicable security policy and operator gates.
 
 # Not
-You do not fix anything, change code, or hold the tree. You do not re-judge severities,
-merge, split, or drop clusters: selection is mechanical (`open_severity >= high`, not
-held, not operator-resolved), and a cluster you personally disagree with is filed
-anyway — the judges' evidence stands. You do not file settled ground (no
-`open_severity`), held clusters (`held: true` is already in front of the operator),
-below-the-bar clusters (`info`/`low`/`medium` sit below every gate by design), or a
-cluster an earlier round of this issue already drained. You do not file gaps for
-problems outside the findings input — that channel stays what it always is, and this
-step is not a second review.
+
+Do not fix code, change the checkout, hold the tree, re-grade findings, or
+merge, split, or drop clusters. The supplied judgments stand even when you
+disagree. Use the gap channel only for the selected findings and the drain
+failures described under Stuck. Create backlog issues through `--gap-file`,
+without separate issue-creation commands.
+
+Apply evidence-rules to faithful transfer, attribution, and your own filing
+claims. Preserve the judges' evidence and its limitations as their evidence;
+this step does not repeat their review or independently verify the defects.
 
 # Method
-Read the reconcile findings input and select the qualifying clusters. Before filing,
-check this step's issue for gap issues already related from an earlier round (`docket
-issue show <id>` lists relations): a cluster whose defect is already filed is named in
-your report with the existing issue id instead of being filed again — one defect, one
-backlog issue.
 
-One gap file per cluster. FIRST LINE: the defect itself in one line — the cluster's
-`title` where it has one, otherwise the defect stated from its evidence; this becomes
-the filed issue's title. SECOND LINE: `Home: THIS repository` — these are review
-findings about this run's own change. THIRD LINE: `Files:` followed by every distinct
-file the cluster's `file:line` evidence names, comma-separated — the engine files the
-issue with neither `-f` nor `--scope`, and the conductor promotes this line into both at
-close so planning can keep colliding work apart. Then the body: the cluster's `open_severity`,
-each member (judge, severity, `file:line`, evidence) copied faithfully under
-evidence-rules, the `alternative` where the cluster carries one, and provenance (run,
-issue, round) so the reader can find the review that produced it. The issue must stand
-alone: its reader arrives from the backlog weeks later, not from this run.
+1. **Read the complete input for this round.** Identify the assigned run,
+   issue, round, and reconcile findings artifact from the brief. Use the
+   supplied schema. Missing, truncated, or malformed input that prevents
+   complete selection takes the Stuck path.
+
+2. **Select mechanically.** The severity order is
+   `info < low < medium < high < blocker`. Select clusters whose
+   `open_severity` is `high` or `blocker`, with `held` not true and
+   `operator_resolved` not true. An absent `open_severity` denotes settled
+   ground under this workflow. Do not substitute historical `severity` or a
+   member's severity for `open_severity`. Interpret optional fields under
+   the schema; an invalid value is not an exclusion. Keep a disposition for
+   every cluster whose `open_severity` is `high` or `blocker`, including
+   those excluded by either flag.
+
+3. **Check prior drains for selected clusters.** Run `docket issue show <id>`
+   for this step's issue and inspect the relevant related gap issue bodies,
+   including earlier rounds and earlier attempts of this round. Establish
+   that the relation results are complete before treating an issue as absent.
+   Match supplied cluster or
+   member identities and provenance, consulting the issue's evidence where
+   necessary. Similar titles or locations alone do not establish the same
+   defect. An operational gap about a failed drain does not count as filing
+   the affected defect, even if it cites that cluster's ID. Report a confirmed
+   prior filing with its issue ID and current status instead of filing it
+   again. Do not reopen or alter that issue.
+   If an unreadable relation or ambiguous match prevents establishing prior
+   filing, use Stuck.
+
+4. **Prepare one gap file per selected cluster without a prior filing.**
+   Recover its member records from the synthesis artifact's markdown body
+   for the same issue and round. Reconcile's `members` contains severities,
+   not complete findings; its single location and evidence may represent
+   only one member. Follow `member_ids` into judge artifacts when necessary.
+   For standing clusters, follow the cited prior-round record. Use the run's
+   artifact index and `docket step artifacts STEP-N` to locate references,
+   then `docket step artifact ARTIFACT-N` to read the full body and payload.
+   Missing required member evidence takes Stuck.
+
+   Use the archetype's permitted scratch location. Start the file directly
+   with these lines, without a heading, blank line, or code fence before them:
+
+   ```text
+   <the defect in one line>
+   Home: THIS repository
+   Files: <distinct evidence file paths, comma-separated>
+   Severity: <the cluster's open_severity>
+   ```
+
+   The first line becomes the issue title. Use the cluster's title where
+   supplied; otherwise state the defect from its evidence. Keep the first
+   line to one line without changing its meaning. `Files:` includes every
+   distinct file named by the cluster's member `file:line` evidence, with
+   location suffixes removed. Preserve the actual paths; do not infer extra
+   files or replace paths with broader globs. If the complete evidence names
+   no files, leave the value empty and preserve its stated scope in the body.
+   The conductor promotes this line into file and scope metadata at close;
+   this step does not supply `-f` or `--scope`. Keep `Severity:` in the leading
+   header so the engine can assign the backlog priority from the open severity.
+
+   After a blank line, include the cluster's `open_severity`, its supplied
+   identity, and every member's judge, severity, `file:line`, and evidence.
+   Preserve member IDs, disposition or closure state, uncertainty, redactions,
+   and evidence provenance wherever supplied. Include the cluster's
+   `alternative` where present. Cite the originating findings and member
+   artifacts, run, issue, and round, preserving any supplied revision or
+   working-state reference. If no cluster ID is supplied, identify its
+   position in the originating artifact without inventing an upstream ID.
+   The reader must be able to understand the defect and recover its review
+   weeks later from the backlog.
+
+5. **Record complete coverage.** Prepare all files before submitting a
+   completion. Every selected cluster must have either a confirmed existing
+   issue or exactly one prepared gap file attached to this completion. Pass
+   each new file with its own `--gap-file`, alongside the non-empty report,
+   using the brief's recording command. An unresolved selection, evidence,
+   deduplication, or filing problem requires Stuck, even if other clusters
+   are ready. Completion's output lists the new issue IDs in submitted gap
+   order; retain that order to map files to IDs, along with the reported step
+   state. Apply the archetype's recording recovery to the saved step result,
+   gap artifacts, and related issues before any
+   retry with an uncertain outcome. A missing receipt does not establish
+   that no issues were filed.
 
 # Emit
-`drain-report` (markdown): one line per cluster filed, pairing it with its gap file
-(the completion's success message pairs those with the filed issue ids), one line per
-`>= high` cluster you skipped and why (held, operator-resolved, already filed as
-issue N), and the round this drain ran on. The report body must be non-empty even when
-every qualifying cluster was skipped or none qualified — an empty emit beside recorded
-gaps parks the step as a gap-only completion, which is the Stuck path, not success.
+
+`drain-report` (markdown): identify the run, issue, and round. Include one
+line per newly filed cluster naming its gap file, and one line per excluded
+`high` or `blocker` cluster stating why: held, operator-resolved, or already
+filed as issue N. Include the existing issue's status for prior filings.
+Preserve supplied cluster IDs, or use the artifact position established above.
+
+A successful report is non-empty even when no files are needed. State
+explicitly when no clusters qualify or every selected cluster was already
+filed. The completion receipt pairs the newly attached files with issue IDs;
+do not invent those IDs in the report prepared before recording.
 
 # Stuck
-A findings input you cannot read as clusters at all, or a qualifying cluster you could
-not file: record a gap describing exactly what is missing and emit an empty report —
-the gap-only completion parks this step `waiting-human` instead of passing an
-undrained round through. Never route a pass around a cluster you could not file: this
-step exists because open highs that pass silently stop existing.
+
+If input, member evidence, selection, prior-filing state, or required filing
+cannot be established, prepare a gap describing the specific missing input
+or failed operation, the affected cluster references, and what would resolve
+it. Preserve known existing issue IDs and any successfully prepared cluster
+files. Attach the ready cluster files and the drain-failure gap with an empty
+`drain-report` body, following the brief's gap-only recording protocol. Put
+the explanation in the gap; even a heading or “blocked” in the report would
+make its body non-empty.
+
+An accepted gap-only completion parks the step `waiting-human`. If recording
+itself fails or its outcome remains uncertain, report that state to the caller
+under the archetype's recovery rules. Do not claim the step was parked without
+confirmation, or submit a success report while any required drain is unresolved.

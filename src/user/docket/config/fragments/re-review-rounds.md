@@ -1,41 +1,59 @@
 ---
 fragment: re-review-rounds
-version: 4
+version: 5
 ---
 # Re-review rounds
 
-On a re-review round (your inputs carry a previous round's findings), scope to
-the delta: state whether each prior finding in your dimension is closed or
-still open, examine what changed since, and do not re-derive findings at
-unchanged loci a prior round already recorded. Repetition is not discovery,
-and flat finding volume across rounds is the signal a fix loop cannot
-converge on.
+On a re-review round, your inputs include prior findings. Compare the current
+state with the previous reviewed state. For each prior finding in your dimension,
+retain its ID and state whether it is closed or still open, citing applicable
+evidence. Close a finding when evidence establishes that its original defect is
+resolved or its claim was invalid; a changed implementation or an author's
+"fixed" claim is insufficient. Preserve established dispositions unless new
+evidence invalidates them. Report missing evidence as a verification gap; do not
+invent closure or claim that an unverified defect was reproduced.
 
-## The Blocker bar rises on re-review
+Carry forward unresolved findings at their supported severities, including
+`blocker`, unless new evidence or an explicitly accepted requirement change
+justifies reassessment. They remain part of aggregation without being counted
+as new discoveries. A partial fix, moved manifestation, or restatement of the
+same underlying defect updates the existing finding; a new location alone does
+not make a finding new.
 
-The loci a fix touched are legitimately new ground, and a genuinely new defect
-there is a real finding; report it at its honest severity. But under max
-aggregation one `blocker` from one judge at one new locus spends an entire fix
-round, and a fresh fix diff reliably offers new loci, so a loop whose rounds
-each blocker-ize the previous round's fix never converges (measured, in a past run:
-finding volume 20 → 16 → 17 across three rounds while the loci rotated; each
-round's blockers were about the previous round's fix). On a re-review round,
-emit `blocker` ONLY when one of these holds:
+Examine the changes and the behavior they affect, including unchanged callers,
+dependencies, and contracts where needed to establish their effects. Do not
+re-derive recorded findings whose relevant evidence remains unchanged. New
+evidence can justify reassessment at an unchanged location; identify what changed
+in the evidence. If the previous reviewed state or relevant history is missing,
+state the comparison gap and limit claims about origin and closure accordingly.
 
-- **Regression**: a defect a prior round recorded as fixed is back, or the
-  fix broke behavior that was correct before it ran.
-- **The fix independently meets the Blocker bar**: it introduces data loss, a
-  security regression, a broken build or test, or a violated AC, established
-  on its own evidence, exactly as the severity ladder defines the rung. The
-  test: had this exact code appeared in round 0, you would have called it a
-  Blocker then, for the same stated reason.
+## Apply the same Blocker bar on every round
 
-Everything else about the fix is authored at Concern or below: it is unpinned
-by a new test (unless that gap itself meets the ladder's Blocker rung), it is
-narrower or less elegant than the ideal remedy, it would ideally also have
-handled an adjacent case, its shape invites future defects. "The ideal fix
-would also have done X" is distance from ideal, distance from ideal is never a
-Blocker, and on a re-review round it is the exact finding class that starves
-the loop of convergence. Those findings lose nothing by being `high`: they
-surface at reconcile, land in the run record, and are weighed at the operator
-gates before publishing; the loop is simply not their venue.
+Every `blocker` must meet the severity ladder's Blocker rung. Regression or
+recurrence establishes relevance to this round; neither establishes severity
+by itself. A returned minor defect remains minor unless its supported impact
+now meets a higher rung.
+
+For a new or reopened `blocker`, identify the triggering conditions, supporting
+evidence, violated requirement or contract, and the applicable Blocker criterion.
+Establish its relationship to the change; for a recurrence, link the prior
+finding and explain why its closure no longer holds. Apply the round-0 test:
+had this exact defect appeared in round 0 under the same requirements, would
+the same evidence and stated impact have made it a Blocker? If not, use the
+lower rung the ladder supports.
+
+A fix that independently meets the Blocker rung remains a Blocker, including
+data loss, a security regression, a broken build or test, or a violated
+acceptance criterion as defined by the ladder. Grade missing tests, adjacent
+cases, broader remedies, and maintainability risks by their demonstrated impact.
+When their established impact is below the Blocker rung, report them at Concern
+or below. Keep unresolved evidence gaps explicit rather than mechanically
+downgrading an unverified claim.
+Distance from an ideal fix is not itself a defect or a reason to escalate.
+
+Keep supported lower-severity findings visible at reconcile, in the run record,
+and at the operator gates before publishing. Under max aggregation, one Blocker
+can trigger another fix round, so do not promote optional improvements to obtain
+another iteration. Equally, do not suppress or downgrade a supported Blocker to
+make the loop finish. Accept a clean delta when warranted; finding counts are
+diagnostic, never a target that must decrease.

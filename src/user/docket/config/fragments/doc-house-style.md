@@ -1,68 +1,84 @@
 ---
 fragment: doc-house-style
-version: 2
+version: 3
 ---
 # Doc house style
 
-Structure is checked mechanically: required sections, their order, frontmatter fields,
-diagram presence. Nothing below repeats those checks; this is the taste that a validator
-cannot enforce. A document that passes every structural check and still leaves its reader
-guessing has failed the only test that matters.
+Apply this style to documentation written or revised for the task. Structural
+checks cover required sections, their order, frontmatter fields, and diagram
+presence. Keep that required structure; apply brevity within it. These rules
+govern whether the content lets someone act without guessing.
 
 ## What a document is for
 
-A design document exists so someone who was not in the room can act. Every section earns
-its place by answering a question that reader will actually ask, in the order they ask
-it: what is the situation, what did we decide, what does that cost, what do I do now.
-A section filled in because the template has it (restating the title, deferring to
-another document, promising detail later) is worse than an honest `N/A.` with one line
-saying why it does not apply.
+A design document exists so someone who was not in the room can act. Within the
+required structure, answer the reader's questions in a useful sequence: what is
+the situation, what is proposed or decided, what does that cost, what happens
+next. Explain the decision and its rationale where the reader needs them.
+Use `N/A.` with a one-line reason only when a section does not apply. Missing
+evidence or an undecided answer is an unknown, not inapplicability.
 
 ## Claims, not vibes
 
-- **Every commitment is checkable.** A requirement a reviewer cannot point at and say
-  "satisfies / does not satisfy" without asking a follow-up question is not a
-  requirement yet. Same for a success metric: name what is measured, how it is measured,
-  and the number or threshold that counts as met. "Improve the experience" is a defect;
-  "p95 under 800ms via the /metrics endpoint" is a commitment.
-- **Verify before asserting.** Anything the document states as fact (a signature, a
-  path, a command, an existing behavior it builds on) is confirmed against the real
-  thing while writing, not recalled. What you could not verify is written as an
-  assumption, in those words. An unverified claim that a reviewer later falsifies
-  invalidates every risk row and criterion resting on it.
-- **Quote what is load-bearing.** When a downstream reader's correctness depends on
-  specific wording elsewhere, reproduce that wording inline rather than citing its
-  location. Every hop paraphrases, and a paraphrase silently drops the sentence that
-  carried the constraint.
+- **Every commitment is checkable.** A reviewer can determine whether a
+  requirement is satisfied from a stated observable outcome and its conditions.
+  A success metric names the operation or population, measurement method,
+  relevant conditions and window, and passing threshold. For example:
+  "Across all requests in the specified 10-minute staging load test at 100
+  requests/second, client-measured p95 latency for `GET /orders` is below
+  800 ms." This is an illustrative target, not a project requirement.
+- **Verify before asserting.** Check claims about existing signatures, paths,
+  commands, and behavior against the relevant implementation, tests, or
+  authoritative documentation for the version being described. Cite evidence
+  for claims the decision depends on. Reuse evidence while it remains applicable. State
+  proposed behavior as proposed; label unverified premises as assumptions and
+  identify what depends on them. If evidence contradicts a premise, surface the
+  conflict and reassess the affected reasoning and criteria.
+- **Quote what is load-bearing.** When correctness depends on exact wording
+  elsewhere, include the shortest quotation that preserves the constraint and
+  its qualifications. Mark it as a quotation and cite its source and applicable
+  version or section. Link to the source for surrounding detail. Otherwise,
+  reference the canonical document rather than duplicating it.
 
 ## Honesty in the shape of the document
 
-- **Present alternatives fairly.** A document that describes only the author's preferred
-  option is advocacy wearing a design document's clothes. Each alternative gets its real
-  strengths, and the verdict says what actually decided it. "Do nothing" and "use what we
-  already have" are alternatives, and often the right one.
-- **State non-goals affirmatively.** Non-goals are the things that could *reasonably*
-  have been in scope and deliberately are not, never restatements of the goals with the
-  polarity flipped. A goals-only framing hides where the boundary was drawn.
-- **Say what gets worse.** Consequences that list only benefits are marketing. Name what
-  becomes harder, what is now hard to reverse, and what the next person will curse.
-- **Risks in hindsight form.** Write them as though the failure already happened: it is
-  six months later and this did not work; here are the likeliest reasons. Pair each
-  with a mitigation or an explicit decision to accept it. Prospective hindsight surfaces
-  what a forward-looking list misses.
+- **Present alternatives fairly.** Compare plausible alternatives against the
+  same decision criteria. Give each its real strengths and costs; say what
+  decided the choice. Consider doing nothing and using what already exists.
+  Explain briefly when either is ruled out by a real constraint. Invented
+  alternatives and token disadvantages do not make a comparison fair.
+- **State non-goals as deliberate boundaries.** Name things that could reasonably
+  have been in scope and were deliberately excluded or deferred. For example,
+  "Historical data migration is deferred to a separate project." Do not pad the
+  list by reversing the wording of the goals.
+- **Say what gets worse.** Name supported tradeoffs: what becomes harder, what
+  costs more, and what becomes difficult to reverse. Scale detail to the
+  decision; do not invent a drawback to fill a section.
+- **Use a premortem to find risks.** Imagine the decision failed after a realistic
+  interval. Identify the likeliest causes and their consequences, then pair each
+  material risk with a concrete mitigation or explicit acceptance of the
+  remaining risk. Make clear these are hypothetical failures. Distinguish
+  proposed mitigations and acceptance from actions already taken or agreed.
 
 ## Fidelity and length
 
-Match weight to risk: the lightest document that fully answers is the right one, and
-over-documenting is its own failure. Tight prose beats exhaustive coverage; a decision
-record is a page, not a treatise. A header over a one-sentence section is decoration,
-not structure. Resolve open questions before the document is considered done; an
-unresolved question shipped inside a finished document becomes someone else's silent
-assumption.
+Match weight to risk: write the lightest document that fully answers the
+reader's questions. Use direct wording and readable paragraphs. Keep decision
+records brief, often about a page, without cutting necessary evidence or
+consequences. Retain required headings even for short answers; add optional
+headings only when they help navigation. Diagrams explain relevant boundaries,
+dependencies, or flows; their labels and behavior agree with the prose.
 
-End on the last decision, consequence, or next action. A closing recap of what the
-document just said ("in conclusion", "in summary") spends the reader's attention on
-nothing; so does a closing line that inflates the work into an aphorism.
+Resolve questions that could change the decision, acceptance criteria, or safe
+execution before treating that decision as settled. If an answer is unavailable,
+keep the affected decision provisional and continue unaffected work. Deliberate
+deferrals identify the next step, responsible person or role, and deadline or
+trigger. Mark missing assignments as unassigned. Do not invent an answer,
+assignment, or agreement to make the document appear finished.
 
-Reference prior accepted documents rather than contradicting or restating them. The same
-concept keeps the same name everywhere it appears.
+Use accepted documents as the baseline. Identify conflicts and state explicitly
+when a proposal would amend or supersede an earlier decision; preserve its
+history. The same concept keeps the same name everywhere it appears.
+
+End on the last decision, consequence, or next action. Omit closing recaps and
+aphorisms. Put any required executive summary where the template calls for it.

@@ -1,11 +1,19 @@
 ---
 fragment: diff-reconstruction
-version: 2
+version: 3
 ---
 # Reconstructing an empty diff
 
-An empty `issue.diff` beside a change-summary that names commits is not a missing
-input: the fix landed as ordinary commits before this step ran. Review those
-commits (`git show <sha>` in your own worktree) as the diff under judgment, and
-say in your findings that the target was reconstructed that way (an earlier run set this
-pattern). Gap only when neither the diff nor any named commit is reachable.
+An empty `issue.diff` is not, by itself, a missing-input gap. When the
+accompanying change-summary names fix commits, resolve each named SHA in the
+target repository and inspect its patch from your own worktree
+(`git show --patch <sha> --` for ordinary commits). Verify that the patches
+correspond to the described change, then use them as the review target.
+
+In your findings, state that the target was reconstructed from commits and
+list the full SHAs reviewed. If only some named commits can be reviewed,
+continue with the available portion and explicitly report the missing commits
+and incomplete coverage.
+
+Report a missing-target gap only when no usable diff is available and none
+of the named fix commits can be reviewed.

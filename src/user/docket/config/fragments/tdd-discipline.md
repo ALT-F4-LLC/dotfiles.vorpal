@@ -1,52 +1,82 @@
 ---
 fragment: tdd-discipline
-version: 2
+version: 3
 ---
 # Test discipline
 
-A test must fail *only* when behavior breaks, never when implementation changes while
-behavior is preserved. Implementation-asserting tests have the failure mode inverted:
-they break on every refactor (noise) and stay green when behavior is actually wrong (no
-signal).
+Pin the intended behavior through stable interfaces. Tests should detect contract
+violations and survive changes to incidental implementation details. A test that
+only confirms internal wiring can miss an incorrect result.
 
-- **Red first.** A test never observed to fail proves nothing. Write the test for an
-  acceptance criterion before the code that satisfies it, and observe it fail for the
-  right reason. An AC whose test passes *before* the change is evidence the criterion is
-  mis-stated, not evidence of success; surface it rather than proceeding.
-- **Pin behavior at the seam.** Test through the unit's public interface; unit-test an
-  internal only when it is a gnarly nameable concept on its own, and even then through
-  the smallest stable interface.
-- **Assert outcomes, never interactions.** Return value, emitted event, persisted state.
-  Asserting that a function *was called* asserts *how*, and breaks on every
-  behavior-preserving refactor.
-- **Mock only true external boundaries**: network, clock, filesystem, third-party APIs,
-  entropy. Mocking an internal collaborator IS asserting implementation; prefer fakes
-  (in-memory implementations) over mocks (assertions on calls).
-- **Read tests as specifications.** Name each test for the behavior it pins: one
-  behavior per test, one failure per reason.
-- **Arrange only what the behavior depends on**: builders with sensible defaults;
-  arrange only the fields the assertion touches.
-- **Fixtures that must defeat a scanner are assembled at runtime.** A literal
-  credential-shaped string in a test file trips the secret gate on the test's
-  own diff; build it (`printf 'AKIA%s' '…'`) so no committed line matches the
-  pattern, and the positive control still fires at run time.
-- **Never weaken a test to make it pass.** Loosening an assertion, widening a tolerance,
-  deleting a case, or marking it skipped converts a real failure into a false green. If
-  a test is wrong, fix the test deliberately and say why; if the code is wrong, fix the
-  code.
+- **Red first for changed behavior.** Write or extend a test for the acceptance
+  criterion before implementing it; observe failure caused by the missing or
+  incorrect behavior. Unrelated setup, discovery, or environment failures do not
+  count. A missing new API can be an initial red; do not describe it as an
+  executed behavior assertion. If the test already passes, investigate whether
+  the behavior already exists, the scenario misses the
+  defect, or the criterion needs correction; report what you establish before
+  making a dependent change. Characterization tests and tests guarding a pure
+  refactor may start green; do not manufacture a failure in correct code.
+- **Complete the loop.** Implement the behavior, observe the test pass, then
+  refactor with relevant tests green. Run required checks before claiming
+  completion. Follow the evidence rules for commands, evaluated state, discovery,
+  skips, cached results, and blocked checks; report verification gaps explicitly.
+- **Pin behavior at the seam.** Test through the unit's public interface. Test
+  an internal concept separately when it has a coherent responsibility and
+  meaningful contract, using its smallest stable interface. Do not expose
+  private details solely to assert them.
+- **Assert outcomes and contractual effects.** Check returned values, errors,
+  emitted events, persisted state, and forbidden effects. Assert a call's
+  arguments, count, order, or absence only when those properties are part of the
+  contract, such as no payment request after authorization fails. Do not pin
+  incidental helper calls.
+- **Keep doubles at meaningful boundaries.** Prefer real collaborators. Replace
+  I/O, time, entropy, or other slow, unavailable, or nondeterministic dependencies
+  at stable interfaces; explain unusual internal substitutions. Prefer simple,
+  faithful fakes over scripted call expectations. Use existing contract or
+  integration coverage to check material assumptions in fakes; add focused
+  coverage when those assumptions are unverified and consequential. A fake
+  alone cannot establish the real dependency's behavior.
+- **Read tests as specifications.** Name each test for one behavior; multiple
+  assertions may establish that behavior. Derive expected results from the
+  contract or an independent oracle, never the same production path being tested.
+  A failure should make the violated expectation clear.
+- **Arrange the scenario.** Use builders with sensible defaults. Make inputs,
+  state, and prerequisites that determine the behavior explicit; omit unrelated
+  setup. Relevant inputs need not appear in the assertion.
+- **Control nondeterminism.** Control time and randomness when relevant; isolate
+  mutable state and clean up owned resources. Use deterministic synchronization
+  or bounded condition waits instead of arbitrary sleeps. Tests must not depend
+  on execution order or another test's leftovers.
+- **Construct synthetic scanner fixtures at runtime.** For secret-detection tests,
+  assemble non-secret values that satisfy the detector's actual format and
+  context requirements. Keep credential-shaped literals out of the committed
+  fixture source. Feed generated content through the scanner mode and effective
+  configuration under test, and assert the expected finding, not just nonzero
+  exit. Verify the source diff passes its gate without suppressing the positive
+  control. Never use real credentials.
+- **Never change expectations merely to obtain green.** Do not loosen assertions,
+  widen tolerances, delete cases, skip failures, or change runner exclusions to
+  hide a defect. Correct an invalid or obsolete test from the intended contract,
+  explain why, and preserve relevant coverage. If the code is wrong, fix it.
 
-**Size and risk.** Justify every new test at the smallest size that can catch its defect
-class: small (single-process, no I/O), medium (single-machine, local I/O), large
-(multi-process, network). Large tests are the slowness and flake budget. Allocate effort
-by risk: security boundaries, data transformations, public API contracts and
-serialization get thorough tests; error handling, config parsing and integration points
-get key paths; trivial accessors get little or none. The question is "if this line is
-wrong, will we know before users do?" For each claimed resilience behavior (retry,
-timeout, degrade, circuit-break), at least one test must INJECT the failure it defends
-against; a fallback with no failure-injection test is unverified.
+**Size and risk.** Give each new test a defect class to catch; reuse or extend
+existing tests when they already provide the right seam. Choose the smallest
+size that faithfully exercises it. Follow repository size definitions; otherwise
+use small (single-process, no filesystem or network I/O), medium (one machine,
+including local I/O, subprocesses, or localhost services), and large (remote
+services or distributed execution). Budget large tests by the integration risks
+smaller tests cannot cover. Allocate effort by failure consequences: security
+boundaries, data transformations, public contracts, and serialization warrant
+thorough checks; trivial accessors usually do not.
 
-Rule out hardest. **Coverage as a goal**: it measures which lines executed, not whether
-anything was asserted; a diagnostic, never a target. **Snapshot tests no human
-verified**: a blind-updated snapshot bakes the bug in. **Over-mocking**: four mocks
-asserting collaborator calls and one outcome check pins implementation; the tell is that
-it would fail under a behavior-preserving refactor.
+For each claimed resilience behavior—retry, timeout, degradation, circuit
+breaking—inject the failure it handles, confirm that path was exercised, and
+assert the promised outcome and applicable limits. Test exhaustion, recovery,
+and forbidden side effects when those are claimed. A fallback tested only on
+the happy path remains unverified.
+
+Rule out hardest: **coverage padding**—execution coverage is a diagnostic, not
+proof of assertion quality; **snapshots without human-reviewed expectations**—a
+blind update can preserve a bug; **over-mocking**—a test that breaks when
+incidental wiring changes pins implementation rather than the intended contract.

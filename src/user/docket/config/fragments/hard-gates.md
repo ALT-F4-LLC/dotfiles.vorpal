@@ -1,57 +1,105 @@
 ---
 fragment: hard-gates
-version: 2
+version: 3
 ---
 # Hard gates G1–G5
 
-Five narrow, **mechanically detectable** symptoms that outweigh feature correctness. They
-fire only on the objective symptom: the moment a gate needs a judgment call to fire, it
-is not a gate finding but an ordinary one under the dimension rubric. Read the
-counter-examples as carefully as the patterns: a gate that fires on a correct construct
-costs more trust than one that misses.
+Five narrow, evidence-based conditions block a passing review even when other
+features work. Patterns locate candidates; they do not establish findings.
+Confirm the trigger from inspected code, an explicit contract, or applicable
+execution evidence, and check the counter-examples before firing. Design
+preferences belong under the dimension rubric. Missing evidence leaves the
+dependent claim UNVERIFIED; it does not prove a defect or a pass.
 
-**G1: Swallowed error.** A `catch`/`rescue`/`except` with no rethrow AND no logged
-context AND no meaningful handling, on a path touching untrusted input, network, or
-persistence. Patterns: an empty catch; a catch whose body is a comment; a discarded
-error result (`_ = err`, `_, _ := …`); `.unwrap()` / `.expect()` / a bare force-unwrap on
-data the function does not control. **Not fired by** deliberate panics on programmer-error
-invariants, where a clear stack is the right move.
+Apply gates within the declared review scope. Attribute a finding to the change
+only when the change introduces, exposes, or worsens it; identify pre-existing
+issues separately. State the reviewed revision or working state and relevant
+verification gaps.
 
-**G2: Unguarded shared mutation.** Shared or module-global mutable state accessed with
-no lock, channel, actor, or single-owner pattern. **Not fired by** mutex/atomic-guarded
-access, message passing, single-owner tasks, or local mutation whose result escapes as a
-new value.
+**G1: Discarded failure or unchecked panic.** An error on a path involving
+untrusted input, network, or persistence is discarded and execution proceeds as
+though the operation succeeded, contrary to its contract; or a reachable failure
+from such a source is forced into a panic where the contract requires rejection,
+propagation, or recovery. Candidates include empty or comment-only handlers,
+ignored error results, and unchecked unwraps. Show the failing path and its
+required disposition. Logging alone does not make apparent success correct.
+**Not fired by** propagation through the language's error channel, translation
+that preserves the required failure information, contract-supported recovery or
+best-effort behavior, an unwrap whose precondition is established and remains
+valid, or deliberate failure on a programmer-error invariant. Do not require
+duplicate logging. **Mitigation:** restore the required error behavior and
+preserve diagnostic context where needed.
 
-**G3: Unparsed boundary input.** Untrusted input (HTTP body, query, or header; env var;
-CLI arg; queue payload; DB row; third-party response; file off disk) consumed without a
-schema parse into a precise type at first contact. **Not fired by** data flowing through
-internal calls after it was parsed once at the boundary.
+**G2: Unprotected shared-state invariant.** Identify shared mutable state, the
+conflicting accesses, and a reachable concurrent or asynchronous interleaving
+that violates a required invariant without effective coordination. A global
+declaration or missing local lock alone is insufficient. **Not fired by**
+synchronization, transactions, message passing, or exclusive ownership that
+protects the whole invariant; state immutable after initialization completed
+before sharing; or local mutation whose result escapes as a new value. Atomics
+or separate locks around individual accesses do not exempt an unprotected
+compound operation.
+**Mitigation:** enforce ownership or coordinate the full operation that must
+remain consistent.
 
-**G4: Surface-not-invariant patch.** A fix papering over an edge case instead of
-addressing the underlying contract. Patterns: a null check added where the real bug is
-upstream data of the wrong shape; a retry loop around a non-idempotent operation;
-defensive guards masking an invariant violation; a snapshot or test updated to make a
-failing case pass without diagnosing why. Firing this one requires reading the issue to
-learn what the code was supposed to *uphold*.
+**G3: Boundary input used without required validation.** A value crosses a trust
+boundary and reaches an operation that relies on a guarantee not established by
+runtime parsing, validation, or an enforced upstream contract. Identify the
+source, missing guarantee, and dependent use. HTTP fields, environment variables,
+CLI arguments, queue payloads, database results, external responses, and files
+are candidates, not proof of missing validation. Establish required guarantees
+before their first dependent use and preserve them in precise types where
+practical; annotations and unchecked casts do not establish runtime guarantees.
+**Not fired by** validated internal flows whose guarantees remain valid,
+framework or storage enforcement of the relevant constraint, or opaque data
+handled according to a contract that requires no further interpretation.
+**Mitigation:** establish the missing guarantee at the appropriate boundary;
+recheck changing state where the operation requires it.
 
-**G5: Unexecuted verification regex.** A change introduces or modifies a regex meant to
-gate verification, with no evidence it was run against the actual target. Patterns: the
-pattern assumes plain text where the target carries markup (bold markers insert
-characters between word and colon); literal adjacency required where the target has
-intervening words; an expected hit count that does not match the real one; a
-basic-regex pipe treated as alternation when it is a literal character. An unexecuted
-verification pattern is a broken gate that reports success.
+**G4: Demonstrated invariant bypass.** A purported fix suppresses a failure,
+skips required behavior, or weakens an assertion while a supported case still
+violates the contract being fixed. Cite that contract from the issue,
+requirements, relevant callers, or tests, and provide a reproducer or concrete
+execution trace showing the remaining violation. Added null checks, retries,
+defensive guards, and snapshot changes are candidates, never sufficient evidence.
+**Not fired by** a guard that enforces the actual contract, a retry whose replay
+safety is established, or an expectation updated for an explicitly changed
+requirement. If the contract is unclear or conflicting, report that uncertainty
+under the ordinary rubric. **Mitigation:** repair the demonstrated contract
+violation and verify the triggering case without hiding it.
 
-**Override recognition.** Before raising any gate finding, look at the change and its
-adjacent lines for an explicit override marker naming the principle the author knowingly
-set aside, in any comment syntax. When one is present, that occurrence is not a gate
-finding: report the override verbatim with its location and stated reason, in its own
-section of your artifact. An override is **surfaced, never silently honored**: whoever
-reads your artifact decides whether the reason holds. Note that in this system an
-override may equally live outside the code, attached to the work item; treat a marker
-you cannot find as absent rather than assumed.
+**G5: Invalid verification or confirmed bypass.** A regex introduced or modified
+to decide verification is demonstrated to misclassify the actual target, or
+available execution evidence explicitly establishes that a required check was
+skipped while the workflow reported verification passed. Distinguish a detector
+defect from a bypass of required execution. Candidates include markup or
+adjacency mismatches, incorrect counts, and regex-engine mismatches.
+Before relying on the check, inspect the target representation and validate the
+exact command, engine, flags, file scope, exit handling, and expected result
+against the current target. Exercise representative known-match and
+known-nonmatch controls through the same pipeline; record exit status and
+decisive output. Execution alone does
+not establish correctness. **Not fired by** missing logs or an explicitly
+unverified or blocked run alone; report the verification gap. Applicable prior
+evidence for unchanged relevant inputs and conditions can satisfy execution.
+These exceptions do not excuse an independently demonstrated detector defect.
+**Mitigation:** correct and validate the detector, or execute the skipped check
+and correct the verification claim.
 
-**A gate finding names five things:** the location, which gate, the symptom observed, the
-required mitigation, and (where the symptom is subtle) why the counter-example does not
-apply. Hitting a hard gate is the review system working; report it plainly and at full
-severity.
+**Override recognition.** Before raising a gate finding, inspect the affected
+code and adjacent comments, the change summary, and available attached work-item
+context for an explicit override naming the gate or principle, the occurrence
+it covers, and the reason. Comment syntax is irrelevant; no source comment is
+required. A matching override moves only that occurrence to an **Overrides**
+section: quote it verbatim, cite its source and affected location, and preserve
+the stated reason. Surfacing it does not endorse the reason or certify the code
+as correct; the reader decides whether to accept it. Do not invent, broaden, or
+assume an override; quoted examples are not declarations. Note unavailable
+context without treating an unseen marker as present.
+
+**A gate finding names five things:** the location and reviewed state; the gate;
+the observed symptom and supporting evidence; the required mitigation; and why
+the relevant counter-example does not apply. Report confirmed, unoverridden
+gates plainly as blocking a passing review. Assign severity from supported
+impact and preconditions, independently of confidence; do not inflate every gate
+to maximum severity or average it away because unrelated features work.

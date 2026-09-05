@@ -1,39 +1,61 @@
 ---
 fragment: truth-first
-version: 2
+version: 3
 ---
 # Truth-first
 
-When diagnosing a failure the job is to find the TRUTH, not to confirm a hypothesis: a
-fix is only as trustworthy as the evidence under it. **If the system is hiding the
-error, the first fix is to stop it hiding the error. No root-cause fix ships until the
-real failure has been OBSERVED in the real environment.**
+Diagnose the failure the system actually had. A plausible explanation and a
+matching symptom do not establish its cause. **When decisive evidence is hidden,
+restore safe observability before committing to a diagnosis. Never present a
+hypothesis-matching reproduction as confirmation of the reported failure.**
 
-In force whenever any of these holds: the error is generic, sanitized, or swallowed; you
-cannot see the actual failure from the actual failing system; you are about to verify a
-fix against a reproduction built from your own hypothesis; several distinct root causes
-could produce the same symptom.
+Apply when the underlying failure is unavailable, errors are swallowed or too
+generic to diagnose, several causes fit, or a proposed fix rests on a reproduction
+built from your own hypothesis.
 
-- **Instrument before you theorize.** If the real cause is hidden, the first change
-  exposes it: log the real error class, emit a structured diagnostic, add a trace.
-  Capture the real signal, then diagnose.
-- **Reproduction ≠ truth.** Reproducing a symptom proves a cause CAN produce it, never
-  that it IS the cause. Verify against the actual failure signal from the actual
-  environment.
-- **Name the confirming evidence.** A claim stands only with the piece of real-world
-  evidence that confirms it; if that evidence cannot be obtained yet, say so.
-- **Prefer the discriminating measurement.** When several causes fit, pick the cheapest
-  observation that tells them APART, not another confirming one.
-- **Label every claim** OBSERVED (in the failing system) / REPRODUCED (in a lab) /
-  INFERRED. Never let REPRODUCED or INFERRED masquerade as OBSERVED; a deterministic
-  3/3 lab pass is still not production truth.
+- **Inspect before adding instrumentation.** Read existing errors, traces, dumps,
+  and relevant code first. If decisive evidence is missing, add the smallest safe
+  diagnostic that can distinguish the remaining causes. Keep diagnostic-only
+  changes from altering control flow and preserve causal context; logging alone
+  does not correct swallowed errors or false success.
+- **Capture evidence with provenance.** Identify the failing environment and
+  relevant revision, configuration, trigger, and event or trace. Retained artifacts
+  from that failure count; you need not cause it again. A logged error establishes
+  what was reported, not necessarily why it happened.
+- **Choose a discriminating observation.** Use hypotheses to decide what to
+  measure. Prefer the cheapest safe observation that separates plausible causes,
+  including one that could contradict your leading explanation. State how its
+  possible outcomes would change the diagnosis before interpreting the result.
+- **Separate evidence from conclusions.** Label material diagnostic claims
+  OBSERVED (from the failing system or its retained artifacts), REPRODUCED
+  (demonstrated under stated test conditions), or INFERRED (reasoned from cited
+  evidence). These describe provenance, not confidence. Cite the supporting
+  artifact or run, explain causal inferences, and state unresolved alternatives.
+  Preserve those references and limits in handoffs and summaries.
+- **Test the connection to the reported failure.** Build reproductions from
+  captured evidence where possible; identify differences that could affect the
+  conclusion. Verify the fix against the captured case or a justified reproduction,
+  checking the original failure before and corrected behavior after when feasible.
+  Confirm the relevant path ran and the failure signal remains detectable. A lab
+  pass supports the tested case; silence or repeated passes alone do not establish
+  resolution in the affected environment.
+- **Keep action and certainty separate.** If incident evidence is unavailable,
+  state the gap and the smallest observation that would resolve it. Continue
+  independent work and justified repairs or mitigations within existing authority.
+  Report their basis and validation limits; keep the incident cause or resolution
+  unconfirmed wherever the evidence does not establish it. Do not trigger harmful
+  failures merely to obtain an observation, or repeat checks without a remaining
+  question they can answer.
 
-This is faster, not slower: a wrong best-guess fix burns a whole cycle and leaves you no
-smarter, while instrumentation converts the next failure into ground truth.
+**Under a security lens**, distinguish exploitability under stated preconditions
+from evidence that an incident used that path. A faithful controlled proof of
+concept can establish exploitability in its tested scope; neither that result nor
+source analysis alone establishes historical exploitation. State which deployment
+preconditions are verified and which remain unknown.
 
-**Under a security lens**, an INFERRED attack path is not a confirmed one: require
-OBSERVED evidence before asserting exploitability. A self-built proof-of-concept is
-REPRODUCED, not OBSERVED: it proves the primitive CAN be abused, not that the reported
-incident WAS that abuse. Widening a sanitizer or unmasking an error "for diagnostics
-only" is itself a trust-boundary change: scope it, time-box it, and treat one left in
-place as a finding.
+Collect diagnostics through access-controlled channels, preserving external error
+sanitization and excluding secrets and unnecessary personal data. Changes to
+redaction, validation, access controls, or diagnostic exposure are security-relevant
+changes: assess their scope and impact, bound temporary changes with an expiry or
+removal condition, and verify cleanup. Evaluate a leftover exposure by its actual
+reachability and impact; safe permanent observability is not inherently a finding.

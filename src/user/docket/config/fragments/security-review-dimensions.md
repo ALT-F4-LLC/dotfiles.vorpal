@@ -1,46 +1,87 @@
 ---
 fragment: security-review-dimensions
-version: 2
+version: 3
 ---
 # Security review dimensions
 
-Work these in order, weighted by what the change touches. A dimension you examined and
-found clean is reported as examined-clean, not as silence.
+Use this order as a checklist; weight depth by the change's security impact and
+follow affected flows across dimensions. Establish the reviewed state, affected
+entry points, attacker capabilities, and required security properties first.
+Include affected callers, dependencies, and configuration beyond the diff.
 
-1. **Authn/authz**: privileged paths, default-deny. Where a dependency or engine
-   pattern-matches privileged identifiers, enumerate wildcard, separator, and bracket
-   semantics against the actual identifier shape, and require sequence-level abuse cases
-   rather than single-input ones.
-2. **Input validation & encoding**: every value crossing a trust boundary, parsed at
-   first contact rather than checked in passing.
-3. **Secret handling**: storage, transit, logs, lifetime, rotation. For strip/redact
-   controls, verify **persist ordering**: a request-view transform can silently skip the
-   at-rest path. Check the framework's own source, not just the change under review.
-4. **Cryptography**: primitive, mode, key management, randomness, constant-time
-   comparison. Verify against current authoritative guidance; never approximate a
-   primitive's properties from memory.
-5. **Trust boundaries**: where the change moves one, crosses one unparsed, or removes
-   one.
-6. **Supply chain**: provenance, pinning, transitive surface, CI integrity.
-7. **Sandbox/isolation**: whether an enforcement point actually blocks under every mode
-   it must survive, and whether it fails closed. A control that degrades to advisory
-   under some configuration is not a control; require the mode-surviving floor and
-   evidence it holds across all of them.
-8. **Logging/observability**: PII and secret leakage, audit completeness.
-9. **Denial of service**: unbounded allocations, regex backtracking, retry storms.
+For each dimension, report findings and coverage: **examined-clean** means no
+finding within the cited paths, modes, and checks. Mark material gaps or relevant
+exclusions **unverified**; use **not-applicable** only for irrelevant dimensions,
+with a reason. A finding does not erase remaining gaps; silence or an incomplete
+check is not a clean result.
 
-**Injection and deserialization surfaces** are examined wherever dimensions 2, 5 and 7
-meet: any construction of a query, command, path, template, or object graph from data
-that crossed a boundary.
+1. **Authn/authz**: identity and session validity, default-deny, object and tenant
+   access, privileged operations. Check enforcement at the protected operation.
+   Where an engine pattern-matches privileged identifiers, verify its actual
+   version, options, normalization, wildcard, separator, and bracket semantics
+   against real identifier shapes. Include allowed and denied cases, plus abuse
+   sequences that create, change, reuse, or revoke relevant state; isolated inputs
+   do not establish sequence safety.
+2. **Input validation & encoding**: identify the guarantees each boundary value
+   needs; establish them at ingress before dependent use. Check syntax, meaning,
+   size, and canonicalization as applicable. Credit enforced upstream guarantees
+   while they remain valid; opaque data need not be interpreted without a reason.
+   Use parameterization or context-specific encoding at the consuming operation;
+   successful parsing alone does not prevent injection.
+3. **Secret handling**: storage, transit, logs, lifetime, rotation, revocation.
+   For strip/redact controls, trace transformation and **persistence ordering**
+   through every affected write path, including queues and error paths. A
+   request-view transform may leave stored values untouched. Inspect the relevant
+   framework source for the version in use, not just the diff; unavailable source
+   leaves source-dependent claims unverified.
+4. **Cryptography**: primitive, mode, authentication, key management, randomness,
+   nonce requirements, and timing-sensitive comparisons. Verify applicable
+   properties and usage against current authoritative guidance and documentation
+   for the implementation in use; cite them rather than relying on memory.
+5. **Trust boundaries**: identify who controls data and authority at each crossing,
+   including stored data and external responses. Check new, moved, or removed
+   boundaries and unintended delegation, network access, or data disclosure.
+   Check security invariants across state transitions, replay, and concurrent
+   operations, including changes between authorization and use.
+6. **Supply chain**: provenance, resolved versions and integrity, pinning,
+   applicable advisories, transitive exposure, and CI/build credentials and code
+   execution. Establish security impact; a dependency change alone is not a finding.
+7. **Sandbox/isolation**: name the guarantee and the modes/configurations in which
+   it must hold. Verify the enforcing layer, bypass and fallback paths, errors,
+   and mode transitions. Identify the minimum enforcement that remains effective
+   throughout that scope. An advisory check cannot satisfy a required blocking
+   guarantee; unexamined required modes remain unverified.
+8. **Logging/observability**: sensitive-data leakage, audit coverage and integrity
+   for required security events, and access to logs. Verify what is actually emitted
+   on success and failure paths.
+9. **Denial of service**: attacker-triggerable CPU, memory, storage, connection,
+   or cost growth; regex backtracking, amplification, and retry storms. Check
+   effective limits and cancellation at the resource-consuming operation.
 
-**Blast radius before severity.** Trace the flagged mechanism to the actual execution
-path that consumes it before scoring it. A finding on a code path nothing reaches is a
-different finding than the same code on a privileged path.
+**Injection and deserialization.** Trace untrusted data into queries, commands,
+paths, templates, interpreters, or object graphs, including after storage or
+transformation. Examine these surfaces wherever present; sandbox involvement is
+not a prerequisite. For AI-enabled paths, include lower-trust content influencing
+instructions, tool authority, or data disclosure.
 
-**Fold re-check.** When a simplification removes or narrows a fail-closed control
-because some property "makes it redundant", check whether that property is OBSERVED or
-merely INFERRED. An inferred premise under a removed control is a fail-OPEN risk, not a
-neutral cleanup: resolving the inference is a prerequisite, not a follow-up.
+**Execution path and impact before severity.** Trace each candidate from an
+attacker-controlled entry or state to the consuming operation and violated
+security property. State preconditions, effective mitigations, and affected
+assets or tenants; cite a concrete code trace or applicable execution evidence.
+Unknown reachability is unverified, not evidence of unreachability. Assign
+severity from supported impact and preconditions, separately from confidence.
 
-**Regressions count as findings.** An existing mitigation weakened by this change is a
-finding in its own right, independent of whether the change introduces anything new.
+**Control-removal re-check.** When simplification removes or narrows a fail-closed
+control as redundant, establish that the replacement premise holds throughout
+the required states and modes and preserves the guarantee. An observed example
+or an unsupported inference is insufficient. An unresolved premise blocks an
+examined-clean result for that control; resolve it before accepting the removal.
+Report a demonstrated bypass as a finding and an unproven premise as a
+verification gap, preserving any independently established regression.
+
+**Regressions count as findings.** Compare effective protection before and after
+the change. A mitigation weakened in a way that reduces required protection is
+a finding even when the underlying hazard predates the change. Attribute issues
+introduced, exposed, or worsened by the change; identify unrelated pre-existing
+issues separately. Do not require a novel exploit or inflate severity merely
+because the issue is a regression.

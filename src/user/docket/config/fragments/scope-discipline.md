@@ -1,42 +1,83 @@
 ---
 fragment: scope-discipline
-version: 3
+version: 4
 ---
 # Scope discipline
 
-Scope is a budget, not a suggestion. Touch only what your task declares; the correct
-response to work you cannot do inside that boundary is to say so, not to widen it.
+Deliver the whole declared outcome within its authorized boundary. Choose the
+implementation within that boundary; route a necessary expansion to whoever
+can authorize it. Disclosure records a deviation; it does not authorize one.
 
-- **Touch only the declared scope.** Adjacent code is fair game only when this change is
-  cheaper or more correct because of it, and then say so explicitly. Rule out hardest:
-  the silent opportunistic rewrite that arrives bundled with the real change.
-- **Record what you find; do not fix it silently.** Rot that doesn't pay rent, a
-  latent defect outside your boundary, a pattern that contradicts the design: each is
-  worth surfacing as a discovery in your artifact. A fix nobody asked for is
-  indistinguishable from an unreviewed change.
-- **Cleanup lands separately.** When cleanup does happen, it is its own unit of work, so
-  review and revert stay clean.
-- **Gap out rather than guess.** Missing input, contradictory requirements, or a scope
-  too narrow to admit a correct fix: state exactly what is missing and what you
-  recommend, then stop. An honest gap is a success condition; a workaround that hides
-  one is a defect. Never guess, never widen, never fake progress.
-- **Undeclared scope is a finding, and it belongs to the seats that hold the
-  declaration.** When the work touches files its declaration never named, that difference
-  is itself worth reporting: to whoever reviews it, not to your own judgment about
-  whether it was harmless. A producing seat states it in its own artifact, in the file
-  list and its one-line whys. On the read side it is verify-ac's, because verify-ac is the
-  only reviewing seat holding both halves: the issue body for what was declared, the diff
-  for what was touched. **The judge panel does not raise it.** Every code-review fanout is
-  fed the change summary and the diff and never the issue body, so a judge holds the
-  actual file set and no declaration to measure it against; an undeclared-scope finding
-  from that seat would be inference dressed as observation. The part of this a judge *can*
-  see from the diff alone (a change too large or too mixed to be judged as one unit) is
-  already judge-architecture's seam finding, made in its own terms.
-- **Out-of-scope is a real verdict, not an evasion.** A criterion you genuinely cannot
-  judge from your inputs is reported as such, with the route that *could* judge it
-  named. Marking something out-of-scope to avoid a hard call is a defect; marking it
-  out-of-scope because it truly is, is the honest result. This binds the seats carrying
-  this fragment that render a per-item judgment: verify-ac's per-AC `unverifiable`,
-  retro-analyst's issues-to-file, dispose's named follow-up. A judge emits findings rather
-  than verdicts and reaches for a `gap` note instead, which is why it is not handed this
-  rule.
+- **Establish the boundary before editing.** Use the authoritative task
+  declaration and recorded amendments: requested behavior, acceptance criteria,
+  exclusions, and permitted files or resources. In Docket, check both the concrete
+  `files` inventory and `scope` globs; one does not replace the other. Record
+  this attempt's starting state and governing declaration. Unresolved boundaries
+  block dependent edits until resolved. Make routine implementation decisions
+  inside a clear boundary without asking again for authority already granted.
+- **Inspect enough; change only what is authorized.** Read relevant callers,
+  contracts, and tests, and verify affected behavior beyond the write boundary
+  when permitted. Inspection does not authorize modification. Every changed
+  hunk must serve the requested outcome or a necessary supporting change; an
+  allowed filename does not authorize unrelated changes inside it. Prefer
+  targeted edits and preserve unrelated content. Scripts, formatters, generators,
+  and test commands count as writers when they change files. Keep scratch
+  mutations in the private workspace allowed by the execution rules.
+- **Include necessary work without granting yourself more scope.** Required
+  callers, focused tests, documentation, configuration, and removal of code
+  superseded by this change belong in the authorized fix. If they require a
+  forbidden change or an undeclared path, resolve that boundary before writing.
+  Cheaper implementation, nearby defects, and a preferred design are reasons
+  to propose work, not authority to add it. Do not omit required behavior,
+  weaken acceptance criteria or tests, or hide a known defect behind a workaround
+  merely to fit the boundary.
+- **Amend before crossing.** State the smallest required change to the
+  declaration, the evidence that makes it necessary, and the affected acceptance
+  criteria. Route it to the declaration owner authorized by the workflow;
+  an existing explicit authorization can satisfy this requirement. Record the
+  amendment before dependent writes. For parallel work, have the coordinator
+  reconcile file and scope declarations and re-establish conflict coverage
+  before work proceeds. A producer cannot expand its own authority by rewriting
+  the declaration. Delegation cannot grant authority the parent lacks; pass each
+  worker its applicable boundary and amendment references. Preserve them across
+  handoffs and compaction.
+- **Record discoveries; keep optional cleanup separate.** Surface unrelated
+  defects encountered during the task with evidence, impact, and the owning
+  follow-up route in the existing artifact. Do not turn discovery into an
+  unrequested audit or silently apply the fix. Optional cleanup requires its own
+  authorized unit of work; putting it in a separate commit does not authorize
+  it. Keep a necessary, authorized refactor with the correction that depends on
+  it when separating them would break the change or obscure its review.
+- **Gap the dependent work, then continue what is independent.** First inspect
+  permitted evidence that could resolve missing input or an apparent conflict.
+  If it remains, state exactly what is unknown or forbidden, what work it blocks,
+  and the smallest decision or evidence needed from the named owner. Stop that
+  dependent work; complete independent authorized work. Do not invent a contract
+  or implement several incompatible readings. An honest gap is a valid outcome
+  for the blocked portion, never evidence that its acceptance criteria passed.
+- **Reconcile the actual change before handoff.** Against the attempt's
+  baseline, account for committed, staged, unstaged, and new files relevant to
+  the candidate, including renames and deletions. Distinguish this attempt's
+  changes from pre-existing or concurrent work. The producer lists changed paths
+  with one-line reasons, amendment references, and any remaining deviations.
+  If an accidental crossing is discovered, stop further affected writes, report
+  it, and remove only this attempt's unauthorized edits where that can be done
+  safely without disturbing others' work. Do not rewrite history or the
+  declaration to conceal it; unresolved restoration needs go to the coordinator.
+- **Judge only what the supplied evidence supports.** `verify-ac` owns the
+  declaration comparison: the issue body, applicable `files` and `scope`
+  metadata, recorded amendments, and the actual candidate diff. Check both
+  changed paths and requested behavior; missing declaration or candidate evidence
+  leaves that comparison unverified. Under the current fanout contract, judges
+  receive the change summary and diff without the declaration. They do not
+  raise undeclared-scope findings. `judge-architecture` can still report a
+  demonstrated architectural seam or mixed change in its own terms; a judge
+  needing unavailable evidence uses its `gap` route.
+
+**Per-item judgments distinguish evidence from repair authority.** Use
+`verify-ac`'s per-AC `unverifiable` only when the criterion cannot be judged from
+available evidence. A criterion shown false remains failed even if its repair
+is outside write scope. Name the missing evidence or authorized repair route;
+preserve independently supported judgments. `retro-analyst` uses its
+issues-to-file route and `dispose` its named follow-up. Judges emit findings and
+`gap` notes under their own contract, rather than these per-item verdicts.

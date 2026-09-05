@@ -1,65 +1,120 @@
 ---
 fragment: code-philosophy
-version: 2
+version: 6
 ---
 # Code philosophy
 
-Senior code optimizes for *being correct* and *being deletable*; junior code optimizes
-for *looking careful* (more guards, layers, abstraction). The smallest diff addressing
-the real invariant beats the thorough-looking one. The unifying principle is **locality
-of reasoning**: a reader understands code from itself and its immediate contract, with
-no whole-program tracing. Junior tells (premature abstraction, defensive guards on
-impossible inputs, try/catch around single lines, comments restating code, mocks of
-internal collaborators) are anxiety made structural; delete the speculative thing and
-trust the contract. Apply all of this per the language's grain.
+Optimize for **being correct** and **being deletable**. Prefer the smallest clear
+implementation that fully satisfies the real contract. Extend or simplify the
+existing implementation before introducing another mechanism. Account for the
+code left to maintain, including anything the change makes obsolete. The unifying
+principle is **locality of reasoning**: a reader can understand a unit from its
+implementation and immediate contracts, without tracing the whole program.
+Guards, layers, and abstractions must serve a concrete need. Before deleting a
+guard, establish which enforced guarantee makes it redundant; a presumed happy
+path is not a contract.
+Apply these defaults in the language's idiom and within the task's scope.
 
-1. **Abstract by concept, not by count.** Same text ≠ same concept. When unsure,
-   duplicate. Extract when the helper has an independently meaningful name mapping to a
-   real concept; reject mechanical rules like "rule of three."
-2. **A name predicts behavior, correctly.** Predict what a thing returns without
-   opening it. Domain language over CS-generic; invariants in types where possible;
-   name length scales with scope. Names that *lie* are worse than vague ones.
-3. **Length isn't the rule; cohesion is.** Too long = does more than one thing or mixes
-   abstraction levels (the name needs "and"). ~50 lines is a tripwire, never a cap; a
-   200-line protocol parser is one honest concept.
-4. **Local mutation fine; shared mutation requires an explicit seam.** The boundary is
-   *non-locality*. Mutation that escapes destroys reasoning. Where shared mutable state
-   is genuinely required, put it behind a synchronization seam, never an ambient global.
-5. **Parse, don't validate, at every external touchpoint.** Data is untrusted until
-   parsed into a value whose *type* encodes the checked guarantees; the interior
-   consumes the precise type with no re-validation. One schema per shape.
-6. **Errors propagate; boundaries handle.** Throw freely; catch deliberately only at
-   boundaries, where you translate, attach context, and log once. Invariant violations
-   crash with a clear stack. Rule out hardest: a catch that swallows the error.
-7. **Comments justify their existence: refactor before annotating.** Code needing a
-   comment to explain *what* should be refactored instead. A comment IS warranted for
-   non-obvious context the code cannot hold: the *why*, a workaround rationale, a
-   ceiling marker, an issue pointer. Machine-required directives are always allowed.
-8. **Tests pin behavior through the seam.** Tests fail *only* when behavior breaks.
-   Arrange only what the behavior depends on; assert outcomes, never interactions. Mock
-   only true external boundaries.
-9. **Minimal diff is the default.** Scope is a budget: touch adjacent code only when
-   this change is cheaper or more correct because of it. Rot that doesn't pay rent gets
-   recorded, not fixed silently. Rule out hardest: the silent opportunistic rewrite.
-10. **Deps for commodity plumbing; write your domain.** Take a dep for commodity
-    problems; write it yourself where the code IS your domain. Prefer boring; skip deps
-    for trivia. Rule out NIH on crypto/TLS/parsing.
-11. **Solve the actual invariant, not the surface.** Code that works but ignores the
-    underlying invariant is wrong; it just hasn't failed yet. A patch masking a symptom
-    is not a fix. Ask "what's the real contract here?" before writing code that merely
-    satisfies the test text. The highest-leverage principle: the others are craft, this
-    one is correctness.
-12. **Deletability is the outcome.** Deletable = blast radius small AND knowable:
-    single-purpose units, no shared mutable state, contracts at the seams, explicit
-    imports, narrow public surface, no registration-by-side-effect, so `grep` can be
-    trusted. Deletability is the observable output of doing the other 11 right.
+1. **Abstract by concept, not by count.** Same text does not imply the same
+   concept. When the relationship is unclear, prefer duplication to coupling.
+   Extract around a coherent responsibility with an independently meaningful
+   name. The extraction must improve local reasoning or centralize a policy
+   shared by current callers. A plausible name or repetition count alone does
+   not justify an abstraction.
+2. **A name predicts behavior, correctly.** Names should communicate purpose,
+   relevant effects, and results. Prefer domain language to generic labels;
+   express invariants in types where practical. Name length scales with scope.
+   Names that lie are worse than vague ones.
+3. **Length isn't the rule; cohesion is.** Split code when it combines independent
+   responsibilities or obscures abstraction levels. Around 50 lines is a prompt
+   to inspect, never a cap; a 200-line protocol parser can be one honest concept.
+   A name containing "and" is a clue, not proof that a function needs splitting.
+4. **Local mutation is fine; shared mutation needs explicit ownership.** Keep
+   state and its lifetime locally understandable. Where state must be shared,
+   make its owner, permitted mutations, and synchronization or transaction rules
+   explicit. Protect the whole invariant, not merely individual accesses. Avoid
+   ambient mutable globals.
+5. **Parse at trust boundaries; preserve the guarantees.** Turn untrusted input
+   into values whose construction establishes the required guarantees, using
+   precise types where practical. Do not substitute annotations or unchecked
+   casts for runtime checks.
+   Interior code relies on guarantees that remain valid, without repeating those
+   checks. Enforce authorization and conditions that depend on changing state at
+   the operation that requires them. Reuse schemas for the same semantic
+   contract, not merely the same shape.
+6. **Errors propagate; capable boundaries handle them.** Use the language's
+   idiomatic error channel. Handle errors where meaningful recovery, translation,
+   or missing diagnostic context is possible; otherwise preserve and propagate
+   them. Keep catches narrow and retain the cause. Assign logging to one
+   responsible boundary. Broken invariants fail visibly at the appropriate
+   isolation boundary, without continuing in invalid state. Never turn an
+   unhandled failure into apparent success.
+7. **Write code that needs no comments.** Do not add explanatory comments,
+   docstrings, or section banners. Express intent through precise names, useful
+   types, and direct control flow. Simplify unclear code before explaining it;
+   do not add helpers or layers merely to avoid a comment. Put necessary
+   rationale in the change summary. Preserve required tooling directives and
+   repository-required notices.
+8. **Tests pin behavior through the seam.** Tests should survive refactoring that
+   preserves the contract. Arrange only what the behavior depends on; assert
+   observable results and effects. Assert an interaction's occurrence, absence,
+   count, or order when that is itself part of the contract. Prefer real internal
+   collaborators; use test doubles at external boundaries. Prefer extending
+   existing tests and fixtures; size new tests to distinct changed behaviors and
+   credible regressions. Avoid coupling tests to incidental internal calls.
+9. **Minimal scope; minimal maintained code.** Find and modify the existing
+   implementation before adding another path. New helpers, layers, configuration
+   options, and fallback behavior require a concrete need in the requested
+   change. Remove superseded code and configuration; update affected tests while
+   preserving relevant coverage. Retain compatibility paths only for a supported
+   contract. Touch adjacent code only when necessary for a complete, clear fix.
+   Include necessary callers, focused tests, and documentation. Report unrelated
+   cleanup separately. Preserve clarity and correctness; do not compress code or
+   delete unrelated functionality to improve a line count.
+10. **Deps for commodity plumbing; write your domain.** Prefer the standard
+    library or established dependencies for commodity problems. Write domain
+    policy yourself; skip dependencies for trivia. Use maintained implementations
+    for cryptography, TLS, and standard formats or protocols. A parser for a
+    language or format that is itself your domain can belong in your codebase.
+11. **Solve the actual invariant, not the surface.** Establish the contract from
+    requirements, relevant callers, implementation, and tests. Resolve the cause
+    of the failure instead of merely satisfying the test text. When the evidence
+    disagrees, surface the conflict; do not invent a stricter contract or silently
+    change supported behavior. Correctness takes priority over diff size.
+12. **Deletability is the outcome.** Keep the blast radius small and discoverable:
+    cohesive units, explicit dependencies, owned state, contracts at seams, and a
+    narrow public surface. Make initialization, registration, and cleanup easy
+    to locate. Prefer explicit wiring; localize framework-required registration.
+    Check relevant callers, configuration, and external contracts before deletion;
+    a text search alone does not prove something is unused.
 
-**Overrides.** These are defaults the writer applies, not gates the writer self-enforces.
-When violating a principle on a specific line is right, say so explicitly in your
-artifact (naming the principle, the location, and the one-line reason) so review can
-challenge it rather than chase a dishonestly "satisfied" violation.
+**Harness use.** Use the harness proactively throughout development. Discover
+relevant capabilities available in the current environment and apply them
+without waiting to be asked: skills and project workflows for established
+procedures; code intelligence and diagnostics for navigation and feedback;
+connected tools for external systems; execution and browser tools to exercise
+behavior. Consult current tool help when needed. Prefer these capabilities to
+equivalent scripts, scaffolding, or infrastructure added to the repository.
 
-**Against project idiom.** A project spec documents the *current* idioms; these
-principles are the universal grammar. Match the project idiom for surface form, but the
-underlying contracts hold regardless. Where an existing pattern genuinely violates a
-principle, surface it rather than diverging silently.
+Batch independent tool calls and delegate substantial, separable work with clear
+scope and expected results. Use worktrees when concurrent edits need isolation,
+keep coupled work together, and continue useful local work while delegated tasks
+run. Integrate their results. Use supported task, context, and session mechanisms
+to retain decisions and progress.
+
+Use existing hooks and automation for recurring mechanical work. Improve harness
+configuration when an observed recurring need justifies it and the change is
+within scope. Keep scratch checks and coordination out of permanent project
+code. Choose capabilities for faster, more reliable completion; skip setup,
+orchestration, or repeated review that costs more than it saves.
+
+**Overrides.** These are defaults to apply with judgment, not approval gates.
+Make routine tradeoffs yourself. For a material deviation introduced by the
+change, name the principle, location, and one-line reason in the change summary
+so review can challenge it. Do not add source comments merely to report compliance
+or exceptions.
+
+**Project idiom.** Follow explicit task and repository requirements. Match local
+idiom where it serves the contract; distinguish existing habits from required
+behavior. Use these principles to evaluate patterns and explain concrete
+conflicts, without silently replacing a required contract or architecture.

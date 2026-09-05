@@ -1,96 +1,103 @@
 ---
 fragment: severity-ladder-general
-version: 4
+version: 5
 ---
 # Severity ladder: general
 
-- **Blocker** (must fix): data loss, a breaking change with no migration, a critical
-  missing test on a privileged path, or (only where your packet carries
-  `fragments/hard-gates.md`) any hard-gate symptom. A seat without that fragment has no
-  gate list, no counter-examples, and no override rules to judge against, so it raises no
-  gate findings at all; where the same substance falls inside its own remit it is graded
-  on its own rubric and named in its own terms.
-- **Concern** (should fix or explicitly justify): a pattern violation, a missing edge
-  case, a test gap on a non-critical path.
-- **Suggestion** (worth considering here or later): a better approach, a minor
-  improvement.
-- **Question**: clarification you need before the judgment can be completed. A question
-  is a real result; do not convert one into a guess.
-- **Praise**: a pattern worth highlighting. Recording what is right is not padding: it
-  tells the next reader which parts were examined and found good.
+Use this vocabulary for general-track review. Keep the security track's
+authoring vocabulary and rubric distinct. Apply the supplied evidence rules
+and review scope; grade supported impact and applicable requirements separately
+from confidence.
 
-This vocabulary is the general track's own. Keep it distinct from the security ladder:
-the two have bled into each other before, and a merged vocabulary makes a Blocker and a
-Critical indistinguishable to anything reading downstream.
+- **Blocker** (must fix before shipping): an established violation of an
+  applicable acceptance criterion (AC); a required build or test broken by the
+  change; a security regression; data loss; or a breaking change without the
+  migration or compatibility path the applicable contract requires. A missing
+  test on a privileged path is a Blocker when an applicable release requirement
+  makes that coverage necessary to ship: identify the requirement and missing
+  case. Missing coverage alone does not prove faulty runtime behavior.
+  Confirmed, unoverridden hard-gate findings also qualify, but only under the
+  packet rule below. Distance from ideal never qualifies.
+- **Concern** (should fix or explicitly justify): a supported issue below the
+  Blocker bar, such as a consequential pattern violation, missing edge case,
+  maintainability risk, or test gap on a non-critical path. State the consequence
+  that makes action or justification warranted.
+- **Suggestion** (worth considering here or later): a minor issue or concrete
+  improvement with an identifiable benefit. A preference alone cannot justify
+  promotion to Concern or Blocker.
+- **Question**: clarification needed to complete or qualify a judgment. Preserve
+  the uncertainty; use the body or gap route below.
+- **Praise**: an observed pattern worth highlighting. Say what was examined and
+  found good without implying broader coverage.
 
-**Emit-time mapping.** The words above are the authoring language; you reason and write
-in them. The `severity` field of the findings payload takes 02 §6's five values, and the
-three defect rungs map onto them as follows. The remaining two are not defects and do not
-become payload entries at all:
+**Hard gates require the packet.** Apply `fragments/hard-gates.md` only when its
+contents are supplied in your packet. Confirm the trigger and check its
+counter-examples and override rules before raising a gate finding; a candidate
+symptom alone is insufficient. In this general track, a confirmed, unoverridden
+gate finding is a Blocker. A seat without that fragment raises no gate findings
+and reconstructs no gate list from memory. It may report the same substance
+within its own remit, using its own rubric and terms. If the packet says the
+fragment is required but its contents are missing, report that coverage gap.
 
-| Author as  | Emit as   | Why                                                     |
-|------------|-----------|---------------------------------------------------------|
-| Blocker    | `blocker` | must fix; the ONLY value that opens a fix round         |
-| Concern    | `high`    | recorded and surfaced; resolved at gates, never looped  |
-| Suggestion | `low`     | below every gate; leaves `medium` free (see below)      |
-| Question   | body, or a `gap` | not a defect; see below                          |
-| Praise     | body only | a payload entry is a defect record                      |
+**Emit-time mapping.** Author findings using the terms above, then use 02 §6's
+payload schema and this mapping. Do not substitute security-track labels.
 
-**Only a Blocker opens a fix round** (operator convergence policy). The
-fix loop's question is "may this change ship?", and a loop keyed on anything judges
-can produce indefinitely never closes (measured: three rounds and a growing findings
-payload on a five-line change). So `blocker` is the loop's whole fuel, and a Blocker
-means exactly that the change as it stands must not ship: an AC violated, the build
-or tests broken by the change, a security regression, data loss. Distance from ideal
-is never a Blocker.
+| Author as | Emit as | Routing |
+| --- | --- | --- |
+| Blocker | `blocker` | The only severity eligible to open a fix round |
+| Concern | `high` | Reconcile, run record, backlog, and operator gates |
+| Suggestion | `low` | Recorded for downstream consideration; no fix round |
+| Question | Body or contract-defined `gap` | No severity entry |
+| Praise | Body only | No severity entry |
 
-**Concern is `high`, not `medium`, and its venue is the RECORD, not the loop.** A
-Concern is "should fix or explicitly justify", and the justification now happens where
-a human can weigh it: `high` sets a cluster's severity under max aggregation, is what a
-held cluster's disagreement is measured over, surfaces at the reconcile and operator
-gates, and lands in the run record and backlog the operator reviews before publishing.
-What it no longer does is conscript a fix round: mechanical rework is the Blocker's
-venue alone.
+`medium` has no default authoring rung here. Use it for a downgraded Concern
+only if the controlling contract explicitly defines that exception; record
+the supported reason and required disposition. Uncertainty, iteration count,
+or a desire to avoid a gate does not justify a downgrade. `info` is not a
+substitute for a Question or Praise. Use the contract's existing representation;
+do not invent fields or encode missing judgment as a defect severity.
 
-**Suggestion is `low`, keeping `medium` in reserve.** Both sit below every gate, so
-routing does not distinguish them. `low` is the better home because a cluster's
-severity is the MAXIMUM over its members, so a Suggestion never moves a mixed cluster,
-and the held-spread check measures how far members disagree; parking general-track
-niceties at `low` keeps a nicety from widening that spread into a hold.
-`medium` stays available for a Concern you have deliberately downgraded but are not
-willing to drop.
+**Only a Blocker opens a fix round.** Concerns remain visible for resolution or
+explicit justification at reconcile and operator gates. Suggestions remain
+recorded. Neither recruits another automatic fix round. Preserve unresolved
+findings and their identities under the re-review contract; do not suppress a
+supported Blocker to finish the loop or promote a preference to continue it.
+No Blockers means no severity-triggered fix round, not permission to publish:
+required checks, unresolved judgment-blocking gaps, and operator dispositions
+still govern readiness.
 
-**A Question is not a severity.** `severity` orders defects, and no value on it means "I
-could not judge." Emitting `info` files a blocking question as the least consequential
-thing in the set, which is backwards for something this ladder calls a real result;
-emitting `blocker` invents a defect and opens a fix round with nothing to fix. So route
-by whether the question blocks you: one that does **not** block the judgment is
-commentary and lives in the markdown body; one that **does** takes the gap path your
-contract already names: emit your findings plus a `gap` note saying exactly what you
-could not resolve.
+**Aggregation does not set severity.** Under max aggregation, a `low` member
+cannot raise a cluster already at `medium` or above. That says nothing about
+disagreement: lowering a member can widen its distance from a higher member.
+Keep Suggestion at `low` because it is the intended classification, not to
+manipulate a hold. Follow the aggregation contract for cluster membership,
+severity order, and held-spread calculation; do not assume an unstated formula
+or tune a finding's severity to obtain a routing outcome.
 
-**Praise lives in the body.** Every payload entry carries a severity and reads
-downstream as a defect. Recording what is right tells the next reader what was examined
-and found good; that is a body function, and filing it as `info` would put a compliment
-into the cluster's severity arithmetic.
+**Questions and Praise stay outside severity.** A Question that does not block
+judgment lives in the markdown body. One that does block judgment uses the
+contract's `gap` path alongside any independently supported findings. State
+what is unknown, which judgment depends on it, and what would resolve it; leave
+that judgment incomplete and continue independent work. Neither `info` nor
+`blocker` means "could not judge." Praise lives in the body and never enters
+cluster arithmetic.
 
-**Report every finding; do not self-filter.** Severity is a classification, not a
-suppression mechanism. A finding a linter would also catch is reported at `Suggestion`,
-never omitted. Declining to report something you found because it seemed minor is a
-recall defect, and filtering happens downstream where the whole set is visible, never at
-authoring time.
+**Report every finding; do not self-filter for importance.** Preserve supported
+minor findings for downstream filtering. Tool detectability does not change
+severity: a style-only lint finding is a Suggestion; a tool-detectable defect
+meeting a higher rung keeps that rung. Retain uncertain leads with their
+evidence limitations under the evidence and gap contracts rather than dropping
+them or asserting an unproven defect. Reporting is not a quota: a clean result
+is valid when the examined evidence supports it.
 
-**Better, not perfect.** Severity tracks the change's effect on health, not its distance
-from ideal. A perfection delta that does not threaten correctness is a `Suggestion`, and
-never a Blocker or Concern; on a change that definitely improves overall code health,
-inflating a preference into a blocking finding is itself the defect. Where a change is
-net-positive but too large or too mixed to judge cleanly, say that plainly rather than
-blocking it on principle.
+**Better, not perfect.** Grade each finding by its supported consequence. Net
+improvement does not erase an independent defect; possible elegance does not
+create a mandatory fix. A supported maintainability or verification concern
+need not demonstrate an existing runtime failure. If size or mixed scope
+prevents a sound judgment, identify the affected coverage and gap rather than
+declaring the size itself a Blocker.
 
-**Every Blocker and Concern names the general rule it instances**, not only its one-line
-fix. A finding that teaches the class prevents the next instance; one that patches the
-symptom buys a single line.
-
-**Attention follows risk.** On large changes, concentrate on the fraction of the code
-carrying most of the risk, and say what you did not examine closely rather than implying
-uniform depth.
+**Teach the rule and disclose coverage.** Every Blocker and Concern names the
+applicable general rule, observed instance, consequence, and evidence, not only
+a one-line fix. On large changes, concentrate effort on the highest-risk paths
+and state what was not examined closely; do not imply uniform depth.

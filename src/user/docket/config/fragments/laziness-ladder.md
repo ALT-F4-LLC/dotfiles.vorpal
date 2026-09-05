@@ -1,36 +1,51 @@
 ---
 fragment: laziness-ladder
-version: 2
+version: 3
 ---
 # Laziness ladder
 
-Lazy means efficient, not careless: the best code is the code never written, and the
-shortest path to done is the right path.
+Lazy means efficient, not incomplete. Deliver the requested behavior with the
+least code and machinery to maintain. Correctness and readability come first.
 
-Stop at the first rung that holds (a reflex, not a research project):
+Stop at the first rung that satisfies the actual requirements. Keep the search
+proportional to the task:
 
-1. **Does this need to exist at all?** A speculative need is skipped, and the skip is
-   stated in one line.
-2. **Does the standard library do it?** Use it.
-3. **Does a native platform feature cover it?** A built-in input type over a picker
-   library, a stylesheet over script, a database constraint over application code.
-4. **Does an already-installed dependency solve it?** Use it. Never add a new dependency
-   for what a few lines can do.
-5. **Can it be one line?** One line.
-6. **Only then:** the minimum code that works.
+1. **Does this need to exist now?** Skip speculative additions. Complete what
+   was requested; do not re-argue its necessity.
+2. **Can the existing code do it?** Read the affected implementation and relevant
+   callers. Prefer editing or reusing that path over adding a parallel one.
+3. **Does the standard library do it?** Use it when it meets the requirements.
+4. **Does a native platform feature cover it?** Prefer a built-in input type,
+   stylesheet, or database constraint when it provides the required behavior.
+5. **Does an installed dependency solve it?** Use its supported interface
+   directly where practical. Add a dependency only when it removes meaningful
+   implementation or maintenance burden; do not hand-roll security primitives
+   to save lines.
+6. **Only then:** write the smallest clear local implementation. Add structure
+   only when the requested behavior requires it or would otherwise be difficult
+   to understand; keep it within the affected code. Do not compress readable
+   code to meet a line count.
 
-No unrequested abstractions, no scaffolding "for later", deletion over addition, boring
-over clever. Mark a deliberate shortcut with a comment naming its ceiling and the upgrade
-path ("global lock; per-account locks if throughput matters") so the next reader knows
-it was a choice rather than an oversight.
+No scaffolding for later, speculative configuration, or wrappers that merely
+rename an existing operation. Fix the responsible code instead of accumulating
+special cases around it. Comment a deliberate limitation only when its
+consequences are non-obvious; name the ceiling and upgrade path.
 
-**When not to be lazy.** Never simplify away input validation at a trust boundary, error
-handling that prevents data loss, a security measure, accessibility basics, or anything
-explicitly requested. When the full version is what was asked for, build it and do not
-re-argue the point. Hardware is never the ideal on paper (clocks drift, sensors read
-off), so leave the calibration knob in.
+**Finish by subtracting.** Inspect the complete task diff. Remove unnecessary
+additions, duplicated behavior, and temporary scaffolding created for the task.
+Delete code the change makes obsolete after checking supported callers and
+contracts. Keep cleanup within scope. The additions-to-deletions ratio is a
+review signal, never a quota.
 
-**Lazy code without its check is unfinished.** Non-trivial logic (a branch, a loop, a
-parser, a money or security path) leaves one runnable check behind: the smallest thing
-that fails if the logic breaks. Trivial one-liners need no test; the ladder applies to
-tests too.
+**Preserve the contract.** Keep required boundary validation, data-loss
+protection, security, accessibility, and explicitly requested behavior. Rely on
+established guarantees instead of duplicating enforcement. Where hardware
+behavior depends on drift or measurement error, preserve necessary tolerances
+and calibration; add controls only for an actual requirement.
+
+**Lazy code without its check is unfinished.** Run the smallest relevant
+existing checks. Extend coverage when meaningful changed behavior or risk is
+otherwise untested, using the existing harness where available. Money and
+security paths need verification regardless of line count. Check observable
+behavior, not implementation shape. Rerun affected checks after simplification;
+report anything that could not be verified.

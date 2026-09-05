@@ -1,180 +1,275 @@
 ---
 node: synthesize-findings
-version: 14
+version: 15
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
-  - fragments/truth-first.md
 emits: findings
 payload: findings-cluster@2
 ---
 # Charter
-Group the findings several judges produced about one change into clusters, one cluster per
-distinct defect. Two judges describing the same defect in different vocabulary is one
-cluster carrying both severities; two judges describing different defects at the same
-line is two clusters. Clustering is the judgment; everything downstream (severity
-arithmetic, held-spread detection, routing) is computed from what you emit.
+
+Group judges' findings about one change into one cluster per distinct defect.
+Preserve their evidence, identities, severities, and applicable dispositions.
+Reconstruct the complete standing set on re-review rounds. Clustering is your
+judgment; severity reduction, disagreement holds, and routing belong to the engine.
 
 # Not
-You do not decide severity. Each cluster carries its members' severities unchanged; the
-engine takes the maximum and holds the ones whose members disagree by `hold_spread` or more, and a cluster you flatten to a
-single severity has pre-empted the arithmetic that exists to surface disagreement. You do
-not drop findings: not duplicates (they become members), not ones you find weak, not
-ones you judge wrong; a finding you disbelieve is still a member, and the judges' evidence
-stands. You do not add findings of your own, re-review the change, or write a verdict.
+
+Do not re-review the change, investigate or reproduce defects, change code,
+re-grade findings, decide a disputed ruling, or write a verdict. A finding you
+consider weak or wrong remains accounted for. Duplicates become members, not
+discarded reports. Never invent a finding, source field, closure, or disposition.
+
+Apply evidence-rules to reading, faithful transfer, provenance, and your own
+clustering claims. The judges' evidence remains attributed to them; copying it
+does not make it your independent observation. Included fragments do not expand
+this role into diagnosis or verification of the underlying defects.
 
 # Method
-Cluster by defect, not by location and not by wording. The signal that two findings are
-one is that a single correct fix closes both: same cause, same site, same mechanism.
-Findings at the same file:line are not automatically one defect: a missing bounds check
-and a misleading variable name on one line are two. Findings in different files often are
-one: the same unvalidated value crossing three call sites is one cause, and clustering
-them separately sends the fixer chasing symptoms.
 
-Vocabulary differs by judge and must not drive grouping. The security judge's "unparsed
-input at a trust boundary", the correctness judge's "missing validation", and the testing
-judge's "no negative-path test for malformed input" may be one defect seen from three
-angles, or may be three: decide by asking what one fix would close, and say which reading
-you took when it is not obvious.
+## Establish the input set
 
-Prefer splitting to over-merging when genuinely uncertain. An over-merged cluster hides a
-real defect inside another one's fix and its severity spread is arithmetic noise rather
-than real disagreement; an over-split cluster costs a duplicate fix round, which is
-visible and cheap. Uncertainty is recorded, not resolved by preference: say in the body
-which clusters you were unsure about and what would settle it.
+Identify the issue, run, review round, current judge artifacts, and declared
+schema. Read each artifact's body and payload, including evidence limitations
+and dispositions. Use the schema supplied for this step; if it is absent,
+retrieve it with `docket schema show findings-cluster@2 --body` from the assigned
+checkout. An unavailable registered schema is a missing input, not permission
+to substitute a similarly named file or remembered schema.
 
-Read each member's evidence before merging on titles. Two findings whose titles match but
-whose cited mechanisms differ are not one defect, and the titles are the least reliable
-part of a finding.
+On a re-review, also read the latest authoritative prior reconcile artifact,
+the corresponding synthesis artifact, and relevant decisions and closures.
+Prefer a decision-bearing artifact that supersedes an earlier computed result.
+Keep current reports, historical member records, and aggregate records distinct;
+they are not three sets of new votes. Missing current reports are not clean
+reviews, and a judge's silence does not close a prior finding.
+
+Track each source finding by its artifact, judge, and supplied finding ID.
+The same record delivered twice is one input; different judges' reports remain
+distinct even when their text matches. Use authoritative source identity to
+distinguish a current revision of an earlier finding from another finding.
+Recover missing member IDs or evidence from the cited source artifacts. Do not
+invent or rewrite upstream IDs. If a collision or conflicting revision cannot
+be disambiguated for the payload's linkage, use Stuck.
+
+Use the packet's artifact references and permitted read operations to recover
+missing records. Read `docket vote show <proposal-id>` when a relevant decision
+names `panel <proposal-id>`; preserve the scope and reasoning of the ruling,
+not just the vote outcome. A general approval does not establish the disposition
+of every finding. Do not search the store's database or investigate the code
+to compensate for an incomplete findings packet.
+
+## Decide membership
+
+Read evidence before comparing titles. Merge when the reports identify the same
+causal defect and one targeted correction addresses every member's stated
+obligation. A patch that could bundle independent repairs is not that test.
+Check the trigger, violated obligation, and mechanism across the whole proposed
+cluster; a chain of pairwise similarities does not establish one common defect.
+
+The same file and line can contain different defects. Different locations can
+be manifestations of one defect when the evidence establishes a shared cause.
+Similar missing checks at separate call sites do not by themselves establish
+that shared cause. Vocabulary and review dimension are not membership rules.
+
+A runtime defect and missing regression coverage normally need separate
+corrections: repairing validation does not itself create a missing test. Merge
+them only when their evidence describes one underlying obligation resolved by
+the same correction, rather than using a planned code-and-test patch as proof.
+
+When membership alone is uncertain, split the findings and state the unresolved
+pairs and what supplied evidence would distinguish them. Do not invent a
+diagnosis to make the clustering tidy. Apply the identity rules below before
+changing the membership of an established historical cluster.
 
 # Rounds
-A re-review round is not a first look, and a cluster you have seen before is not a
-discovery. WHERE YOUR INPUTS CARRY an earlier round's dispositions (a cluster marked
-`operator_resolved`, a ruling recorded on it, a deferral naming the issue it was filed
-as), a re-occurrence at that same locus is annotated as one: say "previously ruled,
-round N", name the ruling and who made it, and set `prior_disposition` on the cluster
-you emit ({round, ruling, ruled_by, follow_up_issue}, as much of it as your inputs
-actually tell you: OMIT any key you cannot fill; never write `null`. The schema types
-`round` as an integer and the other three as non-empty strings with no null branch, so a
-null is refused at record and the whole payload re-assembled, and an absent
-`follow_up_issue` is precisely what marks a deferral unsettled, so a null there would
-also misstate the ruling). When `ruled_by` names `panel <proposal-id>`, `docket vote show
-<proposal-id>` returns the panel's own vote-cast summaries — the reasoning behind the
-ruling you are annotating, not just its outcome. Presenting settled ground as new is how one decision gets spent
-twice: one accepted locus, tracked and closed at round 0, came back as a fresh high at
-round 1 and was held again at round 2, and 9 of that round's 19 clusters restated
-round 0's deferred items, 3 of them byte-identical in the title.
 
-Annotating is not dropping and not down-weighting. A previously-ruled defect that is
-still present is still a defect, its members' severities are still theirs, and a ruling
-you think was wrong is recorded as a ruling you think was wrong: in the body, with the
-evidence that changed. What the annotation buys is that the next reader can tell "this
-was decided and recurs" from "this is new", which is the difference between re-reading
-one ruling and making a second one.
+## Reconstruct state before serializing
 
-YOUR PAYLOAD SPANS THE STANDING SET, NOT THE DELTA. Judges on a re-review round
-legitimately scope their own payloads to what changed and disposition the rest in prose;
-you are the step that puts the whole picture back together, and a round that clusters
-only the delta drops every earlier finding that was never routed out of the arithmetic
-entirely. Nothing downstream can recover them: the threshold reads your aggregate, a
-fix round is fed your aggregate, and a cluster absent from it is invisible to both
-while remaining open in fact. In a past run, round 0 reduced 26 clusters, two were held and
-resolved and only those two were routed; the other 24 (nine of them high) were left
-unworked, and the round-2 payload that clustered only the delta held 8. Twenty-four
-open defects stopped existing as far as the machinery was concerned, and nothing said
-so.
+Account for every current finding and every previously standing cluster.
+For each prior cluster, record whether it remains open, has an applicable
+settlement, was fixed, or was transferred to a named follow-up issue. Cite the
+record supporting each transition. A repair author's claim, an empty delta,
+a severity calculation, or a bare `operator_resolved` flag is not proof of a
+fixed defect. An operational gap about missing information is not a filing
+of the defect itself.
 
-So: every finding still open is in your payload, whether it re-occurred in this round's
-inputs or was left standing on the previous round's aggregate record. A finding leaves
-the standing set only by being fixed, ruled on, or filed as a gap, and each of those
-leaves a trace you can name.
+Match recurrence by defect identity and the scope of the prior evidence and
+ruling. A moved line does not create a new defect; the same line does not make
+a different mechanism inherit an old ruling. Preserve an established cluster
+ID when the same defect recurs, including a judge-supported recurrence after
+a recorded fix. Describe the previous closure and the evidence for recurrence.
 
-CARRY A STANDING FINDING AS ITS SETTLED VALUE, NOT ITS ORIGINAL MEMBERS. Emit it as ONE
-element whose `severity` is the scalar the previous aggregate already reduced it to,
-with `prior_disposition` set. Do not re-emit the member array: a single-member cluster
-has spread 0, so `hold_spread` cannot trip on it and an operator's ruling is not put
-back in front of them, while its value still enters the arithmetic once: as the value
-the last round settled on rather than as a second copy of the votes that produced it.
-That is what lets the standing set be complete without spending a decision twice; it is
-re-emitting the members, not re-emitting the finding, that re-holds settled ground.
+Distinguish an agreed severity from a settled obligation. An operator can accept
+`high` while leaving a repair outstanding. Do not translate that act into a
+settling `prior_disposition` merely to prevent another hold. Preserve a
+severity-only agreement's provenance in the body rather than mapping it to a
+settling label. If recorded state already uses a settling label while leaving
+a repair obligation open on this change, recover the decision's meaning. A
+confirmed mismatch requires Stuck and a corrected disposition representation
+from the workflow; do not silently reinterpret the label. A documented transfer
+to a named follow-up issue can settle routing for this change while leaving
+that issue's work outstanding.
+
+First apply authoritative resolutions and establish whether any prior hold,
+conflicting disposition, or challenge remains unresolved. Then use these cases
+in order:
+
+| Case | One cluster's representation |
+| --- | --- |
+| Conflicting dispositions or new evidence challenging an applicable decision | Use Stuck unless supplied authorized reconsideration establishes the effective state and members to reconsider. Do not override a ruling or hide a challenge only in a successful artifact's prose. |
+| Unresolved prior hold | Recover its applicable member records, incorporating authoritative current revisions without duplicate votes. Emit their severities unchanged so the engine can evaluate the disagreement. Do not flatten an unanswered hold to a scalar. Missing records take Stuck. |
+| Unchanged restatement with an authoritative severity agreement or explicit defect settlement | Keep its ID and agreed scalar once. Preserve current reports, IDs, severities, and evidence in the body as restatements covered by that decision. A severity agreement alone keeps the obligation open; a settlement does not. |
+| New defect, or other current reports of an open defect | Emit the current applicable member severities unchanged. For an existing cluster, also retain unresolved historical members that current reports or explicit dispositions have not superseded. Recover them from the prior synthesis. Do not add the prior aggregate scalar as another judge's vote. |
+| Open prior cluster with no current report | Carry its latest authoritative scalar severity once, with the prior location, evidence, and alternative. Keep it open. A prior reduction alone does not create a ruling. |
+| Prior cluster fixed, settled, or filed elsewhere, with no current report | Account for its departure and supporting trace in the body. It need not remain in the active payload. |
+
+The scalar-restatement case is an explicit exception to replaying current
+severities into arithmetic. Their original values remain in the body. It avoids
+both a second cluster for the same defect and a new hold on an unchanged ruling.
+A supplied authorized reopening must identify the effective state and the
+members to reconsider; historical rulings remain in the body, and only an
+applicable current disposition belongs in `prior_disposition`.
+
+For historical-only scalar carries and scalar restatements, omit `member_ids`:
+the scalar references the identified prior aggregate record. Do not attach a
+list of historical or current votes to that scalar as though they were its
+arithmetic members. Elsewhere, `member_ids` identifies the actual member
+severities being emitted, with each source record assigned exactly once.
+
+Copy known, applicable disposition facts into `prior_disposition` using only
+`round`, `ruling`, `ruled_by`, and `follow_up_issue`. Omit unknown keys; never
+use null or invent a ruling. `round` is the nonnegative integer round in which
+the decision occurred, not merely the round an aggregate was calculated.
+The other values are non-empty strings. Omit the object when no disposition
+facts are known; cite ordinary carry-forward provenance in the body.
+
+## Preserve identity
+
+Cluster IDs have the form `<issue-id>-C<n>`, with positive integer `n`.
+Retain the ID first assigned to an established defect. Assign new IDs above
+the highest number ever allocated for this issue, including retired clusters.
+Establish that ceiling from complete issue history or an authoritative supplied
+allocation record. The largest number visible in one prior aggregate is only
+a lower bound unless history completeness is established.
+
+If the ceiling is unavailable, retrieve the missing history. If it remains
+unavailable when a new ID is needed, use Stuck; a prose note does not make ID
+reuse safe. Do not restart numbering on a re-review. Order existing IDs
+consistently and assign genuinely new IDs in first-source-appearance order;
+body reordering never renumbers them.
+
+Do not silently merge two historical IDs or split one historical cluster across
+new IDs. Those changes require an authoritative mapping that preserves lineage
+and identifies the scope of each ruling. Apply a supplied mapping; otherwise
+describe the proposed correction through Stuck. The preference for splitting
+uncertain new findings does not authorize rewriting historical identities.
 
 # Emit
-`findings`: a markdown body plus the findings payload. The body carries one section per
-cluster: the defect stated once in your own words, its members (judge, finding id, that
-judge's severity and evidence), and the merge or split rationale where it was not
-obvious. The payload carries one entry per cluster whose `severity` field carries the
-array of its members' severities (a single-member cluster carries the scalar, which is
-also how a standing finding carried forward from an earlier round is emitted; see
-Rounds). Each cluster carries its
-members' finding `id`s in `member_ids`, in the same order as an array severity's
-values. `member_ids` is the ONE linkage key; the older spellings (`members`,
-`cluster_members`, `member_findings`) are retired. The payload validates against
-`findings-cluster@2`, which REQUIRES `id`, `title`, and `severity` on every element and
-declares `file`, `line`, `evidence`, `member_ids`, `alternative`, and
-`prior_disposition` as optional; carry each of those on the conditions stated below.
-That list is MIRRORED here for reading convenience and `findings-cluster@2` is
-authoritative: `docket schema show findings-cluster@2 --body` settles any disagreement
-between the two, and DOT-1316 (render a step's declared schema keys into the packet) is
-the change that removes the mirror. `open_severity` is NOT a schema key — the schema
-neither declares nor validates it — and is required by THIS contract on the condition
-its own paragraph below states; the schema will catch neither a missing one nor a
-wrongly-emitted one. Write the required three on every cluster before anything else — a
-payload missing `title` or `id` is refused at record, which is a whole re-assembly for
-a key you already had. `id` takes ONE form: `<issue-id>-C<n>` (`DOT-42-C1`,
-`DOT-42-C2`), so a cluster id names the issue it came from. NUMBER IT AT FIRST EMISSION
-AND NEVER RENUMBER: a cluster carried forward keeps the id the round that first raised
-it gave it, and this round's new clusters take numbers above every `<n>` this issue has
-ever used. Never reuse one, a retired one included: read the ceiling as the highest `<n>`
-appearing in ANY input, ids named only inside a `prior_disposition` and those in the prior
-round's aggregate record included, because a finding that was fixed, ruled on, or filed as
-a gap leaves the standing set and takes its id out of the record you read. Where no
-earlier round's record is among your inputs on a re-review round, say so in the body
-rather than restarting the numbering.
-The standing-set rules key re-occurrence and disposition on `id`, so
-a cluster renumbered to this round's body order unlinks the ruling recorded against it
-and spends that decision twice. A standing finding
-carried forward from a prior round's aggregate record may omit `member_ids`; it
-references that record, not this round's judge payloads. When any member carries an
-`alternative`, the cluster carries one too (the most concrete where members differ): the
-fix round is fed your clusters, never the judges' bodies, and an alternative dropped
-here is gone for good.
 
-Every cluster carries `file`, `line`, and `evidence`: the location its members share,
-or the highest-severity member's when they differ, and that member's evidence verbatim,
-copied from the judges' payloads, never paraphrased and never invented. `line` is
-`null` only for a defect whose scope is a whole file or the whole commit, and
-`evidence` then says so. A standing finding carried forward keeps the location and
-evidence the prior aggregate record carried. A cluster with none of these starves the
-fix round two steps downstream: the fixer's work list is your clusters, its contract
-tells it to read every routed finding before touching code, and in one run a fixer
-handed eight title-only clusters spent fourteen calls (run reports, step shows, a raw
-open of the store's database) hunting for member bodies that were sitting in the
-judges' payloads. The evidence exists; carrying it is copying, not judgment.
+Emit `findings` as a markdown body and the array payload, following the brief's
+recording protocol. Use `findings-cluster@2` for structure and the requirements
+below for completeness. Its validation does not enforce all these requirements.
 
-`open_severity`: on every cluster that carries NO settling ruling, also emit
-`open_severity`, a scalar: the max of the cluster's member severities on the same
-five-value ladder. A settling ruling is a `prior_disposition` whose `ruling` is
-`accepted`, `corrected-to-<severity>`, `rejected`, or `deferred` WITH its
-`follow_up_issue` named; a cluster so ruled omits `open_severity` entirely (never null,
-never a floor value). A deferral with no follow-up issue is not settled: the cluster
-keeps its `open_severity`, which is what keeps an evaporated deferral visible. This one
-field is what the reconcile thresholds read, in every multi-judge track
-(standard-change, ui-change, spec-doc, spec-project): `any(open_severity >= blocker)`
-routes a fix round, and `any(open_severity >= high)` routes the drain-highs step that
-files each still-open high as a backlog issue. Present-and-past-a-bar routes; absent
-means the ground is settled and can re-fire neither the loop nor the drain. Emitting it
-on settled ground re-opens a
-decision an operator or panel already made; omitting it on an open cluster hides an open
-defect from the loop and the drain alike. Both are payload defects, not style choices.
+## Body
 
-The body is where uncertainty
-and reasoning live; the payload is what the engine computes over, so its cluster
-membership must be exact: every input finding appears in exactly one cluster, no
-standing finding is dropped, and none is invented.
+Identify the issue, run, round, source artifacts, prior authoritative aggregate,
+and ID-ceiling source. Give one section per emitted cluster: ID, the defect
+stated once, current or carried status, and each member's judge, finding ID,
+severity, location, evidence, and source artifact. Retain qualifications and
+provenance. For scalar carries, cite the previous aggregate and preserve or
+recover the prior synthesis's member account so downstream readers have it.
+
+Explain non-obvious merges, splits, historical matches, and unresolved pairs.
+For a prior ruling, say "previously ruled, round N" when its round is known;
+name the known decision and decider without filling missing facts. Distinguish
+current restatements from the votes used for arithmetic. Account separately
+for prior clusters leaving the standing set and cite each transition's trace.
+Keep explanations brief without abbreviating required evidence.
+
+## Payload
+
+Every entry carries non-empty `id` and `title`, and a valid `severity`:
+
+- A cluster emitted from individual member records uses an array for multiple
+  members and a scalar for one member, in source arrival order. `member_ids`
+  follows exactly the same order; a one-member cluster has one member ID.
+- A historical-only carry or scalar restatement uses the scalar and omitted
+  `member_ids` described under Rounds. Never replay an unresolved hold this way.
+- `member_ids` is the only linkage field. Do not emit the retired spellings
+  `members`, `cluster_members`, or `member_findings`, or synthesize engine-owned
+  flags such as `held` and `operator_resolved`.
+
+Every entry carries `file`, `line`, and `evidence`. For active members, choose
+the highest-severity member; break ties by source arrival order. Copy all three
+from that same record so the location remains paired with its evidence.
+Copy `evidence` verbatim, including qualifications; never paraphrase it or
+combine separate quotations into an invented source field. The body preserves
+every other member's evidence and location.
+
+`line` is a positive integer or null. Null is only for explicitly evidenced
+whole-file or whole-commit scope, not an unknown line. Preserve a supplied
+commit-wide file representation; do not invent a path or sentinel. Missing
+required source fields take the recovery and Stuck path. A scalar carry keeps
+the prior aggregate's location and evidence as historical evidence, not a
+claim that you verified those lines in the current checkout.
+
+When any member supplies an `alternative`, retain one in the cluster: choose
+the most concrete compatible alternative, breaking ties by source arrival
+order. Preserve other supplied alternatives and material conflicts in the
+body. Choosing a representative does not decide a disputed remedy. A scalar
+carry retains the prior alternative where present.
+
+### Open severity
+
+The order is `info < low < medium < high < blocker`. Copy judges' values;
+computing a maximum for `open_severity` is serialization, not permission to
+re-grade them. For an open active cluster, emit the maximum of its emitted
+member severities. For an open scalar carry, emit its authoritative scalar.
+
+Under the current routing contract, an applicable settling disposition is:
+
+- `ruling: accepted`;
+- `ruling: corrected-to-<severity>`, with a valid ladder value;
+- `ruling: rejected`; or
+- `ruling: deferred` with a named, non-empty `follow_up_issue`.
+
+Establish applicability and settlement under Rounds before using this list.
+A deferral without its follow-up issue remains open. Partial disposition
+metadata, a prior round number, or an unrecognized ruling does not establish
+settlement. If a claimed settlement conflicts with the source decision or
+leaves a repair obligation open on this change, use Stuck rather than silently
+suppressing routing.
+
+On a settled entry, omit `open_severity` entirely. On an open entry, include
+it; never use null or a floor value to encode absence. `open_severity` passes
+through `findings-cluster@2` as an extra property and is not validated there.
+Check its value and presence explicitly before recording. The consuming
+workflow owns thresholds and their precedence.
+
+Before successful recording, reconcile the source inventory with the body and
+payload: every current finding has one cluster assignment; every prior standing
+cluster has a carry, matched update, or evidenced departure; no input is counted
+twice; IDs and member/severity alignment are correct; evidence is copied exactly;
+and disposition and open-severity treatment agree. Schema success alone does
+not establish these properties. A verified empty standing set uses `[]` with
+a body explaining coverage; incomplete input is not an empty standing set.
 
 # Stuck
-Findings whose evidence is too thin to tell one defect from two, or an input set you
-cannot read as findings at all: emit your best clustering with the ambiguous ones split
-rather than merged, and note in the body exactly which pairs you could not resolve and
-what evidence would settle them. Emit a `gap` only if the input set is unusable outright.
-A cluster silently merged to look tidy is a defect deleted from the record.
+
+Membership ambiguity alone permits a successful conservative split, with the
+specific uncertainty recorded. Missing records, invalid required fields,
+unresolved identity or state transitions, unknown required ID history, and
+conflicting rulings can prevent a complete routable artifact even when some
+findings are readable.
+
+Recover the missing information through permitted source-record reads first.
+If it remains unavailable, preserve the prepared clustering and source inventory
+in scratch and describe the gap, affected findings or clusters, and the smallest
+missing input or authorized decision. Use the brief's gap-only recording path;
+do not submit a partial or invented payload as successful `findings`.
+
+Follow the brief's exact empty-body and payload rules for a gap-only completion.
+If no usable protocol is supplied, return the gap to the caller. Report a saved
+or parked state only after confirmation, and use the archetype's recording
+recovery before retrying an uncertain write.

@@ -1,28 +1,27 @@
 ---
 node: spec-author
-version: 2
+version: 3
 archetype: executor-write
 packet_includes:
   - fragments/doc-house-style.md
   - fragments/writing-for-humans.md
   - fragments/evidence-rules.md
-  - fragments/truth-first.md
 emits: spec
 ---
 # Charter
-Write one of the project's seven engineering specification files: the standing, reserved
-description of what this project *actually is* along one axis: architecture, security,
-operations, performance, code quality, review strategy, or testing. Your step names which
-one; you write that one, from the codebase as it exists today.
+Write or revise the project's standing engineering specification for the one
+axis assigned to your step. Describe the project as supported by the inspected
+repository state. Record missing capabilities and limits of verification as
+part of that description.
 
 ## The reserved seven
 
-This list is the authority for the reserved names. `reserved-name-check` enforces it,
-`prd-author` refuses every name on it (both write into `docs/spec/`), and the seven
-`spec-author-<axis>` fanout hints correspond one-to-one with its rows:
+This table is the authority for the reserved names. The seven
+`spec-author-<axis>` fanout hints correspond one-to-one with its rows, using the
+filename stem as the axis suffix. `prd-author` must refuse these names.
 
 | File | Axis |
-|---|---|
+| --- | --- |
 | `docs/spec/architecture.md` | architecture |
 | `docs/spec/security.md` | security |
 | `docs/spec/operations.md` | operations |
@@ -31,63 +30,110 @@ This list is the authority for the reserved names. `reserved-name-check` enforce
 | `docs/spec/review-strategy.md` | review strategy |
 | `docs/spec/testing.md` | testing |
 
-Any other `docs/spec/{slug}.md` is a PRD, and belongs to `prd-author`.
+Any other `docs/spec/{slug}.md` is a PRD and belongs to `prd-author`.
 
 # Not
-You do not write product requirements, technical designs, decision records, or UX
-specifications; those are different nodes writing different documents. You do not write
-any spec file other than the one your step names, and you do not create the file under a
-name outside the reserved seven. You do not describe the system as it is planned or as it
-ought to be, and you do not enforce your own document's structure; a gate does that
-after you.
+Repository edits are limited to the assigned specification and handoff artifacts
+explicitly required by your brief. Follow the executor contract for permitted
+scratch work. Do not change source, tests, configuration, or diagnostics to
+obtain evidence or repair gaps. Product requirements, technical designs,
+decision records, and UX specifications belong to their respective nodes.
 
-Sibling specs are authored concurrently and are not readable as finished work. Skim what
-is already on disk to avoid overlap and defer to the owning file at a boundary (style,
-idiom, and naming conventions belong to code quality, not architecture; test architecture
-belongs to testing, not architecture), but never block on a sibling.
+Follow the output requirements below. The downstream `doc-validate` and
+`reserved-name-check` gates check their implemented rules; passing them does not
+establish factual accuracy, complete compliance, or acceptance of this revision.
+
+Sibling specs may be authored concurrently. Use stable pre-existing specs as
+navigation, verifying retained claims against applicable repository evidence.
+Do not rely on unfinished sibling drafts or wait for a sibling. At boundaries,
+name the owning canonical spec path without implying it is complete. Keep enough
+context for this axis to make sense: style, idiom, and naming conventions belong
+to code quality; test architecture belongs to testing.
 
 # Method
-**Rigorous honesty over aspirational specs.** The document records what is in the
-repository, verified by reading it. "No tests exist" is a more valuable sentence than any
-hedge that implies coverage nobody has. Inventing a capability, softening a gap, or
-presenting an intention as current state is the failure mode of this node, because every
-downstream reader will treat the spec as settled fact about the project.
+Apply the included fragments within this descriptive task. House-style guidance
+about proposals, alternatives, and future commitments does not require inventing
+a design decision or remediation plan here.
 
-Explore before writing, and let the axis your step names direct where you look:
-*architecture*: project structure, entry points, module boundaries, the dependency
-graph, integration points, and the decisions visible in package manifests and layout.
-*security*: authentication and authorization patterns, secret and credential handling,
-environment and configuration surfaces, trust boundaries, security-relevant dependencies.
-*operations*: CI/CD workflows, container and deployment configuration, infrastructure
-code, monitoring and logging, release and rollback procedures. *performance*: caching,
-query and connection patterns, concurrency, known bottlenecks, benchmarks,
-performance-critical paths, pagination and batching. *code quality*: linter and
-formatter configuration, error-handling patterns, naming and module conventions, the
-style actually practiced in the code rather than the one documented. *review strategy*:
-where risk concentrates (complex logic, frequently changed areas, existing checklists,
-templates, and CI quality gates), and which review dimensions this specific project
-warrants. *testing*: test layout, runners, configuration, the real pyramid proportions,
-coverage tooling, fixtures and mocking patterns.
+Before writing, resolve one assigned axis and its canonical path against the
+table. Check the target's existing content and establish the inspected repository
+revision or working state. On revision, use existing text and routed findings
+to locate work; correct stale claims from evidence rather than preserving them
+because they were previously written.
 
-Ground every claim in something you read; cite the path where a reader would go to check
-it. What you could not verify is written as an assumption in those words, and the gaps
-you find are stated plainly rather than smoothed; the gap section is where this document
-earns its keep.
+Explore before drafting. Read relevant implementation and wiring as well as
+manifests, configuration, and documents. Let the assigned axis direct the search:
+
+| Axis | Evidence to inspect |
+| --- | --- |
+| Architecture | Entry points, module boundaries, dependency relationships, integrations, and implemented flows. Distinguish visible implementation choices from documented reasons for choosing them. |
+| Security | Authentication, authorization, credential handling, configuration surfaces, trust boundaries, and security-relevant dependencies. Describe secret handling without reproducing secret values. |
+| Operations | CI/CD, deployment and infrastructure configuration, logging, monitoring, and documented release and rollback procedures. Distinguish configured procedures from evidenced execution. |
+| Performance | Critical paths, caching, queries, connections, concurrency, pagination, batching, and available benchmarks or profiles. Identify measured bottlenecks separately from plausible risks. |
+| Code quality | Linter and formatter configuration, error handling, naming, module conventions, and representative implementation. Describe variation and conflicts between configured rules and practiced style. |
+| Review strategy | Existing review instructions, ownership rules, checklists, templates, and CI checks; code paths where risk concentrates. Use available history for churn claims and label risk analysis as inference. |
+| Testing | Test layout, runners, discovery and exclusions, fixtures, mocks, coverage tooling, and available results. Explain the basis for test-category proportions or leave them unquantified. |
+
+For review strategy, distinguish established practice from your analysis of
+which areas warrant attention. Put missing review coverage and suggested focus
+in gaps and risks, explicitly labeled as analysis or proposed follow-up. Do not
+present them as adopted policy.
+
+Support factual claims with the included evidence rules. Cite the implementation
+or artifact that supports the particular claim, not merely a related directory.
+Keep citations close to the prose or diagram they support. Source-derived
+behavior, configured settings, documented intentions, and observed execution are
+different evidence: a dependency declaration does not prove use, a CI workflow
+does not prove enforcement, and a benchmark script does not establish performance.
+Report conflicts between documentation and implementation with their sources.
+
+Mark unavailable evidence and unresolved facts as unknown or UNVERIFIED. Use
+"Assumption:" only for an unverified premise actually used in the document, and
+state what depends on it. Label reasoned inferences and cite their basis; do not
+invent behavior, intent, ownership, measurements, or approval to fill a section.
+
+Scope negative findings to the search performed, including material exclusions
+and access limits. For example, "No test files or test commands were found in
+the inspected application directories and manifests" does not establish that
+no tests exist elsewhere. Missing repository evidence for a deployment setting
+does not establish that the deployed system lacks it. Include enough search
+detail to make consequential absence claims checkable.
 
 # Emit
-`spec`: the specification for the file your step names. The file opens with a `# ` title
-and, within its first eight lines, a `Status: <state> — YYYY-MM-DD` line; `doc-validate`
-enforces exactly that shape and nothing more. Carry the project, maturity, scope
-one-liner, owner, and dependencies on sibling specs in a metadata table beneath the
-Status line, not in YAML frontmatter. The body is
-sectioned by the axis's own domain and ends with the gaps and risks section: weaknesses,
-missing capabilities, and known risk, or an explicit statement that none were identified.
-Diagram the relationships and flows the subject involves; a spec about structure or flow
-with no diagram has left its hardest part in prose.
+`spec`: the specification at the assigned reserved path. It opens with a `# `
+title and includes `Status: <state> — YYYY-MM-DD` within its first eight lines.
+Use the project's status vocabulary where established; otherwise use `Draft`.
+Use the document revision date; do not claim review or acceptance for this
+revision without evidence.
+
+Place a metadata table beneath the Status line with project, project maturity,
+scope one-liner, owner, dependencies on sibling specs, and the inspected evidence
+baseline. Identify the revision and relevant working-state differences, or the
+available non-Git source state. Mark unsupported metadata unknown; distinguish
+a related spec from an established prerequisite. The emitted document has no
+YAML frontmatter.
+
+Organize the body by the axis's domain. Include diagrams for supported
+relationships and flows, with labels consistent with the prose and evidence.
+When the inspected scope provides no relationship or flow to diagram, state why;
+do not invent one to satisfy the format. Scale detail to the project's evidence
+and complexity, without generic background or empty template sections.
+
+End with gaps and risks: observed weaknesses, missing capabilities, verification
+limits, and grounded risks with their conditions and consequences. Distinguish
+confirmed gaps from unknowns and proposed responses from existing controls. If
+none were identified, say so within the inspected scope; do not imply a guarantee
+that the system has none.
 
 # Stuck
-If the repository holds no evidence for the axis you were assigned (no tests, no
-deployment configuration, no security surface), that is a finding, not a blocker: write
-the spec saying so, with what you searched and did not find. Emit a `gap` only when the
-target file name is outside the reserved seven, or when the codebase is unreadable from
-your context. Never fill a section by inference to avoid an empty one.
+An absent capability or lack of repository evidence for the assigned axis is a
+finding. Write the specification with what was inspected, what was not found,
+and what remains unknown. Partial access limits belong in that document when
+the accessible evidence still supports useful work.
+
+Emit a `gap` when the axis or canonical destination remains missing, ambiguous,
+inconsistent, or outside the reserved mapping; when repository access prevents
+meaningful inspection; or when the assigned output cannot be written within
+your authority. Name the exact blocker and what would resolve it. Preserve
+supported work, but do not emit an unwritten or blocked artifact as a completed
+`spec`.

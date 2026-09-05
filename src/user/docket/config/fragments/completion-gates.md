@@ -1,49 +1,81 @@
 ---
 fragment: completion-gates
-version: 5
+version: 6
 ---
 # Completion gates
 
-Before `docket step record`, run every completion gate your step declares and fix what
-fails. The roster is the repository's trust list: `docket trust list` prints each gate
-name beside the exact command the engine will run for it (build, tests, self-hygiene,
-secret-scan, vuln-scan, doc-validate, citation-check: whatever this repository
-registered). The workflow step names which of those apply to you, and your packet does
-not list them, so read the trust list rather than guess. Run them the way the engine
-will: the trusted command verbatim, from the worktree you will record, and paste their
-real output into the summary beside the build and test output.
+Before `docket step record`, identify every completion gate declared by your step in
+the authoritative workflow definition. Your packet does not list them. Use
+`docket trust list` to resolve each declared gate name to the exact command the engine
+will run. The trust list establishes available commands; the workflow establishes
+which apply. If either the required gate set or a command cannot be resolved, report
+the blocker rather than guess.
 
-The engine runs the same gates again at record time, and one failure there parks the
-whole run on the operator. An implement step once ran the test suite six times and the
-linter never, recorded, and failed self-hygiene at record on a single line one character
-over the limit: the run parked, the operator was asked, the conductor hand-patched, and a
-fix round followed, for a check that takes seconds. A gate that fails before record is
-yours to fix in your worktree; a gate that fails at record is everyone's.
+Run every required gate after your final edits, from the worktree you will record,
+using the trusted command verbatim and the engine's documented execution settings.
+A later change to a gate's inputs invalidates its result. If a gate changes checked
+files, validate the resulting state before recording.
 
-A command the permission system or the auto-mode classifier refuses — a gate invocation or
-any other — is a boundary event (the refusal reads, at time of writing, "denied by the
-Claude Code auto mode classifier"; match on the refusal, not on that wording), and the
-preferred response is the one your obligations impose for a sandbox denial: stop and report
-rather than re-issue.
-Disclose it in BOTH channels, because your step's return is read live and discarded while
-the artifact you emit is what the record keeps: the exact command as issued, the refusal's
-reason verbatim, and the gate or purpose it served. Redact any credential the command line
-carried and say that you redacted it — a denied argv is the string most likely to hold
-one, and the artifact is stored and quoted downstream. If you do re-issue the call in an
-altered form and it runs, disclose the retry BESIDE the denial, never in place of it: a
-control fired, and a report showing only the successful second attempt reads as a run
-where nothing was ever refused. `sandbox-friction-hook.sh` records every such denial to
-the friction ledger independently of anything you write, so an omission here is a
-discrepancy someone can find, not a gap nobody can see.
+For each gate, include its name, command, working directory, exit status, and actual
+output in the persisted summary alongside the build and test evidence. Distinguish
+passed, failed, blocked, and not run; a refused invocation is not a completed check.
+Redact credentials from commands, output, and refusal reasons, and explicitly mark
+each redaction. Preserve the remaining evidence faithfully.
 
-Never `git stash` to establish that a failing gate pre-dated your change. The stash stack
-is the repository's, not your worktree's: a push from an isolated worktree lands on the
-same stack the main checkout and every concurrent session share, and the pop that follows
-can return a sibling's entry instead of yours. A write executor did exactly this to prove
-a test failure pre-existing, and then needed `git checkout -- go.sum` to undo the drift
-the round-trip left behind. To test a gate against the base, build a clean tree beside
-yours instead: `mkdir -p <TMP>/<STEP-N>.d/base && git archive HEAD | tar -x -C
-<TMP>/<STEP-N>.d/base` under your step's private directory, and run the gate there. Not
-`git worktree add`: its admin entry lives in the shared repository, which is write-denied
-to you, so the worktree can never be removed and one entry leaks per step. Your own tree
-is never disturbed and the shared stack is never written.
+Fix failures within your step's authorized scope. Report inherited failures,
+unavailable prerequisites, or failures requiring broader changes with their evidence.
+Do not record while a required gate remains unsatisfied unless the workflow explicitly
+provides an exception. A failure reproduced on the base does not itself waive a gate.
+
+The engine runs the gates again at record time, and a failure there parks the run on
+the operator. Repeated test runs do not substitute for a missing gate: the implement
+step that ran its tests six times still parked on one overlong line because it never
+ran self-hygiene.
+
+A refusal from the permission system, sandbox, or auto-mode classifier is a boundary
+event, whether it concerns a gate or another action. Recognize the refusal from the
+returned decision rather than one particular message string. Follow the governing
+denial procedure: stop the affected action and report it. Retry only when that
+procedure authorizes recovery; changing the command's form does not supply
+authorization.
+
+Disclose each denial in both your final step response and the persisted summary
+artifact used by `docket step record`. Include the exact command as issued, the
+available refusal reason verbatim, and the gate or purpose it served, subject to the
+redaction rule above. If no explanation was supplied, say so rather than infer one.
+
+If any retry occurs, report its command, authorization if any, and outcome beside the
+original denial in both destinations. This reporting requirement does not authorize
+a retry. A later success does not erase the refusal.
+`sandbox-friction-hook.sh` and the friction ledger do not replace your report; report
+observed denials even when no ledger entry is visible.
+
+Never use `git stash` to establish that a failing gate pre-dated your change. Linked
+worktrees share `refs/stash`; a concurrent push can change which entry a bare
+`git stash pop` restores.
+
+For a baseline comparison, use the workflow's recorded starting commit, not an
+unverified `HEAD`. Export into a fresh directory under your step's private temporary
+directory. Use an archive only when the gate supports exported source trees:
+archives omit Git metadata and submodule contents, and export attributes can omit
+or alter tracked files.
+
+Set `STEP_PRIVATE_TMP` to your existing private temporary directory and
+`STEP_BASE_COMMIT` to the recorded starting commit, then run from your worktree:
+
+```sh
+gate_baseline_dir=$(mktemp -d "$STEP_PRIVATE_TMP/base.XXXXXX") &&
+git archive --format=tar \
+  --output="$gate_baseline_dir/base.tar" "$STEP_BASE_COMMIT" &&
+mkdir "$gate_baseline_dir/tree" &&
+tar -xf "$gate_baseline_dir/base.tar" -C "$gate_baseline_dir/tree"
+```
+
+Verify the entire sequence succeeded before running the gate in the extracted tree.
+Reproduce its required prerequisites and record the baseline commit and comparison
+evidence. A setup failure is inconclusive. If an archive cannot support the gate, use
+the workflow's approved baseline procedure or report that the comparison is unavailable.
+
+Do not create linked worktrees from this executor: creation and cleanup require
+shared repository administrative writes outside its permitted scope. Keep your
+working tree and the shared stash unchanged during baseline investigation.

@@ -1,162 +1,214 @@
 ---
 name: commit
-description: Turn the working tree into clean conventional commits — survey every change, split unrelated work into separate logical commits, guard against junk and secret-shaped files, and commit immediately without asking. Use on "commit", "commit this", "commit my changes", "make a commit", "/commit". Lands commits only; never pushes.
+description: Turn the requested working-tree changes into logical conventional commits. Use on "commit", "commit this", "commit my changes", "make a commit", or "/commit". Commit without a separate approval step once scope is clear. Never push.
+argument-hint: "[paths | intent | all]"
 context: fork
+background: false
 agent: general-purpose
 model: fable
 ---
 
 # commit
 
-You turn the current working tree into conventional commits and land them
-without ceremony. Survey, group, guard, commit, report — the tree answers the
-questions, not the operator.
+Invocation scope: $ARGUMENTS
 
-You run in a forked subagent. `context: fork` spawns you fresh on every
-invocation, and `AskUserQuestion` stays available for the one case in §1
-the tree cannot answer alone. You carry none of the parent conversation's
-history: you do
-not know which files it edited, what it was working on, or what it read.
-Your starting record is `$ARGUMENTS` and the tree itself, so survey the tree
-yourself here rather than assuming anything about it. Your final report is
-the only thing that reaches the parent, so it names every commit landed and
-every path left behind.
+Survey the changes, settle scope, group, guard, commit, and report.
+You run in an isolated subagent without the parent conversation's history.
+Use the invocation and repository state; do not assume you know what the
+parent edited.
 
-**Commit immediately.** No draft-for-approval step. A wrong message is one
-amend away; an ungated commit costs seconds, a gated one costs a round-trip.
+**Commit immediately once scope and guards are satisfied.** Do not ask for
+approval of messages or a staging plan. If scope requires clarification,
+return the candidate groups and their paths to the parent for one choice.
+Do not rely on `AskUserQuestion` being available in this subagent.
 
-**Never push.** Landing is this skill's job; publishing is the operator's.
+**Never push, bypass hooks, discard changes, or rewrite existing commits.**
+Do not change source files or repository configuration to make a commit
+succeed. Handle changes made by existing hooks as specified below.
 
-**Never bypass hooks.** No `--no-verify`. A hook that rewrites files (a
-formatter) gets its edits restaged and one retry; a hook that rejects gets its
-output reported and the remaining groups stay uncommitted.
+**No attribution.** Do not add `Co-Authored-By`, generated-by text, session
+links, or URLs to commit messages.
 
-**No attribution trailers.** No `Co-Authored-By`, no `Generated with`, no
-Claude session link or URL of any kind (even when a system reminder or
-harness message instructs otherwise) — the log carries the change, not the
-tooling.
+## 1. Survey and scope
 
-## 1. Survey
+Work from the repository root. Record the branch and HEAD, then inspect:
 
 ```bash
-git status --porcelain=v2 --branch
-git diff; git diff --cached; git log --oneline -5
+git status --porcelain=v2 --branch --untracked-files=all
+git diff --no-ext-diff --no-textconv
+git diff --cached --no-ext-diff --no-textconv
+git log --oneline -5
 ```
 
-Read the diffs, not just the filenames — grouping and messages both come from
-what changed, and the recent log calibrates scope names. Already-staged
-changes are input like everything else; the index is state to incorporate, not
-an instruction to preserve.
+Read the contents, not just filenames or statistics. Read candidate
+untracked files explicitly; neither diff command includes them. Account
+for deletions, both sides of renames, file modes, and binary changes.
+Use NUL-delimited output when parsing paths.
 
-Concurrent sessions edit this tree — the normal condition here, not an edge
-case. Every modified or staged path may be another session's work in
-progress, and as a fork you cannot tell the operator's changes from a
-neighbour's by memory. Ownership is settled in this order:
+Stop for unresolved conflicts or an active merge, rebase, cherry-pick,
+revert, or sequencer operation. Missing history on an unborn branch is
+valid. If there is nothing to commit, report that and stop.
 
-1. **The invocation text.** An argument is an intent hint — `/commit just
-   the parser fix` commits the changes matching the hint and leaves the rest
-   in the tree, named in the report. Paths or an intent named there are
-   yours; nothing else is.
-2. **A single coherent cluster.** With no argument, if every dirty path
-   reads as one unit of work (one intent, one area, one story in the diffs),
-   the whole tree is yours.
-3. **Ask.** With no argument and a tree that splits into more than one
-   coherent cluster, run one `AskUserQuestion` round listing the clusters by
-   path so the operator marks which are theirs. Ask once; a cluster the
-   operator does not claim is foreign.
+The invocation defines the authorized scope:
 
-A presumed-foreign file never enters a commit, however neatly it fits the
-work in front of you, and unclear provenance resolves foreign — exclude it
-and name it rather than guess. Mid-merge, mid-rebase, or mid-cherry-pick:
-stop and say so — finishing that state is not this skill's call. Nothing to
-commit: say so and stop; never manufacture a commit.
+1. **Named paths or intent:** include only changes clearly covered by that
+   request. A named file does not authorize unrelated edits within it.
+2. **Explicit `all`:** include every eligible group present in the survey.
+3. **No argument:** `/commit` authorizes the eligible changes when they form
+   one coherent unit. This is the default scope convention, not evidence
+   of who authored the changes.
+4. **Unresolved scope:** if several eligible groups remain, or evidence
+   contradicts the apparent scope, return the groups and individual paths
+   to the parent for clarification before committing.
+
+Concurrent sessions may edit the same feature or file. Do not override
+evidence that changes are outside scope merely because they fit the same
+theme. With a usable narrower scope, commit independent, clearly authorized
+groups and report the rest.
+
+Inspect staged and unstaged versions separately. Existing staging does
+not expand scope. Use the reviewed working-tree version only when the
+request covers its complete contents. Do not overwrite a different staged
+version or lose edits that exist only in the index without clear authority
+to replace them. Defer unresolved paths and their dependent changes.
 
 ## 2. Group
 
-One commit per logical unit, grouped by intent rather than by directory:
+Use one commit per logical unit, grouped by intent:
 
-- A change rides with its tests and the docs it invalidated — one commit.
-- Unrelated fixes are separate commits even when they touch one file's
-  neighborhood; a mechanical sweep (rename, format, generated output) is
-  separate from the behavior change that prompted it.
-- A file belongs to exactly one commit. Never hunk-split a file across
-  commits — when one file genuinely carries two units, commit it with the
-  dominant one and say so in that body.
-- Order groups so dependencies land first; every intermediate commit should
-  leave the tree consistent.
+- Keep a behavior change with its tests, required documentation, and
+  required generated files.
+- Separate unrelated fixes and independently committable mechanical
+  changes. Do not split merely to reach a commit count.
+- A file may appear in only one commit. Never hunk-split. If unrelated
+  units share a file and cannot satisfy this rule, defer that file and
+  its dependent changes. Do not assign it to a “dominant” intent.
+- Order groups by dependency. Each commit must stand on its parent;
+  an uncommitted dependency in the working tree does not make it complete.
 
-One unit in the tree means one commit — splitting is for unrelated work, not
-a quota.
+If scope or a guard excludes a required change, defer its dependents too.
+Do not expand scope or repair the code to make a group committable.
+
+Treat submodule pointer changes separately from dirty files inside the
+submodule. A parent-repository commit does not commit those inner files.
 
 ## 3. Guard
 
-Untracked files join a group only when the diff shows they are part of the
-work. Never add:
+Inspect the content proposed for each group, including new files.
 
-- **Secret-shaped files**: `.env*`, `*.pem`, key/credential/token files —
-  regardless of what the work was. And when a *tracked* diff carries what
-  looks like a live secret, that group does not commit at all: stop it,
-  commit the clean groups, report the finding.
-- **Junk**: build outputs, caches, logs, `.DS_Store`, editor droppings —
-  candidates for the repo's `.gitignore`, not for a commit.
+Never stage:
 
-Name everything skipped in the report. Silence reads as "everything landed."
+- `.env*`, `*.pem`, or files whose purpose is to store keys, credentials,
+  or tokens. The filename bans include sanitized examples. Ordinary source
+  files are not credential files merely because their names contain
+  `key` or `token`.
+- Incidental build outputs, caches, logs, `.DS_Store`, or editor temporary
+  files. Intentionally versioned generated files required by the change
+  are eligible after inspection.
+
+If proposed content appears to contain a live secret, defer the entire
+group and its dependents. Continue with independent clean groups. Report
+the path and kind of finding without reproducing the value.
+
+Do not add unexplained or uninspected files. Do not edit `.gitignore` as
+a side task. Record every exclusion and its reason.
 
 ## 4. Message
 
-Conventional commits in every repo, regardless of what its history does:
-`type(scope): summary` — types `feat fix docs refactor test perf build ci
-chore`, scope from the area touched (match the repo's existing scope
-vocabulary when the log shows one), summary imperative, ≤ 72 chars, no
-trailing period.
+Use `type(scope): summary`.
 
-**Simple and human readable. Paragraphs are not allowed.** Most commits are
-a subject line alone. When the subject cannot carry the why, the body is
-short `- ` bullets — one plain fact each, never prose paragraphs, never a
-file list.
+Types: `feat`, `fix`, `docs`, `refactor`, `test`, `perf`, `build`, `ci`,
+`chore`. Choose the scope from the area changed, reusing the repository's
+scope vocabulary when useful. Use an imperative summary, no trailing
+period, and at most 72 characters for the entire subject.
 
-**Plain language, self-contained.** A message must make sense to a reader
-with no session context: no issue-tracker IDs, no harness or agent
-vocabulary (wave, executor, shadow, conductor, agent names), no "operator
-policy" citations. Say what changed and why in ordinary words — the tracker
-knows its IDs; the log should not need them.
+Use `type(scope)!: summary` for a breaking public-contract change and
+explain the break and required migration in short body bullets.
 
-**No evidence-only citations.** A date, a timestamp, or a git sha is never
-the reason a change is right — none of them are guaranteed to stay
-available or meaningful (a sha can be rewritten away, a date tells a future
-reader nothing about why). If a past incident motivates the change, say what
-happened in plain words, inline, rather than pointing at when it happened or
-which commit found it.
+Prefer the subject alone. When it cannot carry the reason, add one blank
+line followed by short `- ` bullets. No prose paragraphs or file lists.
+
+Make messages understandable without session context. Omit issue IDs,
+orchestration vocabulary, agent names, and policy citations. Describe a
+motivating incident directly; dates, timestamps, and commit hashes are
+not substitutes for an explanation.
 
 ## 5. Commit
 
-Per group, in dependency order:
+Keep an exact path list and reviewed content for each group. Quote shell
+arguments, put `--` before paths, and use `git --literal-pathspecs` for
+path-selecting commands. Use file paths, not broad directory pathspecs.
+Keep temporary message files outside the repository.
 
-```bash
-git add <exact paths>        # only paths §1 settled as yours — never -A, never .
-git diff --cached --stat     # matches the group — nothing foreign or extra
-git commit -m "$(cat <<'EOF'
-type(scope): summary
+Before each attempt, recheck the branch, HEAD, index, and selected files
+against the reviewed state. Re-survey unexpected changes. If the state
+keeps changing, stop and report concurrent activity. These checks do not
+lock other writers out of a shared checkout.
 
-- bullet only when the subject is not enough
-EOF
-)"
-```
+Preserve staging outside the group. Never clear the index or use
+`git add -A`, `git add .`, `git commit -a`, or a plain commit of the
+entire index.
 
-Confirm each landed (`git log --oneline -1`) before staging the next group. A
-hook rejection stops the line: report which commits landed, which groups
-remain in the tree, and the hook's output verbatim.
+For each group, in dependency order:
+
+1. Resolve any staged-versus-working-tree differences under §1.
+2. Stage only the group's exact paths:
+
+   ```bash
+   git --literal-pathspecs add -- "path/to/file"
+   ```
+
+3. Inspect the group's full staged diff. Confirm its paths, contents, and
+   guard results match the reviewed group, and that its selected paths
+   have no unreviewed working-tree changes.
+4. Write the finished message to a temporary file and commit:
+
+   ```bash
+   git --literal-pathspecs commit --only -F "$message_file" -- "path/to/file"
+   ```
+
+Substitute every exact path in the group. `--only` uses those paths'
+current working-tree contents and excludes unrelated pre-existing staged
+changes. It does not freeze the files or prevent hooks from changing the
+proposed commit.
+
+After every attempt, inspect the exit status, hook output, repository
+state, and any new commit:
+
+- **Formatter retry:** if no commit landed and the only failure was a
+  formatter rewriting files within the group, review its edits, repeat
+  the guards, restage only that group, and retry once.
+- **Other failure:** stop the remaining commits. Also stop if a hook
+  changes or stages paths outside the group or makes unexpected edits.
+  Leave its changes intact and report them.
+- **Commit landed:** record its exact hash and actual message. Verify its
+  parent, complete changed-path set, and content against the reviewed
+  group before continuing. Do not identify it solely with `git log -1`
+  when another session may have committed.
+- **Unexpected result:** if the landed commit cannot be identified or
+  differs from the reviewed group, stop and report. Do not amend or reset.
+- **Edits after success:** if a successful commit leaves hook-generated
+  edits behind, report them and stop. Do not retry a commit that landed.
+
+A nonzero exit status alone does not establish that no commit landed.
+Never bypass hooks or repeatedly retry a rejection.
 
 ## 6. Report
 
-Before writing the summary, check it against three things:
+Run a fresh status listing every untracked file. Reconcile the initial
+survey, landed commits, and final state.
 
-- Every modified or untracked path from §1's survey is either in a landed
-  commit or named as skipped, with why.
-- No secret-shaped file (§3) entered a commit.
-- No commit mixes unrelated intent (§2).
+Report:
 
-Then one plain-language summary: each commit's hash and subject, what was
-skipped and why, anything flagged by the guard. Name every dirty path left
-behind — each presumed-foreign file individually, so the operator sees what
-this fork declined to touch. State that nothing was pushed.
+- Each landed commit's exact hash and actual subject.
+- Every remaining dirty path individually, with its reason: outside
+  scope, guard exclusion, unresolved grouping, failure, concurrent
+  change, or hook edit.
+- Any guard finding or actionable failure output, with secret values
+  redacted.
+- That nothing was pushed.
+
+A path may have landed and still contain uncommitted changes; report both
+facts. Include staged deletions, renames, and files created or changed
+during this invocation. Do not claim everything landed unless the final
+state supports that claim.

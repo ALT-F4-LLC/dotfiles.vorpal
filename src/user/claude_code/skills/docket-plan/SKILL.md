@@ -1,30 +1,47 @@
 ---
 name: docket-plan
-description: Turn a work request into an activatable Docket run — converse until the request is unambiguous, then record the request, a plan artifact, and issues with kinds, labels, scopes, depends_on relations, and verbatim acceptance criteria. Invoked bare (`/docket-plan` with no request and no issue id) it instead surveys the current Docket project's open backlog, aligns with the operator on what this batch should cover (which kinds of work, how aggressively to parallelize), and proposes the most optimal next batch — ready, highest-priority, parallel-safe, run-ready, within a stated budget — then on confirmation records that batch as a run binding the backlog issues directly. Records and stops; never runs the work. Use at the start of a piece of work, to pick the next batch off the backlog, or to extend a run's later phase after execution has learned something.
-context: fork
-agent: general-purpose
+description: Turn a work request or the current Docket backlog into an activatable run. Converse in the main session and prefer the largest feasible complete run, using later waves for known dependencies or safely serialized overlaps. Budget is unlimited unless the operator specifies a limit; show cost forecasts without turning them into caps. Offer concrete smaller-run alternatives when useful. Record the request, plan, issues, routing, scopes, dependencies, and verbatim acceptance criteria; then stop. Invoked bare, select and bind existing backlog issues directly. Use to plan new work, select the next backlog run, or extend a run after findings. Never execute the planned work.
 model: fable
 ---
 
 # docket-plan
 
-You decide what the work *is* — in a forked subagent dedicated to that
-decision. `context: fork` spawns you fresh on every invocation, and nothing
-about how or when you ask changes: run the same multi-round
-`AskUserQuestion` flow exactly as written below, batched the same way, as
-many rounds as the ambiguity needs.
+You decide what the work *is* in the main conversation with the operator.
+Run this skill inline: leave `context` and `agent` out of its frontmatter.
+Its multi-round `AskUserQuestion` flow requires direct interaction with the
+operator. Do not run this skill in a forked subagent or delegate its
+questions; this workflow has no fork-to-main-session dialogue to carry them.
+Keep the repo read, question rounds, and recording in this conversation.
 
-What forking does change is what you already know when you start: you carry
-none of the parent conversation's history — no prior file reads, no context
-gathered before this invocation — only the operator's invocation text and any
-`brief` block it carries. Treat that as the whole starting record. Deciding
-what the work is stays a judgment for a human and you together, so read the
-repo yourself here (§2) rather than assuming anything was read for you
-already. You never spawn anything that starts work, and reading the repo,
-asking the operator, and recording the run are all yours to do here.
+Use the operator's invocation, any supplied `brief` block, and relevant
+answers already settled in this conversation as the starting record. Do not
+re-ask settled questions. Read the repo and refresh Docket state as §2
+requires: conversation history carries intent, but does not replace current
+evidence. A fresh invocation means a new planning pass against the run
+record, not a fresh context that discards the operator's answers.
+
+Run the `AskUserQuestion` rounds below with their existing batching and
+ordering, as many rounds as the ambiguity needs. If that tool is unavailable,
+stop before recording and report that this skill requires an interactive main
+session; do not substitute inferred answers or confirmations. Reading the
+repo, asking the operator, and recording the run are all yours to do here.
+You never spawn anything that starts work.
 
 Rules you must not fight:
 
+- **Prefer the largest feasible complete run.** Maximize the number of
+  legitimate, in-scope issues in one run before proposing smaller runs.
+  Include known later-wave work when its prerequisites and safe scheduling
+  can be established; the first wave is not the run's size limit. Then make
+  each wave as wide as the real dependencies and collisions allow. A smaller
+  run is an operator choice or a named constraint, never a tidy default.
+  Do not inflate the count by inventing work or splitting one cohesive edit
+  into artificial issues. Unknown later-phase work still follows §4.
+- **Budget is unlimited unless the operator specifies a limit.** A missing
+  budget is a settled default, not a question. Keep cost forecasts visible,
+  but do not derive a cap from them, shrink the run because of them, or ask
+  for numeric budget approval in unlimited mode. Honor explicit limits and
+  their units, including still-applicable limits from earlier operator input.
 - **You record; you never execute.** You do not spawn anything that starts
   work, and you never activate unprompted. Activation is a gate you do not
   hold: approving it is a tribunal vote that `docket-run` convenes and
@@ -58,8 +75,9 @@ lookup-able id — read each as history, not as a store reference to resolve.
 
 ## 1. Converse until it decomposes
 
-**A supplied brief block seeds this section — do not re-ask what it already
-answered.** If the operator's message carries a `brief` skill block (labeled
+**A supplied brief block and relevant answers already settled in this
+conversation seed this section — do not re-ask what they already answered.**
+If the operator's message carries a `brief` skill block (labeled
 `Goal:` / `Motivation:` / `Scope:` / `Out-of-scope:` / `Acceptance criteria:`
 / `Size hint:` / `Security-sensitive:` / `Constraints:`), read it as
 already-settled input to the table below: Goal -> Goal, Constraints <-
@@ -102,10 +120,22 @@ The five things you need:
 | | What you are after |
 |---|---|
 | **Goal** | What is true when this is done that is not true now |
-| **Constraints** | What it must not break, touch, or exceed — including budget |
+| **Constraints** | What it must not break, touch, or exceed — including any explicit budget limit; otherwise budget is unlimited |
 | **Acceptance criteria** | How done-ness is checked, in the operator's words |
 | **Security sensitivity** | Does this touch authn/authz, secrets, crypto, sandbox, trust, or supply chain |
-| **Size** | Roughly how many issues, and whether the shape is knowable up front |
+| **Size** | Whether the full shape is knowable; include all feasible issues by default, with any explicit issue-count limit treated as a hard cap |
+
+The preference for the largest complete run is already settled. Apply it
+to request intake, single-issue decomposition, and backlog selection; do not
+ask the operator to restate it on every invocation. Offer the run-shape
+alternatives in §1b when they expose a useful tradeoff. For new work, stay
+within the supplied request rather than adding unrelated backlog items to
+increase the count. Required coverage of the agreed goal and ACs is a hard
+constraint: do not drop necessary work merely to increase the count or fit
+an explicit budget limit. Obtain agreement to a concrete scope reduction or
+budget increase when such a limit prevents the agreed work. If no limit is stated,
+use Unlimited and calculate §3's forecast for information only. Do not ask
+the operator to choose a cap or approve the forecast as a spending limit.
 
 Security sensitivity is asked, not inferred. It sets labels that pin routing
 later, and a wrong guess is silent — so if the answer is not obvious from the
@@ -146,45 +176,54 @@ A `VALIDATION_ERROR` naming no project, or no store reachable, means this
 repo isn't bound — say so and stop. `--limit 1000` is not optional: `issue
 list` caps at 50 and `next` at 10 by default, and neither output flags the
 truncation — a 108-issue backlog was surveyed as 50 and reported complete
-(docket-groom/tend fix). `docket next` is the readiness verb: it
-returns only issues with no incomplete `depends_on` blocker, so a backlog/todo
-issue it omits is blocked and stays out of the batch. Join its ids against the
-`issue list` rows, which carry `priority`, `labels`, `scope`, `assignee`, and
-`description` (verified on `--json=v2`; `next` is for the ids).
+(docket-groom/tend fix). If any result reaches the requested limit, use the
+CLI's help-verified pagination or unlimited form to finish the survey before
+claiming coverage. Do not infer blocking from absence in a truncated result.
+`docket next` identifies issues ready NOW, with no incomplete `depends_on`
+blocker. Join its ids against the `issue list` rows, which carry `priority`,
+`labels`, `scope`, `assignee`, and `description` (verified on `--json=v2`).
+Inspect the other open issues' dependency links too: they can join later
+waves when every open prerequisite can be included in this same run under
+the checks below. Absence from `next` alone no longer excludes an issue
+from the complete run.
 
-**Align on batch scope before ranking.** The survey tells you what exists;
-before you rank it, ask the operator what "the next batch" should mean this
-time — one `AskUserQuestion` round, the same batching discipline as §1's
-questions, placed here because these answers narrow the CANDIDATE set that
-ranking runs over, not the ACs inside it.
+**Align on batch scope before ranking.** The survey tells you what exists.
+Resolve what this run should cover, batching missing decisions into one
+`AskUserQuestion` round under §1's discipline. These answers constrain the
+candidate set, not the ACs inside it. Skip the round when everything is
+already settled.
 
-**This round runs BEFORE any candidate batch is built or presented — it is
-not the same round as step 5's confirmation, and a ranked batch offered with
-only a which-variant choice is not this round, it is skipping it.** A live
-bare-`/docket-plan` session (agentic-services, RUN-67) did exactly that: it
-presented a fully-ranked 4-issue batch with one "how to proceed" question and
-never asked kind filter, width, or cap — caught only when the operator asked
-"Aren't you supposed to ask me questions around the scope, etc?" If you reach
-step 5 and these answers do not exist yet, stop and ask them now rather than
-folding them into the proposal round; do not treat a plausible default as
-consent.
+**Resolve missing scope decisions BEFORE building the proposal.**
+A ranked proposal with a which-variant choice does not replace alignment on
+what work belongs. Reuse settled answers and the standing maximum-run
+preference and unlimited-budget default; ask only for missing decisions.
+The final confirmation approves the concrete roster, showing Unlimited or
+the operator's explicit cap separately from the cost forecast.
 
 - **Kind filter** — which kinds of work belong in this batch: every kind
   (Recommended), bugs only, features only, or a kind/label the operator
-  names. Show the survey's own breakdown (`N bug, M feature, ...` over the
-  ready set) in the question so the choice is informed, not blind.
-- **Parallel width** — maximize parallel issues within whatever budget is
-  set (Recommended: admit every ready, non-colliding, run-ready issue the
-  cap affords, per rule 3 below), or a deliberately smaller batch — the
-  operator names a cap on issue count, a narrower priority floor
-  (critical/high only, say), or both.
+  names. Show the survey's breakdown (`N bug, M feature, ...`), distinguishing
+  ready-now issues from issues with open prerequisites.
+- **Run shape** — use **Maximum complete run (Recommended)** unless the
+  operator chooses otherwise: maximize issue count across safe waves.
+  Useful alternatives are **Parallel-only run**, restricted to ready-now,
+  mutually non-colliding issues, and **Focused run**, with an operator-named
+  issue-count cap, priority floor, or subset. These are single-select
+  alternatives, not simultaneous preferences. State the default rather than
+  requiring a redundant question; present concrete alternatives with the
+  final proposal when their counts, costs, or urgency materially differ.
+- **Budget** — state **Unlimited (default)** when no limit is specified;
+  do not ask a budget question. Preserve an explicit cap in its stated unit.
+  Ask only if a supplied limit is ambiguous or conflicts with other settled
+  instructions. Smaller-run alternatives may show lower forecasts without
+  turning those forecasts into caps.
 
-Skip a question here only when the operator's own invocation already
-answered it (`/docket-plan backlog bugs only` needs no kind-filter question; a
-prior answer this session for a re-proposed batch is not re-asked). Fold
-both into the SAME round as the budget question in rule 5 when no cap is
-stated yet either — one round, not two. State the operator's kind filter
-and width preference at the top of the eventual proposal, plainly, so the
+Skip a question here only when the operator's own invocation or a
+still-applicable answer in this conversation already answered it
+(`/docket-plan backlog bugs only` needs no kind-filter question; a prior
+answer for a re-proposed batch is not re-asked). Batch unresolved alignment
+questions together. State the operator's kind filter, run shape, and budget
+choice at the top of the eventual proposal, plainly, so the
 "not ready"/"deferred" reasoning below reads against what was actually
 asked for.
 
@@ -206,24 +245,45 @@ definitions are the ones `docket-groom` and `tend` already use:
 All three are listed in the proposal under "not free"/"off-scope", never
 silently dropped.
 
-**Rank what remains, in this order** — the operator's own definition of the
-most optimal batch, as the operator settled it ("ready, high-priority, parallel-safe"):
+**Build the largest feasible roster, then schedule its waves.** Apply all
+five checks before final selection. In the maximum complete run, issue count
+is the primary objective within the operator's hard constraints; priority
+and parallel width decide between equally large feasible rosters.
 
-1. **Ready** — in `docket next`'s set. Blocked issues are deferred with the
-   blocker named; they are next batch's candidates, not this one's.
-2. **Highest priority first** — `critical` > `high` > `medium` > `low` >
-   `none`; ties break on id ascending (older first).
-3. **Parallel-safe** — walk down the ranked list and admit an issue only when
-   its scope globs are prefix-disjoint from every glob already in the batch,
-   by the matcher's own rules in §3: the literal prefix before the first
-   `*?[{`, containment either way is a collision, no trim back to a
-   separator, and a leading wildcard collides with everything. A colliding
-   issue is deferred with the glob pair named, whatever its priority: a
-   batch that serializes against itself is not the optimal one, it is the
-   slow one. The engine keeps a second collision key beside scope — the
-   concrete `-f` files, which `docket plan --json` splits into sub-phases
-   when two issues name the same path — so read that output over the
-   candidates too, and treat any two it separates as colliding.
+1. **Ready now or reachable within this run.** A ready-now issue is in the
+   complete `docket next` result. A later-wave issue qualifies only if every
+   still-open prerequisite, transitively, is also included and passes the
+   same ownership, scope, readiness, scheduling, and budget checks. Inspect
+   the links; do not invent an edge or assume another run will finish in
+   time. Count shared prerequisites once. An excluded prerequisite excludes
+   its dependent too: name the missing chain, including external blockers,
+   off-scope work, claimed work, and cycles. Offer a scope expansion as an
+   option when useful; never silently widen the kind filter to include a
+   prerequisite. The final graph must be acyclic with a startable first wave.
+2. **Maximum count, then priority.** Compare feasible rosters by issue count
+   first. At equal count prefer more `critical` issues, then more `high`,
+   `medium`, `low`, and `none`; next prefer a wider safe first wave and
+   fewer planned waves, then id ascending (older first). Explicit must-include
+   issues, priority floors, and caps are hard constraints. A priority-first
+   greedy pass is a starting candidate, not proof of maximum count: compare
+   alternatives when cost or overlap excludes other issues. If maximizing
+   count leaves critical/high work out, make that tradeoff conspicuous and
+   show a concrete priority-first alternative. Do not describe a heuristic
+   result as a proven global maximum; state any search or survey limitation.
+3. **Safe waves.** Check collisions by the matcher's own rules in §3:
+   the literal prefix before the first `*?[{`, containment either way is
+   a collision, no trim back to a separator, and a leading wildcard
+   collides with everything. The engine keeps a second collision key beside
+   scope — the concrete `-f` files, which `docket plan --json` splits into
+   sub-phases when two issues name the same path. Inspect both surfaces.
+   In the complete-run default, a real overlap changes the schedule rather
+   than automatically excluding an issue. Include both only when current
+   engine evidence establishes safe serialization: inspect its plan and
+   scheduling rules for the actual scopes and files, not merely a wave
+   diagram in the plan doc. If that cannot be established, defer with the
+   conflicting pair and scheduling limitation named. Never add a false
+   `depends_on` to force an order. In parallel-only mode, every admitted
+   issue must be ready now and mutually non-colliding.
 
    **Worktree isolation is not a reason to skip this check, and an operator
    invoking it is not grounds to drop the collision.** Every write step runs
@@ -237,27 +297,20 @@ most optimal batch, as the operator settled it ("ready, high-priority, parallel-
    still one shared branch, and ask again rather than let the equivalence
    stand.
 
-   But defer only on a REAL collision. Before you drop a candidate,
-   check whether the overlap is an artifact of an over-broad glob on either
+   Before serializing or deferring a candidate, check whether the overlap is
+   an artifact of an over-broad glob on either
    side — a leading wildcard, a package root where one subdirectory is what
    the ACs actually name, a `**` that predates the work it now describes. If
    narrowing it to what that issue's own ACs honestly need would make the pair
    disjoint, that is a `docket issue edit --scope` the operator can authorize
-   in the confirmation round (step 4 already offers that verb), and it turns a
-   deferral into a batch member. Offer the narrowing as a named option with
-   the proposed globs written out — never defer silently on a collision you
-   could have dissolved. Deferral is the right answer only when both scopes
-   are already as narrow as their ACs allow. Admit every ready, non-colliding,
-   run-ready issue the cap affords: the batch is bounded by budget and by
-   collisions, never by a size that felt tidy — unless the alignment round
-   above settled on a deliberately smaller batch, in which case stop
-   admitting once that narrower target (issue count or priority floor) is
-   met, and say so in the proposal rather than silently padding it back out.
-   Two ready issues never carry an
-   edge between each other
-   (readiness means no open blocker), so the batch has no internal
-   `depends_on` by construction — an issue the operator pulls in from the
-   deferred list brings its own edge with it.
+   in the confirmation round (step 4 already offers that verb). Offer the
+   narrowing with the proposed globs written out; it can widen a wave or
+   admit work that could not otherwise be scheduled. Keep genuine overlaps
+   honest and serialize them only as verified above. Continue admitting
+   feasible issues across later waves until a named constraint binds; never
+   stop because the first wave or the roster looks large enough. Retain
+   every real internal `depends_on` in the plan. Only the parallel-only
+   option has no internal open dependency by construction.
 4. **Run-ready** — every §3 recording obligation the bound workflow will
    check at activation, checked here first: the body carries acceptance
    criteria (at least one checkable item, not a restated title); `--scope` is
@@ -269,6 +322,8 @@ most optimal batch, as the operator settled it ("ready, high-priority, parallel-
    fill it in this session — `docket issue label add` for labels, `docket
    issue edit --scope`, `docket issue file add` for files, or a body with ACs in the operator's words, fine until the activate that binds
    it — or send it to `/docket-groom`; you never fill ACs from your own guess.
+   Apply these checks to every later-wave issue and prerequisite too.
+   Scheduled for later does not waive a missing scope, file, AC, or binding.
 
    **Probe the binding, and probe it in both directions.** §3's
    labels-confirm-binding rule asks whether an issue's labels produce the
@@ -331,16 +386,34 @@ most optimal batch, as the operator settled it ("ready, high-priority, parallel-
    AC-wider-than-scope rule read mechanically, in the direction a backlog
    issue you did not author actually fails it.
 
-5. **Fits the stated budget** — size each admitted issue by §3's arithmetic
-   (the bound workflow's expected-cost floor with when-gated steps included,
+5. **Forecast cost; fit only an explicit limit.** Size every proposed issue
+   by §3's arithmetic (the bound workflow's expected-cost floor with
+   when-gated steps included,
    plus rework headroom: that issue's own bound workflow's
    `rework_round_cost` × that workflow's own declared `max_fix_loops`, read
    from the pinned toml and summed per issue, never one round per workflow
-   and never divided by issue count) and take issues in rank order until the
-   next one would breach the cap. No cap stated yet means the alignment
-   round above asks for one alongside the kind filter and width preference —
-   it is an operator-only question, so it belongs in that same round, not a
-   third.
+   and never divided by issue count). Include the full amount for every
+   issue across ALL waves; later execution does not make headroom reusable.
+   With Unlimited, this is a forecast, not a ceiling: admit every otherwise
+   feasible issue without any budget-driven cutoff. Do not create a finite
+   cap equal to the forecast or present a cost-based smaller run as required.
+
+   With an explicit declared-cost cap, when a candidate plus its
+   not-yet-included prerequisites does not fit, defer that candidate and
+   keep scanning: one oversized issue is not a
+   reason to end selection. Reconsider combinations and replacements that
+   admit more issues, recalculate shared prerequisites once, and remove or
+   reconsider any dependent whose prerequisite leaves the roster. Finish
+   with a check that no further eligible issue or required bundle can be
+   added within the cap and schedule; this establishes no omitted feasible
+   addition, not necessarily a globally maximum roster.
+
+   If an explicit cap prevents a larger run, recommend the largest roster
+   that fits it and optionally show a concrete larger-cap alternative:
+   additional issue ids,
+   added count, and the exact extra budget required. Never raise the cap
+   without the operator choosing that alternative. State the actual limiting
+   factors, including unused budget when no remaining feasible bundle fits.
 
 **Read before you propose.** §2 applies unchanged, narrowed to the candidate
 batch: read the candidates' scope globs yourself — do the globs match files,
@@ -349,30 +422,49 @@ issue's `created_at`), and does any pair collide under the matcher's rules —
 before you write the proposal. An issue whose work is already on HEAD is not
 a batch member; it is a comment on that issue and a line in the proposal.
 
-**Propose, in ONE question round.** Present the proposal as prose above the
-question, then ask via one `AskUserQuestion` round:
+**Propose, in ONE confirmation round.** Lead with the largest feasible
+complete run under the settled constraints, or the operator's explicit
+alternative. Present the following above one `AskUserQuestion` round:
 
-- the kind filter and parallel-width preference the alignment round settled,
-  restated plainly so the rest of the proposal reads against what was
-  actually asked for;
-- the batch, ranked: id, title, priority, labels → the workflow they bind
+- the kind filter, run shape, and budget policy: Unlimited or the explicit
+  cap and its unit;
+- total issue count, ready-now count, planned `First-wave width`, later-wave
+  counts, and full cost including each issue's rework allowance;
+- the roster by planned wave: id, title, priority, labels → the workflow they bind
   (the `<name>@<version>` step 4's probe returned, named for every member,
   not only the surprising ones), scope globs, expected cost, and the one-line
-  reason it ranks where it does; the running total against the cap;
-- deferred, with the reason each time: blocked by DKT-N / collides with DKT-N
-  on `<prefix>` / not free (run RUN-N, or assignee) / off-scope (kind filter)
+  reason for inclusion and wave placement; the forecast total, compared with
+  the cap only when a relevant finite cap exists;
+- deferred, with the reason each time: unavailable prerequisite DKT-N /
+  collision with DKT-N on `<prefix>` that cannot be safely scheduled /
+  later-wave work excluded by parallel-only choice /
+  not free (run RUN-N, or assignee) / off-scope (kind filter)
   / not ready (which obligation from step 4 — no ACs, no scope, a glob
   matching nothing, `labels match N workflows`, `binds <wf>, ACs imply
-  <other>`, or `AC names <path>, not in scope`) / already landed (commit);
-- one single-select question, recommended option first: record this batch as
-  a run (Recommended); record a subset or a different set — the operator
-  names it as typed text; propose again under a different cap or a different
-  kind filter/width preference — stop here and record nothing.
+  <other>`, or `AC names <path>, not in scope`) / explicit budget or issue cap /
+  dependency cycle / already landed (commit).
 
-An empty ready set is a finding, not a failure: say what the survey found —
-nothing open, everything blocked, everything claimed or run-included, nothing
-run-ready — and stop; `/docket-groom` is the skill for a backlog that is full but
-not ready, and you name it rather than grooming here.
+When useful, compare two or three concrete alternatives in a compact table:
+the maximum complete run first and recommended, a parallel-only or
+priority-first roster when it offers a material tradeoff, and a smaller
+focused roster if useful. Show actual issue counts, first-wave widths, wave
+counts, cost forecasts, budget policies, and what each leaves out. Do not
+invent a small default batch size just to fill the table. If the operator already chose a focused
+or parallel-only run, recommend the best roster within that choice.
+
+The single-select confirmation offers recording the recommended roster with
+its exact count and Unlimited or explicit cap, recording a named displayed
+alternative when one exists, or revising/proposing only. Keep revision/propose-only available even
+when alternatives are shown, and never preselect recording as if it were
+consent. Any different typed subset must be rechecked for dependency closure,
+readiness, scheduling, and budget before it is recorded.
+
+If there is no feasible startable run, report the reasons — nothing open,
+unavailable prerequisites, cycles, everything claimed or run-included,
+nothing run-ready, or no complete bundle within an explicit cap — and stop.
+`/docket-groom` is the skill for a backlog that is full but not ready, and you
+name it rather than grooming here. An empty ready-now set calls for inspecting
+the blockers; do not label those issues simply absent from the backlog.
 
 **On "record", go to §3 with the batch as the roster.** The differences from
 request intake are exactly these, and nothing else in §3 relaxes:
@@ -389,14 +481,16 @@ request intake are exactly these, and nothing else in §3 relaxes:
   confirmation verbatim — the option they picked and any text they typed —
   because that is what was asked; the ranked proposal is not a substitute
   for it.
-- The plan doc's body carries the ranking rationale, the deferred list with
-  its reasons, and the budget arithmetic, written for the person who reads
+- The plan doc's body carries the selection rationale, dependency closure,
+  planned waves and evidence for collision serialization, the deferred list
+  with its reasons, and the budget arithmetic, written for the person who reads
   this run in three months and wonders why DKT-N waited.
-- The run's budget is the cap the round settled, sized by §3's arithmetic.
+- The run's budget is Unlimited unless the operator specified a cap.
+  §3's arithmetic is a separate forecast, never an implicit limit.
 
-Then present the recorded run per §5 and stop. Invoking this skill bare
-again after this run closes finds the deferred list waiting as next batch's
-ready set — that is the shape, not a shortcoming.
+Then present the recorded run per §5 and stop. A later invocation surveys
+the deferred work again; earlier blockers may have cleared, but neither
+readiness nor ownership is assumed from this proposal.
 
 **Reshaping a recorded-but-not-yet-active run never ends on an unanswered
 question.** The operator asking, later in the same conversation, to fix a
@@ -508,14 +602,14 @@ issue whose implement step exists to discover the work is done (in a past
 run, a fix was committed nine minutes before `run start` recorded it as
 work to do).
 
-**Track the batch in TodoWrite as it records.** Once the issue set for this
-run is settled — the decomposition from §1, or the batch from §1b — call
-`TodoWrite` once with one `pending` item per issue about to be created,
-`content` the working title. Flip each to `in_progress` right before its own
-`issue create` call and to `completed` once the id comes back, updating the
-content to the real `DKT-N: <title>`. This is a display for the operator
-watching the batch land; it is never where you read the roster back from —
-the roster is what the create/link calls themselves returned.
+**Track the batch in the task list as it records.** Once the issue set for
+this run is settled — the decomposition from §1, or the batch from §1b —
+`TaskCreate` one `pending` task per issue about to be created, `subject`
+the working title. `TaskUpdate` each to `in_progress` right before its own
+`issue create` call and to `completed` once the id comes back, rewriting
+the subject to the real `DKT-N: <title>`. This is a display for the
+operator watching the batch land; it is never where you read the roster
+back from — the roster is what the create/link calls themselves returned.
 
 Run these, in this order, once you know what shape they take:
 
@@ -524,7 +618,8 @@ docket issue create -t "<title>" -T <kind> --idempotency-key <key> \
   -l <label> -f <file> -f <file> --scope '<glob>' -d - < <body-file>  # one per unit of work; -f and --scope are never omitted
 docket issue link add DKT-<n> depends_on DKT-<m>  # the graph's edges
 docket run start --request-file <path> \
-  --budget <cap> --issue DKT-<n> --issue DKT-<m>  # request verbatim; issues must exist first
+  --budget <declared-cap-or-0> --usage-budget <usage-cap-or-0> \
+  --issue DKT-<n> --issue DKT-<m>  # request verbatim; issues must exist first
 docket doc create -T plan -t "<title>" --idempotency-key <key> -d @<path>  # the plan artifact
 ```
 
@@ -546,8 +641,28 @@ paid for getting this wrong. The idempotency key you put on each issue
 entry makes the creates re-runnable: the same key returns the original
 entity, never a duplicate.
 
-`Run.budget` records the cap you elicited in §1 — and you size that cap
-here rather than guess it. The FLOOR is the bound workflow's expected-cost
+**Encode Unlimited explicitly.** The installed CLI's `run start --help`
+documents `--budget 0` as unlimited, and `--usage-budget 0` independently
+disables the measured-usage cap. On new runs, pass both as `0` unless the
+operator specified a limit for that dimension; omission can inherit
+`budget.default` or `budget.usage.default`. Map an explicit limit to the
+correct dimension and unit using `run budget --help`; do not copy one number
+into both dimensions. Declared workflow costs and measured usage are not
+interchangeable. Re-check these flags on first use under the help rule above.
+After recording, read the run's effective limits and verify that they match
+the operator's policy. Do not change global settings or other runs.
+
+For a later planning pass, preserve still-applicable operator-specified
+limits. A configured default or an earlier forecast is not an operator limit;
+reconcile any mismatch with this policy in the run being planned. Record
+Unlimited or the explicit limit separately from the cost forecast.
+
+**Cost forecast, not an automatic cap.** Calculate the proposed run's
+declared-cost floor and normal rework allowance in both budget modes. With
+Unlimited, the total is informational. With an explicit declared-cost cap,
+it is also the admission check. A measured-usage cap remains separate and
+requires evidence in its own unit; never compare it to workflow cost units.
+The FLOOR is the bound workflow's expected-cost
 sum with its when-gated steps INCLUDED: a `when` you cannot evaluate at plan
 time is a step that may well run, and a floor that omits it is a floor for a
 run that did not happen. You READ that sum, you never estimate it: `docket
@@ -599,6 +714,10 @@ them from the tomls rather than trusting this list — it is a worked example
 of the read, not a substitute for it, and every one of these files is
 versioned.
 
+The following sizing and budget-breach examples concern finite caps. They
+explain accurate forecasting and admission under an explicit limit; they do
+not authorize imposing a cap when the operator left the budget unlimited.
+
 Two things this forbids, both of them measured. NEVER budget a fixed number
 of rounds the workflow did not declare: security-change declares THREE and
 rejection-driven loops are that track's normal case — both complete runs to
@@ -622,7 +741,8 @@ cap — for a spec-doc issue whose own definition declares 3.8 of floor and
 7.8 of headroom before the run has learned anything, then raised twice, 12
 -> 15 -> 48, the second raise projecting 35.1 for an investigation expansion
 the run itself declared at 2.60. A number that came from neither the pinned
-definition nor this arithmetic is not a cap, and it is not a raise either.
+definition nor this arithmetic is not a substantiated cost forecast or
+justification for a raise; an explicit operator cap still applies.
 Price only the track's normal case into the cap: a round nobody could have
 planned — an operator's out-of-band commit needing independent review
 mid-run — is what the raise machinery is FOR, not a sizing failure. A cap
@@ -634,12 +754,18 @@ a third raised 12 -> 20 with 23 minutes of idle; a fourth raised three
 times, 5 -> 9 -> 12 -> 20, and spent 15, three times its plan. The raise
 machinery is for work that turned out harder than it read — not for a sum
 you could have taken here (one run's cap of 3 against a 4.8-cost workflow
-forced a mid-run raise panel and serialized its review fanout). Round UP and
+forced a mid-run raise panel and serialized its review fanout). Round the
+forecast UP and
 say what the headroom is for; an unspent cap costs nothing (`docket run
 budget --set <n> --reason '<why>'` adjusts it later, with `--if-version`
 when a concurrent change would matter). Write this arithmetic, one line,
-into the plan doc's body, and use the resulting number as `run start
---budget`. Ids render with each project's prefix — the store is
+into the plan doc's body as the forecast, alongside Unlimited or the
+operator's explicit cap. In unlimited mode, keep the encoded caps at `0`
+regardless of the forecast. If an explicit cap is too small, fit the roster
+without dropping agreed deliverables, or obtain agreement to a concrete scope
+reduction or budget increase before recording. Never silently replace the
+budget policy with the computed forecast.
+Ids render with each project's prefix — the store is
 machine-global and the number is the identity, so `DKT-<n>` and a bare
 number parse in any project.
 
@@ -658,27 +784,31 @@ run in three months, not a step another agent parses mechanically.
 **The issues**, one per unit of work, carry kind, labels, scope globs, and
 the ACs in the body.
 
-**Carve for the widest honest first wave.** The engine runs issues
-concurrently when their scopes do not collide and no edge orders them, so the
-decomposition itself — not the runtime — is what decides how much of this run
-can execute at once. A wave is as wide as you draw it here and never wider.
-So prefer MORE issues with NARROWER scopes over fewer issues with wider ones:
-a unit of work is the smallest chunk that owns its own acceptance criteria and
-its own directory prefix, not the largest chunk one executor could plausibly
-finish. When a drafted issue's scope spans several prefixes that different ACs
-own, split it along those prefixes and give each piece the ACs that belong to
-it — one issue becoming three that run together, for nothing beyond their own
-workflow floors. The limit is honesty, and it is a real limit: never split
-work that genuinely shares a file or an edit (two issues writing the same path
-collide at claim time and one of them dies), never manufacture an issue with
-no checkable AC of its own to pad the count, and never narrow a glob past what
-the change honestly touches to dodge a collision — a scope that lies is caught
-by the scope gate at execution, which is later and more expensive than carving
-it correctly here. Before recording, state the partition to yourself: every
-issue's literal prefix, one owner per prefix, and the count of issues carrying
-no incoming edge. That last number is the width of the first wave; put it in
-the plan artifact, and if it is 1 for a multi-issue run, say why in the same
-breath — a serial plan can be the honest answer, but it is never the default.
+**Keep the full feasible scope in one run; carve for wide, safe waves.**
+Include every known unit that fits the agreed constraints, even when it must
+follow another unit. Do not split the work into smaller runs simply because
+all issues cannot start together. Prefer independent issues with narrow,
+honest scopes when they own distinct acceptance criteria. When a draft spans
+several prefixes with separable ACs, split along those boundaries and budget
+each resulting issue's full workflow and rework allowance.
+
+Never split one cohesive edit or manufacture a criterion just to increase
+the count. Independent units that touch the same file may share a run only
+when their real dependencies and the engine's verified serialization make
+that safe; do not rely on claim failures to order them. Keep every scope
+wide enough for its actual change. A smaller or sequential run may be the
+honest result of these constraints, but an arbitrary preferred batch size is
+not a constraint.
+
+Before recording, check the full dependency graph and both collision surfaces
+against the engine's plan and scheduling rules. Record total issue count,
+ready-now count, planned waves, and `First-wave width`: the number of issues
+the plan can make eligible together without a scope or file collision.
+Count zero-incoming-edge issues separately if useful; that count alone does
+not establish concurrent dispatch. Each wave has one concurrent owner per
+conflicting scope or file, with overlaps across waves explicitly accounted
+for. Explain any narrow wave and any scheduling uncertainty in the plan doc;
+planned width is not a guarantee of runtime capacity.
 
 **Labels are the issue's ROUTING, and you confirm the binding before you
 record it.** Binding is exactly-one-match over the corpus's `[match]` blocks
@@ -833,9 +963,11 @@ NOT trimmed back to a separator, so sibling-looking globs are honestly disjoint:
 `internal/db/**` and `internal/dbx/**` do not collide. The trap is a LEADING
 wildcard — `**/*_test.go` has an EMPTY literal prefix, which is contained in
 every scope in the run, so one such glob serializes the whole run against
-everything and nothing warns you. Write prefix-disjoint globs (one owner per
-directory prefix), never lead with a wildcard, and check the partition against
-the matcher's own rules before recording it. A glob you correct
+everything and nothing warns you. Prefer prefix-disjoint globs, never lead
+with a wildcard, and check them against the matcher's own rules before
+recording. Require one concurrent owner per conflicting prefix; truthful
+overlap across waves is allowed only with verified serialization under §1b.
+Do not narrow away real work to manufacture parallelism. A glob you correct
 later goes through `issue edit --scope`, which REPLACES the whole list rather
 than appending — pass every glob you mean to keep; `issue edit -f` replaces
 the file list the same way, and `issue file add` appends to it. Prefer
@@ -855,14 +987,16 @@ Before writing one, name the input in a phrase you could put in the plan
 artifact: the file, artifact, schema, or decision that B's step READS and A's
 step is what PRODUCES. "B builds on A", "A should land first", "it reads more
 naturally in that order", and "same subsystem" are orderings, not
-dependencies — drop them and let both run in the first wave. Two issues whose
+dependencies — drop the false edges and place the issues in their earliest
+safe waves. Two issues whose
 scopes are prefix-disjoint rarely carry a true edge between them, so when you
 find yourself writing one anyway, suspect the decomposition before the
 ordering: the shared thing usually belongs inside one issue, or in a third
 that both of them depend on — which costs one edge each instead of a chain.
 And prefer a shallow fan (many issues depending on one root) to a chain (each
-depending on the last): the fan's second wave is everything at once, the
-chain's is one issue at a time, for the same edge count. Count the edges you
+depending on the last): the fan lets the children become dependency-ready
+together, while the chain releases one at a time; collisions still constrain
+which children can run concurrently. Count the edges you
 are about to record and check the resulting graph's width against the wave
 arithmetic above; a package where every issue depends on the one before it is
 a serial plan wearing a graph's clothes.
@@ -908,14 +1042,16 @@ This is a designed shape, not a fallback. Use it whenever the honest answer to
 ## 5. Present and stop
 
 If §1 or §1b concludes with nothing to record — the operator chose "propose
-only", or the ready set came back empty — present your reasoning as given
-and stop; run no further commands.
+only", or no feasible startable run remains after the full checks — present
+your reasoning as given and stop; run no further commands.
 
 Otherwise, once the recording commands above have run, present the recorded
-run — the issues, their edges, the scopes, the budget, and the
-`First-wave width` (how many issues carry no incoming edge, so how many run
-concurrently on the first dispatch) — and say plainly where the approval to
-activate lives now: it is a tribunal vote that `docket-run` convenes and
+run — total issue count, the issues, their edges, scopes, Unlimited or explicit
+budget limits, the separate cost forecast, planned waves, and `First-wave
+width` accounting for both dependencies and
+collisions. State why any otherwise eligible work remains outside this run,
+and say plainly where the approval to activate lives now: it is a tribunal
+vote that `docket-run` convenes and
 surfaces when the run is driven. Then stop.
 
 Do not offer to activate it yourself as a convenience. Do not start the run.

@@ -98,15 +98,25 @@ ok(!runParked(returned(STEP_687)),
 ok(!chainDead(returned(STEP_687)),
     "the same reply does not kill its issue's chain")
 
-// ---- Real park signals still park ----
-ok(runParked(returned('Did the work.\n\nSTEP-12 recorded (waiting-human)')),
-    'the mandated record tail (waiting-human) parks')
-ok(runParked(returned('STEP-12 recorded (paused)')),
-    'the mandated record tail (paused) parks')
-ok(runParked(returned('**STEP-12 recorded (waiting-human)**')),
-    'the tail still parks wrapped in markdown emphasis')
-ok(runParked(returned('STEP-12 recorded (waiting-human)\n\n')),
-    'the tail still parks with trailing blank lines')
+// ---- The record tail parks its ISSUE, never the run ----
+// The engine parks the issue (R2b) and leaves the run active for every other
+// lane; RUN-90 lost 1372 of 1656 dispatched rows to the old run-wide reading.
+ok(laneParked(returned('Did the work.\n\nSTEP-12 recorded (waiting-human)')),
+    'the mandated record tail (waiting-human) parks the lane')
+ok(laneParked(returned('STEP-12 recorded (paused)')),
+    'the mandated record tail (paused) parks the lane')
+ok(laneParked(returned('**STEP-12 recorded (waiting-human)**')),
+    'the tail still parks the lane wrapped in markdown emphasis')
+ok(laneParked(returned('STEP-12 recorded (waiting-human)\n\n')),
+    'the tail still parks the lane with trailing blank lines')
+ok(!laneParked(returned('STEP-12 recorded (done)')),
+    'a done tail does not park the lane')
+ok(!runParked(returned('Did the work.\n\nSTEP-12 recorded (waiting-human)')),
+    'the record tail never parks the run')
+ok(!runParked(returned('STEP-12 recorded (paused)')),
+    'a paused tail never parks the run either')
+ok(chainDead(returned('STEP-12 recorded (waiting-human)')),
+    'a lane park kills its own chain for this wave')
 ok(!runParked(returned('STEP-12 recorded (done)')),
     'a done tail does not park')
 
@@ -166,6 +176,9 @@ ok(!chainDead(null), 'a null result is not chain-dead')
 ok(!runParked(null), 'a null result is not a park')
 ok(!runParked({ status: 'engine-run', text: 'STEP-9 recorded (waiting-human)' }),
     'only a RETURNED agent reply is read for park signals')
+ok(!laneParked({ status: 'engine-run', text: 'STEP-9 recorded (waiting-human)' }),
+    'only a RETURNED agent reply is read for lane parks')
+ok(!laneParked(null), 'a null result is not a lane park')
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)

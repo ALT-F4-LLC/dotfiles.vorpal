@@ -298,16 +298,37 @@ ok(LOG.some((l) => l.startsWith('STEP-1572: later stages deferred — predecesso
                                'STEP-1563 is skipped-not-claimable')),
     `DOT-1050: and it too reads as deferred, not dead (got ${JSON.stringify(LOG)})`)
 
-// ---- A park stops LATER stages of every issue, not just one ----
+// ---- A step's park stops LATER stages of ITS issue, and only its issue ----
+// The engine parks the issue (R2b) and keeps the run active: HRN-30's later
+// rows are deferred, HRN-99 runs to the end. RUN-90 lost 1372 of 1656
+// dispatched rows to reading this tail as a run-wide park.
 out = await run(RUN43(), {
     'STEP-1547': { step: 'STEP-1547', status: 'returned',
                    text: 'Did it.\n\nSTEP-1547 recorded (waiting-human)' },
 })
-ok(statusOf(out, 'STEP-1550') === 'not-launched-run-parked' &&
-   statusOf(out, 'STEP-2002') === 'not-launched-run-parked',
-    'a mid-wave park leaves every later row not-launched-run-parked')
+ok(statusOf(out, 'STEP-1550') === 'skipped-chain-dead' &&
+   statusOf(out, 'STEP-1563') === 'skipped-chain-dead',
+    "a lane park defers the parking issue's later rows")
+ok(statusOf(out, 'STEP-2002') === 'returned' && SPAWNED.includes('STEP-2002'),
+    "and the other issue's later stage still launches and returns")
+ok(!LOG.some((l) => l.includes('run parked mid-wave')) &&
+   LOG.some((l) => l.startsWith('STEP-1547: parked waiting-human')),
+    'a lane park is logged as the issue waiting on the operator, not as a run park')
 ok(SPAWNED.includes('STEP-2001'),
     'while the parking row\'s own stage-mates still ran')
+
+// ---- The run-wide park is R1's refusal, not a step's tail ----
+// An agent that launched INTO a parked run reports the CONFLICT; after that,
+// no lane launches a later stage.
+out = await run(RUN43(), {
+    'STEP-1547': { step: 'STEP-1547', status: 'returned',
+                   text: ['STEP-1547', 'CONFLICT', '{"ok":false,"error":"run is not active"}'].join('\n') },
+})
+ok(statusOf(out, 'STEP-1550') === 'not-launched-run-parked' &&
+   statusOf(out, 'STEP-2002') === 'not-launched-run-parked',
+    'a mid-wave run park leaves every later row not-launched-run-parked')
+ok(SPAWNED.includes('STEP-2001'),
+    'while the refusing row\'s own stage-mates still ran')
 
 // ---- DOT-560: the pre-claim probe's fail-open must not cover 'pending' ----
 // Shape: one issue whose stage-0 row is an ACTION (engine-run, so the chain is

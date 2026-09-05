@@ -526,7 +526,8 @@ ${isolated ? `
 4. End your reply with exactly this line, filled in from the record
    response: <step-id> recorded (<status>) — for example "STEP-12 recorded
    (done)" or "STEP-12 recorded (waiting-human)". The wave parses this tail
-   to stop launching later stages into a parked run; do not paraphrase it.`
+   to stop launching this issue's later stages once it parks; do not
+   paraphrase it.`
 }
 
 let input = args
@@ -579,20 +580,28 @@ function isConflictReport(text) {
         <= CONFLICT_REPORT_MAX_LINES
 }
 
-// Two park signals, both in-band: the claim-CONFLICT report of an agent that
-// launched INTO a park ('run is not active'), and the record-status tail of
-// the agent whose own record CAUSED the park ('STEP-N recorded
-// (waiting-human)') — the second stops the next stage before it spawns
-// corpses (measured twice on one run: 5 judges launched into a park the
-// prior stage's result already announced). The tail format is mandated by the
+// Two park signals, both in-band, and they now mean DIFFERENT scopes. The
+// record-status tail of the agent whose own record parked ('STEP-N recorded
+// (waiting-human)') parks that ISSUE: the engine's R2b refuses every later
+// claim on the same issue until the operator rules, and the run stays
+// `active` for every other lane. Reading it as a run-wide park was what
+// RUN-90 paid for — 1372 of 1656 dispatched rows never launched because one
+// lane's verify parked. The claim-CONFLICT report of an agent that launched
+// INTO a park ('run is not active') is still run-wide: R1 refuses every
+// claim, so every lane stops launching. The tail format is mandated by the
 // brief's closing instruction below, which says to END the reply with it, so
 // it is read at the END and nowhere else; trailing emphasis or punctuation is
 // tolerated, a paragraph after it is not. Fail-open: no match keeps launching,
-// and the engine refuses a claim into a parked run anyway.
+// and the engine refuses a claim into a parked issue or run anyway.
+function laneParked(res) {
+    if (res == null || res.status !== 'returned' ||
+        typeof res.text !== 'string') return false
+    return /recorded \((?:waiting-human|paused)\)[\s*_`.]*$/.test(lastLine(res.text))
+}
+
 function runParked(res) {
     if (res == null || res.status !== 'returned' ||
         typeof res.text !== 'string') return false
-    if (/recorded \((?:waiting-human|paused)\)[\s*_`.]*$/.test(lastLine(res.text))) return true
     return isConflictReport(res.text) && res.text.includes('run is not active')
 }
 // TEST-END park-signals
@@ -2379,6 +2388,10 @@ function chainDead(res) {
     // per-round row of the issue (synthesize@N, verify@N) would work the
     // same wrong tree.
     if (res.status === 'parked-base-ancestry') return true
+    // A step that parked its own issue (the mandated tail): every later row
+    // of that issue is refused by the engine's R2b until the operator rules,
+    // so launching one buys a corpse. Other lanes are untouched.
+    if (laneParked(res)) return true
     // Same body-scan trap as runParked: `includes('CONFLICT')` would kill an
     // issue's whole remaining chain on a judge that merely REPORTED one.
     return res.status === 'returned' && isConflictReport(res.text)
@@ -2686,7 +2699,15 @@ async function runLane(name, laneRows) {
             // spawn-failed, so it has to be read as one too.
             const out = res || { step: row.step, status: 'spawn-failed', text: null }
             byStep.set(row.step, out)
-            if (chainDead(out) && row.issue) {
+            if (chainDead(out) && row.issue && laneParked(out)) {
+                // A lane park is a deferral, not a death: nothing failed, the
+                // issue waits on a person, and the engine re-offers its later
+                // rows once the operator rules. Every other lane keeps going.
+                deadIssues.set(row.issue, { step: row.step, status: out.status,
+                    deferral: 'parked waiting-human: the issue is on an operator decision' })
+                log(`${row.step}: parked waiting-human — issue ${row.issue}'s later ` +
+                    `stages wait on the operator; every other lane keeps launching`)
+            } else if (chainDead(out) && row.issue) {
                 const deferral = blockedReason(out)
                 deadIssues.set(row.issue, { step: row.step, status: out.status, deferral })
                 log(deferral

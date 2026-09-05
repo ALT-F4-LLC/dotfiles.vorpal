@@ -266,11 +266,11 @@ await finish('B-2a')
 out = await run
 ok(out.every((r) => r.status === 'returned'), 'headroom: everything settles returned')
 
-// ---- (4) a park is still run-wide -------------------------------------
-// A's writer parks the run on settle; B's writer is waiting behind it
-// (uncertified pair); C's writer is in flight in its own lane. Nothing may
-// launch after the park: the waiter settles without a spawn, C's in-flight
-// row finishes, and every later row is not-launched-run-parked.
+// ---- (4) a park is LANE-wide; only R1's refusal is run-wide ------------
+// A's writer parks ITS ISSUE on settle (the mandated tail): A's later stage
+// never launches, but B's writer, waiting behind it as an uncertified pair,
+// launches the moment A's settles, and C's lane runs to the end. The engine
+// parks the issue (R2b) and keeps the run active for everyone else.
 const PARK = () => [
     ex('A-0', 'AGT-602', 0, 'write'),
     ex('A-1', 'AGT-602', 1, 'judge-correctness'),
@@ -287,21 +287,49 @@ await settle()
 ok(SPAWNED.includes('A-0') && SPAWNED.includes('C-0') && !SPAWNED.includes('B-1'),
     "park: before the park, B's writer waits behind A's")
 await finish('A-0')
-ok(logged('run parked mid-wave'), 'park: the park is observed the moment the parking row settles')
-ok(!SPAWNED.includes('B-1') && !SPAWNED.includes('A-1'),
-    'park: nothing launches after it — not the waiter, not the next stage')
+ok(!logged('run parked mid-wave') && logged('A-0: parked waiting-human'),
+    'park: a lane park is logged as the issue waiting, never as a run park')
+ok(!SPAWNED.includes('A-1'), "park: the parking issue's own next stage never launches")
+ok(!SPAWNED.includes('B-1') && logged('B-1: waiting — writer A-0'),
+    "park: B's writer still waits — behind C's in-flight uncertified writer, not behind the park")
 await finish('C-0')
 out = await run
-ok(statusOf(out, 'C-0') === 'returned', "park: C's in-flight row still finishes")
+ok(SPAWNED.includes('B-1') && logged('B-1: released — launching'),
+    "park: B's writer launches once the last uncertified writer settles — the park holds only A")
+ok(statusOf(out, 'C-0') === 'returned' && statusOf(out, 'C-1') === 'returned',
+    "park: C's lane runs to the end")
+ok(statusOf(out, 'A-1') === 'skipped-chain-dead',
+    "park: A's later row settles skipped-chain-dead, a deferral")
+ok(statusOf(out, 'B-1') === 'returned' && statusOf(out, 'B-2') === 'returned',
+    "park: B's chain completes behind the released waiter")
+ok(!out.some((r) => r.status === 'not-launched-run-parked'),
+    'park: nothing settles not-launched-run-parked on a lane park')
+
+// The run-wide park is R1's refusal: an agent that launched INTO a parked run
+// reports a CONFLICT naming it, and after that nothing launches — not the
+// waiter, not any lane's next stage.
+const INTO_PARK = ['A-0', 'CONFLICT', '{"ok":false,"error":"run is not active"}'].join('\n')
+run = start(PARK(), {
+    hold: ['A-0', 'C-0'],
+    results: { 'A-0': { step: 'A-0', status: 'returned', text: INTO_PARK } },
+})
+await settle()
+await finish('A-0')
+ok(logged('run parked mid-wave'), 'run park: the park is observed the moment the refusal settles')
+ok(!SPAWNED.includes('B-1') && !SPAWNED.includes('A-1'),
+    'run park: nothing launches after it — not the waiter, not the next stage')
+await finish('C-0')
+out = await run
+ok(statusOf(out, 'C-0') === 'returned', "run park: C's in-flight row still finishes")
 ok(statusOf(out, 'B-1') === 'not-launched-run-parked' &&
    statusOf(out, 'B-2') === 'not-launched-run-parked' &&
    statusOf(out, 'A-1') === 'not-launched-run-parked' &&
    statusOf(out, 'C-1') === 'not-launched-run-parked',
-    'park: every unlaunched row settles not-launched-run-parked, including the flushed waiter')
-ok(SPAWNED.length === 2, 'park: exactly the two pre-park spawns happened')
+    'run park: every unlaunched row settles not-launched-run-parked, including the flushed waiter')
+ok(SPAWNED.length === 2, 'run park: exactly the two pre-park spawns happened')
 
-// The same shape when the park lands while ANOTHER lane's stage-0 row is
-// still running: that lane's next stage sees the flag and never launches.
+// A lane park while ANOTHER lane's stage-0 row is still running: that lane
+// starts its stage 1 as usual once its own row returns.
 run = start(RUN67(), {
     hold: ['C-0'],
     results: { 'A-0': { step: 'A-0', status: 'returned', text: 'A-0 recorded (waiting-human)' } },
@@ -311,8 +339,8 @@ ok(!SPAWNED.includes('A-1a') && SPAWNED.includes('B-0'),
     "park: the parking issue's own later stage never launches; stage-mates still ran")
 await finish('C-0')
 out = await run
-ok(statusOf(out, 'C-1a') === 'not-launched-run-parked' && !SPAWNED.includes('C-1a'),
-    "park: a lane whose stage-0 row was still running does not start stage 1 after the park")
+ok(statusOf(out, 'C-1a') === 'returned' && SPAWNED.includes('C-1a'),
+    "park: a lane whose stage-0 row was still running starts stage 1 after another lane's park")
 
 // ---- (5) per-lane chain death, issue-less rows, vote/action rows --------
 const MIXED = () => [

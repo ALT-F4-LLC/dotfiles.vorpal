@@ -134,6 +134,33 @@ case_executor_archetypes_deny() {
         "executor-write: docket trust rm"
 }
 
+# The docket-run conductor is a named general-purpose agent whose name is what
+# the harness reports as agent_type (`docket-conductor-RUN-N`, seen in the
+# friction ledger). Trust verbs are operator-reserved in its own contract, so
+# it is denied like an executor -- and unlike one, its help read is denied too:
+# the claude_code.rs ask rule still fires on `docket trust add --help`, and a
+# background seat's ask has nobody to answer it (RUN-90, 188 minutes).
+case_conductor_seat_denies() {
+    assert_verdict "docket trust add erik ssh-ed25519 AAAA" docket-conductor-RUN-90 DENY \
+        "conductor: docket trust add"
+    assert_verdict "docket trust rm erik" docket-conductor-RUN-90 DENY \
+        "conductor: docket trust rm"
+    assert_verdict "docket trust add --help" docket-conductor-RUN-90 DENY \
+        "conductor: the help read is denied too"
+    assert_verdict "docket trust add --help 2>&1 | sed -n '1,60p'; echo '--- current sdet-abuse row ---'; docket trust list 2>&1 | grep -E '^sdet-abuse|^build'" \
+        docket-conductor-RUN-90 DENY "conductor: RUN-90's own 14:52Z command"
+    assert_verdict "docket trust list" docket-conductor-RUN-90 ALLOW \
+        "conductor: docket trust list stays readable"
+    assert_verdict "docket issue show AGT-1" docket-conductor-RUN-90 ALLOW \
+        "conductor: ordinary verbs untouched"
+    assert_verdict "docket trust add erik key" docket-conductor ALLOW \
+        "near-miss: docket-conductor without a run suffix is not the seat"
+    assert_verdict "docket trust add --help" executor-read ALLOW \
+        "executor: the help read exemption is unchanged"
+    assert_deny_reason "docket trust add erik key" docket-conductor-RUN-90 \
+        "conductor: deny reason keeps the fixed prefix"
+}
+
 case_main_conversation_and_other_agents_allow() {
     assert_verdict "docket trust add erik ssh-ed25519 AAAA" "" ALLOW \
         "no agent_type (main conversation): docket trust add"
@@ -626,6 +653,7 @@ case_input_edge_cases() {
 }
 
 case_executor_archetypes_deny
+case_conductor_seat_denies
 case_main_conversation_and_other_agents_allow
 case_ordinary_docket_verbs_allow
 case_must_not_catch_prose_and_reads

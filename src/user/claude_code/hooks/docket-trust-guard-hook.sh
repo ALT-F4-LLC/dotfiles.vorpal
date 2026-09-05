@@ -161,6 +161,23 @@ is_executor_archetype() {
     esac
 }
 
+# The docket-run conductor is spawned as a named general-purpose agent, and
+# the harness reports that name as its `agent_type` (`docket-conductor-RUN-N`,
+# observed in ~/.claude/friction). Trust-store writes are operator-reserved
+# in the conductor's own contract, so it has no legitimate path to the verb
+# at all -- not even the help read below: the ask rule in claude_code.rs
+# still fires on `docket trust add --help`, and a background seat's ask has
+# nobody at a terminal to answer it. RUN-90's conductor issued exactly that
+# help read at 14:52Z and its whole run sat behind the unanswered prompt
+# until 18:00Z. Denying here is what turns that prompt into an immediate,
+# explained refusal the conductor can route to `main` as a question.
+is_conductor_seat() {
+    case "$1" in
+        docket-conductor-RUN-*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
 INPUT=$(cat 2>/dev/null) || allow_default
 
 if ! command -v jq >/dev/null 2>&1; then
@@ -171,7 +188,12 @@ TOOL_NAME=$(printf '%s' "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null) || a
 [ "$TOOL_NAME" = "Bash" ] || allow_default
 
 AGENT_TYPE=$(printf '%s' "$INPUT" | jq -r '.agent_type // empty' 2>/dev/null) || allow_default
-is_executor_archetype "$AGENT_TYPE" || allow_default
+CONDUCTOR=0
+if is_conductor_seat "$AGENT_TYPE"; then
+    CONDUCTOR=1
+elif ! is_executor_archetype "$AGENT_TYPE"; then
+    allow_default
+fi
 
 COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null) || allow_default
 [ -n "$COMMAND" ] || allow_default
@@ -571,7 +593,7 @@ END {
 # An exempted occurrence `continue`s the scan rather than allowing outright:
 # `docket trust add --help && docket trust add x -- y` still denies on its
 # second occurrence, on this line or a later one.
-MATCH=$(printf '%s' "$STRIPPED" | awk '
+MATCH=$(printf '%s' "$STRIPPED" | awk -v strict="$CONDUCTOR" '
 BEGIN { MARK = "\001" }
 function decode(raw,    inner, cpos) {
     if (length(raw) >= 2 && substr(raw, 1, 1) == MARK && substr(raw, length(raw), 1) == MARK) {
@@ -618,7 +640,7 @@ function decode(raw,    inner, cpos) {
                 pquoted = decode(words[i + 3])
                 pw = D_WORD
                 sub(/[|&;()<>].*$/, "", pw)
-                if (!pquoted && (pw == "-h" || pw == "--help")) continue
+                if (!strict && !pquoted && (pw == "-h" || pw == "--help")) continue
             }
             print "MATCH"
             exit
@@ -628,4 +650,7 @@ function decode(raw,    inner, cpos) {
 ' 2>/dev/null)
 [ "$MATCH" = "MATCH" ] || allow_default
 
+if [ "$CONDUCTOR" = "1" ]; then
+    deny "trust-store write blocked: \`docket trust add/rm\` is operator-reserved and never the conductor's to run, \`--help\` included: a background seat's permission ask has nobody at a terminal to answer it, and RUN-90's conductor held one for 188 minutes. Send the trust matter to \`main\` as its own \`question:\` (never bundled with another gate) and end your turn; the operator's own terminal is the only path to that store."
+fi
 deny "trust-store write blocked: \`docket trust add/rm\` is operator-reserved and never in scope for an executor step, whatever the brief says. If your step genuinely needs a trust entry changed, that is a routing defect: record the mismatch as your step's finding through the gap channel your brief names, and do not retry this call. If this command performs no trust-store write, the matcher has false-positived on the phrase appearing as prose or as an interpreter's code argument (known limitation): to read or search a file's content, use the Read or Grep tool instead (bypasses this matcher entirely); to write prose that names the phrase, put it in a file via the Write/Edit tool rather than a Bash heredoc or an inline code argument."

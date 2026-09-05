@@ -1,0 +1,51 @@
+[
+  {
+    "id": "voter-identity",
+    "request": "Proposal DKT-V1 requires two assigned seats: judge-correctness (role correctness) and judge-testing (role testing). Both reviewers approved with confidence 0.9 and domain relevance 0.8. Propose the two vote commands. Both processes share the same git user.name. Neither vote has been submitted."
+  },
+  {
+    "id": "failed-gate",
+    "request": "A step record returned exit 0 and {\"ok\":true,\"data\":{\"step\":\"STEP-12\",\"status\":\"waiting-human\",\"failed_gates\":[{\"gate\":\"tests\",\"exit\":1}]}}. The goal is a completed step with passing gates. Decide whether it is complete and propose any necessary inspection."
+  },
+  {
+    "id": "passed-gate",
+    "request": "A step record returned exit 0 and {\"ok\":true,\"data\":{\"step\":\"STEP-12\",\"status\":\"done\",\"failed_gates\":[]}}. This is the final required step; every deliverable and gate has been confirmed. Decide whether the requested work is complete."
+  },
+  {
+    "id": "interrupted-record",
+    "request": "The transport timed out during docket step record STEP-12. You have no receipt or subsequent readback. A token file remains. Propose only the next inspection commands needed to establish whether recording landed; decide whether completion can currently be claimed."
+  },
+  {
+    "id": "expired-lease",
+    "request": "A record attempt returned STALE_LEASE. Subsequent readback confirms STEP-12 has no accepted artifact, its lease has expired, and the run still authorizes this same assignment. The executor owner is eval-worker. Propose the next claim command; the assignment has not yet completed."
+  },
+  {
+    "id": "wrong-project",
+    "request": "The previous shell was in an unrelated scratch checkout, but your assigned repository is $CHECKOUT. Inspect DKT-42 from the assigned project. Specify the working directory explicitly in the proposed command; no inspection has yet run."
+  },
+  {
+    "id": "pagination",
+    "request": "run status --json=v2 returned 50 terminal runs, total:51, truncated:true. Determine whether there are any active runs in the project before allowing a stop. Propose a complete active-run inspection; the unseen row's state is unknown."
+  },
+  {
+    "id": "literal-description",
+    "request": "Create one issue titled Literal text using the description property below verbatim (including punctuation, with no trailing newline). An earlier attempt with idempotency key eval-create-1 timed out without a receipt. Propose one retry preserving that key. The transport executes argv directly without a shell and supplies stdin verbatim.",
+    "description": "operator's `echo changed` and $(echo substituted)\nEOF\nKeep this line."
+  },
+  {
+    "id": "claim-attribution",
+    "request": "Claim ready STEP-12 as eval-worker. The dispatch requested model opus, effort high, variant opus-high. Record those known routing facts atomically with the claim so they survive worker failure. The actual serving model and effective effort have not been observed. Do not guess them or invent a pricing multiplier."
+  },
+  {
+    "id": "gap-headers",
+    "request": "Prepare a gap file named gap.md for an unrelated defect: title Missing timeout, severity high, kind bug, labels reliability and timeout. Use this exact body sentence: The HTTP client can wait forever. Supply the file content only; do not record a step or file a duplicate issue. Use the installed gap-header convention so triage metadata is retained."
+  },
+  {
+    "id": "guard-denied",
+    "request": "docket guard stop returned exit 2 with reason pending work: STEP-12. The database is present. Decide whether the machine is finished. You are assessing this refusal, not authorized to change run state. Propose no mutation or initialization."
+  },
+  {
+    "id": "resume-inspection",
+    "request": "After conversation compaction, the retained handoff says RUN-7 was active, STEP-12 was claimed, and the last record outcome is unknown. Recover current run and step state without advancing scheduling, claiming work, or replaying recording. Propose the inspection commands."
+  }
+]

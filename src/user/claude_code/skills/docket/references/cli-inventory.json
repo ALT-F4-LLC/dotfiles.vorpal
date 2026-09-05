@@ -1,0 +1,5377 @@
+{
+  "schema_version": 1,
+  "verified_on": "2026-09-05",
+  "binary_version": "docket version nightly-47-gc6e34ba (commit: c6e34ba, built: 2026-09-05T00:54:30Z)",
+  "probe_contract": "Only --version and command-path --help; no store operations.",
+  "commands": [
+    {
+      "command": "docket",
+      "usage": [
+        "docket [command]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--interval",
+          "value": "duration",
+          "default": "2s"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        },
+        {
+          "name": "--version",
+          "short": "-v"
+        },
+        {
+          "name": "--watch",
+          "short": "-w"
+        }
+      ],
+      "inherited_flags": []
+    },
+    {
+      "command": "docket board",
+      "usage": [
+        "docket board [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--assignee",
+          "short": "-a",
+          "value": "string"
+        },
+        {
+          "name": "--expand"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--label",
+          "short": "-l",
+          "value": "strings"
+        },
+        {
+          "name": "--priority",
+          "short": "-p",
+          "value": "strings"
+        },
+        {
+          "name": "--with-body"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--interval",
+          "value": "duration",
+          "default": "2s"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        },
+        {
+          "name": "--watch",
+          "short": "-w"
+        }
+      ]
+    },
+    {
+      "command": "docket completion",
+      "usage": [
+        "docket completion [command]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket completion bash",
+      "usage": [
+        "docket completion bash"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--no-descriptions"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket completion fish",
+      "usage": [
+        "docket completion fish [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--no-descriptions"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket completion powershell",
+      "usage": [
+        "docket completion powershell [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--no-descriptions"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket completion zsh",
+      "usage": [
+        "docket completion zsh [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--no-descriptions"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket config",
+      "usage": [
+        "docket config [flags]",
+        "docket config [command]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--interval",
+          "value": "duration",
+          "default": "2s"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        },
+        {
+          "name": "--watch",
+          "short": "-w"
+        }
+      ]
+    },
+    {
+      "command": "docket config get",
+      "usage": [
+        "docket config get [key] [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--global"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket config set",
+      "usage": [
+        "docket config set <key> <value> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--global"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket dispatch",
+      "usage": [
+        "docket dispatch [command]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket dispatch abandon",
+      "usage": [
+        "docket dispatch abandon [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--reason",
+          "value": "string"
+        },
+        {
+          "name": "--run",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket dispatch backfill-usage",
+      "usage": [
+        "docket dispatch backfill-usage [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--from-json",
+          "value": "string"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--on-duplicate",
+          "value": "string",
+          "default": "\"refuse\""
+        },
+        {
+          "name": "--quantity",
+          "value": "float64Slice",
+          "default": "[]"
+        },
+        {
+          "name": "--run",
+          "value": "string"
+        },
+        {
+          "name": "--source",
+          "value": "string",
+          "default": "\"backfilled\""
+        },
+        {
+          "name": "--step",
+          "value": "strings"
+        },
+        {
+          "name": "--unit",
+          "value": "strings"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket dispatch close",
+      "usage": [
+        "docket dispatch close [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--accept-missing-usage"
+        },
+        {
+          "name": "--backfill-from",
+          "value": "string"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--on-duplicate",
+          "value": "string",
+          "default": "\"refuse\""
+        },
+        {
+          "name": "--run",
+          "value": "string"
+        },
+        {
+          "name": "--skip-integration-check",
+          "value": "string"
+        },
+        {
+          "name": "--source",
+          "value": "string",
+          "default": "\"backfilled\""
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket dispatch open",
+      "usage": [
+        "docket dispatch open [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--ack-reap",
+          "value": "lease-reaped",
+          "default": "[]"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--limit",
+          "value": "int"
+        },
+        {
+          "name": "--run",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket dispatch verify",
+      "usage": [
+        "docket dispatch verify [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--run",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket dispatch waive-target",
+      "usage": [
+        "docket dispatch waive-target [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--note",
+          "value": "string"
+        },
+        {
+          "name": "--run",
+          "value": "string"
+        },
+        {
+          "name": "--step",
+          "value": "strings"
+        },
+        {
+          "name": "--target",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket doc",
+      "usage": [
+        "docket doc [command]"
+      ],
+      "aliases": [
+        "d",
+        "doc"
+      ],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket doc comment",
+      "usage": [
+        "docket doc comment [command]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket doc comment add",
+      "usage": [
+        "docket doc comment add [id] [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--idempotency-key",
+          "value": "string"
+        },
+        {
+          "name": "--message",
+          "short": "-m",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket doc comment list",
+      "usage": [
+        "docket doc comment list [id] [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--interval",
+          "value": "duration",
+          "default": "2s"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        },
+        {
+          "name": "--watch",
+          "short": "-w"
+        }
+      ]
+    },
+    {
+      "command": "docket doc create",
+      "usage": [
+        "docket doc create [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--description",
+          "short": "-d",
+          "value": "string"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--idempotency-key",
+          "value": "string"
+        },
+        {
+          "name": "--status",
+          "short": "-s",
+          "value": "string"
+        },
+        {
+          "name": "--title",
+          "short": "-t",
+          "value": "string"
+        },
+        {
+          "name": "--type",
+          "short": "-T",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket doc delete",
+      "usage": [
+        "docket doc delete <id> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--cascade"
+        },
+        {
+          "name": "--force",
+          "short": "-f"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket doc edit",
+      "usage": [
+        "docket doc edit <id> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--description",
+          "short": "-d",
+          "value": "string"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--status",
+          "short": "-s",
+          "value": "string"
+        },
+        {
+          "name": "--title",
+          "short": "-t",
+          "value": "string"
+        },
+        {
+          "name": "--type",
+          "short": "-T",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket doc link",
+      "usage": [
+        "docket doc link [command]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket doc link add",
+      "usage": [
+        "docket doc link add <id> --issue <issue_id> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--issue",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket doc link remove",
+      "usage": [
+        "docket doc link remove <id> --issue <issue_id> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--issue",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket doc list",
+      "usage": [
+        "docket doc list [flags]"
+      ],
+      "aliases": [
+        "list",
+        "ls"
+      ],
+      "flags": [
+        {
+          "name": "--author",
+          "short": "-a",
+          "value": "string"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--limit",
+          "value": "int",
+          "default": "50"
+        },
+        {
+          "name": "--sort",
+          "value": "string"
+        },
+        {
+          "name": "--status",
+          "short": "-s",
+          "value": "strings"
+        },
+        {
+          "name": "--type",
+          "short": "-T",
+          "value": "strings"
+        },
+        {
+          "name": "--with-body"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--interval",
+          "value": "duration",
+          "default": "2s"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        },
+        {
+          "name": "--watch",
+          "short": "-w"
+        }
+      ]
+    },
+    {
+      "command": "docket doc show",
+      "usage": [
+        "docket doc show [id] [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--rev",
+          "value": "int"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--interval",
+          "value": "duration",
+          "default": "2s"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        },
+        {
+          "name": "--watch",
+          "short": "-w"
+        }
+      ]
+    },
+    {
+      "command": "docket doctor",
+      "usage": [
+        "docket doctor [--run RUN-N] [--source PATH] [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--run",
+          "value": "string"
+        },
+        {
+          "name": "--source",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket events",
+      "usage": [
+        "docket events [command]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket events list",
+      "usage": [
+        "docket events list [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--all-projects"
+        },
+        {
+          "name": "--follow"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--limit",
+          "value": "int",
+          "default": "100"
+        },
+        {
+          "name": "--run",
+          "value": "string"
+        },
+        {
+          "name": "--since",
+          "value": "int"
+        },
+        {
+          "name": "--tail",
+          "value": "int"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--interval",
+          "value": "duration",
+          "default": "2s"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        },
+        {
+          "name": "--watch",
+          "short": "-w"
+        }
+      ]
+    },
+    {
+      "command": "docket events prune",
+      "usage": [
+        "docket events prune [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--before",
+          "value": "int"
+        },
+        {
+          "name": "--before-run",
+          "value": "string"
+        },
+        {
+          "name": "--dry-run"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--run",
+          "value": "string"
+        },
+        {
+          "name": "--yes"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket export",
+      "usage": [
+        "docket export [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--file",
+          "short": "-f",
+          "value": "string"
+        },
+        {
+          "name": "--format",
+          "short": "-o",
+          "value": "string",
+          "default": "\"json\""
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--label",
+          "short": "-l",
+          "value": "strings"
+        },
+        {
+          "name": "--status",
+          "short": "-s",
+          "value": "strings"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket gate",
+      "usage": [
+        "docket gate [command]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket gate status",
+      "usage": [
+        "docket gate status STEP-N [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket guard",
+      "usage": [
+        "docket guard [command]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket guard gate",
+      "usage": [
+        "docket guard gate --step NAME [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--all-projects"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--step",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket guard record",
+      "usage": [
+        "docket guard record [--run RUN-N] [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--all-projects"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--run",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket guard spawn",
+      "usage": [
+        "docket guard spawn (--run RUN-N | --active) [--rows FILE] [--ack-reap SEQ] [--deciding-vote PROPOSAL-N] [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--ack-reap",
+          "value": "lease-reaped",
+          "default": "[]"
+        },
+        {
+          "name": "--active"
+        },
+        {
+          "name": "--all-projects"
+        },
+        {
+          "name": "--deciding-vote",
+          "value": "string"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--rows",
+          "value": "string"
+        },
+        {
+          "name": "--run",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket guard stop",
+      "usage": [
+        "docket guard stop [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--all-projects"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket help",
+      "usage": [
+        "docket help [command] [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket import",
+      "usage": [
+        "docket import <file> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--merge"
+        },
+        {
+          "name": "--replace"
+        },
+        {
+          "name": "--yes"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket init",
+      "usage": [
+        "docket init [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--local"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue",
+      "usage": [
+        "docket issue [command]"
+      ],
+      "aliases": [
+        "i",
+        "issue"
+      ],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue claim",
+      "usage": [
+        "docket issue claim <id> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--class",
+          "value": "string"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--owner",
+          "value": "string"
+        },
+        {
+          "name": "--ttl",
+          "value": "duration"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue close",
+      "usage": [
+        "docket issue close [id] [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--if-version",
+          "value": "int"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue comment",
+      "usage": [
+        "docket issue comment [command]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue comment add",
+      "usage": [
+        "docket issue comment add [id] [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--idempotency-key",
+          "value": "string"
+        },
+        {
+          "name": "--message",
+          "short": "-m",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue comment list",
+      "usage": [
+        "docket issue comment list [id] [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--interval",
+          "value": "duration",
+          "default": "2s"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        },
+        {
+          "name": "--watch",
+          "short": "-w"
+        }
+      ]
+    },
+    {
+      "command": "docket issue create",
+      "usage": [
+        "docket issue create [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--assignee",
+          "short": "-a",
+          "value": "string"
+        },
+        {
+          "name": "--description",
+          "short": "-d",
+          "value": "string"
+        },
+        {
+          "name": "--file",
+          "short": "-f",
+          "value": "strings"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--idempotency-key",
+          "value": "string"
+        },
+        {
+          "name": "--label",
+          "short": "-l",
+          "value": "strings"
+        },
+        {
+          "name": "--parent",
+          "value": "string"
+        },
+        {
+          "name": "--priority",
+          "short": "-p",
+          "value": "string",
+          "default": "\"none\""
+        },
+        {
+          "name": "--scope",
+          "value": "strings"
+        },
+        {
+          "name": "--status",
+          "short": "-s",
+          "value": "string",
+          "default": "\"backlog\""
+        },
+        {
+          "name": "--title",
+          "short": "-t",
+          "value": "string"
+        },
+        {
+          "name": "--type",
+          "short": "-T",
+          "value": "string",
+          "default": "\"task\""
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue delete",
+      "usage": [
+        "docket issue delete <id> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--force",
+          "short": "-f"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--orphan"
+        },
+        {
+          "name": "--yes",
+          "short": "-y"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue edit",
+      "usage": [
+        "docket issue edit [id] [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--assignee",
+          "short": "-a",
+          "value": "string"
+        },
+        {
+          "name": "--description",
+          "short": "-d",
+          "value": "string"
+        },
+        {
+          "name": "--file",
+          "short": "-f",
+          "value": "strings"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--if-version",
+          "value": "int"
+        },
+        {
+          "name": "--parent",
+          "value": "string"
+        },
+        {
+          "name": "--priority",
+          "short": "-p",
+          "value": "string"
+        },
+        {
+          "name": "--scope",
+          "value": "strings"
+        },
+        {
+          "name": "--status",
+          "short": "-s",
+          "value": "string"
+        },
+        {
+          "name": "--title",
+          "short": "-t",
+          "value": "string"
+        },
+        {
+          "name": "--type",
+          "short": "-T",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue file",
+      "usage": [
+        "docket issue file [command]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue file add",
+      "usage": [
+        "docket issue file add <id> <file-path>... [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue file list",
+      "usage": [
+        "docket issue file list <id> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue file remove",
+      "usage": [
+        "docket issue file remove <id> <file-path>... [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue graph",
+      "usage": [
+        "docket issue graph [id] [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--depth",
+          "value": "int"
+        },
+        {
+          "name": "--direction",
+          "value": "string",
+          "default": "\"both\""
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--mermaid"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--interval",
+          "value": "duration",
+          "default": "2s"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        },
+        {
+          "name": "--watch",
+          "short": "-w"
+        }
+      ]
+    },
+    {
+      "command": "docket issue heartbeat",
+      "usage": [
+        "docket issue heartbeat <id> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--class",
+          "value": "string"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--ttl",
+          "value": "duration"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue label",
+      "usage": [
+        "docket issue label [command]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue label add",
+      "usage": [
+        "docket issue label add <id> <label>... [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--color",
+          "value": "string"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue label delete",
+      "usage": [
+        "docket issue label delete <label> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--force",
+          "short": "-f"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue label list",
+      "usage": [
+        "docket issue label list [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue label rm",
+      "usage": [
+        "docket issue label rm <id> <label>... [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue link",
+      "usage": [
+        "docket issue link [command]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue link add",
+      "usage": [
+        "docket issue link add <id> <relation> <target_id> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue link list",
+      "usage": [
+        "docket issue link list <id> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue link remove",
+      "usage": [
+        "docket issue link remove <id> <relation> <target_id> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue list",
+      "usage": [
+        "docket issue list [flags]"
+      ],
+      "aliases": [
+        "list",
+        "ls"
+      ],
+      "flags": [
+        {
+          "name": "--all"
+        },
+        {
+          "name": "--assignee",
+          "short": "-a",
+          "value": "string"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--label",
+          "short": "-l",
+          "value": "strings"
+        },
+        {
+          "name": "--limit",
+          "value": "int",
+          "default": "50"
+        },
+        {
+          "name": "--parent",
+          "value": "string"
+        },
+        {
+          "name": "--priority",
+          "short": "-p",
+          "value": "strings"
+        },
+        {
+          "name": "--project",
+          "value": "string"
+        },
+        {
+          "name": "--roots"
+        },
+        {
+          "name": "--run",
+          "value": "string"
+        },
+        {
+          "name": "--sort",
+          "value": "string"
+        },
+        {
+          "name": "--status",
+          "short": "-s",
+          "value": "strings"
+        },
+        {
+          "name": "--tree"
+        },
+        {
+          "name": "--type",
+          "short": "-T",
+          "value": "strings"
+        },
+        {
+          "name": "--with-body"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--interval",
+          "value": "duration",
+          "default": "2s"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        },
+        {
+          "name": "--watch",
+          "short": "-w"
+        }
+      ]
+    },
+    {
+      "command": "docket issue log",
+      "usage": [
+        "docket issue log [id] [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--limit",
+          "value": "int",
+          "default": "20"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--interval",
+          "value": "duration",
+          "default": "2s"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        },
+        {
+          "name": "--watch",
+          "short": "-w"
+        }
+      ]
+    },
+    {
+      "command": "docket issue move",
+      "usage": [
+        "docket issue move <id> <status> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--if-version",
+          "value": "int"
+        },
+        {
+          "name": "--note",
+          "value": "string"
+        },
+        {
+          "name": "--project",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue release",
+      "usage": [
+        "docket issue release <id> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue reopen",
+      "usage": [
+        "docket issue reopen [id] [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--if-version",
+          "value": "int"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket issue show",
+      "usage": [
+        "docket issue show id... [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--interval",
+          "value": "duration",
+          "default": "2s"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        },
+        {
+          "name": "--watch",
+          "short": "-w"
+        }
+      ]
+    },
+    {
+      "command": "docket next",
+      "usage": [
+        "docket next [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--label",
+          "short": "-l",
+          "value": "strings"
+        },
+        {
+          "name": "--limit",
+          "value": "int",
+          "default": "10"
+        },
+        {
+          "name": "--priority",
+          "short": "-p",
+          "value": "strings"
+        },
+        {
+          "name": "--run",
+          "value": "string"
+        },
+        {
+          "name": "--status",
+          "short": "-s",
+          "value": "strings"
+        },
+        {
+          "name": "--type",
+          "short": "-T",
+          "value": "strings"
+        },
+        {
+          "name": "--with-body"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--interval",
+          "value": "duration",
+          "default": "2s"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        },
+        {
+          "name": "--watch",
+          "short": "-w"
+        }
+      ]
+    },
+    {
+      "command": "docket plan",
+      "usage": [
+        "docket plan [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--assignee",
+          "short": "-a",
+          "value": "string"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--label",
+          "short": "-l",
+          "value": "strings"
+        },
+        {
+          "name": "--priority",
+          "short": "-p",
+          "value": "strings"
+        },
+        {
+          "name": "--root",
+          "value": "string"
+        },
+        {
+          "name": "--status",
+          "short": "-s",
+          "value": "strings"
+        },
+        {
+          "name": "--type",
+          "short": "-T",
+          "value": "strings"
+        },
+        {
+          "name": "--with-body"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--interval",
+          "value": "duration",
+          "default": "2s"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        },
+        {
+          "name": "--watch",
+          "short": "-w"
+        }
+      ]
+    },
+    {
+      "command": "docket policy",
+      "usage": [
+        "docket policy [command]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket policy resolve",
+      "usage": [
+        "docket policy resolve --run RUN-N SEAT [SEAT...] [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--label",
+          "short": "-l",
+          "value": "strings"
+        },
+        {
+          "name": "--run",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket project",
+      "usage": [
+        "docket project [command]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket project delete",
+      "usage": [
+        "docket project delete PREFIX|NAME|IDENTITY|ID [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket project list",
+      "usage": [
+        "docket project list [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket project set-prefix",
+      "usage": [
+        "docket project set-prefix PREFIX [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket registry",
+      "usage": [
+        "docket registry [command]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket registry audit",
+      "usage": [
+        "docket registry audit [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--project",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket run",
+      "usage": [
+        "docket run [flags]",
+        "docket run [command]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket run abandon",
+      "usage": [
+        "docket run abandon RUN-N --reason R [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--issue",
+          "value": "string"
+        },
+        {
+          "name": "--reason",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket run activate",
+      "usage": [
+        "docket run activate RUN-N [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--dry-run"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--pin",
+          "value": "strings"
+        },
+        {
+          "name": "--reason",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket run budget",
+      "usage": [
+        "docket run budget RUN-N [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--if-version",
+          "value": "int"
+        },
+        {
+          "name": "--reason",
+          "value": "string"
+        },
+        {
+          "name": "--set",
+          "value": "float"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket run issue",
+      "usage": [
+        "docket run issue [command]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket run issue add",
+      "usage": [
+        "docket run issue add RUN-N DKT-N... [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket run issue remove",
+      "usage": [
+        "docket run issue remove RUN-N DKT-N... [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket run note",
+      "usage": [
+        "docket run note [command]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket run note add",
+      "usage": [
+        "docket run note add RUN-N (--text T | --file F) [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--file",
+          "value": "string"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--text",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket run note list",
+      "usage": [
+        "docket run note list RUN-N [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket run pause",
+      "usage": [
+        "docket run pause RUN-N [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--reason",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket run refresh-scope",
+      "usage": [
+        "docket run refresh-scope RUN-N --issue DKT-M --reason R [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--issue",
+          "value": "string"
+        },
+        {
+          "name": "--reason",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket run repin",
+      "usage": [
+        "docket run repin RUN-N --reason R [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--drop",
+          "value": "stringArray"
+        },
+        {
+          "name": "--drop-unresolvable"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--reason",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket run report",
+      "usage": [
+        "docket run report RUN-N [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket run resume",
+      "usage": [
+        "docket run resume RUN-N [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--reason",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket run start",
+      "usage": [
+        "docket run start [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--budget",
+          "value": "budget.unit"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--idempotency-key",
+          "value": "string"
+        },
+        {
+          "name": "--issue",
+          "value": "strings"
+        },
+        {
+          "name": "--request-file",
+          "value": "string"
+        },
+        {
+          "name": "--usage-budget",
+          "value": "budget.usage.unit"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket run status",
+      "usage": [
+        "docket run status [RUN-N] [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--active"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--limit",
+          "value": "int",
+          "default": "50"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket run verify-pins",
+      "usage": [
+        "docket run verify-pins RUN-N [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket schema",
+      "usage": [
+        "docket schema [command]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket schema list",
+      "usage": [
+        "docket schema list [flags]"
+      ],
+      "aliases": [
+        "list",
+        "ls"
+      ],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--limit",
+          "value": "int",
+          "default": "50"
+        },
+        {
+          "name": "--name",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket schema register",
+      "usage": [
+        "docket schema register <name@version> <file.json> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--all-projects"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--project",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket schema show",
+      "usage": [
+        "docket schema show <name>[@<version>] [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--body"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket stats",
+      "usage": [
+        "docket stats [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--interval",
+          "value": "duration",
+          "default": "2s"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        },
+        {
+          "name": "--watch",
+          "short": "-w"
+        }
+      ]
+    },
+    {
+      "command": "docket step",
+      "usage": [
+        "docket step [command]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket step annotate",
+      "usage": [
+        "docket step annotate STEP-N --metadata JSON [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--metadata",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket step approve",
+      "usage": [
+        "docket step approve STEP-N [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--note",
+          "value": "string"
+        },
+        {
+          "name": "--value",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket step artifact",
+      "usage": [
+        "docket step artifact ARTIFACT-N [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--payload"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket step artifacts",
+      "usage": [
+        "docket step artifacts STEP-N [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket step claim",
+      "usage": [
+        "docket step claim STEP-N [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--cost-multiplier",
+          "value": "float"
+        },
+        {
+          "name": "--executor",
+          "value": "string"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--metadata",
+          "value": "string"
+        },
+        {
+          "name": "--owner",
+          "value": "string"
+        },
+        {
+          "name": "--render"
+        },
+        {
+          "name": "--template",
+          "value": "string"
+        },
+        {
+          "name": "--ttl",
+          "value": "duration"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket step complete",
+      "usage": [
+        "docket step complete STEP-N --artifact-file F [flags]"
+      ],
+      "aliases": [
+        "complete",
+        "record"
+      ],
+      "flags": [
+        {
+          "name": "--artifact-file",
+          "value": "string"
+        },
+        {
+          "name": "--gap-file",
+          "value": "gap"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--metadata",
+          "value": "string"
+        },
+        {
+          "name": "--payload-file",
+          "value": "string"
+        },
+        {
+          "name": "--usage",
+          "value": "string"
+        },
+        {
+          "name": "--worktree",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket step context",
+      "usage": [
+        "docket step context STEP-N [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--live"
+        },
+        {
+          "name": "--meta"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket step fail",
+      "usage": [
+        "docket step fail STEP-N [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--metadata",
+          "value": "string"
+        },
+        {
+          "name": "--note",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket step gates",
+      "usage": [
+        "docket step gates STEP-N [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--full"
+        },
+        {
+          "name": "--gate",
+          "value": "strings"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket step heartbeat",
+      "usage": [
+        "docket step heartbeat STEP-N [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket step list",
+      "usage": [
+        "docket step list (--run RUN-N | --issue ISSUE-N) [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--issue",
+          "value": "string"
+        },
+        {
+          "name": "--run",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--interval",
+          "value": "duration",
+          "default": "2s"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        },
+        {
+          "name": "--watch",
+          "short": "-w"
+        }
+      ]
+    },
+    {
+      "command": "docket step reap",
+      "usage": [
+        "docket step reap STEP-N --reason R [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--reason",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket step reject",
+      "usage": [
+        "docket step reject STEP-N [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--note",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket step render",
+      "usage": [
+        "docket step render STEP-N [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--executor",
+          "value": "string"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--template",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket step resolve",
+      "usage": [
+        "docket step resolve STEP-N --as retry|rerun-gates|skip|abandon-issue|override-pass|fix-round [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--as",
+          "value": "string"
+        },
+        {
+          "name": "--batch"
+        },
+        {
+          "name": "--drop-interposed"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--note",
+          "value": "string"
+        },
+        {
+          "name": "--worktree",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket step show",
+      "usage": [
+        "docket step show STEP-N... [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket trust",
+      "usage": [
+        "docket trust [command]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket trust add",
+      "usage": [
+        "docket trust add <name> -- <argv...> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--flaky"
+        },
+        {
+          "name": "--global"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--network",
+          "value": "strings"
+        },
+        {
+          "name": "--prefix"
+        },
+        {
+          "name": "--re-runnable"
+        },
+        {
+          "name": "--stub"
+        },
+        {
+          "name": "--stub-reason",
+          "value": "string"
+        },
+        {
+          "name": "--timeout",
+          "value": "string"
+        },
+        {
+          "name": "--tree"
+        },
+        {
+          "name": "--yes"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket trust list",
+      "usage": [
+        "docket trust list [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--all"
+        },
+        {
+          "name": "--global"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket trust probe",
+      "usage": [
+        "docket trust probe [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--run",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket trust rm",
+      "usage": [
+        "docket trust rm <name> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--global"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket version",
+      "usage": [
+        "docket version [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket vote",
+      "usage": [
+        "docket vote [command]"
+      ],
+      "aliases": [
+        "v",
+        "vote"
+      ],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket vote backfill-usage",
+      "usage": [
+        "docket vote backfill-usage <id> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--from-json",
+          "value": "string"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--quantity",
+          "value": "float64Slice",
+          "default": "[]"
+        },
+        {
+          "name": "--source",
+          "value": "string"
+        },
+        {
+          "name": "--unit",
+          "value": "strings"
+        },
+        {
+          "name": "--voter",
+          "value": "strings"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket vote cast",
+      "usage": [
+        "docket vote cast <id> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--confidence",
+          "value": "float"
+        },
+        {
+          "name": "--domain-relevance",
+          "value": "float"
+        },
+        {
+          "name": "--findings",
+          "value": "string"
+        },
+        {
+          "name": "--findings-json",
+          "value": "string"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--metadata",
+          "value": "string"
+        },
+        {
+          "name": "--role",
+          "value": "string"
+        },
+        {
+          "name": "--summary",
+          "value": "string"
+        },
+        {
+          "name": "--summary-file",
+          "value": "string"
+        },
+        {
+          "name": "--usage",
+          "value": "string"
+        },
+        {
+          "name": "--verdict",
+          "short": "-v",
+          "value": "string"
+        },
+        {
+          "name": "--voter",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket vote close",
+      "usage": [
+        "docket vote close <id> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--reason",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket vote commit",
+      "usage": [
+        "docket vote commit <id> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--escalation-reason",
+          "value": "string"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--outcome",
+          "value": "string",
+          "default": "\"Committed\""
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket vote create",
+      "usage": [
+        "docket vote create [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--created-by",
+          "value": "string"
+        },
+        {
+          "name": "--criticality",
+          "short": "-c",
+          "value": "string",
+          "default": "\"medium\""
+        },
+        {
+          "name": "--description",
+          "short": "-d",
+          "value": "string"
+        },
+        {
+          "name": "--domain-tags",
+          "value": "string"
+        },
+        {
+          "name": "--escalation-reason",
+          "value": "string"
+        },
+        {
+          "name": "--files-changed",
+          "value": "string"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--idempotency-key",
+          "value": "string"
+        },
+        {
+          "name": "--rationale",
+          "short": "-r",
+          "value": "string"
+        },
+        {
+          "name": "--threshold",
+          "value": "float",
+          "default": "0.67"
+        },
+        {
+          "name": "--voters",
+          "short": "-n",
+          "value": "int"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket vote link",
+      "usage": [
+        "docket vote link <proposal-id> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--issue",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket vote list",
+      "usage": [
+        "docket vote list [flags]"
+      ],
+      "aliases": [
+        "list",
+        "ls"
+      ],
+      "flags": [
+        {
+          "name": "--all"
+        },
+        {
+          "name": "--criticality",
+          "short": "-c",
+          "value": "string"
+        },
+        {
+          "name": "--domain-tag",
+          "short": "-d",
+          "value": "string"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--limit",
+          "value": "int",
+          "default": "50"
+        },
+        {
+          "name": "--status",
+          "short": "-s",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--interval",
+          "value": "duration",
+          "default": "2s"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        },
+        {
+          "name": "--watch",
+          "short": "-w"
+        }
+      ]
+    },
+    {
+      "command": "docket vote result",
+      "usage": [
+        "docket vote result <id> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--interval",
+          "value": "duration",
+          "default": "2s"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        },
+        {
+          "name": "--watch",
+          "short": "-w"
+        }
+      ]
+    },
+    {
+      "command": "docket vote show",
+      "usage": [
+        "docket vote show [id] [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--interval",
+          "value": "duration",
+          "default": "2s"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        },
+        {
+          "name": "--watch",
+          "short": "-w"
+        }
+      ]
+    },
+    {
+      "command": "docket vote unlink",
+      "usage": [
+        "docket vote unlink <proposal-id> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--issue",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket workflow",
+      "usage": [
+        "docket workflow [command]"
+      ],
+      "aliases": [
+        "wf",
+        "workflow"
+      ],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket workflow deprecate",
+      "usage": [
+        "docket workflow deprecate <name>@<version> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--all-projects"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--project",
+          "value": "string"
+        },
+        {
+          "name": "--restore"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket workflow init",
+      "usage": [
+        "docket workflow init [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--dir",
+          "value": "string",
+          "default": ".docket/config/workflows"
+        },
+        {
+          "name": "--force"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--template",
+          "value": "string",
+          "default": "\"standard-dev\""
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket workflow lint",
+      "usage": [
+        "docket workflow lint <file.toml> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket workflow list",
+      "usage": [
+        "docket workflow list [flags]"
+      ],
+      "aliases": [
+        "list",
+        "ls"
+      ],
+      "flags": [
+        {
+          "name": "--deprecated"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--limit",
+          "value": "int",
+          "default": "50"
+        },
+        {
+          "name": "--name",
+          "value": "string"
+        },
+        {
+          "name": "--orphans"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket workflow register",
+      "usage": [
+        "docket workflow register <file.toml> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--all-projects"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--project",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket workflow show",
+      "usage": [
+        "docket workflow show <name>[@<version>] [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--source"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    }
+  ]
+}

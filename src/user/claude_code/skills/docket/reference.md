@@ -1,19 +1,49 @@
-# Docket — complete command & flag reference
+# Docket — command semantics and recovery
 
-Split out of SKILL.md once it grew to 2,371 of that file's 4,022 lines
-and was loaded in full on every invocation, while agents ran `docket <verb> --help`
-1,226 times in a measured week and used only 72 distinct flags across 14,648
-invocations. The CLI's own `--help` is authoritative and cheaper than this
-file; reach here for the exhaustive per-flag semantics `--help` does not carry.
+Read the subsection relevant to the current operation; do not load this whole
+file for ordinary issue work. Use `docket <verb> --help` for the installed
+command's flags. The focused guides linked from [SKILL.md](SKILL.md) cover
+transport, issue work, workflow authoring, schemas, and voting.
+
+The additions identified below were checked on
+**2026-09-04 against `docket nightly-46-g4f256e1` (commit `4f256e1`, built
+`2026-09-04T05:39:02Z`)**, using `--help` and `--version` only. This did not
+re-run every historical behavioral claim or JSON example in this reference.
+When installed behavior differs, use its help and inspect the actual response
+before parsing it. Do not use a nearby source checkout as proof of an installed
+binary's behavior unless their commits match.
+
+[references/cli-inventory.json](references/cli-inventory.json) records command
+paths, aliases, usage, and local/inherited flags. It was refreshed on
+**2026-09-05 UTC** against `nightly-47-gc6e34ba` (commit `c6e34ba`, built
+`2026-09-05T00:54:30Z`) and covers 148 public commands. From this
+skill directory, `python3 scripts/cli_inventory.py --check` checks the inventory;
+`--write` refreshes it after reviewing a CLI upgrade. The helper invokes only
+`--help` and `--version`, and does not read or mutate a Docket store. It detects
+command/flag drift, not changes to runtime semantics or JSON response shapes.
+
+## Contents
+
+- [JSON output contract](#json-output)
+- [Issues](#issue-commands) · [Documents](#doc-commands) · [Projects](#project-commands)
+- [Planning](#plan-commands) · [Ready work](#next-commands) · [Board](#board-commands) · [Statistics](#stats-commands)
+- [Workflows](#workflow-commands) · [Schemas](#schema-commands) · [Registry audit](#registry-commands)
+- [Runs](#run-commands) · [Steps](#step-commands) · [Dispatches](#dispatch-commands) · [Events](#events-commands)
+- [Voting](#vote-commands) · [Gate status](#gate-commands) · [Model routing](#policy-commands) · [Guards](#guard-commands)
+- [Trust and probes](#trust-commands) · [Environment checks](#doctor-commands)
+- [Initialize](#init-commands) · [Configuration](#config-commands) · [Export](#export-commands) · [Import](#import-commands) · [Version](#version-commands)
+
+<a id="json-output"></a>
 
 ## JSON envelope — per-verb `data` shapes
 
 Every `--json` response is `{"ok": <bool>, "data": <verb-specific>}` (errors are
 `{"ok": false, "error": "...", "code": "..."}` with no `data` key at all). The
 envelope is stable; the shape of `data` is NOT, and guessing it is what crashes
-hand-rolled parsers. Every row below was run against the live binary —
-**verified against the installed nightly build of `docket`**, in the `dotfiles.vorpal.git`
-project. No row is inherited or assumed.
+hand-rolled parsers. The table below preserves earlier runtime observations;
+it was not re-executed as part of the help-only verification above. Probe the
+relevant read response when adapting a parser to a different binary. These are
+core shapes, not exhaustive field lists; additive fields can appear.
 
 | Verb | `data` under `--json` (v1) | `data` under `--json=v2` / `--format json` |
 | --- | --- | --- |
@@ -29,14 +59,28 @@ project. No row is inherited or assumed.
 | `vote list` (`--all` for resolved) | `{proposals: [...], total: <int>}` | `{items: [...], total, truncated}` |
 | `vote show VOTE-ID` | `{id, status, weighted_score, threshold, required_voters, criticality, final_outcome, escalation_reason, description, rationale, domain_tags, files_changed, linked_issues, linked_docs, created_by, created_at, updated_at, votes: [...]}` | identical |
 
-Four traps, each one confirmed by running the verb rather than reading it:
+Current help documents two additional shape distinctions: `issue show ID` and
+`step show ID` return one object under `data`, while two or more IDs return an
+array of those objects. Issue summaries from `issue list`, `next`, `plan`, and
+`board` omit `description` by default and carry `description_bytes`; pass
+`--with-body` when the full descriptions are required. An omitted body is not
+an empty description.
+
+For `step complete` / `step record`, `ok: true` means the artifact recorded.
+Inspect the step status and `failed_gates`: a recorded artifact can still fail
+its gates and leave the step `waiting-human`. Guard verbs also have a separate
+exit contract: 0 allows, 2 denies; do not interpret their exit 2 as ordinary
+`NOT_FOUND`.
+
+Four parsing traps from the earlier runtime checks:
 
 - **`items` is the v2 key, never the v1 key.** `--json` (v1, the bare flag)
   names the collection after the verb — `events`, `issues`, `steps`, `runs`,
   `proposals`. `--json=v2` and `--format json` rename it to `items` and add
   `truncated`. `json.load(...)["data"]["items"]` on a bare `--json` pipe is a
-  guaranteed `KeyError`. Show-shaped verbs (`run status RUN-N`, `run budget`,
-  `vote show`, `step artifact`) are byte-identical across v1 and v2.
+  `KeyError` when the expected v1 collection is present. The listed show verbs
+  retain the same outer shape in the earlier comparison; do not assume every
+  optional field or future version is byte-identical.
 - **`run status RUN-N` does not return the issue or step rows.** `issues` is an
   `int` count, and `steps` is a status ROLLUP —
   `[{"status": "done", "count": 32}, {"status": "skipped", "count": 30}, ...]`,
@@ -50,13 +94,9 @@ Four traps, each one confirmed by running the verb rather than reading it:
   array, `issue.diff` an object, and `doc`/`gap` carry no structured payload at
   all — `data` is JSON `null`. Type-check before subscripting.
 
-One amendment post-dates that verification: an unconditional `issue` key was
-added, mirroring `id` on every serialized issue — `issue show` (nested
-`sub_issues` included), `issue list` rows, and the issue returned by
-`issue create`/`edit`/`close`/`reopen`/`move` — on v1 and v2 alike. The shapes
-above still hold (`issue list` is still `{issues, total}` under v1); the rows
-inside just carry one added key, so they are no longer byte-identical to the
-verified bytes.
+Every serialized issue carries both `issue` and `id` with the same ID string,
+on v1 and v2. This includes nested `sub_issues`, list rows, and mutation
+responses. It does not make `.data.issue` a nested object.
 
 `run status RUN-N`'s `pins` elements are `{kind, ref, sha256}` (`kind` is
 `"file"` for on-disk config pins; `name@version` refs live in the DB, not on
@@ -65,13 +105,14 @@ voter_role, verdict, confidence, domain_relevance, effective_weight, findings,
 findings_json, summary, metadata, created_at}` — note `findings` is a string
 and `findings_json` is frequently `null`.
 
-## Complete Command & Flag Reference
+## Command & Flag Reference
 
-Every flag below is transcribed directly from the `cmd.Flags().*` calls in
-the corresponding `internal/cli/*.go` file's `init()`. "Req." marks flags
-enforced via `cmd.Flags().MarkFlagRequired` (Cobra rejects the command
-before `RunE` runs if absent) — distinct from flags that are merely
-required *in JSON mode* by manual checks inside `RunE` (noted in Notes).
+The tables explain selected flag interactions and validation rules. The
+generated inventory and installed help are the current mechanical inventory.
+"Required in JSON mode" is distinct from an always-required flag; supply
+noninteractive values explicitly rather than relying on a terminal form.
+
+<a id="issue-commands"></a>
 
 ### `docket issue` (alias `i`) — `internal/cli/issue.go`
 
@@ -129,14 +170,15 @@ declared scope also survives `export`/`import` intact, `NULL` included.
 
 No local flags. Watch-eligible.
 
-**It says when a run gave up on the issue.** Abandoning an issue
-deliberately leaves its tracker status alone, so a `todo` or `review` an
-abandon froze is byte-identical to work nobody has started — a past run's four
-abandoned issues sat at `todo` for days, and a later session read two of those
-operator-abandoned issues as "still parked on a gate that was never resolved"
-and re-asked both decisions. `issue show` now prints a **`Run disposition`**
-section — `work abandoned in <run> by implement@0 (<timestamp>)` plus the
-recorded reason **verbatim** — and `--json` carries `run_disposition`
+Accepts one or more IDs. A single ID returns a flat object under `data`; two
+or more return an array. The `issue` field is the ID string, not a nested
+object: use `data.title`, not `data.issue.title`. Batch already-known IDs in
+one call when their complete details are needed.
+
+Abandoning an issue's run work leaves its tracker status unchanged. Inspect
+`run_disposition` before treating `todo` or `review` as untouched work.
+`issue show` prints the run, deciding step when present, timestamp, and reason;
+`--json` carries `run_disposition`
 `{run, disposition, by, reason, at}`, emitted **only when a run abandoned its
 work**, so an ordinary issue's payload is unchanged. `by` is absent when an
 operator abandoned the issue from outside the graph with `run abandon
@@ -166,19 +208,13 @@ which is where a history belongs.
 | `--all` | — | bool | `false` | include `done` issues |
 | `--project` | — | string | `""` | list ANOTHER project's issues, by prefix, name, identity path, or row id |
 | `--run` | — | string | `""` | list one RUN's roster — the issues bound to `RUN-N` |
+| `--with-body` | — | bool | `false` | include descriptions in JSON rows; otherwise rows carry `description_bytes` |
 
 Watch-eligible.
 
-`--run RUN-N` is the run roster as a LISTING. Before it, the roster
-existed only inside `run status --json` — a document to parse rather than a
-listing to read — and `issue list --run` answered `unknown flag`. It shows the
-whole roster **including `done` issues**: a roster is a closed set, and the
-post-mortem case the flag exists for is mostly finished issues, so hiding them
-would answer "which issues did RUN-14 carry" with "the ones it did not
-finish". Ids render under the RUN's project prefix, for the `--project` reason
-below. An unknown run is `NOT_FOUND`, not an unfiltered listing; `--run` and
-`--project` together are refused, since a run belongs to one project and
-silently picking one of the two scopes would be a lie.
+`--run RUN-N` lists the run's whole roster, **including `done` issues**, under
+the run project's prefix. An unknown run is `NOT_FOUND`; `--run` and
+`--project` together are refused because the run already defines the project.
 
 Listing is otherwise cwd-scoped: the project the working directory resolves to.
 `--project` is the escape hatch a machine-global store needs — without it,
@@ -338,6 +374,8 @@ take `cobra.ExactArgs(3)` — no flags. `list <id>` — no flags.
 
 Watch-eligible.
 
+<a id="plan-commands"></a>
+
 ### `docket plan` — `plan.go`
 
 | Flag | Short | Type | Default | Notes |
@@ -358,6 +396,12 @@ Human/plain rendering distinguishes a same-level file-collision split
 ("Phase N (same dependency level as Phase N-1, split by file collision):")
 from a genuine new dependency level ("Phase N (parallel, after Phase N-1):").
 
+JSON issue rows omit descriptions by default and include `description_bytes`.
+Use `--with-body` to include full descriptions, or `issue show` to inspect
+selected IDs.
+
+<a id="next-commands"></a>
+
 ### `docket next` — `next.go`
 
 | Flag | Short | Type | Default | Notes |
@@ -368,6 +412,7 @@ from a genuine new dependency level ("Phase N (parallel, after Phase N-1):").
 | `--type` | `-T` | stringSlice | `nil` | repeatable |
 | `--limit` | — | int | `10` | issue mode: always applies, default 10. **Step mode (`--run`): unlimited unless `--limit` is explicitly passed** — even an explicit `--limit 0` still means unlimited (`0` is the engine's no-limit sentinel); only an explicit `--limit N` with `N > 0` truncates |
 | `--run` | — | string | `""` | switches to STEP mode: lists a run's offer (ready steps + staged closure) |
+| `--with-body` | — | bool | `false` | include full descriptions in issue-mode JSON rows; otherwise they carry `description_bytes` |
 
 Watch-eligible. Issue mode's `.data.issues` is always an array — `[]`, never
 `null`, when nothing is ready.
@@ -446,6 +491,8 @@ The `next row` shape (engine-spec §11.4):
 | `conditional` | `true` on a staged row sitting (transitively) behind a HOLD-CAPABLE in-offer predecessor — an `aggregate` declaring `hold_spread`, whose completion may hold for an operator instead of routing. Advisory, like `stage`: confirm the predecessor actually ROUTED before spawning such a row, or defer it to the next offer — spawning at the stage boundary risks paying a full boot for a claim refusal. Omitted when false |
 | `status` | effective status, never stored — `ready`, or `staged` on a closure row offered ahead of its readiness (claimable only once its lower-stage predecessors record) |
 | `metadata` | the definition's opaque KV, verbatim |
+
+<a id="workflow-commands"></a>
 
 ### `docket workflow` (alias `wf`) — `workflow.go`
 
@@ -536,6 +583,8 @@ the available ones.
 None of the `workflow` verbs are watch-eligible; `--watch` on any of them is a
 `VALIDATION_ERROR`.
 
+<a id="schema-commands"></a>
+
 ### `docket schema` — `schema.go`
 
 #### `docket schema register <name@version> <file.json>` — `schema_register.go`
@@ -579,6 +628,8 @@ against, so `docket schema show risk-report@1 --body > risk-report.json` round-t
 None of the `schema` verbs are watch-eligible; `--watch` on any of them is a
 `VALIDATION_ERROR`.
 
+<a id="run-commands"></a>
+
 ### `docket run` — `run.go`
 
 A run binds registered workflows to issues and schedules their steps. Runs
@@ -592,6 +643,8 @@ formatted `RUN-<n>` and, like issue IDs, accept the bare number too.
 | `--issue` | — | stringSlice | `nil` | issue to attach (repeatable) |
 | `--request-file` | — | string | `""` | file holding the run's request text |
 | `--budget` | — | float64 | `0` | per-run cap, **enforced**, in the unit `budget.unit` names (see `docket run budget --help`); `0` means unlimited |
+| `--usage-budget` | — | float64 | `0` | independent cap over measured usage; requires `budget.usage.unit` to be armed |
+| `--idempotency-key` | — | string | `""` | repeating a start with the same key returns the original run |
 
 Creates a run in `planning`: nothing is bound, nothing is pinned, and no step
 exists until `run activate`. The run records the resolved **exec root** and
@@ -665,6 +718,55 @@ run is `NOT_FOUND`; a malformed ID is `VALIDATION_ERROR` (exit 3).
 Both answer with the set **after** the change — `{run, status, issues}` — so a
 caller sees what the run now holds rather than re-deriving it from what it
 asked for.
+
+#### `docket run note add|list`
+
+Use a run note for an established fact or authorized disposition every later
+worker needs. Notes render verbatim as `== RUN NOTE N` after `== REQUEST` in
+the shipped packet template and appear as `notes` in `step context`. Custom
+templates must render `.Notes` explicitly. Issue comments and mid-run issue
+description edits do not enter packets.
+
+```bash
+docket run note add RUN-N --file note.txt --json
+docket run note list RUN-N --json
+```
+
+`add` requires exactly one of `--text` or `--file`; `--file -` reads stdin.
+The note is capped at 16 KiB and one trailing newline is dropped from file
+input. Notes are append-only and event-logged; record a later correction
+instead of editing history. Adding is allowed while planning, active, or
+parked, and refused for done or abandoned runs. A note records an existing
+decision; it does not itself authorize a scope change or failed-gate override.
+
+#### `docket run refresh-scope`
+
+After an authorized scope change, use both channels in order:
+
+```bash
+docket issue edit DKT-M --scope 'src/component/**' --json
+docket run refresh-scope RUN-N --issue DKT-M --reason 'Authorized scope change' --json
+```
+
+`issue edit --scope` changes the live declaration used by scheduler mutual
+exclusion. `refresh-scope` copies that declaration into this run's snapshot
+for the issue's remaining work; it has no `--scope` flag of its own. The
+reason is required. Titles, kind, labels, description, pins, and terminal
+step records keep their existing state; the event records old and new scope
+and the affected instances.
+
+The refresh refuses while any affected issue step is claimed, running, or
+gated; while a dispatch is open; on planning or terminal runs; when every
+affected step is terminal; or when the live and frozen scopes already match.
+Respect the refusal and resolve the in-flight state before retrying.
+
+| Intended change | Channel |
+|---|---|
+| Tell every later worker an established fact | `run note add` |
+| Explain the same step's next retry | `step resolve ... --as retry --note ...` |
+| Explain an authorized next fix round | `step resolve ... --as fix-round --note ...` |
+| Propagate an authorized scope declaration to remaining work | `issue edit --scope`, then `run refresh-scope` |
+| Replace drifted pinned file bytes after authorization | `run repin --reason ...`; this does not update issue descriptions |
 
 #### `docket run report RUN-N` — `run_report.go`
 
@@ -870,7 +972,7 @@ They simply will not run, and their gates route per `on_fail` when reached —
 refusing would let anyone who can file an issue block a run by adding an
 untrusted line.
 
-Commands print with control characters escaped (see security.md §8.2); the
+Commands print with control characters escaped; the
 `--json` form carries the raw bytes. `--dry-run` prints the same report and
 discards the whole transaction, so you can inspect what a run would bind
 without committing to it.
@@ -1226,6 +1328,8 @@ agreement anything will read again.
 
 None of the `run` verbs are watch-eligible.
 
+<a id="dispatch-commands"></a>
+
 ### `docket dispatch` — `dispatch.go`
 
 A **dispatch** is a frozen copy of one `next --run` answer, recorded so a batch
@@ -1476,6 +1580,8 @@ confirms the tree is quiet and passes `--ack-reap <seq>`.
 `docket guard spawn --ack-reap` is the other entry point and lands with the
 guard verbs.
 
+<a id="events-commands"></a>
+
 ### `docket events` — `events.go`
 
 The engine's event log, as a cursor feed. Every transition an engine verb makes
@@ -1669,6 +1775,8 @@ over the events that *remain*, so a pruned run reports fewer transitions than it
 made. `events-pruned` is what keeps that honest — a trimmed log says it was
 trimmed rather than looking like a quieter run.
 
+<a id="step-commands"></a>
+
 ### `docket step` — `step.go`
 
 Steps are the units of work a run schedules. A step is **claimed** — which
@@ -1691,6 +1799,13 @@ then **completed** with an artifact.
 | `step render STEP-N [--template F]` | no | context bundle → rendered work packet |
 | `step artifacts STEP-N` | no | read-only; lists what the step PRODUCED, sizes not bodies |
 | `step artifact ARTIFACT-N [--payload]` | no | read-only; one artifact in full |
+
+`step show` accepts multiple IDs: one returns an object under `data`, two or
+more return an array. An expired but unreaped lease is marked `lease_expired:
+true` even though effective status reads `pending`; operations that inspect
+the stored claim can still refuse until it is reaped. When inputs bind an
+`issue.diff`, `target_sha` and `target_worktree` identify the reviewed tree;
+do not substitute the shared checkout's HEAD when those fields are absent.
 
 #### `docket step artifacts` / `docket step artifact`
 
@@ -1739,13 +1854,11 @@ could not be bound — and such a step parks for an operator rather than routing
 never trusted here. Only **`fail`** means a measurement was taken and the work
 did not pass it.
 
-**`escalate_to` is not docket's.** It lives in the relay's `policy.toml` and is
-read by the relay; docket has no `escalate_to` and never picks a model or an
-effort. Every one of one epoch's three genuine capability-suspect retries turned
-out to be environmental, so a ladder keyed on "gates failed twice" would have
-escalated three times and helped zero. Key it on `fail` — the verdict that
-survives the other two now having their own — and read the reason before
-spending a more expensive variant.
+Use the pinned policy's resolved assignment rather than inventing model or
+effort choices; `policy resolve` exposes the engine's seat-resolution rules.
+A `fail` verdict establishes that a measurement ran, not that model capability
+caused the failure. Read its reason before escalating: an environmental defect
+does not improve because the next variant costs more.
 
 `step show` renders a **gate summary** when the step has recorded gate results — a verdict, the gate name, an exit code, and a pointer to
 `step gates` when something did not pass. It used to print no gate section at
@@ -1775,11 +1888,22 @@ no lease touch.
 | `--render` | bool | `false` | return the rendered packet instead of the bundle |
 | `--template` | string | `""` | template file for `--render` |
 | `--executor` | string | `""` | resolved executor hint for `--render`'s `{executor}` packet substitution (default: the step's declared hint) |
+| `--metadata` | string | `""` | opaque JSON object merged onto the step in the claim transaction; record known routing facts before the worker can fail |
+| `--cost-multiplier` | float | `1` | scale declared `expected_cost` for this claim; the scaled amount is checked against the budget cap and recorded with the claim |
 
-The response is engine-spec §11.4's `claim response` verbatim:
-`{ step, token, lease_expires_ms, context }`. The token is returned **exactly
-once** — capture it or claim again. In human mode it prints on its own line and
-never inside the status message.
+Record known model, effort, and variant choices in claim metadata. Record the
+actual serving model separately when it can be observed; do not infer it from
+the requested alias. Use a cost multiplier when the dispatcher's established
+pricing policy assigns the resolved variant a different cost. A guess about
+model prices is not a reliable budget conversion.
+
+The claim response includes `{ step, token, lease_expires_ms, context }`.
+The token is returned **exactly once**: persist the successful claim output
+privately without printing its token into conversation. If the call is
+interrupted, inspect `step show` before retrying; a live claim can already
+exist. Recover the original output if available. Otherwise report the lost
+capability and use the lease/reap recovery protocol; do not turn an uncertain
+response into another claim or reap a worker whose liveness is unknown.
 
 Claim enforces readiness **itself** rather than trusting that you ran `next`; a
 step that is not ready is `CONFLICT` naming the unmet condition. **Human, vote,
@@ -1821,6 +1945,9 @@ active**, where neither the lease TTL nor `max_step_duration` reaps at all (see
 
 #### `docket step complete`
 
+`step record` is an identical alias. Prefer it in Claude Code shell commands
+when the word `complete` collides with shell-builtin classification.
+
 | Flag | Type | Notes |
 |---|---|---|
 | `--artifact-file` | string | **required**; the artifact body. Capped at **1 MiB**; over it is `VALIDATION_ERROR` naming the size and the cap |
@@ -1836,20 +1963,41 @@ step is engine-owned and finishes under any later invocation, so a worker that
 dies mid-saga strands nothing. Completing twice is `AUTH_ERROR`, not a duplicate
 artifact.
 
-**Gaps need no workflow declaration — the channel is always open.** A worker
-that surfaces a problem outside its own scope has nowhere to put it: narrating
-it into the artifact body buries it in prose, and dropping it loses it entirely.
-`--gap-file` gives it two durable homes at once, in the completion's own
-transaction. The materialized issue is created `backlog` / `none` / `task`, with
-the gap body as its description and its title taken from the gap's first
-non-blank line (leading `#` stripped, capped at 120 characters). Docket never
-interprets what the gap says. The success message names the issues it filed —
-`Completed, gaps filed as DKT-91, DKT-92: …`. The materialized issue lands in
-the RUN'S OWN project unconditionally — `--gap-file` has no cross-project
-routing — so a gap whose problem lives in another repository's project gets
-re-homed by whoever reads the completion: `docket issue move <id> --project
-<target>` (operator ruling: gaps belong to their respective
-projects).
+**Recording success does not establish gate success.** The JSON envelope can
+have `ok: true` while `failed_gates` names failures and the step is parked
+`waiting-human`. Check the returned step state and gates before reporting
+completion. If the recording call times out, use `step show`, `step artifacts`,
+and `step gates` to establish whether the artifact recorded before retrying;
+an uncertain call is not evidence that the token remains usable.
+
+**Gaps need no workflow declaration.** Each `--gap-file` records an auxiliary
+artifact and a related backlog issue in the same transaction. The body is
+retained verbatim and the first nonblank line supplies the title (leading `#`
+stripped, capped at 120 characters). Immediately following it, consecutive
+`Key: value` lines form an optional header block, ending at the first non-header
+line, including a blank line:
+
+```text
+Clean-checkout tests cannot find the required fixture
+Severity: high
+Kind: bug
+Labels: test-infrastructure, follow-up
+
+The required test fails because fixtures/example.json is absent at clean HEAD.
+```
+
+| Header | Effect |
+|---|---|
+| `Severity` | `blocker`, `high`, `medium`, `low` map to priority `critical`, `high`, `medium`, `none` |
+| `Priority` | `critical`, `high`, `medium`, `low`, `none`; wins over Severity |
+| `Kind` | `bug`, `feature`, `task`, `epic`, `chore`; default `task` |
+| `Labels` | comma-separated labels, at most 16 |
+
+Unknown keys do not end the header block; unsupported values for recognized
+keys are ignored. Without headers the issue defaults to priority `none`, kind
+`task`, and no labels. The completion names filed IDs. Gaps always land in the
+run's project; moving one to its actual owning project uses
+`docket issue move ID --project TARGET` under the applicable authorization.
 
 **A gap-only completion PARKS instead of passing.** When the declared
 emit's body is empty (whitespace-trimmed) and at least one gap was recorded,
@@ -2048,7 +2196,7 @@ which step is blocking.
 The held step is where an `aggregate` step's held clusters are decided. The
 difference from a declared gate is where the consequence lands: approving a
 declared gate finishes that gate, while approving a held cluster un-defers the
-aggregate step's routing (see *Held clusters* above). Deciding one twice is
+aggregate step's routing (see [held clusters](references/workflows.md#held-clusters-and-what-you-do-about-one)). Deciding one twice is
 `CONFLICT` (exit 4) naming both steps.
 
 When holds are minted as votes (`vote.hold.*`), these verbs apply to a held step
@@ -2060,7 +2208,7 @@ during a tally would take the panel's turn away and orphan its open proposal.
 `--value` belongs to that second case only. It sets the cluster's aggregated
 field to a value validated against the **pinned schema's declared enum**,
 recording the computed value it replaced as `operator_set_from`, and `--note`
-travels with it as `operator_note` — the full rules are in *Held clusters* above.
+travels with it as `operator_note` — see [held-cluster rules](references/workflows.md#held-clusters-and-what-you-do-about-one).
 On a declared human gate, or alongside `reject`, it is a `VALIDATION_ERROR`.
 
 Deciding a **held cluster** with either verb carries the same resolve-time
@@ -2072,13 +2220,14 @@ Declared human gates never carry the field.
 
 #### `docket step context` / `render`
 
-`context` re-emits the bundle read-only, no token. It is assembled from the
-run's **pinned and snapshotted** state only — the issue as it read at
-activation, the recorded input artifacts, and the pin list. It never reads the
-live issue, never reads the working tree, and never opens a pinned file, so two
-calls at the same run state are byte-identical whatever has been edited between
-them. `--meta` adds per-section byte counts as a **sibling** object, leaving the
-bundle itself unchanged.
+`context` re-emits the bundle read-only, no token. It uses the run's snapshots,
+recorded artifacts, pins, and recorded run notes. It never reads the live
+issue or working tree and never opens a pinned file. For a claimed step,
+inputs and their `target_sha` / `target_worktree` replay the bindings recorded
+at claim time. An unclaimed step or one pending retry resolves current run
+artifacts. `--live` explicitly asks what a new claim would receive now for
+any step. Use the default when investigating what a worker actually saw.
+`--meta` adds per-section byte counts alongside the bundle.
 
 `render` formats that bundle through a template. Without `--template` the
 shipped default is used; it ships in the binary and cannot drift. With
@@ -2093,6 +2242,8 @@ step's own declared hint.
 lease has lapsed, which reads as `pending` while the row still carries the stale
 owner.
 
+<a id="guard-commands"></a>
+
 ### `docket guard` — `guard.go`
 
 Deterministic predicates over engine state, for hooks.
@@ -2106,7 +2257,7 @@ Deterministic predicates over engine state, for hooks.
 | `guard spawn --active` | the reap half over **every** active run of the project: denies on the oldest run that would deny, its reason prefixed `RUN-N: `. Mutually exclusive with `--run`, and it does not take `--deciding-vote` — the carve-out admits a batch onto one run, so name that run with `--run`. The `--json` deny envelope is `{ok:false, error, code}` with no run field; the id is the reason's prefix |
 
 **Exit 0 = allow, exit 2 = deny with a reason.** That contract is independent of
-the error-code table above: a guard's caller tests a boolean, so exit 2 here
+the ordinary command error taxonomy: a guard's caller tests a boolean, so exit 2 here
 means "denied", not "not found". The reason goes to stderr in human mode and
 into the envelope's `error` under `--json`.
 
@@ -2116,24 +2267,22 @@ denying.** A repo with no engine has no engine state to forbid anything, so
 plus a `reason` in the JSON payload, and a `guard: …` note on stderr in human
 mode — so a surprisingly-permissive hook is still diagnosable.
 
-This is the one place the exit-2 collision had to be broken. Previously a
-missing database took NOT_FOUND's exit 2, which a hook wired as
-`docket guard stop || exit` could not tell from a denial, so every non-docket
-repo on the machine started denying. Only the absence of a database allows this
-way; every verdict a guard actually computes still denies through exit 2.
+Only database absence receives this exemption; a guard's computed denial
+still exits 2.
 
 `guard stop` deliberately does **not** block on `waiting-human`: it asks whether
 the machine is done working, and a run waiting on a person is not something a
 stop interferes with.
 
-It also does not block on a run **nothing has ever happened to**:
-never dispatched, and no step ever out of `pending`. `docket-bootstrap`'s contractual
-terminal state is exactly that — an activated, never-dispatched run — and all
-six docket-bootstraps measured were denied a turn-end over it, twice
-pushing the operator into starting work nobody had asked for. Nothing was handed
-to anything, so there is nothing for a stop to interrupt. The exemption ends at
-the first dispatch, or at the first step that leaves `pending`: a run that
-acquired history without a manifest still blocks.
+A vote step with an open proposal, and work waiting behind that vote, do not
+block stopping either: the panel can decide outside the conductor's turn.
+After the proposal is decided, the step is dispatchable and blocks until an
+engine invocation routes it. A stop hook should preserve this distinction
+instead of treating every nonterminal row as active machine work.
+
+It also allows a never-dispatched run whose steps have never left `pending`,
+which permits a bootstrap-only handoff. The exemption ends at the first
+dispatch or first step transition, including work performed without a manifest.
 
 Guards answer over the **current project's** runs by default. `guard stop`,
 `guard gate`, and `guard record` accept `--all-projects` to answer over every
@@ -2141,31 +2290,28 @@ project's runs in the store instead — the same vocabulary as
 `events list --all-projects`. (`guard spawn` is inherently per-run and has no
 such flag.)
 
-#### `guard record` — before a worker records
+#### `guard record` — dispatch reconciliation
 
 | Flag | Type | Default | Notes |
 |---|---|---|---|
-| `--run` | string | `""` | the run to check; **omit** to check every non-terminal run |
+| `--run` | string | `""` | the run to check; **omit** to check every non-terminal run in the current project |
+| `--all-projects` | bool | `false` | ask across projects instead of the current project |
 
-Wire it before letting a worker call `step complete`. An unreconciled batch means
-the engine's picture of what is running is already wrong, and recording an
-artifact into that picture is how drift becomes durable.
+The guard denies on an open dispatch or a recorded discrepancy, using the same
+predicate as `next`. An open dispatch is expected while its executors work and
+record; do not require this guard to allow before each executor completes.
+Use it to inspect reconciliation at relay boundaries, and read the reason to
+distinguish a legitimate wave in flight from unresolved discrepancies.
 
-"Unreconciled" is the **same two probes `next` uses** — an open dispatch, or any
-discrepancy — computed by the same function, so the guard and the scheduler
-cannot disagree. The denial repeats `next`'s refusal verbatim, resolutions
-included.
-
-Without `--run` it answers over every non-terminal run and denies if any is
-unreconciled, matching `guard stop`'s shape, so a hook wired once keeps working
-as runs come and go. A `--run` naming a run that does not exist is `NOT_FOUND`
-(exit 2), not a vacuous allow: a typo must not read as permission.
+A named run that does not exist is refused rather than treated as an empty
+run. Preserve that uncertainty when interpreting a hook result.
 
 #### `guard spawn` — before a relay starts a batch
 
 | Flag | Type | Default | Notes |
 |---|---|---|---|
-| `--run` | string | `""` | **required** — the run whose batch is being spawned |
+| `--run` | string | `""` | the run whose batch is being spawned; mutually exclusive with `--active` |
+| `--active` | bool | `false` | check reap holds over every active run of the current project |
 | `--rows` | string | `""` | file holding the JSON array of rows about to be spawned (`-` for stdin) |
 | `--ack-reap` | int64Slice | `nil` | acknowledge a write-class reap by its `lease-reaped` event `seq` (repeatable) |
 | `--deciding-vote` | string | `""` | admit this batch past a reap hold because it exists to DECIDE the named OPEN proposal (`PROPOSAL-N`); event-logged |
@@ -2189,25 +2335,11 @@ Acking a seq twice is a success that changes nothing. Acking a seq that names no
 reap of this run is `VALIDATION_ERROR` (exit 3) — an acknowledgment must name a
 real reap.
 
-**`--deciding-vote` breaks the one deadlock this guard creates**.
-Unacknowledged reaps hold headroom; the sanctioned way to decide whether to
-acknowledge them is a judge panel; and the hold denied that panel's own spawn —
-the exact state the panel exists to decide. Nothing could move, so what happened
-instead was a ~10h operator round trip followed by two self-passed `--ack-reap`
-calls with no panel at all, which is authorization creep arriving through the
-gate's own deadlock. The denial now names the flag, so the way out is readable
-off the refusal.
-
-The carve-out is narrow, and each clause is load-bearing. The proposal must
-**exist** — an id nobody created would be a bypass with a plausible-looking
-flag — and must be **open**, since a decided proposal would otherwise authorize
-every future spawn forever. It relaxes the **reap half only**: row drift is a
-fact about a relay spawning a batch the engine never issued, and no vote makes
-that acceptable. It does **not** acknowledge anything — it admits the panel that
-will decide, and deciding stays the panel's job. Every use writes a
-`spawn-admitted` event carrying the carve-out, the proposal, and the hold it was
-admitted over, because a spawn let past a hold must not read like a spawn
-nothing was holding.
+`--deciding-vote` permits the panel that will decide a reap hold to start. The
+proposal must exist and be open; the flag relaxes only the reap check, never
+row matching, and does not acknowledge the reap. Every use records a
+`spawn-admitted` event naming the proposal and hold. Use it with `--run`, not
+`--active`, because the exception concerns one run's panel.
 
 **Both guards write nothing, except that acknowledgment** — and, when
 `--deciding-vote` is used, its audit event. Neither reaps and neither
@@ -2218,11 +2350,47 @@ run schedules.
 spawn, a dispatch can be abandoned or a lease reaped; the real enforcement stays
 where it has always been, in `step claim`'s compare-and-swap.
 
+<a id="policy-commands"></a>
+
+### `docket policy`
+
+`docket policy resolve --run RUN-N SEAT [SEAT...] --json` reads the run's
+**pinned** policy and returns each seat's `{voter, model, effort, variant}` in
+the requested order. Use this for named panels instead of independently
+reconstructing model selection in the skill or relay.
+
+Pass repeatable `--label` values when issue labels govern sensitivity. A seat
+is sensitive when named by `security.nodes` or a supplied label matches
+`security.labels`. Resolution applies per-seat forbidden models, the security
+rules for sensitive seats, the security variant ceiling, and escalation
+fallback. Every seat must resolve or the whole call fails with `NOT_FOUND`;
+a run without pinned `policy.toml` also fails. Omitting labels resolves as an
+unlabelled row, not as automatic discovery of an issue's labels.
+
+<a id="registry-commands"></a>
+
+### `docket registry`
+
+`docket registry audit --json` compares every project's registered workflow
+and schema names against the shared corpus. `--project` limits it to a prefix,
+name, identity path, or numeric project ID. The verb repairs nothing.
+
+| Finding | Meaning and follow-up |
+|---|---|
+| `behind` | Highest registered version is below the current corpus version. The next activation adopts current definitions under normal validation. |
+| `orphaned` | No scanned file declares the registered name. Review the reported roots before deciding to deprecate a workflow: another project's local config may be absent from this invocation's scan. |
+
+The corpus is scanned once using this invocation's roots, including the current
+checkout's local additions. An orphan report alone does not authorize deletion
+or prove a different project's local workflow is obsolete.
+
+<a id="trust-commands"></a>
+
 ### `docket trust` — `trust.go`
 
 The allowlist of commands docket may execute. **A gate runs only when an entry
 here authorizes it**; an unmatched gate is reported, never run. Full details and
-the reasoning are in docs/spec/security.md §7.
+the trust command's installed help gives the current executable contract.
 
 Entries live in `$XDG_CONFIG_HOME/docket/trust.toml` (default
 `~/.config/docket/trust.toml`), owned by you, mode `0600`, and **never read
@@ -2329,6 +2497,11 @@ step per issue. `--run` labels the report and **does not narrow the roster**.
 Action-class entries are skipped by name, never failed. The worktree is
 removed on success, failure and interrupt.
 
+This executes trusted commands; it is not a read-only status check. A detached
+worktree isolates repository changes, not arbitrary external effects of the
+commands. Run it only when executing those checks is within the current task's
+authorization. Inspect `trust list` when the roster or its effects are unknown.
+
 `--json` data: `{head, passed, failed: [name], skipped: [{name, reason}],
 gates: [{name, stub, exit, log_tail}]}`. `passed` is true only when every
 gate exited 0; a `stub` entry's pass is hollow and marked. Refuses outright
@@ -2406,6 +2579,8 @@ recorded and that nothing will show it later. The warning prints on stderr and
 rides in the JSON response's `warnings` array; like the argv disclosure, it is
 not suppressible.
 
+<a id="gate-commands"></a>
+
 ### `docket gate` — `gate.go`
 
 #### `docket gate status STEP-N`
@@ -2426,6 +2601,8 @@ who have not cast, always present once a proposal exists; `target`
 `{sha, worktree}` the gate judges, absent when the packet names none. The
 whole envelope is under 1 KB for a five-seat panel, so a relay copies it
 exactly.
+
+<a id="doctor-commands"></a>
 
 ### `docket doctor` — `doctor.go`
 
@@ -2450,6 +2627,8 @@ per check: `{check, verdict, detail}`, verdict `OK` | `FAIL` | `DRIFT` |
 check is OK; `skipped` is true when any check is SKIP, and a `--run` omitted
 on an active run reads `clean: false, skipped: true` rather than a clean
 report that quietly checked five things.
+
+<a id="vote-commands"></a>
 
 ### `docket vote` (alias `v`) — `vote.go`
 
@@ -2481,7 +2660,7 @@ report that quietly checked five things.
 | `--findings-json` | — | string | `""` | `"-"` reads stdin; parsed as `model.Findings` JSON; mutually exclusive with `--findings` for stdin use |
 | `--summary` | — | string | `""` | review summary; `"-"` reads stdin. A seat's rationale is routinely kilobytes of prose, and argv runs it past a shell first — a summary containing backticks was once expanded by the shell and stored expanded, and a voter casts once, so there is no amend path |
 | `--summary-file` | — | string | `""` | read the summary from PATH; mutually exclusive with `--summary`. Use it when stdin already feeds `--findings`/`--findings-json` — stdin can feed only ONE flag per invocation, and asking two is a `VALIDATION_ERROR` naming both |
-| `--metadata` | — | string | `""` | JSON object, 16 KiB cap measured on the **encoded** bag (whitespace does not count, escaping does); the seat's own opaque claim about what cast the vote — worked example above; stored whole, never read by core, never verified. It is visible in the process list, stored verbatim in the store, and re-emitted verbatim by `docket export`, so put nothing secret in it |
+| `--metadata` | — | string | `""` | JSON object, 16 KiB cap measured on the **encoded** bag (whitespace does not count, escaping does); the seat's own unverified claim about what cast the vote — see [voting examples](references/voting.md). Stored verbatim and visible in the process list and exports; put nothing secret in it |
 | `--usage` | — | string | `""` | `{"unit": n, ...}` — this seat's own spend report, recorded per seat in the `vote_usage` ledger inside the cast's transaction and summed per unit in the run report's `vote_usage` section. Same rules as `step complete --usage`: at most 32 units, finite non-negative numbers, opaque unit names. Exists because a vote step is never claimed (attempt stays 0), so the step ledger's key cannot hold per-seat rows. A relay that measures a seat's spend AFTER the cast records it with `docket vote backfill-usage` instead; the two stay distinguishable by `vote_usage.source` (v17) |
 
 #### `docket vote commit <id>` — `vote_commit.go`
@@ -2580,6 +2759,8 @@ No local flags. Watch-eligible.
 
 No local flags. Watch-eligible.
 
+<a id="doc-commands"></a>
+
 ### `docket doc` (alias `d`) — `doc.go`
 
 #### `docket doc create` — `doc_create.go`
@@ -2644,6 +2825,8 @@ Watch-eligible.
 
 `comment list` has no local flags; watch-eligible.
 
+<a id="export-commands"></a>
+
 ### `docket export` — `export.go`
 
 | Flag | Short | Type | Default | Notes |
@@ -2653,6 +2836,8 @@ Watch-eligible.
 | `--status` | `-s` | stringSlice | `nil` | repeatable |
 | `--label` | `-l` | stringSlice | `nil` | repeatable (OR match) |
 
+<a id="import-commands"></a>
+
 ### `docket import <file>` — `import.go`
 
 | Flag | Short | Type | Default | Notes |
@@ -2660,6 +2845,8 @@ Watch-eligible.
 | `--merge` | — | bool | `false` | skip duplicates by ID; mutually exclusive with `--replace` |
 | `--replace` | — | bool | `false` | destructive: clears DB first; mutually exclusive with `--merge` |
 | `--yes` | — | bool | `false` | confirm `--replace`; **required** in every output mode |
+
+<a id="board-commands"></a>
 
 ### `docket board` — `board.go`
 
@@ -2669,12 +2856,17 @@ Watch-eligible.
 | `--priority` | `-p` | stringSlice | `nil` | repeatable |
 | `--assignee` | `-a` | string | `""` | |
 | `--expand` | — | bool | `false` | show sub-issues individually instead of rolling up into parent |
+| `--with-body` | — | bool | `false` | include descriptions in JSON rows; otherwise rows carry `description_bytes` |
 
 Watch-eligible.
+
+<a id="stats-commands"></a>
 
 ### `docket stats` — `stats.go`
 
 No local flags. Watch-eligible.
+
+<a id="init-commands"></a>
 
 ### `docket init` — `init.go`
 
@@ -2687,6 +2879,8 @@ job is to create the DB. Initializing an existing database is an idempotent
 success (`created: false`) that also applies pending migrations. `--local`
 opts out of the shared store; resolution prefers an existing local store over
 the global one, so subsequent commands find it without any flag.
+
+<a id="project-commands"></a>
 
 ### `docket project` — `project.go`
 
@@ -2750,9 +2944,13 @@ the project's name — initials for a multi-word name, first three letters
 otherwise — rather than the hardcoded `DKT` it used to write for every row.
 The rest of the invocation renders in the new voice immediately.
 
+<a id="version-commands"></a>
+
 ### `docket version` — `version.go`
 
 No local flags. `skipDB` annotated.
+
+<a id="config-commands"></a>
 
 ### `docket config` — `config.go`
 
@@ -2773,5 +2971,5 @@ there, and a consumer parsing `value` must not have to strip a human marker. Unk
 `VALIDATION_ERROR` (exit 3) at `set` time. Both take `--global`: `set --global`
 writes the store-wide default rather than this project's override, and
 `get --global` reads the store-wide layer ignoring project overrides. See the
-Engine configuration section above for the key table, defaults, and the
-project/store layering.
+[engine configuration](references/workflows.md#engine-configuration-docket-config-setget)
+for the key table, defaults, and project/store layering.

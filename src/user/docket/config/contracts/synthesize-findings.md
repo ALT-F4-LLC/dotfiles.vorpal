@@ -1,6 +1,6 @@
 ---
 node: synthesize-findings
-version: 15
+version: 16
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -188,6 +188,14 @@ for prior clusters leaving the standing set and cite each transition's trace.
 Keep explanations brief without abbreviating required evidence.
 
 ## Payload
+
+<!-- CLUSTER-KEYS-BEGIN: tests/contract-cluster-keys.test.sh diffs this
+     sentence's backticked names against findings-cluster@2's top-level
+     `.items.properties` keys. Edit both together. -->
+Every payload entry's top-level keys are `id`, `title`, `severity`,
+`member_ids`, `file`, `line`, `evidence`, `alternative`, and
+`prior_disposition`.
+<!-- CLUSTER-KEYS-END -->
 
 Every entry carries non-empty `id` and `title`, and a valid `severity`:
 

@@ -1,6 +1,6 @@
 ---
 node: tdd-author
-version: 4
+version: 5
 archetype: executor-write
 packet_includes:
   - fragments/doc-house-style.md
@@ -8,6 +8,7 @@ packet_includes:
   - fragments/code-philosophy.md
   - fragments/evidence-rules.md
   - fragments/scope-discipline.md
+  - fragments/completion-gates.md
 emits: doc
 ---
 # Charter

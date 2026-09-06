@@ -1,11 +1,12 @@
 ---
 node: spec-author
-version: 3
+version: 4
 archetype: executor-write
 packet_includes:
   - fragments/doc-house-style.md
   - fragments/writing-for-humans.md
   - fragments/evidence-rules.md
+  - fragments/completion-gates.md
 emits: spec
 ---
 # Charter

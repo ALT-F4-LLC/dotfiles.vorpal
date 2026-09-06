@@ -1,6 +1,6 @@
 ---
 node: ux-spec-author
-version: 4
+version: 5
 archetype: executor-write
 packet_includes:
   - fragments/doc-house-style.md
@@ -8,6 +8,7 @@ packet_includes:
   - fragments/hig-principles.md
   - fragments/copy-discipline.md
   - fragments/evidence-rules.md
+  - fragments/completion-gates.md
 emits: doc
 ---
 # Charter

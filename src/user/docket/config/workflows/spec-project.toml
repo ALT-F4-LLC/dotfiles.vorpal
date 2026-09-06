@@ -1,7 +1,7 @@
 [pipeline]
 description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step, review them once, and accept by tribunal vote that escalates to the operator."
 name = "spec-project"
-version = 16  # 16: `blocked` joins unless_labels (DOT-1788): a hold label so
+version = 16  # 16: `blocked` joins unless_labels: a hold label so
               #   an issue not yet workable matches zero registered workflows
               #   until the label is removed.
               # 15: reconcile gains the `drain-highs` routing on

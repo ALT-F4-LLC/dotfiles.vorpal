@@ -1,7 +1,7 @@
 [policy]
 version = 23
 
-# `blocked` (DOT-1788): the hold label. An issue not yet workable — blocked on
+# `blocked`: the hold label. An issue not yet workable — blocked on
 # a capability that does not exist, or needing a design session before
 # implementation makes sense — carries this label so it matches zero
 # registered workflows and cannot be selected by `docket-plan` or treated as
@@ -193,7 +193,7 @@ ceiling = "opus-max"
 # `unless_labels` of every workflow that excludes its siblings, or it re-opens
 # the same trap.
 labels = ["security-change", "security-load-bearing", "security"]
-# security-load-bearing labeling test (DOT-1604): apply the label at filing
+# security-load-bearing labeling test: apply the label at filing
 # time to any issue that changes, relocates, or test-gates one of these
 # control classes. "Test-gates" means acceptance criteria whose deletion or
 # mutation a test would catch. Both changing a control's logic and moving or

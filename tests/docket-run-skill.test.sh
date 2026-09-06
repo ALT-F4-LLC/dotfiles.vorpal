@@ -30,9 +30,11 @@
 #     The `git branch -D` bound is a separate sentence and stays on the
 #     paragraph.
 #
-# (e) is an absence claim and is whole-file by nature: every paragraph that
-# names a sandbox lift must be one of the three anchored rulings, so a newly
-# added grant is red until it is deliberately admitted here.
+# (e) is an absence claim and is whole-file by nature: every SENTENCE that
+# names a sandbox lift must be one of the three pinned ruling sentences, so a
+# newly added grant is red until it is deliberately admitted here — including
+# a grant inserted INSIDE one of the three anchored paragraphs, where a
+# paragraph-level census would have exempted every sentence in it.
 #
 # DOCKET_RUN_SKILL_FILE overrides the file under test, so a mutation probe can
 # point the suite at a deliberately broken COPY under $TMPDIR without touching
@@ -45,8 +47,8 @@
 #       s2 the clean control pointed at the broken fixture
 #   (a) cherry-pick lift
 #       p-a reword the paragraph's anchor sentence, so no paragraph carries
-#          it; p-a, p-b and p-c each red (e)'s census too, because a ruling
-#          whose anchor has drifted IS an unanchored lift paragraph
+#          it — the census is pinned to the ruling SENTENCE, not the anchor,
+#          so p-a/p-b/p-c leave it green; only the paragraph() check reds
 #       a1 delete the "Operation not permitted" refusal from the paragraph
 #       a2 drop .claude/skills/** from the sentence naming the failing diff
 #       a3 delete "Verify the sha as always"
@@ -59,8 +61,9 @@
 #       b2 delete "need no lift for the signature"
 #       b3 invert the ruling to "DO lift the sandbox around it", keeping the
 #          words "do not lift the sandbox" elsewhere in the paragraph; this
-#          one reds both b3's and b4's assertion, since b4's literal contains
-#          b3's
+#          one reds b3's and b4's assertion (b4's literal contains b3's) AND
+#          the census, since the mutated sentence still names a lift but no
+#          longer equals the pinned sentence
 #       b4 detach the remedy: end the `just activate` sentence before the
 #          ruling clause, which leaves b3's assertion green
 #   (c) worktree-remove lift
@@ -73,7 +76,9 @@
 #       c2 widen the single-call scope: replace "with its paired common-dir
 #          write" with "with its paired writes"
 #       c3 invert the ruling to "WITHOUT lifting the sandbox", keeping "with
-#          the sandbox lifted" elsewhere in the paragraph
+#          the sandbox lifted" elsewhere in the paragraph; also reds the
+#          census, since the mutated sentence names a lift but no longer
+#          equals the pinned sentence
 #       c4 delete the "The lift never extends to the git branch -D" bound
 #   (d) module-cache unsandboxed retry
 #       p-d reword the paragraph's anchor sentence
@@ -82,6 +87,9 @@
 #          in executors")
 #   (e) lift census
 #       e1 insert a new paragraph granting an unconditioned lift
+#       e2 insert the same unconditioned-lift sentence INSIDE one of the
+#          three anchored paragraphs, so a paragraph-level census would
+#          exempt it; the sentence-level census still reds it
 #
 # A missing input file fails; it never skips green.
 
@@ -267,26 +275,32 @@ else
     bad "module cache: no single paragraph carries 'Warm the Go module cache before dispatching into a Go repo'"
 fi
 
-# (e) Absence claim: no paragraph outside the three anchored rulings speaks of
-# lifting the sandbox. A new grant added anywhere else in the file is red until
-# an anchor and its preconditions are written for it above.
+# (e) Absence claim, run over SENTENCES rather than paragraphs: every
+# sentence anywhere in the file that names a sandbox lift must be one of the
+# three pinned ruling sentences below. A paragraph-level census would exempt
+# every sentence in an anchored paragraph, so a new unconditioned grant
+# inserted inside one of the three rulings' own paragraphs would stay
+# invisible to it; pinning to the sentence catches it wherever it lands.
+# The pins are the same literals already asserted by states() above, so the
+# census and those assertions cannot drift apart.
+sentences "${WORK}/flat" > "${WORK}/all-sentences"
 census=0
-while IFS= read -r para; do
-    case "$para" in
+while IFS= read -r sent; do
+    case "$sent" in
         *'lift the sandbox'*|*'sandbox lifted'*) ;;
         *) continue ;;
     esac
-    case "$para" in
-        *'A cherry-pick whose diff touches'*) ;;
-        *'A signed pick or commit signs INSIDE the sandbox'*) ;;
-        *'Worktrees clean themselves up ONLY when UNCHANGED'*) ;;
+    case "$sent" in
+        *'retry that pick with the sandbox lifted'*) ;;
+        *'do not lift the sandbox around it'*) ;;
+        *'and nothing else, with the sandbox lifted'*) ;;
         *)
-            bad "lift census: an unanchored paragraph rules on a sandbox lift: ${para:0:140}"
+            bad "lift census: an unpinned sentence rules on a sandbox lift: ${sent:0:140}"
             census=1
             ;;
     esac
-done < "${WORK}/flat"
-[ "$census" -eq 0 ] && ok "lift census: every paragraph naming a sandbox lift is one of the anchored rulings"
+done < "${WORK}/all-sentences"
+[ "$census" -eq 0 ] && ok "lift census: every sentence naming a sandbox lift is one of the pinned rulings"
 
 if [ "$fail" -ne 0 ]; then
     echo "docket-run-skill: FAIL — a sandbox lift without its precondition is the failure this pins; fix the skill, not the test." >&2

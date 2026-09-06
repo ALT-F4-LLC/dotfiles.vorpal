@@ -1,7 +1,7 @@
 export const meta = {
     name: 'wave',
     description: 'Run one dispatched manifest end to end: spawn one executor per executor row at the model/effort the engine rendered on it, seat a judge panel on each vote row from its routed roster, and skip action rows (engine-run at record time). Stages run as awaited groups per issue lane, with the cross-issue cohorts the manifest certifies honored — the staged closure means one wave can carry judges -> gate -> reconcile -> report, and no issue idles behind the slower stages of another. PROBE COST PER VOTE ROW: 2 read-only haiku probes of `docket gate status` on the normal path — one before the panel seats (decided yet, which proposal, which target) and one after it returns (missing seats and the tally) — 1 on a gate that was already decided before the wave reached it, and 3 when a re-seat forces a re-read; a gate with no proposal yet spends a `step show` for the engine\'s blocked_reason instead of a panel, and an engine-minted held-cluster gate spends one more read to name its cluster. Each probe answers through a schema, under 1 KB; the per-gate count is reported verbatim in that row\'s spawn_accounting. Invoke by scriptPath ONLY, with args {rows} as a real object — every row carries model/effort/variant resolved by the engine, and the script reads no policy and cannot read files.',
-    whenToUse: 'Invoked by the docket-run skill on an open dispatch, always as Workflow({scriptPath}) — never by name. args is {rows}: `next` rows VERBATIM (executor, vote, and action rows; human rows stay with the conductor), each executor row carrying the model/effort/variant the engine resolved from the run\'s pinned policy.toml and each vote row carrying the same per voter in `voter_assignments` — a row re-typed without those fields is refused. On a dispatch carrying a fix round\'s review fanout, args also carries `integrated` — a map from each such issue to the sha of its prior round\'s INTEGRATION commit — so the wave can assert base ancestry before seating the fanout. There is no policy argument of any kind and no file access.',
+    whenToUse: 'Invoked by the docket-run skill on an open dispatch, always as Workflow({scriptPath}) — never by name. args is {rows, tribunal, cwd}: `next` rows VERBATIM (executor, vote, and action rows; human rows stay with the conductor), each executor row carrying the model/effort/variant the engine resolved from the run\'s pinned policy.toml and each vote row carrying the same per voter in `voter_assignments` — a row re-typed without those fields is refused. `tribunal` is the absolute installed path to tribunal.js, the one workflow-nesting level this script uses to seat every in-wave panel (it cannot resolve that path itself); `cwd` is the repo the run belongs to. On a dispatch carrying a fix round\'s review fanout, args also carries `integrated` — a map from each such issue to the sha of its prior round\'s INTEGRATION commit — so the wave can assert base ancestry before seating the fanout. There is no policy argument of any kind and no file access.',
 }
 
 // ---------------------------------------------------------------------------
@@ -1090,10 +1090,10 @@ function spawn(row, phaseLabel) {
 // ---------------------------------------------------------------------------
 // Vote rows: the in-wave panel. A `kind:"vote"` row rides the manifest —
 // ready, or STAGED behind the work it judges — and the wave seats the panel
-// itself: it cannot nest tribunal.js (workflow nesting is one level, and the
-// wave IS the child), so the seat contract lives here too, adapted from
-// tribunal.js. The engine remains the only authority: `step record` on the
-// gate's last predecessor opens the proposal, each seat casts a REAL
+// by calling tribunal.js one level deep (`workflow({scriptPath: args.tribunal}, ...)`),
+// passing `step` so it renders the mid-wave brief instead of the
+// conversational one. The engine remains the only authority: `step record` on
+// the gate's last predecessor opens the proposal, each seat casts a REAL
 // `docket vote cast`, the engine tallies, and the quorum-reaching cast routes
 // the gate. This script never casts, approves, or tallies.
 //
@@ -1103,11 +1103,11 @@ function spawn(row, phaseLabel) {
 // it and re-derives nothing, the same contract tribunal.js holds its caller to.
 // ---------------------------------------------------------------------------
 
-// SYNC-BEGIN seat-contract
 // A seat missing any of the triple was never routed — the run pins no
 // policy.toml, or the roster was re-typed without its fields — and a panel
 // seated on a guessed tier is the drift a harness-side policy parser used
-// to cause.
+// to cause. Used both for executor rows (resolve(), above) and to validate a
+// vote row's voter_assignments before they cross into tribunal.js's args.
 function assertRouted(who, entry, refusal) {
     for (const k of ['model', 'effort', 'variant']) {
         if (!entry || typeof entry[k] !== 'string' || entry[k] === '') {
@@ -1121,328 +1121,27 @@ function assertRouted(who, entry, refusal) {
     }
 }
 
-function resolveSeat(seat, routing) {
-    if (typeof seat !== 'string' || seat === '') {
+function voterToSeat(voter, routing) {
+    if (typeof voter !== 'string' || voter === '') {
         throw new Error(
-            `wave.js: a voter carries no seat name (got ${JSON.stringify(seat)}). ` +
+            `wave.js: a voter_assignments entry carries no voter name (got ${JSON.stringify(voter)}). ` +
             `Refusing to seat the panel.`
         )
     }
-    assertRouted(`seat ${JSON.stringify(seat)}`, routing, 'Refusing to seat the panel.')
-    return { seat, variant: routing.variant, model: routing.model, effort: routing.effort }
+    assertRouted(`seat ${JSON.stringify(voter)}`, routing, 'Refusing to seat the panel.')
+    return { seat: voter, variant: routing.variant, model: routing.model, effort: routing.effort }
 }
-
-// A seat's lens is its trailing name segment (`tribunal-security` -> security);
-// an unrecognised seat gets the whole-system lens below rather than a throw, so
-// a generically-briefed judge still decides instead of leaving the gate
-// undecidable.
-//
-// A lens is the seat's VOTER brief only — the same trailing names also exist as
-// review-executor contracts (contracts/judge-<name>.md) governing the seat when
-// a workflow fans it out as a reviewer: one name, two remits, resolved by row
-// kind. architecture and security broadly agree across the two; correctness
-// deliberately does not, since the contract hunts logic defects while this lens
-// interrogates the evidence behind the gate's ask (the contract
-// carries the mirror note).
-//
-// Only lenses reachable from a current workflow's voter names are kept
-// (architecture, security, correctness, design); a seat re-adding a retired one
-// (completeness, feasibility, risk) must re-add its lens or it falls to the
-// whole-system brief below.
-const LENSES = {
-    architecture:
-        'DESIGN, COUPLING, AND PRECEDENT. Does this fit the shape of the system it ' +
-        'lands in, or does it bolt a second way of doing something onto a first? What ' +
-        'does it couple that was separate, and what does it make harder to change ' +
-        'next? What precedent does accepting it set for the next twenty things like it?',
-    security:
-        'TRUST BOUNDARIES, PROVENANCE, AND BLAST RADIUS. What boundary does this move ' +
-        'data or execution across, and who is trusted after it that was not before? ' +
-        'Where did the inputs come from and can that provenance be checked? If this is ' +
-        'wrong, how far does the damage reach and how would anyone notice?',
-    correctness:
-        'EVIDENCE, REPRODUCIBILITY, AND VERIFICATION. What is actually demonstrated ' +
-        'here versus asserted? Was the claimed behaviour reproduced, and could you ' +
-        'reproduce it from what is in front of you? What would have to be true for this ' +
-        'to be wrong, and does anything check that?',
-    design:
-        'USER-FACING SHAPE AND COHERENCE. Does what a person sees and does here hold ' +
-        'together — flows that complete, states that are all accounted for, names that ' +
-        'mean what they say? Where does the design contradict itself or the system it ' +
-        'joins, and what would a first-time user get wrong because of it?',
-}
-const WHOLE_SYSTEM_LENS =
-    'WHOLE-SYSTEM REVIEW. No narrower lens is declared for your seat, so read this ' +
-    'as a generalist: design fit, trust and blast radius, and the quality of the ' +
-    'evidence behind every claim.'
-
-function lensOf(seat) {
-    const parts = seat.split('-')
-    const key = parts[parts.length - 1]
-    return { role: key, text: LENSES[key] || WHOLE_SYSTEM_LENS }
-}
-// SYNC-END seat-contract
-
-// TEST-BEGIN seat-brief — extracted and exercised by
-// tests/wave-target-envelope.test.sh, which stubs `lensOf` (the only global
-// this reaches for) and asserts what a target ref does and does not put in
-// front of a judge. Keep every other dependency inside the markers.
-function seatBrief(r, voteId, row, isRespawn, heldCluster, target) {
-    const { role, text } = lensOf(r.seat)
-    const metadataClaim = JSON.stringify({
-        seat: r.seat,
-        variant: r.variant,
-        model: r.model,
-        effort: r.effort,
-    })
-    const respawnNote = isRespawn ? `
-
-THIS IS A SECOND ATTEMPT AT YOUR SEAT. A prior agent held it and returned
-without a recorded cast — \`docket vote show ${voteId}\` shows no entry for
-${r.seat}. Nothing it may have concluded reached anyone, so decide the case
-yourself from scratch. Whatever stopped the first attempt, the cast is the one
-thing that must happen this time: if the command errors, do not abandon it
-silently — end with the verbatim error as instructed below.` : ''
-    // Absent on ordinary gates — then this renders NOTHING and the
-    // brief is byte-for-byte what it was before held clusters existed.
-    const heldClusterNote = heldCluster ? `
-
-HELD CLUSTER: you decide ONE finding cluster — index ${heldCluster.clusterIndex} of
-${heldCluster.clusterCount} in ${heldCluster.artifact} (produced by ${heldCluster.producerStep}). Read it with
-\`docket step artifact ${heldCluster.artifact} --payload\` and judge that cluster
-only: is the held remedy right, and should it block? The other clusters are
-other seats' or already decided.` : ''
-    // Seats used to vote on a tree their own checkout did not contain — one
-    // judge reported that the fix commit was not an ancestor of the judge
-    // worktree's own HEAD, and rejected on evidence grounds, because the
-    // correctness lens asks whether you could reproduce it FROM WHAT IS IN
-    // FRONT OF YOU — no code edit answers that reject, since the fix loop
-    // cannot move a judge's HEAD. The engine lifts the resolved `issue.diff`
-    // round record onto the context bundle as `target_sha`/`target_worktree`,
-    // so NAME the round's target here. Either half may be missing — a bundle
-    // carries both or neither per the engine, but a swept worktree or an
-    // older manifest can leave one — and with NEITHER this says so in as many
-    // words rather than staying silent (below).
-    //
-    // THE LAST NET BEFORE A SHA REACHES A JUDGE. A `TARGET SHA:` line is an
-    // assertion three opus seats will spend calls chasing, so it is written
-    // only for a sha that is SHAPED like one — 40 lowercase hex, the full
-    // object id the engine records, never an abbreviation and never prose.
-    // One wave relayed a fabricated 40-hex sha that existed in no repository
-    // and briefed three judges with it; the gate path (gateTarget) applies
-    // the same shape check, and this one stands behind it so no other caller
-    // of seatBrief can route around it.
-    const rawTargetSha = (target && target.sha) || ''
-    const targetSha = /^[0-9a-f]{40}$/.test(rawTargetSha) ? rawTargetSha : ''
-    const targetWorktree = (target && target.worktree) || ''
-    const targetLines = []
-    if (targetSha) {
-        targetLines.push(`TARGET SHA:     ${targetSha} — the commit the diff under this gate stood at`)
-    }
-    if (targetWorktree) {
-        targetLines.push(`TARGET WORKTREE:${targetWorktree} — the checkout that recorded it, while it is still on disk`)
-    }
-    const targetReads = [
-        targetSha ? `  git cat-file -t ${targetSha}   — proves the object is here at all` : '',
-        targetSha ? `  git show --stat ${targetSha}   then \`git show ${targetSha}\` for the body` : '',
-        targetSha ? `  git diff ${targetSha}^ ${targetSha} -- <path>` : '',
-        targetWorktree ? `  git -C ${targetWorktree} log --oneline -5` : '',
-    ].filter(Boolean).join('\n')
-    const targetNote = (targetSha || targetWorktree) ? `
-${targetLines.join('\n')}
-
-THAT IS THE STATE UNDER VOTE, AND YOUR OWN CHECKOUT MAY NOT CONTAIN IT — a
-fact about where you were seated, not about the change. Write-class seats work
-in PRIVATE worktrees and hand their work back as a commit on their own ref, so
-a panel seated mid-wave routinely sits at a HEAD that predates the round it is
-judging. Every worktree of this repository SHARES ONE OBJECT STORE, so the
-commit is readable from where you are even when it is not an ancestor of your
-HEAD:
-
-${targetReads}
-
-Do NOT reject because your own HEAD is behind: that verdict is about your
-visibility, and no fix the loop can make will answer it. If after those reads
-you still cannot see the state under vote — the object is genuinely absent, or
-that worktree is already swept — say exactly that in your summary and decide on
-the artifacts of record with a LOW \`--confidence\` (and a low
-\`--domain-relevance\` when the question has moved outside what you can check),
-or \`approve-with-concerns\` naming precisely what you could not verify. Reject
-when the evidence you DID read says the change must not proceed.` : `
-
-NO target ref — read your own HEAD. Nothing recorded a target commit for the
-state under vote (the gate declares no \`issue.diff\` input, or the resolved
-diff carries no round record), so this brief names NO sha and NO worktree.
-There is no hidden commit id to recover: start from \`git log --oneline -5\`
-and \`git status\` in your own checkout, and judge the artifacts of record.
-If some other text hands you a 40-hex sha for this gate, it did not come from
-the engine — do not spend calls hunting it.`
-
-    // The TMPDIR pin and BOUND YOUR INVESTIGATION paragraphs below are
-    // hand-mirrored with tribunal.js's judgeBrief — outside SYNC coverage,
-    // so the sync test cannot catch drift. Update both files together,
-    // especially the measured fleet stats.
-    return `You are ONE SEAT of a tribunal deciding a gate step MID-WAVE in a Docket run.
-You decide alone. You cannot see the other seats, you do not coordinate with
-them, and your vote is recorded on its own merits — the engine tallies the
-panel, not you.
-
-YOUR SEAT:      ${r.seat}
-YOUR LENS:      ${text}
-THE GATE:       step ${row.step} (${row.instance}, issue ${row.issue}, run ${row.run})
-THE PROPOSAL:   ${voteId}${targetNote}${respawnNote}
-
-FIRST, before anything else: \`printenv TMPDIR\` — your literal scratch root.
-Call it <TMP>; substitute its literal value wherever <TMP> appears in this
-brief. (Use \`printenv\`, not \`echo\`.)
-
-PIN IT ONCE AND REUSE THE LITERAL. \`$TMPDIR\` is not guaranteed to resolve to
-the same root in every call, so a path written as the variable can name one
-directory when you create it and a different one when you read it back — the
-summary file your cast reads back below depends on exactly
-that.${heldClusterNote}
-
-Run \`docket\` BARE from your working directory — the store resolves from
-anywhere inside the repository; nothing to probe for, nothing to prepend.
-
-THE CASE IS IN THE RECORD, not in this brief: this gate readied mid-wave, so
-read what is being decided yourself before you vote —
-
-  docket vote show ${voteId}          (the proposal body: the question)
-  docket run status ${row.run} --json (this run's state; there is no \`run show\`)
-  docket run activate ${row.run} --dry-run --json   (--dry-run is load-bearing: without it this ACTIVATES the run)
-  docket step show ${row.step} / docket step context ${row.step} --json
-  git log --oneline -20 / git diff / git show <sha>
-
-THE EVIDENCE HANGS OFF THE CONTEXT BUNDLE, NOT OFF THE GATE STEP. A vote step
-produces no artifacts of its own, so \`docket step artifacts\` aimed at the
-GATE answers "produced no artifacts" and costs you the turn. The bundle
-carries the gate's INPUTS at \`.data.context.inputs[]\` — one entry per
-upstream artifact, each naming \`.artifact\` (the ARTIFACT-N id), \`.kind\`
-(threat-model, change-summary, issue.diff, findings), \`.producer_step\`, and
-its \`.body\` and \`.payload\` in full. Read there, and spend
-\`docket step artifact ARTIFACT-N --payload\` only on an id the bundle named.
-
-THEIR FLAGS, since guessing one costs you a turn and teaches you nothing:
-\`step context\` takes \`--meta\` and NOTHING else; \`step artifact\` takes
-\`--payload\`; \`events list\` takes \`--tail N\` (the verb is \`events list\`,
-not \`event list\`); \`--json\` is global and works on any of them. None of
-these READ verbs takes \`--verbose\`, \`-v\`, or \`--version\` — \`-v\` belongs
-to the CAST command below, where it means the verdict, and reaching for it
-while reading is the one confusion to avoid. If you want a flag that is not
-listed here, run that verb's \`--help\` and read it; never guess one.
-
-AND KNOW \`step artifact\`'S TWO JSON SHAPES BEFORE YOU PARSE ONE. With
-\`--payload --json\`, the envelope's \`.data\` IS THE PAYLOAD ITSELF — an ARRAY
-for a findings or cluster payload, so \`.data[0]\` is the first entry and
-\`.data.get(...)\` raises. Without \`--payload\`, \`--json\` returns the artifact
-RECORD and the payload hangs off \`.data.payload\` as a JSON STRING you must
-parse a second time. Two seats on one wave lost their whole turn to
-\`AttributeError: 'list' object has no attribute 'get'\` on \`d['data'].get('payload')\`
-against the first shape. Pick one and match it: \`--payload --json | jq '.data'\`
-for the payload, or plain \`--json | jq -r '.data.payload' | jq .\` for the record.
-
-plus reading any file those name. The gate sits downstream of the work it
-judges — its issue's earlier steps recorded THIS wave, and their artifacts and
-payloads are the evidence. Read what the claims rest on. Do not write, edit,
-commit, or run anything that mutates state — the ONE state change you are
-authorized to make is your own cast, below.
-
-BOUND YOUR INVESTIGATION — then vote. Measured across seven days:
-189 tribunal seats spent 5,309,378 output tokens, 68.7% of it on private
-deliberation — the highest ratio of any role in this fleet — over 36 votes
-and 12 decided proposals in which ZERO verdicts were overturned. That is not
-a panel that needed to think harder; it was already right and kept going. You
-are seated MID-WAVE, so the cost is paid in wall clock every other row in
-this stage waits out. Read what the claims rest on, then decide:
-
-  - A handful of targeted reads settles a typical gate. If your next read is
-    not answering a question you can NAME, you are past the point of value.
-  - You are ONE seat, not the panel. Another lens covering what yours does not
-    is the design working, not a gap for you to close.
-  - A concern you cannot resolve is what \`approve-with-concerns\` and the
-    summary field exist for. Write it down; do not investigate it away.
-  - When you can state a verdict and one paragraph of why, cast. The bar is
-    whether your evidence supports the verdict — not whether more reading
-    could raise your confidence further. It always could.
-
-EVIDENCE-QUALITY RULE: A finding backed by reproduced evidence — a mutation
-test, a demonstrated failure, a verified repro — outranks any aggregate that
-demotes it. Never discount reproduced evidence because other reviewers scored
-the issue lower.
-
-SETTLED GROUND (operator-ratified): a finding whose \`prior_disposition\`
-records a ruling — accepted, corrected, rejected, or deferred with its
-follow-up issue named — is decided ground: an operator or an earlier panel
-already spent that decision, and the fix loop deliberately does not re-route
-it. Re-read the ruling before weighing the finding, and re-litigate it only on
-evidence the ruling did not have. Do not reject a gate over settled findings
-alone; open findings are the ones your verdict weighs — but weighing is not
-counting. Severity already routes: \`blocker\` is the only value that marks a
-change that must not proceed, and an open finding below blocker (a Concern,
-\`high\`), even with no ruling yet, is not by itself reject grounds — its
-venue is \`approve-with-concerns\` and the record, where the operator resolves
-it; the severity ladder rules that mechanical rework is the Blocker's venue
-alone. Reject over sub-blocker findings only when your own evidence convinces
-you the change must not proceed as presented — a judgment about the change,
-never an inventory of open highs.
-
-ESCALATION (operator-ratified): a reject does not block work forever — the
-gate routes onward per its declared routing, to the human operator or into a
-rework loop that answers your findings, so reject when the evidence says
-reject; do not approve to keep things moving.
-
-CAST YOUR VOTE — exactly once, as your last action, in TWO Bash calls. First
-write your one-paragraph summary to a scratch file with a QUOTED heredoc —
-quoting the delimiter means the shell expands NOTHING in the body: backticks,
-$( ), and $VAR all stay literal text:
-
-  cat > <TMP>/${row.step}-${r.seat}-summary.txt <<'EOF'
-  <your one-paragraph reasoning, on ONE line>
-  EOF
-
-Then cast, reading the file back — safe because the substitution wraps a fixed
-\`cat\` of your own file, so its content passes into the flag verbatim instead
-of being re-parsed as shell syntax:
-
-  docket vote cast ${voteId} --voter ${r.seat} --role ${role} -v <approve|approve-with-concerns|reject> --confidence <0.0-1.0> --domain-relevance <0.0-1.0> --metadata '${metadataClaim}' --summary "$(cat <TMP>/${row.step}-${r.seat}-summary.txt)"
-
-  --verdict/-v      approve                = nothing you found should stop this
-                    approve-with-concerns  = proceed, with the risks you name recorded
-                    reject                 = the evidence says do not proceed as presented
-  --confidence      how sure you are of that verdict GIVEN WHAT YOU ACTUALLY
-                    CHECKED. A confident verdict on an uninvestigated payload is
-                    a lie about your own work; lower the number instead.
-  --domain-relevance how much of this decision falls inside YOUR lens. A seat
-                    with little purchase on the question says so with a low
-                    number rather than inflating one — the tally weighs it.
-  --metadata        pre-filled with requested seat routing (seat, variant,
-                    model, effort), not observed serving-model telemetry.
-                    Pass it unchanged. It is unverified, stored as-is, and
-                    public. The relay measures observed models from the
-                    completed transcript; do not infer them from this routing.
-  --summary         ONE paragraph: your verdict's reasoning and the specific
-                    evidence behind it. Write it to the scratch file EXACTLY as
-                    above — NEVER type the paragraph inline in double quotes:
-                    backticks, $( ), and $VAR execute there. No line breaks
-                    inside the file. Name files, shas, and commands you ran —
-                    a summary that could have been written without
-                    investigating will read like one.
-
-YOUR FINAL TEXT IS NOT DELIVERED ANYWHERE. THE CAST IS YOUR DELIVERABLE. If the
-cast command errors, read the error, fix what it names, and retry ONCE. If it
-still fails, end your reply with the verbatim error text and nothing else —
-that is the only case where your final text matters.`
-}
-// TEST-END seat-brief
 
 // TEST-BEGIN gate-vote — extracted and exercised by
 // tests/wave-vote-retry-report.test.sh, which concatenates this region after
 // the classifier-retry region (whose CLASSIFIER_BLOCK / TRANSIENT_CLASSIFIER /
 // reasonText the probe retry below reads) and feeds it stub `agent`,
-// `parallel`, `log`, `seatBrief`, and `resolveSeat` globals. Everything else
-// the region needs must stay INSIDE the markers; tests/wave-target-envelope.test.sh
-// extracts it whole alongside the real `seat-brief` renderer.
+// `parallel`, `log`, `workflow`, and `voterToSeat` globals — the panel seat is
+// tribunal.js's, reached through the stubbed `workflow`, not rendered here.
+// Everything else the region needs must stay INSIDE the markers;
+// tests/wave-target-envelope.test.sh extracts it to assert the gate path
+// spends no target probe, and tests/tribunal-seat-brief.test.sh pins the
+// brief tribunal.js renders for the mid-wave call this region makes.
 function probeBrief(command, servingStep) {
     return `Run exactly this one command:
 
@@ -1814,7 +1513,7 @@ async function runGate(row, phaseLabel) {
             `guessing a panel`)
         return { step: row.step, status: 'gate-blocked', text: asText(gate) }
     }
-    const seats = roster.map((a) => resolveSeat(a && a.voter, a))
+    const seats = roster.map((a) => voterToSeat(a && a.voter, a))
     const held = HELD_INSTANCE_RE.test(row.instance || '')
         ? await heldCluster(row.step, `${row.step} · gate:held-cluster`, phaseLabel, acct)
         : null
@@ -1828,19 +1527,34 @@ async function runGate(row, phaseLabel) {
         (target ? ` on target ${target.sha || '(no sha)'}${target.worktree ? ` (${target.worktree})` : ''}`
                 : ` with NO target ref on the gate — seats read their own HEAD`))
     acct.seats = seats.length
-    await parallel(seats.map((r) => () => {
-        return agent(seatBrief(r, voteId, row, false, held, target), {
-            label: `${row.step} · seat:${r.seat}`,
-            phase: phaseLabel,
-            agentType: 'executor-read',
-            model: r.model,
-            effort: r.effort,
+    // The panel is seated by ONE workflow-nesting level into tribunal.js,
+    // passing `step` so it renders the mid-wave brief (target ref, held
+    // cluster, context-bundle navigation) instead of its conversational one.
+    // A throw (unreadable scriptPath, tribunal's own arg refusal, a child
+    // syntax error) must not crash the whole wave — it settles this row
+    // gate-blocked with the error text, same as any other unreadable gate.
+    const seatPanel = (panelSeats, isRespawn) =>
+        workflow(args.tribunal, {
+            voteId, gateKind: row.instance, cwd: args.cwd,
+            voters: panelSeats.map((s) => ({ seat: s.seat, model: s.model, effort: s.effort, variant: s.variant })),
+            step: { step: row.step, instance: row.instance, issue: row.issue, run: row.run },
+            target, heldCluster: held, isRespawn: Boolean(isRespawn),
+        }).then((res) => {
+            for (const a of (res && res.absorbed) || []) {
+                const label = `${row.step} · seat:${a.seat}` + (isRespawn ? ' (retry)' : '')
+                log(`${row.step} seat ${a.seat}: ${isRespawn ? 'respawn' : 'spawn'} error: ${a.error}`)
+                acct.absorbed.push(`[${label}] ${a.error}`)
+            }
+            return res
         }).catch((err) => {
-            log(`${row.step} seat ${r.seat}: spawn error: ${err}`)
-            acct.absorbed.push(`[${row.step} · seat:${r.seat}] ${reasonText(err) || String(err)}`)
+            log(`${row.step}: tribunal panel spawn error: ${err}`)
+            for (const s of panelSeats) {
+                const label = `${row.step} · seat:${s.seat}` + (isRespawn ? ' (retry)' : '')
+                acct.absorbed.push(`[${label}] ${reasonText(err) || String(err)}`)
+            }
             return null
         })
-    }))
+    await seatPanel(seats, false)
 
     // One re-spawn for seats whose cast never landed — tribunal.js's rule.
     // The same read answers the roster and the tally; the engine names the
@@ -1851,22 +1565,10 @@ async function runGate(row, phaseLabel) {
     if (missing.length > 0) {
         log(`${row.step}: ${missing.length} seat(s) returned without a recorded ` +
             `cast (${missing.map((s) => s.seat).join(', ')}) — re-spawning each ONCE`)
-        await parallel(missing.map((r) => () => {
-            // A re-seated judge is a RETRY of a seat already counted in
-            // acct.seats — never an extra seat, never a probe.
-            acct.retries++
-            return agent(seatBrief(r, voteId, row, true, held, target), {
-                label: `${row.step} · seat:${r.seat} (retry)`,
-                phase: phaseLabel,
-                agentType: 'executor-read',
-                model: r.model,
-                effort: r.effort,
-            }).catch((err) => {
-                log(`${row.step} seat ${r.seat}: respawn error: ${err}`)
-                acct.absorbed.push(`[${row.step} · seat:${r.seat} (retry)] ${reasonText(err) || String(err)}`)
-                return null
-            })
-        }))
+        // A re-seated judge is a RETRY of a seat already counted in
+        // acct.seats — never an extra seat, never a probe.
+        acct.retries += missing.length
+        await seatPanel(missing, true)
         // The record moved underneath the first read — those re-seated casts
         // postdate it — so the tally re-reads rather than reusing it.
         after = await status('gate:outcome')

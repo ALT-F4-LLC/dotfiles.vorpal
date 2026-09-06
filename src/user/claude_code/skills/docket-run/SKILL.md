@@ -1035,8 +1035,15 @@ installed file is the attach-time install diff's DRIFT — stop and
 report it; never hunt for another copy to launch.
 
 ```
-Workflow({ scriptPath: "<absolute installed path to wave.js>", args: {rows} })
+Workflow({ scriptPath: "<absolute installed path to wave.js>", args: {rows, tribunal, cwd} })
 ```
+
+`tribunal` is the absolute installed path to `tribunal.js`, resolved the same
+way as wave.js's own path (step 2's installed-path rule) — wave.js seats every
+in-wave vote row by calling `workflow({scriptPath: args.tribunal}, {...})` one
+level deep, so it cannot resolve that path itself and the conductor supplies
+it. `cwd` is the repo the run belongs to, the same value passed to a
+conversational tribunal launch below.
 
 `scriptPath` and `args` are the ONLY parameters. There is no
 `run_in_background` — the tool rejects unknown keys outright (one run lost a
@@ -1052,7 +1059,7 @@ disk, and nothing in the transcript said so. `scriptPath` is the only invocation
 that provably runs the file that is there now. This is not a preference; a
 by-name invocation is a defect regardless of how convenient it looks.
 
-Pass `args` as `{rows}` — plus `integrated` when the dispatch
+Pass `args` as `{rows, tribunal, cwd}` — plus `integrated` when the dispatch
 carries a fix round's review fanout (its own rule below). wave.js always RECEIVES a string and
 decodes it as normal transport (proven by a controlled probe), so
 the decode line in its log is never a finding. But do not read that as "the

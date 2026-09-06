@@ -38,10 +38,15 @@
 #      many words.
 #
 # HOW. wave.js fences the ancestry helpers in TEST-BEGIN/TEST-END
-# `target-envelope`, the brief renderer in `seat-brief`, and the gate driver
-# in `gate-vote`. This suite extracts all three, stubs the agent per spawn
-# label, and asserts on the probes spent, the log, and the literal brief text
-# handed to each seat.
+# `target-envelope` and the gate driver in `gate-vote`; the brief renderer
+# itself is tribunal.js's `seat-brief` region (DOT-1300 folded the seat
+# contract there — wave.js's `runGate` reaches it one workflow-nesting level
+# deep, via `workflow(args.tribunal, {..., step, target, heldCluster})`).
+# This suite extracts wave.js's two regions and tribunal.js's `seat-brief`,
+# stubs `workflow` to CALL the real extracted `judgeBrief` per voter (so the
+# brief text captured is the genuine mid-wave render, not a stand-in) and the
+# agent per probe label, and asserts on the probes spent, the log, and the
+# literal brief text handed to each seat.
 #
 # WHAT THIS SUITE CANNOT SEE: the real haiku probe (whether jq is installed on
 # the machine it runs on, and what a model does with an envelope once it HAS
@@ -53,6 +58,7 @@ set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/wave.js}"
+TRIBUNAL="${TRIBUNAL_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/tribunal.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
@@ -60,13 +66,14 @@ fatal() {
 }
 
 [ -f "$WAVE" ] || fatal "wave.js not found at ${WAVE}"
+[ -f "$TRIBUNAL" ] || fatal "tribunal.js not found at ${TRIBUNAL}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-target-envelope.XXXXXX") || fatal "mktemp failed"
 trap 'rm -rf "$WORK"' EXIT
 
-extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
-    awk -v r="$1" '
+extract() { # <file> <region> — body between the TEST-BEGIN/TEST-END markers
+    awk -v r="$2" '
         index($0, "TEST-END " r)   { open = 0; ends++ }
         open                       { print }
         index($0, "TEST-BEGIN " r) { open = 1; begins++ }
@@ -76,15 +83,15 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
                 exit 1
             }
         }
-    ' "$WAVE"
+    ' "$1"
 }
 
-extract classifier-retry > "${WORK}/classifier.js" || fatal "bad or missing TEST markers for classifier-retry"
-extract seat-brief       > "${WORK}/brief.js"      || fatal "bad or missing TEST markers for seat-brief"
-extract gate-vote        > "${WORK}/gate.js"       || fatal "bad or missing TEST markers for gate-vote"
-extract target-envelope  > "${WORK}/envelope.js"   || fatal "bad or missing TEST markers for target-envelope"
+extract "$WAVE" classifier-retry > "${WORK}/classifier.js" || fatal "bad or missing TEST markers for classifier-retry in wave.js"
+extract "$TRIBUNAL" seat-brief   > "${WORK}/brief.js"      || fatal "bad or missing TEST markers for seat-brief in tribunal.js"
+extract "$WAVE" gate-vote        > "${WORK}/gate.js"       || fatal "bad or missing TEST markers for gate-vote"
+extract "$WAVE" target-envelope  > "${WORK}/envelope.js"   || fatal "bad or missing TEST markers for target-envelope"
 [ -s "${WORK}/brief.js" ] || fatal "extracted seat-brief region is empty"
-grep -q 'seatBrief'          "${WORK}/brief.js"    || fatal "seat-brief region does not contain seatBrief"
+grep -q 'judgeBrief'         "${WORK}/brief.js"    || fatal "seat-brief region does not contain judgeBrief"
 grep -q 'readTargetEnvelope' "${WORK}/envelope.js" || fatal "target-envelope region does not carry readTargetEnvelope"
 grep -q 'gateTarget'         "${WORK}/gate.js"     || fatal "gate-vote region does not contain gateTarget"
 
@@ -93,11 +100,19 @@ grep -q 'gateTarget'         "${WORK}/gate.js"     || fatal "gate-vote region do
 const LOG = []
 const log = (m) => LOG.push(String(m))
 const parallel = (fns) => Promise.all(fns.map((f) => f()))
-const resolveSeat = (seat) => ({ seat, variant: 'std', model: 'stub-model', effort: 'low' })
-// The only global the brief renderer reaches for.
+const voterToSeat = (seat) => ({ seat, variant: 'std', model: 'stub-model', effort: 'low' })
+// The only global the brief renderer reaches for outside its own TEST fence.
+// wave.js's own gate-vote region declares its OWN TARGET_SHA_RE (gateTarget's
+// envelope shape check) — tribunal.js's copy comes in with the seat-brief
+// region below, so neither needs restating here.
 const lensOf = (seat) => ({ role: 'stub', text: 'STUB LENS.' })
+// wave.js reads these off its own top-level `args` global.
+const args = { tribunal: '/stub/tribunal.js', cwd: '/repo' }
 // Every brief handed to a seat, by spawn label — this is the surface a judge
-// actually reads.
+// actually reads. The panel is seated one workflow-nesting level into
+// tribunal.js: `workflow` here CALLS the real, extracted `judgeBrief` per
+// voter and records its render, so BRIEFS captures the genuine mid-wave
+// text tribunal.js would produce, not a stand-in.
 let BRIEFS = {}
 let SCRIPT = {}
 let CALLS = []
@@ -109,6 +124,14 @@ const agent = (brief, opts) => {
     if (item === undefined) return Promise.resolve(opts.schema ? null : '')
     if (item.reject !== undefined) return Promise.reject(new Error(item.reject))
     return Promise.resolve(item.text)
+}
+const workflow = (path, a) => {
+    for (const v of a.voters) {
+        const label = `${a.step.step} · seat:${v.seat}${a.isRespawn ? ' (retry)' : ''}`
+        CALLS.push(label)
+        BRIEFS[label] = judgeBrief(v, a.voteId, a.gateKind, a.context, a.cwd, a.isRespawn, a.step, a.target, a.heldCluster)
+    }
+    return Promise.resolve({ voteId: a.voteId, seatsSpawned: a.voters.length, absorbed: [] })
 }
 JS
     cat "${WORK}/classifier.js"
@@ -322,15 +345,16 @@ ok(gateTarget({ target: { sha: PHANTOM.slice(0, 12), worktree: '/w' } }).sha ===
 ok(gateTarget({ target: { sha: REAL.toUpperCase(), worktree: '' } }) === null,
     'gateTarget: an uppercase sha is refused — the engine records lowercase hex')
 
-// ---- seatBrief's own shape check, behind the call site ----
-const briefWith = (t) => seatBrief(SEAT, 'DKT-V304', ROW, false, null, t)
+// ---- judgeBrief's own shape check, behind the call site (mid-wave mode) ----
+const STEP = { step: ROW.step, instance: ROW.instance, issue: ROW.issue, run: ROW.run }
+const briefWith = (t) => judgeBrief(SEAT, 'DKT-V304', undefined, undefined, '/repo', false, STEP, t, null)
 ok(!briefWith({ sha: PHANTOM.slice(0, 12), worktree: '' }).includes('TARGET SHA:'),
-    'seatBrief refuses a non-40-hex sha even if a caller routes around the gate path')
+    'judgeBrief refuses a non-40-hex sha even if a caller routes around the gate path')
 ok(briefWith({ sha: PHANTOM.slice(0, 12), worktree: '' }).includes('NO target ref'),
     'and says NO target ref instead')
 ok(briefWith(null).includes('NO target ref') &&
    briefWith(null).includes('read your own HEAD'),
-    'seatBrief(no target) tells the seat to read its own HEAD')
+    'judgeBrief(no target) tells the seat to read its own HEAD')
 ok(!/[0-9a-f]{40}/.test(briefWith(null)),
     'a no-target brief contains no 40-hex string at all')
 ok(briefWith({ sha: REAL, worktree: '' }).includes(`TARGET SHA:     ${REAL}`) &&

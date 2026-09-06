@@ -1,10 +1,10 @@
 export const meta = {
     name: 'tribunal',
-    description: 'Spawn a judge panel that decides one gated proposal by each seat casting a real `docket vote cast`. This script never casts, approves, or tallies — the engine\'s vote machinery tallies. PROBE COST PER PANEL: one read-only haiku probe of the vote record after the seats return (two when the first returns nothing), plus one more after any re-seat; each answers a jq projection of a few hundred bytes through a schema. A conversational proposal has no step, so `docket gate status` cannot address it and the probe reads `docket vote show`. Invoke by scriptPath ONLY, with args {voteId, voters, context, gateKind, cwd} — `voters` is an array of {seat, model, effort, variant} objects, each seat\'s routing already resolved by the caller from the run\'s pinned policy.toml, since the engine renders routing only onto step rows and a conversational gate has none. The script reads no policy and cannot read files.',
-    whenToUse: 'Invoked on a CONVERSATIONAL gate the docket-run skill routes to a panel (ack-reap, activation, budget, fix-batch), always as Workflow({scriptPath}) — never by name. Engine `type = "vote"` step rows ride the wave since the staged closure: wave.js seats their panels itself from the row\'s `voter_assignments`, with the same seat contract as this script. The CALLER creates the proposal, passes its id, and passes every voter WITH its {model, effort, variant}; tribunal.js only fills an open one.',
+    description: 'Spawn a judge panel that decides one gated proposal by each seat casting a real `docket vote cast`. This script never casts, approves, or tallies — the engine\'s vote machinery tallies. Runs in two modes: CONVERSATIONAL (no `step` arg) verifies its own tally and re-seats a missing cast once, at the cost of one read-only haiku probe of the vote record after the seats return (two when the first returns nothing), plus one more after any re-seat; MID-WAVE (`step` present) renders the same brief with the gate\'s row context and target ref, spawns the seats, and returns without probing — the caller (wave.js) already reads `docket gate status` for the tally and drives the one permitted re-seat itself. A conversational proposal has no step, so `docket gate status` cannot address it and the probe reads `docket vote show`. Invoke by scriptPath ONLY, with args {voteId, voters, context, gateKind, cwd, step?, target?, heldCluster?, isRespawn?} — `voters` is an array of {seat, model, effort, variant} objects, each seat\'s routing already resolved by the caller from the run\'s pinned policy.toml, since the engine renders routing only onto step rows and a conversational gate has none. The script reads no policy and cannot read files.',
+    whenToUse: 'Invoked on a CONVERSATIONAL gate the docket-run skill routes to a panel (ack-reap, activation, budget, fix-batch), always as Workflow({scriptPath}) — never by name. Engine `type = "vote"` step rows ride the wave since the staged closure: wave.js calls this same script MID-WAVE (passing `step`) to seat their panels, one level of workflow nesting deep, so the seat brief renders from one place. The CALLER creates the proposal, passes its id, and passes every voter WITH its {model, effort, variant}; tribunal.js only fills an open one.',
     phases: [
         { title: 'Judge', detail: 'one seat per voter, each casting docket vote cast' },
-        { title: 'Verify', detail: 'one haiku probe reads the vote record through a schema', model: 'haiku' },
+        { title: 'Verify', detail: 'one haiku probe reads the vote record through a schema (conversational mode only)', model: 'haiku' },
     ],
 }
 
@@ -12,13 +12,10 @@ export const meta = {
 // Seat routing is the caller's to supply, resolved from the same pinned
 // policy.toml the engine routes step rows from: a seat's standing variant with
 // the [security] pins applied. The engine renders that triple onto every vote
-// step row (wave.js reads it there), but a conversational gate has no row, so
-// it arrives on each `voters` entry instead. This script re-derives nothing —
-// tests/workflow-sync.test.sh diffs the SYNC-marked region below against
-// wave.js's copy (self-names normalized) and fails on drift.
+// step row, but a conversational gate has no row, so it arrives on each
+// `voters` entry instead either way. This script re-derives nothing.
 // ---------------------------------------------------------------------------
 
-// SYNC-BEGIN seat-contract
 // A seat missing any of the triple was never routed — the run pins no
 // policy.toml, or the roster was re-typed without its fields — and a panel
 // seated on a guessed tier is the drift a harness-side policy parser used
@@ -96,13 +93,24 @@ function lensOf(seat) {
     const key = parts[parts.length - 1]
     return { role: key, text: LENSES[key] || WHOLE_SYSTEM_LENS }
 }
-// SYNC-END seat-contract
 
 // ---------------------------------------------------------------------------
 // Briefs
 // ---------------------------------------------------------------------------
 
-function judgeBrief(r, voteId, gateKind, context, cwd, isRespawn) {
+// A sha reaches a brief only when it is SHAPED like the full object id the
+// engine records — 40 lowercase hex, never an abbreviation, never prose. One
+// wave relayed a fabricated 40-hex sha that existed in no repository and
+// briefed three judges with it; this check stands behind every render so no
+// caller can route around it.
+const TARGET_SHA_RE = /^[0-9a-f]{40}$/
+
+// TEST-BEGIN seat-brief — extracted and exercised by
+// tests/tribunal-seat-brief.test.sh and tests/wave-target-envelope.test.sh,
+// which stub `lensOf` (the only global this reaches for) and assert what a
+// mode and a target ref do and do not put in front of a judge. Keep every
+// other dependency inside the markers.
+function judgeBrief(r, voteId, gateKind, context, cwd, isRespawn, step, target, heldCluster) {
     const { role, text } = lensOf(r.seat)
     // Provenance claim recorded on the cast (--metadata): which seat/variant/
     // model/effort cast this vote, so routing and cost are auditable from the
@@ -124,7 +132,7 @@ yourself from scratch. Whatever stopped the first attempt, the cast is the one
 thing that must happen this time: if the command errors, do not abandon it
 silently — end with the verbatim error as instructed below.` : ''
 
-    const activationNote = gateKind === 'activation' ? `
+    const activationNote = (!step && gateKind === 'activation') ? `
 
 BIND-THEN-PIN (read before you cite a registry gap as provenance drift):
 \`docket run activate\` registers the source-config version at BIND TIME, as
@@ -137,41 +145,115 @@ source-config BYTES against the proposal (or, post-activation, compare the
 registered version's hash to the run's pins) — never treat registry absence
 alone as proof of drift.` : ''
 
-    // The TMPDIR pin and BOUND YOUR INVESTIGATION paragraphs below are
-    // hand-mirrored with wave.js's seatBrief — outside SYNC coverage, so the
-    // sync test cannot catch drift. Update both files together, especially
-    // the measured fleet stats.
-    return `You are ONE SEAT of a tribunal deciding a gated proposal in a Docket run.
-You decide alone. You cannot see the other seats, you do not coordinate with
-them, and your vote is recorded on its own merits — the engine tallies the
-panel, not you.
+    // MID-WAVE ONLY: the round's target ref. Seats are NOT seated on the
+    // checkout the round was written in — writers work in private worktrees
+    // — so without this a judge reads its own lagging HEAD, finds the change
+    // absent, and rejects on evidence grounds, which no fix loop can answer.
+    const rawTargetSha = (target && target.sha) || ''
+    const targetSha = TARGET_SHA_RE.test(rawTargetSha) ? rawTargetSha : ''
+    const targetWorktree = (target && target.worktree) || ''
+    const targetLines = []
+    if (targetSha) {
+        targetLines.push(`TARGET SHA:     ${targetSha} — the commit the diff under this gate stood at`)
+    }
+    if (targetWorktree) {
+        targetLines.push(`TARGET WORKTREE:${targetWorktree} — the checkout that recorded it, while it is still on disk`)
+    }
+    const targetReads = [
+        targetSha ? `  git cat-file -t ${targetSha}   — proves the object is here at all` : '',
+        targetSha ? `  git show --stat ${targetSha}   then \`git show ${targetSha}\` for the body` : '',
+        targetSha ? `  git diff ${targetSha}^ ${targetSha} -- <path>` : '',
+        targetWorktree ? `  git -C ${targetWorktree} log --oneline -5` : '',
+    ].filter(Boolean).join('\n')
+    const targetNote = !step ? '' : (targetSha || targetWorktree) ? `
+${targetLines.join('\n')}
 
-YOUR SEAT:      ${r.seat}
-YOUR LENS:      ${text}
-THE GATE:       ${gateKind}
-THE PROPOSAL:   ${voteId}
-WORKING DIR:    ${cwd}${respawnNote}${activationNote}
+THAT IS THE STATE UNDER VOTE, AND YOUR OWN CHECKOUT MAY NOT CONTAIN IT — a
+fact about where you were seated, not about the change. Write-class seats work
+in PRIVATE worktrees and hand their work back as a commit on their own ref, so
+a panel seated mid-wave routinely sits at a HEAD that predates the round it is
+judging. Every worktree of this repository SHARES ONE OBJECT STORE, so the
+commit is readable from where you are even when it is not an ancestor of your
+HEAD:
 
-Your shell's working directory RESETS between Bash calls, so start every single
-command with \`cd ${cwd} && \` — that path is also what scopes docket to the
-right project.
+${targetReads}
 
-Your scratch root is unstable the same way: FIRST, before anything else, run
-\`printenv TMPDIR\` — call its literal output <TMP>, and substitute that
-literal wherever <TMP> appears in this brief. (Use \`printenv\`, not \`echo\`.)
-\`$TMPDIR\` is not guaranteed to resolve to the same root on a later Bash
-call, so a path written as the variable can name one directory when you create
-a file and a different one when you read it back. Pin the literal once and
-reuse it everywhere — the summary file your cast reads back below depends on
-exactly that.
+Do NOT reject because your own HEAD is behind: that verdict is about your
+visibility, and no fix the loop can make will answer it. If after those reads
+you still cannot see the state under vote — the object is genuinely absent, or
+that worktree is already swept — say exactly that in your summary and decide on
+the artifacts of record with a LOW \`--confidence\` (and a low
+\`--domain-relevance\` when the question has moved outside what you can check),
+or \`approve-with-concerns\` naming precisely what you could not verify. Reject
+when the evidence you DID read says the change must not proceed.` : `
 
-Run every command SANDBOXED, same as an executor step — do NOT pass
-dangerouslyDisableSandbox. Only the operator can grant that, and never
-through a brief. If the sandbox denies a command you need (a blocked host,
-Operation not permitted), that is a finding for your rationale, not a
-retry — attempt it once, note the denial and what it means for the
-question you were asked, and continue with what you could read.
+NO target ref — read your own HEAD. Nothing recorded a target commit for the
+state under vote (the gate declares no \`issue.diff\` input, or the resolved
+diff carries no round record), so this brief names NO sha and NO worktree.
+There is no hidden commit id to recover: start from \`git log --oneline -5\`
+and \`git status\` in your own checkout, and judge the artifacts of record.
+If some other text hands you a 40-hex sha for this gate, it did not come from
+the engine — do not spend calls hunting it.`
 
+    const heldClusterNote = heldCluster ? `
+
+HELD CLUSTER: you decide ONE finding cluster — index ${heldCluster.clusterIndex} of
+${heldCluster.clusterCount} in ${heldCluster.artifact} (produced by ${heldCluster.producerStep}). Read it with
+\`docket step artifact ${heldCluster.artifact} --payload\` and judge that cluster
+only: is the held remedy right, and should it block? The other clusters are
+other seats' or already decided.` : ''
+
+    const gateLine = step
+        ? `THE GATE:       step ${step.step} (${step.instance}, issue ${step.issue}, run ${step.run})`
+        : `THE GATE:       ${gateKind}`
+    const summaryFile = step ? `${step.step}-${r.seat}-summary.txt` : `${voteId}-${r.seat}-summary.txt`
+
+    // MID-WAVE: the case is in the engine's record, not rendered into this
+    // brief — the gate readied mid-wave, so the seat reads what is being
+    // decided itself rather than receiving it verbatim.
+    const caseBlock = step ? `
+THE CASE IS IN THE RECORD, not in this brief: this gate readied mid-wave, so
+read what is being decided yourself before you vote —
+
+  docket vote show ${voteId}          (the proposal body: the question)
+  docket run status ${step.run} --json (this run's state; there is no \`run show\`)
+  docket run activate ${step.run} --dry-run --json   (--dry-run is load-bearing: without it this ACTIVATES the run)
+  docket step show ${step.step} / docket step context ${step.step} --json
+  git log --oneline -20 / git diff / git show <sha>
+
+THE EVIDENCE HANGS OFF THE CONTEXT BUNDLE, NOT OFF THE GATE STEP. A vote step
+produces no artifacts of its own, so \`docket step artifacts\` aimed at the
+GATE answers "produced no artifacts" and costs you the turn. The bundle
+carries the gate's INPUTS at \`.data.context.inputs[]\` — one entry per
+upstream artifact, each naming \`.artifact\` (the ARTIFACT-N id), \`.kind\`
+(threat-model, change-summary, issue.diff, findings), \`.producer_step\`, and
+its \`.body\` and \`.payload\` in full. Read there, and spend
+\`docket step artifact ARTIFACT-N --payload\` only on an id the bundle named.
+
+THEIR FLAGS, since guessing one costs you a turn and teaches you nothing:
+\`step context\` takes \`--meta\` and NOTHING else; \`step artifact\` takes
+\`--payload\`; \`events list\` takes \`--tail N\` (the verb is \`events list\`,
+not \`event list\`); \`--json\` is global and works on any of them. None of
+these READ verbs takes \`--verbose\`, \`-v\`, or \`--version\` — \`-v\` belongs
+to the CAST command below, where it means the verdict, and reaching for it
+while reading is the one confusion to avoid. If you want a flag that is not
+listed here, run that verb's \`--help\` and read it; never guess one.
+
+AND KNOW \`step artifact\`'S TWO JSON SHAPES BEFORE YOU PARSE ONE. With
+\`--payload --json\`, the envelope's \`.data\` IS THE PAYLOAD ITSELF — an ARRAY
+for a findings or cluster payload, so \`.data[0]\` is the first entry and
+\`.data.get(...)\` raises. Without \`--payload\`, \`--json\` returns the artifact
+RECORD and the payload hangs off \`.data.payload\` as a JSON STRING you must
+parse a second time. Two seats on one wave lost their whole turn to
+\`AttributeError: 'list' object has no attribute 'get'\` on \`d['data'].get('payload')\`
+against the first shape. Pick one and match it: \`--payload --json | jq '.data'\`
+for the payload, or plain \`--json | jq -r '.data.payload' | jq .\` for the record.
+
+plus reading any file those name. The gate sits downstream of the work it
+judges — its issue's earlier steps recorded THIS wave, and their artifacts and
+payloads are the evidence. Read what the claims rest on. Do not write, edit,
+commit, or run anything that mutates state — the ONE state change you are
+authorized to make is your own cast, below.` : `
 --- WHAT IS BEING DECIDED (verbatim) ---
 ${context}
 --- END OF WHAT IS BEING DECIDED ---
@@ -197,14 +279,89 @@ budget against the expected cost, the scope warnings, and the corpus/trust
 state — the merits of the work itself get their own gates once artifacts
 exist, and pre-reviewing the codebase here duplicates them. A budget gate
 decides a number against evidence of spend; an ack-reap gate decides whether a
-holder is gone. Depth belongs to gates whose SUBJECT is the work.
+holder is gone. Depth belongs to gates whose SUBJECT is the work.`
+
+    const settledGround = step ? `
+
+SETTLED GROUND (operator-ratified): a finding whose \`prior_disposition\`
+records a ruling — accepted, corrected, rejected, or deferred with its
+follow-up issue named — is decided ground: an operator or an earlier panel
+already spent that decision, and the fix loop deliberately does not re-route
+it. Re-read the ruling before weighing the finding, and re-litigate it only on
+evidence the ruling did not have. Do not reject a gate over settled findings
+alone; open findings are the ones your verdict weighs — but weighing is not
+counting. Severity already routes: \`blocker\` is the only value that marks a
+change that must not proceed, and an open finding below blocker (a Concern,
+\`high\`), even with no ruling yet, is not by itself reject grounds — its
+venue is \`approve-with-concerns\` and the record, where the operator resolves
+it; the severity ladder rules that mechanical rework is the Blocker's venue
+alone. Reject over sub-blocker findings only when your own evidence convinces
+you the change must not proceed as presented — a judgment about the change,
+never an inventory of open highs.` : ''
+
+    const boundInvestigationTail = step
+        ? ` You
+are seated MID-WAVE, so the cost is paid in wall clock every other row in
+this stage waits out. Read what the claims rest on, then decide:`
+        : `
+Read what the claims rest on, then decide:`
+
+    const cdPrefix = step ? '' : `cd ${cwd} && `
+    const setupBlock = step ? `
+FIRST, before anything else: \`printenv TMPDIR\` — your literal scratch root.
+Call it <TMP>; substitute its literal value wherever <TMP> appears in this
+brief. (Use \`printenv\`, not \`echo\`.)
+
+PIN IT ONCE AND REUSE THE LITERAL. \`$TMPDIR\` is not guaranteed to resolve to
+the same root in every call, so a path written as the variable can name one
+directory when you create it and a different one when you read it back — the
+summary file your cast reads back below depends on exactly
+that.${heldClusterNote}
+
+Run \`docket\` BARE from your working directory — the store resolves from
+anywhere inside the repository; nothing to probe for, nothing to prepend.
+` : `
+Your shell's working directory RESETS between Bash calls, so start every single
+command with \`cd ${cwd} && \` — that path is also what scopes docket to the
+right project.
+
+Your scratch root is unstable the same way: FIRST, before anything else, run
+\`printenv TMPDIR\` — call its literal output <TMP>, and substitute that
+literal wherever <TMP> appears in this brief. (Use \`printenv\`, not \`echo\`.)
+\`$TMPDIR\` is not guaranteed to resolve to the same root on a later Bash
+call, so a path written as the variable can name one directory when you create
+a file and a different one when you read it back. Pin the literal once and
+reuse it everywhere — the summary file your cast reads back below depends on
+exactly that.
+
+Run every command SANDBOXED, same as an executor step — do NOT pass
+dangerouslyDisableSandbox. Only the operator can grant that, and never
+through a brief. If the sandbox denies a command you need (a blocked host,
+Operation not permitted), that is a finding for your rationale, not a
+retry — attempt it once, note the denial and what it means for the
+question you were asked, and continue with what you could read.
+`
+    const openingLine = step
+        ? 'You are ONE SEAT of a tribunal deciding a gate step MID-WAVE in a Docket run.'
+        : 'You are ONE SEAT of a tribunal deciding a gated proposal in a Docket run.'
+    const workingDirLine = step ? '' : `WORKING DIR:    ${cwd}`
+
+    return `${openingLine}
+You decide alone. You cannot see the other seats, you do not coordinate with
+them, and your vote is recorded on its own merits — the engine tallies the
+panel, not you.
+
+YOUR SEAT:      ${r.seat}
+YOUR LENS:      ${text}
+${gateLine}
+THE PROPOSAL:   ${voteId}${step ? targetNote : ''}${workingDirLine ? `\n${workingDirLine}` : ''}${respawnNote}${activationNote}
+${setupBlock}${caseBlock}${!step ? targetNote : ''}
 
 BOUND YOUR INVESTIGATION — then vote. Measured across seven days:
 189 tribunal seats spent 5,309,378 output tokens, 68.7% of it on private
 deliberation — the highest ratio of any role in this fleet — over 36 votes
 and 12 decided proposals in which ZERO verdicts were overturned. That is not
-a panel that needed to think harder; it was already right and kept going.
-Read what the claims rest on, then decide:
+a panel that needed to think harder; it was already right and kept going.${boundInvestigationTail}
 
   - A handful of targeted reads settles a typical gate. If your next read is
     not answering a question you can NAME, you are past the point of value.
@@ -219,7 +376,7 @@ Read what the claims rest on, then decide:
 EVIDENCE-QUALITY RULE: A finding backed by reproduced evidence — a mutation
 test, a demonstrated failure, a verified repro — outranks any aggregate that
 demotes it. Never discount reproduced evidence because other reviewers scored
-the issue lower.
+the issue lower.${settledGround}
 
 ESCALATION (operator-ratified): a reject does not block work forever — the
 gate routes onward per its declared routing, to the human operator or into a
@@ -229,10 +386,9 @@ reject; do not approve to keep things moving.
 CAST YOUR VOTE — exactly once, as your last action, in TWO Bash calls. First
 write your one-paragraph summary to a scratch file with a QUOTED heredoc —
 quoting the delimiter means the shell expands NOTHING in the body: backticks,
-$( ), and $VAR all stay literal text. The filename carries your proposal and
-seat, so no other seat's file can collide with yours:
+$( ), and $VAR all stay literal text${step ? '' : '. The filename carries your proposal and\nseat, so no other seat\'s file can collide with yours'}:
 
-  cd ${cwd} && cat > <TMP>/${voteId}-${r.seat}-summary.txt <<'EOF'
+  ${cdPrefix}cat > <TMP>/${summaryFile} <<'EOF'
   <your one-paragraph reasoning, on ONE line>
   EOF
 
@@ -240,7 +396,7 @@ Then cast, reading the file back — safe because the substitution wraps a fixed
 \`cat\` of your own file, so its content passes into the flag verbatim instead
 of being re-parsed as shell syntax:
 
-  cd ${cwd} && docket vote cast ${voteId} --voter ${r.seat} --role ${role} -v <approve|approve-with-concerns|reject> --confidence <0.0-1.0> --domain-relevance <0.0-1.0> --metadata '${metadataClaim}' --summary "$(cat <TMP>/${voteId}-${r.seat}-summary.txt)"
+  ${cdPrefix}docket vote cast ${voteId} --voter ${r.seat} --role ${role} -v <approve|approve-with-concerns|reject> --confidence <0.0-1.0> --domain-relevance <0.0-1.0> --metadata '${metadataClaim}' --summary "$(cat <TMP>/${summaryFile})"
 
   --verdict/-v      approve                = nothing you found should stop this
                     approve-with-concerns  = proceed, with the risks you name recorded
@@ -264,13 +420,17 @@ of being re-parsed as shell syntax:
                     a summary that could have been written without
                     investigating will read like one.
 
-YOUR FINAL TEXT IS NOT DELIVERED ANYWHERE. THE CAST IS YOUR DELIVERABLE. No
+YOUR FINAL TEXT IS NOT DELIVERED ANYWHERE. THE CAST IS YOUR DELIVERABLE.${step ? ` If the
+cast command errors, read the error, fix what it names, and retry ONCE. If it
+still fails, end your reply with the verbatim error text and nothing else —
+that is the only case where your final text matters.` : ` No
 summary you write in chat reaches the panel, the conductor, or the operator;
 only the recorded vote does. If the cast command errors, read the error, fix
 what it names, and retry ONCE. If it still fails, end your reply with the
 verbatim error text and nothing else — that is the only case where your final
-text matters.`
+text matters.`}`
 }
+// TEST-END seat-brief
 
 // The probe answers a jq projection through a schema, never the raw record
 // as text: the full envelope is ~10KB on a 3-seat proposal, two haiku probes
@@ -340,12 +500,29 @@ if (!input || typeof input !== 'object') throw new Error(
     `{voteId, voters, context, gateKind, cwd}. Refusing to seat the panel.`
 )
 
-for (const k of ['voteId', 'context', 'gateKind', 'cwd']) {
+// MID-WAVE mode is signaled by a `step` object — the caller is wave.js,
+// seating a panel on an engine-scheduled vote row rather than a conversational
+// gate it opened itself. Mid-wave carries no rendered `context`: the brief
+// tells the seat to read the case from the engine's own record instead.
+const isMidWave = input.step !== undefined && input.step !== null
+const requiredStrings = isMidWave ? ['voteId', 'gateKind', 'cwd'] : ['voteId', 'context', 'gateKind', 'cwd']
+for (const k of requiredStrings) {
     if (typeof input[k] !== 'string' || input[k] === '') {
         throw new Error(
             `tribunal.js: args.${k} is required and must be a non-empty string ` +
             `(got ${JSON.stringify(input[k])}). Refusing to seat the panel.`
         )
+    }
+}
+if (isMidWave) {
+    const step = input.step
+    for (const k of ['step', 'instance', 'issue', 'run']) {
+        if (typeof step[k] !== 'string' || step[k] === '') {
+            throw new Error(
+                `tribunal.js: args.step.${k} is required and must be a non-empty string ` +
+                `(got ${JSON.stringify(step[k])}). Refusing to seat the panel.`
+            )
+        }
     }
 }
 if (!Array.isArray(input.voters) || input.voters.length === 0) {
@@ -356,13 +533,15 @@ if (!Array.isArray(input.voters) || input.voters.length === 0) {
     )
 }
 
-const { voteId, voters, context, gateKind, cwd } = input
+const { voteId, voters, context, gateKind, cwd, step, target, heldCluster, isRespawn } = input
 
-// The proposal must already exist and be open: the CALLER creates it. This
-// script fills a proposal, and never creates, approves, tallies, or commits one.
+// The proposal must already exist and be open: the CALLER creates it (or, mid-
+// wave, the engine's record-driving does). This script fills a proposal, and
+// never creates, approves, tallies, or commits one.
 const seats = voters.map((v) => resolveSeat(v && v.seat, v))
 
-log(`tribunal: ${voteId} — ${gateKind} gate, ${seats.length} seat(s), cwd ${cwd}`)
+log(`tribunal: ${voteId} — ${gateKind} gate, ${seats.length} seat(s), cwd ${cwd}` +
+    (isMidWave ? ` (mid-wave, step ${step.step})` : ''))
 for (const s of seats) {
     log(`  ${s.seat}: role ${lensOf(s.seat).role} @ ${s.model}/${s.effort} (variant ${s.variant})`)
 }
@@ -371,8 +550,8 @@ for (const s of seats) {
 // Judge / Verify
 // ---------------------------------------------------------------------------
 
-function spawnJudge(r, isRespawn) {
-    return agent(judgeBrief(r, voteId, gateKind, context, cwd, isRespawn), {
+function spawnJudge(r, respawn) {
+    return agent(judgeBrief(r, voteId, gateKind, context, cwd, respawn, step, target, heldCluster), {
         label: `seat:${r.seat}`,
         phase: 'Judge',
         agentType: 'executor-read',
@@ -387,7 +566,7 @@ function spawnJudge(r, isRespawn) {
         return text
     }).catch((err) => {
         log(`${r.seat}: spawn error: ${err}`)
-        return null
+        return { seat: r.seat, error: String(err) }
     })
 }
 
@@ -419,40 +598,55 @@ function missingSeats(record) {
     return seats.filter((s) => !cast.includes(s.seat))
 }
 
-await parallel(seats.map((r) => () => spawnJudge(r, false)))
+const spawned = await parallel(seats.map((r) => () => spawnJudge(r, Boolean(isRespawn))))
 
-// An EMPTY probe result says nothing about the casts — treating it as "every
-// seat missing" once re-spawned a whole panel that had already voted. The
-// probe is retried once before any seat is; only a real record is read.
-let outcome = await verify()
-if (outcome === null) {
-    log(`tribunal: the verify probe returned nothing — retrying the probe ONCE before reading any seat as missing`)
-    outcome = await verify()
-}
-let missing = outcome === null ? [] : missingSeats(outcome)
-let respawns = 0
-
-if (missing.length > 0) {
-    respawns = missing.length
-    log(`tribunal: ${missing.length} seat(s) returned without a recorded cast ` +
-        `(${missing.map((s) => s.seat).join(', ')}) — re-spawning each ONCE`)
-    await parallel(missing.map((r) => () => spawnJudge(r, true)))
-    outcome = await verify()
-    const stillMissing = outcome === null ? [] : missingSeats(outcome)
-    if (stillMissing.length > 0) {
-        log(`tribunal: STILL NO CAST from ${stillMissing.map((s) => s.seat).join(', ')} ` +
-            `after the one permitted re-spawn. The panel is short a vote and the tally ` +
-            `cannot resolve as designed. The caller decides what happens next — its ` +
-            `contract allows ONE re-invocation for the missing seats, and after that ` +
-            `the gate escalates to the operator. The record below is what the engine has.`)
+let result
+// MID-WAVE: the caller (wave.js's runGate) already reads `docket gate status`
+// for the tally before and after this call, and drives the one permitted
+// re-seat itself by invoking this script again with `isRespawn` and only the
+// missing seats. This script's own verify/respawn loop below is the
+// CONVERSATIONAL contract, where there is no richer gate-status envelope to
+// read and this script owns the whole decision cycle.
+if (isMidWave) {
+    const absorbed = spawned.filter((s) => s && typeof s === 'object' && typeof s.error === 'string')
+    result = { voteId, seatsSpawned: seats.length, absorbed }
+} else {
+    // An EMPTY probe result says nothing about the casts — treating it as
+    // "every seat missing" once re-spawned a whole panel that had already
+    // voted. The probe is retried once before any seat is; only a real
+    // record is read.
+    let outcome = await verify()
+    if (outcome === null) {
+        log(`tribunal: the verify probe returned nothing — retrying the probe ONCE before reading any seat as missing`)
+        outcome = await verify()
     }
+    let missing = outcome === null ? [] : missingSeats(outcome)
+    let respawns = 0
+
+    if (missing.length > 0) {
+        respawns = missing.length
+        log(`tribunal: ${missing.length} seat(s) returned without a recorded cast ` +
+            `(${missing.map((s) => s.seat).join(', ')}) — re-spawning each ONCE`)
+        await parallel(missing.map((r) => () => spawnJudge(r, true)))
+        outcome = await verify()
+        const stillMissing = outcome === null ? [] : missingSeats(outcome)
+        if (stillMissing.length > 0) {
+            log(`tribunal: STILL NO CAST from ${stillMissing.map((s) => s.seat).join(', ')} ` +
+                `after the one permitted re-spawn. The panel is short a vote and the tally ` +
+                `cannot resolve as designed. The caller decides what happens next — its ` +
+                `contract allows ONE re-invocation for the missing seats, and after that ` +
+                `the gate escalates to the operator. The record below is what the engine has.`)
+        }
+    }
+
+    if (outcome === null) {
+        log(`tribunal: the verify probe returned nothing twice — the outcome is null, ` +
+            `which says nothing about whether the casts landed, and no seat was re-spawned ` +
+            `on that silence. Read the record directly with \`docket vote show ${voteId}\` ` +
+            `before acting on this return.`)
+    }
+
+    result = { voteId, outcome, seatsSpawned: seats.length, respawns }
 }
 
-if (outcome === null) {
-    log(`tribunal: the verify probe returned nothing twice — the outcome is null, ` +
-        `which says nothing about whether the casts landed, and no seat was re-spawned ` +
-        `on that silence. Read the record directly with \`docket vote show ${voteId}\` ` +
-        `before acting on this return.`)
-}
-
-return { voteId, outcome, seatsSpawned: seats.length, respawns }
+return result

@@ -38,11 +38,22 @@
 # gateTarget, heldCluster, gateSuccess, runGate) in TEST-BEGIN/TEST-END
 # `gate-vote` markers. This suite extracts that region, prepends the
 # classifier-retry region (reasonText and the block regexes the probe retry
-# reads) and stub `agent`/`parallel`/`log`/`seatBrief`/`resolveSeat` globals,
-# scripts the agent per spawn label, and asserts on the result runGate
-# returns. park-signals and chain-dead are extracted too so the suite can
-# prove the success result does not trip either predicate, and that the
-# blocked path still hands the ladder the engine's blocked_reason.
+# reads) and stub `agent`/`parallel`/`log`/`workflow`/`voterToSeat` globals,
+# scripts the agent per spawn label and the workflow stub per voter list,
+# and asserts on the result runGate returns. park-signals and chain-dead are
+# extracted too so the suite can prove the success result does not trip
+# either predicate, and that the blocked path still hands the ladder the
+# engine's blocked_reason.
+#
+# THE PANEL ITSELF IS TRIBUNAL.JS'S: runGate calls `workflow(args.tribunal,
+# {...})` one level deep rather than rendering and spawning a seat brief
+# in-process (DOT-1300 folded the seat contract into tribunal.js, reached
+# from wave.js exactly this way). This suite stubs `workflow` to return
+# {absorbed: [...]} shaped like tribunal.js's mid-wave reply, so it pins
+# what wave.js does with that reply — the probe/seat/retry accounting, the
+# log lines, the folded absorbed-error notes — without re-deriving
+# tribunal.js's own seat-spawn logic, which tests/tribunal-seat-brief.test.sh
+# and tests/wave-target-envelope.test.sh pin directly against tribunal.js.
 #
 # WHAT THIS SUITE CANNOT SEE: the harness's own per-agent failure accounting
 # in the completion notification (agents_error and the "[label] failed: ..."
@@ -95,8 +106,10 @@ grep -q 'gateSuccess' "${WORK}/gate.js" || fatal "gate-vote region does not cont
 const LOG = []
 const log = (m) => LOG.push(String(m))
 const parallel = (fns) => Promise.all(fns.map((f) => f()))
-const resolveSeat = (seat) => ({ seat, variant: 'std', model: 'stub-model', effort: 'low' })
-const seatBrief = () => 'seat brief (stub)'
+const voterToSeat = (seat) => ({ seat, variant: 'std', model: 'stub-model', effort: 'low' })
+// The real wave.js reads `args.tribunal` (the installed tribunal.js path) and
+// `args.cwd` off its own top-level `args` global — the workflow's own input.
+const args = { tribunal: '/stub/tribunal.js', cwd: '/repo' }
 // The scripted agent: SCRIPT maps a spawn label to one response or an array
 // of responses consumed in order — {text: ...} resolves with that value (a
 // string for a text probe, an object for a schema probe), {reject: ...}
@@ -113,6 +126,32 @@ const agent = (brief, opts) => {
     if (item === undefined) return Promise.resolve(opts.schema ? null : '')
     if (item.reject !== undefined) return Promise.reject(new Error(item.reject))
     return Promise.resolve(item.text)
+}
+// The panel is one workflow-nesting level into tribunal.js. WORKFLOW_SCRIPT
+// maps each seat name to one outcome or an array of outcomes consumed in call
+// order (a seat can die on its first panel call and cast clean on its
+// retry) — {error: ...} models an agent-level death the same shape
+// spawnJudge's own catch would have produced; an unlisted or exhausted entry
+// "cast" cleanly (absorbed nothing). {throwErr: ...} at the top level of
+// WORKFLOW_SCRIPT makes the whole workflow() call reject, modeling an
+// unreadable tribunal.js path or one of its own arg refusals. Every call is
+// recorded in WORKFLOW_CALLS as {voters, isRespawn} so the suite can assert
+// on what wave.js asked tribunal.js to seat.
+let WORKFLOW_SCRIPT = {}
+let WORKFLOW_CALLS = []
+const workflow = (path, a) => {
+    WORKFLOW_CALLS.push({ voters: a.voters.map((v) => v.seat), isRespawn: Boolean(a.isRespawn) })
+    for (const v of a.voters) {
+        CALLS.push(`${a.step ? a.step.step + ' · ' : ''}seat:${v.seat}${a.isRespawn ? ' (retry)' : ''}`)
+    }
+    if (WORKFLOW_SCRIPT.throwErr !== undefined) return Promise.reject(new Error(WORKFLOW_SCRIPT.throwErr))
+    const absorbed = []
+    for (const v of a.voters) {
+        const entry = WORKFLOW_SCRIPT[v.seat]
+        const item = Array.isArray(entry) ? entry.shift() : entry
+        if (item && item.error) absorbed.push({ seat: v.seat, error: item.error })
+    }
+    return Promise.resolve({ voteId: a.voteId, seatsSpawned: a.voters.length, absorbed })
 }
 JS
     cat "${WORK}/classifier.js"
@@ -156,9 +195,11 @@ const SHOW_BLOCKED = '{"ok":true,"data":{"id":"STEP-2493","status":"pending",' +
     '"blocked_reason":"an `after` predecessor is not done"}}'
 const API_ERR = 'API Error: Connection lost mid-response'
 
-const run = async (script, row) => {
+const run = async (script, wfScript, row) => {
     SCRIPT = script
+    WORKFLOW_SCRIPT = wfScript || {}
     CALLS = []
+    WORKFLOW_CALLS = []
     SCHEMAS = {}
     LOG.length = 0
     return runGate(row || ROW, 'stage 1 (1 row)')
@@ -172,11 +213,9 @@ const probes = () => CALLS.filter((c) => !c.includes('seat:')).length
 // the absorbed errors as notes — and nothing failure-shaped.
 const A = await run({
     'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
-    'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-2493 · seat:judge-security':     { reject: API_ERR },
-    'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
     'STEP-2493 · gate:outcome': [{ reject: API_ERR }, { text: OPEN_ONE_MISSING }, { text: APPROVED }],
-    'STEP-2493 · seat:judge-security (retry)': { text: 'cast recorded' },
+}, {
+    'judge-security': [{ error: API_ERR }, {}],
 })
 ok(A.status === 'gate-passed', 'A: tally succeeded -> status is gate-passed')
 // 3 judges + 4 read-only probes (status, outcome x2 — one died — and the
@@ -390,7 +429,7 @@ ok(chainDead(G) === true, 'G: and the lane still stops this wave')
 // policy.toml, or the row was re-typed — is escalated, never guessed.
 const H = await run({
     'STEP-2493 · gate:status': { text: OPEN_NOBODY },
-}, { ...ROW, voter_assignments: undefined })
+}, {}, { ...ROW, voter_assignments: undefined })
 ok(H.status === 'gate-blocked' && CALLS.length === 1 &&
    LOG.some((l) => l.includes('carries no voter_assignments')),
     'H: no voter_assignments -> gate-blocked after the one read, no panel')
@@ -403,11 +442,8 @@ const HELD = {
 const I = await run({
     'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
     'STEP-2493 · gate:held-cluster': { text: { cluster_index: 0, cluster_count: 10, artifact: 'ARTIFACT-1251', producer_step: 'reconcile@2' } },
-    'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-2493 · seat:judge-security':     { text: 'cast recorded' },
-    'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
     'STEP-2493 · gate:outcome': { text: APPROVED },
-}, HELD)
+}, {}, HELD)
 ok(I.status === 'gate-passed' && calls('STEP-2493 · gate:held-cluster') === 1 &&
    I.spawn_accounting === '3 seats, 3 probes, 0 retries',
     `I: a held-cluster gate spends exactly one extra read (got ${JSON.stringify(I.spawn_accounting)})`)
@@ -418,6 +454,19 @@ ok(SCHEMAS['STEP-2493 · gate:held-cluster'].properties.cluster_index.type === '
 ok(parseHeldCluster({ cluster_index: 0, cluster_count: 10, artifact: 'A', producer_step: 'p' }).clusterCount === 10 &&
    parseHeldCluster({ cluster_index: 0 }) === null && parseHeldCluster(null) === null && parseHeldCluster({}) === null,
     'parseHeldCluster accepts the four-field object and nothing less')
+
+// ---- J: the workflow() call into tribunal.js itself throws — an unreadable
+// scriptPath, a child syntax error, or tribunal.js refusing its own args.
+// That must not crash the wave: no seat can have cast, so the tally reads
+// UNKNOWN and the row parks for the conductor, the same as any other
+// silent-panel gate, and no other issue's lane is disturbed.
+const J = await run({
+    'STEP-2493 · gate:status': { text: OPEN_NOBODY },
+}, { throwErr: 'tribunal.js: args.cwd is required and must be a non-empty string (got ""). Refusing to seat the panel.' })
+ok(J.status === 'gate-parked',
+    `J: a workflow() throw never crashes the wave — the tally reads UNKNOWN and the row parks (got ${JSON.stringify(J)})`)
+ok(LOG.some((l) => l.includes('tribunal panel spawn error') && l.includes('Refusing to seat the panel')),
+    `J: the panel spawn error is logged verbatim (got ${JSON.stringify(LOG)})`)
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)

@@ -789,6 +789,22 @@ mod tests {
                 assert!(!rule.contains(verb), "{verb} must never be allow-listed");
             }
         }
+
+        // The `gh` rule names none of PUBLISHING_ASK_VERBS's three-word `gh
+        // pr` phrases as substrings (it lists `gh pr view/checks/list/diff`
+        // in slash-compressed form), so the loop above never executes for
+        // it. Assert on it unconditionally instead: deleting its exclusion
+        // clause must fail this test even though no verb string matches.
+        let gh_rules: Vec<&&str> = AUTO_MODE_ALLOW_RULES
+            .iter()
+            .filter(|r| r.starts_with("Read-only gh reads"))
+            .collect();
+        assert_eq!(gh_rules.len(), 1, "expected exactly one gh reads rule");
+        assert!(
+            gh_rules[0].contains("outside") || gh_rules[0].contains("ask"),
+            "the gh reads rule must exclude every other gh verb: {}",
+            gh_rules[0]
+        );
     }
 
     #[test]

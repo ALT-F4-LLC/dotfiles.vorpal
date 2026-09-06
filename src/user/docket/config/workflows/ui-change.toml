@@ -1,6 +1,10 @@
 [pipeline]
 name = "ui-change"
-version = 24  # 24: `blocked` joins unless_labels (DOT-1788): a hold label so
+version = 25  # 25: `doc-validate` joins the `implement` and `fix` gate lists
+              #   (DOT-1476): the widened doc-validate pathspec was declared
+              #   only on docs-only and spec-doc/spec-project, so this
+              #   track's doc edits were never checked by it.
+              # 24: `blocked` joins unless_labels (DOT-1788): a hold label so
               #   an issue not yet workable matches zero registered workflows
               #   until the label is removed.
               # 23: three input edits, no topology change. (1) `fix` adds
@@ -105,7 +109,7 @@ class = "write"
 emits = "change-summary"
 executor = "implement"
 expected_cost = 1.50
-gates = ["build", "tests", "self-hygiene", "secret-scan"]
+gates = ["build", "tests", "self-hygiene", "secret-scan", "doc-validate"]
 inputs = ["issue.body"]
 max_attempts = 2
 name = "implement"
@@ -161,7 +165,7 @@ class = "write"
 emits = "change-summary"
 executor = "fix"
 expected_cost = 1.00
-gates = ["build", "tests", "self-hygiene", "secret-scan"]
+gates = ["build", "tests", "self-hygiene", "secret-scan", "doc-validate"]
 inputs = ["reconcile.findings", "synthesize.findings", "implement.change-summary", "issue.latest.change-summary", "issue.latest.ac-report", "design-qa.findings"]
 loop = true
 name = "fix"

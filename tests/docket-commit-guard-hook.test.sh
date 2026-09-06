@@ -599,12 +599,49 @@ case_many_quoted_groups_on_one_line() {
         "the verb after 400 quoted groups is still caught"
 }
 
-# ---- Pre-pass drift: the two guard hooks must share one lexer --------------
+# ---- Missing shared pre-pass file: fail CLOSED, not open ------------------
 #
-# The quote-aware pre-pass is duplicated byte-for-byte in the commit guard and
-# the trust guard, with no sourcing mechanism available (each hook is invoked
-# standalone). A fix applied to one copy and not the other leaves two guards
-# with different notions of inert text, and nothing else in the tree notices.
+# The awk PROGRAM this hook's quote-group pass runs now lives in a sibling
+# file, docket-guard-prepass.awk, rather than inline (DOT-1499). A hook copy
+# with no sibling awk file beside it (a broken install) must DENY, not
+# silently allow every call: this hook's whole job is deciding whether a git
+# write is present, and with no lexer it cannot make that call. The deny
+# fires before the engine gate query, so no docket stub is needed on PATH.
+
+case_missing_prepass_file_denies() {
+    local scratch_dir scratch_hook err rc
+    scratch_dir=$(mktemp -d "${TMPDIR:-/tmp}/docket-commit-guard-prepass-missing.XXXXXX") || \
+        fatal "mktemp failed"
+    scratch_hook="${scratch_dir}/docket-commit-guard-hook.sh"
+    cp "$HOOK" "$scratch_hook" || fatal "could not copy hook to scratch dir"
+    # Deliberately no docket-guard-prepass.awk beside the copy.
+    PATH="$TOOLS_DIR" "$BASH_BIN" "$scratch_hook" >/dev/null 2>&1 \
+        <<<"$(build_input 'git commit -m x')"
+    rc=$?
+    if [ "$rc" -eq 2 ]; then
+        pass "hook copy with no sibling awk file denies (exit 2)"
+    else
+        fail "hook copy with no sibling awk file did not deny (exit ${rc})"
+    fi
+    err=$(PATH="$TOOLS_DIR" "$BASH_BIN" "$scratch_hook" 2>&1 >/dev/null \
+        <<<"$(build_input 'git commit -m x')")
+    case "$err" in
+        *"docket-guard-prepass.awk"*) pass "missing-file deny names the cause" ;;
+        *) fail "missing-file deny reason changed or missing: ${err}" ;;
+    esac
+    rm -rf "$scratch_dir"
+}
+
+# ---- Pre-pass drift: the two guard hooks must share one lexer file --------
+#
+# The quote-aware pre-pass used to be duplicated byte-for-byte in the commit
+# guard and the trust guard, with no sourcing mechanism available (each hook
+# is invoked standalone). DOT-1499 moved the awk PROGRAM into one file,
+# docket-guard-prepass.awk, that both hooks read with `awk -f`; a fix now
+# lands once. What could still drift is which file each hook points at: this
+# pins that both hooks resolve the SAME line (`awk -f "$PREPASS_AWK"` against
+# a path built from their own script directory) rather than a hand-copied
+# inline program reappearing in either one.
 #
 # Both sides are read from REPO_ROOT rather than from the hook under test: the
 # claim is about the pair that ships, and a GUARD_HOOK override points at a
@@ -613,19 +650,20 @@ case_many_quoted_groups_on_one_line() {
 # carried the same mutation -- true of the wrong pair, and the only check
 # standing between a fix applied to one hook and a half-closed bypass.
 
-PREPASS_RANGE="/^STRIPPED=/,/^' 2>\/dev\/null) || allow_default\$/p"
 SHIPPED_HOOKS="${REPO_ROOT}/src/user/claude_code/hooks"
+PREPASS_AWK_FILE="${SHIPPED_HOOKS}/docket-guard-prepass.awk"
+PREPASS_INVOCATION='awk -f "$PREPASS_AWK" 2>/dev/null'
 
 case_prepass_copies_identical() {
-    local trust commit
-    trust=$(sed -n "$PREPASS_RANGE" "${SHIPPED_HOOKS}/docket-trust-guard-hook.sh" 2>/dev/null)
-    commit=$(sed -n "$PREPASS_RANGE" "${SHIPPED_HOOKS}/docket-commit-guard-hook.sh" 2>/dev/null)
-    if [ -z "$trust" ] || [ -z "$commit" ]; then
-        fail "quote-aware pre-pass region not found in one of the shipped hooks"
-    elif [ "$trust" = "$commit" ]; then
-        pass "quote-aware pre-pass is byte-identical in the two shipped hooks"
+    local trust_line commit_line
+    trust_line=$(grep -F "$PREPASS_INVOCATION" "${SHIPPED_HOOKS}/docket-trust-guard-hook.sh" 2>/dev/null)
+    commit_line=$(grep -F "$PREPASS_INVOCATION" "${SHIPPED_HOOKS}/docket-commit-guard-hook.sh" 2>/dev/null)
+    if [ ! -r "$PREPASS_AWK_FILE" ]; then
+        fail "shared pre-pass file docket-guard-prepass.awk is missing"
+    elif [ -z "$trust_line" ] || [ -z "$commit_line" ]; then
+        fail "one of the shipped hooks no longer reads the shared pre-pass file with awk -f (an inline copy may have returned)"
     else
-        fail "quote-aware pre-pass has drifted between the two shipped hooks"
+        pass "both shipped hooks read the one shared pre-pass file"
     fi
 }
 
@@ -665,6 +703,7 @@ case_comment_regions_are_inert
 case_heredoc_position_edges
 case_leaf_cap_is_out_of_band
 case_many_quoted_groups_on_one_line
+case_missing_prepass_file_denies
 case_prepass_copies_identical
 case_input_edge_cases
 

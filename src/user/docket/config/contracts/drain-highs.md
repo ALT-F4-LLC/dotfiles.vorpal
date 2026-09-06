@@ -1,6 +1,6 @@
 ---
 node: drain-highs
-version: 5
+version: 6
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -96,6 +96,13 @@ this step does not repeat their review or independently verify the defects.
    The conductor promotes this line into file and scope metadata at close;
    this step does not supply `-f` or `--scope`. Keep `Severity:` in the leading
    header so the engine can assign the backlog priority from the open severity.
+
+   Apply `security-load-bearing` at this filing, not later at activation:
+   check the cluster against `policy.toml`'s `[security]` labeling test
+   (the six control classes it enumerates, and the rule that changing,
+   relocating, or deleting a control's implementation all qualify). State
+   the label decision and, when applied, which control class in the body.
+   This is the test's sole application site; do not re-derive it elsewhere.
 
    After a blank line, include the cluster's `open_severity`, its supplied
    identity, and every member's judge, severity, `file:line`, and evidence.

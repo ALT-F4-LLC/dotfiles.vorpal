@@ -184,6 +184,29 @@ ceiling = "opus-max"
 # `unless_labels` of every workflow that excludes its siblings, or it re-opens
 # the same trap.
 labels = ["security-change", "security-load-bearing", "security"]
+# security-load-bearing labeling test (DOT-1604): apply the label at filing
+# time to any issue that changes, relocates, or test-gates one of these
+# control classes. "Test-gates" means acceptance criteria whose deletion or
+# mutation a test would catch. Both changing a control's logic and moving or
+# deleting its existing implementation qualify — a botched relocation can
+# silently drop a chokepoint without changing any allow/deny outcome.
+#   (a) Authentication — identity verification (OIDC/JWKS, issuer validation,
+#       interceptor construction, credential validation)
+#   (b) Authorization — access-control decisions (namespace/principal
+#       binding, permission gates)
+#   (c) Credential handling — building, storing, writing, or transmitting
+#       secrets/tokens/credentials
+#   (d) Egress/trust-boundary configuration — what hosts/registries/
+#       endpoints code may reach or trust
+#   (e) Path/namespace confinement — preventing caller-controlled escape
+#       from an intended directory/namespace
+#   (f) Verification/detection of any of the above — per threat-model.md's
+#       definition of a control as including its verification, an
+#       audit/detection-logging gap on a control counts even though deleting
+#       it changes no allow/deny outcome
+# Apply this test once, at filing (drain-highs.md references it for its own
+# gap filings). Do not re-derive it at activation; RUN-92 spent five tribunal
+# rounds re-deriving this same criterion because it lived nowhere durable.
 never = ["fable"]
 nodes = ["judge-security", "threat-model", "tdd-author-security", "spec-author-security", "tribunal-security"]
 # D7 (code.claude.com/docs/en/model-config#automatic-model-fallback, 2026-09-02):

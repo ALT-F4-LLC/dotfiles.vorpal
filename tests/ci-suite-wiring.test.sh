@@ -46,15 +46,20 @@
 #     have every job read as key-less text, and every suite would report
 #     unwired. Under-reports (loud).
 #
-# TESTS_DIR and WORKFLOW_FILE override the inputs, so a mutation probe can
-# point the suite at deliberately-broken COPIES under $TMPDIR without touching
-# the checkout.
+# This file also checks a second wiring path: the justfile `tests` recipe
+# that a developer runs locally must reach every suite too, or a relaxed
+# guard is caught only in CI, on the pull request, rather than before it.
+#
+# TESTS_DIR, WORKFLOW_FILE and JUSTFILE override the inputs, so a mutation
+# probe can point the suite at deliberately-broken COPIES under $TMPDIR
+# without touching the checkout.
 
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 TESTS="${TESTS_DIR:-${SCRIPT_DIR}}"
 WORKFLOW="${WORKFLOW_FILE:-${SCRIPT_DIR}/../.github/workflows/vorpal.yaml}"
+JUSTFILE="${JUSTFILE:-${SCRIPT_DIR}/../justfile}"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/ci-suite-wiring.XXXXXX") || exit 2
 trap 'rm -rf "$WORK"' EXIT
@@ -187,6 +192,81 @@ wired_suites() { # <workflow-file>
 # disagreement. Returns 0 when the sets match and 1 when they differ; 2 means
 # an input made the comparison impossible, which a caller must never read as a
 # trustworthy disagreement.
+# Suite basenames the justfile's `tests` recipe would run, sorted and
+# deduplicated. The workflow-vs-directory comparison above says nothing about
+# the local `tests` recipe itself: deleting its loop over tests/*.test.sh
+# leaves CI and that comparison green, since CI never runs `just tests`. This
+# extracts the recipe body (from its header line to the next non-indented,
+# non-blank line, matching just's own recipe-body rule) and reads two shapes
+# out of it: a `for <var> in tests/*.test.sh` glob loop, which reaches every
+# suite whatever the tree currently holds, and any literal
+# `bash tests/<name>.test.sh` mention, for a recipe that lists suites by
+# name instead. A recipe with a glob loop is read as reaching every suite
+# under the given tests directory without naming them, since that is what
+# the shell would do.
+recipe_suites() { # <tests-dir> <justfile>
+    local tests="$1" body loop_var
+    body=$(awk '
+        /^tests:/ { in_recipe = 1; next }
+        in_recipe && /^[^[:space:]]/ { exit }
+        in_recipe { print }
+    ' "$2")
+
+    loop_var=$(printf '%s\n' "$body" |
+        sed -n 's/^[[:space:]]*for[[:space:]][[:space:]]*\([A-Za-z_][A-Za-z0-9_]*\)[[:space:]][[:space:]]*in[[:space:]][[:space:]]*tests\/\*\.test\.sh[[:space:]]*;.*/\1/p' |
+        head -n1)
+
+    if [ -n "$loop_var" ]; then
+        suite_names "$tests"
+        return
+    fi
+
+    printf '%s\n' "$body" |
+        sed -n 's|.*bash[[:space:]][[:space:]]*tests/\([A-Za-z0-9._-]*\.test\.sh\).*|\1|p' | sort -u
+}
+
+# Compare one tests directory against one justfile's `tests` recipe, printing
+# a FAIL line per suite the recipe cannot reach. This is one-directional,
+# unlike compare_wiring: a recipe naming a deleted suite is a dead reference,
+# not a gap in coverage, and is out of scope here.
+compare_recipe() { # <tests-dir> <justfile>
+    local tests="$1" justfile="$2" cmp status=0 suite
+
+    if [ ! -d "$tests" ]; then
+        echo "FAIL: no tests directory at ${tests}"
+        return 2
+    fi
+    if [ ! -f "$justfile" ]; then
+        echo "FAIL: no justfile at ${justfile}"
+        return 2
+    fi
+    if ! grep -q '^tests:' "$justfile"; then
+        echo "FAIL: no tests recipe in ${justfile}"
+        return 2
+    fi
+
+    cmp=$(mktemp -d "${WORK}/recipe.XXXXXX") || {
+        echo "FAIL: no scratch directory under ${WORK}"
+        return 2
+    }
+
+    suite_names "$tests" > "${cmp}/suites"
+    if [ ! -s "${cmp}/suites" ]; then
+        echo "FAIL: no *.test.sh suites found under ${tests}"
+        return 2
+    fi
+    recipe_suites "$tests" "$justfile" > "${cmp}/reached"
+
+    comm -23 "${cmp}/suites" "${cmp}/reached" > "${cmp}/unreached"
+
+    while read -r suite; do
+        echo "FAIL ${suite}: suite is not reachable from the tests recipe"
+        status=1
+    done < "${cmp}/unreached"
+
+    return "$status"
+}
+
 compare_wiring() { # <tests-dir> <workflow-file>
     local tests="$1" workflow="$2" cmp status=0 suite
 
@@ -231,6 +311,9 @@ fail=0
 
 # ---- The real tree ----------------------------------------------------
 if ! compare_wiring "$TESTS" "$WORKFLOW"; then
+    fail=1
+fi
+if ! compare_recipe "$TESTS" "$JUSTFILE"; then
     fail=1
 fi
 
@@ -489,6 +572,51 @@ jobs:
       - run: echo "to reproduce locally, run bash tests/beta.test.sh"
 YAML
 
+# A tests recipe that globs tests/*.test.sh reaches every suite in the tree
+# without naming any of them.
+cat > "${FIX}/justfile-loop" <<'JUST'
+tests:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cargo test --locked --offline
+    for suite in tests/*.test.sh; do
+        echo "==> $suite"
+        bash "$suite"
+    done
+
+build:
+    cargo build --locked --offline
+JUST
+
+# The mutant this issue exists to catch: the loop over tests/*.test.sh is
+# gone, so nothing in the recipe reaches any suite.
+cat > "${FIX}/justfile-no-loop" <<'JUST'
+tests:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cargo test --locked --offline
+
+build:
+    cargo build --locked --offline
+JUST
+
+# A recipe that lists suites by name instead of globbing: reaches only the
+# suites it names.
+cat > "${FIX}/justfile-named" <<'JUST'
+tests:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    bash tests/alpha.test.sh
+
+build:
+    cargo build --locked --offline
+JUST
+
+cat > "${FIX}/justfile-no-tests-recipe" <<'JUST'
+build:
+    cargo build --locked --offline
+JUST
+
 # Assert both halves of compare_wiring's answer: the status AND the exact FAIL
 # lines. Asserting the status alone would leave the two `comm` directions
 # interchangeable, so a suite naming every real failure as its own inverse
@@ -501,6 +629,28 @@ expect_wiring() { # <label> <status> <tests-dir> <workflow> [<expected line>...]
         want_out=$(printf '%s\n' "$@")
     fi
     out=$(compare_wiring "$tests" "$workflow")
+    got=$?
+    if [ "$got" = "$want_status" ] && [ "$out" = "$want_out" ]; then
+        echo "ok   self-check ${label}"
+        return 0
+    fi
+    echo "FAIL self-check ${label}: expected status ${want_status}, got ${got}"
+    echo "     expected output:"
+    printf '%s\n' "$want_out" | sed 's/^/       /'
+    echo "     actual output:"
+    printf '%s\n' "$out" | sed 's/^/       /'
+    return 1
+}
+
+# Same shape as expect_wiring, for compare_recipe.
+expect_recipe() { # <label> <status> <tests-dir> <justfile> [<expected line>...]
+    local label="$1" want_status="$2" tests="$3" justfile="$4"
+    shift 4
+    local out got want_out=''
+    if [ "$#" -gt 0 ]; then
+        want_out=$(printf '%s\n' "$@")
+    fi
+    out=$(compare_recipe "$tests" "$justfile")
     got=$?
     if [ "$got" = "$want_status" ] && [ "$out" = "$want_out" ]; then
         echo "ok   self-check ${label}"
@@ -559,6 +709,18 @@ expect_wiring "empty tests directory" 2 "${FIX}/empty" "${FIX}/matched.yaml" \
     "FAIL: no *.test.sh suites found under ${FIX}/empty" || fail=1
 expect_wiring "missing tests directory" 2 "${FIX}/absent" "${FIX}/matched.yaml" \
     "FAIL: no tests directory at ${FIX}/absent" || fail=1
+
+expect_recipe "recipe with a glob loop" 0 "${FIX}/tests" "${FIX}/justfile-loop" || fail=1
+expect_recipe "recipe with the loop deleted" 1 "${FIX}/tests" "${FIX}/justfile-no-loop" \
+    "FAIL alpha.test.sh: suite is not reachable from the tests recipe" \
+    "FAIL beta.test.sh: suite is not reachable from the tests recipe" || fail=1
+expect_recipe "recipe naming one suite" 1 "${FIX}/tests" "${FIX}/justfile-named" \
+    "FAIL beta.test.sh: suite is not reachable from the tests recipe" || fail=1
+expect_recipe "no tests recipe in the justfile" 2 "${FIX}/tests" \
+    "${FIX}/justfile-no-tests-recipe" \
+    "FAIL: no tests recipe in ${FIX}/justfile-no-tests-recipe" || fail=1
+expect_recipe "missing tests directory, recipe check" 2 "${FIX}/absent" \
+    "${FIX}/justfile-loop" "FAIL: no tests directory at ${FIX}/absent" || fail=1
 
 if [ "$fail" -ne 0 ]; then
     echo "ci-suite-wiring: FAIL — tests/ and the workflow disagree." >&2

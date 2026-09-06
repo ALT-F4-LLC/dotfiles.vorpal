@@ -27,14 +27,25 @@ if ! repo_root="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null)"; 
 fi
 cd "$repo_root"
 
+work="$(mktemp -d "${TMPDIR:-/tmp}/ac-commands.XXXXXX")"
+trap 'rm -rf "$work"' EXIT
+
+# tail -20 was adequate while `tests` printed only a cargo summary; since it
+# now also runs every tests/*.test.sh suite (~1000+ lines), a bare tail lands
+# only the last suite's output in the bundle: no `==>` markers, no cargo test
+# result, no indication of how far the run got. Keep every `==>` suite marker
+# and cargo's own `test result:` line for that recipe, on top of the normal
+# tail, so the verifier can tell which suites ran and which one failed.
 run() {
-  local label="$1"; shift
+  local label="$1" out="${work}/${1}.out" rc=0; shift
   echo "--- $label: $* ---"
-  if "$@" 2>&1 | tail -20; then
-    echo "[$label] exit 0"
-  else
-    echo "[$label] exit ${PIPESTATUS[0]}"
+  "$@" > "$out" 2>&1 || rc=$?
+  if [ "$label" = tests ]; then
+    grep -E '^==>|^test result:' "$out" || true
+    echo "..."
   fi
+  tail -20 "$out"
+  echo "[$label] exit $rc"
   echo
 }
 

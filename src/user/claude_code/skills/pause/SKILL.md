@@ -14,17 +14,12 @@ pause resumable rather than just stopped.
 session that is already driving RUN-N. Nothing here schedules steps, dispatches
 waves, or makes routing decisions — that is docket-run's contract, untouched.
 
-**When a `docket-conductor-RUN-N` agent drives the run, it runs this skill,
-not you.** docket-run seats one conductor per run as a named background
-agent and the invoking conversation only relays for it (its **Seating**
-section). A pause asked for in that conversation is forwarded to that run's
-conductor by `SendMessage`, in the operator's words — a pause naming no run
-while several conductors are seated is asked back first, never guessed —
-together with every workflow task id and transcript directory the
-conversation handed out for that run as `launched:` replies: the conductor
-never saw those ids, and the resume snapshot below needs them. The conductor then follows this file from **Choosing a halt
-mode** on; its snapshot comes back as a `done:` message, and the live-shadow
-wind-down stays with the conversation that spawned the shadow.
+**The conversation driving the run runs this skill.** docket-run drives a
+run in the invoking conversation itself (its **Seat** section), so the
+workflow task ids, transcript directories and launch args the resume snapshot
+below needs are already in this session's own hands; nothing is forwarded. No
+`docket-conductor-RUN-N` background agent is seated any more, and a pause
+addressed to one is a pause of the run this conversation drives.
 
 ## Choosing a halt mode
 
@@ -255,11 +250,7 @@ background and dropped.
 **In the same session** (operator says resume, no new session involved):
 run `docket run resume RUN-N --reason '<why>'` and hand back to `docket-run` —
 nothing else is needed, since the session still holds everything the snapshot
-above exists to preserve. When a conductor agent paused the run, the parent
-messages that conductor to resume — a named agent stays addressable after
-it completes, and its transcript still holds the args files and ids — or,
-if it was stopped, invokes `/docket-run RUN-N`, which seats a fresh one that
-attaches from the snapshot like a new session would.
+above exists to preserve.
 
 **In a new session**: read the resume prompt (doc or pasted text), run `run
 resume` as its first action, then follow it into `docket-run`'s own attach

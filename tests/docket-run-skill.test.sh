@@ -41,10 +41,21 @@
 # the checkout. The self-checks always read the repository's own copy, so a
 # mutant run does not disturb them. Each assertion's mutant, proven red:
 #
-#   (s) self-check, proven with a copy of THIS SUITE under $TMPDIR
+#   (s) self-check, proven with copies of THIS SUITE under $TMPDIR
 #       s1 states() stubbed to report ok unconditionally, so the built-in
 #          broken fixture passes and the self-check must catch it
 #       s2 the clean control pointed at the broken fixture
+#       s3 paragraph() degraded to whole-file matching (any anchor hit count
+#          accepted, extract becomes the whole flat file) against a fixture
+#          where a cherry-pick literal is moved into another paragraph —
+#          proven caught by the real paragraph(), proven missed by s3's copy
+#       s4 sentences() degraded to identity (no splitting) against a fixture
+#          where the worktree ruling is inverted and its literal reintroduced
+#          as a later sentence of the SAME paragraph — proven caught by the
+#          real sentences(), proven missed by s4's copy
+#       s5 the census key matched against a string absent from the corpus,
+#          against a fixture with a brand-new unanchored lift paragraph —
+#          proven caught by the real census, proven missed by s5's copy
 #   (a) cherry-pick lift
 #       p-a reword the paragraph's anchor sentence, so no paragraph carries
 #          it — the census is pinned to the ruling SENTENCE, not the anchor,
@@ -177,9 +188,16 @@ states() { # <label> <region-file> <literal>
 
 # (s) The suite's own machinery is re-proven every run: a copy of the
 # repository's skill file with one ruling deleted MUST fail, and an untouched
-# copy MUST pass. Without this a broken paragraph()/states() stays green
-# forever. Always the repository's file, never $SKILL, so a mutation probe
-# does not disturb the control.
+# copy MUST pass. Without this a broken states() stays green forever. Always
+# the repository's file, never $SKILL, so a mutation probe does not disturb
+# the control.
+#
+# Three further checks below re-prove paragraph(), sentences(), and the
+# census specifically: each degrades ONE helper in a copy of THIS SUITE and
+# confirms a fixture built to be caught only by that helper's correct
+# behavior slips through the degraded copy. Without these, a broken
+# paragraph()/sentences()/census can regress silently — the states()-only
+# check above cannot see any of the three.
 if [ -z "${DOCKET_RUN_SKILL_INNER:-}" ]; then
     if [ ! -f "$REPO_SKILL" ]; then
         bad "self-check: the repository's own skill file is missing: ${REPO_SKILL}"
@@ -203,9 +221,118 @@ if [ -z "${DOCKET_RUN_SKILL_INNER:-}" ]; then
         else
             bad "self-check: a clean copy of the repository's skill file does not pass"
         fi
+
+        # A synthetic tree at <dir>/tests/<suite basename> plus
+        # <dir>/src/user/claude_code/skills/docket-run/SKILL.md: SELF and
+        # REPO_SKILL both resolve off SCRIPT_DIR, so proving a DEGRADED COPY
+        # of this suite still (or no longer) catches a mutant needs the copy
+        # and the skill file at those same relative paths.
+        run_in_tree() { # <suite-script> <skill-copy> <tree-dir>
+            mkdir -p "$3/tests" "$3/src/user/claude_code/skills/docket-run"
+            cp "$1" "$3/tests/$(basename "$SELF")"
+            cp "$2" "$3/src/user/claude_code/skills/docket-run/SKILL.md"
+            (cd "$3" && DOCKET_RUN_SKILL_INNER=1 bash "tests/$(basename "$SELF")") \
+                >/dev/null 2>&1
+        }
+
+        # helper 1: paragraph() degraded to whole-file matching — any anchor
+        # hit count is accepted, and the "extract" becomes the whole flat
+        # file instead of the one matching paragraph.
+        sed '/^paragraph() { # <anchor> <out>$/,/^}$/{
+                 s/\[ "\$hits" -eq 1 \] || return 1$/[ "$hits" -ge 1 ] || return 1/;
+                 s/grep -F -- "\$1" "\${WORK}\/flat" > "\$2"$/cp "${WORK}\/flat" "$2"/
+             }' "$SELF" > "${WORK}/degraded-paragraph.sh"
+
+        # Fixture: delete "Verify the sha as always..." from its own
+        # cherry-pick paragraph and reinsert the bare literal, unrelated, next
+        # to a DIFFERENT anchored paragraph (module cache). paragraph()'s
+        # exact extract no longer carries it; a whole-file "extract" still
+        # does.
+        sed "s/Verify the sha as always AND that the touched \`.claude\/skills\` paths are ones/Confirm the touched \`.claude\/skills\` paths are ones/;
+             s/\*\*Warm the Go module cache before dispatching into a Go repo\.\*\*/Verify the sha as always, a wholly unrelated aside about repository hygiene.\n\n**Warm the Go module cache before dispatching into a Go repo.**/" \
+            "${WORK}/self-clean.md" > "${WORK}/paragraph-mutant.md"
+
+        if cmp -s "${WORK}/self-clean.md" "${WORK}/paragraph-mutant.md"; then
+            bad "self-check: the paragraph() fixture's mutation did not apply — proves nothing"
+        elif DOCKET_RUN_SKILL_INNER=1 DOCKET_RUN_SKILL_FILE="${WORK}/paragraph-mutant.md" \
+            bash "$SELF" >/dev/null 2>&1; then
+            bad "self-check: the paragraph() fixture (moved literal) did not fail the clean suite"
+        elif run_in_tree "${WORK}/degraded-paragraph.sh" "${WORK}/paragraph-mutant.md" \
+                "${WORK}/tree-paragraph"; then
+            ok "self-check: a paragraph() degraded to whole-file matching lets a moved literal pass"
+        else
+            bad "self-check: a paragraph() degraded to whole-file matching still caught a moved literal — fixture is not load-bearing"
+        fi
+
+        # helper 2: sentences() degraded to identity (no splitting), so a
+        # whole flattened paragraph reads as one "sentence".
+        awk '
+            /^sentences\(\) \{ # <file>$/ { print; print "    cat \"$1\""; skip = 1; next }
+            skip && /^}$/ { print; skip = 0; next }
+            skip { next }
+            { print }
+        ' "$SELF" > "${WORK}/degraded-sentences.sh"
+
+        # Fixture: invert the worktree-remove ruling sentence to "WITHOUT
+        # lifting the sandbox", then reintroduce the untouched literal "and
+        # nothing else, with the sandbox lifted" as a LATER sentence in the
+        # SAME paragraph. sentence() finds exactly one sentence carrying the
+        # anchor, which no longer states the ruling; sentences() degraded to
+        # identity treats the paragraph as one sentence, so the reintroduced
+        # literal still counts as "in" the anchor sentence and passes.
+        awk '
+            BEGIN { done = 0 }
+            {
+                if (!done && $0 == "paired common-dir write and nothing else, with the sandbox lifted instead of") {
+                    print "paired common-dir write and nothing else, WITHOUT lifting the sandbox instead of"
+                    getline nxt; print nxt
+                    getline nxt; print nxt
+                    print "Retry that ONE call, the `git worktree remove` with its paired common-dir"
+                    print "write and nothing else, with the sandbox lifted."
+                    done = 1
+                    next
+                }
+                print
+            }
+        ' "${WORK}/self-clean.md" > "${WORK}/sentences-mutant.md"
+
+        if cmp -s "${WORK}/self-clean.md" "${WORK}/sentences-mutant.md"; then
+            bad "self-check: the sentences() fixture's mutation did not apply — proves nothing"
+        elif DOCKET_RUN_SKILL_INNER=1 DOCKET_RUN_SKILL_FILE="${WORK}/sentences-mutant.md" \
+            bash "$SELF" >/dev/null 2>&1; then
+            bad "self-check: the sentences() fixture (inverted worktree ruling) did not fail the clean suite"
+        elif run_in_tree "${WORK}/degraded-sentences.sh" "${WORK}/sentences-mutant.md" \
+                "${WORK}/tree-sentences"; then
+            ok "self-check: a sentences() degraded to identity lets an inverted ruling pass"
+        else
+            bad "self-check: a sentences() degraded to identity still caught an inverted ruling — fixture is not load-bearing"
+        fi
+
+        # helper 3: the census key matched against nothing.
+        sed "s/\*'lift the sandbox'\*|\*'sandbox lifted'\*) ;;/*'zzz_no_such_key_zzz'*) ;;/" \
+            "$SELF" > "${WORK}/degraded-census.sh"
+
+        # Fixture: a brand-new unconditioned-lift paragraph appended outside
+        # all three anchored rulings — the (e) defect class itself. The
+        # census catches it by key; a census matched against no key does not.
+        cp "${WORK}/self-clean.md" "${WORK}/census-mutant.md"
+        printf '\n%s\n' \
+            'A future revision may also lift the sandbox for unrelated log noise.' \
+            >> "${WORK}/census-mutant.md"
+
+        if cmp -s "${WORK}/self-clean.md" "${WORK}/census-mutant.md"; then
+            bad "self-check: the census fixture's mutation did not apply — proves nothing"
+        elif DOCKET_RUN_SKILL_INNER=1 DOCKET_RUN_SKILL_FILE="${WORK}/census-mutant.md" \
+            bash "$SELF" >/dev/null 2>&1; then
+            bad "self-check: the census fixture (unanchored grant) did not fail the clean suite"
+        elif run_in_tree "${WORK}/degraded-census.sh" "${WORK}/census-mutant.md" \
+                "${WORK}/tree-census"; then
+            ok "self-check: a census matched against no key lets an unanchored grant pass"
+        else
+            bad "self-check: a census matched against no key still caught an unanchored grant — fixture is not load-bearing"
+        fi
     fi
 fi
-
 # (a) The cherry-pick lift is conditioned on verifying the sha and on the
 # touched skill paths being this run's own output.
 if paragraph 'A cherry-pick whose diff touches' "${WORK}/pick"; then

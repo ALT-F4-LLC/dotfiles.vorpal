@@ -705,6 +705,14 @@ digest = "d28f08c120bea39b2f4c8700443d6ea9c2c5e7de01adf839789eeae81a484bf0"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "uv"
+path = "https://github.com/astral-sh/uv/releases/download/0.10.11/uv-aarch64-apple-darwin.tar.gz"
+includes = []
+excludes = []
+digest = "4424c54e6a6c23457dfc8121089748d0572c7a7aaded6feb415309bfc39ef840"
+platform = "aarch64-darwin"
+
+[[sources]]
 name = "vlse-boolbase"
 path = "https://registry.npmjs.org/boolbase/-/boolbase-1.0.0.tgz"
 includes = []

@@ -3,7 +3,7 @@ use vorpal_artifacts::artifact::{
     awscli2::Awscli2, delta::Delta, direnv::Direnv, doppler::Doppler, fd::Fd, fzf::Fzf, gum::Gum,
     herdr::Herdr, hunk::Hunk, jj::Jj, jq::Jq, just::Just, kubectl::Kubectl, lazygit::Lazygit,
     nnn::Nnn, op::Op, pi::Pi, ripgrep::Ripgrep, sesh::Sesh, starship::Starship,
-    terraform::Terraform, tmux::Tmux, zoxide::Zoxide,
+    terraform::Terraform, tmux::Tmux, uv::Uv, zoxide::Zoxide,
 };
 use vorpal_sdk::{
     artifact::{gh::Gh, git::Git, nodejs::NodeJS},
@@ -13,7 +13,10 @@ use vorpal_sdk::{
 pub async fn build(context: &mut ConfigContext) -> Result<Vec<String>> {
     let harnesses = vec![Pi::new().build(context).await?];
 
-    let languages = vec![NodeJS::new().build(context).await?];
+    let languages = vec![
+        NodeJS::new().build(context).await?,
+        Uv::new().build(context).await?,
+    ];
 
     let providers = vec![
         Awscli2::new().build(context).await?,

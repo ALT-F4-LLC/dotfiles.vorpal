@@ -29,6 +29,23 @@
 # asserting anything. This one covers every suite's wiring and says nothing
 # about whether an invoked suite can still fail.
 #
+# Known limits, each named with the direction it errs in:
+#   - `continue-on-error: true` on a step: the row still counts as wired, but
+#     a red run there does not fail CI, so "wired" is weaker than "must pass"
+#     for that row. Over-reports.
+#   - `if: always()` (or any expression referencing a gated dependency's
+#     status) on a job that `needs:` a gated job: this file treats the
+#     dependent as gated like any other `needs:` edge, but Actions still runs
+#     an `always()` job whose need was skipped. Under-reports (loud: a wired
+#     suite is reported unwired).
+#   - a `needs:` target that names a job this file never defines (a typo, or
+#     a job in another workflow file): the lookup is silently absent from
+#     `gated`, so the dependent is never marked gated. Over-reports.
+#   - the job-key indentation assumption: job keys are matched only at two
+#     spaces (`ind == 2`). A workflow reindented to some other width would
+#     have every job read as key-less text, and every suite would report
+#     unwired. Under-reports (loud).
+#
 # TESTS_DIR and WORKFLOW_FILE override the inputs, so a mutation probe can
 # point the suite at deliberately-broken COPIES under $TMPDIR without touching
 # the checkout.

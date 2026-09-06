@@ -45,6 +45,32 @@
 # Fail-open on a missing `jq`: a tooling gap must not brick every Bash call in
 # the session. There is no `docket`-binary fail-open branch here, unlike
 # commit-guard — this hook never shells out to `docket` itself.
+#
+# THREE FAIL-OPEN BRANCHES, and whether an executor seat can reach them
+# (DOT-1431): unparseable stdin (`INPUT=$(cat ...) || allow_default`, this
+# file's own INPUT= line), missing `jq` (the `command -v jq` check right
+# after it), and an unwritable PROBE_OUT/PROBE_CAP (the two `: >"$..."`
+# writes further down, keyed on `${TMPDIR:-/tmp}`). All three are decided
+# KEEP FAILING OPEN, on a MEASURED (not inferred) answer to whether an
+# executor's own Bash calls can move PATH or TMPDIR for a LATER hook
+# invocation in the same session: they cannot. [Claude Code hooks
+# documentation] a hook process inherits the parent Claude Code process's
+# environment directly (only the OTEL_* exporter vars are stripped, plus
+# whatever CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1 would strip, which this
+# fleet's settings set to "0"); [Claude Code tools reference] "Environment
+# variables don't persist [across Bash tool calls]. An `export` in one
+# command won't be available in the next." So PATH and TMPDIR for THIS
+# hook's own process come from the operator's Claude Code CLI environment
+# at launch, not from anything an executor's Bash tool invocations do --
+# this repository's own settings builder (src/user/claude_code.rs) sets
+# neither PATH nor TMPDIR in its `env` block, so both stay at the
+# operator's ambient values. An executor cannot set PATH or TMPDIR for its
+# OWN commands either in a way that survives to the NEXT hook call: each
+# Bash tool call and its PreToolUse hook get a fresh environment snapshot.
+# All three branches are therefore an operator-machine tooling gap, not an
+# attacker-reachable input, so the existing fail-open direction (a tooling
+# gap must not brick every Bash call in the session) stands unchanged for
+# all three.
 
 # DOT-1123 REDESIGN, replacing a hand-rolled AWK shell lexer that re-scanned
 # raw command bytes for heredocs, comments, arithmetic expansions, and

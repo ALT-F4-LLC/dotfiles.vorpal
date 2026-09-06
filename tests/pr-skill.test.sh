@@ -59,8 +59,8 @@
 #                 "trailing newline" prose, which the region excludes
 #                 MN: revert the NUL item to "contains no NUL byte" with no
 #                 detection command
-#   (k)  determ   MK: delete the fenced /usr/bin/head -c de-terminate
-#                 command, leaving the check with no producer
+#   (k)  determ   MK: delete the fenced /usr/bin/perl -0777 -pe 's/\n\z//'
+#                 de-terminate command, leaving the check with no producer
 #
 # (h) and (i) assert the ruling, not a token count: a count of "auto" over
 # the bullet, or of "headRefName" over the file, survives MA, MC and MD
@@ -382,13 +382,15 @@ fi
 
 # (k) The de-terminate step exists to PRODUCE that property: BSD grep's strip
 # pass always terminates its output, so without this the check refuses every
-# title.
-if determinate=$(find_block '/usr/bin/head -c'); then
-    ok "de-terminate: a fenced block cuts the terminator with /usr/bin/head -c"
+# title. Anchored on perl, not head -c: the perl form depends on no
+# hand-computed byte count, which a head -c form would let an off-by-one
+# silently truncate the title past every item in the validation list.
+if determinate=$(find_block "/usr/bin/perl -0777 -pe 's/\\n\\z//'"); then
+    ok "de-terminate: a fenced block cuts the terminator with perl -0777 -pe s/\\n\\z//"
     if grep -qF -- '> <final-title-file>' "$determinate"; then
         ok "de-terminate: it redirects into the file that gets scanned and sent"
     else
-        bad "de-terminate: the head -c command does not redirect into <final-file>"
+        bad "de-terminate: the perl command does not redirect into <final-title-file>"
     fi
 else
     bad "de-terminate: no fenced block runs /usr/bin/head -c — the strip pass's terminator has no remover"

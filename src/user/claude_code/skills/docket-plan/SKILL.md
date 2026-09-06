@@ -901,7 +901,11 @@ WHERE it looks, so only rewriting the pattern to state the property kills it —
 flags allowed between verb and ref, and `git rev-list` counted alongside
 `diff` and `log`:
 `grep -nE 'git (diff|log|rev-list)( +-[^ ]+)* +origin/<base>\.\.HEAD'` goes
-red on `<base>..HEAD`, where the original stayed silent at exit 1. Another AC
+red on `<base>..HEAD`, where the original stayed silent at exit 1. That
+restated pattern is still the shape for a two-dot, flags-then-ref call site
+only; a corpus containing a three-dot range (`...`), a `git -C <dir>` prefix,
+an option preceding the verb, or a ref held in a shell variable needs its own
+widened alternation, not a copy of this line. Another AC
 checked `grep -n 'rev-parse HEAD'` for a refusal rule; anchoring the extract
 to the bullet kills the mutant that deletes the bullet while reintroducing
 the same string as unrelated prose elsewhere (the string is gone from the

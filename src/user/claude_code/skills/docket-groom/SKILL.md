@@ -1,17 +1,20 @@
 ---
 name: docket-groom
-description: Groom every open issue in the current Docket project in the main session until retained work is easy to consume. Validate value, verify and repair every acceptance criterion, triage tickets needing operator decisions through AskUserQuestion, retire approved obsolete or duplicate work, and close gaps in requirements, files, scope, dependencies, and workflow fit. Safe edits apply directly; closures, merges, scope changes, and protected-issue edits require operator approval. One survey from cwd with an optional stale window, including decision follow-through; no implementation or watch. Use on "groom the backlog", "/groom", "clean up the backlog", "triage operator decisions", "which issues are still worth doing", or "make the backlog run-ready".
+description: Groom every open issue in the current Docket project and the Docket engine project in the main session until retained work is easy to consume. Validate value and engine relevance, verify and repair every acceptance criterion, triage tickets needing operator decisions through AskUserQuestion, retire approved obsolete or duplicate work, and close gaps in requirements, files, scope, dependencies, and workflow fit. Safe edits apply directly; closures, merges, scope changes, and protected-issue edits require operator approval. One survey across both projects with an optional stale window, including decision follow-through; no implementation or watch. Use on "groom the backlog", "/groom", "clean up the backlog", "triage operator decisions", "which issues are still worth doing", or "make the backlog run-ready".
 argument-hint: "[stale window, e.g. 14d]"
 model: fable
 ---
 
 # docket-groom
 
-Run one grooming pass over the current project's open issues. The goal is
-to close all grooming gaps so retained work is valuable, clear, and easy
-for the next worker to consume without reconstructing context or asking
-the operator to settle an existing ambiguity. Judge value, resolve missing
-facts, triage operator decisions, and apply the resulting authorized edits.
+Run one grooming pass over the current project's open issues and the
+Docket engine project's open issues. Validate that engine defects and
+capability gaps still apply, including those filed by other Docket skills.
+The goal is to close all grooming gaps so retained work is valuable,
+clear, and easy for the next worker to consume without reconstructing
+context or asking the operator to settle an existing ambiguity. Judge value,
+resolve missing facts, triage operator decisions, and apply the resulting
+authorized edits.
 Seek a backlog of valuable work, without a target issue count or closure
 quota. Identifying a gap or listing a question is not resolving it.
 
@@ -40,9 +43,10 @@ Rules you must not fight:
 - **Never invoke `docket-plan`, `docket-run`, or `tend`, and never create,
   activate, or advance a docket run.** Grooming is issue hygiene only.
   Docket mutations are limited to the `docket issue …` operations described
-  below. Read-only `docket run status`, `docket workflow list`,
-  `docket workflow show`, and CLI help are also permitted for the checks
-  below. Confirm exact command syntax through the relevant `--help`.
+  below. Read-only `docket project list`, `docket run status`,
+  `docket workflow list`, `docket workflow show`, and CLI help are also
+  permitted for the checks below. Confirm exact command syntax through
+  the relevant `--help`.
 - **Safe edits are yours; approval-gated edits are not.** Labels, priority,
   comments, and field fills apply directly subject to §1's exclusions.
   Closures, merges, changes to existing requirements or relations, and
@@ -59,21 +63,42 @@ Rules you must not fight:
 
 ## 1. Survey
 
+Survey both the invoking project and the Docket engine project. The engine
+checkout normally lives at `.../github.com/ALT-F4-LLC/docket.git/main`,
+beside this dotfiles repository. Confirm its location and project/store
+identity using the checkout and supported read-only CLI inspection; do
+not infer ownership from an issue prefix. Follow
+[Docket's context rules](../docket/SKILL.md#establish-context) for store
+resolution. Do not initialize a store or bind a project during grooming.
+If the invoking project is already the engine project in the same store,
+survey it once.
+
+Run these commands from each project's own checkout:
+
 ```bash
 docket issue list --json --limit 1000 -s backlog -s todo -s in-progress -s review
 docket run status --active --json
 ```
 
 Project resolves from cwd's git identity, same as every other docket verb.
-A `VALIDATION_ERROR` naming no project means this repo isn't bound — say
+A `VALIDATION_ERROR` naming no project means that repo isn't bound — say
 so and stop. If no store is reachable, report that failure and stop; do not
 infer the repo's binding from a connection failure. Scope is every open
-issue: everything not closed, all statuses, the whole backlog. Check the
-installed CLI's help for any additional open statuses and pagination. If
-results are truncated or reach the limit, retrieve the remaining issues
-using supported options. Apply the same completeness check to run rosters.
-If the full survey cannot be obtained, report the limitation and stop
-before editing; do not call a capped result a full pass.
+issue in both projects: everything not closed, all statuses, both whole
+backlogs. Include engine-related issues filed in the invoking project as
+well; discovery must not depend on an engine label, age, or a link from a
+local issue. Check the installed CLI's help for any additional open
+statuses and pagination. If results are truncated or reach the limit,
+retrieve the remaining issues using supported options. Apply the same
+completeness check to run rosters.
+If either checkout or project cannot be resolved, or the full survey cannot
+be obtained, report the missing coverage and stop before editing; do not
+call a capped result or an omitted project a full pass.
+
+Keep each issue's owning project, checkout, and store context throughout
+the pass. Read files, resolve workflows, inspect active runs and their
+rosters, and execute issue commands in that owning context. Review an issue
+only once when it appears through several queries or references.
 
 Two kinds of issue are in scope to read but not yours to freely edit — this
 queue isn't docket-groom's alone:
@@ -95,10 +120,11 @@ route that protected issue's label edit through §4 too.
 
 `docket issue show <id> --json` for every surveyed issue — description,
 acceptance criteria, comments, labels, relations. Build one ledger covering
-every issue, including issues with no hygiene defects. Record its ID,
-value decision, one-sentence reason, evidence references, readiness gaps,
-and any proposed action. For each gap, track the evidence or decision
-needed, affected issues, resolution, and verification or remaining blocker.
+every issue, including issues with no hygiene defects. Record its owning
+project and store, ID, value decision, one-sentence reason, evidence
+references, readiness gaps, and any proposed action. For each gap, track
+the evidence or decision needed, affected issues, resolution, and
+verification or remaining blocker.
 Track the recommendation separately from the operator's decision and the
 resulting issue state. Keep this review in the ledger; do not post a
 boilerplate review comment to every issue.
@@ -112,6 +138,19 @@ applies to; a local change is not proof that a required release shipped.
 Where a conclusion depends on current external behavior, verify the
 relevant authoritative source if available. Report inaccessible evidence
 instead of assuming what it would say.
+
+For every engine-related issue in either project, check its original
+failure or missing capability against current engine source and tests,
+linked fixes, and the consuming workflow or configuration where relevant.
+Record the engine revision and any installed or released version relevant
+to the claim. Confirm whether the need remains, was fully or partly fixed,
+or was superseded by an engine change. A consumer workaround does not by
+itself resolve an engine defect or capability gap. A source fix does not
+prove the affected installation has it. Preserve any remaining engine and
+consumer work separately; related work in different projects is not
+automatically duplicate work. If source or version evidence is unavailable,
+record the uncertainty and seek clarification instead of declaring the
+issue obsolete. These are evidence checks only; do not implement fixes.
 
 Answer these questions for each issue, concisely and from evidence:
 
@@ -224,7 +263,8 @@ Record these findings alongside the value decision:
 
 For every retained issue, also confirm that its labels match exactly one
 intended workflow using [docket-plan](../docket-plan/SKILL.md)'s binding
-probe as reference, including applicable local workflow definitions.
+probe as reference, including local workflow definitions in its owning
+project.
 Zero matches, several matches, an unavailable registry, or a mismatch
 with the intended work remains a
 readiness gap. Resolve uncertain intent in §4a; do not choose a workflow
@@ -405,7 +445,7 @@ proposals from §2 — value-based closures, duplicate merges, rescopes,
 repairs to acceptance criteria, relation corrections, confirmed workflow
 holds, and edits §1 rerouted here. Each proposal must contain:
 
-- A stable number, kind, and every issue ID it will affect.
+- A stable number, kind, and every issue ID with its owning project.
 - A one-sentence defense tied to the surveyed evidence.
 - The disposition reason, remaining unique value, and effects on other
   issues or commitments where applicable. Surface assumptions requiring
@@ -414,6 +454,8 @@ holds, and edits §1 rerouted here. Each proposal must contain:
   being carried into a canonical issue.
 - `Commands:` listing the complete ordered command sequence with exact
   arguments and comment or field text, using syntax confirmed by CLI help.
+  State each command's working directory and store context, including any
+  context switches in a proposal affecting both projects.
 
 A **merge** carries anything unique from the duplicate into the canonical
 issue first (a comment or field edit on the canonical), then comments
@@ -550,9 +592,12 @@ changes.
 
 One summary in the main session, plain language: how many issues surveyed,
 how many received a value review, the stale window used, and counts by
-value decision. Include a compact ledger of issue IDs, decisions, reasons,
-and evidence references so every retention and proposed retirement is
-reviewable. Report automatic edits, proposals, operator decisions, and
+value decision, with survey and review counts for each project. Explicitly
+report engine coverage and which engine needs remain, are resolved or
+superseded, or could not be verified. Include a compact ledger of owning
+projects, issue IDs, decisions, reasons, and evidence references so every
+retention and proposed retirement is reviewable. Report automatic edits,
+proposals, operator decisions, and
 confirmed applications separately, by kind and issue ID. State whether
 grooming is complete, which gaps were closed, and which remain with the
 specific input or action needed to close each one.

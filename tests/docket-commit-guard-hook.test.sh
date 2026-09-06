@@ -373,10 +373,21 @@ case_must_not_catch_substitution_reads() {
 
 case_accepted_residual_risks() {
     local script="src/user/claude_code/hooks/docket-commit-guard-hook.sh"
+    local inv='git commit -m x'
     assert_verdict "./deploy.sh" ALLOW "wrapper-script invocation (accepted residual)"
     assert_verdict "bash ${script}" ALLOW "bash <script path> (interpreter-prefixed, accepted residual)"
     assert_verdict "./${script}" ALLOW "./<script path> (direct exec, accepted residual)"
     assert_verdict "timeout 30 bash ${script}" ALLOW "timeout-wrapped script path (accepted residual)"
+    # Carriers with no code flag at all stay ALLOW: the shared pre-pass
+    # (docket-guard-prepass.awk) documents awk, ssh, xargs and find -exec as
+    # known residuals it does not close. Pinned here too, not only in the
+    # trust suite, so the pre-pass comment's "both suites" claim is true.
+    assert_verdict "awk 'BEGIN { system(\"${inv}\") }'" ALLOW \
+        "awk program text: no code flag (accepted residual)"
+    assert_verdict "ssh host '${inv}'" ALLOW \
+        "ssh remote command: no code flag (accepted residual)"
+    assert_verdict "C=\"${inv}\"; bash -c \"\$C\"" ALLOW \
+        "verb reached through a variable (accepted residual)"
     # The look-behind word of the code-argument rule is read as bash builds it
     # from LITERAL text, so a flag or an interpreter that only exists after an
     # expansion is invisible here. Denying every word carrying a `$` would close

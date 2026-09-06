@@ -16,8 +16,9 @@ invocation, with no draft-for-approval step, mirroring `commit`'s
 no-friction style. `commit/SKILL.md` still says "Never push" — that rule is
 unchanged for `commit` itself; the crossing happens only here, and only
 because the operator settled it that way. `pr` never redefines commit
-discipline: where it needs to land a clean commit, it invokes `commit` or
-follows its rules verbatim.
+discipline: where it needs to land a clean commit, it invokes
+`Skill({skill: "commit"})` rather than reimplementing its rules from
+memory, so a future change to `commit` cannot leave a stale copy here.
 
 You run in a forked subagent dedicated to this invocation. `context: fork`
 spawns you fresh every time, and `AskUserQuestion` stays available for
@@ -79,11 +80,15 @@ has no PR yet, and `ready`, `checks`, and `close` neither push nor diff.
    `github.com` host).
 3. HEAD is a branch, not detached (`git symbolic-ref -q HEAD`).
 4. The target repo is resolved once, from `origin`'s URL, as `<owner>/<repo>`,
-   and asserted equal to `gh repo view --json nameWithOwner`. Every `gh pr`,
-   `gh api`, and `gh run` call in this skill carries that resolved value as
-   an explicit `-R <owner>/<repo>` — never gh's stored default, and never a
-   bare invocation that lets `gh` infer it. A mismatch between `origin` and
-   the resolved repo refuses rather than silently picking one.
+   and asserted equal to `gh repo view --json nameWithOwner`. Every `gh pr`
+   and `gh run` call in this skill carries that resolved value as an explicit
+   `-R <owner>/<repo>` — never gh's stored default, and never a bare
+   invocation that lets `gh` infer it. `gh api` has no `-R` flag at all: it
+   carries the same resolved value by spelling `repos/<owner>/<repo>/...` in
+   the REST endpoint path itself (every REST call in this skill does), or, on
+   a GraphQL call, as explicit `owner`/`name` query variables. A mismatch
+   between `origin` and the resolved repo refuses rather than silently
+   picking one.
 5. `<pr-number>` is resolved **once, here**: the number the invocation gives
    explicitly, else the single match from
    `gh pr list -R <owner>/<repo> --head <head-branch> --state open --json
@@ -160,15 +165,19 @@ rather than restate it, so a command shape added later inherits it.
   `git fetch` runs, plus `--force-if-includes`. A bare `--force-with-lease`
   (no `=<ref>:<sha>`) is as forbidden as plain `--force` — it compares
   against a ref the immediately preceding fetch just refreshed, which
-  silently discards a commit another session pushed in between.
+  silently discards a commit another session pushed in between. `git-push`'s
+  own manual documents `--force-if-includes` as a no-op in exactly this
+  combination (with the explicit `<refname>:<expect>` form); it is kept here
+  for the ordinary case where the explicit-sha lease is what actually blocks
+  a stale push, not because the two flags compound.
 - `--no-verify` is never used, on any push, for any mode.
 - **Every `git push` in this skill runs the pre-push range scan below
   first** — `open`, `update`, `sync`, and `review` alike, force-pushes
   included. The scan belongs to the push, not to a mode, so a mode added
   later cannot miss it by omission.
-- A dirty working tree at `open` or `update` is landed first under the
-  `commit` skill's own rules (survey, group, guard, commit) — `pr` invokes
-  those rules rather than restating them, then pushes the result.
+- A dirty working tree at `open` or `update` is landed first with
+  `Skill({skill: "commit"})` (survey, group, guard, commit) — `pr` invokes
+  that skill rather than restating its rules, then pushes the result.
 
 ## Pre-push range scan
 
@@ -532,6 +541,9 @@ generated[- ]with
 (^|[^A-Za-z0-9_])DKT-[0-9]+([^A-Za-z0-9_]|$)
 (^|[^A-Za-z0-9_])DOT-[0-9]+([^A-Za-z0-9_]|$)
 (^|[^A-Za-z0-9_])RUN-[0-9]+([^A-Za-z0-9_]|$)
+altf4\.domains
+/Users/[A-Za-z0-9_.-]+/
+/home/[A-Za-z0-9_.-]+/
 ```
 
 Disposition: any hit refuses the whole text. Nothing is edited; the terminal
@@ -554,6 +566,13 @@ refusing is the conservative side of a call the pattern cannot make.
 `claude` and `anthropic` stay bare substrings so `claude_code`, `claude.ai`,
 and `claude-fable` all hit; `docket` and the ids stay bounded so
 `undocketed` and `xDOT-1` do not, exactly as before.
+
+`altf4\.domains` and the two absolute-home-path patterns cover this
+installation's internal hostnames and local usernames: a `## Testing`
+section is by construction a transcript of local commands, and neither
+class is attribution-shaped, so both refuse rather than strip. `/Users/` and
+`/home/` are bounded to a path segment (`/<user>/`) so they do not fire on
+an unrelated mid-sentence slash.
 
 - Applies to **every byte sent to GitHub** — title, body, thread replies,
   close comments — not only title+body. It does not apply to this skill's
@@ -644,7 +663,7 @@ runs, executes before precondition 4 has resolved `<owner>/<repo>` — every
 
 1. Run preconditions 1-4 and 6. There is no PR yet, so 5 does not apply and
    6's base is the repository default branch.
-2. If the working tree is dirty, land it first under `commit`'s rules.
+2. If the working tree is dirty, land it first with Skill({skill: "commit"}).
 3. Run the **pre-push range scan** above. A hit refuses; nothing is pushed.
 4. `git push -u origin <head-branch>`.
 5. Generate the title and body from the whole-branch diff against the base
@@ -672,7 +691,7 @@ runs, executes before precondition 4 has resolved `<owner>/<repo>` — every
 ## update
 
 1. Run preconditions 1-6.
-2. If the working tree is dirty, land it first under `commit`'s rules.
+2. If the working tree is dirty, land it first with Skill({skill: "commit"}).
 3. Run the **pre-push range scan** above, whether or not step 2 created a
    commit: the range is what the push publishes, not what this invocation
    wrote. A hit refuses and nothing is pushed.
@@ -697,7 +716,12 @@ runs, executes before precondition 4 has resolved `<owner>/<repo>` — every
    fetches** — this mode's first action, ahead of the preconditions:
    `git rev-parse origin/<head-branch>`. Precondition 6 fetches, and a value
    captured after it is the one the push rules forbid as a lease: it compares
-   against a ref the immediately preceding fetch just refreshed.
+   against a ref the immediately preceding fetch just refreshed. **If this
+   command errors** — no remote-tracking ref exists yet for the head branch —
+   **stop and report it; never fetch first and capture the sha afterwards.**
+   That recovery is exactly the bare `--force-with-lease` the push rules
+   forbid: it would compare against a ref the fetch just refreshed rather
+   than a value that predates it.
 2. Run preconditions 1-6. Their `git fetch origin` is this mode's fetch too;
    there is no second one.
 3. Rebase the head branch onto `origin/<base>`.
@@ -717,7 +741,10 @@ runs, executes before precondition 4 has resolved `<owner>/<repo>` — every
 1. Run preconditions 1-6.
 2. Read the PR's review threads via `gh api graphql` on `reviewThreads`
    (the REST review-comments endpoint does not carry per-thread resolution
-   state). Paginate to exhaustion using the connection's cursor; if
+   state), passing precondition 4's resolved `owner` and `name` (repo name)
+   as explicit query variables — `gh api` has no `-R` flag, so a GraphQL call
+   carries the resolved repo this way rather than in a path. Paginate to
+   exhaustion using the connection's cursor; if
    `pageInfo.hasNextPage` is still `true` and pagination cannot continue,
    refuse rather than acting on a partial thread list — an unresolved thread
    on a later page must never read as "none".
@@ -760,8 +787,9 @@ runs, executes before precondition 4 has resolved `<owner>/<repo>` — every
 
      Report the refusal on the thread itself and in the terminal report —
      never silently.
-   - Land accepted edits under `commit`'s rules, run the **pre-push range
-     scan** above, then push (`git push -u origin <head-branch>`, no force).
+   - Land accepted edits with `Skill({skill: "commit"})`, run the **pre-push
+     range scan** above, then push (`git push -u origin <head-branch>`, no
+     force).
      This is the push that publishes comment-derived commits, so the scan
      matters here most.
    - Reply on each addressed thread with what changed. Write the reply text
@@ -793,11 +821,17 @@ runs, executes before precondition 4 has resolved `<owner>/<repo>` — every
 
 1. Run preconditions 1-5. This mode neither pushes nor diffs, so it does not
    read a base.
-2. `gh pr checks <pr-number> -R <owner>/<repo> --watch --interval 30`, with
-   `--fail-fast` off so every check is observed. Bound the watch to a
-   wall-clock cap (20 minutes); if it is reached before every check
-   concludes, stop watching, report "still pending" for whatever remains,
-   and return control rather than blocking indefinitely.
+2. `gh pr checks --watch` has no timeout or deadline flag of its own and
+   blocks until every check concludes, so this machine's stock tools supply
+   no wrapper that bounds it (`timeout` is a GNU coreutils command, absent
+   from this macOS-only repo's toolchain). Poll instead:
+   `gh pr checks <pr-number> -R <owner>/<repo> --json name,state,link` every
+   30 seconds, without `--watch`, against a 20-minute wall-clock deadline
+   this skill holds itself (recorded at the first poll, checked before each
+   subsequent one). `--fail-fast` is not used, so every check is observed on
+   each poll. When the deadline is reached before every check concludes,
+   stop polling, report "still pending" for whatever remains, and return
+   control rather than blocking indefinitely.
 3. Report a per-check table: name, status/conclusion, link.
 4. For each failed check that is a GitHub Actions run, append the tail of
    its log:
@@ -909,7 +943,8 @@ plausible the context makes it look.
      (required reviews, and any other rule it names) is met by this step's
      own fields. This is the carve-out that makes step 3's `auto` path
      reachable rather than dead. Refuse unconditionally, whatever the
-     invocation says: `BEHIND`, `DIRTY`, `UNKNOWN`; a protection read that
+     invocation says: `BEHIND`, `DIRTY`, `UNKNOWN`, `HAS_HOOKS`, `DRAFT`, or
+     any other value that is not `CLEAN`; a protection read that
      errors, or names no rule for `<base>`; and a `BLOCKED`/`UNSTABLE` the
      protection read does not affirmatively confirm this way — an
      undeterminable cause refuses rather than guesses. Every refusal names

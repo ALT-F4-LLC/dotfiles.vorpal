@@ -422,6 +422,36 @@ case_interpreter_code_argument_deny() {
         "prose quoted after a non-interpreter word"
 }
 
+# ---- TABLE: every listed interpreter and every listed code flag denies ---
+#
+# Both lists live in the shared pre-pass (docket-guard-prepass.awk):
+# is_interpreter()'s name list and code_argument()'s flag regex. Before this
+# row, only a handful of each list's members were ever named in a
+# `-c`/`bash`-shaped row above, so narrowing either regex to a fraction of
+# its members left every existing row green (a fix round measured a
+# narrowed flag regex and a narrowed interpreter regex both passing the
+# suite unnoticed). Looping over the FULL lists here means a member
+# deleted from either regex turns its own named row red rather than hiding
+# behind rows that happen to use a different member.
+
+case_full_interpreter_list_denies() {
+    local inv='git commit -m x' interp
+    for interp in sh bash dash zsh ksh mksh csh tcsh \
+                  python python3 python3.11 perl ruby node nodejs php \
+                  lua lua5.1 expect osascript; do
+        assert_verdict "${interp} -c '${inv}'" DENY \
+            "listed interpreter denies: ${interp} -c"
+    done
+}
+
+case_full_code_flag_list_denies() {
+    local inv='git commit -m x' flag
+    for flag in -c -lc -alc -e -E -p -r --eval --print; do
+        assert_verdict "bash ${flag} '${inv}'" DENY \
+            "listed code flag denies: bash ${flag}"
+    done
+}
+
 # ---- MUST DENY: the same call with the flag or interpreter spelled oddly --
 #
 # Quoting, escaping or splitting a word across a quote boundary changes what
@@ -728,6 +758,8 @@ case_must_not_catch_prose_and_reads
 case_must_not_catch_substitution_reads
 case_accepted_residual_risks
 case_interpreter_code_argument_deny
+case_full_interpreter_list_denies
+case_full_code_flag_list_denies
 case_code_flag_and_interpreter_spellings_deny
 case_heredoc_body_prose
 case_heredoc_body_destination

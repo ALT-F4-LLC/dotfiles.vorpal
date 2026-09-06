@@ -78,7 +78,7 @@ const AUTO_MODE_ENVIRONMENT_CONTEXT: &[&str] = &[
 
 const AUTO_MODE_ALLOW_RULES: &[&str] = &[
     "$defaults",
-    "Bash(docket:*) in ALT-F4-LLC repositories — high-frequency org CLI; includes registry and run-state verbs (workflow register --all-projects/--project, run activate, dispatch backfill-usage, issue comment, step claim) and read-only SELECTs against the docket store at ~/.docket/issues.db",
+    "Bash(docket:*) in ALT-F4-LLC repositories — high-frequency org CLI; includes registry and run-state verbs (workflow register --all-projects/--project, run activate, dispatch backfill-usage, issue comment, step claim) and read-only SELECTs against the docket store at ~/.docket/issues.db; `docket trust add`/`docket trust rm` write the store that authorizes a step's own gates and stay outside this rule",
     "Bash(cargo:*) in ALT-F4-LLC repositories — build/test/fmt/check/clippy, including invocations prefixed with CARGO_HOME/CARGO_TARGET_DIR/GOCACHE-style cache overrides; writes only to build caches",
     "Local git operations in trusted repositories — add, commit, worktree, cherry-pick, stash, archive, cat-file, rev-parse, and other repo-local verbs, whether run from the checkout or via `git -C <trusted checkout>`, with commit messages passed inline, via a heredoc, or via `-F <file under the scratch root>`; `git push` publishes and stays outside this rule",
     "Bash(vorpal:*) in ALT-F4-LLC repositories — the org's own build tool, same standing as docket",

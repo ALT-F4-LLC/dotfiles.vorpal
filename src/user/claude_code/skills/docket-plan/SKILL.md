@@ -902,7 +902,13 @@ flags allowed between verb and ref, and `git rev-list` counted alongside
 `diff` and `log`:
 `grep -nE 'git (diff|log|rev-list)( +-[^ ]+)* +origin/<base>\.\.HEAD'` goes
 red on `<base>..HEAD`, where the original stayed silent at exit 1. That
-restated pattern is still the shape for a two-dot, flags-then-ref call site
+restated pattern only kills the mutant where the extract holds exactly one
+range site: an extract with a second, correct range site (a sibling
+`rev-list --count origin/<base>..HEAD` bullet in the same section, say) lets
+the positive pattern match the sibling and exit 0 with the mutant still
+present, so where more than one site is possible, assert the negative instead
+— the mutated form ABSENT from the extract — rather than the positive form.
+The restated pattern is still the shape for a two-dot, flags-then-ref call site
 only; a corpus containing a three-dot range (`...`), a `git -C <dir>` prefix,
 an option preceding the verb, or a ref held in a shell variable needs its own
 widened alternation, not a copy of this line. Another AC

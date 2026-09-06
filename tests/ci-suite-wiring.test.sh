@@ -366,6 +366,34 @@ jobs:
         run: bash tests/beta.test.sh
 YAML
 
+# `if:` written AFTER `run:` in the same step must still gate it: nothing in
+# YAML requires the condition to precede the command.
+cat > "${FIX}/gated-step-if-after-run.yaml" <<'YAML'
+jobs:
+  test-hooks:
+    runs-on: ubuntu-latest
+    steps:
+      - run: bash tests/alpha.test.sh
+      - run: bash tests/beta.test.sh
+        if: false
+YAML
+
+# A gated job placed BEFORE an ungated job: gating must not leak across the
+# job boundary, in either direction.
+cat > "${FIX}/gated-job-first.yaml" <<'YAML'
+jobs:
+  dead:
+    if: false
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo dead
+  test-hooks:
+    runs-on: ubuntu-latest
+    steps:
+      - run: bash tests/alpha.test.sh
+      - run: bash tests/beta.test.sh
+YAML
+
 cat > "${FIX}/mention-only.yaml" <<'YAML'
 jobs:
   test-hooks:
@@ -426,6 +454,10 @@ expect_wiring "job needing an ungated job" 0 "${FIX}/tests" \
     "${FIX}/needs-ungated-job.yaml" || fail=1
 expect_wiring "if-gated step" 1 "${FIX}/tests" "${FIX}/gated-step.yaml" \
     "$UNWIRED_BETA" || fail=1
+expect_wiring "if-gated step, if after run" 1 "${FIX}/tests" \
+    "${FIX}/gated-step-if-after-run.yaml" "$UNWIRED_BETA" || fail=1
+expect_wiring "gated job before an ungated job" 0 "${FIX}/tests" \
+    "${FIX}/gated-job-first.yaml" || fail=1
 expect_wiring "suite named but not run" 1 "${FIX}/tests" "${FIX}/mention-only.yaml" \
     "$UNWIRED_BETA" || fail=1
 expect_wiring "suite name holding a space" 1 "${FIX}/spaced" "${FIX}/matched.yaml" \

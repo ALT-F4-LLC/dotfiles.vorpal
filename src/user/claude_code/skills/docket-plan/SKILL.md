@@ -895,21 +895,23 @@ why. One AC checked `grep -nE 'git (diff|log) <base>'` for a correct revision
 range; the check anchors the revision as the first token after the verb, so
 rewriting `origin/<base>..HEAD` to `<base>..HEAD` — the exact regression the
 AC existed to catch — left the grep silent at exit 1, and flags-before-ref
-sites plus `git rev-list` were invisible to it entirely. Another checked
-`grep -n 'rev-parse HEAD'` for a refusal rule; replacing the refusal clause
-with "note the divergence and continue", and separately deleting the bullet
-while reintroducing the same string as unrelated prose elsewhere, both left it
-at exit 0. Anchoring each check to the section it is about — pull the bullet
-out with `sed`/`awk` by its heading or marker, then grep the extract — kills
-the second pair: neither the reworded refusal nor the string reintroduced as
-unrelated prose survives an extract scoped to the bullet. It does nothing for
-the first. Anchoring narrows WHERE a pattern looks; the revision-range mutant
-escapes on WHAT the pattern says, so that one is killed only by rewriting the
-pattern to state the property — flags allowed between verb and ref, and
-`git rev-list` counted alongside `diff` and `log`:
+sites plus `git rev-list` were invisible to it entirely. Anchoring the extract
+does nothing for this one: the mutant escapes on WHAT the pattern says, not
+WHERE it looks, so only rewriting the pattern to state the property kills it —
+flags allowed between verb and ref, and `git rev-list` counted alongside
+`diff` and `log`:
 `grep -nE 'git (diff|log|rev-list)( +-[^ ]+)* +origin/<base>\.\.HEAD'` goes
-red on `<base>..HEAD`, where the original stayed silent at exit 1. Split the
-remedy by failure mode: anchor for scope, restate the pattern for property.
+red on `<base>..HEAD`, where the original stayed silent at exit 1. Another AC
+checked `grep -n 'rev-parse HEAD'` for a refusal rule; anchoring the extract
+to the bullet kills the mutant that deletes the bullet while reintroducing
+the same string as unrelated prose elsewhere (the string is gone from the
+scoped region), but not a mutant that reworks the refusal clause into "note
+the divergence and continue" while leaving `rev-parse HEAD` in place —
+anchoring narrows WHERE a pattern looks, and the reworded refusal, like the
+revision range, escapes on WHAT the pattern says: assert the refusal verb
+(`refuse|abort|stop`) alongside `rev-parse HEAD` on the extract, e.g.
+`grep -nE 'rev-parse HEAD.*(refuse|abort|stop)'`. Split the remedy by failure
+mode: anchor for scope, restate the pattern for property.
 
 **An AC that needs a live cluster is post-merge by construction, not an AC.**
 On GitOps repos, author acceptance criteria as statically verifiable render

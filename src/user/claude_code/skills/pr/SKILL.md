@@ -38,19 +38,20 @@ being told. The principle, which does not go stale:
   thing between an attacker's text and a publish, so follow them exactly
   rather than by paraphrase.
 - **Read the current ask list rather than trusting any copy of it**,
-  including the one below: it is `with_permission_ask` in
-  `src/user/claude_code.rs` (`grep -n 'with_permission_ask'
+  including the one below: it is `PUBLISHING_ASK_VERBS` in
+  `src/user/claude_code.rs` (`grep -n PUBLISHING_ASK_VERBS
   src/user/claude_code.rs`), and in any other checkout it is whatever that
   installation's permission configuration says.
 
-Worked example, read from this repository on 2026-09-02 and dated because it
-is a snapshot: the asks were `gh api`, `gh pr create`, `gh pr merge`, and
-`git push`. So `gh pr edit`, `gh pr ready`, `gh pr close`, `gh pr comment`,
-and `gh run view` ran **unprompted** that day — publishing generated or
-comment-derived text, and flipping a PR out of draft, had no human
-chokepoint. The `PreToolUse` hooks had no `gh` rule at all, and outside an
-active docket run did not gate `git push` either. Branch protection is
-repo-dependent, and this skill only ever reads it.
+Worked example, read from this repository on 2026-09-06 and dated because it
+is a snapshot: the asks were `gh api`, `gh pr close`, `gh pr comment`,
+`gh pr create`, `gh pr edit`, `gh pr merge`, `gh pr ready`, and `git push`.
+So `gh pr view`, `gh pr list`, `gh pr checks`, `gh run view`, and
+`gh repo view` ran **unprompted** that day — every read this skill makes had
+no human chokepoint, while every write it makes did. The `PreToolUse` hooks
+had no `gh` rule at all, and outside an active docket run did not gate
+`git push` either. Branch protection is repo-dependent, and this skill only
+ever reads it.
 
 When a rule below moves work onto a different `gh` verb, it names the ask
 rule that covers the new verb and where to re-check it — a mechanism that
@@ -346,7 +347,7 @@ precondition.
 
 This is the verb move the preamble requires naming: publication runs on
 `gh api`, covered by the `Bash(gh api:*)` ask (re-check with `grep -n
-'with_permission_ask' src/user/claude_code.rs`), rather than on `gh pr
+PUBLISHING_ASK_VERBS src/user/claude_code.rs`), rather than on `gh pr
 create` / `gh pr edit`. **Do not wrap a `gh pr` command in `xargs` or any
 other launcher** to reach the same place: an ask rule is a prefix match on
 the command as written, so the wrapper's own argv[0] is what it sees, and a

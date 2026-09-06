@@ -314,11 +314,18 @@ STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk -f "$PREPASS_AWK" 2>/dev/null) || allo
 # deviates from that pattern's usual ALLOW and stays on the DENY side,
 # because a `{` at exactly this position has no legitimate reading as
 # prose (prose reaching this position already passed the quote-group test)
-# and every real use of `git commit/push/add` needs no brace at all.
+# and every real use of `git commit/push/add` needs no brace at all. A
+# `${...}` parameter expansion is stripped before this test, not treated
+# as a brace: `git ${V}` is the SAME accepted residual as `git $V` (a
+# computed-subcommand shape this pass already declines to resolve), and
+# `${` is never brace ALTERNATION syntax, so it carries none of the risk
+# this check exists for.
 MATCH=$(printf '%s' "$STRIPPED" | awk '
 BEGIN { MARK = "\001" }
-function has_brace(word) {
-    return index(word, "{") > 0
+function has_brace(word,   stripped) {
+    stripped = word
+    gsub(/\$\{/, "", stripped)
+    return index(stripped, "{") > 0
 }
 function decode(raw,    inner, cpos) {
     if (length(raw) >= 2 && substr(raw, 1, 1) == MARK && substr(raw, length(raw), 1) == MARK) {

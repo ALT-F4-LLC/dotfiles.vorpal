@@ -234,6 +234,12 @@ case_brace_split_verb_denies() {
         "brace-split trust word: docket trus{t,} add"
     assert_verdict "docket trust add{,} erik key" executor-write DENY \
         "brace-split verb, alternative at the end: docket trust add{,}"
+    # A ${...} parameter expansion is not brace alternation: the same
+    # accepted residual as a bare $V (an interpreter/verb reached through a
+    # variable, which this pass already declines to resolve), so it must
+    # not be caught by the brace check above.
+    assert_verdict 'docket trust ${V} erik key' executor-write ALLOW \
+        'docket trust ${V} computed verb: a parameter expansion, not a brace alternation'
 }
 
 # ---- MUST DENY: the verb carried as an interpreter's code argument --------

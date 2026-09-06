@@ -296,6 +296,8 @@ case_must_allow_terminal_fix_negative_controls() {
 case_must_allow_computed_subcommand_residual() {
     assert_verdict 'git $(echo commit)' ALLOW 'git $(echo commit) computed subcommand'
     assert_verdict 'git $V' ALLOW 'git $V computed subcommand'
+    assert_verdict 'git ${V}' ALLOW \
+        'git ${V} computed subcommand: a parameter expansion, not a brace alternation'
     assert_verdict 'git `echo commit`' ALLOW 'git `echo commit` computed subcommand'
 }
 

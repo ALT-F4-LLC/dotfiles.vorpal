@@ -96,8 +96,9 @@ gate: a launch of yours still in flight, or `next` still offering rows on
 issues the park does not touch. When it does, the question is NON-BLOCKING:
 render the accompanying text and the questions as plain text with their
 labels, recommended option first, load `PushNotification` through `ToolSearch`
-and send one naming the run and the gate, end the turn, and keep dispatching
-on the next completion notification as if no question were out. The question
+and send one naming the run and the gate, and carry on with the loop in this
+same turn — close, next, open, launch — exactly as if no question were out;
+the turn ends where it always does, on a launch in flight. The question
 tool freezes this conversation until the operator answers, and RUN-90 sat
 inside it from 00:22 to 07:22 local with every other lane's work claimable
 the whole time. The answer is the operator's next typed message that names a
@@ -863,9 +864,9 @@ step and the run had to be paused.
 ```bash
 docket next --run $RUN --limit 500 --json | jq '{
   total: .data.total,
-  kinds: (.data.steps | group_by(.kind) | map({key: .[0].kind, value: length}) | from_entries),
-  staged: ([.data.steps[] | select(.status == "staged")] | length),
-  issues: (.data.steps | map(.issue) | unique),
+  kinds: ((.data.steps // []) | group_by(.kind) | map({key: .[0].kind, value: length}) | from_entries),
+  staged: ([(.data.steps // [])[] | select(.status == "staged")] | length),
+  issues: ((.data.steps // []) | map(.issue) | unique),
   refusal: .error }'
 ```
 

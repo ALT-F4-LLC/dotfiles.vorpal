@@ -57,6 +57,12 @@ Exclude two more kinds before picking — this queue isn't tend's alone:
   comes back empty. Strictly one issue in flight at a time: workers share
   this working tree, so never have two issues' workers alive at once.
 
+  An issue carrying the `review-gap` label was filed by `drain-highs` from a
+  prior run's review findings, not by hand — its body names the filing
+  run's `source-run:`. Nothing about tending it differs; the label exists
+  so the queue and a later `docket-retro` pass can tell drain-highs filings
+  apart from issues filed any other route.
+
 ## 2. Tend one issue
 
 1. `docket issue show <id> --json` — full detail: description, acceptance

@@ -1,6 +1,6 @@
 ---
 node: drain-highs
-version: 6
+version: 7
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -66,6 +66,17 @@ this step does not repeat their review or independently verify the defects.
    If an unreadable relation or ambiguous match prevents establishing prior
    filing, use Stuck.
 
+   Extend this check across every issue drained in the same wave, not only
+   this step's own issue: before preparing a gap file, compare its cluster's
+   identity and evidence against every other drain-highs step's clusters and
+   filings from this run, using the run's artifact index to reach their
+   synthesis and reconcile artifacts. A cluster that matches one already
+   filed by another issue's drain — same locus and same defect, not merely a
+   similar title — is a duplicate: relate it to that filing with
+   `docket issue link add` (`duplicates`) instead of filing a second issue,
+   and record which filing it duplicates in the report. This is a same-wave,
+   cross-issue check; it does not require reading every historical drain.
+
 4. **Prepare one gap file per selected cluster without a prior filing.**
    Recover its member records from the synthesis artifact's markdown body
    for the same issue and round. Reconcile's `members` contains severities,
@@ -84,6 +95,7 @@ this step does not repeat their review or independently verify the defects.
    Home: THIS repository
    Files: <distinct evidence file paths, comma-separated>
    Severity: <the cluster's open_severity>
+   Labels: review-gap[, security-load-bearing]
    ```
 
    The first line becomes the issue title. Use the cluster's title where
@@ -96,13 +108,19 @@ this step does not repeat their review or independently verify the defects.
    The conductor promotes this line into file and scope metadata at close;
    this step does not supply `-f` or `--scope`. Keep `Severity:` in the leading
    header so the engine can assign the backlog priority from the open severity.
+   Every filing carries `review-gap` in `Labels:`, marking it apart from an
+   issue filed any other route for a later `/tend` pass or `docket-retro`
+   reading to filter on; also state this step's `source-run:RUN-N` in the
+   body below the header so the filing's provenance survives even where
+   `Labels:` is not read.
 
    Apply `security-load-bearing` at this filing, not later at activation:
    check the cluster against `policy.toml`'s `[security]` labeling test
    (the six control classes it enumerates, and the rule that changing,
-   relocating, or deleting a control's implementation all qualify). State
-   the label decision and, when applied, which control class in the body.
-   This is the test's sole application site; do not re-derive it elsewhere.
+   relocating, or deleting a control's implementation all qualify). Add it
+   to the same `Labels:` line when it applies, and state which control class
+   in the body. This is the test's sole application site; do not re-derive
+   it elsewhere.
 
    After a blank line, include the cluster's `open_severity`, its supplied
    identity, and every member's judge, severity, `file:line`, and evidence.

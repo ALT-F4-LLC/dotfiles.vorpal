@@ -404,10 +404,12 @@ because the file it writes is not the file that gets published: the strip
 pass below rewrites the title through `/usr/bin/grep`, which terminates its
 output whether or not its input was terminated — a 17-byte unterminated
 title comes back 18 bytes, ending `\n`. The **de-terminate** step below is what
-produces the property; the validation list's trailing-newline item and the
-byte-count readback above are the two checks that confirm it. Neither check
-may be a `wc -l` count, which cannot see a terminator at all: it reports
-`0` for the correct file and `1` for the defective one.
+produces the property; the validation list's trailing-newline item is the
+check that confirms it — the byte-count readback above confirms only that
+the file-write tool and `Bash` agree on the scratch path, before the strip
+pass runs, and cannot see this later property. The confirming check may not
+be a `wc -l` count, which cannot see a terminator at all: it reports `0` for
+the correct file and `1` for the defective one.
 
 **Explicitly forbidden**, because each is the same crossing wearing a
 different hat: `printf '%s' '<title>' > <file>` and every other shell writer,

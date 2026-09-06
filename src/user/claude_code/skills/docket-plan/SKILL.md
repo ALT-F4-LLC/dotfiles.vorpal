@@ -887,8 +887,10 @@ never reads as uniformly mechanized when only some of it is. Both halves matter 
 every line trails a grep, half of which can never go red, is more misleading
 than one that says plainly which criteria a human must read.
 
-**Prefer the section-anchored form over the whole-file grep.** Extract the
-bullet or block the criterion is about first, then assert on that extract; a
+**Prefer the section-anchored form over the whole-file grep; restate the
+pattern where the mutant escapes on WHAT it says, not WHERE it looks.**
+Extract the bullet or block the criterion is about first, then assert on that
+extract; a
 bare `grep -n 'some string' <file>` over a 750-line document tests only that
 the string exists somewhere in it. Two mutants from a past issue's ACs show
 why. One AC checked `grep -nE 'git (diff|log) <base>'` for a correct revision

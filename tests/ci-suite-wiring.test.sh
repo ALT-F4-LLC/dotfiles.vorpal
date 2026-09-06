@@ -88,11 +88,15 @@ wired_suites() { # <workflow-file>
             if (rest == "") next
 
             if (ind == 0) { flush_job(); next }
-            if (ind == 2 && rest ~ /^[A-Za-z0-9_.-]+:[[:space:]]*$/) {
-                flush_job()
-                job = rest
-                sub(/:[[:space:]]*$/, "", job)
-                next
+            if (ind == 2) {
+                hdr = rest
+                sub(/[[:space:]]+#.*$/, "", hdr)
+                if (hdr ~ /^[A-Za-z0-9_.-]+:[[:space:]]*$/) {
+                    flush_job()
+                    job = hdr
+                    sub(/:[[:space:]]*$/, "", job)
+                    next
+                }
             }
             if (ind == 4) {
                 flush_step()
@@ -269,6 +273,22 @@ jobs:
       - run: bash tests/beta.test.sh
 YAML
 
+# A job header carrying a trailing comment must still end the previous job:
+# the comment must not merge test-hooks and dead into one buffer and drop
+# alpha's row into dead's gated flush.
+cat > "${FIX}/gated-job-commented-header.yaml" <<'YAML'
+jobs:
+  test-hooks:
+    runs-on: ubuntu-latest
+    steps:
+      - run: bash tests/alpha.test.sh
+  dead: # macos build
+    if: false
+    runs-on: ubuntu-latest
+    steps:
+      - run: bash tests/beta.test.sh
+YAML
+
 cat > "${FIX}/gated-job-late-if.yaml" <<'YAML'
 jobs:
   test-hooks:
@@ -396,6 +416,8 @@ expect_wiring "job gated before steps" 1 "${FIX}/tests" "${FIX}/gated-job.yaml" 
     "$UNWIRED_BETA" || fail=1
 expect_wiring "job gated after steps" 1 "${FIX}/tests" "${FIX}/gated-job-late-if.yaml" \
     "$UNWIRED_BETA" || fail=1
+expect_wiring "commented job header before a gated job" 1 "${FIX}/tests" \
+    "${FIX}/gated-job-commented-header.yaml" "$UNWIRED_BETA" || fail=1
 expect_wiring "job needing a gated job" 1 "${FIX}/tests" "${FIX}/needs-gated-job.yaml" \
     "$UNWIRED_ALPHA" "$UNWIRED_BETA" || fail=1
 expect_wiring "job needing a job that needs a gated job" 1 "${FIX}/tests" \

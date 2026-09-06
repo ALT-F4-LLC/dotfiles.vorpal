@@ -1,6 +1,6 @@
 ---
 node: fix
-version: 9
+version: 10
 archetype: executor-write
 packet_includes:
   - fragments/code-philosophy.md
@@ -205,6 +205,9 @@ required by the executor-write obligations. Keep the body concise and include:
   unsuccessful reproduction, scope block, and unavailable verification. A
   rebuttal is not a unilateral withdrawal of a reconciled finding.
 - **Files changed:** one line explaining why each changed file was necessary.
+- **Denials:** every refused command and any re-issue, in both the step's returned
+  response and this artifact, under completion-gates; write none when there were
+  none. Preserve reasons and outcomes with required redactions.
 - **Class sweeps:** search coverage and command/pattern, loci and dispositions,
   filed gap references, and limits on any absence claim.
 - **Entry-point invocations:** published and executed forms, adaptations,

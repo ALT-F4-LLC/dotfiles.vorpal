@@ -1,7 +1,10 @@
 [pipeline]
 description = "Documentation change: implement with doc-validate and citation gates, one correctness judge, tribunal-filtered review and AC verification, and a bounded fix-loop re-entering at review; the conductor integrates commits, the operator publishes. Design-heavy doc work routes through spec-doc first."
 name = "docs-only"
-version = 19  # 19: two input edits, no topology change. (1) `fix` adds
+version = 20  # 20: `blocked` joins unless_labels (DOT-1788): a hold label so
+              #   an issue not yet workable matches zero registered workflows
+              #   until the label is removed.
+              # 19: two input edits, no topology change. (1) `fix` adds
               #   `issue.latest.change-summary` beside
               #   `implement.change-summary`: the engine never rebinds a loop
               #   body's own inputs, so at fix@2 and later the packet carried
@@ -25,7 +28,7 @@ version = 19  # 19: two input edits, no topology change. (1) `fix` adds
 
 [match]
 labels_any = ["docs-only"]
-unless_labels = ["investigation", "spec-doc", "spec-project", "release", "retro"]
+unless_labels = ["blocked", "investigation", "spec-doc", "spec-project", "release", "retro"]
 
 [limits]
 "judge-correctness" = { max = 16, max_step_duration = "1h" }

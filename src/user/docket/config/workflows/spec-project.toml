@@ -1,7 +1,10 @@
 [pipeline]
 description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step, review them once, and accept by tribunal vote that escalates to the operator."
 name = "spec-project"
-version = 15  # 15: reconcile gains the `drain-highs` routing on
+version = 16  # 16: `blocked` joins unless_labels (DOT-1788): a hold label so
+              #   an issue not yet workable matches zero registered workflows
+              #   until the label is removed.
+              # 15: reconcile gains the `drain-highs` routing on
               #   `any(open_severity >= high)` plus the interposed executor
               #   step it names, which files each still-open high cluster
               #   (not held, not operator-resolved) as a `--gap-file` backlog
@@ -24,7 +27,7 @@ version = 15  # 15: reconcile gains the `drain-highs` routing on
 
 [match]
 labels_any = ["spec-project"]
-unless_labels = ["release", "retro"]
+unless_labels = ["blocked", "release", "retro"]
 
 [limits]
 "drain-highs" = { max = 16, max_step_duration = "1h" }

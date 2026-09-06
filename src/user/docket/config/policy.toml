@@ -1,6 +1,15 @@
 [policy]
 version = 23
 
+# `blocked` (DOT-1788): the hold label. An issue not yet workable — blocked on
+# a capability that does not exist, or needing a design session before
+# implementation makes sense — carries this label so it matches zero
+# registered workflows and cannot be selected by `docket-plan` or treated as
+# run-ready by `docket-groom`. Every `workflows/*.toml`'s `[match].unless_labels`
+# names it. Remove the label only once the specific blocking condition named
+# on the issue (the missing capability, or the completed design session) is
+# met; it is not a silent, permanent exclusion.
+
 [variants]
 fable-high = { model = "fable", effort = "high" }
 fable-max = { model = "fable", effort = "max" }

@@ -1,11 +1,13 @@
 [pipeline]
 description = "Read-only root-cause investigation with an optional research step, ending at a tribunal read that revises the report on rejection and escalates to the operator."
 name = "investigation"
-version = 10
+version = 11  # 11: `blocked` joins unless_labels (DOT-1788): a hold label so
+              #   an issue not yet workable matches zero registered workflows
+              #   until the label is removed.
 
 [match]
 labels_any  = ["investigation"]
-unless_labels = ["spec-doc", "spec-project", "release", "retro"]
+unless_labels = ["blocked", "spec-doc", "spec-project", "release", "retro"]
 
 [limits]
 "investigate" = { max = 16, max_step_duration = "1h" }

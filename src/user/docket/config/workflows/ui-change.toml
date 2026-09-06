@@ -1,6 +1,9 @@
 [pipeline]
 name = "ui-change"
-version = 23  # 23: three input edits, no topology change. (1) `fix` adds
+version = 24  # 24: `blocked` joins unless_labels (DOT-1788): a hold label so
+              #   an issue not yet workable matches zero registered workflows
+              #   until the label is removed.
+              # 23: three input edits, no topology change. (1) `fix` adds
               #   `synthesize.findings` beside `reconcile.findings`: the
               #   aggregate reaches the fixer as cluster titles and member ids
               #   with no evidence, while the synthesize artifact's body lists
@@ -73,6 +76,7 @@ description = "UI change bound to an accepted ux-spec (cited in the issue body â
 [match]
 labels_any = ["ui"]
 unless_labels = [
+  "blocked",
   "docs-only",
   "investigation",
   "release",

@@ -1,7 +1,10 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by a research step, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec), escalating to the operator."
 name = "spec-doc"
-version = 23  # 23: the three TDD security lane pairs (`author-tdd-security`,
+version = 24  # 24: `blocked` joins unless_labels (DOT-1788): a hold label so
+              #   an issue not yet workable matches zero registered workflows
+              #   until the label is removed.
+              # 23: the three TDD security lane pairs (`author-tdd-security`,
               #   `-alt`, `-slb` and their `revise-` twins) collapse back to
               #   one pair. They were three copies of one step — same
               #   executor, gates, inputs, cost — differing only in which of
@@ -58,7 +61,7 @@ version = 23  # 23: the three TDD security lane pairs (`author-tdd-security`,
 
 [match]
 labels_any = ["spec-doc"]
-unless_labels = ["spec-project", "release", "retro"]
+unless_labels = ["blocked", "spec-project", "release", "retro"]
 
 [limits]
 "drain-highs" = { max = 16, max_step_duration = "1h" }

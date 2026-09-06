@@ -1,7 +1,10 @@
 [pipeline]
 description = "Cross-issue disposition: write the verdict comment and close the carrier, gated on the build/test sanity check and AC verification with a bounded revise loop; no code-review machinery."
 name = "disposition"
-version = 5  # 5: `docs-only` and `ui` join unless_labels. Neither track
+version = 6  # 6: `blocked` joins unless_labels (DOT-1788): a hold label so an
+             #   issue not yet workable matches zero registered workflows
+             #   until the label is removed.
+             # 5: `docs-only` and `ui` join unless_labels. Neither track
              #   excludes `disposition`, so an issue labelled `disposition` +
              #   `docs-only` or `disposition` + `ui` matched two workflows and
              #   refused activation — the routing sweep in the engine repo
@@ -31,7 +34,7 @@ version = 5  # 5: `docs-only` and `ui` join unless_labels. Neither track
 
 [match]
 labels_any = ["disposition"]
-unless_labels = ["docs-only", "investigation", "spec-doc", "spec-project", "release", "retro", "security", "security-change", "security-load-bearing", "ui"]
+unless_labels = ["blocked", "docs-only", "investigation", "spec-doc", "spec-project", "release", "retro", "security", "security-change", "security-load-bearing", "ui"]
 
 [limits]
 "dispose" = { max = 16, max_step_duration = "1h" }

@@ -68,11 +68,24 @@ wired_suites() { # <workflow-file>
             step_run = ""
             step_gated = 0
         }
+        # A dependency token may be quoted (needs: ["gate"] or needs:\n  - "gate");
+        # strip a matching pair of surrounding quotes so it compares equal to the
+        # job key, which is never quoted.
+        function unquote_needs(list,    n, i, tok, out) {
+            n = split(list, tok, /[[:space:]]+/)
+            out = ""
+            for (i = 1; i <= n; i++) {
+                if (tok[i] == "") continue
+                gsub(/^"|"$|^'\''|'\''$/, "", tok[i])
+                out = out " " tok[i]
+            }
+            return out
+        }
         function flush_job() {
             flush_step()
             if (job != "") {
                 gated[job] = job_gated
-                needs[job] = job_needs
+                needs[job] = unquote_needs(job_needs)
             }
             job = ""
             job_gated = 0
@@ -340,6 +353,39 @@ jobs:
       - run: bash tests/beta.test.sh
 YAML
 
+# A quoted dependency token must compare equal to the unquoted job key: both
+# the flow-sequence and block-sequence spellings can carry quotes.
+cat > "${FIX}/needs-gated-job-quoted.yaml" <<'YAML'
+jobs:
+  gate:
+    if: false
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo gate
+  test-hooks:
+    needs: ["gate"]
+    runs-on: ubuntu-latest
+    steps:
+      - run: bash tests/alpha.test.sh
+      - run: bash tests/beta.test.sh
+YAML
+
+cat > "${FIX}/needs-gated-job-quoted-block.yaml" <<'YAML'
+jobs:
+  gate:
+    if: false
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo gate
+  test-hooks:
+    needs:
+      - "gate"
+    runs-on: ubuntu-latest
+    steps:
+      - run: bash tests/alpha.test.sh
+      - run: bash tests/beta.test.sh
+YAML
+
 # The control for the two above: a `needs:` on an ungated job gates nothing.
 cat > "${FIX}/needs-ungated-job.yaml" <<'YAML'
 jobs:
@@ -450,6 +496,10 @@ expect_wiring "job needing a gated job" 1 "${FIX}/tests" "${FIX}/needs-gated-job
     "$UNWIRED_ALPHA" "$UNWIRED_BETA" || fail=1
 expect_wiring "job needing a job that needs a gated job" 1 "${FIX}/tests" \
     "${FIX}/needs-gated-transitive.yaml" "$UNWIRED_ALPHA" "$UNWIRED_BETA" || fail=1
+expect_wiring "job needing a gated job, quoted flow sequence" 1 "${FIX}/tests" \
+    "${FIX}/needs-gated-job-quoted.yaml" "$UNWIRED_ALPHA" "$UNWIRED_BETA" || fail=1
+expect_wiring "job needing a gated job, quoted block sequence" 1 "${FIX}/tests" \
+    "${FIX}/needs-gated-job-quoted-block.yaml" "$UNWIRED_ALPHA" "$UNWIRED_BETA" || fail=1
 expect_wiring "job needing an ungated job" 0 "${FIX}/tests" \
     "${FIX}/needs-ungated-job.yaml" || fail=1
 expect_wiring "if-gated step" 1 "${FIX}/tests" "${FIX}/gated-step.yaml" \

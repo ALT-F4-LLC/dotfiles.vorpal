@@ -1,5 +1,5 @@
 [policy]
-version = 22
+version = 23
 
 [variants]
 fable-high = { model = "fable", effort = "high" }
@@ -86,12 +86,22 @@ implement = { variant = "opus-medium" }
 # ground; D2 starts at high and reserves xhigh for 30-minute-plus agentic coding
 # with evals showing the gain, which no run here has produced.
 investigate = { variant = "fable-high" }
-judge-architecture = { variant = "opus-high" }
+# Policy 23 — judge-architecture and judge-testing at opus-medium, down from
+# opus-high; judge-correctness stays at opus-high. Measured on RUN-90 (session
+# 099f7b93, 36 waves, 1594 agent-minutes): the three review seats were 45% of
+# all agent time (judge-testing 281 min at 8.5 min per seat, judge-correctness
+# 215 min, judge-architecture 191 min) against implement's 16%. D4 has Opus 5 at
+# medium giving up about 2 points for half the cost, with re-running failures at
+# the default recovering the pass rate — and the escalation ladder is exactly
+# that re-run: a judge seat that fails hops opus-medium -> opus-high. D5 keeps
+# this on Opus rather than a smaller model at a higher effort. The correctness
+# lens keeps the default because it is the seat whose misses reach the tree.
+judge-architecture = { variant = "opus-medium" }
 judge-correctness = { variant = "opus-high" }
 judge-design = { variant = "opus-high" }
 judge-security = { variant = "opus-high", never = ["fable"], reason = "security-classifier-reroute" }
 judge-simplicity = { variant = "opus-medium" }
-judge-testing = { variant = "opus-high" }
+judge-testing = { variant = "opus-medium" }
 # fable-medium, down from fable-max: a requirements document is the knowledge-work
 # deliverable class D4 measured — medium matched the default at 70-87% of its cost —
 # and D5 has Fable at medium matching Fable 5; max is contraindicated by D1.
@@ -130,11 +140,22 @@ tdd-author-security = { variant = "opus-high", never = ["fable"], reason = "secu
 # [escalation.fallback] to opus-xhigh — the escalation path lands where the
 # standing tier used to be. Re-open with runs that pair tier and outcome.
 threat-model = { variant = "opus-high", never = ["fable"], reason = "security-classifier-reroute" }
+# Policy 23 — tribunal-architecture and tribunal-correctness at opus-high, down
+# from fable-high (tribunal-design keeps fable-high: no per-issue step names it).
+# standard-change@31 and security-change@31 interpose a verify-tribunal vote on
+# every verify that reports an AC unverifiable, which on a repo whose
+# ac-commands gate is a stub is nearly every issue (RUN-90: 20 of 23), so these
+# two seats became a per-issue pipeline step rather than an occasional
+# conversational gate, at three seats a firing. D1's ground for Fable —
+# architecture decisions and precedent — is the conversational-gate case; a
+# verify-tribunal weighs an AC report against a diff, the review-executor work
+# judge-correctness and judge-architecture already do at opus-high. A failed
+# seat still escalates opus-high -> fable-high.
+tribunal-architecture = { variant = "opus-high" }
+tribunal-correctness = { variant = "opus-high" }
 # fable-high, down from fable-xhigh: a vote is a short judgment over a proposal, not
 # the 30-minute-plus agentic run D2 reserves xhigh for; D1 keeps architecture and
 # precedent judgment on Fable; D2 starts at high.
-tribunal-architecture = { variant = "fable-high" }
-tribunal-correctness = { variant = "fable-high" }
 tribunal-design = { variant = "fable-high" }
 # opus-high, down from opus-xhigh: same reasoning as its siblings; judge-security,
 # the review-executor face of the same lens, already sits at opus-high.

@@ -57,6 +57,8 @@
 #                 item and its tail -c1 mechanism
 #                 MJ (must stay GREEN): delete the writer paragraph's
 #                 "trailing newline" prose, which the region excludes
+#                 MN: revert the NUL item to "contains no NUL byte" with no
+#                 detection command
 #   (k)  determ   MK: delete the fenced /usr/bin/head -c de-terminate
 #                 command, leaving the check with no producer
 #
@@ -370,6 +372,11 @@ else
         ok "title validation: the item names a mechanism that can see a terminator"
     else
         bad "title validation: no tail -c1 mechanism — a wc -l count cannot see a terminator"
+    fi
+    if grep -qF -- "tr -d '\\000'" "${WORK}/title-validation"; then
+        ok "title validation: the NUL-byte item names a detection command"
+    else
+        bad "title validation: no tr -d '\\000' detection — neither an agent nor the denylist's grep pass can see a NUL directly"
     fi
 fi
 

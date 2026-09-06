@@ -417,7 +417,11 @@ substitution, a heredoc carrying diff or log text, `-b "<body>"` or
 **The title file is validated before it is used**, and a failure refuses the
 publish rather than repairing it: one line with no embedded newline, ends
 without a trailing newline (`tail -c1 <file> | od -An -c` shows no `\n`),
-contains no NUL byte, non-empty after the
+contains no NUL byte — detected by comparing `tr -d '\000' < <file> | wc -c`
+against `wc -c < <file>`; a mismatch refuses, since neither an agent reading
+the title nor the denylist's grep pass (which degrades to `Binary file …
+matches` on a NUL-bearing input, losing line, pattern, and token
+attribution) can see one directly — non-empty after the
 denylist's strip pass,
 ≤ 72 characters, and matching the
 conventional-commit shape above (`type(scope): summary`). A leading `-`

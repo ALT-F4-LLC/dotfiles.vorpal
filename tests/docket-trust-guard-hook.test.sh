@@ -214,6 +214,28 @@ case_must_deny_separately_quoted_tokens() {
         "separately-quoted docket/trust/add (bash-unquotes to a real call)"
 }
 
+# ---- MUST DENY: a brace-split verb word --------------------------------
+#
+# bash's own $BASH_COMMAND reconstruction keeps a leaf's source spelling,
+# unexpanded: `docket trust ad{d,} erik key` reaches this hook as the
+# literal text `ad{d,}`, not as the two words bash actually dispatches
+# (`add`, then an extra empty-alternative token) once it expands the brace.
+# The MATCH pass's word-truncation (stop at the first non-word character)
+# used to read that as the word `ad`, which fails the add/rm test and
+# ALLOWs a verb bash really runs as `add`. A brace can split any of the
+# three words the matcher tests, so each position gets its own row.
+
+case_brace_split_verb_denies() {
+    assert_verdict "docket trust ad{d,} erik ssh-ed25519 AAAA" executor-write DENY \
+        "brace-split verb: docket trust ad{d,}"
+    assert_verdict "docket trust r{m,} erik" executor-write DENY \
+        "brace-split verb: docket trust r{m,}"
+    assert_verdict "docket trus{t,} add erik key" executor-write DENY \
+        "brace-split trust word: docket trus{t,} add"
+    assert_verdict "docket trust add{,} erik key" executor-write DENY \
+        "brace-split verb, alternative at the end: docket trust add{,}"
+}
+
 # ---- MUST DENY: the verb carried as an interpreter's code argument --------
 #
 # A quoted string is prose everywhere except one position: the code argument
@@ -696,6 +718,7 @@ case_ordinary_docket_verbs_allow
 case_must_not_catch_prose_and_reads
 case_must_deny_glued_separator_class
 case_must_deny_separately_quoted_tokens
+case_brace_split_verb_denies
 case_interpreter_code_argument_deny
 case_code_flag_and_interpreter_spellings_deny
 case_interpreter_code_argument_prose_deny

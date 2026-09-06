@@ -435,8 +435,27 @@ STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk -f "$PREPASS_AWK" 2>/dev/null) || allo
 # An exempted occurrence `continue`s the scan rather than allowing outright:
 # `docket trust add --help && docket trust add x -- y` still denies on its
 # second occurrence, on this line or a later one.
+#
+# BRACE EXPANSION (DOT-1515): bash's own $BASH_COMMAND reconstruction keeps
+# a leaf's SOURCE spelling, unexpanded -- `docket trust ad{d,} erik key`
+# reaches this scan as the literal text `ad{d,}`, not as the two words bash
+# actually dispatches (`ad`, `d`) after expansion. The truncation below
+# (stop at the first non-word character) then reads that as the word `ad`,
+# which fails the add/rm test and ALLOWs a verb bash really ran as `add`.
+# Rather than re-implementing brace expansion here -- exactly the kind of
+# re-derivation of what bash already knows that produced CL16 -- an
+# unresolved `{` in the `trust` or verb word position (checked on the
+# UNTRUNCATED word, before the truncation below runs) is read as the same
+# residual class as a `$`-expansion look-behind: this pass cannot evaluate
+# it, so it deviates from that pattern's usual ALLOW and stays on the DENY
+# side, because a `{` at exactly this position has no legitimate reading as
+# prose (prose reaching this position already passed the quote-group test)
+# and every real use of `docket trust add/rm` needs no brace at all.
 MATCH=$(printf '%s' "$STRIPPED" | awk -v strict="$CONDUCTOR" '
 BEGIN { MARK = "\001" }
+function has_brace(word) {
+    return index(word, "{") > 0
+}
 function decode(raw,    inner, cpos) {
     if (length(raw) >= 2 && substr(raw, 1, 1) == MARK && substr(raw, length(raw), 1) == MARK) {
         inner = substr(raw, 2, length(raw) - 2)
@@ -465,12 +484,14 @@ function decode(raw,    inner, cpos) {
             tgroup = D_GROUP
             tw = D_WORD
             texact = tw
+            if (has_brace(tw)) { print "MATCH"; exit }
             sub(/[^A-Za-z0-9_-].*$/, "", tw)
             if (tw != "trust") continue
             vquoted = decode(words[i + 2])
             vgroup = D_GROUP
             vw = D_WORD
             vexact = vw
+            if (has_brace(vw)) { print "MATCH"; exit }
             sub(/[^A-Za-z0-9_-].*$/, "", vw)
             if (vw != "add" && vw != "rm") continue
             if (hquoted && tquoted && vquoted && hgroup == tgroup && tgroup == vgroup) continue

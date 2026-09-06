@@ -299,8 +299,27 @@ STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk -f "$PREPASS_AWK" 2>/dev/null) || allo
 # denied — an accepted false positive, since git's own option parsing
 # would need modeling to tell that case apart from `git commit
 # --help-me-a-message-file`-shaped real writes reliably.
+#
+# BRACE EXPANSION (DOT-1515): bash's own $BASH_COMMAND reconstruction keeps
+# a leaf's SOURCE spelling, unexpanded -- `git commi{t,} -m x` reaches this
+# scan as the literal text `commi{t,}`, not as the two words bash actually
+# dispatches (`commit`, empty) after expansion. The truncation below (stop
+# at the first non-word character) then reads that as the word `commi`,
+# which fails the commit/push/add test and ALLOWs a write bash really ran
+# as `commit`. Rather than re-implementing brace expansion here -- exactly
+# the kind of re-derivation of what bash already knows that produced CL16
+# -- an unresolved `{` in the subcommand word (checked on the UNTRUNCATED
+# word, before the truncation below runs) is read as the same residual
+# class as a `$`-expansion look-behind: this pass cannot evaluate it, so it
+# deviates from that pattern's usual ALLOW and stays on the DENY side,
+# because a `{` at exactly this position has no legitimate reading as
+# prose (prose reaching this position already passed the quote-group test)
+# and every real use of `git commit/push/add` needs no brace at all.
 MATCH=$(printf '%s' "$STRIPPED" | awk '
 BEGIN { MARK = "\001" }
+function has_brace(word) {
+    return index(word, "{") > 0
+}
 function decode(raw,    inner, cpos) {
     if (length(raw) >= 2 && substr(raw, 1, 1) == MARK && substr(raw, length(raw), 1) == MARK) {
         inner = substr(raw, 2, length(raw) - 2)
@@ -342,6 +361,7 @@ function decode(raw,    inner, cpos) {
                 sgroup = D_GROUP
                 s = D_WORD
                 sw = s
+                if (has_brace(sw)) { print "MATCH"; exit }
                 sub(/[^A-Za-z0-9_-].*$/, "", sw)
                 if (sw == "commit" || sw == "push" || sw == "add") {
                     if (hquoted && squoted && hgroup == sgroup) continue

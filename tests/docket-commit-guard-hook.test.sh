@@ -299,6 +299,26 @@ case_must_allow_computed_subcommand_residual() {
     assert_verdict 'git `echo commit`' ALLOW 'git `echo commit` computed subcommand'
 }
 
+# ---- MUST DENY: a brace-split subcommand word -----------------------------
+#
+# bash's own $BASH_COMMAND reconstruction keeps a leaf's source spelling,
+# unexpanded: `git commi{t,} -m x` reaches this hook as the literal text
+# `commi{t,}`, not as the words bash actually dispatches once it expands
+# the brace. The MATCH pass's word-truncation (stop at the first non-word
+# character) used to read that as the word `commi`, which fails the
+# commit/push/add test and ALLOWs a write bash really runs as `commit`.
+# Unlike the computed-subcommand residual above, this is not an expansion
+# this hook declines to resolve -- an unresolved `{` at the subcommand
+# position is denied outright.
+
+case_brace_split_subcommand_denies() {
+    assert_verdict 'git commi{t,} -m x' DENY 'brace-split subcommand: git commi{t,}'
+    assert_verdict 'git pus{h,} origin main' DENY 'brace-split subcommand: git pus{h,}'
+    assert_verdict 'git ad{d,} src/foo.rs' DENY 'brace-split subcommand: git ad{d,}'
+    assert_verdict 'git commit{,} -m x' DENY \
+        'brace-split subcommand, alternative at the end: git commit{,}'
+}
+
 # ---- MUST ALLOW: option-before-subcommand help exemption -----------------
 
 case_must_allow_help_exemption() {
@@ -690,6 +710,7 @@ case_must_deny_capture_output
 case_must_deny_terminal_position
 case_must_allow_terminal_fix_negative_controls
 case_must_allow_computed_subcommand_residual
+case_brace_split_subcommand_denies
 case_must_allow_help_exemption
 case_accepted_false_positive_control
 case_must_not_catch_prose_and_reads

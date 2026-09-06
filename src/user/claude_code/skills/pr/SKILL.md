@@ -390,18 +390,20 @@ crossing **Explicitly forbidden** below rules out. When the readback
 confirms the same bytes, the scratch directory works for both, verified for
 this invocation rather than assumed for every one.
 
-**Both files are plain text**: no trailing
-newline, and no NUL byte anywhere in them. `gh api` sends a file's bytes
-verbatim, so a trailing newline would be published inside the title; and a
-NUL makes `/usr/bin/grep` treat the file as binary, which costs the denylist
-below its line, pattern, and token attribution (it prints only `Binary file
-… matches`) and can substitute that literal string for the operator's title.
+**The title file has no trailing newline**, because `gh api` sends a file's
+bytes verbatim and a trailing newline would be published inside the
+single-line title; the body carries no such rule, because a markdown body
+ending in a blank line is inert, and its terminator is left uncontrolled.
+Both files carry the no-NUL-byte rule: a NUL makes `/usr/bin/grep` treat the
+file as binary, which costs the denylist below its line, pattern, and token
+attribution (it prints only `Binary file … matches`) and can substitute that
+literal string for the operator's title or body.
 The denylist scans exactly the bytes `gh` sends. What the file-write tool
-does with a terminating newline does not decide this property, because the
-file it writes is not the file that gets published: the strip pass below
-rewrites both files through `/usr/bin/grep`, which terminates its output
-whether or not its input was terminated — a 17-byte unterminated title
-comes back 18 bytes, ending `\n`. The **de-terminate** step below is what
+does with a terminating newline does not decide the title's property,
+because the file it writes is not the file that gets published: the strip
+pass below rewrites the title through `/usr/bin/grep`, which terminates its
+output whether or not its input was terminated — a 17-byte unterminated
+title comes back 18 bytes, ending `\n`. The **de-terminate** step below is what
 produces the property; the validation list's trailing-newline item and the
 byte-count readback above are the two checks that confirm it. Neither check
 may be a `wc -l` count, which cannot see a terminator at all: it reports
@@ -478,17 +480,19 @@ stripped — a body engineered so stripping creates a new match must never
 leak through. A strip that empties the text (a title that was nothing but a
 trailer) refuses too: there is nothing left to publish.
 
-**De-terminate the strip pass's output.** `/usr/bin/grep` writes a
-terminating `\n` its input never had, so the stripped file always ends with
-one and the no-trailing-newline rule above can never be met by the strip
-pass alone. Read the count and cut the last byte, in two commands:
+**De-terminate the stripped title's output.** `/usr/bin/grep` writes a
+terminating `\n` its input never had, so the stripped title file always ends
+with one and the no-trailing-newline rule above can never be met by the
+strip pass alone. The stripped body carries no such step: its terminator is
+uncontrolled, per the rule above. Read the title's count and cut its last
+byte, in two commands:
 
 ```
-wc -c < <stripped-file>
+wc -c < <stripped-title-file>
 ```
 
 ```
-/usr/bin/head -c <count-minus-one> <stripped-file> > <final-file>
+/usr/bin/head -c <count-minus-one> <stripped-title-file> > <final-title-file>
 ```
 
 Only a number is written into the command; the text travels from `head`'s
@@ -496,10 +500,10 @@ stdout into the redirect, the permitted crossing named above. A strip pass
 that emptied the text has already refused, so the count is never zero. This
 runs once, after the strip pass and before the refuse-list scan.
 
-**The de-terminated file is the file that gets validated and published.**
-Nothing regenerates either file after this point: the refuse-list pass above
-runs on the de-terminated file, not the original, and that same file —
-byte-identical to what the refuse-list scan just cleared — is what `-F
+**The de-terminated title file and the stripped body file are what gets
+validated and published.** Nothing regenerates either file after this point:
+the refuse-list pass above runs on these files, not the originals, and they —
+byte-identical to what the refuse-list scan just cleared — are what `-F
 'title=@<file>'` / `-F 'body=@<file>'`, a thread reply, or a close comment
 then sends. So the scan-what-you-send rule below ("never regenerate either
 file after the scan") is never read as forbidding the strip and de-terminate

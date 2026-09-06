@@ -385,7 +385,7 @@ fi
 # title.
 if determinate=$(find_block '/usr/bin/head -c'); then
     ok "de-terminate: a fenced block cuts the terminator with /usr/bin/head -c"
-    if grep -qF -- '> <final-file>' "$determinate"; then
+    if grep -qF -- '> <final-title-file>' "$determinate"; then
         ok "de-terminate: it redirects into the file that gets scanned and sent"
     else
         bad "de-terminate: the head -c command does not redirect into <final-file>"

@@ -48,6 +48,8 @@
 #                 "gh pr edit -R <owner>/<repo> --title ... --body ..." — the
 #                 skill's central rule (generated text never enters command
 #                 text) inverted on the path no fence-anchored check reaches
+#   (d4) writer   revert the writer paragraph's prescribed writer from the
+#                 Write tool to "printf '%s' '<title>' > <file>"
 #   (e)  status   reintroduce a standalone "echo $?" line in the checks
 #                 step 4 log-fetch block (DOT-1130)
 #   (f)  tail     rejoin the checks step 4 capture and tail commands into
@@ -318,6 +320,34 @@ if [ "$patch_hits" -eq 1 ] \
     ok "update publish path: PATCH shape states file-valued title and body fields"
 else
     bad "update publish path: expected exactly one PATCH repos/<owner>/<repo>/pulls/<pr-number> statement naming title and body fields, found ${patch_hits}"
+fi
+
+# (d4) The writer paragraph names the Write tool as the prescribed writer for
+# both title and body files, never a shell writer. Anchored on the paragraph
+# that states the rule, fence-stripped, so a mention of "Write" or "printf"
+# elsewhere in the file cannot substitute.
+awk '
+    /^[[:space:]]*```/     { fenced = !fenced; next }
+    fenced                 { next }
+    index($0, "**The ban is on the crossing")            { open = 1; begins++ }
+    open && /^[[:space:]]*$/ { open = 0 }
+    open { print }
+    END { exit (begins == 1) ? 0 : 1 }
+' "$SKILL" > "${WORK}/writer-paragraph"
+writer_region=$?
+
+if [ "$writer_region" -ne 0 ] || [ ! -s "${WORK}/writer-paragraph" ]; then
+    bad "writer paragraph: expected exactly one paragraph opening 'The ban is on the crossing'"
+else
+    sentences "${WORK}/writer-paragraph" > "${WORK}/writer-sentences"
+    writer_sentence=$(grep -F -- 'title and body files' "${WORK}/writer-sentences")
+    if [ -n "$writer_sentence" ] \
+        && printf '%s' "$writer_sentence" | grep -qE -- '(the )?.Write. tool' \
+        && ! printf '%s' "$writer_sentence" | grep -qE -- 'with[[:space:]]+(the[[:space:]]+)?.(printf|cat|echo|tee)'; then
+        ok "writer paragraph: title and body files are written with the Write tool"
+    else
+        bad "writer paragraph: no sentence names the Write tool as the prescribed writer for both title and body files"
+    fi
 fi
 
 # (e) checks step 4 never reads $? in a separate shell from the one that

@@ -124,20 +124,36 @@ in_list() {
 # the name must end it (a closing quote or the space before an argument), so
 # `foo.sh` neither matches `foo.sh.dropped` nor misses `foo.sh session`.
 #
+# The call block is delimited by paren depth, not by line layout: a counter
+# opens at 0 on the `.with_hook(`/`.with_hook_timeout(` line, each scanned line
+# adds its own open parens and subtracts its own close parens, and the window
+# closes when the running depth returns to zero. A one-line collapsed call
+# (legal after `cargo fmt` for a short argument list) then opens and closes on
+# its own line instead of latching open for the rest of the file — where it
+# could paper over an unrelated missing registration much further down; a
+# multi-line call closes only at its true end even when a nested argument
+# wraps and itself emits a closing-paren line (`Some(&format!(...))` split
+# across lines), which a line-leading `)` rule would have mistaken for the
+# end of the outer call.
+#
 # The test-module cut is mirrored in Rust at src/user/claude_code.rs:824
 # (`source.find("#[cfg(test)]")`); both sites assume the test module is last.
 is_registered() {
   sed '/^[[:space:]]*#\[cfg(test)\]/,$d' "$REGISTRATION" |
     grep -vE '^[[:space:]]*//' |
     awk -v prefix="\"bash ~/.claude/hooks/$1" '
-      /\.with_hook(_timeout)?\(/ { in_call = 1 }
-      /^[[:space:]]*\)/ { in_call = 0 }
+      !in_call && /\.with_hook(_timeout)?\(/ { in_call = 1; depth = 0 }
       in_call {
+        line = $0
+        opens = gsub(/\(/, "(", line)
+        closes = gsub(/\)/, ")", line)
+        depth += opens - closes
         at = index($0, prefix)
         if (at > 0) {
           after = substr($0, at + length(prefix), 1)
           if (after == "\"" || after == " " || after == "\t") { found = 1 }
         }
+        if (depth <= 0) { in_call = 0 }
       }
       END { exit found ? 0 : 1 }
     '

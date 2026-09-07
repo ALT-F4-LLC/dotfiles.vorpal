@@ -1,6 +1,6 @@
 ---
 node: judge-security
-version: 10
+version: 11
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -89,7 +89,7 @@ Continue checks independent of the unknown.
 
 On re-review, apply re-review-rounds: retain IDs and evidenced dispositions,
 carry unresolved findings forward, and justify closures with evidence. The
-security ladder governs authoring terms, emit-time mapping, and human convergence
+security ladder governs authoring terms, emit-time mapping, and convergence
 where that fragment discusses general-track bands or automatic fix loops.
 Preserve reviewed states, coverage, finding IDs, dispositions, evidence references,
 and gaps across handoffs and compaction.

@@ -1,6 +1,6 @@
 ---
 fragment: severity-ladder-security
-version: 3
+version: 4
 ---
 # Severity ladder: security
 
@@ -21,7 +21,7 @@ their protection is established.
   loss of a required security guarantee. Examples include a privileged path
   left unguarded or a mitigation regressed; use Critical when the resulting
   exploitability and impact warrant it. Fix, or accept the risk explicitly
-  through the HUMAN security vote.
+  through the `security-vote` panel's recorded approval.
 - **Medium**: a supported security concern below High because impact is limited
   or evidenced prerequisites substantially constrain exploitation. State those
   limits. Low confidence and the mere availability of a workaround do not
@@ -47,16 +47,23 @@ payload contract. Map each rung exactly:
 | Low | `low` |
 | Info | `info` |
 
-**Security convergence.** Critical and High route to the HUMAN security vote.
-A supported Critical remains fix-before-merge or revert; a vote may correct or
-reject its classification on evidence, but risk acceptance alone does not clear
-it. High requires a fix or recorded acceptance by the authorized human decision
-maker. Medium remains recorded and surfaces at the gates and in the backlog;
-Low and Info remain available for downstream consideration.
+**Security convergence.** On the security track, reconcile routes any open
+Critical or High to the `security-vote` panel: the judge seats the workflow
+declares, tallied by the engine; no person sits on it. A supported Critical
+remains fix-before-merge or revert; the panel may correct or reject its
+classification on evidence, but risk acceptance alone does not clear it. High
+requires a fix or the panel's recorded acceptance: approve-with-concerns casts
+whose rationales stand in the vote record, after which `drain-highs` files
+every open High the panel approved past as a backlog issue. A rejected tally
+returns the round to the fix loop; the operator is reached only when the loop
+bound parks the step. Where another track seats this reviewer without a
+security vote, that track's own thresholds route its findings. Medium remains
+recorded and surfaces at the gates and in the backlog; Low and Info remain
+available for downstream consideration.
 
 No severity starts an automatic fix loop in this track. Retain the supplied
 re-review contract's finding identities, evidence, carry-forward, and closure
-rules, but use this ladder's terms and human convergence policy. Unresolved
+rules, but use this ladder's terms and convergence policy. Unresolved
 findings remain unresolved when a review ends. Neither an absent `blocker` nor a
 completed vote proves readiness: required checks, applicable gates, and
 judgment-blocking gaps still apply. A gate override alone is not acceptance of

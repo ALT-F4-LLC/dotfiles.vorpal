@@ -17,7 +17,8 @@
 #
 # PR_SKILL_FILE overrides the file under test, so a mutation probe can point
 # the suite at a deliberately broken COPY under $TMPDIR without touching the
-# checkout. Each assertion's mutant, proven red:
+# checkout. The mutants below were each run red against a copy; assertions
+# not listed here have no recorded mutant:
 #
 #   (a)  publish  replace the fenced publish block with the
 #                 "gh pr create --title ... --body-file ..." shape

@@ -618,6 +618,38 @@ mod tests {
     };
     use crate::file::FileCreate;
 
+    // A rule may name a `gh pr <sub>` verb in slash-compressed form (line 89
+    // uses "gh pr view/checks/list/diff" for four verbs in one phrase) rather
+    // than spelling the whole verb out as a literal substring. Whole-literal
+    // `rule.contains(verb)` misses that spelling entirely: DOT-1472 measured
+    // an allow rule naming "gh pr view/edit/ready, gh pr view/close/comment"
+    // with no exclusion clause passing every existing assertion. For a two-
+    // word verb (anything but `gh pr <sub>`), fall back to the plain
+    // substring test; for a `gh pr <sub>` verb, treat it as named when `sub`
+    // appears in the slash-run immediately following any `gh pr ` occurrence
+    // in the rule.
+    fn rule_names_verb(rule: &str, verb: &str) -> bool {
+        if rule.contains(verb) {
+            return true;
+        }
+        let Some(sub) = verb.strip_prefix("gh pr ") else {
+            return false;
+        };
+        let mut rest = rule;
+        while let Some(pos) = rest.find("gh pr ") {
+            let after = &rest[pos + "gh pr ".len()..];
+            let run_end = after
+                .find(|c: char| c.is_whitespace() || c == ',' || c == ';')
+                .unwrap_or(after.len());
+            let run = &after[..run_end];
+            if run.split('/').any(|tok| tok == sub) {
+                return true;
+            }
+            rest = &after[run_end..];
+        }
+        false
+    }
+
     #[test]
     fn allowed_signers_install_and_config_paths_name_the_same_file() {
         // Activation expands `${HOME}`; git expands only a leading `~/`. The
@@ -778,7 +810,7 @@ mod tests {
         // textual: the verb may appear only alongside "outside" or "ask".
         for rule in AUTO_MODE_ALLOW_RULES {
             for verb in PUBLISHING_ASK_VERBS {
-                if rule.contains(verb) {
+                if rule_names_verb(rule, verb) {
                     assert!(
                         rule.contains("outside") || rule.contains("ask"),
                         "{verb} is named without an exclusion in: {rule}"

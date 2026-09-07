@@ -28,6 +28,8 @@ jobs:
 
       - run: bash tests/docket-trust-guard-hook.test.sh
 
+      - run: bash tests/frozen-drift-check.test.sh
+
       - run: bash tests/pr-skill.test.sh
 
       - run: bash tests/sandbox-bypass-guard-hook.test.sh

@@ -73,6 +73,12 @@
 # docket/jq/shasum unavailable, the engine returned an error, or the
 # integration branch named by FROZEN_DRIFT_CHECK_BASE could not be resolved
 # to a merge-base with HEAD).
+#
+# FROZEN_DRIFT_CHECK_SKIP_ENGINE=1 skips the schema/workflow phases below,
+# which need a live `docket` engine and its registry. tests/frozen-drift-
+# check.test.sh sets it to drive the contracts/fragments comparison — the
+# half this check does entirely from git — against a throwaway fixture repo
+# with no engine involved.
 
 set -euo pipefail
 
@@ -82,29 +88,38 @@ if ! repo_root="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null)"; 
   exit 2
 fi
 
-for tool in docket jq shasum; do
+for tool in jq shasum; do
   if ! command -v "$tool" >/dev/null 2>&1; then
     echo "frozen-drift-check FAILED: required tool '$tool' not on PATH." >&2
     exit 2
   fi
 done
 
-if ! schemas_json="$(docket schema list --json 2>&1)" \
-   || ! echo "$schemas_json" | jq -e '.ok == true' >/dev/null 2>&1; then
-  echo "frozen-drift-check FAILED: 'docket schema list --json' did not return ok:" >&2
-  echo "$schemas_json" >&2
-  exit 2
-fi
-if ! workflows_json="$(docket workflow list --json 2>&1)" \
-   || ! echo "$workflows_json" | jq -e '.ok == true' >/dev/null 2>&1; then
-  echo "frozen-drift-check FAILED: 'docket workflow list --json' did not return ok:" >&2
-  echo "$workflows_json" >&2
-  exit 2
-fi
-
 failed=0
 records=0
 files=0
+
+if [ "${FROZEN_DRIFT_CHECK_SKIP_ENGINE:-0}" = "1" ]; then
+  schemas_json='{"data":{"schemas":[]}}'
+  workflows_json='{"data":{"workflows":[]}}'
+else
+  if ! command -v docket >/dev/null 2>&1; then
+    echo "frozen-drift-check FAILED: required tool 'docket' not on PATH." >&2
+    exit 2
+  fi
+  if ! schemas_json="$(docket schema list --json 2>&1)" \
+     || ! echo "$schemas_json" | jq -e '.ok == true' >/dev/null 2>&1; then
+    echo "frozen-drift-check FAILED: 'docket schema list --json' did not return ok:" >&2
+    echo "$schemas_json" >&2
+    exit 2
+  fi
+  if ! workflows_json="$(docket workflow list --json 2>&1)" \
+     || ! echo "$workflows_json" | jq -e '.ok == true' >/dev/null 2>&1; then
+    echo "frozen-drift-check FAILED: 'docket workflow list --json' did not return ok:" >&2
+    echo "$workflows_json" >&2
+    exit 2
+  fi
+fi
 
 sha256_of() {
   shasum -a 256 "$1" | cut -d' ' -f1

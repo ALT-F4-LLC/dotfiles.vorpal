@@ -23,6 +23,10 @@
 #                 M-1454: delete the publish fence outright (the anchor must
 #                 not fall through to a false match on the review-reply block,
 #                 which carries "pulls" as a literal prefix)
+#   (a3) universal M6: append a SECOND fenced publish block —
+#                 "gh pr create -R <owner>/<repo> --title ... --body-file ..."
+#                 — after the real one; (a) alone finds only the first
+#                 matching block and never looks at the second
 #   (a2) xargs    wrap the publish call in "xargs -0 -a <title-file>"
 #   (b)  scan     M2: join the two scan commands onto one line with a
 #                 semicolon, and drop --diff-merges=first-parent from the walk
@@ -172,6 +176,23 @@ else
     bad "publish block: no fenced block runs gh api --method POST repos/<owner>/<repo>/pulls"
     publish=""
 fi
+
+# (a3) Universal, not existential: find_block above stops at the FIRST
+# matching block, so a second fenced block that also creates the PR — via
+# "gh pr create" or another "gh api ... pulls" call — would never be looked
+# at. Sweep every fenced block for one, and require each to be the gh api
+# file-field form, mirroring the xargs loop's universal quantifier below.
+for b in "$WORK"/block.*.joined; do
+    if grep -qE -- 'gh (api .*/pulls([[:space:]]|$)|pr create)' "$b"; then
+        if grep -qE -- '^[[:space:]]*gh api ' "$b" \
+            && grep -qF -- "-F 'title=@" "$b" \
+            && grep -qF -- "-F 'body=@" "$b"; then
+            ok "publish shape: $(grep -oE -- 'gh (api .*/pulls|pr create)' "$b" | head -n 1) is the gh api file-field form"
+        else
+            bad "publish shape: a fenced block creates the PR without the gh api file-field form: $(grep -E -- 'gh (api .*/pulls|pr create)' "$b" | head -n 1)"
+        fi
+    fi
+done
 
 # (a2) No publish path wraps gh in a launcher: an ask rule is a prefix match
 # on the command as written, so a wrapper removes the ask it appears to keep.

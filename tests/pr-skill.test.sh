@@ -27,6 +27,8 @@
 #                 "gh pr create -R <owner>/<repo> --title ... --body-file ..."
 #                 — after the real one; (a) alone finds only the first
 #                 matching block and never looks at the second
+#   (a4) headbase M-1163: revert "-f head=<head-branch> -f base=<base>" to
+#                 "-F head=<head-branch> -F base=<base>" in the publish block
 #   (a2) xargs    wrap the publish call in "xargs -0 -a <title-file>"
 #   (b)  scan     M2: join the two scan commands onto one line with a
 #                 semicolon, and drop --diff-merges=first-parent from the walk
@@ -172,6 +174,19 @@ if publish=$(find_block_re 'gh api --method POST repos/<owner>/<repo>/pulls([[:s
             bad "publish block: missing ${field} — generated text must reach gh as a file"
         fi
     done
+    # head/base are strings, not files: -F would corrupt a numeric-looking
+    # branch name and expand gh's {branch} placeholder from the current
+    # directory, so the publish block must use -f (raw-field), never -F.
+    if grep -qF -- '-f head=' "$publish" && grep -qF -- '-f base=' "$publish"; then
+        ok "publish block: carries -f head= and -f base="
+    else
+        bad "publish block: missing -f head= or -f base= — head and base must reach gh as raw fields"
+    fi
+    if grep -qF -- '-F head=' "$publish" || grep -qF -- '-F base=' "$publish"; then
+        bad "publish block: -F head= or -F base= present — head/base must never be sent as file-valued fields"
+    else
+        ok "publish block: no -F head= or -F base="
+    fi
 else
     bad "publish block: no fenced block runs gh api --method POST repos/<owner>/<repo>/pulls"
     publish=""

@@ -103,6 +103,26 @@ function bootstrap(row, r, isolated, isWrite) {
     // than a sibling top-level function) so the extraction convention every
     // suite already uses for bootstrap — everything from `function
     // bootstrap(` to the next marker — carries this helper along with it.
+    // DKT-1709: `--owner wave:${row.step}` is a pure function of the step
+    // id, so a retry launched while an earlier claim process for the same
+    // step is still alive presents the IDENTICAL owner — same-owner does not
+    // imply same-process. DKT-1564's same-owner re-mint (recovering a
+    // caller's own committed-but-incomplete lease) can then re-key a lease a
+    // DIFFERENT live process is still working under. A per-launch
+    // discriminator makes a matching owner mean a matching process, so the
+    // re-mint can only ever touch the caller's own earlier attempt. The
+    // script has no process id and no dispatch/launch id on the row (a
+    // manifest carries neither), and Math.random()/Date.now() throw in a
+    // workflow script (they would break resume) — a counter on `bootstrap`
+    // itself, incremented once per rendered claim command, is the one
+    // resumable source of a number that is unique per LAUNCH of this
+    // function rather than per wave: two concurrent launches for the same
+    // step (an original and a retry the wave issues before the first
+    // process exits) never collide, though two separate wave invocations
+    // over their lifetimes can eventually repeat a low count — the engine's
+    // guard only needs launches truly in flight together to differ.
+    bootstrap.launches = (bootstrap.launches || 0) + 1
+    const ownerDiscriminator = bootstrap.launches
     // DKT-1564 makes `docket step claim` exit 0 with `ok: true` when the
     // lease committed but a later stage failed: the response carries the
     // live token plus a non-empty `.data.claim_error` instead of the
@@ -123,7 +143,7 @@ function bootstrap(row, r, isolated, isWrite) {
         return [
             `rm -rf ${dir}`,
             `mkdir -m 700 ${dir}`,
-            `docket step claim ${row.step} --owner wave:${row.step} --render --metadata ${claimMetadataArg} --json > ${claimJson}`,
+            `docket step claim ${row.step} --owner wave:${row.step}:${ownerDiscriminator} --render --metadata ${claimMetadataArg} --json > ${claimJson}`,
             isolated
                 ? `jq -r '.data.token' ${claimJson} > ${token}`
                 : `jq -r '.data.token'  < ${claimJson} > ${token}`,

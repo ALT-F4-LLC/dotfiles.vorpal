@@ -136,13 +136,72 @@ in_list() {
 # across lines), which a line-leading `)` rule would have mistaken for the
 # end of the outer call.
 #
+# The window may only open while scanning a statement that reassigns
+# `settings_builder` (`let settings_builder = settings_builder` or
+# `let settings_builder = settings::ClaudeCodeSettings::new(...)`, the two
+# forms every real registration uses) — tracked as `chain_ok`, reset at each
+# `let` statement start and held until the next one. A `.with_hook(...)` whose
+# result is dropped into another binding (`let _dropped = ...`) never sets
+# `chain_ok`, so it cannot count as a registration even though the call itself
+# matches.
+#
+# Comments are stripped before the awk pass runs: a `//` line comment, and a
+# `/* ... */` block comment (same-line or spanning lines, since a disabled
+# registration is a plausible way to park one). Neither can hold open a call
+# window or fake a chain reassignment. The scan is character-by-character and
+# tracks whether it is inside a `"..."` string literal (with `\"` escapes),
+# because this file's own hook paths and OTEL URLs carry a bare `/*`-alike or
+# `//` substring (`"~/.aws/**"`, `"https://…"`) that is not a comment: a
+# stripper blind to string state would open a block comment at the first
+# `/**` glob and, finding no `*/` anywhere in the file, discard everything
+# after it. The scan does not track `'"'`-quoted char literals or
+# `r#"..."#` raw strings — a `/*`-alike substring inside one of those in the
+# impl region would fail this gate loud (a real registration reads as
+# missing), not silent, which is the safe direction for a security gate.
+#
 # The test-module cut is mirrored in Rust at src/user/claude_code.rs:824
 # (`source.find("#[cfg(test)]")`); both sites assume the test module is last.
+strip_comments() {
+  awk '
+    {
+      n = length($0)
+      out = ""
+      i = 1
+      while (i <= n) {
+        ch = substr($0, i, 1)
+        if (in_block) {
+          if (ch == "*" && substr($0, i + 1, 1) == "/") { in_block = 0; i += 2 }
+          else { i += 1 }
+          continue
+        }
+        if (in_str) {
+          out = out ch
+          if (ch == "\\") { out = out substr($0, i + 1, 1); i += 2; continue }
+          if (ch == "\"") { in_str = 0 }
+          i += 1
+          continue
+        }
+        if (ch == "\"") { in_str = 1; out = out ch; i += 1; continue }
+        if (ch == "/" && substr($0, i + 1, 1) == "*") { in_block = 1; i += 2; continue }
+        if (ch == "/" && substr($0, i + 1, 1) == "/") { break }
+        out = out ch
+        i += 1
+      }
+      print out
+    }
+  '
+}
+
 is_registered() {
   sed '/^[[:space:]]*#\[cfg(test)\]/,$d' "$REGISTRATION" |
-    grep -vE '^[[:space:]]*//' |
+    strip_comments |
     awk -v prefix="\"bash ~/.claude/hooks/$1" '
-      !in_call && /\.with_hook(_timeout)?\(/ { in_call = 1; depth = 0 }
+      /^[[:space:]]*let[[:space:]]+/ {
+        chain_ok = ($0 ~ /^[[:space:]]*let[[:space:]]+settings_builder[[:space:]]*=/)
+      }
+      !in_call && /\.with_hook(_timeout)?\(/ {
+        if (chain_ok) { in_call = 1; depth = 0 }
+      }
       in_call {
         line = $0
         opens = gsub(/\(/, "(", line)

@@ -21,8 +21,11 @@
 #   (a)  publish  replace the fenced publish block with the
 #                 "gh pr create --title ... --body-file ..." shape
 #   (a2) xargs    wrap the publish call in "xargs -0 -a <title-file>"
-#   (b)  scan     join the two scan commands with a pipe, and drop
-#                 --diff-merges=first-parent from the walk
+#   (b)  scan     M2: join the two scan commands onto one line with a
+#                 semicolon, and drop --diff-merges=first-parent from the walk
+#                 M1: fold two "git log" invocations onto one physical line
+#                 with a semicolon, so a line count sees one command where two
+#                 processes ran
 #   (b2) prefix   MG: drop the origin/ prefix at both scan command sites,
 #                 leaving a bare "<base>..HEAD" in the rev-list count and in
 #                 the log walk
@@ -164,19 +167,28 @@ done
 [ "$xargs_hits" -eq 0 ] && ok "publish path: no fenced command block wraps a command in xargs"
 
 # (b) The pre-push scan is two separate commands, and the walk is one process.
+# Structural, not a pipe-byte scan: the block's non-comment, non-blank lines
+# must be exactly two, the rev-list anchor then the log walk, so any
+# single-line join (pipe, semicolon, &&, command substitution) fails, and two
+# git log invocations folded onto one physical line by join_continuations
+# still count as one command line for occurrence purposes.
 if scan=$(find_block 'git rev-list --count origin/<base>..HEAD'); then
     ok "pre-push scan block: git rev-list --count origin/<base>..HEAD"
 
-    if grep -qF -- '|' "$scan"; then
-        bad "pre-push scan block: a pipe joins the scan commands — a failed enumeration then exits 0"
+    grep -vE '^[[:space:]]*(#|$)' "$scan" > "${WORK}/scan-lines"
+    scan_lines=$(grep -c '' "${WORK}/scan-lines")
+    if [ "$scan_lines" -eq 2 ] \
+        && sed -n '1p' "${WORK}/scan-lines" | grep -qE '^git rev-list' \
+        && sed -n '2p' "${WORK}/scan-lines" | grep -qE '^git log'; then
+        ok "pre-push scan block: exactly two command lines, rev-list then log walk"
     else
-        ok "pre-push scan block: no pipe joins the scan commands"
+        bad "pre-push scan block: expected exactly two command lines (git rev-list, then git log), found ${scan_lines} — the two commands must run separately"
     fi
 
-    walks=$(grep -cF -- 'git log' "$scan")
-    if [ "$walks" -eq 1 ]; then
+    walk_occurrences=$(grep -oF -- 'git log' "$scan" | wc -l)
+    if [ "$walk_occurrences" -eq 1 ]; then
         ok "pre-push scan block: exactly one git log walk"
-        walk=$(grep -F -- 'git log' "$scan")
+        walk=$(grep -F -- 'git log' "${WORK}/scan-lines")
         for flag in '--diff-merges=first-parent' '--diff-filter=AM' 'origin/<base>..HEAD'; do
             case "$walk" in
                 *"$flag"*) ok "pre-push scan walk: carries ${flag}" ;;
@@ -188,7 +200,7 @@ if scan=$(find_block 'git rev-list --count origin/<base>..HEAD'); then
                 bad "pre-push scan walk: three-dot range — that is a different question than what the push publishes" ;;
         esac
     else
-        bad "pre-push scan block: expected exactly one git log walk, found ${walks}"
+        bad "pre-push scan block: expected exactly one git log walk, found ${walk_occurrences}"
     fi
 else
     bad "pre-push scan block: no fenced block runs git rev-list --count origin/<base>..HEAD"

@@ -1,7 +1,7 @@
 export const meta = {
     name: 'tribunal',
     description: 'Spawn a judge panel that decides one gated proposal by each seat casting a real `docket vote cast`. This script never casts, approves, or tallies — the engine\'s vote machinery tallies. Runs in two modes: CONVERSATIONAL (no `step` arg) verifies its own tally and re-seats a missing cast once, at the cost of one read-only haiku probe of the vote record after the seats return (two when the first returns nothing), plus one more after any re-seat; MID-WAVE (`step` present) renders the same brief with the gate\'s row context and target ref, spawns the seats, and returns without probing — the caller (wave.js) already reads `docket gate status` for the tally and drives the one permitted re-seat itself. A conversational proposal has no step, so `docket gate status` cannot address it and the probe reads `docket vote show`. Invoke by scriptPath ONLY, with args {voteId, voters, context, gateKind, cwd, step?, target?, heldCluster?, isRespawn?} — `voters` is an array of {seat, model, effort, variant} objects, each seat\'s routing already resolved by the caller from the run\'s pinned policy.toml, since the engine renders routing only onto step rows and a conversational gate has none. The script reads no policy and cannot read files.',
-    whenToUse: 'Invoked on a CONVERSATIONAL gate the docket-run skill routes to a panel (ack-reap, activation, budget, fix-batch), always as Workflow({scriptPath}) — never by name. Engine `type = "vote"` step rows ride the wave since the staged closure: wave.js calls this same script MID-WAVE (passing `step`) to seat their panels, one level of workflow nesting deep, so the seat brief renders from one place. The CALLER creates the proposal, passes its id, and passes every voter WITH its {model, effort, variant}; tribunal.js only fills an open one.',
+    whenToUse: 'Invoked on a CONVERSATIONAL gate the docket-run skill routes to a panel (ack-reap, activation, budget, loop-extension, fix-batch), always as Workflow({scriptPath}) — never by name. Engine `type = "vote"` step rows ride the wave since the staged closure: wave.js calls this same script MID-WAVE (passing `step`) to seat their panels, one level of workflow nesting deep, so the seat brief renders from one place. The CALLER creates the proposal, passes its id, and passes every voter WITH its {model, effort, variant}; tribunal.js only fills an open one.',
     phases: [
         { title: 'Judge', detail: 'one seat per voter, each casting docket vote cast' },
         { title: 'Verify', detail: 'one haiku probe reads the vote record through a schema (conversational mode only)', model: 'haiku' },
@@ -279,7 +279,11 @@ budget against the expected cost, the scope warnings, and the corpus/trust
 state — the merits of the work itself get their own gates once artifacts
 exist, and pre-reviewing the codebase here duplicates them. A budget gate
 decides a number against evidence of spend; an ack-reap gate decides whether a
-holder is gone. Depth belongs to gates whose SUBJECT is the work.`
+holder is gone; a loop-extension gate decides whether ONE more fix round is
+likely to converge, read from the loop history in the rationale — rounds
+against the cap, consecutive rejections, the tiers served, spend, and the
+finding-volume trend — not from re-reviewing the work, which the loop's own
+judges already did. Depth belongs to gates whose SUBJECT is the work.`
 
     const settledGround = step ? `
 

@@ -1,7 +1,30 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 33  # 33: `doc-validate` joins the `implement` and `fix` gate lists
+version = 34  # 34: two seat edits, no topology change. (1)
+              #   `security-vote` seats judge-security and judge-correctness;
+              #   judge-architecture leaves the roster. Measured over the 86 decided
+              #   votes on this track and its retired security-load-bearing sibling
+              #   (46 approved, 40 rejected; 69 of 93 unanimous): replaying the two
+              #   remaining seats' actual casts through the engine's weighted tally
+              #   reproduced 84 outcomes, missed one rejection (architecture alone
+              #   rejected) and flipped one approval (correctness alone rejected).
+              #   judge-security was never the lone rejecter in 118 casts;
+              #   correctness was six times. With two voters under the 0.67 rule one
+              #   reject scores about 0.5 and rejects, so a three-seat panel's 2-1
+              #   coin flip (twenty such tallies, ten each way, decided by confidence
+              #   decimals) disappears. The removed seat ran at opus-medium; the vote
+              #   convenes on 95% of reconciled rounds (93 of 98). (2)
+              #   `verify-tribunal` seats tribunal-correctness alone: all 10
+              #   tribunals decided here approved and every seat matched 10 of 10;
+              #   corpus-wide the correctness seat matched 25 of 25 decided outcomes,
+              #   and one voter tallies deterministically. KEPT on evidence: the
+              #   four-seat fan-out (the security seat is the sole finder of 18 high
+              #   and 1 blocker clusters, testing 103 / 7, architecture 56 / 0,
+              #   correctness 26 / 5 across 98 reconciled rounds) and
+              #   `hold_spread = 3` (6 of 22 held panels here rejected the computed
+              #   value, unlike the change tracks where 36 of 38 approved it).
+              # 33: `doc-validate` joins the `implement` and `fix` gate lists
               #   the widened doc-validate pathspec was declared
               #   only on docs-only and spec-doc/spec-project, so this
               #   track's doc edits were never checked by it.
@@ -293,8 +316,10 @@ vote_rule = "security-acceptance"
 # not the operator-stand-in tribunal, and policy.toml routes the two seat
 # families to different tiers (judge-* opus-high, tribunal-* fable/opus-xhigh).
 # As voters these seats are briefed by the workflow scripts' LENSES table, not
-# by contracts/judge-*.md — one name, two remits.
-voters = ["judge-security", "judge-architecture", "judge-correctness"]
+# by contracts/judge-*.md — one name, two remits. Two seats: under the 0.67
+# security-acceptance rule one reject of two scores about 0.5 and rejects, so
+# a single dissent decides, which a three-seat 2-1 tally never reliably did.
+voters = ["judge-security", "judge-correctness"]
 
 [[step]]
 after = ["security-vote"]
@@ -328,4 +353,4 @@ name = "verify-tribunal"
 on_fail = "fix-loop"
 type = "vote"
 vote_rule = "tribunal"
-voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
+voters = ["tribunal-correctness"]

@@ -1,7 +1,15 @@
 [pipeline]
 description = "Read-only root-cause investigation with an optional research step, ending at a tribunal read that revises the report on rejection and escalates to the operator."
 name = "investigation"
-version = 11  # 11: `blocked` joins unless_labels: a hold label so
+version = 12  # 12: `read-gate` seats tribunal-correctness alone.
+              #   Four gates decided on this machine, all approved, twelve casts; the
+              #   correctness seat matched all four and the security seat would have
+              #   rejected one. Thin evidence, so design judgment: the gate reads a
+              #   root-cause report for evidence and reproducibility, which is the
+              #   correctness lens, and a rejection routes to `revise`, so a wrong
+              #   single-seat reject costs one round, never a park. One voter tallies
+              #   1.0 or 0.0 against the 0.67 rule.
+              # 11: `blocked` joins unless_labels: a hold label so
               #   an issue not yet workable matches zero registered workflows
               #   until the label is removed.
 
@@ -54,7 +62,7 @@ name = "read-gate"
 on_fail = "fix-loop"
 type = "vote"
 vote_rule = "tribunal"
-voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
+voters = ["tribunal-correctness"]
 
 [[step]]
 after_loop = "read-gate"

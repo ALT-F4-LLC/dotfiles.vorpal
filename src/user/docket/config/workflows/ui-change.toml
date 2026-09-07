@@ -1,6 +1,27 @@
 [pipeline]
 name = "ui-change"
-version = 25  # 25: `doc-validate` joins the `implement` and `fix` gate lists
+version = 26  # 26: three edits on the review stage, no topology change.
+              #   (1) `verify-tribunal` seats tribunal-correctness alone: its own
+              #   cast matched 9 of 9 decided outcomes on this track and 25 of 25
+              #   corpus-wide, rejections included, and one voter tallies 1.0 or 0.0
+              #   against the 0.67 rule where a three-seat 2-1 tally landed either
+              #   side of it by confidence decimals. (2) `verify-tribunal` routes a
+              #   rejection to `fix-loop`, as standard-change, security-change and
+              #   docs-only already do, instead of parking the whole run; `fix` gains
+              #   `verify-tribunal.vote-record` so the fixer reads the panel's
+              #   reasoning, as on those tracks. The tribunal rejected 3 of 9 here
+              #   and each rejection stopped the run for an operator decision a fix
+              #   round could have absorbed. (3) `reconcile` drops `hold_spread`: 28
+              #   held-cluster panels were decided on this track and 27 approved the
+              #   computed value, which then routed fix-loop anyway, at three
+              #   store-configured seats and a median 13 minutes each; a disputed
+              #   blocker now goes to the fixer and a wrong one costs one fix round.
+              #   The four-seat fan-out stays (sole finders across 107 reconciled
+              #   rounds: architecture 3 blocker / 46 high, design 2 / 64,
+              #   correctness 2 / 20, testing 0 / 128; testing's sole highs were
+              #   acted on 44 of 55 times they could be) and design-qa stays (5 of 63
+              #   runs routed a blocker no source-reading seat can observe).
+              # 25: `doc-validate` joins the `implement` and `fix` gate lists
               #   the widened doc-validate pathspec was declared
               #   only on docs-only and spec-doc/spec-project, so this
               #   track's doc edits were never checked by it.
@@ -144,7 +165,7 @@ after = ["synthesize"]
 inputs = ["synthesize.findings"]
 max_fix_loops = 2
 name = "reconcile"
-params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
+params = { field = "severity", method = "max", output = "findings" }
 payload = "findings@9"
 threshold = { "fix-loop" = "any(open_severity >= blocker)", "drain-highs" = "any(open_severity >= high)" }
 
@@ -166,7 +187,7 @@ emits = "change-summary"
 executor = "fix"
 expected_cost = 1.00
 gates = ["build", "tests", "self-hygiene", "secret-scan", "doc-validate"]
-inputs = ["reconcile.findings", "synthesize.findings", "implement.change-summary", "issue.latest.change-summary", "issue.latest.ac-report", "design-qa.findings"]
+inputs = ["reconcile.findings", "synthesize.findings", "implement.change-summary", "issue.latest.change-summary", "issue.latest.ac-report", "design-qa.findings", "verify-tribunal.vote-record"]
 loop = true
 name = "fix"
 packet = ["contracts/{executor}.md"]
@@ -201,7 +222,7 @@ threshold = { "fix-loop" = "any(status == unmet)", "verify-tribunal" = "any(stat
 after = ["verify"]
 inputs = ["verify.ac-report", "issue.body", "issue.diff"]
 name = "verify-tribunal"
-on_fail = "waiting-human"
+on_fail = "fix-loop"
 type = "vote"
 vote_rule = "tribunal"
-voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
+voters = ["tribunal-correctness"]

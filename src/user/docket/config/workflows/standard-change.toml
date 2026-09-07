@@ -1,7 +1,31 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 33  # 33: `doc-validate` joins the `implement` and `fix` gate lists
+version = 34  # 34: two edits on the review stage, no topology change. (1)
+              #   `verify-tribunal` seats `tribunal-correctness` alone instead of the
+              #   three-seat tribunal roster. Measured across every verify-tribunal
+              #   decided on this machine (25 panels: 1 here, 10 on security-change,
+              #   9 on ui-change, 5 on the retired security-load-bearing track; 19
+              #   approved, 6 rejected), the correctness seat's own cast matched the
+              #   panel's outcome in all 25, every rejection included. One voter
+              #   tallies 1.0 on approve and 0.0 on reject against the rule's 0.67, so
+              #   the decision is deterministic; a three-seat 2-1 tally scored 0.63 to
+              #   0.70 by each cast's confidence decimals, and the twenty such tallies
+              #   in the ledger split ten approved, ten rejected. Rule, `on_fail` and
+              #   the fixer's vote-record input are unchanged. (2) `reconcile` drops
+              #   `hold_spread`: absent never holds, so a disputed blocker routes to
+              #   the fixer directly. 10 held-cluster panels were decided on this
+              #   track and 9 approved the computed value, which then routed fix-loop
+              #   anyway; each panel seats three store-configured tribunal seats at a
+              #   median 13 minutes apiece, so a wrong blocker now costs one fix round
+              #   instead of a panel on every disputed one. Thresholds and
+              #   `max_fix_loops` stay. The judge fan-out stays at three: each seat is
+              #   the sole finder of clusters no other seat raised (across 187
+              #   reconciled rounds, correctness 11 blocker / 43 high, architecture
+              #   3 / 71, testing 3 / 154), and of drained highs 41% were later worked
+              #   to done inside a run while 1-4% of any seat's high-or-above
+              #   findings were ever downgraded by a fixer, a panel or an operator.
+              # 33: `doc-validate` joins the `implement` and `fix` gate lists
               #   the widened doc-validate pathspec was declared
               #   only on docs-only and spec-doc/spec-project, so an ordinary
               #   change's doc edits were never checked by it.
@@ -155,7 +179,7 @@ after = ["synthesize"]
 inputs = ["synthesize.findings"]
 max_fix_loops = 2
 name = "reconcile"
-params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
+params = { field = "severity", method = "max", output = "findings" }
 payload = "findings@9"
 threshold = { "fix-loop" = "any(open_severity >= blocker)", "drain-highs" = "any(open_severity >= high)" }
 
@@ -202,4 +226,4 @@ name = "verify-tribunal"
 on_fail = "fix-loop"
 type = "vote"
 vote_rule = "tribunal"
-voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
+voters = ["tribunal-correctness"]

@@ -1,7 +1,17 @@
 [pipeline]
 description = "Documentation change: implement with doc-validate and citation gates, one correctness judge, tribunal-filtered review and AC verification, and a bounded fix-loop re-entering at review; the conductor integrates commits, the operator publishes. Design-heavy doc work routes through spec-doc first."
 name = "docs-only"
-version = 20  # 20: `blocked` joins unless_labels: a hold label so
+version = 21  # 21: both vote gates seat tribunal-correctness alone.
+              #   review-tribunal fired on 3 of 15 reviews and decided 2 (one
+              #   approved, one rejected); verify-tribunal never fired here (33 of 33
+              #   ACs met). Too few decisions to measure a seat, so this is design
+              #   judgment stated as such: both gates ask whether a blocker's or a
+              #   report's evidence holds, which is the correctness lens, and both
+              #   already route a rejection to the fix loop, so a wrong single-seat
+              #   reject costs one round, never a park. Corpus-wide the correctness
+              #   seat matched 25 of 25 decided verify-tribunal outcomes, and one
+              #   voter tallies 1.0 or 0.0 against the 0.67 rule.
+              # 20: `blocked` joins unless_labels: a hold label so
               #   an issue not yet workable matches zero registered workflows
               #   until the label is removed.
               # 19: two input edits, no topology change. (1) `fix` adds
@@ -67,7 +77,7 @@ name = "review-tribunal"
 on_fail = "fix-loop"
 type = "vote"
 vote_rule = "tribunal"
-voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
+voters = ["tribunal-correctness"]
 
 [[step]]
 after_loop = "review"
@@ -102,4 +112,4 @@ name = "verify-tribunal"
 on_fail = "fix-loop"
 type = "vote"
 vote_rule = "tribunal"
-voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
+voters = ["tribunal-correctness"]

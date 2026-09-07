@@ -22,14 +22,14 @@
 #
 #   (a)  publish  replace the fenced publish block with the
 #                 "gh pr create --title ... --body-file ..." shape
-#                 M-1454: delete the publish fence outright (the anchor must
+#                 ML: delete the publish fence outright (the anchor must
 #                 not fall through to a false match on the review-reply block,
 #                 which carries "pulls" as a literal prefix)
 #   (a3) universal M6: append a SECOND fenced publish block —
 #                 "gh pr create -R <owner>/<repo> --title ... --body-file ..."
 #                 — after the real one; (a) alone finds only the first
 #                 matching block and never looks at the second
-#   (a4) headbase M-1163: revert "-f head=<head-branch> -f base=<base>" to
+#   (a4) headbase MP: revert "-f head=<head-branch> -f base=<base>" to
 #                 "-F head=<head-branch> -F base=<base>" in the publish block
 #   (a2) xargs    wrap the publish call in "xargs -0 -a <title-file>"
 #   (b)  scan     M2: join the two scan commands onto one line with a
@@ -45,7 +45,7 @@
 #   (c)  refusal  delete src/user/claude_code/skills/** from the review-mode
 #                 refusal list (it still occurs elsewhere in the file)
 #   (d)  title    reintroduce the forbidden literal --title "<title>"
-#   (d2) update   M-1155: rewrite the update/PATCH publish path to
+#   (d2) update   MQ: rewrite the update/PATCH publish path to
 #                 "gh pr edit -R <owner>/<repo> --title ... --body ..." — the
 #                 skill's central rule (generated text never enters command
 #                 text) inverted on the path no fence-anchored check reaches
@@ -72,10 +72,10 @@
 #                 invocation said auto ..." sentence)
 #                 MF (must stay GREEN): insert an unrelated earlier line
 #                 containing "mergeStateStatus == CLEAN" above merge step 2
-#                 M-1370 (must stay GREEN): insert a fenced worked example
+#                 MR (must stay GREEN): insert a fenced worked example
 #                 after the mergeable == MERGEABLE bullet, containing a line
 #                 with the exact bullet indent and mergeStateStatus == CLEAN
-#                 M-1370-control: the same line as a second REAL bullet,
+#                 MR-control: the same line as a second REAL bullet,
 #                 outside any fence
 #                 MZ: "accept the PR here" rewritten to "never accept the PR
 #                 here" — a negation governing the acceptance verb

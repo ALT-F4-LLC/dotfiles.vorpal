@@ -237,6 +237,7 @@ impl ClaudeCode {
             .with_permission_default_mode("auto")
             .with_permission_disable_bypass_permissions_mode("disable")
             .with_preferred_notif_channel("ghostty")
+            .with_remote_control_at_startup(false)
             .with_sandbox_enabled(true)
             .with_show_thinking_summaries(true)
             .with_skill_listing_budget_fraction(0.02)

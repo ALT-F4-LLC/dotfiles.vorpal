@@ -1,7 +1,32 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by a research step, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec); a rejection re-enters the bounded revise loop at review."
 name = "spec-doc"
-version = 25  # 25: `accept-human` routes a rejection to `fix-loop` instead
+version = 26  # 26: no behavior change — a step rename and two comment
+              #   corrections; the topology, seats, rules and routes are
+              #   byte-for-byte those of version 25. (a) The tribunal
+              #   acceptance vote `accept-human` is renamed
+              #   `accept-tribunal`: it seats tribunal-architecture,
+              #   tribunal-security and tribunal-design, and since version 25
+              #   its rejection has routed `fix-loop`, so the old name
+              #   described neither the seats nor the route. `revise-prd`
+              #   and `revise-ux-spec` now read `accept-tribunal.vote-record`
+              #   — the engine serves the same recorded proposal under the
+              #   new step name — and `record.after` names the new name.
+              #   Same `vote_rule = "tribunal"`, same `on_fail = "fix-loop"`,
+              #   same `after = ["reconcile"]`, same `when`. (b) The
+              #   version-25 note below is corrected in place. It said the
+              #   judge-panel gate's three decisions on one issue were two
+              #   rejections that looped with no operator involvement and a
+              #   third that hit the loop bound. The store shows one
+              #   rejection at 3-0 that looped with no operator involvement,
+              #   one rejection at 2-1 (weighted 0.36) that hit the loop
+              #   bound, parked waiting-human, and was resolved `fix-round`
+              #   twelve minutes later, and one approval at 2-1 (weighted
+              #   0.63): two rejections, not three, and only one looped. The
+              #   note's mechanism claim, the loop bound as the human
+              #   backstop, stands. A registered version's bytes are frozen,
+              #   so the edited bytes are a new version.
+              # 25: `accept-human` routes a rejection to `fix-loop` instead
               #   of `waiting-human`, matching `accept-vote-tdd` and
               #   `accept-vote-adr` in this file (same `after`, same re-entry
               #   at `review`); `revise-prd` and `revise-ux-spec` read
@@ -10,10 +35,12 @@ version = 25  # 25: `accept-human` routes a rejection to `fix-loop` instead
               #   project on this machine (2 issues ever bound): this gate
               #   decided once — rejected 3-0, parked the run, operator
               #   resolved `override-pass`. The judge-panel gate on the same
-              #   track decided three times on one issue: two rejections
-              #   looped with no operator involvement, and the third hit the
-              #   loop bound, parked waiting-human, and the operator resolved
-              #   `fix-round`. That bound is the backstop this keeps: a
+              #   track decided three times on one issue: one rejection
+              #   (3-0) looped with no operator involvement; one rejection
+              #   (2-1, weighted 0.36) hit the loop bound, parked
+              #   waiting-human, and the operator resolved `fix-round`
+              #   twelve minutes later; the third decision approved (2-1,
+              #   weighted 0.63). That bound is the backstop this keeps: a
               #   rejected vote with `on_fail = "fix-loop"` enters the
               #   issue's loop, and when the next ordinal would exceed
               #   `max_fix_loops` (2, declared on `reconcile`; one counter
@@ -264,7 +291,7 @@ emits = "doc"
 executor = "ux-spec-author"
 expected_cost = 1.50
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["reconcile.findings", "issue.latest.doc", "accept-human.vote-record", "research.*"]
+inputs = ["reconcile.findings", "issue.latest.doc", "accept-tribunal.vote-record", "research.*"]
 loop = true
 name = "revise-ux-spec"
 packet = ["contracts/{executor}.md"]
@@ -277,7 +304,7 @@ emits = "doc"
 executor = "prd-author"
 expected_cost = 1.50
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["reconcile.findings", "issue.latest.doc", "accept-human.vote-record", "research.*"]
+inputs = ["reconcile.findings", "issue.latest.doc", "accept-tribunal.vote-record", "research.*"]
 loop = true
 name = "revise-prd"
 packet = ["contracts/{executor}.md"]
@@ -291,7 +318,7 @@ on_fail = "fix-loop"
 type = "vote"
 vote_rule = "doc-acceptance"
 # Deliberately judge-*, not tribunal-*: doc-acceptance is the judges' own
-# panel, not the operator-stand-in tribunal (`accept-human` below), and
+# panel, not the operator-stand-in tribunal (`accept-tribunal` below), and
 # policy.toml routes the two seat families to different tiers (judge-*
 # opus-high, tribunal-* fable/opus-xhigh). As voters these seats are briefed
 # by the workflow scripts' LENSES table, not by contracts/judge-*.md — one
@@ -313,7 +340,7 @@ when = "labels contains doc:adr and labels != doc:tdd"
 [[step]]
 after = ["reconcile"]
 inputs = ["issue.latest.doc", "reconcile.findings"]
-name = "accept-human"
+name = "accept-tribunal"
 on_fail = "fix-loop"
 type = "vote"
 vote_rule = "tribunal"
@@ -322,7 +349,7 @@ when = "labels != doc:tdd and labels != doc:adr"
 
 [[step]]
 action = "doc-record"
-after = ["accept-vote-tdd", "accept-vote-adr", "accept-human"]
+after = ["accept-vote-tdd", "accept-vote-adr", "accept-tribunal"]
 expected_cost = 0.20
 gates = ["citation-check"]
 inputs = ["issue.latest.doc"]

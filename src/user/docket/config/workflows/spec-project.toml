@@ -1,16 +1,30 @@
 [pipeline]
 description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step, review them once, and accept by tribunal vote; a rejection re-enters the bounded revise loop at review."
 name = "spec-project"
-version = 17  # 17: `accept` routes a rejection to `fix-loop` instead of
+version = 18  # 18: no behavior change — the version-17 note below is
+              #   corrected in place; every step, seat, rule and route is
+              #   byte-for-byte version 17's. The note said spec-doc's
+              #   judge-panel rejections "looped without operator
+              #   involvement", all of them. The store shows two judge-panel
+              #   rejections on that track: one at 3-0 that looped with no
+              #   operator involvement, and one at 2-1 (weighted 0.36) that
+              #   hit the loop bound, parked waiting-human, and was resolved
+              #   `fix-round` by the operator twelve minutes later. The
+              #   mechanism claim, the loop bound as the human backstop,
+              #   stands. A registered version's bytes are frozen, so the
+              #   edited bytes are a new version.
+              # 17: `accept` routes a rejection to `fix-loop` instead of
               #   `waiting-human`, as spec-doc's acceptance votes do, and
               #   `revise` reads `accept.vote-record` so the seven authors
               #   see the panel's reasoning. Not measured on this track: it
               #   has never been activated on any project on this machine
               #   (0 of 97 runs). The nearest measurement is spec-doc's,
               #   where the only tribunal rejection ever decided parked the
-              #   run and the operator resolved `override-pass`, while the
-              #   judge-panel rejections on the same track looped without
-              #   operator involvement. The human backstop moves rather than
+              #   run and the operator resolved `override-pass`, while of
+              #   the two judge-panel rejections on the same track, one
+              #   looped without operator involvement and the other hit the
+              #   loop bound and was resolved `fix-round` by the operator.
+              #   The human backstop moves rather than
               #   disappears: a rejected vote with `on_fail = "fix-loop"`
               #   enters the issue's loop, and when the next ordinal would
               #   exceed `max_fix_loops` (2, declared on `reconcile`; one

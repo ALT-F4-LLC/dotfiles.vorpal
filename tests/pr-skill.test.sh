@@ -67,6 +67,11 @@
 #                 invocation said auto ..." sentence)
 #                 MF (must stay GREEN): insert an unrelated earlier line
 #                 containing "mergeStateStatus == CLEAN" above merge step 2
+#                 M-1370 (must stay GREEN): insert a fenced worked example
+#                 after the mergeable == MERGEABLE bullet, containing a line
+#                 with the exact bullet indent and mergeStateStatus == CLEAN
+#                 M-1370-control: the same line as a second REAL bullet,
+#                 outside any fence
 #   (i)  headref  MC: replace "and assert it equals <head-branch>; a mismatch
 #                 refuses, naming both branches" with "and note it in the
 #                 report"
@@ -417,8 +422,12 @@ fi
 # never refused. The bullet is taken by its position inside merge step 2, and
 # a second matching region — or a second step 2 — refuses rather than
 # guessing, so a `mergeStateStatus == CLEAN` line elsewhere in the file
-# cannot be extracted in its place.
+# cannot be extracted in its place. Fence-stripped first, the same fence
+# toggle sentences() carries, so a worked example inside a fence cannot be
+# mistaken for a second real bullet.
 awk '
+    /^[[:space:]]*```/ { fenced = !fenced; next }
+    fenced        { next }
     /^## merge /  { in_merge = 1; next }
     /^## /        { in_merge = 0 }
     !in_merge     { next }

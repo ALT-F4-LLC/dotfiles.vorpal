@@ -1613,7 +1613,7 @@ async function runGate(row, phaseLabel) {
     // syntax error) must not crash the whole wave — it settles this row
     // gate-blocked with the error text, same as any other unreadable gate.
     const seatPanel = (panelSeats, isRespawn) =>
-        workflow(args.tribunal, {
+        workflow({ scriptPath: args.tribunal }, {
             voteId, gateKind: row.instance, cwd: args.cwd,
             voters: panelSeats.map((s) => ({ seat: s.seat, model: s.model, effort: s.effort, variant: s.variant })),
             step: { step: row.step, instance: row.instance, issue: row.issue, run: row.run },

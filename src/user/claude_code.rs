@@ -171,6 +171,24 @@ fn sandbox_filesystem_allow_read_paths() -> Vec<String> {
     ]
 }
 
+// The complete set of `Bash(...)` permission-ask patterns this build emits:
+// the two docket trust-store writes plus every PUBLISHING_ASK_VERBS row,
+// each wrapped the same way `build()` wraps it. A test asserts this against
+// an explicit literal set independent of PUBLISHING_ASK_VERBS, so a verb
+// quietly dropped from that list, or a hand-added `with_permission_ask` row
+// added beside the fold instead of through it, both change what this
+// function returns relative to that literal -- neither could pass silently
+// by construction the way a loop keyed on the same list they are supposed
+// to guard against drifting from would.
+fn permission_ask_patterns() -> Vec<String> {
+    let mut patterns = vec![
+        "Bash(docket trust add:*)".to_string(),
+        "Bash(docket trust rm:*)".to_string(),
+    ];
+    patterns.extend(PUBLISHING_ASK_VERBS.iter().map(|v| format!("Bash({v}:*)")));
+    patterns
+}
+
 impl ClaudeCode {
     pub fn new(name: &str, systems: Vec<ArtifactSystem>) -> Self {
         Self {
@@ -403,12 +421,11 @@ impl ClaudeCode {
         // first, so the human sees the bytes before they are public. `gh run view`
         // is deliberately absent: it only reads CI logs, and the `pr` skill already
         // treats that output as untrusted data rather than instructions.
-        let settings_builder = PUBLISHING_ASK_VERBS.iter().fold(
-            settings_builder
-                .with_permission_ask("Bash(docket trust add:*)")
-                .with_permission_ask("Bash(docket trust rm:*)"),
-            |builder, verb| builder.with_permission_ask(&format!("Bash({verb}:*)")),
-        );
+        let settings_builder = permission_ask_patterns()
+            .iter()
+            .fold(settings_builder, |builder, pattern| {
+                builder.with_permission_ask(pattern)
+            });
 
         let settings_builder = deny_sensitive_paths(
             settings_builder,
@@ -610,7 +627,7 @@ impl ClaudeCode {
 #[cfg(test)]
 mod tests {
     use super::{
-        claude_home, component_name, sandbox_filesystem_allow_read_paths,
+        claude_home, component_name, permission_ask_patterns, sandbox_filesystem_allow_read_paths,
         sandbox_filesystem_deny_read_paths, sorted_permission_patterns, AUTO_MODE_ALLOW_RULES,
         GIT_ALLOWED_SIGNERS_CONFIG_PATH, GIT_ALLOWED_SIGNERS_INSTALL_PATH, PUBLISHING_ASK_VERBS,
         SANDBOX_CLAUDE_SCRATCH_ROOT, SANDBOX_CLAUDE_SCRATCH_ROOT_PRIVATE, SENSITIVE_PATHS,
@@ -874,6 +891,49 @@ mod tests {
         assert!(
             !body.contains("format!(\"Read({p})\")"),
             "a Read() permission deny wrapper is back"
+        );
+    }
+
+    #[test]
+    fn permission_ask_patterns_equal_an_explicit_literal_set() {
+        // Independent ground truth: this literal set is NOT derived from
+        // PUBLISHING_ASK_VERBS, so a verb quietly dropped from that constant
+        // changes what permission_ask_patterns() returns relative to a set
+        // that never moves with it. DOT-1473's mutant D (delete "git push"
+        // from PUBLISHING_ASK_VERBS) fails this assertion; a loop keyed on
+        // the same list PUBLISHING_ASK_VERBS provides could never catch it.
+        let mut expected = vec![
+            "Bash(docket trust add:*)".to_string(),
+            "Bash(docket trust rm:*)".to_string(),
+            "Bash(gh api:*)".to_string(),
+            "Bash(gh pr close:*)".to_string(),
+            "Bash(gh pr comment:*)".to_string(),
+            "Bash(gh pr create:*)".to_string(),
+            "Bash(gh pr edit:*)".to_string(),
+            "Bash(gh pr merge:*)".to_string(),
+            "Bash(gh pr ready:*)".to_string(),
+            "Bash(git push:*)".to_string(),
+        ];
+        let mut actual = permission_ask_patterns();
+        expected.sort_unstable();
+        actual.sort_unstable();
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn no_hand_added_permission_ask_rows_beside_the_fold() {
+        // A `with_permission_ask` row added directly in `build()`, beside
+        // the permission_ask_patterns() fold, would not appear in that
+        // function's return value and so would never reach the literal-set
+        // assertion above -- it bypasses ground truth by construction. Guard
+        // the source text instead: the fold in `build()` is the only call
+        // site `with_permission_ask` may have.
+        let source = include_str!("claude_code.rs");
+        let body = &source[..source.find("#[cfg(test)]").expect("tests follow the impl")];
+        let occurrences = body.matches("with_permission_ask(").count();
+        assert_eq!(
+            occurrences, 1,
+            "with_permission_ask must be called only inside the permission_ask_patterns() fold"
         );
     }
 

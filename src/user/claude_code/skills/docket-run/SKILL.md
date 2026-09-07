@@ -2077,9 +2077,12 @@ is the question — authorize fix round N of a loop capped at M on the issue —
 the rationale is the five-field loop-history line that **A fix-round gate
 PAST the workflow's `max_fix_loops` presents the LOOP** (below) specifies,
 plus the latest rejection's tally and every seat's verdict verbatim, and
-`--files-changed` is the issue's files. Seat the roster and tiers a fix-batch
-gate seats. An approved tally authorizes exactly that one round: `docket step
-resolve STEP-N --as fix-round` citing the proposal id in its note, then
+`--files-changed` is the issue's files. Seat the constant conversational-gate
+roster the tribunal.js block below fixes — `tribunal-architecture`,
+`tribunal-security`, `tribunal-correctness` — each looked up from the pinned
+policy as that block specifies. An approved tally authorizes exactly that one
+round: `docket step resolve STEP-N --as fix-round` citing the proposal id in
+its note, then
 `docket vote link` to the issue. A rejected tally, a panel that cannot
 finish, or a park asking for any round beyond `max_fix_loops + 1` is the
 operator's, presented with the panel's reasoning where there is one. Nothing

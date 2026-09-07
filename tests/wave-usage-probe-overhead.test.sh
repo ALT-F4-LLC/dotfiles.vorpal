@@ -408,8 +408,26 @@ ok(quiet.errors.length === 1 && quiet.errors[0].includes('carries no usage'),
 const unread = [{ file: 'agent-blank.jsonl', extract: {
     bootstrap: false, cast: null, record: null, probe: false, exec: false, step_mention: null, usage: want,
 } }]
-ok(reduceRows(unread, 'steps', []).errors[0].includes('no user message'),
+const unreadResult = reduceRows(unread, 'steps', [])
+ok(unreadResult.errors[0].includes('no user message'),
     'an agent with no bootstrap at all cannot be classified and is an error')
+ok(unreadResult.errors[0].includes('"bootstrap":false') && unreadResult.errors[0].includes('"step_mention":null'),
+    'the thrown error names the agent\'s raw structured answer beside the jq verdict, not just the file name')
+
+// ---- A relayed bootstrap:false, checked twice, is a misreport, not an error ----
+// wave.js never dispatches an agent without a bootstrap brief, so this is a
+// case a script cannot rule out on its own — a second independent read
+// repeating the same answer is treated as a relay misreport and folded into
+// overhead (with its usage) rather than thrown, so it cannot sink the join.
+const misreport = [{ file: 'agent-misreport.jsonl', extract: {
+    bootstrap: false, bootstrapFallback: true, cast: null, record: null, probe: true, exec: false,
+    step_mention: 'STEP-4541', usage: want,
+} }]
+const misreportResult = reduceRows(misreport, 'steps', [])
+ok(misreportResult.errors.length === 0 && misreportResult.overhead.agents.length === 1,
+    'a bootstrap:false confirmed on retry is folded into overhead, not thrown as an error')
+ok(UNITS.every((u) => misreportResult.overhead.sums[u] === want[u]),
+    'and its usage is still counted into the overhead total, not dropped')
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)

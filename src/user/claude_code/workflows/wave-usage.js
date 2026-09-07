@@ -1,6 +1,6 @@
 export const meta = {
     name: 'wave-usage',
-    description: 'Measure a completed wave\'s token spend from its agent transcripts and emit the back-fill rows: one row per (step, unit) for `docket dispatch backfill-usage --from-json -`, or per (proposal, voter, unit) for `docket vote backfill-usage --from-json -`. Every agent is partitioned exactly once into judge, claimant, or wave overhead by what its bootstrap brief told it to do. PROBE COST: one low-effort read-only agent per agent-*.jsonl in the directory, plus one scout. Invoke by scriptPath ONLY, with args {dir, mode?, exclude?}.',
+    description: 'Measure a completed wave\'s token spend from its agent transcripts and emit the back-fill rows: one row per (step, unit) for `docket dispatch backfill-usage --from-json -`, or per (proposal, voter, unit) for `docket vote backfill-usage --from-json -`. Every agent is partitioned exactly once into judge, claimant, or wave overhead by what its bootstrap brief told it to do. PROBE COST: one low-effort read-only agent per agent-*.jsonl in the directory, plus one scout, plus one re-check for any transcript relayed as bootstrap:false. Invoke by scriptPath ONLY, with args {dir, mode?, exclude?}.',
     whenToUse: 'Invoked by the docket-run skill the moment a wave returns, launched beside the close rather than ahead of it (the engine treats a step recorded less than `dispatch.grace` ago as usage PENDING, so the join may land after the close; a step still unbilled past that window is the `usage-rows-missing` refusal it always was), and by the pause and resume paths for a wave whose usage was never back-filled. args is {dir: absolute transcript directory, mode: "steps" (default) | "seats", exclude: [STEP-N...] in steps mode or [seat...] in seats mode}. The script cannot read files itself; its agents run one fixed jq program per transcript and the reduction happens here.',
     phases: [
         { title: 'Scout', detail: 'one agent lists the agent transcripts' },
@@ -92,9 +92,12 @@ export const meta = {
 //                  Effective effort is not exposed by this transcript shape.
 //                  complete covers parsed, deduplicated usage-bearing messages;
 //                  it does not certify that the transcript or task finished.
-// Throws when the directory holds no agent transcripts, when an agent's
-// bootstrap cannot be read, when an executor brief names no step to record,
-// or when a dispatched agent carries no usage.
+// Throws when the directory holds no agent transcripts, when a relayed
+// bootstrap:false repeats on a fresh re-check and cannot be resolved locally,
+// when an executor brief names no step to record, or when a dispatched agent
+// carries no usage. A bootstrap:false confirmed on that re-check is not an
+// error: it is folded into wave overhead instead, since wave.js never
+// dispatches an agent without a bootstrap brief.
 // ---------------------------------------------------------------------------
 
 let input = args
@@ -198,7 +201,21 @@ function classify(extract, mode, file) {
                  label: `${file} (${x.cast.proposal}/${x.cast.voter})` }
     }
     if (!x.bootstrap) {
-        return { bucket: 'error', key: null, label: `${file}: no user message — cannot classify` }
+        // The relaying agent said jq found no first `type:"user"` line. Twice
+        // in a row (bootstrapFallback set by the caller after a fresh retry
+        // repeats the answer) is treated as a misreport rather than truth —
+        // wave.js never dispatches an agent without a bootstrap brief, so a
+        // reproducible "no user message" is far more likely a relay error
+        // than an actual bootstrap-free transcript. Reported here as
+        // overhead (with its usage) rather than thrown, so one misreport
+        // does not sink the whole join.
+        if (x.bootstrapFallback) {
+            return { bucket: 'overhead', key: null,
+                     label: `no user message reported twice (misreport, not thrown)` +
+                            `${x.step_mention ? `, mentions ${x.step_mention}` : ''}` }
+        }
+        return { bucket: 'error', key: null,
+                 label: `${file}: no user message — cannot classify (agent answer: ${JSON.stringify(x)})` }
     }
     // An executor brief never carries a probe marker, so both together mean
     // drift, and the claimant path (with its own drift error) still wins.
@@ -328,14 +345,14 @@ find ${sq(dir)} -maxdepth 1 -type f -name 'agent-*.jsonl' | LC_ALL=C sort; echo 
 
 Return {files: [...]} with every path printed, one entry per line, verbatim and in that order. An empty listing is {files: []}. Do not open, read, or count the files.`
 
-const extractBrief = (file) => `You are a read-only measurement relay for one transcript file. Do not cd anywhere. Run these commands verbatim, sandboxed. The first writes a jq program with a quoted heredoc so nothing in it is expanded; the second runs it:
+const extractBrief = (file, retry) => `You are a read-only measurement relay for one transcript file. Do not cd anywhere. Run these commands verbatim, sandboxed. The first writes a jq program with a quoted heredoc so nothing in it is expanded; the second runs it:
 
 \`\`\`
 cat > "\${TMPDIR:-/tmp}/wave-usage-$$.jq" <<'JQ'
 ${EXTRACT_JQ}JQ
 jq -c -n -R -f "\${TMPDIR:-/tmp}/wave-usage-$$.jq" ${sq(file)}; echo "exit=$?"
 \`\`\`
-
+${retry ? '\nThis is a SECOND, independent run of the same command against the same file — a prior run reported bootstrap:false and is being re-checked. Run the command fresh; do not reuse or assume any earlier result.\n' : ''}
 jq prints exactly one JSON object. Return it as the structured output with ok:true and every field copied verbatim — bootstrap, cast, record, probe, exec, step_mention, models_observed, model_observation_complete, usage — including every number exactly as printed. Do not compute, estimate, round, or adjust anything, and do not read the transcript by any other means. Model names come only from the extracted message fields; missing observations remain empty. If jq exits non-zero or prints nothing, return ok:false with the error text in \`error\`.`
 
 phase('Scout')
@@ -376,8 +393,41 @@ extracted.forEach((r, i) => {
         errors.push(`${file}: jq failed — ${why}`)
         return
     }
-    results.push(r)
+    results.push({ ...r, path: files[i] })
 })
+
+// A relayed bootstrap:false is checked once more before it is trusted: wave.js
+// never dispatches an agent without a bootstrap brief, so this is far more
+// often the relay misreporting jq's own answer than a real bootstrap-free
+// transcript (observed: a file whose jq output plainly carried a first
+// `type:"user"` line, relayed back as bootstrap:false). One fresh agent
+// against the same file is cheap — this only re-runs files that came back
+// this way, not the whole extract stage.
+const suspect = results.filter((r) => r.extract.bootstrap === false)
+if (suspect.length) {
+    log(`wave-usage: ${suspect.length} transcript(s) reported bootstrap:false — re-checking before trusting it`)
+    const recheck = await pipeline(
+        suspect,
+        (r) => agent(extractBrief(r.path, true), {
+            label: `${r.file} · extract (retry)`,
+            phase: 'Extract',
+            schema: EXTRACT_SCHEMA,
+            effort: 'low',
+        }),
+    )
+    recheck.forEach((second, i) => {
+        const r = suspect[i]
+        if (second && second.ok && second.bootstrap === false) {
+            log(`wave-usage: ${r.file}: bootstrap:false confirmed on a second, independent read — treating as a misreport and recording as overhead, not an error`)
+            r.extract = { ...r.extract, bootstrapFallback: true }
+        } else if (second && second.ok) {
+            log(`wave-usage: ${r.file}: bootstrap:false did not repeat on retry — using the retry's answer`)
+            r.extract = second
+        } else {
+            log(`wave-usage: ${r.file}: retry could not confirm or refute the first answer — reporting the original error`)
+        }
+    })
+}
 
 const reduced = reduceRows(results, mode, exclude)
 reduced.errors.unshift(...errors)

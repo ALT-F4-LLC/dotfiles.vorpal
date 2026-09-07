@@ -64,9 +64,14 @@ if ! repo_root="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null)"; 
 fi
 cd "$repo_root"
 
-readonly HOOKS_DIR="src/user/claude_code/hooks"
-readonly REGISTRATION="src/user/claude_code.rs"
-readonly SUITES_DIR="tests"
+# The four path constants and the registry below are all overridable so
+# tests/sdet-abuse.test.sh can drive this gate against a synthetic fixture
+# tree (hook dir, claude_code.rs stand-in, tests dir) instead of the real one.
+# SDET_ABUSE_REGISTRY, if set, is sourced after the default registry so a test
+# can replace ENFORCING/ADVISORY/UNWIRED/KNOWN_UNVERIFIED wholesale.
+readonly HOOKS_DIR="${SDET_ABUSE_HOOKS_DIR:-src/user/claude_code/hooks}"
+readonly REGISTRATION="${SDET_ABUSE_REGISTRATION:-src/user/claude_code.rs}"
+readonly SUITES_DIR="${SDET_ABUSE_SUITES_DIR:-tests}"
 
 # A suite that passes fewer cases than this has not exercised its hook. The
 # smallest suite in the tree runs nineteen cases and the largest over eighty;
@@ -96,6 +101,18 @@ UNWIRED=()
 # warning on every run, and the gate fails the moment its suite lands without
 # the entry going.
 KNOWN_UNVERIFIED=()
+
+# Test-only override: a file that reassigns ENFORCING/ADVISORY/UNWIRED/
+# KNOWN_UNVERIFIED for a run against a synthetic fixture tree. Sourcing a
+# path named by an environment variable is safe here specifically because
+# this gate, like every gate child, runs in an allowlisted environment with
+# no attacker-controlled input feeding SDET_ABUSE_REGISTRY — it exists for
+# tests/sdet-abuse.test.sh to point at its own fixtures, not for anything
+# reachable from an untrusted step.
+if [ -n "${SDET_ABUSE_REGISTRY:-}" ]; then
+  # shellcheck disable=SC1090
+  source "$SDET_ABUSE_REGISTRY"
+fi
 
 in_list() {
   local needle="$1"

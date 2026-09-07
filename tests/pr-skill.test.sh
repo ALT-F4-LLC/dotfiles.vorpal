@@ -58,8 +58,12 @@
 #   (g)  reply    rewrite the review-thread-reply or close-comment
 #                 instruction to "gh pr comment <n> ... --body \"$text\""
 #                 (DOT-1149); the same rewrite also leaves a
-#                 gh pr comment ... --body "<text>" line in the file, which
-#                 the forbidden-form check rejects on its own
+#                 gh pr comment ... --body "<text>" line in a fenced block,
+#                 which the block-anchored forbidden-form check rejects on
+#                 its own
+#                 reflow (must stay GREEN): join SKILL.md's "gh pr comment …
+#                 --body \"<text>\" is never used" prose sentence onto one
+#                 physical line, touching no fenced block
 #   (h)  auto     MA: inside merge step 2's mergeStateStatus bullet, rewrite
 #                 "accept the PR here — handed to step 3" to "refuse here as
 #                 well, which keeps step 3 unreachable"
@@ -440,12 +444,19 @@ else
 fi
 
 # `[^\n]` here would be a bracket expression excluding the letter n, not a
-# "not a newline" class, and every real call names <pr-number>.
-if grep -qE 'gh pr comment .*--body "' "$SKILL"; then
-    bad "forbidden form: gh pr comment ... --body \"<text>\" appears in ${SKILL}"
-else
-    ok "forbidden form: gh pr comment ... --body \"<text>\" appears nowhere"
-fi
+# "not a newline" class, and every real call names <pr-number>. Block-
+# anchored, like the xargs and echo $? checks: this exact string also
+# occurs in the prose that explains the rule (a mention, not a command), so
+# a whole-file grep goes red on a behaviour-preserving prose reflow that
+# joins two explanatory lines onto one, with no fenced block touched.
+comment_hits=0
+for b in "$WORK"/block.*.joined; do
+    if grep -qE -- 'gh pr comment .*--body "' "$b"; then
+        bad "forbidden form: gh pr comment ... --body \"<text>\" appears in a fenced block: $b"
+        comment_hits=1
+    fi
+done
+[ "$comment_hits" -eq 0 ] && ok "forbidden form: gh pr comment ... --body \"<text>\" appears in no fenced block"
 
 # (h) merge step 2's mergeStateStatus bullet keeps step 3's `auto` path
 # reachable: the pending-required-check case is ACCEPTED here and handed on,

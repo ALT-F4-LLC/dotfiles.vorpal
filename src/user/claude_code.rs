@@ -941,6 +941,54 @@ mod tests {
     }
 
     #[test]
+    fn every_publishing_gh_verb_the_pr_skill_invokes_has_an_ask_row() {
+        // Cross-check against the skill's own text rather than against
+        // PUBLISHING_ASK_VERBS itself: a mutant that deletes rows from
+        // PUBLISHING_ASK_VERBS (DOT-1473's mutant D, restated for four
+        // entries) still leaves this assertion with something independent
+        // to fail against, since the skill file the verbs are extracted
+        // from does not move when the constant does. `gh pr view`,
+        // `checks`, `list`, and `diff` are read verbs (the exact set
+        // AUTO_MODE_ALLOW_RULES:89 allow-lists); every OTHER `gh pr <verb>`
+        // the skill invokes, plus a bare `gh api`, must have an ask row.
+        const READ_GH_PR_VERBS: &[&str] = &["view", "checks", "list", "diff"];
+
+        let skill = include_str!("claude_code/skills/pr/SKILL.md");
+        let ask_patterns = permission_ask_patterns();
+
+        let mut publishing_verbs: Vec<String> = Vec::new();
+        let mut rest = skill;
+        while let Some(pos) = rest.find("gh pr ") {
+            let after = &rest[pos + "gh pr ".len()..];
+            let end = after
+                .find(|c: char| !c.is_ascii_lowercase())
+                .unwrap_or(after.len());
+            let verb = &after[..end];
+            if !verb.is_empty() && !READ_GH_PR_VERBS.contains(&verb) {
+                publishing_verbs.push(format!("gh pr {verb}"));
+            }
+            rest = &after[end..];
+        }
+        if skill.contains("gh api") {
+            publishing_verbs.push("gh api".to_string());
+        }
+        publishing_verbs.sort_unstable();
+        publishing_verbs.dedup();
+
+        assert!(
+            !publishing_verbs.is_empty(),
+            "expected the pr skill to invoke at least one publishing gh verb"
+        );
+        for verb in publishing_verbs {
+            let pattern = format!("Bash({verb}:*)");
+            assert!(
+                ask_patterns.contains(&pattern),
+                "{verb} is invoked by the pr skill but has no permission-ask row"
+            );
+        }
+    }
+
+    #[test]
     fn sandbox_read_denials_are_sorted_and_unique() {
         let denied = sandbox_filesystem_deny_read_paths();
         let mut expected = denied.clone();

@@ -11,8 +11,9 @@
 # Assertions are anchored to the fenced command blocks and to the review
 # mode's refusal-list region, never to whole-file text: each of these strings
 # also occurs in the prose that explains the rule, so a whole-file grep stays
-# green while the command itself is wrong. The one exception is (d), an
-# absence claim, which is whole-file by nature.
+# green while the command itself is wrong. The exceptions are (d) and (d2),
+# absence claims, which are whole-file by nature — the update/PATCH publish
+# path is prose, outside any fence, so no fence-anchored check reaches it.
 #
 # PR_SKILL_FILE overrides the file under test, so a mutation probe can point
 # the suite at a deliberately broken COPY under $TMPDIR without touching the
@@ -43,6 +44,10 @@
 #   (c)  refusal  delete src/user/claude_code/skills/** from the review-mode
 #                 refusal list (it still occurs elsewhere in the file)
 #   (d)  title    reintroduce the forbidden literal --title "<title>"
+#   (d2) update   M-1155: rewrite the update/PATCH publish path to
+#                 "gh pr edit -R <owner>/<repo> --title ... --body ..." — the
+#                 skill's central rule (generated text never enters command
+#                 text) inverted on the path no fence-anchored check reaches
 #   (e)  status   reintroduce a standalone "echo $?" line in the checks
 #                 step 4 log-fetch block (DOT-1130)
 #   (f)  tail     rejoin the checks step 4 capture and tail commands into
@@ -289,6 +294,30 @@ if grep -qF -- '--title "<title>"' "$SKILL"; then
     bad "forbidden form: --title \"<title>\" appears in ${SKILL}"
 else
     ok "forbidden form: --title \"<title>\" appears nowhere"
+fi
+
+# (d2) The update/PATCH publish path is stated in prose, outside any fence,
+# so (a)'s fence-anchored check never reaches it. Whole-file by nature, like
+# (d): gh pr create and gh pr edit must never appear as a publish instruction
+# (carrying --title or --body) anywhere in the file — a legitimate non-publish
+# gh pr edit (the review step's --add-reviewer) carries neither flag and must
+# stay green.
+if grep -qE -- 'gh pr (create|edit)([^`]|$)*(--title|--body)([^-]|$)' "$SKILL"; then
+    bad "forbidden form: gh pr create/edit appears with --title or --body as a publish instruction in ${SKILL}"
+else
+    ok "forbidden form: gh pr create/edit never appears with --title or --body"
+fi
+
+# (d3) The update mode's PATCH publish path names the same file-valued
+# fields as the POST path, in one sentence.
+patch_hits=$(grep -cF -- '--method PATCH repos/<owner>/<repo>/pulls/<pr-number>' "$SKILL")
+if [ "$patch_hits" -eq 1 ] \
+    && grep -qF -- '--method PATCH repos/<owner>/<repo>/pulls/<pr-number>' "$SKILL" \
+    && grep -A2 -F -- '--method PATCH repos/<owner>/<repo>/pulls/<pr-number>' "$SKILL" \
+        | tr '\n' ' ' | grep -qE -- '`title`.*`body`|title.*and.*body'; then
+    ok "update publish path: PATCH shape states file-valued title and body fields"
+else
+    bad "update publish path: expected exactly one PATCH repos/<owner>/<repo>/pulls/<pr-number> statement naming title and body fields, found ${patch_hits}"
 fi
 
 # (e) checks step 4 never reads $? in a separate shell from the one that

@@ -131,13 +131,8 @@ argument always wins; bare, you resolve it yourself rather than asking.
   ```
 
   This lists every non-terminal run (`planning`, `active`, `waiting-human`)
-  in the current project — one read, no run state kept. In this payload
-  `.data.steps` is a list of status/count BUCKETS, not step rows, so nothing
-  here answers "which step" — `docket step list --run $RUN` does:
-
-  ```bash
-  docket run status RUN-N --json | jq '.data.run.status, .data.steps'
-  ```
+  in the current project — one read, no run state kept. Its payload carries
+  `.data.runs` and `.data.total`, nothing named "which step".
 
   Resolve `$RUN` by this precedence, applied once:
 

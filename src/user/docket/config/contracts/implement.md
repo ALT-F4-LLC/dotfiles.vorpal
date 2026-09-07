@@ -1,8 +1,9 @@
 ---
 node: implement
-version: 9
+version: 10
 archetype: executor-write
 packet_includes:
+  - fragments/prime-directive.md
   - fragments/code-philosophy.md
   - fragments/tdd-discipline.md
   - fragments/test-infra-discipline.md

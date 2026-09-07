@@ -1,8 +1,9 @@
 ---
 node: tdd-author-security
-version: 5
+version: 6
 archetype: executor-write
 packet_includes:
+  - fragments/prime-directive.md
   - fragments/doc-house-style.md
   - fragments/writing-for-humans.md
   - fragments/threat-model-method.md

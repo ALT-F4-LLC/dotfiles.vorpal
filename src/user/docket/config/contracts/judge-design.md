@@ -1,8 +1,9 @@
 ---
 node: judge-design
-version: 10
+version: 11
 archetype: executor-read
 packet_includes:
+  - fragments/prime-directive.md
   - fragments/hig-principles.md
   - fragments/copy-discipline.md
   - fragments/severity-ladder-general.md

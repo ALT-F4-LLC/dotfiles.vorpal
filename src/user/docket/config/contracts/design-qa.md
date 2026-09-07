@@ -1,8 +1,9 @@
 ---
 node: design-qa
-version: 9
+version: 10
 archetype: executor-read
 packet_includes:
+  - fragments/prime-directive.md
   - fragments/hig-principles.md
   - fragments/copy-discipline.md
   - fragments/severity-ladder-general.md

@@ -1,8 +1,9 @@
 ---
 node: threat-model
-version: 4
+version: 5
 archetype: executor-read
 packet_includes:
+  - fragments/prime-directive.md
   - fragments/threat-model-method.md
   - fragments/security-review-dimensions.md
   - fragments/severity-ladder-security.md

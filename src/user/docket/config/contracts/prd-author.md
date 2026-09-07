@@ -1,8 +1,9 @@
 ---
 node: prd-author
-version: 6
+version: 7
 archetype: executor-write
 packet_includes:
+  - fragments/prime-directive.md
   - fragments/doc-house-style.md
   - fragments/writing-for-humans.md
   - fragments/evidence-rules.md

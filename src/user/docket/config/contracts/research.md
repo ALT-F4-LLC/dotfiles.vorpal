@@ -1,8 +1,9 @@
 ---
 node: research
-version: 3
+version: 4
 archetype: executor-research
 packet_includes:
+  - fragments/prime-directive.md
   - fragments/evidence-rules.md
   - fragments/writing-for-humans.md
 emits: research-notes

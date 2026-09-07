@@ -1,8 +1,9 @@
 ---
 node: investigate
-version: 3
+version: 4
 archetype: executor-read
 packet_includes:
+  - fragments/prime-directive.md
   - fragments/truth-first.md
   - fragments/evidence-rules.md
   - fragments/writing-for-humans.md

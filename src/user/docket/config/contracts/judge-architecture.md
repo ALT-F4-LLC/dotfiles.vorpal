@@ -1,8 +1,9 @@
 ---
 node: judge-architecture
-version: 11
+version: 12
 archetype: executor-read
 packet_includes:
+  - fragments/prime-directive.md
   - fragments/severity-ladder-general.md
   - fragments/code-philosophy.md
   - fragments/laziness-ladder.md

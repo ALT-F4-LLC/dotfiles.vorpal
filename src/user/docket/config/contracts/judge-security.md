@@ -1,8 +1,9 @@
 ---
 node: judge-security
-version: 9
+version: 10
 archetype: executor-read
 packet_includes:
+  - fragments/prime-directive.md
   - fragments/severity-ladder-security.md
   - fragments/security-review-dimensions.md
   - fragments/evidence-rules.md

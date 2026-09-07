@@ -1,8 +1,9 @@
 ---
 node: verify-ac
-version: 7
+version: 8
 archetype: executor-read
 packet_includes:
+  - fragments/prime-directive.md
   - fragments/evidence-rules.md
   - fragments/scope-discipline.md
 emits: ac-report

@@ -1,8 +1,9 @@
 ---
 node: retro-analyst
-version: 4
+version: 5
 archetype: executor-read
 packet_includes:
+  - fragments/prime-directive.md
   - fragments/evidence-rules.md
   - fragments/writing-for-humans.md
   - fragments/scope-discipline.md

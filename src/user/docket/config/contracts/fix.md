@@ -1,8 +1,9 @@
 ---
 node: fix
-version: 10
+version: 11
 archetype: executor-write
 packet_includes:
+  - fragments/prime-directive.md
   - fragments/code-philosophy.md
   - fragments/tdd-discipline.md
   - fragments/scope-discipline.md

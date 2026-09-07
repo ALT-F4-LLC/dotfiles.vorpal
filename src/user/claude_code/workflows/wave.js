@@ -346,10 +346,10 @@ ${!isWrite ? `
    - Find the target sha — the change-summary's FIRST LINE carries it.
    - IF THAT FIRST LINE CARRIES NO SHA, or reports COMMIT BLOCKED, the
      packet's target_sha is NOT the change. A blocked commit leaves the
-     worktree's BASE HEAD standing in that field, so archiving it rebuilds
-     the tree as it stood BEFORE the work. Say exactly that in your record,
-     evaluate the packet's rendered issue.diff as the change, and file NO
-     finding against a file you read from that sha — each would be a false
+     field EMPTY — the engine's signal for this case — so there is no sha
+     to archive at all. Say exactly that in your record, evaluate the
+     packet's rendered issue.diff as the change, and file NO finding
+     against a file you read from that sha — each would be a false
      blocker against work that is present but uncommitted.
    - OTHERWISE reconstruct the target read-only, ALWAYS — do not first probe
      whether your checkout contains the change: integration cherry-picks, so

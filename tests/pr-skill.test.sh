@@ -109,6 +109,12 @@
 #                 detection command
 #   (k)  determ   MK: delete the fenced /usr/bin/perl -0777 -pe 's/\n\z//'
 #                 de-terminate command, leaving the check with no producer
+#                 MZ: the "runs once" sentence rewritten to "after the
+#                 refuse-list scan has cleared the stripped file" — the block
+#                 stays in place, only the ordering claim inverts
+#                 MZ2: the fenced perl block physically moved to the end of
+#                 the document, below the refuse list — the prose is
+#                 untouched, only the block's position moves
 #
 # (h) and (i) assert the ruling, not a token count: a count of "auto" over
 # the bullet, or of "headRefName" over the file, survives MA, MC and MD
@@ -602,8 +608,42 @@ if determinate=$(find_block "/usr/bin/perl -0777 -pe 's/\\n\\z//'"); then
     else
         bad "de-terminate: the perl command does not redirect into <final-title-file>"
     fi
+
+    # Ordering, not just presence: find_block returns the first block
+    # containing the literal, with no positional constraint, so a fenced
+    # block moved below the refuse list (whether the earlier check catches
+    # its content or not) would report the same two ok lines. Compare the
+    # two blocks' own N numerically — glob order is lexicographic
+    # (block.1, block.10, block.11, block.2, ...), not document order, so N
+    # is parsed out of the filename rather than trusted from iteration.
+    # The refuse list is anchored on a pattern unique to it: a bare "claude"
+    # is also a strip-list line and sorts before the refuse list in glob
+    # order.
+    determinate_n=${determinate##*/block.}
+    determinate_n=${determinate_n%.joined}
+    if refuse_block=$(find_block 'DOT-[0-9]+([^A-Za-z0-9_]|$)'); then
+        refuse_n=${refuse_block##*/block.}
+        refuse_n=${refuse_n%.joined}
+        if [ "$determinate_n" -lt "$refuse_n" ]; then
+            ok "de-terminate: the perl block (block ${determinate_n}) precedes the refuse-list block (block ${refuse_n})"
+        else
+            bad "de-terminate: the perl block (block ${determinate_n}) does not precede the refuse-list block (block ${refuse_n})"
+        fi
+    else
+        bad "de-terminate: no fenced block carries the refuse list's DOT-<n> pattern — cannot check ordering"
+    fi
+
+    # The prose states the same ordering: the sentence carrying "runs once"
+    # also names the refuse-list scan as coming after.
+    sentences "$SKILL" > "${WORK}/determinate-sentences"
+    once_sentence=$(grep -F -- 'runs once' "${WORK}/determinate-sentences")
+    if [ -n "$once_sentence" ] && printf '%s' "$once_sentence" | grep -qF -- 'before the refuse-list scan'; then
+        ok "de-terminate: the 'runs once' sentence names the refuse-list scan as coming after"
+    else
+        bad "de-terminate: no 'runs once' sentence names the refuse-list scan as coming after"
+    fi
 else
-    bad "de-terminate: no fenced block runs /usr/bin/head -c — the strip pass's terminator has no remover"
+    bad "de-terminate: no fenced block runs /usr/bin/perl -0777 -pe s/\\n\\z// — the strip pass's terminator has no remover"
 fi
 
 if [ "$fail" -ne 0 ]; then

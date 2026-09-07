@@ -84,6 +84,34 @@ function archetype(row, hint) {
 // (three cycles, every spawn refused, zero steps claimed). Say what to do and
 // what containment binds; a rule needs no argument for why it is allowed.
 function bootstrap(row, r, isolated, isWrite) {
+    // The claim bootstrap: seven commands rendered in two joins (isolated:
+    // one per Bash call, literal paths; shared: one Bash call, `&&`-chained)
+    // — the same sequence duplicated in DOT-1269 already drifted once (one
+    // copy wrote the packet to a file while the other printed it to stdout).
+    // One array of command strings is the source for both forms; `isolated`
+    // picks the token line's exact syntax (the shared form's `&&` chain
+    // reads the claim file via an explicit `<` redirect since it cannot rely
+    // on argument order the way a standalone call can). Nested here (rather
+    // than a sibling top-level function) so the extraction convention every
+    // suite already uses for bootstrap — everything from `function
+    // bootstrap(` to the next marker — carries this helper along with it.
+    function claimCommands(isolated) {
+        const dir = `<TMP>/${row.step}.d`
+        const claimJson = `${dir}/${row.step}.claim.json`
+        const token = `${dir}/${row.step}.token`
+        const packet = `${dir}/${row.step}.packet.md`
+        return [
+            `rm -rf ${dir}`,
+            `mkdir -m 700 ${dir}`,
+            `docket step claim ${row.step} --owner wave:${row.step} --render --metadata ${claimMetadataArg} --json > ${claimJson}`,
+            isolated
+                ? `jq -r '.data.token' ${claimJson} > ${token}`
+                : `jq -r '.data.token'  < ${claimJson} > ${token}`,
+            `chmod 600 ${token}`,
+            `jq -r '.data.packet' ${claimJson} > ${packet}`,
+            `cat /dev/null > ${claimJson}`,
+        ]
+    }
     // Routing is known before execution; recording it at claim preserves it
     // when the executor fails. Clear prior-attempt observations at the same
     // boundary. A requested alias is not evidence of the serving model.
@@ -186,26 +214,14 @@ read STEP-N or \${row.step}, and this one does not.${isolationNote}${pinNote}
 1. Claim it AND PARK THE TOKEN ON DISK${isolated ? ` — run these as separate
    plain Bash calls, literal paths throughout (form 1' from obligation 0):
 
-   \`rm -rf <TMP>/${row.step}.d\`
-   \`mkdir -m 700 <TMP>/${row.step}.d\`
-   \`docket step claim ${row.step} --owner wave:${row.step} --render --metadata ${claimMetadataArg} --json > <TMP>/${row.step}.d/${row.step}.claim.json\`
-   \`jq -r '.data.token' <TMP>/${row.step}.d/${row.step}.claim.json > <TMP>/${row.step}.d/${row.step}.token\`
-   \`chmod 600 <TMP>/${row.step}.d/${row.step}.token\`
-   \`jq -r '.data.packet' <TMP>/${row.step}.d/${row.step}.claim.json > <TMP>/${row.step}.d/${row.step}.packet.md\`
-   \`cat /dev/null > <TMP>/${row.step}.d/${row.step}.claim.json\`
+${claimCommands(true).map((c) => `   \`${c}\``).join('\n')}
    Then open <TMP>/${row.step}.d/${row.step}.packet.md with the Read tool — the
    packet goes to a FILE here, not stdout, which also keeps a large brief from
    being truncated by the harness's inline-output cap.
 ` : `, in ONE Bash call, exactly this:
 
    \`\`\`
-   rm -rf <TMP>/${row.step}.d &&
-     mkdir -m 700 <TMP>/${row.step}.d &&
-     docket step claim ${row.step} --owner wave:${row.step} --render --metadata ${claimMetadataArg} --json > <TMP>/${row.step}.d/${row.step}.claim.json &&
-     jq -r '.data.token'  < <TMP>/${row.step}.d/${row.step}.claim.json > <TMP>/${row.step}.d/${row.step}.token &&
-     chmod 600 <TMP>/${row.step}.d/${row.step}.token &&
-     jq -r '.data.packet' <TMP>/${row.step}.d/${row.step}.claim.json > <TMP>/${row.step}.d/${row.step}.packet.md &&
-     cat /dev/null > <TMP>/${row.step}.d/${row.step}.claim.json
+   ${claimCommands(false).join(' &&\n     ')}
    \`\`\`
 `}
 

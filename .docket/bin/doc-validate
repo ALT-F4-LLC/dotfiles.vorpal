@@ -62,10 +62,26 @@ while IFS= read -r f; do
       # A skill is loaded through its YAML frontmatter block, so the header
       # shape a skill carries is that block, not a '# ' title. An unterminated
       # block swallows the whole file and the skill silently stops loading.
+      #
+      # The closing fence search is bounded to the first FRONTMATTER_MAX_LINES
+      # lines, not the whole file: an unbounded `$0 == "---"` scan treats ANY
+      # later '---' — a body rule, a markdown thematic break — as the
+      # terminator, so a skill whose real closing fence was deleted still
+      # reads as terminated once the scan reaches the next one. The largest
+      # frontmatter block in this repo's skills today is 12 lines
+      # (skills/brief/SKILL.md); 40 leaves headroom without reaching into a
+      # skill's body. src/user/claude_code/skills/docket/SKILL.md is the
+      # mutant fixture for this check (tests/doc-validate.test.sh): deleting
+      # its closing fence at line 9 must fail here, not pass on a later '---'
+      # further down its 252-line body.
+      frontmatter_max_lines=40
       if ! head -1 "$f" | grep -q '^---$'; then
         echo "doc-validate: $f does not open with a '---' frontmatter fence" >&2
         failed=1
-      elif ! awk 'NR > 1 && $0 == "---" { found = 1; exit } END { exit !found }' "$f"; then
+      elif ! awk -v max="$frontmatter_max_lines" \
+        'NR > 1 && NR <= max && $0 == "---" { found = 1; exit }
+         NR > max { exit }
+         END { exit !found }' "$f"; then
         echo "doc-validate: $f has an unterminated frontmatter block" >&2
         failed=1
       fi

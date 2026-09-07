@@ -89,6 +89,13 @@
 #                 the negated word "refusal"
 #                 MK: "a mismatch is noted in the report, with no refusal" —
 #                 same defect, different phrasing
+#                 mut-phrase: one benign sentence carrying "assert it equals"
+#                 inserted under an unrelated heading (## merge) — the
+#                 uniqueness check is anchored on precondition 5's own
+#                 paragraph, not the whole file, so this must stay GREEN
+#                 MI-headref: "Read baseRefName and assert it equals the
+#                 recorded base; a mismatch refuses." inserted the same way —
+#                 must also stay GREEN
 #   (j)  eol      MI: revert the title-validation paragraph to "exactly one
 #                 line, no embedded newline", dropping the trailing-newline
 #                 item and its tail -c1 mechanism
@@ -494,12 +501,33 @@ else
 fi
 
 # (i) An explicitly given PR number is checked against the checked-out
-# branch, and a mismatch refuses. Anchored on the sentence that carries the
-# assertion, not on how often headRefName is written.
-sentences "$SKILL" > "${WORK}/skill-sentences"
-head_hits=$(grep -cF -- 'assert it equals' "${WORK}/skill-sentences")
+# branch, and a mismatch refuses. Anchored on precondition 5's own paragraph,
+# fence-stripped, the same positional pattern (c) and (h) use — not on the
+# whole file, where a benign "assert it equals" sentence added anywhere else
+# (e.g. under ## merge) would false-red an untouched ruling.
+awk '
+    /^[[:space:]]*```/ { fenced = !fenced; next }
+    fenced             { next }
+    /^## Preconditions/ { in_pre = 1; next }
+    /^## /             { in_pre = 0 }
+    !in_pre            { next }
+    /^5\. / { in_region = 1; regions++; print; next }
+    /^6\. / { in_region = 0 }
+    in_region { print }
+' "$SKILL" > "${WORK}/precondition-5"
+precondition_region=$?
 
-if [ "$head_hits" -ne 1 ]; then
+if [ "$precondition_region" -ne 0 ] || [ ! -s "${WORK}/precondition-5" ]; then
+    bad "head-branch assertion: could not delimit precondition 5's paragraph"
+    head_hits=-1
+else
+    sentences "${WORK}/precondition-5" > "${WORK}/skill-sentences"
+    head_hits=$(grep -cF -- 'assert it equals' "${WORK}/skill-sentences")
+fi
+
+if [ "$head_hits" -eq -1 ]; then
+    :
+elif [ "$head_hits" -ne 1 ]; then
     bad "head-branch assertion: expected exactly one sentence carrying 'assert it equals', found ${head_hits}"
 else
     ok "head-branch assertion: one sentence asserts the PR's head branch equals the checkout's"

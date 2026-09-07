@@ -83,6 +83,14 @@ function archetype(row, hint) {
 // self-justifying brief once cost an entire dispatch every executor spawn
 // (three cycles, every spawn refused, zero steps claimed). Say what to do and
 // what containment binds; a rule needs no argument for why it is allowed.
+// TEST-BEGIN bootstrap — extracted and exercised by
+// tests/wave-bootstrap-render.test.sh, which asserts the read-class render
+// (isWrite false) redirects the claim's packet to a packet.md file, carries
+// the Read-tool instruction naming it, and prints no packet to stdout; the
+// write-class render (isWrite true) is the negative case. Keep this function
+// free of workflow globals (agent, log, args) so it stays evaluable on its
+// own — the same convention tests/wave-model-attribution.test.sh already
+// relies on when it extracts starting at the declaration line below.
 function bootstrap(row, r, isolated, isWrite) {
     // The claim bootstrap: seven commands rendered in two joins (isolated:
     // one per Bash call, literal paths; shared: one Bash call, `&&`-chained)
@@ -545,6 +553,7 @@ ${isolated ? `
    to stop launching this issue's later stages once it parks; do not
    paraphrase it.`
 }
+// TEST-END bootstrap
 
 let input = args
 if (typeof input === 'string') {

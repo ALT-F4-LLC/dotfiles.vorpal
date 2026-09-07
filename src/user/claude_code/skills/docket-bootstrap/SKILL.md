@@ -152,11 +152,23 @@ offer a replacement. Identify its intended workflow and acceptance criteria.
 Do not create an unseen issue or start an unseen run. Broader work goes to
 `/docket-plan` before activation.
 
-Derive gates, pre-gates, and actions by parsing the workflow TOML. Include every
-consumer step. Inspect `docket trust list --all` and distinguish an applicable
-entry from one bound elsewhere. Include the installed `doc-record` action even
-if today's issue will not use it; mark its future-use status explicitly.
-Propose `commit-exec` only if a local workflow actually consumes it.
+Derive gates, pre-gates, and actions by parsing every workflow TOML in the
+installed corpus and any local addition, not only the smoke issue's workflow.
+A later issue's labels can bind any of them, and a gate declared there with no
+trust entry bound to this repository parks that issue's first gated step
+`unmatched`. Measured across every project on this machine on 2026-09-07, 21
+parks carried an unmatched gate row, nearly all reading "an entry with this
+name exists but is bound to a different repo", and three of the nine steps
+still parked were that shape. Include every consumer step. Inspect `docket
+trust list --all` and treat an entry bound to another repository as missing
+here, never as applicable. Propose one entry per gate in that union, bound to
+this repository, each carrying the real command the miners found. A gate this
+repository cannot yet satisfy gets no argv and no stub: list it as a known
+unmatched gate with the workflows it would park and the consequence stated
+plainly, so the operator decides whether to close the gap before or after
+activation. Include the installed `doc-record` action even if today's issue
+will not use it; mark its future-use status explicitly. Propose `commit-exec`
+only if a local workflow actually consumes it.
 
 Prepare exact proposed changes: project/store initialization if needed, prefix,
 config keys with current and proposed values and scopes, local file diffs, smoke
@@ -195,7 +207,10 @@ do not delegate the operator's answer or infer it from silence.
    Explain any prefix matching or absolute mutable repo path in its proposal.
    Apply only that approved entry with `trust add --yes`, flags before `--`,
    then read back the effective entry. Resolve conflicts as described in the
-   action reference; never silently remove existing trust.
+   action reference; never silently remove existing trust. The proposal set is
+   the corpus-wide gate union from step 4, so it is longer than the smoke
+   issue's workflow alone; a gate the operator declines or defers stays in the
+   activation summary as unmatched, with the workflows it will park.
 4. **Finish preparation.** After the last bootstrap reader finishes, remove only
    unchanged, session-owned working specs using the ownership manifest. Do this
    **before activation**. Recheck local files, HEAD, policy, trust, and corpus
@@ -205,7 +220,10 @@ do not delegate the operator's answer or infer it from silence.
    together with unresolved blockers. A required unmatched gate is a blocker to
    dispatch, with its affected steps and consequence stated plainly. Recommend
    resolving it first; activate a deliberately parked blocked run only when the
-   operator explicitly chooses that state. On approval, activate without
+   operator explicitly chooses that state. An unmatched gate that only other
+   workflows declare does not block this activation; report it as deferred,
+   naming those workflows, so the first issue that binds one does not park as
+   a surprise. On approval, activate without
    `--dry-run` and confirm the resulting status. Do not dispatch any step.
 
 If a probe, approval, or activation fails, preserve the checkpoint and report the
@@ -225,8 +243,10 @@ specs, and unresolved findings with owning projects. If a created spec changed
 after verification, name it as preserved rather than claiming a clean tree.
 
 Name each required unmatched gate/action as **BLOCKER**, its consumer steps, and
-whether refusal occurs before work, at completion, or during an action. The next
-conductor must inspect real `gate_results`; `unmatched` means it did not execute.
+whether refusal occurs before work, at completion, or during an action. Name
+each unmatched gate that only other workflows declare as **DEFERRED**, with the
+workflows it will park. The next conductor must inspect real `gate_results`;
+`unmatched` means it did not execute.
 
 The successful terminal state is activated and undispatched. A stop hook does
 not authorize dispatch or abandonment. If a guard prevents handoff, explain the

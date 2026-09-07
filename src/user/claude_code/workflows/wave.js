@@ -2285,8 +2285,26 @@ if (lanes.size > 1) {
 const inFlight = new Map()   // step -> row, executor rows launched and unsettled
 const waiting = []           // { row, seq, resolve, held }
 let submitted = 0
+// The Workflow tool documents its own agent() concurrency cap as
+// min(16, CPUs-2) per launch — this script cannot read the machine's CPU
+// count, so 16 is the loosest bound it can assert, and on a machine under 18
+// cores the real cap is tighter than this. A row that clears admission() but
+// then queues behind that harness cap was launching into a park the wave had
+// already observed: 21 judge agents once queued minutes ahead of a mid-wave
+// park and all started into it, each settling on a claim refusal 10-20s
+// later. Bounding admission itself to this cap keeps the queue in `waiting`,
+// where pump() already flushes it not-launched-run-parked the moment a park
+// lands — the fix belongs here, not at the agent() call site: nothing in a
+// workflow script runs between the harness dequeuing a call and that call's
+// body starting, so a check placed there would see the park too late to
+// matter.
+const HARNESS_CAP = 16
 function blocker(row) {
     if (!isExecutorRow(row)) return null
+    if (inFlight.size >= HARNESS_CAP) {
+        return `${inFlight.size} row(s) in flight — the harness runs at most ` +
+            `${HARNESS_CAP} agents concurrently`
+    }
     const c = classOf(row)
     let live = 0
     for (const other of inFlight.values()) {

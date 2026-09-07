@@ -379,6 +379,47 @@ ok(out.every((r) => r.status === 'returned' || r.status === 'gate-passed') &&
    before('A-1a', 'A-3') && before('A-3', 'A-4'),
     'single lane: the chain ladders in stage order to the end')
 
+// ---- (7) DOT-1603: a row already queued for a harness execution slot when
+// the wave observes a park does not launch into it. Seventeen independent
+// read-class issues, one stage-0 row each — no class-headroom or writer-
+// coupling rule ever fires here, so the ONLY thing that can hold the
+// seventeenth back is the harness's own concurrency cap this admission rule
+// now bounds. All seventeen are HELD (the stub spawn stands in for a row
+// admitted but still queued for a harness slot — the exact state RUN-88's
+// judges were in when the park landed), so the suite can watch the cap hold
+// the last one back, then watch a park settle it without ever spawning.
+const CAPPED = () => Array.from({ length: 17 }, (_, i) =>
+    ex(`R${i}-0`, `CAP-${i}`, 0, 'research'))
+const capRows = CAPPED()
+const capHeld = capRows.map((r) => r.step)
+const CAP_INTO_PARK = [capHeld[0], 'CONFLICT', '{"ok":false,"error":"run is not active"}'].join('\n')
+run = start(capRows, {
+    hold: capHeld,
+    results: { [capHeld[0]]: { step: capHeld[0], status: 'returned', text: CAP_INTO_PARK } },
+})
+await settle()
+ok(capHeld.slice(0, 16).every((s) => SPAWNED.includes(s)),
+    'DOT-1603: sixteen rows reach the harness (the documented min(16, CPUs-2) ceiling)')
+ok(!SPAWNED.includes(capHeld[16]),
+    'DOT-1603: the seventeenth row does not launch — it queues behind the cap')
+ok(logged('waiting — 16 row(s) in flight — the harness runs at most 16 agents concurrently'),
+    'DOT-1603: the wait names the harness cap, not a class or writer rule')
+// The held row that returns is one of the sixteen already in the harness;
+// its refusal is the run-wide park signal, observed while the seventeenth is
+// still queued behind the cap — the exact RUN-88 shape.
+await finish(capHeld[0])
+ok(logged('run parked mid-wave'), 'DOT-1603: the park is observed the moment the refusal settles')
+ok(!SPAWNED.includes(capHeld[16]),
+    'DOT-1603: the queued row still has not spawned once the park lands')
+// Drain the rest of the in-flight sixteen so the ladder can settle.
+for (const s of capHeld.slice(1, 16)) await finish(s)
+const capOut = await run
+ok(statusOf(capOut, capHeld[16]) === 'not-launched-run-parked',
+    'DOT-1603: the queued row settles not-launched-run-parked — it never spawned into the park')
+ok(!SPAWNED.includes(capHeld[16]),
+    'DOT-1603: and it is confirmed absent from SPAWNED, not merely reported that way')
+ok(SPAWNED.length === 16, 'DOT-1603: exactly the sixteen pre-park spawns happened, never a seventeenth')
+
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)
 JS

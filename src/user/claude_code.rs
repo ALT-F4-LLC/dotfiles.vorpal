@@ -417,10 +417,13 @@ impl ClaudeCode {
         let settings_builder = settings_builder
             .with_permission_additional_directories(vec!["~/.claude/workflows".to_string()]);
 
-        // Every `gh` verb that publishes text or changes who can act on a PR asks
-        // first, so the human sees the bytes before they are public. `gh run view`
-        // is deliberately absent: it only reads CI logs, and the `pr` skill already
-        // treats that output as untrusted data rather than instructions.
+        // Every `gh pr` verb the `pr` skill invokes that publishes text or
+        // changes who can act on a PR asks first, so the human sees the
+        // bytes before they are public. This list is keyed to the verbs the
+        // skills invoke; a skill that adds a publishing `gh` verb adds a row
+        // here. `gh run view` is deliberately absent: it only reads CI logs,
+        // and the `pr` skill already treats that output as untrusted data
+        // rather than instructions.
         let settings_builder = permission_ask_patterns()
             .iter()
             .fold(settings_builder, |builder, pattern| {

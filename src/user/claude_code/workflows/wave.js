@@ -103,6 +103,18 @@ function bootstrap(row, r, isolated, isWrite) {
     // than a sibling top-level function) so the extraction convention every
     // suite already uses for bootstrap — everything from `function
     // bootstrap(` to the next marker — carries this helper along with it.
+    // DKT-1564 makes `docket step claim` exit 0 with `ok: true` when the
+    // lease committed but a later stage failed: the response carries the
+    // live token plus a non-empty `.data.claim_error` instead of the
+    // non-zero exit that used to be the stop signal. Nothing downstream of
+    // the claim reads that field on its own — a chain that only checks the
+    // claim's own exit status runs straight through and writes the literal
+    // string `null` as the packet (`jq -r '.data.packet'` on an envelope
+    // with no `packet` key). This guard is the check: it exits non-zero
+    // (jq -e, empty output on failure — nothing to relay wrongly) exactly
+    // when `.data.claim_error` is present and non-empty, placed after the
+    // token is captured (ending the lease is the reason the engine hands it
+    // over) and before the packet is ever read.
     function claimCommands(isolated) {
         const dir = `<TMP>/${row.step}.d`
         const claimJson = `${dir}/${row.step}.claim.json`
@@ -116,6 +128,7 @@ function bootstrap(row, r, isolated, isWrite) {
                 ? `jq -r '.data.token' ${claimJson} > ${token}`
                 : `jq -r '.data.token'  < ${claimJson} > ${token}`,
             `chmod 600 ${token}`,
+            `jq -e '(.data.claim_error // "") == ""' ${claimJson} > /dev/null`,
             `jq -r '.data.packet' ${claimJson} > ${packet}`,
             `cat /dev/null > ${claimJson}`,
         ]
@@ -232,6 +245,27 @@ ${claimCommands(true).map((c) => `   \`${c}\``).join('\n')}
    ${claimCommands(false).join(' &&\n     ')}
    \`\`\`
 `}
+
+   IF THE CHAIN STOPS BEFORE THE PACKET LINE ABOVE — the claim command itself
+   errored, the token file came back empty, or the \`claim_error\` check
+   printed \`false\` — do NOT retry the claim and do NOT read a packet: an
+   incomplete claim carries no \`packet\` key, so reading it anyway prints the
+   four characters \`null\` and nothing past this point is your real contract.
+   Diagnose with ONE more read-only command against the claim file that is
+   still on disk (the truncation below has not run yet):
+
+   \`jq -c '{error: .error, code: .code, claim_error: .data.claim_error, re_minted: .data.re_minted}' <TMP>/${row.step}.d/${row.step}.claim.json\`
+
+   An EMPTY token file means no lease committed — report CLAIM FAILED with
+   that diagnostic verbatim and STOP; there is nothing to end. A token file
+   that DID capture something, with \`claim_error\` non-empty, means the lease
+   committed but a later stage failed (the RUN-90 shape DKT-1564 exists to
+   recover from) — you hold a live token and MUST end it:
+   \`docket step fail ${row.step} --note '<claim_error verbatim>' < <TMP>/${row.step}.d/${row.step}.token\`,
+   then report CLAIM INCOMPLETE with the diagnostic and STOP. \`re_minted: true\`
+   on that diagnostic means the engine recovered YOUR OWN earlier lease under
+   this same owner — name it in your report so a reap panel is not convened
+   for a claim that was already yours.
 
    The last command TRUNCATES the claim file rather than deleting it — its
    contents are spent the moment the packet file above is written. Same rule

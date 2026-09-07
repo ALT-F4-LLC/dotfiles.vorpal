@@ -101,6 +101,9 @@
 #                 MI-headref: "Read baseRefName and assert it equals the
 #                 recorded base; a mismatch refuses." inserted the same way —
 #                 must also stay GREEN
+#                 MS: a second "5. " line inserted under ## Preconditions —
+#                 the extractor must refuse (more than one region matches),
+#                 not concatenate the two regions and search the result
 #   (j)  eol      MI: revert the title-validation paragraph to "exactly one
 #                 line, no embedded newline", dropping the trailing-newline
 #                 item and its tail -c1 mechanism
@@ -536,6 +539,7 @@ awk '
     /^5\. / { in_region = 1; regions++; print; next }
     /^6\. / { in_region = 0 }
     in_region { print }
+    END { exit (regions == 1) ? 0 : 1 }
 ' "$SKILL" > "${WORK}/precondition-5"
 precondition_region=$?
 

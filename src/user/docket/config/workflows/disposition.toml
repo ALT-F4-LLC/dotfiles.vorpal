@@ -1,7 +1,28 @@
 [pipeline]
 description = "Cross-issue disposition: write the verdict comment and close the carrier, gated on the build/test sanity check and AC verification with a bounded revise loop; no code-review machinery."
 name = "disposition"
-version = 6  # 6: `blocked` joins unless_labels: a hold label so an
+version = 7  # 7: `verify` routes `unverifiable` to an interposed
+             #   `verify-tribunal` vote (`tribunal-correctness`, rule
+             #   `tribunal`, `on_fail = "fix-loop"`) instead of `waiting-human`
+             #   — the step docs-only, standard-change, security-change and
+             #   ui-change already carry — and `revise` reads its vote-record.
+             #   Not measured on this track: it has never been activated on
+             #   any project on this machine (0 of 97 runs). It ports the
+             #   baseline track's measurement: in one run, 20 of 21
+             #   waiting-human parks were a verify reporting an AC
+             #   `unverifiable` because the `ac-commands` gate is a stub, and
+             #   the operator resolved every one `override-pass`; this
+             #   track's verify uses that same stub gate. The human backstop
+             #   moves rather than disappears: a rejected vote with
+             #   `on_fail = "fix-loop"` enters the issue's loop, and when the
+             #   next ordinal would exceed `max_fix_loops` (2, read
+             #   workflow-wide off `verify`) the engine parks the vote step
+             #   waiting-human with a reason naming `docket step resolve
+             #   --as fix-round`; a round that changed no bytes in the
+             #   issue's scope parks the same way. `unmet` still loops, and
+             #   both lanes count against the one issue counter, so an
+             #   `unmet` round plus a rejection is two of the two.
+             # 6: `blocked` joins unless_labels: a hold label so an
              #   issue not yet workable matches zero registered workflows
              #   until the label is removed.
              # 5: `docs-only` and `ui` join unless_labels. Neither track
@@ -65,7 +86,16 @@ max_fix_loops = 2
 name = "verify"
 packet = ["contracts/{executor}.md"]
 payload = "ac-report@1"
-threshold = { "fix-loop" = "any(status == unmet)", "waiting-human" = "any(status == unverifiable)" }
+threshold = { "fix-loop" = "any(status == unmet)", "verify-tribunal" = "any(status == unverifiable)" }
+
+[[step]]
+after = ["verify"]
+inputs = ["verify.ac-report", "issue.body", "issue.diff"]
+name = "verify-tribunal"
+on_fail = "fix-loop"
+type = "vote"
+vote_rule = "tribunal"
+voters = ["tribunal-correctness"]
 
 [[step]]
 after_loop = "verify"
@@ -74,7 +104,7 @@ emits = "disposition"
 executor = "dispose"
 expected_cost = 0.40
 gates = ["build", "tests"]
-inputs = ["verify.ac-report", "issue.latest.disposition", "issue.body"]
+inputs = ["verify.ac-report", "issue.latest.disposition", "issue.body", "verify-tribunal.vote-record"]
 loop = true
 name = "revise"
 packet = ["contracts/{executor}.md"]

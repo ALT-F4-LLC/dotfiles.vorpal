@@ -1,7 +1,29 @@
 [pipeline]
-description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by a research step, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec), escalating to the operator."
+description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by a research step, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec); a rejection re-enters the bounded revise loop at review."
 name = "spec-doc"
-version = 24  # 24: `blocked` joins unless_labels: a hold label so
+version = 25  # 25: `accept-human` routes a rejection to `fix-loop` instead
+              #   of `waiting-human`, matching `accept-vote-tdd` and
+              #   `accept-vote-adr` in this file (same `after`, same re-entry
+              #   at `review`); `revise-prd` and `revise-ux-spec` read
+              #   `accept-human.vote-record` as `revise-tdd` reads
+              #   `accept-vote-tdd.vote-record`. Measured across every
+              #   project on this machine (2 issues ever bound): this gate
+              #   decided once — rejected 3-0, parked the run, operator
+              #   resolved `override-pass`. The judge-panel gate on the same
+              #   track decided three times on one issue: two rejections
+              #   looped with no operator involvement, and the third hit the
+              #   loop bound, parked waiting-human, and the operator resolved
+              #   `fix-round`. That bound is the backstop this keeps: a
+              #   rejected vote with `on_fail = "fix-loop"` enters the
+              #   issue's loop, and when the next ordinal would exceed
+              #   `max_fix_loops` (2, declared on `reconcile`; one counter
+              #   per issue, shared with reconcile's blocker rounds) the
+              #   engine parks the vote step waiting-human with a reason
+              #   naming `docket step resolve --as fix-round`. Thin evidence,
+              #   stated as such; the change leans on the file's own two
+              #   sibling gates. Description no longer says "escalating to
+              #   the operator".
+              # 24: `blocked` joins unless_labels: a hold label so
               #   an issue not yet workable matches zero registered workflows
               #   until the label is removed.
               # 23: the three TDD security lane pairs (`author-tdd-security`,
@@ -242,7 +264,7 @@ emits = "doc"
 executor = "ux-spec-author"
 expected_cost = 1.50
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["reconcile.findings", "issue.latest.doc", "research.*"]
+inputs = ["reconcile.findings", "issue.latest.doc", "accept-human.vote-record", "research.*"]
 loop = true
 name = "revise-ux-spec"
 packet = ["contracts/{executor}.md"]
@@ -255,7 +277,7 @@ emits = "doc"
 executor = "prd-author"
 expected_cost = 1.50
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["reconcile.findings", "issue.latest.doc", "research.*"]
+inputs = ["reconcile.findings", "issue.latest.doc", "accept-human.vote-record", "research.*"]
 loop = true
 name = "revise-prd"
 packet = ["contracts/{executor}.md"]
@@ -292,7 +314,7 @@ when = "labels contains doc:adr and labels != doc:tdd"
 after = ["reconcile"]
 inputs = ["issue.latest.doc", "reconcile.findings"]
 name = "accept-human"
-on_fail = "waiting-human"
+on_fail = "fix-loop"
 type = "vote"
 vote_rule = "tribunal"
 voters = ["tribunal-architecture", "tribunal-security", "tribunal-design"]

@@ -1,7 +1,24 @@
 [pipeline]
-description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step, review them once, and accept by tribunal vote that escalates to the operator."
+description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step, review them once, and accept by tribunal vote; a rejection re-enters the bounded revise loop at review."
 name = "spec-project"
-version = 16  # 16: `blocked` joins unless_labels: a hold label so
+version = 17  # 17: `accept` routes a rejection to `fix-loop` instead of
+              #   `waiting-human`, as spec-doc's acceptance votes do, and
+              #   `revise` reads `accept.vote-record` so the seven authors
+              #   see the panel's reasoning. Not measured on this track: it
+              #   has never been activated on any project on this machine
+              #   (0 of 97 runs). The nearest measurement is spec-doc's,
+              #   where the only tribunal rejection ever decided parked the
+              #   run and the operator resolved `override-pass`, while the
+              #   judge-panel rejections on the same track looped without
+              #   operator involvement. The human backstop moves rather than
+              #   disappears: a rejected vote with `on_fail = "fix-loop"`
+              #   enters the issue's loop, and when the next ordinal would
+              #   exceed `max_fix_loops` (2, declared on `reconcile`; one
+              #   counter per issue, shared with reconcile's blocker rounds)
+              #   the engine parks the vote step waiting-human with a reason
+              #   naming `docket step resolve --as fix-round`. Description
+              #   no longer says "escalates to the operator".
+              # 16: `blocked` joins unless_labels: a hold label so
               #   an issue not yet workable matches zero registered workflows
               #   until the label is removed.
               # 15: reconcile gains the `drain-highs` routing on
@@ -128,7 +145,7 @@ fanout = [
   "spec-author-testing",
 ]
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["reconcile.findings", "issue.latest.spec", "research.*"]
+inputs = ["reconcile.findings", "issue.latest.spec", "accept.vote-record", "research.*"]
 loop = true
 name = "revise"
 packet = ["contracts/spec-author.md"]
@@ -137,7 +154,7 @@ packet = ["contracts/spec-author.md"]
 after = ["reconcile"]
 inputs = ["spec-author.*", "reconcile.findings"]
 name = "accept"
-on_fail = "waiting-human"
+on_fail = "fix-loop"
 type = "vote"
 vote_rule = "tribunal"
 voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]

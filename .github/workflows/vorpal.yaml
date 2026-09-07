@@ -50,6 +50,8 @@ jobs:
 
       - run: bash tests/sensitive-path-guard-hook.test.sh
 
+      - run: bash tests/tribunal-seat-brief.test.sh
+
       - run: bash tests/wave-chain-dead-ladder.test.sh
 
       - run: bash tests/wave-classifier-retry.test.sh

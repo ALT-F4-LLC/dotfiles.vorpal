@@ -20,6 +20,9 @@
 #
 #   (a)  publish  replace the fenced publish block with the
 #                 "gh pr create --title ... --body-file ..." shape
+#                 M-1454: delete the publish fence outright (the anchor must
+#                 not fall through to a false match on the review-reply block,
+#                 which carries "pulls" as a literal prefix)
 #   (a2) xargs    wrap the publish call in "xargs -0 -a <title-file>"
 #   (b)  scan     M2: join the two scan commands onto one line with a
 #                 semicolon, and drop --diff-merges=first-parent from the walk
@@ -140,8 +143,23 @@ find_block() { # <literal> — path of the joined block containing it
     return 1
 }
 
-# (a) The publish block is the gh api file-field form.
-if publish=$(find_block 'gh api --method POST repos/<owner>/<repo>/pulls'); then
+find_block_re() { # <ERE> — path of the joined block matching it
+    local b
+    for b in "$WORK"/block.*.joined; do
+        if grep -qE -- "$1" "$b"; then
+            printf '%s\n' "$b"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# (a) The publish block is the gh api file-field form. Anchored so the
+# literal cannot prefix-match the review-reply endpoint
+# (.../pulls/<pr-number>/comments/<comment-id>/replies carries "pulls" as a
+# prefix too): the anchor requires "pulls" end the line or be followed only
+# by whitespace, never a "/".
+if publish=$(find_block_re 'gh api --method POST repos/<owner>/<repo>/pulls([[:space:]]|$)'); then
     ok "publish block: gh api --method POST repos/<owner>/<repo>/pulls"
     for field in "-F 'title=@" "-F 'body=@"; do
         if grep -qF -- "$field" "$publish"; then

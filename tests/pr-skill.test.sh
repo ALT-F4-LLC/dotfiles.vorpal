@@ -99,6 +99,10 @@
 #   (j)  eol      MI: revert the title-validation paragraph to "exactly one
 #                 line, no embedded newline", dropping the trailing-newline
 #                 item and its tail -c1 mechanism
+#                 MX: invert the item in place to "with a trailing newline
+#                 (tail -c1 <file> | od -An -c shows a \n)" — the same two
+#                 tokens (tail -c1, trailing newline) survive the inversion,
+#                 so a token-presence check cannot see the ruling flipped
 #                 MJ (must stay GREEN): delete the writer paragraph's
 #                 "trailing newline" prose, which the region excludes
 #                 MN: revert the NUL item to "contains no NUL byte" with no
@@ -564,15 +568,20 @@ if [ "$validation_region" -ne 0 ] || [ ! -s "${WORK}/title-validation" ]; then
     bad "title validation: expected exactly one paragraph opening 'The title file is validated before it is used'"
 else
     ok "title validation: exactly one validation paragraph"
-    if grep -qF -- 'trailing newline' "${WORK}/title-validation"; then
-        ok "title validation: the list refuses a trailing newline"
+
+    # Pins the ruling, not the words: the item's sentence must carry "tail
+    # -c1" AND a negation immediately governing "trailing newline"
+    # ("without a trailing newline" / "no trailing newline"), so inverting
+    # the rule to require a trailing newline — while leaving the same two
+    # tokens present — fails this even though a bare token-presence check
+    # would not.
+    sentences "${WORK}/title-validation" > "${WORK}/title-validation-sentences"
+    eol_sentence=$(grep -F -- 'tail -c1' "${WORK}/title-validation-sentences")
+    if [ -n "$eol_sentence" ] \
+        && printf '%s' "$eol_sentence" | grep -qEi -- '(without|no)[[:space:]]+(a[[:space:]]+)?trailing newline'; then
+        ok "title validation: the tail -c1 sentence requires no trailing newline"
     else
-        bad "title validation: no trailing-newline item — gh publishes the terminator inside the title"
-    fi
-    if grep -qF -- 'tail -c1' "${WORK}/title-validation"; then
-        ok "title validation: the item names a mechanism that can see a terminator"
-    else
-        bad "title validation: no tail -c1 mechanism — a wc -l count cannot see a terminator"
+        bad "title validation: no sentence pairs tail -c1 with a negation of 'trailing newline' — a mechanism the ruling could invert and still pass"
     fi
     if grep -qF -- "tr -d '\\000'" "${WORK}/title-validation"; then
         ok "title validation: the NUL-byte item names a detection command"

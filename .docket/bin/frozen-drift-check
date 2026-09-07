@@ -45,15 +45,34 @@
 # Contracts and fragments (contracts/*.md, fragments/*.md) carry no frozen
 # registration to diff against — packets are templates
 # ("contracts/{executor}.md") resolved and pinned per-run at activation — so
-# git HEAD is the reference instead: the front-matter `version` must move in
+# the merge-base with the integration branch (FROZEN_DRIFT_CHECK_BASE, default
+# "main") is the reference instead: the front-matter `version` must move in
 # lockstep with the body. A changed body demands a strictly greater version, a
 # changed version demands a changed body, and either half alone is drift the
 # next run's `docket run verify-pins` would otherwise discover. Files absent
-# from HEAD (new contracts) have no prior version and are skipped. policy.toml
-# stays out of scope: it carries no version field.
+# from the merge-base (new contracts) have no prior version and are skipped.
+# policy.toml stays out of scope: it carries no version field.
+#
+# The reference is the merge-base, not HEAD or the branch tip directly: HEAD
+# moves with every commit on this branch, so comparing against it made a
+# committed missing-bump invisible the instant it landed — `git commit -am`
+# on an unbumped body edit made HEAD equal the working tree and the check
+# read "unchanged". The branch tip alone would work today but breaks the
+# moment the integration branch gains commits this branch has not merged: the
+# merge-base is the one point both branches agree predates this branch's own
+# edits, so it stays the right reference through that divergence too. Run
+# directly on the integration branch itself, the merge-base IS HEAD and this
+# check degrades to the original HEAD-vs-working-tree comparison — the same
+# gap this reference change closes everywhere else. That is expected: on the
+# integration branch there is no other branch's history to diff against, and
+# a missing bump merged straight onto it is caught the moment the next
+# feature branch takes a merge-base against it and finds its own edits
+# undercut.
 #
 # Exit codes: 0 clean, 1 drift found, 2 environment failure (not a git repo,
-# or docket/jq/shasum unavailable, or the engine returned an error).
+# docket/jq/shasum unavailable, the engine returned an error, or the
+# integration branch named by FROZEN_DRIFT_CHECK_BASE could not be resolved
+# to a merge-base with HEAD).
 
 set -euo pipefail
 
@@ -196,9 +215,10 @@ while IFS=$'\t' read -r name version reg_sha source_path; do
 done <<< "$workflow_rows"
 
 # --- contracts and fragments: front-matter version tracks the body ---------
-# Reference is git HEAD, not a frozen record (see header). Both readers take
-# the file's bytes on stdin so the working copy and `git show HEAD:` go
-# through the same parse.
+# Reference is the merge-base with the integration branch, not a frozen
+# record (see header) and not HEAD directly. Both readers take the file's
+# bytes on stdin so the working copy and `git show <base>:` go through the
+# same parse.
 
 body_sha_without_version() {
   awk '!/^version:[[:space:]]*[0-9]+[[:space:]]*$/' | shasum -a 256 | cut -d' ' -f1
@@ -209,16 +229,24 @@ frontmatter_version() {
 }
 
 report_version_drift() {
-  # $1 file, $2 HEAD version, $3 working version, $4 reason
+  # $1 file, $2 base version, $3 working version, $4 reason
   echo "frozen-drift-check: DRIFT contract $1" >&2
-  echo "  HEAD version:    $2" >&2
+  echo "  base version:    $2" >&2
   echo "  working version: $3" >&2
   echo "  note:            $4" >&2
   failed=1
 }
 
+integration_branch="${FROZEN_DRIFT_CHECK_BASE:-main}"
+if ! base_ref="$(git -C "$repo_root" merge-base HEAD "$integration_branch" 2>&1)"; then
+  echo "frozen-drift-check FAILED: could not resolve a merge-base between HEAD and '$integration_branch':" >&2
+  echo "$base_ref" >&2
+  echo "Set FROZEN_DRIFT_CHECK_BASE to the integration branch name if it is not 'main'." >&2
+  exit 2
+fi
+
 versioned=0
-head_docs="$(git -C "$repo_root" ls-tree -r --name-only HEAD -- \
+base_docs="$(git -C "$repo_root" ls-tree -r --name-only "$base_ref" -- \
   src/user/docket/config/contracts src/user/docket/config/fragments)"
 
 while IFS= read -r rel; do
@@ -229,27 +257,27 @@ while IFS= read -r rel; do
     continue
   fi
   versioned=$((versioned + 1))
-  head_body="$(git -C "$repo_root" show "HEAD:$rel" | body_sha_without_version)"
-  head_version="$(git -C "$repo_root" show "HEAD:$rel" | frontmatter_version)"
+  base_body="$(git -C "$repo_root" show "${base_ref}:$rel" | body_sha_without_version)"
+  base_version="$(git -C "$repo_root" show "${base_ref}:$rel" | frontmatter_version)"
   cur_body="$(body_sha_without_version < "$repo_root/$rel")"
   cur_version="$(frontmatter_version < "$repo_root/$rel")"
   if [ -z "$cur_version" ]; then
-    report_version_drift "$rel" "${head_version:-<none>}" "<none>" \
+    report_version_drift "$rel" "${base_version:-<none>}" "<none>" \
       "front matter declares no numeric 'version:' field"
-  elif [ "$cur_body" = "$head_body" ]; then
-    if [ "$cur_version" = "${head_version:-}" ]; then
+  elif [ "$cur_body" = "$base_body" ]; then
+    if [ "$cur_version" = "${base_version:-}" ]; then
       echo "frozen-drift-check: ok    contract $rel (unchanged at v${cur_version})"
     else
-      report_version_drift "$rel" "${head_version:-<none>}" "$cur_version" \
-        "version changed but the body is identical to HEAD; revert the bump or make the edit"
+      report_version_drift "$rel" "${base_version:-<none>}" "$cur_version" \
+        "version changed but the body is identical to the merge-base; revert the bump or make the edit"
     fi
-  elif [ -n "$head_version" ] && [ "$cur_version" -gt "$head_version" ]; then
-    echo "frozen-drift-check: ok    contract $rel (body changed, v${head_version} -> v${cur_version})"
+  elif [ -n "$base_version" ] && [ "$cur_version" -gt "$base_version" ]; then
+    echo "frozen-drift-check: ok    contract $rel (body changed, v${base_version} -> v${cur_version})"
   else
-    report_version_drift "$rel" "${head_version:-<none>}" "$cur_version" \
-      "body changed but the version is not above HEAD's; bump it"
+    report_version_drift "$rel" "${base_version:-<none>}" "$cur_version" \
+      "body changed but the version is not above the merge-base's; bump it"
   fi
-done <<< "$head_docs"
+done <<< "$base_docs"
 
 echo ""
 if [ "$failed" -ne 0 ]; then

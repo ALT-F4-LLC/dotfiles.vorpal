@@ -72,6 +72,14 @@
 #                 with the exact bullet indent and mergeStateStatus == CLEAN
 #                 M-1370-control: the same line as a second REAL bullet,
 #                 outside any fence
+#                 MZ: "accept the PR here" rewritten to "never accept the PR
+#                 here" — a negation governing the acceptance verb
+#                 MZ2: "do not accept ... nothing is handed to step 3" —
+#                 same defect class, opposite phrasing
+#                 MG: "only when" rewritten to "whether or not" — drops the
+#                 restrictive qualifier over the branch-protection read
+#                 MH: the unconditional-refusal sentence for
+#                 BEHIND/DIRTY/UNKNOWN deleted outright
 #   (i)  headref  MC: replace "and assert it equals <head-branch>; a mismatch
 #                 refuses, naming both branches" with "and note it in the
 #                 report"
@@ -452,10 +460,31 @@ else
         bad "auto carve-out: the bullet never names auto — step 3's auto path is dead"
     fi
 
-    if grep -F -- 'step 3' "${WORK}/auto-sentences" | grep -Ei 'accept' | grep -qEiv 'refus'; then
-        ok "auto carve-out: the pending case is accepted here and handed to step 3"
+    # Acceptance: "accept" and "step 3" in the same clause (no ";" between),
+    # not governed by a negation token, and carrying the restrictive
+    # qualifier "only when" over the branch-protection read. A negation
+    # anywhere ahead of "accept" in the sentence (never accept, do not
+    # accept, ...) fails this even though "step 3" and "accept" still sit in
+    # the same clause.
+    accept_sentence=$(grep -F -- 'step 3' "${WORK}/auto-sentences" | grep -Ei 'accept')
+    if [ -n "$accept_sentence" ] \
+        && printf '%s' "$accept_sentence" | grep -qEi 'accept[^;]*step 3' \
+        && ! printf '%s' "$accept_sentence" | grep -qEi '(never|not|no longer|cannot|do not)[[:space:]]+accept' \
+        && printf '%s' "$accept_sentence" | grep -qF -- 'only when'; then
+        ok "auto carve-out: the pending case is accepted here and handed to step 3, only when the protection read confirms it"
     else
-        bad "auto carve-out: no sentence hands the pending case to step 3 with an acceptance verb free of a refusal verb"
+        bad "auto carve-out: no sentence hands the pending case to step 3 with an unnegated acceptance verb restricted by 'only when'"
+    fi
+
+    # Refusal: a further sentence in the same bullet names all three
+    # unconditional-refusal values.
+    refusal_sentence=$(grep -Ei -- 'refus' "${WORK}/auto-sentences" | grep -F -- 'BEHIND')
+    if [ -n "$refusal_sentence" ] \
+        && printf '%s' "$refusal_sentence" | grep -qF -- 'DIRTY' \
+        && printf '%s' "$refusal_sentence" | grep -qF -- 'UNKNOWN'; then
+        ok "auto carve-out: a further sentence refuses BEHIND, DIRTY, and UNKNOWN unconditionally"
+    else
+        bad "auto carve-out: no sentence refuses BEHIND, DIRTY, and UNKNOWN unconditionally"
     fi
 fi
 

@@ -84,6 +84,11 @@
 #                 refuses, naming both branches" with "and note it in the
 #                 report"
 #                 MD: drop only the refusal verb from that sentence
+#                 MY: "a mismatch **refuses**" rewritten to "a mismatch is
+#                 only noted, never a refusal" — *refus* still matches inside
+#                 the negated word "refusal"
+#                 MK: "a mismatch is noted in the report, with no refusal" —
+#                 same defect, different phrasing
 #   (j)  eol      MI: revert the title-validation paragraph to "exactly one
 #                 line, no embedded newline", dropping the trailing-newline
 #                 item and its tail -c1 mechanism
@@ -500,10 +505,15 @@ else
     ok "head-branch assertion: one sentence asserts the PR's head branch equals the checkout's"
     head_sentence=$(grep -F -- 'assert it equals' "${WORK}/skill-sentences")
 
-    case "$head_sentence" in
-        *refus*) ok "head-branch assertion: a mismatch refuses" ;;
-        *) bad "head-branch assertion: no refusal governs the mismatch — it is then merely reported" ;;
-    esac
+    # Matches the grammatical subject — "mismatch" followed by a refusal
+    # verb, allowing bold markup between them — not a bare *refus* substring,
+    # which matches inside "refusal" even when a negation ("is only noted,
+    # never a refusal", "with no refusal") governs it.
+    if printf '%s' "$head_sentence" | grep -qEi -- 'mismatch[^a-z]*\*{0,2}refuses'; then
+        ok "head-branch assertion: a mismatch refuses"
+    else
+        bad "head-branch assertion: no refusal governs the mismatch — it is then merely reported"
+    fi
 
     case "$head_sentence" in
         *'<head-branch>'*) ok "head-branch assertion: the sentence names <head-branch>" ;;

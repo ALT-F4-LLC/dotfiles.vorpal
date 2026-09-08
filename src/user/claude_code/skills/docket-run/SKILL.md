@@ -1629,6 +1629,18 @@ checked against that precondition before anything else runs:
    or deliverable already cites the writer's sha (the change-summary from
    record does — see above), update it, or add a follow-up, pointing at
    this annotation rather than re-typing the sha.
+   **If the pick CONFLICTED and you resolved it by hand**, the landed content
+   differs from the recorded commit and neither the close's patch-equivalence
+   nor the review packets' target can match it — so annotate with the
+   verified form instead, in the same call:
+   `docket step annotate STEP-N --integrated-sha <new full sha> --metadata
+   '{"writer_sha":"<sha>"}'`. The engine checks the sha is an ancestor of the
+   shared HEAD, re-records the step's `issue.diff` from that commit's own
+   patch (superseding the stale record), and sets `integrated_sha` itself;
+   the close then accepts the step `how: "resolved"` and the next `dispatch
+   open` reports no `stale_targets` for its review rows. A verbatim pick
+   (no conflict) keeps the plain `--metadata` form: its recorded diff is
+   already the landed content, and patch-equivalence acquits it.
 
 A cherry-pick whose diff touches `.claude/skills/**` fails under the sandbox
 on the unlink (`Operation not permitted` — the write-deny, not the content).
@@ -2743,23 +2755,27 @@ re-find the gate failure on the pre-patch sha and open a fix round on a defect
 already fixed.
 
 **If the operator rules the conductor patch anyway**, land it as its own commit
-(the operator-ruling paragraph below) and owe two things past the resolve verb.
-First, annotate the step so the record carries the shas the diff artifact does
-not — the same call the integration procedure requires (**Worktree writers**
-above), run right here, not deferred:
+(the operator-ruling paragraph below), integrate it, and then RE-POINT the
+step's record at the commit the shared branch carries — the verified
+annotation, run right here, not deferred:
 
 ```bash
-docket step annotate STEP-N --metadata '{"integrated_sha":"<new sha>","writer_sha":"<sha>"}'
+docket step annotate STEP-N --integrated-sha <patch's full sha on the shared branch> \
+  --metadata '{"writer_sha":"<sha>"}'
 ```
 
-— `writer_sha` the step's failing recorded sha, `integrated_sha` the patch's
-commit on the shared branch, and the resolve note naming both plus what the
-patch changed. Second, SAY IT in the ruling exchange, before they answer: the
-fanout will review the pre-patch tree, so the round it opens re-reports the
-defect and that cost is part of what they are buying. No resolve path
-re-records a step's diff artifact after an out-of-band patch — a known engine
-gap, filed — so the annotation and that sentence are the whole mitigation until
-it closes.
+— the engine verifies the sha is an ancestor of the shared HEAD (a sha it does
+not carry is refused with nothing written), re-records the step's `issue.diff`
+from that commit's own patch superseding the failing record, and sets
+`integrated_sha`; `writer_sha` keeps the step's failing recorded sha findable,
+and the resolve note names both plus what the patch changed. After it, every
+review packet binds to the patched tree, the next `dispatch open` reports no
+`stale_targets` for the fanout, and the close accepts the step `how:
+"resolved"`. The same call is the way back for a DONE step whose commit was
+later cherry-picked with a conflict resolution — `retry` refuses a done step,
+and this does not. Without it (an older engine), the fanout reviews the
+pre-patch tree and the round it opens re-reports the defect — say so in the
+ruling exchange, before they answer.
 
 **A gate that failed on a broken check is settled on evidence, not overridden
 blind.** When a gate's output shows it never actually ran (one case: govulncheck

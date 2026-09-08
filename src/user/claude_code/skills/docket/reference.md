@@ -1790,7 +1790,7 @@ then **completed** with an artifact.
 | `step reap STEP-N --reason R` | no | forced reap of a dead holder's claim, without waiting out the lease |
 | `step complete STEP-N --artifact-file F …` | **yes** (stages 0–1) | the saga |
 | `step fail STEP-N [--note …] [--metadata …]` | **yes** | routes per `on_fail` when the CLAIM count reaches `max_attempts` (E-8: attempt counts claims, never failures); counts the failure into the row's `failed_attempts` (a reap counts into `reaped_claims` instead) |
-| `step annotate STEP-N --metadata JSON` | no | merges opaque KV onto a **finished** step's record; event-logged |
+| `step annotate STEP-N [--metadata JSON] [--integrated-sha SHA]` | no | merges opaque KV onto a **finished** step's record; `--integrated-sha` verifies ancestry and re-records the step's `issue.diff` from the named commit; event-logged |
 | `step approve\|reject STEP-N [--note …] [--value V]` | no | `type="human"` gate steps, and a materialized held step of either kind (a vote-minted one once a failed tally parks it) |
 | `step resolve STEP-N --as …` | no | `waiting-human` resolutions; `retry` **resets the retry budget** (moves `attempt_base`) — `attempt` itself and the `failed_attempts`/`reaped_claims` breakdown are never reset and not incremented by it |
 | `step show STEP-N` | no | read-only; effective status |
@@ -2038,7 +2038,30 @@ which is the run an operator most wants tier-drift data from.
 
 | Flag | Type | Notes |
 |---|---|---|
-| `--metadata` | string | **required**; a JSON **object** of opaque keys to values, merged onto the finished step's own metadata |
+| `--metadata` | string | a JSON **object** of opaque keys to values, merged onto the finished step's own metadata; **required unless `--integrated-sha` is given** |
+| `--integrated-sha` | string | the **full 40-hex** commit id the shared branch carries for a write-class step's landed work; the engine **verifies** it is an ancestor of the shared checkout's HEAD, then re-records the step's `issue.diff` from that commit's own patch and sets `integrated_sha` in the step's metadata |
+
+**`--integrated-sha` is the verified integration** — the path for a write step
+whose landed content diverged from its recorded commit (a cherry-pick whose
+conflict you resolved by hand, an operator-ruled patch on top of a gate
+failure). Ancestry is checked first and a sha the shared branch does not carry
+is refused (`CONFLICT`) with nothing written; then the step's newest
+`issue.diff` is superseded by one computed from the named commit (`git
+diff-tree`, scoped like every `issue.diff`, out-of-scope paths disclosed), the
+same supersession `step resolve --worktree` performs, and the re-record is
+logged `issue-diff-repinned` with both shas and `resolution: integrated-sha`.
+From then on every downstream packet binds its `target_sha` to the resolved
+commit, `dispatch open` reports no `stale_targets` for the step's review rows,
+and `dispatch close` accepts the step with `how: "resolved"` in its
+integration record — no `--skip-integration-check` needed. The sha names ONE
+ordinary commit whose patch is the step's landed work; a merge commit records
+an empty body. Refusals beyond ancestry: a step that records no `issue.diff` of
+its own or whose record names no commit (`VALIDATION_ERROR`), a prefix or
+non-hex sha (`VALIDATION_ERROR`), an unanswerable ancestry question or an
+engine with no git probe wired (`CONFLICT`). The success line and the JSON
+envelope (`issue_diff_repin`) report the re-record exactly as a resolve's re-pin
+does. Both flags may be given together; the verified sha wins over any
+`integrated_sha` the metadata spells.
 
 The post-completion channel for facts that become true only **after** a step's
 record freezes. The canonical case is integration: a relay that

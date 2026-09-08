@@ -954,8 +954,33 @@ remains the mistake above.
 ### 2. Open the dispatch and hand it to the wave
 
 ```bash
-docket dispatch open --run $RUN --json
+docket dispatch open --run $RUN --limit 240 --json
 ```
+
+**Always pass `--limit 240` (default is `0`, unlimited).** A large ready set
+opens an unbounded manifest — one run's `next` offered 930 rows, a 364 KB
+JSON payload that blew past both the `Read` tool's 256 KB cap and the
+`Workflow` tool's practical inline-arg size for `wave.js`'s `args.rows`. 240
+rows is a size already proven launchable (repeatedly, across several runs):
+comfortably under both ceilings whether the wave carries mostly single-row
+executor lanes or wide `review@N#k` panels. It is a manifest-size cap only —
+the run's own issue count is not the lever, and there is no "max issues a
+planner should create" number to hold it to; a large run just spans more
+waves, exactly as staged closure already assumes. If a `dispatch open --json`
+answer ever exceeds size limits despite `--limit 240` (a pathological single
+wave with unusually wide per-row payloads), do not hand-chunk the JSON to fit
+— the manifest is hashed, and a hand-retyped or truncated copy will not match
+what the engine recorded. Instead: `dispatch verify` to confirm nothing is
+lost, `dispatch abandon` with the size constraint named in `--reason`, then
+reopen at a smaller `--limit`.
+
+To read an oversized `dispatch open --json` answer safely rather than risk a
+lossy re-type: pipe it through `jq -c '.data.rows[]' > rows.jsonl` and read
+that file in chunks of ≤120 lines via the `Read` tool's `offset`/`limit`
+(JSON-lines format lets `Read` paginate a file with "very long lines," which
+a single giant `[...]` array does not allow). Do this to inspect the rows,
+never to reconstruct them by hand for the `Workflow` call — pass the object
+you already have from `dispatch open`'s own JSON, not a retyped copy.
 
 **No policy crosses a launch.** Every executor row `next` returns, and every
 voter on a vote row, carries `model`, `effort` and `variant` resolved by the
@@ -1794,7 +1819,7 @@ held until someone confirms the process is gone, and the seq from the
 an approved tally:
 
 ```bash
-docket dispatch open --run $RUN --ack-reap <seq>
+docket dispatch open --run $RUN --limit 240 --ack-reap <seq>
 ```
 
 `docket guard spawn --run $RUN --ack-reap <seq>` acks the same way, before its

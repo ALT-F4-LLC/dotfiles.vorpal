@@ -372,7 +372,9 @@ as unverified, not claimed.
 ## 8. Land
 
 Commit via the `commit` skill. Other sessions share this tree — stage only
-the files this refit touched, nothing else. Then report in plain language:
+the files this refit touched, nothing else. The commit skill's message is
+final: no post-commit amendment for attribution, `Claude-Session:` or
+otherwise. Then report in plain language:
 what changed and why, the blast radius and how each consumer was handled,
 each deviation the operator accepted and the engine issue filed for it,
 what was verified (lint, syntax checks) and what was not (no live run).

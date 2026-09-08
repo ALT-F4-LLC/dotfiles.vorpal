@@ -270,9 +270,10 @@ questions do not need to be repeated.
 - **`/docket-plan`:** Invoke `docket-plan` with the confirmed brief or
   handoff as `args`. Planning, tracking, and verification now belong to
   that workflow. For a one-shot request with Security-sensitive `no`, a
-  Size hint of `trivial` carries the `trivial` routing label into the plan,
-  and `bounded` work confined to one or two files carries `small`; state
-  the label in the handoff so the planner records it.
+  Size hint of `trivial` proposes the `trivial` routing label in the
+  handoff and `bounded` work confined to one or two files proposes
+  `small`; the planner confirms either under its own sizing rule before
+  recording it.
 - **`/loop`:** Invoke `loop` from the main conversation with the confirmed
   brief and Loop details. Ensure the repeated task preserves scope,
   exclusions, constraints, per-pass action, and the stop/cancel policy.

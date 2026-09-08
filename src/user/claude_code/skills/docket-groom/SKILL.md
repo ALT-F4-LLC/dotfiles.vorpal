@@ -262,13 +262,10 @@ Record these findings alongside the value decision:
   fill makes an issue eligible.
 - **Stale or missing size label:** `small` binds the small-change track and
   `trivial` the trivial-change track, under
-  [docket-plan](../docket-plan/SKILL.md)'s sizing rule (at most two files in
-  one directory, no new file, criteria verifiable from the diff for
-  `small`; a typo, config value, doc line, or one-line fix for `trivial`;
-  never on a security-sensitive issue). Remove a size label the issue's
-  files, scope, or criteria have outgrown, and add one where they fit the
-  rule; an eligible issue carrying neither walks the full `standard-change`
-  chain.
+  [docket-plan](../docket-plan/SKILL.md)'s sizing rule, which is the one
+  statement of the criteria. Remove a size label the issue's files, scope,
+  or criteria have outgrown, and add one where they fit the rule; an
+  eligible issue carrying neither walks the full `standard-change` chain.
 
 For every retained issue, also confirm that its labels match exactly one
 intended workflow using [docket-plan](../docket-plan/SKILL.md)'s binding

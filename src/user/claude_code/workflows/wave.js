@@ -1,6 +1,6 @@
 export const meta = {
     name: 'wave',
-    description: 'Run one dispatched manifest end to end: spawn one executor per executor row at the model/effort the engine rendered on it, seat a judge panel on each vote row from its routed roster, and skip action rows (engine-run at record time). Stages run as awaited groups per issue lane, with the cross-issue cohorts the manifest certifies honored — the staged closure means one wave can carry judges -> gate -> reconcile -> report, and no issue idles behind the slower stages of another. PROBE COST PER VOTE ROW: 2 read-only haiku probes of `docket gate status` on the normal path — one before the panel seats (decided yet, which proposal, which target) and one after it returns (missing seats and the tally) — 1 on a gate that was already decided before the wave reached it, and 3 when a re-seat forces a re-read; a gate with no proposal yet spends a `step show` for the engine\'s blocked_reason instead of a panel, and an engine-minted held-cluster gate spends one more read to name its cluster. Each probe answers through a schema, under 1 KB; the per-gate count is reported verbatim in that row\'s spawn_accounting. Invoke by scriptPath ONLY, with args {rows} as a real object — every row carries model/effort/variant resolved by the engine, and the script reads no policy and cannot read files.',
+    description: 'Run one dispatched manifest end to end: spawn one executor per executor row at the model/effort the engine rendered on it, seat a judge panel on each vote row from its routed roster, and skip action rows (engine-run at record time). Stages run as awaited groups per issue lane, with the cross-issue cohorts the manifest certifies honored — the staged closure means one wave can carry judges -> gate -> reconcile -> report, and inside a wave no issue idles behind the slower stages of another; writers the engine never co-staged still serialize, so a wave launches at most three such writer cohorts and defers the rest to the next dispatch rather than holding every finished lane behind a long writer ladder. PROBE COST PER VOTE ROW: 2 read-only haiku probes of `docket gate status` on the normal path — one before the panel seats (decided yet, which proposal, which target) and one after it returns (missing seats and the tally) — 1 on a gate that was already decided before the wave reached it, and 3 when a re-seat forces a re-read; a gate with no proposal yet spends a `step show` for the engine\'s blocked_reason instead of a panel, and an engine-minted held-cluster gate spends one more read to name its cluster. Each probe answers through a schema, under 1 KB; the per-gate count is reported verbatim in that row\'s spawn_accounting. Invoke by scriptPath ONLY, with args {rows} as a real object — every row carries model/effort/variant resolved by the engine, and the script reads no policy and cannot read files.',
     whenToUse: 'Invoked by the docket-run skill on an open dispatch, always as Workflow({scriptPath}) — never by name. args is {rows, tribunal, cwd}: `next` rows VERBATIM (executor, vote, and action rows; human rows stay with the conductor), each executor row carrying the model/effort/variant the engine resolved from the run\'s pinned policy.toml and each vote row carrying the same per voter in `voter_assignments` — a row re-typed without those fields is refused. `tribunal` is the absolute installed path to tribunal.js, the one workflow-nesting level this script uses to seat every in-wave panel (it cannot resolve that path itself); `cwd` is the repo the run belongs to. On a dispatch carrying a fix round\'s review fanout, args also carries `integrated` — a map from each such issue to the sha of its prior round\'s INTEGRATION commit — so the wave can assert base ancestry before seating the fanout. There is no policy argument of any kind and no file access.',
 }
 
@@ -2279,6 +2279,41 @@ for (const group of stages.values()) {
     }
 }
 const scopeCertified = (a, b) => a === b || scopePairs.has(pairKey(a, b))
+
+// WRITER LADDER BUDGET. Writers the manifest never co-staged serialize on
+// the engine's stage order (blocker() below), and the wave returns only when
+// every lane has: on RUN-95 a 25-writer manifest ran 287 minutes, the last
+// 227 of them at one to three executors, while the median lane had finished
+// at 51 and every out-of-manifest row of every issue — fix rounds minted
+// mid-wave, tails the `--limit` cut — waited for the wave to end. A writer
+// whose lane would queue behind three or more uncertified writer cohorts is
+// not launched this wave: it settles not-launched-writer-budget, its lane's
+// later rows read as deferred, and the engine re-offers all of them at the
+// next dispatch untouched (unlaunched pending rows are what a close expects).
+// The ladder still drains serially; what changes is that every other lane
+// gets its next dispatch after three cohorts instead of eleven. Depth counts
+// STAGES holding an uncertified other-lane writer below this row, so a lane's
+// own writer chain and a certified neighbour never count against it.
+const WRITER_LADDER_BUDGET = 3
+const writerStagesByLane = new Map()   // lane -> Set(stage) over writer rows
+for (const row of rows) {
+    if (!isWriter(row) || !row.issue) continue
+    const l = laneOf(row)
+    if (!writerStagesByLane.has(l)) writerStagesByLane.set(l, new Set())
+    writerStagesByLane.get(l).add(stageOf(row))
+}
+function writerLadderDepth(row) {
+    const mine = laneOf(row)
+    const s = stageOf(row)
+    const below = new Set()
+    for (const [lane, stgs] of writerStagesByLane) {
+        if (lane === mine || scopeCertified(mine, lane)) continue
+        for (const t of stgs) if (t < s) below.add(t)
+    }
+    return below.size
+}
+const overWriterBudget = (row) => isWriter(row) && !!row.issue &&
+    writerLadderDepth(row) >= WRITER_LADDER_BUDGET
 if (lanes.size > 1) {
     log(`wave: lanes run concurrently; the manifest certifies class headroom ` +
         [...certifiedClass.entries()].map(([c, n]) => `${c || '(no class)'}≤${n}`).join(', '))
@@ -2343,12 +2378,24 @@ function blocker(row) {
     }
     return null
 }
-// Deterministic and synchronous: lowest stage first (the engine's own order,
-// so the global ladder is what falls out wherever nothing is certified), then
-// submission order. Every admission changes the in-flight set, so the scan
-// restarts from the top. Single-threaded event loop; nothing here awaits.
+// Deterministic and synchronous. Writers first, lowest stage first (the
+// engine's own order, so the global ladder is what falls out wherever nothing
+// is certified): they are the wave's long pole, and the coupling rule above
+// already holds back any pair the manifest never certified. Then every other
+// executor row DEEPEST stage first: a lane's next hop goes ahead of another
+// lane's first hop, so a chain finishes instead of every chain advancing one
+// rung per release — under lowest-stage-first, one RUN-95 issue's synthesize
+// waited 30 minutes and its verify 19 behind other lanes' stage-0 rows at the
+// harness cap (163 such holds in one wave). Submission order breaks ties.
+// Every admission changes the in-flight set, so the scan restarts from the
+// top. Single-threaded event loop; nothing here awaits.
+const admissionRank = (w) => (isWriter(w.row) ? [0, stageOf(w.row)] : [1, -stageOf(w.row)])
 function pump() {
-    waiting.sort((a, b) => stageOf(a.row) - stageOf(b.row) || a.seq - b.seq)
+    waiting.sort((a, b) => {
+        const [ga, sa] = admissionRank(a)
+        const [gb, sb] = admissionRank(b)
+        return ga - gb || sa - sb || a.seq - b.seq
+    })
     let i = 0
     while (i < waiting.length) {
         const w = waiting[i]
@@ -2470,6 +2517,15 @@ async function runLane(name, laneRows) {
                 // manifest so the stage numbering stays transparent.
                 log(`${row.step}: action step — engine-run at record time, no spawn`)
                 return Promise.resolve({ step: row.step, status: 'engine-run', text: null })
+            }
+            if (overWriterBudget(row)) {
+                log(`${row.step}: not launched — writer ladder budget: ${writerLadderDepth(row)} ` +
+                    `stage(s) of uncertified other-lane writers sit below stage ${stageOf(row)} ` +
+                    `and the wave launches at most ${WRITER_LADDER_BUDGET} such cohorts; the ` +
+                    `engine re-offers it next dispatch (issue ${row.issue}'s later stages deferred)`)
+                deadIssues.set(row.issue, { step: row.step, status: 'not-launched-writer-budget',
+                    deferral: 'writer ladder budget: the wave launches at most three uncertified writer cohorts' })
+                return Promise.resolve({ step: row.step, status: 'not-launched-writer-budget', text: null })
             }
             return admission(row).then((go) => {
                 if (!go) {

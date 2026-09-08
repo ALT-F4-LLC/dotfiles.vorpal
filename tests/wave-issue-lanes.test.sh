@@ -23,12 +23,17 @@
 # still running; (2) cross-issue coupling — writers the engine never
 # co-staged keep the global stage order between them, logged as such, while a
 # reader-only issue never waits; (3) the class bound holds rows back only
-# while the certified count is in flight, and releases them lowest-stage
-# first; (4) a park is still run-wide: nothing launches after it, and a row
+# while the certified count is in flight, and releases them in admission
+# order (writers lowest stage first, every other row deepest stage first,
+# then submission order — (8) pins the deepest-first half); (4) a park is
+# still run-wide: nothing launches after it, and a row
 # waiting for admission settles not-launched-run-parked without a spawn; (5)
 # chain death stays per issue, an issue-less row rides its own lane, vote and
 # action rows neither reserve nor wait; (6) the return still carries one entry
-# per manifest row, in manifest order.
+# per manifest row, in manifest order; (9) the writer ladder budget: a
+# writer queued behind three or more uncertified other-lane writer cohorts
+# settles not-launched-writer-budget, its lane's later rows read as deferred,
+# and a lane's own writer chain never counts against it.
 #
 # HOW. Like tests/wave-chain-dead-ladder.test.sh it wraps the extracted ladder
 # region in an async function with stub spawn/runGate/probe/parallel/log
@@ -419,6 +424,66 @@ ok(statusOf(capOut, capHeld[16]) === 'not-launched-run-parked',
 ok(!SPAWNED.includes(capHeld[16]),
     'DOT-1603: and it is confirmed absent from SPAWNED, not merely reported that way')
 ok(SPAWNED.length === 16, 'DOT-1603: exactly the sixteen pre-park spawns happened, never a seventeenth')
+
+// ---- (8) deepest-stage-first admission for rows that hold no tree --------
+// Two judges at stage 0 hold the certified judge count (2). Lane D's judge
+// at stage 1 and lane C's judge at stage 2 both queue behind them, C's
+// submitted later. When one slot frees, the DEEPER row launches first: a
+// chain finishes instead of every chain advancing one rung.
+const DEEP = () => [
+    ex('A-0', 'HRN-1', 0, 'judge'),
+    ex('B-0', 'HRN-2', 0, 'judge'),
+    ex('D-0', 'HRN-4', 0, 'synthesize-findings'),
+    ex('D-1', 'HRN-4', 1, 'judge'),
+    ex('C-0', 'HRN-3', 0, 'synthesize-findings'),
+    ex('C-1', 'HRN-3', 1, 'synthesize-findings'),
+    ex('C-2', 'HRN-3', 2, 'judge'),
+]
+run = start(DEEP(), { hold: ['A-0', 'B-0', 'C-2'] })
+await settle()
+ok(SPAWNED.includes('D-0') && SPAWNED.includes('C-0') && SPAWNED.includes('C-1') &&
+   !SPAWNED.includes('D-1') && !SPAWNED.includes('C-2'),
+    'deepest-first: both waiting judges hold behind the certified judge count')
+await finish('A-0')
+ok(SPAWNED.includes('C-2') && !SPAWNED.includes('D-1'),
+    'deepest-first: one freed slot admits the stage-2 row ahead of the earlier-submitted stage-1 row')
+await finish('B-0')
+ok(SPAWNED.includes('D-1'), 'deepest-first: the next freed slot admits the stage-1 row')
+await finish('C-2')
+const deepOut = await run
+ok(statusOf(deepOut, 'D-1') === 'returned' && statusOf(deepOut, 'C-2') === 'returned',
+    'deepest-first: both rows settle returned')
+
+// ---- (9) writer ladder budget: the fourth uncertified writer cohort waits
+// for the next dispatch. Four lanes hold one writer each at stages 0..3 and
+// none are co-staged, so they serialize; lane HRN-14's judge at stage 4
+// rides behind its writer. Lane HRN-15 has writers at stages 0 and 3 of its
+// OWN: its stage-0 writer is co-staged with HRN-11's (certified), so the
+// uncertified other-lane writers below its stage-3 writer sit at stages 1
+// and 2 only — depth 2 — and it launches.
+const LADDER = () => [
+    ex('W1-0', 'HRN-11', 0, 'write'),
+    ex('W2-1', 'HRN-12', 1, 'write'),
+    ex('W3-2', 'HRN-13', 2, 'write'),
+    ex('W4-3', 'HRN-14', 3, 'write'),
+    ex('W4-4', 'HRN-14', 4, 'judge'),
+    ex('S-0', 'HRN-15', 0, 'write'),
+    ex('S-3', 'HRN-15', 3, 'write'),
+]
+run = start(LADDER())
+const ladderOut = await run
+ok(SPAWNED.includes('W1-0') && SPAWNED.includes('W2-1') && SPAWNED.includes('W3-2'),
+    'writer budget: the first three uncertified writer cohorts launch')
+ok(!SPAWNED.includes('W4-3') && statusOf(ladderOut, 'W4-3') === 'not-launched-writer-budget',
+    'writer budget: the fourth cohort is not launched and settles not-launched-writer-budget')
+ok(!SPAWNED.includes('W4-4') && statusOf(ladderOut, 'W4-4') === 'skipped-chain-dead',
+    "writer budget: the deferred lane's later row is skipped, not launched")
+ok(logged('W4-4: later stages deferred') && !logged('chain died'),
+    'writer budget: the skip reads as deferred, never as died')
+ok(logged('writer ladder budget'), 'writer budget: the log names the rule')
+ok(SPAWNED.includes('S-3') && statusOf(ladderOut, 'S-3') === 'returned',
+    "writer budget: a lane's own writer chain does not count against it")
+ok(ladderOut.length === 7, 'writer budget: one entry per manifest row')
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)

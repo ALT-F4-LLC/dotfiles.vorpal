@@ -119,8 +119,8 @@ seats" creates is exactly how seats get mis-sized.
    doubt, seat up — the point of delegating is that a worker can afford a
    stronger model and effort than the loop itself:
 
-   - Mechanical single-file edits (typo, config value, doc line): `haiku`
-     or `sonnet`.
+   - Mechanical single-file edits (typo, config value, doc line — the class
+     docket's `trivial` label names): `haiku` or `sonnet`.
    - Ordinary implementation work — most issues: `opus`.
    - Gnarly work (subtle correctness, cross-cutting changes, debugging an
      unknown cause): `fable` at `max` effort.

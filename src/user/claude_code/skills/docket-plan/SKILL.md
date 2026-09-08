@@ -418,9 +418,15 @@ and parallel width decide between equally large feasible rosters.
 **Read before you propose.** §2 applies unchanged, narrowed to the candidate
 batch: read the candidates' scope globs yourself — do the globs match files,
 has any candidate's fix already landed (`git log` over its globs since the
-issue's `created_at`), and does any pair collide under the matcher's rules —
-before you write the proposal. An issue whose work is already on HEAD is not
-a batch member; it is a comment on that issue and a line in the proposal.
+issue's `created_at`, then the acceptance criteria themselves read against
+HEAD — a fix that landed under another path or before the issue was filed
+leaves the log over its globs empty), and does any pair collide under the
+matcher's rules — before you write the proposal. An issue whose work is
+already on HEAD, or whose every acceptance criterion HEAD already meets, is
+not a batch member; it is a comment on that issue and a line in the
+proposal. On one 147-issue run, 9 of the 35 issues bound to
+`standard-change` recorded no diff because their criteria were already met,
+and each still walked every stage of the chain.
 
 **Propose, in ONE confirmation round.** Lead with the largest feasible
 complete run under the settled constraints, or the operator's explicit
@@ -815,7 +821,8 @@ record it.** Binding is exactly-one-match over the corpus's `[match]` blocks
 and every one of them discriminates on labels alone (§2): `standard-change` is
 the baseline that matches any issue carrying NONE of the variant labels, and
 each variant binds on exactly one — `ui`, `docs-only`, `investigation`,
-`security-change`, `spec-doc`, `spec-project`. So a
+`security-change`, `spec-doc`, `spec-project`, and the two size labels,
+`small` (small-change) and `trivial` (trivial-change). So a
 missing variant label does not fail — it binds the WRONG workflow, exactly one
 match, and the engine's zero-or-several refusal structurally cannot see it: no
 scope warning, no lint, nothing downstream flags it. Before recording, name
@@ -840,6 +847,19 @@ justifying, never the default (an activation panel rejected a
 domain-flavored work onto the baseline ON PURPOSE is legitimate, but it is an
 operator decision: elicit it and record it in the issue body and the plan
 artifact — never route by omission.
+
+**Size labels are yours to apply at filing, and their absence is the same
+tell.** A one- or two-file issue that adds no file and whose acceptance
+criteria are verifiable from the diff, carrying neither `small` nor
+`trivial`, binds the full `standard-change` chain silently. Apply `small`
+when the issue declares at most two files in one directory, adds no file,
+and every acceptance criterion is verifiable from the diff or a trusted
+fenced command; apply `trivial` only to a typo, a config value, a doc line,
+or a one-line fix. Never apply either to a security-sensitive issue or to
+one carrying any label in policy's `[security].labels`. When in doubt apply
+`small`: an issue carrying both binds the judged small-change track.
+Confirm the binding the same way as every other variant, with `docket
+workflow show small-change` or `docket workflow show trivial-change`.
 
 **Every issue carries both file surfaces the engine keys collision on: `-f`
 for each concrete file its change will touch, and `--scope` for the globs

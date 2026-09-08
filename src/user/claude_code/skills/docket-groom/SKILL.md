@@ -260,6 +260,15 @@ Record these findings alongside the value decision:
   workflow despite earlier grooming passes that fixed its acceptance
   criteria. Check this drift explicitly rather than assuming a content
   fill makes an issue eligible.
+- **Stale or missing size label:** `small` binds the small-change track and
+  `trivial` the trivial-change track, under
+  [docket-plan](../docket-plan/SKILL.md)'s sizing rule (at most two files in
+  one directory, no new file, criteria verifiable from the diff for
+  `small`; a typo, config value, doc line, or one-line fix for `trivial`;
+  never on a security-sensitive issue). Remove a size label the issue's
+  files, scope, or criteria have outgrown, and add one where they fit the
+  rule; an eligible issue carrying neither walks the full `standard-change`
+  chain.
 
 For every retained issue, also confirm that its labels match exactly one
 intended workflow using [docket-plan](../docket-plan/SKILL.md)'s binding
@@ -313,6 +322,14 @@ Do not stop at flagging poor wording, silently weaken a requirement to
 make it testable, or replace valid criteria with a generic checklist.
 Apply the same review after an approved rescope or merge. Retired work
 does not need speculative criteria for work that will not be performed.
+
+Check each criterion against HEAD as well. When the repo read shows every
+criterion already met (the described change landed under another issue or
+before this one was filed), the issue is finished work, not run-ready work:
+propose closing it through §4 with the evidence per criterion instead of
+repairing criteria for a run to rediscover. On one 147-issue run, 9 of the
+35 issues bound to `standard-change` recorded no diff for this reason and
+still walked every stage of the chain.
 
 ## 3. Safe edits, applied now
 

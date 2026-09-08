@@ -777,11 +777,12 @@ it by id (`{issue, workflow}`), `promoted_issues[]` names what activation
 promotes, and `issues_bound` is the count beside them. That is a READ — the
 created_at_ms-window reconstruction earlier runs needed is retired, and so is
 hunting for a verb that lists a planning run's issues. After activation
-`docket next --run $RUN --json` reports what is ready; if it disagrees with
+`docket next --run $RUN --json=v2` reports what is ready; if it disagrees with
 what you presented, that is a stop-and-report, not a shrug. **Pass no
-`--limit` on the `--run` form:** with `--run` the engine returns the whole
-ready set unless a limit is passed (its `--help`), and a limit truncates
-silently, with no marker in the JSON — an older default of 10 once returned
+`--limit` on the `--run` form, and read v2:** with `--run` the engine returns
+the whole ready set unless a limit is passed (its `--help`); the v1 envelope
+reports the post-limit count as `total` by design, and only v2 carries the
+pre-cut `total` and a `truncated` flag — an older default of 10 once returned
 10 of 27 rows and would have stranded 17 steps if trusted, and a later
 `--limit 500` read `total: 500` against a 930-row offer. Keep the promotion
 vigilance regardless: check `events list --run $RUN` for `issue-promoted` (tail
@@ -876,20 +877,22 @@ step and the run had to be paused.
 ### 1. Ask what is ready
 
 ```bash
-docket next --run $RUN --json | jq '{
+docket next --run $RUN --json=v2 | jq '{
   total: .data.total,
-  kinds: ((.data.steps // []) | group_by(.kind) | map({key: .[0].kind, value: length}) | from_entries),
-  staged: ([(.data.steps // [])[] | select(.status == "staged")] | length),
-  writers: ([(.data.steps // [])[] | select(.class == "write")] | length),
-  issues: ((.data.steps // []) | map(.issue) | unique),
+  truncated: .data.truncated,
+  kinds: ((.data.items // []) | group_by(.kind) | map({key: .[0].kind, value: length}) | from_entries),
+  staged: ([(.data.items // [])[] | select(.status == "staged")] | length),
+  writers: ([(.data.items // [])[] | select(.class == "write")] | length),
+  issues: ((.data.items // []) | map(.issue) | unique),
   refusal: .error }'
 ```
 
-`--limit` stays off this call: with `--run` the engine returns the whole
-ready set unless a limit is passed (its `--help`), and a limit truncates
-`total` silently — two summaries on one run read `total: 500` against a
-930-row offer. Nothing here enters the conversation but the summary, so size
-is not a concern. `writers` is the wave-length lever: wave.js serializes
+Read the v2 envelope and pass no `--limit`: with `--run` the engine returns
+the whole ready set unless a limit is passed (its `--help`), the v1 envelope
+reports the post-limit count as `total` by design, and only v2 carries the
+pre-cut `total` beside an explicit `truncated` — two v1 summaries on one run
+read `total: 500` against a 930-row offer. Nothing here enters the
+conversation but the summary, so size is not a concern. `writers` is the wave-length lever: wave.js serializes
 writers the engine never co-staged, so a wave runs about as long as the sum
 of its writer cohorts' slowest members — a 25-writer offer ran 287 minutes,
 the last 227 of them at one to three executors, while every other lane's next

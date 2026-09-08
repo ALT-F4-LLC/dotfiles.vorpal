@@ -1,7 +1,32 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 34  # 34: two edits on the review stage, no topology change. (1)
+version = 35  # 35: `small` and `trivial` join unless_labels, so an issue carrying either
+              #   binds the new small-change or trivial-change track instead of this one;
+              #   nothing else changes. Measured on one 147-issue run on this machine
+              #   (35 issues bound here, 27 finished): a change of 20 lines or fewer
+              #   spent a median 38 seat-minutes over 7 executor seats plus 3 tribunal
+              #   seats and took a median 22.7 hours from first claim to done, no
+              #   faster than a 21-100-line change (23.5 h) or one over 400 lines
+              #   (17.2 h). Seat time by stage here: the three judges 35%, implement
+              #   28%, verify 25%, fix 4%, synthesize 4%, drain-highs 4%. The elapsed
+              #   time was not seat time: every finished chain crossed three
+              #   dispatches (implement; the three judges and synthesize; drain, verify
+              #   and the tribunal), and the waits at those boundaries were about two
+              #   thirds of it, so the lever a lighter track pulls is rows per issue
+              #   and serial stages, not model tiers. Nine of the 35 issues recorded no
+              #   diff at all (their acceptance criteria were already met at HEAD) and
+              #   still walked every stage; they drew 3 of this track's 4 blocker fix
+              #   rounds and all 3 of its parked fix rounds — a stale-backlog class for
+              #   grooming to retire before activation, not a lane this file can
+              #   express, because `[match]` and a step's `when` read issue kind and
+              #   labels only, never the diff. Across every project's ledger (225
+              #   distinct issues bound here) round-0 reconcile routed a blocker fix
+              #   round on 7 of 64 changes of 20 lines or fewer and 12 of 92 of 21-100
+              #   lines, so this three-judge review is kept as the default for an
+              #   unlabelled change; the lighter tracks bind only by a label a person,
+              #   the groomer or the planner applied.
+              # 34: two edits on the review stage, no topology change. (1)
               #   `verify-tribunal` seats `tribunal-correctness` alone instead of the
               #   three-seat tribunal roster. Measured across every verify-tribunal
               #   decided on this machine (25 panels: 1 here, 10 on security-change,
@@ -124,8 +149,10 @@ unless_labels = [
   "security",
   "security-change",
   "security-load-bearing",
+  "small",
   "spec-doc",
   "spec-project",
+  "trivial",
   "ui",
 ]
 

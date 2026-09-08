@@ -1,0 +1,93 @@
+[pipeline]
+description = "Trivial mechanical change, bound by the `trivial` label: implement with the full gate list, then AC verification with a single-seat tribunal on an unverifiable AC and one fix round re-entering at verify; no judge; the conductor integrates commits, the operator publishes."
+name = "trivial-change"
+version = 1  # 1: the lightest track, for a mechanical change that a person, the
+             #   groomer or the planner labelled `trivial`: a typo, a config value,
+             #   a one-line fix whose acceptance criteria a diff trace can verify.
+             #   Same implement step and gate list as standard-change, then AC
+             #   verification, the single-seat tribunal on an unverifiable AC, and
+             #   one fix round re-entering at verify. No judge at all: across the 225
+             #   distinct standard-change issues in every project's ledger, the
+             #   three-judge panel's whole in-run effect on changes of 20 lines or
+             #   fewer was a blocker fix round on 7 of 64, and the completion gates
+             #   (build, tests, secret-scan, vuln-scan, doc-validate), the AC
+             #   verification and the tribunal are the coverage here. Because that
+             #   7-in-64 is not zero, the `small` label wins when an issue carries
+             #   both, so a doubtful case takes the judged track, and the fixer reads
+             #   a step-level fragment saying the AC report is its whole work list.
+             #   Forecast rather than measured, from the same run's medians: 2
+             #   executor seats and about 21 seat-minutes (implement 12.8, verify
+             #   7.8), plus one tribunal seat when an AC is unverifiable, over a chain
+             #   of two dispatches instead of three. The label is applied before
+             #   activation because `[match]` and `when` read issue kind and labels
+             #   only, never the diff.
+
+[match]
+labels_any = ["trivial"]
+unless_labels = [
+  "blocked",
+  "disposition",
+  "docs-only",
+  "investigation",
+  "release",
+  "retro",
+  "security",
+  "security-change",
+  "security-load-bearing",
+  "small",
+  "spec-doc",
+  "spec-project",
+  "ui",
+]
+
+[limits]
+"verify-ac" = { max = 16, max_step_duration = "1h" }
+"write" = { max = 16, max_step_duration = "2h" }
+
+[[step]]
+after = []
+class = "write"
+emits = "change-summary"
+executor = "implement"
+expected_cost = 1.50
+gates = ["build", "tests", "self-hygiene", "secret-scan", "vuln-scan", "doc-validate"]
+inputs = ["issue.body"]
+max_attempts = 2
+name = "implement"
+on_fail = "waiting-human"
+packet = ["contracts/{executor}.md"]
+
+[[step]]
+after_loop = "verify"
+class = "write"
+emits = "change-summary"
+executor = "fix"
+expected_cost = 1.00
+gates = ["build", "tests", "self-hygiene", "secret-scan", "vuln-scan", "doc-validate"]
+inputs = ["implement.change-summary", "issue.latest.change-summary", "issue.latest.ac-report", "verify-tribunal.vote-record"]
+loop = true
+name = "fix"
+packet = ["contracts/{executor}.md", "fragments/fix-ac-only.md"]
+
+[[step]]
+after = ["implement"]
+emits = "ac-report"
+executor = "verify-ac"
+expected_cost = 0.50
+gates = [{ name = "ac-commands", pre = true }]
+holds_tree = false
+inputs = ["issue.body", "issue.diff", "implement.change-summary", "verify.gate-results"]
+max_fix_loops = 1
+name = "verify"
+packet = ["contracts/{executor}.md"]
+payload = "ac-report@1"
+threshold = { "fix-loop" = "any(status == unmet)", "verify-tribunal" = "any(status == unverifiable)" }
+
+[[step]]
+after = ["verify"]
+inputs = ["verify.ac-report", "issue.body", "issue.diff"]
+name = "verify-tribunal"
+on_fail = "fix-loop"
+type = "vote"
+vote_rule = "tribunal"
+voters = ["tribunal-correctness"]

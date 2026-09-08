@@ -1362,13 +1362,21 @@ with a reason.
 | `--ack-reap` | int64Slice | `nil` | acknowledge a write-class reap by its `lease-reaped` event `seq`; repeatable |
 
 Response is engine-spec §11.4's `dispatch` shape: `{dispatch, run, opened_seq,
-expires_ms, rows: [<next row>…]}`. Each row is stored as its canonical JSON
-bytes plus a sha256, so `verify` compares bytes rather than a re-serialization
-that could differ in key order.
+expires_ms, rows: [<next row>…]}`, plus `reaped` and `reap_hold` (both
+`omitempty`, absent when this open reaped nothing). Each row is stored as its
+canonical JSON bytes plus a sha256, so `verify` compares bytes rather than a
+re-serialization that could differ in key order.
 
 `open` performs the same lazy lease reap `next` does — offering a stale step
 that a reap would have freed would make the manifest wrong the moment it was
-written.
+written. `reaped` names the step instances THIS open reaped, and `reap_hold`
+is the guard's own denial text for any unacknowledged bounded-class reap
+still holding the run afterward (this open's own reaps included): the seq of
+each and `--ack-reap` as the flag that clears it. `--ack-reap` applied on the
+same call cannot cover a reap this open performs after the ack, so a relay
+reading a non-empty `reap_hold` acknowledges it or convenes an ack-reap panel
+before composing the next launch, rather than discovering the same hold from
+a `guard spawn` denial afterward.
 
 **`stale_targets` asks about CONTENT, not just about the sha.** Integration cherry-picks an executor's worktree commit onto the
 shared branch, which always mints a new sha, so a recorded target is never an

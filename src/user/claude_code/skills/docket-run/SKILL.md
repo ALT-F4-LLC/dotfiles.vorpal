@@ -992,7 +992,13 @@ docket dispatch open --run $RUN --limit 240 --json
 **Always pass `--limit 240` (default is `0`, unlimited).** A large ready set
 opens an unbounded manifest — one run's `next` offered 930 rows, a 364 KB
 JSON payload that blew past both the `Read` tool's 256 KB cap and the
-`Workflow` tool's practical inline-arg size for `wave.js`'s `args.rows`. 240
+`Workflow` tool's practical inline-arg size for `wave.js`'s `args.rows`. This
+is a PAYLOAD-SIZE cap, not a defense against the harness's separate
+1000-agent lifetime cap: wave.js reserves each row's projected agents against
+a 900-agent budget as it admits rows and defers whatever the remainder cannot
+cover (`not-launched-agent-budget`, re-offered by the engine at the next
+dispatch), so a manifest of any size is safe to hand the wave whole and the
+conductor never hand-computes a safe `--limit` for the agent cap. 240
 rows is a size already proven launchable (repeatedly, across several runs):
 comfortably under both ceilings whether the wave carries mostly single-row
 executor lanes or wide `review@N#k` panels (a 240-row manifest runs 80 to
@@ -1037,6 +1043,14 @@ holds the only bytes that route.
 step's recorded target sha is no longer an ancestor of the shared checkout's
 HEAD — the branch moved on, and the tree that sha names may no longer exist on
 it. Two responses are allowed, and dispatching through it is neither:
+
+**A non-empty `reap_hold` on the same answer is a second stop-and-verify.**
+`dispatch open` reaps a lapsed write-class lease before it computes the
+manifest and reports what it reaped in `reaped` (the step instances) and
+`reap_hold` (the guard's own denial text — each seq and the flag that clears
+it). `guard spawn`'s hold is exactly this text, so convene the ack-reap panel
+from `reap_hold` now, before composing the launch, rather than discovering
+the same hold from a denied spawn afterward.
 
 - **Confirm the claim-time semantics first.** Ask the engine what actually
   happens when a step carrying a stale target gets claimed: does the packet get
@@ -1275,28 +1289,35 @@ or diagnose the wave's result. Then, in this SAME turn and while it runs:
 and the pre-open reap check — `docket guard spawn --run $RUN` with no `--rows`
 answers the reap half alone (exit 2 names an unacknowledged write-class
 reap), so an ack-reap proposal opens and its panel convenes now, beside the
-join, not after a denied launch (two of four launches on one run were denied
-by the spawn guard after the open, 8 to 9 minutes each, one on a lease that
-expired during `dispatch open` itself). End the turn on the join. Read the
-wave's return as rows, not as a verdict: `not-launched-run-parked`,
-`not-launched-writer-budget` (wave.js launches at most three writer cohorts
-the manifest never certified disjoint, and defers the rest) and
-`skipped-chain-dead` worded as deferred are rows nothing failed on — the
-engine re-offers every one of them at the next dispatch.
+join, not after a denied launch. This check is for a reap that PREDATES the
+open — a lease that lapsed while the prior wave ran. A reap the open ITSELF
+performed (a lease that lapsed during `dispatch open`'s own run) rides on
+that open's own `reaped`/`reap_hold` fields instead (see step 2 above) and is
+caught immediately, without waiting for a spawn-guard denial. End the turn on
+the join. Read the wave's return as rows, not as a verdict:
+`not-launched-run-parked`, `not-launched-writer-budget` (wave.js launches at
+most three writer cohorts the manifest never certified disjoint, and defers
+the rest), `not-launched-agent-budget` (wave.js reserves each row's projected
+agents against a 900-agent budget and defers what the remainder cannot
+cover) and `skipped-chain-dead` worded as deferred are rows nothing failed on
+— the engine re-offers every one of them at the next dispatch.
 
-**The join is on the close's critical path for every wave longer than the
-grace.** To the engine a step recorded less than `dispatch.grace` (15
-minutes) ago is usage PENDING, not missing; a step recorded earlier and still
-unbilled makes `dispatch close` refuse `usage-rows-missing`. A wave shorter
-than the grace closes before its join lands; a 240-row wave runs one to five
-hours, so its close waits for the join, and the join takes about three
-seconds per agent transcript (11 to 13 minutes for 220 to 250 agents). On one
-run the conductor idled 11 minutes on the join, ran a seats-mode join before
-the close for 7 more, and once launched the join only after two close
-refusals; the work above fills that time instead. A join still outstanding
-when the NEXT close comes is back-filled first; a join outstanding when
-`next` returns EMPTY is back-filled before the done report, never after, and
-the done report's own check (step 1) reads `missing_usage` for exactly this.
+**A wave's early steps do not refuse the close just for running past the
+grace.** The engine measures `dispatch.grace` (15 minutes) from the run's
+NEWEST terminal executor step record — the wave's last record — not from
+each step's own timestamp: a step billed or not that recorded before that
+last record is usage PENDING as long as the last record is inside the grace,
+and only becomes a `usage-rows-missing` refusal once the last record itself
+is past it. A 240-row wave runs one to five hours, so its close can still
+wait on the join once the wave's LAST record is outside the grace, and the
+join takes about three seconds per agent transcript (11 to 13 minutes for
+220 to 250 agents). On one run the conductor idled 11 minutes on the join,
+ran a seats-mode join before the close for 7 more, and once launched the
+join only after two close refusals; the work above fills that time instead.
+A join still outstanding when the NEXT close comes is back-filled first; a
+join outstanding when `next` returns EMPTY is back-filled before the done
+report, never after, and the done report's own check (step 1) reads
+`missing_usage` for exactly this.
 
 **2. On the join's notification: back-fill, verify, close — as SEPARATE
 calls, and close first, then next.** The seats-mode join for any panel you
@@ -1389,8 +1410,9 @@ docket dispatch close --run $RUN --json
 ```
 
 Rows land against the step's recorded attempt, `--source` defaults to
-`backfilled`, and the window is `dispatch.grace` from each step's recording,
-close or no close — the flow never needs another.
+`backfilled`, and the window is `dispatch.grace` from the run's newest
+terminal step record — the wave's last one — close or no close — the flow
+never needs another.
 
 **Drop rows the engine already holds before piping.** Two classes are always
 in wave-usage's output and always refused: (a) vote-kind steps — a vote step
@@ -2733,10 +2755,13 @@ on the interposed rows after any override-pass to see which of them the engine
 actually left standing.
 
 **A gate that failed on the executor's OWN commit is answered with `retry`;
-`override-pass` leaves the step's recorded diff on the FAILING sha.** The diff
-artifact is written at record time and no resolution re-records it — the verb
-writes a pass beside the step, it does not re-point the step at a tree fixed
-afterwards. So a conductor patch under an override-pass is invisible
+`override-pass` ALONE leaves the step's recorded diff on the FAILING sha.**
+The diff artifact is written at record time and `override-pass` does not
+re-record it — the verb writes a pass beside the step, it does not re-point
+the step at a tree fixed afterwards. (`step annotate --integrated-sha` DOES
+re-record it, once the fixed tree is integrated — see the ruling paragraph
+below, which is the sanctioned way past this rather than a gap.) So a
+conductor patch under an override-pass ALONE is invisible
 downstream: every review packet renders from that recorded artifact, the next
 dispatch carries the pre-patch sha as the fanout's target (a `stale_targets`
 row above is where that surfaces, when it surfaces at all), and the panel reads
@@ -2748,7 +2773,8 @@ synthesize returned exactly one blocker — that same line-length violation —
 reconcile routed `fix-loop` on it alone, and the fix round's own fixer reported
 "no action, ruff is clean now" after ~21.6k output and ~11.2M cache-read
 tokens. The question you put to the operator carries this in its OPTION TEXT:
-`retry` is the only resolution that produces a clean RECORDED sha and is
+`retry` is the resolution that produces a clean RECORDED sha with no further
+action and is
 therefore the recommended option (its own precondition is the rendered-brief
 check above), and the override-pass option states that the review fanout will
 re-find the gate failure on the pre-patch sha and open a fix round on a defect

@@ -9,12 +9,36 @@ digest = "7debfa42bc88109f226700e6c2620ef19497d51932d9d6d8859791fd5f470b20"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "awscli2"
+path = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.33.1.zip"
+includes = []
+excludes = []
+digest = "9cc123be6401193a29659b9aaf65f3fa6be770ff0fc9fbdd4f41cc6ec666c294"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "bash"
+path = "https://sdk.vorpal.build/source/bash-5.3.tar.gz"
+includes = []
+excludes = []
+digest = "8e8da18fe5560d744bd6ca32d4128badb699394567b6b7ae18b8a734268655a4"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "bash-language-server"
 path = "https://registry.npmjs.org/bash-language-server/-/bash-language-server-5.6.0.tgz"
 includes = []
 excludes = []
 digest = "9602ed7f00a9aa18d8aa05f910c147a8da5430ab8b4deb8fb9a597b7f6ad5cd7"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "bash-language-server"
+path = "https://registry.npmjs.org/bash-language-server/-/bash-language-server-5.6.0.tgz"
+includes = []
+excludes = []
+digest = "9602ed7f00a9aa18d8aa05f910c147a8da5430ab8b4deb8fb9a597b7f6ad5cd7"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "bat"
@@ -25,12 +49,44 @@ digest = "3abca7df1be4d52ef37ccd22f0b01da87f149f4ca1f74633d53deba87d98b078"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "bat"
+path = "https://github.com/sharkdp/bat/releases/download/v0.25.0/bat-v0.25.0-x86_64-unknown-linux-musl.tar.gz"
+includes = []
+excludes = []
+digest = "3ed3a7e93b208399749a2b4b55318f39a8376922173a8af75cfba26890adfc48"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "binutils"
+path = "https://sdk.vorpal.build/source/binutils-2.45.tar.gz"
+includes = []
+excludes = []
+digest = "ef4e00c3b96def973211d311ea2874d15f2bbcdce670053759bf09584db2d545"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "bison"
+path = "https://sdk.vorpal.build/source/bison-3.8.2.tar.gz"
+includes = []
+excludes = []
+digest = "cb18c2c8562fc01bf3ae17ffe9cf8274e3dd49d39f89397c1a8bac7ee14ce85f"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "bls-balanced-match"
 path = "https://registry.npmjs.org/balanced-match/-/balanced-match-1.0.2.tgz"
 includes = []
 excludes = []
 digest = "5472a2f9517223c70ede2f6c2f970b5229769760b1b709c859de3706f59489c3"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-balanced-match"
+path = "https://registry.npmjs.org/balanced-match/-/balanced-match-1.0.2.tgz"
+includes = []
+excludes = []
+digest = "5472a2f9517223c70ede2f6c2f970b5229769760b1b709c859de3706f59489c3"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "bls-brace-expansion"
@@ -41,12 +97,28 @@ digest = "d7ff9f72158fabf609a4c4eb309853d40d0910e974a2aa78f3e4961e93cc3046"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "bls-brace-expansion"
+path = "https://registry.npmjs.org/brace-expansion/-/brace-expansion-2.0.1.tgz"
+includes = []
+excludes = []
+digest = "d7ff9f72158fabf609a4c4eb309853d40d0910e974a2aa78f3e4961e93cc3046"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "bls-braces"
 path = "https://registry.npmjs.org/braces/-/braces-3.0.3.tgz"
 includes = []
 excludes = []
 digest = "369fb69f30979f0cad137e30c2d726459c94684f64f6fa894ba00447883276a1"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-braces"
+path = "https://registry.npmjs.org/braces/-/braces-3.0.3.tgz"
+includes = []
+excludes = []
+digest = "369fb69f30979f0cad137e30c2d726459c94684f64f6fa894ba00447883276a1"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "bls-commander"
@@ -57,12 +129,28 @@ digest = "28368d2fe0265f1759857d0ed1b5c4e97eb5c89859fc7dffc48940a4615c8184"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "bls-commander"
+path = "https://registry.npmjs.org/commander/-/commander-15.0.0.tgz"
+includes = []
+excludes = []
+digest = "28368d2fe0265f1759857d0ed1b5c4e97eb5c89859fc7dffc48940a4615c8184"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "bls-editorconfig"
 path = "https://registry.npmjs.org/editorconfig/-/editorconfig-2.0.1.tgz"
 includes = []
 excludes = []
 digest = "f97c38586f2c4aa805b60cc48fbfa35ea0c5f8e9bc14acd3c438d3e71be07a65"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-editorconfig"
+path = "https://registry.npmjs.org/editorconfig/-/editorconfig-2.0.1.tgz"
+includes = []
+excludes = []
+digest = "f97c38586f2c4aa805b60cc48fbfa35ea0c5f8e9bc14acd3c438d3e71be07a65"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "bls-fast-glob"
@@ -73,12 +161,28 @@ digest = "c62a9c29a78c2795539b8aa566360a13eed5857ec7649a61616c5f360970f4da"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "bls-fast-glob"
+path = "https://registry.npmjs.org/fast-glob/-/fast-glob-3.3.3.tgz"
+includes = []
+excludes = []
+digest = "c62a9c29a78c2795539b8aa566360a13eed5857ec7649a61616c5f360970f4da"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "bls-fastq"
 path = "https://registry.npmjs.org/fastq/-/fastq-1.20.1.tgz"
 includes = []
 excludes = []
 digest = "7da2d3cb64f29c2adb2b260d7f4fc7de33958205b86709c37d9a17f37b065ecf"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-fastq"
+path = "https://registry.npmjs.org/fastq/-/fastq-1.20.1.tgz"
+includes = []
+excludes = []
+digest = "7da2d3cb64f29c2adb2b260d7f4fc7de33958205b86709c37d9a17f37b065ecf"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "bls-fill-range"
@@ -89,12 +193,28 @@ digest = "40dae5ba10940c7092c013b511e784eb4a48ec295a0f2b6b0be97fba80e6b194"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "bls-fill-range"
+path = "https://registry.npmjs.org/fill-range/-/fill-range-7.1.1.tgz"
+includes = []
+excludes = []
+digest = "40dae5ba10940c7092c013b511e784eb4a48ec295a0f2b6b0be97fba80e6b194"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "bls-fuzzy-search"
 path = "https://registry.npmjs.org/fuzzy-search/-/fuzzy-search-3.2.1.tgz"
 includes = []
 excludes = []
 digest = "04781a4a02ffa9786f0fda7e16e86a6e5a7ad0c4c3dd268e74a0ac306c1f59de"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-fuzzy-search"
+path = "https://registry.npmjs.org/fuzzy-search/-/fuzzy-search-3.2.1.tgz"
+includes = []
+excludes = []
+digest = "04781a4a02ffa9786f0fda7e16e86a6e5a7ad0c4c3dd268e74a0ac306c1f59de"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "bls-glob-parent"
@@ -105,12 +225,28 @@ digest = "87338cc1a9ff0b3300683ab9981fbd16e8a0e0e6fd9f0b19f6ad42c0666fc7bf"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "bls-glob-parent"
+path = "https://registry.npmjs.org/glob-parent/-/glob-parent-5.1.2.tgz"
+includes = []
+excludes = []
+digest = "87338cc1a9ff0b3300683ab9981fbd16e8a0e0e6fd9f0b19f6ad42c0666fc7bf"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "bls-is-extglob"
 path = "https://registry.npmjs.org/is-extglob/-/is-extglob-2.1.1.tgz"
 includes = []
 excludes = []
 digest = "d6e18eab80db8c08cb7ff9b1f78b615092866d19109aec9bd93ca419e649d23a"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-is-extglob"
+path = "https://registry.npmjs.org/is-extglob/-/is-extglob-2.1.1.tgz"
+includes = []
+excludes = []
+digest = "d6e18eab80db8c08cb7ff9b1f78b615092866d19109aec9bd93ca419e649d23a"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "bls-is-glob"
@@ -121,12 +257,28 @@ digest = "ff1cffd23b79ccd47343d4a3d5c901b03a17bb7994710c1a3215ca14b6c70d30"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "bls-is-glob"
+path = "https://registry.npmjs.org/is-glob/-/is-glob-4.0.3.tgz"
+includes = []
+excludes = []
+digest = "ff1cffd23b79ccd47343d4a3d5c901b03a17bb7994710c1a3215ca14b6c70d30"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "bls-is-number"
 path = "https://registry.npmjs.org/is-number/-/is-number-7.0.0.tgz"
 includes = []
 excludes = []
 digest = "d63f5863b4accfdb52510ccda01a4681ee9f14594c87dc31039e317cc8ce0e27"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-is-number"
+path = "https://registry.npmjs.org/is-number/-/is-number-7.0.0.tgz"
+includes = []
+excludes = []
+digest = "d63f5863b4accfdb52510ccda01a4681ee9f14594c87dc31039e317cc8ce0e27"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "bls-merge2"
@@ -137,12 +289,28 @@ digest = "343739a9118dcddb5913756c087d7842843c1559cdafdb5d9d40aa6ddd4f6c70"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "bls-merge2"
+path = "https://registry.npmjs.org/merge2/-/merge2-1.4.1.tgz"
+includes = []
+excludes = []
+digest = "343739a9118dcddb5913756c087d7842843c1559cdafdb5d9d40aa6ddd4f6c70"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "bls-micromatch"
 path = "https://registry.npmjs.org/micromatch/-/micromatch-4.0.8.tgz"
 includes = []
 excludes = []
 digest = "6e06635f54df8f87ba52935ba401c6b4f756378fb453e4ff9c6b4acfff92c429"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-micromatch"
+path = "https://registry.npmjs.org/micromatch/-/micromatch-4.0.8.tgz"
+includes = []
+excludes = []
+digest = "6e06635f54df8f87ba52935ba401c6b4f756378fb453e4ff9c6b4acfff92c429"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "bls-minimatch"
@@ -153,12 +321,28 @@ digest = "8d587f80713945afadc92f127ed7e238bdef7dab0e2a2bf4b041274c65dac6cd"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "bls-minimatch"
+path = "https://registry.npmjs.org/minimatch/-/minimatch-10.0.1.tgz"
+includes = []
+excludes = []
+digest = "8d587f80713945afadc92f127ed7e238bdef7dab0e2a2bf4b041274c65dac6cd"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "bls-mixmark-domino"
 path = "https://registry.npmjs.org/@mixmark-io/domino/-/domino-2.2.0.tgz"
 includes = []
 excludes = []
 digest = "bc42d1fa14c5a95b84456dab4d37d3ed812d3a1ae1fe670829e4cc5396ad050e"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-mixmark-domino"
+path = "https://registry.npmjs.org/@mixmark-io/domino/-/domino-2.2.0.tgz"
+includes = []
+excludes = []
+digest = "bc42d1fa14c5a95b84456dab4d37d3ed812d3a1ae1fe670829e4cc5396ad050e"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "bls-node-fetch"
@@ -169,12 +353,28 @@ digest = "e9a331173565996a542f3d6e8dc112b17f6e5d7c2bea7fd6b821e519a5758f86"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "bls-node-fetch"
+path = "https://registry.npmjs.org/node-fetch/-/node-fetch-2.7.0.tgz"
+includes = []
+excludes = []
+digest = "e9a331173565996a542f3d6e8dc112b17f6e5d7c2bea7fd6b821e519a5758f86"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "bls-nodelib-fs-scandir"
 path = "https://registry.npmjs.org/@nodelib/fs.scandir/-/fs.scandir-2.1.5.tgz"
 includes = []
 excludes = []
 digest = "e800bcc56aed33d5e45525e77d81f5bd21e145623af190a7074dac652b7f8798"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-nodelib-fs-scandir"
+path = "https://registry.npmjs.org/@nodelib/fs.scandir/-/fs.scandir-2.1.5.tgz"
+includes = []
+excludes = []
+digest = "e800bcc56aed33d5e45525e77d81f5bd21e145623af190a7074dac652b7f8798"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "bls-nodelib-fs-stat"
@@ -185,12 +385,28 @@ digest = "91bafa32af897cc0d7765880cfc94966a3c46b139ffc466797114f7dcbc642a6"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "bls-nodelib-fs-stat"
+path = "https://registry.npmjs.org/@nodelib/fs.stat/-/fs.stat-2.0.5.tgz"
+includes = []
+excludes = []
+digest = "91bafa32af897cc0d7765880cfc94966a3c46b139ffc466797114f7dcbc642a6"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "bls-nodelib-fs-walk"
 path = "https://registry.npmjs.org/@nodelib/fs.walk/-/fs.walk-1.2.8.tgz"
 includes = []
 excludes = []
 digest = "0b98aac5b73a3b113f3b4e47d99ae78e2e4e1adf48b099ea0fbfcfef3dcd9a5c"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-nodelib-fs-walk"
+path = "https://registry.npmjs.org/@nodelib/fs.walk/-/fs.walk-1.2.8.tgz"
+includes = []
+excludes = []
+digest = "0b98aac5b73a3b113f3b4e47d99ae78e2e4e1adf48b099ea0fbfcfef3dcd9a5c"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "bls-one-ini-wasm"
@@ -201,12 +417,28 @@ digest = "46b7a9963210f1a9ffd37d901dd70975ab73fe01c9a79913f09cfb3d7243c437"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "bls-one-ini-wasm"
+path = "https://registry.npmjs.org/@one-ini/wasm/-/wasm-0.2.0.tgz"
+includes = []
+excludes = []
+digest = "46b7a9963210f1a9ffd37d901dd70975ab73fe01c9a79913f09cfb3d7243c437"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "bls-picomatch"
 path = "https://registry.npmjs.org/picomatch/-/picomatch-2.3.1.tgz"
 includes = []
 excludes = []
 digest = "1d174edd33c12d1e0e342ad763f8d2c63dc99c2cc29171317c6ef5ac0ab782f2"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-picomatch"
+path = "https://registry.npmjs.org/picomatch/-/picomatch-2.3.1.tgz"
+includes = []
+excludes = []
+digest = "1d174edd33c12d1e0e342ad763f8d2c63dc99c2cc29171317c6ef5ac0ab782f2"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "bls-queue-microtask"
@@ -217,12 +449,28 @@ digest = "05f6c7babbafab550a3c08f9a34321795d1f4514267edc2c3e9baefd2939803f"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "bls-queue-microtask"
+path = "https://registry.npmjs.org/queue-microtask/-/queue-microtask-1.2.3.tgz"
+includes = []
+excludes = []
+digest = "05f6c7babbafab550a3c08f9a34321795d1f4514267edc2c3e9baefd2939803f"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "bls-reusify"
 path = "https://registry.npmjs.org/reusify/-/reusify-1.1.0.tgz"
 includes = []
 excludes = []
 digest = "1959fbbc38ef73d803d68ee4ab0cd927659504a24b8dd8bca323037400840863"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-reusify"
+path = "https://registry.npmjs.org/reusify/-/reusify-1.1.0.tgz"
+includes = []
+excludes = []
+digest = "1959fbbc38ef73d803d68ee4ab0cd927659504a24b8dd8bca323037400840863"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "bls-run-parallel"
@@ -233,12 +481,28 @@ digest = "c9961f5bf925ee301be4212377e254a6f966a3309e163b6623a099973089282b"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "bls-run-parallel"
+path = "https://registry.npmjs.org/run-parallel/-/run-parallel-1.2.0.tgz"
+includes = []
+excludes = []
+digest = "c9961f5bf925ee301be4212377e254a6f966a3309e163b6623a099973089282b"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "bls-semver"
 path = "https://registry.npmjs.org/semver/-/semver-7.8.5.tgz"
 includes = []
 excludes = []
 digest = "a92457e9abcf8c44bf92b5c2dfe53a1ce4cc47f269f6dd4eb0fbaefc0e05d2f6"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-semver"
+path = "https://registry.npmjs.org/semver/-/semver-7.8.5.tgz"
+includes = []
+excludes = []
+digest = "a92457e9abcf8c44bf92b5c2dfe53a1ce4cc47f269f6dd4eb0fbaefc0e05d2f6"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "bls-to-regex-range"
@@ -249,12 +513,28 @@ digest = "1c1d1ab512395935b2ee5b7d1e2cf2778da71cf943ada371342118187a82208c"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "bls-to-regex-range"
+path = "https://registry.npmjs.org/to-regex-range/-/to-regex-range-5.0.1.tgz"
+includes = []
+excludes = []
+digest = "1c1d1ab512395935b2ee5b7d1e2cf2778da71cf943ada371342118187a82208c"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "bls-tr46"
 path = "https://registry.npmjs.org/tr46/-/tr46-0.0.3.tgz"
 includes = []
 excludes = []
 digest = "be6e7c90a0d865073e2abe44dc582f06dceb3cbd3294aecc377330eda098dbaf"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-tr46"
+path = "https://registry.npmjs.org/tr46/-/tr46-0.0.3.tgz"
+includes = []
+excludes = []
+digest = "be6e7c90a0d865073e2abe44dc582f06dceb3cbd3294aecc377330eda098dbaf"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "bls-turndown"
@@ -265,12 +545,28 @@ digest = "16e64331cf87527da046a9b5a0187d4aa21854cb0bf58d9cc71c95891a91c72e"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "bls-turndown"
+path = "https://registry.npmjs.org/turndown/-/turndown-7.2.0.tgz"
+includes = []
+excludes = []
+digest = "16e64331cf87527da046a9b5a0187d4aa21854cb0bf58d9cc71c95891a91c72e"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "bls-vscode-jsonrpc"
 path = "https://registry.npmjs.org/vscode-jsonrpc/-/vscode-jsonrpc-8.0.2.tgz"
 includes = []
 excludes = []
 digest = "654278949d7d75cdf73fd9cdf4d61d036d6eaae26302bcd177d0d94f84adf1e0"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-vscode-jsonrpc"
+path = "https://registry.npmjs.org/vscode-jsonrpc/-/vscode-jsonrpc-8.0.2.tgz"
+includes = []
+excludes = []
+digest = "654278949d7d75cdf73fd9cdf4d61d036d6eaae26302bcd177d0d94f84adf1e0"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "bls-vscode-languageserver"
@@ -281,12 +577,28 @@ digest = "b861e4dcfa4fac9a3d5ea30e3aad490ded66073c27203a7669c5f0361bf43531"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "bls-vscode-languageserver"
+path = "https://registry.npmjs.org/vscode-languageserver/-/vscode-languageserver-8.0.2.tgz"
+includes = []
+excludes = []
+digest = "b861e4dcfa4fac9a3d5ea30e3aad490ded66073c27203a7669c5f0361bf43531"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "bls-vscode-languageserver-protocol"
 path = "https://registry.npmjs.org/vscode-languageserver-protocol/-/vscode-languageserver-protocol-3.17.2.tgz"
 includes = []
 excludes = []
 digest = "aaa1213ccd584485b0b3a4e8cafa00d43bdd927a4f2b174d6219b6a214d52c85"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-vscode-languageserver-protocol"
+path = "https://registry.npmjs.org/vscode-languageserver-protocol/-/vscode-languageserver-protocol-3.17.2.tgz"
+includes = []
+excludes = []
+digest = "aaa1213ccd584485b0b3a4e8cafa00d43bdd927a4f2b174d6219b6a214d52c85"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "bls-vscode-languageserver-textdocument"
@@ -297,12 +609,28 @@ digest = "bfac61d25c7266cc4f0a91795c0177435f8b421fd61c564f075d813a87a760c0"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "bls-vscode-languageserver-textdocument"
+path = "https://registry.npmjs.org/vscode-languageserver-textdocument/-/vscode-languageserver-textdocument-1.0.12.tgz"
+includes = []
+excludes = []
+digest = "bfac61d25c7266cc4f0a91795c0177435f8b421fd61c564f075d813a87a760c0"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "bls-vscode-languageserver-types"
 path = "https://registry.npmjs.org/vscode-languageserver-types/-/vscode-languageserver-types-3.17.2.tgz"
 includes = []
 excludes = []
 digest = "c4a90cc44272ab27883841fdb41cd947b975d19dc772c9a98bbbcfb41e8e60ab"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-vscode-languageserver-types"
+path = "https://registry.npmjs.org/vscode-languageserver-types/-/vscode-languageserver-types-3.17.2.tgz"
+includes = []
+excludes = []
+digest = "c4a90cc44272ab27883841fdb41cd947b975d19dc772c9a98bbbcfb41e8e60ab"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "bls-web-tree-sitter"
@@ -313,12 +641,28 @@ digest = "9effbc07c4ec4618d51f943d17cff87e741081d2838da5c5dfe66b98b23b1c0a"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "bls-web-tree-sitter"
+path = "https://registry.npmjs.org/web-tree-sitter/-/web-tree-sitter-0.24.5.tgz"
+includes = []
+excludes = []
+digest = "9effbc07c4ec4618d51f943d17cff87e741081d2838da5c5dfe66b98b23b1c0a"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "bls-webidl-conversions"
 path = "https://registry.npmjs.org/webidl-conversions/-/webidl-conversions-3.0.1.tgz"
 includes = []
 excludes = []
 digest = "cf4528c2c81d01184341265747c6032074776f39d42eb0faa91a72f057cdbc24"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-webidl-conversions"
+path = "https://registry.npmjs.org/webidl-conversions/-/webidl-conversions-3.0.1.tgz"
+includes = []
+excludes = []
+digest = "cf4528c2c81d01184341265747c6032074776f39d42eb0faa91a72f057cdbc24"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "bls-whatwg-url"
@@ -329,12 +673,36 @@ digest = "36c3a6f2d039aea001e4173b8b3eb8322cf7d45db4227b62b016096a81d76295"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "bls-whatwg-url"
+path = "https://registry.npmjs.org/whatwg-url/-/whatwg-url-5.0.0.tgz"
+includes = []
+excludes = []
+digest = "36c3a6f2d039aea001e4173b8b3eb8322cf7d45db4227b62b016096a81d76295"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "bls-zod"
 path = "https://registry.npmjs.org/zod/-/zod-3.24.2.tgz"
 includes = []
 excludes = []
 digest = "5c41cc6b2009eea9bb9ea78063d5d74e9aa7af143ed3825103fc3982d535274e"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-zod"
+path = "https://registry.npmjs.org/zod/-/zod-3.24.2.tgz"
+includes = []
+excludes = []
+digest = "5c41cc6b2009eea9bb9ea78063d5d74e9aa7af143ed3825103fc3982d535274e"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "cargo"
+path = "https://sdk.vorpal.build/source/cargo-1.93.1-x86_64-unknown-linux-gnu.tar.gz"
+includes = []
+excludes = []
+digest = "379b758b6be27ddd82ce70a5bbdb4bfe1030cd535271377f8fd51a426080ddee"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "cargo"
@@ -353,12 +721,52 @@ digest = "098f2d1d808bc417bfa1dc63419ffedb1781ca65dd780858c0f8f67e9decb57b"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "clippy"
+path = "https://sdk.vorpal.build/source/clippy-1.93.1-x86_64-unknown-linux-gnu.tar.gz"
+includes = []
+excludes = []
+digest = "a5515f5ede4c8c2c751647e710747a021e22df00d6c80778628cded51d24ec70"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "coreutils"
+path = "https://sdk.vorpal.build/source/coreutils-9.7.tar.gz"
+includes = []
+excludes = []
+digest = "a7abdad032ae6c318dbb4c9b444d9031ab34d1308700005c4bd5eb5156cad523"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "cue"
+path = "https://github.com/cue-lang/cue/releases/download/v0.15.1/cue_v0.15.1_linux_amd64.tar.gz"
+includes = []
+excludes = []
+digest = "2bc26da522822b50fe3cfbba1cd035e8fa03fb0b6205710f197ae4101f1a602e"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "cue"
 path = "https://github.com/cue-lang/cue/releases/download/v0.15.1/cue_v0.15.1_darwin_arm64.tar.gz"
 includes = []
 excludes = []
 digest = "b22048682013f1d2e1e3fe2ecadf6fb4c1c87232283d18f07d8e148b3791d68e"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "curl"
+path = "https://sdk.vorpal.build/source/curl-8.15.0.tar.xz"
+includes = []
+excludes = []
+digest = "565e83672abb0ba470bbfcb07f49877b54abc68a51c4dd7831c61129fed9e244"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "curl-cacert"
+path = "https://sdk.vorpal.build/source/cacert-1776122862.pem"
+includes = []
+excludes = []
+digest = "2f4bfe5eb47cf2325d70469a0488a20d0b451d622c5b4bbf02935c5661d9de36"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "delta"
@@ -369,12 +777,44 @@ digest = "5d91e97d17f534ad0edbebcc1d424d22163b1c93d0555d325c76094d5a047a98"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "delta"
+path = "https://github.com/dandavison/delta/releases/download/0.18.2/delta-0.18.2-x86_64-unknown-linux-musl.tar.gz"
+includes = []
+excludes = []
+digest = "a787e0c934950fda32f65abb8039d5da945226c69fd4cc1e0984b08d6996c13d"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "diffutils"
+path = "https://sdk.vorpal.build/source/diffutils-3.12.tar.xz"
+includes = []
+excludes = []
+digest = "7e416707fa95ffddaae20d11541834bad8d6df24b6bcc8044c2f16a7fb27755e"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "direnv"
+path = "https://github.com/direnv/direnv/releases/download/v2.37.1/direnv.linux-amd64"
+includes = []
+excludes = []
+digest = "7a2107aa88782cc841a4fb65ec5ba43d2bdcde400337d87cdd930b3dd35b66b1"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "direnv"
 path = "https://github.com/direnv/direnv/releases/download/v2.37.1/direnv.darwin-arm64"
 includes = []
 excludes = []
 digest = "8204ab746effc28aa1dd329c50b585e86ff322607f255bea09e2bd654b4fcdb8"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "doppler"
+path = "https://github.com/DopplerHQ/cli/releases/download/3.75.1/doppler_3.75.1_linux_amd64.tar.gz"
+includes = []
+excludes = []
+digest = "74c431039e5395ef554a718efb927e237cc732c11b9f7b87821f6b92ef37a6b7"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "doppler"
@@ -393,12 +833,76 @@ digest = "0908501901ff99232aa75a18bf9409e80dae10742dc3759a67249bca5a459490"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "fd"
+path = "https://github.com/sharkdp/fd/releases/download/v10.2.0/fd-v10.2.0-x86_64-unknown-linux-musl.tar.gz"
+includes = []
+excludes = []
+digest = "fdaa40fadd825cb5a895baee0b353e569006fef98dae2c84190e53c1775ed88f"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "file"
+path = "https://sdk.vorpal.build/source/file-5.46.tar.gz"
+includes = []
+excludes = []
+digest = "07a8a2f5e1458359d20f420865e4a246c55c1b85176274dfee81e109e9789fb2"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "findutils"
+path = "https://sdk.vorpal.build/source/findutils-4.10.0.tar.xz"
+includes = []
+excludes = []
+digest = "242f804d87a5036bb0fab99966227dc61e853e5a67e1b10c3cc45681c792657e"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "fzf"
 path = "https://github.com/junegunn/fzf/releases/download/v0.70.0/fzf-0.70.0-darwin_arm64.tar.gz"
 includes = []
 excludes = []
 digest = "0c48ed17e428e6e092964d3dba0f11ac8138b5964c9f4305965e200b98ad4f8e"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "fzf"
+path = "https://github.com/junegunn/fzf/releases/download/v0.70.0/fzf-0.70.0-linux_amd64.tar.gz"
+includes = []
+excludes = []
+digest = "cfec2fedd6c05d090ab461bf0b47c43b5ebb253f6a58d6ae8307c6c682533464"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "gawk"
+path = "https://sdk.vorpal.build/source/gawk-5.3.2.tar.gz"
+includes = []
+excludes = []
+digest = "33ad80dd59a028d9ac67cffeb9cb35483b268c530bd90d18bb245596d3847103"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "gcc"
+path = "https://sdk.vorpal.build/source/gcc-15.2.0.tar.xz"
+includes = []
+excludes = []
+digest = "cf322f18454e1f54a0ebf661b4c3b556de43651aea8bc7a3bb14ee3863ed56d4"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "gettext"
+path = "https://sdk.vorpal.build/source/gettext-0.26.tar.gz"
+includes = []
+excludes = []
+digest = "459265943fcb010124e5056bfff3e9fc95d571f3abef9d022b0af18cbc282b02"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "gh"
+path = "https://sdk.vorpal.build/source/gh_2.87.3_linux_amd64.tar.gz"
+includes = []
+excludes = []
+digest = "6582f9d01e650e6c90965fbe5c00417e3c2c6f3f1eab330bbf15be83818f9851"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "gh"
@@ -417,12 +921,52 @@ digest = "4c08acf32a9dd52cb4f64d1835bade4128af51dd85742245987643cde0aeb9b1"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "git"
+path = "https://sdk.vorpal.build/source/git-2.53.0.tar.gz"
+includes = []
+excludes = []
+digest = "4c08acf32a9dd52cb4f64d1835bade4128af51dd85742245987643cde0aeb9b1"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "glibc"
+path = "https://sdk.vorpal.build/source/glibc-2.42.tar.gz"
+includes = []
+excludes = []
+digest = "ce551ab3767e6b55726d763a14f98bfc4bff9ebcd3516f478885408e454942b1"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "glibc-patch"
+path = "https://sdk.vorpal.build/source/glibc-2.42-fhs-1.patch"
+includes = []
+excludes = []
+digest = "69cf0653ad0a6a178366d291f30629d4e1cb633178aa4b8efbea0c851fb944ca"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "gmp"
+path = "https://sdk.vorpal.build/source/gmp-6.3.0.tar.gz"
+includes = []
+excludes = []
+digest = "191226cef6e9ce60e291e178db47682aadea28cb3e92f35f006ba317f3e10195"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "go"
 path = "https://sdk.vorpal.build/source/go1.26.0.darwin-arm64.tar.gz"
 includes = []
 excludes = []
 digest = "83d3ebad7958766647de4d3a8a1b2d3860da607632ac07889085b933e3e97f0f"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "go"
+path = "https://sdk.vorpal.build/source/go1.26.0.linux-amd64.tar.gz"
+includes = []
+excludes = []
+digest = "d23a8bd1d7050453d53bcb13271e7682a176463a6f53992b1a2cedf17310ef30"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "gopls"
@@ -433,12 +977,52 @@ digest = "411df8f3301010012a491337a4f5fa884fbcc323fe7e9ad75aa470f4bf921c56"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "gopls"
+path = "https://sdk.vorpal.build/source/go-tools-v0.42.0.tar.gz"
+includes = []
+excludes = []
+digest = "411df8f3301010012a491337a4f5fa884fbcc323fe7e9ad75aa470f4bf921c56"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "grep"
+path = "https://sdk.vorpal.build/source/grep-3.12.tar.gz"
+includes = []
+excludes = []
+digest = "127096050676822f1f9f18e2bdf847f74907ec691562959cdcbf07e7d524012c"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "gum"
 path = "https://github.com/charmbracelet/gum/releases/download/v0.17.0/gum_0.17.0_Darwin_arm64.tar.gz"
 includes = []
 excludes = []
 digest = "ae3c5778aaf3e3c06757b7c1cf11771a6dddf96b215d1fc21d34aac4104f4eec"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "gum"
+path = "https://github.com/charmbracelet/gum/releases/download/v0.17.0/gum_0.17.0_Linux_x86_64.tar.gz"
+includes = []
+excludes = []
+digest = "e2d44a169585e48a2cfe2a7ee2b80a5b582b50ddf2aef97181cf0e84ad9333c2"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "gzip"
+path = "https://sdk.vorpal.build/source/gzip-1.14.tar.gz"
+includes = []
+excludes = []
+digest = "82c708cb0f1ae98c1bcd38edb744ece2cc13cbbd65379a11ff030f86a140ce3d"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "herdr"
+path = "https://github.com/ogulcancelik/herdr/releases/download/v0.8.2/herdr-linux-x86_64"
+includes = []
+excludes = []
+digest = "6d3a8f517b62996e54951e355f8d3ae3cc71c3785041ea4a19c36ba40c63f45b"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "herdr"
@@ -457,6 +1041,14 @@ digest = "5284275b298d1106c10f84f5791cc66748b1f16501ff86ed0eb96ea210cb420c"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "hunk"
+path = "https://github.com/modem-dev/hunk/releases/download/v0.16.0/hunkdiff-linux-x64.tar.gz"
+includes = []
+excludes = []
+digest = "c8bc5af2f69a8ffedca83dd3c337544b42acb9c9a85add1fe08c01f897c6555e"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "jj"
 path = "https://github.com/jj-vcs/jj/releases/download/v0.37.0/jj-v0.37.0-aarch64-apple-darwin.tar.gz"
 includes = []
@@ -465,12 +1057,36 @@ digest = "1550c0eb485b0887aa2bfbc1b071836773d3c53459b2fa0bba8b8a4ce68c4523"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "jj"
+path = "https://github.com/jj-vcs/jj/releases/download/v0.37.0/jj-v0.37.0-x86_64-unknown-linux-musl.tar.gz"
+includes = []
+excludes = []
+digest = "84e75bec06d039a473f178e506e389b08022969023e1c9d7eb4e0e56c7d832b1"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "jq"
 path = "https://github.com/jqlang/jq/releases/download/jq-1.8.1/jq-macos-arm64"
 includes = []
 excludes = []
 digest = "718c0fbb8f728c4b62cac2e65dba61cbdf2eed5e7eff38681097ec7b04dd815a"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "jq"
+path = "https://github.com/jqlang/jq/releases/download/jq-1.8.1/jq-linux-amd64"
+includes = []
+excludes = []
+digest = "8d4bc0c56b18656763379011d871603057e2cc5112207019296960c1e4f6193b"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "just"
+path = "https://github.com/casey/just/releases/download/1.45.0/just-1.45.0-x86_64-unknown-linux-musl.tar.gz"
+includes = []
+excludes = []
+digest = "52cf02b0cae7ca331c7ae345e233a216cf1e9d2ac2cfe17e00895ca3715a21af"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "just"
@@ -489,6 +1105,22 @@ digest = "c27c31b3c2caab9209b54d9e5e61cbd8c39a112c84e076c3a1f6c376fa05e1b3"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "k9s"
+path = "https://github.com/derailed/k9s/releases/download/v0.50.18/k9s_Linux_amd64.tar.gz"
+includes = []
+excludes = []
+digest = "fcc42954aea2023650adcd8f73e1a186e1dff84b8563692536f593f8eb4d6d8c"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "kubectl"
+path = "https://dl.k8s.io/release/v1.35.0/bin/linux/amd64/kubectl"
+includes = []
+excludes = []
+digest = "b3ccb81e850fc635e8391d5e46e3b322f4b9b805cc99a8e91766c0718012af3c"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "kubectl"
 path = "https://dl.k8s.io/release/v1.35.0/bin/darwin/arm64/kubectl"
 includes = []
@@ -505,12 +1137,60 @@ digest = "42dd9183e9692a5a73ad4dfa109f06e67c1c7cd172afdb3d66a1fc4a5ee4c892"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "lazygit"
+path = "https://github.com/jesseduffield/lazygit/releases/download/v0.44.1/lazygit_0.44.1_Linux_x86_64.tar.gz"
+includes = []
+excludes = []
+digest = "a96d8b341ccf9fe456c43ae04ecbc08a885f344d6f1ea5e6b805de3cb0ba8b53"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "libevent"
 path = "https://github.com/libevent/libevent/releases/download/release-2.1.12-stable/libevent-2.1.12-stable.tar.gz"
 includes = []
 excludes = []
 digest = "22fdbe5a18db114046227ccde47cc8fbe11fa9ee2170b235f949275a161853ee"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "libevent"
+path = "https://github.com/libevent/libevent/releases/download/release-2.1.12-stable/libevent-2.1.12-stable.tar.gz"
+includes = []
+excludes = []
+digest = "22fdbe5a18db114046227ccde47cc8fbe11fa9ee2170b235f949275a161853ee"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "libidn2"
+path = "https://sdk.vorpal.build/source/libidn2-2.3.8.tar.gz"
+includes = []
+excludes = []
+digest = "a5a46eb63af153ca526f17133b2f5be09bc434b7cdc25f924a2580b879ab9b9c"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "libpsl"
+path = "https://sdk.vorpal.build/source/libpsl-0.21.5.tar.gz"
+includes = []
+excludes = []
+digest = "65ecfe61646c50119a018a2003149833c11387efd92462f974f1ff9f907c1d78"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "libunistring"
+path = "https://sdk.vorpal.build/source/libunistring-1.3.tar.gz"
+includes = []
+excludes = []
+digest = "e9d4afe75ff42ffce5e55c7267a45d2b6a2c3909d8d8e1ba09cdb99f28896b4d"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "linux"
+path = "https://sdk.vorpal.build/source/linux-6.16.1.tar.xz"
+includes = []
+excludes = []
+digest = "40d7204e3d3f1112f0fb32d32cd18421db103a8564c7b277c2b83d54df5b2ff2"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "lua-language-server"
@@ -521,12 +1201,60 @@ digest = "0af75d2d31b1c1918cc0f47403b724da62ae01e936ca9fa161d1f262e8631884"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "lua-language-server"
+path = "https://github.com/LuaLS/lua-language-server/releases/download/3.18.2/lua-language-server-3.18.2-linux-x64.tar.gz"
+includes = []
+excludes = []
+digest = "e006a0dc68d63ac00cd4b6fbf3934026e18ef7e260506e54f28e886b0b8d2e31"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "m4"
+path = "https://sdk.vorpal.build/source/m4-1.4.20.tar.gz"
+includes = []
+excludes = []
+digest = "633adb94257b39e0e3f9785ea7ccad7ce9b31b22914fdacdcc5accf2b09fba16"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "make"
+path = "https://sdk.vorpal.build/source/make-4.4.1.tar.gz"
+includes = []
+excludes = []
+digest = "8dfe7b0e51b3e190cd75e046880855ac1be76cf36961e5cfcc82bfa91b2c3ba8"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "mpc"
+path = "https://sdk.vorpal.build/source/mpc-1.3.1.tar.gz"
+includes = []
+excludes = []
+digest = "c179fbcd6e48931a16c0af37d0c4a5e1688dd07d71e2b4a532c68cd5edbb5b72"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "mpfr"
+path = "https://sdk.vorpal.build/source/mpfr-4.2.2.tar.xz"
+includes = []
+excludes = []
+digest = "837f1bf914eb615761136e6bcd2d49502865b18c0f0d18b4decb513355c4449b"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "ncurses"
 path = "https://sdk.vorpal.build/source/ncurses-6.5-20250809.tar.gz"
 includes = []
 excludes = []
 digest = "e67077219f4e56cc6cc56958104a9271871ef65ef7985081aced1fd5024f9f47"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "ncurses"
+path = "https://sdk.vorpal.build/source/ncurses-6.5-20250809.tar.gz"
+includes = []
+excludes = []
+digest = "e67077219f4e56cc6cc56958104a9271871ef65ef7985081aced1fd5024f9f47"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "neovim"
@@ -537,12 +1265,28 @@ digest = "54110529d739e5b8811f222df075c49d4d17ac442f8d95153f1ca4d434035949"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "neovim"
+path = "https://github.com/neovim/neovim/releases/download/v0.12.3/nvim-linux-x86_64.tar.gz"
+includes = []
+excludes = []
+digest = "f2ef9e2001393fbb8fe6fc3f2d2d2082a64c88d1552fae087060b38e2b5e84cc"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "nnn"
 path = "https://github.com/jarun/nnn/archive/refs/tags/v5.1.tar.gz"
 includes = []
 excludes = []
 digest = "a0a9e0cff52847ffdd91673adc7dffbda2177e67a87d7fdba5717c898ea0518f"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "nnn"
+path = "https://github.com/jarun/nnn/archive/refs/tags/v5.1.tar.gz"
+includes = []
+excludes = []
+digest = "a0a9e0cff52847ffdd91673adc7dffbda2177e67a87d7fdba5717c898ea0518f"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "nodejs"
@@ -553,12 +1297,60 @@ digest = "852a244f9da062f7d22326a7bc3d7836745521232bd44b06468ec48e1cf359e4"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "nodejs"
+path = "https://sdk.vorpal.build/source/node-v22.22.0-linux-x64.tar.gz"
+includes = []
+excludes = []
+digest = "85e8bfadee08751035db748cfe0e6f2cd99cfe4ed854b1ac2fb253ada3f13765"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "op"
 path = "https://cache.agilebits.com/dist/1P/op2/pkg/v2.34.1/op_darwin_arm64_v2.34.1.zip"
 includes = []
 excludes = []
 digest = "a178768e4a235c4bccf1350b81c2af0225e7f8029cc73a1d58d7c22ee72be769"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "op"
+path = "https://cache.agilebits.com/dist/1P/op2/pkg/v2.34.1/op_linux_amd64_v2.34.1.zip"
+includes = []
+excludes = []
+digest = "fca044d451c67e845426d41ea7b42137d450bc98323b7725ec5f47c9a7dde461"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "openssl"
+path = "https://sdk.vorpal.build/source/openssl-3.5.2.tar.gz"
+includes = []
+excludes = []
+digest = "c18db5dccbd9ee71d1454dbf275b508c1fa452b133f0e8e9812d6f8135c29362"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "patch"
+path = "https://sdk.vorpal.build/source/patch-2.8.tar.gz"
+includes = []
+excludes = []
+digest = "a003cf376248ecf2dc3edbce55f672f7677ff95ef94dd7ce6fdcef8353ecde7c"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "perl"
+path = "https://sdk.vorpal.build/source/perl-5.42.0.tar.xz"
+includes = []
+excludes = []
+digest = "43a6f8cf15fcedeb66e95c4957ec8bc43db40515de89483e507c01c255fce853"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "pi"
+path = "https://github.com/earendil-works/pi/releases/download/v0.84.3/pi-linux-x64.tar.gz"
+includes = []
+excludes = []
+digest = "19d2611f4953c149855b2c2be0b446e9c1fd0ffe87bc1145755403351b5f3c3d"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "pi"
@@ -577,6 +1369,22 @@ digest = "db043f5df7971d9bf97a81c75a46c4656e1a6235c05edad48d11a9314df5363f"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "pkg-config"
+path = "https://pkgconfig.freedesktop.org/releases/pkg-config-0.29.2.tar.gz"
+includes = []
+excludes = []
+digest = "db043f5df7971d9bf97a81c75a46c4656e1a6235c05edad48d11a9314df5363f"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "protoc"
+path = "https://sdk.vorpal.build/source/protoc-34.0-linux-x86_64.zip"
+includes = []
+excludes = []
+digest = "72ef7563c9bc34409ec1bbc2632479a47a1c99e458346fcb7f4e1ca0c2f4f008"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "protoc"
 path = "https://sdk.vorpal.build/source/protoc-34.0-osx-aarch_64.zip"
 includes = []
@@ -585,12 +1393,36 @@ digest = "f45e1434669e1f88fd6f7ebf750388ef3135f5477fd7e34d7531e3c18f4751f3"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "python"
+path = "https://sdk.vorpal.build/source/Python-3.13.7.tar.xz"
+includes = []
+excludes = []
+digest = "2118e11e9ee7b73a88e2fb7c9122455c314660de29beb4d4f15af2d21e15ec42"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "readline"
 path = "https://ftpmirror.gnu.org/readline/readline-8.2.tar.gz"
 includes = []
 excludes = []
 digest = "bd548669e2e324cf1450a04897779301c20f6ccb161f2f6ede7584cab56ce83f"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "readline"
+path = "https://ftpmirror.gnu.org/readline/readline-8.2.tar.gz"
+includes = []
+excludes = []
+digest = "bd548669e2e324cf1450a04897779301c20f6ccb161f2f6ede7584cab56ce83f"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "ripgrep"
+path = "https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep-14.1.1-x86_64-unknown-linux-musl.tar.gz"
+includes = []
+excludes = []
+digest = "57d61ac3324ba6486b798c8e9dfbab9835a595a8d4ace6342886a20b50fde13a"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "ripgrep"
@@ -609,12 +1441,28 @@ digest = "5389db13945d33e320e4ddb44c558fda83923ceeac0d9931d6deae8ec2373bd6"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "rust-analyzer"
+path = "https://sdk.vorpal.build/source/rust-analyzer-1.93.1-x86_64-unknown-linux-gnu.tar.gz"
+includes = []
+excludes = []
+digest = "edac8e06763f599243d084d763d28ebc0fc4e2022b2bc235645c8e490b3044ca"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "rust-src"
 path = "https://sdk.vorpal.build/source/rust-src-1.93.1.tar.gz"
 includes = []
 excludes = []
 digest = "52da4bcd8bd8e2d0ae2635e1503efa8f5838bd18958b983d52336d73896e7172"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "rust-src"
+path = "https://sdk.vorpal.build/source/rust-src-1.93.1.tar.gz"
+includes = []
+excludes = []
+digest = "52da4bcd8bd8e2d0ae2635e1503efa8f5838bd18958b983d52336d73896e7172"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "rust-std"
@@ -625,12 +1473,36 @@ digest = "0db6b692d4782e80abd92bd18a1f0797229472c62f40417cdc975fb8f3413ee3"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "rust-std"
+path = "https://sdk.vorpal.build/source/rust-std-1.93.1-x86_64-unknown-linux-gnu.tar.gz"
+includes = []
+excludes = []
+digest = "d2a48d1e65027c3382c76850179f85ac03c25f318adbf2a97f5b02271bb1eacf"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "rustc"
 path = "https://sdk.vorpal.build/source/rustc-1.93.1-aarch64-apple-darwin.tar.gz"
 includes = []
 excludes = []
 digest = "53c9d5b83e6f2c6b826d29043e36c104a179cc8eeb354424d1799632ec82bd3a"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "rustc"
+path = "https://sdk.vorpal.build/source/rustc-1.93.1-x86_64-unknown-linux-gnu.tar.gz"
+includes = []
+excludes = []
+digest = "6ff1c992044553d46afbcb9bf352ceb64a82c9d454bbba78eaf555e7d24bc685"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "rustfmt"
+path = "https://sdk.vorpal.build/source/rustfmt-1.93.1-x86_64-unknown-linux-gnu.tar.gz"
+includes = []
+excludes = []
+digest = "0c45566683fa70ae7dad317a2d9ef510a16a012cb4240dbd12a69e36ed543fab"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "rustfmt"
@@ -641,12 +1513,28 @@ digest = "17b27bfbf46861bc587e5dc0e04fbc32cbd02f9b111867ffc79653261de7796a"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "sed"
+path = "https://sdk.vorpal.build/source/sed-4.9.tar.gz"
+includes = []
+excludes = []
+digest = "434ff552af89340088e0d8cb206c251761297909bbee401176bc8f655e8e7cf2"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "sesh"
 path = "https://github.com/joshmedeski/sesh/releases/download/v2.24.2/sesh_Darwin_arm64.tar.gz"
 includes = []
 excludes = []
 digest = "2efb04b9de0b7bc99f87ab3e2a0f20fa9de946f162b45b362a1b626849a19cf7"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "sesh"
+path = "https://github.com/joshmedeski/sesh/releases/download/v2.24.2/sesh_Linux_x86_64.tar.gz"
+includes = []
+excludes = []
+digest = "53db758ca110353a58ebc5bff32a4ab2a52090640a8ea11b6e1193c428c5204d"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "starship"
@@ -657,12 +1545,44 @@ digest = "43fcef328b7ddd3f8e2b2ceb7adefb9dca5719c853627f26a25ac7f2a1e2faee"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "starship"
+path = "https://github.com/starship/starship/releases/download/v1.25.1/starship-x86_64-unknown-linux-musl.tar.gz"
+includes = []
+excludes = []
+digest = "f445745e75d4daf601651b916c1471c2cf1b7ca232a415999451b320ed553715"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "tar"
+path = "https://sdk.vorpal.build/source/tar-1.35.tar.gz"
+includes = []
+excludes = []
+digest = "f9bb5f39ed45b1c6a324470515d2ef73e74422c5f345503106d861576d3f02f3"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "terraform"
 path = "https://releases.hashicorp.com/terraform/1.13.1/terraform_1.13.1_darwin_arm64.zip"
 includes = []
 excludes = []
 digest = "a67245b7b54156f38f6df535e4bdf0154195f1a47a0a0bf692d4f80f260d200b"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "terraform"
+path = "https://releases.hashicorp.com/terraform/1.13.1/terraform_1.13.1_linux_amd64.zip"
+includes = []
+excludes = []
+digest = "b4a4bd942ba8007adc5261c7611dca53cc5b5e10f9bbb334a6ec8b1645f13bd0"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "texinfo"
+path = "https://sdk.vorpal.build/source/texinfo-7.2.tar.gz"
+includes = []
+excludes = []
+digest = "6bc4aa1be570367196b2488d4783f02dae702822db9d2aa9e5d650339e0f770e"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "tmux"
@@ -673,12 +1593,28 @@ digest = "70691bfbbe623d25d99561192dfb52211ca7e1fa120271c57ae56fe24ca97521"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "tmux"
+path = "https://github.com/tmux/tmux/releases/download/3.5a/tmux-3.5a.tar.gz"
+includes = []
+excludes = []
+digest = "70691bfbbe623d25d99561192dfb52211ca7e1fa120271c57ae56fe24ca97521"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "tree-sitter"
 path = "https://github.com/tree-sitter/tree-sitter/releases/download/v0.26.9/tree-sitter-cli-macos-arm64.zip"
 includes = []
 excludes = []
 digest = "a2fcfe68911f1076f81258f9bed01cb6c53f7be3068ea71dc0d3f08857922a6f"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "tree-sitter"
+path = "https://github.com/tree-sitter/tree-sitter/releases/download/v0.26.9/tree-sitter-cli-linux-x64.zip"
+includes = []
+excludes = []
+digest = "d7806a8ea6c95a712bc9899e8f26532faa321bdcd77a19d612697d3e6bc0663d"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "typescript"
@@ -689,12 +1625,52 @@ digest = "44444464088bfaca1b661ae019259cd92586fd91a80209aabaac9a3fe0dc912a"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "typescript"
+path = "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz"
+includes = []
+excludes = []
+digest = "44444464088bfaca1b661ae019259cd92586fd91a80209aabaac9a3fe0dc912a"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "typescript-language-server"
 path = "https://registry.npmjs.org/typescript-language-server/-/typescript-language-server-5.3.0.tgz"
 includes = []
 excludes = []
 digest = "a7a1f522fb471627564b358892dce3f611fdbe1224e05a2e993d0cd01ea776ad"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "typescript-language-server"
+path = "https://registry.npmjs.org/typescript-language-server/-/typescript-language-server-5.3.0.tgz"
+includes = []
+excludes = []
+digest = "a7a1f522fb471627564b358892dce3f611fdbe1224e05a2e993d0cd01ea776ad"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "unzip"
+path = "https://sdk.vorpal.build/source/unzip60.tar.gz"
+includes = []
+excludes = []
+digest = "4585067be297ae977da3f81587fcf0a141a8d6ceb6137d199255683ed189c3ed"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "unzip-patch-fixes"
+path = "https://sdk.vorpal.build/source/unzip-6.0-consolidated_fixes-1.patch"
+includes = []
+excludes = []
+digest = "11350935be5bbb743f1a97ec069b78fc2904f92b24abbc7fb3d7f0ff8bb889ea"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "unzip-patch-gcc14"
+path = "https://sdk.vorpal.build/source/unzip-6.0-gcc14-1.patch"
+includes = []
+excludes = []
+digest = "d6ac941672086ea4c8d5047d550b40047825a685cc7c48626d2f0939e1a0c797"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "user-bat-theme-file-source"
@@ -705,12 +1681,36 @@ digest = "d28f08c120bea39b2f4c8700443d6ea9c2c5e7de01adf839789eeae81a484bf0"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "user-bat-theme-file-source"
+path = "https://raw.githubusercontent.com/folke/tokyonight.nvim/refs/tags/v4.14.1/extras/sublime/tokyonight_night.tmTheme"
+includes = []
+excludes = []
+digest = "d28f08c120bea39b2f4c8700443d6ea9c2c5e7de01adf839789eeae81a484bf0"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "util-linux"
+path = "https://sdk.vorpal.build/source/util-linux-2.41.1.tar.xz"
+includes = []
+excludes = []
+digest = "1f10bfbd4ac7b3e8058fe837b0ed9274d2b3f603dc2d7cbc3d325dc612b06aaa"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "uv"
 path = "https://github.com/astral-sh/uv/releases/download/0.10.11/uv-aarch64-apple-darwin.tar.gz"
 includes = []
 excludes = []
 digest = "4424c54e6a6c23457dfc8121089748d0572c7a7aaded6feb415309bfc39ef840"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "uv"
+path = "https://github.com/astral-sh/uv/releases/download/0.10.11/uv-x86_64-unknown-linux-gnu.tar.gz"
+includes = []
+excludes = []
+digest = "7597d68b306d295e7d8093eed3ac0551aa349366597cd306e481291a93ce8e24"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "vlse-boolbase"
@@ -721,12 +1721,28 @@ digest = "316b55881cd9e091151f060042446974e27e0ac6b8690a5d367e50bdf264fd4e"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "vlse-boolbase"
+path = "https://registry.npmjs.org/boolbase/-/boolbase-1.0.0.tgz"
+includes = []
+excludes = []
+digest = "316b55881cd9e091151f060042446974e27e0ac6b8690a5d367e50bdf264fd4e"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "vlse-core-js"
 path = "https://registry.npmjs.org/core-js/-/core-js-3.49.0.tgz"
 includes = []
 excludes = []
 digest = "b1c4c717f4306fc68bd326723207811d212e56bcec86e1b50cae705deee737f4"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-core-js"
+path = "https://registry.npmjs.org/core-js/-/core-js-3.49.0.tgz"
+includes = []
+excludes = []
+digest = "b1c4c717f4306fc68bd326723207811d212e56bcec86e1b50cae705deee737f4"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "vlse-css-select"
@@ -737,12 +1753,28 @@ digest = "59abd1ae5564bcd84e5ddfbded18ef66ccc011efd43146dac0a5cd01424412b0"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "vlse-css-select"
+path = "https://registry.npmjs.org/css-select/-/css-select-5.2.2.tgz"
+includes = []
+excludes = []
+digest = "59abd1ae5564bcd84e5ddfbded18ef66ccc011efd43146dac0a5cd01424412b0"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "vlse-css-what"
 path = "https://registry.npmjs.org/css-what/-/css-what-6.2.2.tgz"
 includes = []
 excludes = []
 digest = "74643fb6496739314cd039857929d3cabe52d4b7d792c5a2bb50930d59a1838b"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-css-what"
+path = "https://registry.npmjs.org/css-what/-/css-what-6.2.2.tgz"
+includes = []
+excludes = []
+digest = "74643fb6496739314cd039857929d3cabe52d4b7d792c5a2bb50930d59a1838b"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "vlse-dom-serializer"
@@ -753,12 +1785,28 @@ digest = "0f3c699cfd3328aca11773f0fa10f14100f62068f44720cc984ac06248598f90"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "vlse-dom-serializer"
+path = "https://registry.npmjs.org/dom-serializer/-/dom-serializer-2.0.0.tgz"
+includes = []
+excludes = []
+digest = "0f3c699cfd3328aca11773f0fa10f14100f62068f44720cc984ac06248598f90"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "vlse-domelementtype"
 path = "https://registry.npmjs.org/domelementtype/-/domelementtype-2.3.0.tgz"
 includes = []
 excludes = []
 digest = "35a93d285b27173232f13d059fde81ef34056d07221d524b58a8fb99a8e5bc3f"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-domelementtype"
+path = "https://registry.npmjs.org/domelementtype/-/domelementtype-2.3.0.tgz"
+includes = []
+excludes = []
+digest = "35a93d285b27173232f13d059fde81ef34056d07221d524b58a8fb99a8e5bc3f"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "vlse-domhandler"
@@ -769,12 +1817,28 @@ digest = "5413509613b58809d8558fef05b0a61487fe2902c1d3b054b5dc50198fdf6758"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "vlse-domhandler"
+path = "https://registry.npmjs.org/domhandler/-/domhandler-5.0.3.tgz"
+includes = []
+excludes = []
+digest = "5413509613b58809d8558fef05b0a61487fe2902c1d3b054b5dc50198fdf6758"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "vlse-domutils"
 path = "https://registry.npmjs.org/domutils/-/domutils-3.2.2.tgz"
 includes = []
 excludes = []
 digest = "d62cb1005e441a875dc8b7fba9a17ea7582eef783e874731e7096cf01edcbd9a"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-domutils"
+path = "https://registry.npmjs.org/domutils/-/domutils-3.2.2.tgz"
+includes = []
+excludes = []
+digest = "d62cb1005e441a875dc8b7fba9a17ea7582eef783e874731e7096cf01edcbd9a"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "vlse-entities"
@@ -785,12 +1849,28 @@ digest = "6de5b4af5bcd75b57029f8ae66ab6ed3068b53ed3e599467651b93326439af9c"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "vlse-entities"
+path = "https://registry.npmjs.org/entities/-/entities-4.5.0.tgz"
+includes = []
+excludes = []
+digest = "6de5b4af5bcd75b57029f8ae66ab6ed3068b53ed3e599467651b93326439af9c"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "vlse-he"
 path = "https://registry.npmjs.org/he/-/he-1.2.0.tgz"
 includes = []
 excludes = []
 digest = "fd3442169db2c70f4dd4da5fee0de3a3703d2eeaaf27320cefa17c2635237297"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-he"
+path = "https://registry.npmjs.org/he/-/he-1.2.0.tgz"
+includes = []
+excludes = []
+digest = "fd3442169db2c70f4dd4da5fee0de3a3703d2eeaaf27320cefa17c2635237297"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "vlse-jsonc-parser"
@@ -801,12 +1881,28 @@ digest = "0c07ac7a46068e04667268026ae825fbc6c4a1204bad8e67d04e0bdd06aaab06"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "vlse-jsonc-parser"
+path = "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz"
+includes = []
+excludes = []
+digest = "0c07ac7a46068e04667268026ae825fbc6c4a1204bad8e67d04e0bdd06aaab06"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "vlse-node-html-parser"
 path = "https://registry.npmjs.org/node-html-parser/-/node-html-parser-6.1.15-0.tgz"
 includes = []
 excludes = []
 digest = "7c034f1c0a02ffc3bd6b168b4cb99f54a94f33abda4b35375de1b0b157e0b9e3"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-node-html-parser"
+path = "https://registry.npmjs.org/node-html-parser/-/node-html-parser-6.1.15-0.tgz"
+includes = []
+excludes = []
+digest = "7c034f1c0a02ffc3bd6b168b4cb99f54a94f33abda4b35375de1b0b157e0b9e3"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "vlse-nth-check"
@@ -817,12 +1913,28 @@ digest = "884e88fb74a458186a6c3e58398af5f4de8b3d1db8ca2af7415e7dfe14999c02"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "vlse-nth-check"
+path = "https://registry.npmjs.org/nth-check/-/nth-check-2.1.1.tgz"
+includes = []
+excludes = []
+digest = "884e88fb74a458186a6c3e58398af5f4de8b3d1db8ca2af7415e7dfe14999c02"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "vlse-picomatch"
 path = "https://registry.npmjs.org/picomatch/-/picomatch-2.3.2.tgz"
 includes = []
 excludes = []
 digest = "4530e29ec072a2fd31ef627ba733acf29f412b7ad309ac3af50bc2524bbc893c"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-picomatch"
+path = "https://registry.npmjs.org/picomatch/-/picomatch-2.3.2.tgz"
+includes = []
+excludes = []
+digest = "4530e29ec072a2fd31ef627ba733acf29f412b7ad309ac3af50bc2524bbc893c"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "vlse-regenerator-runtime"
@@ -833,12 +1945,28 @@ digest = "6ba1a79f567c048f5cfab16e100ebaafd4b246d609b2d036de4be43bd4202ae0"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "vlse-regenerator-runtime"
+path = "https://registry.npmjs.org/regenerator-runtime/-/regenerator-runtime-0.13.11.tgz"
+includes = []
+excludes = []
+digest = "6ba1a79f567c048f5cfab16e100ebaafd4b246d609b2d036de4be43bd4202ae0"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "vlse-request-light"
 path = "https://registry.npmjs.org/request-light/-/request-light-0.7.0.tgz"
 includes = []
 excludes = []
 digest = "8307312d71878ff50ca4150464df2a3134b5ce8a4c876b28bf5e949c36a48606"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-request-light"
+path = "https://registry.npmjs.org/request-light/-/request-light-0.7.0.tgz"
+includes = []
+excludes = []
+digest = "8307312d71878ff50ca4150464df2a3134b5ce8a4c876b28bf5e949c36a48606"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "vlse-semver"
@@ -849,12 +1977,28 @@ digest = "a92457e9abcf8c44bf92b5c2dfe53a1ce4cc47f269f6dd4eb0fbaefc0e05d2f6"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "vlse-semver"
+path = "https://registry.npmjs.org/semver/-/semver-7.8.5.tgz"
+includes = []
+excludes = []
+digest = "a92457e9abcf8c44bf92b5c2dfe53a1ce4cc47f269f6dd4eb0fbaefc0e05d2f6"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "vlse-typescript"
 path = "https://registry.npmjs.org/typescript/-/typescript-4.9.5.tgz"
 includes = []
 excludes = []
 digest = "7e0e8a5f4a4114ea30ce26eacba1e09ce0ce7cb6b40a3cc7b873ca2fa346291e"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-typescript"
+path = "https://registry.npmjs.org/typescript/-/typescript-4.9.5.tgz"
+includes = []
+excludes = []
+digest = "7e0e8a5f4a4114ea30ce26eacba1e09ce0ce7cb6b40a3cc7b873ca2fa346291e"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "vlse-vscode-css-languageservice"
@@ -865,12 +2009,28 @@ digest = "503464b5f9a492d9a0cec630881a32f9da739f00e66ae8b07f49ced8ea5c274a"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "vlse-vscode-css-languageservice"
+path = "https://registry.npmjs.org/vscode-css-languageservice/-/vscode-css-languageservice-6.3.10.tgz"
+includes = []
+excludes = []
+digest = "503464b5f9a492d9a0cec630881a32f9da739f00e66ae8b07f49ced8ea5c274a"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "vlse-vscode-html-languageservice"
 path = "https://registry.npmjs.org/vscode-html-languageservice/-/vscode-html-languageservice-5.6.2.tgz"
 includes = []
 excludes = []
 digest = "2ac8c1e711a29cbe985f02adde19aa61bf8bac768bfb97b2933d0f55affad010"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-vscode-html-languageservice"
+path = "https://registry.npmjs.org/vscode-html-languageservice/-/vscode-html-languageservice-5.6.2.tgz"
+includes = []
+excludes = []
+digest = "2ac8c1e711a29cbe985f02adde19aa61bf8bac768bfb97b2933d0f55affad010"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "vlse-vscode-json-languageservice"
@@ -881,12 +2041,28 @@ digest = "eb35e54e30fd57a4cc2719952edec70d451e897eb014d782549eefdeebbd2533"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "vlse-vscode-json-languageservice"
+path = "https://registry.npmjs.org/vscode-json-languageservice/-/vscode-json-languageservice-5.7.2.tgz"
+includes = []
+excludes = []
+digest = "eb35e54e30fd57a4cc2719952edec70d451e897eb014d782549eefdeebbd2533"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "vlse-vscode-jsonrpc"
 path = "https://registry.npmjs.org/vscode-jsonrpc/-/vscode-jsonrpc-9.0.0-next.1.tgz"
 includes = []
 excludes = []
 digest = "f9079530325bdb8df80f9fb1095f5af6ea424f7e71eeafd6009a691bc60f3150"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-vscode-jsonrpc"
+path = "https://registry.npmjs.org/vscode-jsonrpc/-/vscode-jsonrpc-9.0.0-next.1.tgz"
+includes = []
+excludes = []
+digest = "f9079530325bdb8df80f9fb1095f5af6ea424f7e71eeafd6009a691bc60f3150"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "vlse-vscode-l10n"
@@ -897,12 +2073,28 @@ digest = "f51294bb2038cef307be242f7c2346a3d2af92aeb0d281720fb4c448e2dbb2dc"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "vlse-vscode-l10n"
+path = "https://registry.npmjs.org/@vscode/l10n/-/l10n-0.0.18.tgz"
+includes = []
+excludes = []
+digest = "f51294bb2038cef307be242f7c2346a3d2af92aeb0d281720fb4c448e2dbb2dc"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "vlse-vscode-languageserver"
 path = "https://registry.npmjs.org/vscode-languageserver/-/vscode-languageserver-10.0.1.tgz"
 includes = []
 excludes = []
 digest = "d146145727e3648a969a453881789a74bf57e7895d463d35ed6ba9db08a5e941"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-vscode-languageserver"
+path = "https://registry.npmjs.org/vscode-languageserver/-/vscode-languageserver-10.0.1.tgz"
+includes = []
+excludes = []
+digest = "d146145727e3648a969a453881789a74bf57e7895d463d35ed6ba9db08a5e941"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "vlse-vscode-languageserver-protocol"
@@ -913,12 +2105,28 @@ digest = "215e597ff453e14896fd824d7c00d807c2abbd70c1027d9cc72b1160c56d8010"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "vlse-vscode-languageserver-protocol"
+path = "https://registry.npmjs.org/vscode-languageserver-protocol/-/vscode-languageserver-protocol-3.18.1.tgz"
+includes = []
+excludes = []
+digest = "215e597ff453e14896fd824d7c00d807c2abbd70c1027d9cc72b1160c56d8010"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "vlse-vscode-languageserver-textdocument"
 path = "https://registry.npmjs.org/vscode-languageserver-textdocument/-/vscode-languageserver-textdocument-1.0.13.tgz"
 includes = []
 excludes = []
 digest = "84d69006e41b5d8ea37bead0a240dc572402128d5f1fded980aa98272ad95096"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-vscode-languageserver-textdocument"
+path = "https://registry.npmjs.org/vscode-languageserver-textdocument/-/vscode-languageserver-textdocument-1.0.13.tgz"
+includes = []
+excludes = []
+digest = "84d69006e41b5d8ea37bead0a240dc572402128d5f1fded980aa98272ad95096"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "vlse-vscode-languageserver-types"
@@ -929,12 +2137,28 @@ digest = "a3f41d4867d0a16b9584fe2a65dea44ea2177a8e30e87db145f0733ebc61e33e"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "vlse-vscode-languageserver-types"
+path = "https://registry.npmjs.org/vscode-languageserver-types/-/vscode-languageserver-types-3.18.0.tgz"
+includes = []
+excludes = []
+digest = "a3f41d4867d0a16b9584fe2a65dea44ea2177a8e30e87db145f0733ebc61e33e"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "vlse-vscode-markdown-languageservice"
 path = "https://registry.npmjs.org/vscode-markdown-languageservice/-/vscode-markdown-languageservice-0.5.0-alpha.1.tgz"
 includes = []
 excludes = []
 digest = "447e958ac57a0766d2b8bdd53640fafbe83e6fe06f42fb4ff8d7819ff96ee087"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-vscode-markdown-languageservice"
+path = "https://registry.npmjs.org/vscode-markdown-languageservice/-/vscode-markdown-languageservice-0.5.0-alpha.1.tgz"
+includes = []
+excludes = []
+digest = "447e958ac57a0766d2b8bdd53640fafbe83e6fe06f42fb4ff8d7819ff96ee087"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "vlse-vscode-nls"
@@ -945,12 +2169,28 @@ digest = "3ef164c5d32b72db8e1e0467df00ef9f98ca66a9d1b287e40baca745abffc0e3"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "vlse-vscode-nls"
+path = "https://registry.npmjs.org/vscode-nls/-/vscode-nls-5.2.0.tgz"
+includes = []
+excludes = []
+digest = "3ef164c5d32b72db8e1e0467df00ef9f98ca66a9d1b287e40baca745abffc0e3"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "vlse-vscode-uri"
 path = "https://registry.npmjs.org/vscode-uri/-/vscode-uri-3.1.0.tgz"
 includes = []
 excludes = []
 digest = "c96d56c27c33fa4c7ce81a34281772bc84684f8ef119c061cb896864831827d6"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-vscode-uri"
+path = "https://registry.npmjs.org/vscode-uri/-/vscode-uri-3.1.0.tgz"
+includes = []
+excludes = []
+digest = "c96d56c27c33fa4c7ce81a34281772bc84684f8ef119c061cb896864831827d6"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "vscode-langservers-extracted"
@@ -961,12 +2201,36 @@ digest = "fc17196fc98070d02c9eabf5e523329e34ee4d0bcabcee521f22cdee5c2a0caa"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "vscode-langservers-extracted"
+path = "https://registry.npmjs.org/vscode-langservers-extracted/-/vscode-langservers-extracted-4.10.0.tgz"
+includes = []
+excludes = []
+digest = "fc17196fc98070d02c9eabf5e523329e34ee4d0bcabcee521f22cdee5c2a0caa"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "xz"
+path = "https://sdk.vorpal.build/source/xz-5.8.1.tar.xz"
+includes = []
+excludes = []
+digest = "24827cfbd8504ed6499a08262caf7d4c4584a5ee2505843526f0f020daf9ab93"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "yaml-language-server"
 path = "https://registry.npmjs.org/yaml-language-server/-/yaml-language-server-1.23.0.tgz"
 includes = []
 excludes = []
 digest = "a622f5be54da6b02083e300f5058fa143d8e8ff70529ee64103bd460fdc2142f"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "yaml-language-server"
+path = "https://registry.npmjs.org/yaml-language-server/-/yaml-language-server-1.23.0.tgz"
+includes = []
+excludes = []
+digest = "a622f5be54da6b02083e300f5058fa143d8e8ff70529ee64103bd460fdc2142f"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "yls-ajv"
@@ -977,12 +2241,28 @@ digest = "a0ef90036d7f210e358ad2e170b2ee921eb697023cd7182888c8e894329cbc7c"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "yls-ajv"
+path = "https://registry.npmjs.org/ajv/-/ajv-8.20.0.tgz"
+includes = []
+excludes = []
+digest = "a0ef90036d7f210e358ad2e170b2ee921eb697023cd7182888c8e894329cbc7c"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "yls-ajv-draft-04"
 path = "https://registry.npmjs.org/ajv-draft-04/-/ajv-draft-04-1.0.0.tgz"
 includes = []
 excludes = []
 digest = "a4a531fd47c2e05e1918e41165d6673a184dae16b040efca78be03fd0bb916d3"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-ajv-draft-04"
+path = "https://registry.npmjs.org/ajv-draft-04/-/ajv-draft-04-1.0.0.tgz"
+includes = []
+excludes = []
+digest = "a4a531fd47c2e05e1918e41165d6673a184dae16b040efca78be03fd0bb916d3"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "yls-ajv-i18n"
@@ -993,12 +2273,28 @@ digest = "76867268fcdaa6bbe49e59add7a75cf3ae1e9610d74aa26f7dc0455fdb033c71"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "yls-ajv-i18n"
+path = "https://registry.npmjs.org/ajv-i18n/-/ajv-i18n-4.2.0.tgz"
+includes = []
+excludes = []
+digest = "76867268fcdaa6bbe49e59add7a75cf3ae1e9610d74aa26f7dc0455fdb033c71"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "yls-fast-deep-equal"
 path = "https://registry.npmjs.org/fast-deep-equal/-/fast-deep-equal-3.1.3.tgz"
 includes = []
 excludes = []
 digest = "6763f654eb92f5b1ec2431ae4a60923ad01617a68f8cb9033babb988d8318edf"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-fast-deep-equal"
+path = "https://registry.npmjs.org/fast-deep-equal/-/fast-deep-equal-3.1.3.tgz"
+includes = []
+excludes = []
+digest = "6763f654eb92f5b1ec2431ae4a60923ad01617a68f8cb9033babb988d8318edf"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "yls-fast-uri"
@@ -1009,12 +2305,28 @@ digest = "2e440470838fe3f30eb483cd91bbead68ba18fb8559d98ac3384db2755401d36"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "yls-fast-uri"
+path = "https://registry.npmjs.org/fast-uri/-/fast-uri-3.1.2.tgz"
+includes = []
+excludes = []
+digest = "2e440470838fe3f30eb483cd91bbead68ba18fb8559d98ac3384db2755401d36"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "yls-json-schema-traverse"
 path = "https://registry.npmjs.org/json-schema-traverse/-/json-schema-traverse-1.0.0.tgz"
 includes = []
 excludes = []
 digest = "e6ee77f952e27e346dd6e8cbbab182e157c535679ff326b0a792c15f48b2987d"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-json-schema-traverse"
+path = "https://registry.npmjs.org/json-schema-traverse/-/json-schema-traverse-1.0.0.tgz"
+includes = []
+excludes = []
+digest = "e6ee77f952e27e346dd6e8cbbab182e157c535679ff326b0a792c15f48b2987d"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "yls-jsonc-parser"
@@ -1025,12 +2337,28 @@ digest = "0c07ac7a46068e04667268026ae825fbc6c4a1204bad8e67d04e0bdd06aaab06"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "yls-jsonc-parser"
+path = "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz"
+includes = []
+excludes = []
+digest = "0c07ac7a46068e04667268026ae825fbc6c4a1204bad8e67d04e0bdd06aaab06"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "yls-prettier"
 path = "https://registry.npmjs.org/prettier/-/prettier-3.8.4.tgz"
 includes = []
 excludes = []
 digest = "1fd159d6652dd85d3190adab9f42b20081bbbbb3b86f1a8a66b904402e2171e1"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-prettier"
+path = "https://registry.npmjs.org/prettier/-/prettier-3.8.4.tgz"
+includes = []
+excludes = []
+digest = "1fd159d6652dd85d3190adab9f42b20081bbbbb3b86f1a8a66b904402e2171e1"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "yls-request-light"
@@ -1041,12 +2369,28 @@ digest = "0b5c4acbb76ccd47bf17b63f9aafb0c76dbbc91e613b7ac1b8d94703598afbdf"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "yls-request-light"
+path = "https://registry.npmjs.org/request-light/-/request-light-0.5.8.tgz"
+includes = []
+excludes = []
+digest = "0b5c4acbb76ccd47bf17b63f9aafb0c76dbbc91e613b7ac1b8d94703598afbdf"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "yls-require-from-string"
 path = "https://registry.npmjs.org/require-from-string/-/require-from-string-2.0.2.tgz"
 includes = []
 excludes = []
 digest = "5ab713ae092a5eae232b5d035b7713de3e8a66693d646a409841869f3f115e9a"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-require-from-string"
+path = "https://registry.npmjs.org/require-from-string/-/require-from-string-2.0.2.tgz"
+includes = []
+excludes = []
+digest = "5ab713ae092a5eae232b5d035b7713de3e8a66693d646a409841869f3f115e9a"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "yls-vscode-json-languageservice"
@@ -1057,12 +2401,28 @@ digest = "f63fba2935070f01db92066a570e2f44b94577b70e629527dcea067dc3aac5d3"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "yls-vscode-json-languageservice"
+path = "https://registry.npmjs.org/vscode-json-languageservice/-/vscode-json-languageservice-4.1.8.tgz"
+includes = []
+excludes = []
+digest = "f63fba2935070f01db92066a570e2f44b94577b70e629527dcea067dc3aac5d3"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "yls-vscode-jsonrpc"
 path = "https://registry.npmjs.org/vscode-jsonrpc/-/vscode-jsonrpc-8.2.0.tgz"
 includes = []
 excludes = []
 digest = "ee3367dab7d8048cfcf3b38ea26f64255afafb954e876945f766a62bc35edf12"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-vscode-jsonrpc"
+path = "https://registry.npmjs.org/vscode-jsonrpc/-/vscode-jsonrpc-8.2.0.tgz"
+includes = []
+excludes = []
+digest = "ee3367dab7d8048cfcf3b38ea26f64255afafb954e876945f766a62bc35edf12"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "yls-vscode-l10n"
@@ -1073,12 +2433,28 @@ digest = "f51294bb2038cef307be242f7c2346a3d2af92aeb0d281720fb4c448e2dbb2dc"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "yls-vscode-l10n"
+path = "https://registry.npmjs.org/@vscode/l10n/-/l10n-0.0.18.tgz"
+includes = []
+excludes = []
+digest = "f51294bb2038cef307be242f7c2346a3d2af92aeb0d281720fb4c448e2dbb2dc"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "yls-vscode-languageserver"
 path = "https://registry.npmjs.org/vscode-languageserver/-/vscode-languageserver-9.0.1.tgz"
 includes = []
 excludes = []
 digest = "f42a33bc9f833f747e3825dd2d8d57608c49ed3bcb2244a7499f43043631ce60"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-vscode-languageserver"
+path = "https://registry.npmjs.org/vscode-languageserver/-/vscode-languageserver-9.0.1.tgz"
+includes = []
+excludes = []
+digest = "f42a33bc9f833f747e3825dd2d8d57608c49ed3bcb2244a7499f43043631ce60"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "yls-vscode-languageserver-protocol"
@@ -1089,12 +2465,28 @@ digest = "829769485e9c762c336e3d730def7f9fd236578cc59df7ce3ebc726830fed03e"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "yls-vscode-languageserver-protocol"
+path = "https://registry.npmjs.org/vscode-languageserver-protocol/-/vscode-languageserver-protocol-3.17.5.tgz"
+includes = []
+excludes = []
+digest = "829769485e9c762c336e3d730def7f9fd236578cc59df7ce3ebc726830fed03e"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "yls-vscode-languageserver-textdocument"
 path = "https://registry.npmjs.org/vscode-languageserver-textdocument/-/vscode-languageserver-textdocument-1.0.13.tgz"
 includes = []
 excludes = []
 digest = "84d69006e41b5d8ea37bead0a240dc572402128d5f1fded980aa98272ad95096"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-vscode-languageserver-textdocument"
+path = "https://registry.npmjs.org/vscode-languageserver-textdocument/-/vscode-languageserver-textdocument-1.0.13.tgz"
+includes = []
+excludes = []
+digest = "84d69006e41b5d8ea37bead0a240dc572402128d5f1fded980aa98272ad95096"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "yls-vscode-languageserver-types"
@@ -1105,12 +2497,28 @@ digest = "6a3ebf4ea45489f50fffd514a91c011dd317036f5c1debe89a947cab1e714061"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "yls-vscode-languageserver-types"
+path = "https://registry.npmjs.org/vscode-languageserver-types/-/vscode-languageserver-types-3.17.5.tgz"
+includes = []
+excludes = []
+digest = "6a3ebf4ea45489f50fffd514a91c011dd317036f5c1debe89a947cab1e714061"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "yls-vscode-nls"
 path = "https://registry.npmjs.org/vscode-nls/-/vscode-nls-5.2.0.tgz"
 includes = []
 excludes = []
 digest = "3ef164c5d32b72db8e1e0467df00ef9f98ca66a9d1b287e40baca745abffc0e3"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-vscode-nls"
+path = "https://registry.npmjs.org/vscode-nls/-/vscode-nls-5.2.0.tgz"
+includes = []
+excludes = []
+digest = "3ef164c5d32b72db8e1e0467df00ef9f98ca66a9d1b287e40baca745abffc0e3"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "yls-vscode-uri"
@@ -1121,12 +2529,44 @@ digest = "c96d56c27c33fa4c7ce81a34281772bc84684f8ef119c061cb896864831827d6"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "yls-vscode-uri"
+path = "https://registry.npmjs.org/vscode-uri/-/vscode-uri-3.1.0.tgz"
+includes = []
+excludes = []
+digest = "c96d56c27c33fa4c7ce81a34281772bc84684f8ef119c061cb896864831827d6"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "yls-yaml"
 path = "https://registry.npmjs.org/yaml/-/yaml-2.8.3.tgz"
 includes = []
 excludes = []
 digest = "a0412e454289b3a32833c5a3a0869c19601ebb008429580a04fdcbf94679501d"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-yaml"
+path = "https://registry.npmjs.org/yaml/-/yaml-2.8.3.tgz"
+includes = []
+excludes = []
+digest = "a0412e454289b3a32833c5a3a0869c19601ebb008429580a04fdcbf94679501d"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "zlib"
+path = "https://sdk.vorpal.build/source/zlib-1.3.1.tar.gz"
+includes = []
+excludes = []
+digest = "3f7995d5f103719283f509c23624287ce95c349439e881ed935a3c2c807bb683"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "zoxide"
+path = "https://github.com/ajeetdsouza/zoxide/releases/download/v0.9.9/zoxide-0.9.9-x86_64-unknown-linux-musl.tar.gz"
+includes = []
+excludes = []
+digest = "4824d9bc01ae86b77f9e235c59bf6a80f8e5e95683c10a27c987a13784867351"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "zoxide"

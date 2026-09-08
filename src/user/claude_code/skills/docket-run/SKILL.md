@@ -1,6 +1,6 @@
 ---
 name: docket-run
-description: Drive an activated Docket run to completion — ask the engine what is ready, dispatch it (the manifest carries the staged closure, whole dependency chains per wave), invoke the wave workflow, close the dispatch, repeat. Vote gates ride the wave (it seats the panel mid-wave); conversational gates go to tribunal.js; two standing rulings answer a park machine-side first (a completion-gate failure that reproduces clean on the same sha auto-passes, and a loop-extension panel decides the first fix round past `max_fix_loops`); every other non-approval that parks, and every reserved matter, escalates to the operator, and the engine verb runs on the outcome. Invoked as `/docket-run RUN-N` it drives that run explicitly; invoked bare it resolves "the next run" itself — the newest active or waiting-human run in the project, else the newest run still in planning, else a plain report that there is nothing to drive — so it chains directly after `/docket-plan`'s own bare mode with no question in between. Holds no run state and makes no routing decisions; the engine schedules and wave.js routes. Drives the run in the invoking conversation itself: the operator sees every dispatch, gate and park where they sit, and a gate that parks one issue while other issues still have work is rendered and pushed, never blocked on.
+description: Drive an activated Docket run to completion — ask the engine what is ready, dispatch it (the manifest carries the staged closure — ready rows and their dependents up to the `--limit`, which cuts every issue's deepest stages first), invoke the wave workflow, close the dispatch, repeat. Vote gates ride the wave (it seats the panel mid-wave); conversational gates go to tribunal.js; two standing rulings answer a park machine-side first (a completion-gate failure that reproduces clean on the same sha auto-passes, and a loop-extension panel decides the first fix round past `max_fix_loops`); every other non-approval that parks, and every reserved matter, escalates to the operator, and the engine verb runs on the outcome. Invoked as `/docket-run RUN-N` it drives that run explicitly; invoked bare it resolves "the next run" itself — the newest active or waiting-human run in the project, else the newest run still in planning, else a plain report that there is nothing to drive — so it chains directly after `/docket-plan`'s own bare mode with no question in between. Holds no run state and makes no routing decisions; the engine schedules and wave.js routes. Drives the run in the invoking conversation itself: the operator sees every dispatch, gate and park where they sit, and a gate that parks one issue while other issues still have work is rendered and pushed, never blocked on.
 argument-hint: "[RUN-N]"
 ---
 
@@ -109,6 +109,21 @@ rather than opening a second, and the answer you read back carries a ruling
 per labelled gate. Only when nothing can move until the operator rules, with
 `next` offering nothing but parked issues and no launch in flight, is the
 question tool the carrier, and then it is the only thing left to do anyway.
+
+**The same rule covers every boundary question, not only gate parks.** A
+question whose answer cannot change the open manifest's rows — a worktree
+cleanup, a permission or classifier prompt on a conductor-side command, a
+disposition on something outside the manifest — is asked the non-blocking
+way, with the wave launched first. The question tool holds a launch only when
+the answer changes what the wave would run: a stale target, pin drift, a
+manifest-changing scope edit, or a tree state that would fail every lane's
+gate. A tree state that fails only the writer lanes' gates does not hold the
+launch: launch, name those lanes in the notification, and let the standing
+ruling on machine-caused gate failures answer their parks once the fix lands.
+Measured on one run: a question about deleting two untracked zero-byte files
+held a 240-row manifest open with nothing in flight from 02:02 to 08:53
+local, 6 h 51 min, while four fifths of its rows were judge, synthesize and
+verify rows that hold no tree.
 
 **Helpers.** A helper you spawn with `Agent` is visible only through its
 completion notification and `SendMessage`; a helper's idle notification is not
@@ -762,12 +777,13 @@ it by id (`{issue, workflow}`), `promoted_issues[]` names what activation
 promotes, and `issues_bound` is the count beside them. That is a READ — the
 created_at_ms-window reconstruction earlier runs needed is retired, and so is
 hunting for a verb that lists a planning run's issues. After activation
-`docket next --run $RUN --limit 500 --json` reports what is ready; if it disagrees with
-what you presented, that is a stop-and-report, not a shrug. **The engine's
-default `--limit` is 10 and it truncates silently, with no marker in the
-JSON** — one run's first manifest read returned 10 of 27 rows and would have
-stranded 17 steps if trusted, so the explicit generous limit above is
-load-bearing, not decorative. Keep the promotion
+`docket next --run $RUN --json` reports what is ready; if it disagrees with
+what you presented, that is a stop-and-report, not a shrug. **Pass no
+`--limit` on the `--run` form:** with `--run` the engine returns the whole
+ready set unless a limit is passed (its `--help`), and a limit truncates
+silently, with no marker in the JSON — an older default of 10 once returned
+10 of 27 rows and would have stranded 17 steps if trusted, and a later
+`--limit 500` read `total: 500` against a 930-row offer. Keep the promotion
 vigilance regardless: check `events list --run $RUN` for `issue-promoted` (tail
 the feed with `--since <last-seq>` or `--tail N`; it pages at 100 and has no
 --offset — one conductor burned three invented flags learning this) —
@@ -860,13 +876,26 @@ step and the run had to be paused.
 ### 1. Ask what is ready
 
 ```bash
-docket next --run $RUN --limit 500 --json | jq '{
+docket next --run $RUN --json | jq '{
   total: .data.total,
   kinds: ((.data.steps // []) | group_by(.kind) | map({key: .[0].kind, value: length}) | from_entries),
   staged: ([(.data.steps // [])[] | select(.status == "staged")] | length),
+  writers: ([(.data.steps // [])[] | select(.class == "write")] | length),
   issues: ((.data.steps // []) | map(.issue) | unique),
   refusal: .error }'
 ```
+
+`--limit` stays off this call: with `--run` the engine returns the whole
+ready set unless a limit is passed (its `--help`), and a limit truncates
+`total` silently — two summaries on one run read `total: 500` against a
+930-row offer. Nothing here enters the conversation but the summary, so size
+is not a concern. `writers` is the wave-length lever: wave.js serializes
+writers the engine never co-staged, so a wave runs about as long as the sum
+of its writer cohorts' slowest members — a 25-writer offer ran 287 minutes,
+the last 227 of them at one to three executors, while every other lane's next
+rows waited for the wave to return. See that number before you launch it,
+and when it is large say so in the report: a plan that clusters writers on
+one scope is `docket-plan`'s to split across runs, not yours to reorder.
 
 Read `next` as a SUMMARY, never as rows. The rows you launch are the ones
 `dispatch open` returns in step 2 (the same shape, hashed into the manifest),
@@ -963,10 +992,19 @@ JSON payload that blew past both the `Read` tool's 256 KB cap and the
 `Workflow` tool's practical inline-arg size for `wave.js`'s `args.rows`. 240
 rows is a size already proven launchable (repeatedly, across several runs):
 comfortably under both ceilings whether the wave carries mostly single-row
-executor lanes or wide `review@N#k` panels. It is a manifest-size cap only —
-the run's own issue count is not the lever, and there is no "max issues a
-planner should create" number to hold it to; a large run just spans more
-waves, exactly as staged closure already assumes. If a `dispatch open --json`
+executor lanes or wide `review@N#k` panels (a 240-row manifest runs 80 to
+87 KB). It is a manifest-size cap by intent, and the run's own issue count is
+not the lever — there is no "max issues a planner should create" number to
+hold it to. But know what the cap cuts: the engine orders the offer
+stage-major (every issue's stage-k rows before any issue's stage-k+1 rows)
+and applies `--limit` as a prefix, so a cap drops the deepest stages of
+EVERY issue first, never a whole issue. On one 147-issue run a 930-row offer
+cut to 240 carried stages 0 to 2 of 76 issues; no finished standard-change
+chain fit in one dispatch, 41 of its 69 dispatch boundaries were that cut,
+and a fix round minted mid-wave always starts in a later dispatch. A large
+run spans more waves, and each of its issues spans more of them; the
+engine-side fix (a lane-complete limit) is filed against the engine. If a
+`dispatch open --json`
 answer ever exceeds size limits despite `--limit 240` (a pathological single
 wave with unusually wide per-row payloads), do not hand-chunk the JSON to fit
 — the manifest is hashed, and a hand-retyped or truncated copy will not match
@@ -1226,24 +1264,42 @@ free meanwhile — the operator can do other things, and so can you.
 
 On the wave's completion notification, in this order:
 
-**1. Launch the usage join FIRST, and do not wait for it.** The join is a
-`Workflow` launch (below) that reads the wave's transcripts. Launch it the
-moment the notification arrives, before you read or diagnose the wave's
-result, and go straight on to integration and the close while it runs. To the
-engine a step recorded less than `dispatch.grace` (15 minutes) ago is usage
-PENDING, not missing: `dispatch close` and `next` proceed, and the back-fill
-lands when the join's own completion notification arrives, at whatever point
-of the next cycle that is. Before that engine change the probe refused the
-instant a step recorded, which put the join ahead of every close: 21 joins of
-about 2.5 minutes each on RUN-90, serial with the close. A join still
-outstanding when the NEXT close comes is back-filled first (past the grace
-the engine refuses that close exactly as it always did); a join outstanding
-when `next` returns EMPTY is back-filled before the done report, never after,
-and the done report's own check (step 1) reads `missing_usage` for exactly
-this.
+**1. Launch the usage join FIRST, then spend the turn on what the close
+needs.** The join is a `Workflow` launch (below) that reads the wave's
+transcripts. Launch it the moment the notification arrives, before you read
+or diagnose the wave's result. Then, in this SAME turn and while it runs:
+`dispatch verify`; every cherry-pick, `step annotate` and the worktree sweep;
+and the pre-open reap check — `docket guard spawn --run $RUN` with no `--rows`
+answers the reap half alone (exit 2 names an unacknowledged write-class
+reap), so an ack-reap proposal opens and its panel convenes now, beside the
+join, not after a denied launch (two of four launches on one run were denied
+by the spawn guard after the open, 8 to 9 minutes each, one on a lease that
+expired during `dispatch open` itself). End the turn on the join. Read the
+wave's return as rows, not as a verdict: `not-launched-run-parked`,
+`not-launched-writer-budget` (wave.js launches at most three writer cohorts
+the manifest never certified disjoint, and defers the rest) and
+`skipped-chain-dead` worded as deferred are rows nothing failed on — the
+engine re-offers every one of them at the next dispatch.
 
-**2. Integrate, verify, close — as SEPARATE calls, and close first, then
-next:** do not issue `docket next --run` while this dispatch is still open, it
+**The join is on the close's critical path for every wave longer than the
+grace.** To the engine a step recorded less than `dispatch.grace` (15
+minutes) ago is usage PENDING, not missing; a step recorded earlier and still
+unbilled makes `dispatch close` refuse `usage-rows-missing`. A wave shorter
+than the grace closes before its join lands; a 240-row wave runs one to five
+hours, so its close waits for the join, and the join takes about three
+seconds per agent transcript (11 to 13 minutes for 220 to 250 agents). On one
+run the conductor idled 11 minutes on the join, ran a seats-mode join before
+the close for 7 more, and once launched the join only after two close
+refusals; the work above fills that time instead. A join still outstanding
+when the NEXT close comes is back-filled first; a join outstanding when
+`next` returns EMPTY is back-filled before the done report, never after, and
+the done report's own check (step 1) reads `missing_usage` for exactly this.
+
+**2. On the join's notification: back-fill, verify, close — as SEPARATE
+calls, and close first, then next.** The seats-mode join for any panel you
+convened launches beside the NEXT wave, after the close: vote-seat usage is
+never a close discrepancy. Do not issue `docket next --run` while this
+dispatch is still open, it
 only refuses the call. Chaining close unconditionally behind a back-fill in
 one compound command closes on stranded usage the moment the back-fill fails
 (one run's last iteration ran the chain and got lucky). (Shell

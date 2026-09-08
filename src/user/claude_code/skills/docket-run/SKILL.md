@@ -1817,7 +1817,7 @@ recount or a paraphrase:**
 
 **A disposition is reported only where one was actually taken — and a
 `pre = true` gate can never be one.** A pre-gate (`gates = [{ name =
-"ac-commands", pre = true }]` on `verify`, `render-verify`/`copy-verify` on
+"ac-commands", pre = true }]` on `verify-ac`, `render-verify`/`copy-verify` on
 `design-qa`) runs at CLAIM and its rows ride in under `context.pre_gates`. A
 failing one does NOT refuse the claim, does not park the step, and is never
 resolved: it is a MEASUREMENT the declaring step consumes, and the judging is
@@ -2639,7 +2639,7 @@ There is no `docket artifact` command, and the events log carries no artifact
 bodies (one conductor burned six calls rediscovering this hop). An engine-minted
 held-cluster row (`reconcile-held@0#N`) is the exception that carries nothing
 itself: `step artifacts` on it returns none and `step show` names no cluster.
-Its payload lives on the synthesize/aggregate step's artifact — `step
+Its payload lives on the synthesize-findings/aggregate step's artifact — `step
 artifacts` on THAT step, then `step artifact ARTIFACT-N --payload`, which
 prints a bare JSON LIST of clusters, not `{"clusters": []}`. `#N` is the
 1-based index into that list, NOT a cluster id — confirm it against the

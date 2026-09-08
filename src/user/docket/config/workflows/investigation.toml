@@ -1,7 +1,23 @@
 [pipeline]
 description = "Read-only root-cause investigation with an optional research step, ending at a tribunal read that revises the report on rejection and escalates to the operator."
 name = "investigation"
-version = 12  # 12: `read-gate` seats tribunal-correctness alone.
+version = 13  # 13: corpus-wide naming-convention pass (src/user/docket/config/README.md).
+              #   Step/executor renames only, no topology change. `read-gate`
+              #   -> `report-vote` (vote steps now uniformly named
+              #   `<gated-step>-vote`). `report` and `revise` no longer borrow
+              #   executor `investigate`'s policy row and literal contract
+              #   paths (`contracts/report.md`, `contracts/revise.md`) — each
+              #   gets its own `[executors]` row (`report`,
+              #   `revise-investigation`) and resolves its packet via the
+              #   standard `contracts/{executor}.md` form. `revise` is
+              #   renamed to `revise-investigation` since its new executor
+              #   identity needs a step name that differs from its own
+              #   executor is never required, but this loop-back step's old
+              #   name collided with disposition.toml's unrelated `revise`
+              #   step, and the executor rename makes `revise-investigation`
+              #   the natural step name too. `contracts/revise.md` is
+              #   renamed to `contracts/revise-investigation.md` to match.
+              # 12: `read-gate` seats tribunal-correctness alone.
               #   Four gates decided on this machine, all approved, twelve casts; the
               #   correctness seat matched all four and the security seat would have
               #   rejected one. Thin evidence, so design judgment: the gate reads a
@@ -19,7 +35,9 @@ unless_labels = ["blocked", "spec-doc", "spec-project", "release", "retro"]
 
 [limits]
 "investigate" = { max = 16, max_step_duration = "1h" }
+"report" = { max = 16, max_step_duration = "1h" }
 "research" = { max = 16, max_step_duration = "1h" }
+"revise-investigation" = { max = 16, max_step_duration = "1h" }
 
 [[step]]
 after = []
@@ -47,30 +65,30 @@ when = "labels contains needs-research"
 [[step]]
 after = ["investigate", "research"]
 emits = "investigation"
-executor = "investigate"
+executor = "report"
 expected_cost = 0.40
 holds_tree = false
 inputs = ["investigate.investigation", "research.*", "issue.body"]
 name = "report"
-packet = ["contracts/report.md"]
+packet = ["contracts/{executor}.md"]
 
 [[step]]
 after = ["report"]
 inputs = ["report.investigation"]
 max_fix_loops = 2
-name = "read-gate"
+name = "report-vote"
 on_fail = "fix-loop"
 type = "vote"
 vote_rule = "tribunal"
 voters = ["tribunal-correctness"]
 
 [[step]]
-after_loop = "read-gate"
+after_loop = "report-vote"
 emits = "investigation"
-executor = "investigate"
+executor = "revise-investigation"
 expected_cost = 0.40
 holds_tree = false
 inputs = ["issue.latest.investigation", "research.*", "issue.body"]
 loop = true
-name = "revise"
-packet = ["contracts/revise.md"]
+name = "revise-investigation"
+packet = ["contracts/{executor}.md"]

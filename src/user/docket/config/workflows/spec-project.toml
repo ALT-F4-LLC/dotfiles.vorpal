@@ -1,7 +1,15 @@
 [pipeline]
 description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step, review them once, and accept by tribunal vote; a rejection re-enters the bounded revise loop at review."
 name = "spec-project"
-version = 18  # 18: no behavior change — the version-17 note below is
+version = 19  # 19: corpus-wide naming-convention pass (src/user/docket/config/README.md).
+              #   Step renames only, no topology change: `synthesize` ->
+              #   `synthesize-findings`, `revise` (the spec-author fanout's
+              #   loop-back step) -> `revise-spec` (a loop-back step's name
+              #   must differ from its first-pass step name `spec-author`),
+              #   `accept` -> `spec-vote` (vote steps now uniformly named
+              #   `<role>-vote`). Every `after`, threshold route key, and
+              #   `<step>.<kind>` input reference updated to match.
+              # 18: no behavior change — the version-17 note below is
               #   corrected in place; every step, seat, rule and route is
               #   byte-for-byte version 17's. The note said spec-doc's
               #   judge-panel rejections "looped without operator
@@ -119,14 +127,14 @@ executor = "synthesize-findings"
 expected_cost = 0.60
 holds_tree = false
 inputs = ["review.*"]
-name = "synthesize"
+name = "synthesize-findings"
 packet = ["contracts/{executor}.md"]
 payload = "findings-cluster@2"
 
 [[step]]
 action = "aggregate"
-after = ["synthesize"]
-inputs = ["synthesize.findings"]
+after = ["synthesize-findings"]
+inputs = ["synthesize-findings.findings"]
 max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
@@ -159,15 +167,15 @@ fanout = [
   "spec-author-testing",
 ]
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["reconcile.findings", "issue.latest.spec", "accept.vote-record", "research.*"]
+inputs = ["reconcile.findings", "issue.latest.spec", "spec-vote.vote-record", "research.*"]
 loop = true
-name = "revise"
+name = "revise-spec"
 packet = ["contracts/spec-author.md"]
 
 [[step]]
 after = ["reconcile"]
 inputs = ["spec-author.*", "reconcile.findings"]
-name = "accept"
+name = "spec-vote"
 on_fail = "fix-loop"
 type = "vote"
 vote_rule = "tribunal"

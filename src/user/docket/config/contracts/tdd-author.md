@@ -1,6 +1,6 @@
 ---
 node: tdd-author
-version: 6
+version: 7
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
@@ -113,8 +113,9 @@ prevents exercise, what will make verification possible, and whether it blocks a
 dependent phase or rollout. Preserve non-blocking gaps with their follow-up route.
 
 # Emit
-`tdd`: the new or revised technical design document, with its proposal or acceptance
-status clear. Include:
+Engine kind: `doc` (per frontmatter). Document type: `tdd` — the new or revised
+technical design document, with its proposal or acceptance status clear.
+Include:
 
 - Problem, goals, constraints, and deliberate non-goals.
 - Context, accepted commitments, and relevant prior art.

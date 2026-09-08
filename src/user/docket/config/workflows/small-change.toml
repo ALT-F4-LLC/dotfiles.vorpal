@@ -1,7 +1,11 @@
 [pipeline]
 description = "Small ordinary change, bound by the `small` label: implement with the full gate list, one correctness judge routing a blocker straight to the fix loop, AC verification with a single-seat tribunal on an unverifiable AC, and a bounded fix loop re-entering at review; the conductor integrates commits, the operator publishes."
 name = "small-change"
-version = 1  # 1: the light track for an ordinary change that a person, the groomer
+version = 2  # 2: corpus-wide naming-convention pass (src/user/docket/config/README.md).
+             #   Step renames only, no topology change: `verify` -> `verify-ac`,
+             #   `verify-tribunal` -> `verify-ac-vote`. Every `after`, threshold route
+             #   key, and `<step>.<kind>` input reference updated to match.
+             # 1: the light track for an ordinary change that a person, the groomer
              #   or the planner labelled `small`. Same implement step and gate list
              #   as standard-change; one correctness judge instead of three; no
              #   synthesize, reconcile or drain step, because those exist to cluster
@@ -98,7 +102,7 @@ emits = "change-summary"
 executor = "fix"
 expected_cost = 1.00
 gates = ["build", "tests", "self-hygiene", "secret-scan", "vuln-scan", "doc-validate"]
-inputs = ["review.findings", "implement.change-summary", "issue.latest.change-summary", "issue.latest.ac-report", "verify-tribunal.vote-record"]
+inputs = ["review.findings", "implement.change-summary", "issue.latest.change-summary", "issue.latest.ac-report", "verify-ac-vote.vote-record"]
 loop = true
 name = "fix"
 packet = ["contracts/{executor}.md"]
@@ -110,16 +114,16 @@ executor = "verify-ac"
 expected_cost = 0.50
 gates = [{ name = "ac-commands", pre = true }]
 holds_tree = false
-inputs = ["issue.body", "issue.diff", "implement.change-summary", "verify.gate-results"]
-name = "verify"
+inputs = ["issue.body", "issue.diff", "implement.change-summary", "verify-ac.gate-results"]
+name = "verify-ac"
 packet = ["contracts/{executor}.md"]
 payload = "ac-report@1"
-threshold = { "fix-loop" = "any(status == unmet)", "verify-tribunal" = "any(status == unverifiable)" }
+threshold = { "fix-loop" = "any(status == unmet)", "verify-ac-vote" = "any(status == unverifiable)" }
 
 [[step]]
-after = ["verify"]
-inputs = ["verify.ac-report", "issue.body", "issue.diff"]
-name = "verify-tribunal"
+after = ["verify-ac"]
+inputs = ["verify-ac.ac-report", "issue.body", "issue.diff"]
+name = "verify-ac-vote"
 on_fail = "fix-loop"
 type = "vote"
 vote_rule = "tribunal"

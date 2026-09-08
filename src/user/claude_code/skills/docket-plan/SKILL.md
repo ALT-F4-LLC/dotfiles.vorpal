@@ -59,7 +59,7 @@ Rules you must not fight:
   will verify on, and paste what it actually printed. Output quoted from any
   transcript is a FACT to verify, not a source — transcripts capture
   transient states (a staged-deletion snapshot put an impossible expected
-  string into an AC; a judge caught it one step before the verify gate
+  string into an AC; a judge caught it one step before the verify-ac gate
   would have hard-failed it).
 
 **Three invocation shapes, picked by the argument you were given.** A
@@ -698,24 +698,26 @@ guessed: for EVERY admitted issue, its bound workflow's `rework_round_cost`
 Both factors are in the pinned definition. `grep -n max_fix_loops
 ~/.docket/config/workflows/<wf>.toml` gives the bound — it lives on the step
 that OWNS the loop, which is `reconcile` on standard-change, ui-change,
-security-change, spec-doc and spec-project, `verify` on docs-only and
-disposition, and the `read-gate` vote on investigation. The round is the
+security-change, spec-doc and spec-project, `verify-ac` on docs-only and
+disposition, and the `report-vote` vote on investigation. The round is the
 `loop = true` step plus everything replayed from its `after_loop` re-entry
 point up to that owning step — on the change tracks exactly the fix +
-judges + synthesize arithmetic the floor already does. Read the step NAMES,
-not the costs alone: the fix step is called `revise` on spec-doc,
-spec-project, investigation and disposition, docs-only's `review` is a
-single `judge-correctness` with no fanout and the track has no synthesize
-step at all, and spec-doc's six `revise-*` variants are mutually exclusive
-`when`s — exactly one fires, so its round carries 1.50 once, not six times.
+judges + synthesize-findings arithmetic the floor already does. Read the
+step NAMES, not the costs alone: the fix step is called `revise-spec` on
+spec-project, `revise-investigation` on investigation and
+`revise-disposition` on disposition, docs-only's `review` is a single
+`judge-correctness` with no fanout and the track has no synthesize-findings
+step at all, and spec-doc's five `revise-*` variants are mutually exclusive
+`when`s — exactly one fires, so its round carries 1.50 once, not five times.
 
 The corpus as it reads today, round × declared loops = reserved per issue:
 standard-change 1.0 + 2.40 + 0.60 = 4.0 × 2 = 8.0; ui-change 4.0 × 2 = 8.0;
 security-change 4.0 × 3 = 12.0; spec-doc 1.50 + 1.80 + 0.60 = 3.9 × 2 = 7.8;
-spec-project (`revise` fans out seven ways at 0.70) 4.90 + 1.80 + 0.60 =
-7.3 × 2 = 14.6; docs-only 0.60 + 0.60 + verify 0.40 = 1.6 × 2 = 3.2;
-disposition 0.40 + verify 0.40 = 0.8 × 2 = 1.6; investigation `revise` 0.40
-alone, its re-entry being a vote that costs nothing, × 2 = 0.8. Recompute
+spec-project (`revise-spec` fans out seven ways at 0.70) 4.90 + 1.80 + 0.60 =
+7.3 × 2 = 14.6; docs-only 0.60 + 0.60 + verify-ac 0.40 = 1.6 × 2 = 3.2;
+disposition 0.40 + verify-ac 0.40 = 0.8 × 2 = 1.6; investigation
+`revise-investigation` 0.40 alone, its re-entry being a vote that costs
+nothing, × 2 = 0.8. Recompute
 them from the tomls rather than trusting this list — it is a worked example
 of the read, not a substitute for it, and every one of these files is
 versioned.
@@ -946,7 +948,7 @@ mode: anchor for scope, restate the pattern for property.
 
 **An AC that needs a live cluster is post-merge by construction, not an AC.**
 On GitOps repos, author acceptance criteria as statically verifiable render
-assertions — a `kustomize build` / manifest-render check the verify step can
+assertions — a `kustomize build` / manifest-render check the verify-ac step can
 actually run — and record cluster-runtime commands (`kubectl`, `flux` against
 the live cluster) in the issue body as post-merge checks instead. The sandbox
 cannot reach a cluster, so a runtime AC is unverifiable on every run by

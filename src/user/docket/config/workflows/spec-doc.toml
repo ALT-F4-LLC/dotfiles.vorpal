@@ -1,7 +1,22 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by a research step, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec); a rejection re-enters the bounded revise loop at review."
 name = "spec-doc"
-version = 26  # 26: no behavior change — a step rename and two comment
+version = 27  # 27: corpus-wide naming-convention pass (src/user/docket/config/README.md).
+              #   Step renames, plus one topology change. Renames: `author-tdd-security`
+              #   -> `tdd-author-security`, `author-tdd` -> `tdd-author`, `author-adr`
+              #   -> `adr-author`, `author-ux-spec` -> `ux-spec-author`, `author-prd`
+              #   -> `prd-author` (each step now equals its sole executor's name,
+              #   retiring the corpus's systematic author-<X>/<X>-author word-order
+              #   inversion); `synthesize` -> `synthesize-findings`; `accept-vote-tdd`
+              #   -> `tdd-vote`, `accept-vote-adr` -> `adr-vote` (vote steps now
+              #   uniformly named `<doctype>-vote`). Topology change: `accept-tribunal`
+              #   — which gated BOTH ux-spec and prd acceptance under one step name
+              #   selected by two mutually exclusive `when` clauses — splits into two
+              #   steps, `ux-spec-vote` and `prd-vote`, each carrying one of the former
+              #   combined step's `when` predicates and identical voters/vote_rule/
+              #   after/on_fail. `record`'s `after` list and the two revise-* steps'
+              #   vote-record inputs updated to the split names. Step count 15 -> 16.
+              # 26: no behavior change — a step rename and two comment
               #   corrections; the topology, seats, rules and routes are
               #   byte-for-byte those of version 25. (a) The tribunal
               #   acceptance vote `accept-human` is renamed
@@ -141,7 +156,7 @@ expected_cost = 1.20
 gates = ["doc-validate", "tdd-preflight", "reserved-name-check"]
 inputs = ["research.*", "issue.body"]
 max_attempts = 2
-name = "author-tdd-security"
+name = "tdd-author-security"
 on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
 when = "labels contains doc:tdd and labels contains_any [security-change, security-load-bearing, security]"
@@ -155,7 +170,7 @@ expected_cost = 1.20
 gates = ["doc-validate", "tdd-preflight", "reserved-name-check"]
 inputs = ["research.*", "issue.body"]
 max_attempts = 2
-name = "author-tdd"
+name = "tdd-author"
 on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
 when = "labels contains doc:tdd and labels != security-change and labels != security and labels != security-load-bearing"
@@ -169,7 +184,7 @@ expected_cost = 1.20
 gates = ["doc-validate", "reserved-name-check"]
 inputs = ["research.*", "issue.body"]
 max_attempts = 2
-name = "author-adr"
+name = "adr-author"
 on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
 when = "labels contains doc:adr and labels != doc:tdd"
@@ -183,7 +198,7 @@ expected_cost = 1.20
 gates = ["doc-validate", "reserved-name-check"]
 inputs = ["research.*", "issue.body"]
 max_attempts = 2
-name = "author-ux-spec"
+name = "ux-spec-author"
 on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
 when = "labels contains doc:ux-spec and labels != doc:tdd and labels != doc:adr"
@@ -197,13 +212,13 @@ expected_cost = 1.20
 gates = ["doc-validate", "reserved-name-check"]
 inputs = ["research.*", "issue.body"]
 max_attempts = 2
-name = "author-prd"
+name = "prd-author"
 on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
 when = "labels != doc:tdd and labels != doc:adr and labels != doc:ux-spec"
 
 [[step]]
-after = ["author-tdd-security", "author-tdd", "author-adr", "author-ux-spec", "author-prd"]
+after = ["tdd-author-security", "tdd-author", "adr-author", "ux-spec-author", "prd-author"]
 emits = "findings"
 expected_cost = 0.60
 fanout = ["judge-architecture", "judge-security", "judge-design"]
@@ -220,14 +235,14 @@ executor = "synthesize-findings"
 expected_cost = 0.60
 holds_tree = false
 inputs = ["review.*"]
-name = "synthesize"
+name = "synthesize-findings"
 packet = ["contracts/{executor}.md"]
 payload = "findings-cluster@2"
 
 [[step]]
 action = "aggregate"
-after = ["synthesize"]
-inputs = ["synthesize.findings"]
+after = ["synthesize-findings"]
+inputs = ["synthesize-findings.findings"]
 max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
@@ -252,7 +267,7 @@ emits = "doc"
 executor = "tdd-author-security"
 expected_cost = 1.50
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["reconcile.findings", "issue.latest.doc", "accept-vote-tdd.vote-record", "research.*"]
+inputs = ["reconcile.findings", "issue.latest.doc", "tdd-vote.vote-record", "research.*"]
 loop = true
 name = "revise-tdd-security"
 packet = ["contracts/{executor}.md"]
@@ -265,7 +280,7 @@ emits = "doc"
 executor = "tdd-author"
 expected_cost = 1.50
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["reconcile.findings", "issue.latest.doc", "accept-vote-tdd.vote-record", "research.*"]
+inputs = ["reconcile.findings", "issue.latest.doc", "tdd-vote.vote-record", "research.*"]
 loop = true
 name = "revise-tdd"
 packet = ["contracts/{executor}.md"]
@@ -278,7 +293,7 @@ emits = "doc"
 executor = "adr-author"
 expected_cost = 1.50
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["reconcile.findings", "issue.latest.doc", "accept-vote-adr.vote-record", "research.*"]
+inputs = ["reconcile.findings", "issue.latest.doc", "adr-vote.vote-record", "research.*"]
 loop = true
 name = "revise-adr"
 packet = ["contracts/{executor}.md"]
@@ -291,7 +306,7 @@ emits = "doc"
 executor = "ux-spec-author"
 expected_cost = 1.50
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["reconcile.findings", "issue.latest.doc", "accept-tribunal.vote-record", "research.*"]
+inputs = ["reconcile.findings", "issue.latest.doc", "ux-spec-vote.vote-record", "research.*"]
 loop = true
 name = "revise-ux-spec"
 packet = ["contracts/{executor}.md"]
@@ -304,7 +319,7 @@ emits = "doc"
 executor = "prd-author"
 expected_cost = 1.50
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["reconcile.findings", "issue.latest.doc", "accept-tribunal.vote-record", "research.*"]
+inputs = ["reconcile.findings", "issue.latest.doc", "prd-vote.vote-record", "research.*"]
 loop = true
 name = "revise-prd"
 packet = ["contracts/{executor}.md"]
@@ -313,12 +328,12 @@ when = "labels != doc:tdd and labels != doc:adr and labels != doc:ux-spec"
 [[step]]
 after = ["reconcile"]
 inputs = ["issue.latest.doc", "reconcile.findings"]
-name = "accept-vote-tdd"
+name = "tdd-vote"
 on_fail = "fix-loop"
 type = "vote"
 vote_rule = "doc-acceptance"
 # Deliberately judge-*, not tribunal-*: doc-acceptance is the judges' own
-# panel, not the operator-stand-in tribunal (`accept-tribunal` below), and
+# panel, not the operator-stand-in tribunal (`ux-spec-vote`/`prd-vote` below), and
 # policy.toml routes the two seat families to different tiers (judge-*
 # opus-high, tribunal-* fable/opus-xhigh). As voters these seats are briefed
 # by the workflow scripts' LENSES table, not by contracts/judge-*.md — one
@@ -329,27 +344,37 @@ when = "labels contains doc:tdd"
 [[step]]
 after = ["reconcile"]
 inputs = ["issue.latest.doc", "reconcile.findings"]
-name = "accept-vote-adr"
+name = "adr-vote"
 on_fail = "fix-loop"
 type = "vote"
 vote_rule = "doc-acceptance"
-# judge-*, deliberately — see accept-vote-tdd above.
+# judge-*, deliberately — see tdd-vote above.
 voters = ["judge-architecture", "judge-security", "judge-correctness"]
 when = "labels contains doc:adr and labels != doc:tdd"
 
 [[step]]
 after = ["reconcile"]
 inputs = ["issue.latest.doc", "reconcile.findings"]
-name = "accept-tribunal"
+name = "ux-spec-vote"
 on_fail = "fix-loop"
 type = "vote"
 vote_rule = "tribunal"
 voters = ["tribunal-architecture", "tribunal-security", "tribunal-design"]
-when = "labels != doc:tdd and labels != doc:adr"
+when = "labels contains doc:ux-spec and labels != doc:tdd and labels != doc:adr"
+
+[[step]]
+after = ["reconcile"]
+inputs = ["issue.latest.doc", "reconcile.findings"]
+name = "prd-vote"
+on_fail = "fix-loop"
+type = "vote"
+vote_rule = "tribunal"
+voters = ["tribunal-architecture", "tribunal-security", "tribunal-design"]
+when = "labels != doc:tdd and labels != doc:adr and labels != doc:ux-spec"
 
 [[step]]
 action = "doc-record"
-after = ["accept-vote-tdd", "accept-vote-adr", "accept-tribunal"]
+after = ["tdd-vote", "adr-vote", "ux-spec-vote", "prd-vote"]
 expected_cost = 0.20
 gates = ["citation-check"]
 inputs = ["issue.latest.doc"]

@@ -1,6 +1,6 @@
 ---
-node: revise
-version: 4
+node: revise-investigation
+version: 5
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -10,7 +10,7 @@ packet_includes:
 emits: investigation
 ---
 # Charter
-Revise the report rejected by the read-gate. Use that report as the base and
+Revise the report rejected by the report-vote. Use that report as the base and
 the tribunal's actual rationales as the work list. Verify the disputed claims
 and return a complete, evidence-supported report. The gate owns approval.
 

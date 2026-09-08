@@ -1,7 +1,16 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 35  # 35: `small` and `trivial` join unless_labels, so an issue carrying either
+version = 36  # 36: corpus-wide naming-convention pass (src/user/docket/config/README.md).
+              #   Step renames only, no topology change: `synthesize` ->
+              #   `synthesize-findings` (step now equals its sole executor's
+              #   name), `verify` -> `verify-ac` (same), `verify-tribunal` ->
+              #   `verify-ac-vote` (vote steps now uniformly named
+              #   `<gated-step>-vote`). Every `after`, threshold route key, and
+              #   `<step>.<kind>` input reference updated to match. `fix`'s
+              #   `verify-tribunal.vote-record` input is now
+              #   `verify-ac-vote.vote-record`.
+              # 35: `small` and `trivial` join unless_labels, so an issue carrying either
               #   binds the new small-change or trivial-change track instead of this one;
               #   nothing else changes. Measured on one 147-issue run on this machine
               #   (35 issues bound here, 27 finished): a change of 20 lines or fewer
@@ -196,14 +205,14 @@ executor = "synthesize-findings"
 expected_cost = 0.60
 holds_tree = false
 inputs = ["review.*"]
-name = "synthesize"
+name = "synthesize-findings"
 packet = ["contracts/{executor}.md"]
 payload = "findings-cluster@2"
 
 [[step]]
 action = "aggregate"
-after = ["synthesize"]
-inputs = ["synthesize.findings"]
+after = ["synthesize-findings"]
+inputs = ["synthesize-findings.findings"]
 max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", output = "findings" }
@@ -228,7 +237,7 @@ emits = "change-summary"
 executor = "fix"
 expected_cost = 1.00
 gates = ["build", "tests", "self-hygiene", "secret-scan", "vuln-scan", "doc-validate"]
-inputs = ["reconcile.findings", "synthesize.findings", "implement.change-summary", "issue.latest.change-summary", "issue.latest.ac-report", "verify-tribunal.vote-record"]
+inputs = ["reconcile.findings", "synthesize-findings.findings", "implement.change-summary", "issue.latest.change-summary", "issue.latest.ac-report", "verify-ac-vote.vote-record"]
 loop = true
 name = "fix"
 packet = ["contracts/{executor}.md"]
@@ -240,16 +249,16 @@ executor = "verify-ac"
 expected_cost = 0.50
 gates = [{ name = "ac-commands", pre = true }]
 holds_tree = false
-inputs = ["issue.body", "issue.diff", "implement.change-summary", "verify.gate-results"]
-name = "verify"
+inputs = ["issue.body", "issue.diff", "implement.change-summary", "verify-ac.gate-results"]
+name = "verify-ac"
 packet = ["contracts/{executor}.md"]
 payload = "ac-report@1"
-threshold = { "fix-loop" = "any(status == unmet)", "verify-tribunal" = "any(status == unverifiable)" }
+threshold = { "fix-loop" = "any(status == unmet)", "verify-ac-vote" = "any(status == unverifiable)" }
 
 [[step]]
-after = ["verify"]
-inputs = ["verify.ac-report", "issue.body", "issue.diff"]
-name = "verify-tribunal"
+after = ["verify-ac"]
+inputs = ["verify-ac.ac-report", "issue.body", "issue.diff"]
+name = "verify-ac-vote"
 on_fail = "fix-loop"
 type = "vote"
 vote_rule = "tribunal"

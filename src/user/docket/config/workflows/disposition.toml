@@ -1,7 +1,18 @@
 [pipeline]
 description = "Cross-issue disposition: write the verdict comment and close the carrier, gated on the build/test sanity check and AC verification with a bounded revise loop; no code-review machinery."
 name = "disposition"
-version = 7  # 7: `verify` routes `unverifiable` to an interposed
+version = 8  # 8: corpus-wide naming-convention pass (src/user/docket/config/README.md).
+             #   Step renames only, no topology change: `verify` ->
+             #   `verify-ac`, `verify-tribunal` -> `verify-ac-vote` (vote
+             #   steps now uniformly named `<gated-step>-vote`), `revise`
+             #   (this file's dispose loop-back) -> `revise-disposition`
+             #   (a loop-back step's name must differ from its first-pass
+             #   step name — this file's `revise` and investigation.toml's
+             #   `revise` were also two same-named steps resolving to two
+             #   entirely different underlying contracts, which this rename
+             #   also removes). Every `after`, `after_loop`, threshold route
+             #   key, and `<step>.<kind>` input reference updated to match.
+             # 7: `verify` routes `unverifiable` to an interposed
              #   `verify-tribunal` vote (`tribunal-correctness`, rule
              #   `tribunal`, `on_fail = "fix-loop"`) instead of `waiting-human`
              #   — the step docs-only, standard-change, security-change and
@@ -81,30 +92,30 @@ executor = "verify-ac"
 expected_cost = 0.40
 gates = [{ name = "ac-commands", pre = true }]
 holds_tree = false
-inputs = ["issue.body", "issue.diff", "dispose.disposition", "verify.gate-results"]
+inputs = ["issue.body", "issue.diff", "dispose.disposition", "verify-ac.gate-results"]
 max_fix_loops = 2
-name = "verify"
+name = "verify-ac"
 packet = ["contracts/{executor}.md"]
 payload = "ac-report@1"
-threshold = { "fix-loop" = "any(status == unmet)", "verify-tribunal" = "any(status == unverifiable)" }
+threshold = { "fix-loop" = "any(status == unmet)", "verify-ac-vote" = "any(status == unverifiable)" }
 
 [[step]]
-after = ["verify"]
-inputs = ["verify.ac-report", "issue.body", "issue.diff"]
-name = "verify-tribunal"
+after = ["verify-ac"]
+inputs = ["verify-ac.ac-report", "issue.body", "issue.diff"]
+name = "verify-ac-vote"
 on_fail = "fix-loop"
 type = "vote"
 vote_rule = "tribunal"
 voters = ["tribunal-correctness"]
 
 [[step]]
-after_loop = "verify"
+after_loop = "verify-ac"
 class = "write"
 emits = "disposition"
 executor = "dispose"
 expected_cost = 0.40
 gates = ["build", "tests"]
-inputs = ["verify.ac-report", "issue.latest.disposition", "issue.body", "verify-tribunal.vote-record"]
+inputs = ["verify-ac.ac-report", "issue.latest.disposition", "issue.body", "verify-ac-vote.vote-record"]
 loop = true
-name = "revise"
+name = "revise-disposition"
 packet = ["contracts/{executor}.md"]

@@ -1,6 +1,12 @@
 [pipeline]
 name = "ui-change"
-version = 26  # 26: three edits on the review stage, no topology change.
+version = 27  # 27: corpus-wide naming-convention pass (src/user/docket/config/README.md).
+              #   Step renames only, no topology change: `synthesize` ->
+              #   `synthesize-findings`, `verify` -> `verify-ac`, `verify-tribunal` ->
+              #   `verify-ac-vote`. Every `after`, threshold route key, and
+              #   `<step>.<kind>` input reference updated to match; `verify`'s
+              #   dependency on `design-qa` is preserved under its new name `verify-ac`.
+              # 26: three edits on the review stage, no topology change.
               #   (1) `verify-tribunal` seats tribunal-correctness alone: its own
               #   cast matched 9 of 9 decided outcomes on this track and 25 of 25
               #   corpus-wide, rejections included, and one voter tallies 1.0 or 0.0
@@ -155,14 +161,14 @@ executor = "synthesize-findings"
 expected_cost = 0.60
 holds_tree = false
 inputs = ["review.*"]
-name = "synthesize"
+name = "synthesize-findings"
 packet = ["contracts/{executor}.md"]
 payload = "findings-cluster@2"
 
 [[step]]
 action = "aggregate"
-after = ["synthesize"]
-inputs = ["synthesize.findings"]
+after = ["synthesize-findings"]
+inputs = ["synthesize-findings.findings"]
 max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", output = "findings" }
@@ -187,7 +193,7 @@ emits = "change-summary"
 executor = "fix"
 expected_cost = 1.00
 gates = ["build", "tests", "self-hygiene", "secret-scan", "doc-validate"]
-inputs = ["reconcile.findings", "synthesize.findings", "implement.change-summary", "issue.latest.change-summary", "issue.latest.ac-report", "design-qa.findings", "verify-tribunal.vote-record"]
+inputs = ["reconcile.findings", "synthesize-findings.findings", "implement.change-summary", "issue.latest.change-summary", "issue.latest.ac-report", "design-qa.findings", "verify-ac-vote.vote-record"]
 loop = true
 name = "fix"
 packet = ["contracts/{executor}.md"]
@@ -212,16 +218,16 @@ executor = "verify-ac"
 expected_cost = 0.50
 gates = [{ name = "ac-commands", pre = true }]
 holds_tree = false
-inputs = ["issue.body", "issue.diff", "implement.change-summary", "verify.gate-results", "design-qa.findings"]
-name = "verify"
+inputs = ["issue.body", "issue.diff", "implement.change-summary", "verify-ac.gate-results", "design-qa.findings"]
+name = "verify-ac"
 packet = ["contracts/{executor}.md"]
 payload = "ac-report@1"
-threshold = { "fix-loop" = "any(status == unmet)", "verify-tribunal" = "any(status == unverifiable)" }
+threshold = { "fix-loop" = "any(status == unmet)", "verify-ac-vote" = "any(status == unverifiable)" }
 
 [[step]]
-after = ["verify"]
-inputs = ["verify.ac-report", "issue.body", "issue.diff"]
-name = "verify-tribunal"
+after = ["verify-ac"]
+inputs = ["verify-ac.ac-report", "issue.body", "issue.diff"]
+name = "verify-ac-vote"
 on_fail = "fix-loop"
 type = "vote"
 vote_rule = "tribunal"

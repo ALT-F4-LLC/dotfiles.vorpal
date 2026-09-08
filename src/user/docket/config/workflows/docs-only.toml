@@ -1,7 +1,14 @@
 [pipeline]
 description = "Documentation change: implement with doc-validate and citation gates, one correctness judge, tribunal-filtered review and AC verification, and a bounded fix-loop re-entering at review; the conductor integrates commits, the operator publishes. Design-heavy doc work routes through spec-doc first."
 name = "docs-only"
-version = 21  # 21: both vote gates seat tribunal-correctness alone.
+version = 22  # 22: corpus-wide naming-convention pass (src/user/docket/config/README.md).
+              #   Step renames only, no topology change: `verify` -> `verify-ac`,
+              #   `review-tribunal` -> `review-vote`, `verify-tribunal` -> `verify-ac-vote`
+              #   (vote steps now uniformly named `<gated-step>-vote`; this file's two
+              #   distinct vote steps get two distinct new names, not the same one).
+              #   Every `after`, threshold route key, and `<step>.<kind>` input
+              #   reference updated to match.
+              # 21: both vote gates seat tribunal-correctness alone.
               #   review-tribunal fired on 3 of 15 reviews and decided 2 (one
               #   approved, one rejected); verify-tribunal never fired here (33 of 33
               #   ACs met). Too few decisions to measure a seat, so this is design
@@ -68,12 +75,12 @@ inputs = ["implement.change-summary", "issue.diff"]
 name = "review"
 packet = ["contracts/{executor}.md"]
 payload = "findings@9"
-threshold = { "review-tribunal" = "any(severity >= blocker)" }
+threshold = { "review-vote" = "any(severity >= blocker)" }
 
 [[step]]
 after = ["review"]
 inputs = ["review.findings", "issue.diff"]
-name = "review-tribunal"
+name = "review-vote"
 on_fail = "fix-loop"
 type = "vote"
 vote_rule = "tribunal"
@@ -86,7 +93,7 @@ emits = "change-summary"
 executor = "fix"
 expected_cost = 0.60
 gates = ["self-hygiene", "doc-validate", "citation-check"]
-inputs = ["review.findings", "implement.change-summary", "issue.latest.change-summary", "issue.latest.ac-report", "review-tribunal.vote-record", "verify-tribunal.vote-record"]
+inputs = ["review.findings", "implement.change-summary", "issue.latest.change-summary", "issue.latest.ac-report", "review-vote.vote-record", "verify-ac-vote.vote-record"]
 loop = true
 name = "fix"
 packet = ["contracts/{executor}.md"]
@@ -98,17 +105,17 @@ executor = "verify-ac"
 expected_cost = 0.40
 gates = [{ name = "ac-commands", pre = true }]
 holds_tree = false
-inputs = ["issue.body", "issue.diff", "implement.change-summary", "verify.gate-results"]
+inputs = ["issue.body", "issue.diff", "implement.change-summary", "verify-ac.gate-results"]
 max_fix_loops = 2
-name = "verify"
+name = "verify-ac"
 packet = ["contracts/{executor}.md"]
 payload = "ac-report@1"
-threshold = { "fix-loop" = "any(status == unmet)", "verify-tribunal" = "any(status == unverifiable)" }
+threshold = { "fix-loop" = "any(status == unmet)", "verify-ac-vote" = "any(status == unverifiable)" }
 
 [[step]]
-after = ["verify"]
-inputs = ["verify.ac-report", "issue.body", "issue.diff"]
-name = "verify-tribunal"
+after = ["verify-ac"]
+inputs = ["verify-ac.ac-report", "issue.body", "issue.diff"]
+name = "verify-ac-vote"
 on_fail = "fix-loop"
 type = "vote"
 vote_rule = "tribunal"

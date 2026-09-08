@@ -631,9 +631,9 @@ which is the artifact kind it produces:
 ```toml
 [[step]]
 name    = "reconcile"
-after   = ["synthesize"]
+after   = ["synthesize-findings"]
 action  = "aggregate"
-inputs  = ["synthesize.findings"]
+inputs  = ["synthesize-findings.findings"]
 payload = "findings@1"
 params  = { field = "severity", method = "median", hold_spread = 2, output = "findings" }
 ```
@@ -705,7 +705,7 @@ defined only over an order, so an aggregate without one could never compute.
 **The input.** The builtin reduces the **concatenated payloads of the step's
 declared `inputs` artifacts**, resolved by the ordinary input rules — `done`
 producers only, in declared order, and scoped to the step's own loop ordinal. So
-`inputs = ["synthesize.findings"]` means "reduce what `synthesize` recorded".
+`inputs = ["synthesize-findings.findings"]` means "reduce what `synthesize-findings` recorded".
 `inputs` must be non-empty on an `aggregate` step, refused at `workflow
 register`: a step with nothing to read can never compute.
 

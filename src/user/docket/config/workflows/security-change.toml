@@ -1,7 +1,14 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 34  # 34: two seat edits, no topology change. (1)
+version = 35  # 35: corpus-wide naming-convention pass (src/user/docket/config/README.md).
+              #   Step renames only, no topology change: `synthesize` ->
+              #   `synthesize-findings` (step now equals its sole executor's name),
+              #   `verify` -> `verify-ac` (same), `verify-tribunal` -> `verify-ac-vote`
+              #   (vote steps now uniformly named `<gated-step>-vote`). Every `after`,
+              #   threshold route key, and `<step>.<kind>` input reference updated to
+              #   match.
+              # 34: two seat edits, no topology change. (1)
               #   `security-vote` seats judge-security and judge-correctness;
               #   judge-architecture leaves the roster. Measured over the 86 decided
               #   votes on this track and its retired security-load-bearing sibling
@@ -279,14 +286,14 @@ executor = "synthesize-findings"
 expected_cost = 0.60
 holds_tree = false
 inputs = ["review.*"]
-name = "synthesize"
+name = "synthesize-findings"
 packet = ["contracts/{executor}.md"]
 payload = "findings-cluster@2"
 
 [[step]]
 action = "aggregate"
-after = ["synthesize"]
-inputs = ["synthesize.findings"]
+after = ["synthesize-findings"]
+inputs = ["synthesize-findings.findings"]
 max_fix_loops = 3
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
@@ -301,7 +308,7 @@ emits = "change-summary"
 packet = ["contracts/{executor}.md"]
 expected_cost = 1.00
 loop = true
-inputs = ["reconcile.findings", "synthesize.findings", "implement.change-summary", "issue.latest.change-summary", "threat-model.threat-model", "issue.latest.ac-report", "security-vote.vote-record", "verify-tribunal.vote-record"]
+inputs = ["reconcile.findings", "synthesize-findings.findings", "implement.change-summary", "issue.latest.change-summary", "threat-model.threat-model", "issue.latest.ac-report", "security-vote.vote-record", "verify-ac-vote.vote-record"]
 gates = ["build", "tests", "self-hygiene", "secret-scan", "vuln-scan", "sdet-abuse", "doc-validate"]
 after_loop = "review"
 
@@ -340,16 +347,16 @@ executor = "verify-ac"
 expected_cost = 0.50
 gates = [{ name = "ac-commands", pre = true }]
 holds_tree = false
-inputs = ["issue.body", "issue.diff", "implement.change-summary", "verify.gate-results"]
-name = "verify"
+inputs = ["issue.body", "issue.diff", "implement.change-summary", "verify-ac.gate-results"]
+name = "verify-ac"
 packet = ["contracts/{executor}.md"]
 payload = "ac-report@1"
-threshold = { "fix-loop" = "any(status == unmet)", "verify-tribunal" = "any(status == unverifiable)" }
+threshold = { "fix-loop" = "any(status == unmet)", "verify-ac-vote" = "any(status == unverifiable)" }
 
 [[step]]
-after = ["verify"]
-inputs = ["verify.ac-report", "issue.body", "issue.diff"]
-name = "verify-tribunal"
+after = ["verify-ac"]
+inputs = ["verify-ac.ac-report", "issue.body", "issue.diff"]
+name = "verify-ac-vote"
 on_fail = "fix-loop"
 type = "vote"
 vote_rule = "tribunal"

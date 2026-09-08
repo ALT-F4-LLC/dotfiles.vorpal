@@ -1,6 +1,6 @@
 ---
 node: dispose
-version: 5
+version: 6
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
@@ -81,7 +81,7 @@ instead of inferring success from an issued command. After a failed or ambiguous
 write, reconcile the saved state before any authorized retry; if the outcome
 remains unknown, stop the dependent actions.
 
-When `verify.ac-report` is present, read it and the posted disposition. Answer each
+When `verify-ac.ac-report` is present, read it and the posted disposition. Answer each
 unmet rationale with a correction within this node's scope or cited counter-evidence.
 When the comment needs correction, append a complete corrected disposition linking
 the earlier comment and identifying what it supersedes. Preserve the earlier text.

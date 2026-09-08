@@ -1,6 +1,6 @@
 ---
 node: adr-author
-version: 6
+version: 7
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
@@ -74,7 +74,8 @@ Use stable ADR links and revision-specific references for exact historical
 passages. Link to detailed comparisons and verification evidence.
 
 # Emit
-`adr`: the new or updated decision record, with its identifier, title, status,
+Engine kind: `doc` (per frontmatter). Document type: `adr` — the new or
+updated decision record, with its identifier, title, status,
 known decision date and decision-maker, and evidence of selection or acceptance.
 Use the repository's metadata format. New records and revised drafts retain these
 sections; addenda preserve the accepted record's existing structure:

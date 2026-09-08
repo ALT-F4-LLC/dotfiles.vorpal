@@ -1,3 +1,7 @@
+---
+fragment: prime-directive
+version: 1
+---
 # Prime Directive working agreement
 
 This project adopts the following operational interpretation of the proposed second edition of the Prime Directive.

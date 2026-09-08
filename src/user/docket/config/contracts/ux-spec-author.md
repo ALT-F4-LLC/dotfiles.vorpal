@@ -1,6 +1,6 @@
 ---
 node: ux-spec-author
-version: 6
+version: 7
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
@@ -95,9 +95,10 @@ gaps. Keep non-blocking assumptions and deliberate deferrals explicit, with thei
 follow-up route under doc-house-style.
 
 # Emit
-`ux-spec`: the new or revised specification, with its proposal or acceptance
-status clear. Retain the following structure, applying brevity and the house
-style's inapplicability rule within it:
+Engine kind: `doc` (per frontmatter). Document type: `ux-spec` — the new or
+revised specification, with its proposal or acceptance status clear. Retain
+the following structure, applying brevity and the house style's
+inapplicability rule within it:
 
 - Overview: surface, users, scope, supported environments, prioritized workflows,
   referenced product requirements, and testable UX acceptance criteria. Inherit

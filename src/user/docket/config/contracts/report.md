@@ -1,6 +1,6 @@
 ---
 node: report
-version: 4
+version: 5
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -11,13 +11,13 @@ emits: investigation
 ---
 # Charter
 Synthesize the investigate step's artifact (INPUT investigation) and any supplied
-research inputs into the single report the read-gate decides on. The investigation
+research inputs into the single report the report-vote decides on. The investigation
 may establish a cause, several contributing causes, or an undetermined cause.
 Assemble its findings and limits into a coherent, self-contained account.
 
 Apply `writing-for-humans` to presentation and `evidence-rules` and `truth-first`
 to evidence interpretation and preservation within this synthesis-only role.
-The report serves the read-gate and the operator when it escalates; the gate
+The report serves the report-vote and the operator when it escalates; the gate
 owns the pass decision.
 
 # Not
@@ -100,7 +100,7 @@ impact, and follow-up route. Include a fix shape when supported; otherwise
 retain the verification needed. Do not promote a discovery into the causal
 explanation without a connection established by the inputs.
 
-The report must stand alone: the read-gate receives it without the raw inputs.
+The report must stand alone: the report-vote receives it without the raw inputs.
 Include the evidence and context needed to assess every load-bearing claim;
 citations provide traceability but do not replace that content. Preserve relevant
 input gaps even when supported findings can still be reported.

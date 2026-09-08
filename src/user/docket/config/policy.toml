@@ -1,5 +1,11 @@
 [policy]
-version = 23
+version = 24  # 24: corpus-wide naming-convention pass
+              # (src/user/docket/config/README.md) adds two `[executors]` rows,
+              # `report` and `revise-investigation`, promoted from borrowing
+              # `investigate`'s policy row (investigation.toml renamed their
+              # steps to match their own executor identity). Both inherit
+              # `investigate`'s current `fable-high` tier absent evidence to
+              # retune it. No existing row renamed or retuned.
 
 # `blocked`: the hold label. An issue not yet workable — blocked on
 # a capability that does not exist, or needing a design session before
@@ -115,10 +121,20 @@ judge-testing = { variant = "opus-medium" }
 # deliverable class D4 measured — medium matched the default at 70-87% of its cost —
 # and D5 has Fable at medium matching Fable 5; max is contraindicated by D1.
 prd-author = { variant = "fable-medium" }
+# fable-high, matching investigate: this executor was investigation.toml's
+# `report` step, which previously ran under investigate's own policy row;
+# same synthesis-only read work, same tier, per D1's ground for
+# root-cause/architecture judgment on Fable.
+report = { variant = "fable-high" }
 # fable-medium, down from fable-xhigh: D4 — DeepResearch Bench II scored the same at
 # low, medium, and high while cost rose; D5 — at low Fable calls retrieval less
 # often, so medium is the floor for a seat whose whole job is retrieval.
 research = { variant = "fable-medium" }
+# fable-high, matching investigate: this executor was investigation.toml's
+# `revise` loop-back step, which previously ran under investigate's own
+# policy row and a literal `contracts/revise.md` packet path. Same
+# revision-only read/write class, same tier.
+revise-investigation = { variant = "fable-high" }
 spec-author-architecture = { variant = "opus-high" }
 spec-author-code-quality = { variant = "opus-high" }
 spec-author-operations = { variant = "opus-high" }

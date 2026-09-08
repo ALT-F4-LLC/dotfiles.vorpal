@@ -52,6 +52,8 @@ jobs:
 
       - run: bash tests/tribunal-seat-brief.test.sh
 
+      - run: bash tests/wave-agent-budget.test.sh
+
       - run: bash tests/wave-bootstrap-render.test.sh
 
       - run: bash tests/wave-chain-dead-ladder.test.sh

@@ -1,6 +1,6 @@
 export const meta = {
     name: 'wave',
-    description: 'Run one dispatched manifest end to end: spawn one executor per executor row at the model/effort the engine rendered on it, seat a judge panel on each vote row from its routed roster, and skip action rows (engine-run at record time). Stages run as awaited groups per issue lane, with the cross-issue cohorts the manifest certifies honored — the staged closure means one wave can carry judges -> gate -> reconcile -> report, and inside a wave no issue idles behind the slower stages of another; writers the engine never co-staged still serialize, so a wave launches at most three such writer cohorts and defers the rest to the next dispatch rather than holding every finished lane behind a long writer ladder. PROBE COST PER VOTE ROW: 2 read-only haiku probes of `docket gate status` on the normal path — one before the panel seats (decided yet, which proposal, which target) and one after it returns (missing seats and the tally) — 1 on a gate that was already decided before the wave reached it, and 3 when a re-seat forces a re-read; a gate with no proposal yet spends a `step show` for the engine\'s blocked_reason instead of a panel, and an engine-minted held-cluster gate spends one more read to name its cluster. Each probe answers through a schema, under 1 KB; the per-gate count is reported verbatim in that row\'s spawn_accounting. Invoke by scriptPath ONLY, with args {rows} as a real object — every row carries model/effort/variant resolved by the engine, and the script reads no policy and cannot read files.',
+    description: 'Run one dispatched manifest end to end: spawn one executor per executor row at the model/effort the engine rendered on it, seat a judge panel on each vote row from its routed roster, and skip action rows (engine-run at record time). Stages run as awaited groups per issue lane, with the cross-issue cohorts the manifest certifies honored — the staged closure means one wave can carry judges -> gate -> reconcile -> report, and inside a wave no issue idles behind the slower stages of another; writers the engine never co-staged still serialize, so a wave launches at most three such writer cohorts and defers the rest to the next dispatch rather than holding every finished lane behind a long writer ladder. AGENT BUDGET: the Workflow tool caps one invocation at 1000 agents over its lifetime, so the wave reserves each row\'s projected agents at admission (executor 2, vote row seats+3) against a 900-agent budget and defers, on the spot and without holding its lane, every row the remainder cannot cover; the engine re-offers deferred rows at the next dispatch, and a manifest of any size is safe to hand over whole. PROBE COST PER VOTE ROW: 2 read-only haiku probes of `docket gate status` on the normal path — one before the panel seats (decided yet, which proposal, which target) and one after it returns (missing seats and the tally) — 1 on a gate that was already decided before the wave reached it, and 3 when a re-seat forces a re-read; a gate with no proposal yet spends a `step show` for the engine\'s blocked_reason instead of a panel, and an engine-minted held-cluster gate spends one more read to name its cluster. Each probe answers through a schema, under 1 KB; the per-gate count is reported verbatim in that row\'s spawn_accounting. Invoke by scriptPath ONLY, with args {rows} as a real object — every row carries model/effort/variant resolved by the engine, and the script reads no policy and cannot read files.',
     whenToUse: 'Invoked by the docket-run skill on an open dispatch, always as Workflow({scriptPath}) — never by name. args is {rows, tribunal, cwd}: `next` rows VERBATIM (executor, vote, and action rows; human rows stay with the conductor), each executor row carrying the model/effort/variant the engine resolved from the run\'s pinned policy.toml and each vote row carrying the same per voter in `voter_assignments` — a row re-typed without those fields is refused. `tribunal` is the absolute installed path to tribunal.js, the one workflow-nesting level this script uses to seat every in-wave panel (it cannot resolve that path itself); `cwd` is the repo the run belongs to. On a dispatch carrying a fix round\'s review fanout, args also carries `integrated` — a map from each such issue to the sha of its prior round\'s INTEGRATION commit — so the wave can assert base ancestry before seating the fanout. There is no policy argument of any kind and no file access.',
 }
 
@@ -2314,6 +2314,59 @@ function writerLadderDepth(row) {
 }
 const overWriterBudget = (row) => isWriter(row) && !!row.issue &&
     writerLadderDepth(row) >= WRITER_LADDER_BUDGET
+
+// AGENT BUDGET. The Workflow tool caps the agents one invocation may spawn
+// over its LIFETIME at 1000 — documented as a runaway-loop backstop "set far
+// above any real workflow", and one a staged-closure manifest clears with no
+// loop anywhere: RUN-95's first `dispatch open` (no --limit) offered 947
+// executor rows and 200 vote rows, some 1750-2150 agents once seats and probes
+// are counted, and a wave launched over it would have died mid-flight with
+// claims and worktrees stranded across most of the run's issues. Sub-waves
+// inside one script do not help — the cap counts every agent() the invocation
+// ever made — and `--limit` on the open was a hand-sized workaround that
+// depended on harness internals the conductor had to re-derive each time. So
+// the wave BOUNDS ITSELF. Every row reserves its projected agents the instant
+// it is admitted; a row the remaining budget cannot cover is DEFERRED on the
+// spot — never held: a held row blocks its lane, and through the stage await
+// every row behind it — and the engine re-offers deferred rows at the next
+// dispatch exactly as it does the writer-ladder deferrals above. The check is
+// per row at the instant it asks, so lanes still inside the budget keep
+// launching around a deferred one, and admissionRank's deepest-stage-first
+// order spends what is left on finishing chains rather than starting more.
+//
+// The projection is the ORDINARY path, not the worst case, so a manifest that
+// fits is not throttled by a retry it will not need: an executor is its spawn
+// plus one read-only probe (pre-claim, ancestry, or the null-recovery read); a
+// vote row is its seats plus the two gate:status reads and one more for a
+// blocked or held read. Retries, re-seats and block probes are the exception
+// and are paid from the reserve held back below the cap.
+const AGENT_LIFETIME_CAP = 1000
+const AGENT_BUDGET_RESERVE = 100
+const AGENT_BUDGET = AGENT_LIFETIME_CAP - AGENT_BUDGET_RESERVE
+const EXECUTOR_AGENT_COST = 2
+const VOTE_PROBE_COST = 3
+const DEFAULT_PANEL_SEATS = 3
+function agentCost(row) {
+    if (row.kind === 'action') return 0
+    if (row.kind === 'vote') {
+        const seats = Array.isArray(row.voter_assignments) && row.voter_assignments.length > 0
+            ? row.voter_assignments.length : DEFAULT_PANEL_SEATS
+        return seats + VOTE_PROBE_COST
+    }
+    return EXECUTOR_AGENT_COST
+}
+let agentsReserved = 0
+const agentsProjected = rows.reduce((n, r) => n + agentCost(r), 0)
+if (agentsProjected > AGENT_BUDGET) {
+    log(`wave: the manifest projects ~${agentsProjected} agents against a budget of ` +
+        `${AGENT_BUDGET} (the Workflow tool's ${AGENT_LIFETIME_CAP}-agent lifetime cap less a ` +
+        `${AGENT_BUDGET_RESERVE}-agent reserve for retries and re-seats); rows the budget ` +
+        `cannot cover are deferred to the next dispatch as they come up, deepest stages first`)
+}
+const overAgentBudget = (row) => agentsReserved + agentCost(row) > AGENT_BUDGET
+const AGENT_BUDGET_DEFERRAL = 'agent budget: the wave reserves at most ' +
+    `${AGENT_BUDGET} projected agents per launch`
+
 if (lanes.size > 1) {
     log(`wave: lanes run concurrently; the manifest certifies class headroom ` +
         [...certifiedClass.entries()].map(([c, n]) => `${c || '(no class)'}≤${n}`).join(', '))
@@ -2401,7 +2454,16 @@ function pump() {
         const w = waiting[i]
         if (parked) {
             waiting.splice(i, 1)
-            w.resolve(false)
+            w.resolve('parked')
+            continue
+        }
+        // The budget is decided BEFORE the cohort blockers and never waited
+        // on: a reservation is only ever released by the wave ending, so a
+        // row that does not fit now will not fit later, and holding it would
+        // idle its lane behind a slot that is not coming.
+        if (overAgentBudget(w.row)) {
+            waiting.splice(i, 1)
+            w.resolve('budget')
             continue
         }
         const why = blocker(w.row)
@@ -2414,13 +2476,15 @@ function pump() {
             continue
         }
         waiting.splice(i, 1)
+        agentsReserved += agentCost(w.row)
         if (isExecutorRow(w.row)) inFlight.set(w.row.step, w.row)
         if (w.held) log(`${w.row.step}: released — launching`)
-        w.resolve(true)
+        w.resolve('launch')
         i = 0
     }
 }
-// Resolves true to launch, false when the run parked while the row waited.
+// Resolves 'launch' to launch, 'parked' when the run parked while the row
+// waited, 'budget' when the agent budget cannot cover the row.
 function admission(row) {
     return new Promise((resolve) => {
         waiting.push({ row, seq: submitted++, resolve, held: false })
@@ -2528,7 +2592,23 @@ async function runLane(name, laneRows) {
                 return Promise.resolve({ step: row.step, status: 'not-launched-writer-budget', text: null })
             }
             return admission(row).then((go) => {
-                if (!go) {
+                if (go === 'budget') {
+                    // Same settle as the writer-ladder deferral: nothing
+                    // failed, the row is not launched this wave, and the
+                    // engine re-offers it (and its lane's later rows, which
+                    // the deadIssues mark keeps from booting into a claim
+                    // refusal) at the next dispatch.
+                    log(`${row.step}: not launched — agent budget: ${agentsReserved} of ` +
+                        `${AGENT_BUDGET} projected agents reserved and this row needs ` +
+                        `${agentCost(row)} more; the engine re-offers it next dispatch` +
+                        (row.issue ? ` (issue ${row.issue}'s later stages deferred)` : ''))
+                    if (row.issue) {
+                        deadIssues.set(row.issue, { step: row.step, status: 'not-launched-agent-budget',
+                            deferral: AGENT_BUDGET_DEFERRAL })
+                    }
+                    return { step: row.step, status: 'not-launched-agent-budget', text: null }
+                }
+                if (go !== 'launch') {
                     log(`${row.step}: not launched — the run parked while it waited`)
                     return { step: row.step, status: 'not-launched-run-parked', text: null }
                 }
@@ -2578,6 +2658,20 @@ async function runLane(name, laneRows) {
 }
 
 await parallel([...lanes.entries()].map(([name, laneRows]) => () => runLane(name, laneRows)))
+
+// The budget's accounting, always: a wave that launched everything says so
+// too, and a reader comparing a wave's projected reservation to its
+// spawn_accounting can recalibrate the per-kind costs above from evidence.
+{
+    const deferred = rows.filter((row) => {
+        const out = byStep.get(row.step)
+        return out && out.status === 'not-launched-agent-budget'
+    }).length
+    log(`wave: agent budget — ${agentsReserved} of ${AGENT_BUDGET} projected agents ` +
+        `reserved this launch` + (deferred > 0
+            ? `; ${deferred} row(s) deferred to the next dispatch for want of budget`
+            : ''))
+}
 
 return rows.map((row) => byStep.get(row.step) ||
     { step: row.step, status: parked ? 'not-launched-run-parked' : 'spawn-failed' })

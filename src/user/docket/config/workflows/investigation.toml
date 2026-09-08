@@ -9,13 +9,12 @@ version = 13  # 13: corpus-wide naming-convention pass (src/user/docket/config/R
               #   paths (`contracts/report.md`, `contracts/revise.md`) — each
               #   gets its own `[executors]` row (`report`,
               #   `revise-investigation`) and resolves its packet via the
-              #   standard `contracts/{executor}.md` form. `revise` is
-              #   renamed to `revise-investigation` since its new executor
-              #   identity needs a step name that differs from its own
-              #   executor is never required, but this loop-back step's old
-              #   name collided with disposition.toml's unrelated `revise`
-              #   step, and the executor rename makes `revise-investigation`
-              #   the natural step name too. `contracts/revise.md` is
+              #   standard `contracts/{executor}.md` form. This loop-back
+              #   step's old name, `revise`, also collided with
+              #   disposition.toml's unrelated `revise` step (a different
+              #   executor, a different contract) — renaming the step to
+              #   `revise-investigation` alongside its new executor identity
+              #   removes that collision too. `contracts/revise.md` is
               #   renamed to `contracts/revise-investigation.md` to match.
               # 12: `read-gate` seats tribunal-correctness alone.
               #   Four gates decided on this machine, all approved, twelve casts; the

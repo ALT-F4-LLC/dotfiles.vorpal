@@ -85,7 +85,7 @@ rather than assuming an unsandboxed shell is needed. Where it is not writable,
 | Attempt pressure | `attempts`, loop ordinals | a step repeatedly at `max_attempts` wants a smaller charter, not a bigger budget |
 | Trust drift (D14) | `trust-added`/`trust-removed` (store-level; query with `--all-projects` — visible either way, but only that flag proves you saw all of them) | **an entry the operator does not recognize is a finding, and you raise it first** |
 | Config churn (D15) | your own proposals per run over time | churn trending up means docket-bootstrap mined the repo wrong; fix the source, not each symptom |
-| Routing drift | the four metadata keys (below), read per step with `docket step show` / `step context` — `run report`'s `metadata` is a key → distinct-values rollup that never pairs requested with resolved on one step, so it shows aggregate skew only | requested ≠ resolved across runs means policy asks for a model it does not get |
+| Routing drift | the requested pair only, from step rows: `model_requested` / `effort_requested` (below). The resolved pair on a step row is `unknown` unless the runtime supplied an observation, so it measures nothing. The serving model is observed only by wave-usage.js, which reads it from each transcript's assistant messages and returns it as `model_observations` to the conversation that drove the wave, apart from routing requests; nothing persists it, and its ledger rows carry step, unit and quantity only | a served model that differs from the requested one, in the driving conversation's wave-usage results, means policy asks for a model it does not get; a store-only retro cannot see it and says so instead of reporting a clean row |
 | Vote calibration | `vote_rule` outcomes vs the threshold | a rule that never fails, or always fails, is a threshold not doing work |
 | Variant fit | `[executors]` rows vs attempts + cost at that variant | a row failing repeatedly at its variant is mis-sized, not under-budgeted |
 | Review-yield | output tokens per stage (review vs implement vs verify, from `metadata`/`budget`); distinct clusters the review stage found; distinct issues `drain-highs` filed, post-dedupe; how many of those routed to a fix round; how many prior runs' `review-gap` issues (`docket issue list --label review-gap --json`) have since closed | review spend far exceeding implement's own, or a low post-dedupe filed-to-found ratio, means the stage is expensive relative to what survives it; a flat or falling closed count across runs means filed `review-gap` backlog is accumulating unworked |
@@ -134,16 +134,24 @@ is creating it, not calibrating it. Sizing these from evidence — and creating
 the missing ones — is explicitly docket-retro's job. A rule whose outcome never
 differs from a plain human gate is a rule to question, not tune.
 
-**The four metadata keys.** Every completed step carries
-`model_requested` / `effort_requested` (what policy asked for) and
-`model_resolved` / `effort_resolved` (what actually served). The gap between
-them is routing drift, and it is invisible anywhere else. Read the pair off
-the step itself (`docket step show` / `step context`): `run report`'s
-`metadata` is a rollup of key → distinct values with counts, so it can show
-that resolutions disagree in aggregate but never which step asked for what.
-Known blind spot, stated so you do not misread a clean report: **a failed or
-crashed step contributes none of the four**, so drift concentrated in failures
-will not appear here. Read attempt counts alongside.
+**The four metadata keys, two of them observed.** Every completed step
+carries `model_requested` / `effort_requested` (what policy asked for) and
+`model_resolved` / `effort_resolved` (what actually served). Today only the
+requested pair is observed: the wave writes the resolved pair as `unknown` at
+claim time and tells executors to leave it so unless the runtime supplies an
+observation, and none has so far, so a completed step contributes only the
+requested pair. The serving model is recorded nowhere in the store;
+wave-usage.js reads it from each transcript's assistant messages and returns
+it as `model_observations` to the conversation that drove the wave, apart
+from the usage rows it back-fills. Read the requested pair off the step
+itself (`docket step show` / `step context`): `run report`'s `metadata` is a
+rollup of key → distinct values with counts, so it can show aggregate skew
+but never which step asked for what. Known blind spots, stated so you do not
+misread a clean report: **a failed or crashed step contributes none of the
+four, and a completed step contributes only the requested two**, so drift is
+invisible here by construction; measure it from the driving conversation's
+wave-usage results, or state that it was not measured. Read attempt counts
+alongside.
 
 **Lease and duration limits, if steps are being reaped mid-work.** Liveness is
 no longer TTL-only: `step heartbeat` extends a live claim, `step reap STEP-N

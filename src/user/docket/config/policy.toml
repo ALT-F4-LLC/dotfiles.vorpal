@@ -1,5 +1,9 @@
 [policy]
-version = 24  # 24: corpus-wide naming-convention pass
+version = 25  # 25: docket-groom now parents retained issues under epics and
+              # can propose creating one, marking it `blocked` so no workflow
+              # selects it. That is a permanent use of the hold label, which
+              # this file's `blocked` comment did not previously cover.
+              # 24: corpus-wide naming-convention pass
               # (src/user/docket/config/README.md) adds two `[executors]` rows,
               # `report` and `revise-investigation`, promoted from borrowing
               # `investigate`'s policy row (investigation.toml renamed their
@@ -15,6 +19,10 @@ version = 24  # 24: corpus-wide naming-convention pass
 # names it. Remove the label only once the specific blocking condition named
 # on the issue (the missing capability, or the completed design session) is
 # met; it is not a silent, permanent exclusion.
+#
+# Exception: an epic issue (kind `epic`) carries `blocked` permanently as a
+# container marker, since epics have no work of their own for a workflow to
+# match. docket-groom never removes `blocked` from an epic.
 
 [variants]
 fable-high = { model = "fable", effort = "high" }

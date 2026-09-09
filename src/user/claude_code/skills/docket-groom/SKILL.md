@@ -1,6 +1,6 @@
 ---
 name: docket-groom
-description: Groom every open issue in the current Docket project and the Docket engine project in the main session until retained work is easy to consume. Validate value and engine relevance, verify and repair every acceptance criterion, triage tickets needing operator decisions through AskUserQuestion, retire approved obsolete or duplicate work, and close gaps in requirements, files, scope, dependencies, and workflow fit. Safe edits apply directly; closures, merges, scope changes, and protected-issue edits require operator approval. One survey across both projects with an optional stale window, including decision follow-through; no implementation or watch. Use on "groom the backlog", "/groom", "clean up the backlog", "triage operator decisions", "which issues are still worth doing", or "make the backlog run-ready".
+description: Groom every open issue in the current Docket project and the Docket engine project in the main session until retained work is easy to consume. Validate value and engine relevance, verify and repair every acceptance criterion, triage tickets needing operator decisions through AskUserQuestion, retire approved obsolete or duplicate work, group retained work under relevant Docket epics, and close gaps in requirements, files, scope, dependencies, and workflow fit. Safe edits apply directly; closures, merges, scope changes, epic creation, re-parenting, and protected-issue edits require operator approval. One survey across both projects with an optional stale window, including decision follow-through; no implementation or watch. Use on "groom the backlog", "/groom", "clean up the backlog", "triage operator decisions", "which issues are still worth doing", or "make the backlog run-ready".
 argument-hint: "[stale window, e.g. 14d]"
 model: fable
 ---
@@ -13,8 +13,10 @@ capability gaps still apply, including those filed by other Docket skills.
 The goal is to close all grooming gaps so retained work is valuable,
 clear, and easy for the next worker to consume without reconstructing
 context or asking the operator to settle an existing ambiguity. Judge value,
-resolve missing facts, triage operator decisions, and apply the resulting
-authorized edits.
+resolve missing facts, triage operator decisions, group retained work under
+the Docket epics it serves, and apply the resulting authorized edits. A
+groomed backlog reads as a short list of outcomes with their member issues,
+not a flat list.
 Seek a backlog of valuable work, without a target issue count or closure
 quota. Identifying a gap or listing a question is not resolving it.
 
@@ -43,13 +45,17 @@ Rules you must not fight:
 - **Never invoke `docket-plan`, `docket-run`, or `tend`, and never create,
   activate, or advance a docket run.** Grooming is issue hygiene only.
   Docket mutations are limited to the `docket issue …` operations described
-  below. Read-only `docket project list`, `docket run status`,
+  below, including `docket issue edit --parent` and, only for an epic
+  proposal the operator approved in §4b, `docket issue create -T epic`.
+  Read-only `docket project list`, `docket run status`,
   `docket workflow list`, `docket workflow show`, and CLI help are also
   permitted for the checks below. Confirm exact command syntax through
   the relevant `--help`.
 - **Safe edits are yours; approval-gated edits are not.** Labels, priority,
-  comments, and field fills apply directly subject to §1's exclusions.
-  Closures, merges, changes to existing requirements or relations, and
+  comments, field fills, and parenting an unparented retained issue to an
+  existing epic apply directly subject to §1's exclusions.
+  Closures, merges, changes to existing requirements or relations, epic
+  creation, moving an issue between parents, and
   edits rerouted by those exclusions go through §4;
   only run `docket issue close` for a proposal the operator approved there.
 - **Judge from evidence.** A duplicate call you cannot defend in one
@@ -99,6 +105,13 @@ Keep each issue's owning project, checkout, and store context throughout
 the pass. Read files, resolve workflows, inspect active runs and their
 rosters, and execute issue commands in that owning context. Review an issue
 only once when it appears through several queries or references.
+
+Epics arrive through the same survey: a row whose `kind` is `epic` is an
+epic, and every row's `parent_id` names its epic when it has one. Do not
+run a separate epic query; the survey's explicit status flags already cover
+every open status. Record each project's open epics and each issue's
+current parent in the ledger before judging anything. `docket issue show`
+lists an epic's children under `sub_issues`.
 
 Two kinds of issue are in scope to read but not yours to freely edit — this
 queue isn't docket-groom's alone:
@@ -192,7 +205,8 @@ Assign exactly one decision, keeping readiness as a separate assessment:
 - **Rescope:** the problem has value, but the proposed approach is obsolete,
   oversized, or mixes useful and unnecessary work. Propose the smallest
   supported change to the existing contract through §4. Suggest a split
-  when outcomes are independent, but do not create new issues in this pass.
+  when outcomes are independent, but do not create new issues in this pass;
+  the one exception is an epic the operator approves under §4b.
 - **Merge:** another retained issue can represent the same outcome after
   preserving this issue's unique information. Use §4's merge proposal.
 - **Close:** propose closure through §4 with a specific reason: fully
@@ -201,6 +215,15 @@ Assign exactly one decision, keeping readiness as a separate assessment:
   superseded issue, name where the remaining need is represented. For a
   value-versus-cost judgment, state the concrete tradeoff and assumptions
   for the operator to decide; low priority alone is not a reason.
+
+An epic is a container, and its value is its open `sub_issues`. Retain an
+epic while any child is retained or unresolved. When every child is closed
+or the epic's outcome is delivered, propose its closure through §4b. Never
+propose closing an epic that still has open children unless the same
+proposal re-parents each of them; an epic closure must not orphan work.
+An epic whose stated outcome no longer fits the project can be closed only
+after its retained children are re-parented or explicitly left as roots
+in the same proposal.
 
 Challenge each retention: would its remaining outcome justify accepting
 this issue if filed today? Challenge each closure: what concrete benefit
@@ -266,9 +289,33 @@ Record these findings alongside the value decision:
   statement of the criteria. Remove a size label the issue's files, scope,
   or criteria have outgrown, and add one where they fit the rule; an
   eligible issue carrying neither walks the full `standard-change` chain.
+- **Ungrouped:** a retained non-epic issue with no parent, or whose parent
+  is not the epic its outcome serves. Match the issue to an open epic in
+  its owning project by shared outcome, judged the way the duplicate rule
+  judges: a membership you cannot defend in one sentence is not a
+  membership, it is two issues that share a noun. The epic's title and
+  description, `depends_on` relations among candidate members, shared
+  files or scope, and recorded decisions are evidence; a shared label or
+  component name alone is not. Record the epic and the one-sentence
+  defense in the ledger. Where no open epic fits and two or more retained
+  issues share one defensible outcome, draft an epic proposal for §4b with
+  its title, a description naming the outcome, and its members. An issue
+  with no defensible epic stays unparented and is reported as such; never
+  force a group, and never nest an epic under another epic. Epics stay
+  per project; do not propose a parent in another project.
 
-For every retained issue, also confirm that its labels match exactly one
-intended workflow using [docket-plan](../docket-plan/SKILL.md)'s binding
+Epics are containers, not work. Skip the not-run-ready, size-label, and
+stale-binding checks for an issue whose `kind` is `epic`: it declares no
+files, scope, or acceptance criteria, and it carries `blocked` so it matches
+zero registered workflows. `standard-change` binds any issue that no label
+excludes, so an epic without `blocked` would be selected by a bare
+`docket-plan` and walk the chain with nothing to do. `blocked` on an epic is
+expected, not a stale-binding finding; an epic without it is a readiness
+gap whose repair is adding the label under §3.
+
+For every retained non-epic issue, also confirm that its labels match
+exactly one intended workflow using
+[docket-plan](../docket-plan/SKILL.md)'s binding
 probe as reference, including local workflow definitions in its owning
 project.
 Zero matches, several matches, an unavailable registry, or a mismatch
@@ -283,11 +330,13 @@ to work an issue.
 
 ### 2c. Verify every acceptance criterion
 
-Review the full acceptance-criteria set on every surveyed issue, including
-existing criteria that appear complete. Check each criterion individually
-and the set against the current goal, requirements, and recorded decisions.
-One good criterion does not make the rest acceptable. Record each defective
-criterion and uncovered requirement in the ledger with the needed repair.
+Review the full acceptance-criteria set on every surveyed non-epic issue,
+including existing criteria that appear complete. Check each criterion
+individually and the set against the current goal, requirements, and
+recorded decisions. One good criterion does not make the rest acceptable.
+Record each defective criterion and uncovered requirement in the ledger
+with the needed repair. An epic carries no acceptance criteria of its own;
+its children carry them, and an epic without criteria is not a gap.
 
 A well-defined set meets all of these conditions:
 
@@ -346,6 +395,18 @@ confirmed unchanged workflow eligibility apply directly; other edits
 route to §4. Use existing label conventions and do not add a value label
 whose workflow effect is unknown. Ledger decisions are not Docket statuses
 or labels and do not authorize status changes.
+
+Parenting is a safe edit under one condition: the issue is retained, has
+no parent, is neither run-included nor claimed, and the target is an
+existing open epic in the same project with a §2b defense recorded. Apply
+it with `docket issue edit <id> --parent <epic> --if-version <n>` from a
+fresh read, then comment the one-sentence defense on the child. Parent
+and kind route nothing in any registered workflow and activation does not
+freeze them, so this edit changes no eligibility. Moving an issue between
+parents, parenting a run-included or claimed issue, and detaching an
+issue go through §4b. Adding `blocked` to an epic that lacks it is a
+direct label edit here, since the corpus policy documents its exclusion
+effect. Never remove `blocked` from an epic during grooming.
 
 Do not automatically broaden workflow eligibility for issues whose value
 is unresolved or whose closure, merge, or rescope is pending. Identify any
@@ -456,8 +517,9 @@ these blockers remain, report an incomplete pass under §5 and stop.
 
 Closures and merges never apply without the operator's say-so. Batch the
 proposals from §2 — value-based closures, duplicate merges, rescopes,
-repairs to acceptance criteria, relation corrections, confirmed workflow
-holds, and edits §1 rerouted here. Each proposal must contain:
+repairs to acceptance criteria, relation corrections, epic creations,
+re-parents, confirmed workflow holds, and edits §1 rerouted here. Each
+proposal must contain:
 
 - A stable number, kind, and every issue ID with its owning project.
 - A one-sentence defense tied to the surveyed evidence.
@@ -485,8 +547,9 @@ justify reconsideration, without scheduling a revisit. Do not describe
 obsolete, rejected, or superseded work as implemented.
 
 Before proposing any closure or merge, inspect incoming and outgoing
-relations. Establish whether closing it would unblock dependent work or
-imply fulfillment of a prerequisite. Cancellation does not fulfill a
+relations, the issue's parent, and its `sub_issues`. Establish whether
+closing it would unblock dependent work, imply fulfillment of a
+prerequisite, or orphan children. Cancellation does not fulfill a
 dependency. Include necessary preservation and relation corrections in
 the same proposal, using supported CLI operations before the closure.
 If the consequences or a suitable representation cannot be established,
@@ -510,13 +573,41 @@ and names the condition for reconsideration. It does not cancel or change
 an active run or claim; if safe isolation would require either, report that
 limit.
 
+An **epic creation** proposes one new issue of kind `epic` in one project:
+its title, a description naming the shared outcome and what completing it
+means, the `blocked` label, and every member with its one-sentence
+defense. Two or more retained members are required; one issue is not an
+epic. The `Commands:` sequence runs the create first:
+
+```bash
+docket issue create -T epic -l blocked -t "<title>" -d "<description>" \
+  --idempotency-key groom-<project>-<proposal number> --json=v2
+```
+
+Then one `docket issue edit <member> --parent <EPIC>` per member, then
+the defense comment on each member. `<EPIC>` is a named placeholder
+resolved from the create's JSON output. The idempotency key is derived
+from the project and the proposal's stable number, so a retry after an
+uncertain outcome returns the same epic instead of a second one. Use
+`-d -` with stdin when the description spans lines. Members that are
+run-included or claimed need their protection named in the proposal.
+The epic's membership is the approval; do not add members the proposal
+did not list.
+
+A **re-parent** shows each affected issue's current parent and proposed
+parent, or `none` when detaching, with the evidence for the move. Use it
+for moving an issue between epics, parenting a run-included or claimed
+issue, detaching an issue from an epic that no longer fits, and
+re-homing children ahead of an epic closure.
+
 A **rerouted safe edit** lists the operations it would have used in §3,
 including `docket issue file add` where needed and the drafting comment
 for a field fill. It need not fit into a single `docket issue edit` command.
 
 Make proposals independently selectable. Combine dependent changes into
-one proposal; do not offer two proposals that would close the same issue
-or require a canonical issue another proposal would close.
+one proposal; do not offer two proposals that would close the same issue,
+require a canonical issue another proposal would close, or parent an issue
+to an epic another proposal creates.
 
 If there is nothing to propose, finish any remaining §4a triage; proceed
 to §5 only when no further decisions or authorized edits can be completed.
@@ -585,7 +676,10 @@ Re-read each retained issue's entire final acceptance-criteria set against
 criteria well-defined after every criterion passes and all required
 outcomes are covered. An absent, vague, contradictory, or unverifiable
 criterion keeps that issue's grooming incomplete until properly set and
-verified in the stored ticket.
+verified in the stored ticket. That recheck applies to non-epic issues.
+An epic's recheck is that it carries `blocked`, that every open child is
+retained or has a recorded gap, and that each membership has its
+one-sentence defense in the ledger.
 
 Grooming is complete only when every surveyed issue has a verified
 disposition and retained work has no unresolved grooming gaps. Distinguish
@@ -608,11 +702,15 @@ One summary in the main session, plain language: how many issues surveyed,
 how many received a value review, the stale window used, and counts by
 value decision, with survey and review counts for each project. Explicitly
 report engine coverage and which engine needs remain, are resolved or
-superseded, or could not be verified. Include a compact ledger of owning
+superseded, or could not be verified. Present retained work grouped by
+epic, per project: each epic's ID, title, and its retained members with
+their readiness, followed by the retained issues that have no epic and the
+reason each stayed ungrouped. Include a compact ledger of owning
 projects, issue IDs, decisions, reasons, and evidence references so every
 retention and proposed retirement is reviewable. Report automatic edits,
 proposals, operator decisions, and
-confirmed applications separately, by kind and issue ID. State whether
+confirmed applications separately, by kind and issue ID; list parent
+edits and epic creations under their own kinds. State whether
 grooming is complete, which gaps were closed, and which remain with the
 specific input or action needed to close each one.
 

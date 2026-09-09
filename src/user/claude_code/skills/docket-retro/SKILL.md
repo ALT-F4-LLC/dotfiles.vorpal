@@ -1,8 +1,6 @@
 ---
 name: docket-retro
 description: Evolve the shared docket corpus (src/user/docket/config/, operator-installed by `just activate`) and a repo's own optional .docket/config/ additions from run evidence — read run reports and the event log, find what recent runs actually cost and caught, and propose versioned config edits for approval. Operator-invoked only; suggest it after about five completed runs.
-context: fork
-agent: general-purpose
 model: fable
 ---
 
@@ -12,14 +10,18 @@ You turn what runs actually did into config changes. Evidence first, proposal
 second, write only after the panel says yes — or, where the panel splits and
 where trust is involved, after the operator does (§3).
 
-You run in a forked subagent dedicated to this retro. `context: fork` spawns
-you fresh on every invocation, and §1's analyst spawn and §3's approval
-conversation run exactly as written, through `Workflow` and
-`AskUserQuestion`. You carry none of the parent conversation's history —
-no run reports already read, no earlier nudge that prompted this — only
-`$ARGUMENTS`. Gather the evidence yourself here (§1) rather than assuming
-anything was read for you. Your final report is the only thing that reaches
-the parent, so it carries every proposal and its outcome.
+You run in the invoking conversation, because the two tools this skill
+depends on exist only there: §1 seats its analysts through `Workflow`, and
+§3's approval conversation runs through `AskUserQuestion`. A forked subagent
+has neither; it can seat analysts only through the plain `Agent` tool, at
+whatever effort the session defaults to, and can only hand the panel and the
+operator's questions back to the conversation it forked from. Keep the
+evidence out of this conversation all the same: gathering and aggregation
+are the analysts' work (§1); this conversation reads their findings, composes
+the proposals, and holds the approval conversation. Assume nothing was read
+for you — no run reports from earlier in the session, no nudge that prompted
+this — and gather through §1 every time, from `$ARGUMENTS`. The §5 report is
+delivered here and carries every proposal and its outcome.
 
 **Never run automatically.** The operator invokes you. After roughly five
 completed runs a session may *say* "five runs since the last docket-retro — worth

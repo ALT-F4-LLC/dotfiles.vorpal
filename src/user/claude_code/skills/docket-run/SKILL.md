@@ -2360,9 +2360,36 @@ in your next status report, one line each. Everything else stays the
 operator's: a gate that also fails on reproduction is a real failure or an
 environment this class does not cover, an `unmatched` row is a trust matter
 and reserved, a `skipped` row is the engine's own park, and a security gate's
-failure is presented however clean the reproduction looks. `--batch` is not
-this ruling; it stays the operator's run-scoped grant for a signature you
-could not reproduce clean.
+failure is presented however clean the reproduction looks.
+
+**A repeating signature gets one run-scoped grant, on its second park.** The
+engine keys a `--batch` grant on the failure signature — gate name, exit and
+reason, the `gate`, `exit` and `reason` fields `docket step gates STEP-N
+--json` shows — and applies it at routing to every later step of the same
+run that fails that gate the same way, including steps a fix round mints
+after the grant. The first park of a signature follows the paragraph above
+exactly: reproduce, pass, no grant. When a later step in the same run parks
+and EVERY one of its `fail` rows matches a signature whose first occurrence
+reproduced clean in this run under this ruling, resolve it with `docket step
+resolve STEP-N --as override-pass --batch` without reproducing it again, with
+a note naming this ruling, the step and sha of the first reproduction it
+rests on, and the root-cause issue. That skips the reproduction on the second
+step's own sha on purpose: one environmental signature once cost seventy
+reproductions in a single run and held implement steps in `waiting-human`
+for hours, and the operator ruled that a signature proven clean once in a
+run is granted for the rest of it. Nothing else widens: a `fail` row whose
+signature has no clean first reproduction in this run, an `unmatched` or
+`skipped` row, or a security gate takes the step down the ordinary path with
+no grant, and a signature that did not reproduce clean stays the operator's
+whether or not a grant exists for another one. Report every grant in your
+next status report, one line each: the grant id (the `gate-override-granted`
+event's `detail`, `GATE#ID`, in `docket events list --run RUN-N --json
+--all-projects`), the signature, the first reproduction it rests on, and its
+reach — every later step of this run, fix rounds included — then, in later
+reports, the count of `step-batch-overridden` events against that id. The
+engine offers no verb to list or revoke a grant, so that report line is the
+operator's only view of a standing authorization the conductor recorded on
+its own.
 
 ### Escalating to the operator
 

@@ -2466,9 +2466,8 @@ looked worth buying on its own.
 covers.** From `ac-report@2` a verify-ac seat reports an out-of-scope AC as
 `unmet-out-of-scope`, which routes to the one-seat verify vote instead of the
 fixer, and the engine refuses a round whose predecessor moved nothing in
-scope (its non-convergence refusal) and, from the same corpus change, parks a
-review loop whose reconciled volume stops shrinking. None of that reaches a
-run pinned to an earlier workflow version,
+scope (its non-convergence refusal). Neither reaches a run pinned to an
+earlier workflow version,
 and neither sees a gap the round found for the first time. Those parks are
 this ruling's.
 

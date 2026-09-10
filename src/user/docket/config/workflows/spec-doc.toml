@@ -1,13 +1,7 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by a research step, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec); a rejection re-enters the bounded revise loop at review."
 name = "spec-doc"
-version = 28  # 28: `reconcile` gains `max_stalled_rounds = 2`: the engine refuses a
-              #   revise-loop entry after two consecutive rounds whose reconciled
-              #   cluster count sets no new minimum, parking it `waiting-human` as a
-              #   loop-bound park instead of buying a third review round. No
-              #   topology change; the measurement is on standard-change@37, whose
-              #   aggregate carries the same open-cluster payload this one does.
-              # 27: corpus-wide naming-convention pass (src/user/docket/config/README.md).
+version = 27  # 27: corpus-wide naming-convention pass (src/user/docket/config/README.md).
               #   Step renames, plus one topology change. Renames: `author-tdd-security`
               #   -> `tdd-author-security`, `author-tdd` -> `tdd-author`, `author-adr`
               #   -> `adr-author`, `author-ux-spec` -> `ux-spec-author`, `author-prd`
@@ -250,7 +244,6 @@ action = "aggregate"
 after = ["synthesize-findings"]
 inputs = ["synthesize-findings.findings"]
 max_fix_loops = 2
-max_stalled_rounds = 2
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
 payload = "findings@9"

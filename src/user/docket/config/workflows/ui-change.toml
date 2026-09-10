@@ -5,10 +5,8 @@ version = 28  # 28: `verify-ac` emits `ac-report@2` (adds `unmet-out-of-scope`)
               #   `fix-loop`'s `any(status == unmet)`: an in-scope unmet still
               #   loops, an out-of-scope or unverifiable AC goes to the one-seat
               #   `verify-ac-vote` (approve passes with the gap filed, reject
-              #   routes fix-loop). `reconcile` gains `max_stalled_rounds = 2`: two
-              #   consecutive rounds whose reconciled cluster count sets no new
-              #   minimum park the loop instead of buying a third review round. No
-              #   topology change; both measurements are on standard-change@37.
+              #   routes fix-loop). No topology change; the measurement is on
+              #   standard-change@37.
               # 27: corpus-wide naming-convention pass (src/user/docket/config/README.md).
               #   Step renames only, no topology change: `synthesize` ->
               #   `synthesize-findings`, `verify` -> `verify-ac`, `verify-tribunal` ->
@@ -179,7 +177,6 @@ action = "aggregate"
 after = ["synthesize-findings"]
 inputs = ["synthesize-findings.findings"]
 max_fix_loops = 2
-max_stalled_rounds = 2
 name = "reconcile"
 params = { field = "severity", method = "max", output = "findings" }
 payload = "findings@9"

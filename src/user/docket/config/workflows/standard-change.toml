@@ -16,13 +16,12 @@ version = 37  # 37: `verify-ac` emits `ac-report@2`, whose status enum adds
               #   four rounds each closing a distinct gap in AC1, then override-pass
               #   with the residue filed as a follow-up; a second issue on the same
               #   run filed the same shape as a gap. Under @37 that AC3 routes to
-              #   the vote at verify@0. Also `reconcile` gains
-              #   `max_stalled_rounds = 2`: the engine refuses a loop entry after two
-              #   consecutive rounds in which the aggregate's cluster count set no new
-              #   minimum, parking it `waiting-human` as a loop-bound park. Measured
-              #   on RUN-98's three looped issues, the reconciled count ran 9→8→3→3,
-              #   7→5→3→5 and 2→2→0→0, so no converging loop would have parked while
-              #   a ten-round plateau (RUN-51, 8-12 clusters flat) parks at round 3.
+              #   the vote at verify@0. NOT adopted: the engine's `max_stalled_rounds`
+              #   on `reconcile`. Its first measured round is only a baseline, so a
+              #   bound of 2 fires on the third loop entry, which `max_fix_loops = 2`
+              #   already refuses, and a bound of 1 would have parked one of RUN-98's
+              #   three converging loops (reconciled counts 9→8→3→3, 7→5→3→5 and
+              #   2→2→0→0) one round before it converged.
               # 36: corpus-wide naming-convention pass (src/user/docket/config/README.md).
               #   Step renames only, no topology change: `synthesize` ->
               #   `synthesize-findings` (step now equals its sole executor's
@@ -236,7 +235,6 @@ action = "aggregate"
 after = ["synthesize-findings"]
 inputs = ["synthesize-findings.findings"]
 max_fix_loops = 2
-max_stalled_rounds = 2
 name = "reconcile"
 params = { field = "severity", method = "max", output = "findings" }
 payload = "findings@9"

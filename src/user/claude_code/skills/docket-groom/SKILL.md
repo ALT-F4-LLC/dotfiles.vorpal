@@ -368,7 +368,7 @@ A well-defined set meets all of these conditions:
   related gap issue usually says where — is split out to its own issue in the
   owning project or recorded as a dependency, never left bound: a verify seat
   can never judge it `met`, so the issue loops to its cap on every run that
-  carries it (RUN-98 HRN-830, HRN-2217).
+  carries it, the shape two issues took on RUN-98.
 
 For retained work, properly set every missing or defective criterion in
 the ticket during this pass. Draft missing criteria from established

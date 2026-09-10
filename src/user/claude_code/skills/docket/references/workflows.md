@@ -334,8 +334,8 @@ legitimately `claimed` at `waiting-human`.
 | `after_loop` | step name | where execution re-enters after a loop body |
 | `max_attempts` | int ≥ 1 | per-instance retry budget |
 | `max_fix_loops` | int ≥ 0 | round budget, checked against the issue's one loop-ordinal counter. Declared on a step with no `serves`, it is the **issue-level ceiling**. Declared on a `serves`-scoped body, it is that **cluster's own** budget, counted over ordinals holding that cluster's instances — the issue-level ceiling still governs on top of it |
-| `pass_floor` | `{ field, at }`, optional; requires `payload`, and `at` must be a value of `field`'s declared order (V37/V37a) | exit bar on a `pass` routing: when the routing resolves to `pass` but the step's recorded payload holds an element whose `field` value sits at or above `at`'s position and is neither `held` nor `operator_resolved`, the step parks `waiting-human` instead of exiting, naming `--as override-pass` and `--as fix-round` as the ways out. Opaque tokens compared by position; declared nowhere, nothing changes *(DKT-870, engine commit 2c58fc9; present in the installed nightly-90 build, unused by the corpus as of 2026-09-10)* |
-| `max_stalled_rounds` | int ≥ 0, default 0 (never fires); only on a step that can route `fix-loop` and records an artifact (V38) | non-convergence tolerance over THIS step's routed volume: a `fix-loop` entry after that many consecutive rounds in which the recorded payload's element count never fell below the smallest count any earlier round recorded is refused in the non-convergence park's shape — counter restored, nothing instantiated, `waiting-human` naming `--as fix-round`. A shrinking set never parks; one oscillating around a floor does *(DKT-870, same commit and status)* |
+| `pass_floor` | `{ field, at }`, optional; requires `payload`, and `at` must be a value of `field`'s declared order (V37/V37a) | exit bar on a `pass` routing: when the routing resolves to `pass` but the step's recorded payload holds an element whose `field` value sits at or above `at`'s position and is neither `held` nor `operator_resolved`, the step parks `waiting-human` instead of exiting, naming `--as override-pass` and `--as fix-round` as the ways out. Opaque tokens compared by position; declared nowhere, nothing changes *(engine commit 2c58fc9; present in the installed nightly-90 build, unused by the corpus as of 2026-09-10)* |
+| `max_stalled_rounds` | int ≥ 0, default 0 (never fires); only on a step that can route `fix-loop` and records an artifact (V38) | non-convergence tolerance over THIS step's routed volume: a `fix-loop` entry after that many consecutive rounds in which the recorded payload's element count never fell below the smallest count any earlier round recorded is refused in the non-convergence park's shape — counter restored, nothing instantiated, `waiting-human` naming `--as fix-round`. A shrinking set never parks; one oscillating around a floor does *(same commit; the corpus sets it to 2 on every `reconcile` that routes `fix-loop` from 2026-09-10, measured on RUN-98 where converging loops ran 9→8→3→3, 7→5→3→5 and 2→2→0→0 clusters and none would have parked)* |
 | `expected_cost` | number ≥ 0, default 0 | the step's contribution to the run's budget floor, accrued **per claim**. Per expanded sibling on a fanout — four siblings accrue four times, no proration |
 | `when` | predicate over `kind` / `labels` — `<kind\|labels> <==\|!=\|contains> <value>` or `labels contains-any (a, b, c)` clauses, joined by `and` throughout or `or` throughout | step is skipped when false. `or` needs one clause to hold, `and` needs all; mixing the two connectives in one predicate is rejected at register time (there are no parentheses, so `a and b or c` has no defined reading). `contains-any` holds when the list intersects the issue's labels — the step-level `labels_any` — so `kind == task and labels contains-any (security-change, security)` says "this kind AND any of these labels" without mixing connectives |
 | `metadata` | opaque table | recorded and delivered verbatim |
@@ -896,15 +896,16 @@ What happens on loop entry, in one transaction:
    `loop round %d for %q would exceed its cluster's max_fix_loops = %d on %s`
    instead of the issue-wide `loop %d would exceed max_fix_loops = %d on %s`;
    either way `docket step resolve --as fix-round` authorizes one more round.
-   Two refusals share that park's shape without touching the bound (DKT-340,
-   engine commit f2dcb58): a round whose predecessor moved no bytes in the
+   Two refusals share that park's shape without touching the bound (engine
+   commit f2dcb58): a round whose predecessor moved no bytes in the
    issue's scope, and one whose routing step recorded the same verdict as
    the round below it, are refused — nothing superseded, nothing
    instantiated, `waiting-human` naming `--as fix-round`, which re-enters
    through the authorized path the refusal does not check. A degenerate diff
    (empty, or carrying only the unresolved-base marker) never counts as
    unchanged. Exhaustion itself has no routing of its own: the bound always
-   parks `waiting-human` (DKT-1902, open).
+   parks `waiting-human`; a declared exhaustion routing is an open engine
+   request.
 2. **Unclaimed work downstream of the triggered cluster's `after_loop` root(s)
    is superseded.** Instances at a lower ordinal that are still `pending`
    become `superseded` — a terminal status, not a deletion. Already-claimed and

@@ -2403,7 +2403,7 @@ until they withdraw it. A `loop N would exceed max_fix_loops = M` park asks
 whether the issue should buy another round, and read one round at a time the
 answer has kept being yes: 36 loop-bound parks across every project on this
 machine, 17 extended, one issue extended round after round to ordinal 10
-against a cap of 3 and then abandoned. RUN-98 HRN-830 is the shape this
+against a cap of 3 and then abandoned. One RUN-98 issue is the shape this
 ruling names: four rounds, each closing a real and different gap in one
 compound criterion, while a second criterion's only remedy sat in another
 repository from review@0 and kept the verify routing `fix-loop` whatever the
@@ -2466,7 +2466,9 @@ looked worth buying on its own.
 covers.** From `ac-report@2` a verify-ac seat reports an out-of-scope AC as
 `unmet-out-of-scope`, which routes to the one-seat verify vote instead of the
 fixer, and the engine refuses a round whose predecessor moved nothing in
-scope (DKT-340). Neither reaches a run pinned to an earlier workflow version,
+scope (its non-convergence refusal) and, from the same corpus change, parks a
+review loop whose reconciled volume stops shrinking. None of that reaches a
+run pinned to an earlier workflow version,
 and neither sees a gap the round found for the first time. Those parks are
 this ruling's.
 

@@ -59,7 +59,7 @@ Rules you must not fight:
   as a proposed split, one criterion per condition, and their answer is
   recorded verbatim — never split silently. A verify seat judges a criterion
   as written, so every case it bundles is one more fix round for the fixer
-  to discover: RUN-98 HRN-830 spent four rounds on one criterion whose two
+  to discover: one RUN-98 issue spent four rounds on one criterion whose two
   disjuncts each hid a further case.
 - **A derived AC that predicts command output is run before it is
   recorded.** Execute the command — non-mutating check commands only, which
@@ -402,9 +402,10 @@ and parallel width decide between equally large feasible rosters.
    record it as a dependency, and say so in the proposal. Bound anyway, it
    can never be `met`: at best verify reports it `unmet-out-of-scope` and a
    vote passes it with a filing, at worst it routes `fix-loop` to the cap and
-   parks on every run that carries it. RUN-98 HRN-830 carried one such AC
+   parks on every run that carries it. One RUN-98 issue carried such an AC
    (its remedy filed against the engine at review@0) through two re-plans
-   and four rounds; HRN-2217 is the same shape on HRN-852.
+   and four rounds, and a second issue on the same run filed the same shape
+   as a gap.
 
 5. **Forecast cost; fit only an explicit limit.** Size every proposed issue
    by §3's arithmetic (the bound workflow's expected-cost floor with

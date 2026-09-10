@@ -1,6 +1,6 @@
 ---
 name: docket-run
-description: Drive an activated Docket run to completion — ask the engine what is ready, dispatch it (the manifest carries the staged closure — ready rows and their dependents up to the `--limit`, which cuts every issue's deepest stages first), invoke the wave workflow, close the dispatch, repeat. Vote gates ride the wave (it seats the panel mid-wave); conversational gates go to tribunal.js; two standing rulings answer a park machine-side first (a completion-gate failure that reproduces clean on the same sha auto-passes, and a loop-extension panel decides the first fix round past `max_fix_loops`); every other non-approval that parks, and every reserved matter, escalates to the operator, and the engine verb runs on the outcome. Invoked as `/docket-run RUN-N` it drives that run explicitly; invoked bare it resolves "the next run" itself — the newest active or waiting-human run in the project, else the newest run still in planning, else a plain report that there is nothing to drive — so it chains directly after `/docket-plan`'s own bare mode with no question in between. Holds no run state and makes no routing decisions; the engine schedules and wave.js routes. Drives the run in the invoking conversation itself: the operator sees every dispatch, gate and park where they sit, and a gate that parks one issue while other issues still have work is rendered and pushed, never blocked on.
+description: Drive an activated Docket run to completion — ask the engine what is ready, dispatch it (the manifest carries the staged closure — ready rows and their dependents up to the `--limit`, which cuts every issue's deepest stages first), invoke the wave workflow, close the dispatch, repeat. Vote gates ride the wave (it seats the panel mid-wave); conversational gates go to tribunal.js; three standing rulings answer a park machine-side first (a completion-gate failure that reproduces clean on the same sha auto-passes, a loop-bound park files its residue and passes, and a loop-extension panel decides the first fix round past `max_fix_loops` only when the last round regressed something); every other non-approval that parks, and every reserved matter, escalates to the operator, and the engine verb runs on the outcome. Invoked as `/docket-run RUN-N` it drives that run explicitly; invoked bare it resolves "the next run" itself — the newest active or waiting-human run in the project, else the newest run still in planning, else a plain report that there is nothing to drive — so it chains directly after `/docket-plan`'s own bare mode with no question in between. Holds no run state and makes no routing decisions; the engine schedules and wave.js routes. Drives the run in the invoking conversation itself: the operator sees every dispatch, gate and park where they sit, and a gate that parks one issue while other issues still have work is rendered and pushed, never blocked on.
 argument-hint: "[RUN-N]"
 ---
 
@@ -827,7 +827,7 @@ report progress, do not ask the operator whether to continue, and do not treat
 three things:**
 
 1. A gate parks the run (`waiting-human`) — a `human:*` step, or a vote step
-   whose tally fell short — apply the two standing rulings under **Gates**
+   whose tally fell short — apply the three standing rulings under **Gates**
    first (a completion-gate failure that reproduces clean on the same sha, and
    the first fix round past `max_fix_loops`), then present whatever remains to
    the operator and wait. A vote step merely READY is not this: it is work for
@@ -1518,7 +1518,7 @@ each, against a run budget that never sees them. `run report` now prints
 `Coverage: N of M seat(s) reported spend`, so the gap is legible after the fact
 instead of reading as "no panels ran".
 
-Surface any `waiting-human` steps (below) — the two standing rulings under
+Surface any `waiting-human` steps (below) — the three standing rulings under
 **Gates** first, the operator for whatever they do not answer — then go back to
 step 1.
 
@@ -2184,18 +2184,22 @@ also what admits a panel past a reap hold, so a stale row makes two surfaces
 lie, one of them a guard. Four ballots of one epoch stood open exactly this
 way. No other gate class has a key convention; use it only here.
 
-**A loop-extension gate is the panel's once, then the operator's.** When the
-engine parks a step because the next fix round would exceed `max_fix_loops`
-(the park reason names `docket step resolve --as fix-round`), read the round
-the park asks for: `loop N` in the reason, which is the issue's highest
+**A loop-extension gate is the panel's once, then the operator's — and only
+for a regression.** When the engine parks a step because the next fix round
+would exceed `max_fix_loops` (the park reason names `docket step resolve --as
+fix-round`), first apply **Standing ruling: a loop-bound park** below: residue
+files and passes with no panel and no question, and only a regression the
+last round introduced reaches this gate. For a regression, read the round the
+park asks for: `loop N` in the reason, which is the issue's highest
 `loop-entered` `ordinal=` plus one. If that round is exactly
 `max_fix_loops + 1`, open a proposal with `gateKind` `"loop-extension"` and
 convene the panel BEFORE presenting anything to the operator. The description
-is the question — authorize fix round N of a loop capped at M on the issue —
-the rationale is the five-field loop-history line that **A fix-round gate
-PAST the workflow's `max_fix_loops` presents the LOOP** (below) specifies,
-plus the latest rejection's tally and every seat's verdict verbatim, and
-`--files-changed` is the issue's files. Seat the constant conversational-gate
+is the question — did fix round N-1 regress the named item, and does one round
+to restore it stand a better chance than filing it — the rationale is the
+five-field loop-history line that **A fix-round gate PAST the workflow's
+`max_fix_loops` presents the LOOP** (below) specifies, plus the latest
+rejection's tally and every seat's verdict verbatim, and `--files-changed` is
+the issue's files. Seat the constant conversational-gate
 roster the tribunal.js block below fixes — `tribunal-architecture`,
 `tribunal-security`, `tribunal-correctness` — each looked up from the pinned
 policy as that block specifies. An approved tally authorizes exactly that one
@@ -2391,12 +2395,86 @@ engine offers no verb to list or revoke a grant, so that report line is the
 operator's only view of a standing authorization the conductor recorded on
 its own.
 
+### Standing ruling: a loop-bound park
+
+The operator ruled once, on evidence, and the ruling stands for every run
+until they withdraw it. A `loop N would exceed max_fix_loops = M` park asks
+whether the issue should buy another round, and read one round at a time the
+answer has kept being yes: 36 loop-bound parks across every project on this
+machine, 17 extended, one issue extended round after round to ordinal 10
+against a cap of 3 and then abandoned. RUN-98 HRN-830 is the shape this
+ruling names: four rounds, each closing a real and different gap in one
+compound criterion, while a second criterion's only remedy sat in another
+repository from review@0 and kept the verify routing `fix-loop` whatever the
+fixer did; the operator ended it with "Stop here, override-pass and file the
+rest." This section is that ruling.
+
+**Classify before you convene.** Read the routing step's own artifact IN
+FULL — the `ac-report` on a verify trigger, the reconcile aggregate on a
+review trigger — and the previous round's, then place the trigger in exactly
+one class:
+
+- **Regression.** The last fix round broke something that was whole before
+  it: an AC `met` at the previous verify now `unmet`, or a finding an earlier
+  round closed now reopened at the same locus (the re-review fragment's
+  recurrence). The evidence names the last round's own hunks.
+- **Residue.** Everything else: a gap no earlier round was assigned and this
+  round's verify or judges found first, an AC whose every repair lies outside
+  the issue's declared scope or in another repository, or a repair that ran
+  its rounds and did not land. A finding that is new is not a regression; a
+  finding that is real is not a reason to extend.
+
+**Residue files and passes; you do not ask.** Run the premise check first: an
+open issue already carrying the residue — the step's own gap filings, every
+id the artifact cites read with `docket issue show`, the "tracked by" rule
+below — is linked, never refiled. Then, per residue item without a home:
+
+```bash
+docket issue create -t "<the defect in one line>" -T <bug|task> -p <priority from severity> \
+  -l loop-bound -f <every file the evidence names> --scope '<glob bounding the fix>' -d - <<'DESC'
+<the artifact's own evidence for the item, verbatim — criterion, file:line, judgment>
+source-run: RUN-N, <step instance>, loop-bound at round N of a cap of M
+DESC
+docket issue link add <new-id> relates_to <issue>
+```
+
+then resolve the park with the filings in the note. A verify step's threshold
+interposes its vote, so `--drop-interposed` is required there and is the
+acknowledgment that the vote is skipped on purpose:
+
+```bash
+docket step resolve STEP-N --as override-pass --drop-interposed \
+  --note "loop-bound ruling: residue; filed <ids>; <AC or cluster> out of scope, remedy <home>"
+```
+
+Report every such resolution in your next status report, one line each: the
+issue, the round against the cap, the class, and the ids filed or linked.
+`loop-bound` is the provenance label a later census filters on, as `tribunal`
+and `review-gap` are for their routes.
+
+**Only a regression buys a round, and only through the panel.** A regression
+at round `max_fix_loops + 1` is what the loop-extension gate under **The
+panel** decides, and its question is the classification itself, with the
+loop-history line beside it. Approval mints exactly one round; rejection, a
+panel that cannot finish, or a regression at any later round goes to the
+operator with the panel's reasoning. Never extend on residue, however new and
+however real the gap: the ruling exists because every one of those rounds
+looked worth buying on its own.
+
+**What the corpus already does machine-side, and what this ruling still
+covers.** From `ac-report@2` a verify-ac seat reports an out-of-scope AC as
+`unmet-out-of-scope`, which routes to the one-seat verify vote instead of the
+fixer, and the engine refuses a round whose predecessor moved nothing in
+scope (DKT-340). Neither reaches a run pinned to an earlier workflow version,
+and neither sees a gap the round found for the first time. Those parks are
+this ruling's.
+
 ### Escalating to the operator
 
 **The operator never types an engine command.** You are the interface: you
 present the gate in conversation, and you run the verb on their answer. With
 declared human gates gone, `waiting-human` carries every operator-facing
-decision the two standing rulings under **Gates** do not answer — a park is how
+decision the three standing rulings under **Gates** do not answer — a park is how
 the operator hears about anything — so what follows
 is the primary surface of this skill, not an edge case. Expect MORE parks than
 earlier runs produced, and read them as the design working rather than as
@@ -2492,7 +2570,9 @@ later — abandoning the issue, with the run finishing at 69.5 of the
 75. Assembling the line is YOUR work and needs no verb that does not exist:
 the engine computes every field above today. This rule governs what the gate
 PRESENTS; the option set is whatever the workflow and the operator's own
-vocabulary give you, unchanged.
+vocabulary give you, unchanged — and **Standing ruling: a loop-bound park**
+under **Gates** decides, before any question is asked, whether the park is
+yours to file and pass.
 
 **The premise-check runs before the QUESTION, not only before a filing.** The
 scope-read you do before creating an issue — the repo, the project's backlog,
@@ -2596,7 +2676,7 @@ multi-question call is fine; one question carrying several gates is not.
 **A gate disposition is scoped to the STEP it answered.** An override-pass on
 STEP-N settles STEP-N. It settles nothing about the next step that parks the
 same way, however identical the root cause, the failing script, or your own
-reasoning — a `waiting-human` park outside the two standing rulings under
+reasoning — a `waiting-human` park outside the three standing rulings under
 **Gates** is reserved to the operator, and approval in one context never
 extends to the next. A recurrence parks again and is
 asked again. The ONLY things that carry are those standing rulings and an

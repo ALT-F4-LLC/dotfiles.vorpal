@@ -22,6 +22,11 @@ version = 37  # 37: `verify-ac` emits `ac-report@2`, whose status enum adds
               #   already refuses, and a bound of 1 would have parked one of RUN-98's
               #   three converging loops (reconciled counts 9→8→3→3, 7→5→3→5 and
               #   2→2→0→0) one round before it converged.
+              #   Also `route-direct`, `route-loop` and `route-tend` join
+              #   unless_labels: an issue docket-groom routed to the operator's
+              #   own session, the tend queue, or a loop matches zero workflows,
+              #   like `blocked`, until the label changes; `route-run` stays
+              #   bindable.
               # 36: corpus-wide naming-convention pass (src/user/docket/config/README.md).
               #   Step renames only, no topology change: `synthesize` ->
               #   `synthesize-findings` (step now equals its sole executor's
@@ -176,6 +181,9 @@ unless_labels = [
   "investigation",
   "release",
   "retro",
+  "route-direct",
+  "route-loop",
+  "route-tend",
   "security",
   "security-change",
   "security-load-bearing",

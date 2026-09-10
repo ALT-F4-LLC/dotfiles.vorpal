@@ -7,6 +7,11 @@ version = 28  # 28: `verify-ac` emits `ac-report@2` (adds `unmet-out-of-scope`)
               #   `verify-ac-vote` (approve passes with the gap filed, reject
               #   routes fix-loop). No topology change; the measurement is on
               #   standard-change@37.
+              #   Also `route-direct`, `route-loop` and `route-tend` join
+              #   unless_labels: an issue docket-groom routed to the operator's
+              #   own session, the tend queue, or a loop matches zero workflows,
+              #   like `blocked`, until the label changes; `route-run` stays
+              #   bindable.
               # 27: corpus-wide naming-convention pass (src/user/docket/config/README.md).
               #   Step renames only, no topology change: `synthesize` ->
               #   `synthesize-findings`, `verify` -> `verify-ac`, `verify-tribunal` ->
@@ -119,6 +124,9 @@ unless_labels = [
   "investigation",
   "release",
   "retro",
+  "route-direct",
+  "route-loop",
+  "route-tend",
   "security",
   "security-change",
   "security-load-bearing",

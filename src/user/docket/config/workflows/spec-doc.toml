@@ -1,7 +1,12 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by a research step, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec); a rejection re-enters the bounded revise loop at review."
 name = "spec-doc"
-version = 27  # 27: corpus-wide naming-convention pass (src/user/docket/config/README.md).
+version = 28  # 28: `route-direct`, `route-loop` and `route-tend` join unless_labels:
+              #   an issue docket-groom routed to the operator's own session, the
+              #   tend queue, or a loop matches zero workflows, like `blocked`,
+              #   until the label changes; `route-run` stays bindable. No
+              #   topology change.
+              # 27: corpus-wide naming-convention pass (src/user/docket/config/README.md).
               #   Step renames, plus one topology change. Renames: `author-tdd-security`
               #   -> `tdd-author-security`, `author-tdd` -> `tdd-author`, `author-adr`
               #   -> `adr-author`, `author-ux-spec` -> `ux-spec-author`, `author-prd`
@@ -125,7 +130,7 @@ version = 27  # 27: corpus-wide naming-convention pass (src/user/docket/config/R
 
 [match]
 labels_any = ["spec-doc"]
-unless_labels = ["blocked", "spec-project", "release", "retro"]
+unless_labels = ["blocked", "spec-project", "release", "retro", "route-direct", "route-loop", "route-tend"]
 
 [limits]
 "drain-highs" = { max = 16, max_step_duration = "1h" }

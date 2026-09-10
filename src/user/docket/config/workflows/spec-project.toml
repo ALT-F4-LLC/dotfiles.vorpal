@@ -1,7 +1,12 @@
 [pipeline]
 description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step, review them once, and accept by tribunal vote; a rejection re-enters the bounded revise loop at review."
 name = "spec-project"
-version = 19  # 19: corpus-wide naming-convention pass (src/user/docket/config/README.md).
+version = 20  # 20: `route-direct`, `route-loop` and `route-tend` join unless_labels:
+              #   an issue docket-groom routed to the operator's own session, the
+              #   tend queue, or a loop matches zero workflows, like `blocked`,
+              #   until the label changes; `route-run` stays bindable. No
+              #   topology change.
+              # 19: corpus-wide naming-convention pass (src/user/docket/config/README.md).
               #   Step renames only, no topology change: `synthesize` ->
               #   `synthesize-findings`, `revise` (the spec-author fanout's
               #   loop-back step) -> `revise-spec` (a loop-back step's name
@@ -66,7 +71,7 @@ version = 19  # 19: corpus-wide naming-convention pass (src/user/docket/config/R
 
 [match]
 labels_any = ["spec-project"]
-unless_labels = ["blocked", "release", "retro"]
+unless_labels = ["blocked", "release", "retro", "route-direct", "route-loop", "route-tend"]
 
 [limits]
 "drain-highs" = { max = 16, max_step_duration = "1h" }

@@ -1,7 +1,12 @@
 [pipeline]
 description = "Read-only root-cause investigation with an optional research step, ending at a tribunal read that revises the report on rejection and escalates to the operator."
 name = "investigation"
-version = 13  # 13: corpus-wide naming-convention pass (src/user/docket/config/README.md).
+version = 14  # 14: `route-direct`, `route-loop` and `route-tend` join unless_labels:
+              #   an issue docket-groom routed to the operator's own session, the
+              #   tend queue, or a loop matches zero workflows, like `blocked`,
+              #   until the label changes; `route-run` stays bindable. No
+              #   topology change.
+              # 13: corpus-wide naming-convention pass (src/user/docket/config/README.md).
               #   Step/executor renames only, no topology change. `read-gate`
               #   -> `report-vote` (vote steps now uniformly named
               #   `<gated-step>-vote`). `report` and `revise` no longer borrow
@@ -30,7 +35,7 @@ version = 13  # 13: corpus-wide naming-convention pass (src/user/docket/config/R
 
 [match]
 labels_any  = ["investigation"]
-unless_labels = ["blocked", "spec-doc", "spec-project", "release", "retro"]
+unless_labels = ["blocked", "spec-doc", "spec-project", "release", "retro", "route-direct", "route-loop", "route-tend"]
 
 [limits]
 "investigate" = { max = 16, max_step_duration = "1h" }

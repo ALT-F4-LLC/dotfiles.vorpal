@@ -96,8 +96,11 @@ otherwise preserve the conflict and its effect on the affected judgment.
 - `met`: applicable evidence establishes every required condition under the
   AC's stated logic.
 - `unmet`: applicable evidence establishes a violation of the AC. For an AC
-  requiring several conditions, one demonstrated failure is sufficient; retain
-  any unverified portions too.
+  requiring several conditions, one demonstrated failure is sufficient for the
+  status; the body still walks every condition, disjunct, and branch of the
+  criterion's trigger and records each one's own verdict and evidence, so the
+  fixer's work list for the AC is complete in one round instead of one branch
+  per round. Retain any unverified portions too.
 - `unmet-out-of-scope`: applicable evidence establishes a violation, every
   repair route lies outside all applicable step scopes and recorded amendments
   or in another repository, and the gap is filed in this completion or an
@@ -167,7 +170,8 @@ schema. Include:
 
 - Evaluated issue snapshot, candidate, baseline, and material input limits.
 - One section per AC: ID and criterion, classification, decisive evidence and
-  provenance, judgment, and any unresolved condition or repair-authority gap.
+  provenance, judgment, every condition or branch of the criterion with its own
+  verdict, and any unresolved condition or repair-authority gap.
 - A scope reconciliation section listing overruns, or the supported result and
   coverage of that comparison; state when the comparison was not possible.
 - Gaps with affected ACs or comparisons, established facts, the missing input

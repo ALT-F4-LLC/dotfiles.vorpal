@@ -48,6 +48,10 @@ evidence rules; `git rev-parse HEAD` alone does not identify uncommitted content
 
 **Account for ACs explicitly.** Prioritize the supplied `unmet` ACs, grouping
 overlapping findings with them by cause and respecting repair dependencies.
+Repair the whole criterion, not the branch the report happened to demonstrate:
+enumerate every condition, disjunct, and case its wording covers, check each
+against the candidate, and dispose of each with evidence. A repair that argues
+one branch and leaves a sibling untested costs a full round per branch.
 For each, record what was missing, the repair or unresolved disposition, and
 the evidence for reassessment. The report's unmet threshold explains this
 route; it does not remove routed findings from the work list.

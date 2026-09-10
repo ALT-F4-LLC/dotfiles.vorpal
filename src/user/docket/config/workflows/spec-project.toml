@@ -1,7 +1,13 @@
 [pipeline]
 description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step, review them once, and accept by tribunal vote; a rejection re-enters the bounded revise loop at review."
 name = "spec-project"
-version = 19  # 19: corpus-wide naming-convention pass (src/user/docket/config/README.md).
+version = 20  # 20: `reconcile` gains `max_stalled_rounds = 2`: the engine refuses a
+              #   revise-loop entry after two consecutive rounds whose reconciled
+              #   cluster count sets no new minimum, parking it `waiting-human` as a
+              #   loop-bound park instead of buying a third review round. No
+              #   topology change; the measurement is on standard-change@37, whose
+              #   aggregate carries the same open-cluster payload this one does.
+              # 19: corpus-wide naming-convention pass (src/user/docket/config/README.md).
               #   Step renames only, no topology change: `synthesize` ->
               #   `synthesize-findings`, `revise` (the spec-author fanout's
               #   loop-back step) -> `revise-spec` (a loop-back step's name
@@ -136,6 +142,7 @@ action = "aggregate"
 after = ["synthesize-findings"]
 inputs = ["synthesize-findings.findings"]
 max_fix_loops = 2
+max_stalled_rounds = 2
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
 payload = "findings@9"

@@ -162,7 +162,7 @@ unrelated AC statuses because of an overrun; if an AC itself restricts the chang
 scope, evaluate that criterion normally against the same evidence.
 
 # Emit
-`ac-report`: a markdown body and the `ac-report@1` payload using the supplied
+`ac-report`: a markdown body and the `ac-report@2` payload using the supplied
 schema. Include:
 
 - Evaluated issue snapshot, candidate, baseline, and material input limits.

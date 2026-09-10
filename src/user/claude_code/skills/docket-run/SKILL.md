@@ -828,8 +828,9 @@ three things:**
 
 1. A gate parks the run (`waiting-human`) — a `human:*` step, or a vote step
    whose tally fell short — apply the three standing rulings under **Gates**
-   first (a completion-gate failure that reproduces clean on the same sha, and
-   the first fix round past `max_fix_loops`), then present whatever remains to
+   first (a completion-gate failure that reproduces clean on the same sha, a
+   loop-bound park whose residue files and passes, and the first fix round
+   past `max_fix_loops` on a regression), then present whatever remains to
    the operator and wait. A vote step merely READY is not this: it is work for
    you, in the middle of the loop.
 2. An engine **refusal** you cannot resolve — report it verbatim and stop.

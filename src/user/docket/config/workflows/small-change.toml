@@ -1,5 +1,5 @@
 [pipeline]
-description = "Small ordinary change, bound by the `small` label: implement with the full gate list, one correctness judge routing a blocker straight to the fix loop, AC verification with a single-seat tribunal on an unverifiable AC, and a bounded fix loop re-entering at review; the conductor integrates commits, the operator publishes."
+description = "Small ordinary change, bound by the `small` label: implement with the full gate list, one correctness judge routing a blocker straight to the fix loop, AC verification with a single-seat tribunal on an unverifiable or out-of-scope AC, and a bounded fix loop re-entering at review; the conductor integrates commits, the operator publishes."
 name = "small-change"
 version = 3  # 3: `verify-ac` emits `ac-report@2` (adds `unmet-out-of-scope`)
              #   and its vote predicate becomes `any(status != met)`, read after

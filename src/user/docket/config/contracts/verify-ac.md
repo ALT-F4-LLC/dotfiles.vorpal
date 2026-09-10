@@ -165,8 +165,11 @@ unrelated AC statuses because of an overrun; if an AC itself restricts the chang
 scope, evaluate that criterion normally against the same evidence.
 
 # Emit
-`ac-report`: a markdown body and the `ac-report@2` payload using the supplied
-schema. Include:
+`ac-report`: a markdown body and the `ac-report` payload using the supplied
+schema. A run pinned before the status set widened supplies `ac-report@1`,
+which has no `unmet-out-of-scope` value: there, report such an AC as `unmet`
+with its gap filed, and name the intended status in the body so the record
+shows why the routing looped. Include:
 
 - Evaluated issue snapshot, candidate, baseline, and material input limits.
 - One section per AC: ID and criterion, classification, decisive evidence and

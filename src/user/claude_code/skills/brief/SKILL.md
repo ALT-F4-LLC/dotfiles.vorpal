@@ -188,7 +188,12 @@ described scope supports it.
 
 **Docket tracking** records an explicit tracking requirement or work
 being performed against an existing issue. A background citation to an
-issue does not itself require tracking.
+issue does not itself require tracking. A referenced issue's routing label
+(`route-run`, `route-direct`, `route-tend`, `route-loop`, set by
+docket-groom) is the operator's standing route decision: record it in this
+field and follow it in §3. Tracking for `route-direct` and `route-tend`
+work is satisfied by closing the issue with a summary comment when the
+work lands, not by a run.
 
 For iterative work, establish the action per pass, cadence, and stop/cancel
 policy. Acceptance criteria may supply a terminal stop condition; ongoing
@@ -203,8 +208,13 @@ that the requirement has been satisfied.
 
 Apply these rules in order:
 
-1. **Docket tracking required, or Security-sensitive `yes`:**
-   `/docket-plan` is required.
+1. **Security-sensitive `yes`:** `/docket-plan` is required, whatever
+   routing label the issue carries; report the label as a conflict.
+   **Docket tracking required:** follow the tracked issue's routing label.
+   `route-run` or no label means `/docket-plan` is required; `route-direct`
+   means direct execution; `route-tend` means leave it to `/tend`, or direct
+   when the operator wants it now; `route-loop` continues at rule 3. A label
+   that contradicts the operator's ask is surfaced, never resolved silently.
 2. **Security-sensitive `unknown` requiring investigation:**
    recommend `/docket-plan` to assess the boundary.
 3. **Shape `iterative`:**
@@ -282,7 +292,10 @@ questions do not need to be repeated.
   the confirmed brief or handoff and follow its workflow.
 - **Direct:** Perform the work under the confirmed brief without creating
   docket issues, plan artifacts, schedules, or teams. Verify the acceptance
-  criteria using checks appropriate to the work.
+  criteria using checks appropriate to the work. For an issue routed
+  `route-direct` or `route-tend`, close it once the criteria are verified:
+  `docket issue comment add <id> -m "<what landed and where>"`, then
+  `docket issue close <id>`.
 - **Just give me the brief:** Emit the block verbatim and stop.
 
 After confirmation, proceed within the approved scope. Reopen briefing

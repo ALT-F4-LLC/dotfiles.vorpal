@@ -1,6 +1,6 @@
 ---
 name: tend
-description: Watch the current Docket project's issue queue — the existing backlog and whatever gets added after — and work issues one at a time by delegating each to a right-sized subagent while this conversation orchestrates — no `/docket-plan`, no `/docket-run`, no docket run. Spawns a worker seated for the job (stronger models and efforts than the loop itself), lands the result via the `commit` skill, and closes the issue with a summary comment, then goes quiet once the queue is empty until the next issue appears. Meant to run under `/loop` (self-pacing, e.g. `/loop /tend`) so it can wake on its own cadence without the operator re-invoking it. Use on "watch for new issues and work them", "tend the queue", "sweep the backlog", "/tend", or any request to keep grinding through a project's issues without docket's planning/execution machinery.
+description: Watch the current Docket project's issue queue — the `route-tend` issues in the existing backlog and whatever gets added after — and work them one at a time by delegating each to a right-sized subagent while this conversation orchestrates — no `/docket-plan`, no `/docket-run`, no docket run. Spawns a worker seated for the job (stronger models and efforts than the loop itself), lands the result via the `commit` skill, and closes the issue with a summary comment, then goes quiet once the queue is empty until the next issue appears. Meant to run under `/loop` (self-pacing, e.g. `/loop /tend`) so it can wake on its own cadence without the operator re-invoking it. Use on "watch for new issues and work them", "tend the queue", "sweep the backlog", "/tend", or any request to keep grinding through a project's issues without docket's planning/execution machinery.
 ---
 
 # tend
@@ -32,9 +32,13 @@ docket run status --active --json
 Project resolves from cwd's git identity, same as every other docket verb
 (see the `docket` skill). A `VALIDATION_ERROR` naming no project, or no store
 reachable, means this repo isn't bound — say so and stop. The queue is
-everything sitting in `backlog` or `todo` — the pre-existing backlog is fair
-game, not just issues that show up after you started watching (operator
-ruling). Ignore issues already `in-progress` or `review` — you
+every `backlog` or `todo` issue carrying the `route-tend` label — docket-groom's
+mark for mechanical, fully specified work a worker finishes without a
+question — and the pre-existing backlog is fair game, not just issues that
+show up after you started watching (operator ruling). An issue with no
+routing label, or with `route-run`, `route-direct`, or `route-loop`, is not
+tend's: grooming, a run, the operator's own brief, or a loop owns it. Skip
+it silently. Ignore issues already `in-progress` or `review` — you
 put them there yourself in a prior tick (see §2's blocked case).
 
 Exclude two more kinds before picking — this queue isn't tend's alone:

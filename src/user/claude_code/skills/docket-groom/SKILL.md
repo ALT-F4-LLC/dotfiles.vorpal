@@ -289,6 +289,24 @@ Record these findings alongside the value decision:
   statement of the criteria. Remove a size label the issue's files, scope,
   or criteria have outgrown, and add one where they fit the rule; an
   eligible issue carrying neither walks the full `standard-change` chain.
+- **Missing or stale routing label:** every retained non-epic issue carries
+  exactly one of `route-run`, `route-direct`, `route-tend`, `route-loop`,
+  the family [brief](../brief/SKILL.md)'s route rules define and
+  docket-plan, tend, brief, and every workflow's `unless_labels` read.
+  Apply it as a safe edit when the criteria clearly hold, from the issue's
+  body, files, scope, and labels: `route-run` when the work is
+  security-sensitive or its boundary is unknown, when its size is bounded
+  or needs design, or when it needs the review evidence a run produces;
+  `route-tend` when it is one-shot, non-security, fits one working turn,
+  and leaves no decision open, so a worker finishes it without a question;
+  `route-direct` when it is that small but leaves a decision or a judgment
+  to the operator; `route-loop` when the ask is explicitly recurring and
+  the body states the per-pass action, cadence, and stop policy with a
+  trivial pass. Correct a label the issue has outgrown the way a stale size
+  label is corrected. When no rule clearly holds, apply nothing and list
+  the issue in the report as unrouted with what would settle it; bare
+  `docket-plan` excludes unrouted issues, so an unrouted issue is one no
+  route will pick up. Epics carry no routing label.
 - **Ungrouped:** a retained non-epic issue with no parent, or whose parent
   is not the epic its outcome serves. Match the issue to an open epic in
   its owning project by shared outcome, judged the way the duplicate rule
@@ -676,8 +694,8 @@ closure that was not proposed.
 Recheck every retained issue against the ledger and its final stored
 content. A worker should be able to identify the current goal, intended
 deliverable, scope and files, checkable acceptance criteria, required
-context, settled operator decisions, true prerequisites, and intended
-workflow from the ticket and its explicit references. Check that decisions
+context, settled operator decisions, true prerequisites, intended
+workflow, and routing label from the ticket and its explicit references. Check that decisions
 are reflected consistently in the body, criteria, labels, and relations,
 with superseded directions in comment history clearly identified. Route
 any remaining resolvable gap through §3 or §4 within this pass.

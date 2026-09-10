@@ -249,6 +249,13 @@ definitions are the ones `docket-groom` and `tend` already use:
   that run's docket-plan/docket-run session, even while the run is parked.
 - **Claimed.** Any issue with a non-empty `assignee` — someone or something
   else already has it.
+- **Unrouted or routed elsewhere.** Only an issue carrying `route-run` is a
+  candidate. An issue with no routing label is unrouted: count it, name the
+  count in the proposal with a pointer to `/docket-groom`, and never rank
+  it. An issue carrying `route-direct`, `route-tend`, or `route-loop` is
+  another route's (the operator's own brief, the tend queue, a loop) and is
+  listed as routed elsewhere; every registered workflow also lists those
+  three in `unless_labels`, so activation would refuse it anyway.
 
 All three are listed in the proposal under "not free"/"off-scope", never
 silently dropped.
@@ -332,6 +339,16 @@ and parallel width decide between equally large feasible rosters.
    it — or send it to `/docket-groom`; you never fill ACs from your own guess.
    Apply these checks to every later-wave issue and prerequisite too.
    Scheduled for later does not waive a missing scope, file, AC, or binding.
+
+   **Routing labels bind the route before the workflow.** An issue the
+   operator named that carries `route-direct`, `route-tend`, or
+   `route-loop` is not run work: refuse it with the label named, and let
+   the operator relabel it (by hand or through `/docket-groom`) before it
+   can bind — every registered workflow lists those three in
+   `unless_labels`, so activation would refuse it too. An issue the
+   operator named that carries no routing label gets `route-run` when the
+   run is recorded (`docket issue label add <id> route-run`), so the label
+   states the route the record already made.
 
    **Probe the binding, and probe it in both directions.** §3's
    labels-confirm-binding rule asks whether an issue's labels produce the
@@ -469,7 +486,9 @@ alternative. Present the following above one `AskUserQuestion` round:
   / not ready (which obligation from step 4 — no ACs, no scope, a glob
   matching nothing, `labels match N workflows`, `binds <wf>, ACs imply
   <other>`, or `AC names <path>, not in scope`) / explicit budget or issue cap /
-  dependency cycle / already landed (commit).
+  dependency cycle / already landed (commit) / unrouted (no routing label;
+  `/docket-groom` sets one) / routed elsewhere (`route-direct`, `route-tend`,
+  or `route-loop`).
 
 When useful, compare two or three concrete alternatives in a compact table:
 the maximum complete run first and recommended, a parallel-only or

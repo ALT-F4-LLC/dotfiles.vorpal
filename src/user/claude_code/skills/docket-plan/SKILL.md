@@ -53,6 +53,14 @@ Rules you must not fight:
 - **Acceptance criteria are copied verbatim.** Whatever the operator states
   as done-ness goes into the issue body word for word. You may add ACs you
   derived and say you derived them; you may not paraphrase theirs.
+- **One condition per criterion.** A derived AC states one observable
+  condition. An operator-stated criterion that joins alternatives with "or"
+  or bundles several outcomes is put to the operator in the question round
+  as a proposed split, one criterion per condition, and their answer is
+  recorded verbatim — never split silently. A verify seat judges a criterion
+  as written, so every case it bundles is one more fix round for the fixer
+  to discover: RUN-98 HRN-830 spent four rounds on one criterion whose two
+  disjuncts each hid a further case.
 - **A derived AC that predicts command output is run before it is
   recorded.** Execute the command — non-mutating check commands only, which
   is all this class of AC ever quotes — against the COMMITTED tree the run
@@ -385,6 +393,18 @@ and parallel width decide between equally large feasible rosters.
    list, so pass every glob you mean to keep. This is §3's
    AC-wider-than-scope rule read mechanically, in the direction a backlog
    issue you did not author actually fails it.
+
+   **Every AC is satisfiable inside the issue's scope.** An AC whose only
+   remedy needs a change outside every scope glob, in another repository, or
+   in a capability the engine does not have — read the issue's related gap
+   issues, where an earlier run has usually said so — is not bound under
+   this issue. Split it out as its own issue in the owning project, or
+   record it as a dependency, and say so in the proposal. Bound anyway, it
+   can never be `met`: at best verify reports it `unmet-out-of-scope` and a
+   vote passes it with a filing, at worst it routes `fix-loop` to the cap and
+   parks on every run that carries it. RUN-98 HRN-830 carried one such AC
+   (its remedy filed against the engine at review@0) through two re-plans
+   and four rounds; HRN-2217 is the same shape on HRN-852.
 
 5. **Forecast cost; fit only an explicit limit.** Size every proposed issue
    by §3's arithmetic (the bound workflow's expected-cost floor with

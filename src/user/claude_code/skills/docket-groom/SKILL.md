@@ -346,8 +346,11 @@ A well-defined set meets all of these conditions:
   "improve performance", or "tests pass" alone does not define acceptance.
 - **Complete coverage:** every required outcome has a criterion, including
   failure cases, boundaries, and compatibility constraints established by
-  the issue or evidence. Split bundled outcomes when they need different
-  checks. Do not add speculative requirements or invent numerical targets.
+  the issue or evidence. Split bundled outcomes, including alternatives
+  joined by "or", when they need different checks: a verify seat judges a
+  criterion as written, so each bundled case is a separate fix round waiting
+  to be found. Do not add speculative requirements or invent numerical
+  targets.
 - **Clear verification:** each criterion has an objective pass/fail rule
   and a feasible verification method under §3. A command must check the
   stated property, not merely find a keyword or run an unrelated suite.
@@ -359,6 +362,13 @@ A well-defined set meets all of these conditions:
   feasible in that workflow's environment. Identify planned test or
   artifact creation as part of the deliverable rather than implying it
   already exists. Contradictions and unresolved placeholders are gaps.
+- **In-scope satisfiability:** every criterion can be met by a change inside
+  the issue's files and scope, in this repository, with capabilities the
+  engine has. A criterion whose only remedy lies elsewhere — an earlier run's
+  related gap issue usually says where — is split out to its own issue in the
+  owning project or recorded as a dependency, never left bound: a verify seat
+  can never judge it `met`, so the issue loops to its cap on every run that
+  carries it (RUN-98 HRN-830, HRN-2217).
 
 For retained work, properly set every missing or defective criterion in
 the ticket during this pass. Draft missing criteria from established

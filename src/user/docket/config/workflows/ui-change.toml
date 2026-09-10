@@ -1,6 +1,13 @@
 [pipeline]
 name = "ui-change"
-version = 27  # 27: corpus-wide naming-convention pass (src/user/docket/config/README.md).
+version = 28  # 28: `verify-ac` emits `ac-report@2` (adds `unmet-out-of-scope`)
+              #   and its vote predicate becomes `any(status != met)`, read after
+              #   `fix-loop`'s `any(status == unmet)`: an in-scope unmet still
+              #   loops, an out-of-scope or unverifiable AC goes to the one-seat
+              #   `verify-ac-vote` (approve passes with the gap filed, reject
+              #   routes fix-loop). No topology change; the measurement is on
+              #   standard-change@37.
+              # 27: corpus-wide naming-convention pass (src/user/docket/config/README.md).
               #   Step renames only, no topology change: `synthesize` ->
               #   `synthesize-findings`, `verify` -> `verify-ac`, `verify-tribunal` ->
               #   `verify-ac-vote`. Every `after`, threshold route key, and
@@ -221,8 +228,8 @@ holds_tree = false
 inputs = ["issue.body", "issue.diff", "implement.change-summary", "verify-ac.gate-results", "design-qa.findings"]
 name = "verify-ac"
 packet = ["contracts/{executor}.md"]
-payload = "ac-report@1"
-threshold = { "fix-loop" = "any(status == unmet)", "verify-ac-vote" = "any(status == unverifiable)" }
+payload = "ac-report@2"
+threshold = { "fix-loop" = "any(status == unmet)", "verify-ac-vote" = "any(status != met)" }
 
 [[step]]
 after = ["verify-ac"]

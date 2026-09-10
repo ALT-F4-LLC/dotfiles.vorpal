@@ -1,6 +1,6 @@
 ---
 node: fix
-version: 11
+version: 12
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
@@ -53,7 +53,10 @@ the evidence for reassessment. The report's unmet threshold explains this
 route; it does not remove routed findings from the work list.
 
 An AC marked `unverifiable` is not an independent repair assignment. Do not
-expand work merely to make it verifiable. An authorized repair may affect its
+expand work merely to make it verifiable. An AC marked `unmet-out-of-scope`
+is not one either: its repair lies outside this issue's scope and is filed as
+a follow-up. It becomes your work only when a supplied `verify-ac-vote` vote
+record rejects that judgment as in scope; then treat it as `unmet`. An authorized repair may affect its
 shared code; record that effect and any relevant evidence. Preserve the
 report's judgment for `verify` to reassess rather than editing or overriding it.
 Do not redo the full AC review; verify behavior affected by your repairs.
@@ -196,7 +199,8 @@ no-change procedure permits.
 required by the executor-write obligations. Keep the body concise and include:
 
 - **AC dispositions:** each supplied `unmet` AC ID, missing behavior, repair
-  or unresolved reason, and evidence for reassessment; each `unverifiable`
+  or unresolved reason, and evidence for reassessment; each `unverifiable` or
+  `unmet-out-of-scope`
   AC's retained judgment and any effect of authorized repairs.
 - **Findings addressed:** ID, cause, change, and supporting evidence, including
   relevant pre-fail and post-pass results. Link shared repairs without losing

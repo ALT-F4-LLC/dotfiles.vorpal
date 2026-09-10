@@ -1,13 +1,13 @@
 ---
 node: verify-ac
-version: 8
+version: 9
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
   - fragments/evidence-rules.md
   - fragments/scope-discipline.md
 emits: ac-report
-payload: ac-report@1
+payload: ac-report@2
 ---
 # Charter
 Determine, one acceptance criterion at a time, whether the evaluated candidate
@@ -98,6 +98,11 @@ otherwise preserve the conflict and its effect on the affected judgment.
 - `unmet`: applicable evidence establishes a violation of the AC. For an AC
   requiring several conditions, one demonstrated failure is sufficient; retain
   any unverified portions too.
+- `unmet-out-of-scope`: applicable evidence establishes a violation, every
+  repair route lies outside all applicable step scopes and recorded amendments
+  or in another repository, and the gap is filed in this completion or an
+  existing open filing is cited with its current status. An AC with any
+  in-scope repair route, however partial, stays `unmet`.
 - `unverifiable`: no violation is established, but missing evidence, ambiguous
   or contradictory wording, or a forbidden requirements source prevents a
   supported judgment.
@@ -126,8 +131,13 @@ do not broaden the sandbox or execute a control yourself.
 
 **Separate scope limits from AC results.** Inspect permitted evidence before
 calling a requirement incompatible with the plan: a file outside write scope
-may already satisfy it. If evidence proves an AC false but fixing it requires
-work outside all applicable step scopes, retain `unmet` and emit a scope/AC gap.
+may already satisfy it. If evidence proves an AC false and every repair requires
+work outside all applicable step scopes, judge `unmet-out-of-scope` and emit a
+scope/AC gap in the same completion, or cite the existing open filing with its
+status; routing sends that judgment to the verify vote, not the fixer, and a
+rejected vote returns it to the fixer as `unmet`. Do not choose `unmet` to
+force a round the scope cannot use, and do not choose `unmet-out-of-scope`
+while any repair route is in scope.
 Quote the criterion, applicable declarations and amendments, and required work
 outside them. If evidence is unavailable, use `unverifiable` and name the actual
 verification limit. A forbidden design-only requirement is an issue-body gap;
@@ -164,7 +174,7 @@ schema. Include:
   or authority, and the smallest next action for the responsible owner or role.
 
 The payload contains exactly one entry per inventoried AC, preserving its ID
-and a status in `met|unmet|unverifiable`. Keep body and payload consistent; do
+and a status in `met|unmet|unmet-out-of-scope|unverifiable`. Keep body and payload consistent; do
 not add statuses for classifications, blockers, or gaps. Use the brief's gap and
 artifact protocol without inventing fields or filing external issues yourself.
 Routing is computed from the payload and gate results; draw no overall verdict

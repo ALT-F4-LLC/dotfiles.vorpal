@@ -1,7 +1,22 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 36  # 36: corpus-wide naming-convention pass (src/user/docket/config/README.md).
+version = 37  # 37: `verify-ac` emits `ac-report@2`, whose status enum adds
+              #   `unmet-out-of-scope`: an AC shown false whose every repair lies
+              #   outside all applicable step scopes or in another repository,
+              #   gap-filed by verify-ac itself. The vote predicate becomes
+              #   `any(status != met)`, read after `fix-loop`'s
+              #   `any(status == unmet)` under first-match order, so an in-scope
+              #   unmet still loops while an out-of-scope or unverifiable AC goes
+              #   to the one-seat `verify-ac-vote`: approve passes with the filing
+              #   on record, reject routes fix-loop as before. No topology change.
+              #   Measured on RUN-98 HRN-830 (this track at 35): AC3's only remedy
+              #   was engine-side from review@0 and it stayed `unmet` through every
+              #   verify, so the issue could only loop to the cap and park — four
+              #   rounds each closing a distinct gap in AC1, then override-pass with
+              #   the residue filed (HRN-2295). HRN-2217 is the same shape on
+              #   HRN-852. Under @37 that AC3 routes to the vote at verify@0.
+              # 36: corpus-wide naming-convention pass (src/user/docket/config/README.md).
               #   Step renames only, no topology change: `synthesize` ->
               #   `synthesize-findings` (step now equals its sole executor's
               #   name), `verify` -> `verify-ac` (same), `verify-tribunal` ->
@@ -252,8 +267,8 @@ holds_tree = false
 inputs = ["issue.body", "issue.diff", "implement.change-summary", "verify-ac.gate-results"]
 name = "verify-ac"
 packet = ["contracts/{executor}.md"]
-payload = "ac-report@1"
-threshold = { "fix-loop" = "any(status == unmet)", "verify-ac-vote" = "any(status == unverifiable)" }
+payload = "ac-report@2"
+threshold = { "fix-loop" = "any(status == unmet)", "verify-ac-vote" = "any(status != met)" }
 
 [[step]]
 after = ["verify-ac"]

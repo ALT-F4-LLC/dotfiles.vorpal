@@ -1,7 +1,14 @@
 [pipeline]
 description = "Cross-issue disposition: write the verdict comment and close the carrier, gated on the build/test sanity check and AC verification with a bounded revise loop; no code-review machinery."
 name = "disposition"
-version = 8  # 8: corpus-wide naming-convention pass (src/user/docket/config/README.md).
+version = 9  # 9: `verify-ac` emits `ac-report@2` (adds `unmet-out-of-scope`)
+             #   and its vote predicate becomes `any(status != met)`, read after
+             #   `fix-loop`'s `any(status == unmet)`: an in-scope unmet still
+             #   loops, an out-of-scope or unverifiable AC goes to the one-seat
+             #   `verify-ac-vote` (approve passes with the gap filed, reject
+             #   routes fix-loop). No topology change; the measurement is on
+             #   standard-change@37.
+             # 8: corpus-wide naming-convention pass (src/user/docket/config/README.md).
              #   Step renames only, no topology change: `verify` ->
              #   `verify-ac`, `verify-tribunal` -> `verify-ac-vote` (vote
              #   steps now uniformly named `<gated-step>-vote`), `revise`
@@ -96,8 +103,8 @@ inputs = ["issue.body", "issue.diff", "dispose.disposition", "verify-ac.gate-res
 max_fix_loops = 2
 name = "verify-ac"
 packet = ["contracts/{executor}.md"]
-payload = "ac-report@1"
-threshold = { "fix-loop" = "any(status == unmet)", "verify-ac-vote" = "any(status == unverifiable)" }
+payload = "ac-report@2"
+threshold = { "fix-loop" = "any(status == unmet)", "verify-ac-vote" = "any(status != met)" }
 
 [[step]]
 after = ["verify-ac"]

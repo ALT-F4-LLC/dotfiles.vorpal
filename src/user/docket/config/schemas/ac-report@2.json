@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ac-report@2",
+  "description": "The verify-ac payload (02 §6): one element per acceptance criterion, each a per-AC judgment with its evidence. Routing is computed over `status` by the verify step's thresholds, read top to bottom — `any(status == unmet)` routes `fix-loop`, then `any(status != met)` routes the verify vote (05 §1) — which are equality predicates and need no declared order; `status` is therefore an ordinary enum, deliberately not an `ordered_enum`, because these four values form no ladder and inventing one would let `>=` compile against a comparison nobody defined. @2 adds `unmet-out-of-scope`: an AC shown false whose every repair lies outside all applicable step scopes. Under the first-match order it never reaches the fixer; the vote confirms the scope claim and the filing, and a rejection routes `fix-loop` through the vote's own `on_fail`.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "description": "The acceptance criterion's identifier, matching the issue body's AC section.",
+        "type": "string",
+        "minLength": 1
+      },
+      "status": {
+        "description": "The per-AC judgment (02 §6). `unmet` is a demonstrated violation with at least one repair route inside the applicable step scopes. `unmet-out-of-scope` is a demonstrated violation whose every repair route lies outside all applicable step scopes and amendments or in another repository, with the gap filed in the same completion or an existing open filing cited. `unverifiable` covers both an AC whose fenced command fell outside the operator's trust allowlist — reported, never executed (06 §4) — and one that is runtime-only or too defective in its wording to judge.",
+        "type": "string",
+        "enum": ["met", "unmet", "unmet-out-of-scope", "unverifiable"]
+      },
+      "evidence": {
+        "description": "What a skeptic could re-run or re-read: the recorded pre-gate command result, or the file:line trace through the diff. For `unmet-out-of-scope`, also the declarations and amendments the repair falls outside and the filed or cited gap issue.",
+        "type": "string"
+      },
+      "classification": {
+        "description": "How the AC was verified: `command` (the engine ran it as a pre-gate at claim and the result arrived in the context bundle), `static` (traced through the diff), or `runtime` (observable only by running the system, hence never verified statically).",
+        "type": "string",
+        "enum": ["command", "static", "runtime"]
+      }
+    },
+    "required": ["id", "status"],
+    "additionalProperties": true
+  }
+}

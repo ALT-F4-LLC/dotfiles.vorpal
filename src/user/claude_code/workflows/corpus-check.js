@@ -23,6 +23,18 @@ const AGENT_CONFIG = {
 
 const SHARD_LINES = 1500
 const REFUTERS_PER_FINDING = 3
+// Verification runs one refuter agent per (file batch, refuter) rather than per
+// finding: a batch carries every finding from one file up to VERIFY_BATCH_MAX,
+// and the refuter returns one verdict per finding. The 2026-09-10 run produced
+// 388 findings, so per-finding refuters alone needed 1164 agents against the
+// Workflow tool's 1000-agent lifetime cap and the tail went unverified.
+const VERIFY_BATCH_MAX = 12
+// Agent budget, fixed before any fan-out so the read plan can never consume the
+// verification allowance. Every reserve is a count of agent() calls.
+const AGENT_CAP = 1000
+const AGENT_CAP_MARGIN = 10
+const DISCOVERY_AGENTS = 3
+const COMPLETENESS_RESERVE = 1 + 8 // the critic plus at most eight gap refills
 
 const CROSS_PAIRS = [
   {
@@ -105,13 +117,23 @@ const COMPLETENESS_SCHEMA = {
   required: ['gaps'],
 }
 
-const VERDICT_SCHEMA = {
+const BATCH_VERDICT_SCHEMA = {
   type: 'object',
   properties: {
-    refuted: { type: 'boolean' },
-    reason: { type: 'string' },
+    verdicts: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          index: { type: 'integer', description: 'The finding number from the batch, starting at 1' },
+          refuted: { type: 'boolean' },
+          reason: { type: 'string' },
+        },
+        required: ['index', 'refuted', 'reason'],
+      },
+    },
   },
-  required: ['refuted', 'reason'],
+  required: ['verdicts'],
 }
 
 function parseLines(text) {
@@ -120,6 +142,60 @@ function parseLines(text) {
     .map((line) => line.trim())
     .filter((line) => line && !line.startsWith('#'))
 }
+
+// TEST-BEGIN verify-budget — pure planning helpers, exercised without a run.
+function verifyBudget(readPlanSize, crossPairs) {
+  return Math.max(0, AGENT_CAP - AGENT_CAP_MARGIN - DISCOVERY_AGENTS - readPlanSize - COMPLETENESS_RESERVE - crossPairs)
+}
+
+// One batch per file slice of at most VERIFY_BATCH_MAX findings, in stable file
+// order so a resumed run replays the same batches.
+function buildVerifyBatches(findings) {
+  const byFile = new Map()
+  findings.forEach((finding, index) => {
+    if (!byFile.has(finding.file)) byFile.set(finding.file, [])
+    byFile.get(finding.file).push({ finding, index })
+  })
+  return [...byFile.keys()].sort().flatMap((file) => {
+    const items = byFile.get(file)
+    return Array.from({ length: Math.ceil(items.length / VERIFY_BATCH_MAX) }, (_, slice) => ({
+      file,
+      slice,
+      items: items.slice(slice * VERIFY_BATCH_MAX, (slice + 1) * VERIFY_BATCH_MAX),
+    }))
+  })
+}
+
+// Splits batches into those the budget covers and those it cannot; the second
+// list is reported as unverified, never dropped and never counted as survived.
+function planVerification(batches, budget) {
+  const affordable = Math.floor(budget / REFUTERS_PER_FINDING)
+  return { covered: batches.slice(0, affordable), uncovered: batches.slice(affordable) }
+}
+
+// Applies one batch's refuter returns to its findings. A refuter that returned
+// nothing, or omitted a finding's index, casts no vote on it. A finding with no
+// votes at all is unverified, not refuted and not upheld.
+function applyBatchVerdicts(batch, returns) {
+  const upheld = []
+  const unverified = []
+  batch.items.forEach(({ finding }, position) => {
+    const votes = returns
+      .filter(Boolean)
+      .map((r) => (r.verdicts || []).find((v) => v.index === position + 1))
+      .filter(Boolean)
+    if (!votes.length) {
+      unverified.push(finding)
+      return
+    }
+    const refutedCount = votes.filter((v) => v.refuted).length
+    // Require a strict majority of returned votes to uphold; ties fail.
+    if (refutedCount >= votes.length / 2) return
+    upheld.push({ ...finding, refuterVotes: votes.length, refutedBy: refutedCount })
+  })
+  return { upheld, unverified }
+}
+// TEST-END verify-budget
 
 function buildReadPlan(files, lineCounts) {
   return files.flatMap((file) => {
@@ -180,43 +256,55 @@ full length; other files need one full range (e.g. "1-252"). Return each missing
 or uncovered span in a large file as a gap, naming the file and missing range.`,
     { phase: 'Completeness', label: 'completeness-critic', schema: COMPLETENESS_SCHEMA, ...AGENT_CONFIG.coverage }
   )
-  const gaps = critic?.gaps || []
+  // A critic that returned nothing is not a clean critic; the skill treats a
+  // throw as "coverage unverified, stop".
+  if (!critic) throw new Error('corpus-check: the completeness critic returned nothing; coverage is unverified')
+  const gaps = critic.gaps || []
   if (!gaps.length) {
     log('Completeness pass: full coverage confirmed, no gaps')
     return { reports: [], coverageNote: 'No coverage gaps found.' }
   }
 
-  log(`Completeness pass found ${gaps.length} gap(s); re-dispatching`)
-  const gapReads = await pipeline(gaps, (gap) =>
+  const refillLimit = COMPLETENESS_RESERVE - 1
+  const refills = gaps.slice(0, refillLimit)
+  const unfilled = gaps.slice(refillLimit)
+  log(`Completeness pass found ${gaps.length} gap(s); re-dispatching ${refills.length}`)
+  if (unfilled.length) log(`Refill reserve is ${refillLimit}; ${unfilled.length} gap(s) stay UNCOVERED: ${unfilled.map((gap) => `${gap.file} (${gap.range})`).join(', ')}`)
+  const gapReads = await pipeline(refills, (gap) =>
     agent(readPrompt(gap.file, ` (lines ${gap.range})`, sinceRefNote), { phase: 'Completeness', label: `refill:${gap.file}`, schema: FINDING_SCHEMA, ...AGENT_CONFIG.refill })
   )
+  const describe = (list) => list.map((gap) => `${gap.file} (${gap.range})`).join(', ')
   return {
     reports: gapReads.filter(Boolean),
-    coverageNote: `Re-dispatched ${gaps.length} gap(s) found by the completeness pass: ${gaps.map((gap) => `${gap.file} (${gap.range})`).join(', ')}.`,
+    coverageNote: `Re-dispatched ${refills.length} gap(s) found by the completeness pass: ${describe(refills)}.`
+      + (unfilled.length ? ` UNCOVERED, beyond the refill reserve: ${describe(unfilled)}.` : ''),
   }
 }
 
-async function verifyFinding(finding) {
-  const prompt = `Try to REFUTE this corpus coherence finding:
-File: ${finding.file}
+async function verifyBatch(batch) {
+  const listing = batch.items
+    .map(({ finding }, position) => `--- Finding ${position + 1}
 Location: ${finding.location}
 Quote: ${finding.quote}
 Counterpart: ${finding.counterpart || '(none stated)'}
 Severity: ${finding.severity}
-Claimed problem: ${finding.summary}
+Claimed problem: ${finding.summary}`)
+    .join('\n')
+  const prompt = `Try to REFUTE each of these ${batch.items.length} corpus coherence finding(s), all in
+File: ${batch.file}
 
-Read the file and any named counterpart yourself. Default to refuted=true
+${listing}
+
+Read the file once and any named counterpart yourself, then judge every finding
+independently and return one verdict per finding number. Default to refuted=true
 unless you can confirm both the quoted text and the problem. Refute inaccurate
 quotes, misrepresented counterparts, claims consistent under a reasonable
-reading, and findings that misunderstand the file's scope.`
-  const votes = await parallel(Array.from({ length: REFUTERS_PER_FINDING }, () => () =>
-    agent(prompt, { phase: 'Verify', label: `verify:${finding.file}`, schema: VERDICT_SCHEMA, ...AGENT_CONFIG.verify })
+reading, and findings that misunderstand the file's scope. A verdict you omit
+counts as no vote, not as a refutation.`
+  const returns = await parallel(Array.from({ length: REFUTERS_PER_FINDING }, () => () =>
+    agent(prompt, { phase: 'Verify', label: `verify:${batch.file}#${batch.slice}`, schema: BATCH_VERDICT_SCHEMA, ...AGENT_CONFIG.verify })
   ))
-  const castVotes = votes.filter(Boolean)
-  const refutedCount = castVotes.filter((vote) => vote.refuted).length
-  // Require a strict majority of returned votes to uphold; ties and no votes fail.
-  if (refutedCount >= castVotes.length / 2) return null
-  return { ...finding, refuterVotes: castVotes.length, refutedBy: refutedCount }
+  return applyBatchVerdicts(batch, returns)
 }
 
 const sinceRef = args?.sinceRef || null
@@ -254,7 +342,9 @@ const lineCounts = new Map(largeFiles.map(({ file, lines }) => [file, lines]))
 if (largeFiles.length) log(`Sharding ${largeFiles.length} large file(s): ${largeFiles.map(({ file, lines }) => `${file} (${lines}L)`).join(', ')}`)
 
 const readPlan = buildReadPlan(files, lineCounts)
-log(`Read plan: ${readPlan.length} agent(s) over ${files.length} file(s)`)
+const verifyAllowance = verifyBudget(readPlan.length, CROSS_PAIRS.length)
+log(`Read plan: ${readPlan.length} agent(s) over ${files.length} file(s); verification allowance ${verifyAllowance} agent(s) (${Math.floor(verifyAllowance / REFUTERS_PER_FINDING)} batches of up to ${VERIFY_BATCH_MAX} findings)`)
+if (verifyAllowance < REFUTERS_PER_FINDING) log(`Read plan leaves no verification allowance under the ${AGENT_CAP}-agent cap; every finding will be reported UNVERIFIED`)
 
 phase('Read')
 const initialReports = (await pipeline(readPlan, ({ file, rangeNote, label }) =>
@@ -286,21 +376,36 @@ const rawFindings = allReports.flatMap((report) =>
 log(`${rawFindings.length} raw finding(s) before verification`)
 
 if (rawFindings.length) phase('Verify')
-const findings = rawFindings.length
-  ? (await parallel(rawFindings.map((finding) => () => verifyFinding(finding)))).filter(Boolean)
-  : []
-if (rawFindings.length) log(`${findings.length}/${rawFindings.length} finding(s) survived adversarial verification`)
+const batches = buildVerifyBatches(rawFindings)
+const { covered, uncovered } = planVerification(batches, verifyAllowance)
+if (uncovered.length) log(`Verification allowance covers ${covered.length} of ${batches.length} batch(es); ${uncovered.reduce((n, b) => n + b.items.length, 0)} finding(s) will be reported UNVERIFIED`)
+const results = covered.length ? (await parallel(covered.map((batch) => () => verifyBatch(batch)))).filter(Boolean) : []
+const findings = results.flatMap((r) => r.upheld)
+const unverified = [
+  ...results.flatMap((r) => r.unverified),
+  ...uncovered.flatMap((batch) => batch.items.map(({ finding }) => finding)),
+]
+const verifiedCount = rawFindings.length - unverified.length
+if (rawFindings.length) log(`${findings.length}/${verifiedCount} verified finding(s) survived adversarial verification; ${unverified.length} unverified`)
 
+const partial = unverified.length > 0
+const verificationNote = partial
+  ? `Verification PARTIAL: ${unverified.length} of ${rawFindings.length} raw finding(s) unverified (agent budget or no refuter vote); see the unverified list.`
+  : 'Verification complete: every raw finding was judged.'
 const summary = rawFindings.length
-  ? `${rawFindings.length} raw findings, ${findings.length} survived adversarial verification (${REFUTERS_PER_FINDING} refuters/finding, majority-uphold).`
+  ? `${rawFindings.length} raw findings, ${verifiedCount} verified, ${findings.length} survived adversarial verification (${REFUTERS_PER_FINDING} refuters/batch, majority-uphold)${partial ? `; ${unverified.length} UNVERIFIED` : ''}.`
   : 'no findings surfaced.'
 
 return {
   findings,
+  unverified,
   filesAudited: files.length,
   readPlanSize: readPlan.length,
-  coverageNote,
+  coverageNote: rawFindings.length ? `${coverageNote} ${verificationNote}` : coverageNote,
   rawFindingCount: rawFindings.length,
+  verifiedCount,
   survivedCount: findings.length,
+  unverifiedCount: unverified.length,
+  verificationPartial: partial,
   summary: `${files.length} files audited via ${readPlan.length} read(s); ${summary}`,
 }

@@ -1,6 +1,6 @@
 ---
 node: ux-spec-author
-version: 8
+version: 9
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
@@ -10,6 +10,7 @@ packet_includes:
   - fragments/hig-principles.md
   - fragments/copy-discipline.md
   - fragments/evidence-rules.md
+  - fragments/scope-discipline.md
   - fragments/completion-gates.md
 emits: doc
 ---

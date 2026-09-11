@@ -1,6 +1,6 @@
 ---
 fragment: laziness-ladder
-version: 5
+version: 6
 ---
 # Laziness ladder
 
@@ -29,8 +29,9 @@ requirements for the chosen design. Keep the search proportional to the task:
 
 No scaffolding for later, speculative configuration, or wrappers that merely
 rename an existing operation. Fix the responsible code instead of accumulating
-special cases around it. Comment a deliberate limitation only when its
-consequences are non-obvious; name the ceiling and upgrade path.
+special cases around it. Record a deliberate limitation in the change summary
+when its consequences are non-obvious; name the ceiling and upgrade path. Source
+comments follow code-philosophy #7.
 
 **Finish by subtracting.** Inspect the complete task diff. Remove unnecessary
 additions, duplicated behavior, and temporary scaffolding created for the task.

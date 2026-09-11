@@ -36,7 +36,10 @@ tone alone, and say which mode you are using before you act.
    but "honors in-flight completes" — nothing about it interrupts a step
    already claimed.
 2. If a wave is in flight, keep awaiting it exactly as docket-run normally does;
-   do not busy-wait and do not abandon the dispatch. Let it finish.
+   do not busy-wait and do not abandon the dispatch. Let it finish. A dispatch
+   docket-run split into shards is several launches over one manifest: await
+   every one of them, and back-fill each shard's usage under its own `wfId`
+   as it returns, before the close.
 
    **Know what "finish" means after a pause.** Readiness requires the run to
    be active, and the engine re-checks it at CLAIM time, not at dispatch
@@ -122,16 +125,19 @@ checkout, never a wave worktree.
 
 **Session-only state — write all of it down, or it is gone:**
 
-- **Every wave this session launched**: its `wfId`, and the journal/transcript
-  directory path docket-run used for `wave-usage`. Without both, usage for that
-  wave can never be back-filled (`docket dispatch backfill-usage --source
-  "wave-journal:<wfId>"`), and the worktree sweep set for that wave
-  (`worktree-wf_<id>-*` branches) cannot be told apart from a foreign entry.
+- **Every wave this session launched** — every SHARD launch of a split
+  dispatch counts as its own wave here: its `wfId`, its `shard: {index, of}`,
+  and the journal/transcript directory path docket-run used for `wave-usage`.
+  Without the `wfId` and that directory, usage for that wave can never be back-filled (`docket
+  dispatch backfill-usage --source "wave-journal:<wfId>"`), and the worktree
+  sweep set for that wave (`worktree-wf_<id>-*` branches) cannot be told
+  apart from a foreign entry.
 - **The FULL original `Workflow` args** — the literal `rows` JSON exactly as
-  `next` returned it, routing fields included, and any `integrated` map —
-  for any wave or tribunal a later session might need to resume with
-  `resumeFromRunId`. The harness does not restore these; an arg-less resume
-  dies at startup.
+  `next` returned it, routing fields included, any `integrated` map, and the
+  shard spec — for any wave or tribunal a later session might need to resume
+  with `resumeFromRunId`. The harness does not restore these; an arg-less
+  resume dies at startup, and a shard resumed under a different `index` or
+  `of` runs a different lane set.
 - **Un-integrated writer shas**: any executor sha that was recorded but never
   cherry-picked into the shared checkout, with its worktree path and branch.
   Integration is never automatic. A worktree removed without naming its sha
@@ -148,9 +154,12 @@ checkout, never a wave worktree.
   never honor one on your own initiative; a resuming session needs to know
   one is outstanding.
 - **Every tribunal proposal id convened this session**, with a one-line tally
-  each. Panel spend lives outside the run ledger entirely (wave-usage
-  attributes by step id; panels carry vote ids instead) — a close or resume
-  report that omits them can understate the session's real cost by half.
+  each. Panel spend reaches the ledger through the seats-mode wave-usage join
+  piped to `docket vote backfill-usage <proposal-id> --source
+  "tribunal:<wfId>"` — back-fill every panel this session convened before
+  recording the snapshot, in both halt modes, and carry into the snapshot only
+  the proposal ids whose back-fill is still outstanding, with their tribunal
+  transcript dirs and `wfId`s.
 - **Foreign `wf_*` worktree entries observed** but not this session's to
   remove — name them as operator-cleanup candidates so they are not
   rediscovered cold.

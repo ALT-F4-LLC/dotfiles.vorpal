@@ -109,6 +109,20 @@ const probe = (_cmd, _label, _phase, step) => {
     PROBED.push(step)
     return Promise.resolve(PROBES.get(step) || '')
 }
+// stepShow() mirrors the schema envelope wave.js now reads at the pre-claim
+// site: null on a dead probe (matches probe()'s '' contract), {error} when
+// the fixture text carries no parseable status (unparseable prose fails
+// open exactly like the old regex-over-text path did), else the normalized
+// {status, blockedReason} shape.
+const stepShow = (step) => {
+    PROBED.push(step)
+    const text = PROBES.get(step)
+    if (!text) return Promise.resolve(null)
+    const status = text.match(/"status"\s*:\s*"([a-z-]+)"/)
+    if (!status) return Promise.resolve({ error: text.trim() })
+    const reason = text.match(/"blocked_reason"\s*:\s*"([^"]*)"/)
+    return Promise.resolve({ status: status[1], blockedReason: reason ? reason[1] : '' })
+}
 
 const ladder = async () => {
 JS

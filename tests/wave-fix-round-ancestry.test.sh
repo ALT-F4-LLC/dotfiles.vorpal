@@ -128,6 +128,9 @@ const probe = (cmd, _label, _phase, _step) => {
     }
     return Promise.resolve('')
 }
+// No fixture in this suite carries an action row, so needsClaimProbe never
+// fires — kept for completeness, fail-open like the probe() default above.
+const stepShow = () => Promise.resolve(null)
 
 JS
     # park-signals and fix-round-ancestry land at MODULE scope so the unit

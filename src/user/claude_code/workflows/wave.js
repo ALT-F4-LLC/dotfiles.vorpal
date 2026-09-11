@@ -1,7 +1,7 @@
 export const meta = {
     name: 'wave',
-    description: 'Run one dispatched manifest end to end: spawn one executor per executor row at the model/effort the engine rendered on it, seat a judge panel on each vote row from its routed roster, and skip action rows (engine-run at record time). Stages run as awaited groups per issue lane, with the cross-issue cohorts the manifest certifies honored — the staged closure means one wave can carry judges -> gate -> reconcile -> report, and inside a wave no issue idles behind the slower stages of another; writers the engine never co-staged still serialize, so a wave launches at most three such writer cohorts and defers the rest to the next dispatch rather than holding every finished lane behind a long writer ladder. AGENT BUDGET: the Workflow tool caps one invocation at 1000 agents over its lifetime, so the wave reserves each row\'s projected agents at admission (executor 2, vote row seats+3) against a 900-agent budget and defers, on the spot and without holding its lane, every row the remainder cannot cover; the engine re-offers deferred rows at the next dispatch, and a manifest of any size is safe to hand over whole. PROBE COST PER VOTE ROW: 2 read-only haiku probes of `docket gate status` on the normal path — one before the panel seats (decided yet, which proposal, which target) and one after it returns (missing seats and the tally) — 1 on a gate that was already decided before the wave reached it, and 3 when a re-seat forces a re-read; a gate with no proposal yet spends a `step show` for the engine\'s blocked_reason instead of a panel, and an engine-minted held-cluster gate spends one more read to name its cluster. Each probe answers through a schema, under 1 KB; the per-gate count is reported verbatim in that row\'s spawn_accounting. Invoke by scriptPath ONLY, with args {rows, tribunal, cwd} as a real object — every row carries model/effort/variant resolved by the engine, and the script reads no policy and cannot read files.',
-    whenToUse: 'Invoked by the docket-run skill on an open dispatch, always as Workflow({scriptPath}) — never by name. args is {rows, tribunal, cwd}: `next` rows VERBATIM (executor, vote, and action rows; human rows stay with the conductor), each executor row carrying the model/effort/variant the engine resolved from the run\'s pinned policy.toml and each vote row carrying the same per voter in `voter_assignments` — a row re-typed without those fields is refused. `tribunal` is the absolute installed path to tribunal.js, the one workflow-nesting level this script uses to seat every in-wave panel (it cannot resolve that path itself); `cwd` is the repo the run belongs to. On a dispatch carrying a fix round\'s review fanout, args also carries `integrated` — a map from each such issue to the sha of its prior round\'s INTEGRATION commit — so the wave can assert base ancestry before seating the fanout. There is no policy argument of any kind and no file access.',
+    description: 'Run one dispatched manifest end to end: spawn one executor per executor row at the model/effort the engine rendered on it, seat a judge panel on each vote row from its routed roster, and skip action rows (engine-run at record time). Stages run as awaited groups per issue lane, with the cross-issue cohorts the manifest certifies honored — the staged closure means one wave can carry judges -> gate -> reconcile -> report, and inside a wave no issue idles behind the slower stages of another; writers the engine never co-staged still serialize, so a wave launches at most three such writer cohorts and defers the rest to the next dispatch rather than holding every finished lane behind a long writer ladder. AGENT BUDGET: the Workflow tool caps one invocation at 1000 agents over its lifetime, so the wave reserves each row\'s projected agents at admission (executor 2, vote row seats+3) against a 900-agent budget and defers, on the spot and without holding its lane, every row the remainder cannot cover; the engine re-offers deferred rows at the next dispatch, and a manifest of any size is safe to hand over whole. SHARDS: both caps are per invocation, so one dispatch may launch up to SHARD_CAP (4) waves at once, each handed the FULL manifest plus `shard: {index, of}`; every launch computes the same deterministic partition — whole issue lanes as units, writer lanes the engine never co-staged welded into one unit so they still serialize, units balanced largest-first onto the least-loaded shard — runs only its own lanes, admits only its share of each class\'s certified headroom, and settles every sibling row not-launched-other-shard. PROBE COST PER VOTE ROW: 2 read-only haiku probes of `docket gate status` on the normal path — one before the panel seats (decided yet, which proposal, which target) and one after it returns (missing seats and the tally) — 1 on a gate that was already decided before the wave reached it, and 3 when a re-seat forces a re-read; a gate with no proposal yet spends a `step show` for the engine\'s blocked_reason instead of a panel, and an engine-minted held-cluster gate spends one more read to name its cluster. Each probe answers through a schema, under 1 KB; the per-gate count is reported verbatim in that row\'s spawn_accounting. Invoke by scriptPath ONLY, with args {rows, tribunal, cwd, shard?} as a real object — every row carries model/effort/variant resolved by the engine, and the script reads no policy and cannot read files.',
+    whenToUse: 'Invoked by the docket-run skill on an open dispatch, always as Workflow({scriptPath}) — never by name, and once per shard when the dispatch is split (the same rows in every launch, `shard: {index, of}` differing). args is {rows, tribunal, cwd, shard?}: `next` rows VERBATIM (executor, vote, and action rows; human rows stay with the conductor), each executor row carrying the model/effort/variant the engine resolved from the run\'s pinned policy.toml and each vote row carrying the same per voter in `voter_assignments` — a row re-typed without those fields is refused. `tribunal` is the absolute installed path to tribunal.js, the one workflow-nesting level this script uses to seat every in-wave panel (it cannot resolve that path itself); `cwd` is the repo the run belongs to. On a dispatch carrying a fix round\'s review fanout, args also carries `integrated` — a map from each such issue to the sha of its prior round\'s INTEGRATION commit — so the wave can assert base ancestry before seating the fanout. There is no policy argument of any kind and no file access.',
 }
 
 // TEST-BEGIN configuration — shared by the extracted behavior suites.
@@ -24,6 +24,13 @@ const EXECUTOR_AGENT_COST = 2
 const VOTE_PROBE_COST = 3
 const DEFAULT_PANEL_SEATS = 3
 const HARNESS_CAP = 16
+// Most concurrent wave launches one dispatch may split into. Every launch is
+// its own Workflow invocation with its own HARNESS_CAP and AGENT_BUDGET, and
+// every launch receives the FULL manifest as args (the rows are hashed and
+// pass verbatim), so the conductor emits one manifest copy per shard: four
+// copies of a 240-row manifest is ~340 KB of launch args per dispatch, which
+// is the ceiling this constant holds.
+const SHARD_CAP = 4
 // TEST-END configuration
 
 // ---------------------------------------------------------------------------
@@ -84,10 +91,10 @@ function archetype(row, hint) {
 // SCRATCH HYGIENE: every
 // file an executor writes lives in a private per-step directory <TMP>/<step>.d,
 // mode 0700, built fresh at claim (rm -rf then mkdir -m 700) and removed by the
-// executor the moment a record or fail exits 0. Before this, tokens (0600) and
-// packets/claims (0644, world-readable) accumulated unbounded at the shared
-// TMPDIR root — 911 stale tokens and 139 world-readable packets measured on one
-// machine. Step ids are engine-minted and monotonic, so a fresh
+// executor the moment a record or fail exits 0. The shared TMPDIR root is
+// world-readable and every file dropped there accumulates unbounded, which is
+// why tokens (0600) and packets/claims (0644) live in the private per-step
+// dir instead. Step ids are engine-minted and monotonic, so a fresh
 // run cannot inherit stale files; the interrupted path (executor dies holding a
 // claim) is swept by the conductor at reap — see docket-run/SKILL.md, "A dead
 // spawn is reaped, not waited out."
@@ -116,8 +123,8 @@ function archetype(row, hint) {
 function bootstrap(row, r, isolated, isWrite) {
     // The claim bootstrap: seven commands rendered in two joins (isolated:
     // one per Bash call, literal paths; shared: one Bash call, `&&`-chained)
-    // — the same sequence duplicated in DOT-1269 already drifted once (one
-    // copy wrote the packet to a file while the other printed it to stdout).
+    // — a duplicated sequence has drifted before (one copy wrote the packet
+    // to a file while the other printed it to stdout).
     // One array of command strings is the source for both forms; `isolated`
     // picks the token line's exact syntax (the shared form's `&&` chain
     // reads the claim file via an explicit `<` redirect since it cannot rely
@@ -125,12 +132,12 @@ function bootstrap(row, r, isolated, isWrite) {
     // than a sibling top-level function) so the extraction convention every
     // suite already uses for bootstrap — everything from `function
     // bootstrap(` to the next marker — carries this helper along with it.
-    // DKT-1709: `--owner wave:${row.step}` is a pure function of the step
-    // id, so a retry launched while an earlier claim process for the same
-    // step is still alive presents the IDENTICAL owner — same-owner does not
-    // imply same-process. DKT-1564's same-owner re-mint (recovering a
-    // caller's own committed-but-incomplete lease) can then re-key a lease a
-    // DIFFERENT live process is still working under. A per-launch
+    // `--owner wave:${row.step}` is a pure function of the step id, so a
+    // retry launched while an earlier claim process for the same step is
+    // still alive presents the IDENTICAL owner — same-owner does not imply
+    // same-process. The same-owner re-mint that recovers a caller's own
+    // committed-but-incomplete lease can then re-key a lease a DIFFERENT
+    // live process is still working under. A per-launch
     // discriminator makes a matching owner mean a matching process, so the
     // re-mint can only ever touch the caller's own earlier attempt. The
     // script has no process id and no dispatch/launch id on the row (a
@@ -145,7 +152,7 @@ function bootstrap(row, r, isolated, isWrite) {
     // guard only needs launches truly in flight together to differ.
     bootstrap.launches = (bootstrap.launches || 0) + 1
     const ownerDiscriminator = bootstrap.launches
-    // DKT-1564 makes `docket step claim` exit 0 with `ok: true` when the
+    // `docket step claim` exits 0 with `ok: true` when the
     // lease committed but a later stage failed: the response carries the
     // live token plus a non-empty `.data.claim_error` instead of the
     // non-zero exit that used to be the stop signal. Nothing downstream of
@@ -301,8 +308,7 @@ ${claimCommands(true).map((c) => `   \`${c}\``).join('\n')}
    An EMPTY token file means no lease committed — report CLAIM FAILED with
    that diagnostic verbatim and STOP; there is nothing to end. A token file
    that DID capture something, with \`claim_error\` non-empty, means the lease
-   committed but a later stage failed (the RUN-90 shape DKT-1564 exists to
-   recover from) — you hold a live token and MUST end it:
+   committed but a later stage failed — you hold a live token and MUST end it:
    \`docket step fail ${row.step} --note '<claim_error verbatim>' < <TMP>/${row.step}.d/${row.step}.token\`,
    then report CLAIM INCOMPLETE with the diagnostic and STOP. \`re_minted: true\`
    on that diagnostic means the engine recovered YOUR OWN earlier lease under
@@ -683,9 +689,9 @@ function isConflictReport(text) {
 // record-status tail of the agent whose own record parked ('STEP-N recorded
 // (waiting-human)') parks that ISSUE: the engine's R2b refuses every later
 // claim on the same issue until the operator rules, and the run stays
-// `active` for every other lane. Reading it as a run-wide park was what
-// RUN-90 paid for — 1372 of 1656 dispatched rows never launched because one
-// lane's verify parked. The claim-CONFLICT report of an agent that launched
+// `active` for every other lane. Reading it as a run-wide park has cost
+// most of one run's dispatched rows in a single event because one lane's
+// verify parked. The claim-CONFLICT report of an agent that launched
 // INTO a park ('run is not active') is still run-wide: R1 refuses every
 // claim, so every lane stops launching. The tail format is mandated by the
 // brief's closing instruction below, which says to END the reply with it, so
@@ -711,11 +717,11 @@ function runParked(res) {
 // as "never started" but actually means ALREADY CLAIMED — routinely by a
 // PREDECESSOR OF THE VERY AGENT that just reported it.
 //
-// RUN-61 DISPATCH-332 is the fixture: the operator interrupted
+// One observed dispatch is the fixture: the operator interrupted
 // the fix@1 executor mid-step, harness resume relaunched the identical agent
 // spec (none of wave.js's own retry paths fired — resume is invisible from
 // inside this script), the relaunched agent's claim was refused with that
-// sentence, and the wave reported it as STEP-2760's outcome before
+// sentence, and the wave reported it as that step's outcome before
 // chain-killing nine downstream rows. The truth was the opposite — claimed,
 // holder dead, reap needed — and the conductor had to reconstruct it from
 // the journal.
@@ -756,6 +762,10 @@ function isOrphanedClaimConflict(text) {
 // unclaimed step; `failed_attempts`/`reaped_claims` are omitted at 0), and
 // nothing here is asserted that the text did not actually carry.
 function parseStepShow(show) {
+    // stepShow() below already returns this exact shape (absence as '', not
+    // undefined) — pass it through rather than re-stringifying and
+    // re-regexing an object the schema already validated.
+    if (show && typeof show === 'object') return show
     const s = typeof show === 'string' ? show : ''
     const grab = (key, val) => {
         const m = s.match(new RegExp(`"${key}"\\s*:\\s*${val}`))
@@ -976,12 +986,12 @@ function probeRecovered(p, label) {
 }
 // TEST-END null-probe
 
-// DOT-1265: once a null-recovery probe (either kind below) comes back with
-// nothing itself, a burst of nulls across many rows is a session/rate-limit
-// event, not N independent dead spawns — measured: a mid-wave 429 nulled 22
-// of 26 agent() calls, and the block-probe this file already spawns per
-// null is an agent() call too, so probing every one of them just adds more
-// corpses to the same storm (11 extra, on that run, all also null). Module
+// Once a null-recovery probe (either kind below) comes back with nothing
+// itself, a burst of nulls across many rows is a session/rate-limit event,
+// not N independent dead spawns — a mid-wave 429 has nulled most of a
+// wave's agent() calls in one shot, and the block-probe this file already
+// spawns per null is an agent() call too, so probing every one of them just
+// adds more corpses to the same storm. Module
 // state, not per-row: `spawn()` runs once per row and shares this flag
 // across every row this wave. Date.now() is unavailable in a workflow
 // script, so the trip is "a probe itself returned nothing", not a time
@@ -1040,8 +1050,7 @@ function spawn(row, phaseLabel) {
             log(`${row.step}: claim refused "the step is not pending" — probing ` +
                 `the step's real state rather than relaying the refusal as the ` +
                 `outcome`)
-            return probe(`docket step show ${row.step} --json`,
-                `${row.step} · claim-conflict`, phaseLabel, row.step)
+            return stepShow(row.step, `${row.step} · claim-conflict`, phaseLabel)
                 .then((show) => {
                     const diagnosed = orphanedClaimReport(row.step, text, show)
                     if (!diagnosed) {
@@ -1060,7 +1069,7 @@ function spawn(row, phaseLabel) {
         // which this script cannot read. A blind retry here would relaunch
         // agents the operator had just skipped.
         //
-        // DOT-1265: a null does not mean nothing happened — the record can
+        // A null does not mean nothing happened — the record can
         // complete and the very API turn that would have returned the
         // agent's final text can still die (a rate limit, a dropped
         // connection) afterward, which reads identically to a dead spawn
@@ -1076,9 +1085,26 @@ function spawn(row, phaseLabel) {
                 `event rather than spawning another probe`)
             return escalate()
         }
-        return probe(`docket step show ${row.step} --json`,
-            `${row.step} · null-recovery`, phaseLabel, row.step)
+        return stepShow(row.step, `${row.step} · null-recovery`, phaseLabel)
             .then((show) => {
+                if (show === null) {
+                    // The recovery probe's own agent() call came back with
+                    // nothing — the same failure the row it was checking
+                    // just had. One probe is enough evidence of a storm.
+                    nullBurstTripped = true
+                    log(`${row.step}: the null-recovery probe itself returned ` +
+                        `nothing — treating this as a session/rate-limit event; ` +
+                        `no further per-row recovery probes this wave`)
+                    return escalate()
+                }
+                if (show.error) {
+                    // The engine's own read errored — a real answer, not a
+                    // dead probe, so this is NOT storm evidence. The status
+                    // is unknown either way; fall through to notRecorded().
+                    log(`${row.step}: the null-recovery probe's \`docket step ` +
+                        `show\` errored (${show.error}) — status unknown, not ` +
+                        `treating this as a storm signature`)
+                }
                 const st = parseStepShow(show)
                 if (st.status === 'done') {
                     log(`${row.step}: agent() returned null, but \`docket step ` +
@@ -1093,16 +1119,6 @@ function spawn(row, phaseLabel) {
                             `attempt=${st.attempt || '?'}). Treated as ` +
                             `returned — the lane continues.`,
                     }
-                }
-                if (show === '') {
-                    // The recovery probe's own agent() call came back with
-                    // nothing — the same failure the row it was checking
-                    // just had. One probe is enough evidence of a storm.
-                    nullBurstTripped = true
-                    log(`${row.step}: the null-recovery probe itself returned ` +
-                        `nothing — treating this as a session/rate-limit event; ` +
-                        `no further per-row recovery probes this wave`)
-                    return escalate()
                 }
                 return notRecorded()
             }, () => {
@@ -1308,6 +1324,79 @@ function probe(command, label, phaseLabel, servingStep, acct) {
         }).then((text) => text == null ? '' : text)
     }
     return retrying(label, acct, once, '')
+}
+
+// `docket step show STEP-N --json` answered through a schema instead of
+// regexed out of relayed text, same rationale as GATE_STATUS_SCHEMA below:
+// a haiku probe retyping the envelope verbatim can drop or corrupt a field,
+// and a regex fallback can match a status word quoted inside unrelated
+// prose. The three orphaned-claim/null-recovery/pre-claim call sites that
+// used to regex this command's output now read this envelope directly.
+const STEP_SHOW_SCHEMA = {
+    type: 'object',
+    properties: {
+        status: { type: 'string' },
+        attempt: { type: 'integer' },
+        owner: { type: 'string' },
+        live: { type: 'boolean' },
+        failed_attempts: { type: 'integer' },
+        reaped_claims: { type: 'integer' },
+        blocked_reason: { type: 'string' },
+        error: { type: 'string' },
+    },
+}
+
+function stepShowBrief(step) {
+    return `Run exactly this one command:
+
+  docket step show ${step} --json
+
+Return the command's \`data\` object through the structured output, field for
+field: status as data.status, attempt as data.attempt, owner as
+data.lease.owner, live as data.lease.live, failed_attempts as
+data.failed_attempts, reaped_claims as data.reaped_claims, blocked_reason as
+data.blocked_reason. Copy each value exactly as printed; add no field the
+output did not carry and fill none in — omit a field entirely when the
+envelope does not carry it (an absent lease block means omit owner and live
+both). If the command errors or prints no \`data\` object, return {error:
+<the error text verbatim>} and nothing else.
+
+Do not cast a vote, do not investigate, do not run anything else. You are a
+read-only probe reporting what the record currently says.
+
+WAVE PROBE: not a step execution. Your usage is wave overhead. This read serves
+${step}, which is the step it READS, not a step you run — the usage join must
+not attribute your tokens to it.`
+}
+
+// Normalizes the schema envelope to parseStepShow's own string-typed shape
+// (absence is '', not undefined) so every existing consumer of that shape —
+// orphanedClaimReport, the facts line, the done/pending checks — is
+// unchanged. Returns null when the agent returned nothing (mirrors probe()'s
+// ''), {error} verbatim when the engine's own read errored, else the
+// normalized object. Never regexed: a malformed schema reply is treated the
+// same as an empty one rather than salvaged.
+function stepShow(step, label, phaseLabel) {
+    const once = () => agent(stepShowBrief(step), {
+        label,
+        phase: phaseLabel,
+        agentType: 'executor-read',
+        ...AGENT_CONFIG.probe,
+        schema: STEP_SHOW_SCHEMA,
+    }).then((g) => {
+        if (g == null) return null
+        if (typeof g.error === 'string') return { error: g.error }
+        return {
+            status: typeof g.status === 'string' ? g.status : '',
+            attempt: typeof g.attempt === 'number' ? String(g.attempt) : '',
+            owner: typeof g.owner === 'string' ? g.owner : '',
+            live: typeof g.live === 'boolean' ? String(g.live) : '',
+            blockedReason: typeof g.blocked_reason === 'string' ? g.blocked_reason : '',
+            failed: typeof g.failed_attempts === 'number' ? String(g.failed_attempts) : '',
+            reaped: typeof g.reaped_claims === 'number' ? String(g.reaped_claims) : '',
+        }
+    })
+    return retrying(label, undefined, once, null)
 }
 
 // `docket gate status STEP-N --json` answers a gate's whole decision state in
@@ -1773,11 +1862,11 @@ function parseTargetRef(text) {
 // branch; the next round's fix worktree is cut from that branch's HEAD, so
 // the tree the next review fanout judges must DESCEND from the integrated
 // commit. Nothing verified that, and twice the hand-off broke a round late:
-// RUN-35 round 2 — all five judges found round-1's commit was not
-// an ancestor of the judged commit and re-filed two defects round 1 had
-// closed (17.37M tokens re-finding closed work); RUN-51 rounds 5-6
-// — fix@5's worktree was a SIBLING of round 4's commit, two full review
-// rounds spent detecting and repairing the fork.
+// one round found all five judges' commit was not an ancestor of the judged
+// commit and re-filed two defects an earlier round had closed, burning a
+// large re-finding cost; another round's fix worktree was a SIBLING of the
+// prior commit, two full review rounds spent detecting and repairing the
+// fork.
 //
 // So the wave asserts the ancestry BEFORE the fanout spawns — the same check
 // the judges already ran one round too late — and parks the round as a RELAY
@@ -1798,13 +1887,14 @@ function parseTargetRef(text) {
 // old behavior: the guard exists to stop a measured waste, never to add a new
 // way for a healthy round to stall.
 //
-// AND THE MAP ITSELF CAN NAME THE WRONG ROUND (DOT-1022). When fix@N and its
+// AND THE MAP ITSELF CAN NAME THE WRONG ROUND. When fix@N and its
 // review@N#k fanout are SPLIT across dispatches — a /pause, a wave that ended
 // between them, a budget stop — fix@N is already integrated by the time the
 // conductor derives the map, and "most recent integration" reads as fix@N's
 // own commit: the cherry-pick OF the judged tree. A cherry-pick can never be
 // an ancestor of its source, so the merge-base exits 1 on every HEALTHY round
-// in that shape (RUN-66 DISPATCH-360: 18 of 28 rows lost to it). So before
+// in that shape — over half a wave's rows have been lost to it in one
+// observed run. So before
 // parking, self-check the map entry — if `prior` carries a `cherry picked
 // from commit <target>` trailer it IS the judged round's own integration and
 // the verdict is worthless: fail open and dispatch.
@@ -1868,8 +1958,8 @@ function parseAncestryTargetSha(text) {
     return ANCESTRY_SHA_RE.test(sha) ? sha : ''
 }
 
-// One read-only probe carrying both directions of the evidence the RUN-35
-// judges recorded: the merge-base exit status (0 = the judged tree contains
+// One read-only probe carrying both directions of the evidence a broken
+// hand-off round recorded: the merge-base exit status (0 = the judged tree contains
 // the prior round's integrated commit) and the branch containment listing.
 // Every worktree shares one object store, so both commands resolve from the
 // shared checkout the probe runs in.
@@ -1883,7 +1973,7 @@ function parseAncestryExit(text) {
     return m ? parseInt(m[1], 10) : null
 }
 
-// SELF-CHECK ON THE MAP ENTRY (DOT-1022). A non-zero merge-base is only
+// SELF-CHECK ON THE MAP ENTRY. A non-zero merge-base is only
 // evidence of a broken hand-off if `prior` is the round BEFORE the one being
 // judged. When the conductor derived the map after fix@N had already been
 // integrated (the fanout split off into a later dispatch), `prior` is the
@@ -1984,10 +2074,10 @@ log(`wave: ${rows.length} row(s) across stage(s) ${stageKeys.join('→')}`)
         log(`wave: fix-round ancestry guard armed for ${issues.join(', ')} ` +
             `(${guarded.length} fanout row(s))`)
     }
-    // ...and name the ones it is NOT armed for (DOT-1048). Fail-open is
+    // ...and name the ones it is NOT armed for. Fail-open is
     // right, silence is not: a round-2 fanout with no `integrated` entry
     // used to leave NO line in the log, so the guard's absence looked
-    // identical to a wave that had no fix round in it. RUN-63 DISPATCH-364
+    // identical to a wave that had no fix round in it. One observed dispatch
     // read the skill's carve-out ("no integration yet for an issue") as "no
     // integration window yet for THIS round", omitted the map on a round-2
     // fanout whose round 1 HAD been integrated, and nothing said so. One
@@ -2128,13 +2218,14 @@ function chainDead(res) {
         (res.status === 'returned' && isConflictReport(res.text))
 }
 
-// A CHAIN-DEAD LANE IS NOT THE SAME AS A DEAD CHAIN (DOT-1050). chainDead()
+// A CHAIN-DEAD LANE IS NOT THE SAME AS A DEAD CHAIN. chainDead()
 // answers one question — do NOT launch this issue's later rows this wave — and
 // two very different situations answer it yes. Something failed (a spawn that
 // produced no agent, a claim CONFLICT, a rejected gate, a broken base
 // ancestry); or nothing failed at all and the engine has simply not made the
-// row claimable yet, because a predecessor is still progressing. RUN-63 hit
-// the second shape four waves running: the engine minted a held-cluster panel
+// row claimable yet, because a predecessor is still progressing. One
+// observed run hit the second shape four waves running: the engine minted a
+// held-cluster panel
 // step between a gate and its `after` predecessor, the gate had no proposal to
 // seat on, and the wave logged "this wave's chain died at an earlier stage" —
 // while that predecessor was recording, holding its step and opening its vote,
@@ -2184,11 +2275,6 @@ function blockedReason(res) {
 
 // ---- lanes: one per issue, an issue-less row riding a lane of its own ----
 const laneOf = (row) => (row.issue ? String(row.issue) : `row:${row.step}`)
-const lanes = groupRows(rows, laneOf)
-log(`wave: ${lanes.size} issue lane(s): ` + [...lanes.entries()].map(([name, laneRows]) => {
-    const ks = [...new Set(laneRows.map(stageOf))].sort((a, b) => a - b)
-    return `${name}×${laneRows.length}${ks.length > 1 ? ` (stages ${ks.join('→')})` : ''}`
-}).join(', '))
 
 // ---- what the manifest certifies about cross-issue concurrency ----
 // The launch path treats every row that is neither an action nor a vote as
@@ -2203,6 +2289,9 @@ const classOf = (row) => (typeof row.class === 'string' && row.class !== '')
     : (typeof row.executor === 'string' ? row.executor : '')
 const isWriter = (row) => isExecutorRow(row) && classOf(row) === 'write'
 const pairKey = (a, b) => (a < b ? `${a} ${b}` : `${b} ${a}`)
+// Certification reads the FULL manifest, never a shard: what the engine
+// co-staged is a fact about the dispatch, and a shard that read only its
+// own rows would forget a coupling whose other half runs in a sibling.
 const certifiedClass = new Map()   // class -> largest same-stage count
 for (const group of stages.values()) {
     for (const [name, members] of groupRows(group.filter(isExecutorRow), classOf)) {
@@ -2214,11 +2303,135 @@ const scopePairs = new Set([...stages.values()].flatMap((group) =>
     pairsOf(writerLanesOf(group)).map(([a, b]) => pairKey(a, b))))
 const scopeCertified = (a, b) => a === b || scopePairs.has(pairKey(a, b))
 
+// ---- shards: one dispatch, several concurrent wave launches ----
+// The Workflow tool caps ONE invocation at HARNESS_CAP concurrent agents and
+// AGENT_LIFETIME_CAP over its life, and a nested workflow() shares both with
+// its parent — so the only way a dispatch gets more headroom is several
+// top-level launches, each handed the whole manifest plus `shard: {index,
+// of}` and each running only the lanes the partition assigns it. The
+// partition is a pure function of the rows and the spec, so every shard
+// computes the same answer and no lane runs twice or nowhere.
+//
+// Units are whole lanes, never rows: a lane's stage ladder is what the wave
+// schedules, and splitting one across launches would put its stage k+1 in a
+// launch that cannot see stage k settle. Writer lanes the engine never
+// co-staged (scopes unproven disjoint) are welded into one unit so the
+// coupling rule in blocker() below still serializes them — two launches
+// cannot see each other's in-flight set. Certified-disjoint writer lanes
+// and every reader-only lane are free units. Units go to the least-loaded
+// shard, largest first, ties by name then lowest shard: deterministic,
+// roughly balanced, and never dependent on anything a resume would change.
+//
+// Class headroom is the engine's and it is global across the launches, so
+// each shard admits only its share of the certified count: certified / the
+// number of shards that hold rows of that class (floor, at least one). In
+// sum the shards stay within the certification whenever it is at least the
+// shard count; the one exception is a class certified BELOW the number of
+// shards holding it, where the floor of one per shard can exceed it and
+// the engine's own claim check is the backstop — the shard logs that
+// shape at start so a claim CONFLICT in it is traceable. The price of the
+// split is that a class spread across shards runs narrower per shard than
+// one wave would run it.
+function shardPartition(rows, spec) {
+    const noShard = { index: 0, of: 1, effective: 1, rows, laneShard: new Map(), classShards: new Map() }
+    if (spec === undefined || spec === null) return noShard
+    const bad = (why) => new Error(
+        `wave.js: args.shard must be {index, of} with integers 0 <= index < of; got ` +
+        `${JSON.stringify(spec)} (${why}). Refusing to route.`)
+    if (typeof spec !== 'object') throw bad('not an object')
+    const { index, of } = spec
+    if (!Number.isInteger(index) || !Number.isInteger(of)) throw bad('non-integer')
+    if (of < 1 || index < 0 || index >= of) throw bad('out of range')
+    if (of > SHARD_CAP) throw bad(`of exceeds SHARD_CAP ${SHARD_CAP}`)
+
+    // Union-find over writer lanes: uncertified pairs share a unit.
+    const parent = new Map()
+    const find = (x) => {
+        if (!parent.has(x)) parent.set(x, x)
+        while (parent.get(x) !== x) { parent.set(x, parent.get(parent.get(x))); x = parent.get(x) }
+        return x
+    }
+    const union = (a, b) => { const ra = find(a), rb = find(b); if (ra !== rb) parent.set(ra < rb ? rb : ra, ra < rb ? ra : rb) }
+    const writerLanes = writerLanesOf(rows)
+    for (const [a, b] of pairsOf(writerLanes)) if (!scopeCertified(a, b)) union(a, b)
+
+    const laneRows = groupRows(rows, laneOf)
+    const units = new Map()   // unit key -> { lanes, size }
+    for (const [lane, members] of laneRows) {
+        const key = parent.has(lane) ? `unit:${find(lane)}` : `lane:${lane}`
+        if (!units.has(key)) units.set(key, { lanes: [], size: 0 })
+        units.get(key).lanes.push(lane)
+        units.get(key).size += members.length
+    }
+    const effective = Math.max(1, Math.min(of, units.size))
+    const load = new Array(effective).fill(0)
+    const laneShard = new Map()
+    const ordered = [...units.entries()].sort(([ka, a], [kb, b]) => b.size - a.size || (ka < kb ? -1 : ka > kb ? 1 : 0))
+    for (const [, unit] of ordered) {
+        let target = 0
+        for (let s = 1; s < effective; s++) if (load[s] < load[target]) target = s
+        load[target] += unit.size
+        for (const lane of unit.lanes) laneShard.set(lane, target)
+    }
+    const classShards = new Map()   // class -> Set of shards holding rows of it
+    for (const row of rows) {
+        if (!isExecutorRow(row)) continue
+        const c = classOf(row)
+        if (!classShards.has(c)) classShards.set(c, new Set())
+        classShards.get(c).add(laneShard.get(laneOf(row)))
+    }
+    return {
+        index, of, effective,
+        rows: rows.filter((row) => laneShard.get(laneOf(row)) === index),
+        laneShard,
+        classShards: new Map([...classShards].map(([c, set]) => [c, set.size])),
+    }
+}
+const shard = shardPartition(rows, input.shard)
+const shardRows = shard.rows
+const mine = new Set(shardRows.map((row) => row.step))
+if (shard.of > 1) {
+    const units = new Map()
+    for (const s of shard.laneShard.values()) units.set(s, (units.get(s) || 0) + 1)
+    log(`wave: shard ${shard.index + 1} of ${shard.effective} (${shard.of} offered` +
+        (shard.effective < shard.of ? `, ${shard.of - shard.effective} idle: fewer lane units than shards` : '') +
+        `) — this launch runs ${shardRows.length} of ${rows.length} row(s) across ` +
+        `${units.get(shard.index) || 0} lane(s); every other row settles not-launched-other-shard`)
+    if (shard.index >= shard.effective) {
+        log('wave: idle shard — nothing to launch; the sibling shards carry every lane')
+    }
+    for (const [c, n] of shard.classShards) {
+        if (n > 1) {
+            const certified = certifiedClass.get(c) || 1
+            certifiedClass.set(c, Math.max(1, Math.floor(certified / n)))
+            if (certified < n) {
+                log(`wave: class ${c || '(no class)'} is certified at ${certified} but ` +
+                    `sits in ${n} shards — one per shard can exceed the certification ` +
+                    `in sum; a claim CONFLICT on this class is that shape, not a defect`)
+            }
+        }
+    }
+    if ([...shard.classShards.values()].some((n) => n > 1)) {
+        log(`wave: class headroom divided across shards — this launch admits ` +
+            [...shard.classShards].filter(([, n]) => n > 1)
+                .map(([c, n]) => `${c || '(no class)'}≤${certifiedClass.get(c)} (certified ${certifiedClass.get(c) * n}+ over ${n} shards)`)
+                .join(', '))
+    }
+}
+
+const lanes = groupRows(shardRows, laneOf)
+log(`wave: ${lanes.size} issue lane(s): ` + [...lanes.entries()].map(([name, laneRows]) => {
+    const ks = [...new Set(laneRows.map(stageOf))].sort((a, b) => a - b)
+    return `${name}×${laneRows.length}${ks.length > 1 ? ` (stages ${ks.join('→')})` : ''}`
+}).join(', '))
+
 // Bound long writer queues so finished lanes can reach the next dispatch.
 // Depth counts earlier stages with uncertified writers in OTHER lanes; a
 // lane's own chain and certified neighbours do not count. Defer depth >= 3
 // and the lane's later rows; the engine re-offers them next dispatch.
-const writersByLane = groupRows(rows.filter((row) => isWriter(row) && row.issue), laneOf)
+// Read off THIS shard's rows: an uncertified writer in a sibling shard was
+// welded into this shard by the partition, so none exists elsewhere.
+const writersByLane = groupRows(shardRows.filter((row) => isWriter(row) && row.issue), laneOf)
 const writerStagesByLane = new Map([...writersByLane].map(([lane, writers]) =>
     [lane, new Set(writers.map(stageOf))]))
 
@@ -2246,7 +2459,7 @@ function agentCost(row) {
     return EXECUTOR_AGENT_COST
 }
 let agentsReserved = 0
-const agentsProjected = rows.reduce((n, r) => n + agentCost(r), 0)
+const agentsProjected = shardRows.reduce((n, r) => n + agentCost(r), 0)
 if (agentsProjected > AGENT_BUDGET) {
     log(`wave: the manifest projects ~${agentsProjected} agents against a budget of ` +
         `${AGENT_BUDGET} (the Workflow tool's ${AGENT_LIFETIME_CAP}-agent lifetime cap less a ` +
@@ -2260,7 +2473,7 @@ const AGENT_BUDGET_DEFERRAL = 'agent budget: the wave reserves at most ' +
 if (lanes.size > 1) {
     log(`wave: lanes run concurrently; the manifest certifies class headroom ` +
         [...certifiedClass.entries()].map(([c, n]) => `${c || '(no class)'}≤${n}`).join(', '))
-    const unproven = pairsOf(writerLanesOf(rows))
+    const unproven = pairsOf(writerLanesOf(shardRows))
         .filter(([a, b]) => !scopeCertified(a, b))
         .map(([a, b]) => `${a}/${b}`)
     if (unproven.length > 0) {
@@ -2320,9 +2533,9 @@ function blocker(row) {
 // already holds back any pair the manifest never certified. Then every other
 // executor row DEEPEST stage first: a lane's next hop goes ahead of another
 // lane's first hop, so a chain finishes instead of every chain advancing one
-// rung per release — under lowest-stage-first, one RUN-95 issue's synthesize
-// waited 30 minutes and its verify 19 behind other lanes' stage-0 rows at the
-// harness cap (163 such holds in one wave). Submission order breaks ties.
+// rung per release — under lowest-stage-first, one issue's synthesize step
+// has waited well behind other lanes' stage-0 rows at the harness cap, with
+// many such holds in a single wave. Submission order breaks ties.
 // Every admission changes the in-flight set, so the scan restarts from the
 // top. Single-threaded event loop; nothing here awaits.
 const admissionRank = (w) => (isWriter(w.row) ? [0, stageOf(w.row)] : [1, -stageOf(w.row)])
@@ -2392,11 +2605,10 @@ function startRow(row, label) {
     if (row.kind === 'vote') return runGate(row, label)
     const launchRow = () => {
         if (needsClaimProbe(row)) {
-            return probe(`docket step show ${row.step} --json`,
-                `${row.step} · pre-claim`, label, row.step).then((show) => {
+            return stepShow(row.step, `${row.step} · pre-claim`, label).then((show) => {
                 // Skip only on a positively recognized status the wave
-                // cannot act on; empty output, prose, and anything
-                // unrecognized all spawn (fail-open). `pending` belongs
+                // cannot act on; a dead probe, an engine error, and any
+                // other status all spawn (fail-open). `pending` belongs
                 // in that set HERE and only here: this probe runs after
                 // the row's lane awaited and settled its earlier stages,
                 // and admission excludes this wave's own cohort pressure,
@@ -2404,12 +2616,17 @@ function startRow(row, label) {
                 // `ready`. A pending row is dead for the wave — spawning
                 // it burns an executor that dies on claim CONFLICT, and
                 // the engine re-offers it next dispatch.
-                const term = show.match(/"status"\s*:\s*"(done|superseded|skipped|failed|pending)"/)
-                if (!term) return spawn(row, label)
-                log(`${row.step}: not claimable (${term[1]}) — a same-issue ` +
+                const terminal = ['done', 'superseded', 'skipped', 'failed', 'pending']
+                if (!show || show.error || !terminal.includes(show.status)) return spawn(row, label)
+                log(`${row.step}: not claimable (${show.status}) — a same-issue ` +
                     `gate or action upstream left it unreachable for this ` +
                     `wave; skipping the spawn`)
-                return { step: row.step, status: 'skipped-not-claimable', text: show }
+                // blockedReason() (chain-dead region) still reads `text` as
+                // the raw `docket step show` envelope — render the same
+                // shape the engine emits so it keeps working unchanged.
+                const envelope = { data: { step: row.step, status: show.status } }
+                if (show.blockedReason) envelope.data.blocked_reason = show.blockedReason
+                return { step: row.step, status: 'skipped-not-claimable', text: JSON.stringify(envelope) }
             })
         }
         return spawn(row, label)
@@ -2554,6 +2771,11 @@ await parallel([...lanes.entries()].map(([name, laneRows]) => () => runLane(name
             : ''))
 }
 
+// One entry per MANIFEST row, in manifest order, whichever shard this is: a
+// sibling shard's row settles not-launched-other-shard here — nothing
+// failed, another launch of this same dispatch owns it.
 return rows.map((row) => byStep.get(row.step) ||
-    { step: row.step, status: parked ? 'not-launched-run-parked' : 'spawn-failed' })
+    (mine.has(row.step)
+        ? { step: row.step, status: parked ? 'not-launched-run-parked' : 'spawn-failed' }
+        : { step: row.step, status: 'not-launched-other-shard', text: null }))
 // TEST-END stage-ladder

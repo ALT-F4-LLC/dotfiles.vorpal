@@ -124,6 +124,12 @@ const probe = (_cmd, _label, _phase, step) => {
     PROBED.push(step)
     return Promise.resolve('')
 }
+// Matches probe()'s unconditional fail-open here: no fixture in this suite
+// exercises a terminal pre-claim status, only that the row still spawns.
+const stepShow = (step) => {
+    PROBED.push(step)
+    return Promise.resolve(null)
+}
 
 const ladder = async () => {
 JS

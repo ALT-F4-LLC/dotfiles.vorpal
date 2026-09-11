@@ -83,6 +83,9 @@ const runGate = (row) => {
     return Promise.resolve({ step: row.step, status: 'gate-passed', text: '{"status":"done"}' })
 }
 const probe = () => Promise.resolve('')
+// Matches probe()'s fail-open contract for the pre-claim call site: no
+// status means launchRow always falls through to spawn(row, label).
+const stepShow = () => Promise.resolve(null)
 
 const ladder = async () => {
 JS

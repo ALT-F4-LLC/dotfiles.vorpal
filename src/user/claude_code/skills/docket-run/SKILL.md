@@ -1,6 +1,6 @@
 ---
 name: docket-run
-description: Drive an activated Docket run to completion — ask the engine what is ready, dispatch it (the manifest carries the staged closure — ready rows and their dependents up to the `--limit`, which cuts every issue's deepest stages first), invoke the wave workflow, close the dispatch, repeat. Vote gates ride the wave (it seats the panel mid-wave); conversational gates go to tribunal.js; three standing rulings answer a park machine-side first (a completion-gate failure that reproduces clean on the same sha auto-passes, a loop-bound park files its residue and passes, and a loop-extension panel decides the first fix round past `max_fix_loops` only when the last round regressed something); every other non-approval that parks, and every reserved matter, escalates to the operator, and the engine verb runs on the outcome. Invoked as `/docket-run RUN-N` it drives that run explicitly; invoked bare it resolves "the next run" itself — the newest active or waiting-human run in the project, else the newest run still in planning, else a plain report that there is nothing to drive — so it chains directly after `/docket-plan`'s own bare mode with no question in between. Holds no run state and makes no routing decisions; the engine schedules and wave.js routes. Drives the run in the invoking conversation itself: the operator sees every dispatch, gate and park where they sit, and a gate that parks one issue while other issues still have work is rendered and pushed, never blocked on.
+description: Drive an activated Docket run to completion — ask the engine what is ready, dispatch it (the manifest carries the staged closure — ready rows and their dependents up to the `--limit`, which cuts every issue's deepest stages first), launch the wave workflow once per shard (up to four concurrent launches over the same manifest, one issue lane set each), close the dispatch once every shard returns, repeat. Vote gates ride the wave (it seats the panel mid-wave); conversational gates go to tribunal.js; three standing rulings answer a park machine-side first (a completion-gate failure that reproduces clean on the same sha auto-passes, a loop-bound park files its residue and passes, and a loop-extension panel decides the first fix round past `max_fix_loops` only when the last round regressed something); every other non-approval that parks, and every reserved matter, escalates to the operator, and the engine verb runs on the outcome. Invoked as `/docket-run RUN-N` it drives that run explicitly; invoked bare it resolves "the next run" itself — the newest active or waiting-human run in the project, else the newest run still in planning, else a plain report that there is nothing to drive — so it chains directly after `/docket-plan`'s own bare mode with no question in between. Holds no run state and makes no routing decisions; the engine schedules and wave.js routes. Drives the run in the invoking conversation itself: the operator sees every dispatch, gate and park where they sit, and a gate that parks one issue while other issues still have work is rendered and pushed, never blocked on.
 argument-hint: "[RUN-N]"
 ---
 
@@ -61,8 +61,8 @@ escalated a total blocker with no cause attached.
 **You size no panels and reconcile nothing.** Fan-out widths, thresholds,
 finding clustering, retries — all engine and pipeline mechanics. You do not
 second-guess a `next` result. The one panel shape you ever type is the tribunal
-proposal's, and it is a constant this contract fixes (`-n 3 --threshold 0.67`),
-not a width you chose.
+proposal's, and it is a constant this contract fixes — `docket vote create`'s
+`-n 3 --threshold 0.67` — not a width you chose.
 
 **Historical citations.** Bare `DKT-nn` ids in this text predate the 2026-08
 store reset and no longer resolve in the live store — read them as provenance
@@ -761,7 +761,8 @@ label add` plus a fresh dry-run; after it, activation has frozen both the
 binding and the body snapshot for the whole run, and re-docket-planning is the only
 exit. A past harness incident is the lesson: a TUI issue with `labels=[]`
 and scope `internal/tui/**` bound `standard-change`, dropping judge-design
-from the fanout and skipping the terminal design-qa/render-verify step — one
+from the fanout and skipping the design-qa step and its render-verify/copy-verify
+pre-gates — one
 seat caught it and rejected, the tally approved anyway, and the mis-binding
 froze, because the flag this check exists to raise was absent from the
 proposal the other two seats voted on.
@@ -885,8 +886,14 @@ docket next --run $RUN --json=v2 | jq '{
   staged: ([(.data.items // [])[] | select(.status == "staged")] | length),
   writers: ([(.data.items // [])[] | select(.class == "write")] | length),
   issues: ((.data.items // []) | map(.issue) | unique),
+  shards: ((.data.items // []) | map(.issue // empty) | unique | length | if . > 4 then 4 else (if . < 1 then 1 else . end) end),
   refusal: .error }'
 ```
+
+`shards` is the number of wave launches step 2 makes for this dispatch: one
+per issue lane up to wave.js's `SHARD_CAP` of four. It is a count you pass
+through as `of`, not a partition you compute — which lanes each launch runs
+is wave.js's, in code.
 
 Read the v2 envelope and pass no `--limit`: with `--run` the engine returns
 the whole ready set unless a limit is passed (its `--help`), the v1 envelope
@@ -1114,8 +1121,33 @@ installed file is the attach-time install diff's DRIFT — stop and
 report it; never hunt for another copy to launch.
 
 ```
-Workflow({ scriptPath: "<absolute installed path to wave.js>", args: {rows, tribunal, cwd} })
+Workflow({ scriptPath: "<absolute installed path to wave.js>", args: {rows, tribunal, cwd, shard: {index: 0, of: N}} })
+Workflow({ scriptPath: "<absolute installed path to wave.js>", args: {rows, tribunal, cwd, shard: {index: 1, of: N}} })
+…one launch per index, 0 through N-1, all in this same turn
 ```
+
+**A dispatch is N wave launches, not one, and N is step 1's `shards`.** The
+Workflow tool bounds ONE invocation at 16 concurrent agents and 1000 over its
+life, and a nested workflow shares both with its parent, so the only way a
+dispatch gets more headroom is more top-level launches. Every launch gets
+the SAME `rows` — the whole manifest, verbatim — and a `shard: {index, of}`
+that differs only in `index`; wave.js computes one deterministic partition
+from the rows (whole issue lanes as units, writer lanes the engine never
+co-staged welded into one unit so they still serialize, units balanced onto
+the least-loaded shard), runs the lanes it owns, admits only its share of
+each class's certified headroom, and settles every sibling's row
+`not-launched-other-shard`. No lane runs twice or nowhere, and you choose
+nothing but `of`. Emit all N launches in ONE turn, as separate `Workflow`
+calls: a launch held back for a sibling's return is a shard that never ran
+in parallel. `of` above wave.js's `SHARD_CAP` (four) is refused, so a
+`shards` of 1 is one launch exactly as before, and a manifest with fewer
+lane units than `of` leaves the surplus launches idle — they log that and
+return at once, and their empty return still gets step 3's join.
+
+The price is context: every launch carries the full manifest as `args`, so
+a 240-row dispatch at four shards is roughly 340 KB of launch args in this
+conversation where one wave was 85 KB. That is what `SHARD_CAP` holds at
+four, and why it is not a number to raise by hand.
 
 `tribunal` is the absolute installed path to `tribunal.js`, resolved the same
 way as wave.js's own path (step 2's installed-path rule) — wave.js seats every
@@ -1138,8 +1170,9 @@ disk, and nothing in the transcript said so. `scriptPath` is the only invocation
 that provably runs the file that is there now. This is not a preference; a
 by-name invocation is a defect regardless of how convenient it looks.
 
-Pass `args` as `{rows, tribunal, cwd}` — plus `integrated` when the dispatch
-carries a fix round's review fanout (its own rule below). wave.js always RECEIVES a string and
+Pass `args` as `{rows, tribunal, cwd, shard}` — plus `integrated` when the dispatch
+carries a fix round's review fanout (its own rule below), the same map in
+every shard's launch. wave.js always RECEIVES a string and
 decodes it as normal transport (proven by a controlled probe), so
 the decode line in its log is never a finding. But do not read that as "the
 string in your transcript is the harness's doing, not yours" — this skill said
@@ -1147,7 +1180,7 @@ exactly that and it is FALSE. Across 347 launches in one week
 the recorded args split three ways by formatting: 124 canonical-compact
 (consistent with the harness stringifying an object you emitted), 221 with a
 space after each colon, and 2 with newlines and indentation — formats no single
-encoder produces. The transcript therefore does show what you emitted, two of
+encoder produces. The transcript therefore does show what you emitted; two of
 those 347 launches recorded args that were not valid JSON at all. EMIT the
 object as a literal JSON value in the tool call — do not hand-stringify it
 into a quoted string. Self-check if you are unsure which you did: your
@@ -1161,13 +1194,10 @@ row re-typed without its `model`, `effort` and `variant` fields is a row the
 wave refuses to route.
 
 **wave-audit's line is not noise.** The hook relays
-`docket guard record`, and it used to print a "dispatch open or discrepancy
-standing" advisory on EVERY wave launch — a wave launches against an open
-dispatch by definition, so the line fired three for three on one run and meant
-nothing. It is now silent on an open dispatch (and on a repo with no docket
-database) and speaks only when the guard denies for some OTHER reason, quoting
-the engine's own text. A clean launch produces no stderr from this hook at
-all, so any line it does print is a standing discrepancy or something
+`docket guard record` and is silent on an open dispatch (and on a repo with no
+docket database); it speaks only when the guard denies for some OTHER reason,
+quoting the engine's own text. A clean launch produces no stderr from this
+hook at all, so any line it does print is a standing discrepancy or something
 unexpected: read it, do not scroll past it.
 
 **A dispatch carrying a fix round's review fanout also carries `integrated`.**
@@ -1199,7 +1229,7 @@ DISPATCH-360 lost 18 of 28 rows to exactly this — 8 fanout rows parked
 `parked-base-ancestry`, 10 downstream "skipped — chain died" — and the
 identical dispatch with round N-1's shas seated all 8 judges and converged
 both issues. Ask "which write step built the tree these judges will read?" and
-pass the integration of the one BEFORE it. (wave.js now self-checks the entry
+pass the integration of the one BEFORE it. (wave.js self-checks the entry
 and fails open when it detects this, but it costs a probe and the map should
 be right.)
 
@@ -1258,7 +1288,8 @@ claimable when their stage arrives) and that staging is code, not your
 judgment. Never drop a `staged` row because it "isn't ready" — offering it
 ahead of readiness is the entire mechanism.
 
-Then await the wave's completion notification — which means END YOUR TURN.
+Then await the wave's completion notifications — one per shard launch,
+arriving in whatever order the shards finish — which means END YOUR TURN.
 Notifications only deliver at turn boundaries: a turn held open "waiting" is a
 turn that starves itself of the very signal it waits for (one session queued a
 teammate's completion report ~9 minutes behind a busy-wait). Ending the turn
@@ -1280,14 +1311,22 @@ free meanwhile — the operator can do other things, and so can you.
 
 ### 3. Close the dispatch
 
-On the wave's completion notification, in this order:
+On a wave's completion notification, in this order. A dispatch split into
+shards (step 2) returns one notification PER SHARD: each one gets its own
+usage join and back-fill the moment it lands, under its own `wfId` (the
+shards' step sets are disjoint, so no row lands twice), and everything from
+`dispatch verify` on waits for the LAST shard's notification — the dispatch
+is one manifest and closes once. Between the first shard's return and the
+last, the turn ends the same way it always does, on a launch in flight.
 
 **1. Launch the usage join FIRST, then spend the turn on what the close
 needs.** The join is a `Workflow` launch (below) that reads the wave's
 transcripts. Launch it the moment the notification arrives, before you read
 or diagnose the wave's result. Then, in this SAME turn and while it runs:
-`dispatch verify`; every cherry-pick, `step annotate` and the worktree sweep;
-and the pre-open reap check — `docket guard spawn --run $RUN` with no `--rows`
+every cherry-pick, `step annotate` and the worktree sweep for the rows THIS
+notification settled — on every shard's notification — and, on the LAST
+shard's notification only (or the sole wave's), `dispatch verify` and the
+pre-open reap check — `docket guard spawn --run $RUN` with no `--rows`
 answers the reap half alone (exit 2 names an unacknowledged write-class
 reap), so an ack-reap proposal opens and its panel convenes now, beside the
 join, not after a denied launch. This check is for a reap that PREDATES the
@@ -1302,6 +1341,10 @@ the rest), `not-launched-agent-budget` (wave.js reserves each row's projected
 agents against a 900-agent budget and defers what the remainder cannot
 cover) and `skipped-chain-dead` worded as deferred are rows nothing failed on
 — the engine re-offers every one of them at the next dispatch.
+`not-launched-other-shard` is not even deferred: a sibling launch of this
+same dispatch owns that row, and its own notification carries the row's
+real settle. Read a sharded dispatch's outcome as the union of its shards'
+returns, each row taken from the one shard that does not say other-shard.
 
 **A wave's early steps do not refuse the close just for running past the
 grace.** The engine measures `dispatch.grace` (15 minutes) from the run's
@@ -1425,12 +1468,12 @@ as already-recorded, that refusal is AUTHORITATIVE — delete that step's rows
 and resubmit the rest; it is not a discrepancy to report (measured: seven
 whole-batch aborts across three runs, each hand-filtered with ad-hoc python).
 
-Excluding them is not the same as their spend being counted. This rule used
-to say seats "record their own usage at `docket vote cast`" — they do not.
-`--usage` is optional there and nothing in this corpus passes it, which is why
-the ledger held **zero** vote-usage rows against 174 casts for a whole epoch.
-Seat spend reaches the ledger the way every other agent's does, through the
-transcripts — see the panel back-fill below.
+Excluding them is not the same as their spend being counted. Seats do not
+record their own usage at `docket vote cast`: `--usage` is optional there and
+nothing in this corpus passes it, which is why the ledger held **zero**
+vote-usage rows against 174 casts for a whole epoch. Seat spend reaches the
+ledger the way every other agent's does, through the transcripts — see the
+panel back-fill below.
 
 Read `verify`'s answer by shape, not by exit alone — and since the engine
 learned to reconcile staging and row position, a cleanly recorded dispatch
@@ -1865,7 +1908,7 @@ with the step that weighed it. Only a gate you actually resolved — a real
 disposition — is described that way, with its step id beside it. RUN-70's
 close report said "`tests`/`ac-commands` failed on a pre-existing gap —
 override-passed per your standing disposition" when only `tests` on STEP-3286
-had been override-passed at all; `ac-commands` was `verify@0`'s pre-gate on
+had been override-passed at all; `ac-commands` was `verify-ac@0`'s pre-gate on
 STEP-3293, which recorded no resolve because none was possible — that step
 went `done` with the gate row still at `verdict: fail`. The sentence credited
 an authorization the operator never gave, and bundled it with one they did.
@@ -2093,7 +2136,7 @@ only on `docket run refresh-scope RUN-N --issue DKT-M --reason R`, which is
 refused while a dispatch is open. Run it before the next `dispatch open`, or
 the widened scope reaches no step of this run.
 
-Filing DOT-1063 took three attempts without it: the first stored a body
+Filing one issue took three attempts without it: the first stored a body
 with two words missing (zsh had run the backticked `` `/docket-retro` `` and
 `` `/docket-refit` `` as commands), the second stored `operator'\''s` where an
 apostrophe had been, and the third had to go through a `python3 -c
@@ -2414,17 +2457,21 @@ rest." This section is that ruling.
 
 **Classify before you convene.** Read the routing step's own artifact IN
 FULL — the `ac-report` on a verify trigger, the reconcile aggregate on a
-review trigger — and the previous round's, then place the trigger in exactly
+review trigger, the rejected proposal (`docket vote show`) on a vote
+trigger — and the previous round's, then place the trigger in exactly
 one class:
 
 - **Regression.** The last fix round broke something that was whole before
-  it: an AC `met` at the previous verify now `unmet`, or a finding an earlier
+  it: an AC `met` at the previous verify now `unmet`, a finding an earlier
   round closed now reopened at the same locus (the re-review fragment's
-  recurrence). The evidence names the last round's own hunks.
+  recurrence), or, on a vote trigger, a seat re-raising an item an earlier
+  round's proposal already closed. The evidence names the last round's own
+  hunks or, for a vote trigger, the earlier proposal's own recorded verdict.
 - **Residue.** Everything else: a gap no earlier round was assigned and this
   round's verify or judges found first, an AC whose every repair lies outside
-  the issue's declared scope or in another repository, or a repair that ran
-  its rounds and did not land. A finding that is new is not a regression; a
+  the issue's declared scope or in another repository, a repair that ran
+  its rounds and did not land, or, on a vote trigger, a new objection no
+  earlier proposal addressed. A finding that is new is not a regression; a
   finding that is real is not a reason to extend.
 
 **Residue files and passes; you do not ask.** Run the premise check first: an
@@ -2556,9 +2603,9 @@ read verb away:
   `docket step artifacts STEP-N` on that round's reconcile/aggregate step,
   then `docket step artifact ARTIFACT-N --payload`, which prints a bare JSON
   list whose entries carry `open_severity`, `held`, and `operator_resolved` —
-  count it. Flat volume across rounds is the corpus's own stated
-  non-convergence signal (`fragments/re-review-rounds.md`), so when the counts
-  are flat, the line says so.
+  count it. `max_stalled_rounds` (workflows.md) is the corpus's own stated
+  non-convergence signal, so when the counts are flat across that many rounds,
+  the line says so.
 
 One real run once granted six rounds past
 security-change's `max_fix_loops = 3` — `step-resolved detail=fix-round` at
@@ -2755,9 +2802,9 @@ panels have a proposal id and a `spawn_accounting` line but no `workflows/`
 entry of their own — only a panel you convened yourself through a separate
 `Workflow({scriptPath: …tribunal.js})` call is a launch. RUN-68's conductor
 reported "5 Workflow launches total" from memory — 3 waves plus two panels it
-called activation gates — where the directory held 4, because DKT-V310 was the
-held-cluster panel seated inside wave `wf_365a81b0` and had never been launched
-at all. Read the count and paste the number the `ls` gives you.
+called activation gates — where the directory held 4, because one proposal was
+the held-cluster panel seated inside wave `wf_365a81b0` and had never been
+launched at all. Read the count and paste the number the `ls` gives you.
 
 On their answer:
 
@@ -3085,7 +3132,7 @@ for e in evs:
 ```
 
 **Filter on the `kind` field; never keyword-grep the detail text.** Words like
-`waiting-human`, `failed-routed` and `step-routed` appear on the moments a run
+`waiting-human` and `step-routed` appear on the moments a run
 PARKED and on none of the moments it RESOLVED — a grep for them selects the
 questions and drops every answer. That is exactly how one conductor read
 a prior run's history: it reported two issues "parked on a `waiting-human` gate … never

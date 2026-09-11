@@ -74,6 +74,8 @@ jobs:
 
       - run: bash tests/wave-park-signals.test.sh
 
+      - run: bash tests/wave-shard-partition.test.sh
+
       - run: bash tests/wave-target-envelope.test.sh
 
       - run: bash tests/wave-usage-probe-overhead.test.sh

@@ -91,6 +91,7 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
     ' "$WAVE"
 }
 
+extract configuration > "${WORK}/configuration.js" || fatal "bad or missing TEST markers for configuration"
 extract classifier-retry > "${WORK}/classifier.js" || fatal "bad or missing TEST markers for classifier-retry"
 extract park-signals     > "${WORK}/park.js"       || fatal "bad or missing TEST markers for park-signals"
 extract gate-vote        > "${WORK}/gate.js"       || fatal "bad or missing TEST markers for gate-vote"
@@ -101,6 +102,7 @@ grep -q 'runGate'     "${WORK}/gate.js" || fatal "gate-vote region does not cont
 grep -q 'gateSuccess' "${WORK}/gate.js" || fatal "gate-vote region does not contain gateSuccess"
 
 {
+    cat "${WORK}/configuration.js"
     # --- stub workflow globals the gate region reaches for ---
     cat <<'JS'
 const LOG = []

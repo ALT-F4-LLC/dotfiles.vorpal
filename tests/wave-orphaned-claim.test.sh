@@ -60,6 +60,7 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
 }
 
 {
+    extract configuration || fatal "bad or missing TEST markers for configuration"
     # park-signals first: it defines isConflictReport, which the orphaned-claim
     # predicate reads. chain-dead nests inside stage-ladder; extract it alone.
     extract park-signals   || fatal "bad or missing TEST markers for park-signals"

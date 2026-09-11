@@ -1,8 +1,30 @@
 export const meta = {
     name: 'wave',
-    description: 'Run one dispatched manifest end to end: spawn one executor per executor row at the model/effort the engine rendered on it, seat a judge panel on each vote row from its routed roster, and skip action rows (engine-run at record time). Stages run as awaited groups per issue lane, with the cross-issue cohorts the manifest certifies honored — the staged closure means one wave can carry judges -> gate -> reconcile -> report, and inside a wave no issue idles behind the slower stages of another; writers the engine never co-staged still serialize, so a wave launches at most three such writer cohorts and defers the rest to the next dispatch rather than holding every finished lane behind a long writer ladder. AGENT BUDGET: the Workflow tool caps one invocation at 1000 agents over its lifetime, so the wave reserves each row\'s projected agents at admission (executor 2, vote row seats+3) against a 900-agent budget and defers, on the spot and without holding its lane, every row the remainder cannot cover; the engine re-offers deferred rows at the next dispatch, and a manifest of any size is safe to hand over whole. PROBE COST PER VOTE ROW: 2 read-only haiku probes of `docket gate status` on the normal path — one before the panel seats (decided yet, which proposal, which target) and one after it returns (missing seats and the tally) — 1 on a gate that was already decided before the wave reached it, and 3 when a re-seat forces a re-read; a gate with no proposal yet spends a `step show` for the engine\'s blocked_reason instead of a panel, and an engine-minted held-cluster gate spends one more read to name its cluster. Each probe answers through a schema, under 1 KB; the per-gate count is reported verbatim in that row\'s spawn_accounting. Invoke by scriptPath ONLY, with args {rows} as a real object — every row carries model/effort/variant resolved by the engine, and the script reads no policy and cannot read files.',
+    description: 'Run one dispatched manifest end to end: spawn one executor per executor row at the model/effort the engine rendered on it, seat a judge panel on each vote row from its routed roster, and skip action rows (engine-run at record time). Stages run as awaited groups per issue lane, with the cross-issue cohorts the manifest certifies honored — the staged closure means one wave can carry judges -> gate -> reconcile -> report, and inside a wave no issue idles behind the slower stages of another; writers the engine never co-staged still serialize, so a wave launches at most three such writer cohorts and defers the rest to the next dispatch rather than holding every finished lane behind a long writer ladder. AGENT BUDGET: the Workflow tool caps one invocation at 1000 agents over its lifetime, so the wave reserves each row\'s projected agents at admission (executor 2, vote row seats+3) against a 900-agent budget and defers, on the spot and without holding its lane, every row the remainder cannot cover; the engine re-offers deferred rows at the next dispatch, and a manifest of any size is safe to hand over whole. PROBE COST PER VOTE ROW: 2 read-only haiku probes of `docket gate status` on the normal path — one before the panel seats (decided yet, which proposal, which target) and one after it returns (missing seats and the tally) — 1 on a gate that was already decided before the wave reached it, and 3 when a re-seat forces a re-read; a gate with no proposal yet spends a `step show` for the engine\'s blocked_reason instead of a panel, and an engine-minted held-cluster gate spends one more read to name its cluster. Each probe answers through a schema, under 1 KB; the per-gate count is reported verbatim in that row\'s spawn_accounting. Invoke by scriptPath ONLY, with args {rows, tribunal, cwd} as a real object — every row carries model/effort/variant resolved by the engine, and the script reads no policy and cannot read files.',
     whenToUse: 'Invoked by the docket-run skill on an open dispatch, always as Workflow({scriptPath}) — never by name. args is {rows, tribunal, cwd}: `next` rows VERBATIM (executor, vote, and action rows; human rows stay with the conductor), each executor row carrying the model/effort/variant the engine resolved from the run\'s pinned policy.toml and each vote row carrying the same per voter in `voter_assignments` — a row re-typed without those fields is refused. `tribunal` is the absolute installed path to tribunal.js, the one workflow-nesting level this script uses to seat every in-wave panel (it cannot resolve that path itself); `cwd` is the repo the run belongs to. On a dispatch carrying a fix round\'s review fanout, args also carries `integrated` — a map from each such issue to the sha of its prior round\'s INTEGRATION commit — so the wave can assert base ancestry before seating the fanout. There is no policy argument of any kind and no file access.',
 }
+
+// TEST-BEGIN configuration — shared by the extracted behavior suites.
+// Only helper probes use these defaults. Executors and panel seats retain
+// the model/effort the engine resolved from the run's pinned policy.
+const AGENT_CONFIG = {
+    probe: { model: 'haiku', effort: 'low' },
+    gateStatus: { model: 'haiku', effort: 'low' },
+    heldCluster: { model: 'haiku', effort: 'low' },
+    blockProbe: { effort: 'low' }, // Deliberately inherit the session model.
+}
+
+const BLOCK_PROBE_LOOKBACK_HOURS = 12
+const CONFLICT_REPORT_MAX_LINES = 4
+const WRITER_LADDER_BUDGET = 3
+const AGENT_LIFETIME_CAP = 1000
+const AGENT_BUDGET_RESERVE = 100
+const AGENT_BUDGET = AGENT_LIFETIME_CAP - AGENT_BUDGET_RESERVE
+const EXECUTOR_AGENT_COST = 2
+const VOTE_PROBE_COST = 3
+const DEFAULT_PANEL_SEATS = 3
+const HARNESS_CAP = 16
+// TEST-END configuration
 
 // ---------------------------------------------------------------------------
 // Routing rides the row. The engine resolves {model, effort, variant} for
@@ -640,10 +662,8 @@ const rows = input.rows || []
 // scan, and this corpus reviews its own park handling constantly.
 // TEST-BEGIN park-signals — extracted and exercised by
 // tests/wave-park-signals.test.sh against verbatim replies captured from that
-// run. Keep everything between the markers free of workflow globals (agent,
-// log, args) so it stays evaluable on its own.
-const CONFLICT_REPORT_MAX_LINES = 4
-
+// run. Prepend the configuration region; these predicates use no workflow
+// globals (agent, log, args).
 function lastLine(text) {
     const lines = String(text).trim().split('\n').filter((l) => l.trim())
     return lines.length ? lines[lines.length - 1].trim() : ''
@@ -918,7 +938,7 @@ function blockProbeBrief(label) {
         '',
         'HOW — parse the JSON (python3 or jq); never raw-grep, since other',
         'fields such as promptPreview quote labels too:',
-        '1. Consider only files modified within the last 12 hours whose',
+        `1. Consider only files modified within the last ${BLOCK_PROBE_LOOKBACK_HOURS} hours whose`,
         '   top-level status is NOT "completed", "failed", or "killed" — a',
         '   terminal-status file is some OTHER, older run of the same step.',
         '2. Find workflowProgress entries whose `label` field equals the',
@@ -1105,7 +1125,7 @@ function spawn(row, phaseLabel) {
                 label: `${row.step} · block-probe`,
                 phase: phaseLabel,
                 agentType: 'executor-read',
-                effort: 'low',
+                ...AGENT_CONFIG.blockProbe,
                 schema: PROBE_SCHEMA,
             }).then((p) => probeRecovered(p, stepLabel), () => {
                 nullBurstTripped = true
@@ -1217,7 +1237,7 @@ function voterToSeat(voter, routing) {
 // reasonText the probe retry below reads) and feeds it stub `agent`,
 // `parallel`, `log`, `workflow`, and `voterToSeat` globals — the panel seat is
 // tribunal.js's, reached through the stubbed `workflow`, not rendered here.
-// Everything else the region needs must stay INSIDE the markers;
+// Prepend the configuration region. Other dependencies stay inside the markers;
 // tests/wave-target-envelope.test.sh extracts it to assert the gate path
 // spends no target probe, and tests/tribunal-seat-brief.test.sh pins the
 // brief tribunal.js renders for the mid-wave call this region makes.
@@ -1284,8 +1304,7 @@ function probe(command, label, phaseLabel, servingStep, acct) {
             label,
             phase: phaseLabel,
             agentType: 'executor-read',
-            model: 'haiku',
-            effort: 'low',
+            ...AGENT_CONFIG.probe,
         }).then((text) => text == null ? '' : text)
     }
     return retrying(label, acct, once, '')
@@ -1372,8 +1391,7 @@ function gateStatus(step, label, phaseLabel, acct) {
             label,
             phase: phaseLabel,
             agentType: 'executor-read',
-            model: 'haiku',
-            effort: 'low',
+            ...AGENT_CONFIG.gateStatus,
             schema: GATE_STATUS_SCHEMA,
         }).then((g) => {
             if (g && typeof g.step_status === 'string' && typeof g.outcome === 'string') return g
@@ -1470,50 +1488,33 @@ function heldCluster(step, label, phaseLabel, acct) {
             label,
             phase: phaseLabel,
             agentType: 'executor-read',
-            model: 'haiku',
-            effort: 'low',
+            ...AGENT_CONFIG.heldCluster,
             schema: HELD_CLUSTER_SCHEMA,
         }).then(parseHeldCluster)
     }
     return retrying(label, acct, once, null)
 }
 
-// Assemble a gate's SUCCESS result. A vote row whose tally succeeds after
-// agent-level noise (a seat re-spawn, a probe resubmission, a dead probe)
-// must not read as failed: one past run's completion notification carried
-// "[STEP-N · gate:tally] failed: ..." BESIDE the same step's trusted
-// gate-passed verdict — exactly the shape a conductor misreads as a failed
-// gate. So the success result carries seat/probe/retry accounting
-// explicitly, and every absorbed error as a NOTE naming the tally's
-// success — never as a failure. Failure outcomes (gate-rejected/-blocked/
-// -parked) deliberately do NOT come through here: their errors are real.
-//
-// SEATS AND PROBES ARE COUNTED SEPARATELY. A single "N spawns for M seats"
-// total conflated the judges with the read-only haiku probes the gate path
-// spends on its own bookkeeping: a real 3-judge panel logged "8 spawns for 3
-// seats", and an auditor checking the seat count against the row's roster
-// saw 8 vs 3. Worse, an ALREADY-DECIDED gate seats no panel at all and
-// logged "1 spawn for 0 seats" — a judge on an empty panel. So the seats
-// clause is emitted ONLY when a panel was actually seated; with no panel the
-// line reports probes and retries alone.
+// Successful tallies report recovered agent errors as notes. Failed gates
+// keep their errors and never pass through here. Count seats separately from
+// probes and retries; omit the seats clause when no panel was seated.
 function gateSuccess(step, text, acct) {
     const n = (count, one, many) => `${count} ${count === 1 ? one : many}`
-    const parts = []
-    if (acct.seats > 0) parts.push(n(acct.seats, 'seat', 'seats'))
-    parts.push(n(acct.probes, 'probe', 'probes'))
-    parts.push(n(acct.retries, 'retry', 'retries'))
-    const res = {
+    const parts = [
+        acct.seats > 0 ? n(acct.seats, 'seat', 'seats') : '',
+        n(acct.probes, 'probe', 'probes'),
+        n(acct.retries, 'retry', 'retries'),
+    ].filter(Boolean)
+    const notes = acct.absorbed.map((error) =>
+        `absorbed agent-level error (superseded in-wave; the tally ` +
+        `SUCCEEDED — NOT a failure of this step): ${error}`)
+    return {
         step,
         status: 'gate-passed',
         text,
         spawn_accounting: parts.join(', '),
+        ...(notes.length > 0 ? { notes } : {}),
     }
-    if (acct.absorbed.length > 0) {
-        res.notes = acct.absorbed.map((e) =>
-            `absorbed agent-level error (superseded in-wave; the tally ` +
-            `SUCCEEDED — NOT a failure of this step): ${e}`)
-    }
-    return res
 }
 
 async function runGate(row, phaseLabel) {
@@ -1936,73 +1937,39 @@ function ancestryParkReport(step, broken) {
 }
 // TEST-END fix-round-ancestry
 
-// PER-ISSUE LANES, WITH THE ENGINE'S CROSS-ISSUE COHORTS HONORED FROM THE
-// MANIFEST ITSELF. The engine's `stage` labels carry two different things at
-// once (engine lookahead.go):
-//
-//   1. DEPENDENCY ORDER, which is SAME-ISSUE ONLY. `after` predecessors,
-//      loop re-entry (precedesInSet refuses a cross-issue pair outright)
-//      and open interposed gates all live inside one issue's workflow. A
-//      cross-issue `depends_on` never reaches a manifest at all: the closure
-//      stops at an unsatisfied one ("cross-issue edges resolve at issue
-//      completion, which is rollup work no single wave owns"), so a row is
-//      offered only once its issue's dependencies are already met, and no
-//      manifest row carries a dependency field to inspect.
-//   2. COHORT PACKING, which IS cross-issue. Within one stage a bounded
-//      class holds at most `[limits] max` rows and tree-holding steps of
-//      different issues must have disjoint scopes; a staged row that does
-//      not fit its earliest legal stage is bumped later. That coupling is
-//      what the first per-issue lanes broke — they ran the bumped row
-//      concurrently with the writer it was bumped away from and bounced it
-//      off `claim` — and why a global ladder replaced them.
-//
-// The global ladder honored (2) by making every issue wait for every other
-// issue at every stage: measured on one run as an issue's judges idling
-// ~12 minutes behind two unrelated implements and a park. This ladder keeps
-// (1) per issue — a LANE ascends its own stage labels with an await between
-// — and honors (2) from what the manifest proves:
-//
-//   - CLASS HEADROOM. The engine put at most `max` rows of a bounded class
-//     into any one stage (ClaimablePrefix for ready rows, cohortFits for
-//     staged ones), so the largest same-stage count of a class in this
-//     manifest is a proven lower bound on its limit. The wave never has more
-//     rows of a class in flight than that count, whichever stages they came
-//     from. An unbounded class is under-used by the rule, never
-//     over-committed.
-//   - SCOPE. Two writers the engine co-staged were checked against each
-//     other, and scope is a property of the ISSUE, so one co-staged writer
-//     pair proves the two issues' scopes disjoint (or empty) for every
-//     writer either issue owns. A writer launches ahead of another issue's
-//     in-flight writer only on that proof; without it the pair keeps the
-//     engine's stage order between them, and the log says so. "Writer" is
-//     `class: "write"` — the corpus's tree-holding class; every other
-//     executor step in the corpus declares `holds_tree = false` and is exempt
-//     from R4 engine-side. This is the one place the ladder leans on corpus
-//     convention rather than engine data: a step holding a tree under some
-//     other class would be scope-serialized by the engine and not by the
-//     wave, and would bounce on claim.
-//
-// A park is still RUN-WIDE: the engine refuses every claim while the run is
-// not active (R1 is the first readiness clause and `claim` re-checks it), so
-// once a park is observed no lane launches anything further — rows waiting
-// for admission settle `not-launched-run-parked`, in-flight rows finish. A
-// CONFLICT, a failed spawn, or an uncleared gate still kills only its own
-// issue's later rows.
+// Each issue awaits its own stages; unrelated lanes can advance independently.
+// The manifest also certifies cross-issue concurrency (engine lookahead.go):
+// - A class's largest same-stage count bounds its in-flight rows.
+// - Co-staged writers prove their issues' scopes disjoint. Other writer pairs
+//   keep the engine's stage order. This relies on the corpus convention that
+//   only class "write" holds a tree; the engine still checks every claim.
+// Cross-issue dependencies are already satisfied before a row is offered.
+// A run park stops all later launches, while in-flight rows finish. A lane
+// park, conflict, failed spawn, or uncleared gate stops only its own issue.
 // TEST-BEGIN stage-ladder — extracted and exercised by
 // tests/wave-chain-dead-ladder.test.sh, tests/wave-fix-round-ancestry.test.sh
 // and tests/wave-issue-lanes.test.sh, which wrap this whole region in an
 // async function and feed it stub `parallel`/`spawn`/`runGate`/`probe`/`log`
-// globals. Everything the ladder itself needs must stay INSIDE the markers;
+// globals. Prepend configuration; other ladder dependencies stay inside the markers;
 // the only workflow globals it may reach for are those stubs, `rows`,
 // `input`, and the fix-round-ancestry region's helpers (the suites
 // concatenate that region ahead of this one).
 const stageOf = (row) => (Number.isInteger(row.stage) ? row.stage : 0)
-const stages = new Map()
-for (const row of rows) {
-    const s = stageOf(row)
-    if (!stages.has(s)) stages.set(s, [])
-    stages.get(s).push(row)
+
+// Preserve manifest order within each group; only the new map is mutated.
+function groupRows(rows, keyOf) {
+    const groups = new Map()
+    for (const row of rows) {
+        const key = keyOf(row)
+        if (!groups.has(key)) groups.set(key, [])
+        groups.get(key).push(row)
+    }
+    return groups
 }
+
+const pairsOf = (items) => items.flatMap((first, index) =>
+    items.slice(index + 1).map((second) => [first, second]))
+const stages = groupRows(rows, stageOf)
 const stageKeys = [...stages.keys()].sort((a, b) => a - b)
 
 log(`wave: ${rows.map((r) => `${r.step}·${r.kind === 'executor' ? r.executor : r.kind}`).join(', ')}`)
@@ -2148,34 +2115,17 @@ let parked = false
 const deadIssues = new Map()
 
 // TEST-BEGIN chain-dead — see the park-signals note above.
+// Each status leaves later same-issue steps unclaimable this wave.
+const CHAIN_DEAD_STATUSES = [
+    'gate-parked', 'gate-blocked', 'gate-rejected',
+    'skipped-not-claimable', 'skipped-not-ready',
+    'spawn-failed', 'claim-conflict', 'parked-base-ancestry',
+]
+
 function chainDead(res) {
     if (res == null) return false
-    if (res.status === 'gate-parked' || res.status === 'gate-blocked' ||
-        res.status === 'gate-rejected' || res.status === 'skipped-not-claimable' ||
-        res.status === 'skipped-not-ready') return true
-    // A stage-N executor that never produced an agent leaves its step
-    // unrecorded, so every later `after` row of the same ISSUE is guaranteed to
-    // die on claim ("an `after` predecessor is not done"). One past run spent
-    // ~52K tokens booting three such corpses. The engine re-offers the whole
-    // chain at the next dispatch, so calling the issue dead here loses nothing.
-    if (res.status === 'spawn-failed') return true
-    // A diagnosed claim CONFLICT is the SAME dead chain it always
-    // was — only the report changed. It carries its own status precisely so
-    // the kill does not ride on the report's text staying inside
-    // isConflictReport()'s three-line budget, which the diagnosis exceeds.
-    if (res.status === 'claim-conflict') return true
-    // A fix round parked on broken base ancestry. The judged tree
-    // does not contain the prior round's integrated commit, so every later
-    // per-round row of the issue (synthesize@N, verify@N) would work the
-    // same wrong tree.
-    if (res.status === 'parked-base-ancestry') return true
-    // A step that parked its own issue (the mandated tail): every later row
-    // of that issue is refused by the engine's R2b until the operator rules,
-    // so launching one buys a corpse. Other lanes are untouched.
-    if (laneParked(res)) return true
-    // Same body-scan trap as runParked: `includes('CONFLICT')` would kill an
-    // issue's whole remaining chain on a judge that merely REPORTED one.
-    return res.status === 'returned' && isConflictReport(res.text)
+    return CHAIN_DEAD_STATUSES.includes(res.status) || laneParked(res) ||
+        (res.status === 'returned' && isConflictReport(res.text))
 }
 
 // A CHAIN-DEAD LANE IS NOT THE SAME AS A DEAD CHAIN (DOT-1050). chainDead()
@@ -2223,8 +2173,7 @@ function blockedReason(res) {
     // parked-base-ancestry and a CONFLICT report are failures whatever the
     // payload says; gate-parked is an uncleared gate the conductor escalates.
     if (res == null) return null
-    if (res.status !== 'gate-blocked' && res.status !== 'skipped-not-claimable' &&
-        res.status !== 'skipped-not-ready') return null
+    if (!['gate-blocked', 'skipped-not-claimable', 'skipped-not-ready'].includes(res.status)) return null
     if (typeof res.text !== 'string') return null
     const m = res.text.match(/"blocked_reason"\s*:\s*"((?:[^"\\]|\\.)*)"/)
     if (!m) return null
@@ -2235,12 +2184,7 @@ function blockedReason(res) {
 
 // ---- lanes: one per issue, an issue-less row riding a lane of its own ----
 const laneOf = (row) => (row.issue ? String(row.issue) : `row:${row.step}`)
-const lanes = new Map()
-for (const row of rows) {
-    const l = laneOf(row)
-    if (!lanes.has(l)) lanes.set(l, [])
-    lanes.get(l).push(row)
-}
+const lanes = groupRows(rows, laneOf)
 log(`wave: ${lanes.size} issue lane(s): ` + [...lanes.entries()].map(([name, laneRows]) => {
     const ks = [...new Set(laneRows.map(stageOf))].sort((a, b) => a - b)
     return `${name}×${laneRows.length}${ks.length > 1 ? ` (stages ${ks.join('→')})` : ''}`
@@ -2260,92 +2204,38 @@ const classOf = (row) => (typeof row.class === 'string' && row.class !== '')
 const isWriter = (row) => isExecutorRow(row) && classOf(row) === 'write'
 const pairKey = (a, b) => (a < b ? `${a} ${b}` : `${b} ${a}`)
 const certifiedClass = new Map()   // class -> largest same-stage count
-const scopePairs = new Set()       // lane pairs with writers co-staged
 for (const group of stages.values()) {
-    const perClass = new Map()
-    const writerLanes = new Set()
-    for (const row of group) {
-        if (!isExecutorRow(row)) continue
-        const c = classOf(row)
-        perClass.set(c, (perClass.get(c) || 0) + 1)
-        if (isWriter(row) && row.issue) writerLanes.add(laneOf(row))
-    }
-    for (const [c, n] of perClass) {
-        if (n > (certifiedClass.get(c) || 0)) certifiedClass.set(c, n)
-    }
-    const ws = [...writerLanes]
-    for (let i = 0; i < ws.length; i++) {
-        for (let j = i + 1; j < ws.length; j++) scopePairs.add(pairKey(ws[i], ws[j]))
+    for (const [name, members] of groupRows(group.filter(isExecutorRow), classOf)) {
+        certifiedClass.set(name, Math.max(certifiedClass.get(name) || 0, members.length))
     }
 }
+const writerLanesOf = (rows) => [...new Set(rows.filter((row) => isWriter(row) && row.issue).map(laneOf))]
+const scopePairs = new Set([...stages.values()].flatMap((group) =>
+    pairsOf(writerLanesOf(group)).map(([a, b]) => pairKey(a, b))))
 const scopeCertified = (a, b) => a === b || scopePairs.has(pairKey(a, b))
 
-// WRITER LADDER BUDGET. Writers the manifest never co-staged serialize on
-// the engine's stage order (blocker() below), and the wave returns only when
-// every lane has: on RUN-95 a 25-writer manifest ran 287 minutes, the last
-// 227 of them at one to three executors, while the median lane had finished
-// at 51 and every out-of-manifest row of every issue — fix rounds minted
-// mid-wave, tails the `--limit` cut — waited for the wave to end. A writer
-// whose lane would queue behind three or more uncertified writer cohorts is
-// not launched this wave: it settles not-launched-writer-budget, its lane's
-// later rows read as deferred, and the engine re-offers all of them at the
-// next dispatch untouched (unlaunched pending rows are what a close expects).
-// The ladder still drains serially; what changes is that every other lane
-// gets its next dispatch after three cohorts instead of eleven. Depth counts
-// STAGES holding an uncertified other-lane writer below this row, so a lane's
-// own writer chain and a certified neighbour never count against it.
-const WRITER_LADDER_BUDGET = 3
-const writerStagesByLane = new Map()   // lane -> Set(stage) over writer rows
-for (const row of rows) {
-    if (!isWriter(row) || !row.issue) continue
-    const l = laneOf(row)
-    if (!writerStagesByLane.has(l)) writerStagesByLane.set(l, new Set())
-    writerStagesByLane.get(l).add(stageOf(row))
-}
+// Bound long writer queues so finished lanes can reach the next dispatch.
+// Depth counts earlier stages with uncertified writers in OTHER lanes; a
+// lane's own chain and certified neighbours do not count. Defer depth >= 3
+// and the lane's later rows; the engine re-offers them next dispatch.
+const writersByLane = groupRows(rows.filter((row) => isWriter(row) && row.issue), laneOf)
+const writerStagesByLane = new Map([...writersByLane].map(([lane, writers]) =>
+    [lane, new Set(writers.map(stageOf))]))
+
 function writerLadderDepth(row) {
-    const mine = laneOf(row)
-    const s = stageOf(row)
-    const below = new Set()
-    for (const [lane, stgs] of writerStagesByLane) {
-        if (lane === mine || scopeCertified(mine, lane)) continue
-        for (const t of stgs) if (t < s) below.add(t)
-    }
-    return below.size
+    const earlierStages = [...writerStagesByLane]
+        .filter(([lane]) => !scopeCertified(laneOf(row), lane))
+        .flatMap(([, stages]) => [...stages].filter((stage) => stage < stageOf(row)))
+    return new Set(earlierStages).size
 }
 const overWriterBudget = (row) => isWriter(row) && !!row.issue &&
     writerLadderDepth(row) >= WRITER_LADDER_BUDGET
 
-// AGENT BUDGET. The Workflow tool caps the agents one invocation may spawn
-// over its LIFETIME at 1000 — documented as a runaway-loop backstop "set far
-// above any real workflow", and one a staged-closure manifest clears with no
-// loop anywhere: RUN-95's first `dispatch open` (no --limit) offered 947
-// executor rows and 200 vote rows, some 1750-2150 agents once seats and probes
-// are counted, and a wave launched over it would have died mid-flight with
-// claims and worktrees stranded across most of the run's issues. Sub-waves
-// inside one script do not help — the cap counts every agent() the invocation
-// ever made — and `--limit` on the open was a hand-sized workaround that
-// depended on harness internals the conductor had to re-derive each time. So
-// the wave BOUNDS ITSELF. Every row reserves its projected agents the instant
-// it is admitted; a row the remaining budget cannot cover is DEFERRED on the
-// spot — never held: a held row blocks its lane, and through the stage await
-// every row behind it — and the engine re-offers deferred rows at the next
-// dispatch exactly as it does the writer-ladder deferrals above. The check is
-// per row at the instant it asks, so lanes still inside the budget keep
-// launching around a deferred one, and admissionRank's deepest-stage-first
-// order spends what is left on finishing chains rather than starting more.
-//
-// The projection is the ORDINARY path, not the worst case, so a manifest that
-// fits is not throttled by a retry it will not need: an executor is its spawn
-// plus one read-only probe (pre-claim, ancestry, or the null-recovery read); a
-// vote row is its seats plus the two gate:status reads and one more for a
-// blocked or held read. Retries, re-seats and block probes are the exception
-// and are paid from the reserve held back below the cap.
-const AGENT_LIFETIME_CAP = 1000
-const AGENT_BUDGET_RESERVE = 100
-const AGENT_BUDGET = AGENT_LIFETIME_CAP - AGENT_BUDGET_RESERVE
-const EXECUTOR_AGENT_COST = 2
-const VOTE_PROBE_COST = 3
-const DEFAULT_PANEL_SEATS = 3
+// Reserve projected agents at admission against the invocation's lifetime
+// cap. Reservations never release: a row that cannot fit is deferred at once,
+// allowing other lanes to continue. Deepest-first admission finishes chains.
+// Project the ordinary path: executor + one probe; panel + two status reads
+// + one blocked/held read. Keep 100 agents for retries, re-seats and block probes.
 function agentCost(row) {
     if (row.kind === 'action') return 0
     if (row.kind === 'vote') {
@@ -2370,15 +2260,9 @@ const AGENT_BUDGET_DEFERRAL = 'agent budget: the wave reserves at most ' +
 if (lanes.size > 1) {
     log(`wave: lanes run concurrently; the manifest certifies class headroom ` +
         [...certifiedClass.entries()].map(([c, n]) => `${c || '(no class)'}≤${n}`).join(', '))
-    const writerLanes = [...new Set(rows.filter((r) => isWriter(r) && r.issue).map(laneOf))]
-    const unproven = []
-    for (let i = 0; i < writerLanes.length; i++) {
-        for (let j = i + 1; j < writerLanes.length; j++) {
-            if (!scopeCertified(writerLanes[i], writerLanes[j])) {
-                unproven.push(`${writerLanes[i]}/${writerLanes[j]}`)
-            }
-        }
-    }
+    const unproven = pairsOf(writerLanesOf(rows))
+        .filter(([a, b]) => !scopeCertified(a, b))
+        .map(([a, b]) => `${a}/${b}`)
     if (unproven.length > 0) {
         log(`wave: cross-issue coupling — the engine never co-staged writers of ` +
             `${unproven.join(', ')}, so their scopes are unproven disjoint; those ` +
@@ -2406,7 +2290,6 @@ let submitted = 0
 // workflow script runs between the harness dequeuing a call and that call's
 // body starting, so a check placed there would see the park too late to
 // matter.
-const HARNESS_CAP = 16
 function blocker(row) {
     if (!isExecutorRow(row)) return null
     if (inFlight.size >= HARNESS_CAP) {
@@ -2543,13 +2426,90 @@ function startRow(row, label) {
     return launchRow()
 }
 
-async function runLane(name, laneRows) {
-    const byStage = new Map()
-    for (const row of laneRows) {
-        const s = stageOf(row)
-        if (!byStage.has(s)) byStage.set(s, [])
-        byStage.get(s).push(row)
+function runRow(row, label) {
+    if (row.kind === 'action') {
+        // Engine-run, and normally already DONE: the record of its
+        // last predecessor drove it (engine drive.go) before that
+        // record returned. Nothing to spawn; the row is in the
+        // manifest so the stage numbering stays transparent.
+        log(`${row.step}: action step — engine-run at record time, no spawn`)
+        return Promise.resolve({ step: row.step, status: 'engine-run', text: null })
     }
+    if (overWriterBudget(row)) {
+        log(`${row.step}: not launched — writer ladder budget: ${writerLadderDepth(row)} ` +
+            `stage(s) of uncertified other-lane writers sit below stage ${stageOf(row)} ` +
+            `and the wave launches at most ${WRITER_LADDER_BUDGET} such cohorts; the ` +
+            `engine re-offers it next dispatch (issue ${row.issue}'s later stages deferred)`)
+        deadIssues.set(row.issue, { step: row.step, status: 'not-launched-writer-budget',
+            deferral: `writer ladder budget: the wave launches at most ${WRITER_LADDER_BUDGET === 3 ? 'three' : WRITER_LADDER_BUDGET} uncertified writer cohorts` })
+        return Promise.resolve({ step: row.step, status: 'not-launched-writer-budget', text: null })
+    }
+    return admission(row).then((go) => {
+        if (go === 'budget') {
+            // Same settle as the writer-ladder deferral: nothing
+            // failed, the row is not launched this wave, and the
+            // engine re-offers it (and its lane's later rows, which
+            // the deadIssues mark keeps from booting into a claim
+            // refusal) at the next dispatch.
+            log(`${row.step}: not launched — agent budget: ${agentsReserved} of ` +
+                `${AGENT_BUDGET} projected agents reserved and this row needs ` +
+                `${agentCost(row)} more; the engine re-offers it next dispatch` +
+                (row.issue ? ` (issue ${row.issue}'s later stages deferred)` : ''))
+            if (row.issue) {
+                deadIssues.set(row.issue, { step: row.step, status: 'not-launched-agent-budget',
+                    deferral: AGENT_BUDGET_DEFERRAL })
+            }
+            return { step: row.step, status: 'not-launched-agent-budget', text: null }
+        }
+        if (go !== 'launch') {
+            log(`${row.step}: not launched — the run parked while it waited`)
+            return { step: row.step, status: 'not-launched-run-parked', text: null }
+        }
+        return Promise.resolve()
+            .then(() => startRow(row, label))
+            .then((res) => {
+                // Read the park signal PER ROW, the moment it lands,
+                // and BEFORE the row's slot is released: releasing
+                // first would admit a waiter into a run the engine
+                // already refuses claims on.
+                observePark(res)
+                release(row)
+                return res
+            }, (err) => {
+                release(row)
+                throw err
+            })
+    })
+}
+
+function settleRow(row, res) {
+    // Normalize BEFORE the chain test: a missing settle is recorded as
+    // spawn-failed, so it has to be read as one too.
+    const out = res || { step: row.step, status: 'spawn-failed', text: null }
+    byStep.set(row.step, out)
+    if (chainDead(out) && row.issue && laneParked(out)) {
+        // A lane park is a deferral, not a death: nothing failed, the
+        // issue waits on a person, and the engine re-offers its later
+        // rows once the operator rules. Every other lane keeps going.
+        deadIssues.set(row.issue, { step: row.step, status: out.status,
+            deferral: 'parked waiting-human: the issue is on an operator decision' })
+        log(`${row.step}: parked waiting-human — issue ${row.issue}'s later ` +
+            `stages wait on the operator; every other lane keeps launching`)
+    } else if (chainDead(out) && row.issue) {
+        const deferral = blockedReason(out)
+        deadIssues.set(row.issue, { step: row.step, status: out.status, deferral })
+        log(deferral
+            ? `${row.step}: settled ${out.status}, but the engine reports ` +
+              `"${deferral}" — its predecessor is progressing, NOT failed, so ` +
+              `issue ${row.issue}'s later stages are deferred to the next ` +
+              `dispatch rather than dead`
+            : `${row.step}: settled ${out.status} — issue ${row.issue}'s later ` +
+              `stages will not be launched this wave`)
+    }
+}
+
+async function runLane(name, laneRows) {
+    const byStage = groupRows(laneRows, stageOf)
     const keys = [...byStage.keys()].sort((a, b) => a - b)
     for (const k of keys) {
         if (parked) break
@@ -2573,87 +2533,8 @@ async function runLane(name, laneRows) {
         })
         if (group.length === 0) continue
         const label = `${name} stage ${k} (${group.length} row${group.length === 1 ? '' : 's'})`
-        const settled = await parallel(group.map((row) => () => {
-            if (row.kind === 'action') {
-                // Engine-run, and normally already DONE: the record of its
-                // last predecessor drove it (engine drive.go) before that
-                // record returned. Nothing to spawn; the row is in the
-                // manifest so the stage numbering stays transparent.
-                log(`${row.step}: action step — engine-run at record time, no spawn`)
-                return Promise.resolve({ step: row.step, status: 'engine-run', text: null })
-            }
-            if (overWriterBudget(row)) {
-                log(`${row.step}: not launched — writer ladder budget: ${writerLadderDepth(row)} ` +
-                    `stage(s) of uncertified other-lane writers sit below stage ${stageOf(row)} ` +
-                    `and the wave launches at most ${WRITER_LADDER_BUDGET} such cohorts; the ` +
-                    `engine re-offers it next dispatch (issue ${row.issue}'s later stages deferred)`)
-                deadIssues.set(row.issue, { step: row.step, status: 'not-launched-writer-budget',
-                    deferral: 'writer ladder budget: the wave launches at most three uncertified writer cohorts' })
-                return Promise.resolve({ step: row.step, status: 'not-launched-writer-budget', text: null })
-            }
-            return admission(row).then((go) => {
-                if (go === 'budget') {
-                    // Same settle as the writer-ladder deferral: nothing
-                    // failed, the row is not launched this wave, and the
-                    // engine re-offers it (and its lane's later rows, which
-                    // the deadIssues mark keeps from booting into a claim
-                    // refusal) at the next dispatch.
-                    log(`${row.step}: not launched — agent budget: ${agentsReserved} of ` +
-                        `${AGENT_BUDGET} projected agents reserved and this row needs ` +
-                        `${agentCost(row)} more; the engine re-offers it next dispatch` +
-                        (row.issue ? ` (issue ${row.issue}'s later stages deferred)` : ''))
-                    if (row.issue) {
-                        deadIssues.set(row.issue, { step: row.step, status: 'not-launched-agent-budget',
-                            deferral: AGENT_BUDGET_DEFERRAL })
-                    }
-                    return { step: row.step, status: 'not-launched-agent-budget', text: null }
-                }
-                if (go !== 'launch') {
-                    log(`${row.step}: not launched — the run parked while it waited`)
-                    return { step: row.step, status: 'not-launched-run-parked', text: null }
-                }
-                return Promise.resolve()
-                    .then(() => startRow(row, label))
-                    .then((res) => {
-                        // Read the park signal PER ROW, the moment it lands,
-                        // and BEFORE the row's slot is released: releasing
-                        // first would admit a waiter into a run the engine
-                        // already refuses claims on.
-                        observePark(res)
-                        release(row)
-                        return res
-                    }, (err) => {
-                        release(row)
-                        throw err
-                    })
-            })
-        }))
-        settled.forEach((res, i) => {
-            const row = group[i]
-            // Normalize BEFORE the chain test: a missing settle is recorded as
-            // spawn-failed, so it has to be read as one too.
-            const out = res || { step: row.step, status: 'spawn-failed', text: null }
-            byStep.set(row.step, out)
-            if (chainDead(out) && row.issue && laneParked(out)) {
-                // A lane park is a deferral, not a death: nothing failed, the
-                // issue waits on a person, and the engine re-offers its later
-                // rows once the operator rules. Every other lane keeps going.
-                deadIssues.set(row.issue, { step: row.step, status: out.status,
-                    deferral: 'parked waiting-human: the issue is on an operator decision' })
-                log(`${row.step}: parked waiting-human — issue ${row.issue}'s later ` +
-                    `stages wait on the operator; every other lane keeps launching`)
-            } else if (chainDead(out) && row.issue) {
-                const deferral = blockedReason(out)
-                deadIssues.set(row.issue, { step: row.step, status: out.status, deferral })
-                log(deferral
-                    ? `${row.step}: settled ${out.status}, but the engine reports ` +
-                      `"${deferral}" — its predecessor is progressing, NOT failed, so ` +
-                      `issue ${row.issue}'s later stages are deferred to the next ` +
-                      `dispatch rather than dead`
-                    : `${row.step}: settled ${out.status} — issue ${row.issue}'s later ` +
-                      `stages will not be launched this wave`)
-            }
-        })
+        const settled = await parallel(group.map((row) => () => runRow(row, label)))
+        settled.forEach((res, index) => settleRow(group[index], res))
     }
 }
 

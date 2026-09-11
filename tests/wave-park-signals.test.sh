@@ -59,6 +59,7 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
 }
 
 {
+    extract configuration || fatal "bad or missing TEST markers for configuration"
     extract park-signals || fatal "bad or missing TEST markers for park-signals"
     extract chain-dead   || fatal "bad or missing TEST markers for chain-dead"
 } > "${WORK}/predicates.js" || exit 2

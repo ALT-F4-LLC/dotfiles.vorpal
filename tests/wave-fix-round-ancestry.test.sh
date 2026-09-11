@@ -66,6 +66,7 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
     ' "$WAVE"
 }
 
+extract configuration > "${WORK}/configuration.js" || fatal "bad or missing TEST markers for configuration"
 extract park-signals       > "${WORK}/park.js"     || fatal "bad or missing TEST markers for park-signals"
 # The guard's target read shares the gate path's jq envelope and its
 # structural reader (DOT-1040), which live in their own nested region.
@@ -76,6 +77,7 @@ extract stage-ladder       > "${WORK}/ladder.js"   || fatal "bad or missing TEST
 grep -q 'needsAncestryCheck' "${WORK}/ancestry.js" || fatal "fix-round-ancestry region does not contain needsAncestryCheck"
 
 {
+    cat "${WORK}/configuration.js"
     # --- stub workflow globals the ladder reaches for ---
     cat <<'JS'
 let rows = []

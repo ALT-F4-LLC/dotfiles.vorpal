@@ -58,6 +58,7 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
     ' "$WAVE"
 }
 
+extract configuration > "${WORK}/configuration.js" || fatal "bad or missing TEST markers for configuration"
 extract park-signals > "${WORK}/park.js" || fatal "bad or missing TEST markers for park-signals"
 # The ladder calls the fix-round base-ancestry helpers (DOT-871), which live
 # in their own region so tests/wave-fix-round-ancestry.test.sh can exercise
@@ -72,6 +73,7 @@ extract stage-ladder > "${WORK}/ladder.js" || fatal "bad or missing TEST markers
 grep -q 'chainDead' "${WORK}/ladder.js" || fatal "stage-ladder region does not contain chainDead"
 
 {
+    cat "${WORK}/configuration.js"
     # --- stub workflow globals the ladder reaches for ---
     cat <<'JS'
 let rows = []

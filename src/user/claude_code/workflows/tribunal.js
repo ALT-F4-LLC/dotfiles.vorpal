@@ -8,6 +8,11 @@ export const meta = {
     ],
 }
 
+// Verifier settings are local; judges keep caller routing from pinned policy.
+const AGENT_CONFIG = {
+    verify: { model: 'haiku', effort: 'low' },
+}
+
 // ---------------------------------------------------------------------------
 // Seat routing is the caller's to supply, resolved from the same pinned
 // policy.toml the engine routes step rows from: a seat's standing variant with
@@ -89,8 +94,7 @@ const WHOLE_SYSTEM_LENS =
     'evidence behind every claim.'
 
 function lensOf(seat) {
-    const parts = seat.split('-')
-    const key = parts[parts.length - 1]
+    const key = seat.split('-').pop()
     return { role: key, text: LENSES[key] || WHOLE_SYSTEM_LENS }
 }
 
@@ -152,13 +156,10 @@ alone as proof of drift.` : ''
     const rawTargetSha = (target && target.sha) || ''
     const targetSha = TARGET_SHA_RE.test(rawTargetSha) ? rawTargetSha : ''
     const targetWorktree = (target && target.worktree) || ''
-    const targetLines = []
-    if (targetSha) {
-        targetLines.push(`TARGET SHA:     ${targetSha} — the commit the diff under this gate stood at`)
-    }
-    if (targetWorktree) {
-        targetLines.push(`TARGET WORKTREE:${targetWorktree} — the checkout that recorded it, while it is still on disk`)
-    }
+    const targetLines = [
+        targetSha ? `TARGET SHA:     ${targetSha} — the commit the diff under this gate stood at` : '',
+        targetWorktree ? `TARGET WORKTREE:${targetWorktree} — the checkout that recorded it, while it is still on disk` : '',
+    ].filter(Boolean)
     const targetReads = [
         targetSha ? `  git cat-file -t ${targetSha}   — proves the object is here at all` : '',
         targetSha ? `  git show --stat ${targetSha}   then \`git show ${targetSha}\` for the body` : '',
@@ -361,7 +362,7 @@ ${gateLine}
 THE PROPOSAL:   ${voteId}${step ? targetNote : ''}${workingDirLine ? `\n${workingDirLine}` : ''}${respawnNote}${activationNote}
 ${setupBlock}${caseBlock}${!step ? targetNote : ''}
 
-BOUND YOUR INVESTIGATION — then vote. Measured across seven days:
+BOUND YOUR INVESTIGATION — then vote. Measured across seven days, as of 2026-08-19:
 189 tribunal seats spent 5,309,378 output tokens, 68.7% of it on private
 deliberation — the highest ratio of any role in this fleet — over 36 votes
 and 12 decided proposals in which ZERO verdicts were overturned. That is not
@@ -487,18 +488,32 @@ read-only probe reporting what the vote record currently says.`
 // Transport + validation
 // ---------------------------------------------------------------------------
 
-let input = args
-if (typeof input === 'string') {
+function decodeArgs(value) {
+    if (typeof value !== 'string') return value
     try {
-        input = JSON.parse(input)
+        const input = JSON.parse(value)
         log('tribunal.js: decoded args from the harness JSON-encoded transport (normal)')
-    } catch (e) {
+        return input
+    } catch (error) {
         throw new Error(
-            `tribunal.js: args arrived as a STRING that is not valid JSON (${e.message}). ` +
+            `tribunal.js: args arrived as a STRING that is not valid JSON (${error.message}). ` +
             `Refusing to seat the panel.`
         )
     }
 }
+
+function assertRequiredStrings(value, fields, path) {
+    for (const field of fields) {
+        if (typeof value[field] !== 'string' || value[field] === '') {
+            throw new Error(
+                `tribunal.js: ${path}.${field} is required and must be a non-empty string ` +
+                `(got ${JSON.stringify(value[field])}). Refusing to seat the panel.`
+            )
+        }
+    }
+}
+
+const input = decodeArgs(args)
 if (!input || typeof input !== 'object') throw new Error(
     `tribunal.js: args is ${typeof input}, expected ` +
     `{voteId, voters, context, gateKind, cwd}. Refusing to seat the panel.`
@@ -510,25 +525,8 @@ if (!input || typeof input !== 'object') throw new Error(
 // tells the seat to read the case from the engine's own record instead.
 const isMidWave = input.step !== undefined && input.step !== null
 const requiredStrings = isMidWave ? ['voteId', 'gateKind', 'cwd'] : ['voteId', 'context', 'gateKind', 'cwd']
-for (const k of requiredStrings) {
-    if (typeof input[k] !== 'string' || input[k] === '') {
-        throw new Error(
-            `tribunal.js: args.${k} is required and must be a non-empty string ` +
-            `(got ${JSON.stringify(input[k])}). Refusing to seat the panel.`
-        )
-    }
-}
-if (isMidWave) {
-    const step = input.step
-    for (const k of ['step', 'instance', 'issue', 'run']) {
-        if (typeof step[k] !== 'string' || step[k] === '') {
-            throw new Error(
-                `tribunal.js: args.step.${k} is required and must be a non-empty string ` +
-                `(got ${JSON.stringify(step[k])}). Refusing to seat the panel.`
-            )
-        }
-    }
-}
+assertRequiredStrings(input, requiredStrings, 'args')
+if (isMidWave) assertRequiredStrings(input.step, ['step', 'instance', 'issue', 'run'], 'args.step')
 if (!Array.isArray(input.voters) || input.voters.length === 0) {
     throw new Error(
         `tribunal.js: args.voters must be a non-empty array of ` +
@@ -581,8 +579,7 @@ function verify() {
         label: `verify:${voteId}`,
         phase: 'Verify',
         agentType: 'executor-read',
-        model: 'haiku',
-        effort: 'low',
+        ...AGENT_CONFIG.verify,
         schema: VOTE_SHOW_SCHEMA,
     }).then((record) => {
         if (record && Array.isArray(record.votes)) return record
@@ -602,45 +599,31 @@ function missingSeats(record) {
     return seats.filter((s) => !cast.includes(s.seat))
 }
 
-const spawned = await parallel(seats.map((r) => () => spawnJudge(r, Boolean(isRespawn))))
+// Retry an unknown record before deciding whether any seats need another attempt.
+async function verifyWithRetry() {
+    const outcome = await verify()
+    if (outcome !== null) return outcome
+    log(`tribunal: the verify probe returned nothing — retrying the probe ONCE before reading any seat as missing`)
+    return verify()
+}
 
-let result
-// MID-WAVE: the caller (wave.js's runGate) already reads `docket gate status`
-// for the tally before and after this call, and drives the one permitted
-// re-seat itself by invoking this script again with `isRespawn` and only the
-// missing seats. This script's own verify/respawn loop below is the
-// CONVERSATIONAL contract, where there is no richer gate-status envelope to
-// read and this script owns the whole decision cycle.
-if (isMidWave) {
-    const absorbed = spawned.filter((s) => s && typeof s === 'object' && typeof s.error === 'string')
-    result = { voteId, seatsSpawned: seats.length, absorbed }
-} else {
-    // An EMPTY probe result says nothing about the casts — treating it as
-    // "every seat missing" once re-spawned a whole panel that had already
-    // voted. The probe is retried once before any seat is; only a real
-    // record is read.
-    let outcome = await verify()
-    if (outcome === null) {
-        log(`tribunal: the verify probe returned nothing — retrying the probe ONCE before reading any seat as missing`)
-        outcome = await verify()
-    }
-    let missing = outcome === null ? [] : missingSeats(outcome)
-    let respawns = 0
-
+async function verifyPanel() {
+    const initialOutcome = await verifyWithRetry()
+    const missing = initialOutcome === null ? [] : missingSeats(initialOutcome)
     if (missing.length > 0) {
-        respawns = missing.length
         log(`tribunal: ${missing.length} seat(s) returned without a recorded cast ` +
             `(${missing.map((s) => s.seat).join(', ')}) — re-spawning each ONCE`)
         await parallel(missing.map((r) => () => spawnJudge(r, true)))
-        outcome = await verify()
-        const stillMissing = outcome === null ? [] : missingSeats(outcome)
-        if (stillMissing.length > 0) {
-            log(`tribunal: STILL NO CAST from ${stillMissing.map((s) => s.seat).join(', ')} ` +
-                `after the one permitted re-spawn. The panel is short a vote and the tally ` +
-                `cannot resolve as designed. The caller decides what happens next — its ` +
-                `contract allows ONE re-invocation for the missing seats, and after that ` +
-                `the gate escalates to the operator. The record below is what the engine has.`)
-        }
+    }
+
+    const outcome = missing.length > 0 ? await verify() : initialOutcome
+    const stillMissing = missing.length > 0 && outcome !== null ? missingSeats(outcome) : []
+    if (stillMissing.length > 0) {
+        log(`tribunal: STILL NO CAST from ${stillMissing.map((s) => s.seat).join(', ')} ` +
+            `after the one permitted re-spawn. The panel is short a vote and the tally ` +
+            `cannot resolve as designed. The caller decides what happens next — its ` +
+            `contract allows ONE re-invocation for the missing seats, and after that ` +
+            `the gate escalates to the operator. The record below is what the engine has.`)
     }
 
     if (outcome === null) {
@@ -650,7 +633,15 @@ if (isMidWave) {
             `before acting on this return.`)
     }
 
-    result = { voteId, outcome, seatsSpawned: seats.length, respawns }
+    return { voteId, outcome, seatsSpawned: seats.length, respawns: missing.length }
 }
+
+const spawned = await parallel(seats.map((seat) => () => spawnJudge(seat, Boolean(isRespawn))))
+
+// Mid-wave callers own verification and the one permitted re-seat; conversational
+// panels verify their own record because they have no gate-status envelope.
+const result = isMidWave
+    ? { voteId, seatsSpawned: seats.length, absorbed: spawned.filter((seat) => seat && typeof seat === 'object' && typeof seat.error === 'string') }
+    : await verifyPanel()
 
 return result

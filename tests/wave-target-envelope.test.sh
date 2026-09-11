@@ -86,6 +86,7 @@ extract() { # <file> <region> — body between the TEST-BEGIN/TEST-END markers
     ' "$1"
 }
 
+extract "$WAVE" configuration > "${WORK}/configuration.js" || fatal "bad or missing TEST markers for configuration in wave.js"
 extract "$WAVE" classifier-retry > "${WORK}/classifier.js" || fatal "bad or missing TEST markers for classifier-retry in wave.js"
 extract "$TRIBUNAL" seat-brief   > "${WORK}/brief.js"      || fatal "bad or missing TEST markers for seat-brief in tribunal.js"
 extract "$WAVE" gate-vote        > "${WORK}/gate.js"       || fatal "bad or missing TEST markers for gate-vote"
@@ -96,6 +97,7 @@ grep -q 'readTargetEnvelope' "${WORK}/envelope.js" || fatal "target-envelope reg
 grep -q 'gateTarget'         "${WORK}/gate.js"     || fatal "gate-vote region does not contain gateTarget"
 
 {
+    cat "${WORK}/configuration.js"
     cat <<'JS'
 const LOG = []
 const log = (m) => LOG.push(String(m))

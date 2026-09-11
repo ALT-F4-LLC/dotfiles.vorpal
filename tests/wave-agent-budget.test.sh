@@ -57,6 +57,7 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
     ' "$WAVE"
 }
 
+extract configuration > "${WORK}/configuration.js" || fatal "bad or missing TEST markers for configuration"
 extract park-signals > "${WORK}/park.js" || fatal "bad or missing TEST markers for park-signals"
 extract target-envelope > "${WORK}/envelope.js" || fatal "bad or missing TEST markers for target-envelope"
 extract fix-round-ancestry > "${WORK}/ancestry.js" || fatal "bad or missing TEST markers for fix-round-ancestry"
@@ -65,6 +66,7 @@ extract stage-ladder > "${WORK}/ladder.js" || fatal "bad or missing TEST markers
 grep -q 'AGENT_BUDGET' "${WORK}/ladder.js" || fatal "stage-ladder region does not contain the agent budget"
 
 {
+    cat "${WORK}/configuration.js"
     cat <<'JS'
 let rows = []
 let input = {}
@@ -112,11 +114,10 @@ const run = async (theRows) => {
     LOG.length = 0
     return ladder()
 }
-// The constants the region declares, read back off it so the suite cannot
-// drift from the script: budget 900, executor 2, vote seats + 3.
-const BUDGET = 900
-const EXEC = 2
-const VOTE_PROBES = 3
+// Read the production configuration rather than duplicating its values.
+const BUDGET = AGENT_BUDGET
+const EXEC = EXECUTOR_AGENT_COST
+const VOTE_PROBES = VOTE_PROBE_COST
 
 // ---- A manifest that fits launches everything and reports the budget ----
 let out = await run([ex('STEP-1', 'A', 0), ex('STEP-2', 'A', 1), vote('STEP-3', 'A', 2, 3), ex('STEP-4', 'B', 0)])

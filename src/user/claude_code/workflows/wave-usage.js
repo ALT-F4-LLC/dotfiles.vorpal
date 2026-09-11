@@ -8,6 +8,15 @@ export const meta = {
     ],
 }
 
+// Model is omitted so agents inherit the caller's model.
+const AGENT_CONFIG = {
+    scout: { effort: 'low' },
+    extract: { effort: 'low' },
+    recheck: { effort: 'low' },
+}
+
+const DEFAULT_MODE = 'steps'
+
 // ---------------------------------------------------------------------------
 // THE TRANSCRIPT-DERIVED TOKEN PATH, designed rather than a workaround: a
 // claimant cannot observe its own token consumption, so the conductor that
@@ -92,25 +101,21 @@ export const meta = {
 //                  Effective effort is not exposed by this transcript shape.
 //                  complete covers parsed, deduplicated usage-bearing messages;
 //                  it does not certify that the transcript or task finished.
-// Throws when the directory holds no agent transcripts, when a relayed
-// bootstrap:false repeats on a fresh re-check and cannot be resolved locally,
+// Throws when the directory holds no agent transcripts, when the fresh
+// re-check of a relayed bootstrap:false fails to return a usable answer,
 // when an executor brief names no step to record, or when a dispatched agent
 // carries no usage. A bootstrap:false confirmed on that re-check is not an
 // error: it is folded into wave overhead instead, since wave.js never
 // dispatches an agent without a bootstrap brief.
 // ---------------------------------------------------------------------------
 
-let input = args
-if (typeof input === 'string') {
-    input = JSON.parse(input)
-    log('wave-usage: decoded args from the harness JSON-encoded transport (normal)')
-}
-input = input || {}
+const input = (typeof args === 'string' ? JSON.parse(args) : args) || {}
+if (typeof args === 'string') log('wave-usage: decoded args from the harness JSON-encoded transport (normal)')
 const dir = input.dir
 if (typeof dir !== 'string' || !dir.startsWith('/')) {
     throw new Error(`wave-usage: args.dir must be an absolute transcript directory, got ${JSON.stringify(dir)}`)
 }
-const mode = input.mode == null ? 'steps' : input.mode
+const mode = input.mode == null ? DEFAULT_MODE : input.mode
 if (mode !== 'steps' && mode !== 'seats') {
     throw new Error(`wave-usage: args.mode must be "steps" or "seats", got ${JSON.stringify(mode)}`)
 }
@@ -189,8 +194,7 @@ const zeroSums = () => Object.fromEntries(UNITS.map((u) => [u, 0]))
 // The three questions, in the one order that cannot misfile a read: briefed
 // to cast? briefed only to read? briefed to record? First yes wins. `file`
 // appears only in labels and error text.
-function classify(extract, mode, file) {
-    const x = extract
+function classify(x, mode, file) {
     if (mode === 'seats') {
         if (!x.cast) return { bucket: 'unattributed', key: null, label: file }
         const key = [x.cast.proposal, x.cast.voter]
@@ -235,6 +239,26 @@ function classify(extract, mode, file) {
     return { bucket: 'row', key: record, label: record }
 }
 
+function modelObservation(file, extract, classification, mode) {
+    const models = Array.isArray(extract.models_observed)
+        ? [...new Set(extract.models_observed.filter((model) =>
+            typeof model === 'string' && model !== '' && model !== '<synthetic>'))].sort()
+        : []
+    return {
+        file,
+        kind: classification.bucket === 'overhead' ? 'overhead' : mode === 'seats' ? 'seat' : 'step',
+        key: classification.key,
+        models,
+        complete: extract.model_observation_complete === true && models.length > 0,
+        source: 'assistant.message.model',
+        effort_resolved: 'unknown',
+    }
+}
+
+function addUsage(sums, usage) {
+    for (const unit of UNITS) sums[unit] += usage[unit] || 0
+}
+
 // results: [{file, extract}] in directory order. Sums per key, in the order
 // the ledger wants: numeric by step, or grouped by proposal then seat.
 function reduceRows(results, mode, exclude) {
@@ -246,27 +270,18 @@ function reduceRows(results, mode, exclude) {
     const excluded = new Set(exclude || [])
     for (const { file, extract } of results) {
         const c = classify(extract, mode, file)
-        if (c.bucket === 'error') { errors.push(c.label); continue }
+        if (c.bucket === 'error') {
+            errors.push(c.label)
+            continue
+        }
         if (c.bucket === 'seated' || c.bucket === 'unattributed') {
             skipped.push({ file, reason: c.bucket, key: c.key, label: c.label })
             continue
         }
-        const models = Array.isArray(extract.models_observed)
-            ? [...new Set(extract.models_observed.filter((m) =>
-                typeof m === 'string' && m !== '' && m !== '<synthetic>'))].sort()
-            : []
-        model_observations.push({
-            file,
-            kind: c.bucket === 'overhead' ? 'overhead' : mode === 'seats' ? 'seat' : 'step',
-            key: c.key,
-            models,
-            complete: extract.model_observation_complete === true && models.length > 0,
-            source: 'assistant.message.model',
-            effort_resolved: 'unknown',
-        })
+        model_observations.push(modelObservation(file, extract, c, mode))
         if (c.bucket === 'overhead') {
             overhead.agents.push({ file, label: c.label })
-            for (const u of UNITS) overhead.sums[u] += extract.usage[u] || 0
+            addUsage(overhead.sums, extract.usage)
             continue
         }
         const excludeName = mode === 'seats' ? c.key[1] : c.key
@@ -280,21 +295,17 @@ function reduceRows(results, mode, exclude) {
         }
         const id = mode === 'seats' ? c.key.join(' ') : c.key
         if (!totals.has(id)) totals.set(id, { key: c.key, sums: zeroSums() })
-        const t = totals.get(id).sums
-        for (const u of UNITS) t[u] += extract.usage[u] || 0
+        addUsage(totals.get(id).sums, extract.usage)
     }
     const cmp = mode === 'seats'
         ? (a, b) => (a.key[0] < b.key[0] ? -1 : a.key[0] > b.key[0] ? 1 :
                      a.key[1] < b.key[1] ? -1 : a.key[1] > b.key[1] ? 1 : 0)
         : (a, b) => parseInt(a.key.split('-')[1], 10) - parseInt(b.key.split('-')[1], 10)
-    const rows = []
-    for (const { key, sums } of [...totals.values()].sort(cmp)) {
-        for (const unit of UNITS) {
-            rows.push(mode === 'seats'
-                ? { proposal: key[0], voter: key[1], unit, quantity: sums[unit] }
-                : { step: key, unit, quantity: sums[unit] })
-        }
-    }
+    const rows = [...totals.values()].sort(cmp).flatMap(({ key, sums }) =>
+        UNITS.map((unit) => mode === 'seats'
+            ? { proposal: key[0], voter: key[1], unit, quantity: sums[unit] }
+            : { step: key, unit, quantity: sums[unit] }),
+    )
     return { rows, overhead, skipped, errors, model_observations }
 }
 // TEST-END wave-usage-classify
@@ -356,7 +367,7 @@ ${retry ? '\nThis is a SECOND, independent run of the same command against the s
 jq prints exactly one JSON object. Return it as the structured output with ok:true and every field copied verbatim — bootstrap, cast, record, probe, exec, step_mention, models_observed, model_observation_complete, usage — including every number exactly as printed. Do not compute, estimate, round, or adjust anything, and do not read the transcript by any other means. Model names come only from the extracted message fields; missing observations remain empty. If jq exits non-zero or prints nothing, return ok:false with the error text in \`error\`.`
 
 phase('Scout')
-const listing = await agent(scoutBrief, { label: 'scout', phase: 'Scout', schema: FILES_SCHEMA, effort: 'low' })
+const listing = await agent(scoutBrief, { label: 'scout', phase: 'Scout', schema: FILES_SCHEMA, ...AGENT_CONFIG.scout })
 const files = [...new Set((listing && listing.files) || [])]
     .filter((f) => /\/agent-[^/]*\.jsonl$/.test(f))
     .sort()
@@ -373,38 +384,34 @@ const extracted = await pipeline(
         label: `${basename(file)} · extract`,
         phase: 'Extract',
         schema: EXTRACT_SCHEMA,
-        effort: 'low',
+        ...AGENT_CONFIG.extract,
     }),
     (extract, file) => ({ file: basename(file), extract }),
 )
 
 const errors = []
-const results = []
-extracted.forEach((r, i) => {
+const initialResults = extracted.flatMap((r, i) => {
     const file = basename(files[i])
     if (!r) {
         log(`wave-usage: ${file}: extraction agent returned nothing`)
         errors.push(`${file}: extraction agent returned nothing`)
-        return
+        return []
     }
     if (!r.extract || !r.extract.ok) {
         const why = (r.extract && r.extract.error) || 'no error text'
         log(`wave-usage: ${file}: jq failed — ${why}`)
         errors.push(`${file}: jq failed — ${why}`)
-        return
+        return []
     }
-    results.push({ ...r, path: files[i] })
+    return [{ ...r, path: files[i] }]
 })
 
-// A relayed bootstrap:false is checked once more before it is trusted: wave.js
-// never dispatches an agent without a bootstrap brief, so this is far more
-// often the relay misreporting jq's own answer than a real bootstrap-free
-// transcript (observed: a file whose jq output plainly carried a first
-// `type:"user"` line, relayed back as bootstrap:false). One fresh agent
-// against the same file is cheap — this only re-runs files that came back
-// this way, not the whole extract stage.
-const suspect = results.filter((r) => r.extract.bootstrap === false)
-if (suspect.length) {
+// Every dispatched agent has a bootstrap brief. Recheck missing briefs once
+// before treating a repeated answer as a relay misreport and wave overhead.
+async function recheckBootstrap(results) {
+    const suspect = results.filter((r) => r.extract.bootstrap === false)
+    if (!suspect.length) return results
+
     log(`wave-usage: ${suspect.length} transcript(s) reported bootstrap:false — re-checking before trusting it`)
     const recheck = await pipeline(
         suspect,
@@ -412,25 +419,28 @@ if (suspect.length) {
             label: `${r.file} · extract (retry)`,
             phase: 'Extract',
             schema: EXTRACT_SCHEMA,
-            effort: 'low',
+            ...AGENT_CONFIG.recheck,
         }),
     )
+    const replacements = new Map()
     recheck.forEach((second, i) => {
         const r = suspect[i]
         if (second && second.ok && second.bootstrap === false) {
             log(`wave-usage: ${r.file}: bootstrap:false confirmed on a second, independent read — treating as a misreport and recording as overhead, not an error`)
-            r.extract = { ...r.extract, bootstrapFallback: true }
+            replacements.set(r, { ...r, extract: { ...r.extract, bootstrapFallback: true } })
         } else if (second && second.ok) {
             log(`wave-usage: ${r.file}: bootstrap:false did not repeat on retry — using the retry's answer`)
-            r.extract = second
+            replacements.set(r, { ...r, extract: second })
         } else {
             log(`wave-usage: ${r.file}: retry could not confirm or refute the first answer — reporting the original error`)
         }
     })
+    return results.map((r) => replacements.get(r) || r)
 }
 
-const reduced = reduceRows(results, mode, exclude)
-reduced.errors.unshift(...errors)
+const results = await recheckBootstrap(initialResults)
+const summary = reduceRows(results, mode, exclude)
+const reduced = { ...summary, errors: [...errors, ...summary.errors] }
 
 for (const observation of reduced.model_observations) {
     log(`wave-usage: ${observation.file}: serving models ` +

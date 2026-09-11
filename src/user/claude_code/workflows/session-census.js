@@ -8,6 +8,21 @@ export const meta = {
     ],
 }
 
+// TEST-BEGIN session-census-config — include before either pure test region.
+// Model is omitted so agents inherit the caller's model.
+const AGENT_CONFIG = {
+    scout: { effort: 'low' },
+    extract: { effort: 'low' },
+}
+
+const MIN_MATCHED_CELL_MESSAGES = 25
+const ACTIVE_GAP_SECONDS = 300
+const ROLE_BRIEF_CHARS = 300
+const ERROR_TEXT_CHARS = 200
+const EFFORT_RANK = {low: 0, medium: 1, high: 2, xhigh: 3, max: 4}
+const UNKNOWN_EFFORT_RANK = 9
+// TEST-END session-census-config
+
 // ---------------------------------------------------------------------------
 // Why these rules exist (each one was learned by getting the census wrong):
 //
@@ -15,7 +30,8 @@ export const meta = {
 //   docket policy.toml, so they cannot measure a change to the global harness
 //   dial; pooling hides the signal the census exists to find.
 // * usage.output_tokens_details.thinking_tokens is not always present.
-//   Clients before 2.1.228 never wrote it, and current clients omit it on a
+//   Two earlier clients seen in this fleet, 2.1.219 and 2.1.227, never wrote
+//   it, and current clients omit it on a
 //   sizeable minority of messages. Absent is NOT zero: such a message may
 //   still carry thinking blocks, and counting it as zero biases think% low.
 //   Those messages are excluded from token metrics and their count is
@@ -49,10 +65,11 @@ export const meta = {
 //   think_msgs, think_msgs_pct, think_chars, text_chars, think_text_ratio,
 //   tool_uses, sessions, excluded_no_thinking_accounting, notes. main adds
 //   operator_inputs, interrupts, interrupt_pct, agents_killed, kill_events,
-//   idle, time, context, by_model_effort, matched_cells; subagent adds by_role.
+//   idle, time, context, by_model_effort, matched_cells,
+//   sidechain_rows_dropped; subagent adds by_role.
 // ---------------------------------------------------------------------------
 
-// TEST-BEGIN session-census-extract — evaluable on its own; run the string as
+// TEST-BEGIN session-census-extract — include session-census-config; run the string as
 // `jq -c -n -R --arg kind main|subagent -f <file> <transcript>`.
 // -R + fromjson so one malformed line is skipped, not fatal.
 const CENSUS_JQ = String.raw`
@@ -123,7 +140,7 @@ def user_row($rec):
   if $kind == "subagent" then
     if .role == null then
       ($rec | user_text | strip) as $text
-      | if $text != "" then .role = ($text[0:300] | classify_role) else . end
+      | if $text != "" then .role = ($text[0:${ROLE_BRIEF_CHARS}] | classify_role) else . end
     else . end
   else
     ($rec | user_text) as $text
@@ -207,7 +224,7 @@ reduce (inputs | try fromjson catch null) as $rec (
 | (.stamps | sort) as $s
 | .span_seconds = (if ($s | length) > 1 then $s[-1] - $s[0] else 0 end)
 | .active_seconds = (if ($s | length) > 1
-    then ([range(1; $s | length) | ($s[.] - $s[. - 1]) | select(. <= 300)] | add // 0)
+    then ([range(1; $s | length) | ($s[.] - $s[. - 1]) | select(. <= ${ACTIVE_GAP_SECONDS})] | add // 0)
     else 0 end)
 | .first_ts = (if ($s | length) > 0 then ($s[0] | todateiso8601) else null end)
 | .last_ts = (if ($s | length) > 0 then ($s[-1] | todateiso8601) else null end)
@@ -218,8 +235,8 @@ reduce (inputs | try fromjson catch null) as $rec (
 // TEST-END session-census-extract
 
 // TEST-BEGIN session-census-aggregate — pure; pools MAIN and SUBAGENT
-// separately and derives the ratios the census reports. Free of workflow
-// globals so it is evaluable against fixture rows on its own.
+// separately and derives the ratios the census reports. Include
+// session-census-config to evaluate it against fixture rows.
 const NOTES = {
     both: [
         'main and subagent are measured separately and never pooled',
@@ -229,12 +246,10 @@ const NOTES = {
     ],
     main: [
         'by_model_effort rows are the only ones that measure the global harness dial',
-        'matched_cells hold the same model and skill at more than one effort (n >= 25 msgs): read the direction, not the magnitude',
+        `matched_cells hold the same model and skill at more than one effort (n >= ${MIN_MATCHED_CELL_MESSAGES} msgs): read the direction, not the magnitude`,
         'idle.text_only is the narration cost; idle.tool_call is a ping that turned out to need work',
     ],
 }
-
-const EFFORT_RANK = {low: 0, medium: 1, high: 2, xhigh: 3, max: 4}
 
 // A subagent transcript lives at <project>/<parent-session>/subagents/...; it
 // is attributed to the parent session so sessions count conversations.
@@ -245,14 +260,20 @@ function sessionOf(path) {
     return base.slice(0, 8)
 }
 
-function addCounts(into, r) {
-    into.msgs += r.msgs
-    into.out += r.out
-    into.think += r.think
-    into.think_msgs += r.think_msgs
-    into.think_chars += r.think_chars
-    into.text_chars += r.text_chars
-    into.tool_uses += r.tool_uses || 0
+function addCounts(total, counts) {
+    total.msgs += counts.msgs
+    total.out += counts.out
+    total.think += counts.think
+    total.think_msgs += counts.think_msgs
+    total.think_chars += counts.think_chars
+    total.text_chars += counts.text_chars
+    total.tool_uses += counts.tool_uses || 0
+}
+
+function addFrequencies(total, counts) {
+    for (const [key, count] of Object.entries(counts || {})) {
+        total[key] = (total[key] || 0) + count
+    }
 }
 
 function blank() {
@@ -271,6 +292,47 @@ function percentile(vals, q) {
     if (!vals.length) return 0
     const s = [...vals].sort((a, b) => a - b)
     return s[Math.min(Math.floor(s.length * q), s.length - 1)]
+}
+
+const effortRank = (effort) => EFFORT_RANK[effort] == null ? UNKNOWN_EFFORT_RANK : EFFORT_RANK[effort]
+
+function modelEffortRows(cells) {
+    const grouped = {}
+    for (const cell of cells) {
+        const key = `${cell.model}|${cell.effort}`
+        const group = grouped[key] || { ...blank(), model: cell.model, effort: cell.effort }
+        addCounts(group, cell)
+        for (const session of cell.sessions) group.sessions.add(session)
+        grouped[key] = group
+    }
+    return Object.values(grouped)
+        .sort((a, b) => a.model.localeCompare(b.model) || effortRank(a.effort) - effortRank(b.effort))
+        .map((cell) => ({
+            model: cell.model, effort: cell.effort, sessions: cell.sessions.size,
+            msgs: cell.msgs, out_tokens: cell.out, think_pct: pct(cell), think_text_ratio: ratio(cell),
+        }))
+}
+
+// Compare the same model and skill at multiple efforts, with enough messages
+// in each cell to make the direction useful.
+function matchedCells(cells) {
+    const grouped = {}
+    for (const cell of cells) {
+        if (cell.msgs < MIN_MATCHED_CELL_MESSAGES) continue
+        const key = `${cell.model}|${cell.skill}`
+        const group = grouped[key] || { model: cell.model, skill: cell.skill, efforts: [] }
+        group.efforts.push({
+            effort: cell.effort, think_pct: pct(cell), think_text_ratio: ratio(cell),
+            msgs: cell.msgs, sessions: cell.sessions.size,
+        })
+        grouped[key] = group
+    }
+    return Object.values(grouped)
+        .filter((group) => group.efforts.length > 1)
+        .map((group) => ({
+            ...group,
+            efforts: [...group.efforts].sort((a, b) => effortRank(a.effort) - effortRank(b.effort)),
+        }))
 }
 
 function summary(seg) {
@@ -306,18 +368,14 @@ function aggregate(results) {
         const sid = sessionOf(r.path)
         addCounts(seg, r)
         seg.sessions.add(sid)
-        for (const [v, n] of Object.entries(r.excluded || {})) {
-            excluded[r.kind][v] = (excluded[r.kind][v] || 0) + n
-        }
+        addFrequencies(excluded[r.kind], r.excluded)
         if (r.kind === 'subagent') {
             const role = r.role || 'other'
             roles[role] = roles[role] || blank()
             addCounts(roles[role], r)
             roles[role].sessions.add(sid)
             roleEfforts[role] = roleEfforts[role] || {}
-            for (const [e, n] of Object.entries(r.efforts || {})) {
-                roleEfforts[role][e] = (roleEfforts[role][e] || 0) + n
-            }
+            addFrequencies(roleEfforts[role], r.efforts)
             continue
         }
         sidechainDropped += r.sidechain_dropped || 0
@@ -330,47 +388,28 @@ function aggregate(results) {
         idleWorked += r.idle_worked
         active += r.active_seconds || 0
         span += r.span_seconds || 0
-        if (r.ctx_first != null) { firstCtx.push(r.ctx_first); peakCtx.push(r.ctx_peak) }
+        if (r.ctx_first != null) {
+            firstCtx.push(r.ctx_first)
+            peakCtx.push(r.ctx_peak)
+        }
         for (const c of r.cells || []) {
             const key = `${c.model}|${c.effort}|${c.skill}`
-            cells[key] = cells[key] || Object.assign(blank(), {model: c.model, effort: c.effort, skill: c.skill})
+            cells[key] = cells[key] || { ...blank(), model: c.model, effort: c.effort, skill: c.skill }
             addCounts(cells[key], c)
             cells[key].sessions.add(sid)
         }
     }
 
-    const byModelEffort = {}
-    for (const c of Object.values(cells)) {
-        const key = `${c.model}|${c.effort}`
-        byModelEffort[key] = byModelEffort[key] || Object.assign(blank(), {model: c.model, effort: c.effort})
-        addCounts(byModelEffort[key], c)
-        for (const s of c.sessions) byModelEffort[key].sessions.add(s)
-    }
-    const rank = (e) => EFFORT_RANK[e] == null ? 9 : EFFORT_RANK[e]
-    const modelEffortRows = Object.values(byModelEffort)
-        .sort((a, b) => a.model.localeCompare(b.model) || rank(a.effort) - rank(b.effort))
-        .map((c) => ({model: c.model, effort: c.effort, sessions: c.sessions.size, msgs: c.msgs, out_tokens: c.out, think_pct: pct(c), think_text_ratio: ratio(c)}))
-
-    // Same model+skill at more than one effort: the only quasi-controlled
-    // comparison observational data offers.
-    const grouped = {}
-    for (const c of Object.values(cells)) {
-        if (c.msgs < 25) continue
-        const key = `${c.model}|${c.skill}`
-        grouped[key] = grouped[key] || {model: c.model, skill: c.skill, efforts: []}
-        grouped[key].efforts.push({effort: c.effort, think_pct: pct(c), think_text_ratio: ratio(c), msgs: c.msgs, sessions: c.sessions.size})
-    }
-    const matchedCells = Object.values(grouped)
-        .filter((g) => g.efforts.length > 1)
-        .map((g) => ({model: g.model, skill: g.skill, efforts: g.efforts.sort((a, b) => rank(a.effort) - rank(b.effort))}))
-
-    const byRole = {}
-    for (const [name, c] of Object.entries(roles).sort((a, b) => b[1].out - a[1].out)) {
-        byRole[name] = {msgs: c.msgs, out_tokens: c.out, think_pct: pct(c), think_text_ratio: ratio(c), efforts: roleEfforts[name]}
-    }
+    const byRole = Object.fromEntries(Object.entries(roles)
+        .sort((a, b) => b[1].out - a[1].out)
+        .map(([name, counts]) => [name, {
+            msgs: counts.msgs, out_tokens: counts.out, think_pct: pct(counts),
+            think_text_ratio: ratio(counts), efforts: roleEfforts[name],
+        }]))
 
     const sumExcluded = (m) => Object.values(m).reduce((a, b) => a + b, 0)
-    const main = Object.assign(summary(kinds.main), {
+    const main = {
+        ...summary(kinds.main),
         excluded_no_thinking_accounting: {total: sumExcluded(excluded.main), by_version: excluded.main},
         sidechain_rows_dropped: sidechainDropped,
         operator_inputs: operator,
@@ -396,15 +435,16 @@ function aggregate(results) {
             peak_p50: percentile(peakCtx, 0.5),
             peak_max: peakCtx.length ? Math.max(...peakCtx) : 0,
         },
-        by_model_effort: modelEffortRows,
-        matched_cells: matchedCells,
-        notes: NOTES.both.concat(NOTES.main),
-    })
-    const subagent = Object.assign(summary(kinds.subagent), {
+        by_model_effort: modelEffortRows(Object.values(cells)),
+        matched_cells: matchedCells(Object.values(cells)),
+        notes: [...NOTES.both, ...NOTES.main],
+    }
+    const subagent = {
+        ...summary(kinds.subagent),
         excluded_no_thinking_accounting: {total: sumExcluded(excluded.subagent), by_version: excluded.subagent},
         by_role: byRole,
         notes: NOTES.both,
-    })
+    }
     return {main, subagent}
 }
 // TEST-END session-census-aggregate
@@ -449,7 +489,7 @@ touch -d '${cutoff}' "$TMPDIR/session-census.cutoff" && find '${root}' -name '*.
 ${SANDBOX_RULE}
 
 Return every path the command printed, one entry per path, none dropped or deduplicated. kind is "subagent" when the path contains a "/subagents/" segment, otherwise "main". If the command printed nothing, return an empty files array.`,
-    {label: 'scout:transcripts', phase: 'Scout', effort: 'low', schema: {
+    {label: 'scout:transcripts', phase: 'Scout', ...AGENT_CONFIG.scout, schema: {
         type: 'object',
         properties: {
             files: {type: 'array', items: {
@@ -536,22 +576,30 @@ const results = await pipeline(files,
     (f, _item, i) => agent(extractPrompt(f), {
         label: `extract:${f.kind}:${i + 1}/${files.length}`,
         phase: 'Extract',
-        effort: 'low',
+        ...AGENT_CONFIG.extract,
         schema: EXTRACT_SCHEMA,
     }),
-    (r, f) => (r ? Object.assign(r, {path: f.path, kind: f.kind}) : null),
+    (r, f) => (r ? { ...r, path: f.path, kind: f.kind } : null),
 )
 
-const usable = []
-for (let i = 0; i < files.length; i++) {
-    const r = results[i]
-    if (!r) { log(`session-census: DROPPED ${files[i].path} (extract agent returned nothing)`); continue }
-    if (r.error) { log(`session-census: DROPPED ${files[i].path} (jq: ${String(r.error).slice(0, 200)})`); continue }
-    const missing = COUNT_FIELDS.filter((k) => typeof r[k] !== 'number')
-    if (missing.length) { log(`session-census: DROPPED ${files[i].path} (extract returned no ${missing.join(', ')})`); continue }
-    if (r.last_ts && r.last_ts < cutoff) log(`session-census: ${files[i].path} mtime is newer than the cutoff but its last row (${r.last_ts}) is not; counted anyway, as the original did`)
-    usable.push(r)
+function usableExtract(result, file) {
+    if (!result) {
+        log(`session-census: DROPPED ${file.path} (extract agent returned nothing)`)
+        return false
+    }
+    if (result.error) {
+        log(`session-census: DROPPED ${file.path} (jq: ${String(result.error).slice(0, ERROR_TEXT_CHARS)})`)
+        return false
+    }
+    const missing = COUNT_FIELDS.filter((key) => typeof result[key] !== 'number')
+    if (missing.length) {
+        log(`session-census: DROPPED ${file.path} (extract returned no ${missing.join(', ')})`)
+        return false
+    }
+    if (result.last_ts && result.last_ts < cutoff) log(`session-census: ${file.path} mtime is newer than the cutoff but its last row (${result.last_ts}) is not; counted anyway, as the original did`)
+    return true
 }
+const usable = files.flatMap((file, i) => usableExtract(results[i], file) ? [results[i]] : [])
 log(`session-census: ${usable.length}/${files.length} transcripts extracted`)
 
 const census = aggregate(usable)

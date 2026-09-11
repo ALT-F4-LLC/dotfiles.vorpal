@@ -77,6 +77,7 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
     ' "$WAVE"
 }
 
+extract configuration > "${WORK}/configuration.js" || fatal "bad or missing TEST markers for configuration"
 extract park-signals       > "${WORK}/park.js"     || fatal "bad or missing TEST markers for park-signals"
 extract target-envelope    > "${WORK}/envelope.js" || fatal "bad or missing TEST markers for target-envelope"
 extract fix-round-ancestry > "${WORK}/ancestry.js" || fatal "bad or missing TEST markers for fix-round-ancestry"
@@ -85,6 +86,7 @@ extract stage-ladder       > "${WORK}/ladder.js"   || fatal "bad or missing TEST
 grep -q 'runLane' "${WORK}/ladder.js" || fatal "stage-ladder region does not contain runLane"
 
 {
+    cat "${WORK}/configuration.js"
     cat <<'JS'
 let rows = []
 let input = {}

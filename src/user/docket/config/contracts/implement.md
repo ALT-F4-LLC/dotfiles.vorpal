@@ -1,6 +1,6 @@
 ---
 node: implement
-version: 11
+version: 12
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
@@ -57,7 +57,8 @@ checks. Emit an already-satisfied change-summary, identify verified pre-existing
 fix commits separately from the candidate SHA, and state any unavailable historical
 attribution. Do not invent a pre-fail, recreate the fix, or create an empty commit
 merely to show activity. Use the brief's hand-back procedure for the existing
-candidate; this outcome still goes through the normal review fanout. If warranted
+candidate; this outcome still goes through the workflow's normal downstream
+review and verification steps. If warranted
 regression coverage changes the tree, commit and report those changes normally.
 
 Otherwise, run the design search before writing production code: weigh
@@ -81,9 +82,8 @@ For an unchanged candidate, verify the existing SHA under the hand-back procedur
 Verify that the candidate contains all intended task changes and excludes unrelated
 work. Bind the reported evidence to this final candidate: if hooks, generators,
 or later edits change relevant inputs, rerun affected checks and reconcile the
-commit before hand-back. Do not
-substitute an earlier fix commit for the candidate SHA or omit required changes
-left outside the commit.
+commit before hand-back. Do not substitute an earlier fix commit for the
+candidate SHA or omit required changes left outside the commit.
 
 # Emit
 `change-summary` (markdown): the first line is the exact full candidate commit SHA

@@ -1,6 +1,6 @@
 ---
 node: synthesize-findings
-version: 17
+version: 18
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -205,9 +205,10 @@ Every entry carries non-empty `id` and `title`, and a valid `severity`:
   follows exactly the same order; a one-member cluster has one member ID.
 - A historical-only carry or scalar restatement uses the scalar and omitted
   `member_ids` described under Rounds. Never replay an unresolved hold this way.
-- `member_ids` is the only linkage field. Do not emit the retired spellings
-  `members`, `cluster_members`, or `member_findings`, or synthesize engine-owned
-  flags such as `held` and `operator_resolved`.
+- `member_ids` is the only linkage field. Do not emit `members`, which belongs
+  to the aggregate's output, or the retired `cluster_members` and
+  `member_findings`, or synthesize engine-owned flags such as `held` and
+  `operator_resolved`.
 
 Every entry carries `file`, `line`, and `evidence`. For active members, choose
 the highest-severity member; break ties by source arrival order. Copy all three

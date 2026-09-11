@@ -1,11 +1,11 @@
 ---
 fragment: test-code-boundaries
-version: 3
+version: 4
 ---
 # When the change under review is test code
 
-A test-heavy or test-only diff receives review from every seat dispatched by
-the fanout. Each seat completes its review under its own charter and returns
+A test-heavy or test-only diff receives the same review from every seated
+reviewer. Each seat completes its review under its own charter and returns
 its normal result, including no findings when appropriate. No seat drops its
 dimension or defers it wholesale to judge-testing because production code is
 absent. Code-review seats examine test source; design-qa follows the built-surface
@@ -46,9 +46,9 @@ findings need not concern separate defects or separate harms.
 
 Author each supported finding with its own evidence and severity. Let
 synthesize-findings cluster findings that describe the same underlying defect,
-preserving the contributing seats and their severities under its aggregation
-contract. Sharing a file or using similar words alone does not establish that
-two findings describe the same defect.
+preserving the contributing seats and their severities under the clustering
+and aggregation contracts. Sharing a file or using similar words alone does not
+establish that two findings describe the same defect.
 
 If your only supported claim is "this branch is untested", "coverage here is
 thin", "this needs a negative control", or "the suite stays green without the

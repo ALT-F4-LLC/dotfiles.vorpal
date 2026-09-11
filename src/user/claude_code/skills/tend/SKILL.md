@@ -38,8 +38,9 @@ question — and the pre-existing backlog is fair game, not just issues that
 show up after you started watching (operator ruling). An issue with no
 routing label, or with `route-run`, `route-direct`, or `route-loop`, is not
 tend's: grooming, a run, the operator's own brief, or a loop owns it. Skip
-it silently. Ignore issues already `in-progress` or `review` — you
-put them there yourself in a prior tick (see §2's blocked case).
+it silently. The query is `-s backlog -s todo`, so an issue you moved to
+`in-progress` or `review` in a prior tick never reappears (see §2's blocked
+case).
 
 Exclude two more kinds before picking — this queue isn't tend's alone:
 
@@ -52,9 +53,11 @@ Exclude two more kinds before picking — this queue isn't tend's alone:
   the issues it works, so a populated `assignee` means someone or something
   else already has it. Skip it.
 
-- **Empty:** nothing to do. `ScheduleWakeup({delaySeconds: 150-180,
-  noop: true, ...})` and stop. No "no new issues" message — a quiet tick is
-  not an event.
+- **Empty:** nothing to do. Under self-paced `/loop /tend`, arm
+  `ScheduleWakeup({delaySeconds: 150-180, noop: true, ...})` and stop; under
+  an explicit interval the cron firing supplies the next tick, so stop; invoked
+  bare, stop and say the pass is done. No "no new issues" message — a quiet
+  tick is not an event.
 - **Non-empty:** sort by id ascending (lowest = oldest = created first), take
   the first one, tend it (§2), then **loop back to re-poll immediately** —
   don't schedule a wakeup between queued issues. Only go quiet once a poll
@@ -183,6 +186,6 @@ blocked (step 4 of §2).
 
 ## Stop
 
-The loop ends when the operator stops it (`ScheduleWakeup({stop: true})`, or
-simply telling you to stop) or ends the `/loop`. There is no other terminal
+The loop ends when the operator stops it (`ScheduleWakeup({stop: true})`
+under self-pacing, or telling you to stop) or ends the `/loop`. There is no other terminal
 condition — an empty queue is a rest, not a finish.

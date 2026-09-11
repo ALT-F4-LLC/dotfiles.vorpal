@@ -59,8 +59,8 @@ Rules you must not fight:
   as a proposed split, one criterion per condition, and their answer is
   recorded verbatim — never split silently. A verify seat judges a criterion
   as written, so every case it bundles is one more fix round for the fixer
-  to discover: one RUN-98 issue spent four rounds on one criterion whose two
-  disjuncts each hid a further case.
+  to discover: one issue on a past run spent four rounds on one criterion
+  whose two disjuncts each hid a further case.
 - **A criterion that encodes the worse design is a reframe, put to the
   operator before it is recorded.** Verbatim copying fixes wording, not
   design. When the read shows the stated done-ness would force a mechanism
@@ -193,8 +193,8 @@ Project resolves from cwd's git identity, same as every other docket verb.
 A `VALIDATION_ERROR` naming no project, or no store reachable, means this
 repo isn't bound — say so and stop. `--limit 1000` is not optional: `issue
 list` caps at 50 and `next` at 10 by default, and neither output flags the
-truncation — a 108-issue backlog was surveyed as 50 and reported complete
-(docket-groom/tend fix). If any result reaches the requested limit, use the
+truncation — a 108-issue backlog was surveyed as 50 and reported complete;
+the same limit binds `/docket-groom` and `/tend`. If any result reaches the requested limit, use the
 CLI's help-verified pagination or unlimited form to finish the survey before
 claiming coverage. Do not infer blocking from absence in a truncated result.
 `docket next` identifies issues ready NOW, with no incomplete `depends_on`
@@ -429,10 +429,10 @@ and parallel width decide between equally large feasible rosters.
    record it as a dependency, and say so in the proposal. Bound anyway, it
    can never be `met`: at best verify reports it `unmet-out-of-scope` and a
    vote passes it with a filing, at worst it routes `fix-loop` to the cap and
-   parks on every run that carries it. One RUN-98 issue carried such an AC
-   (its remedy filed against the engine at review@0) through two re-plans
-   and four rounds, and a second issue on the same run filed the same shape
-   as a gap.
+   parks on every run that carries it. One issue carried such an AC (its
+   remedy filed against the engine at an early review round) through two
+   re-plans and four rounds, and a second issue on the same run filed the
+   same shape as a gap.
 
 5. **Forecast cost; fit only an explicit limit.** Size every proposed issue
    by §3's arithmetic (the bound workflow's expected-cost floor with
@@ -505,8 +505,9 @@ the maximum complete run first and recommended, a parallel-only or
 priority-first roster when it offers a material tradeoff, and a smaller
 focused roster if useful. Show actual issue counts, first-wave widths, wave
 counts, cost forecasts, budget policies, and what each leaves out. Do not
-invent a small default batch size just to fill the table. If the operator already chose a focused
-or parallel-only run, recommend the best roster within that choice.
+invent a small default batch size to fill the table. If the operator already
+chose a focused or parallel-only run, recommend the best roster within that
+choice.
 
 The single-select confirmation offers recording the recommended roster with
 its exact count and Unlimited or explicit cap, recording a named displayed
@@ -520,7 +521,7 @@ unavailable prerequisites, cycles, everything claimed or run-included,
 nothing run-ready, or no complete bundle within an explicit cap — and stop.
 `/docket-groom` is the skill for a backlog that is full but not ready, and you
 name it rather than grooming here. An empty ready-now set calls for inspecting
-the blockers; do not label those issues simply absent from the backlog.
+the blockers; do not report those issues as merely absent from the backlog.
 
 **On "record", go to §3 with the batch as the roster.** The differences from
 request intake are exactly these, and nothing else in §3 relaxes:
@@ -556,11 +557,11 @@ section, not an escape from it. Run it, then re-run §5's presentation with
 the run's CURRENT state (roster, budget, First-wave width) before yielding
 the turn, even if a new open item surfaced along the way — name that item as
 a question inside the presentation, not as the last line of the message with
-nothing else restated. A live bare-`/docket-plan` session (agentic-services,
-RUN-67) reshaped a run's roster, fixed a blocking label, raised its budget,
-then ended mid-question about a newly-surfaced scope gap with no restated
-run state and no re-presentation — leaving the operator to infer RUN-67's
-actual status rather than being told it. Trailing off there is the same
+nothing else restated. A live bare-`/docket-plan` session once reshaped a
+run's roster, fixed a blocking label, raised its budget, then ended
+mid-question about a newly-surfaced scope gap with no restated run state and
+no re-presentation — leaving the operator to infer the run's actual status
+rather than being told it. Trailing off there is the same
 failure §5 exists to prevent for the original recording.
 
 ## 2. Read before you decompose
@@ -728,8 +729,7 @@ is the bound workflow's source — `grep -n expected_cost
 with each `fanout` step's cost multiplied by its sibling count (`grep -n
 'fanout =' ~/.docket/config/workflows/<wf>.toml` gives the list; the tomls
 annotate those lines `# per expanded sibling`). Standard-change's review is
-0.60 × four judges = 2.40 — three in the `review` fanout plus the
-when-gated `review-security` — security-change's and ui-change's are 0.60 ×
+0.60 × three judges = 1.80, security-change's and ui-change's are 0.60 ×
 four, spec-doc's 0.60 × three, and spec-project's `spec-author` fans out
 SEVEN ways at 1.00 apiece. The per-track total is the sum YOU read and never
 a figure copied out of this paragraph: these tomls are versioned (`grep
@@ -748,8 +748,10 @@ guessed: for EVERY admitted issue, its bound workflow's `rework_round_cost`
 Both factors are in the pinned definition. `grep -n max_fix_loops
 ~/.docket/config/workflows/<wf>.toml` gives the bound — it lives on the step
 that OWNS the loop, which is `reconcile` on standard-change, ui-change,
-security-change, spec-doc and spec-project, `verify-ac` on docs-only and
-disposition, and the `report-vote` vote on investigation. The round is the
+security-change, spec-doc and spec-project, `review` on small-change,
+`verify-ac` on docs-only, disposition and trivial-change, and the
+`report-vote` vote on investigation. trivial-change is the one track that
+declares `max_fix_loops = 1`. The round is the
 `loop = true` step plus everything replayed from its `after_loop` re-entry
 point up to that owning step — on the change tracks exactly the fix +
 judges + synthesize-findings arithmetic the floor already does. Read the
@@ -761,13 +763,14 @@ step at all, and spec-doc's five `revise-*` variants are mutually exclusive
 `when`s — exactly one fires, so its round carries 1.50 once, not five times.
 
 The corpus as it reads today, round × declared loops = reserved per issue:
-standard-change 1.0 + 2.40 + 0.60 = 4.0 × 2 = 8.0; ui-change 4.0 × 2 = 8.0;
+standard-change 1.0 + 1.80 + 0.60 = 3.4 × 2 = 6.8; ui-change 4.0 × 2 = 8.0;
 security-change 1.0 + 2.40 + 0.60 = 4.0 × 3 = 12.0; spec-doc 1.50 + 1.80 + 0.60 = 3.9 × 2 = 7.8;
 spec-project (`revise-spec` fans out seven ways at 0.70) 4.90 + 1.80 + 0.60 =
 7.3 × 2 = 14.6; docs-only 0.60 + 0.60 + verify-ac 0.40 = 1.6 × 2 = 3.2;
-disposition 0.40 + verify-ac 0.40 = 0.8 × 2 = 1.6; investigation
-`revise-investigation` 0.40 alone, its re-entry being a vote that costs
-nothing, × 2 = 0.8. Recompute
+disposition 0.40 + verify-ac 0.40 = 0.8 × 2 = 1.6; small-change 1.0 +
+review 0.60 = 1.6 × 2 = 3.2; trivial-change 1.0 + verify-ac 0.50 = 1.5 × 1 =
+1.5; investigation `revise-investigation` 0.40 alone, its re-entry being a
+vote that costs nothing, × 2 = 0.8. Recompute
 them from the tomls rather than trusting this list — it is a worked example
 of the read, not a substitute for it, and every one of these files is
 versioned.
@@ -847,13 +850,13 @@ the ACs in the body.
 
 **Keep the full feasible scope in one run; carve for wide, safe waves.**
 Include every known unit that fits the agreed constraints, even when it must
-follow another unit. Do not split the work into smaller runs simply because
-all issues cannot start together. Prefer independent issues with narrow,
+follow another unit. Do not split the work into smaller runs because all
+issues cannot start together. Prefer independent issues with narrow,
 honest scopes when they own distinct acceptance criteria. When a draft spans
 several prefixes with separable ACs, split along those boundaries and budget
 each resulting issue's full workflow and rework allowance.
 
-Never split one cohesive edit or manufacture a criterion just to increase
+Never split one cohesive edit or manufacture a criterion to increase
 the count. Independent units that touch the same file may share a run only
 when their real dependencies and the engine's verified serialization make
 that safe; do not rely on claim failures to order them. Keep every scope
@@ -875,9 +878,11 @@ planned width is not a guarantee of runtime capacity.
 record it.** Binding is exactly-one-match over the corpus's `[match]` blocks
 and every one of them discriminates on labels alone (§2): `standard-change` is
 the baseline that matches any issue carrying NONE of the variant labels, and
-each variant binds on exactly one — `ui`, `docs-only`, `investigation`,
-`security-change`, `spec-doc`, `spec-project`, and the two size labels,
-`small` (small-change) and `trivial` (trivial-change). So a
+each variant binds on its own label or labels — `ui`, `docs-only`,
+`investigation`, `disposition`, `spec-doc`, `spec-project`, any of
+`security-change`, `security-load-bearing`, or `security` (the same set as
+policy's `[security].labels`), and the two size labels, `small`
+(small-change) and `trivial` (trivial-change). So a
 missing variant label does not fail — it binds the WRONG workflow, exactly one
 match, and the engine's zero-or-several refusal structurally cannot see it: no
 scope warning, no lint, nothing downstream flags it. Before recording, name

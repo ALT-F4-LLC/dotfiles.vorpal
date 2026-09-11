@@ -22,7 +22,7 @@ quota. Identifying a gap or listing a question is not resolving it.
 
 Run this skill inline in the main session. Keep the survey, grooming ledger,
 edits, proposal gate, and final report in this session; do not delegate the
-pass or its approval gate to a subagent. Section 4 requires the main
+pass or its approval gate to a subagent. §4 requires the main
 session's `AskUserQuestion` tool. Do not rely on a subagent to ask the
 operator, send a live message, or arrange a later handoff.
 
@@ -53,7 +53,8 @@ Rules you must not fight:
   the relevant `--help`.
 - **Safe edits are yours; approval-gated edits are not.** Labels, priority,
   comments, field fills, and parenting an unparented retained issue to an
-  existing epic apply directly subject to §1's exclusions.
+  existing epic apply directly subject to §1's exclusions and §3's rule on
+  eligibility-narrowing hold labels.
   Closures, merges, changes to existing requirements or relations, epic
   creation, moving an issue between parents, and
   edits rerouted by those exclusions go through §4;
@@ -82,7 +83,7 @@ survey it once.
 Run these commands from each project's own checkout:
 
 ```bash
-docket issue list --json --limit 1000 -s backlog -s todo -s in-progress -s review
+docket issue list --json=v2 --limit 1000 -s backlog -s todo -s in-progress -s review
 docket run status --active --json
 ```
 
@@ -117,7 +118,7 @@ Two kinds of issue are in scope to read but not yours to freely edit — this
 queue isn't docket-groom's alone:
 
 - **Run-included.** For each run `docket run status --active --json`
-  returns, `docket issue list --run <ref> --json --limit 1000` names that
+  returns, `docket issue list --run <ref> --json=v2 --limit 1000` names that
   run's roster. An open issue on any of those rosters belongs to a
   docket-plan/docket-run session, even while the run is parked.
 - **Claimed.** Any issue with a non-empty `assignee` — someone or something
@@ -131,7 +132,7 @@ route that protected issue's label edit through §4 too.
 
 ## 2. Read and judge
 
-`docket issue show <id> --json` for every surveyed issue — description,
+`docket issue show <id> --json=v2` for every surveyed issue — description,
 acceptance criteria, comments, labels, relations. Build one ledger covering
 every issue, including issues with no hygiene defects. Record its owning
 project and store, ID, value decision, one-sentence reason, evidence

@@ -1,6 +1,6 @@
 ---
 node: threat-model
-version: 6
+version: 7
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -162,6 +162,8 @@ and pending risk decisions remain explicit in an otherwise complete model.
 Use the brief's gap and completion protocol. In Docket's gap-only completion,
 put supported partial analysis in the gap body and leave the declared
 `threat-model` body empty: a nonempty model plus a gap follows normal completion
-and does not park the step. Do not emit an incomplete model as a completed
+and does not park the step. An accepted gap-only completion parks the step
+`waiting-human`; report a parked state only after confirmation. Do not emit an
+incomplete model as a completed
 artifact. If the brief provides no usable protocol for the blocked outcome,
 return the mismatch to the caller without inventing a command or status.

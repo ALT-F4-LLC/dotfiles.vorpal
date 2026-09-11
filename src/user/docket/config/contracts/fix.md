@@ -1,6 +1,6 @@
 ---
 node: fix
-version: 16
+version: 17
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
@@ -185,8 +185,8 @@ point. Build and test results alone do not establish its published forms.
 Run the repository's completion gates declared by the workflow, resolving
 each name to its command with `docket trust list` per `completion-gates`,
 plus the required build and test commands. One applicable run may satisfy
-overlapping obligations; do not
-repeat it merely to fill another heading. Repeat affected checks after
+overlapping obligations; do not repeat it merely to fill another heading.
+Repeat affected checks after
 relevant changes or when a failure or unresolved question warrants it.
 Record actual commands, exit statuses, decisive output, and retained log
 references under the evidence rules, including blocked, skipped, or cached
@@ -204,8 +204,8 @@ validated by the cited evidence; account for relevant subsequent changes and
 uncommitted files. Resolve the final SHA from the worktree, never from memory.
 Do not invent a commit or use a placeholder when no valid integration target
 exists. Use the supplied gap procedure for a blocked handoff. When no code
-change is warranted, use an existing candidate commit only as the archetype's
-no-change procedure permits.
+change is warranted, use an existing candidate commit only as the brief's
+hand-back procedure permits.
 
 # Emit
 `change-summary` (markdown). Its FIRST LINE is the bare worktree commit SHA
@@ -237,7 +237,7 @@ required by the executor-write obligations. Keep the body concise and include:
   references, and blockers to candidate completion.
 - **Known limits and gaps:** unresolved obligations, decisions or evidence
   needed, and follow-up references. Preserve partial work and evidence through
-  the archetype's recording protocol when gaps prevent ordinary handoff.
+  the brief's gap procedure when gaps prevent ordinary handoff.
 
 Do not restate the diff; review receives the engine's delta. Preserve the
 obligation IDs, declarations, candidate identity, dispositions, evidence

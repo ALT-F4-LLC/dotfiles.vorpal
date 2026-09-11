@@ -1,6 +1,6 @@
 ---
 node: investigate
-version: 5
+version: 6
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -36,7 +36,7 @@ authority.
 
 Do not conduct a general diff review; `judge-correctness` owns that work. Inspect
 relevant changes when they help explain this failure. Route security failures or
-discoveries to `threat-model` or the security judges without investigating
+discoveries to `threat-model` or `judge-security` without investigating
 exploitability.
 
 # Method

@@ -1,6 +1,6 @@
 ---
 node: ux-spec-author
-version: 9
+version: 10
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
@@ -27,7 +27,9 @@ transitions to adjacent surfaces without absorbing their specifications.
 
 You do not implement the surface, decompose work into issues, grant approval, or
 review the shipped result. Follow the required document structure and copy
-contracts; independent gates run the structure and copy verification checks.
+contracts. The downstream `doc-validate` and `reserved-name-check` gates check
+their implemented rules; passing them does not establish that the required
+structure or the copy contracts are satisfied.
 Apply included fragments within this authoring role: their implementation,
 repair, and delivered-output verification instructions do not expand it.
 

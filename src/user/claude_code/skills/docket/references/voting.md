@@ -74,8 +74,10 @@ docket vote unlink DKT-V1 --json=v2 --issue DKT-1
 `vote commit` records an authorized out-of-band decision and bypasses the
 normal workflow threshold. It is not a routine finalization step after agent
 casts. `vote close` retires an open proposal whose decision happened another
-way; use it only after that actual decision. Neither verb grants authority to
-override a human-only matter.
+way; use it only after that actual decision. A proposal an engine vote step
+opened refuses `vote close` (`CONFLICT`); move that run with `docket step
+resolve` instead. Neither verb grants authority to override a human-only
+matter.
 
 **A vote step may add a `threshold`, evaluated over the cast set once an
 approved tally comes back — before the step is allowed to route `pass`**.

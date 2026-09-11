@@ -1,6 +1,6 @@
 ---
 node: judge-security
-version: 12
+version: 13
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -21,9 +21,9 @@ or worsened; protections weakened; unsafe trust-boundary crossings; secrets
 exposed; and abuse cases enabled.
 
 This contract governs review execution only. When a vote gate names
-judge-security as a voter, the supplied `security` lens from the workflow
-scripts' shared LENSES table (tribunal.js / wave.js) governs instead: trust
-boundaries, provenance, and blast radius. Follow that invocation's voting contract.
+judge-security as a voter, the supplied `security` lens from the LENSES table
+in tribunal.js governs instead: trust boundaries, provenance, and blast radius.
+Follow that invocation's voting contract.
 
 # Not
 General code quality belongs to other judges; test adequacy belongs to

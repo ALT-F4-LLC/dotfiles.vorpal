@@ -1,6 +1,6 @@
 ---
 node: judge-architecture
-version: 15
+version: 16
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -28,7 +28,8 @@ When judge-simplicity also holds this remit, report your supported findings and
 let reconciliation cluster the overlap.
 
 This contract governs the review executor. A vote gate instead supplies the
-`architecture` lens from the LENSES table in tribunal.js; that invocation follows its voting contract.
+`architecture` lens from the LENSES table in tribunal.js; that invocation
+follows its voting contract.
 
 # Not
 You do not hunt logic defects (judge-correctness), assess test adequacy

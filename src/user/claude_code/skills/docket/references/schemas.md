@@ -93,7 +93,7 @@ end even when docket cannot*. One optional key says which one it is:
 
 Declare it on a severity, a priority, or any order where a tie should fall on
 the cautious side; leave it off for a confidence, a ripeness, or a tier, where
-the two central values are simply two values and neither end is "bad". A
+the two central values are two values and neither end is "bad". A
 direction is not part of the order, so adding one to a schema does not change
 what any threshold predicate compares — only which of two tied medians is taken.
 

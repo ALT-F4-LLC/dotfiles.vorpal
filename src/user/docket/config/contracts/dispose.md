@@ -1,6 +1,6 @@
 ---
 node: dispose
-version: 8
+version: 9
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
@@ -73,9 +73,9 @@ do not claim to have closed it again. An unrelated or unexplained closure requir
 a `gap` before writing.
 
 When a new or corrected comment is needed, post with
-`docket issue comment <CARRIER> ...`. Capture the returned identifier and read back
-the saved comment to confirm its target and full text. Only after that confirmation
-and the closure conditions hold, close an open carrier with
+`docket issue comment add <CARRIER> ...`. Capture the returned identifier and
+read back the saved comment to confirm its target and full text. Only after that
+confirmation and the closure conditions hold, close an open carrier with
 `docket issue close <CARRIER>`, then read back its state. Report the observed state
 instead of inferring success from an issued command. After a failed or ambiguous
 write, reconcile the saved state before any authorized retry; if the outcome

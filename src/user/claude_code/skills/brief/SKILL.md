@@ -299,6 +299,10 @@ questions do not need to be repeated.
   brief and Loop details. Ensure the repeated task preserves scope,
   exclusions, constraints, per-pass action, and the stop/cancel policy.
   Report the schedule actually established and any relevant lifetime limit.
+- **`/tend`:** tend takes work from the `route-tend` queue, not from an
+  `args` payload. Ensure a `route-tend`-labeled issue carrying the brief's
+  scope and acceptance criteria exists, filing one if it does not, and
+  report that the work waits for the next tend tick.
 - **Another orchestration skill:** Invoke its available entry point with
   the confirmed brief or handoff and follow its workflow.
 - **Direct:** Perform the work under the confirmed brief without creating

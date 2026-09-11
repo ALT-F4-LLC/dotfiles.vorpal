@@ -1,6 +1,6 @@
 ---
 fragment: completion-gates
-version: 6
+version: 7
 ---
 # Completion gates
 
@@ -27,8 +27,9 @@ unavailable prerequisites, or failures requiring broader changes with their evid
 Do not record while a required gate remains unsatisfied unless the workflow explicitly
 provides an exception. A failure reproduced on the base does not itself waive a gate.
 
-The engine runs the gates again at record time, and a failure there parks the run on
-the operator. Repeated test runs do not substitute for a missing gate: the implement
+The engine runs the gates again at record time, and a failure there parks the step;
+the conductor resolves it under the run's standing rulings or escalates it to the
+operator. Repeated test runs do not substitute for a missing gate: the implement
 step that ran its tests six times still parked on one overlong line because it never
 ran self-hygiene.
 
@@ -60,10 +61,12 @@ directory. Use an archive only when the gate supports exported source trees:
 archives omit Git metadata and submodule contents, and export attributes can omit
 or alter tracked files.
 
-Set `STEP_PRIVATE_TMP` to your existing private temporary directory and
-`STEP_BASE_COMMIT` to the recorded starting commit, then run from your worktree:
+Allocate a private directory for this attempt beneath the literal `$TMPDIR`, set
+`STEP_PRIVATE_TMP` to it and `STEP_BASE_COMMIT` to the recorded starting commit,
+then run from your worktree:
 
 ```sh
+STEP_PRIVATE_TMP=$(mktemp -d "$TMPDIR/step.XXXXXX") &&
 gate_baseline_dir=$(mktemp -d "$STEP_PRIVATE_TMP/base.XXXXXX") &&
 git archive --format=tar \
   --output="$gate_baseline_dir/base.tar" "$STEP_BASE_COMMIT" &&

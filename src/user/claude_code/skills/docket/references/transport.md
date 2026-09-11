@@ -348,7 +348,8 @@ interactive form; missing required fields are always a hard
 ---
 ## Workflow: Watch Mode
 
-Any watch-eligible command (see table above) can be re-run on an interval
+Any watch-eligible command (see [`--watch` eligibility](#--watch-eligibility))
+can be re-run on an interval
 instead of polling manually:
 
 ```bash
@@ -357,8 +358,9 @@ docket board --watch                       # human-mode live board, default 2s i
 docket vote result DKT-V1 --watch --interval 1s
 ```
 
-`--watch` is rejected with `VALIDATION_ERROR` on any write command (e.g.
-`docket issue create --watch` fails immediately). Watch mode runs until
+`--watch` is rejected with `VALIDATION_ERROR` on any command off the
+allowlist, write or read-only (`docket issue create --watch` and
+`docket project list --watch` both fail immediately). Watch mode runs until
 `Ctrl-C` (SIGINT) or SIGTERM. In an agent session, give a watch an explicit
 stop condition and keep it off a blocking foreground tool call when the user
 needs continued interaction. Do not start indefinite watching for a one-time

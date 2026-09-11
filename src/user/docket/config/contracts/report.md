@@ -1,6 +1,6 @@
 ---
 node: report
-version: 5
+version: 6
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -70,8 +70,9 @@ sources. Preserve material exclusions and inaccessible evidence. A documentation
 search does not add runtime coverage. Where coverage is unspecified, say so;
 do not infer what neither input examined from silence.
 
-Research omitted by the conditional fanout is normal and creates no gap. With
-no research inputs, restate the investigation for the reader, preserving all
+Research omitted by the conditional research step is normal and creates no
+gap. With no research inputs, restate the investigation for the reader,
+preserving all
 material findings, evidence, alternatives, limitations, and recommendations.
 Condense repetition and chronology without losing anything needed to assess or
 act on the result. An expected or supplied but unreadable research artifact is

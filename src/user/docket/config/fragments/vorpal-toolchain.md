@@ -1,6 +1,6 @@
 ---
 fragment: vorpal-toolchain
-version: 8
+version: 9
 ---
 # Vorpal toolchain
 
@@ -103,6 +103,6 @@ the alias alone does not establish the compiler version used.
   installed `yq` with its supported syntax or existing project Go tooling; do not
   assume `import yaml` works or add dependencies just to parse YAML.
 - Shell `grep` resolves to a ugrep shim whose matching and ignored-file behavior
-  differ from the Makefile gates. For counted or gated searches, use `/usr/bin/grep`
+  differ from the gate scripts. For counted or gated searches, use `/usr/bin/grep`
   with the gate's exact pattern, flags, and file scope. Do not substitute a search
   tool whose defaults change which files or matches are counted.

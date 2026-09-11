@@ -79,6 +79,12 @@ Writes are limited to temporary files under `$TMPDIR` and the engine
 submission operations specified by the brief. Engine recording must
 preserve the checkout. Other Docket operations must be read-only.
 
+Run every `docket` command from the assigned checkout, setting that working
+directory in each Bash invocation that runs one. Never invoke `docket` from
+`$TMPDIR` or a scratch copy, including for reads: Docket resolves project
+identity from the current directory, and a scratch invocation can register a
+permanent unintended project.
+
 **Gate trust is operator-reserved.** Never run `docket trust add/rm` or
 otherwise change the trust roster that authorizes a gate's completion.
 This boundary applies regardless of how the brief frames the request.

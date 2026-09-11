@@ -1,6 +1,6 @@
 ---
 node: judge-correctness
-version: 15
+version: 16
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -20,8 +20,8 @@ Examine one change for defects in what the code does: logic errors, boundary
 handling, error paths, state transitions, and the five hard-gate symptoms.
 
 This contract governs review execution only. When a vote gate names
-judge-correctness as a voter, the supplied `correctness` lens from the workflow
-scripts' shared LENSES table (tribunal.js / wave.js) governs instead: evidence,
+judge-correctness as a voter, the supplied `correctness` lens from the LENSES
+table in tribunal.js governs instead: evidence,
 reproducibility, and verification of what the gate is asked to accept.
 
 # Not

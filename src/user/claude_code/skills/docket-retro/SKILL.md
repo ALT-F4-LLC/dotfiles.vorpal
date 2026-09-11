@@ -124,7 +124,8 @@ A rule exists iff its threshold is set, and a threshold sized from one repo's
 runs belongs on that project's override — `--global` only for a default every
 project should inherit. **Thresholds are store state, not shipped config** —
 the corpus sets none, so a fresh or reset store has none either, and a corpus
-workflow naming a rule (today `security-acceptance` and `doc-acceptance`)
+workflow naming a rule (today `tribunal`, `security-acceptance`, and
+`doc-acceptance`)
 fails `docket workflow lint` with `vote_rule "<name>" is not registered` until
 the `config set` above runs. Read `docket config get
 vote.rule.<name>.threshold` before assuming a rule exists; empty means the job
@@ -244,7 +245,7 @@ tally you have condensed is not one. Only what they approve is applied.
 A docket-retro that proposes nothing because five runs went cleanly is a correct
 docket-retro — say so rather than manufacturing work, and convene no panel to hear it.
 
-Never propose a change that adds manual upkeep for the developer; that violates
+Never propose a change that adds manual upkeep for the operator; that violates
 zero-touch on its face. The answer is config or engine, not a step in someone's
 routine.
 

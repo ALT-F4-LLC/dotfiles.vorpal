@@ -73,9 +73,8 @@ docket issue delete DKT-1 --json=v2 --force  # cascade-delete issue + all sub-is
 docket issue delete DKT-1 --json=v2 --orphan # delete issue, promote sub-issues to root
 ```
 
-Valid `--status` values: `backlog`, `todo`, `in-progress`, `review`, `done`.
-Valid `--priority` values: `none`, `low`, `medium`, `high`, `critical`.
-Valid `--type`/`-T` values: `task`, `bug`, `feature`, `epic`, `chore`.
+Valid `--status`, `--priority`, and `--type`/`-T` values are listed under
+[Enum Reference](#enum-reference).
 
 List and inspect:
 
@@ -234,6 +233,7 @@ docket import backup.json --json=v2                  # default: requires an EMPT
 is a `CONFLICT`.
 
 ---
+
 ## Enum Reference
 
 Transcribed from `internal/model/issue.go`, `relation.go`, `proposal.go`
@@ -253,6 +253,8 @@ Transcribed from `internal/model/issue.go`, `relation.go`, `proposal.go`
 `docket doc`'s `--type`/`-T` and `--status`/`-s` are **free-form strings**
 with no enum validation in the CLI layer — pick a project convention (e.g.
 `tdd`, `adr`, `ux`) and use it consistently.
+
+---
 
 ## ID Formats
 

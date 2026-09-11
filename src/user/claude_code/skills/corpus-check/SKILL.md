@@ -41,7 +41,7 @@ confined to files the diff touched.
 Run `just crossref-check` first, from the repository root. This is fast,
 free of judgment calls, and catches dead paths, dead relative links and
 heading anchors, dead `/docket-*` references and skill names in a
-description, stale schema versions, undeclared workflow
+description, schema references with no file on disk, undeclared workflow
 executors, gate names with no `just` recipe or `PROJECT_GATES` row, bad
 routing labels, and name/stem mismatches — read `.docket/bin/crossref-check`
 if you need the exact rule set.
@@ -71,8 +71,9 @@ Workflow({ scriptPath: "<absolute installed path to corpus-check.js>", args: {si
 ```
 
 This fans out one agent per file over both trees (sharded by line range for
-any file over roughly 1500 lines — `docket-run/SKILL.md`, `docket-plan/SKILL.md`,
-and `docket/reference.md` are the known cases), runs a completeness pass
+any file over roughly 1500 lines — `docket-run/SKILL.md`, `docket/reference.md`,
+and `workflows/wave.js` are the known cases as of writing; the workflow
+measures sizes itself at run time), runs a completeness pass
 that re-dispatches any file or range nothing covered, then a cross-boundary
 pass pairing claims one tree makes about the other, then routes every raw
 finding through adversarial verification (independent skeptics voting

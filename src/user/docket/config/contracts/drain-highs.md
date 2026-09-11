@@ -1,6 +1,6 @@
 ---
 node: drain-highs
-version: 8
+version: 9
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -57,13 +57,12 @@ this step does not repeat their review or independently verify the defects.
    for this step's issue and inspect the relevant related gap issue bodies,
    including earlier rounds and earlier attempts of this round. Establish
    that the relation results are complete before treating an issue as absent.
-   Match supplied cluster or
-   member identities and provenance, consulting the issue's evidence where
-   necessary. Similar titles or locations alone do not establish the same
-   defect. An operational gap about a failed drain does not count as filing
-   the affected defect, even if it cites that cluster's ID. Report a confirmed
-   prior filing with its issue ID and current status instead of filing it
-   again. Do not reopen or alter that issue.
+   Match supplied cluster or member identities and provenance, consulting the
+   issue's evidence where necessary. Similar titles or locations alone do not
+   establish the same defect. An operational gap about a failed drain does not
+   count as filing the affected defect, even if it cites that cluster's ID.
+   Report a confirmed prior filing with its issue ID and current status instead
+   of filing it again. Do not reopen or alter that issue.
    If an unreadable relation or ambiguous match prevents establishing prior
    filing, use Stuck.
 
@@ -143,9 +142,8 @@ this step does not repeat their review or independently verify the defects.
    are ready. Completion's output lists the new issue IDs in submitted gap
    order; retain that order to map files to IDs, along with the reported step
    state. Apply the archetype's recording recovery to the saved step result,
-   gap artifacts, and related issues before any
-   retry with an uncertain outcome. A missing receipt does not establish
-   that no issues were filed.
+   gap artifacts, and related issues before any retry with an uncertain
+   outcome. A missing receipt does not establish that no issues were filed.
 
 # Emit
 

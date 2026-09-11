@@ -28,7 +28,9 @@ A step that assesses work must preserve the work it assesses; checkout
 mutation also compromises recorded diffs and worktree cleanup.
 
 If a required probe may modify files, run it on an independent copy under
-`$TMPDIR`, in a directory identified by your step ID. Ensure the probe cannot
+the private per-step scratch directory the brief assigns; absent one, treat
+`$TMPDIR` as shared and use a directory named by your step ID plus an attempt
+identifier or generated suffix. Ensure the probe cannot
 write back into the checkout or shared repository metadata through links,
 Git references, caches, or configured output paths. Never mutate the checkout
 and then restore it.
@@ -65,10 +67,11 @@ protocol, return the mismatch to the caller without inventing a recording
 command or completion status.
 
 **Recording recovery.** A timeout or interrupted recording call does not
-establish that recording failed. Use the brief's prescribed readback
-procedure to determine whether the record was accepted before retrying.
-If the outcome cannot be established, report that uncertainty without
-submitting another completion.
+establish that recording failed. If the brief prescribes a readback
+procedure, use it to determine whether the record was accepted before
+retrying; otherwise leave deliverables parked as the brief directs. If the
+outcome cannot be established, report that uncertainty without submitting
+another completion.
 
 **Proportion.** Complete the investigation the brief requires. Each
 additional read or probe must answer an unresolved question relevant to

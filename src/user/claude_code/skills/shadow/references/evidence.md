@@ -93,7 +93,7 @@ remains unknown unless the runtime exposes it for that execution.
 
 ## Usage and census checks
 
-The local census and sandbox-friction workflows are useful only when their
+The local `session-census` and `sandbox-friction` workflows are useful only when their
 installed behavior matches this audit's scope. Inspect their version and input
 contract before launching through installed absolute `scriptPath`. Supply the
 frozen cutoff/end or manifest only if supported; never invent an accepted arg.
@@ -101,7 +101,7 @@ If the script cannot express the required window, label its raw result with its
 actual scope or leave that metric unavailable. Do not quote it as a correct
 seven-day census.
 
-The installed session-census script sums usage per assistant message without
+The installed `session-census` workflow sums usage per assistant message without
 deduplicating by message ID, so its totals can count streamed rewrites more
 than once. Report this limitation once and continue the qualitative audit.
 

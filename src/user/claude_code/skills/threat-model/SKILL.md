@@ -2,7 +2,7 @@
 name: threat-model
 description: >-
   Analyze security threats for a system, feature, or change using the four-question
-  framework. Use when the user requests a threat model, attack-path analysis, or
+  framework. Use when the operator requests a threat model, attack-path analysis, or
   evaluation of security controls.
 argument-hint: "[system, component, or change]"
 ---
@@ -11,8 +11,8 @@ argument-hint: "[system, component, or change]"
 
 Target or focus supplied with invocation: $ARGUMENTS
 
-Use the user's request and repository context to establish the target when arguments
-are absent. Ask only if the scope cannot reasonably be determined. Perform analysis
+Use the operator's request and repository context to establish the target when
+arguments are absent. Ask only if the scope cannot reasonably be determined. Perform analysis
 and verification within the existing task authorization; propose mitigations unless
 their implementation is also within scope.
 

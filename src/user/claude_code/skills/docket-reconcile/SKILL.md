@@ -53,7 +53,8 @@ not `--global`, unless the operator says every project should get it.
 Never `grep` a version out of these files: a `grep -m1 version` silently
 concatenates digits from unrelated keys and reports `security-change@2525792`
 for what is actually `@25`. Never hand-parse them either. `tomllib` needs
-Python 3.11+ and is absent here, where `python3` is 3.9.
+Python 3.11+; if `python3 -c 'import tomllib'` fails, the interpreter
+predates it.
 
 `docket workflow lint <file> --json=v2` is the parser, and it is the same parse
 `docket workflow register` runs:
@@ -111,7 +112,7 @@ for root in roots:                     # later root wins -- see "Two roots" belo
         else:
             bad.append((f, err.splitlines()[0] if err else "lint failed"))
 
-out = docket("workflow", "list", "--deprecated", "--limit", "500", "--json=v2")
+out = docket("workflow", "list", "--deprecated", "--limit", "0", "--json=v2")
 if not out.get("ok"):
     sys.exit("registry read failed: " + str(out.get("error")))
 reg = {}
@@ -246,7 +247,6 @@ repo-local one (`<repo>/.docket/config/workflows/`), with the repo-local one
 winning a name declared in both.
 
 **That precedence is the planner's convention, not a verified engine
-behaviour.** No repo in this store currently has a local config root, so the
-collision has never occurred and the rule has never been exercised. If you hit
-a name declared in both roots, confirm what the engine actually binds before
-trusting the plan — and once you know, replace this paragraph with the answer.
+behaviour.** While no root declares a colliding name, the rule stays
+unexercised. If you hit a name declared in both roots, confirm what the
+engine actually binds before trusting the plan.

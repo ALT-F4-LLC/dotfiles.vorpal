@@ -1,12 +1,13 @@
 ---
 fragment: doc-house-style
-version: 3
+version: 4
 ---
 # Doc house style
 
 Apply this style to documentation written or revised for the task. Structural
-checks cover required sections, their order, frontmatter fields, and diagram
-presence. Keep that required structure; apply brevity within it. These rules
+requirements, such as required sections, their order, frontmatter fields, and
+diagram presence, come from the consuming contract's Emit section, not from a
+gate. Keep that required structure; apply brevity within it. These rules
 govern whether the content lets someone act without guessing.
 
 ## What a document is for
@@ -30,10 +31,10 @@ evidence or an undecided answer is an unknown, not inapplicability.
 - **Verify before asserting.** Check claims about existing signatures, paths,
   commands, and behavior against the relevant implementation, tests, or
   authoritative documentation for the version being described. Cite evidence
-  for claims the decision depends on. Reuse evidence while it remains applicable. State
-  proposed behavior as proposed; label unverified premises as assumptions and
-  identify what depends on them. If evidence contradicts a premise, surface the
-  conflict and reassess the affected reasoning and criteria.
+  for claims the decision depends on. State proposed behavior as proposed; label
+  unverified premises as assumptions and identify what depends on them. If
+  evidence contradicts a premise, surface the conflict and reassess the affected
+  reasoning and criteria.
 - **Quote what is load-bearing.** When correctness depends on exact wording
   elsewhere, include the shortest quotation that preserves the constraint and
   its qualifications. Mark it as a quotation and cite its source and applicable

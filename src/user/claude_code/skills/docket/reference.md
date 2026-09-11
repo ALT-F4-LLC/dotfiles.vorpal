@@ -786,6 +786,7 @@ zeros, `abandoned` reports the trail up to abandonment.
 | `artifacts` | the **index**: id, kind, producer instance, producer `executor` and `issue`, sha256, bytes — never the bodies |
 | `metadata` | step `metadata` keys → distinct values with counts, verbatim and uninterpreted — over the **merged** bag, so both what a definition declared and what a worker reported via `step complete --metadata` are counted |
 | `actors` | per-actor event counts (`next` / `gate` / `threshold` / `human`) — the attribution rollup described under `docket events` below, computed over the events that remain |
+| `step_usage` | the usage **ledger** row by row: each row's `step`, `instance`, `attempt`, `unit`, `quantity`, and `source` — the detail behind `budget`'s per-unit `reported` sums, and what a duplicate back-fill refusal points at |
 | `vote_metadata` | the same key → distinct-value rollup over vote seats' `--metadata` bags |
 | `vote_usage` | per-unit sums of vote seats' `--usage` reports, beside the step ledger's `reported` — never merged with it |
 | `vote_usage_coverage` | `{casts, reported}` — how many seat-casts reported spend at all. **Never omitted**, so "panels ran and said nothing" is distinguishable from "no panels ran" |
@@ -1167,6 +1168,8 @@ the moment they stop.
 | Flag | Type | Default | Notes |
 |---|---|---|---|
 | `--reason` | string | `""` | **required** — why the recorded agreement is moving; empty is `VALIDATION_ERROR` (exit 3) |
+| `--drop` | stringArray | — | retire this one pinned file ref, which no longer resolves and no pending step reads (repeatable); records a `run-repinned` event with a null `new_sha256` and `dropped: true` |
+| `--drop-unresolvable` | bool | `false` | retire every drifted file pin that no longer resolves and no pending step reads; never touches refs that resolve to different bytes, nor workflow or schema pins |
 
 The recovery half of the pin story. `run activate` freezes a pin per
 ref at content-hash granularity, and `docket run verify-pins RUN-N` reports
@@ -1209,9 +1212,12 @@ and `step_inputs` are never touched.
 
 **Refuses `NOT_FOUND` (exit 2)** when any pinned ref no longer resolves at
 all — repin adopts current disk bytes and a missing ref has none to adopt, so
-it refuses the **whole set**, all-or-nothing, the same rule activation's own
-pinning follows ("pinning is never partial"); restore the file(s) or abandon
-the run instead.
+by default it refuses the **whole set**, all-or-nothing, the same rule
+activation's own pinning follows ("pinning is never partial"). Three ways out:
+restore the file(s), abandon the run, or retire the dead pins with `--drop REF`
+/ `--drop-unresolvable` — opt-in, and refused all the same when a
+**non-terminal** step's packet closure still reaches the ref, naming the
+readers, since dropping it would only move the wedge to render time.
 
 **A no-op is success, not an error.** When nothing has drifted the response
 reports `0` repinned and the message says every pin already matches disk, so
@@ -1757,8 +1763,8 @@ publishes the per-actor counts:
 |---|---|---|
 | `next` | the scheduler | `step-ready`, `lease-reaped`, `join-completed`, `loop-entered`, `dispatch-abandoned`, `issue-promoted` |
 | `gate` | a deterministic check, actions included | `gate-started`, `gate-recorded`, `gate-unmatched`, `gate-rerun`, `vote-opened`, `vote-tallied` |
-| `threshold` | computed routing | `step-routed`, `step-failed`, `step-superseded`, `step-skipped`, `step-held` |
-| `human` | an operator verb, including one a harness relays | `run-*` (`run-started`, `run-activated`, `run-paused`, `run-resumed`, `run-abandoned`, `run-done`, `run-budget-set`, `run-repinned`), `step-claimed`, `step-heartbeat`, `step-recorded`, `step-resolved`, `step-approved`, `step-rejected`, `step-annotated`, `issue-abandoned`, `trust-*`, `project-registered`, `dispatch-opened`, `dispatch-closed`, `reap-acknowledged`, `events-pruned` |
+| `threshold` | computed routing | `step-routed`, `step-failed`, `step-superseded`, `step-skipped`, `step-held`, `step-batch-overridden` |
+| `human` | an operator verb, including one a harness relays | `run-*` (`run-started`, `run-activated`, `run-paused`, `run-resumed`, `run-abandoned`, `run-done`, `run-budget-set`, `run-repinned`), `step-claimed`, `step-heartbeat`, `step-recorded`, `step-resolved`, `step-approved`, `step-rejected`, `step-annotated`, `issue-abandoned`, `issue-diff-repinned`, `gate-override-granted`, `spawn-admitted`, `trust-*`, `project-registered`, `dispatch-opened`, `dispatch-closed`, `reap-acknowledged`, `events-pruned` |
 
 The three operator lifecycle kinds each carry `data` of `{from, to, reason}`,
 written in the same transaction as the status they record. `lease-reaped` is
@@ -2420,8 +2426,8 @@ or prove a different project's local workflow is obsolete.
 ### `docket trust` — `trust.go`
 
 The allowlist of commands docket may execute. **A gate runs only when an entry
-here authorizes it**; an unmatched gate is reported, never run. Full details and
-the trust command's installed help gives the current executable contract.
+here authorizes it**; an unmatched gate is reported, never run. The trust
+command's installed help gives the current executable contract.
 
 Entries live in `$XDG_CONFIG_HOME/docket/trust.toml` (default
 `~/.config/docket/trust.toml`), owned by you, mode `0600`, and **never read

@@ -242,7 +242,9 @@ A retired version reports `deprecated_at_ms` under `--json=v2` and prints
 | A threshold names a field its declared schema does not declare | `VALIDATION_ERROR` | 3 |
 | A threshold literal is not a value its declared schema allows | `VALIDATION_ERROR` | 3 |
 | An ordered comparison (`>=`, `>`, `<=`, `<`) on a field with no `ordered_enum` | `VALIDATION_ERROR` | 3 |
-| A step emitting the reserved kind `gate-results` | `VALIDATION_ERROR` | 3 |
+| A step emitting the reserved kind `gate-results` or `vote-record` | `VALIDATION_ERROR` | 3 |
+| `<step>.vote-record` naming a producer whose `type` is not `"vote"` (V11) | `VALIDATION_ERROR` | 3 |
+| `issue.linked.<relation>.<kind>` naming `*`, `gate-results`, or `vote-record` as the kind | `VALIDATION_ERROR` | 3 |
 | Definition file not found | `NOT_FOUND` | 2 |
 | Re-registering different bytes at an existing `name@version` | `CONFLICT` | 4 |
 | `workflow lint` on a draft whose `name@version` is registered with different bytes | `CONFLICT` | 4 |
@@ -645,7 +647,7 @@ params  = { field = "severity", method = "median", hold_spread = 2, output = "fi
 `CONFLICT` — "resolved by the engine, not by a worker" — the same way it refuses
 a `human` or `vote` gate. The engine runs it, records its artifact, and routes.
 It still appears in `docket next --run` so a dispatcher can see what a run is
-doing; the row simply carries no `executor` to spawn.
+doing; the row carries no `executor` to spawn.
 
 **Resolution is builtin-first.** `aggregate` is the one computation docket
 performs itself; every other action name is looked up in your trust store and
@@ -727,7 +729,7 @@ count is even**. So a cluster of `{low, blocker}` medians to `low`.
 
 That is not caution. Docket does not know which end of your order is worse: a
 rule that took "the more severe of the two" would be docket holding an opinion
-about severities, which is simply wrong for a `confidence` or a `ripeness`
+about severities, which is wrong for a `confidence` or a `ripeness`
 enum and invisible when it is. One expression, no special case, and the
 standard lower median for ordinal data where no average exists.
 
@@ -774,7 +776,7 @@ and the routing step **stops**. Concretely:
 - Each held step is offered by `next --run` immediately, takes no claim and no
   token, and shows up as an ordinary human gate — or as a vote gate, when
   `vote.hold.*` is configured (see *Engine configuration*). Everything below is
-  the same either way; a tally simply answers first, and escalates to the
+  the same either way; a tally answers first, and escalates to the
   operator's verbs below when it does not pass.
 - Use `guard stop` to inspect whether stopping is currently allowed. A
   `waiting-human` state does not itself forbid stopping; do not approve or
@@ -814,7 +816,7 @@ decision happened*.
 | Rule about `--value` | |
 |---|---|
 | It is validated against the **pinned schema's declared enum** before anything is written | a correction must be a member of the membership set the run agreed to; a value outside it is a `VALIDATION_ERROR` |
-| It is **never parsed from `--note`** | docket does not read a disposition out of prose. Refusing to infer one was always right; what it argued for was a structured field, not no field |
+| It is **never parsed from `--note`** | docket does not read a disposition out of prose; `--value` is the structured field that carries one |
 | It accompanies **approve** only | reject records no artifact for the cluster, so there is no value to set — `--value` with `reject` is a `VALIDATION_ERROR` |
 | It applies to **materialized** `<step>-held` steps only | a declared human gate has no payload of its own to correct, so the flag would reach nothing there; that too is a `VALIDATION_ERROR` naming the step |
 | The routing step must declare an aggregated field and a `payload` schema | otherwise there is no field to set and no enum to check against |

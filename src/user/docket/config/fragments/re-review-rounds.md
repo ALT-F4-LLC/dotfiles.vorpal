@@ -1,6 +1,6 @@
 ---
 fragment: re-review-rounds
-version: 6
+version: 7
 ---
 # Re-review rounds
 
@@ -49,6 +49,7 @@ cases, broader remedies, and maintainability risks by their demonstrated impact.
 When their established impact is below the Blocker rung, report them at Concern
 or below. Keep unresolved evidence gaps explicit rather than mechanically
 downgrading an unverified claim.
+
 Distance from an ideal fix is not itself a defect or a reason to escalate.
 
 Keep supported lower-severity findings visible at reconcile, in the run record,

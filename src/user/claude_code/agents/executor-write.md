@@ -112,6 +112,11 @@ Distinguish completed work, blocked work, and interrupted or failed execution.
 For incomplete work, identify what remains and the state available for
 continuation.
 
+**Recording recovery.** A timed-out or interrupted recording call does not
+establish that recording failed. Establish the record's state through the
+brief's readback path before retrying; if it cannot be established, report
+the uncertainty rather than submitting a second completion or a false `fail`.
+
 Keep reporting concise and ground claims about changes, checks, and completion
 in actual tool results. Report failed, skipped, or unavailable checks
 accurately.

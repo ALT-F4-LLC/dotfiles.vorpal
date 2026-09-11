@@ -128,8 +128,8 @@ entry to its own §1–§8 run; carry the evidence forward as the finding.
   the file, retire the references that named it — through §7–§8, landing
   its own commit.
 - **addition** — a named gap the evidence shows the corpus not covering.
-  Design its shape on the surface the gap demands (workflow, contract,
-  fragment, or schema), then run §4 for any deviation the design forces,
+  Design its shape on the surface the gap demands (workflow, policy row,
+  contract, fragment, or schema), then run §4 for any deviation the design forces,
   §5 for approval, and §6–§8 to implement and land it as its own commit.
 
 Report each target's verdict and evidence in plain language as it's reached,
@@ -241,13 +241,15 @@ The docket engine checkout lives beside this repo
   re-instantiation
 - `internal/engine/loop.go`, `vote.go`, `human.go` — fix-loop entry,
   supersede sweep, budgets and parks, vote tally and rule resolution
+- `internal/workflow/packet.go` — packet assembly: what `packet_includes` and
+  step-level fragments become in the rendered packet
 - `docket <verb> --help` and `docket config` — registered vote rules,
   schemas, doc-store verbs
 
 The wave runner, `src/user/claude_code/workflows/wave.js`, is the authority
 for everything the engine never sees: how policy rows resolve to a variant
-and seat, and what packet assembly does with `packet_includes` and step-level
-fragments. The `LENSES` table vote-seat names resolve against lives in
+and seat. It pipes the packet out of the engine's claim envelope and assembles
+none of it. The `LENSES` table vote-seat names resolve against lives in
 `src/user/claude_code/workflows/tribunal.js`.
 
 For each capability the spec leans on, answer from source before designing

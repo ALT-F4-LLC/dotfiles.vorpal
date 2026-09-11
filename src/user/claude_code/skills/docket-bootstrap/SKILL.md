@@ -41,10 +41,10 @@ made in the conversation and ask only for unresolved decisions.
 
 ## 1. Establish the environment
 
-Before spawning, record the canonical checkout path, HEAD, docket and Claude Code versions,
-resolved store, selected model/provider, and available agent tools. Confirm the
-specific `executor-read` and `executor-write` definitions; an unrelated agent
-file does not establish their availability.
+Before spawning, record the canonical checkout path, HEAD, docket and Claude
+Code versions, resolved store, selected model/provider, and available agent
+tools. Confirm the specific `executor-read` and `executor-write` definitions;
+an unrelated agent file does not establish their availability.
 
 Use one unique session directory and record its absolute path in the conversation
 and checkpoint. Put snapshots, manifests, reports, and probes below it. Never
@@ -153,13 +153,15 @@ Do not create an unseen issue or start an unseen run. Broader work goes to
 Derive gates, pre-gates, and actions by parsing every workflow TOML in the
 installed corpus and any local addition, not only the smoke issue's workflow.
 A later issue's labels can bind any of them, and a gate declared there with no
-trust entry bound to this repository parks that issue's first gated step
-`unmatched`. Measured across every project on this machine on 2026-09-10, 21
-parks carried an unmatched gate row, every one reading "an entry of this name
-exists but is bound to a different repo", and three of the 34 steps still
-parked were that shape, all in abandoned runs. Include every consumer step. Inspect `docket
-trust list --all` and treat an entry bound to another repository as missing
-here, never as applicable. Propose one entry per gate in that union, bound to
+trust entry bound to this repository fails that issue's first gated step
+`unmatched`, which routes per its `on_fail`: `waiting-human` on every
+first-pass gated step in the installed corpus, so it parks. Measured across
+every project on this machine on 2026-09-10, 21 parks carried an unmatched
+gate row, every one reading "an entry of this name exists but is bound to a
+different repo", and three of the 34 steps still parked were that shape, all
+in abandoned runs. Include every consumer step. Inspect `docket trust list
+--all` and treat an entry bound to another repository as missing here, never
+as applicable. Propose one entry per gate in that union, bound to
 this repository, each carrying the real command the miners found. A gate this
 repository cannot yet satisfy gets no argv and no stub: list it as a known
 unmatched gate with the workflows it would park and the consequence stated
@@ -198,8 +200,9 @@ do not delegate the operator's answer or infer it from silence.
    Present its human-mode registration and harvested-command output verbatim,
    plus a separate gate/action table. Include consumer steps, exact argv, flags,
    coverage, verification environment, trust scope, and status. A count of
-   harvested fences is not a command list. Named-gate trust must be checked
-   separately; a clean activation preview does not verify those commands.
+   harvested fences is not a command list. The activation preflight warns only
+   about gates the bound workflows declare and prints nothing when they all
+   resolve, so check the rest of the §4 union separately.
 3. **Approve trust individually.** Each call identifies one entry, repository,
    exact argv, and explicit values for `re-runnable`, `tree`, and `flaky`.
    Explain any prefix matching or absolute mutable repo path in its proposal.

@@ -1,6 +1,6 @@
 ---
 fragment: severity-ladder-general
-version: 5
+version: 6
 ---
 # Severity ladder: general
 
@@ -71,7 +71,7 @@ cannot raise a cluster already at `medium` or above. That says nothing about
 disagreement: lowering a member can widen its distance from a higher member.
 Keep Suggestion at `low` because it is the intended classification, not to
 manipulate a hold. Follow the aggregation contract for cluster membership,
-severity order, and held-spread calculation; do not assume an unstated formula
+severity order, and `hold_spread` calculation; do not assume an unstated formula
 or tune a finding's severity to obtain a routing outcome.
 
 **Questions and Praise stay outside severity.** A Question that does not block

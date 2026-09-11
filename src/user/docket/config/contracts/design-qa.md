@@ -1,6 +1,6 @@
 ---
 node: design-qa
-version: 11
+version: 12
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -149,7 +149,7 @@ or stderr. Preserve evidence references and verification limits across handoffs.
 Include actual coverage, prior finding dispositions, documented accepted
 deviations, and what worked well in the body. Apply the general ladder's
 emit-time mapping to eligible findings only. Praise, clean coverage, and
-non-blocking questions have no severity entry. Use the contract's gap route
+non-blocking questions have no severity entry. Use the brief's gap route
 for judgment-blocking unknowns; do not invent payload fields or severities.
 
 An empty findings payload is valid. Report examined-clean only when the required

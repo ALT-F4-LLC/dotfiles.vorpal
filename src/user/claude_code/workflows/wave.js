@@ -121,7 +121,7 @@ function archetype(row, hint) {
 // own — the same convention tests/wave-model-attribution.test.sh already
 // relies on when it extracts starting at the declaration line below.
 function bootstrap(row, r, isolated, isWrite) {
-    // The claim bootstrap: seven commands rendered in two joins (isolated:
+    // The claim bootstrap: eight commands rendered in two joins (isolated:
     // one per Bash call, literal paths; shared: one Bash call, `&&`-chained)
     // — a duplicated sequence has drifted before (one copy wrote the packet
     // to a file while the other printed it to stdout).
@@ -249,18 +249,12 @@ function bootstrap(row, r, isolated, isWrite) {
    one sanctioned read — never run reports, step lists, \`--help\`, or the
    store's database.
 
-   TRANSLATION RULES — obligation 3 below prints a code block written for the
-   shared tree; run its ISOLATED form instead, everything else in its prose
-   still binding. Obligation 1 already renders your claim form directly below.
-
    If the claim itself errors naming a packet file ("pinned by this run but is
    no longer on disk"), report the error verbatim and STOP — the ref came from
    a REPO-ADDITION config layer, repo-root-relative and absent from your
    worktree (shared-corpus refs resolve from any cwd); the claim already
    recorded and the token is gone, so a re-claim just burns another attempt —
-   the relay's reap is the only way out.
-   3'. Record with the token fed to stdin from its literal path:
-       \`docket step record ${row.step} ... < <TMP>/${row.step}.d/${row.step}.token\`
+   the conductor's reap is the only way out.
 
    Uncommitted work in the shared tree is deliberately not visible, and
    your inputs arrive in the rendered packet, not from the tree.` : ''
@@ -282,12 +276,10 @@ is the id you claim in obligation 1; a brief with an unfilled placeholder would
 read STEP-N or \${row.step}, and this one does not.${isolationNote}${pinNote}
 
 1. Claim it AND PARK THE TOKEN ON DISK${isolated ? ` — run these as separate
-   plain Bash calls, literal paths throughout (form 1' from obligation 0):
+   plain Bash calls, literal paths throughout (this is form 1', the claim
+   obligation 0 names):
 
 ${claimCommands(true).map((c) => `   \`${c}\``).join('\n')}
-   Then open <TMP>/${row.step}.d/${row.step}.packet.md with the Read tool — the
-   packet goes to a FILE here, not stdout, which also keeps a large brief from
-   being truncated by the harness's inline-output cap.
 ` : `, in ONE Bash call, exactly this:
 
    \`\`\`
@@ -297,7 +289,8 @@ ${claimCommands(true).map((c) => `   \`${c}\``).join('\n')}
 
    IF THE CHAIN STOPS BEFORE THE PACKET LINE ABOVE — the claim command itself
    errored, the token file came back empty, or the \`claim_error\` check
-   printed \`false\` — do NOT retry the claim and do NOT read a packet: an
+   exited non-zero (it prints nothing either way) — do NOT retry the claim and
+   do NOT read a packet: an
    incomplete claim carries no \`packet\` key, so reading it anyway prints the
    four characters \`null\` and nothing past this point is your real contract.
    Diagnose with ONE more read-only command against the claim file that is
@@ -440,8 +433,7 @@ ${!isWrite ? `
 ` : ''}
 
 3. Record it yourself with \`docket step record\`, feeding the token file to
-   STDIN${isolated ? ` — ISOLATED: run form 3' from obligation 0 (literal
-   token path) in place of the command below; everything else still binds you.` : ':'}
+   STDIN:
 
    \`docket step record ${row.step}${isWrite ? ' --worktree <YOUR CHECKOUT>' : ''} --artifact-file <TMP>/${row.step}.d/${row.step}-<kind>.md --metadata '{"model_resolved":"unknown","effort_resolved":"unknown"}' < <TMP>/${row.step}.d/${row.step}.token\`
 
@@ -1327,7 +1319,7 @@ function probe(command, label, phaseLabel, servingStep, acct) {
 }
 
 // `docket step show STEP-N --json` answered through a schema instead of
-// regexed out of relayed text, same rationale as GATE_STATUS_SCHEMA below:
+// regexed out of relayed text, same rationale as GATE_STATUS_SCHEMA:
 // a haiku probe retyping the envelope verbatim can drop or corrupt a field,
 // and a regex fallback can match a status word quoted inside unrelated
 // prose. The three orphaned-claim/null-recovery/pre-claim call sites that
@@ -2039,11 +2031,12 @@ function ancestryParkReport(step, broken) {
 // TEST-BEGIN stage-ladder — extracted and exercised by
 // tests/wave-chain-dead-ladder.test.sh, tests/wave-fix-round-ancestry.test.sh
 // and tests/wave-issue-lanes.test.sh, which wrap this whole region in an
-// async function and feed it stub `parallel`/`spawn`/`runGate`/`probe`/`log`
-// globals. Prepend configuration; other ladder dependencies stay inside the markers;
-// the only workflow globals it may reach for are those stubs, `rows`,
-// `input`, and the fix-round-ancestry region's helpers (the suites
-// concatenate that region ahead of this one).
+// async function and feed it stub `parallel`/`spawn`/`runGate`/`probe`/
+// `stepShow`/`log` globals. The suites prepend configuration, park-signals
+// (laneParked, runParked, isConflictReport) and fix-round-ancestry with its
+// nested target-envelope helpers; other ladder dependencies stay inside the
+// markers, and the only workflow globals it may reach for are those stubs,
+// `rows`, `input`, and the prepended regions' helpers.
 const stageOf = (row) => (Number.isInteger(row.stage) ? row.stage : 0)
 
 // Preserve manifest order within each group; only the new map is mutated.
@@ -2222,8 +2215,8 @@ function chainDead(res) {
 // answers one question — do NOT launch this issue's later rows this wave — and
 // two very different situations answer it yes. Something failed (a spawn that
 // produced no agent, a claim CONFLICT, a rejected gate, a broken base
-// ancestry); or nothing failed at all and the engine has simply not made the
-// row claimable yet, because a predecessor is still progressing. One
+// ancestry); or nothing failed at all and the engine has not made the row
+// claimable yet, because a predecessor is still progressing. One
 // observed run hit the second shape four waves running: the engine minted a
 // held-cluster panel
 // step between a gate and its `after` predecessor, the gate had no proposal to

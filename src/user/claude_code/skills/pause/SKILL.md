@@ -18,8 +18,8 @@ waves, or makes routing decisions — that is docket-run's contract, untouched.
 run in the invoking conversation itself (its **Seat** section), so the
 workflow task ids, transcript directories and launch args the resume snapshot
 below needs are already in this session's own hands; nothing is forwarded. No
-`docket-conductor-RUN-N` background agent is seated any more, and a pause
-addressed to one is a pause of the run this conversation drives.
+`docket-conductor-RUN-N` background agent is seated; a pause addressed to one
+is a pause of the run this conversation drives.
 
 ## Choosing a halt mode
 
@@ -199,9 +199,10 @@ used; operator precedent rulings and any unexecuted answer; held peer
 authorization claims; every tribunal proposal id with its tally; foreign
 `wf_*` worktree entries observed; every step id the graceful halt refused;
 whether a live shadow was watching and was told to wind down; and every
-advisory note carrying **`DISPOSITION REQUIRED:`**. This is the same list as above, checked as a gate
-rather than trusted as a memory — the earlier pause that dropped an unlabelled
-lead is exactly what a silent gap here produces again.
+advisory note carrying **`DISPOSITION REQUIRED:`**. This is the same list as
+above, checked as a gate rather than trusted as a memory — the earlier pause
+that dropped an unlabelled lead is exactly what a silent gap here produces
+again.
 
 ## Recording and printing the resume prompt
 

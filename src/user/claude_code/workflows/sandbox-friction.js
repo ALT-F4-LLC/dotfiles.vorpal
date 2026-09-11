@@ -164,20 +164,20 @@ function description(g) {
 
 Kind: ${g.kind}
 Subject: ${g.subject}
-Events: ${g.count} (of which ${g.bypasses} were unsandboxed retries)
-Distinct checkouts affected: ${g.repos}
-Example command: ${g.example}
+Events: ${g.count}${g.kind === 'classifier-denial' ? '' : ` (of which ${g.bypasses} were unsandboxed retries)`}
+Distinct working directories affected: ${g.repos}
+Example command: ${g.example.slice(0, EXAMPLE_LENGTH).replace(/\s*\n\s*/g, ' ')}
 
 ${g.kind === 'classifier-denial' ? CLASSIFIER_REMEDY : SANDBOX_REMEDY}`
 }
 
 function filePrompt(g) {
-    const title = `Sandbox friction: ${g.subject} hit ${g.count} times across ${g.repos} checkouts`
+    const title = `Sandbox friction: ${g.subject} hit ${g.count} times across ${g.repos} working directories`
     return `File one docket issue for a sandbox friction group unless one already names its subject. Run exactly this, verbatim, as ONE shell invocation. The cd is load-bearing: docket routes \`issue create\` by cwd and has no --project flag, so the issue must be created from the dotfiles checkout.
 
 \`\`\`
 cd ${shq(checkout)} || { echo "exit=cd-failed"; exit 0; }
-if docket issue list --label sandbox --json | grep -qF -- ${shq(g.subject)}; then
+if docket issue list --label sandbox --all --limit 500 --json | grep -qF -- ${shq(g.subject)}; then
   echo "ALREADY-FILED"
 else
   cat > "$TMPDIR/sandbox-friction-issue.md" <<'ISSUE_BODY_EOF'

@@ -651,13 +651,14 @@ JSON is `{data, ok}`, so a bare `.pins[]` selects NOTHING, and a loop over
 nothing reports every pin clean while verifying none. COUNT the rows before you
 believe the verdict — zero file pins on a real run means your path is wrong, not
 that the run has none. Any `PIN MISMATCH` line is the same STOP-AND-REPORT.
+
 **Transition debris:** a `.docket/config/` full of SYMLINKS is the retired
 link-farm model, and against the shared root it is now a second additions layer
 that duplicates or dangles — a dangling file link inside a scanned root refuses
 activation naming the file. Any symlink `find .docket/config -type l` reports is
 a stop-and-report for the operator to delete; real files there are legitimate,
 being the repo's own additions. A repo with no `.docket` at all is the normal
-case, and this check is simply vacuous there. Both TREE checks run BEFORE the
+case, and this check is vacuous there. Both TREE checks run BEFORE the
 panel and neither is a panel matter: a stale install or symlink debris is a
 stop-and-report to the operator, whose tree it is.
 
@@ -1052,14 +1053,6 @@ step's recorded target sha is no longer an ancestor of the shared checkout's
 HEAD — the branch moved on, and the tree that sha names may no longer exist on
 it. Two responses are allowed, and dispatching through it is neither:
 
-**A non-empty `reap_hold` on the same answer is a second stop-and-verify.**
-`dispatch open` reaps a lapsed write-class lease before it computes the
-manifest and reports what it reaped in `reaped` (the step instances) and
-`reap_hold` (the guard's own denial text — each seq and the flag that clears
-it). `guard spawn`'s hold is exactly this text, so convene the ack-reap panel
-from `reap_hold` now, before composing the launch, rather than discovering
-the same hold from a denied spawn afterward.
-
 - **Confirm the claim-time semantics first.** Ask the engine what actually
   happens when a step carrying a stale target gets claimed: does the packet get
   reconstructed from current HEAD, or rendered against the phantom tree the
@@ -1067,6 +1060,14 @@ the same hold from a denied spawn afterward.
 - **Or escalate, quoting the warning verbatim.** The row names the sha and the
   repo — that is exactly what the operator needs to see. Hand it over unedited
   and stop.
+
+**A non-empty `reap_hold` on the same answer is a second stop-and-verify.**
+`dispatch open` reaps a lapsed write-class lease before it computes the
+manifest and reports what it reaped in `reaped` (the step instances) and
+`reap_hold` (the guard's own denial text — each seq and the flag that clears
+it). `guard spawn`'s hold is exactly this text, so convene the ack-reap panel
+from `reap_hold` now, before composing the launch, rather than discovering
+the same hold from a denied spawn afterward.
 
 Never dispatch on an assumed rebind. A conductor did exactly that — reasoning
 that the workflow "would reconstruct its target from current HEAD," a behavior
@@ -1522,8 +1523,7 @@ that belongs below you.
 
 A background helper you spawned is invisible to `ListAgents`
 while it runs — its completion notification is the only status surface, and
-`SendMessage` to its name is the only nudge lever. Prefer `run_in_background:
-false` for the join; it is short and you need the result to proceed.
+`SendMessage` to its name is the only nudge lever.
 
 **TaskStop a delegate the moment its report is in hand.** Stopping it is the
 last step of using it, not end-of-run housekeeping: a helper that has already
@@ -1883,7 +1883,7 @@ recount or a paraphrase:**
   landed" from memory or from eyeballing `git log --oneline`. A conductor
   that had just run `git log --oneline -8` still miscounted by eye (RUN-67:
   reported 6 against a range that held 5). Conductor patch commits (**If the
-  operator rules the conductor patch anyway** above) are named by sha
+  operator rules the conductor patch anyway** below) are named by sha
   within that same pasted range, not folded into an executor count or
   described separately from it — one list, one source, sha by sha.
 - **`dispatch close`'s own JSON is pasted into the close report in full**,
@@ -2864,11 +2864,12 @@ ask me again," never as "same routing, different ledger mark" (measured).
 **A held cluster has a THIRD answer: correct the value.** `docket step approve
 STEP-N --value <member>` overrides the cluster's aggregated field with a value
 the operator names — and on a spec-doc hold that field IS severity (the
-workflow aggregates `field = "severity"` by median, holding on spread). So "the
-median is wrong, call it high" is one flag, not a backlog issue. The value must
-be a member of the pinned schema's declared enum; the engine refuses anything
-else, and the enum comes from the FROZEN pins, not the files on disk. Offer all
-three: approve the computed value, approve a corrected one, or reject. An
+workflow aggregates `field = "severity"` by max, holding on spread). So "the
+aggregated severity is wrong, call it high" is one flag, not a backlog issue.
+The value must be a member of the pinned schema's declared enum; the engine
+refuses anything else, and the enum comes from the FROZEN pins, not the files
+on disk. Offer all three: approve the computed value, approve a corrected one,
+or reject. An
 instruction the engine genuinely cannot execute is still surfaced first, then
 materialized as a backlog issue so it cannot evaporate —
 but check for a flag before reaching for that.

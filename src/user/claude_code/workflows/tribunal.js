@@ -57,10 +57,10 @@ function resolveSeat(seat, routing) {
 // A lens is the seat's VOTER brief only — the same trailing names also exist as
 // review-executor contracts (contracts/judge-<name>.md) governing the seat when
 // a workflow fans it out as a reviewer: one name, two remits, resolved by row
-// kind. architecture and security broadly agree across the two; correctness
-// deliberately does not, since the contract hunts logic defects while this lens
-// interrogates the evidence behind the gate's ask (the contract
-// carries the mirror note).
+// kind. architecture, security, and design broadly agree across the two;
+// correctness deliberately does not, since the contract hunts logic defects
+// while this lens interrogates the evidence behind the gate's ask (the
+// contract carries the mirror note).
 //
 // Only lenses reachable from a current workflow's voter names are kept
 // (architecture, security, correctness, design); a seat re-adding a retired one
@@ -284,7 +284,9 @@ budget against the expected cost, the scope warnings, and the corpus/trust
 state — the merits of the work itself get their own gates once artifacts
 exist, and pre-reviewing the codebase here duplicates them. A budget gate
 decides a number against evidence of spend; an ack-reap gate decides whether a
-holder is gone; a loop-extension gate decides whether ONE more fix round is
+holder is gone; a fix-batch gate decides whether the conductor's batch of fixes
+may land as one unit, judged on the files the batch changed; a loop-extension
+gate decides whether ONE more fix round is
 likely to converge, read from the loop history in the rationale — rounds
 against the cap, consecutive rejections, the tiers served, spend, and the
 finding-volume trend — not from re-reviewing the work, which the loop's own

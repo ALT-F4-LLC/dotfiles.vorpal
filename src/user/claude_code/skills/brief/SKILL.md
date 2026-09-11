@@ -221,7 +221,10 @@ Apply these rules in order:
 1. **Security-sensitive `yes`:** `/docket-plan` is required, whatever
    routing label the issue carries; report the label as a conflict.
 2. **Docket tracking required:** follow the tracked issue's routing label.
-   `route-run` or no label means `/docket-plan` is required; `route-direct`
+   `route-run` means `/docket-plan` is required; an issue with no label reaches
+   `/docket-plan` only when the operator names it explicitly (it then gets
+   `route-run` on recording) — otherwise point at `/docket-groom` to set a
+   routing label first; `route-direct`
    means direct execution; `route-tend` means leave it to `/tend`, or direct
    when the operator wants it now; `route-loop` continues at rule 4. A label
    that contradicts the operator's ask is surfaced, never resolved silently.

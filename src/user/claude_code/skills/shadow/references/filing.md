@@ -68,10 +68,10 @@ than blindly reproducing the last sweep's queue.
 
 Maintain a ledger: local finding ID, fingerprint, owner/store, intended operation,
 attempt, returned issue ID, and verified result. On a timeout or ambiguous return,
-reconcile the store before retrying. Record batch receipts as they arrive so
-partial success survives interruption. Do not interpret a missing response as
-proof that creation failed. Concurrent duplicate prevention remains best effort
-unless the engine offers a verified idempotency key or uniqueness constraint.
+reconcile the store before retrying; pass a stable, finding-derived
+`--idempotency-key` so a retried create cannot duplicate the same issue. Record
+batch receipts as they arrive so partial success survives interruption. Do not
+interpret a missing response as proof that creation failed.
 
 ## Worker-ready issue contract
 

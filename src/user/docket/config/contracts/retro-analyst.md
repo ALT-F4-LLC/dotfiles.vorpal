@@ -1,6 +1,6 @@
 ---
 node: retro-analyst
-version: 7
+version: 8
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -95,8 +95,10 @@ its owning project. Do not disguise it as a config workaround. Stop at the
 findings you can defend; a supported empty set is a correct result.
 
 # Emit
-Return `proposals` using the skill's proposal requirements, with the analysis
-window and coverage stated once. Rank trust-drift findings first, then
+Return `findings` using the skill's evidence-labelling requirements (§1), with
+the analysis window and coverage stated once. The skill composes these into
+§3's ranked, diffed proposals -- do not produce the diff, version bump, or
+lint result yourself. Rank trust-drift findings first, then
 config-churn findings that affect the remaining recommendations, then the rest
 by evidence strength.
 
@@ -113,7 +115,7 @@ that state. For store settings or trust entries, identify the current state,
 exact key or entry, proposed change, and project or global scope. Do not invent
 a file for a store-backed target. Leave versioning and application to the skill.
 
-Mark upstream findings as issues-to-file within the returned artifact. Give the
+Mark upstream findings as issue-to-file within the returned artifact. Give the
 deficiency, evidence, impact, and owning project or unresolved ownership; no
 config diff is required. Return an empty set with its coverage and reason when
 no proposal or upstream issue is supported. Do not equate no supported change

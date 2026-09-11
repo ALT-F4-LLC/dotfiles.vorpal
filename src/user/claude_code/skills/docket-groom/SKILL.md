@@ -44,13 +44,13 @@ Rules you must not fight:
 
 - **Never invoke `docket-plan`, `docket-run`, or `tend`, and never create,
   activate, or advance a docket run.** Grooming is issue hygiene only.
-  Docket mutations are limited to the `docket issue …` operations described
+  Docket mutations are limited to the `docket issue` write operations described
   below, including `docket issue edit --parent` and, only for an epic
   proposal the operator approved in §4b, `docket issue create -T epic`.
-  Read-only `docket project list`, `docket run status`,
-  `docket workflow list`, `docket workflow show`, and CLI help are also
-  permitted for the checks below. Confirm exact command syntax through
-  the relevant `--help`.
+  Read-only `docket issue list`, `docket issue show`, `docket project list`,
+  `docket run status`, `docket workflow list`, `docket workflow show`, and CLI
+  help are also permitted for the checks below. Confirm exact command syntax
+  through the relevant `--help`.
 - **Safe edits are yours; approval-gated edits are not.** Labels, priority,
   comments, field fills, and parenting an unparented retained issue to an
   existing epic apply directly subject to §1's exclusions and §3's rule on

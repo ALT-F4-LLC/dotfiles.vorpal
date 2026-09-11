@@ -1,12 +1,12 @@
 ---
 node: synthesize-findings
-version: 18
+version: 19
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
   - fragments/evidence-rules.md
 emits: findings
-payload: findings-cluster@2
+payload: findings-cluster@3
 ---
 # Charter
 
@@ -34,7 +34,7 @@ this role into diagnosis or verification of the underlying defects.
 Identify the issue, run, review round, current judge artifacts, and declared
 schema. Read each artifact's body and payload, including evidence limitations
 and dispositions. Use the schema supplied for this step; if it is absent,
-retrieve it with `docket schema show findings-cluster@2 --body` from the assigned
+retrieve it with `docket schema show findings-cluster@3 --body` from the assigned
 checkout. An unavailable registered schema is a missing input, not permission
 to substitute a similarly named file or remembered schema.
 
@@ -169,7 +169,7 @@ uncertain new findings does not authorize rewriting historical identities.
 # Emit
 
 Emit `findings` as a markdown body and the array payload, following the brief's
-recording protocol. Use `findings-cluster@2` for structure and the requirements
+recording protocol. Use `findings-cluster@3` for structure and the requirements
 below for completeness. Its validation does not enforce all these requirements.
 
 ## Body
@@ -191,9 +191,9 @@ Keep explanations brief without abbreviating required evidence.
 ## Payload
 
 <!-- CLUSTER-KEYS-BEGIN: tests/contract-cluster-keys.test.sh diffs this
-     sentence's backticked names against findings-cluster@2's top-level
+     sentence's backticked names against findings-cluster@3's top-level
      `.items.properties` keys. Edit both together. -->
-Every payload entry's top-level keys are `id`, `title`, `severity`,
+findings-cluster@3's top-level keys are `id`, `title`, `severity`,
 `member_ids`, `file`, `line`, `evidence`, `alternative`, and
 `prior_disposition`.
 <!-- CLUSTER-KEYS-END -->
@@ -253,7 +253,7 @@ suppressing routing.
 
 On a settled entry, omit `open_severity` entirely. On an open entry, include
 it; never use null or a floor value to encode absence. `open_severity` passes
-through `findings-cluster@2` as an extra property and is not validated there.
+through `findings-cluster@3` as an extra property and is not validated there.
 Check its value and presence explicitly before recording. The consuming
 workflow owns thresholds and their precedence.
 

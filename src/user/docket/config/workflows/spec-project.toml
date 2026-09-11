@@ -1,7 +1,16 @@
 [pipeline]
 description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step, review and reconcile the findings, drain any open highs, and accept by tribunal vote; a rejection re-enters the bounded revise loop at spec authoring and runs review again."
 name = "spec-project"
-version = 21  # 21: the pipeline description names the current graph: the
+version = 22  # 22: three fixes, no topology change. `review` and `spec-vote`
+              #   read `issue.latest.spec` instead of the first-pass
+              #   `spec-author.*`, matching spec-doc's `issue.latest.doc`:
+              #   after a fix-loop round through `revise-spec`, the reviewers
+              #   and the tribunal now judge the latest spec rather than the
+              #   pre-revision one. `review` and `synthesize-findings` repoint
+              #   to `findings@10` and `findings-cluster@3` — prose-only
+              #   schema corrections, no validation-semantics change. Also
+              #   closes a dropped-period sentence in the v20 changelog entry.
+              # 21: the pipeline description names the current graph: the
               #   revise loop re-enters at `revise-spec` (then review), and
               #   reconcile and drain-highs sit between review and the vote.
               #   No topology change.
@@ -71,7 +80,7 @@ version = 21  # 21: the pipeline description names the current graph: the
               #   — a citation-scrub pass rewrote both schemas' field
               #   descriptions to drop literal DKT/RUN/DOT-style provenance
               #   ids, which the engine refuses as an in-place edit to a
-              #   frozen registration
+              #   frozen registration.
 
 [match]
 labels_any = ["spec-project"]
@@ -124,10 +133,10 @@ emits = "findings"
 expected_cost = 0.60
 fanout = ["judge-architecture", "judge-correctness", "judge-simplicity"]
 holds_tree = false
-inputs = ["spec-author.*", "issue.body"]
+inputs = ["issue.latest.spec", "issue.body"]
 name = "review"
 packet = ["contracts/{executor}.md"]
-payload = "findings@9"
+payload = "findings@10"
 
 [[step]]
 after = ["review"]
@@ -138,7 +147,7 @@ holds_tree = false
 inputs = ["review.*"]
 name = "synthesize-findings"
 packet = ["contracts/{executor}.md"]
-payload = "findings-cluster@2"
+payload = "findings-cluster@3"
 
 [[step]]
 action = "aggregate"
@@ -147,7 +156,7 @@ inputs = ["synthesize-findings.findings"]
 max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
-payload = "findings@9"
+payload = "findings@10"
 threshold = { "fix-loop" = "any(open_severity >= blocker)", "drain-highs" = "any(open_severity >= high)" }
 
 [[step]]
@@ -185,7 +194,7 @@ packet = ["contracts/spec-author.md"]
 
 [[step]]
 after = ["reconcile"]
-inputs = ["spec-author.*", "reconcile.findings"]
+inputs = ["issue.latest.spec", "reconcile.findings"]
 name = "spec-vote"
 on_fail = "fix-loop"
 type = "vote"

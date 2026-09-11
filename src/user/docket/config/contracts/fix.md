@@ -1,6 +1,6 @@
 ---
 node: fix
-version: 18
+version: 19
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
@@ -24,8 +24,8 @@ disposition. A shared repair may satisfy several items; retain every item ID.
 You do not re-implement the issue, revise its requirements, or re-judge the
 whole change. The `implement` change-summary is context. The routed findings,
 reconciled where a reconcile stage produced them, remain authoritative
-assignments; do not silently drop, downgrade, or
-declare them withdrawn. Report a supported disagreement for reassessment.
+assignments; do not silently drop, downgrade, or declare them withdrawn.
+Report a supported disagreement for reassessment.
 
 Do not repair unrelated discoveries. File them through the supplied gap route.
 Correct regressions introduced by your own repair within this charter; their
@@ -188,8 +188,8 @@ Run the repository's completion gates declared by the workflow, resolving
 each name to its command with `docket trust list` per `completion-gates`,
 plus the required build and test commands. One applicable run may satisfy
 overlapping obligations; do not repeat it merely to fill another heading.
-Repeat affected checks after
-relevant changes or when a failure or unresolved question warrants it.
+Repeat affected checks after relevant changes or when a failure or unresolved
+question warrants it.
 Record actual commands, exit statuses, decisive output, and retained log
 references under the evidence rules, including blocked, skipped, or cached
 results and their limits.
@@ -210,8 +210,9 @@ change is warranted, use an existing candidate commit only as the brief's
 hand-back procedure permits.
 
 # Emit
-`change-summary` (markdown). Its FIRST LINE is the bare worktree commit SHA
-required by the executor-write obligations. Keep the body concise and include:
+`change-summary` (markdown). Its FIRST LINE is the exact full candidate
+commit SHA required by the hand-back procedure. Keep the body concise and
+include:
 
 - **AC dispositions:** each supplied `unmet` AC ID, missing behavior, repair
   or unresolved reason, and evidence for reassessment; each `unverifiable` or
@@ -219,17 +220,16 @@ required by the executor-write obligations. Keep the body concise and include:
   AC's retained judgment and any effect of authorized repairs.
 - **Findings addressed:** ID, cause, change, and supporting evidence, including
   relevant pre-fail and post-pass results. Link shared repairs without losing
-  member IDs. Give the design-search record for each repair: candidates
-  weighed, the pick, why it won, or the one-line reason the search did not
-  apply.
+  member IDs. Give the design-search record for each repair: candidates weighed,
+  the pick, why it won, or the one-line reason the search did not apply.
 - **Findings not addressed:** ID, disposition, evidence, and remaining question
   or owning stage. Distinguish disproven premise, supported disagreement,
   unsuccessful reproduction, scope block, and unavailable verification. A
   rebuttal is not a unilateral withdrawal of a reconciled finding.
 - **Files changed:** one line explaining why each changed file was necessary.
-- **Denials:** every refused command and any re-issue, in both the step's returned
-  response and this artifact, under completion-gates; write none when there were
-  none. Preserve reasons and outcomes with required redactions.
+- **Denials:** every refused command and any re-issue, in both the step's
+  returned response and this artifact, under completion-gates; write none
+  when there were none. Preserve reasons and outcomes with required redactions.
 - **Class sweeps:** search coverage and command/pattern, loci and dispositions,
   filed gap references, and limits on any absence claim.
 - **Entry-point invocations:** published and executed forms, adaptations,
@@ -249,9 +249,10 @@ references, attempted repairs, and unresolved gaps across compaction or handoff.
 Gap the dependent work when required inputs are missing, requirements remain
 irreconcilable, a correct repair exceeds this role's scope, or a finding can
 neither be reproduced nor rebutted with sufficient evidence. Name the affected
-IDs, what you established, and the smallest decision, scope change, or evidence
-needed from the conductor or operator. Continue independent authorized work unless an execution
-rule requires stopping the step; never represent the blocked portion as closed.
+IDs, what you established, and the smallest decision, scope change, or
+evidence needed from the conductor or operator. Continue independent
+authorized work unless an execution rule requires stopping the step; never
+represent the blocked portion as closed.
 
 For environmental failures without a stricter toolchain rule, allow at most
 two attempts at the same blocked operation. A retry needs a changed condition

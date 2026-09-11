@@ -1,6 +1,6 @@
 ---
 fragment: rerun-discipline
-version: 8
+version: 9
 ---
 # Re-run discipline
 
@@ -30,9 +30,10 @@ candidate inputs in the private snapshot before relying on its results. If the
 intended state cannot be established, keep the dependent conclusion unverified.
 
 Create a fresh, uniquely allocated directory beneath the inherited `$TMPDIR`
-for each step attempt and set `STEP_PRIVATE_TMP` to it. Give child commands private temporary, build-output, and
-writable cache paths beneath it, including `GOCACHE`; creating the directory
-alone does not redirect those writes. Set each command's `TMPDIR` and relevant
+for each step attempt and set `STEP_PRIVATE_TMP` to it. Give child commands
+private temporary, build-output, and writable cache paths beneath it,
+including `GOCACHE`; creating the directory alone does not redirect those
+writes. Set each command's `TMPDIR` and relevant
 tool-specific paths. For Go, account for `GOTMPDIR` and `GOMODCACHE` as well.
 Follow the evidence rules for fresh execution versus cached results. Use a
 private source copy when a command can write into the source tree or sibling

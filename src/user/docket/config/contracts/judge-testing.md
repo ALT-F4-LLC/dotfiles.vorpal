@@ -1,6 +1,6 @@
 ---
 node: judge-testing
-version: 11
+version: 12
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -13,7 +13,7 @@ packet_includes:
   - fragments/test-code-boundaries.md
   - fragments/diff-reconstruction.md
 emits: findings
-payload: findings@9
+payload: findings@10
 ---
 # Charter
 Examine one change for test adequacy, reliability, and the accuracy of its claimed
@@ -92,7 +92,7 @@ Use the evidence rules for state, discovery, skips, exclusions, caching, and fai
 attribution. A current green run does not establish the red-first sequence or
 "0 new failures" without the relevant prior evidence.
 
-Use the rerun fragment's scratch-copy exports under the executor-read boundary.
+Use the rerun fragment's private copies and export directories under the executor-read boundary.
 Preserve all intended candidate inputs;
 isolate writes, outputs, caches, and other mutable resources. Probes, including
 mutations or controls, must not write into the reviewed checkout or shared
@@ -111,7 +111,7 @@ dispositions, target identities, evidence references, and gaps across rounds,
 handoffs, and compaction; justify closures with evidence.
 
 # Emit
-`findings`: a markdown body and the `findings@9` payload, using the supplied schema
+`findings`: a markdown body and the `findings@10` payload, using the supplied schema
 and recording protocol. Give each finding an identity, location and reviewed state,
 the untested or overstated behavior, why current evidence does not establish it,
 consequence, evidence label and references, authored severity and reason, and a

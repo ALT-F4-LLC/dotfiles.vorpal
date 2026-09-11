@@ -1,7 +1,11 @@
 [pipeline]
 description = "Documentation change: implement with doc-validate and citation gates, one correctness judge, tribunal-filtered review and AC verification, and a bounded fix-loop re-entering at review; the conductor integrates commits, the operator publishes. Design-heavy doc work routes through spec-doc first."
 name = "docs-only"
-version = 23  # 23: `verify-ac` emits `ac-report@2` (adds `unmet-out-of-scope`)
+version = 24  # 24: the review step repoints `payload = "findings@10"` — a
+              #   prose-only schema correction (findings@9's stale field
+              #   descriptions), no validation-semantics change. No topology
+              #   change.
+              # 23: `verify-ac` emits `ac-report@2` (adds `unmet-out-of-scope`)
               #   and its vote predicate becomes `any(status != met)`, read after
               #   `fix-loop`'s `any(status == unmet)`: an in-scope unmet still
               #   loops, an out-of-scope or unverifiable AC goes to the one-seat
@@ -86,7 +90,7 @@ holds_tree = false
 inputs = ["implement.change-summary", "issue.diff"]
 name = "review"
 packet = ["contracts/{executor}.md"]
-payload = "findings@9"
+payload = "findings@10"
 threshold = { "review-vote" = "any(severity >= blocker)" }
 
 [[step]]

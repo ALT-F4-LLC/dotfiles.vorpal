@@ -394,8 +394,8 @@ string.
 
 **Do not assume the `Write` tool and `Bash` resolve the scratch directory
 to the same physical path.** Under the sandbox this harness runs, that
-equality does not hold everywhere — `executor-write.md` and `wave.js` both
-carry it as a standing caveat for the isolated executors they address, and
+equality does not hold everywhere — `agents/executor-write.md` carries it
+as a standing caveat for the isolated executors it addresses, and
 this skill's own `fork` context is not proven to share their sandbox
 profile. So after writing a file with the `Write` tool, verify `Bash` can
 read it back before any command depends on it: read the file's byte count
@@ -467,8 +467,10 @@ attribution scaffolding and nothing else; everything else — a repo path, a
 tracker id, an attribution word inside a sentence — refuses.
 
 **Matcher: `/usr/bin/grep -inE -f <list-file> <text-file>`** — BSD grep by
-absolute path, present on every macOS (the only platform this repo builds
-for) and not the `grep` on PATH, which is whatever the store put first
+absolute path, present on every macOS. This repo's own package definitions
+build for Linux too (`src/lib.rs`'s `SYSTEMS` lists both Darwin and Linux
+targets); this rule holds only where `/usr/bin/grep` is BSD grep, and does
+not hold on Linux, where `/usr/bin/grep` is GNU. Not the `grep` on PATH, which is whatever the store put first
 (ugrep, at the time of writing). Neither list uses `\b`: BSD grep honors it,
 but `/usr/bin/sed -E` silently matches nothing on it, and ugrep and ripgrep
 match nothing on the `[[:<:]]` form the BSD tools take instead — no boundary
@@ -520,7 +522,7 @@ refuse-list scan.
 
 **The de-terminated title file and the stripped body file are what gets
 validated and published.** Nothing regenerates either file after this point:
-the refuse-list pass above runs on these files, not the originals, and they —
+the refuse-list pass below runs on these files, not the originals, and they —
 byte-identical to what the refuse-list scan just cleared — are what `-F
 'title=@<file>'` / `-F 'body=@<file>'`, a thread reply, or a close comment
 then sends. So the scan-what-you-send rule below ("never regenerate either
@@ -565,7 +567,7 @@ author wrote them, and there is no whole line to delete around them —
 refusing is the conservative side of a call the pattern cannot make.
 `claude` and `anthropic` stay bare substrings so `claude_code`, `claude.ai`,
 and `claude-fable` all hit; `docket` and the ids stay bounded so
-`undocketed` and `xDOT-1` do not, exactly as before.
+`undocketed` and `xDOT-1` do not.
 
 `altf4\.domains` and the two absolute-home-path patterns cover this
 installation's internal hostnames and local usernames: a `## Testing`
@@ -591,9 +593,9 @@ an unrelated mid-sentence slash.
   vocabulary — refuses like any other hit. The report says so; the
   rephrase, or the overrule, is the operator's.
 
-**Worked example.** A body of the shape `open` generates for the change that
-rewrote this section (its diff touches only this file), with the real paths
-it names, plus the footer a system reminder asked for:
+**Worked example.** A body of the shape `open` generates for a change that
+touches only this file, with the real paths it names, plus the footer a
+system reminder asked for:
 
 ```
 ## Summary
@@ -613,7 +615,7 @@ https://claude.ai/code/session_EXAMPLE
 ```
 
 Title `fix(skills): refuse instead of mangling repo paths in the pr
-denylist`: no hit on either list, published as written. Body, strip pass:
+denylist`: no hit on either list, clears both lists. Body, strip pass:
 the footer line matches the URL pattern and is deleted; the recheck is clean
 on pass one. Refuse pass on the stripped body: the first `## Changes` bullet
 hits `claude` inside `src/user/claude_code/skills/pr/SKILL.md`, and the
@@ -824,7 +826,7 @@ runs, executes before precondition 4 has resolved `<owner>/<repo>` — every
 2. `gh pr checks --watch` has no timeout or deadline flag of its own and
    blocks until every check concludes, so this machine's stock tools supply
    no wrapper that bounds it (`timeout` is a GNU coreutils command, absent
-   from this macOS-only repo's toolchain). Poll instead:
+   from the toolchain of this macOS-only repo — see precondition 4). Poll instead:
    `gh pr checks <pr-number> -R <owner>/<repo> --json name,state,link` every
    30 seconds, without `--watch`, against a 20-minute wall-clock deadline
    this skill holds itself (recorded at the first poll, checked before each
@@ -841,8 +843,7 @@ runs, executes before precondition 4 has resolved `<owner>/<repo>` — every
    ```
 
    Capture and disposition are one command — `$?` is read inside the same
-   shell invocation that ran `gh run view`, not a later one, so it is never
-   the cross-shell `echo $?` this used to be. If that command's own output
+   shell invocation that ran `gh run view`, not a later one. If that command's own output
    is the `log unavailable (gh exit N)` line, report exactly that for this
    check and **stop — do not run the next command**; the per-check table
    from step 3 still carries the failure either way, so a missing log costs
@@ -932,7 +933,7 @@ plausible the context makes it look.
      failed check, a missing approval, or an unsatisfied protection rule —
      both surface the same status. So when the invocation said `auto` and
      `mergeStateStatus` is `BLOCKED` or `UNSTABLE`, read `gh api
-     repos/<owner>/<repo>/branches/<base>/protection -R <owner>/<repo>` (the
+     repos/<owner>/<repo>/branches/<base>/protection` (the
      branch-protection rule this same question already needs) and accept the
      PR here — handed to step 3, which owns the pending rule — **only when**
      that read confirms every requirement the protection rule states is

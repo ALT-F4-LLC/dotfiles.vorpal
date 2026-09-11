@@ -31,14 +31,15 @@ if the audit cannot finish, name the remaining coverage without calling it done.
 
 After selection, retrieve the full relevant conductor, direct-agent, and workflow
 evidence from the inventoried paths, launch records, and returned paths. Do not
-infer parentage from cwd and
-recency alone. A session can share its directory with unrelated concurrent work.
+infer parentage from cwd and recency alone. A session can share its directory
+with unrelated concurrent work.
 Deduplicate replayed history using stable record identity and explicit lineage;
 do not deduplicate separate attempts just because their text matches.
 
 Inventory memory separately across every project directory, including projects
-with no in-window session. Read its entries and index under the main skill's
-memory rules; this is a current-state audit alongside the windowed transcripts.
+with no in-window session. Read its entries and index under SKILL.md's "2.
+Establish the baseline" and "4. Record findings" sections; this is a
+current-state audit alongside the windowed transcripts.
 Report projects/entries reviewed, unavailable, and pending. Missing corroboration
 in the seven-day transcript window does not prove a memory claim is false.
 
@@ -75,10 +76,10 @@ journal. Its task result can supply evidence, but a nonempty output file can be
 partial. Confirm completion independently.
 
 Join by stable session/workflow/agent identity. For Docket steps, prefer an
-explicit assignment record, or the installed `wave-usage` obligation classifier:
-claimant (step record), judge (vote cast), and wave overhead (read-only probes)
-have different owners.
-The first `STEP-N` in a prompt can be something a probe read. For tend, prefer
+explicit assignment record, or the installed `wave-usage` obligation
+classifier: claimant (step record), judge (vote cast), and wave overhead
+(read-only probes) have different owners. The first `STEP-N` in a prompt can
+be something a probe read. For tend, prefer
 an explicit launch record binding project, issue, agent, and workflow identity.
 Otherwise require an unambiguous assignment statement in the bootstrap brief;
 a regex finding an issue ID in quoted descriptions is insufficient. Preserve
@@ -93,17 +94,17 @@ remains unknown unless the runtime exposes it for that execution.
 
 ## Usage and census checks
 
-The local `session-census` and `sandbox-friction` workflows are useful only when their
-installed behavior matches this audit's scope. Inspect their version and input
-contract before launching through installed absolute `scriptPath`. Supply the
-frozen cutoff/end or manifest only if supported; never invent an accepted arg.
-If the script cannot express the required window, label its raw result with its
-actual scope or leave that metric unavailable. Do not quote it as a correct
-seven-day census.
+The installed `session-census` and `sandbox-friction` workflows are useful
+only when their installed behavior matches this audit's scope. Inspect their
+version and input contract before launching through installed absolute
+`scriptPath`. Supply the frozen cutoff only if supported; never invent an
+accepted arg. If the script cannot express the required window, label its raw
+result with its actual scope or leave that metric unavailable. Do not quote it
+as a correct seven-day census.
 
-The installed `session-census` workflow sums usage per assistant message without
-deduplicating by message ID, so its totals can count streamed rewrites more
-than once. Report this limitation once and continue the qualitative audit.
+The installed `session-census` workflow's `assistant_row` function sums
+usage per assistant message with no message-ID dedup anywhere in the
+script, so its totals can count streamed rewrites more than once. Report this limitation once and continue the qualitative audit.
 
 Validate usage extraction against the installed `wave-usage` semantics:
 

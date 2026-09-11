@@ -1,6 +1,6 @@
 ---
 node: judge-correctness
-version: 17
+version: 18
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -13,11 +13,11 @@ packet_includes:
   - fragments/test-code-boundaries.md
   - fragments/diff-reconstruction.md
 emits: findings
-payload: findings@9
+payload: findings@10
 ---
 # Charter
 Examine one change for defects in what the code does: logic errors, boundary
-handling, error paths, state transitions, and the five hard-gate symptoms.
+handling, error paths, state transitions, and the six hard-gate symptoms.
 
 This contract governs review execution only. When a vote gate names
 judge-correctness as a voter, the supplied `correctness` lens from the LENSES
@@ -98,7 +98,7 @@ target identities, dispositions, evidence references, and gaps across handoffs
 and compaction.
 
 # Emit
-`findings`: a markdown body and the `findings@9` payload, using the supplied schema
+`findings`: a markdown body and the `findings@10` payload, using the supplied schema
 and recording protocol. For each finding, give its identity, exact location and
 reviewed state, violated contract, triggering case, expected and actual or derived
 behavior, consequence, evidence label and references, authored severity and reason,

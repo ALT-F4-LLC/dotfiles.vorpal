@@ -1,6 +1,6 @@
 ---
 fragment: vorpal-toolchain
-version: 9
+version: 10
 ---
 # Vorpal toolchain
 
@@ -53,13 +53,12 @@ The conductor prepares the shared module cache before dispatch. Preserve that
 configuration: do not override `GOMODCACHE`, redirect it through `GOPATH`, create a
 private module cache, or delete shared caches.
 
-Set `GOCACHE` to a fresh subdirectory inside the brief's private step directory,
-`<TMP>/<STEP-N>.d`. `<TMP>` is the literal value pinned from `printenv TMPDIR`.
-The brief's rerun discipline must make this directory exclusive to this session and
-dispatch; a step number alone under a shared TMPDIR is insufficient. If exclusive
-ownership is not established, stop and report the missing directory assignment.
-Use this directory for temporary diff inputs too. Cleanup may touch only your own
-step directory, after its processes have finished.
+Set `GOCACHE` to a fresh subdirectory inside the brief's assigned private step
+directory, `<TMP>/<STEP-N>.d`. `<TMP>` is the literal value pinned from
+`printenv TMPDIR`; that directory is built fresh at claim and is exclusive to
+this session and dispatch. If no directory is assigned, stop and report the
+missing assignment. Use this directory for temporary diff inputs too. Cleanup
+may touch only your own step directory, after its processes have finished.
 
 Explicitly change to the repository root in each build/test call. In Claude Code,
 set the Bash tool's `timeout` to `300000` milliseconds for a cold build or test run;
@@ -102,7 +101,7 @@ the alias alone does not establish the compiler version used.
 - This executor has no PyYAML. Use an already available YAML parser, such as the
   installed `yq` with its supported syntax or existing project Go tooling; do not
   assume `import yaml` works or add dependencies just to parse YAML.
-- Shell `grep` resolves to a ugrep shim whose matching and ignored-file behavior
+- Shell `grep` resolves to a `ugrep` shim whose matching and ignored-file behavior
   differ from the gate scripts. For counted or gated searches, use `/usr/bin/grep`
   with the gate's exact pattern, flags, and file scope. Do not substitute a search
   tool whose defaults change which files or matches are counted.

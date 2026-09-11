@@ -1,6 +1,6 @@
 ---
 fragment: design-search
-version: 2
+version: 3
 ---
 # Design search
 
@@ -55,7 +55,7 @@ proportional to the decision's blast radius.
 carries hard-gates: it blocks a passing review and opens a fix round. Grade a
 pick that a recorded or evident alternative clearly dominates on the criteria
 above by its supported consequence on the severity ladder in your packet: a
-Concern when the pick costs correctness, locality of reasoning, or maintenance
+a Concern when the pick costs correctness, locality of reasoning, or maintenance
 that the alternative would not; a Suggestion when the benefit is real but
 minor. A different but equal design is not a finding, and neither is distance
 from ideal. When the record is thin, two candidates that differ only in

@@ -1,6 +1,6 @@
 ---
 fragment: copy-discipline
-version: 4
+version: 5
 ---
 # Copy discipline
 
@@ -33,9 +33,9 @@ values when quoting or interpolating them.
 
 ## Copy contracts define observable acceptance criteria
 
-**Identify the surface, state, channel, and kind.** Give each copy entry a stable name or
-existing message key. Declare its locale, or inherit the document's explicit
-locale. Mark the entry as one of:
+**Identify the surface, state, channel, and kind.** Give each copy entry a
+stable name or existing message key. Declare its locale, or inherit the
+document's explicit locale. Mark the entry as one of:
 
 - **LITERAL:** fixed text the named surface must emit exactly.
 - **TEMPLATE:** final wording with defined runtime substitutions. Specify each

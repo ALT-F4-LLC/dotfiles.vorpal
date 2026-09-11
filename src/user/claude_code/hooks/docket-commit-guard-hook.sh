@@ -38,7 +38,7 @@
 #
 # THE MATCHER — leaf enumeration, widening, and quote-group marking below —
 # is shared byte-for-byte with docket-trust-guard-hook.sh; see that file's
-# header for the DOT-1123 redesign rationale (CL9/CL16/CL17) this replaces.
+# header for the redesign rationale this replaces.
 # Only what comes after quote-group marking differs: this file's MATCH step
 # looks for `git commit`/`push`/`add`, with git's own `-C`/`-c`/`--git-dir`
 # global-option skipping and its option-before-subcommand help exemption,
@@ -266,7 +266,7 @@ SCAN_TEXT=$(awk -v RS='\036' -v widen="$WIDEN" '
 # — there is nothing of that shape left for this pass to get wrong.
 #
 # The awk PROGRAM itself lives in docket-guard-prepass.awk, shared
-# byte-for-byte with docket-trust-guard-hook.sh (DOT-1499): both hooks
+# byte-for-byte with docket-trust-guard-hook.sh: both hooks
 # install as siblings under ~/.claude/hooks (src/user/claude_code.rs ships
 # the whole hooks/ directory as one artifact), so resolving it beside this
 # script's own path reaches the installed copy the same way in production
@@ -300,7 +300,7 @@ STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk -f "$PREPASS_AWK" 2>/dev/null) || allo
 # would need modeling to tell that case apart from `git commit
 # --help-me-a-message-file`-shaped real writes reliably.
 #
-# BRACE EXPANSION (DOT-1515): bash's own $BASH_COMMAND reconstruction keeps
+# BRACE EXPANSION: bash's own $BASH_COMMAND reconstruction keeps
 # a leaf's SOURCE spelling, unexpanded -- `git commi{t,} -m x` reaches this
 # scan as the literal text `commi{t,}`, not as the two words bash actually
 # dispatches (`commit`, empty) after expansion. The truncation below (stop

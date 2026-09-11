@@ -157,9 +157,9 @@ trust entry bound to this repository fails that issue's first gated step
 `unmatched`, which routes per its `on_fail`: `waiting-human` on every
 first-pass gated step in the installed corpus, so it parks. Measured across
 every project on this machine on 2026-09-10, 21 parks carried an unmatched
-gate row, every one reading "an entry of this name exists but is bound to a
-different repo", and three of the 34 steps still parked were that shape, all
-in abandoned runs. Include every consumer step. Inspect `docket trust list
+gate row reading a case of no trust entry bound to this repository, and three
+of the 34 steps still parked were that shape, all in abandoned runs. Include
+every consumer step. Inspect `docket trust list
 --all` and treat an entry bound to another repository as missing here, never
 as applicable. Propose one entry per gate in that union, bound to
 this repository, each carrying the real command the miners found. A gate this
@@ -202,9 +202,13 @@ do not delegate the operator's answer or infer it from silence.
    coverage, verification environment, trust scope, and status. A count of
    harvested fences is not a command list. The activation preflight warns only
    about gates the bound workflows declare and prints nothing when they all
-   resolve, so check the rest of the §4 union separately.
+   resolve, so check the rest of the §4 union separately. It also lists any
+   stub-backed gate (`trust add --stub`) separately as a note: a stub resolves
+   and will run, but measures nothing — surface that in §5.3's read-back as
+   hollow assurance rather than a satisfied gate.
 3. **Approve trust individually.** Each call identifies one entry, repository,
-   exact argv, and explicit values for `re-runnable`, `tree`, and `flaky`.
+   exact argv, and explicit values for `re-runnable`, `tree`, `flaky`, and
+   `stub`.
    Explain any prefix matching or absolute mutable repo path in its proposal.
    Apply only that approved entry with `trust add --yes`, flags before `--`,
    then read back the effective entry. Show any conflict with an existing

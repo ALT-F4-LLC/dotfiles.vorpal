@@ -12,9 +12,9 @@ argument-hint: "[system, component, or change]"
 Target or focus supplied with invocation: $ARGUMENTS
 
 Use the operator's request and repository context to establish the target when
-arguments are absent. Ask only if the scope cannot reasonably be determined. Perform analysis
-and verification within the existing task authorization; propose mitigations unless
-their implementation is also within scope.
+arguments are absent. Ask only if the scope cannot reasonably be determined.
+Perform analysis and verification within the existing task authorization;
+propose mitigations unless their implementation is also within scope.
 
 ## Establish the frame
 

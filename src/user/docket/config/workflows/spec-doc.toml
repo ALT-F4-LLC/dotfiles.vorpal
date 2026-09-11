@@ -1,7 +1,13 @@
 [pipeline]
-description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by a research step, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec); a rejection re-enters the bounded revise loop at review."
+description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by a research step, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec); a rejection re-enters the bounded revise loop at the doctype's revise step, which then runs review again."
 name = "spec-doc"
-version = 29  # 29: fixes the doc-acceptance comment's stale tier claim (policy
+version = 30  # 30: two fixes, no topology change. An earlier changelog entry
+              #   cited a stale step count ("15 -> 16") for the vote-record
+              #   input split; corrected to the current count ("19 -> 20").
+              #   review and synthesize-findings repoint to `findings@10` and
+              #   `findings-cluster@3` — prose-only schema corrections, no
+              #   validation-semantics change.
+              # 29: fixes the doc-acceptance comment's stale tier claim (policy
               #   23 moved tribunal-architecture and tribunal-correctness to
               #   opus-high, matching judge-* except judge-architecture/
               #   simplicity/testing at opus-medium; only tribunal-design
@@ -25,7 +31,7 @@ version = 29  # 29: fixes the doc-acceptance comment's stale tier claim (policy
               #   steps, `ux-spec-vote` and `prd-vote`, each carrying one of the former
               #   combined step's `when` predicates and identical voters/vote_rule/
               #   after/on_fail. `record`'s `after` list and the two revise-* steps'
-              #   vote-record inputs updated to the split names. Step count 15 -> 16.
+              #   vote-record inputs updated to the split names. Step count 19 -> 20.
               # 26: no behavior change — a step rename and two comment
               #   corrections; the topology, seats, rules and routes are
               #   byte-for-byte those of version 25. (a) The tribunal
@@ -236,7 +242,7 @@ holds_tree = false
 inputs = ["issue.latest.doc", "issue.body"]
 name = "review"
 packet = ["contracts/{executor}.md"]
-payload = "findings@9"
+payload = "findings@10"
 
 [[step]]
 after = ["review"]
@@ -247,7 +253,7 @@ holds_tree = false
 inputs = ["review.*"]
 name = "synthesize-findings"
 packet = ["contracts/{executor}.md"]
-payload = "findings-cluster@2"
+payload = "findings-cluster@3"
 
 [[step]]
 action = "aggregate"
@@ -256,7 +262,7 @@ inputs = ["synthesize-findings.findings"]
 max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
-payload = "findings@9"
+payload = "findings@10"
 threshold = { "fix-loop" = "any(open_severity >= blocker)", "drain-highs" = "any(open_severity >= high)" }
 
 [[step]]

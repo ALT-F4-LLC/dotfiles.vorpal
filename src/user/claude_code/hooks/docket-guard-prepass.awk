@@ -1,8 +1,8 @@
 # Shared quote-group pre-pass for docket-trust-guard-hook.sh and
 # docket-commit-guard-hook.sh. Both hooks feed this the same SCAN_TEXT (their
 # post-widening leaf buffer) via `awk -f`; see either hook's header for the
-# DOT-1123 redesign this pre-pass is part of. Read as one file rather than
-# duplicated inline so a lexer fix lands once instead of twice (DOT-1499).
+# redesign this pre-pass is part of. Read as one file rather than
+# duplicated inline so a lexer fix lands once instead of twice.
 #
 # A quoted group in ONE position is code rather than prose: the argument an
 # interpreter executes verbatim. True when the word immediately before the

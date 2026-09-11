@@ -1,7 +1,12 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 37  # 37: `verify-ac` emits `ac-report@2`, whose status enum adds
+version = 38  # 38: two fixes, no topology change. An earlier changelog entry
+              #   cited a resolved tracker reference for the `ac-commands`
+              #   gate stub; dropped as stale. review repoints to
+              #   `findings@10` — a prose-only schema correction, no
+              #   validation-semantics change.
+              # 37: `verify-ac` emits `ac-report@2`, whose status enum adds
               #   `unmet-out-of-scope`: an AC shown false whose every repair lies
               #   outside all applicable step scopes or in another repository,
               #   gap-filed by verify-ac itself. The vote predicate becomes
@@ -98,8 +103,8 @@ version = 37  # 37: `verify-ac` emits `ac-report@2`, whose status enum adds
               #   `on_fail = "fix-loop"`, `vote_rule = "tribunal"`), and
               #   `fix` reads its vote-record. RUN-90 measured the old
               #   routing: 20 of its 21 parks were a verify reporting an AC
-              #   `unverifiable` because the `ac-commands` gate is a stub
-              #   (AGT-271); every one parked the whole run and every one
+              #   `unverifiable` because the `ac-commands` gate is a stub;
+              #   every one parked the whole run and every one
               #   the operator resolved `override-pass`. A vote rides the
               #   wave and parks nothing; a below-threshold tally still
               #   routes to the fixer, never to a silent pass. Cost: three
@@ -166,7 +171,7 @@ version = 37  # 37: `verify-ac` emits `ac-report@2`, whose status enum adds
               #   this pipeline audited a newly added dependency's own CVE
               #   exposure — a hash-pinned lockfile buys integrity, not
               #   vulnerability freedom. The gate is UNCONDITIONAL because
-              #   §11.1 admits no gate predicate: a gate entry carries only
+              #   a gate entry carries only
               #   `name`, `source`, and `pre`, and step-level `when` reads
               #   issue kind/labels, never the diff. A repo with no
               #   `vuln-scan` trust entry records `unmatched`, which routes
@@ -223,7 +228,7 @@ after = ["implement"]
 fanout = ["judge-correctness", "judge-architecture", "judge-testing"]
 emits = "findings"
 packet = ["contracts/{executor}.md"]
-payload = "findings@9"
+payload = "findings@10"
 expected_cost = 0.60
 inputs = ["implement.change-summary", "issue.diff"]
 
@@ -236,7 +241,7 @@ holds_tree = false
 inputs = ["review.*"]
 name = "synthesize-findings"
 packet = ["contracts/{executor}.md"]
-payload = "findings-cluster@2"
+payload = "findings-cluster@3"
 
 [[step]]
 action = "aggregate"
@@ -245,7 +250,7 @@ inputs = ["synthesize-findings.findings"]
 max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", output = "findings" }
-payload = "findings@9"
+payload = "findings@10"
 threshold = { "fix-loop" = "any(open_severity >= blocker)", "drain-highs" = "any(open_severity >= high)" }
 
 [[step]]

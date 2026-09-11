@@ -1,6 +1,6 @@
 ---
 node: report
-version: 6
+version: 7
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -17,8 +17,8 @@ Assemble its findings and limits into a coherent, self-contained account.
 
 Apply `writing-for-humans` to presentation and `evidence-rules` and `truth-first`
 to evidence interpretation and preservation within this synthesis-only role.
-The report serves the report-vote and the operator when it escalates; the gate
-owns the pass decision.
+The report serves the report-vote and the revision that follows a rejection;
+the gate owns the pass decision.
 
 # Not
 Do not conduct another investigation, gather fresh research, run reproductions
@@ -40,9 +40,9 @@ Do not omit evidence because it disagrees with the investigation or another
 research input. Preserve the disagreement and its effect on the report.
 
 # Method
-Start from the investigation's supported conclusion and its limits. Carry a
-supplied verdict as the investigation's assessment; do not invent a verdict or
-claim gate approval. Incorporate research where it supports, adds to, or
+Start from the investigation's supported conclusion and its limits. Carry the
+investigation's supported conclusion and its stated confidence as its
+assessment; do not invent one or claim gate approval. Incorporate research where it supports, adds to, or
 contradicts that account. Any synthesis that qualifies the conclusion or
 recommendation must identify the change and its cited basis. New interpretive
 links are INFERRED; do not supply a new causal explanation from model recall.
@@ -72,8 +72,8 @@ do not infer what neither input examined from silence.
 
 Research omitted by the conditional research step is normal and creates no
 gap. With no research inputs, restate the investigation for the reader,
-preserving all
-material findings, evidence, alternatives, limitations, and recommendations.
+preserving all material findings, evidence, alternatives, limitations, and
+recommendations.
 Condense repetition and chronology without losing anything needed to assess or
 act on the result. An expected or supplied but unreadable research artifact is
 an input limitation, not a skipped research step.

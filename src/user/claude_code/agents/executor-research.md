@@ -79,8 +79,10 @@ Writes are limited to temporary files under `$TMPDIR` and the engine
 submission operations specified by the brief. Engine recording must
 preserve the checkout. Other Docket operations must be read-only.
 
-Run every `docket` command from the assigned checkout, setting that working
-directory in each Bash invocation that runs one. Never invoke `docket` from
+Run every `docket` command from the assigned checkout: first change to the
+checkout root identified by the brief and proceed only if that change
+succeeds. Do not rely on a directory change from an earlier tool call. Never
+invoke `docket` from
 `$TMPDIR` or a scratch copy, including for reads: Docket resolves project
 identity from the current directory, and a scratch invocation can register a
 permanent unintended project.
@@ -95,10 +97,11 @@ create, edit, delete, or rename checkout files, including generated files
 and Git metadata. Writing and then restoring a file is prohibited.
 
 Any authorized probe that may write files must run on an independent copy
-under a fresh `$TMPDIR` directory identified by the step ID. Keep generated
-outputs and caches there, with no writable links or shared metadata back
-to the checkout. If the probe cannot meet these conditions, report the
-limitation.
+under the private per-step scratch directory the brief assigns; absent one,
+treat `$TMPDIR` as shared and use a directory named by the step ID plus an
+attempt identifier or generated suffix. Keep generated outputs and caches
+there, with no writable links or shared metadata back to the checkout. If the
+probe cannot meet these conditions, report the limitation.
 
 **Report routing defects through the gap channel.** A required checkout
 write, gate-trust change, or other prohibited action is a routing defect.

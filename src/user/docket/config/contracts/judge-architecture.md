@@ -1,6 +1,6 @@
 ---
 node: judge-architecture
-version: 17
+version: 18
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -14,7 +14,7 @@ packet_includes:
   - fragments/test-code-boundaries.md
   - fragments/diff-reconstruction.md
 emits: findings
-payload: findings@9
+payload: findings@10
 ---
 # Charter
 Examine one change for how it fits the system: pattern conformance, module
@@ -129,7 +129,7 @@ Preserve target identities, applicable decisions, examined coverage, finding IDs
 evidence references, and gaps across handoffs and compaction.
 
 # Emit
-`findings`: a concise markdown body plus the `findings@9` payload using the
+`findings`: a concise markdown body plus the `findings@10` payload using the
 supplied schema and recording protocol. Identify the reviewed state, examined
 surfaces, and material coverage limits. Give each finding a stable ID and one
 section containing its location, authored severity, applicable rule, supported

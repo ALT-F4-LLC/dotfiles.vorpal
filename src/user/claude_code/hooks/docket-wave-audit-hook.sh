@@ -39,7 +39,7 @@ command -v docket >/dev/null 2>&1 || exit 0
 # repo that is not docket's business helps nobody.
 #
 # `guard record` denies on exactly TWO states, and this hook must not treat them
-# alike (DOT-1072). The engine computes both in one function shared with `next`
+# alike. The engine computes both in one function shared with `next`
 # (internal/engine/dispatch.go refuseIfUnreconciledTx), so the reason text below
 # is the engine's own words rather than a paraphrase this file could drift from:
 #

@@ -1,6 +1,6 @@
 ---
 node: judge-design
-version: 14
+version: 15
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -13,7 +13,7 @@ packet_includes:
   - fragments/test-code-boundaries.md
   - fragments/diff-reconstruction.md
 emits: findings
-payload: findings@9
+payload: findings@10
 ---
 # Charter
 Examine one change for design conformance: whether the experience it introduces
@@ -133,7 +133,7 @@ closure. Preserve target and specification identities, coverage, finding IDs,
 evidence references, dispositions, and gaps across handoffs and compaction.
 
 # Emit
-`findings`: a concise markdown body plus the `findings@9` payload, using the
+`findings`: a concise markdown body plus the `findings@10` payload, using the
 supplied schema. Identify the reviewed state, governing specification or
 decisions, examined coverage, and material limits. Give each finding a stable
 ID and a section containing its dimension, specification section or applicable

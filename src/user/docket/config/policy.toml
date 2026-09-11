@@ -1,5 +1,8 @@
 [policy]
-version = 27  # 27: implement and fix move opus-medium -> opus-high. The design
+version = 28  # 28: fixes a grammar slip in the round-1 fixer comment ("the
+              # docket-retro attributes" -> "docket-retro attributes"). No
+              # routing value changed.
+              # 27: implement and fix move opus-medium -> opus-high. The design
               # search (fragments/design-search.md) puts an architecture
               # decision inside every writer step, and D1 names architecture
               # decisions as where extra investigation pays; D6 has review and
@@ -188,20 +191,22 @@ tdd-author-security = { variant = "opus-high", never = ["fable"], reason = "secu
 # [escalation.fallback] to opus-xhigh — the escalation path lands where the
 # standing tier used to be. Re-open with runs that pair tier and outcome.
 threat-model = { variant = "opus-high", never = ["fable"], reason = "security-classifier-reroute" }
-# Policy 23 — tribunal-architecture and tribunal-correctness at opus-high, down
-# from fable-high (tribunal-design keeps fable-high: no change-track step
-# names it — spec-doc's ux-spec-vote and prd-vote seat it, but those are
-# doc-authoring gates, not the change-track verify-tribunal this paragraph
-# is about).
-# standard-change@31 and security-change@31 interpose a verify-tribunal vote on
-# every verify that reports an AC unverifiable, which on a repo whose
-# ac-commands gate is a stub is nearly every issue (RUN-90: 20 of 23), so these
-# two seats became a per-issue pipeline step rather than an occasional
-# conversational gate, at three seats a firing. D1's ground for Fable —
-# architecture decisions and precedent — is the conversational-gate case; a
-# verify-tribunal weighs an AC report against a diff, the review-executor work
-# judge-correctness and judge-architecture already do at opus-high. A failed
-# seat still escalates opus-high -> fable-high.
+# Policy 23 — tribunal-correctness at opus-high, down from fable-high.
+# standard-change and security-change interpose a single-seat verify-ac-vote
+# (named verify-tribunal and three-seat at @31; renamed and cut to
+# tribunal-correctness alone since) on every verify that reports an AC
+# unverifiable, which on a repo whose ac-commands gate is a stub is nearly
+# every issue (measured 20 of 23 under the old name), so this seat is a
+# per-issue pipeline step rather than an occasional conversational gate. D1's
+# ground for Fable — architecture decisions and precedent — is the
+# conversational-gate case; verify-ac-vote weighs an AC report against a diff,
+# the review-executor work judge-correctness already does at opus-high. A
+# failed seat still escalates opus-high -> fable-high.
+#
+# tribunal-architecture names no change-track step at all: its only current
+# seats are spec-project's accept-vote and spec-doc's ux-spec-vote/prd-vote,
+# doc-authoring gates alongside tribunal-design. See tribunal-design's own
+# note below for the open question this leaves.
 tribunal-architecture = { variant = "opus-high" }
 tribunal-correctness = { variant = "opus-high" }
 # fable-high, down from fable-xhigh: a vote is a short judgment over a proposal, not
@@ -298,8 +303,10 @@ reason = "Fable's safety classifiers cover more categories than Opus 5's cyber-o
 # the resolver's arithmetic, not in the default; lowering the default would
 # stop genuine failures from escalating to buy back a cost the arithmetic fix
 # removes outright. Until the engine change lands, an acknowledged reap that
-# is re-dispatched still re-runs one tier up, and acknowledging it (the
-# docket-run ack-reap ruling) buys that tier cost knowingly.
+# is re-dispatched still re-runs one tier up. Acknowledging it (the
+# docket-run ack-reap gate) does not currently surface that cost to the
+# panel -- the gate's required evidence is the holder confirmed gone and the
+# error verbatim, not the tier hop.
 on_failure = "one-hop"
 # Round-based escalation. A fix-loop round is a FRESH step id —
 # `docket step resolve --as fix-round` mints fix@N+1 at attempt 0 — so
@@ -317,7 +324,7 @@ on_round = "one-hop"
 # security-labelled issues. Measured across 19 fix-loop runs (15 security-flavored:
 # RUN-25/29/30/34/35/36/38/48/49/50/51/52/58/59/60; 4 contrast: RUN-32/53/56/61):
 # round-1 fixers that already served opus-medium reproduced the just-closed-class
-# recurrence the docket-retro attributes to the base tier in every group that could observe
+# recurrence docket-retro attributes to the base tier in every group that could observe
 # one (e.g. RUN-60's own fix@2, RUN-61's own "re-introducing the class this same
 # commit deleted twice"), while sonnet-medium round-1 fixers converged in one round
 # on several security issues. The recurrence tracks the

@@ -30,10 +30,10 @@ mutation also compromises recorded diffs and worktree cleanup.
 If a required probe may modify files, run it on an independent copy under
 the private per-step scratch directory the brief assigns; absent one, treat
 `$TMPDIR` as shared and use a directory named by your step ID plus an attempt
-identifier or generated suffix. Ensure the probe cannot
-write back into the checkout or shared repository metadata through links,
-Git references, caches, or configured output paths. Never mutate the checkout
-and then restore it.
+identifier or generated suffix. Ensure the probe cannot write back into the
+checkout or shared repository metadata through links, Git references,
+caches, or configured output paths. Never mutate the checkout and then
+restore it.
 
 **Trust changes are operator-reserved.** Do not run `docket trust add/rm`
 or otherwise modify the trust roster to authorize a gate's completion.
@@ -50,12 +50,13 @@ Never invoke `docket` from `$TMPDIR` or a scratch copy, including for
 inspection. Docket resolves project identity from the current directory;
 a scratch invocation can register a permanent unintended project.
 
-**Write scratch paths through `$TMPDIR`.** Use quoted paths such as
-`"$TMPDIR/..."`. Do not substitute literal `/tmp/...` or `/Users/...` paths:
-the scratch root can differ between calls, and a sandboxed and an unsandboxed
-command can resolve it to different directories, so a handwritten path points
-at the wrong tree. If `$TMPDIR` is unavailable, report the blocker rather than
-choosing another location.
+**Write scratch paths through your assigned private step directory when the
+brief assigns one.** Use its literal path, pinned once from `printenv TMPDIR`
+per the brief's bootstrap and reused verbatim; do not re-resolve `$TMPDIR`
+mid-step; a sandboxed and an unsandboxed command can resolve it to different
+directories. Absent an assignment, use quoted `"$TMPDIR/..."` paths rather
+than a hand-written `/tmp/...` or `/Users/...` path. If `$TMPDIR` is
+unavailable, report the blocker rather than choosing another location.
 
 **Report routing defects without triggering the same retry.** If the brief
 requires a checkout write or an operator-reserved trust change, do not

@@ -1,6 +1,10 @@
 [pipeline]
 name = "ui-change"
-version = 28  # 28: `verify-ac` emits `ac-report@2` (adds `unmet-out-of-scope`)
+version = 29  # 29: review, synthesize-findings and reconcile repoint to
+              #   `findings@10` and `findings-cluster@3` — prose-only schema
+              #   corrections (stale field descriptions), no
+              #   validation-semantics change. No topology change.
+              # 28: `verify-ac` emits `ac-report@2` (adds `unmet-out-of-scope`)
               #   and its vote predicate becomes `any(status != met)`, read after
               #   `fix-loop`'s `any(status == unmet)`: an in-scope unmet still
               #   loops, an out-of-scope or unverifiable AC goes to the one-seat
@@ -167,7 +171,7 @@ holds_tree = false
 inputs = ["implement.change-summary", "issue.diff"]
 name = "review"
 packet = ["contracts/{executor}.md"]
-payload = "findings@9"
+payload = "findings@10"
 
 [[step]]
 after = ["review"]
@@ -178,7 +182,7 @@ holds_tree = false
 inputs = ["review.*"]
 name = "synthesize-findings"
 packet = ["contracts/{executor}.md"]
-payload = "findings-cluster@2"
+payload = "findings-cluster@3"
 
 [[step]]
 action = "aggregate"
@@ -187,7 +191,7 @@ inputs = ["synthesize-findings.findings"]
 max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", output = "findings" }
-payload = "findings@9"
+payload = "findings@10"
 threshold = { "fix-loop" = "any(open_severity >= blocker)", "drain-highs" = "any(open_severity >= high)" }
 
 [[step]]
@@ -223,7 +227,7 @@ holds_tree = false
 inputs = ["issue.body", "issue.diff", "implement.change-summary", "design-qa.gate-results"]
 name = "design-qa"
 packet = ["contracts/{executor}.md"]
-payload = "findings@9"
+payload = "findings@10"
 threshold = { "fix-loop" = "any(severity >= blocker)" }
 
 [[step]]

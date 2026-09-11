@@ -46,8 +46,8 @@
 # the session. There is no `docket`-binary fail-open branch here, unlike
 # commit-guard — this hook never shells out to `docket` itself.
 #
-# THREE FAIL-OPEN BRANCHES, and whether an executor seat can reach them
-# (DOT-1431): unparseable stdin (`INPUT=$(cat ...) || allow_default`, this
+# THREE FAIL-OPEN BRANCHES, and whether an executor seat can reach them:
+# unparseable stdin (`INPUT=$(cat ...) || allow_default`, this
 # file's own INPUT= line), missing `jq` (the `command -v jq` check right
 # after it), and an unwritable PROBE_OUT/PROBE_CAP (the two `: >"$..."`
 # writes further down, keyed on `${TMPDIR:-/tmp}`). All three are decided
@@ -72,10 +72,10 @@
 # gap must not brick every Bash call in the session) stands unchanged for
 # all three.
 
-# DOT-1123 REDESIGN, replacing a hand-rolled AWK shell lexer that re-scanned
+# REDESIGN, replacing a hand-rolled AWK shell lexer that re-scanned
 # raw command bytes for heredocs, comments, arithmetic expansions, and
 # separators with no notion of bash's actual grammar. Three fix-loop rounds
-# on that lexer (RUN-76) EACH found a live, reproduced bypass or false-DENY
+# on that lexer EACH found a live, reproduced bypass or false-DENY
 # regression in what the PRIOR round had just landed:
 #   CL9  (survived all 3 rounds): a quoted heredoc's body, once marked
 #        prose because its immediate destination (cat/tee/dd) was on a
@@ -193,9 +193,9 @@ is_executor_archetype() {
 # in the conductor's own contract, so it has no legitimate path to the verb
 # at all -- not even the help read below: the ask rule in claude_code.rs
 # still fires on `docket trust add --help`, and a background seat's ask has
-# nobody at a terminal to answer it. RUN-90's conductor issued exactly that
-# help read at 14:52Z and its whole run sat behind the unanswered prompt
-# until 18:00Z. Denying here is what turns that prompt into an immediate,
+# nobody at a terminal to answer it. One conductor issued exactly that
+# help read and its whole run sat behind the unanswered prompt for hours.
+# Denying here is what turns that prompt into an immediate,
 # explained refusal the conductor can route to `main` as a question.
 is_conductor_seat() {
     case "$1" in
@@ -412,7 +412,7 @@ SCAN_TEXT=$(awk -v RS='\036' -v widen="$WIDEN" '
 # — there is nothing of that shape left for this pass to get wrong.
 #
 # The awk PROGRAM itself lives in docket-guard-prepass.awk, shared
-# byte-for-byte with docket-commit-guard-hook.sh (DOT-1499): both hooks
+# byte-for-byte with docket-commit-guard-hook.sh: both hooks
 # install as siblings under ~/.claude/hooks (src/user/claude_code.rs ships
 # the whole hooks/ directory as one artifact), so resolving it beside this
 # script's own path reaches the installed copy the same way in production
@@ -462,7 +462,7 @@ STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk -f "$PREPASS_AWK" 2>/dev/null) || allo
 # `docket trust add --help && docket trust add x -- y` still denies on its
 # second occurrence, on this line or a later one.
 #
-# BRACE EXPANSION (DOT-1515): bash's own $BASH_COMMAND reconstruction keeps
+# BRACE EXPANSION: bash's own $BASH_COMMAND reconstruction keeps
 # a leaf's SOURCE spelling, unexpanded -- `docket trust ad{d,} erik key`
 # reaches this scan as the literal text `ad{d,}`, not as the two words bash
 # actually dispatches (`ad`, `d`) after expansion. The truncation below
@@ -547,6 +547,6 @@ function decode(raw,    inner, cpos) {
 [ "$MATCH" = "MATCH" ] || allow_default
 
 if [ "$CONDUCTOR" = "1" ]; then
-    deny "trust-store write blocked: \`docket trust add/rm\` is operator-reserved and never the conductor's to run, \`--help\` included: a background seat's permission ask has nobody at a terminal to answer it, and RUN-90's conductor held one for 188 minutes. Send the trust matter to \`main\` as its own \`question:\` (never bundled with another gate) and end your turn; the operator's own terminal is the only path to that store."
+    deny "trust-store write blocked: \`docket trust add/rm\` is operator-reserved and never the conductor's to run, \`--help\` included: a background seat's permission ask has nobody at a terminal to answer it, and one conductor has held one for hours. Send the trust matter to \`main\` as its own \`question:\` (never bundled with another gate) and end your turn; the operator's own terminal is the only path to that store."
 fi
 deny "trust-store write blocked: \`docket trust add/rm\` is operator-reserved and never in scope for an executor step, whatever the brief says. If your step genuinely needs a trust entry changed, that is a routing defect: record the mismatch as your step's finding through the gap channel your brief names, and do not retry this call. If this command performs no trust-store write, the matcher has false-positived on the phrase appearing as prose or as an interpreter's code argument (known limitation): to read or search a file's content, use the Read or Grep tool instead (bypasses this matcher entirely); to write prose that names the phrase, put it in a file via the Write/Edit tool rather than a Bash heredoc or an inline code argument."

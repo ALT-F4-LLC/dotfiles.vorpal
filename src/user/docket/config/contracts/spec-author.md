@@ -1,6 +1,6 @@
 ---
 node: spec-author
-version: 6
+version: 7
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
@@ -37,8 +37,8 @@ Any other `docs/spec/{slug}.md` is a PRD and belongs to `prd-author`.
 
 # Not
 Repository edits are limited to the assigned specification and handoff artifacts
-explicitly required by your brief. Follow the executor contract for permitted
-scratch work. Do not change source, tests, configuration, or diagnostics to
+explicitly required by your brief. Follow the `executor-write` archetype's
+boundaries for permitted scratch work. Do not change source, tests, configuration, or diagnostics to
 obtain evidence or repair gaps. Product requirements, technical designs,
 decision records, and UX specifications belong to their respective nodes.
 

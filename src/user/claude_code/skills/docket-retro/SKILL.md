@@ -106,7 +106,6 @@ bump — but note it, because the next docket-retro attributes what followed to 
 | `[variants]` | a variant's {model, effort} consistently over- or under-serving its rows; an `escalate_to` hop that lands wrong |
 | `[executors]` | a hint mis-sized; a row orphaned by a deleted workflow; a hint with no row |
 | `[security]` | security-labelled work landing on an unpinned row — widen `nodes` or `labels` |
-| `[[resolve]]` | a rule that never matches, or ordering that lets the general rule shadow the specific one |
 | `[escalation]` | `one-hop` under- or over-shooting; a `fable_gates` entry that never fires |
 
 Two invariants any `[executors]` proposal must preserve: **every hint has
@@ -289,8 +288,10 @@ mined-facts comment kept current. A schema edit is a new
 `schemas/<name>@N+1.json`, plus a bump to every workflow naming it.
 `policy.toml`, contracts, and fragments are pinned rather than registered. A
 contract or fragment body edit bumps its front-matter `version` in the same
-commit (frozen-drift-check enforces the lockstep); `policy.toml` alone carries
-no version field. Note every change so the next docket-retro can attribute
+commit (frozen-drift-check enforces the lockstep); `policy.toml` carries an
+informational `[policy].version` the engine never freezes or enforces --
+bump it as a changelog courtesy, not because anything checks it. Note every
+change so the next docket-retro can attribute
 what followed.
 Trust the OPERATOR approved goes in with `docket trust add <name> --yes --
 <argv>` — no other approval opens that door.

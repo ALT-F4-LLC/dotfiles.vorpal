@@ -1,15 +1,16 @@
 ---
 fragment: evidence-rules
-version: 4
+version: 5
 ---
 # Evidence rules
 
 Every load-bearing factual claim cites what was actually read, run, or observed.
 For source claims, cite the relevant `file:line` and inspected revision or working
 state; for runs, give the command, working directory, relevant inputs or
-configuration, exit status, and decisive output. Cite documentation for the version in use.
-Distinguish observation, inference, and what remains UNVERIFIED. Quote faithfully,
-mark redactions, and use confidence language that the evidence supports.
+configuration, exit status, and decisive output. Cite documentation for the
+version in use. Distinguish observation, inference, and what remains UNVERIFIED.
+Quote faithfully, mark redactions, and use confidence language that the
+evidence supports.
 
 Apply the checks relevant to the claim. Reuse evidence while its inputs and
 conditions remain applicable; repeat checks when a relevant change, failure, or
@@ -57,8 +58,8 @@ unresolved question warrants it.
 - **Controls establish what a probe can detect.** Before inferring absence from
   a custom detector, run a representative known-positive control through the
   same pipeline and configuration, changing only the condition being isolated.
-  Confirm the fixture reaches the check. Use realistic values that satisfy its input
-  requirements. A passing control supports only the behavior it exercises; it
+  Confirm the fixture reaches the check. Use realistic values that satisfy its
+  input requirements. A passing control supports only the behavior it exercises; it
   does not prove complete coverage.
 - **Challenge positive results too.** Trace a suspected defect to the behavior,
   violated contract, and triggering conditions before reporting it. Check a

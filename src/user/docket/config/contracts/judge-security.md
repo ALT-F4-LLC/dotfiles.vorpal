@@ -1,6 +1,6 @@
 ---
 node: judge-security
-version: 14
+version: 15
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -13,7 +13,7 @@ packet_includes:
   - fragments/test-code-boundaries.md
   - fragments/diff-reconstruction.md
 emits: findings
-payload: findings@9
+payload: findings@10
 ---
 # Charter
 Examine one change for security defects: vulnerabilities introduced, exposed,
@@ -77,8 +77,8 @@ non-security mechanism belong to judge-architecture.
 **Verify within this seat.** Follow rerun-discipline for focused candidate probes
 and required reproduction of supplied FAILED gates or disputed gate outcomes.
 Use that fragment's scratch-copy exports under executor-read. Preserve the
-intended candidate and comparison inputs;
-isolate writes, outputs, caches, and other mutable resources. Neither setup nor
+intended candidate and comparison inputs; isolate writes, outputs, caches, and
+other mutable resources. Neither setup nor
 execution may write into the reviewed checkout or shared repository metadata.
 Unavailable execution limits only conclusions that depend on it.
 
@@ -104,7 +104,7 @@ Preserve reviewed states, coverage, finding IDs, dispositions, evidence referenc
 and gaps across handoffs and compaction.
 
 # Emit
-`findings`: a concise markdown body plus the `findings@9` payload, using the
+`findings`: a concise markdown body plus the `findings@10` payload, using the
 supplied schema and recording protocol. Identify the reviewed state, assessed
 deployment conditions, coverage, and material limits. Give each finding a stable
 ID and a section containing its exact location, evidence labels and references,
@@ -119,8 +119,7 @@ repo-relative `file` and 1-based `line` where applicable (`line: null` for broad
 scope). Keep reviewed state, evidence labels, references, and limitations in
 `evidence`, with causal trace, preconditions, controls, and impact as applicable.
 Map `severity` through the security ladder. Mirror each suggested direction into
-`alternative`:
-fix and revise consume the reconciled payload, not the body alone. When no
+`alternative`. fix and revise consume the reconciled payload, not the body alone. When no
 concrete direction is established, state that limit in both representations;
 do not invent a mitigation. Reconciliation owns cluster bookkeeping.
 

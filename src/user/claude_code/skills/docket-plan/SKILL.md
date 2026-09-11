@@ -336,10 +336,12 @@ and parallel width decide between equally large feasible rosters.
    stop because the first wave or the roster looks large enough. Retain
    every real internal `depends_on` in the plan. Only the parallel-only
    option has no internal open dependency by construction.
-4. **Run-ready** — every §3 recording obligation the bound workflow will
-   check at activation, checked here first: the body carries acceptance
-   criteria (at least one checkable item, not a restated title); `--scope` is
-   set and every glob matches at least one file in this checkout; the row's
+4. **Run-ready** — every §3 recording obligation, checked here because
+   activation will not catch most of them (§3: a missing scope draws a
+   warning and activates anyway; only a graph cycle refuses): the body
+   carries acceptance criteria (at least one checkable item, not a restated
+   title); `--scope` is set and every glob matches at least one file in this
+   checkout; the row's
    `files` list is non-empty, naming the concrete files the change touches;
    plus the binding probe and the scope-vs-AC
    lint below. An issue that fails any of them is not run-ready: list it
@@ -930,7 +932,8 @@ is not run-ready and is never recorded. The
 engine keys exclusion and the lint on `holds_tree`, not on write-ness, and reads
 an unset `holds_tree` as TRUE — "does it hold the tree" is the question, and it
 is answered yes by default. A scope-less issue is treated as NEVER
-conflicting (S1 is permissive, not conservative); activation emits a scope
+conflicting (the scheduler's mutual-exclusion rule is permissive, not
+conservative); activation emits a scope
 warning for it and then activates anyway — the only lint that refuses is a graph
 cycle. So under scope-parallel execution its holder runs beside anything and
 ships regardless, unless you act on the warning here: a past run shipped its

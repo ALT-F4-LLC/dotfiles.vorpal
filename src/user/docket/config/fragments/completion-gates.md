@@ -1,6 +1,6 @@
 ---
 fragment: completion-gates
-version: 8
+version: 9
 ---
 # Completion gates
 
@@ -29,15 +29,14 @@ provides an exception. A failure reproduced on the base does not itself waive a 
 
 The engine runs the gates again at record time, and a failure there parks the step;
 the conductor resolves it under the run's standing rulings or escalates it to the
-operator. Repeated test runs do not substitute for a missing gate: the implement
-step that ran its tests six times still parked on one overlong line because it never
-ran self-hygiene.
+operator. Repeated test runs do not substitute for a missing gate; a step that
+never runs `self-hygiene` parks on its findings regardless of how many times
+its tests passed.
 
 A refusal from the permission system, sandbox, or auto-mode classifier is a boundary
 event, whether it concerns a gate or another action. Recognize the refusal from the
-returned decision rather than one particular message string. Follow the governing
-denial procedure: stop the affected action and report it. Retry only when that
-procedure authorizes recovery; changing the command's form does not supply
+returned decision rather than one particular message string. Stop the affected action and report it. Retry only when the refusing
+system's own recovery instruction authorizes it; changing the command's form does not supply
 authorization.
 
 Disclose each denial in both your final step response and the persisted summary
@@ -57,17 +56,17 @@ worktrees share `refs/stash`; a concurrent push can change which entry a bare
 
 For a baseline comparison, resolve the intended base to a commit ID and record it
 as the baseline; use `HEAD` only when verified to be that base. Export into a fresh
-directory under your step's private temporary directory. Use an archive only when the gate supports exported source trees:
-archives omit Git metadata and submodule contents, and export attributes can omit
-or alter tracked files.
+directory under your step's private temporary directory. Use an archive only
+when the gate supports exported source trees: archives omit Git metadata and
+submodule contents, and export attributes can omit or alter tracked files.
 
-Allocate a private directory for this attempt beneath the literal `$TMPDIR`, set
-`STEP_PRIVATE_TMP` to it and `STEP_BASE_COMMIT` to the resolved baseline commit,
+Allocate this attempt's export inside your assigned private step directory
+(the brief's `<TMP>/<STEP-N>.d`, wherever one is assigned), set
+`gate_baseline_dir` to it and `STEP_BASE_COMMIT` to the resolved baseline commit,
 then run from your worktree:
 
 ```sh
-STEP_PRIVATE_TMP=$(mktemp -d "$TMPDIR/step.XXXXXX") &&
-gate_baseline_dir=$(mktemp -d "$STEP_PRIVATE_TMP/base.XXXXXX") &&
+gate_baseline_dir=$(mktemp -d "<TMP>/<STEP-N>.d/base.XXXXXX") &&
 git archive --format=tar \
   --output="$gate_baseline_dir/base.tar" "$STEP_BASE_COMMIT" &&
 mkdir "$gate_baseline_dir/tree" &&

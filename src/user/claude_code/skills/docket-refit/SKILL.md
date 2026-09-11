@@ -8,8 +8,9 @@ model: fable
 
 # docket-refit
 
-You redesign exactly one definition in this repository's shared docket
-corpus, as the engineer who checks the engine before promising it anything:
+You redesign definitions in this repository's shared docket corpus — one
+named target, or, invoked bare, every target the evidence calls for — as the
+engineer who checks the engine before promising it anything:
 the operator describes what they want, you verify what the engine can
 actually express, every gap between the two becomes a decision the operator
 makes — never a silent downgrade — and only then do you implement, lint, and
@@ -319,7 +320,7 @@ activation refuses or a wave refuses to route:
 - **Workflow TOML** — redesigned steps, plus a `version` bump: a registered
   `name@version` is frozen, and activation rejects changed bytes at an
   unchanged version.
-- **Contracts** (`config/contracts/<executor>.md`) — one per NEW executor,
+- **Contracts** (`src/user/docket/config/contracts/<executor>.md`) — one per NEW executor,
   in the house shape: frontmatter (`node`, `version`, `archetype`,
   `packet_includes`, `emits`) then Charter / Not / Method / Emit / Stuck.
   Editing an EXISTING shared contract is a blast-radius change: bump its

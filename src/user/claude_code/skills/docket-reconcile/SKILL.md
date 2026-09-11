@@ -13,14 +13,15 @@ registry, because a registry is a set of rows in the store and the corpus is a
 set of files. Nothing keeps them in step, so a project quietly keeps binding
 whatever it last registered — in one observed case four workflows behind
 (`docs-only@17` while the corpus had `@18`, `standard-change@25` against `@26`)
-with every one of those stale rows looking perfectly healthy in
+with every one of those stale rows looking healthy in
 `docket workflow list`.
 
 **The invariant you are establishing:** for every workflow name declared by a
 file in any instance-config root, the version that file declares is registered
 and binding, and every other registered version of that name is retired. After
 a successful pass, `docket workflow list` and the corpus files agree
-name-for-name and version-for-version, with the same count on both sides.
+name-for-name and version-for-version, with a binding count equal to the
+target binding set the planner printed.
 
 **Not `docket-refit`.** You change registry rows only. You never edit a workflow TOML,
 never bump a version, never author a definition. When the corpus is what is
@@ -50,10 +51,11 @@ not `--global`, unless the operator says every project should get it.
 
 ## Let the engine parse the TOML
 
-Never `grep` a version out of these files: a `grep -m1 version` silently
-concatenates digits from unrelated keys and reports `security-change@2525792`
-for what is actually `@25`. Never hand-parse them either. `tomllib` needs
-Python 3.11+; if `python3 -c 'import tomllib'` fails, the interpreter
+Never `grep` a version out of these files: the version line carries a
+trailing changelog comment full of digits, so piping `grep -m1 version`
+through a digit filter concatenates the version with that comment and reports
+`security-change@2525792` for `@25`. Never hand-parse them either. `tomllib`
+needs Python 3.11+; if `python3 -c 'import tomllib'` fails, the interpreter
 predates it.
 
 `docket workflow lint <file> --json=v2` is the parser, and it is the same parse
@@ -66,7 +68,7 @@ predates it.
 
 `registration` is the engine's own verdict on what a register would do: `new`,
 `unchanged`, or a failure carrying `"code":"CONFLICT"` whose error names the
-frozen `name@version` and both hashes. That is precisely the REGISTER /
+frozen `name@version` and both hashes. That is the REGISTER /
 CONFLICT decision, decided by the engine rather than by a hash comparison in
 the planner — so the planner needs no TOML library and no `sha256` of its own.
 
@@ -106,13 +108,15 @@ for root in roots:                     # later root wins -- see "Two roots" belo
             disk[d["name"]] = {"v": d["version"], "f": f, "reg": d["registration"]}
             continue
         err = str(r.get("error", ""))
-        m = re.match(r"([^\s@]+)@(\d+) is registered with different bytes", err)
-        if r.get("code") == "CONFLICT" and m:      # the frozen row the engine named
-            disk[m.group(1)] = {"v": int(m.group(2)), "f": f, "reg": "conflict"}
+        m = re.search(r"([^\s@]+)@(\d+) is registered with different bytes", err)
+        if r.get("code") == "CONFLICT":        # the frozen row the engine named
+            name = m.group(1) if m else os.path.basename(f)
+            version = int(m.group(2)) if m else None
+            disk[name] = {"v": version, "f": f, "reg": "conflict"}
         else:
             bad.append((f, err.splitlines()[0] if err else "lint failed"))
 
-out = docket("workflow", "list", "--deprecated", "--limit", "0", "--json=v2")
+out = docket("workflow", "list", "--deprecated", "--limit", "500", "--json=v2")
 if not out.get("ok"):
     sys.exit("registry read failed: " + str(out.get("error")))
 reg = {}
@@ -126,6 +130,7 @@ for name, d in sorted(disk.items()):
     rows = reg.get(name, {})
     if d["reg"] == "conflict":
         plan.append(("CONFLICT", f"# {name}@{d['v']} registered bytes != {d['f']} -- bump [pipeline].version in SOURCE, never force"))
+        continue        # leave this name's binding untouched until the version bump lands
     elif d["reg"] == "new":
         plan.append(("REGISTER", f"docket workflow lint {d['f']} && docket workflow register {d['f']}"))
     elif rows.get(d["v"], {}).get("deprecated_at_ms"):
@@ -218,10 +223,11 @@ print('binding count:', len(items))
 ```
 
 Then re-run the planner. **A clean pass prints no `REGISTER`, `RESTORE`, or
-`DEPRECATE` line** and a binding count equal to the corpus file count.
-`CONFLICT`, `INVALID`, and `ORPHAN` lines are reported outcomes, not unfinished
-work; the `action(s)` count includes them. Any remaining actionable line means
-the pass did not finish; say so plainly rather than reporting success.
+`DEPRECATE` line** and a binding count equal to the target binding set printed
+by the planner. `CONFLICT`, `INVALID`, and `ORPHAN` lines are reported
+outcomes, not unfinished work; the `action(s)` count includes them. Any
+remaining actionable line means the pass did not finish; say so plainly rather
+than reporting success.
 
 ## Scope — one project unless told otherwise
 
@@ -251,4 +257,4 @@ winning a name declared in both.
 **That precedence is the planner's convention, not a verified engine
 behaviour.** While no root declares a colliding name, the rule stays
 unexercised. If you hit a name declared in both roots, confirm what the
-engine actually binds before trusting the plan.
+engine binds before trusting the plan.

@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "findings-cluster@3",
+  "description": "Successor to findings-cluster@2, a prose-only correction the engine's byte-identity rule still forces into a fresh version. The SYNTHESIZE document — declared on synthesize steps ONLY: never on judges and never on reconcile — findings@10 owns both boundaries, and its declared severity order is the one the ordered thresholds compile from. Historically synthesize declared no `payload` because every findings@N put a property-level scalar `enum` on `severity`, which refuses the multi-member cluster shape the builtin `aggregate` reads — its `clusterMembers` takes member severities from the `severity` field itself, scalar-or-array (06 §2). The engine compiles full JSON Schema draft 2020-12 (schema.go), so this document writes that input contract down as an anyOf instead of leaving the seam unvalidated. This document standardizes `member_ids` as the ONE linkage key; `additionalProperties` stays true, so the retired spellings (`cluster_members`, `member_findings`) still validate and the contract alone is what stops the drift. No `ordered_enum` anywhere: no threshold reads this document, and the reconcile step's findings@10 keeps the declared order thresholds compile from.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "description": "Stable identifier for the cluster, unique within the payload. Required: the standing-set rules key re-occurrence and disposition on it, and this document is never declared on the aggregate step, so the concern that keeps `id` optional on the cluster carry-through documents does not apply.",
+        "type": "string",
+        "minLength": 1
+      },
+      "title": {
+        "description": "The defect stated once, in the synthesizer's own words.",
+        "type": "string",
+        "minLength": 1
+      },
+      "severity": {
+        "description": "Scalar-or-array, the aggregate's INPUT contract (06 §2): a multi-member cluster carries the array of its members' severities in arrival order, and a single-member cluster — including a standing finding carried forward from an earlier round at the scalar the previous aggregate reduced it to — carries the scalar. Values are 02 §6's five: info, low, medium, high, blocker. Deliberately NOT `ordered_enum`: the order thresholds compare on is declared by findings@10 on the reconcile step, and declaring a second order here would be a second source of truth.",
+        "anyOf": [
+          {
+            "type": "string",
+            "enum": ["info", "low", "medium", "high", "blocker"]
+          },
+          {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "enum": ["info", "low", "medium", "high", "blocker"]
+            }
+          }
+        ]
+      },
+      "member_ids": {
+        "description": "The `id`s of the judge findings this cluster merges, in the same arrival order as an array `severity`'s values. THE one member-linkage key: `members` is the aggregate's OUTPUT record and the pre-schema variants (`cluster_members`, `member_findings`) are retired by this document — `additionalProperties` still validates them, so the contract naming only this key is what stops the drift, not the schema. Optional: a standing finding carried forward from an earlier round references the prior aggregate record, not this round's judge payloads, and may have no member ids to name.",
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "file": {
+        "description": "Repo-relative path the cluster is anchored to, when its members share one.",
+        "type": "string"
+      },
+      "line": {
+        "description": "1-indexed line within `file`. Optional; an explicit `null` is also valid for a cluster whose scope is the whole file or the whole commit. `minimum` applies only when the value is a number.",
+        "type": ["integer", "null"],
+        "minimum": 1
+      },
+      "evidence": {
+        "description": "What a skeptic can re-run or re-read to confirm the defect — drawn from the members' evidence, not invented.",
+        "type": "string"
+      },
+      "alternative": {
+        "description": "A concrete alternative, when one member carried it. Optional at every severity.",
+        "type": "string"
+      },
+      "prior_disposition": {
+        "description": "How this same locus was already ruled on in an EARLIER fix-loop round — set by synthesize when its inputs identify a cluster as a re-occurrence or when it carries a standing finding forward (the standing-set rule: a re-review payload spans the standing set, not the delta). Sub-fields per findings@10's declaration; every one optional.",
+        "type": "object",
+        "properties": {
+          "round": {
+            "description": "The fix-loop round the ruling was made in, 0-based.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "ruling": {
+            "description": "What was decided: `accepted`, `corrected-to-<severity>`, `rejected`, or `deferred` (which `follow_up_issue` must then name).",
+            "type": "string",
+            "minLength": 1
+          },
+          "ruled_by": {
+            "description": "Who decided: `operator`, or `panel <proposal-id>`.",
+            "type": "string",
+            "minLength": 1
+          },
+          "follow_up_issue": {
+            "description": "The issue id the deferred work was filed as.",
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "required": ["id", "title", "severity"],
+    "additionalProperties": true
+  }
+}

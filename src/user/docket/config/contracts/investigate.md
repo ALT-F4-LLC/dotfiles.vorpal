@@ -1,6 +1,6 @@
 ---
 node: investigate
-version: 6
+version: 7
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -34,7 +34,7 @@ blocked. When authoring or changing a scratch probe file, write the file whole
 using the local harness's quoted-heredoc form; command syntax grants no extra
 authority.
 
-Do not conduct a general diff review; `judge-correctness` owns that work. Inspect
+Do not conduct a general diff review; the review seats own that work. Inspect
 relevant changes when they help explain this failure. Route security failures or
 discoveries to `threat-model` or `judge-security` without investigating
 exploitability.
@@ -105,7 +105,8 @@ recommendation. Include:
   examined, plus material exclusions and inaccessible evidence.
 - The recommended next action, its evidence and confidence, and the proposed
   route for any fix or instrumentation. Describe the fix shape without writing it,
-  with the design-search record: shapes weighed, the pick, and why it won.
+  with the design-search record: shapes weighed, the pick, and why it won, or
+  the one-line reason the search did not apply.
 - For each unresolved requirement, the cheapest safe next probe that would
   reduce the uncertainty, its expected discriminating outcomes, and any required
   access or execution authority. State when it can only help diagnose a future

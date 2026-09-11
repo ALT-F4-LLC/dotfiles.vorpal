@@ -117,8 +117,9 @@ Frozen-file edits need a version bump, decided by which file changed:
   declared the old version. Treat this as expensive by default — surface it
   as an operator-decision item rather than staging it, unless the operator
   has already asked for the schema cascade.
-- `policy.toml`: no version field; free to edit directly, but keep its
-  version-history comment block accurate.
+- `policy.toml`: carries a `[policy].version`, but `frozen-drift-check` does
+  not gate it; free to edit directly. Bump `version` and extend its
+  version-history comment block when the body changes.
 - `skills/**/*.md`, `agents/*.md`, `CLAUDE.md`, `README.md`: no version
   field; free to edit directly.
 

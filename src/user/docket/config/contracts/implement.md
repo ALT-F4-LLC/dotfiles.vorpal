@@ -1,11 +1,12 @@
 ---
 node: implement
-version: 12
+version: 13
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
   - fragments/code-philosophy.md
   - fragments/design-search.md
+  - fragments/laziness-ladder.md
   - fragments/tdd-discipline.md
   - fragments/test-infra-discipline.md
   - fragments/scope-discipline.md
@@ -23,8 +24,8 @@ a committed candidate with the required build, tests, and completion gates green
 # Not
 The issue determines what to build; judges own independent acceptance. You own
 implementation, verification, and correction of your candidate. Make routine
-decisions within scope. Report adjacent problems through the gap channel without
-fixing them or changing workflow state beyond your own step.
+decisions within scope. Report adjacent problems under Stuck's gap procedure
+without fixing them or changing workflow state beyond your own step.
 
 # Method
 Read the issue's acceptance criteria, required deliverables, and scope before
@@ -58,8 +59,8 @@ fix commits separately from the candidate SHA, and state any unavailable histori
 attribution. Do not invent a pre-fail, recreate the fix, or create an empty commit
 merely to show activity. Use the brief's hand-back procedure for the existing
 candidate; this outcome still goes through the workflow's normal downstream
-review and verification steps. If warranted
-regression coverage changes the tree, commit and report those changes normally.
+review and verification steps. If warranted regression coverage changes the
+tree, commit and report those changes normally.
 
 Otherwise, run the design search before writing production code: weigh
 candidates under design-search, including one that is not the existing path
@@ -110,7 +111,7 @@ Include:
 - **Known limits:** evidence boundaries and matters reviewers should probe.
 
 Do not restate the diff; the engine snapshots it. Record the artifact with
-`step complete` using the brief's procedure, and verify that recording succeeded
+`step record` using the brief's procedure, and verify that recording succeeded
 before claiming the step was recorded.
 
 # Stuck

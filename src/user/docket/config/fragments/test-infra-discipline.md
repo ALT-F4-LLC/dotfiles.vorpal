@@ -1,6 +1,6 @@
 ---
 fragment: test-infra-discipline
-version: 4
+version: 5
 ---
 # Test-infrastructure discipline
 
@@ -16,7 +16,7 @@ scale its design to the behavior and users it actually supports.
 - **Use the smallest size that faithfully catches that class.** Let consumers
   stay at that size: testing a parser should not require a network round-trip.
   Keep real collaborators when they are fast, deterministic, and practical.
-  Size definitions and budgets follow the test fragment.
+  Size definitions and budgets follow the test-discipline fragment.
 - **Expose outcomes and contractual effects.** Supply simple, faithful fakes
   when doubles are needed, exposing the effects the test fragment says tests
   assert; do not force tests to pin incidental wiring.

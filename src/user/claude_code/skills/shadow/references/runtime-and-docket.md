@@ -24,8 +24,9 @@ and write-capable MCP tools can exceed a nominally read-only tool selection.
 
 As checked 2026-09-11, Fable 5.1 (`claude-fable-5-1`), Opus 5 (`claude-opus-5`),
 and Sonnet 5 (`claude-sonnet-5`) are the current documented models, and the
-`fable` alias resolves to Fable 5.1; provider mappings and overrides matter. Preserve the Fable observer preference, while recording
-fallbacks from message-level evidence. These model IDs are routing choices,
+`fable` alias resolves to Fable 5.1; provider mappings and overrides matter.
+Preserve the Fable observer preference, while recording fallbacks from
+message-level evidence. These model IDs are routing choices,
 not evidence that a behavior evaluation ran on those models.
 [Model configuration](https://code.claude.com/docs/en/model-config).
 
@@ -65,10 +66,8 @@ in a different store is not the same issue.
 Its shared startup opens the database and migrates it before command handlers;
 the connection also configures WAL. A handler with no update statements can
 still write through startup or project resolution. `verify-pins` is absent from
-the inspected read-verb registration exemption. This skill must not invoke that
-path against the live store under its observation boundary; it runs only
-through a verified read-only path, as the read list and evidence table below
-repeat.
+the inspected read-verb registration exemption; this skill must not invoke that
+path against the live store under its observation boundary.
 
 Use a supported, verified read-only observer connection if one becomes
 available. Otherwise use the observed session's already-recorded results and
@@ -85,7 +84,7 @@ do not force a checkpoint or create sidecars to satisfy them during observation.
 [SQLite URI semantics](https://www.sqlite.org/uri.html),
 [SQLite WAL](https://www.sqlite.org/wal.html).
 
-## Observation operations, once their effects are verified
+## Observation operations
 
 These names describe intended read operations, not an unconditional allowlist:
 `run status`, `run report`, `run verify-pins` (only through a verified

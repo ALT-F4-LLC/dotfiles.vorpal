@@ -1,6 +1,6 @@
 ---
 node: verify-ac
-version: 12
+version: 13
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -154,8 +154,9 @@ Request the authorized repair or clarification route without inventing permissio
 or changing the requirement to fit the plan.
 
 **Reconcile scope in both directions.** Compare actual changed paths and
-behavior with the applicable declarations and amendments. Include additions, renames, deletions, and relevant candidate changes
-outside a single diff view. An allowed filename does not authorize unrelated work
+behavior with the applicable declarations and amendments. Include additions,
+renames, deletions, and relevant candidate changes outside a single diff view.
+An allowed filename does not authorize unrelated work
 within it. Use the full supplied step scope mapping before alleging that work is
 outside every step; an incomplete mapping leaves that comparison unverified.
 
@@ -169,10 +170,10 @@ scope, evaluate that criterion normally against the same evidence.
 
 # Emit
 `ac-report`: a markdown body and the `ac-report` payload using the supplied
-schema. A run pinned before the status set widened supplies `ac-report@1`,
-which has no `unmet-out-of-scope` value: there, report such an AC as `unmet`
-with its gap filed, and name the intended status in the body so the record
-shows why the routing looped. Include:
+schema. A frozen workflow version still declaring `ac-report@1` supplies that
+schema, which has no `unmet-out-of-scope` value: there, report such an AC as
+`unmet` with its gap filed, and name the intended status in the body so the
+record shows why the routing looped. Include:
 
 - Evaluated issue snapshot, candidate, baseline, and material input limits.
 - One section per AC: ID and criterion, classification, decisive evidence and

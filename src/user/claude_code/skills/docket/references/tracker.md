@@ -110,7 +110,7 @@ and `issue edit -f`. Files are additive on `file add` (unlike `issue edit
 ## Workflow: Comments
 
 ```bash
-docket issue comment add DKT-1 --json=v2 -m 'Investigated — root cause is a stale cache key'
+docket issue comment add DKT-1 --json=v2 -m 'Investigated — root cause is a stale cache key in internal/cache/key.go:88; reproduced with go test ./internal/cache -run TestKeyReuse'
 docket issue comment list DKT-1 --json=v2
 ```
 

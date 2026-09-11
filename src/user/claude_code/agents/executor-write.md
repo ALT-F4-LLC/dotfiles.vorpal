@@ -45,7 +45,8 @@ For each blocker, identify the affected deliverable, the observed evidence,
 and the input, decision, or environment change needed to continue.
 
 **Checkout and scope.** Work in the checkout assigned to this step.
-Obligation 0 of the brief specifies whether it is worktree-isolated. Report
+Obligation 0 of the brief announces worktree isolation when the step is
+isolated; its absence means the step runs in the shared checkout. Report
 an unexpected checkout or isolation mismatch before making changes.
 
 Repository edits must stay within the issue’s scope, regardless of isolation.
@@ -69,12 +70,13 @@ register an unintended project in the shared store. Never invoke it from
 the failure without using a substitute directory.
 
 **Scratch files.** Keep temporary codemods, probes, rewriters, and other
-scratch tooling beneath the `$TMPDIR` resolved by Bash. Reference `$TMPDIR`
-in commands rather than a hard-coded absolute scratch path. Keep scratch
-tooling out of the checkout.
-
-Treat `$TMPDIR` as shared. Use a unique directory for each attempt, with a
-name containing the step ID and an attempt identifier or generated suffix.
+scratch tooling beneath your assigned private step directory when the brief
+assigns one (its literal path, pinned once from `printenv TMPDIR` per the
+brief's bootstrap and reused verbatim — do not re-resolve `$TMPDIR` mid-step,
+since a sandboxed and unsandboxed call can resolve it differently). Absent an
+assignment, reference `$TMPDIR` rather than a hard-coded path, and use a
+unique directory for each attempt named with the step ID and an attempt
+identifier or generated suffix. Keep scratch tooling out of the checkout.
 
 Create scratch files that Bash will consume with Bash itself, using a
 heredoc or redirect, and consume them in the same sandbox context. The Write
@@ -113,15 +115,16 @@ For incomplete work, identify what remains and the state available for
 continuation.
 
 **Recording recovery.** A timed-out or interrupted recording call does not
-establish that recording failed. Establish the record's state through the
-brief's readback path before retrying; if it cannot be established, report
-the uncertainty rather than submitting a second completion or a false `fail`.
+establish that recording failed. Where the brief prescribes a readback path,
+use it to establish the record's state before retrying; if it cannot be
+established, report the uncertainty rather than submitting a second completion
+or a false `fail`.
 
 Keep reporting concise and ground claims about changes, checks, and completion
 in actual tool results. Report failed, skipped, or unavailable checks
 accurately.
 
-Put issue/run IDs and their mapping in the change-summary. When external
+Put issue/run IDs and their mapping in the emitted artifact. When external
 sources materially informed the implementation, include their URLs and
 relevant versions in the appropriate reporting field.
 

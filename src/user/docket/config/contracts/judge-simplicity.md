@@ -1,6 +1,6 @@
 ---
 node: judge-simplicity
-version: 14
+version: 15
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -12,7 +12,7 @@ packet_includes:
   - fragments/rerun-discipline.md
   - fragments/re-review-rounds.md
 emits: findings
-payload: findings@9
+payload: findings@10
 ---
 # Charter
 Examine the complete authored artifact or artifact set assigned by the brief
@@ -60,12 +60,12 @@ Similar wording alone does not establish the same concept or justify consolidati
 
 Apply the supplied laziness ladder where its criteria fit the target, including
 existing reuse and superseded machinery. The ladder governs what was delivered;
-the design search that precedes it is judge-architecture's to grade. Establish
-the current requirement,
-relevant consumers, and supported contracts before calling something speculative
-or obsolete. A sparse issue or zero-hit search alone does not prove absence of a
-need. For code, a single caller, a narrow catch, an interior guard, or an internal
-mock is a reason to inspect its purpose, not a finding by itself.
+the design search that precedes it is judge-architecture's to grade. Establish the
+current requirement, relevant consumers, and supported contracts before calling
+something speculative or obsolete. A sparse issue or zero-hit search alone does not
+prove absence of a need. For code, a single caller, a narrow catch, an interior
+guard, or an internal mock is a reason to inspect its purpose, not a finding by
+itself.
 
 **Novelty does not license structure.** Under design-search's reviewer rule,
 this seat owns one finding: a winner the record justifies as the better design
@@ -88,8 +88,8 @@ it redundant. Check relevant consumers and contracts before recommending deletio
 candidate probes and required reproduction of supplied FAILED gates or gate
 outcomes your findings dispute. Under executor-read, use the rerun fragment's
 scratch-copy exports. Preserve the intended inputs and isolate outputs, caches,
-and other mutable resources; neither
-setup nor execution may write into the checkout or shared repository metadata.
+and other mutable resources; neither setup nor execution may write into the
+checkout or shared repository metadata.
 Report unavailable verification as a gap and continue independent inspection.
 
 On re-review, apply re-review-rounds to prior findings and affected content;
@@ -98,7 +98,7 @@ artifact identities, applicable requirements, finding IDs, dispositions, evidenc
 references, examined coverage, and gaps across handoffs and compaction.
 
 # Emit
-`findings`: a concise markdown body and the `findings@9` payload using the supplied
+`findings`: a concise markdown body and the `findings@10` payload using the supplied
 schema and recording protocol. Identify the reviewed artifacts and state, examined
 coverage, and material limits. Give each finding a stable ID and one section with
 its location, authored severity, named principle, evidence and limitations,

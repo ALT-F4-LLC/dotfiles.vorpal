@@ -1,12 +1,11 @@
 ---
 name: tend
-description: Watch the current Docket project's issue queue — the `route-tend` issues in the existing backlog and whatever gets added after — and work them one at a time by delegating each to a right-sized subagent while this conversation orchestrates — no `/docket-plan`, no `/docket-run`, no docket run. Spawns a worker seated for the job (stronger models and efforts than the loop itself), lands the result via the `commit` skill, and closes the issue with a summary comment, then goes quiet once the queue is empty until the next issue appears. Meant to run under `/loop` (self-pacing, e.g. `/loop /tend`) so it can wake on its own cadence without the operator re-invoking it. Use on "watch for new issues and work them", "tend the queue", "sweep the backlog", "/tend", or any request to keep grinding through a project's issues without docket's planning/execution machinery.
+description: Watch the current Docket project's issue queue — the `route-tend` issues in the existing backlog and whatever gets added after — and work them one at a time by delegating each to a right-sized subagent while this conversation orchestrates — no `/docket-plan`, no `/docket-run`, no docket run. Spawns a worker seated for the job (stronger models and efforts than the loop itself), lands the result via the `commit` skill, and closes the issue with a summary comment, then, under `/loop`, goes quiet once the queue is empty until the next issue appears (invoked bare it does one pass instead). Meant to run under `/loop` (self-pacing, e.g. `/loop /tend`) so it can wake on its own cadence without the operator re-invoking it. Use on "watch for new issues and work them", "tend the queue", "sweep the backlog", "/tend", or any request to keep grinding through a project's issues without docket's planning/execution machinery.
 ---
 
 # tend
 
-You keep one Docket project's issue queue empty as an orchestrator: no
-`/docket-plan`, no `/docket-run`, no docket run — ever, for this loop. You read an
+You keep one Docket project's issue queue empty as an orchestrator. You read an
 issue, hand the implementation to a subagent seated for the job, then
 commit, close, and move on. The only custom skills in play are `docket`
 (issue verbs) and `commit` (landing changes) — everything else here is
@@ -32,9 +31,10 @@ docket run status --active --json
 Project resolves from cwd's git identity, same as every other docket verb
 (see the `docket` skill). A `VALIDATION_ERROR` naming no project, or no store
 reachable, means this repo isn't bound — say so and stop. The queue is
-every `backlog` or `todo` issue carrying the `route-tend` label — docket-groom's
-mark for mechanical, fully specified work a worker finishes without a
-question — and the pre-existing backlog is fair game, not just issues that
+every `backlog` or `todo` issue carrying the `route-tend` label — the mark
+the [brief](../brief/SKILL.md) skill's route rules define and docket-groom
+or brief applies, for mechanical, fully specified work a worker finishes
+without a question — and the pre-existing backlog is fair game, not just issues that
 show up after you started watching (operator ruling). An issue with no
 routing label, or with `route-run`, `route-direct`, or `route-loop`, is not
 tend's: grooming, a run, the operator's own brief, or a loop owns it. Skip
@@ -52,6 +52,8 @@ Exclude two more kinds before picking — this queue isn't tend's alone:
 - **Claimed.** Any issue with a non-empty `assignee` — tend never sets one on
   the issues it works, so a populated `assignee` means someone or something
   else already has it. Skip it.
+
+After the exclusions, the queue is either:
 
 - **Empty:** nothing to do. Under self-paced `/loop /tend`, arm
   `ScheduleWakeup({delaySeconds: 150-180, noop: true, ...})` and stop; under
@@ -136,13 +138,9 @@ seats" creates is exactly how seats get mis-sized.
    Effort is an explicit pick at every tier: choose it with the same
    judgment that sized the model — a mechanical edit has no use for deep
    reasoning, gnarly always gets `max` — never by echoing the session's own
-   default, which is not part of the decision.
-   Write the ruling down as one line — the tier named (mechanical /
-   ordinary / gnarly) plus why THIS issue fits it — and carry it into the
-   spawn as step 2 shows. The line is required, not decoration: one
-   mechanism for every seat makes reflexively seating everything
-   `fable`/`max` as easy as inheriting a default, and stating the reason
-   is what forces the judgment to happen.
+   default, which is not part of the decision. Write the ruling down as one
+   line — the tier named (mechanical / ordinary / gnarly) plus why THIS
+   issue fits it — and carry it into the spawn as step 2 shows.
 
 2. **Spawn through `Workflow`**, the worker brief embedded in the script.
    The statement immediately before the `agent()` call is a `log()` line

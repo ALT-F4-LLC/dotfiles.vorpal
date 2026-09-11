@@ -1,6 +1,6 @@
 ---
 fragment: scope-discipline
-version: 7
+version: 8
 ---
 # Scope discipline
 
@@ -22,7 +22,8 @@ can authorize it. Disclosure records a deviation; it does not authorize one.
   allowed filename does not authorize unrelated changes inside it. Prefer
   targeted edits and preserve unrelated content. Scripts, formatters, generators,
   and test commands count as writers when they change files. Keep scratch
-  mutations in the private workspace allowed by the execution rules.
+  mutations in the private per-step scratch directory your brief names
+  (the wave's SCRATCH HYGIENE rules), not elsewhere in the checkout.
 - **Include necessary work without granting yourself more scope.** Required
   callers, focused tests, documentation, configuration, and removal of code
   superseded by this change belong in the authorized fix. If they require a
@@ -38,7 +39,7 @@ can authorize it. Disclosure records a deviation; it does not authorize one.
   declaration, the evidence that makes it necessary, and the affected acceptance
   criteria. Route it to the declaration owner authorized by the workflow;
   an existing explicit authorization can satisfy this requirement. Record the
-  amendment before dependent writes. For parallel work, have the coordinator
+  amendment before dependent writes. For parallel work, have the conductor
   reconcile file and scope declarations and re-establish conflict coverage
   before work proceeds. A producer cannot expand its own authority by rewriting
   the declaration. Delegation cannot grant authority the parent lacks; pass each
@@ -66,7 +67,7 @@ can authorize it. Disclosure records a deviation; it does not authorize one.
   If an accidental crossing is discovered, stop further affected writes, report
   it, and remove only this attempt's unauthorized edits where that can be done
   safely without disturbing others' work. Do not rewrite history or the
-  declaration to conceal it; unresolved restoration needs go to the coordinator.
+  declaration to conceal it; unresolved restoration needs go to the conductor.
 - **Judge only what the supplied evidence supports.** `verify-ac` owns the
   declaration comparison: the issue body, applicable `files` and `scope`
   metadata, recorded amendments, and the actual candidate diff. Check both

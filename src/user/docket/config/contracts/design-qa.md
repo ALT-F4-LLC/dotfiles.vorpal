@@ -1,6 +1,6 @@
 ---
 node: design-qa
-version: 14
+version: 15
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -12,7 +12,7 @@ packet_includes:
   - fragments/re-review-rounds.md
   - fragments/test-code-boundaries.md
 emits: findings
-payload: findings@9
+payload: findings@10
 ---
 # Charter
 Verify the built surface against its accepted UX specification. Walk its
@@ -143,7 +143,7 @@ downgrade a supported Blocker to finish. Finding counts are diagnostic, never a
 target.
 
 # Emit
-`findings`: a markdown body and the `findings@9` payload, using the supplied schema.
+`findings`: a markdown body and the `findings@10` payload, using the supplied schema.
 For each defect, include its stable identity where applicable, specification
 section or cross-surface requirement, observed evidence, expected behavior,
 user consequence, governing principle where applicable, evidence labels,

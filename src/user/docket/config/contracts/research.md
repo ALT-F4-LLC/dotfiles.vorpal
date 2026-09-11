@@ -1,6 +1,6 @@
 ---
 node: research
-version: 5
+version: 6
 archetype: executor-research
 packet_includes:
   - fragments/prime-directive.md
@@ -56,6 +56,7 @@ or redactions. Formatting and whitespace normalization must not change meaning.
 For markup, tables, or PDFs, use an inspectable representation that preserves the
 relevant structure; check the rendered source with permitted tools when extraction
 is ambiguous.
+
 Failure to find a sentence through text stripping does not establish its absence.
 
 Label source evidence `quoted` only after this check. Record the source URL,

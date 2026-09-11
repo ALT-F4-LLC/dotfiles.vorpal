@@ -69,7 +69,7 @@ happened, and a model's self-report cannot attest which model served it.
 
 ## Current model targets
 
-As checked 2026-09-04, use Fable 5.1, Opus 5 and Sonnet 5 for the generally
+As checked 2026-09-11, use Fable 5.1, Opus 5 and Sonnet 5 for the generally
 available Claude 5 comparison. Mythos 5.1 is an optional additional target
 only for an account granted access. Haiku remains 4.5 and has no effort control.
 The repository's policy already routes work by model and effort; preserve it
@@ -87,5 +87,5 @@ Sources: [Claude skill evaluation guidance](https://platform.claude.com/docs/en/
 [Sonnet 5](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-sonnet-5),
 [Opus 5](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5),
 [Fable 5.1](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5-1),
-[model availability](https://platform.claude.com/docs/en/models/overview),
+[model availability](https://platform.claude.com/docs/en/about-claude/models/overview),
 [effective models and effort limits](https://code.claude.com/docs/en/model-config).

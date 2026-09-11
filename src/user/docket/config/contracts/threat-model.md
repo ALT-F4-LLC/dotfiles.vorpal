@@ -1,6 +1,6 @@
 ---
 node: threat-model
-version: 7
+version: 8
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -110,10 +110,9 @@ a missing verification specification leaves the control row unfinished.
 - **Required controls:** one row per control, naming existing or proposed
   status, required behavior, enforcement point, prerequisites/bypass limits,
   linked abuse-case IDs, the responses weighed and why this one won, and
-  verification. Include adversarial and benign
-  inputs/sequences, expected outcomes, intended verification location, and
-  actual result and scope when run;
-  mark checks passed, failed, or not run. Longer verification details may live
+  verification. Include adversarial and benign inputs/sequences, expected
+  outcomes, intended verification location, and actual result and scope when
+  run; mark checks passed, failed, or not run. Longer verification details may live
   under the linked case. A proposed chokepoint names the component/operation
   and enforcement timing without pretending the implementation exists.
 - **Inherited exclusions:** for derived controls, the source tool/version,
@@ -164,6 +163,6 @@ put supported partial analysis in the gap body and leave the declared
 `threat-model` body empty: a nonempty model plus a gap follows normal completion
 and does not park the step. An accepted gap-only completion parks the step
 `waiting-human`; report a parked state only after confirmation. Do not emit an
-incomplete model as a completed
-artifact. If the brief provides no usable protocol for the blocked outcome,
+incomplete model as a completed artifact. If the brief provides no usable
+protocol for the blocked outcome,
 return the mismatch to the caller without inventing a command or status.

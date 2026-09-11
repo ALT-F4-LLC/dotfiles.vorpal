@@ -1,7 +1,15 @@
 [pipeline]
 description = "Small ordinary change, bound by the `small` label: implement with the full gate list, one correctness judge routing a blocker straight to the fix loop, AC verification with a single-seat tribunal on an unverifiable or out-of-scope AC, and a bounded fix loop re-entering at review; the conductor integrates commits, the operator publishes."
 name = "small-change"
-version = 3  # 3: `verify-ac` emits `ac-report@2` (adds `unmet-out-of-scope`)
+version = 4  # 4: three fixes, no topology change. Two earlier changelog
+             #   entries were stale against the current corpus: the
+             #   dispatch-chain comment now names `reconcile` among the
+             #   second chain's steps, and the label-timing comment no
+             #   longer misattributes a rule to a step's `when` (only a
+             #   workflow's `[match]` reads issue kind and labels). review
+             #   repoints to `findings@10` — a prose-only schema correction,
+             #   no validation-semantics change.
+             # 3: `verify-ac` emits `ac-report@2` (adds `unmet-out-of-scope`)
              #   and its vote predicate becomes `any(status != met)`, read after
              #   `fix-loop`'s `any(status == unmet)`: an in-scope unmet still
              #   loops, an out-of-scope or unverifiable AC goes to the one-seat
@@ -29,7 +37,7 @@ version = 3  # 3: `verify-ac` emits `ac-report@2` (adds `unmet-out-of-scope`)
              #   median 22.7 hours from first claim to done, no faster than a
              #   21-100-line change (23.5 h) or one over 400 lines (17.2 h), because
              #   every chain crossed three dispatches (implement; the three judges and
-             #   synthesize; drain, verify and the tribunal) and the waits at those
+             #   synthesize; reconcile, drain, verify and the tribunal) and the waits at those
              #   boundaries were about two thirds of the elapsed time. docs-only,
              #   which has this track's shape, finished its 21-100-line changes on the
              #   same run in a median 8.4 hours over two dispatches, with 3 executor
@@ -56,7 +64,7 @@ version = 3  # 3: `verify-ac` emits `ac-report@2` (adds `unmet-out-of-scope`)
              #   times and fix-loop once (ui-change's design-qa, which routes a
              #   blocker to the fixer directly, is the precedent for this edge). The
              #   label is applied before activation
-             #   because a step's `when` and a workflow's `[match]` read issue kind and
+             #   because a workflow's `[match]` reads issue kind and
              #   labels only, never the diff.
 
 [match]
@@ -107,7 +115,7 @@ inputs = ["implement.change-summary", "issue.diff"]
 max_fix_loops = 2
 name = "review"
 packet = ["contracts/{executor}.md"]
-payload = "findings@9"
+payload = "findings@10"
 threshold = { "fix-loop" = "any(severity >= blocker)" }
 
 [[step]]

@@ -50,12 +50,13 @@ docket vote cast DKT-V1 --json=v2 \
 
 `--metadata` is optional and opaque. Populate model and effort fields only
 from observed runtime facts; do not infer a model from a role or fabricate
-measurements. `--usage` records this seat’s own measured spend; a relay may
-backfill usage after observing it. Consult the CLI reference for those flags.
-Treat the value as public — it is visible to anyone who can list processes, it
-is stored verbatim in the store, and `docket export` re-emits it verbatim with
-no redaction. It reads back through `vote show --json`, `vote result --json`,
-and the export document; the human-readable tables do not render it.
+measurements. Treat `--metadata` as public — it is visible to anyone who can
+list processes, it is stored verbatim in the store, and `docket export`
+re-emits it verbatim with no redaction. It reads back through `vote show
+--json`, `vote result --json`, and the export document; the human-readable
+tables do not render it. `--usage` records this seat’s own measured spend; a
+relay may backfill usage after observing it. Consult the CLI reference for
+both flags.
 
 Valid `--verdict`/`-v` values: `approve`, `approve-with-concerns`, `reject`.
 Valid `--criticality`/`-c` values: `low`, `medium`, `high`, `critical`.
@@ -101,9 +102,9 @@ threshold = { "fix-loop" = "count>=2(vote == approve-with-concerns)" }
 A **rejected** tally is untouched — it still routes per `on_fail`, threshold
 or not. A **committed** proposal (an operator's manual `vote commit`) skips
 the threshold too — that decision was made out of band. A step declaring no
-`threshold` behaves exactly as before. `approve-with-concerns` has always
-tallied as a full approval weight; what's new is only this post-approval
-routing check, not the tally math. The step's own recorded tally is readable
+`threshold` routes on the tally alone. `approve-with-concerns` tallies as a
+full approval weight; the threshold is a post-approval routing check and does
+not change the tally math. The step's own recorded tally is readable
 downstream as an input — see [engine-produced inputs](workflows.md#engine-produced-inputs).
 
 ---

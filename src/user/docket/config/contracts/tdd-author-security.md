@@ -1,6 +1,6 @@
 ---
 node: tdd-author-security
-version: 9
+version: 10
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
@@ -26,8 +26,9 @@ You do not write code, create issues, grant design approval, or accept residual
 risk on another owner's behalf. Route unresolved product framing to its owner
 with the threats and constraints articulated. Reference relevant product and UX
 specifications without restating their work. Follow the required document
-structure; structural validation remains a gate you run and the engine
-re-checks.
+structure; `doc-validate` is one of your step's completion gates
+(`fragments/completion-gates.md`) and structural validation is yours to run
+before recording.
 
 Take the whole document when understanding or changing the security control
 requires a dedicated threat model that governs the design. For work that only
@@ -62,7 +63,7 @@ Read the relevant code, effective configuration, interfaces, controls, and accep
 documents. Name external precedent and its applicable version: specifications,
 publications, and the implementation's own documentation. Distinguish established
 behavior from proposed behavior. Document each relevant inherited, changed, or
-dropped exclusion under the fragment's derived-control rule, including how the
+dropped exclusion under threat-model-method's adapted-control rule, including how the
 target input set and attacker control affect its safety.
 
 Weigh materially different designs under design-search before choosing: at least
@@ -127,11 +128,9 @@ preserved. Include:
 Every ship-blocking obligation appears as an explicit row in the implementation
 plan, including required tests, rollout safeguards, and operational work. Give
 each a stable identifier, checkable completion criteria, and the phase or release
-it blocks. Use the exact blocking label defined by the governing template or
-decomposition contract, consistently wherever the obligation appears. Prose in
-another section does not replace the row, and phase boundaries do not make a
-required protection optional. Resolve missing blocking-label conventions before
-handoff for decomposition.
+it blocks. Give each obligation a consistent blocking marker used wherever it
+appears. Prose in another section does not replace the row, and phase
+boundaries do not make a required protection optional.
 
 # Stuck
 If the goal, adversary, assets, or relevant boundaries cannot be established, emit

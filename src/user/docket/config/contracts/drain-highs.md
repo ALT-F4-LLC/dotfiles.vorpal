@@ -1,6 +1,6 @@
 ---
 node: drain-highs
-version: 10
+version: 11
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -116,7 +116,8 @@ this step does not repeat their review or independently verify the defects.
    Apply `security-load-bearing` at this filing, not later at activation:
    check the cluster against `policy.toml`'s `[security]` labeling test
    (the six control classes it enumerates, and the rule that changing,
-   relocating, or deleting a control's implementation all qualify). Add it
+   relocating, deleting, or test-gating a control's implementation all
+   qualify). Add it
    to the same `Labels:` line when it applies, and state which control class
    in the body. This is the test's sole application site; do not re-derive
    it elsewhere.

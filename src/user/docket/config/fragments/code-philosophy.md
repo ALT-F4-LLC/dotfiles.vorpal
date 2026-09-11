@@ -1,6 +1,6 @@
 ---
 fragment: code-philosophy
-version: 8
+version: 9
 ---
 # Code philosophy
 
@@ -89,9 +89,10 @@ Apply these defaults in the language's idiom and within the task's scope.
     Check relevant callers, configuration, and external contracts before deletion;
     a text search alone does not prove something is unused.
 
-**Harness use.** Use the harness proactively throughout development. Discover
-relevant capabilities available in the current environment and apply them
-without waiting to be asked: skills and project workflows for established
+**Harness use.** Within your contract's archetype and write authority, use
+the harness proactively throughout development. Discover relevant
+capabilities available in the current environment and apply them without
+waiting to be asked: skills and project workflows for established
 procedures; code intelligence and diagnostics for navigation and feedback;
 connected tools for external systems; execution and browser tools to exercise
 behavior. Consult current tool help when needed. Prefer these capabilities to
@@ -113,8 +114,7 @@ orchestration, or repeated review that costs more than it saves.
 Make routine tradeoffs yourself. For a material deviation introduced by the
 change, name the principle, location, the alternatives compared, and one-line
 reason in the change summary so review can challenge it. Do not add source
-comments merely to report compliance
-or exceptions.
+comments merely to report compliance or exceptions.
 
 **Project idiom.** Follow explicit task and repository requirements. Match local
 idiom where it serves the contract; distinguish existing habits from required

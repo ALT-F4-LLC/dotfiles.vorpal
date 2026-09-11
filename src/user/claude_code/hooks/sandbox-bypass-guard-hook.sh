@@ -24,7 +24,7 @@
 # the reason reaches the executor so it runs the sandboxed form instead of
 # retrying the lift under another spelling.
 #
-# DOT-1262: two Workflow-spawned tribunal seats (agentType executor-read per
+# Two Workflow-spawned tribunal seats (agentType executor-read per
 # their own meta.json) lifted the sandbox unchallenged — this hook's
 # `.agent_type` read came back empty for them, though it is unconfirmed
 # whether that is because the field genuinely arrives empty for a
@@ -46,8 +46,9 @@
 #      first message carries none of those is treated exactly as before:
 #      allowed through to the harness's own classifier/prompt handling. This
 #      is deliberately narrow and biased toward a false ALLOW over a false
-#      DENY on the operator's own path — it closes the specific gap DOT-1262
-#      measured, not a general agent_type-is-missing case.
+#      DENY on the operator's own path — it closes the specific gap the
+#      Workflow-spawned-seat case above measured, not a general
+#      agent_type-is-missing case.
 
 set -uo pipefail
 

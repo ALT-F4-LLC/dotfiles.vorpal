@@ -1,18 +1,21 @@
 export const meta = {
     name: 'session-census',
-    description: 'Measure deliberation and course-correction cost across Claude Code transcripts: think tokens vs output tokens, thinking chars vs visible text chars, operator inputs, interrupts, killed agents, and idle-notification narration — MAIN and SUBAGENT measured separately and never pooled. Read-only. Invoke by scriptPath ONLY, with args {root, cutoff, days}.',
-    whenToUse: 'Invoked by the shadow skill (fleet sweep or single session) to put numbers under "everything is over-thought". Run before a harness change and after, and diff the two returns. Cost: one low-effort agent per transcript newer than the cutoff; a 7-day fleet window is hundreds of files, so the conductor picks the window.',
+    description: 'Measure deliberation and course-correction cost across Claude Code transcripts: think tokens vs output tokens, thinking chars vs visible text chars, operator inputs, interrupts, killed agents, and idle-notification narration — MAIN and SUBAGENT measured separately and never pooled. Read-only. Invoke by scriptPath ONLY, with args {root, cutoff, days?}.',
+    whenToUse: 'Invoked by the shadow skill (fleet sweep or single session) to put numbers under "everything is over-thought". Run before a harness change and after, and diff the two returns. Cost: one scout, plus one low-effort agent per transcript newer than the cutoff, plus one retry per transcript whose extract came back empty or with missing count fields; a 7-day fleet window is hundreds of files, so the conductor picks the window.',
     phases: [
         { title: 'Scout', detail: 'one agent finds the transcripts newer than the cutoff' },
-        { title: 'Extract', detail: 'one low-effort agent per transcript runs the fixed jq' },
+        { title: 'Extract', detail: 'one low-effort agent per transcript runs the fixed jq, plus one retry for any transcript that came back empty or incomplete' },
     ],
 }
 
 // TEST-BEGIN session-census-config — include before either pure test region.
-// Model is omitted so agents inherit the caller's model.
+// scout/extract only relay a fixed shell command's output through a schema
+// (no judgment involved), so a cheap model is pinned rather than inherited —
+// the same reasoning wave.js:probe and tribunal.js:verify apply to read-only
+// relay agents of this shape.
 const AGENT_CONFIG = {
-    scout: { effort: 'low' },
-    extract: { effort: 'low' },
+    scout: { model: 'haiku', effort: 'low' },
+    extract: { model: 'haiku', effort: 'low' },
 }
 
 const MIN_MATCHED_CELL_MESSAGES = 25
@@ -53,6 +56,10 @@ const UNKNOWN_EFFORT_RANK = 9
 //   Silence is the intended response, so lower is better on that row like
 //   every other row here.
 //
+// Invoked by skills/shadow/SKILL.md (and its references/evidence.md) — no
+// separate skills/session-census/SKILL.md exists; this file's own
+// meta.description/meta.whenToUse are the contract.
+//
 // args: {root, cutoff, days}
 //   root   — absolute path of the projects directory (literal, no `~`).
 //   cutoff — ISO-8601 UTC timestamp ending in Z (2026-09-01T00:00:00Z); only
@@ -60,7 +67,7 @@ const UNKNOWN_EFFORT_RANK = 9
 //            conductor: a script cannot call Date.
 //   days   — the window length the cutoff represents, for labelling only.
 //
-// return: {window:{days, cutoff}, files:{main, subagent}, main:{...}, subagent:{...}}
+// return: {window:{days, cutoff}, files:{main, subagent, dropped}, main:{...}, subagent:{...}}
 //   Both kind objects carry msgs, out_tokens, think_tokens, think_pct,
 //   think_msgs, think_msgs_pct, think_chars, text_chars, think_text_ratio,
 //   tool_uses, sessions, excluded_no_thinking_accounting, notes. main adds
@@ -234,7 +241,7 @@ reduce (inputs | try fromjson catch null) as $rec (
 `
 // TEST-END session-census-extract
 
-// TEST-BEGIN session-census-aggregate — pure; pools MAIN and SUBAGENT
+// TEST-BEGIN session-census-aggregate — pure; aggregates MAIN and SUBAGENT
 // separately and derives the ratios the census reports. Include
 // session-census-config to evaluate it against fixture rows.
 const NOTES = {
@@ -582,24 +589,52 @@ const results = await pipeline(files,
     (r, f) => (r ? { ...r, path: f.path, kind: f.kind } : null),
 )
 
-function usableExtract(result, file) {
+// 'retryable': null (agent returned nothing) or missing count fields — both
+// plausibly a transient harness failure, not a defect in the transcript
+// itself. A jq error is excluded: the fixed program is deterministic, so an
+// error on one attempt reproduces identically on a second and a retry buys
+// nothing.
+function classifyExtract(result, file) {
     if (!result) {
-        log(`session-census: DROPPED ${file.path} (extract agent returned nothing)`)
-        return false
+        log(`session-census: ${file.path}: extract agent returned nothing`)
+        return { usable: false, retryable: true }
     }
     if (result.error) {
         log(`session-census: DROPPED ${file.path} (jq: ${String(result.error).slice(0, ERROR_TEXT_CHARS)})`)
-        return false
+        return { usable: false, retryable: false }
     }
     const missing = COUNT_FIELDS.filter((key) => typeof result[key] !== 'number')
     if (missing.length) {
-        log(`session-census: DROPPED ${file.path} (extract returned no ${missing.join(', ')})`)
-        return false
+        log(`session-census: ${file.path}: extract returned no ${missing.join(', ')}`)
+        return { usable: false, retryable: true }
     }
-    if (result.last_ts && result.last_ts < cutoff) log(`session-census: ${file.path} mtime is newer than the cutoff but its last row (${result.last_ts}) is not; counted anyway, as the original did`)
-    return true
+    if (result.last_ts && result.last_ts < cutoff) log(`session-census: ${file.path} mtime is newer than the cutoff but its last row (${result.last_ts}) is not; counted anyway`)
+    return { usable: true }
 }
-const usable = files.flatMap((file, i) => usableExtract(results[i], file) ? [results[i]] : [])
+
+const classified = files.map((file, i) => ({ file, i, ...classifyExtract(results[i], file) }))
+const retryable = classified.filter((c) => c.retryable)
+if (retryable.length) {
+    log(`session-census: ${retryable.length} transcript(s) came back empty or incomplete — retrying once before dropping`)
+    const retried = await pipeline(retryable, (c) => agent(extractPrompt(c.file), {
+        label: `extract:${c.file.kind}:retry:${c.i + 1}/${files.length}`,
+        phase: 'Extract',
+        ...AGENT_CONFIG.extract,
+        schema: EXTRACT_SCHEMA,
+    }))
+    retried.forEach((r, j) => {
+        const c = retryable[j]
+        const second = classifyExtract(r ? { ...r, path: c.file.path, kind: c.file.kind } : null, c.file)
+        if (second.usable) {
+            log(`session-census: ${c.file.path}: retry succeeded`)
+            results[c.i] = { ...r, path: c.file.path, kind: c.file.kind }
+            classified[c.i].usable = true
+        } else {
+            log(`session-census: DROPPED ${c.file.path} (retry did not recover it)`)
+        }
+    })
+}
+const usable = classified.filter((c) => c.usable).map((c) => results[c.i])
 log(`session-census: ${usable.length}/${files.length} transcripts extracted`)
 
 const census = aggregate(usable)

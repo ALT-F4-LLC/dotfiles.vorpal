@@ -12,22 +12,21 @@ export const meta = {
 
 // Pin models to avoid inheriting the caller's quota-limited model.
 const AGENT_CONFIG = {
-  discovery: { model: 'sonnet', effort: 'low' },
-  sizing: { model: 'sonnet', effort: 'low' },
-  read: { model: 'opus', effort: 'high' },
-  coverage: { model: 'sonnet', effort: 'low' },
-  refill: { model: 'opus', effort: 'high' },
-  crossBoundary: { model: 'opus', effort: 'high' },
-  verify: { model: 'sonnet', effort: 'low' },
+  discovery: { model: 'haiku', effort: 'low' },
+  sizing: { model: 'haiku', effort: 'low' },
+  read: { model: 'sonnet', effort: 'low' },
+  coverage: { model: 'haiku', effort: 'low' },
+  refill: { model: 'sonnet', effort: 'low' },
+  crossBoundary: { model: 'fable', effort: 'low' },
+  verify: { model: 'haiku', effort: 'low' },
 }
 
 const SHARD_LINES = 1500
-const REFUTERS_PER_FINDING = 3
+const REFUTERS_PER_BATCH = 3
 // Verification runs one refuter agent per (file batch, refuter) rather than per
 // finding: a batch carries every finding from one file up to VERIFY_BATCH_MAX,
-// and the refuter returns one verdict per finding. The 2026-09-10 run produced
-// 388 findings, so per-finding refuters alone needed 1164 agents against the
-// Workflow tool's 1000-agent lifetime cap and the tail went unverified.
+// and the refuter returns one verdict per finding. A refuter per finding would
+// exceed the Workflow tool's 1000-agent lifetime cap on a few hundred findings.
 const VERIFY_BATCH_MAX = 12
 // Agent budget, fixed before any fan-out so the read plan can never consume the
 // verification allowance. Every reserve is a count of agent() calls.
@@ -169,7 +168,7 @@ function buildVerifyBatches(findings) {
 // Splits batches into those the budget covers and those it cannot; the second
 // list is reported as unverified, never dropped and never counted as survived.
 function planVerification(batches, budget) {
-  const affordable = Math.floor(budget / REFUTERS_PER_FINDING)
+  const affordable = Math.floor(budget / REFUTERS_PER_BATCH)
   return { covered: batches.slice(0, affordable), uncovered: batches.slice(affordable) }
 }
 
@@ -301,7 +300,7 @@ unless you can confirm both the quoted text and the problem. Refute inaccurate
 quotes, misrepresented counterparts, claims consistent under a reasonable
 reading, and findings that misunderstand the file's scope. A verdict you omit
 counts as no vote, not as a refutation.`
-  const returns = await parallel(Array.from({ length: REFUTERS_PER_FINDING }, () => () =>
+  const returns = await parallel(Array.from({ length: REFUTERS_PER_BATCH }, () => () =>
     agent(prompt, { phase: 'Verify', label: `verify:${batch.file}#${batch.slice}`, schema: BATCH_VERDICT_SCHEMA, ...AGENT_CONFIG.verify })
   ))
   return applyBatchVerdicts(batch, returns)
@@ -343,8 +342,8 @@ if (largeFiles.length) log(`Sharding ${largeFiles.length} large file(s): ${large
 
 const readPlan = buildReadPlan(files, lineCounts)
 const verifyAllowance = verifyBudget(readPlan.length, CROSS_PAIRS.length)
-log(`Read plan: ${readPlan.length} agent(s) over ${files.length} file(s); verification allowance ${verifyAllowance} agent(s) (${Math.floor(verifyAllowance / REFUTERS_PER_FINDING)} batches of up to ${VERIFY_BATCH_MAX} findings)`)
-if (verifyAllowance < REFUTERS_PER_FINDING) log(`Read plan leaves no verification allowance under the ${AGENT_CAP}-agent cap; every finding will be reported UNVERIFIED`)
+log(`Read plan: ${readPlan.length} agent(s) over ${files.length} file(s); verification allowance ${verifyAllowance} agent(s) (${Math.floor(verifyAllowance / REFUTERS_PER_BATCH)} batches of up to ${VERIFY_BATCH_MAX} findings)`)
+if (verifyAllowance < REFUTERS_PER_BATCH) log(`Read plan leaves no verification allowance under the ${AGENT_CAP}-agent cap; every finding will be reported UNVERIFIED`)
 
 phase('Read')
 const initialReports = (await pipeline(readPlan, ({ file, rangeNote, label }) =>
@@ -393,7 +392,7 @@ const verificationNote = partial
   ? `Verification PARTIAL: ${unverified.length} of ${rawFindings.length} raw finding(s) unverified (agent budget or no refuter vote); see the unverified list.`
   : 'Verification complete: every raw finding was judged.'
 const summary = rawFindings.length
-  ? `${rawFindings.length} raw findings, ${verifiedCount} verified, ${findings.length} survived adversarial verification (${REFUTERS_PER_FINDING} refuters/batch, majority-uphold)${partial ? `; ${unverified.length} UNVERIFIED` : ''}.`
+  ? `${rawFindings.length} raw findings, ${verifiedCount} verified, ${findings.length} survived adversarial verification (${REFUTERS_PER_BATCH} refuters/batch, majority-uphold)${partial ? `; ${unverified.length} UNVERIFIED` : ''}.`
   : 'no findings surfaced.'
 
 return {

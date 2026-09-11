@@ -395,7 +395,8 @@ reject; do not approve to keep things moving.
 CAST YOUR VOTE — exactly once, as your last action, in TWO Bash calls. First
 write your one-paragraph summary to a scratch file with a QUOTED heredoc —
 quoting the delimiter means the shell expands NOTHING in the body: backticks,
-$( ), and $VAR all stay literal text${step ? '' : '. The filename carries your proposal and\nseat, so no other seat\'s file can collide with yours'}:
+$( ), and $VAR all stay literal text. The filename carries your ${step ? 'step' : 'proposal'} and
+seat, so no other seat's file can collide with yours:
 
   ${cdPrefix}cat > <TMP>/${summaryFile} <<'EOF'
   <your one-paragraph reasoning, on ONE line>
@@ -612,6 +613,7 @@ async function verifyWithRetry() {
 }
 
 async function verifyPanel() {
+    phase('Verify')
     const initialOutcome = await verifyWithRetry()
     const missing = initialOutcome === null ? [] : missingSeats(initialOutcome)
     if (missing.length > 0) {
@@ -640,6 +642,7 @@ async function verifyPanel() {
     return { voteId, outcome, seatsSpawned: seats.length, respawns: missing.length }
 }
 
+phase('Judge')
 const spawned = await parallel(seats.map((seat) => () => spawnJudge(seat, Boolean(isRespawn))))
 
 // Mid-wave callers own verification and the one permitted re-seat; conversational

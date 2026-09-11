@@ -4,13 +4,17 @@ export const meta = {
     whenToUse: 'The operator-ruling half of the sandbox self-improving loop. sandbox-friction-hook.sh records every sandbox denial, unsandboxed retry, and classifier denial from any session in any project; this reads that ledger. Read-only unless file is true.',
     phases: [
         { title: 'Group', detail: 'one agent ranks the ledger by denied subject' },
-        { title: 'File', detail: 'one agent per group files a sandbox issue from the dotfiles checkout' },
+        { title: 'File', detail: 'one agent per group files a sandbox issue from the dotfiles checkout, plus one retry for any filing agent that returned nothing' },
     ],
 }
 
-// Omitted models inherit the caller's model.
+// group relays a fixed jq program's output through a schema (no judgment
+// involved), so a cheap model is pinned rather than inherited — the same
+// reasoning wave.js:probe and tribunal.js:verify apply to read-only relay
+// agents of this shape. file performs a side-effecting `docket issue create`
+// and keeps inheriting the caller's model.
 const AGENT_CONFIG = {
-    group: { effort: 'low' },
+    group: { model: 'haiku', effort: 'low' },
     file: { effort: 'low' },
 }
 const PATH_SEGMENTS = 7
@@ -24,7 +28,8 @@ const ERROR_DETAIL_LENGTH = 300
 // File from the dotfiles checkout: `docket issue create` routes by cwd and
 // has no --project flag.
 //
-// Subjects starting with "(" are unclassified and appear only in the summary.
+// Subjects starting with "(" are unclassified: they are never filed, and
+// appear in the summary and in `skipped`.
 //
 // args: {ledger, cutoff, file, checkout}
 //   ledger   — absolute path of the friction ledger (~/.claude/friction/sandbox.jsonl, expanded).
@@ -198,27 +203,39 @@ async function fileGroups(groups) {
         })
     const actionable = groups.filter((g) => !g.subject.startsWith('('))
 
-    const outcomes = await pipeline(actionable,
-        (g, _item, i) => agent(filePrompt(g), {
-            label: `file:${i + 1}/${actionable.length}`,
-            phase: 'File',
-            ...AGENT_CONFIG.file,
-            schema: {
-                type: 'object',
-                properties: {
-                    action: {type: 'string', enum: ['filed', 'already-filed', 'failed']},
-                    detail: {type: 'string'},
-                },
-                required: ['action', 'detail'],
-            },
-        }),
-    )
+    const FILE_SCHEMA = {
+        type: 'object',
+        properties: {
+            action: {type: 'string', enum: ['filed', 'already-filed', 'failed']},
+            detail: {type: 'string'},
+        },
+        required: ['action', 'detail'],
+    }
+    const fileOnce = (g, i, retry) => agent(filePrompt(g), {
+        label: `file:${i + 1}/${actionable.length}${retry ? ' (retry)' : ''}`,
+        phase: 'File',
+        ...AGENT_CONFIG.file,
+        schema: FILE_SCHEMA,
+    })
+
+    const outcomes = await pipeline(actionable, (g, _item, i) => fileOnce(g, i))
+
+    // filePrompt's own idempotency check (docket issue list before create)
+    // makes a retry safe: a null result means the agent returned nothing,
+    // not that filing was attempted and failed, so one re-dispatch is
+    // worth the cost before permanently dropping the group.
+    const nullIndexes = outcomes.flatMap((o, i) => o ? [] : [i])
+    if (nullIndexes.length) {
+        log(`sandbox-friction: ${nullIndexes.length} filing agent(s) returned nothing — retrying once`)
+        const retried = await pipeline(nullIndexes, (i) => fileOnce(actionable[i], i, true))
+        nullIndexes.forEach((i, j) => { outcomes[i] = retried[j] })
+    }
 
     const results = actionable.map(({subject}, index) => {
         const outcome = outcomes[index]
         if (!outcome) {
-            log(`sandbox-friction: DROPPED ${subject}: filing agent returned nothing`)
-            return {subject, why: 'filing agent returned nothing'}
+            log(`sandbox-friction: DROPPED ${subject}: filing agent returned nothing (retry included)`)
+            return {subject, why: 'filing agent returned nothing after one retry'}
         }
         if (outcome.action === 'filed') {
             log(`sandbox-friction: filed ${subject}: ${outcome.detail.trim().split('\n').pop()}`)

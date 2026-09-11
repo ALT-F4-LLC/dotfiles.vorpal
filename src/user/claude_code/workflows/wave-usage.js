@@ -8,11 +8,14 @@ export const meta = {
     ],
 }
 
-// Model is omitted so agents inherit the caller's model.
+// scout/extract/recheck only relay a fixed command's output through a schema
+// (no judgment involved), so a cheap model is pinned rather than inherited —
+// the same reasoning wave.js:probe and tribunal.js:verify already apply to
+// read-only relay agents of this shape.
 const AGENT_CONFIG = {
-    scout: { effort: 'low' },
-    extract: { effort: 'low' },
-    recheck: { effort: 'low' },
+    scout: { model: 'haiku', effort: 'low' },
+    extract: { model: 'haiku', effort: 'low' },
+    recheck: { model: 'haiku', effort: 'low' },
 }
 
 const DEFAULT_MODE = 'steps'
@@ -368,9 +371,12 @@ jq prints exactly one JSON object. Return it as the structured output with ok:tr
 
 phase('Scout')
 const listing = await agent(scoutBrief, { label: 'scout', phase: 'Scout', schema: FILES_SCHEMA, ...AGENT_CONFIG.scout })
-const files = [...new Set((listing && listing.files) || [])]
-    .filter((f) => /\/agent-[^/]*\.jsonl$/.test(f))
-    .sort()
+const rawFiles = [...new Set((listing && listing.files) || [])]
+const files = rawFiles.filter((f) => /\/agent-[^/]*\.jsonl$/.test(f)).sort()
+if (files.length !== rawFiles.length) {
+    const dropped = rawFiles.filter((f) => !/\/agent-[^/]*\.jsonl$/.test(f))
+    log(`wave-usage: scout listed ${rawFiles.length} path(s), ${dropped.length} not matching agent-*.jsonl and dropped: ${dropped.join(', ')}`)
+}
 log(`wave-usage: ${files.length} agent transcript(s) under ${dir} (${mode} mode)`)
 if (files.length === 0) {
     throw new Error(`wave-usage: no agent-*.jsonl under ${dir} — nothing to measure, which is a finding, not an empty batch`)
@@ -389,6 +395,14 @@ const extracted = await pipeline(
     (extract, file) => ({ file: basename(file), extract }),
 )
 
+// EXTRACT_SCHEMA requires only `ok`, so a schema-valid reply can still omit
+// `usage` — reduceRows dereferences extract.usage[u] unguarded. Shared by
+// the initial pass and recheckBootstrap's retry branch below, so neither
+// path can reintroduce the gap the other one guards against.
+function hasUsage(extract) {
+    return Boolean(extract && extract.usage && typeof extract.usage === 'object')
+}
+
 const errors = []
 const initialResults = extracted.flatMap((r, i) => {
     const file = basename(files[i])
@@ -401,6 +415,11 @@ const initialResults = extracted.flatMap((r, i) => {
         const why = (r.extract && r.extract.error) || 'no error text'
         log(`wave-usage: ${file}: jq failed — ${why}`)
         errors.push(`${file}: jq failed — ${why}`)
+        return []
+    }
+    if (!hasUsage(r.extract)) {
+        log(`wave-usage: ${file}: extract reported ok but carried no usage`)
+        errors.push(`${file}: extract reported ok but carried no usage`)
         return []
     }
     return [{ ...r, path: files[i] }]
@@ -428,9 +447,11 @@ async function recheckBootstrap(results) {
         if (second && second.ok && second.bootstrap === false) {
             log(`wave-usage: ${r.file}: bootstrap:false confirmed on a second, independent read — treating as a misreport and recording as overhead, not an error`)
             replacements.set(r, { ...r, extract: { ...r.extract, bootstrapFallback: true } })
-        } else if (second && second.ok) {
+        } else if (second && second.ok && hasUsage(second)) {
             log(`wave-usage: ${r.file}: bootstrap:false did not repeat on retry — using the retry's answer`)
             replacements.set(r, { ...r, extract: second })
+        } else if (second && second.ok) {
+            log(`wave-usage: ${r.file}: retry reported ok but carried no usage — reporting the original error rather than a reply reduceRows cannot use`)
         } else {
             log(`wave-usage: ${r.file}: retry could not confirm or refute the first answer — reporting the original error`)
         }

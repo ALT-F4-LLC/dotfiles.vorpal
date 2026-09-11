@@ -1,6 +1,6 @@
 ---
 node: judge-correctness
-version: 16
+version: 17
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -68,8 +68,8 @@ to Overrides; do not re-file that same occurrence as an ordinary finding.
 
 **Verify within this seat.** Follow rerun-discipline for focused candidate probes
 and required reproduction of supplied FAILED gates or disputed gate outcomes.
-The executor-read boundary requires independent scratch copies instead of that
-fragment's linked-worktree procedure. Preserve the intended candidate inputs;
+Use that fragment's scratch-copy exports under the executor-read boundary.
+Preserve the intended candidate inputs;
 isolate writes, outputs, caches, and other mutable resources. Probes must not
 write into the reviewed checkout or its shared repository metadata.
 

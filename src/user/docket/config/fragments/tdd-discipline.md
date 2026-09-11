@@ -1,6 +1,6 @@
 ---
 fragment: tdd-discipline
-version: 3
+version: 4
 ---
 # Test discipline
 
@@ -48,13 +48,9 @@ only confirms internal wiring can miss an incorrect result.
   mutable state and clean up owned resources. Use deterministic synchronization
   or bounded condition waits instead of arbitrary sleeps. Tests must not depend
   on execution order or another test's leftovers.
-- **Construct synthetic scanner fixtures at runtime.** For secret-detection tests,
-  assemble non-secret values that satisfy the detector's actual format and
-  context requirements. Keep credential-shaped literals out of the committed
-  fixture source. Feed generated content through the scanner mode and effective
-  configuration under test, and assert the expected finding, not just nonzero
-  exit. Verify the source diff passes its gate without suppressing the positive
-  control. Never use real credentials.
+- **Build scanner fixtures at runtime, never from committed literals.** The
+  test-infrastructure fragment's scanner rule governs their construction;
+  never use real credentials.
 - **Never change expectations merely to obtain green.** Do not loosen assertions,
   widen tolerances, delete cases, skip failures, or change runner exclusions to
   hide a defect. Correct an invalid or obsolete test from the intended contract,

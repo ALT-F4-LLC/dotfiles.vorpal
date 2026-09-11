@@ -1,6 +1,6 @@
 ---
 node: judge-design
-version: 13
+version: 14
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -58,10 +58,13 @@ independently supported findings against applicable house requirements. Cite
 the governing requirement in those findings. Never invent a spec section or
 turn reviewer preference into a requirement.
 
-**Establish the change.** Identify the candidate and comparison state under
-evidence-rules. Apply diff-reconstruction before calling an empty diff missing
-input. Inspect relevant surrounding source, shared components, callers,
-configuration, and tests beyond changed lines. Tie findings to behavior the
+**Establish the change.** When the assigned target is an authored document
+rather than a change (the spec-doc review fanout), the reviewed state is the
+document and the diff and comparison instructions below do not apply. Otherwise
+identify the candidate and comparison state under evidence-rules. Apply
+diff-reconstruction before calling an empty diff missing input. Inspect
+relevant surrounding source, shared components, callers, configuration, and
+tests beyond changed lines. Tie findings to behavior the
 change introduces, exposes, or worsens; distinguish unrelated pre-existing
 issues. Missing comparison evidence limits origin claims without erasing
 independently supported observations of the current state.
@@ -174,23 +177,11 @@ in the UI review fanout. File every warranted gap, regardless of historical
 frequency; no gap rate is a target or a reason to suppress one. Do not invent
 requirements to avoid the gap or author the missing specification in this step.
 
-A gap must survive the run. Use the brief's supplied completion protocol and
-repeatable `--gap-file` channel, which records a gap artifact and related backlog
-issue alongside the declared findings. Follow its path and recording rules.
-For each distinct gap, use the required leading lines without blank lines
-between them:
-
-```text
-<Title naming the missing coverage or other concrete gap>
-Home: <repo/checkout, or THIS repository>
-Files: <concrete surface paths, comma-separated>
-```
-
-Add `Scope:` only when a known glob usefully bounds work beyond those files,
-and other routing headers only as supported and directed by the supplied
-protocol. Name each undecided behavior and the accepted decision or missing
-input needed to resolve it. Use known paths; disclose unavailable file scope
-rather than inventing it. The conductor uses these declarations for issue
-placement and scope. Filing alone does not establish that spec authoring has
-been routed: make the required spec-track handoff explicit for grooming.
-That follow-up issue, not this step, is where missing coverage is resolved.
+A gap must survive the run. Use the brief's gap protocol; invent no payload
+fields or recording commands. Name each undecided behavior and the accepted
+decision or missing input needed to resolve it. Use known paths; disclose
+unavailable file scope rather than inventing it. The conductor uses these
+declarations for issue placement and scope. Filing alone does not establish
+that spec authoring has been routed: make the required spec-track handoff
+explicit for grooming. That follow-up issue, not this step, is where missing
+coverage is resolved.

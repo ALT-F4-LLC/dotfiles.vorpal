@@ -234,7 +234,8 @@ Apply these rules in order:
    across passes needs a plan.
 5. **Shape `one-shot`, Security-sensitive `no`, Size hint `trivial`:**
    recommend `/tend` when the work leaves no decision or judgment open, and
-   direct execution when it does.
+   direct execution when it does. Recommending `/tend` entails filing the
+   work as a `route-tend` issue, since tend takes work only from that queue.
 6. **Other one-shot work:**
    recommend `/docket-plan`.
 

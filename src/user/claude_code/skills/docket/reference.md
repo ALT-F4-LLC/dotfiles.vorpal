@@ -538,9 +538,12 @@ whichever version is highest today. An already-retired version is `CONFLICT`
 |---|---|---|---|---|
 | `--name` | — | string | `""` | filter to one workflow name |
 | `--limit` | — | int | `50` | `0` means no limit |
+| `--deprecated` | — | bool | `false` | include retired versions (`deprecated_at_ms` set); without it only versions still eligible to bind are listed |
+| `--orphans` | — | bool | `false` | narrow to registered names no file in any config root declares; a per-name filesystem verdict, so `--deprecated` has no effect under it and retired rows are listed as they are |
 
-**Every** registered version of each name is listed, not only the binding one —
-the query reduces nothing — so lineage is visible rather than inferred.
+The plain listing shows every version still eligible to bind, so a superseded
+but unretired version appears beside the binding one and lineage is visible
+rather than inferred. Retired versions appear only under `--deprecated`.
 
 A `Collection`: under `--json=v2` the payload is `{items, total, truncated}`,
 where `total` is the true pre-limit count. Items carry `row_version` (the CAS

@@ -163,10 +163,8 @@ Work within the task's scope and granted permissions.
 
 ## PR titles and bodies
 
-- Title: imperative, under 60 characters.
-- Body: two to four sentences covering what changes, why, and relevant validation
-  or limitations. Expand when the task or repository template requires more.
-- No headings, bullets, or checklists unless the repository template requires them.
+PR titles and bodies follow the pr skill, which owns their shape, length, and
+sections. The prose rules above apply to the wording inside them.
 
 ## Never include
 

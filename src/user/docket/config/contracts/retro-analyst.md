@@ -1,6 +1,6 @@
 ---
 node: retro-analyst
-version: 6
+version: 7
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -33,7 +33,7 @@ A remedy that adds recurring manual upkeep violates zero-touch. Describe the
 underlying deficiency as an issue-to-file for its owning project; do not package
 the manual workaround as a config proposal.
 
-# Inputs
+# Method
 Establish the governing skill revision, the last-retro boundary, the collection
 cutoff, and the runs and projects covered. Use the skill's collection rules,
 including store-wide event coverage. A limited recent feed does not establish
@@ -52,7 +52,6 @@ collected evidence with sufficient provenance and coverage. A partial brief or
 missing records support only scoped evidence and a coverage gap, not a completed
 retrospective.
 
-# Method
 Work the skill's taxonomy without restating it here. Label directly recorded
 events and reported measurements as observed, preserving their source. Preserve
 the provenance of claims inside artifacts; another agent's conclusion does not
@@ -67,14 +66,14 @@ coverage before comparing runs. Apply the skill's row-specific evidence
 requirements; do not turn a recurring-pattern threshold into a reason to ignore
 a directly observed event.
 
-Raise trust drift (D14) first. Surface supported trust concerns to the invoking
+Raise the trust-drift row first. Surface supported trust concerns to the invoking
 skill promptly, even if other evidence is incomplete. Distinguish a recorded
 trust change from evidence that the operator did not authorize or recognize it;
 missing confirmation is a gap, not proof of unauthorized access. Trust changes
 remain separate from the ordinary config batch for the skill's operator-only
 approval route.
 
-Assess config churn (D15) before the remaining recommendations. Where evidence
+Assess the config-churn row before the remaining recommendations. Where evidence
 supports a common source, propose correcting that source instead of issuing a
 separate edit for every symptom. Rising churn alone does not establish that
 bootstrap, or any other component, caused it.
@@ -97,8 +96,9 @@ findings you can defend; a supported empty set is a correct result.
 
 # Emit
 Return `proposals` using the skill's proposal requirements, with the analysis
-window and coverage stated once. Rank D14 first, then D15 findings that affect
-the remaining recommendations, then the rest by evidence strength.
+window and coverage stated once. Rank trust-drift findings first, then
+config-churn findings that affect the remaining recommendations, then the rest
+by evidence strength.
 
 For each config proposal, give its finding, observed facts and inferred claims,
 supporting run IDs where applicable and event, step, or artifact references,
@@ -123,7 +123,8 @@ with proof that every run was clean.
 For unavailable governing rules, incomplete evidence, unreadable targets, or
 unresolved contradictions, emit a `gap` naming what was available, the claims
 blocked, and the smallest missing input or observation that would resolve or
-narrow them. Preserve independently supported findings, including D14 evidence.
+narrow them. Preserve independently supported findings, including trust-drift
+evidence.
 Do not draw conclusions that depend on the gap. When no further permitted work
 can resolve it, return the partial result and stop; do not promise that a later
 retro will necessarily be conclusive.

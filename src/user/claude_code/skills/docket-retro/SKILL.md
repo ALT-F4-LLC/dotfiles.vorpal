@@ -60,7 +60,8 @@ docket step artifact <id> --json                      # one artifact's body; the
 ```
 
 Collect every run since the last docket-retro before concluding anything — one run is
-an anecdote. The docket events store is machine-global, but `events list` is
+an anecdote. With no prior retro, the window is every run in the store. The
+docket events store is machine-global, but `events list` is
 cwd-scoped by default: a run's events may have been recorded from a different
 project's working directory, so a cwd-scoped query — `--run RUN-N` included —
 can return `ok:true, total 0` for a run that genuinely exists. Always pass

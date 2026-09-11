@@ -1,6 +1,6 @@
 ---
 node: judge-security
-version: 13
+version: 14
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -76,8 +76,8 @@ non-security mechanism belong to judge-architecture.
 
 **Verify within this seat.** Follow rerun-discipline for focused candidate probes
 and required reproduction of supplied FAILED gates or disputed gate outcomes.
-Under executor-read, use independent scratch copies instead of that fragment's
-linked-worktree procedure. Preserve the intended candidate and comparison inputs;
+Use that fragment's scratch-copy exports under executor-read. Preserve the
+intended candidate and comparison inputs;
 isolate writes, outputs, caches, and other mutable resources. Neither setup nor
 execution may write into the reviewed checkout or shared repository metadata.
 Unavailable execution limits only conclusions that depend on it.

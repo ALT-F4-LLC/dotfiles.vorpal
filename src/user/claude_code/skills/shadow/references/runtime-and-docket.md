@@ -22,10 +22,9 @@ audit. A prompt boundary alone is not enforced containment; unrestricted shell
 and write-capable MCP tools can exceed a nominally read-only tool selection.
 [Subagents](https://code.claude.com/docs/en/sub-agents).
 
-Fable 5.1 (`claude-fable-5-1`), Opus 5 (`claude-opus-5`), and Sonnet 5
-(`claude-sonnet-5`) are current documented models at this revision. The `fable`
-alias defaults to Fable 5.1 from Claude Code v2.1.255; provider mappings and
-overrides matter. Preserve the Fable observer preference, while recording
+As checked 2026-09-11, Fable 5.1 (`claude-fable-5-1`), Opus 5 (`claude-opus-5`),
+and Sonnet 5 (`claude-sonnet-5`) are the current documented models, and the
+`fable` alias resolves to Fable 5.1; provider mappings and overrides matter. Preserve the Fable observer preference, while recording
 fallbacks from message-level evidence. These model IDs are routing choices,
 not evidence that a behavior evaluation ran on those models.
 [Model configuration](https://code.claude.com/docs/en/model-config).

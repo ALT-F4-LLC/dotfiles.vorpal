@@ -1,6 +1,6 @@
 ---
 fragment: truth-first
-version: 3
+version: 4
 ---
 # Truth-first
 
@@ -46,12 +46,6 @@ built from your own hypothesis.
   unconfirmed wherever the evidence does not establish it. Do not trigger harmful
   failures merely to obtain an observation, or repeat checks without a remaining
   question they can answer.
-
-**Under a security lens**, distinguish exploitability under stated preconditions
-from evidence that an incident used that path. A faithful controlled proof of
-concept can establish exploitability in its tested scope; neither that result nor
-source analysis alone establishes historical exploitation. State which deployment
-preconditions are verified and which remain unknown.
 
 Collect diagnostics through access-controlled channels, preserving external error
 sanitization and excluding secrets and unnecessary personal data. Changes to

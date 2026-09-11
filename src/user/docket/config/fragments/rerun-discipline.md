@@ -1,6 +1,6 @@
 ---
 fragment: rerun-discipline
-version: 7
+version: 8
 ---
 # Re-run discipline
 
@@ -30,7 +30,7 @@ candidate inputs in the private snapshot before relying on its results. If the
 intended state cannot be established, keep the dependent conclusion unverified.
 
 Create a fresh, uniquely allocated directory beneath the inherited `$TMPDIR`
-for each step attempt. Give child commands private temporary, build-output, and
+for each step attempt and set `STEP_PRIVATE_TMP` to it. Give child commands private temporary, build-output, and
 writable cache paths beneath it, including `GOCACHE`; creating the directory
 alone does not redirect those writes. Set each command's `TMPDIR` and relevant
 tool-specific paths. For Go, account for `GOTMPDIR` and `GOMODCACHE` as well.
@@ -58,12 +58,13 @@ Never plant or undo a scratch mutation in the shared checkout.
 
 Never use `git stash` to obtain a clean tree. The stash stack is shared by the
 repository's worktrees. For a committed comparison base, resolve the intended
-base to a commit ID, then use
-`git worktree add --detach "$STEP_TMP/base" "$BASE_COMMIT"`, where `STEP_TMP`
-is this step's private directory and `BASE_COMMIT` is that resolved ID. Use
-`HEAD` only when verified to be the intended base.
+base to a commit ID, set `STEP_BASE_COMMIT` to it, and export that commit with
+`git archive` into a fresh directory beneath `$STEP_PRIVATE_TMP`, extracting
+the archive into a `tree` subdirectory there. Use `HEAD` only when verified to
+be the intended base. An archive omits Git metadata and submodule contents;
+when the comparison needs them, report the comparison as unavailable rather
+than creating a linked worktree.
 
-Keep logs, comparison files, and state records outside disposable worktrees,
-and retain them for review and reconciliation. Remove only worktrees created by
-your step, using `git worktree remove` after preserving the evidence. Limit any
-forced removal to your own verified disposable worktree and files.
+Keep logs, comparison files, and state records outside disposable export
+directories, and retain them for review and reconciliation. Remove only export
+directories created by your step, after preserving the evidence.

@@ -1,6 +1,6 @@
 ---
 node: fix
-version: 17
+version: 18
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
@@ -22,8 +22,9 @@ disposition. A shared repair may satisfy several items; retain every item ID.
 
 # Not
 You do not re-implement the issue, revise its requirements, or re-judge the
-whole change. The `implement` change-summary is context. The reconciled
-findings remain authoritative assignments; do not silently drop, downgrade, or
+whole change. The `implement` change-summary is context. The routed findings,
+reconciled where a reconcile stage produced them, remain authoritative
+assignments; do not silently drop, downgrade, or
 declare them withdrawn. Report a supported disagreement for reassessment.
 
 Do not repair unrelated discoveries. File them through the supplied gap route.
@@ -34,8 +35,9 @@ do not authorize additional work or changes outside its boundaries.
 
 # Method
 **Establish the work and state.** Read the `ac-report`, when present, before
-the findings. Then read every routed finding and the supplied synthesize
-clusters, including the member evidence needed to understand each obligation.
+the findings. Then read every routed finding and, where a synthesize stage
+produced them, the supplied clusters, including the member evidence needed to
+understand each obligation.
 When a needed member body is absent, retrieve it with
 `docket step artifact ARTIFACT-N --payload`, using an artifact ID named by the
 packet. This is the permitted missing-body retrieval, not permission to browse

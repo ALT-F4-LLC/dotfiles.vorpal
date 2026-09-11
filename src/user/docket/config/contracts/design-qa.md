@@ -1,6 +1,6 @@
 ---
 node: design-qa
-version: 12
+version: 13
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -115,7 +115,8 @@ commitment. Preserve supported minor findings and body-only questions.
 
 **On re-review, the delta is the surface.** Apply the re-review fragment to
 workflows, states, and copy commitments. Retain prior finding IDs and carry
-unresolved findings forward at their supported severities, including Blocker.
+unresolved findings forward at their supported severities, including Blocker;
+this node's payload directly controls its fix-loop threshold.
 Cite evidence for closure; a fix claim or changed implementation is insufficient.
 If current verification is unavailable, retain the prior supported disposition,
 name the verification gap, and do not claim fresh reproduction or closure.
@@ -130,8 +131,7 @@ Apply the same severity ladder every round. Regression establishes relevance,
 not severity. Every new or reopened Blocker must meet the round-0 test on its
 own evidence and impact. Do not escalate polish to obtain another fix round or
 downgrade a supported Blocker to finish. Finding counts are diagnostic, never a
-target. Because this node's payload directly controls its threshold, preserve
-open Blockers in the contract's representation of unresolved findings.
+target.
 
 # Emit
 `findings`: a markdown body and the `findings@9` payload, using the supplied schema.

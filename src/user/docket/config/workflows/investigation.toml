@@ -1,7 +1,13 @@
 [pipeline]
 description = "Read-only root-cause investigation with an optional research step, ending at a tribunal read that sends the report back to a bounded revision loop on rejection."
 name = "investigation"
-version = 15  # 15: the pipeline description no longer says "escalates to the
+version = 16  # 16: `report-vote` reads `issue.latest.investigation` instead of
+              #   `report.investigation`, so a re-run after `revise-investigation`
+              #   sees the revised report, as every other loop-gated vote in the
+              #   corpus already does; `revise-investigation` gains
+              #   `report-vote.vote-record` in its inputs, the record its
+              #   contract tells it to read. No topology change.
+              # 15: the pipeline description no longer says "escalates to the
               #   operator" — report-vote's on_fail is fix-loop, matching the
               #   fix spec-project@17 and spec-doc@25 made to the same
               #   stale clause. No topology change.
@@ -82,7 +88,7 @@ packet = ["contracts/{executor}.md"]
 
 [[step]]
 after = ["report"]
-inputs = ["report.investigation"]
+inputs = ["issue.latest.investigation"]
 max_fix_loops = 2
 name = "report-vote"
 on_fail = "fix-loop"
@@ -96,7 +102,7 @@ emits = "investigation"
 executor = "revise-investigation"
 expected_cost = 0.40
 holds_tree = false
-inputs = ["issue.latest.investigation", "research.*", "issue.body"]
+inputs = ["issue.latest.investigation", "report-vote.vote-record", "research.*", "issue.body"]
 loop = true
 name = "revise-investigation"
 packet = ["contracts/{executor}.md"]

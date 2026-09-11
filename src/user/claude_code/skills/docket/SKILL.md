@@ -2,7 +2,7 @@
 name: docket
 description: >
   Use the Docket CLI for issues, documents, votes, and workflow definitions
-  when the user names Docket or the conversation already uses a Docket
+  when the operator names Docket or the conversation already uses a Docket
   project. Includes inspection, safe mutations, and engine diagnostics;
   routes Docket planning, bootstrap, and run execution to their companion
   skills.
@@ -119,8 +119,8 @@ operation. Supported verbs are issue/doc/vote creation, `run start`, and
 issue/doc comment addition. Read the result back when verifying exact stored
 text matters.
 
-User authorization persists across the task. Keep human-only decisions in
-the applicable companion policy with the human: a model vote is not a trust
+Operator authorization persists across the task. Keep operator-only decisions
+in the applicable companion policy with the operator: a model vote is not a trust
 grant or permission to override a reserved gate. Use destructive flags,
 manual vote commits, gate overrides, and forced lease reaps only within the
 authority already provided; their availability is not additional authority.
@@ -187,7 +187,7 @@ between calls, and remove it when no longer needed.
   process; confirm a prior writer is gone before acknowledging its reap.
 - Heartbeat within the applicable lease TTL. A workflow's
   `max_step_duration` is independent of heartbeats and can still reap work.
-- Resolve human gates and held clusters using the applicable operating
+- Resolve operator gates and held clusters using the applicable operating
   policy. Do not create a passing result to clear an infrastructure failure.
 
 Use [transport](references/transport.md) for issue leases and

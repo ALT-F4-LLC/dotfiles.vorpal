@@ -52,9 +52,10 @@ a scratch invocation can register a permanent unintended project.
 
 **Write scratch paths through `$TMPDIR`.** Use quoted paths such as
 `"$TMPDIR/..."`. Do not substitute literal `/tmp/...` or `/Users/...` paths:
-the isolation harness recognizes the environment-variable form and may
-reject handwritten absolute paths. If `$TMPDIR` is unavailable, report the
-blocker rather than choosing another location.
+the scratch root can differ between calls, and a sandboxed and an unsandboxed
+command can resolve it to different directories, so a handwritten path points
+at the wrong tree. If `$TMPDIR` is unavailable, report the blocker rather than
+choosing another location.
 
 **Report routing defects without triggering the same retry.** If the brief
 requires a checkout write or an operator-reserved trust change, do not

@@ -79,7 +79,7 @@ explicit assignment record, or the installed `wave-usage` obligation classifier:
 claimant (step record), judge (vote cast), and wave overhead (read-only probes)
 have different owners.
 The first `STEP-N` in a prompt can be something a probe read. For tend, prefer
-an explicit `{project_identity, issue_id, agent_id, workflow_id}` launch mapping.
+an explicit launch record binding project, issue, agent, and workflow identity.
 Otherwise require an unambiguous assignment statement in the bootstrap brief;
 a regex finding an issue ID in quoted descriptions is insufficient. Preserve
 unattributed work as a count and limitation, never force a plausible join.

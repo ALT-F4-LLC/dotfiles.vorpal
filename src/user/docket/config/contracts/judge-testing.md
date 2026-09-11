@@ -1,6 +1,6 @@
 ---
 node: judge-testing
-version: 10
+version: 11
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -92,8 +92,8 @@ Use the evidence rules for state, discovery, skips, exclusions, caching, and fai
 attribution. A current green run does not establish the red-first sequence or
 "0 new failures" without the relevant prior evidence.
 
-The executor-read boundary requires independent scratch copies instead of the
-rerun fragment's linked-worktree procedure. Preserve all intended candidate inputs;
+Use the rerun fragment's scratch-copy exports under the executor-read boundary.
+Preserve all intended candidate inputs;
 isolate writes, outputs, caches, and other mutable resources. Probes, including
 mutations or controls, must not write into the reviewed checkout or shared
 repository metadata. Retain probe changes, logs, and state references as evidence.

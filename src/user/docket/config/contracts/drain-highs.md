@@ -1,6 +1,6 @@
 ---
 node: drain-highs
-version: 9
+version: 10
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -72,9 +72,8 @@ this step does not repeat their review or independently verify the defects.
    filings from this run, using the run's artifact index to reach their
    synthesis and reconcile artifacts. A cluster that matches one already
    filed by another issue's drain — same locus and same defect, not merely a
-   similar title — is a duplicate: relate it to that filing with
-   `docket issue link add` (`duplicates`) instead of filing a second issue,
-   and record which filing it duplicates in the report. This is a same-wave,
+   similar title — is a duplicate: file nothing for it and record in the
+   report which sibling filing it duplicates. This is a same-wave,
    cross-issue check; it does not require reading every historical drain.
 
 4. **Prepare one gap file per selected cluster without a prior filing.**

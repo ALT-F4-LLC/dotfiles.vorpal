@@ -31,7 +31,7 @@ docket issue create --json=v2 \
   -l backend -l must-have \
   -f internal/api/router.go \
   --scope 'internal/api/**' \
-  -a '@alice' \
+  -a alice \
   -d - <<'DESC'
 Prevent abuse on public endpoints — `just build` and $(go test ./...) arrive
 intact because the quoted DESC delimiter stops the shell expanding them.
@@ -51,7 +51,7 @@ Edit only the fields you pass — `issue edit` uses `cmd.Flags().Changed(...)`
 so omitted flags are left untouched, not reset to zero values:
 
 ```bash
-docket issue edit DKT-1 --json=v2 -s in-progress -a '@bob'
+docket issue edit DKT-1 --json=v2 -s in-progress -a bob
 docket issue edit DKT-1 --json=v2 --parent DKT-5      # reparent
 docket issue edit DKT-1 --json=v2 --parent none        # make it a root issue again
 docket issue edit DKT-1 --json=v2 -f a.go -f b.go       # REPLACES the file list (not additive)

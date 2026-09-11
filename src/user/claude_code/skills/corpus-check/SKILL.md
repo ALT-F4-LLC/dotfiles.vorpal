@@ -75,13 +75,17 @@ any file over roughly 1500 lines — `docket-run/SKILL.md`, `docket/reference.md
 and `workflows/wave.js` are the known cases as of writing; the workflow
 measures sizes itself at run time), runs a completeness pass
 that re-dispatches any file or range nothing covered, then a cross-boundary
-pass pairing claims one tree makes about the other, then routes every raw
-finding through adversarial verification (independent skeptics voting
-refute/uphold) before it reaches you. The workflow returns only
+pass pairing claims one tree makes about the other, then verifies raw
+findings in per-file batches (independent skeptics voting refute/uphold)
+within an agent budget it fixes before the read fan-out. `findings` holds only
 majority-survived findings, each carrying its file, location, quote,
-counterpart, severity, and a proposed fix. Read the workflow's own summary
-line for what it dropped as refuted and what it could not cover — do not
-report exhaustive coverage the run itself flagged as partial.
+counterpart, severity, and a proposed fix. `unverified` holds every finding the
+budget could not cover or that received no vote; `verificationPartial`,
+`verifiedCount`, and `unverifiedCount` say how far verification got, and
+`coverageNote` states it in words. Read the summary line for what was refuted
+and what could not be covered. When `verificationPartial` is true, report the
+unverified findings by file as unaudited, never as clean, and do not report
+exhaustive coverage the run itself flagged as partial.
 
 If the workflow throws or returns nothing, say so and stop; do not
 substitute a smaller manual read as if it satisfied this step.

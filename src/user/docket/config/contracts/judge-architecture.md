@@ -1,6 +1,6 @@
 ---
 node: judge-architecture
-version: 16
+version: 17
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -107,9 +107,9 @@ itself.
 
 Investigative commands follow rerun-discipline, including its required
 reproductions of reported FAILED gates and gate outcomes your findings dispute.
-Under executor-read, use independent scratch copies for probes and comparison
-bases instead of the fragment's linked-worktree procedure. Preserve the intended
-candidate inputs and isolate outputs, caches, and other mutable resources.
+Under executor-read, use the fragment's scratch-copy exports for probes and
+comparison bases. Preserve the intended candidate inputs and isolate outputs,
+caches, and other mutable resources.
 Neither the probe nor its setup may write into the checkout or shared repository
 metadata. Report unavailable execution as a verification gap and continue
 independent inspection.

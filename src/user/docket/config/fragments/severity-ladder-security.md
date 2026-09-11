@@ -1,6 +1,6 @@
 ---
 fragment: severity-ladder-security
-version: 4
+version: 5
 ---
 # Severity ladder: security
 
@@ -55,8 +55,7 @@ classification on evidence, but risk acceptance alone does not clear it. High
 requires a fix or the panel's recorded acceptance: approve-with-concerns casts
 whose rationales stand in the vote record, after which `drain-highs` files
 every open High the panel approved past as a backlog issue. A rejected tally
-returns the round to the fix loop; the operator is reached only when the loop
-bound parks the step. Where another track seats this reviewer without a
+returns the round to the fix loop. Where another track seats this reviewer without a
 security vote, that track's own thresholds route its findings. Medium remains
 recorded and surfaces at the gates and in the backlog; Low and Info remain
 available for downstream consideration.

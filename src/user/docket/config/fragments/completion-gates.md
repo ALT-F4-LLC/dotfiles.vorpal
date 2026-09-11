@@ -1,6 +1,6 @@
 ---
 fragment: completion-gates
-version: 7
+version: 8
 ---
 # Completion gates
 
@@ -55,14 +55,14 @@ Never use `git stash` to establish that a failing gate pre-dated your change. Li
 worktrees share `refs/stash`; a concurrent push can change which entry a bare
 `git stash pop` restores.
 
-For a baseline comparison, use the workflow's recorded starting commit, not an
-unverified `HEAD`. Export into a fresh directory under your step's private temporary
-directory. Use an archive only when the gate supports exported source trees:
+For a baseline comparison, resolve the intended base to a commit ID and record it
+as the baseline; use `HEAD` only when verified to be that base. Export into a fresh
+directory under your step's private temporary directory. Use an archive only when the gate supports exported source trees:
 archives omit Git metadata and submodule contents, and export attributes can omit
 or alter tracked files.
 
 Allocate a private directory for this attempt beneath the literal `$TMPDIR`, set
-`STEP_PRIVATE_TMP` to it and `STEP_BASE_COMMIT` to the recorded starting commit,
+`STEP_PRIVATE_TMP` to it and `STEP_BASE_COMMIT` to the resolved baseline commit,
 then run from your worktree:
 
 ```sh
@@ -79,6 +79,6 @@ Reproduce its required prerequisites and record the baseline commit and comparis
 evidence. A setup failure is inconclusive. If an archive cannot support the gate, use
 the workflow's approved baseline procedure or report that the comparison is unavailable.
 
-Do not create linked worktrees from this executor: creation and cleanup require
-shared repository administrative writes outside its permitted scope. Keep your
+Do not create linked worktrees from this executor: baseline investigation stays
+within the assigned checkout's scope and the step's private directory. Keep your
 working tree and the shared stash unchanged during baseline investigation.

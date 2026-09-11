@@ -388,7 +388,7 @@ A well-defined set meets all of these conditions:
   owning project or recorded as a dependency, never left bound: a verify seat
   can never judge it `met`, so at best it reports `unmet-out-of-scope` and a
   vote passes it with a filing, at worst it routes `fix-loop` to the cap and
-  parks on every run that carries it, the shape two issues took on RUN-98.
+  parks on every run that carries it, the shape two issues took on one past run.
 
 A criterion that encodes the worse design is an operator decision under
 §4a, not a repair. When the repo read shows the stated outcome would force

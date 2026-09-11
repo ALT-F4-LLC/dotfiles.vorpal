@@ -217,9 +217,11 @@ print('binding count:', len(items))
 "
 ```
 
-Then re-run the planner. **A clean pass prints `0 action(s)`** and a binding
-count equal to the corpus file count. Anything else means the pass did not
-finish; say so plainly rather than reporting success.
+Then re-run the planner. **A clean pass prints no `REGISTER`, `RESTORE`, or
+`DEPRECATE` line** and a binding count equal to the corpus file count.
+`CONFLICT`, `INVALID`, and `ORPHAN` lines are reported outcomes, not unfinished
+work; the `action(s)` count includes them. Any remaining actionable line means
+the pass did not finish; say so plainly rather than reporting success.
 
 ## Scope — one project unless told otherwise
 

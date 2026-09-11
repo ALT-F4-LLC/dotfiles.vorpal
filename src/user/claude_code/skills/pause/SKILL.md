@@ -10,6 +10,10 @@ follow. `docket run pause RUN-N` alone parks the run — it does nothing about
 everything that lives only in THIS session's head. This skill is what makes a
 pause resumable rather than just stopped.
 
+**Parking a run, not ending a session.** To walk away for good — stopping
+this session's agents, schedules and watches and filing what is unfinished —
+use `finish` (`skills/finish/SKILL.md`), which hands any live run back here.
+
 **Not a replacement for `docket-run`.** You run inside or alongside a docket-run
 session that is already driving RUN-N. Nothing here schedules steps, dispatches
 waves, or makes routing decisions — that is docket-run's contract, untouched.

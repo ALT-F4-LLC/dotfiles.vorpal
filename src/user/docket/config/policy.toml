@@ -1,5 +1,14 @@
 [policy]
-version = 29  # 29: lower default effort across the corpus. Reverses policy
+version = 30  # 30: comment-only, no routing value changed. Engine commit
+              # ffd117a (docket nightly-101) exempts fable-standing
+              # rows from the post-walk fable gate, so fable-low's retry now
+              # stays on Fable for every row, not only the investigator
+              # class; the version 29 deviation note and its per-row echoes
+              # are dropped. Also corrects two version 29 comments: opus-low's
+              # retry lands above the tier judge-testing and judge-architecture
+              # left (opus-medium), and fix's security-labelled walk diverges
+              # from the unlabelled one at round 4.
+              # 29: lower default effort across the corpus. Reverses policy
               # 27's implement/fix move and goes below it: every row but
               # judge-simplicity now stands at the lowest tier its model
               # supports (three `low` variants added; judge-correctness,
@@ -63,11 +72,13 @@ version = 29  # 29: lower default effort across the corpus. Reverses policy
 [variants]
 # Policy 29 adds the three `low` variants. opus-low escalates straight to
 # opus-high, so the one retry a `max_attempts = 2` step permits lands on the
-# tier every opus row left. fable-low escalates to fable-medium; the engine's
-# post-walk fable gate redirects that hop to [escalation.fallback] opus-high
-# for every row but the investigator class (investigate, research), which is
-# filed against the engine as a gap, not worked around here. sonnet-low
-# escalates to sonnet-medium. The older fable variants stay chain tops.
+# tier every opus row left except judge-testing and judge-architecture, which
+# left opus-medium and retry above it. fable-low escalates to fable-medium and
+# stays on Fable for every fable-standing row: since engine commit ffd117a
+# (policy 30) the post-walk fable gate exempts rows whose standing variant is
+# already fable, so the redirect to [escalation.fallback] applies only to
+# opus- and sonnet-standing rows that walk onto Fable. sonnet-low escalates to
+# sonnet-medium. The older fable variants stay chain tops.
 fable-high = { model = "fable", effort = "high" }
 fable-low = { model = "fable", effort = "low", escalate_to = "fable-medium" }
 fable-max = { model = "fable", effort = "max" }
@@ -146,10 +157,10 @@ drain-highs = { variant = "sonnet-low" }
 # fable-low (policy 29), from fable-high: the operator chose the lowest tier for
 # wall-clock and more incremental loops. Nothing measures this seat (6 steps,
 # all skipped); D4's knowledge-work class and D5's "at low ... often competitive"
-# are the only ground. A retry walks fable-low -> fable-medium, which the
-# engine's post-walk fable gate redirects to [escalation.fallback] opus-high,
-# not today's fable-high: the max_attempts = 2 cap binds, and the workflow is
-# untouched. Retro: adr-vote outcomes at this tier.
+# are the only ground. A retry walks fable-low -> fable-medium and stays on
+# Fable (policy 30, engine commit ffd117a), one notch below today's fable-high:
+# the max_attempts = 2 cap binds, and the workflow is untouched.
+# Retro: adr-vote outcomes at this tier.
 adr-author = { variant = "fable-low" }
 # opus-low (policy 29), from opus-high: the operator chose the lowest tier for
 # wall-clock and more incremental loops. 129 completions, all at opus-high
@@ -171,9 +182,11 @@ dispose = { variant = "opus-low" }
 # looped again 16 of 32 times; nothing measures low, D4 has Opus 5 giving up
 # about 8 points at low against 2 at medium, and every extra loop costs a
 # mean 42 lane-minutes. Round 2 onward climbs to opus-high through on_round;
-# a retry lands on opus-high through opus-low's escalate_to. On a
-# security-labelled issue the same walk holds: opus-high, then fable-high is
-# forbidden and redirects to opus-xhigh, then opus-max at the ceiling.
+# a retry lands on opus-high through opus-low's escalate_to. Unlabelled, the
+# rounds climb opus-high, then opus-xhigh (fable-high redirected by the
+# post-walk gate), and stay there at round 4 because fable-high is a chain
+# top; on a security-labelled issue `never` redirects fable-high to opus-xhigh
+# and round 4 reaches opus-max at the ceiling, so the two walks diverge there.
 # Retro: round-1 median against 14.5 min; looped-again against 16 of 32.
 fix = { variant = "opus-low" }
 # opus-low (policy 29), from opus-high: the operator chose opus-low for
@@ -194,8 +207,8 @@ implement = { variant = "opus-low" }
 # for wall-clock and more incremental loops. Eight completions across four
 # runs: 2.2 min at fable-max (2), 5.4 at opus-max (4), 2.9 at fable-high (2);
 # D1 names root-cause investigation as Fable's ground and D5 has low calling
-# retrieval less often. investigate is investigator-class, so its retry walks
-# fable-low -> fable-medium and stays on Fable, one notch below today's tier:
+# retrieval less often. A retry walks fable-low -> fable-medium and stays on
+# Fable, one notch below today's tier:
 # the max_attempts = 2 cap binds and the workflow is untouched.
 # Retro: report-vote outcomes and investigate minutes at this tier.
 investigate = { variant = "fable-low" }
@@ -253,30 +266,30 @@ judge-testing = { variant = "opus-low" }
 # fable-low (policy 29), from fable-medium: the operator chose the lowest tier
 # for wall-clock and more incremental loops. Never run (6 steps skipped); D4's
 # knowledge-work class and D5's "at low ... often competitive" are the only
-# ground. A retry walks to fable-medium, which the post-walk fable gate
-# redirects to [escalation.fallback] opus-high (today's tier is not reached on
-# Fable; the cap binds). Retro: prd-vote outcomes at this tier.
+# ground. A retry walks to fable-medium and stays on Fable (policy 30, engine
+# commit ffd117a), reaching today's tier within the max_attempts = 2 cap.
+# Retro: prd-vote outcomes at this tier.
 prd-author = { variant = "fable-low" }
 # fable-low (policy 29), from fable-high: the operator chose the lowest tier
 # for wall-clock and more incremental loops; matches investigate. Four
 # completions (as investigation.toml's former `report` step) ran a mean 3.8
-# min. Not investigator-class, so a retry walks to fable-medium and the
-# post-walk fable gate redirects it to opus-high. Retro: report-vote outcomes.
+# min. A retry walks to fable-medium and stays on Fable (policy 30), one
+# notch below today's fable-high. Retro: report-vote outcomes.
 report = { variant = "fable-low" }
 # fable-low (policy 29), from fable-medium: the operator chose to override the
 # documented D5 retrieval floor (at low Fable "calls search and retrieval tools
 # less often", so medium was the floor for a seat whose whole job is
 # retrieval) for wall-clock and more incremental loops. The step has never
 # completed (7 steps, all skipped), so nothing measures either tier.
-# investigator-class: a retry walks to fable-medium and stays on Fable.
+# A retry walks to fable-medium and stays on Fable.
 # Retro: the check that would show retrieval dropping is the source count and
 # external-source citations per research-notes artifact at fable-low against
 # the first notes recorded at any higher tier; a drop restores the floor.
 research = { variant = "fable-low" }
 # fable-low (policy 29), from fable-high: the operator chose the lowest tier
 # for wall-clock and more incremental loops; matches investigate. The step has
-# never run. Not investigator-class, so a retry walks to fable-medium and the
-# post-walk fable gate redirects it to opus-high.
+# never run. A retry walks to fable-medium and stays on Fable (policy 30),
+# one notch below today's fable-high.
 revise-investigation = { variant = "fable-low" }
 # opus-low (policy 29), from opus-high, all seven: the operator chose the
 # lowest tier for wall-clock and more incremental loops. No run has expanded
@@ -298,8 +311,8 @@ spec-author-testing = { variant = "opus-low" }
 synthesize-findings = { variant = "sonnet-low" }
 # fable-low (policy 29), from fable-high: the operator chose the lowest tier
 # for wall-clock and more incremental loops. Never run (6 steps skipped); the
-# same ground and the same retry walk as adr-author (fable-medium, redirected
-# to opus-high by the fable gate; the cap binds). Retro: tdd-vote outcomes.
+# same ground and the same retry walk as adr-author (fable-medium, on Fable;
+# the cap binds). Retro: tdd-vote outcomes.
 tdd-author = { variant = "fable-low" }
 # opus-low (policy 29), from opus-high: the operator chose the lowest tier for
 # wall-clock and more incremental loops. Four completions, all at opus-xhigh

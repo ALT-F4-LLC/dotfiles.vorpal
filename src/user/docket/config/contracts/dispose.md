@@ -1,6 +1,6 @@
 ---
 node: dispose
-version: 7
+version: 8
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
@@ -83,9 +83,9 @@ remains unknown, stop the dependent actions.
 
 When `verify-ac.ac-report` is present, read it and the posted disposition. Answer each
 unmet rationale with a correction within this node's scope or cited counter-evidence.
-An AC the report marks `unmet-out-of-scope` is filed as a follow-up and is not yours
-to answer unless the supplied vote record rejected that judgment; then treat it as
-unmet.
+An AC the report marks `unmet-out-of-scope` is filed as a follow-up and is not
+yours to answer unless the supplied vote record rejected that judgment; then
+treat it as unmet.
 When the comment needs correction, append a complete corrected disposition linking
 the earlier comment and identifying what it supersedes. Preserve the earlier text.
 Apply the same evidence, gate, and publication conditions; an already closed carrier

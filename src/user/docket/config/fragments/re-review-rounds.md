@@ -1,6 +1,6 @@
 ---
 fragment: re-review-rounds
-version: 5
+version: 6
 ---
 # Re-review rounds
 
@@ -27,9 +27,9 @@ evidence can justify reassessment at an unchanged location; identify what change
 in the evidence. If the previous reviewed state or relevant history is missing,
 state the comparison gap and limit claims about origin and closure accordingly.
 
-## Apply the same Blocker bar on every round
+## Apply the same top-severity bar on every round
 
-Every `blocker` must meet the severity ladder's Blocker rung. Regression or
+Every `blocker` must meet the governing severity ladder's top rung. Regression or
 recurrence establishes relevance to this round; neither establishes severity
 by itself. A returned minor defect remains minor unless its supported impact
 now meets a higher rung.
@@ -52,8 +52,10 @@ downgrading an unverified claim.
 Distance from an ideal fix is not itself a defect or a reason to escalate.
 
 Keep supported lower-severity findings visible at reconcile, in the run record,
-and at the operator gates before publishing. Under max aggregation, one Blocker
-can trigger another fix round, so do not promote optional improvements to obtain
-another iteration. Equally, do not suppress or downgrade a supported Blocker to
-make the loop finish. Accept a clean delta when warranted; finding counts are
-diagnostic, never a target that must decrease.
+and at the operator gates before publishing. Under max aggregation on a track
+whose ladder starts an automatic fix loop, one top-severity finding can
+trigger another round, so do not promote optional improvements to obtain
+another iteration. Equally, do not suppress or downgrade a supported
+top-severity finding to make the loop finish, or to reach whatever
+convergence point the governing ladder defines. Accept a clean delta when
+warranted; finding counts are diagnostic, never a target that must decrease.

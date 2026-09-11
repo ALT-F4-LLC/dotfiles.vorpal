@@ -1,7 +1,12 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by a research step, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec); a rejection re-enters the bounded revise loop at review."
 name = "spec-doc"
-version = 28  # 28: `route-direct`, `route-loop` and `route-tend` join unless_labels:
+version = 29  # 29: fixes the doc-acceptance comment's stale tier claim (policy
+              #   23 moved tribunal-architecture and tribunal-correctness to
+              #   opus-high, matching judge-* except judge-architecture/
+              #   simplicity/testing at opus-medium; only tribunal-design
+              #   still sits at fable-high). No topology change.
+              # 28: `route-direct`, `route-loop` and `route-tend` join unless_labels:
               #   an issue docket-groom routed to the operator's own session, the
               #   tend queue, or a loop matches zero workflows, like `blocked`,
               #   until the label changes; `route-run` stays bindable. No
@@ -339,8 +344,8 @@ type = "vote"
 vote_rule = "doc-acceptance"
 # Deliberately judge-*, not tribunal-*: doc-acceptance is the judges' own
 # panel, not the operator-stand-in tribunal (`ux-spec-vote`/`prd-vote` below), and
-# policy.toml routes the two seat families to different tiers (judge-*
-# opus-high, tribunal-* fable/opus-xhigh). As voters these seats are briefed
+# the two seat families are routed separately in policy.toml even where
+# their current tiers coincide. As voters these seats are briefed
 # by the workflow scripts' LENSES table, not by contracts/judge-*.md — one
 # name, two remits.
 voters = ["judge-architecture", "judge-security", "judge-correctness"]

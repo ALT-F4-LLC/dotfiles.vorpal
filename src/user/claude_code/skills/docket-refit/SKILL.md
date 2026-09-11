@@ -1,6 +1,6 @@
 ---
 name: docket-refit
-description: Redesign one definition in the shared docket corpus under src/user/docket/config — a workflow, policy.toml, an executor contract, a packet fragment, or a payload schema — through an interactive, capability-checked refactor. Sweep the target's blast radius across every consumer, mine run evidence across every project that exercised it to ground optimization proposals, iterate the target spec with the operator, verify every claimed capability against the live docket engine (and wave.js) source, surface each engine-forced deviation as an explicit decision, render the settled design as a visual Artifact for approval before implementing, then land the full co-change closure (workflow TOML, contracts, fragments, policy rows, vote-seat lenses, schemas), lint every consumer, file engine issues for real gaps, and commit. Invoked bare (`/refit` with nothing named) it instead runs corpus mode — mine run evidence across every surface in the corpus (workflows AND policy, contracts, fragments, schemas) triage-then-deep-dive, verdict each one, and carry every refit, removal, and addition the evidence calls for through the same §1–§8 process to a landed commit, target by target, with the same per-target deviation gates and artifact approval as single mode. Use on "refit the ui-change workflow", "/refit standard-change", "/refit policy.toml", "tighten the implement contract", "refit the findings schema", "refactor a docket workflow", "optimize the release pipeline", "add a phase to release", "redesign the investigation pipeline", bare "/refit" to redesign the whole corpus, or any request to change or improve what any definition under src/user/docket/config does.
+description: Redesign one definition in the shared docket corpus under src/user/docket/config — a workflow, policy.toml, an executor contract, a packet fragment, or a payload schema — through an interactive, capability-checked refactor. Sweep the target's blast radius across every consumer, mine run evidence across every project that exercised it to ground optimization proposals, iterate the target spec with the operator, verify every claimed capability against the live docket engine (and wave.js) source, surface each engine-forced deviation as an explicit decision, render the settled design as a visual Artifact for approval before implementing, then land the full co-change closure (workflow TOML, contracts, fragments, policy rows, vote-seat lenses, schemas), lint every consumer, file engine issues for real gaps, and commit. Invoked bare (`/refit` with nothing named) it instead runs corpus mode — mine run evidence across every surface in the corpus (workflows AND policy, contracts, fragments, schemas) triage-then-deep-dive, verdict each one, and carry every refit, removal, and addition the evidence calls for through the same §1–§8 process to a landed commit, target by target, with the same per-target deviation gates and artifact approval as single mode. Use on "refit the ui-change workflow", "/refit standard-change", "/refit policy.toml", "tighten the implement contract", "refit the findings schema", "refactor a docket workflow", "optimize the standard-change pipeline", "add a phase to security-change", "redesign the investigation pipeline", bare "/refit" to redesign the whole corpus, or any request to change or improve what any definition under src/user/docket/config does.
 context: fork
 agent: general-purpose
 model: fable
@@ -235,8 +235,9 @@ The docket engine checkout lives beside this repo
 
 The wave runner, `src/user/claude_code/workflows/wave.js`, is the authority
 for everything the engine never sees: how policy rows resolve to a variant
-and seat, what packet assembly does with `packet_includes` and step-level
-fragments, and the `LENSES` table vote-seat names resolve against.
+and seat, and what packet assembly does with `packet_includes` and step-level
+fragments. The `LENSES` table vote-seat names resolve against lives in
+`src/user/claude_code/workflows/tribunal.js`.
 
 For each capability the spec leans on, answer from source before designing
 around it: how fan-out expands and when its width is fixed; how many
@@ -322,7 +323,7 @@ activation refuses or a wave refuses to route:
   models, ceiling, node list) still hold for every touched row.
 - **Vote-seat lenses** — a seat's lens is the last hyphen-token of its name,
   resolved against the `LENSES` table in
-  `src/user/claude_code/workflows/wave.js`; a new lens key needs an entry
+  `src/user/claude_code/workflows/tribunal.js`; a new lens key needs an entry
   there or the seat judges generically. `node --check` after editing.
 - **Vote rules** — reuse a registered rule when its threshold matches (rules
   are thresholds; voters are orthogonal). A genuinely new rule is a store
@@ -357,7 +358,7 @@ docket workflow lint src/user/docket/config/workflows/<name>.toml
 Lint the target workflow — and when the change entered from a shared
 surface, lint EVERY workflow the §1 sweep listed as a consumer: a green
 target with a broken sibling is the failure the blast-radius review exists
-to prevent. `node --check` wave.js if lenses changed.
+to prevent. `node --check` tribunal.js if lenses changed.
 
 Lint resolves schemas and vote rules from the current project's store, which
 can lag the corpus: before blaming your edit, lint the installed known-good

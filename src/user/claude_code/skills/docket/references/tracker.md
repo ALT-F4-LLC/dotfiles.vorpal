@@ -224,8 +224,7 @@ docket export -o csv -f issues.csv -s todo -s in-progress
 docket export -o markdown > issues.md
 
 docket import backup.json --json=v2 --merge          # skip duplicates by ID
-docket import backup.json --json=v2 --replace --yes  # destructive: wipes DB first; --yes is required
-                                                    # in every output mode, --json=v2 never substitutes
+docket import backup.json --json=v2 --replace --yes  # destructive: wipes DB first; --yes required in every output mode
 docket import backup.json --json=v2                  # default: requires an EMPTY database, else CONFLICT
 ```
 

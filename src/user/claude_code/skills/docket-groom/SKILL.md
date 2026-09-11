@@ -1,6 +1,6 @@
 ---
 name: docket-groom
-description: Groom every open issue in the current Docket project and the Docket engine project in the main session until retained work is easy to consume. Validate value and engine relevance, verify and repair every acceptance criterion, triage tickets needing operator decisions through AskUserQuestion, retire approved obsolete or duplicate work, group retained work under relevant Docket epics, and close gaps in requirements, files, scope, dependencies, and workflow fit. Safe edits apply directly; closures, merges, scope changes, epic creation, re-parenting, and protected-issue edits require operator approval. One survey across both projects with an optional stale window, including decision follow-through; no implementation or watch. Use on "groom the backlog", "/groom", "clean up the backlog", "triage operator decisions", "which issues are still worth doing", or "make the backlog run-ready".
+description: Groom every open issue in the current Docket project and the Docket engine project in the main session until retained work is easy to consume. Validate value and engine relevance, verify and repair every acceptance criterion, triage issues needing operator decisions through AskUserQuestion, retire approved obsolete or duplicate work, group retained work under relevant Docket epics, and close gaps in requirements, files, scope, dependencies, and workflow fit. Safe edits apply directly; closures, merges, scope changes, epic creation, re-parenting, and protected-issue edits require operator approval. One survey across both projects with an optional stale window, including decision follow-through; no implementation or watch. Use on "groom the backlog", "/groom", "clean up the backlog", "triage operator decisions", "which issues are still worth doing", or "make the backlog run-ready".
 argument-hint: "[stale window, e.g. 14d]"
 model: fable
 ---
@@ -279,10 +279,10 @@ Record these findings alongside the value decision:
   `docket workflow show <name>` per candidate, evaluated against the
   issue's labels. Establish both that the label is obsolete and that it
   changes matching; zero matches alone does not make a label wrong.
-  AGT-602's obsolete `retro` label excluded it from every registered
-  workflow despite earlier grooming passes that fixed its acceptance
-  criteria. Check this drift explicitly rather than assuming a content
-  fill makes an issue eligible.
+  An obsolete label can exclude an issue from every registered workflow
+  even after earlier grooming passes fixed its acceptance criteria. Check
+  this drift explicitly rather than assuming a content fill makes an
+  issue eligible.
 - **Stale or missing size label:** `small` binds the small-change track and
   `trivial` the trivial-change track, under
   [docket-plan](../docket-plan/SKILL.md)'s sizing rule, which is the one
@@ -385,11 +385,12 @@ A well-defined set meets all of these conditions:
   engine has. A criterion whose only remedy lies elsewhere — an earlier run's
   related gap issue usually says where — is split out to its own issue in the
   owning project or recorded as a dependency, never left bound: a verify seat
-  can never judge it `met`, so the issue loops to its cap on every run that
-  carries it, the shape two issues took on RUN-98.
+  can never judge it `met`, so at best it reports `unmet-out-of-scope` and a
+  vote passes it with a filing, at worst it routes `fix-loop` to the cap and
+  parks on every run that carries it, the shape two issues took on RUN-98.
 
 For retained work, properly set every missing or defective criterion in
-the ticket during this pass. Draft missing criteria from established
+the issue during this pass. Draft missing criteria from established
 requirements under §3; prepare exact repairs to existing criteria under
 §4b. Resolve unknown expected behavior or thresholds through §4a first.
 Do not stop at flagging poor wording, silently weaken a requirement to
@@ -454,7 +455,7 @@ If it does not, record the readiness limitation rather than inventing an
 existing path. Fill only missing scope; preserve existing entries when an
 edit replaces the field. If a path or field value cannot be established
 from evidence, route the missing fact or decision through §4a. A limitation
-that grooming cannot resolve stays explicit in the ticket and report.
+that grooming cannot resolve stays explicit in the issue and report.
 
 Every acceptance criterion, existing or drafted, must meet §2c and have
 its verification method recorded. A criterion with a verification command
@@ -493,7 +494,7 @@ does not start another grooming pass.
 ### 4a. Triage operator decisions to resolution
 
 Work through every decision and readiness gap in the ledger, including
-questions already waiting in tickets before this invocation. Read linked
+questions already waiting in issues before this invocation. Read linked
 decisions and earlier answers first. Resolve factual gaps from available
 evidence and use authority already granted in this session; do not ask
 the operator to repeat a settled decision or perform routine investigation.
@@ -504,7 +505,7 @@ options and tradeoffs, and a recommendation when supported. Explain what
 each answer would change or unblock. Group issues sharing one decision,
 and ask prerequisite questions before questions that depend on them.
 Present a concrete choice the operator can answer without rereading the
-backlog. Do not ask a generic "what should we do with this ticket?"
+backlog. Do not ask a generic "what should we do with this issue?"
 
 Use `AskUserQuestion` in the main session, in manageable batches within
 the tool's limits. Use a single choice for mutually exclusive outcomes.
@@ -516,7 +517,7 @@ another material gap; do not restart the survey or repeatedly ask a
 declined question.
 
 After each answer, update the ledger and record the decision and its
-rationale in the affected tickets. Carry resolved requirements into the
+rationale in the affected issues. Carry resolved requirements into the
 goal, acceptance criteria, files, scope, and dependency proposals as
 needed; the next worker must not need this chat to understand the task.
 Apply supported missing-field fills under §3. Send changes to existing
@@ -527,7 +528,7 @@ unshown mutations. Reassess affected value decisions and readiness after
 the resulting edits, including dependent issues and stale decision labels.
 Remove a resolved decision label only under the applicable §3/§4b rules.
 
-An operator decision can settle a decision-only ticket. Propose its closure
+An operator decision can settle a decision-only issue. Propose its closure
 through §4b only after recording the answer and preserving its effects on
 dependent work. A decision to implement work does not complete that work.
 An issue whose deliverable is investigation can be ready with an explicit
@@ -695,7 +696,7 @@ Recheck every retained issue against the ledger and its final stored
 content. A worker should be able to identify the current goal, intended
 deliverable, scope and files, checkable acceptance criteria, required
 context, settled operator decisions, true prerequisites, intended
-workflow, and routing label from the ticket and its explicit references. Check that decisions
+workflow, and routing label from the issue and its explicit references. Check that decisions
 are reflected consistently in the body, criteria, labels, and relations,
 with superseded directions in comment history clearly identified. Route
 any remaining resolvable gap through §3 or §4 within this pass.
@@ -704,7 +705,7 @@ Re-read each retained issue's entire final acceptance-criteria set against
 criteria well-defined after every criterion passes and all required
 outcomes are covered. An absent, vague, contradictory, or unverifiable
 criterion keeps that issue's grooming incomplete until properly set and
-verified in the stored ticket. That recheck applies to non-epic issues.
+verified in the stored issue. That recheck applies to non-epic issues.
 An epic's recheck is that it carries `blocked`, that every open child is
 retained or has a recorded gap, and that each membership has its
 one-sentence defense in the ledger.
@@ -717,7 +718,7 @@ implemented during grooming. Claimed or run-included work is not free to
 consume even when its contract is complete. Pending decisions, unavailable
 evidence, required but unapproved edits, or failed mutations make grooming
 incomplete for the affected work. Report those limits explicitly; neither
-deferral nor a tidy ticket closes a gap.
+deferral nor a tidy issue closes a gap.
 
 Before reporting, check the summary and each proposal's one-sentence
 defense against §2's evidence: no hedged claim standing without the

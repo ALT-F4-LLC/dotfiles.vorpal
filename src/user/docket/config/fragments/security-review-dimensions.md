@@ -1,6 +1,6 @@
 ---
 fragment: security-review-dimensions
-version: 3
+version: 4
 ---
 # Security review dimensions
 
@@ -52,17 +52,16 @@ check is not a clean result.
    throughout that scope. An advisory check cannot satisfy a required blocking
    guarantee; unexamined required modes remain unverified.
 8. **Logging/observability**: sensitive-data leakage, audit coverage and integrity
-   for required security events, and access to logs. Verify what is actually emitted
+   for required security events, and access to logs. Verify what is emitted
    on success and failure paths.
 9. **Denial of service**: attacker-triggerable CPU, memory, storage, connection,
    or cost growth; regex backtracking, amplification, and retry storms. Check
    effective limits and cancellation at the resource-consuming operation.
-
-**Injection and deserialization.** Trace untrusted data into queries, commands,
-paths, templates, interpreters, or object graphs, including after storage or
-transformation. Examine these surfaces wherever present; sandbox involvement is
-not a prerequisite. For AI-enabled paths, include lower-trust content influencing
-instructions, tool authority, or data disclosure.
+10. **Injection and deserialization**: trace untrusted data into queries,
+    commands, paths, templates, interpreters, or object graphs, including after
+    storage or transformation. Examine these surfaces wherever present; sandbox
+    involvement is not a prerequisite. For AI-enabled paths, include lower-trust
+    content influencing instructions, tool authority, or data disclosure.
 
 **Execution path and impact before severity.** Trace each candidate from an
 attacker-controlled entry or state to the consuming operation and violated

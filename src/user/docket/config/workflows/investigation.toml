@@ -1,7 +1,11 @@
 [pipeline]
-description = "Read-only root-cause investigation with an optional research step, ending at a tribunal read that revises the report on rejection and escalates to the operator."
+description = "Read-only root-cause investigation with an optional research step, ending at a tribunal read that sends the report back to a bounded revision loop on rejection."
 name = "investigation"
-version = 14  # 14: `route-direct`, `route-loop` and `route-tend` join unless_labels:
+version = 15  # 15: the pipeline description no longer says "escalates to the
+              #   operator" — report-vote's on_fail is fix-loop, matching the
+              #   fix spec-project@17 and spec-doc@25 made to the same
+              #   stale clause. No topology change.
+              # 14: `route-direct`, `route-loop` and `route-tend` join unless_labels:
               #   an issue docket-groom routed to the operator's own session, the
               #   tend queue, or a loop matches zero workflows, like `blocked`,
               #   until the label changes; `route-run` stays bindable. No

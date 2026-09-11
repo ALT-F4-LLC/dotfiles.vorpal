@@ -108,7 +108,8 @@ is enabled because its source exists.
 
 ## 3. Observe and delegate
 
-For a self-shadow, use one addressable observer with Fable when available under
+For a self-shadow, use one addressable observer named `shadow-live` (the name
+`pause` messages to wind it down), with Fable when available under
 the configured provider and account. Record the requested and observed model;
 do not silently substitute an unavailable model. Use explicit supported effort
 through an existing agent definition or other supported launch configuration

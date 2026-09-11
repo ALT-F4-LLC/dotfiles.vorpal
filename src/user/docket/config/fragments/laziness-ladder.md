@@ -1,6 +1,6 @@
 ---
 fragment: laziness-ladder
-version: 3
+version: 4
 ---
 # Laziness ladder
 
@@ -17,7 +17,7 @@ proportional to the task:
 3. **Does the standard library do it?** Use it when it meets the requirements.
 4. **Does a native platform feature cover it?** Prefer a built-in input type,
    stylesheet, or database constraint when it provides the required behavior.
-5. **Does an installed dependency solve it?** Use its supported interface
+5. **Does a dependency, installed or added, solve it?** Use its supported interface
    directly where practical. Add a dependency only when it removes meaningful
    implementation or maintenance burden; do not hand-roll security primitives
    to save lines.

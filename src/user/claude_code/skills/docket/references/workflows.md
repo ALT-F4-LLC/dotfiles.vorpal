@@ -8,7 +8,7 @@ engine semantics; it does not replace a companion skill’s operating policy.
 Find the relevant heading before reading a large section:
 
 - Engine configuration (`docket config set|get`)
-- Workflow: Workflow definitions (`docket workflow`)
+- Workflow definitions (`docket workflow`)
 - Shipped templates
 - Registration is content-addressed and immutable
 - Checking a draft without registering it (`docket workflow lint`)
@@ -105,7 +105,7 @@ docket config set vote.hold.voters alice,bob,carol
 ```
 
 **BOTH keys are required, and unset is a strict no-op:** with either missing,
-holds are minted `human` exactly as they always were, and one operator approves
+holds are minted `human`, and one operator approves
 or rejects them. With both set they are minted `vote` and flow through the
 ordinary vote lifecycle. The escalation is one-directional:
 
@@ -122,7 +122,7 @@ supplies the question's type. Editing or clearing these keys mid-run changes who
 casts on holds minted *after* the edit, never what an already-open question is.
 
 
-## Workflow: Workflow definitions (`docket workflow`)
+## Workflow definitions (`docket workflow`)
 
 A **workflow** is a declarative description of the steps a piece of work goes
 through: what runs, in what order, what each step needs from the ones before
@@ -146,7 +146,7 @@ docket workflow show standard-dev --json=v2
 
 At this stage registration is all that happens: a registered workflow is
 stored, inspectable, and validated, but nothing runs it yet. A repo that never
-registers one behaves exactly as it did before workflows existed.
+registers one runs no workflow.
 
 ### Shipped templates
 
@@ -279,6 +279,7 @@ read  = 4                      # bare int is shorthand for { max = 4 }
 name  = "check"
 after = []                     # [] means root; see below
 executor = "author"
+class = "write"                # accounted under [limits].write above
 emits = "check-report"
 ```
 
@@ -287,7 +288,7 @@ are the only three things a bound on one does.
 
 | Key | Bounds |
 |---|---|
-| `max` | how many steps of the class may be `claimed`/`running` at once. A **finite** `max` is also what makes the class write-class for [dispatch reap acknowledgments](../reference.md) — a class with no `max` gets neither ack rows nor a headroom hold |
+| `max` | how many steps of the class may be `claimed`/`running` at once. A **finite** `max` is also what makes the class write-class for [dispatch reap acknowledgments](../reference.md#docket-dispatch--dispatchgo) — a class with no `max` gets neither ack rows nor a headroom hold |
 | `lease_ttl` | the lease a claim of this class takes, overriding `docket config lease.ttl.<class>` |
 | `max_step_duration` | a **schedule-to-close** bound measured from the claim, **independent of heartbeats** |
 
@@ -330,7 +331,7 @@ legitimately `claimed` at `waiting-human`.
 | `threshold` | table: routing → predicate | routing computed from the step's results |
 | `on_fail` | `"fix-loop"` \| `"waiting-human"` \| `"skip"` \| `"abandon-issue"`; default `"waiting-human"` | where a failure routes. **Required explicitly on `type="human"` and `type="vote"` steps** — the default is a routing nobody chose |
 | `loop` | bool, default false | marks a loop-body step |
-| `serves` | [step names], default = every `fix-loop`-capable step | scopes this `loop = true` step (and its `after_loop` chain) to the named steps' **loop cluster** — entry fires only the bodies serving the step whose routing actually triggered it (the **trigger**). Omitted or empty means "serves every trigger," one cluster for the whole workflow — byte-identical to a workflow written before this existed |
+| `serves` | [step names], default = every `fix-loop`-capable step | scopes this `loop = true` step (and its `after_loop` chain) to the named steps' **loop cluster** — entry fires only the bodies serving the step whose routing actually triggered it (the **trigger**). Omitted or empty means "serves every trigger," one cluster for the whole workflow |
 | `after_loop` | step name | where execution re-enters after a loop body |
 | `max_attempts` | int ≥ 1 | per-instance retry budget |
 | `max_fix_loops` | int ≥ 0 | round budget, checked against the issue's one loop-ordinal counter. Declared on a step with no `serves`, it is the **issue-level ceiling**. Declared on a `serves`-scoped body, it is that **cluster's own** budget, counted over ordinals holding that cluster's instances — the issue-level ceiling still governs on top of it |
@@ -377,8 +378,8 @@ bundle as `target_sha` — the commit the diff's tree stood at — and
 `target_worktree` — the producing record's declared worktree path, good while
 that checkout is still on disk (it is swept at integration). Both are omitted
 entirely when the resolved diff carries no round record. The default packet
-template states them in its header, so a reviewing consumer no longer
-re-derives the tree from a prose convention in the change-summary's first
+template states them in its header, so a reviewing consumer reads the tree
+from these fields instead of a prose convention in the change-summary's first
 line. They are exactly as reproducible as the input they describe.
 
 `<step>.gate-results` is the named step's **recorded** gate results, served from
@@ -509,7 +510,7 @@ names, team names, or people's names there and they mean what you intend.
 Docket reads `output`, and the built-in `aggregate` validates and interprets
 its declared keys. See [Action steps](#action-steps--computations-not-workers).
 
-**`when`'s list form has constraints the worked example above doesn't show.**
+**`when`'s list form has constraints the table entry above doesn't show.**
 `contains-any` needs at least one element — `labels contains-any ()` is
 rejected — with no leading, trailing, or doubled commas and no nesting;
 whitespace around elements and parens is fine, whitespace inside a bare value
@@ -540,7 +541,7 @@ never interprets it — there is no registry of known gates, no gate whose name
 has behavior, and no default gate.
 
 **Every gate needs a matching trust entry or it does not run** (see
-[trust contracts](../reference.md)). A gate declaration does not authorize
+[trust contracts](../reference.md#docket-trust--trustgo)). A gate declaration does not authorize
 adding trust; apply the companion policy and existing user authorization. An unmatched gate is recorded
 `verdict: "unmatched"` with null `argv` and null `exit`, nothing spawns, and
 **the step fails** and routes per `on_fail`. A workflow whose check cannot run
@@ -605,7 +606,7 @@ Docket then **sets** these itself:
 | `DOCKET_REPO` | the repository root |
 | `DOCKET_ISSUE` | `DKT-N`, the issue the gated step belongs to |
 | `DOCKET_SCOPE` | the issue's declared scope globs, **newline-joined**; absent entirely when there are no globs to carry |
-| `DOCKET_GATE_NETWORK` | the trust entry's declared hosts, comma-joined — set only when it declared any, alongside the proxy variables |
+| `DOCKET_GATE_NETWORK` | the trust entry's declared hosts, comma-joined — set only when it declared any |
 
 `DOCKET_ISSUE` and `DOCKET_SCOPE` are what let a **diff-shaped** gate evaluate
 the change it is actually gating instead of the whole dirty tree. The globs are
@@ -618,7 +619,7 @@ touches.
 The variable carries globs or nothing, so it is the one surface where declaring
 no scope and declaring an empty one look alike — a declared-but-empty scope
 leaves `DOCKET_SCOPE` unset too, rather than setting it to the empty string.
-Everywhere the two are distinguishable they stay distinguished: v1's `scope`
+Everywhere the two are distinguishable they stay distinguished: the `scope`
 key, and the activation lint that warns about the first and not the second. A
 gate that must tell them apart reads `docket issue show`, not its environment.
 
@@ -636,7 +637,7 @@ name    = "reconcile"
 after   = ["synthesize-findings"]
 action  = "aggregate"
 inputs  = ["synthesize-findings.findings"]
-payload = "findings@1"
+payload = "findings@9"
 params  = { field = "severity", method = "median", hold_spread = 2, output = "findings" }
 ```
 
@@ -735,7 +736,7 @@ know which end is worse, but *your order can*. Add `"conservative_end": "upper"`
 beside the `ordered_enum` annotation and that field's even-count median ties
 resolve toward the top of the declared order instead — `{low, blocker}` medians
 to `blocker`. Declare nothing and the lower median is unchanged, which is what
-keeps a `confidence` or `ripeness` order behaving exactly as it always has. See
+keeps a `confidence` or `ripeness` order at the lower median. See
 [The `conservative_end` annotation](schemas.md#the-conservative_end-annotation).
 
 The direction moves the **median tie and nothing else**: `min` and `max` already
@@ -860,7 +861,7 @@ A `fanout` step expands to one sibling per hint, in declared order:
 **`min_siblings` does not cancel early.** Reaching the quorum does not release
 the join: docket waits for every sibling to finish and *then* compares. A
 4-way fanout with `min_siblings = 2` and two siblings already `done` still waits
-for the other two. This is deliberate for v1 — cancelling work that is already
+for the other two. This is deliberate — cancelling work that is already
 running, to save time on a quorum that is already met, is a decision docket
 declines to make on your behalf.
 
@@ -879,7 +880,7 @@ Only the bodies **serving that trigger** instantiate, and only their
 `after_loop` downstream is superseded — a second gate elsewhere in the
 workflow stays untouched, still `pending`, not stale. Omitting `serves` (or
 leaving it empty) means "serves every trigger": one cluster spans the whole
-workflow, byte-identical to a workflow written before this existed. Input
+workflow. Input
 redirection for stale artifacts is still computed workflow-wide, not per
 cluster — only the supersede/instantiate set on entry is cluster-scoped. The
 event feed's `loop-entered` data gains a `trigger` field alongside `ordinal`.
@@ -896,8 +897,8 @@ What happens on loop entry, in one transaction:
    `loop round %d for %q would exceed its cluster's max_fix_loops = %d on %s`
    instead of the issue-wide `loop %d would exceed max_fix_loops = %d on %s`;
    either way `docket step resolve --as fix-round` authorizes one more round.
-   Two refusals share that park's shape without touching the bound (engine
-   commit f2dcb58): a round whose predecessor moved no bytes in the
+   Two refusals share that park's shape without touching the bound *(engine
+   commit f2dcb58)*: a round whose predecessor moved no bytes in the
    issue's scope, and one whose routing step recorded the same verdict as
    the round below it, are refused — nothing superseded, nothing
    instantiated, `waiting-human` naming `--as fix-round`, which re-enters
@@ -921,7 +922,7 @@ What happens on loop entry, in one transaction:
 Steps **upstream** of `after_loop` do not re-run. That is why `inputs` bind
 **per input**: a step at ordinal 1 resolves each declared input at ordinal 1 if
 something produced it there, and otherwise falls back to the highest earlier
-ordinal that did. The fixture's `fix` step binds `reconcile.findings` fresh at
+ordinal that did. A `fix` step at ordinal 1 binds `reconcile.findings` fresh at
 ordinal 1 and `implement.change-summary` from ordinal 0, in the same step.
 
 **Issue completion is evaluated over highest-ordinal instances only.** A `done`

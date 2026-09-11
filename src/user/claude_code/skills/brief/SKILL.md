@@ -210,21 +210,22 @@ Apply these rules in order:
 
 1. **Security-sensitive `yes`:** `/docket-plan` is required, whatever
    routing label the issue carries; report the label as a conflict.
-   **Docket tracking required:** follow the tracked issue's routing label.
+2. **Docket tracking required:** follow the tracked issue's routing label.
    `route-run` or no label means `/docket-plan` is required; `route-direct`
    means direct execution; `route-tend` means leave it to `/tend`, or direct
-   when the operator wants it now; `route-loop` continues at rule 3. A label
+   when the operator wants it now; `route-loop` continues at rule 4. A label
    that contradicts the operator's ask is surfaced, never resolved silently.
-2. **Security-sensitive `unknown` requiring investigation:**
+3. **Security-sensitive `unknown` requiring investigation:**
    recommend `/docket-plan` to assess the boundary.
-3. **Shape `iterative`:**
+4. **Shape `iterative`:**
    recommend `/loop` when each pass is trivial, the loop contract is
    established, and its scheduling capabilities fit the requested lifetime.
    Recommend `/docket-plan` when a pass is larger or uncertain, or coordination
    across passes needs a plan.
-4. **Shape `one-shot`, Security-sensitive `no`, Size hint `trivial`:**
-   recommend direct execution.
-5. **Other one-shot work:**
+5. **Shape `one-shot`, Security-sensitive `no`, Size hint `trivial`:**
+   recommend `/tend` when the work leaves no decision or judgment open, and
+   direct execution when it does.
+6. **Other one-shot work:**
    recommend `/docket-plan`.
 
 Resolve an unknown operating pattern before recommending execution.
@@ -280,7 +281,7 @@ questions do not need to be repeated.
 - **`/docket-plan`:** Invoke `docket-plan` with the confirmed brief or
   handoff as `args`. Planning, tracking, and verification now belong to
   that workflow. For a one-shot request with Security-sensitive `no`, a
-  Size hint of `trivial` proposes the `trivial` routing label in the
+  Size hint of `trivial` proposes the `trivial` size label in the
   handoff and `bounded` work confined to one or two files proposes
   `small`; the planner confirms either under its own sizing rule before
   recording it.

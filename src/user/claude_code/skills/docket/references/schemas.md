@@ -68,7 +68,7 @@ T-shirt sizes, or ripeness grades.
 
 A payload is an array of objects. A schema over it is therefore usually
 `{"type": "array", "items": {"type": "object", …}}` — and a document that is not
-that shape still registers, it simply declares nothing a threshold can name.
+that shape still registers; it declares nothing a threshold can name.
 
 ### The `conservative_end` annotation
 

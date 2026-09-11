@@ -620,8 +620,8 @@ hits `claude` inside `src/user/claude_code/skills/pr/SKILL.md`, and the
 second `## Testing` bullet hits the bounded `docket` inside
 `.docket/bin/secret-scan`. The body is refused unedited, and the report names
 both lines, both tokens, and that the branch was pushed with no PR opened.
-Before this split, that first bullet was stripped to
-`src/user/_code/skills/pr/SKILL.md`, no longer matched, and went out as a
+A strip pass applied to that first bullet instead would remove `claude` from
+the path, leave a path that names nothing in the tree, and publish it as a
 fact about the tree.
 
 ## Mode selection

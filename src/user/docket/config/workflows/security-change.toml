@@ -1,7 +1,13 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 36  # 36: `verify-ac` emits `ac-report@2` (adds `unmet-out-of-scope`)
+version = 37  # 37: fixes the security-acceptance comment's stale tier claim
+              #   (policy 23 moved tribunal-architecture and
+              #   tribunal-correctness to opus-high, matching judge-* except
+              #   judge-architecture/simplicity/testing at opus-medium; only
+              #   tribunal-design still sits at fable-high). No topology
+              #   change.
+              # 36: `verify-ac` emits `ac-report@2` (adds `unmet-out-of-scope`)
               #   and its vote predicate becomes `any(status != met)`, read after
               #   `fix-loop`'s `any(status == unmet)`: an in-scope unmet still
               #   loops, an out-of-scope or unverifiable AC goes to the one-seat
@@ -309,6 +315,7 @@ payload = "findings-cluster@2"
 action = "aggregate"
 after = ["synthesize-findings"]
 inputs = ["synthesize-findings.findings"]
+# One round above every other track's reconcile (2); no recorded reason.
 max_fix_loops = 3
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
@@ -335,8 +342,8 @@ on_fail = "fix-loop"
 type = "vote"
 vote_rule = "security-acceptance"
 # Deliberately judge-*, not tribunal-*: this is the security-acceptance panel,
-# not the operator-stand-in tribunal, and policy.toml routes the two seat
-# families to different tiers (judge-* opus-high, tribunal-* fable/opus-xhigh).
+# not the operator-stand-in tribunal, and the two seat families are routed
+# separately in policy.toml even where their current tiers coincide.
 # As voters these seats are briefed by the workflow scripts' LENSES table, not
 # by contracts/judge-*.md — one name, two remits. Two seats: under the 0.67
 # security-acceptance rule one reject of two scores about 0.5 and rejects, so

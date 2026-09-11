@@ -146,10 +146,9 @@ report = { variant = "fable-high" }
 # low, medium, and high while cost rose; D5 — at low Fable calls retrieval less
 # often, so medium is the floor for a seat whose whole job is retrieval.
 research = { variant = "fable-medium" }
-# fable-high, matching investigate: this executor was investigation.toml's
-# `revise` loop-back step, which previously ran under investigate's own
-# policy row and a literal `contracts/revise.md` packet path. Same
-# revision-only read/write class, same tier.
+# fable-high, matching investigate: this executor is investigation.toml's
+# loop-back revision step, the same revision-only read/write class as
+# investigate, so the same tier.
 revise-investigation = { variant = "fable-high" }
 spec-author-architecture = { variant = "opus-high" }
 spec-author-code-quality = { variant = "opus-high" }
@@ -182,7 +181,10 @@ tdd-author-security = { variant = "opus-high", never = ["fable"], reason = "secu
 # standing tier used to be. Re-open with runs that pair tier and outcome.
 threat-model = { variant = "opus-high", never = ["fable"], reason = "security-classifier-reroute" }
 # Policy 23 — tribunal-architecture and tribunal-correctness at opus-high, down
-# from fable-high (tribunal-design keeps fable-high: no per-issue step names it).
+# from fable-high (tribunal-design keeps fable-high: no change-track step
+# names it — spec-doc's ux-spec-vote and prd-vote seat it, but those are
+# doc-authoring gates, not the change-track verify-tribunal this paragraph
+# is about).
 # standard-change@31 and security-change@31 interpose a verify-tribunal vote on
 # every verify that reports an AC unverifiable, which on a repo whose
 # ac-commands gate is a stub is nearly every issue (RUN-90: 20 of 23), so these

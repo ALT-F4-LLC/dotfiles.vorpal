@@ -722,9 +722,9 @@ annotate those lines `# per expanded sibling`). Standard-change's review is
 when-gated `review-security` — security-change's and ui-change's are 0.60 ×
 four, spec-doc's 0.60 × three, and spec-project's `spec-author` fans out
 SEVEN ways at 1.00 apiece. The per-track total is the sum YOU read and never
-a figure copied out of this paragraph: these tomls are versioned
-(standard-change is on 22, security-change on 18) and a total frozen into
-prose goes stale silently. Two bounded greps over one file for one key each
+a figure copied out of this paragraph: these tomls are versioned (`grep
+version ~/.docket/config/workflows/<wf>.toml` gives the current number) and
+a total frozen into prose goes stale silently. Two bounded greps over one file for one key each
 — not a raw corpus dump, and nothing here binds, so the source tomls are the
 right surface. Never present a floor you did not read this way as corpus
 arithmetic: a live bare-`/docket-plan` session once invented per-issue floors of
@@ -752,7 +752,7 @@ step at all, and spec-doc's five `revise-*` variants are mutually exclusive
 
 The corpus as it reads today, round × declared loops = reserved per issue:
 standard-change 1.0 + 2.40 + 0.60 = 4.0 × 2 = 8.0; ui-change 4.0 × 2 = 8.0;
-security-change 4.0 × 3 = 12.0; spec-doc 1.50 + 1.80 + 0.60 = 3.9 × 2 = 7.8;
+security-change 1.0 + 2.40 + 0.60 = 4.0 × 3 = 12.0; spec-doc 1.50 + 1.80 + 0.60 = 3.9 × 2 = 7.8;
 spec-project (`revise-spec` fans out seven ways at 0.70) 4.90 + 1.80 + 0.60 =
 7.3 × 2 = 14.6; docs-only 0.60 + 0.60 + verify-ac 0.40 = 1.6 × 2 = 3.2;
 disposition 0.40 + verify-ac 0.40 = 0.8 × 2 = 1.6; investigation

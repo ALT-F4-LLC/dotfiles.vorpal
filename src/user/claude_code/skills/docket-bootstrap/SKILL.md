@@ -1,6 +1,6 @@
 ---
 name: docket-bootstrap
-description: "Bind a repository to the shared docket corpus: inspect the repo, prepare its configuration and trust proposals, and activate one operator-approved smoke issue without dispatching it. Use for initial setup or to diagnose a missing workflow match. For lasting project specs use spec-project; for an established binding use docket-retro."
+description: "Bind a repository to the shared docket corpus: inspect the repo, prepare its configuration and trust proposals, and activate one operator-approved smoke issue without dispatching it. Use for initial setup or to diagnose a missing workflow match. For lasting project specs plan a run on the spec-project workflow through docket-plan; for an established binding use docket-retro."
 model: fable
 ---
 
@@ -41,8 +41,7 @@ made in the conversation and ask only for unresolved decisions.
 
 ## 1. Establish the environment
 
-Read [runtime-and-specs.md](references/runtime-and-specs.md) before spawning.
-Record the canonical checkout path, HEAD, docket and Claude Code versions,
+Before spawning, record the canonical checkout path, HEAD, docket and Claude Code versions,
 resolved store, selected model/provider, and available agent tools. Confirm the
 specific `executor-read` and `executor-write` definitions; an unrelated agent
 file does not establish their availability.
@@ -87,8 +86,8 @@ and symlink paths. Reuse every existing regular file without rewriting it.
 Create only missing axes; seven existing specs means no authoring or cleanup.
 A partial set is not permission to overwrite the files already there.
 
-Follow the ownership, publication, and completion protocol in the runtime
-reference, including its canonical-path compatibility branch when required.
+Each author owns only its assigned output and report paths, publishes by
+writing them, and completes by reporting what it wrote and what it left open.
 Pass each author the absolute contract and fragment paths, its axis,
 date, project identity, snapshot context, and assigned output/report paths. Authors
 are leaf agents, do not commit, and do not wait for sibling drafts. Route each
@@ -123,9 +122,8 @@ Specs are maps to source files, not proof of their claims. Derive scopes from th
 real module and test layout. A gap in tests or CI is a finding; never invent a
 successful gate to fill it.
 
-Before any check execution, read
-[gates-and-actions.md](references/gates-and-actions.md). Classify command side
-effects first. Run eligible checks in the checkout and in an explicit HEAD
+Classify command side effects before any check execution.
+Run eligible checks in the checkout and in an explicit HEAD
 worktree under the actual gate sandbox when available. Record exact argv, cwd,
 revision, environment limitations, elapsed time, exit status, and bounded failure
 output. If execution would install packages, publish, mutate a service, or alter
@@ -138,9 +136,9 @@ equivalence with the engine's execution environment.
 
 ## 4. Prepare the binding
 
-Read [docket-contracts.md](references/docket-contracts.md) before authoring an
-addition or proposing engine configuration. Treat its docket-specific details
-as contracts to check against the installed CLI/source, not as release detection.
+Before authoring an addition or proposing engine configuration, check every
+docket-specific detail against the installed CLI/source, not against release
+detection.
 
 The entire shared corpus is read; do not select or fork a subset. Add a workflow
 or schema locally only when the shape is genuinely repo-specific. A generally
@@ -156,10 +154,10 @@ Derive gates, pre-gates, and actions by parsing every workflow TOML in the
 installed corpus and any local addition, not only the smoke issue's workflow.
 A later issue's labels can bind any of them, and a gate declared there with no
 trust entry bound to this repository parks that issue's first gated step
-`unmatched`. Measured across every project on this machine on 2026-09-07, 21
-parks carried an unmatched gate row, nearly all reading "an entry with this
-name exists but is bound to a different repo", and three of the nine steps
-still parked were that shape. Include every consumer step. Inspect `docket
+`unmatched`. Measured across every project on this machine on 2026-09-10, 21
+parks carried an unmatched gate row, every one reading "an entry of this name
+exists but is bound to a different repo", and three of the 34 steps still
+parked were that shape, all in abandoned runs. Include every consumer step. Inspect `docket
 trust list --all` and treat an entry bound to another repository as missing
 here, never as applicable. Propose one entry per gate in that union, bound to
 this repository, each carrying the real command the miners found. A gate this
@@ -206,9 +204,10 @@ do not delegate the operator's answer or infer it from silence.
    exact argv, and explicit values for `re-runnable`, `tree`, and `flaky`.
    Explain any prefix matching or absolute mutable repo path in its proposal.
    Apply only that approved entry with `trust add --yes`, flags before `--`,
-   then read back the effective entry. Resolve conflicts as described in the
-   action reference; never silently remove existing trust. The proposal set is
-   the corpus-wide gate union from step 4, so it is longer than the smoke
+   then read back the effective entry. Show any conflict with an existing
+   entry to the operator and apply only what they choose; never silently
+   remove existing trust. The proposal set is
+   the corpus-wide gate union from §4, so it is longer than the smoke
    issue's workflow alone; a gate the operator declines or defers stays in the
    activation summary as unmatched, with the workflows it will park.
 4. **Finish preparation.** After the last bootstrap reader finishes, remove only

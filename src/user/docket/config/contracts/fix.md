@@ -1,6 +1,6 @@
 ---
 node: fix
-version: 12
+version: 15
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
@@ -60,9 +60,10 @@ An AC marked `unverifiable` is not an independent repair assignment. Do not
 expand work merely to make it verifiable. An AC marked `unmet-out-of-scope`
 is not one either: its repair lies outside this issue's scope and is filed as
 a follow-up. It becomes your work only when a supplied `verify-ac-vote` vote
-record rejects that judgment as in scope; then treat it as `unmet`. An authorized repair may affect its
-shared code; record that effect and any relevant evidence. Preserve the
-report's judgment for `verify` to reassess rather than editing or overriding it.
+record rejects that judgment as in scope; then treat it as `unmet`. An
+authorized repair may affect its shared code; record that effect and any
+relevant evidence. Preserve the report's judgment for `verify-ac` to
+reassess rather than editing or overriding it.
 Do not redo the full AC review; verify behavior affected by your repairs.
 
 **Establish applicability and cause.** Check each finding against the current
@@ -103,7 +104,7 @@ secret-scanner controls as the test fragment requires.
 For a finding about enforcement by a control or guard, drive the real entry
 point and assert the required result and consequential forbidden effects.
 Establish that the test detects missing enforcement. A pre-fix red through
-that entry point can supply this evidence when it actually demonstrates the
+that entry point can supply this evidence when it demonstrates the
 bypass; a helper-only test cannot. Otherwise, falsify the regression in a
 private copy of the candidate:
 
@@ -124,8 +125,8 @@ a substitute project merely to run a regression.
 
 For behavior that cannot be expressed as a test, cite the inspected location,
 evaluated state, and reasoning, naming what execution remains unavailable.
-Use the evidence and truth-first vocabulary: OBSERVED, REPRODUCED, or INFERRED
-as appropriate, and UNVERIFIED for unsupported conclusions. A controlled
+Use the evidence and truth-first vocabulary: `OBSERVED`, `REPRODUCED`, or `INFERRED`
+as appropriate, and `UNVERIFIED` for unsupported conclusions. A controlled
 reproduction does not by itself establish a historical incident's cause.
 
 **Sweep the demonstrated class.** Inspect likely sibling instances of each
@@ -174,9 +175,10 @@ point. Build and test results alone do not establish its published forms.
    as verbatim verification of the published command.
 
 # Completion
-Run the repository's completion gates using `docket trust list` as the roster
-and `completion-gates` for the procedure, plus the required build and test
-commands. One applicable run may satisfy overlapping obligations; do not
+Run the repository's completion gates declared by the workflow, resolving
+each name to its command with `docket trust list` per `completion-gates`,
+plus the required build and test commands. One applicable run may satisfy
+overlapping obligations; do not
 repeat it merely to fill another heading. Repeat affected checks after
 relevant changes or when a failure or unresolved question warrants it.
 Record actual commands, exit statuses, decisive output, and retained log
@@ -210,7 +212,7 @@ required by the executor-write obligations. Keep the body concise and include:
   relevant pre-fail and post-pass results. Link shared repairs without losing
   member IDs. State any repair alternative taken and not taken.
 - **Findings not addressed:** ID, disposition, evidence, and remaining question
-  or owning route. Distinguish disproven premise, supported disagreement,
+  or owning stage. Distinguish disproven premise, supported disagreement,
   unsuccessful reproduction, scope block, and unavailable verification. A
   rebuttal is not a unilateral withdrawal of a reconciled finding.
 - **Files changed:** one line explaining why each changed file was necessary.
@@ -221,7 +223,7 @@ required by the executor-write obligations. Keep the body concise and include:
   filed gap references, and limits on any absence claim.
 - **Entry-point invocations:** published and executed forms, adaptations,
   candidate provenance, exit statuses and output, or NOT RUN with reasons;
-  use “none altered” when this section's trigger does not apply.
+  use `none altered` when this section's trigger does not apply.
 - **Required checks and readiness:** outcomes, evaluated state, evidence
   references, and blockers to candidate completion.
 - **Known limits and gaps:** unresolved obligations, decisions or evidence
@@ -237,7 +239,7 @@ Gap the dependent work when required inputs are missing, requirements remain
 irreconcilable, a correct repair exceeds this role's scope, or a finding can
 neither be reproduced nor rebutted with sufficient evidence. Name the affected
 IDs, what you established, and the smallest decision, scope change, or evidence
-needed from the owner. Continue independent authorized work unless an execution
+needed from the conductor or operator. Continue independent authorized work unless an execution
 rule requires stopping the step; never represent the blocked portion as closed.
 
 For environmental failures without a stricter toolchain rule, allow at most

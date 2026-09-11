@@ -916,7 +916,7 @@ current contents of `.docket/config/`, so a definition goes from "written" to
 
 | Directory | What activation does |
 |---|---|
-| `config/schemas/*.json` | **registers** as a payload schema, named for the file (`findings@1.json` → `findings@1`) |
+| `config/schemas/*.json` | **registers** as a payload schema, named for the file (`findings@9.json` → `findings@9`) |
 | `config/workflows/*.toml` | **registers** as a workflow definition, named by its own `[pipeline]` block |
 | everything else under `config/` | **pins** by content hash and registers nothing — contracts, fragments, templates, `policy.toml` |
 
@@ -1411,7 +1411,7 @@ returns the manifest — because drift blocks only the steps that read a
 drifted ref, and the per-step `CONFLICT` at claim/render remains the actual
 enforcement. `pin_drift` is **absent whenever every pin is sound**.
 
-**A manifest short of the rows you can see are ready says why.** When R7
+**A manifest short of the rows you can see are ready says why.** When the engine
 withholds steps for lack of budget headroom, the response carries
 `budget_held` — `withheld: N step(s), reason=budget headroom X < cost:
 <instance> (cost Y)…` — and the same line goes to stderr for a human; `next`
@@ -1797,7 +1797,7 @@ then **completed** with an artifact.
 | `step heartbeat STEP-N` | **yes** | extends the lease; does not touch `attempt` |
 | `step reap STEP-N --reason R` | no | forced reap of a dead holder's claim, without waiting out the lease |
 | `step complete STEP-N --artifact-file F …` | **yes** (stages 0–1) | the saga |
-| `step fail STEP-N [--note …] [--metadata …]` | **yes** | routes per `on_fail` when the CLAIM count reaches `max_attempts` (E-8: attempt counts claims, never failures); counts the failure into the row's `failed_attempts` (a reap counts into `reaped_claims` instead) |
+| `step fail STEP-N [--note …] [--metadata …]` | **yes** | routes per `on_fail` when the CLAIM count reaches `max_attempts` (attempt counts claims, never failures); counts the failure into the row's `failed_attempts` (a reap counts into `reaped_claims` instead) |
 | `step annotate STEP-N [--metadata JSON] [--integrated-sha SHA]` | no | merges opaque KV onto a **finished** step's record; `--integrated-sha` verifies ancestry and re-records the step's `issue.diff` from the named commit; event-logged |
 | `step approve\|reject STEP-N [--note …] [--value V]` | no | `type="human"` gate steps, and a materialized held step of either kind (a vote-minted one once a failed tally parks it) |
 | `step resolve STEP-N --as …` | no | `waiting-human` resolutions; `retry` **resets the retry budget** (moves `attempt_base`) — `attempt` itself and the `failed_attempts`/`reaped_claims` breakdown are never reset and not incremented by it |

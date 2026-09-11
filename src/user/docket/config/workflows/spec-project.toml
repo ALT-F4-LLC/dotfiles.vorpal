@@ -1,7 +1,11 @@
 [pipeline]
-description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step, review them once, and accept by tribunal vote; a rejection re-enters the bounded revise loop at review."
+description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step, review and reconcile the findings, drain any open highs, and accept by tribunal vote; a rejection re-enters the bounded revise loop at spec authoring and runs review again."
 name = "spec-project"
-version = 20  # 20: `route-direct`, `route-loop` and `route-tend` join unless_labels:
+version = 21  # 21: the pipeline description names the current graph: the
+              #   revise loop re-enters at `revise-spec` (then review), and
+              #   reconcile and drain-highs sit between review and the vote.
+              #   No topology change.
+              # 20: `route-direct`, `route-loop` and `route-tend` join unless_labels:
               #   an issue docket-groom routed to the operator's own session, the
               #   tend queue, or a loop matches zero workflows, like `blocked`,
               #   until the label changes; `route-run` stays bindable. No
@@ -157,6 +161,8 @@ name = "drain-highs"
 on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
 
+# Loop body: attempts and failure routing are governed by reconcile's
+# max_fix_loops, not a local max_attempts/on_fail pair.
 [[step]]
 after_loop = "review"
 class = "write"

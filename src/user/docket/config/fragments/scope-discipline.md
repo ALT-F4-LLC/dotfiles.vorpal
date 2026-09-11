@@ -1,6 +1,6 @@
 ---
 fragment: scope-discipline
-version: 5
+version: 6
 ---
 # Scope discipline
 
@@ -76,10 +76,10 @@ can authorize it. Disclosure records a deviation; it does not authorize one.
 
 **Per-item judgments distinguish evidence from repair authority.** Use
 `verify-ac`'s per-AC `unverifiable` only when the criterion cannot be judged from
-available evidence. A criterion shown false remains failed even if its repair
-is outside write scope: `unmet` while any repair route is in scope,
-`unmet-out-of-scope` when every route lies outside all applicable step scopes
-and the gap is filed. Name the missing evidence or authorized repair route;
-preserve independently supported judgments. `retro-analyst` uses its
+available evidence. A criterion shown false stays `unmet` or
+`unmet-out-of-scope` even when its repair is outside write scope; `verify-ac`
+defines which status applies and what filing that requires. Name the missing
+evidence or authorized repair route; preserve independently supported
+judgments. `retro-analyst` uses its
 issues-to-file route and `dispose` its named follow-up. Judges emit findings and
 `gap` notes under their own contract, rather than these per-item verdicts.

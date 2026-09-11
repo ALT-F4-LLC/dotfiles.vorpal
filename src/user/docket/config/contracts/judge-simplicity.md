@@ -1,6 +1,6 @@
 ---
 node: judge-simplicity
-version: 10
+version: 11
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -20,7 +20,9 @@ and obsolete scaffolding. Ground findings in the supplied code-philosophy
 principles, applied to the artifact's purpose.
 
 This seat serves artifact review. On code-change workflows, judge-architecture
-owns overbuild. Changing that seating is a workflow decision requiring evidence;
+holds the overbuild remit; when this seat is also seated on the same change,
+report your own supported findings and let reconciliation cluster the
+overlap. Changing that seating is a workflow decision requiring evidence;
 it is not part of this review.
 
 # Not

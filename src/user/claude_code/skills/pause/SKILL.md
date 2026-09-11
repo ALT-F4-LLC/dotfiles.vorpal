@@ -107,10 +107,12 @@ stop it.
 
 ## Building the resume snapshot
 
-The snapshot exists because a huge amount of what a docket-run session knows
+The snapshot exists because much of what a docket-run session knows
 lives ONLY in this session's own context — the engine cannot answer it, and a
 transcript nobody but this session can read is not a handoff. Capture exactly
-what the engine cannot reconstruct; do not restate what it can.
+what the engine cannot reconstruct; do not restate what it can. One
+exception: the step ids a graceful halt refused are listed explicitly, so the
+resuming session does not re-derive them from the full step list.
 
 **Write the working directory down first.** Every `docket` read is scoped to
 the project the cwd resolves to, so a prompt without it sends the new session
@@ -186,8 +188,9 @@ args for anything a later session might resume; every un-integrated writer
 sha with its worktree path; whether this run's budget raise has already been
 used; operator precedent rulings and any unexecuted answer; held peer
 authorization claims; every tribunal proposal id with its tally; foreign
-`wf_*` worktree entries observed; and every advisory note carrying
-**`DISPOSITION REQUIRED:`**. This is the same list as above, checked as a gate
+`wf_*` worktree entries observed; every step id the graceful halt refused;
+whether a live shadow was watching and was told to wind down; and every
+advisory note carrying **`DISPOSITION REQUIRED:`**. This is the same list as above, checked as a gate
 rather than trusted as a memory — the earlier pause that dropped an unlabelled
 lead is exactly what a silent gap here produces again.
 
@@ -254,5 +257,5 @@ above exists to preserve.
 
 **In a new session**: read the resume prompt (doc or pasted text), run `run
 resume` as its first action, then follow it into `docket-run`'s own attach
-procedure — seat preflight, stale-install diff, and a fresh policy re-cat all
-happen there, not from anything carried in the prompt.
+procedure — seat preflight and the stale-install diff happen there, not from
+anything carried in the prompt.

@@ -129,18 +129,16 @@ seats" creates is exactly how seats get mis-sized.
    - Gnarly work (subtle correctness, cross-cutting changes, debugging an
      unknown cause): `fable` at `max` effort.
 
-   Effort is an explicit pick at every tier now, not just gnarly's: choose
-   it with the same judgment that sized the model — a mechanical edit has
-   no use for deep reasoning, gnarly always gets `max` — never by echoing
-   the session's own default, which is no longer part of the decision.
+   Effort is an explicit pick at every tier: choose it with the same
+   judgment that sized the model — a mechanical edit has no use for deep
+   reasoning, gnarly always gets `max` — never by echoing the session's own
+   default, which is not part of the decision.
    Write the ruling down as one line — the tier named (mechanical /
    ordinary / gnarly) plus why THIS issue fits it — and carry it into the
    spawn as step 2 shows. The line is required, not decoration: one
    mechanism for every seat makes reflexively seating everything
-   `fable`/`max` exactly as easy as inheriting the default used to be (two
-   issues in a row went out at `fable`/`max` with no per-issue
-   justification), and stating the reason is what forces the
-   judgment to actually happen.
+   `fable`/`max` as easy as inheriting a default, and stating the reason
+   is what forces the judgment to happen.
 
 2. **Spawn through `Workflow`**, the worker brief embedded in the script.
    The statement immediately before the `agent()` call is a `log()` line
@@ -171,13 +169,13 @@ unstaged; never run docket verbs, git commits, or skills; the final
 message is the report — files changed, what was verified and how, anything
 left undone.
 
-A report that names its verification and shows the evidence goes to §2.5.
+A report that names its verification and shows the evidence goes to step 5 of §2.
 A report with no verification evidence gets one follow-up round, not a
 commit — a `Workflow` seat cannot be messaged after its script returns, so
 the follow-up is a fresh `agent()` spawn (same tier, same explicit opts,
 same tier line) briefed with the first report and the check it failed to
 show. If the second report still can't show its check, treat the issue as
-blocked (§2.4).
+blocked (step 4 of §2).
 
 ## Stop
 

@@ -1,6 +1,6 @@
 ---
 node: judge-design
-version: 11
+version: 12
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -76,7 +76,7 @@ recovery. Reading isolated components or naming states is not a journey walk.
 Cover the dimensions the change touches: usability and task efficiency;
 consistency and cross-surface naming; accessibility; information hierarchy
 and visual composition; error handling and recovery; copy; and perceived
-responsiveness. Apply the supplied principles and house floors to the medium
+responsiveness. Apply the supplied principles and house requirements to the medium
 in use. Record the examined paths and material limits; mark other dimensions
 not-applicable with a reason. Unexamined is not the same as not-applicable.
 

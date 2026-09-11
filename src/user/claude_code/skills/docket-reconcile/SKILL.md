@@ -1,6 +1,6 @@
 ---
 name: docket-reconcile
-description: Make one Docket project's workflow registry match the installed file corpus exactly — register every version the corpus declares but the registry lacks, restore one that was retired by mistake, retire every other version of that name so the corpus file is the only thing binding, and report orphaned names and frozen-row conflicts it must not fix on its own. Use on "reconcile the workflows", "/reconcile", "make the registry match the corpus", "the workflows are out of date", "register the new workflow versions", "deprecate the old workflows", or after any `just activate` that moved the corpus forward. Read-only until it prints a plan and the operator approves it. Registry-only. It never edits a workflow TOML, and corpus authoring belongs to `refit`.
+description: Make one Docket project's workflow registry match the installed file corpus exactly — register every version the corpus declares but the registry lacks, restore one that was retired by mistake, retire every other version of that name so the corpus file is the only thing binding, and report orphaned names and frozen-row conflicts it must not fix on its own. Use on "reconcile the workflows", "/reconcile", "make the registry match the corpus", "the workflows are out of date", "register the new workflow versions", "deprecate the old workflows", or after any `just activate` that moved the corpus forward. Read-only until it prints a plan and the operator approves it. Registry-only. It never edits a workflow TOML, and corpus authoring belongs to `docket-refit`.
 ---
 
 # docket-reconcile
@@ -52,9 +52,8 @@ not `--global`, unless the operator says every project should get it.
 
 Never `grep` a version out of these files: a `grep -m1 version` silently
 concatenates digits from unrelated keys and reports `security-change@2525792`
-for what is actually `@25`. Never hand-parse them either. The planner used to
-import `tomllib`, which needs Python 3.11+ and is simply absent where `python3`
-is 3.9 — as it is here.
+for what is actually `@25`. Never hand-parse them either. `tomllib` needs
+Python 3.11+ and is absent here, where `python3` is 3.9.
 
 `docket workflow lint <file> --json=v2` is the parser, and it is the same parse
 `docket workflow register` runs:
@@ -184,7 +183,7 @@ names — one conflict does not block the rest.
 schema or `vote_rule` it references that is not registered here. Suspect your
 cwd first (above), then re-run the single lint by hand to read the whole error.
 A genuinely broken definition is `docket-refit`'s to fix, in source — you cannot
-register it and must not paper over it. Note that the file contributes no name
+register it and must not paper over it. The file contributes no name
 to the target set while it fails, so a name it would have claimed can also show
 up on an ORPHAN line; that pairing is the same fault reported twice, not two.
 
@@ -233,7 +232,7 @@ one shared corpus, so every project fell behind together — which makes the
 sweep tempting. **It is still an operator decision.** Say how many projects are
 affected, then ask. Do not infer it from the drift being shared.
 
-Note that validation is per target: a definition's `payload` and `vote_rule`
+Validation is per target: a definition's `payload` and `vote_rule`
 references resolve against the registry of the project being written to, so the
 same bytes can be valid in one project and refused in the next for a schema
 that does not exist there. Register schemas first when sweeping a store that

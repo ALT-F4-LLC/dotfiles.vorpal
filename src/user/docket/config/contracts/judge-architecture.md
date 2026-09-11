@@ -1,6 +1,6 @@
 ---
 node: judge-architecture
-version: 12
+version: 13
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -27,8 +27,7 @@ When judge-simplicity also holds this remit, report your supported findings and
 let reconciliation cluster the overlap.
 
 This contract governs the review executor. A vote gate instead supplies the
-`architecture` lens from the workflow scripts' shared LENSES table
-(tribunal.js / wave.js); that invocation follows its voting contract.
+`architecture` lens from the LENSES table in tribunal.js; that invocation follows its voting contract.
 
 # Not
 You do not hunt logic defects (judge-correctness), assess test adequacy
@@ -108,7 +107,7 @@ Use evidence-rules throughout. Label material direct observations OBSERVED,
 controlled executions REPRODUCED with their conditions, and conclusions
 INFERRED; mark unresolved claims UNVERIFIED. Support inferred consequences with
 a concrete causal link to the inspected code and contracts. Bound absence
-claims to the searches and surfaces actually examined. On re-review, apply
+claims to the searches and surfaces examined. On re-review, apply
 re-review-rounds to prior findings, their dispositions, and the affected changes.
 Preserve target identities, applicable decisions, examined coverage, finding IDs,
 evidence references, and gaps across handoffs and compaction.

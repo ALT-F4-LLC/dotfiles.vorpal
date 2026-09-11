@@ -76,7 +76,8 @@ partial. Confirm completion independently.
 
 Join by stable session/workflow/agent identity. For Docket steps, prefer an
 explicit assignment record, or the installed `wave-usage` obligation classifier:
-execution/record, voting/cast, and read-only probe/overhead have different owners.
+claimant (step record), judge (vote cast), and wave overhead (read-only probes)
+have different owners.
 The first `STEP-N` in a prompt can be something a probe read. For tend, prefer
 an explicit `{project_identity, issue_id, agent_id, workflow_id}` launch mapping.
 Otherwise require an unambiguous assignment statement in the bootstrap brief;
@@ -100,11 +101,9 @@ If the script cannot express the required window, label its raw result with its
 actual scope or leave that metric unavailable. Do not quote it as a correct
 seven-day census.
 
-The inspected census source counts content-stale files selected by mtime and
-sums repeated message usage. Until corrected and activated, its totals do not
-satisfy this specification. Its `cutoff` field in returned metadata does not
-prove records were filtered by it. Report this limitation once and continue the
-qualitative audit.
+The installed session-census script sums usage per assistant message without
+deduplicating by message ID, so its totals can count streamed rewrites more
+than once. Report this limitation once and continue the qualitative audit.
 
 Validate usage extraction against the installed `wave-usage` semantics:
 

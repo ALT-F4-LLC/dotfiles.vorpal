@@ -2185,8 +2185,10 @@ also what admits a panel past a reap hold, so a stale row makes two surfaces
 lie, one of them a guard. Four ballots of one epoch stood open exactly this
 way. No other gate class has a key convention; use it only here.
 
-**A loop-extension gate is the panel's once, then the operator's — and only
-for a regression.** When the engine parks a step because the next fix round
+### Standing ruling: a loop-extension panel decides only the first round past `max_fix_loops`
+
+A loop-extension gate is the panel's once, then the operator's — and only
+for a regression. When the engine parks a step because the next fix round
 would exceed `max_fix_loops` (the park reason names `docket step resolve --as
 fix-round`), first apply **Standing ruling: a loop-bound park** below: residue
 files and passes with no panel and no question, and only a regression the
@@ -2212,7 +2214,7 @@ operator's, presented with the panel's reasoning where there is one. Nothing
 needs tracking: the next park on the same issue asks for `max_fix_loops + 2`
 and fails the test by arithmetic. Measured across every project on this
 machine: 36 loop-bound parks, 17 answered fix-round by the operator, 10
-override-passed, 8 stopped; one issue was extended round after round to
+override-passed, 8 stopped, one still open; one issue was extended round after round to
 ordinal 10 against a cap of 3 and then abandoned, which is why the panel's
 authority is one round.
 

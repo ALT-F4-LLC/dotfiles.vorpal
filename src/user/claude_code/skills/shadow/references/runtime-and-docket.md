@@ -67,7 +67,9 @@ Its shared startup opens the database and migrates it before command handlers;
 the connection also configures WAL. A handler with no update statements can
 still write through startup or project resolution. `verify-pins` is absent from
 the inspected read-verb registration exemption. This skill must not invoke that
-path against the live store under its observation boundary.
+path against the live store under its observation boundary; it runs only
+through a verified read-only path, as the read list and evidence table below
+repeat.
 
 Use a supported, verified read-only observer connection if one becomes
 available. Otherwise use the observed session's already-recorded results and
@@ -87,7 +89,8 @@ do not force a checkpoint or create sidecars to satisfy them during observation.
 ## Observation operations, once their effects are verified
 
 These names describe intended read operations, not an unconditional allowlist:
-`run status`, `run report`, `run verify-pins`, `events list`, `issue list|show`,
+`run status`, `run report`, `run verify-pins` (only through a verified
+read-only path, never the live store), `events list`, `issue list|show`,
 `project list`, `config get`, `trust list`, `workflow list|show|lint`,
 `step show|context|render|artifacts|artifact`, and a verified non-repairing
 `doctor` check. Reassess after a binary change. `next`, `dispatch`, claim/record,
@@ -103,7 +106,7 @@ Preserve these local evidence distinctions when supported by the build:
 | Question | Evidence and limit |
 |---|---|
 | What did a packet contain? | Captured packet or `step render`; today's render may differ from what was consumed. A successful render does not validate every run pin. |
-| Are pins intact? | `run verify-pins` through a verified read-only path. Record each unresolved or mismatched reference. Do not re-pin. |
+| Are pins intact? | `run verify-pins` through a verified read-only path, never the live store. Record each unresolved or mismatched reference. Do not re-pin. |
 | Manual pin fallback? | Validate the JSON envelope and pin array. Resolve each reference using its recorded origin/root precedence; do not assume every file belongs to the shared corpus. Compare hashes and count verified, mismatched, unresolved and unsupported pins separately. A valid empty array, a missing field and a parse failure are different outcomes. |
 | What produced an artifact? | `step artifacts` then `step artifact`, including payload where needed. Listing hashes may describe summary bodies rather than payloads. |
 | Did a gate pass? | Gate result/artifact or authoritative report. A gate-recorded event alone may omit the verdict. |

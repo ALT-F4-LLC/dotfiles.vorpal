@@ -39,11 +39,9 @@ or one per run when runs are many), each briefed with the corpus contract
 `~/.docket/config/contracts/retro-analyst.md` (source in the dotfiles
 checkout: `src/user/docket/config/contracts/retro-analyst.md`) — the node the
 corpus already defines for exactly this — plus §2's table verbatim.
-`retro-analyst` carries no `policy.toml` row: the retro pipeline that once
-dispatched it through the wave was removed (`retro.toml` — deliberate and
-permanent, not an accident: "no issue ever carried
-the retro label, so no run ever bound it" and this skill "covers the same
-analyze/vote/apply loop on its own"), and the row went with it. The skill-side
+`retro-analyst` carries no `policy.toml` row and no workflow dispatches it
+through the wave: no issue carries the retro label, and this skill runs the
+analyze/vote/apply loop itself. The skill-side
 spawn below is the only path this node has, so seat each analyst through the
 built-in `Workflow` tool's `agent()` call with the intended `model` and
 `effort` set explicitly in its opts — the plain `Agent` tool carries no effort
@@ -77,15 +75,15 @@ rather than assuming an unsandboxed shell is needed. Where it is not writable,
 | Question | Where | What a finding looks like |
 |---|---|---|
 | Where does spend go? | `budget`: `floor` vs `reported[]` (per unit, never summed; `budget_unit` names the counted one), `spend` = max of the two, `cap` + `cap_source`, `burn_rate`, `breach_reason` (`attempts` is its own top-level section, not a budget field) | one step carries most of the floor, or `reported` dwarfs `floor` → `expected_cost` miscalibrated; a `breach_reason` under `cap_source: config` means the run met a default nobody sized for it |
-| Judge value (D2) | `artifacts` grouped by `executor` (+`issue`) — `producer` is the fanout ordinal (`review@0#2`), which says WHERE in the topology, never WHO; bodies come from `step artifact` | a judge that never uniquely contributes above `low` across 5 runs → cut it in a version bump |
-| Dedup rate (D3) | duplicate findings across a fanout's artifacts — the report is an index and carries no bodies, so read them with `step artifacts` then `step artifact` | under 10% at width ≤ 4 across 5 runs → propose exact-locus dedup instead of `synthesize-findings` |
-| Recurring shapes (D5) | the same topology planned ≥ 3 times | migrate it into a workflow template — never leave the planner to re-improvise |
+| Judge value | `artifacts` grouped by `executor` (+`issue`) — `producer` is the fanout ordinal (`review@0#2`), which says WHERE in the topology, never WHO; bodies come from `step artifact` | a judge that never uniquely contributes above `low` across 5 runs → cut it in a version bump |
+| Dedup rate | duplicate findings across a fanout's artifacts — the report is an index and carries no bodies, so read them with `step artifacts` then `step artifact` | under 10% at width ≤ 4 across 5 runs → propose exact-locus dedup instead of `synthesize-findings` |
+| Recurring shapes | the same topology planned ≥ 3 times | migrate it into a workflow template — never leave the planner to re-improvise |
 | Gate health | `gates` pass/fail/**unmatched**, `gate_trail` (its `output` rides non-pass rows only, last 2000 bytes) | any `unmatched` is a missing trust entry, not a failing check |
 | Intervention profile | `run-paused`, `step-held`, and `step-routed` with destination `waiting-human` — that string is a run/step STATUS, not an event kind, so filtering events on it returns nothing; `lease-reaped` behind the holds — query with `--all-projects`, since the run being investigated may have been driven from another project's cwd | designed gate vs breach vs held — three different fixes; a hold behind a `lease-reaped` carrying `data.forced` was a relay declaring a dead spawn, not a slow step |
 | Attempt pressure | `attempts`, loop ordinals | a step repeatedly at `max_attempts` wants a smaller charter, not a bigger budget |
-| Trust drift (D14) | `trust-added`/`trust-removed` (store-level; query with `--all-projects` — visible either way, but only that flag proves you saw all of them) | **an entry the operator does not recognize is a finding, and you raise it first** |
-| Config churn (D15) | your own proposals per run over time | churn trending up means docket-bootstrap mined the repo wrong; fix the source, not each symptom |
-| Routing drift | the requested pair only, from step rows: `model_requested` / `effort_requested` (below). The resolved pair on a step row is `unknown` unless the runtime supplied an observation, so it measures nothing. The serving model is observed only by wave-usage.js, which reads it from each transcript's assistant messages and returns it as `model_observations` to the conversation that drove the wave, apart from routing requests; nothing persists it, and its ledger rows carry step, unit and quantity only | a served model that differs from the requested one, in the driving conversation's wave-usage results, means policy asks for a model it does not get; a store-only retro cannot see it and says so instead of reporting a clean row |
+| Trust drift | `trust-added`/`trust-removed` (store-level; query with `--all-projects` — visible either way, but only that flag proves you saw all of them) | **an entry the operator does not recognize is a finding, and you raise it first** |
+| Config churn | your own proposals per run over time | churn trending up means docket-bootstrap mined the repo wrong; fix the source, not each symptom |
+| Routing drift | the requested pair only, from step rows: `model_requested` / `effort_requested` (below). The resolved pair on a step row is `unknown` unless the runtime supplied an observation, so it measures nothing. The serving model reaches only the driving conversation, as `model_observations` from wave-usage.js (see the four metadata keys below) | a served model that differs from the requested one, in the driving conversation's wave-usage results, means policy asks for a model it does not get; a store-only retro cannot see it and says so instead of reporting a clean row |
 | Vote calibration | `vote_rule` outcomes vs the threshold | a rule that never fails, or always fails, is a threshold not doing work |
 | Variant fit | `[executors]` rows vs attempts + cost at that variant | a row failing repeatedly at its variant is mis-sized, not under-budgeted |
 | Review-yield | output tokens per stage (review vs implement vs verify, from `metadata`/`budget`); distinct clusters the review stage found; distinct issues `drain-highs` filed, post-dedupe; how many of those routed to a fix round; how many prior runs' `review-gap` issues (`docket issue list --label review-gap --json`) have since closed | review spend far exceeding implement's own, or a low post-dedupe filed-to-found ratio, means the stage is expensive relative to what survives it; a flat or falling closed count across runs means filed `review-gap` backlog is accumulating unworked |
@@ -93,9 +91,9 @@ rather than assuming an unsandboxed shell is needed. Where it is not writable,
 Label every claim by what it rests on: a count from the report is observed, a
 pattern across five runs is inferred. Say which one you have.
 
-### The M3-era surfaces you may propose edits to
+### Further surfaces you may propose edits to
 
-These surfaces exist now that earlier retros had no vocabulary for. Same
+These surfaces are also yours to propose edits against. Same
 mechanism as everything else — evidence, proposal, approval — but know they are
 yours to propose against:
 
@@ -139,7 +137,7 @@ carries `model_requested` / `effort_requested` (what policy asked for) and
 `model_resolved` / `effort_resolved` (what actually served). Today only the
 requested pair is observed: the wave writes the resolved pair as `unknown` at
 claim time and tells executors to leave it so unless the runtime supplies an
-observation, and none has so far, so a completed step contributes only the
+observation, and none does today, so a completed step contributes only the
 requested pair. The serving model is recorded nowhere in the store;
 wave-usage.js reads it from each transcript's assistant messages and returns
 it as `model_observations` to the conversation that drove the wave, apart
@@ -153,8 +151,8 @@ invisible here by construction; measure it from the driving conversation's
 wave-usage results, or state that it was not measured. Read attempt counts
 alongside.
 
-**Lease and duration limits, if steps are being reaped mid-work.** Liveness is
-no longer TTL-only: `step heartbeat` extends a live claim, `step reap STEP-N
+**Lease and duration limits, if steps are being reaped mid-work.** Liveness
+combines TTL and heartbeat: `step heartbeat` extends a live claim, `step reap STEP-N
 --reason R` is the token-free channel for a relay that watched its executor
 die, and `[limits]` classes take `{max, lease_ttl, max_step_duration}`. Read
 the reaps apart (query events with `--all-projects`, since the reaped run may
@@ -181,6 +179,8 @@ defend — and give every one of them, before anything is written:
 - what the evidence says, with the numbers and the run IDs it came from
 - the edit, as a diff against the current file
 - the version bump it carries
+- for a workflow edit, the clean `docket workflow lint <file.toml>` result on
+  the edited checkout bytes (§4 explains what it proves)
 - what it costs if you are wrong
 
 The proposal packet is allowed to cite run IDs — the panel is deciding NOW,
@@ -282,8 +282,11 @@ rename the addition — and say which you chose and why.
 A workflow edit stays in the same file with `[pipeline].version = N+1` and its
 mined-facts comment kept current. A schema edit is a new
 `schemas/<name>@N+1.json`, plus a bump to every workflow naming it.
-`policy.toml`, contracts, and fragments are pinned rather than registered —
-edit freely, but note the change so the next docket-retro can attribute what followed.
+`policy.toml`, contracts, and fragments are pinned rather than registered. A
+contract or fragment body edit bumps its front-matter `version` in the same
+commit (frozen-drift-check enforces the lockstep); `policy.toml` alone carries
+no version field. Note every change so the next docket-retro can attribute
+what followed.
 Trust the OPERATOR approved goes in with `docket trust add <name> --yes --
 <argv>` — no other approval opens that door.
 

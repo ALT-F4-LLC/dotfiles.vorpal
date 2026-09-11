@@ -1,6 +1,6 @@
 ---
 fragment: rerun-discipline
-version: 6
+version: 7
 ---
 # Re-run discipline
 
@@ -48,8 +48,8 @@ private directory and diff those files. Preserve each producer's exit status
 and stderr; equal output files do not establish equivalent successful runs if a
 producer failed. Distinguish differences from a comparison error. Do not use
 process substitution or stdin-backed paths for these comparisons, or seek a
-sandbox lift to make them work. The recorded `/dev/fd/N` refusals concern the
-comparison mechanism; they do not establish a defect in the reviewed change.
+sandbox lift to make them work. A `/dev/fd/N` refusal in the record concerns the
+comparison mechanism; it does not establish a defect in the reviewed change.
 
 A code-mutating probe, including a positive control or planted mutant, runs
 only in a private copy of the state being tested. Keep the mutation confined

@@ -61,6 +61,16 @@ Rules you must not fight:
   as written, so every case it bundles is one more fix round for the fixer
   to discover: one RUN-98 issue spent four rounds on one criterion whose two
   disjuncts each hid a further case.
+- **A criterion that encodes the worse design is a reframe, put to the
+  operator before it is recorded.** Verbatim copying fixes wording, not
+  design. When the read shows the stated done-ness would force a mechanism
+  the codebase's own invariants argue against, or a shape that would look
+  the same in any repo while this one needs something else, offer the
+  reframe as an option in the question round beside the criterion as
+  stated; the operator's pick is recorded verbatim, and the reframe that
+  loses is noted in the plan artifact so a writer does not rediscover it.
+  A reframe inside the issue's scope that still satisfies every recorded
+  criterion is the writer's implementation choice and needs no question.
 - **A derived AC that predicts command output is run before it is
   recorded.** Execute the command — non-mutating check commands only, which
   is all this class of AC ever quotes — against the COMMITTED tree the run
@@ -823,8 +833,11 @@ not a substitute.
 
 **The plan artifact** is prose, and it is the one place your reasoning is
 allowed to live: the decomposition rationale, the risks you see, the phasing you
-suggest, and anything you asked about that turned out to matter. Before it
-goes into the doc, check the draft the way you'd check anyone else's
+suggest, the run shapes and workflow bindings you weighed against the one
+you chose and why it won, and anything you asked about that turned out to
+matter. Weigh at least one shape that is not the corpus's habitual answer
+before settling; the plan records the comparison in a few lines, not the
+search. Before it goes into the doc, check the draft the way you'd check anyone else's
 writing: no hedged claim without the read or the operator answer behind it,
 no restated obviousness, no padding — this is prose for a person reading the
 run in three months, not a step another agent parses mechanically.

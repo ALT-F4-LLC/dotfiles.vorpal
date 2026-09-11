@@ -1,10 +1,11 @@
 ---
 node: implement
-version: 10
+version: 11
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
   - fragments/code-philosophy.md
+  - fragments/design-search.md
   - fragments/tdd-discipline.md
   - fragments/test-infra-discipline.md
   - fragments/scope-discipline.md
@@ -59,10 +60,14 @@ merely to show activity. Use the brief's hand-back procedure for the existing
 candidate; this outcome still goes through the normal review fanout. If warranted
 regression coverage changes the tree, commit and report those changes normally.
 
-Otherwise, implement the smallest complete change under code-philosophy. Observe
-the relevant tests pass and keep them green through necessary refactoring. Satisfy
-the whole authorized outcome; passing a narrow test is not sufficient evidence
-for behavior it does not exercise.
+Otherwise, run the design search before writing production code: weigh
+candidates under design-search, including one that is not the existing path
+and, where the ask encodes the worse design, a reframe that still satisfies
+every AC inside the declared scope. Then implement the winner as the smallest
+complete change under code-philosophy. Observe the relevant tests pass and keep
+them green through necessary refactoring. Satisfy the whole authorized outcome;
+passing a narrow test is not sufficient evidence for behavior it does not
+exercise.
 
 Before hand-back, identify the step's required gates from the authoritative
 workflow and resolve their commands with `docket trust list`. Run them according
@@ -96,8 +101,9 @@ Include:
   and other criteria. Account for required deliverables too.
 - **Completion checks:** gate, build, and test commands and real output under the
   evidence and completion-gates rules. Explain any shared evidence mapping.
-- **Decisions:** material choices the issue left open and deviations reportable
-  under the included fragments.
+- **Decisions:** material choices the issue left open, the design-search
+  record (candidates weighed, the pick, why it won, or the one-line reason the
+  search did not apply), and deviations reportable under the included fragments.
 - **Denials:** every refused command and any re-issue, in both the step's returned
   response and this artifact, under completion-gates; write none when there were
   none. Preserve reasons and outcomes with required redactions.

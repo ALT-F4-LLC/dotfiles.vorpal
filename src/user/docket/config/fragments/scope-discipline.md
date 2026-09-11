@@ -1,6 +1,6 @@
 ---
 fragment: scope-discipline
-version: 6
+version: 7
 ---
 # Scope discipline
 
@@ -28,7 +28,10 @@ can authorize it. Disclosure records a deviation; it does not authorize one.
   superseded by this change belong in the authorized fix. If they require a
   forbidden change or an undeclared path, resolve that boundary before writing.
   Cheaper implementation, nearby defects, and a preferred design are reasons
-  to propose work, not authority to add it. Do not omit required behavior,
+  to propose work, not authority to add it. A reframed design that stays inside
+  the declared boundary and satisfies every stated acceptance criterion is an
+  implementation choice within it; one that would cross follows the amendment
+  rule below. Do not omit required behavior,
   weaken acceptance criteria or tests, or hide a known defect behind a workaround
   merely to fit the boundary.
 - **Amend before crossing.** State the smallest required change to the

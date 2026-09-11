@@ -86,6 +86,12 @@ the step.
 - If required evidence cannot be obtained within scope, record what you
   checked, what remains uncertain, and how that limits the conclusion.
 
+**Alternative explanations.** Before recording a finding, weigh the
+explanations the evidence admits, not only the first that fits; a read or
+probe that separates them answers an unresolved question and is within
+proportion. Record the explanation chosen and why the others lost where the
+brief's format records reasoning.
+
 **Evidence.** Support substantive findings with the relevant file location
 or command result. Distinguish observations from inferences and unresolved
 questions. An incomplete read, failed command, or truncated result does not

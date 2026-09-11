@@ -1,9 +1,10 @@
 ---
 node: tdd-author-security
-version: 7
+version: 8
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
+  - fragments/design-search.md
   - fragments/doc-house-style.md
   - fragments/writing-for-humans.md
   - fragments/threat-model-method.md
@@ -63,6 +64,16 @@ behavior from proposed behavior. Document each relevant inherited, changed, or
 dropped exclusion under the fragment's derived-control rule, including how the
 target input set and attacker control affect its safety.
 
+Weigh materially different designs under design-search before choosing: at least
+one mechanism the codebase lacks, and a reframe of the trust boundary or the
+requirement when the stated one encodes the weaker protection. A reframe inside
+the authorized scope that satisfies every stated acceptance criterion is yours to
+choose; one that moves the boundary or a criterion is a proposal to its owner,
+recorded with its reasoning while the design serves the stated requirement.
+Compare on the required security properties first, then correctness, locality,
+and deletability; the chosen design ships with the least structure that enforces
+the properties.
+
 Resolve the premises needed to choose the design. Proposed controls require
 credible enforcement and verification plans; their implementation tests need not
 have run before the design exists. Identify those tests as planned and specify
@@ -99,7 +110,8 @@ preserved. Include:
   attack paths, exclusions with reasons, assumptions, and residual risk with its
   acceptance status.
 - Trust boundaries: what data or authority crosses each and who controls it.
-- Alternatives and rationale, chosen architecture, data model, and interface
+- Alternatives and rationale as the design-search record (candidates weighed,
+  the pick, why it won), chosen architecture, data model, and interface
   contracts, with enforcement points and dependencies.
 - Security considerations of the chosen approach, including failure behavior,
   bypass paths, inherited exclusions, and material tradeoffs.

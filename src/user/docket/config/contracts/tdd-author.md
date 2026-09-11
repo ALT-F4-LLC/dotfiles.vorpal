@@ -1,12 +1,13 @@
 ---
 node: tdd-author
-version: 7
+version: 8
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
   - fragments/doc-house-style.md
   - fragments/writing-for-humans.md
   - fragments/code-philosophy.md
+  - fragments/design-search.md
   - fragments/evidence-rules.md
   - fragments/scope-discipline.md
   - fragments/completion-gates.md
@@ -52,6 +53,15 @@ cite authoritative material for the applicable version; explain why its conditio
 apply here. Compare the recommended approach with credible alternatives against
 the same constraints, including doing nothing or using what exists. Explain a
 ruled-out baseline; do not invent alternatives to meet a quota.
+
+Run the design search before settling the recommendation: weigh candidates that
+differ in mechanism, including one the codebase does not already use and, where
+the requirement itself encodes the worse design, a reframe of the requirement.
+A reframe inside the authorized scope that satisfies every stated acceptance
+criterion is yours to recommend; one that changes the boundary or a criterion is
+a proposal to the requirement's owner, recorded with its reasoning while the
+design serves the stated requirement. The recommendation is the smallest design
+that wins the comparison; a novel approach earns no extra structure.
 
 Distinguish verified facts about the current system, proposed contracts and
 targets, and unresolved assumptions. Verify the factual premises behind decisions,
@@ -119,7 +129,8 @@ Include:
 
 - Problem, goals, constraints, and deliberate non-goals.
 - Context, accepted commitments, and relevant prior art.
-- Alternatives and verdicts, including the baseline disposition.
+- Alternatives and verdicts, including the baseline disposition: the
+  design-search record of candidates weighed, the pick, and why it won.
 - Recommended architecture, data model, and interface contracts.
 - Migration, rollout, rollback limits, and recovery.
 - Hypothetical failure scenarios with mitigations or residual-risk decisions.

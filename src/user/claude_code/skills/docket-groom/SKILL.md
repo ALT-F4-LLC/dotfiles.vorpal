@@ -389,6 +389,16 @@ A well-defined set meets all of these conditions:
   vote passes it with a filing, at worst it routes `fix-loop` to the cap and
   parks on every run that carries it, the shape two issues took on RUN-98.
 
+A criterion that encodes the worse design is an operator decision under
+§4a, not a repair. When the repo read shows the stated outcome would force
+a mechanism the codebase's invariants argue against, or the shape a
+requirement would take in any repository while this one needs another,
+present the reframe beside the criterion as stated, with the evidence, and
+record the operator's pick verbatim. Repairing such a criterion toward its
+literal wording makes it testable and still wrong. A reframe the writer
+can make inside the issue's scope while satisfying every criterion as
+written is the writer's choice and raises no decision here.
+
 For retained work, properly set every missing or defective criterion in
 the issue during this pass. Draft missing criteria from established
 requirements under §3; prepare exact repairs to existing criteria under

@@ -1,9 +1,10 @@
 ---
 node: judge-correctness
-version: 13
+version: 14
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
+  - fragments/design-search.md
   - fragments/hard-gates.md
   - fragments/severity-ladder-general.md
   - fragments/evidence-rules.md
@@ -79,6 +80,11 @@ a complete source trace can establish a defect without execution. A reproduction
 built from a hypothesis establishes its tested case, not the cause of a reported
 incident. Keep that causal claim qualified and name the smallest observation
 that would resolve it.
+
+Design-search findings are not yours: judge-architecture grades the search
+record and the chosen mechanism. Note in the body, without a severity entry,
+when a recorded alternative would have changed the correctness evidence in
+front of you.
 
 Preserve unsupported candidates as qualified leads or Questions, with the missing
 evidence and next probe; use `gap` when they prevent judgment. Do not convert

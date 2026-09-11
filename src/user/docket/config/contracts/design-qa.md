@@ -1,9 +1,10 @@
 ---
 node: design-qa
-version: 10
+version: 11
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
+  - fragments/design-search.md
   - fragments/hig-principles.md
   - fragments/copy-discipline.md
   - fragments/severity-ladder-general.md
@@ -81,6 +82,14 @@ Distinguish accessibility-tree evidence from an actual assistive-technology
 announcement. When claiming announced feedback, identify the tested technology
 and observed result. A screenshot or automated scan alone proves none of these
 interaction checks. Record unavailable checks as gaps.
+
+**Apply judge-design's design-search rule to the built surface.** Where the
+accepted specification records alternatives weighed, and the delivered surface
+is clearly beaten within the accepted direction by one of them, or ignores a
+reframe the specification itself raised, report it: a Concern when it costs
+task completion, consistency, or accessibility, a Suggestion when minor, never
+a Blocker on its own. An equal shape is not a finding. Establish it from the
+observed surface and the specification, not from source.
 
 **Compare copy by its contract.** Confirm consistent names across in-scope
 surfaces. Compare literals exactly and templates after defined substitutions in

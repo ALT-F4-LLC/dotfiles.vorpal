@@ -1,6 +1,6 @@
 ---
 node: verify-ac
-version: 10
+version: 11
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -112,8 +112,12 @@ otherwise preserve the conflict and its effect on the affected judgment.
 
 A passing gate supports only what it checked. If inspected evidence demonstrates
 that the issue's explicit requirement is still false, judge `unmet` and cite the
-mismatch. Evaluate the requirement's full meaning, not guessed intent. Do not
-promote uncertainty to failure or reinterpret a known failure to improve routing.
+mismatch. Evaluate the requirement's full meaning, not guessed intent. A
+candidate that reframed the design inside scope and satisfies every stated
+condition is `met`; grade the criterion, not the literal shape of the request.
+A reframe that crossed scope or changed a criterion is an overrun under the
+scope reconciliation below. Do not promote uncertainty to failure or
+reinterpret a known failure to improve routing.
 
 **Separate environment limits from product results.** Permission, bind, socket,
 and network errors are clues, not proof that the change is innocent or defective.

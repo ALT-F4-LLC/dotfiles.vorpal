@@ -1,9 +1,10 @@
 ---
 node: ux-spec-author
-version: 7
+version: 8
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
+  - fragments/design-search.md
   - fragments/doc-house-style.md
   - fragments/writing-for-humans.md
   - fragments/hig-principles.md
@@ -49,6 +50,16 @@ Use its conflict-resolution rule, recording material tradeoffs with the applicab
 principle names and consequences for users. Establish the design direction from
 the task, content, and product context; explore consequential uncertainty with
 proportional sketches or prototypes. Adapt patterns to the target medium.
+
+Run the design search before settling the direction: weigh materially different
+interaction shapes, including one the product does not already use and, where
+the requirement encodes the worse experience, a reframe of the requirement. A
+reframe inside the authorized scope that satisfies every stated acceptance
+criterion is a UX choice within your authority; one that moves the boundary or a
+criterion is a proposal to its owner, recorded with its reasoning while the spec
+serves the stated ask. The familiarity rule in hig-principles governs the
+delivered surface, not the search: a novel shape ships only when it wins on the
+user's task.
 
 Design failure and recovery before finalizing each workflow's success path.
 Specify entry conditions, actions, transitions, observable outcomes, preserved
@@ -121,8 +132,10 @@ inapplicability rule within it:
   proposed targets and unknown baselines without designing instrumentation.
 - Handoff notes: UX component responsibilities, sequence recommendations and
   dependencies, the authorized MVP cutline and deferrals, resolved decisions with
-  brief rationale, exact cross-spec references, and validation performed or still
-  needed. Sequence recommendations do not create issues or alter product priority.
+  brief rationale including the design-search record (shapes weighed, the pick,
+  why it won, or the one-line reason the search did not apply), exact cross-spec
+  references, and validation performed or still needed. Sequence recommendations
+  do not create issues or alter product priority.
 
 Give workflows and states stable references and connect them to their acceptance
 criteria and canonical copy entries. Diagram at least the primary flow or state

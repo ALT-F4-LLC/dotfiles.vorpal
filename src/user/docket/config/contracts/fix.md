@@ -1,10 +1,11 @@
 ---
 node: fix
-version: 15
+version: 16
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
   - fragments/code-philosophy.md
+  - fragments/design-search.md
   - fragments/tdd-discipline.md
   - fragments/scope-discipline.md
   - fragments/evidence-rules.md
@@ -72,8 +73,14 @@ applicable. An earlier observation can be stale; an `INFERRED` finding needs
 its premise checked rather than assumed. Group findings by the violated
 invariant and demonstrated cause, not merely by file or similar syntax.
 
-Choose among compatible repair alternatives using the governing requirements
-and evidence. Record which stated alternative you took and which you did not.
+Run the design search on each repair, bounded by the finding or unmet AC:
+weigh compatible repairs under design-search, including one that is not the
+existing path and, where the routed finding or AC encodes the worse design, a
+reframe that still satisfies every AC inside the declared scope. A reframe
+that would change scope or a criterion is reported for reassessment, not
+built. Choose using the governing requirements and evidence, then deliver the
+winner as the smallest complete repair. Record which stated alternative you
+took and which you did not.
 If requirements remain incompatible, gap the dependent items instead of
 inventing a compromise or overruling the reconciliation. A failed reproduction
 alone does not disprove a finding: distinguish a supported rebuttal from an
@@ -210,7 +217,9 @@ required by the executor-write obligations. Keep the body concise and include:
   AC's retained judgment and any effect of authorized repairs.
 - **Findings addressed:** ID, cause, change, and supporting evidence, including
   relevant pre-fail and post-pass results. Link shared repairs without losing
-  member IDs. State any repair alternative taken and not taken.
+  member IDs. Give the design-search record for each repair: candidates
+  weighed, the pick, why it won, or the one-line reason the search did not
+  apply.
 - **Findings not addressed:** ID, disposition, evidence, and remaining question
   or owning stage. Distinguish disproven premise, supported disagreement,
   unsuccessful reproduction, scope block, and unavailable verification. A

@@ -1,9 +1,10 @@
 ---
 node: investigate
-version: 4
+version: 5
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
+  - fragments/design-search.md
   - fragments/truth-first.md
   - fragments/evidence-rules.md
   - fragments/writing-for-humans.md
@@ -52,6 +53,14 @@ captured evidence where possible, recording relevant differences from the affect
 system. A laboratory result retains its REPRODUCED provenance; connecting it to
 the reported failure requires evidence.
 
+Apply design-search to the explanation and the recommendation. Hold more than
+one candidate cause until a discriminating observation separates them; the
+explanation that fits the symptom first is a candidate, not the conclusion. For
+the recommended fix, weigh materially different shapes, including one the
+codebase does not already use and a reframe of the reported requirement when the
+report encodes the wrong fix. Recommend the shape that resolves the invariant
+with the least maintained code, and record the shapes rejected.
+
 Compare a failing case with a working counterpart when available. Establish
 which relevant conditions are shared: implementation, effective configuration,
 inputs, identity, dependencies, and state. Identical code alone does not isolate
@@ -95,7 +104,8 @@ recommendation. Include:
 - Coverage: cases, revisions or runtime state, environments, and time windows
   examined, plus material exclusions and inaccessible evidence.
 - The recommended next action, its evidence and confidence, and the proposed
-  route for any fix or instrumentation. Describe the fix shape without writing it.
+  route for any fix or instrumentation. Describe the fix shape without writing it,
+  with the design-search record: shapes weighed, the pick, and why it won.
 - For each unresolved requirement, the cheapest safe next probe that would
   reduce the uncertainty, its expected discriminating outcomes, and any required
   access or execution authority. State when it can only help diagnose a future

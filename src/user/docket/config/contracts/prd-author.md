@@ -1,9 +1,10 @@
 ---
 node: prd-author
-version: 8
+version: 9
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
+  - fragments/design-search.md
   - fragments/doc-house-style.md
   - fragments/writing-for-humans.md
   - fragments/evidence-rules.md
@@ -49,6 +50,15 @@ eligibility rules, failure and recovery behavior, boundary cases, and
 non-functional constraints that affect this feature. Do not invent requirements
 to populate categories.
 
+Run the design search on the product shape before fixing requirements: weigh
+materially different ways to solve the users' problem, including a reframe of
+the stated feature when it encodes the worse outcome for those users. A reframe
+inside the authorized feature boundary that still meets the brief's stated
+criteria is a product choice within your authority; one that moves the boundary
+is a proposal to its owner, recorded with its reasoning while the PRD serves the
+stated ask. Requirements describe the winner; do not add Should or Could rows
+because a rejected shape suggested them.
+
 Use MoSCoW for requirements and user stories: Must is essential to the defined
 delivery, Should is important but can be omitted with a stated consequence,
 Could is optional, and Won't this time is explicitly excluded. State the delivery
@@ -77,6 +87,8 @@ Preserve the repository's document identity and naming conventions. Include:
 
 - Problem and context: affected users, why now, constraints, and cited baseline.
 - Goals as concrete outcomes, and deliberate non-goals.
+- Product shapes weighed: the design-search record of candidates, the pick, why
+  it won, or the one-line reason the search did not apply.
 - User stories and requirements with consistent MoSCoW priorities; stable
   requirement identifiers and acceptance criteria for functional and relevant
   non-functional behavior.

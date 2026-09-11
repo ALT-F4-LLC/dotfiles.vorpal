@@ -1,9 +1,10 @@
 ---
 node: judge-simplicity
-version: 11
+version: 12
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
+  - fragments/design-search.md
   - fragments/code-philosophy.md
   - fragments/laziness-ladder.md
   - fragments/severity-ladder-general.md
@@ -59,11 +60,21 @@ force a reader to reconstruct one responsibility across unrelated sections.
 Similar wording alone does not establish the same concept or justify consolidation.
 
 Apply the supplied laziness ladder where its criteria fit the target, including
-existing reuse and superseded machinery. Establish the current requirement,
+existing reuse and superseded machinery. The ladder governs what was delivered;
+the design search that precedes it is judge-architecture's to grade. Establish
+the current requirement,
 relevant consumers, and supported contracts before calling something speculative
 or obsolete. A sparse issue or zero-hit search alone does not prove absence of a
 need. For code, a single caller, a narrow catch, an interior guard, or an internal
 mock is a reason to inspect its purpose, not a finding by itself.
+
+**Novelty does not license structure.** Under design-search's reviewer rule,
+this seat owns one finding: a winner the record justifies as the better design
+shipped with more structure, options, or scaffolding than its benefit covers.
+Grade it as a Concern when the surplus costs maintenance or locality of
+reasoning, a Suggestion when minor, never a Blocker on its own. Whether the
+search happened, or whether the mechanism itself was the right pick, belongs
+to judge-architecture.
 
 Recommend the smallest justified deletion, consolidation, reuse, or simplification.
 Explain what becomes easier to understand or maintain and why the alternative

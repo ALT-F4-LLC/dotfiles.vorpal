@@ -40,12 +40,18 @@ it as unresolved and continue without inventing acceptance.
    and feasibility, stating uncertainty. Record relevant exclusions and their reasons;
    missing evidence is not a reason to declare a threat out of scope.
 
-3. **What are we going to do about it?** Give each material threat a response and
-   identify remaining risk. Every control names its enforcement point, prerequisites,
-   and bypass paths; distinguish existing controls from proposed ones. A compensating
-   control must provide comparable protection against the threats addressed by the
-   control it replaces. Explain coverage and gaps, including when enforcement moves
-   to another boundary.
+3. **What are we going to do about it?** Weigh alternatives before recommending:
+   for each material threat, at least one mitigation that is not the familiar
+   control for that threat class, and a reframe of the boundary itself when
+   moving or removing it would eliminate the path rather than guard it. Choose
+   on coverage against the stated adversary, enforcement locality, bypass
+   surface, and what the control leaves to maintain, then recommend the winner
+   and record the alternatives weighed and why it won. Give each material threat
+   a response and identify remaining risk. Every control names its enforcement
+   point, prerequisites, and bypass paths; distinguish existing controls from
+   proposed ones. A compensating control must provide comparable protection
+   against the threats addressed by the control it replaces. Explain coverage and
+   gaps, including when enforcement moves to another boundary.
 
 4. **Did we do a good enough job?** Review the model's coverage, assumptions, threat
    responses, and residual risk. For each control, specify an abuse case and expected

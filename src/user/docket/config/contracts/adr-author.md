@@ -1,9 +1,10 @@
 ---
 node: adr-author
-version: 7
+version: 8
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
+  - fragments/design-search.md
   - fragments/doc-house-style.md
   - fragments/writing-for-humans.md
   - fragments/evidence-rules.md
@@ -70,6 +71,13 @@ or accepted. New analysis does not establish historical agreement. For condition
 choices or accepted assumptions, include any agreed review trigger and the
 consequence if the assumption fails.
 
+Apply design-search to the record, not the decision. The alternatives section
+presents the candidates the decision-maker actually weighed, fairly and in the
+same terms as the choice. When the evidence shows a materially different option
+that was never weighed, record it as later analysis with its reasoning; it does
+not reopen the decision or reframe the choice. Say when no alternatives were
+weighed.
+
 Use stable ADR links and revision-specific references for exact historical
 passages. Link to detailed comparisons and verification evidence.
 
@@ -84,8 +92,9 @@ sections; addenda preserve the accepted record's existing structure:
 - **Decision:** the selected choice and why it fits those drivers.
 - **Consequences:** supported benefits, costs, risks, reversal constraints, and
   relevant neutral effects or agreed review triggers.
-- **Alternatives considered:** evidenced alternatives with a brief, fair verdict
-  against the same drivers. State when none were considered or their history is
+- **Alternatives considered:** the design-search record: evidenced alternatives
+  with a brief, fair verdict against the same drivers. State when none were
+  considered or their history is
   unavailable, as supported by the evidence; distinguish any later analysis.
 
 # Stuck

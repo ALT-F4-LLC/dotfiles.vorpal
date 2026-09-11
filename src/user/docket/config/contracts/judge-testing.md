@@ -1,9 +1,10 @@
 ---
 node: judge-testing
-version: 9
+version: 10
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
+  - fragments/design-search.md
   - fragments/tdd-discipline.md
   - fragments/severity-ladder-general.md
   - fragments/evidence-rules.md
@@ -58,6 +59,14 @@ or needless failures. Missing coverage need not prove a production bug; identify
 the unprotected behavior and why coverage matters. Assess stated omissions against
 their rationale and applicable requirements; being deliberate does not settle
 adequacy. Missing red-first records leave that history unverified, not disproven.
+
+**A dominated test strategy is yours.** Under design-search's reviewer rule,
+this seat owns the finding that the chosen test strategy is clearly beaten by
+a recorded or evident alternative: one that would pin the behavior through the
+seam where this one pins incidentals, or establish the claim where this one
+cannot. A Concern when the gap costs detection or maintenance, a Suggestion
+when minor, never a Blocker on its own. An equal alternative is not a finding.
+The search record and the production mechanism belong to judge-architecture.
 
 Judge fixtures against the claim. Empty or default inputs can establish those
 cases; claims about a real producer need support for consequential fields and

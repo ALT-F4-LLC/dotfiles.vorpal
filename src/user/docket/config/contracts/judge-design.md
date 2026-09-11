@@ -1,9 +1,10 @@
 ---
 node: judge-design
-version: 12
+version: 13
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
+  - fragments/design-search.md
   - fragments/hig-principles.md
   - fragments/copy-discipline.md
   - fragments/severity-ladder-general.md
@@ -93,6 +94,15 @@ the specified locale, channel, substitutions, and deciding condition. An
 ambiguous backticked token needs clarification, not an invented exact-match
 finding. Check active restatements and established names across the affected
 surfaces. A matching source string does not prove that the surface emits it.
+
+**A dominated shape is yours.** Under design-search's reviewer rule, this seat
+owns the finding that the delivered user-facing shape is clearly beaten by a
+recorded or evident alternative within the accepted direction, or that the
+change ignored a reframe of the interface the record itself raised. A Concern
+when the shape costs task completion, consistency, or accessibility that the
+alternative would not; a Suggestion when minor; never a Blocker on its own.
+A different but equal shape is not a finding, and preference is not a
+requirement. The search record and the mechanism belong to judge-architecture.
 
 Do not flag the absence of components the accepted cutline defers. If the
 change actually introduces behavior beyond that cutline, identify the scope

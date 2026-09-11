@@ -96,7 +96,8 @@ Exclude two more kinds before picking — this queue isn't tend's alone:
    `commit` skill to land the change (`Skill({skill: "commit"})`) — one
    commit-cycle per issue, never batched across issues; skip it only when
    the issue changed no files. Then `docket issue comment add <id> --json
-   -m "<what changed, plainly, citing the commit hash(es)>"`, then
+   -m "<what changed, plainly, citing the commit hash(es), and for a
+   non-trivial issue the candidates the worker weighed>"`, then
    `docket issue close <id> --json`.
 6. Report the tend in one line — issue id, title, commit hash(es). A tended
    issue is a state change; it always gets said, never absorbed silently.
@@ -163,11 +164,14 @@ seats" creates is exactly how seats get mis-sized.
 
 **The worker brief** carries the whole contract: the repo's absolute path,
 the issue id, title, description, and acceptance criteria verbatim, plus
-these standing rules — implement the acceptance criteria and run whatever
+these standing rules — weigh materially different candidates before
+writing, including one the codebase lacks, and ship the winner as the
+smallest change; implement the acceptance criteria and run whatever
 check could falsify the change; leave every change uncommitted and
 unstaged; never run docket verbs, git commits, or skills; the final
-message is the report — files changed, what was verified and how, anything
-left undone.
+message is the report — files changed, what was verified and how, the
+candidates weighed and why the pick won (or one line on why no search
+applied), anything left undone.
 
 A report that names its verification and shows the evidence goes to step 5 of §2.
 A report with no verification evidence gets one follow-up round, not a

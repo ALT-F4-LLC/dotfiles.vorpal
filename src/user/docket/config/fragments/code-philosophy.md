@@ -1,12 +1,11 @@
 ---
 fragment: code-philosophy
-version: 6
+version: 7
 ---
 # Code philosophy
 
 Optimize for **being correct** and **being deletable**. Prefer the smallest clear
-implementation that fully satisfies the real contract. Extend or simplify the
-existing implementation before introducing another mechanism. Account for the
+implementation that fully satisfies the real contract. Account for the
 code left to maintain, including anything the change makes obsolete. The unifying
 principle is **locality of reasoning**: a reader can understand a unit from its
 implementation and immediate contracts, without tracing the whole program.
@@ -62,8 +61,9 @@ Apply these defaults in the language's idiom and within the task's scope.
    collaborators; use test doubles at external boundaries. Prefer extending
    existing tests and fixtures; size new tests to distinct changed behaviors and
    credible regressions. Avoid coupling tests to incidental internal calls.
-9. **Minimal scope; minimal maintained code.** Find and modify the existing
-   implementation before adding another path. New helpers, layers, configuration
+9. **Minimal scope; minimal maintained code.** Once the design search has
+   weighed the alternatives, find and modify the existing implementation before
+   adding another path. New helpers, layers, configuration
    options, and fallback behavior require a concrete need in the requested
    change. Remove superseded code and configuration; update affected tests while
    preserving relevant coverage. Retain compatibility paths only for a supported
@@ -110,8 +110,9 @@ orchestration, or repeated review that costs more than it saves.
 
 **Overrides.** These are defaults to apply with judgment, not approval gates.
 Make routine tradeoffs yourself. For a material deviation introduced by the
-change, name the principle, location, and one-line reason in the change summary
-so review can challenge it. Do not add source comments merely to report compliance
+change, name the principle, location, the alternatives compared, and one-line
+reason in the change summary so review can challenge it. Do not add source
+comments merely to report compliance
 or exceptions.
 
 **Project idiom.** Follow explicit task and repository requirements. Match local

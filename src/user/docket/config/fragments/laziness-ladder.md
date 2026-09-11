@@ -1,14 +1,15 @@
 ---
 fragment: laziness-ladder
-version: 4
+version: 5
 ---
 # Laziness ladder
 
 Lazy means efficient, not incomplete. Deliver the requested behavior with the
 least code and machinery to maintain. Correctness and readability come first.
 
-Stop at the first rung that satisfies the actual requirements. Keep the search
-proportional to the task:
+The ladder orders delivery, not the design search that precedes it: weigh the
+alternatives first, then stop at the first rung that satisfies the actual
+requirements for the chosen design. Keep the search proportional to the task:
 
 1. **Does this need to exist now?** Skip speculative additions. Complete what
    was requested; do not re-argue its necessity.

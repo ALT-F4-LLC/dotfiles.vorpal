@@ -178,6 +178,9 @@ defend — and give every one of them, before anything is written:
 
 - what the evidence says, with the numbers and the run IDs it came from
 - the edit, as a diff against the current file
+- at least one alternative edit that answers the same evidence, including
+  one that is not the corpus's habitual shape, and the reason the proposed
+  edit won on correctness, locality of reasoning, deletability, and upkeep
 - the version bump it carries
 - for a workflow edit, the clean `docket workflow lint <file.toml>` result on
   the edited checkout bytes (§4 explains what it proves)

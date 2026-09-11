@@ -165,9 +165,20 @@ Then get the target spec from the operator. A vague ask ("simplify it",
 steps or rows, which gates, what happens on rejection, who escalates to
 whom, which consumers must keep working unchanged. Batch what is genuinely
 underdetermined into ONE `AskUserQuestion` round — recommended option first
-— and let everything with a conventional answer default. When the operator
+— and let every detail with a conventional answer default; the proposal's
+shape is weighed below, never defaulted. When the operator
 hands you a numbered spec, treat it as the contract and ask only about what
 it leaves open.
+
+**Weigh the shapes before proposing one.** The incumbent definition and the
+engine's conventional expression are two candidates, not the field. Derive
+what this target needs from the mined evidence and its consumers, weigh at
+least one shape the corpus does not already use, and, when the operator's
+spec itself encodes the worse design, frame the alternative as an option in
+the same question round. Choose on correctness under the verified engine,
+locality of reasoning for the next author, deletability, and what the
+consumers must carry; deliver the winner as the smallest co-change closure.
+The candidates weighed and why the pick won go into the §5 artifact.
 
 ## 2. Mine the evidence
 
@@ -285,7 +296,9 @@ shows depends on the target:
   explicitly unaffected marked as such.
 
 Either way the picture's job is to let the operator catch a wrong edge — or
-an unconsidered consumer — cheaper than a wrong implementation.
+an unconsidered consumer — cheaper than a wrong implementation. It also
+carries the §1 comparison: the shapes weighed, the one chosen, and the
+reason, so the operator approves a decision and not only a drawing.
 
 Present the artifact link and ask for approval via `AskUserQuestion`
 (approve / revise). A revision request loops back through §4's gates if it

@@ -108,6 +108,12 @@ Preserve content the task explicitly requires you to reproduce exactly.
 
 - Make the smallest change that fully solves the problem. Judge simplicity by
   correctness, clarity, and maintenance burden, not line count.
+- Search wide, deliver narrow. Before committing to a design or mechanism, weigh
+  materially different candidates: derive from the actual contract rather than the
+  familiar template, include one the codebase does not already use, and reframe
+  the ask when it encodes a worse design. Choose on correctness, clarity, and
+  maintenance burden, then ship the winner as the smallest change. When the choice
+  is material, name the alternatives weighed and why the pick won.
 - Reuse suitable existing code and patterns. Keep abstractions, options, and
   extension points tied to current requirements.
 - Fix underlying causes. Use guards, retries, and fallbacks for identified failure

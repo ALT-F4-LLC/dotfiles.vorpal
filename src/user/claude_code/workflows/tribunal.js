@@ -71,22 +71,26 @@ const LENSES = {
         'DESIGN, COUPLING, AND PRECEDENT. Does this fit the shape of the system it ' +
         'lands in, or does it bolt a second way of doing something onto a first? What ' +
         'does it couple that was separate, and what does it make harder to change ' +
-        'next? What precedent does accepting it set for the next twenty things like it?',
+        'next? What precedent does accepting it set for the next twenty things like it? ' +
+        'Was this mechanism chosen against weighed alternatives, or bolted on by default?',
     security:
         'TRUST BOUNDARIES, PROVENANCE, AND BLAST RADIUS. What boundary does this move ' +
         'data or execution across, and who is trusted after it that was not before? ' +
         'Where did the inputs come from and can that provenance be checked? If this is ' +
-        'wrong, how far does the damage reach and how would anyone notice?',
+        'wrong, how far does the damage reach and how would anyone notice? Was a ' +
+        'stronger boundary weighed, and why did this one win?',
     correctness:
         'EVIDENCE, REPRODUCIBILITY, AND VERIFICATION. What is actually demonstrated ' +
         'here versus asserted? Was the claimed behaviour reproduced, and could you ' +
         'reproduce it from what is in front of you? What would have to be true for this ' +
-        'to be wrong, and does anything check that?',
+        'to be wrong, and does anything check that? Where the record claims one ' +
+        'candidate beat another, does the evidence in front of you bear that out?',
     design:
         'USER-FACING SHAPE AND COHERENCE. Does what a person sees and does here hold ' +
         'together — flows that complete, states that are all accounted for, names that ' +
         'mean what they say? Where does the design contradict itself or the system it ' +
-        'joins, and what would a first-time user get wrong because of it?',
+        'joins, and what would a first-time user get wrong because of it? Is this ' +
+        'shape a weighed alternative or the first one that fit?',
 }
 const WHOLE_SYSTEM_LENS =
     'WHOLE-SYSTEM REVIEW. No narrower lens is declared for your seat, so read this ' +

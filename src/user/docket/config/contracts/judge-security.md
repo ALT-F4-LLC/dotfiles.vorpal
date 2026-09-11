@@ -1,9 +1,10 @@
 ---
 node: judge-security
-version: 11
+version: 12
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
+  - fragments/design-search.md
   - fragments/severity-ladder-security.md
   - fragments/security-review-dimensions.md
   - fragments/evidence-rules.md
@@ -64,6 +65,14 @@ plausible protections and alternative explanations. A supported loss of required
 protection is reportable without a working exploit or evidence of an incident.
 Apply the security ladder separately from confidence; do not require a fabricated
 attack narrative for an Info observation or inflate a concrete Low improvement.
+
+**A dominated security mechanism is yours.** Under design-search's reviewer
+rule, this seat owns the finding that a recorded or evident alternative would
+have enforced the same property at a stronger boundary or by construction where
+the shipped mechanism relies on convention. Author it in the security ladder's
+terms by its supported loss of protection, not the general ladder's Concern or
+Suggestion; an equal mechanism is not a finding. The search record and the
+non-security mechanism belong to judge-architecture.
 
 **Verify within this seat.** Follow rerun-discipline for focused candidate probes
 and required reproduction of supplied FAILED gates or disputed gate outcomes.

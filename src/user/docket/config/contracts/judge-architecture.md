@@ -1,9 +1,10 @@
 ---
 node: judge-architecture
-version: 13
+version: 14
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
+  - fragments/design-search.md
   - fragments/severity-ladder-general.md
   - fragments/code-philosophy.md
   - fragments/laziness-ladder.md
@@ -76,11 +77,23 @@ Apply the supplied code-philosophy principles within this charter.
 For overbuild, apply the supplied laziness ladder to new machinery and code the
 change makes obsolete. Establish the requirement and supported callers or
 contracts before calling something unnecessary; an incomplete summary does not
-prove that a need was never requested. Stop at the first rung that fully meets
-the requirements. Name the applicable code-philosophy principle and recommend
-the smallest justified deletion, reuse, or simplification. Check the supported
-surface before recommending removal; a zero-hit text search alone does not
-establish that a public or dynamically registered component is unused.
+prove that a need was never requested. The ladder is the delivery-time rule:
+the shipped change stops at the first rung that fully meets the requirements,
+after the design search has weighed the alternatives. Name the applicable
+code-philosophy principle and recommend the smallest justified deletion, reuse,
+or simplification. Check the supported surface before recommending removal; a
+zero-hit text search alone does not establish that a public or dynamically
+registered component is unused.
+
+**The design search is yours.** Apply design-search's reviewer rule: this seat
+owns the missing-search-record finding and the dominated-mechanism finding,
+where the change summary records no candidates weighed, or a recorded or evident
+alternative clearly beats the shipped mechanism on correctness, locality of
+reasoning, or deletability. A dominated pick that costs one of those is a
+Concern; a real but minor benefit is a Suggestion; neither is a Blocker on its
+own. A different but equal design, or distance from ideal, is not a finding.
+Assess the record and the result; do not redo the writer's search. Other seats
+leave these findings to you and report only what falls in their own lens.
 
 Preserve the ladder's exclusions and required behavior. Before recommending
 removal of redundant enforcement, identify the established guarantee that

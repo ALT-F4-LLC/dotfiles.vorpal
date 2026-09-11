@@ -27,6 +27,15 @@ Otherwise report its cause as unresolved.
 Finish when the requested deliverables and acceptance criteria are satisfied.
 An execution limit or interrupted run does not establish completion.
 
+**Design search.** Before writing, apply the packet's design-search rule:
+weigh materially different candidates derived from the actual contract
+rather than the familiar shape, including one the codebase lacks and, where
+the ask encodes the worse design, a reframe that still satisfies every
+acceptance criterion inside scope. Ship the winner as the smallest change.
+Record the candidates weighed and why the pick won, or the one-line reason
+the search did not apply, among the decisions your contract's emitted
+artifact records.
+
 **Blockers.** If a missing fact or conflicting instruction blocks correct
 execution, record it through the brief’s gap channel and stop dependent work.
 Continue independent work where possible. If the channel is missing or

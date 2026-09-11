@@ -1,9 +1,10 @@
 ---
 node: threat-model
-version: 5
+version: 6
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
+  - fragments/design-search.md
   - fragments/threat-model-method.md
   - fragments/security-review-dimensions.md
   - fragments/severity-ladder-security.md
@@ -71,6 +72,13 @@ derived control, state the original and target input sets and each relevant
 exclusion's disposition, including how attacker-controlled input could trigger
 it. Do not inherit exclusions merely because the original tool has them;
 an inherited limitation does not authorize excluding required verification.
+Weigh materially different responses for each abuse case under design-search:
+an existing mechanism extended, one the codebase lacks, and a reframe of the
+boundary that removes the crossing rather than guarding it. Recommend the
+response that enforces the property at the fewest chokepoints with the least
+maintained code, and record the responses rejected. A reframe inside the
+declared scope is a recommendation; one that moves the boundary or a requirement
+is the scope change Stuck already routes.
 
 **Finish at question four.** Apply the fragment's coverage and verification bar:
 adversarial input or sequence, expected blocking or detection, and a benign case
@@ -101,7 +109,8 @@ a missing verification specification leaves the control row unfinished.
   uncertain scenarios qualified rather than asserting an unproven defect.
 - **Required controls:** one row per control, naming existing or proposed
   status, required behavior, enforcement point, prerequisites/bypass limits,
-  linked abuse-case IDs, and verification. Include adversarial and benign
+  linked abuse-case IDs, the responses weighed and why this one won, and
+  verification. Include adversarial and benign
   inputs/sequences, expected outcomes, intended verification location, and
   actual result and scope when run;
   mark checks passed, failed, or not run. Longer verification details may live

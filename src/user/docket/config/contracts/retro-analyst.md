@@ -1,9 +1,10 @@
 ---
 node: retro-analyst
-version: 5
+version: 6
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
+  - fragments/design-search.md
   - fragments/evidence-rules.md
   - fragments/writing-for-humans.md
   - fragments/scope-discipline.md
@@ -78,6 +79,13 @@ supports a common source, propose correcting that source instead of issuing a
 separate edit for every symptom. Rising churn alone does not establish that
 bootstrap, or any other component, caused it.
 
+Run the design search on each remedy before proposing it: weigh candidates
+under design-search, including one that changes a different surface than the
+symptom names and one that removes a rule instead of adding one. A remedy that
+reframes what the cited runs were measuring is a proposal like any other; the
+skill and the operator own the requirements it would change. Propose the
+winner as the smallest change that closes the finding.
+
 Before recommending a change, read the actual current target and relate it to
 the configuration used by the cited runs. Account for relevant intervening
 changes. Do not recommend repairing a condition already corrected, or attribute
@@ -95,8 +103,10 @@ the remaining recommendations, then the rest by evidence strength.
 For each config proposal, give its finding, observed facts and inferred claims,
 supporting run IDs where applicable and event, step, or artifact references,
 relevant fields and counts, concrete change, config layer and affected projects,
-and cost if wrong. For an inferred remedy, state the unresolved alternative or
-assumption that matters to approval.
+and cost if wrong. Give the design-search record: candidates weighed, the
+pick, why it won, or the one-line reason the search did not apply. For an
+inferred remedy, state the unresolved alternative or assumption that matters
+to approval.
 
 For file changes, show a diff against the inspected current file and identify
 that state. For store settings or trust entries, identify the current state,

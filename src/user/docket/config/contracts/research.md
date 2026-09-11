@@ -1,9 +1,10 @@
 ---
 node: research
-version: 4
+version: 5
 archetype: executor-research
 packet_includes:
   - fragments/prime-directive.md
+  - fragments/design-search.md
   - fragments/evidence-rules.md
   - fragments/writing-for-humans.md
 emits: research-notes
@@ -80,6 +81,13 @@ integration points, dependency versions, and configuration. Distinguish existing
 integration points from proposed ones, and estimates from observations. If the
 available evidence cannot support a ranking, state the unresolved tradeoff.
 
+Under design-search, the compared set includes at least one approach outside the
+codebase's current habits and, when the question encodes the weaker framing, a
+reframed question stated with the evidence that motivates it; answer the question
+asked and record the reframe beside it. A recommendation names the candidates
+weighed and why the recommended one won on the stated criteria, or the one-line
+reason no comparison applied.
+
 Reuse verified passages while their source state and applicability remain valid.
 Finish when required answers and coverage are supported or permitted work is
 exhausted; reserve capacity for reporting. Missing evidence cannot be repaired by
@@ -93,7 +101,8 @@ Include:
 - For each load-bearing external-source claim, its short quotation, provenance,
   `quoted` label, and explanation of what it supports. Link inferences to those
   premises. Cite repository observations and searches under `evidence-rules`.
-- Any requested comparison, adoption costs, and conditional recommendation.
+- Any requested comparison, adoption costs, and conditional recommendation, with
+  the design-search record: candidates weighed, the pick, and why it won.
 - Coverage: named references inspected, searches performed, versions and dates
   covered, inaccessible or summary-derived material, and required work left
   unexamined. Keep unsupported leads separate from established findings.

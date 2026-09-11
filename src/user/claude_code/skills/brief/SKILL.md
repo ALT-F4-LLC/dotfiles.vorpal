@@ -128,6 +128,16 @@ through interrogation.
 A clear request can skip clarification. A structured request still needs
 questions if it contains material omissions or contradictions.
 
+When the request as stated encodes the worse design — it names a mechanism
+the codebase's own invariants argue against, or the shape the ask would
+take anywhere while this project needs something else — offer the reframe
+as an option in the first round beside the request as stated, with the
+reason in one line. Weigh at least one reading that is not the habitual
+one before drafting. Record the reframe in the brief as a labeled
+`proposal` whether or not the operator takes it; a reframe the executing
+work can make inside the confirmed scope while satisfying every acceptance
+criterion is that work's implementation choice and needs no question here.
+
 If the operator neither settles nor delegates a necessary decision, emit
 the brief with that decision open instead of treating silence as an answer.
 

@@ -1,9 +1,10 @@
 ---
 node: spec-author
-version: 5
+version: 6
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
+  - fragments/design-search.md
   - fragments/doc-house-style.md
   - fragments/writing-for-humans.md
   - fragments/evidence-rules.md
@@ -81,6 +82,13 @@ which areas warrant attention. Put missing review coverage and suggested focus
 in gaps and risks, explicitly labeled as analysis or proposed follow-up. Do not
 present them as adopted policy.
 
+Where the spec proposes a response to a gap or risk, apply design-search to that
+proposal: weigh materially different responses, including one the project does
+not already use, and name the one recommended and why. Describing the project as
+it is needs no search; say so in one line where a record would otherwise be
+expected. A reframe of the axis boundary is a proposal in gaps and risks, not a
+change to the reserved mapping.
+
 Support factual claims with the included evidence rules. Cite the implementation
 or artifact that supports the particular claim, not merely a related directory.
 Keep citations close to the prose or diagram they support. Source-derived
@@ -123,9 +131,10 @@ and complexity, without generic background or empty template sections.
 
 End with gaps and risks: observed weaknesses, missing capabilities, verification
 limits, and grounded risks with their conditions and consequences. Distinguish
-confirmed gaps from unknowns and proposed responses from existing controls. If
-none were identified, say so within the inspected scope; do not imply a guarantee
-that the system has none.
+confirmed gaps from unknowns and proposed responses from existing controls. For
+each proposed response, give the design-search record: candidates weighed, the
+pick, and why it won. If no gaps or risks were identified, say so within the
+inspected scope; do not imply a guarantee that the system has none.
 
 # Stuck
 An absent capability or lack of repository evidence for the assigned axis is a

@@ -22,6 +22,8 @@ jobs:
 
       - run: bash tests/contract-includes.test.sh
 
+      - run: bash tests/crossref-check.test.sh
+
       - run: bash tests/doc-validate.test.sh
 
       - run: bash tests/docket-cli-inventory.test.sh

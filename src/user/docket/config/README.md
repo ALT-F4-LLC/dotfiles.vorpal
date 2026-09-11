@@ -35,7 +35,7 @@ packet of their own) are named `<lens>`, matching the review-executor
 lens they stand in for when one exists: `tribunal-architecture`,
 `tribunal-correctness`, `tribunal-design`, `tribunal-security` — their
 `tribunal-` prefix distinguishes the vote-time identity (defined in
-wave.js's/tribunal.js's shared LENSES table) from the `judge-`-prefixed
+tribunal.js's LENSES table) from the `judge-`-prefixed
 review executor of the same lens.
 
 ## Steps
@@ -92,6 +92,14 @@ throughout this corpus (`ac-commands`, `secret-scan`,
 `security-classifier-reroute`, `opus-medium`, `security-change`,
 `blocked`). This file states the shape for new additions; it does not
 mandate renaming anything that already conforms.
+
+Most gate names are this repo's own `just` recipes. A gate a workflow names
+that this repo does not provide belongs to the TARGET project instead —
+`ui-change.toml`'s `render-verify` and `copy-verify` are supplied by
+whatever repository's own justfile the workflow runs against, not by this
+one. `.docket/bin/crossref-check`'s `PROJECT_GATES` list is the authority
+for which gate names are cross-repo by design; a gate absent from both
+`just --summary` and that list is drift, not a deliberate exception.
 
 Routing labels form one family, `route-<destination>`, and an issue
 carries at most one: `route-run` (a docket-plan run, the only value a

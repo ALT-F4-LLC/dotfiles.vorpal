@@ -64,6 +64,9 @@ doc-record:
 citation-check:
     .docket/bin/citation-check
 
+crossref-check:
+    .docket/bin/crossref-check
+
 tdd-preflight:
     .docket/bin/tdd-preflight
 

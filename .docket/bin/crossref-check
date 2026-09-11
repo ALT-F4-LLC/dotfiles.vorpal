@@ -1,0 +1,326 @@
+#!/usr/bin/env bash
+#
+# crossref-check — every name the prose corpus points at still exists.
+#
+# The corpus is the Claude Code skill tree (src/user/claude_code: CLAUDE.md,
+# skills/**/*.md, agents/*.md) and the docket definition tree
+# (src/user/docket/config: contracts, fragments, workflows, policy.toml,
+# README.md). The two trees name each other constantly — a skill cites a
+# contract path, a workflow comment cites a schema version, a contract cites
+# a gate — and a rename on one side leaves the other side describing a thing
+# that is gone. Nothing else reads both trees: doc-validate checks a header
+# on changed files, contract-includes resolves packet_includes only,
+# frozen-drift-check compares bytes to the registry. This gate resolves the
+# references themselves, over the WHOLE corpus every run, because the file
+# that breaks is usually not the file that changed.
+#
+# Checks, each deterministic and each named in the failure line:
+#
+#   path         A path-shaped token resolves on disk. Repo-rooted forms
+#                (src/user/..., .docket/bin/x, tests/x.test.sh) are checked
+#                everywhere. Tree-relative forms (skills/x/..., agents/x.md,
+#                hooks/x.sh, workflows/x.js) resolve under
+#                src/user/claude_code. Bare corpus forms (contracts/x.md,
+#                fragments/x.md, schemas/x.json, workflows/x.toml) are
+#                checked only inside src/user/docket/config, because the
+#                docket skill's engine reference documents another repo's
+#                example corpus with the same directory names.
+#   link         A relative markdown link resolves beside the file, and a
+#                `#fragment` on it names a heading in the target, slugged
+#                the way GitHub does (lowercase, punctuation dropped,
+#                spaces to hyphens, a repeated slug suffixed -1, -2, ...).
+#   skill        A `/docket-<x>` slash reference names an existing skill
+#                directory. Other slash references are not checked: some
+#                name Claude Code built-ins (/loop) and some are trigger
+#                phrases the skill description advertises, and the gate has
+#                no way to tell those apart from a typo. A skill's
+#                frontmatter description is the hand-off surface, so there
+#                every `docket-<x>` token must be a skill directory and a
+#                backticked short form of one (`refit` for docket-refit)
+#                is refused.
+#   schema       A `<name>@<N>` token whose <name> is a schema this corpus
+#                ships resolves to schemas/<name>@<N>.json. Older versions
+#                stay on disk for pinned-run reproduction, so an older
+#                mention resolves as long as the file was kept.
+#   executor     Every `executor = "<x>"` in a workflow step has
+#                contracts/<x>.md (the spec-author-<axis> family shares
+#                contracts/spec-author.md, the one exception README.md
+#                documents) and a `[executors]` row in policy.toml.
+#   gate         Every gate a workflow names is a justfile recipe. A gate
+#                the target project supplies instead of this repo is listed
+#                in PROJECT_GATES below, with the workflow that needs it.
+#   label        Every `route-<x>` token is one of the four routing labels
+#                README.md defines, and every workflow's `[match]
+#                unless_labels` carries `blocked` plus the three
+#                routed-away labels, as README.md says every workflow must.
+#   name         A definition's declared name equals its file stem: `name:`
+#                for skills and agents, `node:` for contracts, `fragment:`
+#                for fragments.
+#
+# What is skipped, and why. The changelog comment attached to a workflow's
+# `[pipeline] version = N` line and to `[policy] version = N` records what
+# earlier versions pointed at; a renamed path is CORRECT history there, so
+# those comment blocks (the `version =` line and the `#`-only lines that
+# continue it) are not scanned. Everything else in a TOML file, including
+# other comments, is.
+#
+# Exit 1 on the first class of failure found, after listing every failure;
+# 0 when every reference resolves. CORPUS_ROOT overrides the repository root
+# under test so tests/crossref-check.test.sh can point this gate at a
+# deliberately broken copy under $TMPDIR without touching the checkout.
+
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+if [ -n "${CORPUS_ROOT:-}" ]; then
+  repo_root="$CORPUS_ROOT"
+elif ! repo_root="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null)"; then
+  echo "crossref-check FAILED: $script_dir is not inside a git repository." >&2
+  exit 1
+fi
+cd "$repo_root"
+
+claude_tree="src/user/claude_code"
+docket_tree="src/user/docket/config"
+
+# Gates a workflow names that the TARGET project's justfile provides, not this
+# repo's. Add a row here only with the workflow that needs it, so a reader can
+# tell a deliberate cross-repo gate from a typo.
+PROJECT_GATES="
+render-verify ui-change
+copy-verify ui-change
+"
+
+for d in "$claude_tree" "$docket_tree"; do
+  if [ ! -d "$d" ]; then
+    echo "crossref-check FAILED: $d is not a directory under $repo_root" >&2
+    exit 1
+  fi
+done
+
+failed=0
+fail() {
+  # $1 check, $2 file, $3 line, $4 message
+  echo "crossref-check: $1  $2:$3  $4" >&2
+  failed=1
+}
+
+# --- corpus files and their checkable lines ---------------------------------
+
+corpus_files() {
+  find "$claude_tree" "$docket_tree" -type f \( -name '*.md' -o -name '*.toml' \) \
+    -not -path "$claude_tree/hooks/*" | sort
+}
+
+# Emit "file<TAB>line<TAB>text" for every line the checks read. For TOML,
+# drop the changelog block: the `version = N` line and the `#`-only lines
+# that immediately follow it.
+checkable_lines() {
+  local f="$1"
+  case "$f" in
+    *.toml)
+      awk -v f="$f" '
+        skip && $0 ~ /^[[:space:]]*#/ { next }
+        { skip = 0 }
+        $0 ~ /^version[[:space:]]*=/ { skip = 1; next }
+        { printf "%s\t%d\t%s\n", f, NR, $0 }
+      ' "$f"
+      ;;
+    *)
+      awk -v f="$f" '{ printf "%s\t%d\t%s\n", f, NR, $0 }' "$f"
+      ;;
+  esac
+}
+
+lines_file="$(mktemp "${TMPDIR:-/tmp}/crossref-check.XXXXXX")"
+trap 'rm -f "$lines_file"' EXIT
+while IFS= read -r f; do
+  checkable_lines "$f"
+done < <(corpus_files) > "$lines_file"
+
+# tokens <regex>: emit "file<TAB>line<TAB>token" for every match of <regex>
+# on a checkable line, one row per match. The pattern travels through the
+# environment, not `-v`: awk processes escape sequences in a `-v` value, so
+# `\]` and `\(` would reach the matcher as bare `]` and `(`.
+tokens() {
+  TOKEN_RE="$1" awk -F'\t' '
+    BEGIN { re = ENVIRON["TOKEN_RE"] }
+    {
+      s = $3
+      while (match(s, re)) {
+        printf "%s\t%s\t%s\n", $1, $2, substr(s, RSTART, RLENGTH)
+        s = substr(s, RSTART + RLENGTH)
+      }
+    }
+  ' "$lines_file"
+}
+
+# --- path: path-shaped tokens resolve on disk --------------------------------
+
+path_re='(src/user/[a-z_]+/[A-Za-z0-9_./@-]+|\.docket/bin/[a-z-]+|tests/[a-z-]+\.test\.(sh|py)|skills/[a-z-]+/[A-Za-z0-9_./-]+|agents/[a-z-]+\.md|hooks/[a-z-]+\.sh|workflows/[a-z-]+\.(js|toml)|contracts/[a-z-]+\.md|fragments/[a-z-]+\.md|schemas/[a-z0-9@-]+\.json)'
+while IFS=$'\t' read -r file line tok; do
+  tok="${tok%%[).,:;\`]}"
+  tok="${tok%%[).,:;\`]}"
+  case "$tok" in
+    src/*|.docket/*|tests/*) target="$tok" ;;
+    skills/*|agents/*|hooks/*|workflows/*.js) target="$claude_tree/$tok" ;;
+    contracts/*|fragments/*|schemas/*|workflows/*.toml)
+      case "$file" in
+        "$docket_tree"/*) target="$docket_tree/$tok" ;;
+        *) continue ;;
+      esac
+      ;;
+    *) continue ;;
+  esac
+  # A workflow's `packet = ["contracts/{executor}.md"]` is a template the
+  # engine expands per step; the executor check below resolves it.
+  case "$target" in *'{executor}'*) continue ;; esac
+  [ -e "$target" ] || fail path "$file" "$line" "$tok does not exist"
+done < <(tokens "$path_re")
+
+# --- link: a relative markdown link resolves from the file's directory -------
+
+heading_slugs() {
+  # GitHub's heading slugs for $1: fenced code is skipped, the text is
+  # lowercased, everything but letters, digits, spaces, hyphens and
+  # underscores is dropped, spaces become hyphens, and a repeat gets -N.
+  awk '
+    /^```/ { fence = !fence; next }
+    fence { next }
+    /^#{1,6} / {
+      t = $0; sub(/^#+[[:space:]]*/, "", t); sub(/[[:space:]]+#*[[:space:]]*$/, "", t)
+      t = tolower(t); gsub(/[^a-z0-9 _-]/, "", t); gsub(/ /, "-", t)
+      if (t in seen) { seen[t]++; t = t "-" (seen[t] - 1) } else { seen[t] = 1 }
+      print t
+    }
+  ' "$1"
+}
+while IFS=$'\t' read -r file line tok; do
+  target="${tok#\](}"; target="${target%)}"
+  anchor=""; case "$target" in *'#'*) anchor="${target#*#}" ;; esac
+  target="${target%%#*}"
+  case "$target" in http://*|https://*|/*) continue ;; esac
+  path="$(dirname "$file")/$target"
+  if [ ! -e "$path" ]; then
+    fail link "$file" "$line" "link target $target does not exist beside $file"
+  elif [ -n "$anchor" ] && [ "${path##*.}" = "md" ]; then
+    grep -qx -- "$anchor" < <(heading_slugs "$path") || fail link "$file" "$line" "anchor #$anchor names no heading in $target"
+  fi
+done < <(tokens '\]\([A-Za-z0-9_./-]+\.(md|toml|json|sh|js)(#[^)]*)?\)')
+
+# --- skill: /docket-<x> names an existing skill directory --------------------
+
+while IFS=$'\t' read -r file line tok; do
+  name="${tok##*/docket-}"
+  [ -d "$claude_tree/skills/docket-$name" ] || fail skill "$file" "$line" "/docket-$name is not a skill under $claude_tree/skills"
+done < <(tokens '(^|[^A-Za-z0-9_./-])/docket-[a-z]+(-[a-z]+)*')
+
+# A description hands off by name: every docket-<x> in it is a skill
+# directory, and a backticked short form of a docket- skill is refused.
+for f in "$claude_tree"/skills/*/SKILL.md; do
+  desc="$(awk 'NR == 1 && $0 != "---" { exit } NR > 1 && $0 == "---" { exit } index($0, "description:") == 1 { sub(/^description:[[:space:]]*/, ""); print; exit }' "$f")"
+  [ -n "$desc" ] || continue
+  while IFS= read -r name; do
+    [ -n "$name" ] || continue
+    [ -d "$claude_tree/skills/$name" ] || fail skill "$f" 1 "description names $name, not a skill under $claude_tree/skills"
+  done < <(grep -oE '(^|[^A-Za-z0-9_./-])docket-[a-z]+(-[a-z]+)*' <<< "$desc" | grep -oE 'docket-[a-z-]+' | sort -u)
+  while IFS= read -r short; do
+    [ -n "$short" ] || continue
+    [ -d "$claude_tree/skills/$short" ] && continue
+    [ -d "$claude_tree/skills/docket-$short" ] && fail skill "$f" 1 "description names \`$short\`; the skill is docket-$short"
+  done < <(grep -oE '\`[a-z]+(-[a-z]+)*\`' <<< "$desc" | tr -d '\`' | sort -u)
+done
+
+# --- schema: <name>@<N> resolves to a shipped schema file --------------------
+
+schema_names="$(find "$docket_tree/schemas" -name '*@*.json' | sed -E 's|.*/||; s|@[0-9]+\.json$||' | sort -u | tr '\n' '|' | sed 's/|$//')"
+if [ -n "$schema_names" ]; then
+  while IFS=$'\t' read -r file line tok; do
+    [ -f "$docket_tree/schemas/$tok.json" ] || fail schema "$file" "$line" "$tok has no file at $docket_tree/schemas/$tok.json"
+  done < <(tokens "($schema_names)@[0-9]+" | awk -F'\t' '$3 ~ /@[0-9]+$/')
+fi
+
+# --- executor: contract file and policy row exist ----------------------------
+
+policy_rows="$(awk '/^\[executors\]/{s=1;next} /^\[/{s=0} s && /^[a-z][a-z0-9-]*[[:space:]]*=/{sub(/[[:space:]]*=.*/,""); print}' "$docket_tree/policy.toml" | sort -u)"
+while IFS=$'\t' read -r wf line tok; do
+  ex="${tok#executor = \"}"; ex="${ex%\"}"
+  case "$ex" in
+    spec-author-*) contract="$docket_tree/contracts/spec-author.md" ;;
+    *) contract="$docket_tree/contracts/$ex.md" ;;
+  esac
+  [ -f "$contract" ] || fail executor "$wf" "$line" "executor $ex has no contract at $contract"
+  grep -qx "$ex" <<< "$policy_rows" || fail executor "$wf" "$line" "executor $ex has no [executors] row in $docket_tree/policy.toml"
+done < <(tokens 'executor = "[a-z0-9-]+"' | awk -F'\t' -v t="$docket_tree/workflows/" 'index($1, t) == 1')
+
+# --- gate: every gate a workflow names is a justfile recipe ------------------
+
+recipes="$(grep -oE '^[a-z][a-z0-9-]*:' justfile 2>/dev/null | tr -d ':' | sort -u)"
+gate_names() {
+  # Every gate name a workflow file lists. The file is flattened first so a
+  # multi-line `gates = [...]` reads as one array; names appear as bare "x"
+  # entries or as { name = "x", ... } tables.
+  tr '\n' ' ' < "$1" \
+    | grep -oE 'gates[[:space:]]*=[[:space:]]*\[[^]]*\]' \
+    | grep -oE '"[a-z][a-z0-9-]*"' | tr -d '"' | sort -u
+}
+for wf in "$docket_tree"/workflows/*.toml; do
+  stem="$(basename "$wf" .toml)"
+  while IFS= read -r g; do
+    [ -n "$g" ] || continue
+    grep -qx "$g" <<< "$recipes" && continue
+    grep -qE "^$g $stem\$" <<< "$PROJECT_GATES" && continue
+    line="$(grep -n -m1 -E "\"$g\"" "$wf" | cut -d: -f1)"
+    fail gate "$wf" "${line:-0}" "gate $g is not a justfile recipe and not a PROJECT_GATES row for $stem"
+  done < <(gate_names "$wf")
+done
+
+# --- label: routing labels are the four README.md defines --------------------
+
+# A label is checked only when the prose quotes it (`route-x` or "route-x");
+# an unquoted route-<word> is ordinary English.
+while IFS=$'\t' read -r file line tok; do
+  tok="${tok#[\`\"]}"; tok="${tok%[\`\"]}"
+  case "$tok" in
+    route-run|route-direct|route-tend|route-loop) ;;
+    *) fail label "$file" "$line" "$tok is not one of route-run, route-direct, route-tend, route-loop" ;;
+  esac
+done < <(tokens '[`"]route-[a-z]+[`"]')
+
+for wf in "$docket_tree"/workflows/*.toml; do
+  unless="$(tr '\n' ' ' < "$wf" | grep -oE 'unless_labels[[:space:]]*=[[:space:]]*\[[^]]*\]' | head -1)"
+  for want in blocked route-direct route-tend route-loop; do
+    grep -qE "\"$want\"" <<< "$unless" || fail label "$wf" "$(grep -n -m1 'unless_labels' "$wf" | cut -d: -f1)" "[match] unless_labels lacks \"$want\""
+  done
+done
+
+# --- name: declared name equals file stem -----------------------------------
+
+frontmatter_field() {
+  # $1 file, $2 key: the key's value inside the leading YAML block.
+  awk -v key="$2" '
+    NR == 1 && $0 != "---" { exit }
+    NR > 1 && $0 == "---" { exit }
+    NR > 1 && index($0, key ":") == 1 { sub("^" key ":[[:space:]]*", ""); print; exit }
+  ' "$1"
+}
+check_name() {
+  # $1 file, $2 key, $3 expected
+  local got
+  got="$(frontmatter_field "$1" "$2")"
+  [ "$got" = "$3" ] || fail name "$1" 1 "$2 is '${got:-<missing>}', expected '$3'"
+}
+for f in "$claude_tree"/skills/*/SKILL.md; do check_name "$f" name "$(basename "$(dirname "$f")")"; done
+for f in "$claude_tree"/agents/*.md; do check_name "$f" name "$(basename "$f" .md)"; done
+for f in "$docket_tree"/contracts/*.md; do check_name "$f" node "$(basename "$f" .md)"; done
+for f in "$docket_tree"/fragments/*.md; do check_name "$f" fragment "$(basename "$f" .md)"; done
+
+if [ "$failed" -ne 0 ]; then
+  echo "" >&2
+  echo "crossref-check FAILED. Rename the reference to what exists now, or" >&2
+  echo "restore the target; a renamed path is correct only inside a version" >&2
+  echo "changelog comment." >&2
+  exit 1
+fi
+
+echo "crossref-check: ok ($(corpus_files | wc -l | tr -d ' ') files)"

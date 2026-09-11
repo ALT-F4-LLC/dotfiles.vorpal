@@ -1,6 +1,6 @@
 ---
 node: design-qa
-version: 13
+version: 14
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -70,6 +70,15 @@ the general ladder, citing the applicable Blocker criterion when using Blocker.
 A confirmed failure of a required render can establish a violated acceptance
 criterion; an unavailable capture alone cannot. Apply a blocking gate only when
 its governing rule is supplied and its trigger is established.
+
+A render-verify or copy-verify result carrying `NO COVERAGE` in the
+`gate-results` input reports that the gate examined nothing, and is not render
+or copy coverage of the change under review. Its exit status is 0, so the marker
+text is the only signal separating it from a pass; read the verdict, never the
+exit code alone. Record that mechanical half as absent coverage under the
+coverage rule above and report it as a gap, never as a passing half, and do not
+let it support an examined-clean result. Absent coverage is not itself a defect
+finding: judge the affected surface from your own observation.
 
 **Measure accessibility through the running surface.** Measure contrast using
 effective rendered foreground and background colors, accounting for compositing;

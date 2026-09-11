@@ -1,10 +1,10 @@
 ---
 fragment: hard-gates
-version: 3
+version: 4
 ---
-# Hard gates G1–G5
+# Hard gates G1–G6
 
-Five narrow, evidence-based conditions block a passing review even when other
+Six narrow, evidence-based conditions block a passing review even when other
 features work. Patterns locate candidates; they do not establish findings.
 Confirm the trigger from inspected code, an explicit contract, or applicable
 execution evidence, and check the counter-examples before firing. Design
@@ -85,6 +85,20 @@ evidence for unchanged relevant inputs and conditions can satisfy execution.
 These exceptions do not excuse an independently demonstrated detector defect.
 **Mitigation:** correct and validate the detector, or execute the skipped check
 and correct the verification claim.
+
+**G6: Missing design-search record.** The change summary's decisions carry
+neither the design-search record (candidates weighed, the pick, why it won)
+nor the one-line reason the search did not apply, for a change that chose a
+design, mechanism, interface, or test strategy. Confirm it from the change
+summary alone; the diff can neither establish nor refute a search. **Not fired
+by** a record that ends at the obvious answer with the alternatives named, a
+not-applicable line for a change whose shape the requirement fixes (a rename,
+a copied value, a one-line data fix, a repair whose form the acceptance
+criterion dictates), or an artifact whose contract records the search under
+its own heading. Do not grade the pick here; a dominated pick is
+judge-architecture's design-search finding under the severity ladder.
+**Mitigation:** run the search, record it, and revise the change where the
+search changes the pick.
 
 **Override recognition.** Before raising a gate finding, inspect the affected
 code and adjacent comments, the change summary, and available attached work-item

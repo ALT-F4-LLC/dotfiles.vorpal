@@ -1,6 +1,6 @@
 ---
 node: judge-architecture
-version: 14
+version: 15
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -86,14 +86,16 @@ zero-hit text search alone does not establish that a public or dynamically
 registered component is unused.
 
 **The design search is yours.** Apply design-search's reviewer rule: this seat
-owns the missing-search-record finding and the dominated-mechanism finding,
-where the change summary records no candidates weighed, or a recorded or evident
-alternative clearly beats the shipped mechanism on correctness, locality of
-reasoning, or deletability. A dominated pick that costs one of those is a
-Concern; a real but minor benefit is a Suggestion; neither is a Blocker on its
-own. A different but equal design, or distance from ideal, is not a finding.
-Assess the record and the result; do not redo the writer's search. Other seats
-leave these findings to you and report only what falls in their own lens.
+owns the dominated-mechanism finding, where a recorded or evident alternative
+clearly beats the shipped mechanism on correctness, locality of reasoning, or
+deletability. A dominated pick that costs one of those is a Concern; a real but
+minor benefit is a Suggestion. A different but equal design, or distance from
+ideal, is not a finding. When the record is thin, name one materially
+different alternative from the codebase in front of you and grade the pick
+against it; the writer's search does not bound yours. A change summary with no
+record at all is hard gate G6, fired by the seat whose packet carries
+hard-gates. Other seats leave these findings to you and report only what falls
+in their own lens.
 
 Preserve the ladder's exclusions and required behavior. Before recommending
 removal of redundant enforcement, identify the established guarantee that

@@ -1,6 +1,6 @@
 ---
 fragment: code-philosophy
-version: 7
+version: 8
 ---
 # Code philosophy
 
@@ -61,9 +61,10 @@ Apply these defaults in the language's idiom and within the task's scope.
    collaborators; use test doubles at external boundaries. Prefer extending
    existing tests and fixtures; size new tests to distinct changed behaviors and
    credible regressions. Avoid coupling tests to incidental internal calls.
-9. **Minimal scope; minimal maintained code.** Once the design search has
-   weighed the alternatives, find and modify the existing implementation before
-   adding another path. New helpers, layers, configuration
+9. **Minimal scope; minimal maintained code.** Modify the existing
+   implementation, or add the mechanism the design search chose over it; both
+   are ordinary outcomes, recorded among the decisions. A parallel path the
+   search did not choose is the defect. New helpers, layers, configuration
    options, and fallback behavior require a concrete need in the requested
    change. Remove superseded code and configuration; update affected tests while
    preserving relevant coverage. Retain compatibility paths only for a supported

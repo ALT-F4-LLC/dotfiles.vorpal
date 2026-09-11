@@ -1,6 +1,6 @@
 ---
 fragment: design-search
-version: 1
+version: 2
 ---
 # Design search
 
@@ -29,9 +29,8 @@ proportional to the decision's blast radius.
   spread one concept across more places, add another special case, or leave
   the invariant enforced by convention rather than construction. Deliver the
   new mechanism only when it wins on correctness, locality of reasoning, and
-  deletability, and record it as a code-philosophy override among the
-  artifact's decisions: the principle deviated from, the alternatives
-  compared, and the reason it won.
+  deletability. A new mechanism that wins is an ordinary outcome of the
+  search, recorded like any other pick; it is not a deviation to justify.
 - **Question the ask before solving it.** When the stated requirement or
   interface encodes the worse design, frame the alternative. A reframe that
   stays inside the declared scope and satisfies every stated acceptance
@@ -52,11 +51,14 @@ proportional to the decision's blast radius.
   merits. An absent record reads as an absent search; reviewers cannot
   distinguish the two.
 
-**For reviewers.** Grade a missing search record, or a pick that a recorded or
-evident alternative clearly dominates on the criteria above, by its supported
-consequence on the severity ladder in your packet: a Concern when the pick
-costs correctness, locality of reasoning, or maintenance that the alternative
-would not; a Suggestion when the benefit is real but minor; never a Blocker on
-its own. A different but equal design is not a finding, and neither is
-distance from ideal. Assess the record and the result; do not redo the
-writer's search.
+**For reviewers.** A missing record is hard gate G6 for the seat whose packet
+carries hard-gates: it blocks a passing review and opens a fix round. Grade a
+pick that a recorded or evident alternative clearly dominates on the criteria
+above by its supported consequence on the severity ladder in your packet: a
+Concern when the pick costs correctness, locality of reasoning, or maintenance
+that the alternative would not; a Suggestion when the benefit is real but
+minor. A different but equal design is not a finding, and neither is distance
+from ideal. When the record is thin, two candidates that differ only in
+spelling or a pick that is the generic shape for the language, name one
+materially different alternative from the codebase in front of you and grade
+the pick against it; the writer's search does not bound yours.

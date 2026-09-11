@@ -1,5 +1,13 @@
 [policy]
-version = 26  # 26: the [escalation] note now records what the reap-vs-failure
+version = 27  # 27: implement and fix move opus-medium -> opus-high. The design
+              # search (fragments/design-search.md) puts an architecture
+              # decision inside every writer step, and D1 names architecture
+              # decisions as where extra investigation pays; D6 has review and
+              # verification at high. Round 2 onward already landed on opus-high
+              # through the fallback, so the retune removes the cheap first
+              # round rather than adding a tier. Escalation for both is now
+              # fable-high via opus-high's escalate_to.
+              # 26: the [escalation] note now records what the reap-vs-failure
               # measurement found and where the fix belongs (the engine's
               # resolver now sees `prior_attempt_end` on the row but still
               # walks the bare claim count) and rules that `one-hop` stays;
@@ -104,15 +112,15 @@ dispose = { variant = "opus-high" }
 # high cluster as a --gap-file backlog issue. Mechanical selection and faithful
 # copying, no judgment over severities; same tier as synthesize-findings.
 drain-highs = { variant = "sonnet-medium" }
-# opus-medium, down from sonnet-xhigh: D4 has Opus 5 at low/medium beating Sonnet 5
-# at default per solved task, D5 warns off a smaller model at a higher effort, and D2
-# reserves xhigh for 30-minute-plus agentic runs, which a scoped repair of reconciled
-# findings is not. Round 2 onward lands on opus-high through the fallback.
-fix = { variant = "opus-medium" }
-# opus-medium, from sonnet-high: D4 — medium gives up about 2 points for half the
-# cost and re-running failures at the default recovers the pass rate; judges and
-# verify-ac are the failure detector here, fix rounds the re-run at opus-high.
-implement = { variant = "opus-medium" }
+# opus-high (policy 27), from opus-medium: every repair now runs the design search,
+# an architecture decision D1 places on the capable tier at its default effort; D2
+# still reserves xhigh for 30-minute-plus agentic runs, which a scoped repair is not.
+fix = { variant = "opus-high" }
+# opus-high (policy 27), from opus-medium: the design search makes each implement
+# step an architecture decision, D1's ground for extra investigation, and D6 puts
+# the default effort on work whose quality judges cannot cheaply recover. Judges
+# and verify-ac remain the failure detector; escalation is fable-high.
+implement = { variant = "opus-high" }
 # fable-high, down from fable-xhigh: D1 names root-cause investigation as Fable's
 # ground; D2 starts at high and reserves xhigh for 30-minute-plus agentic coding
 # with evals showing the gain, which no run here has produced.

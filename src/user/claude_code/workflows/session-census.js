@@ -42,6 +42,11 @@ const UNKNOWN_EFFORT_RANK = 9
 //   between messages with and without thinking blocks (3014 vs 2965), so the
 //   exclusion is close to unbiased; when the two disagree, trust
 //   think_text_ratio, which every message can contribute to.
+// * Assistant rows are deduplicated by message id, last occurrence wins, the
+//   same rule wave-usage.js applies: a streamed message repeats across lines
+//   under one id with output_tokens growing, so a per-line sum inflates every
+//   token and character total. Row histograms (versions, efforts, excluded)
+//   and the context-size trace still count lines.
 // * Most user-role rows are not the operator: task notifications, teammate
 //   messages, tool results, and isMeta skill-body injections all arrive as
 //   role=user. Only typed prose, slash commands, and !bash count as input.
@@ -99,9 +104,9 @@ def user_text:
 # large "other" bucket means these patterns drifted from the briefs.
 def classify_role:
   if test("one seat of a tribunal"; "i") then "tribunal-seat"
-  elif test("retro analyst|mining docket run evidence"; "i") then "retro-analyst"
+  elif test("retro-analyst|window of runs since the last docket-retro"; "i") then "retro-analyst"
   elif test("spec-author"; "i") then "spec-author"
-  elif test("executing one step|docket engine pipeline"; "i") then "executor-step"
+  elif test("executing one step"; "i") then "executor-step"
   elif test("judge|review agent|refute|adversar|critic"; "i") then "judge/review"
   elif test("implement|author the|apply the fix|make the change"; "i") then "implement/write"
   elif test("read-only|survey|mine |inventory|scan |locate "; "i") then "read/survey"
@@ -163,6 +168,24 @@ def user_row($rec):
       else . end
   end;
 
+# One assistant line's share of the totals; $sign -1 retracts a share an
+# earlier line under the same message id already added.
+def contribute($c; $sign):
+  .msgs += $sign * $c.msgs
+  | .think_chars += $sign * $c.tc
+  | .text_chars += $sign * $c.txc
+  | .tool_uses += $sign * $c.tu
+  | if $c.usable then
+      .out += $sign * $c.out
+      | .think += $sign * $c.think
+      | (if $c.think > 0 then .think_msgs += $sign else . end)
+      | (if $c.key != null then
+           .cells[$c.key] |= ((. // {model: $c.model, effort: $c.effort, skill: $c.skill, msgs: 0, out: 0, think: 0, think_msgs: 0, think_chars: 0, text_chars: 0})
+             | .msgs += $sign | .out += $sign * $c.out | .think += $sign * $c.think | .think_chars += $sign * $c.tc | .text_chars += $sign * $c.txc
+             | (if $c.think > 0 then .think_msgs += $sign else . end))
+         else . end)
+    else . end;
+
 def assistant_row($rec):
   ($rec.message // {}) as $msg
   | ($msg.usage // {}) as $usage
@@ -178,10 +201,10 @@ def assistant_row($rec):
   | ([$blocks[] | select(.type == "text") | select(((.text // "") | strip) != "")] | length > 0) as $visible
   | ([$blocks[] | select(.type == "tool_use")] | length) as $tu
   | (($version | no_think_accounting | not) and $think != null) as $usable
-  | .msgs += 1
-  | .think_chars += $tc
-  | .text_chars += $txc
-  | .tool_uses += $tu
+  | ($msg.id // null) as $id
+  | ({msgs: 1, tc: $tc, txc: $txc, tu: $tu, usable: $usable, out: $out, think: ($think // 0),
+      key: (if $kind == "main" and ($model // "") != "" and ($effort // "") != "" then ($model + "|" + $effort + "|" + $skill) else null end),
+      model: $model, effort: $effort, skill: $skill}) as $c
   | .versions[$version] += 1
   | (if $kind == "main" then
        (.ctx_last = (($usage.input_tokens // 0) + ($usage.cache_creation_input_tokens // 0) + ($usage.cache_read_input_tokens // 0)))
@@ -190,17 +213,13 @@ def assistant_row($rec):
      else . end)
   | (if .idle_open then .idle_tools += $tu | (if $visible then .idle_texts += 1 else . end) else . end)
   | (if ($effort // "") != "" then .efforts[$effort] += 1 else . end)
-  | if $usable then
-      .out += $out
-      | .think += $think
-      | (if $think > 0 then .think_msgs += 1 else . end)
-      | (if $kind == "main" and ($model // "") != "" and ($effort // "") != "" then
-           (($model + "|" + $effort + "|" + $skill) as $key
-            | .cells[$key] |= ((. // {model: $model, effort: $effort, skill: $skill, msgs: 0, out: 0, think: 0, think_msgs: 0, think_chars: 0, text_chars: 0})
-                | .msgs += 1 | .out += $out | .think += $think | .think_chars += $tc | .text_chars += $txc
-                | (if $think > 0 then .think_msgs += 1 else . end)))
-         else . end)
-    else .excluded[$version] += 1 end;
+  # A streamed message repeats across lines under one id with output_tokens
+  # growing; the last line is the whole message, so retract the earlier line's
+  # contribution before adding this one (last occurrence wins).
+  | (if $id != null and .seen[$id] != null then contribute(.seen[$id]; -1) else . end)
+  | contribute($c; 1)
+  | (if $id != null then .seen[$id] = $c else . end)
+  | if $usable then . else .excluded[$version] += 1 end;
 
 def step($rec):
   if ($rec | type) != "object" then .
@@ -217,7 +236,7 @@ def step($rec):
   end;
 
 reduce (inputs | try fromjson catch null) as $rec (
-  {kind: $kind, role: null, rows: {}, versions: {}, excluded: {},
+  {kind: $kind, role: null, rows: {}, versions: {}, excluded: {}, seen: {},
    msgs: 0, out: 0, think: 0, think_msgs: 0, think_chars: 0, text_chars: 0, tool_uses: 0,
    sidechain_dropped: 0, efforts: {}, cells: {},
    operator: 0, interrupts: 0, kills: 0, kill_events: 0,
@@ -237,7 +256,7 @@ reduce (inputs | try fromjson catch null) as $rec (
 | .last_ts = (if ($s | length) > 0 then ($s[-1] | todateiso8601) else null end)
 | .version = (.versions | to_entries | sort_by(-.value) | .[0].key // "?")
 | .cells = [.cells[]]
-| del(.stamps, .idle_open, .idle_tools, .idle_texts, .ctx_last)
+| del(.stamps, .idle_open, .idle_tools, .idle_texts, .ctx_last, .seen)
 `
 // TEST-END session-census-extract
 
@@ -608,7 +627,7 @@ function classifyExtract(result, file) {
         log(`session-census: ${file.path}: extract returned no ${missing.join(', ')}`)
         return { usable: false, retryable: true }
     }
-    if (result.last_ts && result.last_ts < cutoff) log(`session-census: ${file.path} mtime is newer than the cutoff but its last row (${result.last_ts}) is not; counted anyway`)
+    if (result.last_ts && result.last_ts < cutoff) log(`session-census: ${file.path} mtime is newer than the cutoff but its last row (${result.last_ts}) is not; counted anyway — mtime, not last-row time, defines the window`)
     return { usable: true }
 }
 

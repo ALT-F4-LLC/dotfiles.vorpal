@@ -1,5 +1,6 @@
 [policy]
-version = 30  # 30: comment-only, no routing value changed. Engine commit
+version = 31  # 31: comment-only concision rewrite; no routing value changed.
+              # 30: comment-only, no routing value changed. Engine commit
               # ffd117a (docket nightly-101) exempts fable-standing
               # rows from the post-walk fable gate, so fable-low's retry now
               # stays on Fable for every row, not only the investigator
@@ -56,27 +57,24 @@ version = 30  # 30: comment-only, no routing value changed. Engine commit
               # `investigate`'s current `fable-high` tier absent evidence to
               # retune it. No existing row renamed or retuned.
 
-# `blocked`: the hold label. An issue not yet workable — blocked on
-# a capability that does not exist, or needing a design session before
-# implementation makes sense — carries this label so it matches zero
-# registered workflows and cannot be selected by `docket-plan` or treated as
-# run-ready by `docket-groom`. Every `workflows/*.toml`'s `[match].unless_labels`
-# names it. Remove the label only once the specific blocking condition named
-# on the issue (the missing capability, or the completed design session) is
-# met; it is not a silent, permanent exclusion.
+# `blocked`: the hold label. Apply it to an issue not yet workable — blocked
+# on a missing capability, or needing a design session first. It matches zero
+# registered workflows, so `docket-plan` cannot select the issue and
+# `docket-groom` cannot treat it as run-ready. Every `workflows/*.toml`'s
+# `[match].unless_labels` names it. Remove the label only once the blocking
+# condition named on the issue is met.
 #
 # Exception: an epic issue (kind `epic`) carries `blocked` permanently as a
 # container marker, since epics have no work of their own for a workflow to
 # match. docket-groom never removes `blocked` from an epic.
 
 [variants]
-# Policy 29 adds the three `low` variants. opus-low escalates straight to
-# opus-high, so the one retry a `max_attempts = 2` step permits lands on the
-# tier every opus row left except judge-testing and judge-architecture, which
-# left opus-medium and retry above it. fable-low escalates to fable-medium and
-# stays on Fable for every fable-standing row: since engine commit ffd117a
-# (policy 30) the post-walk fable gate exempts rows whose standing variant is
-# already fable, so the redirect to [escalation.fallback] applies only to
+# Policy 29 adds the three `low` variants. opus-low escalates to opus-high,
+# the tier every opus row left except judge-testing and judge-architecture
+# (left opus-medium; retry lands above it). fable-low escalates to
+# fable-medium and stays on Fable for every fable-standing row: since engine
+# commit ffd117a (policy 30) the post-walk fable gate exempts rows already
+# standing on fable, so the redirect to [escalation.fallback] applies only to
 # opus- and sonnet-standing rows that walk onto Fable. sonnet-low escalates to
 # sonnet-medium. The older fable variants stay chain tops.
 fable-high = { model = "fable", effort = "high" }
@@ -97,7 +95,7 @@ sonnet-xhigh = { model = "sonnet", effort = "xhigh", escalate_to = "opus-xhigh" 
 
 [executors]
 # Policy 21 — model/effort re-derived from Anthropic's official documentation
-# (fetched 2026-09-02), fit to each seat's role and cost-aware. Cited below as D1-D7:
+# (fetched 2026-09-02), fit to each seat's role, cost-aware. Cited below as D1-D7:
 #   D1 code.claude.com/docs/en/model-config — aliases resolve fable → Fable 5.1,
 #      opus → Opus 5, sonnet → Sonnet 5, haiku → Haiku 4.5; effort is
 #      low|medium|high|xhigh|max with `high` "The default on every model except
@@ -140,162 +138,158 @@ sonnet-xhigh = { model = "sonnet", effort = "xhigh", escalate_to = "opus-xhigh" 
 #      Sonnet→Opus at high; "for most tasks you should use the model's default effort
 #      level".
 #   D7 code.claude.com/docs/en/model-config#automatic-model-fallback — see [security].
-# The re-run-failures pattern in D4 is what [escalation] already implements: a
-# non-gated opus-medium seat that fails hops to fable-medium, misses the fable gate,
-# and lands on [escalation.fallback] opus-high — the model's default effort. Policy
-# 29 moved every row but judge-simplicity, which keeps its prior tier under D1-D6
-# because no decision covered it; every other row's comment states its move.
+# D4's re-run-failures pattern is what [escalation] already implements: a
+# non-gated opus-medium seat that fails hops to fable-medium, misses the fable
+# gate, and lands on [escalation.fallback] opus-high — the model's default
+# effort. Policy 29 moved every row but judge-simplicity, which keeps its
+# prior tier since no decision covered it; every other row's comment states
+# its move.
 # Seat for the reconcile drain-highs routing — files each still-open
 # high cluster as a --gap-file backlog issue. Mechanical selection and faithful
 # copying, no judgment over severities; same tier as synthesize-findings.
-# sonnet-low (policy 29), from sonnet-medium: the operator chose the lowest
-# tier for wall-clock. 110 completions at sonnet-medium ran a median 2.7 min,
-# so under a minute is on the table; D2 places Sonnet 5 low on "chat and
+# sonnet-low (policy 29), from sonnet-medium, for wall-clock: 110 completions
+# at sonnet-medium ran a median 2.7 min; D2 places Sonnet 5 low on "chat and
 # non-coding use cases". One retry lands on today's sonnet-medium.
 # Retro: median against 2.7 min.
 drain-highs = { variant = "sonnet-low" }
-# fable-low (policy 29), from fable-high: the operator chose the lowest tier for
-# wall-clock and more incremental loops. Nothing measures this seat (6 steps,
-# all skipped); D4's knowledge-work class and D5's "at low ... often competitive"
-# are the only ground. A retry walks fable-low -> fable-medium and stays on
-# Fable (policy 30, engine commit ffd117a), one notch below today's fable-high:
-# the max_attempts = 2 cap binds, and the workflow is untouched.
+# fable-low (policy 29), from fable-high, for wall-clock and more incremental
+# loops. Nothing measures this seat (6 steps, all skipped); D4's knowledge-work
+# class and D5's "at low ... often competitive" are the only ground. A retry
+# walks fable-low -> fable-medium and stays on Fable (policy 30, engine commit
+# ffd117a), one notch below today's fable-high; the max_attempts = 2 cap binds.
 # Retro: adr-vote outcomes at this tier.
 adr-author = { variant = "fable-low" }
-# opus-low (policy 29), from opus-high: the operator chose the lowest tier for
-# wall-clock and more incremental loops. 129 completions, all at opus-high
-# (median 10.3 min, p90 16.4; nine reap re-runs at opus-xhigh ran 11.7), so
-# effort barely moved it and nothing measures low; its verdict is a silent
-# detector. One retry lands on opus-high through opus-low's escalate_to.
-# Retro: median against 10.3 min; NO COVERAGE and fail verdict rates.
+# opus-low (policy 29), from opus-high, for wall-clock and more incremental
+# loops. 129 completions, all at opus-high (median 10.3 min, p90 16.4; nine
+# reap re-runs at opus-xhigh ran 11.7); nothing measures low, and its verdict
+# is a silent detector. One retry lands on opus-high through opus-low's
+# escalate_to. Retro: median against 10.3 min; NO COVERAGE and fail verdict rates.
 design-qa = { variant = "opus-low" }
-# opus-low (policy 29), from opus-high: the operator chose the lowest tier for
-# wall-clock and more incremental loops. The disposition workflow has never run,
-# so nothing is measured. Round 2 onward climbs to opus-high through on_round
-# (round_executors), and a retry within max_attempts = 2 lands on opus-high.
+# opus-low (policy 29), from opus-high, for wall-clock and more incremental
+# loops. The disposition workflow has never run, so nothing is measured.
+# Round 2 onward climbs to opus-high through on_round (round_executors), and
+# a retry within max_attempts = 2 lands on opus-high.
 dispose = { variant = "opus-low" }
-# opus-low (policy 29), from opus-high: the operator chose opus-low for
-# wall-clock and more incremental loops, against the measured recommendation
-# of opus-medium (policy 27's tier before the reversal). fix binds more
-# measured waves than any other executor (60 of 223, 19 min mean when it
-# binds); round 1 at opus-medium ran a median 14.5 min over 39 attempts and
-# looped again 16 of 32 times; nothing measures low, D4 has Opus 5 giving up
-# about 8 points at low against 2 at medium, and every extra loop costs a
-# mean 42 lane-minutes. Round 2 onward climbs to opus-high through on_round;
-# a retry lands on opus-high through opus-low's escalate_to. Unlabelled, the
-# rounds climb opus-high, then opus-xhigh (fable-high redirected by the
-# post-walk gate), and stay there at round 4 because fable-high is a chain
-# top; on a security-labelled issue `never` redirects fable-high to opus-xhigh
-# and round 4 reaches opus-max at the ceiling, so the two walks diverge there.
+# opus-low (policy 29), from opus-high, for wall-clock and more incremental
+# loops, against the measured recommendation of opus-medium (policy 27's tier
+# before the reversal). fix binds more measured waves than any other executor
+# (60 of 223, 19 min mean when it binds); round 1 at opus-medium ran a median
+# 14.5 min over 39 attempts and looped again 16 of 32 times; nothing measures
+# low, D4 has Opus 5 giving up about 8 points at low against 2 at medium, and
+# every extra loop costs a mean 42 lane-minutes. Round 2 onward climbs to
+# opus-high through on_round; a retry lands on opus-high through opus-low's
+# escalate_to. Unlabelled, the rounds climb opus-high, then opus-xhigh
+# (fable-high redirected by the post-walk gate), and stay there at round 4
+# because fable-high is a chain top; on a security-labelled issue `never`
+# redirects fable-high to opus-xhigh and round 4 reaches opus-max at the
+# ceiling, so the two walks diverge there.
 # Retro: round-1 median against 14.5 min; looped-again against 16 of 32.
 fix = { variant = "opus-low" }
-# opus-low (policy 29), from opus-high: the operator chose opus-low for
-# wall-clock and more incremental loops, against the measured recommendation
-# of opus-medium (the reversal of policy 27, which landed on reasoning alone;
-# the one genuine first attempt at opus-high since ran 7.6 min in a one-issue
-# run). implement binds 36 of 223 measured waves (19 min mean when it does)
-# and is 18% of a lane's serial minutes. opus-medium served 274 attempts
-# (median 12.5 min, p90 21.6) with 45 of 250 issues (18%) entering a fix
-# loop afterwards; nothing measures low, D4 has Opus 5 giving up about 8
-# points at low against 2 at medium, and a loop costs a mean 42 lane-minutes,
-# so low pays only where its saving exceeds 0.42 min per point of extra loop
-# entry. Judges and verify-ac stay the failure detector. The one retry within
-# max_attempts = 2 lands on opus-high, today's standing tier, through
-# opus-low's escalate_to. Retro: median against 12.5 min; loop entry against 18%.
+# opus-low (policy 29), from opus-high, for wall-clock and more incremental
+# loops, against the measured recommendation of opus-medium (the reversal of
+# policy 27, which landed on reasoning alone; the one genuine first attempt at
+# opus-high since ran 7.6 min in a one-issue run). implement binds 36 of 223
+# measured waves (19 min mean when it does), 18% of a lane's serial minutes.
+# opus-medium served 274 attempts (median 12.5 min, p90 21.6) with 45 of 250
+# issues (18%) entering a fix loop afterwards; nothing measures low, D4 has
+# Opus 5 giving up about 8 points at low against 2 at medium, and a loop costs
+# a mean 42 lane-minutes, so low pays only where its saving exceeds 0.42 min
+# per point of extra loop entry. Judges and verify-ac stay the failure
+# detector. The one retry within max_attempts = 2 lands on opus-high, today's
+# standing tier, through opus-low's escalate_to.
+# Retro: median against 12.5 min; loop entry against 18%.
 implement = { variant = "opus-low" }
-# fable-low (policy 29), from fable-high: the operator chose the lowest tier
-# for wall-clock and more incremental loops. Eight completions across four
-# runs: 2.2 min at fable-max (2), 5.4 at opus-max (4), 2.9 at fable-high (2);
-# D1 names root-cause investigation as Fable's ground and D5 has low calling
-# retrieval less often. A retry walks fable-low -> fable-medium and stays on
-# Fable, one notch below today's tier:
-# the max_attempts = 2 cap binds and the workflow is untouched.
+# fable-low (policy 29), from fable-high, for wall-clock and more incremental
+# loops. Eight completions across four runs: 2.2 min at fable-max (2), 5.4 at
+# opus-max (4), 2.9 at fable-high (2); D1 names root-cause investigation as
+# Fable's ground, D5 has low calling retrieval less often. A retry walks
+# fable-low -> fable-medium and stays on Fable, one notch below today's tier;
+# the max_attempts = 2 cap binds.
 # Retro: report-vote outcomes and investigate minutes at this tier.
 investigate = { variant = "fable-low" }
 # Policy 23 — judge-architecture and judge-testing at opus-medium, down from
 # opus-high; judge-correctness stays at opus-high. Measured on RUN-90 (session
 # 099f7b93, 36 waves, 1594 agent-minutes): the three review seats were 45% of
 # all agent time (judge-testing 281 min at 8.5 min per seat, judge-correctness
-# 215 min, judge-architecture 191 min) against implement's 16%. D4 has Opus 5 at
-# medium giving up about 2 points for half the cost, with re-running failures at
-# the default recovering the pass rate — and the escalation ladder is exactly
+# 215 min, judge-architecture 191 min) against implement's 16%. D4 has Opus 5
+# at medium giving up about 2 points for half the cost, with re-running
+# failures at the default recovering the pass rate — the escalation ladder is
 # that re-run: a judge seat that fails hops opus-medium -> opus-high. D5 keeps
-# this on Opus rather than a smaller model at a higher effort. The correctness
-# lens keeps the default because it is the seat whose misses reach the tree.
-# opus-low (policy 29), from opus-medium: the operator chose the lowest tier
-# for wall-clock. 211 completions at opus-medium ran a median 4.5 min with
-# 1.64 findings per review (0.55 high-severity); nothing measures low on a
-# silent seat. A retry lands on opus-high through opus-low's escalate_to,
-# above today's medium. Retro: findings per review against 1.64.
+# this on Opus rather than a smaller model at a higher effort. The
+# correctness lens keeps the default: it is the seat whose misses reach the tree.
+# opus-low (policy 29), from opus-medium, for wall-clock. 211 completions at
+# opus-medium ran a median 4.5 min with 1.64 findings per review (0.55
+# high-severity); nothing measures low on a silent seat. A retry lands on
+# opus-high through opus-low's escalate_to, above today's medium.
+# Retro: findings per review against 1.64.
 judge-architecture = { variant = "opus-low" }
 # opus-medium (policy 29), from opus-high, on the policy 23 evidence statement
 # rather than the retry argument (a judge's miss is silent and never
 # escalates). Since policy 23 the two lenses it moved emitted as many findings
 # per review at medium as at high (judge-architecture 1.64 vs 1.64,
-# judge-testing 1.91 vs 1.86), with the caveat that every high-tier sample
-# since is a re-run after a reap. This lens is the slowest seat of 30% of
-# three-judge fanouts and the only seat of small-change and docs-only reviews
-# (24 since RUN-90). It is also a voter on security-change's security-vote and
-# spec-doc's tdd-vote and adr-vote, and the engine seats voters at the
-# standing tier, so those panels move with it. A reaped or failed seat still
-# re-runs at opus-high. Retro: findings per review against 0.95 (0.34 high).
+# judge-testing 1.91 vs 1.86), though every high-tier sample since is a re-run
+# after a reap. This lens is the slowest seat of 30% of three-judge fanouts
+# and the only seat of small-change and docs-only reviews (24 since RUN-90).
+# It also votes on security-change's security-vote and spec-doc's tdd-vote
+# and adr-vote; the engine seats voters at the standing tier, so those panels
+# move with it. A reaped or failed seat still re-runs at opus-high.
+# Retro: findings per review against 0.95 (0.34 high).
 judge-correctness = { variant = "opus-medium" }
-# opus-low (policy 29), from opus-high: the operator chose the lowest tier for
-# wall-clock and more incremental loops. 208 completions, all at opus-high
-# (median 6.5 min, 1.13 findings per review, 0.46 high-severity; five reap
-# re-runs at opus-xhigh ran 8.8), so nothing measures low and a miss is silent.
-# One retry lands on opus-high. Retro: findings per review against 1.13.
+# opus-low (policy 29), from opus-high, for wall-clock and more incremental
+# loops. 208 completions, all at opus-high (median 6.5 min, 1.13 findings per
+# review, 0.46 high-severity; five reap re-runs at opus-xhigh ran 8.8);
+# nothing measures low and a miss is silent. One retry lands on opus-high.
+# Retro: findings per review against 1.13.
 judge-design = { variant = "opus-low" }
-# opus-low (policy 29), from opus-high: the operator chose the lowest tier for
-# wall-clock and more incremental loops. 168 completions, all at opus-high
-# (median 7.8 min, 1.9 findings per review), on security-change's fanout,
-# spec-doc's review and the security-vote panel; nothing measures low here,
-# and a miss on this seat is a silent security miss that never escalates.
-# `never` and the [security] ceiling bound the walk, not the standing tier: a
-# retry lands on opus-high, then fable-high is forbidden and redirects to
-# opus-xhigh. Retro: findings per review against 1.9; security-vote rejects.
+# opus-low (policy 29), from opus-high, for wall-clock and more incremental
+# loops. 168 completions, all at opus-high (median 7.8 min, 1.9 findings per
+# review), on security-change's fanout, spec-doc's review and the
+# security-vote panel; nothing measures low here, and a miss on this seat is
+# a silent security miss that never escalates. `never` and the [security]
+# ceiling bound the walk, not the standing tier: a retry lands on opus-high,
+# then fable-high is forbidden and redirects to opus-xhigh.
+# Retro: findings per review against 1.9; security-vote rejects.
 judge-security = { variant = "opus-low", never = ["fable"], reason = "security-classifier-reroute" }
 judge-simplicity = { variant = "opus-medium" }
-# opus-low (policy 29), from opus-medium: the operator chose the lowest tier
-# for wall-clock. judge-testing is the slowest seat of 49% of three-judge
-# fanouts; 204 completions at opus-medium ran a median 7.5 min with 1.91
-# findings per review (0.90 high-severity); nothing measures low on a silent
-# seat. A retry lands on opus-high through opus-low's escalate_to, above
-# today's medium. Retro: fanout median against 7.5 min; findings against 1.91.
+# opus-low (policy 29), from opus-medium, for wall-clock. judge-testing is the
+# slowest seat of 49% of three-judge fanouts; 204 completions at opus-medium
+# ran a median 7.5 min with 1.91 findings per review (0.90 high-severity);
+# nothing measures low on a silent seat. A retry lands on opus-high through
+# opus-low's escalate_to, above today's medium.
+# Retro: fanout median against 7.5 min; findings against 1.91.
 judge-testing = { variant = "opus-low" }
-# fable-low (policy 29), from fable-medium: the operator chose the lowest tier
-# for wall-clock and more incremental loops. Never run (6 steps skipped); D4's
-# knowledge-work class and D5's "at low ... often competitive" are the only
-# ground. A retry walks to fable-medium and stays on Fable (policy 30, engine
-# commit ffd117a), reaching today's tier within the max_attempts = 2 cap.
+# fable-low (policy 29), from fable-medium, for wall-clock. Never run (6
+# steps skipped); D4's knowledge-work class and D5's "at low ... often
+# competitive" are the only ground. A retry walks to fable-medium and stays
+# on Fable (policy 30, engine commit ffd117a), reaching today's tier within
+# the max_attempts = 2 cap.
 # Retro: prd-vote outcomes at this tier.
 prd-author = { variant = "fable-low" }
-# fable-low (policy 29), from fable-high: the operator chose the lowest tier
-# for wall-clock and more incremental loops; matches investigate. Four
-# completions (as investigation.toml's former `report` step) ran a mean 3.8
-# min. A retry walks to fable-medium and stays on Fable (policy 30), one
-# notch below today's fable-high. Retro: report-vote outcomes.
+# fable-low (policy 29), from fable-high, for wall-clock and more incremental
+# loops; matches investigate. Four completions (as investigation.toml's
+# former `report` step) ran a mean 3.8 min. A retry walks to fable-medium and
+# stays on Fable (policy 30), one notch below today's fable-high.
+# Retro: report-vote outcomes.
 report = { variant = "fable-low" }
-# fable-low (policy 29), from fable-medium: the operator chose to override the
-# documented D5 retrieval floor (at low Fable "calls search and retrieval tools
-# less often", so medium was the floor for a seat whose whole job is
-# retrieval) for wall-clock and more incremental loops. The step has never
-# completed (7 steps, all skipped), so nothing measures either tier.
-# A retry walks to fable-medium and stays on Fable.
+# fable-low (policy 29), from fable-medium, for wall-clock and more
+# incremental loops, overriding the documented D5 retrieval floor (at low
+# Fable "calls search and retrieval tools less often", so medium was the
+# floor for a seat whose whole job is retrieval). The step has never
+# completed (7 steps, all skipped), so nothing measures either tier. A retry
+# walks to fable-medium and stays on Fable.
 # Retro: the check that would show retrieval dropping is the source count and
 # external-source citations per research-notes artifact at fable-low against
 # the first notes recorded at any higher tier; a drop restores the floor.
 research = { variant = "fable-low" }
-# fable-low (policy 29), from fable-high: the operator chose the lowest tier
-# for wall-clock and more incremental loops; matches investigate. The step has
-# never run. A retry walks to fable-medium and stays on Fable (policy 30),
-# one notch below today's fable-high.
+# fable-low (policy 29), from fable-high, for wall-clock and more incremental
+# loops; matches investigate. The step has never run. A retry walks to
+# fable-medium and stays on Fable (policy 30), one notch below today's fable-high.
 revise-investigation = { variant = "fable-low" }
-# opus-low (policy 29), from opus-high, all seven: the operator chose the
-# lowest tier for wall-clock and more incremental loops. No run has expanded
-# spec-project's author fanout, so nothing is measured. One retry within
-# max_attempts = 2 lands on opus-high through opus-low's escalate_to; the
-# security axis keeps `never`, and its walk continues opus-xhigh, opus-max.
+# opus-low (policy 29), from opus-high, all seven, for wall-clock and more
+# incremental loops. No run has expanded spec-project's author fanout, so
+# nothing is measured. One retry within max_attempts = 2 lands on opus-high
+# through opus-low's escalate_to; the security axis keeps `never`, and its
+# walk continues opus-xhigh, opus-max.
 spec-author-architecture = { variant = "opus-low" }
 spec-author-code-quality = { variant = "opus-low" }
 spec-author-operations = { variant = "opus-low" }
@@ -303,33 +297,32 @@ spec-author-performance = { variant = "opus-low" }
 spec-author-review-strategy = { variant = "opus-low" }
 spec-author-security = { variant = "opus-low", never = ["fable"], reason = "security-classifier-reroute" }
 spec-author-testing = { variant = "opus-low" }
-# sonnet-low (policy 29), from sonnet-medium: the operator chose the lowest
-# tier for wall-clock. 221 completions at sonnet-medium ran a median 2.7 min
-# (p90 5.6), so under a minute is on the table; D2 places Sonnet 5 low on
+# sonnet-low (policy 29), from sonnet-medium, for wall-clock. 221 completions
+# at sonnet-medium ran a median 2.7 min (p90 5.6); D2 places Sonnet 5 low on
 # "chat and non-coding use cases". One retry lands on today's sonnet-medium.
 # Retro: median against 2.7 min; reconcile aggregate outcomes.
 synthesize-findings = { variant = "sonnet-low" }
-# fable-low (policy 29), from fable-high: the operator chose the lowest tier
-# for wall-clock and more incremental loops. Never run (6 steps skipped); the
-# same ground and the same retry walk as adr-author (fable-medium, on Fable;
-# the cap binds). Retro: tdd-vote outcomes.
+# fable-low (policy 29), from fable-high, for wall-clock and more incremental
+# loops. Never run (6 steps skipped); the same ground and retry walk as
+# adr-author (fable-medium, on Fable; the cap binds).
+# Retro: tdd-vote outcomes.
 tdd-author = { variant = "fable-low" }
-# opus-low (policy 29), from opus-high: the operator chose the lowest tier for
-# wall-clock and more incremental loops. Four completions, all at opus-xhigh
-# (17.6 min mean, one run), none at high or below, so nothing measures the
-# move. `never` and the ceiling bound the walk: a retry lands on opus-high,
-# then fable-high is forbidden and redirects to opus-xhigh.
+# opus-low (policy 29), from opus-high, for wall-clock and more incremental
+# loops. Four completions, all at opus-xhigh (17.6 min mean, one run), none
+# at high or below, so nothing measures the move. `never` and the ceiling
+# bound the walk: a retry lands on opus-high, then fable-high is forbidden
+# and redirects to opus-xhigh.
 # Retro: tdd-vote outcomes for the security TDD at this tier.
 tdd-author-security = { variant = "opus-low", never = ["fable"], reason = "security-classifier-reroute" }
-# opus-low (policy 29), from opus-high (policy 20 had moved it from opus-xhigh):
-# the operator chose the lowest tier for wall-clock and more incremental
-# loops. The threat model is the security track's longest serial stage and
-# binds 11 measured security waves; 139 completions ran a median 7.8 min at
-# opus-high (77 recorded) and 7.9 at opus-xhigh (24, an earlier era), so
-# effort barely moved it, the expected saving is small, and nothing measures
-# low; the security-vote panel is its detector. `never` and the ceiling bound
-# the walk: a retry lands on opus-high, then fable-high is forbidden and
-# redirects to opus-xhigh, then opus-max at the ceiling.
+# opus-low (policy 29), from opus-high (policy 20 had moved it from
+# opus-xhigh), for wall-clock and more incremental loops. The threat model is
+# the security track's longest serial stage and binds 11 measured security
+# waves; 139 completions ran a median 7.8 min at opus-high (77 recorded) and
+# 7.9 at opus-xhigh (24, an earlier era); effort barely moved it, the
+# expected saving is small, and nothing measures low; the security-vote
+# panel is its detector. `never` and the ceiling bound the walk: a retry
+# lands on opus-high, then fable-high is forbidden and redirects to
+# opus-xhigh, then opus-max at the ceiling.
 # Retro: median against 7.8 min; security-vote rejects on the threat model.
 threat-model = { variant = "opus-low", never = ["fable"], reason = "security-classifier-reroute" }
 # Policy 23 — tribunal-correctness at opus-high, down from fable-high.
@@ -338,21 +331,21 @@ threat-model = { variant = "opus-low", never = ["fable"], reason = "security-cla
 # tribunal-correctness alone since) on every verify that reports an AC
 # unverifiable, which on a repo whose ac-commands gate is a stub is nearly
 # every issue (measured 20 of 23 under the old name), so this seat is a
-# per-issue pipeline step rather than an occasional conversational gate. D1's
-# ground for Fable — architecture decisions and precedent — is the
-# conversational-gate case; verify-ac-vote weighs an AC report against a diff,
-# the review-executor work judge-correctness already does at opus-high. A
-# failed seat still escalates opus-high -> fable-high.
+# per-issue pipeline step, not an occasional conversational gate. D1's ground
+# for Fable — architecture decisions and precedent — is the
+# conversational-gate case; verify-ac-vote weighs an AC report against a
+# diff, the review-executor work judge-correctness already does at
+# opus-high. A failed seat still escalates opus-high -> fable-high.
 #
 # tribunal-architecture names no change-track step at all: its only current
 # seats are spec-project's accept-vote and spec-doc's ux-spec-vote/prd-vote,
 # doc-authoring gates alongside tribunal-design. See tribunal-design's own
 # note below for the open question this leaves.
-# opus-low (policy 29), from opus-high: the operator chose the lowest tier for
-# wall-clock. 328 casts across six tiers with a reject rate that did not track
-# the tier (fable-high 4 of 32, fable-xhigh 3 of 62, fable-max 4 of 56,
-# opus-high 12 of 152, opus-max 3 of 18, opus-xhigh 0 of 8); nothing measures
-# low. A vote seat never walks. Retro: reject rate against these.
+# opus-low (policy 29), from opus-high, for wall-clock. 328 casts across six
+# tiers with a reject rate that did not track the tier (fable-high 4 of 32,
+# fable-xhigh 3 of 62, fable-max 4 of 56, opus-high 12 of 152, opus-max 3 of
+# 18, opus-xhigh 0 of 8); nothing measures low. A vote seat never walks.
+# Retro: reject rate against these.
 tribunal-architecture = { variant = "opus-low" }
 # opus-medium (policy 29), from opus-high, on the same D4 knowledge-work
 # ground as judge-correctness. Across every tier this seat has served
@@ -363,58 +356,54 @@ tribunal-architecture = { variant = "opus-low" }
 # tier it always runs at; the [security] ceiling and never-list still apply
 # on a security-labelled row. Retro: reject rate against 6%; panel against 5.7 min.
 tribunal-correctness = { variant = "opus-medium" }
-# fable-low (policy 29), from fable-high: the operator chose the lowest tier
-# for wall-clock. This seat has never cast a vote (ux-spec-vote never reached),
-# so nothing is measured. A vote seat never walks; on a security-labelled row
-# `never` sends it through [escalation.fallback] to opus-medium.
+# fable-low (policy 29), from fable-high, for wall-clock. This seat has never
+# cast a vote (ux-spec-vote never reached), so nothing is measured. A vote
+# seat never walks; on a security-labelled row `never` sends it through
+# [escalation.fallback] to opus-medium.
 tribunal-design = { variant = "fable-low" }
-# opus-low (policy 29), from opus-high: the operator chose the lowest tier for
-# wall-clock. 328 casts with a reject rate that did not track the tier
-# (opus-high 11 of 114, opus-xhigh 9 of 80, opus-max 15 of 134); nothing
-# measures low, and a miss on this seat is a silent security miss. A vote
-# seat never walks; `never` and the ceiling still apply.
+# opus-low (policy 29), from opus-high, for wall-clock. 328 casts with a
+# reject rate that did not track the tier (opus-high 11 of 114, opus-xhigh 9
+# of 80, opus-max 15 of 134); nothing measures low, and a miss on this seat
+# is a silent security miss. A vote seat never walks; `never` and the
+# ceiling still apply.
 # Retro: reject rate against these.
 tribunal-security = { variant = "opus-low", never = ["fable"], reason = "security-classifier-reroute" }
-# fable-low (policy 29), from fable-medium: the operator chose the lowest tier
-# for wall-clock and more incremental loops. Two completions, both at
-# opus-xhigh in the earliest runs (19.7 min median), none on Fable; the same
-# ground and retry walk as prd-author. Retro: ux-spec-vote outcomes.
+# fable-low (policy 29), from fable-medium, for wall-clock and more
+# incremental loops. Two completions, both at opus-xhigh in the earliest
+# runs (19.7 min median), none on Fable; the same ground and retry walk as
+# prd-author. Retro: ux-spec-vote outcomes.
 ux-spec-author = { variant = "fable-low" }
-# opus-medium (policy 29), from opus-high: the operator chose opus-medium for
-# wall-clock and more incremental loops, against the measured recommendation
-# to keep opus-high. 206 completions at opus-high ran a median 7.1 min (p90
-# 10.9) and 18 reap re-runs at opus-xhigh 7.3, so effort barely moved it; it
-# flags an unmet or unverifiable AC on 58% of its reports, and a seat that
-# marks more ACs unverifiable adds a 5.7-minute verify-ac-vote to the lane
-# tail, which is the risk accepted here. A retry lands on opus-high.
+# opus-medium (policy 29), from opus-high, for wall-clock and more
+# incremental loops, against the measured recommendation to keep opus-high.
+# 206 completions at opus-high ran a median 7.1 min (p90 10.9) and 18 reap
+# re-runs at opus-xhigh 7.3; effort barely moved it. It flags an unmet or
+# unverifiable AC on 58% of its reports, and a seat that marks more ACs
+# unverifiable adds a 5.7-minute verify-ac-vote to the lane tail, the risk
+# accepted here. A retry lands on opus-high.
 # Retro: median against 7.1 min; unverifiable share against 114 of 619 ACs.
 verify-ac = { variant = "opus-medium" }
 
 [security]
 ceiling = "opus-max"
 # Every label here also ROUTES — it is not a model-only list. Until
-# security-change@26 these three labels model-routed while only two of them
-# appeared in any workflow's [match].labels_any, so an issue labelled just
-# `security` drew the ceiling and the `never` below but ran the ordinary
-# standard-change pipeline, with no threat model, no security-vote and no
-# abuse-case gate, and no check could see it: `run activate --dry-run` refuses
-# zero matches and refuses several, but an exactly-one-WRONG match is
-# structurally undetectable there. The split was reconciled by making
-# `security` route (security-change@26 [match].labels_any; excluded in
-# standard-change@27, ui-change@21, disposition@3) rather than by deleting it
-# here — deleting it would have removed the divergence without closing the
-# hole, since an issue labelled only `security` would still bind the baseline
-# silently, and would have lost the Opus floor as well. So: a label added to
-# this list must also be added to security-change's `labels_any` and to the
-# `unless_labels` of every workflow that excludes its siblings, or it re-opens
-# the same trap.
+# security-change@26 these three labels model-routed while only two appeared
+# in any workflow's [match].labels_any, so an issue labelled just `security`
+# drew the ceiling and the `never` below but ran the ordinary standard-change
+# pipeline, with no threat model, no security-vote, no abuse-case gate; no
+# check could see it, since `run activate --dry-run` refuses zero matches and
+# several matches but an exactly-one-WRONG match is structurally
+# undetectable there. Fix: `security` now routes too (security-change@26
+# [match].labels_any; excluded in standard-change@27, ui-change@21,
+# disposition@3). A label added to this list must also be added to
+# security-change's `labels_any` and to the `unless_labels` of every workflow
+# that excludes its siblings, or it re-opens the same trap.
 labels = ["security-change", "security-load-bearing", "security"]
-# security-load-bearing labeling test: apply the label at filing
-# time to any issue that changes, relocates, or test-gates one of these
-# control classes. "Test-gates" means acceptance criteria whose deletion or
-# mutation a test would catch. Both changing a control's logic and moving or
-# deleting its existing implementation qualify — a botched relocation can
-# silently drop a chokepoint without changing any allow/deny outcome.
+# security-load-bearing labeling test: apply the label at filing time to any
+# issue that changes, relocates, or test-gates one of these control classes.
+# "Test-gates" means acceptance criteria whose deletion or mutation a test
+# would catch. Both changing a control's logic and moving or deleting its
+# existing implementation qualify — a botched relocation can silently drop a
+# chokepoint without changing any allow/deny outcome.
 #   (a) Authentication — identity verification (OIDC/JWKS, issuer validation,
 #       interceptor construction, credential validation)
 #   (b) Authorization — access-control decisions (namespace/principal
@@ -445,63 +434,63 @@ reason = "Fable's safety classifiers cover more categories than Opus 5's cyber-o
 
 [escalation]
 # The on_failure walk is keyed on the row's claim count. The engine counts a
-# claim whether it ended in a recorded failure or in a lease reap (a session
+# claim whether it ended in a recorded failure or a lease reap (a session
 # kill, a dead relay, a lapsed lease), and the resolver walks one escalate_to
-# hop per prior claim, so a step whose only prior claim was reaped re-runs one
-# tier up — e.g. an opus-high judge on a security-labelled issue walks to
+# hop per prior claim, so a step whose only prior claim was reaped re-runs
+# one tier up — e.g. an opus-high judge on a security-labelled issue walks to
 # fable-high, is redirected by `never`, and lands on [escalation.fallback]
-# opus-xhigh — on a row that never failed. Measured on this store across a
-# window of seven runs in three projects: 79 re-runs of reaped claims, and not
-# one step anywhere in the window with a recorded failure behind its second
-# attempt. 52 of the 79 were served a tier up and 27 were not, on the same
-# claim count; verify-ac and the four review judges made up 62 of the 79.
-# Attempt-matched output medians show the higher tier produced no more work
-# than the first attempt (0.4x to 1.5x per executor), so the hop bought a
-# higher price per token for the same output.
+# opus-xhigh, on a row that never failed. Measured across a window of seven
+# runs in three projects: 79 re-runs of reaped claims, none with a recorded
+# failure behind its second attempt. 52 of the 79 were served a tier up and
+# 27 were not, on the same claim count; verify-ac and the four review judges
+# made up 62 of the 79. Attempt-matched output medians show the higher tier
+# produced no more work than the first attempt (0.4x to 1.5x per executor),
+# so the hop bought a higher price per token for the same output.
 #
 # The row now carries the distinction the walk needs: `failed_attempts` and
 # `reaped_claims` count how each prior claim ended, and `prior_attempt_end`
 # names how the most recent one ended ("reaped" | "failed"), on every
-# next/dispatch-open/step-show row; the installed engine has this schema, and
-# 67 of the 79 hops above ran under it. The engine's policy resolver, which
-# ports the wave's walk, still reads the bare claim count and ignores those
-# fields. Teaching it to hop on failed attempts only is an engine change,
-# filed against the engine, not a value this file can express.
+# next/dispatch-open/step-show row; the installed engine has this schema,
+# and 67 of the 79 hops above ran under it. The engine's policy resolver,
+# which ports the wave's walk, still reads the bare claim count and ignores
+# those fields. Teaching it to hop on failed attempts only is an engine
+# change, filed against the engine, not a value this file can express.
 #
-# Docket-retro ruling: the shipped default stays `one-hop`. The waste sits in
-# the resolver's arithmetic, not in the default; lowering the default would
-# stop genuine failures from escalating to buy back a cost the arithmetic fix
-# removes outright. Until the engine change lands, an acknowledged reap that
-# is re-dispatched still re-runs one tier up. Acknowledging it (the
+# Docket-retro ruling: the shipped default stays `one-hop`. The waste sits
+# in the resolver's arithmetic, not the default; lowering the default would
+# stop genuine failures from escalating to buy back a cost the arithmetic
+# fix removes outright. Until the engine change lands, an acknowledged reap
+# that is re-dispatched still re-runs one tier up. Acknowledging it (the
 # docket-run ack-reap gate) does not currently surface that cost to the
-# panel -- the gate's required evidence is the holder confirmed gone and the
+# panel: the gate's required evidence is the holder confirmed gone and the
 # error verbatim, not the tier hop.
 on_failure = "one-hop"
 # Round-based escalation. A fix-loop round is a FRESH step id —
 # `docket step resolve --as fix-round` mints fix@N+1 at attempt 0 — so
-# on_failure's attempt-keyed walk never sees a loop's failure history and the
-# fixer sat at sonnet-medium for all nine rounds of a past run before this gap
-# was caught. The engine
-# encodes the round ordinal in the instance name (`fix@N`, first entry minted
-# at @1); executors listed in round_executors count each round AFTER their
-# first as one escalate_to hop, composed with any attempt hops and bounded by
-# the same chain end / [security].ceiling. Only listed executors participate:
-# the per-round re-runs that share the ordinal (review@N judges, synthesize@N,
-# verify@N) are deliberately NOT listed and keep their standing variants.
+# on_failure's attempt-keyed walk never sees a loop's failure history; the
+# fixer sat at sonnet-medium for all nine rounds of a past run before this
+# gap was caught. The engine encodes the round ordinal in the instance name
+# (`fix@N`, first entry minted at @1); executors listed in round_executors
+# count each round after their first as one escalate_to hop, composed with
+# any attempt hops and bounded by the same chain end / [security].ceiling.
+# Only listed executors participate: the per-round re-runs that share the
+# ordinal (review@N judges, synthesize@N, verify@N) are deliberately not
+# listed and keep their standing variants.
 on_round = "one-hop"
 # Docket-retro: DECLINED — `fix` does not start one hop up on
-# security-labelled issues. Measured across 19 fix-loop runs (15 security-flavored:
-# RUN-25/29/30/34/35/36/38/48/49/50/51/52/58/59/60; 4 contrast: RUN-32/53/56/61):
-# round-1 fixers that already served opus-medium reproduced the just-closed-class
-# recurrence docket-retro attributes to the base tier in every group that could observe
-# one (e.g. RUN-60's own fix@2, RUN-61's own "re-introducing the class this same
-# commit deleted twice"), while sonnet-medium round-1 fixers converged in one round
-# on several security issues. The recurrence tracks the
-# fix diff's size and spread, not the tier, and appears at the same rate on
-# unlabelled work. The remedy landed instead as the sibling-sweep and
-# claim-discipline obligations in contracts/fix.md@4. Do not re-open without runs
-# where a tier-differentiated comparison is observable — today the ledger prices no
-# tier (expected_cost is variant-blind) and pairs requested/resolved only per step.
+# security-labelled issues. Measured across 19 fix-loop runs (15
+# security-flavored: RUN-25/29/30/34/35/36/38/48/49/50/51/52/58/59/60; 4
+# contrast: RUN-32/53/56/61): round-1 fixers already at opus-medium
+# reproduced the just-closed-class recurrence docket-retro attributes to the
+# base tier in every group that could observe one (e.g. RUN-60's own fix@2,
+# RUN-61's own "re-introducing the class this same commit deleted twice"),
+# while sonnet-medium round-1 fixers converged in one round on several
+# security issues. The recurrence tracks the fix diff's size and spread, not
+# the tier, and appears at the same rate on unlabelled work. The remedy
+# landed instead as the sibling-sweep and claim-discipline obligations in
+# contracts/fix.md@4. Do not re-open without runs where a tier-differentiated
+# comparison is observable — today the ledger prices no tier (expected_cost
+# is variant-blind) and pairs requested/resolved only per step.
 round_executors = ["fix", "dispose"]
 fable_gates = [
   "failed-top-opus-round",
@@ -512,9 +501,9 @@ fable_gates = [
 [escalation.fallback]
 fable-high = "opus-xhigh"
 # fable-low (policy 29): the map's one-notch-up pattern, and required — a
-# fable-low seat on a security-labelled row resolves through it (tribunal-design
-# on a security-labelled spec-doc issue), and the engine refuses a policy that
-# leaves such a seat no permitted model.
+# fable-low seat on a security-labelled row resolves through it
+# (tribunal-design on a security-labelled spec-doc issue), and the engine
+# refuses a policy that leaves such a seat no permitted model.
 fable-low = "opus-medium"
 fable-max = "opus-max"
 fable-medium = "opus-high"

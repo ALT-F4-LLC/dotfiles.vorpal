@@ -1,6 +1,6 @@
 ---
 node: implement
-version: 13
+version: 14
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
@@ -52,15 +52,16 @@ Determine each AC's baseline status and how to verify it:
   written or the necessary evidence is unavailable, use Stuck. Disclosure alone
   does not establish satisfaction.
 
-If every AC and required deliverable is already satisfied, take the verification
-path: verify the existing candidate and perform the same required completion
-checks. Emit an already-satisfied change-summary, identify verified pre-existing
-fix commits separately from the candidate SHA, and state any unavailable historical
-attribution. Do not invent a pre-fail, recreate the fix, or create an empty commit
-merely to show activity. Use the brief's hand-back procedure for the existing
-candidate; this outcome still goes through the workflow's normal downstream
-review and verification steps. If warranted regression coverage changes the
-tree, commit and report those changes normally.
+If every AC and required deliverable is already satisfied, take the
+verification path: verify the existing candidate and perform the same
+required completion checks. Emit an already-satisfied change-summary, identify
+verified pre-existing fix commits separately from the candidate SHA, and state
+any unavailable historical attribution. Do not invent a pre-fail, recreate the
+fix, or create an empty commit merely to show activity. Use the brief's
+hand-back procedure for the existing candidate; this outcome still goes
+through the workflow's normal downstream review and verification steps.
+If warranted regression coverage changes the tree, commit and report those
+changes normally.
 
 Otherwise, run the design search before writing production code: weigh
 candidates under design-search, including one that is not the existing path
@@ -105,14 +106,14 @@ Include:
 - **Decisions:** material choices the issue left open, the design-search
   record (candidates weighed, the pick, why it won, or the one-line reason the
   search did not apply), and deviations reportable under the included fragments.
-- **Denials:** every refused command and any re-issue, in both the step's returned
-  response and this artifact, under completion-gates; write none when there were
-  none. Preserve reasons and outcomes with required redactions.
+- **Denials:** every refused command and any re-issue, in both the step's
+  returned response and this artifact, under completion-gates, with reasons
+  and outcomes and required redactions; write none when there were none.
 - **Known limits:** evidence boundaries and matters reviewers should probe.
 
-Do not restate the diff; the engine snapshots it. Record the artifact with
-`step record` using the brief's procedure, and verify that recording succeeded
-before claiming the step was recorded.
+Do not restate the diff. Record the artifact with `step record` using the
+brief's procedure, and verify that recording succeeded before claiming the
+step was recorded.
 
 # Stuck
 Missing input, contradictory ACs, insufficient scope, or unavailable required
@@ -121,15 +122,16 @@ or authority, and smallest recommended next action. Stop dependent work and
 complete independent authorized work where possible. Honor any earlier whole-step
 stop required by the executor or included fragments.
 
-For an otherwise recoverable environment failure, allow at most two attempts for
-the same blocker. A second attempt needs a supported, authorized recovery action;
-repeating a command without new grounds is not recovery. Permission denials and
-toolchain-specific stop rules take precedence over this limit.
+For an otherwise recoverable environment failure, allow at most two attempts
+for the same blocker. A second attempt needs a supported, authorized recovery
+action; repeating a command without new grounds is not recovery. Permission
+denials and toolchain-specific stop rules take precedence over this limit.
 
-Record the gap with `step complete` through the brief's gap procedure, including
-the state of partial edits or commits and the required denial report. This records
-a handled gap, not satisfied ACs or permission to integrate incomplete work. Use
-`step fail` only for an unsuccessful execution that redispatch might redeem; it
-carries `--note` only, with no artifact. If recording is unavailable or fails,
-return the gap or failure and observed error without claiming it was recorded.
-A workaround that hides a gap is a defect.
+Record the gap with `step complete` through the brief's gap procedure,
+including the state of partial edits or commits and the required denial
+report. This records a handled gap, not satisfied ACs or permission to
+integrate incomplete work. Use `step fail` only for an unsuccessful execution
+that redispatch might redeem; it carries `--note` only, with no artifact. If
+recording is unavailable or fails, return the gap or failure and observed
+error without claiming it was recorded. A workaround that hides a gap is a
+defect.

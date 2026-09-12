@@ -47,11 +47,12 @@ observed schedule to discover its state.
 
 `Workflow` is a documented Claude Code feature, while `wave.js`, the census,
 and Docket are local integrations. Read the installed `workflow-authoring`
-reference before launching a local workflow. Pass the installed absolute
-`scriptPath` and literal arguments. Do not launch an unactivated source script
-or copy a refused script into an allowed directory. A workflow's null result
-means no usable result; it does not prove no agent ran or no side effect occurred.
-[Workflows](https://code.claude.com/docs/en/workflows).
+reference before launching a local workflow, and launch only the installed
+absolute `scriptPath` with literal arguments (never an unactivated source
+script or a refused script copied into an allowed directory; see
+[evidence](evidence.md#usage-and-census-checks)). A workflow's null result
+means no usable result; it does not prove no agent ran or no side effect
+occurred. [Workflows](https://code.claude.com/docs/en/workflows).
 
 ## Docket access gate
 
@@ -62,12 +63,12 @@ explicit `DOCKET_PATH`, then a repository-local store found by walking upward,
 then the global store. Verify this for the installed build; a matching issue ID
 in a different store is not the same issue.
 
-**The inspected Docket source does not support the original write-free claim.**
-Its shared startup opens the database and migrates it before command handlers;
-the connection also configures WAL. A handler with no update statements can
-still write through startup or project resolution. `verify-pins` is absent from
-the inspected read-verb registration exemption; this skill must not invoke that
-path against the live store under its observation boundary.
+No Docket verb is write-free against the live store: shared startup opens the
+database and migrates it before command handlers run, and the connection
+configures WAL, so a handler with no update statements can still write through
+startup or project resolution. `verify-pins` in particular is absent from the
+inspected read-verb registration exemption; never invoke it against the live
+store under this observation boundary.
 
 Use a supported, verified read-only observer connection if one becomes
 available. Otherwise use the observed session's already-recorded results and
@@ -75,24 +76,24 @@ existing consistent exports. Report their time and freshness. Do not substitute
 an older binary, change the live store path, initialize a project, reap a lease,
 or migrate a database merely to make observation work.
 
-`immutable=1` tells SQLite that a file cannot change; it is not an escape hatch
-for a changing live database. Use it only for a known consistent immutable
-snapshot. A main-file view can omit committed WAL records, so absence from it
-does not prove absence from the run. A casual separate copy of database and WAL
-files is not a consistent snapshot. Read-only WAL access has prerequisites;
-do not force a checkpoint or create sidecars to satisfy them during observation.
+Use `immutable=1` only for a known consistent immutable snapshot, never for a
+changing live database. A main-file view can omit committed WAL records, so
+absence from it does not prove absence from the run. A casual separate copy of
+database and WAL files is not a consistent snapshot. Read-only WAL access has
+prerequisites; do not force a checkpoint or create sidecars to satisfy them
+during observation.
 [SQLite URI semantics](https://www.sqlite.org/uri.html),
 [SQLite WAL](https://www.sqlite.org/wal.html).
 
 ## Observation operations
 
 These names describe intended read operations, not an unconditional allowlist:
-`run status`, `run report`, `run verify-pins` (only through a verified
-read-only path, never the live store), `events list`, `issue list|show`,
-`project list`, `config get`, `trust list`, `workflow list|show|lint`,
-`step show|context|render|artifacts|artifact`, and a verified non-repairing
-`doctor` check. Reassess after a binary change. `next`, `dispatch`, claim/record,
-reap, activation, and configuration writes stay outside the observer's role.
+`run status`, `run report`, `run verify-pins` (per the access gate above),
+`events list`, `issue list|show`, `project list`, `config get`, `trust list`,
+`workflow list|show|lint`, `step show|context|render|artifacts|artifact`, and a
+verified non-repairing `doctor` check. Reassess after a binary change. `next`,
+`dispatch`, claim/record, reap, activation, and configuration writes stay
+outside the observer's role.
 
 Anchor project-scoped queries to a verified checkout. An empty listing from an
 unregistered or wrong directory is not evidence of an empty queue. A project

@@ -1,7 +1,9 @@
 [pipeline]
-description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step, review and reconcile the findings, drain any open highs, and accept by tribunal vote; a rejection re-enters the bounded revise loop at spec authoring and runs review again."
+description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step. Review and reconcile the findings, drain any open highs, and accept by tribunal vote. A rejection re-enters the bounded revise loop at spec authoring and runs review again."
 name = "spec-project"
-version = 23  # 23: `lease_ttl` added to every `[limits]` entry, matched to
+version = 24  # 24: prose-only rewrite for concision; no topology, routing, or
+              #   limit change.
+              # 23: `lease_ttl` added to every `[limits]` entry, matched to
               #   that entry's `max_step_duration`, so a lease lasts exactly
               #   as long as the step may run. A long wave no longer outlives
               #   the write-class lease and no longer draws an ack-reap panel;

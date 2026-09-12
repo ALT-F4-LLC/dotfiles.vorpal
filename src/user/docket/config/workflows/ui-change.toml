@@ -1,6 +1,8 @@
 [pipeline]
 name = "ui-change"
-version = 30  # 30: `lease_ttl` added to every `[limits]` entry, matched to
+version = 31  # 31: prose-only rewrite for concision; no topology, routing, or
+              #   limit change.
+              # 30: `lease_ttl` added to every `[limits]` entry, matched to
               #   that entry's `max_step_duration`, so a lease lasts exactly
               #   as long as the step may run. A long wave no longer outlives
               #   the write-class lease and no longer draws an ack-reap panel;
@@ -124,7 +126,7 @@ version = 30  # 30: `lease_ttl` added to every `[limits]` entry, matched to
               #   findings-cluster@2, the same scrub applied to those two
               #   schemas' field descriptions. The engine refuses an in-place
               #   edit to a frozen registration either way.
-description = "UI change bound to an accepted ux-spec (cited in the issue body — no engine input form reaches a cross-issue doc), design-judged and design-QA'd before AC verification so an AC that reads the design-QA findings can resolve met/unmet instead of unverifiable; the conductor integrates commits, the operator publishes."
+description = "UI change bound to an accepted ux-spec cited in the issue body. Design-judged and design-QA'd before AC verification, so AC verification can read the design-QA findings and resolve met/unmet instead of unverifiable. The conductor integrates commits; the operator publishes."
 
 [match]
 labels_any = ["ui"]

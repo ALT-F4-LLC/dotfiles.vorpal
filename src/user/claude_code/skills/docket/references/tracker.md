@@ -18,11 +18,10 @@ Find the relevant heading before reading a large section:
 
 ## Workflow: Issue Creation & Editing
 
-Create an issue (only `--title` is required in JSON mode). In this example the
-description arrives on stdin with `-d -`, through a QUOTED heredoc
-delimiter, so the shell cannot run anything embedded in the text (see
-[prose transport](transport.md#free-text-flags-quote-so-the-shell-cannot-run-your-text); a double-quoted `echo "…" |` pipe does
-NOT protect it):
+Create an issue (only `--title` is required in JSON mode). Here the
+description arrives on stdin with `-d -`, through a quoted heredoc delimiter,
+so the shell cannot run anything embedded in the text (see [prose
+transport](transport.md#free-text-flags-quote-so-the-shell-cannot-run-your-text)):
 
 ```bash
 docket issue create --json=v2 \
@@ -38,17 +37,8 @@ intact because the quoted DESC delimiter stops the shell expanding them.
 DESC
 ```
 
-For multiline or pasted text, prefer a supported file input or stdin through
-a quoted heredoc. A short, correctly single-quoted literal is also safe.
-See [prose transport](transport.md#free-text-flags-quote-so-the-shell-cannot-run-your-text).
-
-Pick a delimiter the body cannot contain. `EOF` is the wrong default for
-descriptions quoting shell snippets — a body with a bare `EOF` line of its
-own closes the heredoc early and the rest of the text is executed as
-commands. `DESC` (or a uniquely-named one) is the habit.
-
-Edit only the fields you pass — `issue edit` uses `cmd.Flags().Changed(...)`
-so omitted flags are left untouched, not reset to zero values:
+`issue edit` uses `cmd.Flags().Changed(...)`, so it edits only the fields you
+pass; omitted flags are left untouched, not reset to zero values:
 
 ```bash
 docket issue edit DKT-1 --json=v2 -s in-progress -a bob
@@ -60,9 +50,8 @@ docket issue edit DKT-1 --json=v2 -f a.go -f b.go       # REPLACES the file list
 Reparenting validates against cycles (`db.IsDescendant`) and rejects
 self-parenting with `VALIDATION_ERROR`/`CONFLICT`.
 
-Status transitions and lifecycle commands follow. Delete, cascade, and
-project-migration examples require the corresponding requested scope; they
-are alternatives, not a sequence to execute:
+The delete, cascade, and project-migration commands below are alternatives,
+not a sequence to execute; each needs its own requested scope:
 
 ```bash
 docket issue move DKT-1 review --json=v2     # arbitrary status transition
@@ -84,11 +73,11 @@ docket issue show DKT-1 --json=v2     # full detail: sub-issues, relations, comm
 docket issue log DKT-1 --json=v2 --limit 50
 ```
 
-`issue show` accepts multiple IDs: one ID returns an object under `data`,
-two or more return an array. `issue list`, `next`, `plan`, and `board` return
-summary rows without descriptions by default and carry `description_bytes`.
-Use `--with-body` when full descriptions are required, or batch `issue show`
-for the selected IDs. Missing description fields are not empty descriptions.
+`issue show` accepts multiple IDs: one ID returns an object under `data`, two
+or more return an array. `issue list`, `next`, `plan`, and `board` return
+summary rows without descriptions by default, carrying `description_bytes`
+instead. Use `--with-body` for full descriptions, or batch `issue show` for
+the selected IDs. A missing description field is not an empty description.
 
 ---
 
@@ -100,10 +89,10 @@ docket issue file list DKT-1 --json=v2
 docket issue file remove DKT-1 --json=v2 internal/api/router.go
 ```
 
-`add`/`remove` take 2+ positional args (`id` then one or more file paths) —
-there is no `-f` flag on `issue file add`; that's only on `issue create -f`
-and `issue edit -f`. Files are additive on `file add` (unlike `issue edit
--f`, which replaces the whole list).
+`add`/`remove` take 2+ positional args (`id` then one or more file paths).
+There is no `-f` flag on `issue file add`; that's only on `issue create -f`
+and `issue edit -f`. Files are additive on `file add`, unlike `issue edit
+-f`, which replaces the whole list.
 
 ---
 
@@ -117,12 +106,12 @@ docket issue comment list DKT-1 --json=v2
 `-m`/`--message` is optional: if omitted and stdin is a pipe, the body is
 read from stdin; if omitted and stdin is a TTY (human mode only), `$EDITOR`
 (default `vi`) is opened. In `--json` mode, `-m` (or piped stdin) is
-required — there is no editor fallback.
+required; there is no editor fallback.
 
-**Record the observation and its provenance.** State what was found, the
-relevant measured result, and a command, path, revision, or artifact ID that
-helps another reader verify it. A date or ID alone does not explain the
-evidence, but useful pointers should accompany the self-contained finding.
+Record the observation and its provenance: what was found, the relevant
+measured result, and a command, path, revision, or artifact ID that helps
+another reader verify it. Include those pointers alongside the
+self-contained finding, not instead of it.
 
 ---
 
@@ -152,10 +141,9 @@ docket issue graph DKT-1 --json=v2 --direction both --depth 2
 docket issue graph DKT-1 --mermaid --direction down   # Mermaid flowchart, human-readable only
 ```
 
-`--direction` must be one of `up` (what blocks this), `down` (what this
-blocks), or `both` (default). `--depth 0` (default) means unlimited BFS
-traversal. Use this before touching a shared interface to assess blast
-radius.
+`--direction` is `up` (what blocks this), `down` (what this blocks), or
+`both` (default). `--depth 0` (default) means unlimited BFS traversal. Use
+this before touching a shared interface to assess blast radius.
 
 ---
 
@@ -213,9 +201,9 @@ file contents, 1 MiB cap), or `-` (stdin, 1 MiB cap).
 ## Workflow: Export / Import
 
 A shared store can contain several projects. Confirm the intended store,
-export scope, and destination before transferring data. `--replace` wipes the
-database, so use it only for an explicitly authorized replacement; choose
-one import mode from these alternatives.
+export scope, and destination before transferring data. `--replace` wipes
+the database; use it only for an explicitly authorized replacement, and
+choose one import mode from these alternatives.
 
 ```bash
 docket export --json=v2 -o json -f backup.json
@@ -268,13 +256,9 @@ with no enum validation in the CLI layer — pick a project convention (e.g.
 
 The issue prefix is per-project (`docket project set-prefix`) and display
 only: in a project whose prefix is `VOR`, issues render `VOR-42`, but the
-number is the store-wide identity — `DKT-42`, `VOR-42`, and bare `42` all
-parse to the same issue, **from any project**. That last part is what
-makes `issue list --project` usable: the listing prints another project's ids,
-and the next command has to be able to take one back. `DOC`, `RUN`, and `STEP`
-are reserved, never project-configurable, and never parse as issue ids — an
-`issue show RUN-3` that resolved to issue 3 is exactly the ambiguity the
-reservation exists to prevent.
+number is the store-wide identity. `DKT-42`, `VOR-42`, and bare `42` all
+parse to the same issue, from any project. `DOC`, `RUN`, and `STEP` are
+reserved, never project-configurable, and never parse as issue ids.
 
 A step also carries a rendered **instance identity** — `name@k#i`, where `k` is
 the loop ordinal and `#i` the fanout sibling index (`implement@0`,

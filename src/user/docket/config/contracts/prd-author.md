@@ -1,6 +1,6 @@
 ---
 node: prd-author
-version: 10
+version: 11
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
@@ -85,7 +85,7 @@ product choice is still a gap. Retain only non-blocking questions and explicit
 deferrals, with the next step, responsible role, and deadline or trigger.
 
 # Emit
-Engine kind: `doc` (per frontmatter). Document type: `prd` — the new or revised
+Engine kind: `doc` (per frontmatter). Document type: `prd`, the new or revised
 product requirements document, with its proposal or acceptance status clear.
 Preserve the repository's document identity and naming conventions. Include:
 

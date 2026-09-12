@@ -1,6 +1,6 @@
 ---
 node: investigate
-version: 7
+version: 8
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -17,8 +17,8 @@ recommendation with explicit limits. Establish the causal chain as far as the
 evidence permits; multiple contributing causes or an undetermined cause are
 valid outcomes.
 
-Apply `truth-first` for diagnosis, `evidence-rules` for factual support, and
-`writing-for-humans` for presentation, within this node's read-only authority.
+Apply `truth-first` to diagnosis, `evidence-rules` to factual support, and
+`writing-for-humans` to presentation, within this node's read-only authority.
 
 # Not
 Do not implement repairs, mitigations, or changes to the affected system.
@@ -27,12 +27,11 @@ about adding diagnostics or validating fixes does not expand this authority.
 
 Use the `executor-read` archetype's permitted scratch workspace for diagnostic
 probes that write, including tests, builds, and bisection. Preserve the checkout
-and shared repository metadata throughout execution. Scratch execution must also
-be isolated from writes to live services or shared application state. If those
-effects cannot be contained within the permitted surface, report the probe as
-blocked. When authoring or changing a scratch probe file, write the file whole
-using the local harness's quoted-heredoc form; command syntax grants no extra
-authority.
+and shared repository metadata throughout execution. Isolate scratch execution
+from writes to live services or shared application state; report the probe as
+blocked if those effects cannot be contained within the permitted surface. When
+authoring or changing a scratch probe file, write the file whole using the local
+harness's quoted-heredoc form; command syntax grants no extra authority.
 
 Do not conduct a general diff review; the review seats own that work. Inspect
 relevant changes when they help explain this failure. Route security failures or
@@ -54,8 +53,7 @@ system. A laboratory result retains its REPRODUCED provenance; connecting it to
 the reported failure requires evidence.
 
 Apply design-search to the explanation and the recommendation. Hold more than
-one candidate cause until a discriminating observation separates them; the
-explanation that fits the symptom first is a candidate, not the conclusion. For
+one candidate cause until a discriminating observation separates them. For
 the recommended fix, weigh materially different shapes, including one the
 codebase does not already use and a reframe of the reported requirement when the
 report encodes the wrong fix. Recommend the shape that resolves the invariant
@@ -71,7 +69,7 @@ Use bisection when the comparison can be narrowed with a reliable predicate for
 the same failure. Preserve valid inputs and relevant conditions. An untestable
 case is neither passing nor failing; account for variability before using
 inconsistent results to eliminate candidates. A boundary revision or minimal
-failing input narrows the cause but does not by itself explain it.
+failing input narrows the cause but does not explain it.
 
 For performance or intermittent failures, define the metric, workload, population,
 and comparison window. Account for relevant warmup, caching, concurrency, and
@@ -85,7 +83,7 @@ intent; a current process snapshot may not describe a historical failure.
 Apply `evidence-rules` to negative log claims over the complete defined search
 window. State retention, ingestion, filtering, and signature limits. A zero count
 establishes no matches in the verified records; a sample can establish an
-occurrence but cannot establish absence across the window.
+occurrence but not absence across the window.
 
 Stop probing once the required conclusion is supported or no permitted probe can
 advance an unresolved requirement. Include scratch changes needed to interpret a

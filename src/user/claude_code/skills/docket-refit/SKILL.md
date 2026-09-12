@@ -1,6 +1,6 @@
 ---
 name: docket-refit
-description: Redesign one definition in the shared docket corpus under src/user/docket/config — a workflow, policy.toml, an executor contract, a packet fragment, or a payload schema — through an interactive, capability-checked refactor. Sweep the target's blast radius across every consumer, mine run evidence across every project that exercised it to ground optimization proposals, iterate the target spec with the operator, verify every claimed capability against the live docket engine (and wave.js) source, surface each engine-forced deviation as an explicit decision, render the settled design as a visual Artifact for approval before implementing, then land the full co-change closure (workflow TOML, contracts, fragments, policy rows, vote-seat lenses, schemas), lint every consumer, file engine issues for real gaps, and commit. Invoked bare (`/refit` with nothing named) it instead runs corpus mode — mine run evidence across every surface in the corpus (workflows AND policy, contracts, fragments, schemas) triage-then-deep-dive, verdict each one, and carry every refit, removal, and addition the evidence calls for through the same §1–§8 process to a landed commit, target by target, with the same per-target deviation gates and artifact approval as single mode. Use on "refit the ui-change workflow", "/refit standard-change", "/refit policy.toml", "tighten the implement contract", "refit the findings schema", "refactor a docket workflow", "optimize the standard-change pipeline", "add a phase to security-change", "redesign the investigation pipeline", bare "/refit" to redesign the whole corpus, or any request to change or improve what any definition under src/user/docket/config does.
+description: Redesign one definition in the shared docket corpus under src/user/docket/config — a workflow, policy.toml, an executor contract, a packet fragment, or a payload schema. Sweeps the target's blast radius across every consumer, mines run evidence across every project that exercised it, iterates the target spec with the operator, verifies every claimed capability against the live docket engine (and wave.js) source, surfaces each engine-forced deviation as an explicit decision, renders the settled design as a visual Artifact for approval before implementing, then lands the full co-change closure (workflow TOML, contracts, fragments, policy rows, vote-seat lenses, schemas), lints every consumer, files engine issues for real gaps, and commits. Invoked bare (`/refit` with nothing named), it runs corpus mode instead: mine run evidence across every surface in the corpus (workflows and policy, contracts, fragments, schemas), triage then deep-dive, verdict each one, and carry every refit, removal, and addition the evidence calls for through the same §1–§8 process to a landed commit, target by target, with the same per-target deviation gates and artifact approval as single mode. Use on "refit the ui-change workflow", "/refit standard-change", "/refit policy.toml", "tighten the implement contract", "refit the findings schema", "refactor a docket workflow", "optimize the standard-change pipeline", "add a phase to security-change", "redesign the investigation pipeline", bare "/refit" to redesign the whole corpus, or any request to change or improve what any definition under src/user/docket/config does.
 context: fork
 agent: general-purpose
 model: fable
@@ -9,13 +9,12 @@ model: fable
 # docket-refit
 
 You redesign definitions in this repository's shared docket corpus — one
-named target, or, invoked bare, every target the evidence calls for — as the
-engineer who checks the engine before promising it anything:
-the operator describes what they want, you verify what the engine can
-actually express, every gap between the two becomes a decision the operator
-makes — never a silent downgrade — and only then do you implement, lint, and
-commit. Source only: nothing under `~/.claude` or `~/.docket` is edited, and
-the operator's `just activate` is the only installer.
+named target, or, invoked bare, every target the evidence calls for. The
+operator describes what they want; you verify what the engine can actually
+express; every gap between the two becomes a decision the operator makes,
+never a silent downgrade; only then do you implement, lint, and commit.
+Source only: nothing under `~/.claude` or `~/.docket` is edited, and the
+operator's `just activate` is the only installer.
 
 You run in a forked subagent dedicated to this refit. `context: fork` spawns
 you fresh on every invocation, and the deviation decisions, the spec
@@ -23,8 +22,8 @@ iteration, and the artifact approval gate below run exactly as written,
 through `AskUserQuestion` and `Artifact`. You carry none of the parent
 conversation's history — no consumer sweep, no run evidence, no earlier
 discussion of the target — only `$ARGUMENTS` (the named target, or nothing
-for corpus mode). Read the corpus and the engine source yourself here rather
-than assuming anything was read for you. Your final report is the only thing
+for corpus mode). Read the corpus and the engine source yourself rather than
+assuming anything was read for you. Your final report is the only thing
 that reaches the parent, so it names the commit landed and every decision
 the operator made along the way.
 
@@ -53,71 +52,66 @@ target at a time.
 ## Design canon
 
 The corpus is a production configuration system serving every project on
-this machine, and it is redesigned the way large-scale SDLC treats shared
-infrastructure. These practices are working vocabulary for every proposal
-you make, on any surface — not limited to the five above:
+this machine. These practices are working vocabulary for every proposal you
+make, on any surface, not limited to the five above:
 
-- **Change control via frozen versions.** A registered `name@version` is an
-  immutable release: changed bytes demand a version bump, exactly as a
-  published API version never changes under its consumers. In-flight runs
-  finish on the version they started with; the bump is the rollout.
+- **Change control via frozen versions.** A registered `name@version` is
+  immutable: changed bytes demand a version bump. In-flight runs finish on
+  the version they started with; the bump is the rollout.
 - **Blast-radius review before shared-surface edits.** Contracts, fragments,
-  policy rows, and schemas are shared libraries: before proposing an edit,
-  enumerate every consumer (the reverse-dependency sweep in §1) and design
-  for all of them — the monorepo rule that whoever changes an interface owns
-  every caller.
+  policy rows, and schemas are shared: before proposing an edit, enumerate
+  every consumer (the reverse-dependency sweep in §1) and design for all of
+  them.
 - **Consumer-driven contract testing.** A schema is a contract between the
   executor that emits it and the threshold predicates and downstream steps
-  that read it. A change to either side is checked against the other before
-  it lands, never discovered at ordinal 3 of a live run.
-- **Policy as code.** `policy.toml` is reviewed like an IAM or CODEOWNERS
-  change: least-capable tier that meets the bar, every exception explicit
-  with a recorded `reason`, security `never` rules treated as invariants a
-  refit must prove it preserves.
+  that read it. Check a change to either side against the other before it
+  lands, never discovered at ordinal 3 of a live run.
+- **Policy as code.** Review `policy.toml` for least-capable tier that meets
+  the bar, every exception explicit with a recorded `reason`, and security
+  `never` rules as invariants a refit must prove it preserves.
 - **Deprecate, don't break.** When consumers cannot all move at once, the
-  old version stays registered while the new one lands, and removal is a
+  old version stays registered while the new one lands. Removal is a
   separate, later change with its own evidence that nothing references it.
 - **One source of truth.** A rule needed by two contracts lives in a
   fragment, not in two places; drift between duplicates is a defect the
   refit removes, not preserves.
 - **Budgets as SLOs.** `expected_cost`, fix-loop budgets, and vote margins
-  are service-level objectives: mined actuals versus declared budgets are
-  the primary optimization signal, and a budget nothing has ever approached
-  — or one chronically exhausted — is a finding either way.
+  are service-level objectives. Mined actuals versus declared budgets are
+  the primary optimization signal; a budget nothing has ever approached, or
+  one chronically exhausted, is a finding either way.
 
 ## Corpus mode (invoked bare)
 
 Invoked with nothing named, redesign the whole corpus instead of one
 definition: mine and verdict every surface, then carry every verdict that
 calls for a change through the full §1–§8 process to a landed commit,
-target by target, in the same session. Unconditional — every definition
-gets mined and verdicted and every non-`keep` verdict proceeds straight into
-its own §1–§8 run; there is no upfront action list to approve before work
-starts. The operator checkpoints are the same ones single mode already has —
-§4's deviation gate and §5's artifact approval — hit per target, as each is
+target by target, in the same session. Every definition gets mined and
+verdicted, and every non-`keep` verdict proceeds straight into its own
+§1–§8 run; there is no upfront action list to approve before work starts.
+The operator checkpoints are the same ones single mode already has — §4's
+deviation gate and §5's artifact approval — hit per target, as each is
 reached, not batched.
 
 **Triage, then deep-dive.** Read every definition under
-`src/user/docket/config/` whole — every workflow, `policy.toml`, every
+`src/user/docket/config/` whole: every workflow, `policy.toml`, every
 contract, fragment, and schema. Mine in two passes: first an aggregate pass
 across every project (`docket project list`, then run counts, outcomes, and
-costs per workflow via `docket stats` and `docket run`); then §2's full
-per-target mining ONLY on what the aggregate flags as suspect — never-run
+costs per workflow via `docket stats` and `docket run`); then run §2's full
+per-target mining only on what the aggregate flags as suspect — never-run
 workflows, chronic parks or budget exhaustions, gates that never reject,
 cost far off `expected_cost`, executors whose emits chronically fail their
 schema or draw judge rejections, policy rows routing nothing, fragments and
-schemas with zero consumers. §2's evidence rules apply throughout: counts
-over vivid samples, thin evidence said plainly. A definition cleared on
-aggregate numbers alone is reported as such, not as deep-mined. This pass
-satisfies §2 for every target it deep-dives — don't re-mine a target on
-entry to its own §1–§8 run; carry the evidence forward as the finding.
+schemas with zero consumers. A definition cleared on aggregate numbers
+alone is reported as such, not as deep-mined. This pass satisfies §2 for
+every target it deep-dives — don't re-mine a target on entry to its own
+§1–§8 run; carry the evidence forward as the finding.
 
 **Verdicts drive the target, not a suggestion.** Every definition gets one:
 
 - **keep** — evidence shows it earning its shape. Record the finding and
   move to the next target; nothing else runs for this one.
 - **refit** — name what needs changing and why, citing numbers. That
-  evidence-backed shape IS the target spec for this run — §1's "iterate a
+  evidence-backed shape is the target spec for this run: §1's "iterate a
   vague ask with the operator" is what single mode does when the operator
   supplies the ask; here the mining already produced one. Run §1's
   blast-radius sweep, then §2 (already satisfied above) through §8 on this
@@ -130,11 +124,12 @@ entry to its own §1–§8 run; carry the evidence forward as the finding.
   its own commit.
 - **addition** — a named gap the evidence shows the corpus not covering.
   Design its shape on the surface the gap demands (workflow, policy row,
-  contract, fragment, or schema), then run §4 for any deviation the design forces,
-  §5 for approval, and §6–§8 to implement and land it as its own commit.
+  contract, fragment, or schema), then run §4 for any deviation the design
+  forces, §5 for approval, and §6–§8 to implement and land it as its own
+  commit.
 
 Report each target's verdict and evidence in plain language as it's reached,
-not held back for an end-of-run summary — the operator sees the corpus-wide
+not held back for an end-of-run summary. The operator sees the corpus-wide
 shape of the sweep as it happens, and the §4/§5 gates are where they weigh
 in on any one target.
 
@@ -165,11 +160,11 @@ Then get the target spec from the operator. A vague ask ("simplify it",
 "make it stricter") is iterated until it names concrete behavior: which
 steps or rows, which gates, what happens on rejection, who escalates to
 whom, which consumers must keep working unchanged. Batch what is genuinely
-underdetermined into ONE `AskUserQuestion` round — recommended option first
-— and let every detail with a conventional answer default; the proposal's
-shape is weighed below, never defaulted. When the operator
-hands you a numbered spec, treat it as the contract and ask only about what
-it leaves open.
+underdetermined into one `AskUserQuestion` round, recommended option first,
+and let every detail with a conventional answer default; the proposal's
+shape is weighed below, never defaulted. When the operator hands you a
+numbered spec, treat it as the contract and ask only about what it leaves
+open.
 
 **Weigh the shapes before proposing one.** The incumbent definition and the
 engine's conventional expression are two candidates, not the field. Derive
@@ -211,23 +206,23 @@ What to count depends on the surface:
   hops, `on_failure` retries), cost per variant tier against output quality
   signals, security reroutes actually exercised.
 
-A pattern seen in a few vivid runs is a hypothesis, not a finding — go
-count it, and the aggregate is the finding even when it contradicts the
-samples. Each optimization you propose cites its numbers ("this fanout row:
-4 planned, 0 executed across every run → drop it at the version bump");
-thin evidence (few runs, young definition) is said plainly and the proposal
-leans on design judgment instead — never dressed as data. Mined findings
-feed §1's iteration as proposal input; when the operator invoked docket-refit as
-"optimize <target>" with no spec of their own, they ARE the proposal. When
-the operator arrives with a full spec, mining still runs as a check — does
-the evidence contradict anything the spec assumes? (`docket-retro` sweeps the
-whole corpus on its own cadence; this mining is scoped to the one
+A pattern seen in a few vivid runs is a hypothesis, not a finding: count it,
+and the aggregate is the finding even when it contradicts the samples. Each
+optimization you propose cites its numbers ("this fanout row: 4 planned, 0
+executed across every run → drop it at the version bump"); thin evidence
+(few runs, young definition) is said plainly and the proposal leans on
+design judgment instead, never dressed as data. Mined findings feed §1's
+iteration as proposal input; when the operator invoked docket-refit as
+"optimize <target>" with no spec of their own, they are the proposal. When
+the operator arrives with a full spec, mining still runs as a check: does
+the evidence contradict anything the spec assumes? (`docket-retro` sweeps
+the whole corpus on its own cadence; this mining is scoped to the one
 definition being redesigned.)
 
 ## 3. Verify against the engine
 
-**Source is the only capability authority.** Not memory, not this file, not
-what a sibling definition appears to imply — engines move, and a design
+**Source is the only capability authority** — not memory, not this file,
+not what a sibling definition appears to imply. Engines move, and a design
 promised on a stale assumption fails at activation or, worse, at ordinal 3
 of a live run. Two authorities cover the corpus:
 
@@ -261,8 +256,8 @@ and how loop ordinals rebind them; what a vote step needs (registered rule,
 routable voters) and what its rejection can route to; what exhausting a
 budget does; how a policy row's `variant`, `never`, and `escalate_to`
 actually resolve; which schema fields threshold predicates can reach. Read
-until the mechanism is settled — one honest pass, not a re-derivation loop
-— and carry the answer as a cited fact (`file:line`).
+until the mechanism is settled in one pass, and carry the answer as a
+cited fact (`file:line`).
 
 ## 4. Gate the deviations
 
@@ -298,10 +293,10 @@ shows depends on the target:
   version consumed, tier moved, field added, rule tightened) and consumers
   explicitly unaffected marked as such.
 
-Either way the picture's job is to let the operator catch a wrong edge — or
-an unconsidered consumer — cheaper than a wrong implementation. It also
-carries the §1 comparison: the shapes weighed, the one chosen, and the
-reason, so the operator approves a decision and not only a drawing.
+Either way, the picture lets the operator catch a wrong edge, or an
+unconsidered consumer, cheaper than a wrong implementation. It also carries
+the §1 comparison: the shapes weighed, the one chosen, and the reason, so
+the operator approves a decision and not only a drawing.
 
 Present the artifact link and ask for approval via `AskUserQuestion`
 (approve / revise). A revision request loops back through §4's gates if it
@@ -314,24 +309,24 @@ the definition's schematic.
 
 A corpus change is rarely one file, whichever surface it enters from. The
 blast-radius list from §1 is the worklist: land the target and every
-consumer edit it forces, in one change — skipping a surface is how
+consumer edit it forces, in one change. Skipping a surface is how
 activation refuses or a wave refuses to route:
 
 - **Workflow TOML** — redesigned steps, plus a `version` bump: a registered
   `name@version` is frozen, and activation rejects changed bytes at an
   unchanged version.
-- **Contracts** (`src/user/docket/config/contracts/<executor>.md`) — one per NEW executor,
-  in the house shape: frontmatter (`node`, `version`, `archetype`,
-  `packet_includes`, `emits`) then Charter / Not / Method / Emit / Stuck.
-  Editing an EXISTING shared contract is a blast-radius change: bump its
-  `version` and verify the edit against every consuming workflow, not just
-  the one in hand — a rule needed by only one pipeline belongs in a
-  step-level packet fragment instead.
-- **Fragments** (`config/fragments/`) — rules shared across nodes (a
+- **Contracts** (`src/user/docket/config/contracts/<executor>.md`) — one
+  per new executor, in the house shape: frontmatter (`node`, `version`,
+  `archetype`, `packet_includes`, `emits`) then Charter / Not / Method /
+  Emit / Stuck. Editing an existing shared contract is a blast-radius
+  change: bump its `version` and verify the edit against every consuming
+  workflow, not just the one in hand — a rule needed by only one pipeline
+  belongs in a step-level packet fragment instead.
+- **Fragments** (`src/user/docket/config/fragments/`) — rules shared across nodes (a
   protocol, a store convention) live once in a fragment appended to each
   consumer's packet, never copy-pasted into contracts. A fragment edit is
   reviewed against every including contract; bump its `version`.
-- **policy.toml** — an `[executors]` row for every new executor AND every
+- **policy.toml** — an `[executors]` row for every new executor and every
   new vote seat (the wave refuses to route or seat anything without a row),
   plus the policy version bump. Match variant tiers to comparable existing
   seats — least-capable tier that meets the bar, exceptions carrying an
@@ -339,14 +334,14 @@ activation refuses or a wave refuses to route:
   models, ceiling, node list) still hold for every touched row.
 - **Vote-seat lenses** — a seat's lens is the last hyphen-token of its name,
   resolved against the `LENSES` table in
-  `src/user/claude_code/workflows/tribunal.js`; a new lens key needs an entry
-  there or the seat judges generically. `node --check` after editing.
+  `src/user/claude_code/workflows/tribunal.js`; a new lens key needs an
+  entry there or the seat judges generically. `node --check` after editing.
 - **Vote rules** — reuse a registered rule when its threshold matches (rules
   are thresholds; voters are orthogonal). A genuinely new rule is a store
-  registration (`docket config set --global vote.rule.<name>.threshold`) the
-  operator runs — name it in the report rather than mutating the store
+  registration (`docket config set --global vote.rule.<name>.threshold`)
+  the operator runs; name it in the report rather than mutating the store
   yourself.
-- **Schemas** (`config/schemas/`) — a new `payload` kind needs a schema
+- **Schemas** (`src/user/docket/config/schemas/`) — a new `payload` kind needs a schema
   file and threshold predicates that match its fields. Changing an existing
   kind is a new `kind@n+1` file, both sides of the contract moved together:
   every emitting contract and every reading predicate updated to the new
@@ -356,14 +351,13 @@ activation refuses or a wave refuses to route:
 Before moving to §7, write one line per surface above — touched, or
 not-applicable and why — even when the answer is obvious. A surface skipped
 by oversight looks identical to one skipped on purpose until it is named;
-the checklist is what tells them apart before a lint or an activation does.
+the checklist tells them apart before a lint or an activation does.
 
-**Whatever rationale you write into any of these files, write the finding
-itself, not a pointer to it.** A date, a timestamp, a git sha, or an issue
-id is not always available or kept — none of it means anything to whoever
-reads this comment after the run it came from is gone, the commit is
-rewritten, or the issue is closed. Say what was actually measured or
-observed, in plain words, inline in the comment.
+Whatever rationale you write into any of these files, write the finding
+itself, not a pointer to it. A date, timestamp, sha, or issue id means
+nothing to whoever reads the comment after the run it came from is gone,
+the commit is rewritten, or the issue is closed. Say what was actually
+measured or observed, in plain words, inline in the comment.
 
 ## 7. Validate
 
@@ -371,8 +365,8 @@ observed, in plain words, inline in the comment.
 docket workflow lint src/user/docket/config/workflows/<name>.toml
 ```
 
-Lint the target workflow — and when the change entered from a shared
-surface, lint EVERY workflow the §1 sweep listed as a consumer: a green
+Lint the target workflow, and when the change entered from a shared
+surface, lint every workflow the §1 sweep listed as a consumer: a green
 target with a broken sibling is the failure the blast-radius review exists
 to prevent. `node --check` tribunal.js if lenses changed.
 
@@ -380,7 +374,7 @@ Lint resolves schemas and vote rules from the current project's store, which
 can lag the corpus: before blaming your edit, lint the installed known-good
 version of the same workflow — an identical failure is environmental.
 A missing corpus schema registers from its source file
-(`docket schema register <kind@n> config/schemas/<kind@n>.json`), then
+(`docket schema register <kind@n> src/user/docket/config/schemas/<kind@n>.json`), then
 re-lint. The acceptance floor is a clean lint across every consumer at the
 bumped versions; anything the lint cannot see (live loop behavior, seat
 quality, whether a fragment's rule actually lands in outputs) is reported
@@ -388,12 +382,11 @@ as unverified, not claimed.
 
 ## 8. Land
 
-Commit via the `commit` skill. Other sessions share this tree — stage only
-the files this refit touched, nothing else. The commit skill's message is
-final: no post-commit amendment for attribution, `Claude-Session:` or
-otherwise. Then report in plain language:
-what changed and why, the blast radius and how each consumer was handled,
-each deviation the operator accepted and the engine issue filed for it,
-what was verified (lint, syntax checks) and what was not (no live run).
-Never push; never install — the change reaches `~/.docket` and `~/.claude`
-only through the operator's `just activate`.
+Commit via the `commit` skill. Other sessions share this tree, so stage
+only the files this refit touched. The commit skill's message is final: no
+post-commit amendment for attribution, `Claude-Session:` or otherwise. Then
+report in plain language: what changed and why, the blast radius and how
+each consumer was handled, each deviation the operator accepted and the
+engine issue filed for it, what was verified (lint, syntax checks) and what
+was not (no live run). Never push; never install — the change reaches
+`~/.docket` and `~/.claude` only through the operator's `just activate`.

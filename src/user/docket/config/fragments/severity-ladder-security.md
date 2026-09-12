@@ -1,6 +1,6 @@
 ---
 fragment: severity-ladder-security
-version: 5
+version: 6
 ---
 # Severity ladder: security
 
@@ -33,8 +33,8 @@ their protection is established.
   vulnerabilities retain the rung their impact warrants.
 
 This is the security track's authoring vocabulary. Do not borrow general-track
-bands or use their criteria to grade security findings. A vulnerability class
-or example alone does not establish severity; apply the conditions above.
+bands or use their criteria to grade security findings. A vulnerability class or
+example alone does not establish severity; apply the conditions above.
 
 **Emit-time mapping.** Author with this vocabulary and use the supplied 02 §6
 payload contract. Map each rung exactly:
@@ -55,15 +55,15 @@ classification on evidence, but risk acceptance alone does not clear it. High
 requires a fix or the panel's recorded acceptance: approve-with-concerns casts
 whose rationales stand in the vote record, after which `drain-highs` files
 every open High the panel approved past as a backlog issue. A rejected tally
-returns the round to the fix loop. Where another track seats this reviewer without a
-security vote, that track's own thresholds route its findings. Medium remains
-recorded and surfaces at the gates and in the backlog; Low and Info remain
-available for downstream consideration.
+returns the round to the fix loop. Where another track seats this reviewer
+without a security vote, that track's own thresholds route its findings.
+Medium remains recorded and surfaces at the gates and in the backlog; Low and
+Info remain available for downstream consideration.
 
 No severity starts an automatic fix loop in this track. Retain the supplied
 re-review contract's finding identities, evidence, carry-forward, and closure
-rules, but use this ladder's terms and convergence policy. Unresolved
-findings remain unresolved when a review ends. Neither an absent `blocker` nor a
+rules, but use this ladder's terms and convergence policy. Unresolved findings
+remain unresolved when a review ends. Neither an absent `blocker` nor a
 completed vote proves readiness: required checks, applicable gates, and
 judgment-blocking gaps still apply. A gate override alone is not acceptance of
 an independently supported security risk.
@@ -77,32 +77,34 @@ evidence supports it. On large changes, concentrate effort on flows that cross
 or define trust boundaries and state material coverage limits.
 
 **Evidence and uncertainty.** Every security finding names the threat, affected
-property (confidentiality / integrity / availability / non-repudiation), concrete
-code or execution evidence, impact, and mitigation. Assess severity separately
-from confidence. Preserve uncertain leads with their evidence limits under the
-supplied evidence and gap contracts; do not assert an unproven defect, downgrade
-it mechanically, or treat unknown reachability as safety. If the output contract
-is unavailable, preserve the analysis and identify the gap without inventing
-fields or claiming valid payload emission. Info observations need no fabricated
-threat. Redact live secrets from report evidence.
+property (confidentiality / integrity / availability / non-repudiation),
+concrete code or execution evidence, impact, and mitigation. Assess severity
+separately from confidence. Preserve uncertain leads with their evidence
+limits under the supplied evidence and gap contracts; do not assert an
+unproven defect, downgrade it mechanically, or treat unknown reachability as
+safety. If the output contract is unavailable, preserve the analysis and
+identify the gap without inventing fields or claiming valid payload emission.
+Info observations need no fabricated threat. Redact live secrets from report
+evidence.
 
-**Mitigation must preserve the guarantee.** A proposed workaround does not lower
-severity. Credit only controls established to apply in the assessed state, and
-explain the residual exposure. Swallowing an exception that masks an auth
-bypass, exempting an unsafe host from policy, or disabling a check for a green
-build does not resolve the underlying finding. When the proper fix is out of
-scope, keep that limitation and the unresolved risk explicit.
+**Mitigation must preserve the guarantee.** A proposed workaround does not
+lower severity. Credit only controls established to apply in the assessed
+state, and explain the residual exposure. Swallowing an exception that masks
+an auth bypass, exempting an unsafe host from policy, or disabling a check for
+a green build does not resolve the underlying finding. When the proper fix is
+out of scope, keep that limitation and the unresolved risk explicit.
 
 **Comments and suppressions use the same ladder.** Establish who can access or
 influence the content, what information or protection is affected, and the
-resulting risk. A live secret in a comment can be Critical. An internal hostname,
-path, exploit explanation, or disabled-control rationale is not automatically
-High or Medium; establish the disclosure or control loss and its consequence.
+resulting risk. A live secret in a comment can be Critical. An internal
+hostname, path, exploit explanation, or disabled-control rationale is not
+automatically High or Medium; establish the disclosure or control loss and its
+consequence.
 
-A suppression on or adjacent to security-sensitive code needs a justification:
-what check is bypassed and what invariant is enforced in its place. Verify the
-directive's actual scope and effect; proximity to credential validation alone
-does not establish High. Report missing justification as an evidence gap or a
-supported requirement violation, as applicable. A rationale alone does not
-prove the replacement invariant; a demonstrated weakening takes the severity
-its consequence warrants.
+A suppression on or adjacent to security-sensitive code needs a
+justification: what check is bypassed and what invariant is enforced in its
+place. Verify the directive's actual scope and effect; proximity to
+credential validation alone does not establish High. Report missing
+justification as an evidence gap or a supported requirement violation, as
+applicable. A rationale alone does not prove the replacement invariant; a
+demonstrated weakening takes the severity its consequence warrants.

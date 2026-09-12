@@ -10,19 +10,18 @@ Find the relevant heading before reading a large section:
 
 ## Workflow: Voting (`docket vote`, consensus proposals)
 
-**A workflow step can open one of these.** A `type="vote"` step creates a
-proposal when it becomes ready, fans out to the voters it names, and routes on
-the outcome — `approved` passes the step, `rejected` routes per its `on_fail`,
-which such a step must declare explicitly (V13a). `waiting-human` is legal there
-and means *escalate to an operator*, unlike on a human gate where it is refused.
-The proposal's id rides on the step row as `proposal`, and the roster as
-`voters`, so a caller holding a `next` row can cast without reading the pinned
-definition. Nothing about the machinery below changes: voters cast with the same
-`docket vote cast` shown here, the tally is the same weighted score and quorum,
-and there is **no new verb**. The step names a `vote_rule`, which is a pair of
-`vote.rule.<name>.*` config keys, and `required_voters` is the length of its own
-`voters` list. Nothing casts a vote automatically — a voter is a person or a
-process running the CLI.
+A workflow step can open one of these: a `type="vote"` step creates a
+proposal when it becomes ready, fans out to the voters it names, and routes
+on the outcome. `approved` passes the step; `rejected` routes per its
+`on_fail`, which such a step must declare explicitly (V13a). `waiting-human`
+is legal there and means escalate to an operator, unlike on a human gate
+where it is refused. The proposal's id rides on the step row as `proposal`,
+and the roster as `voters`, so a caller holding a `next` row can cast without
+reading the pinned definition; there is no new verb beyond `docket vote
+cast`. The step names a `vote_rule`, a pair of
+`vote.rule.<name>.*` config keys, and `required_voters` is the length of its
+own `voters` list. Nothing casts a vote automatically; a voter is a person or
+a process running the CLI.
 
 Create a proposal:
 
@@ -35,11 +34,11 @@ docket vote create --json=v2 \
   --files-changed 'internal/db/issue.go,internal/db/doc.go'
 ```
 
-Cast only the assigned seat’s own assessment. Pass its exact `--voter`: the
+Cast only the assigned seat's own assessment. Pass its exact `--voter`: the
 default is `git user.name`, so concurrent agents using the default collide
 under one identity. Verify the roster, proposal, content, and assessment
-before casting; there is no amendment path. Replace the values below with
-the actual assignment and evidence. A file keeps long rationale out of argv:
+before casting; there is no amendment path. Replace the values below with the
+actual assignment and evidence; a file keeps long rationale out of argv:
 
 ```bash
 docket vote cast DKT-V1 --json=v2 \
@@ -50,13 +49,11 @@ docket vote cast DKT-V1 --json=v2 \
 
 `--metadata` is optional and opaque. Populate model and effort fields only
 from observed runtime facts; do not infer a model from a role or fabricate
-measurements. Treat `--metadata` as public — it is visible to anyone who can
-list processes, it is stored verbatim in the store, and `docket export`
-re-emits it verbatim with no redaction. It reads back through `vote show
---json`, `vote result --json`, and the export document; the human-readable
-tables do not render it. `--usage` records this seat’s own measured spend; a
-relay may backfill usage after observing it. Consult the CLI reference for
-both flags.
+measurements. Treat it as public: it is stored and exported verbatim, with no
+redaction, and reads back through `vote show --json`, `vote result --json`,
+and the export document, though the human-readable tables do not render it.
+`--usage` records this seat's own measured spend; a relay may backfill usage
+after observing it. Consult the CLI reference for both flags.
 
 Valid `--verdict`/`-v` values: `approve`, `approve-with-concerns`, `reject`.
 Valid `--criticality`/`-c` values: `low`, `medium`, `high`, `critical`.
@@ -80,14 +77,14 @@ opened refuses `vote close` (`CONFLICT`); move that run with `docket step
 resolve` instead. Neither verb grants authority to override a human-only
 matter.
 
-**A vote step may add a `threshold`, evaluated over the cast set once an
-approved tally comes back — before the step is allowed to route `pass`**.
-It reads the same predicate grammar `threshold` uses on gate steps,
-but over the cast's own fields: `vote` / `verdict` (aliases for the same
-field) and `voter`. Only `==`/`!=` are legal — casts carry no registered
-schema, so an ordered comparison (`>=`, `>`, …) is refused at register time
-(V36). Routing is restricted to `fix-loop`, `waiting-human`, `pass` — no
-step-name interposition on a vote gate.
+A vote step may add a `threshold`, evaluated over the cast set once an
+approved tally comes back, before the step is allowed to route `pass`. It
+reads the same predicate grammar `threshold` uses on gate steps, but over the
+cast's own fields: `vote`/`verdict` (aliases for the same field) and `voter`.
+Only `==`/`!=` are legal: casts carry no registered schema, so an ordered
+comparison (`>=`, `>`, …) is refused at register time (V36). Routing is
+restricted to `fix-loop`, `waiting-human`, `pass`; no step-name interposition
+on a vote gate.
 
 ```toml
 [[step]]
@@ -99,13 +96,13 @@ on_fail = "waiting-human"
 threshold = { "fix-loop" = "count>=2(vote == approve-with-concerns)" }
 ```
 
-A **rejected** tally is untouched — it still routes per `on_fail`, threshold
-or not. A **committed** proposal (an operator's manual `vote commit`) skips
-the threshold too — that decision was made out of band. A step declaring no
+A rejected tally is untouched: it still routes per `on_fail`, threshold or
+not. A committed proposal (an operator's manual `vote commit`) skips the
+threshold too, since that decision was made out of band. A step declaring no
 `threshold` routes on the tally alone. `approve-with-concerns` tallies as a
 full approval weight; the threshold is a post-approval routing check and does
 not change the tally math. The step's own recorded tally is readable
-downstream as an input — see [engine-produced inputs](workflows.md#engine-produced-inputs).
+downstream as an input; see [engine-produced inputs](workflows.md#engine-produced-inputs).
 
 ---
 

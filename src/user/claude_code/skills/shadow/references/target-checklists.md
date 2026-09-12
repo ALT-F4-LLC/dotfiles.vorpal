@@ -1,11 +1,11 @@
 # Local execution checklists
 
 Read only the relevant checklist, then reconcile it with the target's actual
-installed definition and the version evidenced by the run. These rules summarize
-the supplied Docket/tend contracts; they do not establish universal engine
-semantics or authorize shadow to perform any observed operation. If this file
-and the target disagree, record the disagreement and establish which contract
-applied. Never judge a past execution solely against a newer checklist.
+installed definition and the version evidenced by the run. These rules
+summarize the supplied Docket/tend contracts: they establish no universal
+engine semantics and authorize no observed operation. If this file and the
+target disagree, record the disagreement, establish which contract applied,
+and never judge a past execution solely against a newer checklist.
 
 ## Docket-run conductor
 
@@ -62,7 +62,6 @@ remain part of the arc.
 | Operator report | Every tended issue gets its required visible line with ID, title and commit hash(es), or an explicit no-change result. |
 | Stop | The operator can stop recurrence; expiration or runtime failure may also stop it and must be reported accurately. Empty queue is not completion of a still-armed loop. Settle current work separately. |
 
-For another execution skill, derive an equivalent checklist from its actual
-contract. Keep a bounded list of observable obligations and their evidence
-surfaces rather than copying every emphatic sentence into another permanent
-definition. A disagreement or omission matters through its consequence.
+For another execution skill, derive an equivalent bounded checklist of
+observable obligations and evidence surfaces from its actual contract. A
+disagreement or omission matters through its consequence.

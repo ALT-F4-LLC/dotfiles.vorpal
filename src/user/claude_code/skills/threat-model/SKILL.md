@@ -22,8 +22,8 @@ Identify the **system and change in scope**, the **adversary's initial access an
 capabilities**, the **assets and security properties** at stake, and the **acceptable
 residual risk** and who accepts it. Identify which inputs the adversary controls.
 Treat prompt injection and supply-chain compromise as attack mechanisms, not
-substitutes for specifying capabilities. If risk tolerance is unspecified, record
-it as unresolved and continue without inventing acceptance.
+substitutes for capabilities. If risk tolerance is unspecified, record it as
+unresolved and continue without inventing acceptance.
 
 ## Answer all four questions
 
@@ -45,21 +45,21 @@ it as unresolved and continue without inventing acceptance.
    control for that threat class, and a reframe of the boundary itself when
    moving or removing it would eliminate the path rather than guard it. Choose
    on coverage against the stated adversary, enforcement locality, bypass
-   surface, and what the control leaves to maintain, then recommend the winner
-   and record the alternatives weighed and why it won. Give each material threat
-   a response and identify remaining risk. Every control names its enforcement
-   point, prerequisites, and bypass paths; distinguish existing controls from
+   surface, and maintenance burden, then recommend the winner and record the
+   alternatives weighed and why it won. Give each material threat a response
+   and identify remaining risk. Every control names its enforcement point,
+   prerequisites, and bypass paths; distinguish existing controls from
    proposed ones. A compensating control must provide comparable protection
-   against the threats addressed by the control it replaces. Explain coverage and
-   gaps, including when enforcement moves to another boundary.
+   against the threats addressed by the control it replaces. Explain coverage
+   and gaps, including when enforcement moves to another boundary.
 
 4. **Did we do a good enough job?** Review the model's coverage, assumptions, threat
    responses, and residual risk. For each control, specify an abuse case and expected
    blocking or detection, plus a benign case that should remain allowed. Where
    practical, verify in an isolated test setup that deliberately breaking the control
    makes its verification fail. Record expected and actual results, with checks marked
-   passed, failed, or not run. A verification plan is not a verification result.
-   Identify unresolved work and any pending risk-acceptance decision.
+   passed, failed, or not run. A verification plan is not a result. Identify
+   unresolved work and any pending risk-acceptance decision.
 
 ## Ground claims in evidence
 
@@ -79,12 +79,11 @@ can trigger retained exclusions and evade the intended protection.
 
 ## Scrutinize weakened protections
 
-Scrutinize changes that allow previously blocked behavior. Before narrowing or removing
-a control as redundant, establish why the remaining protection covers the relevant
-attack paths and operating conditions, using implementation evidence and appropriate
-bypass and failure tests. A passing test supports only the conditions it exercises.
-If the redundancy claim remains unverified, retain the control and report the unresolved
-dependency.
+Before narrowing or removing a control as redundant, establish why the remaining
+protection covers the relevant attack paths and operating conditions, using
+implementation evidence and bypass and failure tests. A passing test supports
+only the conditions it exercises. If the redundancy claim remains unverified,
+retain the control and report the unresolved dependency.
 
 ## Report
 

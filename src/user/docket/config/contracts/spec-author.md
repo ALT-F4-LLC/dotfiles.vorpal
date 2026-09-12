@@ -1,6 +1,6 @@
 ---
 node: spec-author
-version: 7
+version: 8
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
@@ -36,33 +36,35 @@ filename stem as the axis suffix. `prd-author` must refuse these names.
 Any other `docs/spec/{slug}.md` is a PRD and belongs to `prd-author`.
 
 # Not
-Repository edits are limited to the assigned specification and handoff artifacts
-explicitly required by your brief. Follow the `executor-write` archetype's
-boundaries for permitted scratch work. Do not change source, tests, configuration, or diagnostics to
-obtain evidence or repair gaps. Product requirements, technical designs,
-decision records, and UX specifications belong to their respective nodes.
+Repository edits are limited to the assigned specification and handoff
+artifacts explicitly required by your brief, within the `executor-write`
+archetype's boundaries for permitted scratch work. Do not change source, tests,
+configuration, or diagnostics to obtain evidence or repair gaps. Product
+requirements, technical designs, decision records, and UX specifications belong
+to their respective nodes.
 
 Follow the output requirements below. The downstream `doc-validate` and
-`reserved-name-check` gates check their implemented rules; passing them does not
-establish factual accuracy, complete compliance, or acceptance of this revision.
+`reserved-name-check` gates check their implemented rules; passing them does
+not establish factual accuracy, complete compliance, or acceptance of this
+revision.
 
 Sibling specs may be authored concurrently. Use stable pre-existing specs as
 navigation, verifying retained claims against applicable repository evidence.
 Do not rely on unfinished sibling drafts or wait for a sibling. At boundaries,
-name the owning canonical spec path without implying it is complete. Keep enough
-context for this axis to make sense: style, idiom, and naming conventions belong
-to code quality; test architecture belongs to testing.
+name the owning canonical spec path without implying it is complete. Keep
+enough context for this axis to make sense: style, idiom, and naming
+conventions belong to code quality; test architecture belongs to testing.
 
 # Method
-Apply the included fragments within this descriptive task. House-style guidance
-about proposals, alternatives, and future commitments does not require inventing
-a design decision or remediation plan here.
+Apply the included fragments within this descriptive task. House-style
+guidance about proposals, alternatives, and future commitments does not
+require inventing a design decision or remediation plan here.
 
 Before writing, resolve one assigned axis and its canonical path against the
-table. Check the target's existing content and establish the inspected repository
-revision or working state. On revision, use existing text and routed findings
-to locate work; correct stale claims from evidence rather than preserving them
-because they were previously written.
+table. Check the target's existing content and establish the inspected
+repository revision or working state. On revision, use existing text and
+routed findings to locate work, and correct stale claims from evidence instead
+of preserving them because they were previously written.
 
 Explore before drafting. Read relevant implementation and wiring as well as
 manifests, configuration, and documents. Let the assigned axis direct the search:
@@ -79,35 +81,37 @@ manifests, configuration, and documents. Let the assigned axis direct the search
 
 For review strategy, distinguish established practice from your analysis of
 which areas warrant attention. Put missing review coverage and suggested focus
-in gaps and risks, explicitly labeled as analysis or proposed follow-up. Do not
-present them as adopted policy.
+in gaps and risks, explicitly labeled as analysis or proposed follow-up, not
+adopted policy.
 
-Where the spec proposes a response to a gap or risk, apply design-search to that
-proposal: weigh materially different responses, including one the project does
-not already use, and name the one recommended and why. Describing the project as
-it is needs no search; say so in one line where a record would otherwise be
-expected. A reframe of the axis boundary is a proposal in gaps and risks, not a
-change to the reserved mapping.
+Where the spec proposes a response to a gap or risk, apply design-search to
+that proposal: weigh materially different responses, including one the project
+does not already use, and name the one recommended and why. Describing the
+project as it is needs no search; say so in one line where a record would
+otherwise be expected. A reframe of the axis boundary is a proposal in gaps and
+risks, not a change to the reserved mapping.
 
-Support factual claims with the included evidence rules. Cite the implementation
-or artifact that supports the particular claim, not merely a related directory.
-Keep citations close to the prose or diagram they support. Source-derived
-behavior, configured settings, documented intentions, and observed execution are
-different evidence: a dependency declaration does not prove use, a CI workflow
-does not prove enforcement, and a benchmark script does not establish performance.
-Report conflicts between documentation and implementation with their sources.
+Support factual claims with the included evidence rules. Cite the
+implementation or artifact that supports the particular claim, not merely a
+related directory, and keep citations close to the prose or diagram they
+support. Source-derived behavior, configured settings, documented intentions,
+and observed execution are different evidence: a dependency declaration does
+not prove use, a CI workflow does not prove enforcement, and a benchmark script
+does not establish performance. Report conflicts between documentation and
+implementation with their sources.
 
 Mark unavailable evidence and unresolved facts as unknown or UNVERIFIED. Use
-"Assumption:" only for an unverified premise actually used in the document, and
-state what depends on it. Label reasoned inferences and cite their basis; do not
-invent behavior, intent, ownership, measurements, or approval to fill a section.
+"Assumption:" only for an unverified premise actually used in the document,
+and state what depends on it. Label reasoned inferences and cite their basis;
+do not invent behavior, intent, ownership, measurements, or approval to fill a
+section.
 
 Scope negative findings to the search performed, including material exclusions
 and access limits. For example, "No test files or test commands were found in
 the inspected application directories and manifests" does not establish that
-no tests exist elsewhere. Missing repository evidence for a deployment setting
-does not establish that the deployed system lacks it. Include enough search
-detail to make consequential absence claims checkable.
+no tests exist elsewhere, and missing repository evidence for a deployment
+setting does not establish that the deployed system lacks it. Include enough
+search detail to make consequential absence claims checkable.
 
 # Emit
 `spec`: the specification at the assigned reserved path. It opens with a `# `
@@ -117,30 +121,32 @@ Use the document revision date; do not claim review or acceptance for this
 revision without evidence.
 
 Place a metadata table beneath the Status line with project, project maturity,
-scope one-liner, owner, dependencies on sibling specs, and the inspected evidence
-baseline. Identify the revision and relevant working-state differences, or the
-available non-Git source state. Mark unsupported metadata unknown; distinguish
-a related spec from an established prerequisite. The emitted document has no
-YAML frontmatter.
+scope one-liner, owner, dependencies on sibling specs, and the inspected
+evidence baseline. Identify the revision and relevant working-state
+differences, or the available non-Git source state. Mark unsupported metadata
+unknown, and distinguish a related spec from an established prerequisite. The
+emitted document has no YAML frontmatter.
 
 Organize the body by the axis's domain. Include diagrams for supported
 relationships and flows, with labels consistent with the prose and evidence.
-When the inspected scope provides no relationship or flow to diagram, state why;
-do not invent one to satisfy the format. Scale detail to the project's evidence
-and complexity, without generic background or empty template sections.
+When the inspected scope provides no relationship or flow to diagram, state
+why instead of inventing one to satisfy the format. Scale detail to the
+project's evidence and complexity, without generic background or empty
+template sections.
 
-End with gaps and risks: observed weaknesses, missing capabilities, verification
-limits, and grounded risks with their conditions and consequences. Distinguish
-confirmed gaps from unknowns and proposed responses from existing controls. For
-each proposed response, give the design-search record: candidates weighed, the
-pick, and why it won. If no gaps or risks were identified, say so within the
-inspected scope; do not imply a guarantee that the system has none.
+End with gaps and risks: observed weaknesses, missing capabilities,
+verification limits, and grounded risks with their conditions and
+consequences. Distinguish confirmed gaps from unknowns and proposed responses
+from existing controls. For each proposed response, give the design-search
+record: candidates weighed, the pick, and why it won. If no gaps or risks were
+identified, say so within the inspected scope; that is not a guarantee the
+system has none.
 
 # Stuck
 An absent capability or lack of repository evidence for the assigned axis is a
 finding. Write the specification with what was inspected, what was not found,
-and what remains unknown. Partial access limits belong in that document when
-the accessible evidence still supports useful work.
+and what remains unknown. Note partial access limits in that document when the
+accessible evidence still supports useful work.
 
 Emit a `gap` when the axis or canonical destination remains missing, ambiguous,
 inconsistent, or outside the reserved mapping; when repository access prevents

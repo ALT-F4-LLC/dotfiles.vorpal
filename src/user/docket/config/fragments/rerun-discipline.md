@@ -1,6 +1,6 @@
 ---
 fragment: rerun-discipline
-version: 9
+version: 10
 ---
 # Re-run discipline
 
@@ -30,11 +30,11 @@ candidate inputs in the private snapshot before relying on its results. If the
 intended state cannot be established, keep the dependent conclusion unverified.
 
 Create a fresh, uniquely allocated directory beneath the inherited `$TMPDIR`
-for each step attempt and set `STEP_PRIVATE_TMP` to it. Give child commands
-private temporary, build-output, and writable cache paths beneath it,
-including `GOCACHE`; creating the directory alone does not redirect those
-writes. Set each command's `TMPDIR` and relevant
-tool-specific paths. For Go, account for `GOTMPDIR` and `GOMODCACHE` as well.
+for each step attempt and set `STEP_PRIVATE_TMP` to it; creating the directory
+alone does not redirect those writes. Set each command's `TMPDIR` and relevant
+tool-specific paths to redirect its private temporary, build-output, and
+writable cache paths beneath it, including `GOCACHE`; for Go, account for
+`GOTMPDIR` and `GOMODCACHE` as well.
 Follow the evidence rules for fresh execution versus cached results. Use a
 private source copy when a command can write into the source tree or sibling
 edits could change its inputs. Isolate other mutable resources the command uses,
@@ -57,7 +57,7 @@ only in a private copy of the state being tested. Keep the mutation confined
 to that copy and preserve the control result and mutation diff as evidence.
 Never plant or undo a scratch mutation in the shared checkout.
 
-Never use `git stash` to obtain a clean tree. The stash stack is shared by the
+Never use `git stash` to obtain a clean tree: the stash stack is shared by the
 repository's worktrees. For a committed comparison base, resolve the intended
 base to a commit ID, set `STEP_BASE_COMMIT` to it, and export that commit with
 `git archive` into a fresh directory beneath `$STEP_PRIVATE_TMP`, extracting

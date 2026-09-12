@@ -1,8 +1,8 @@
 # Reconcile and file
 
 Read this before any issue write. One coordinator owns filing for the audit.
-Observation authorization permits findings intake after these conditions are
-met; it never permits fixing or draining the queue.
+Observation authorization permits findings intake once these conditions are
+met. It never permits fixing or draining the queue.
 
 ## Eligibility
 
@@ -22,36 +22,36 @@ current source, affected work, and existing issue state. Use this disposition:
 A run is terminal only with reliable run/task evidence and settled relevant
 children. A loop also requires confirmed scheduling stop and settled current
 work. Paused/waiting-human is not terminal. Unknown state stays pending. Recheck
-before each batch that could wake a queue consumer; these checks do not lock the
-repository or guarantee no other session can begin afterward. If the required
-noninterference needs an atomic guarantee, hold the finding until an explicitly
-non-dispatchable intake mechanism is available. Never invent a safe issue state
-or stop queue consumers to create one.
+before each batch that could wake a queue consumer; these checks do not lock
+the repository or guarantee no other session can begin afterward. If the
+required noninterference needs an atomic guarantee, hold the finding until an
+explicitly non-dispatchable intake mechanism is available. Never invent a safe
+issue state or stop queue consumers to create one.
 
 ## Route by owner and store
 
-Definition, shared-corpus, workflow, and harness-source remedies normally belong
-to the dotfiles project. Engine defects belong to the Docket codebase. A bug in
-an observed repository belongs to that repository. An instance override belongs
-in the policy referral unless it exposes a shipped defect.
+Definition, shared-corpus, workflow, and harness-source remedies normally
+belong to the dotfiles project. Engine defects belong to the Docket codebase.
+A bug in an observed repository belongs to that repository. An instance
+override belongs in the policy referral unless it exposes a shipped defect.
 
 Resolve the owner's actual checkout and Git identity from trustworthy project
 metadata and filesystem evidence. Do not assume a primary worktree is named
-`main`. Verify the selected store as well as the checkout; explicit store
+`main`. Verify the selected store as well as the checkout: explicit store
 overrides and legacy local stores can defeat machine-global assumptions.
 Project-scoped listings must answer for this owner. Never create in the launch
 repo intending to move the issue afterward.
 
-Filing requires an installed compatible Docket binary whose startup effects are
-understood. An issue write does not authorize unrelated schema migrations or
-project registration. If the binary cannot satisfy that boundary, leave filing
-pending with its concrete prerequisite; do not upgrade, register, or migrate as
-part of shadow.
+Filing requires an installed compatible Docket binary whose startup effects
+are understood. An issue write does not authorize unrelated schema migrations
+or project registration. If the binary cannot satisfy that boundary, leave
+filing pending with its concrete prerequisite; do not upgrade, register, or
+migrate as part of shadow.
 
-Run a verified creation operation from the owning checkout, using a subshell or
-the tool's cwd parameter. Quote the checkout and every scope glob. Supply issue
-text through supported structured input or a literal body file in the permitted
-audit directory; do not interpolate transcript text into shell code.
+Run a verified creation operation from the owning checkout, using a subshell
+or the tool's cwd parameter. Quote the checkout and every scope glob. Supply
+issue text through supported structured input or a literal body file in the
+permitted audit directory; do not interpolate transcript text into shell code.
 
 ## Deduplicate before creating
 
@@ -115,12 +115,12 @@ for the worker to change that boundary or destroy uncommitted work. Preserve the
 installed tend security-gate requirement and any authorization already present
 in the actual worker session; shadow does not manufacture or waive approval.
 
-Acceptance criteria must be possible for a worker without this conversation.
-For command-backed criteria, give the command, expected observable result, and
-the concrete failing variant/mutant required by the local docket-plan contract.
-For a prose judgment without an executable check, mark it `read-verified` and
-state what to inspect; do not use that label to hide an unperformed behavioral
-test. Never claim a proposed acceptance check was already run.
+Acceptance criteria must be checkable by a worker without this conversation. A
+command-backed criterion states the concrete failing variant/mutant the local
+docket-plan contract requires. For a prose judgment without an executable
+check, mark it `read-verified` and state what to inspect; never use that label
+to hide an unperformed behavioral test, and never claim a proposed acceptance
+check already ran.
 
 Source fixes belong in the source repository, not the installed store. Name
 `src/user/claude_code/...` or `src/user/docket/config/...` as appropriate, and
@@ -140,13 +140,14 @@ a filing error to surface, not a successful item to count.
 Every confirmed finding must have a project-qualified issue ID or a reason it
 was not filed. Preserve instance-policy referrals and findings resolved during
 the run without counting them as open defects. Name affected trust boundaries
-separately when relevant. Include the evidence coverage, unresolved limitations,
-absolute log path, and the next condition another shadow should watch first.
+separately when relevant. Include the evidence coverage, unresolved
+limitations, the absolute audit log path, and the next condition another
+shadow should watch first.
 
-Persist the review and final ledger before sending. Collect and stop this
-audit's remaining helpers and monitors, preserving partial evidence; never stop
-observed work. If storage was denied, deliver the full review through the
-permitted result channel and explicitly say no durable audit log was created.
+Persist the review and final ledger to that log before delivery. If storage
+was denied, deliver the full review through the permitted result channel and
+explicitly say no durable audit log was created.
 
-Say that no fixes were applied. Filed issues drain through `tend` in their owning
-repos or through a docket-plan → docket-run execution. Do not start that work.
+Say that no fixes were applied. Filed issues drain through `tend` in their
+owning repos or through a docket-plan → docket-run execution; do not start
+that work.

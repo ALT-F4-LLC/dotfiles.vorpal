@@ -1,7 +1,9 @@
 [pipeline]
-description = "Cross-issue disposition: write the verdict comment and close the carrier, gated on the build/test sanity check and AC verification with a bounded revise loop; no code-review machinery."
+description = "Cross-issue disposition: write the verdict comment and close the carrier. Gated on the build/test sanity check and AC verification, with a bounded revise loop. No code-review machinery."
 name = "disposition"
-version = 10  # 10: `lease_ttl` added to every `[limits]` entry, matched to
+version = 11  # 11: prose-only rewrite for concision; no topology, routing, or
+              #   limit change.
+              # 10: `lease_ttl` added to every `[limits]` entry, matched to
               #   that entry's `max_step_duration`, so a lease lasts exactly
               #   as long as the step may run. A long wave no longer outlives
               #   the write-class lease and no longer draws an ack-reap panel;

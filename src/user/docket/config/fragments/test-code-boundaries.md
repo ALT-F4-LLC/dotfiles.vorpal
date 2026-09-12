@@ -1,6 +1,6 @@
 ---
 fragment: test-code-boundaries
-version: 5
+version: 6
 ---
 # When the change under review is test code
 
@@ -29,11 +29,9 @@ available evidence.
   assertion can detect the relevant defect, whether fixture assumptions support
   claims about a real producer, whether nondeterministic outcomes make results
   unreliable as evidence, and whether coverage omissions are deliberate and
-  justified. These remain judge-testing's claims on a test-heavy diff.
-
-judge-testing reviews tests as evidence; other code-review seats examine them
-as code within their own charters. A shared source location does not erase this
-division, and it does not require either seat to suppress a supported finding.
+  justified. These remain judge-testing's claims on a test-heavy diff, and a
+  shared source location does not shift them to another seat, nor does it
+  require either seat to suppress a supported finding.
 
 ## Where both land on one defect
 

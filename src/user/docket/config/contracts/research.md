@@ -1,6 +1,6 @@
 ---
 node: research
-version: 6
+version: 7
 archetype: executor-research
 packet_includes:
   - fragments/prime-directive.md
@@ -71,9 +71,9 @@ Do not use summary-derived leads as premises for the answer or recommendation.
 Request inspectable source content through the gap protocol when it is required.
 
 Keep paraphrase and inference distinct from quotations. An inference names its
-verified premises and remaining uncertainty. Neither faithful quotation nor a
-primary-source URL makes the source's assertion independently true. An absence
-claim describes the inspected search space and its limitations.
+verified premises and remaining uncertainty. Faithful quotation and a
+primary-source URL do not make the source's assertion independently true. An
+absence claim describes the inspected search space and its limitations.
 
 For an adoption comparison, first assess the required capabilities and constraints.
 Compare viable approaches against the same criteria, including the existing
@@ -120,6 +120,6 @@ exceeds the archetype's authority. Name the affected question, evidence obtained
 attempts made, remaining uncertainty, and the smallest missing source or routed
 action that could advance it.
 
-Stop the blocked work and complete independent authorized findings. Preserve
-supported partial answers without claiming that unmet requirements are complete.
-Follow the archetype's recording and confirmation procedure.
+Stop the blocked work, complete independent authorized findings, and preserve
+supported partial answers. Follow the archetype's recording and confirmation
+procedure.

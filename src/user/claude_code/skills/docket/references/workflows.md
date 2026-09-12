@@ -27,7 +27,7 @@ Find the relevant heading before reading a large section:
 
 ## Engine configuration (`docket config set|get`)
 
-Engine defaults live in the database and are read by the claim machinery:
+Engine defaults live in the database, read by the claim machinery:
 
 | Key | Type | Default | Meaning |
 |---|---|---|---|
@@ -47,16 +47,14 @@ Engine defaults live in the database and are read by the claim machinery:
 | `vote.hold.voters` | comma-separated names or `""` | `""` | who casts on a materialized held step. Empty (the default) mints held steps as `human` |
 
 A step without an explicit `class` uses its executor hint as the class.
-Declare `class = "read"` or `class = "write"` if those are the keys you want
-to configure; setting `lease.ttl.read` cannot affect an unrelated class.
-Class names are opaque. A finite `[limits] max`, not the word “write,”
-activates reap acknowledgments and class headroom holds. Reaping fences
-database authority but does not stop an operating-system process.
+Declare `class = "read"` or `class = "write"` to configure those keys;
+setting `lease.ttl.read` cannot affect an unrelated class. Class names are
+opaque. A finite `[limits] max`, not the word "write," activates reap
+acknowledgments and class headroom holds. Reaping fences database authority
+but does not stop an operating-system process.
 
 `docket config set lease.ttl.<class>` **warns** when no registered workflow
-declares that class, naming the ones that do. A warning and not a refusal —
-configuring ahead of a workflow is ordinary — but a TTL that binds nothing is
-otherwise discovered when a healthy step is reaped mid-run.
+declares that class, naming the ones that do; it does not refuse.
 
 ```bash
 docket config set lease.ttl.write 45m
@@ -64,39 +62,35 @@ docket config get lease.ttl.write --json=v2     # {"key":...,"value":"45m","sour
 docket config get                            # every key, with its source
 ```
 
-`source` is `set` or `default`, so "nobody configured this" is distinguishable
-from "configured to the same value". An unknown key or a value of the wrong
-type is a `VALIDATION_ERROR` (exit 3) at `set` time — a typo never silently
-stores a key nothing reads. The class in `lease.ttl.<class>` is an opaque
-string; docket never interprets it.
+`source` is `set` or `default`, distinguishing "nobody configured this" from
+"configured to the same value". An unknown key or a value of the wrong type
+is a `VALIDATION_ERROR` (exit 3) at `set` time. The class in
+`lease.ttl.<class>` is an opaque string; docket never interprets it.
 
-Under the shared store, config is **layered per project**: a read resolves the
-current project's override, then the store-wide value, then the built-in
-default (the first two both report `source: set`). `config set --global`
-writes the store-wide default instead of this project's override, and
-`config get --global` reads the store-wide values ignoring this project's
-overrides.
+Config is **layered per project**: a read resolves the current project's
+override, then the store-wide value, then the built-in default (the first two
+both report `source: set`). `config set --global` writes the store-wide
+default instead of this project's override; `config get --global` reads the
+store-wide values, ignoring this project's overrides.
 
-**Vote rules.** A workflow's `type="vote"` step names a rule rather than passing
-flags, because a step cannot pass flags. A rule *exists* iff its `.threshold` is
-set — criticality has a default, so it cannot be the existence test:
+**Vote rules.** A `type="vote"` step names a rule instead of passing flags. A
+rule *exists* iff its `.threshold` is set — criticality has a default, so it
+cannot be the existence test:
 
 ```bash
 docket config set vote.rule.majority.threshold 0.6
 docket config set vote.rule.majority.criticality high
 ```
 
-`<name>` is opaque, exactly as the lease class is. A step whose `vote_rule`
-names an unregistered rule is refused at `workflow register` (V26), naming the
-rule and listing the registered ones — a workflow that cannot possibly tally
-should not register. Note that `required_voters` comes from the step's own
-`voters` list, not from the rule: a rule is about *how strictly to tally*, the
-step about *who casts*.
+`<name>` is opaque, like the lease class. A step whose `vote_rule` names an
+unregistered rule is refused at `workflow register` (V26), naming the rule
+and listing the registered ones. `required_voters` comes from the step's own
+`voters` list, not the rule: the rule sets *how strictly to tally*, the step
+sets *who casts*.
 
 **Held steps by tally.** A materialized `<step>-held` step is the one row in a
 run no author wrote, so it has no `[[step]]` table to carry `voters` and
-`vote_rule`. `vote.hold.rule` and `vote.hold.voters` are where an instance says
-them instead:
+`vote_rule`. `vote.hold.rule` and `vote.hold.voters` supply them instead:
 
 ```bash
 docket config set vote.rule.panel.threshold 0.6
@@ -104,36 +98,32 @@ docket config set vote.hold.rule panel
 docket config set vote.hold.voters alice,bob,carol
 ```
 
-**BOTH keys are required, and unset is a strict no-op:** with either missing,
-holds are minted `human`, and one operator approves
-or rejects them. With both set they are minted `vote` and flow through the
-ordinary vote lifecycle. The escalation is one-directional:
+**BOTH keys are required; unset is a strict no-op.** With either missing,
+holds are minted `human`, and one operator approves or rejects them. With
+both set they are minted `vote` and flow through the ordinary vote lifecycle.
+The escalation is one-directional:
 
 - **pass** — the computed value stands, identical to `step approve` on the
   cluster. The payload records `operator_resolved` and the aggregate resumes.
-- **anything else** — the step **parks** at `waiting-human` and the question
-  passes to an operator, who answers it with `step approve` (including
-  `--value`) or `step reject`. A tally may confirm the engine's own computation
-  and may never overrule it, so a panel that could not agree cannot produce the
-  effect of an operator who declined.
+- **anything else** — the step **parks** at `waiting-human`, and an operator
+  answers with `step approve` (including `--value`) or `step reject`. A tally
+  can confirm the engine's own computation but cannot overrule it.
 
-The MINTED KIND is what persists: config supplies the roster, the step row
-supplies the question's type. Editing or clearing these keys mid-run changes who
-casts on holds minted *after* the edit, never what an already-open question is.
-
+The minted kind persists: config supplies the roster, the step row supplies
+the question's type. Editing or clearing these keys mid-run changes who casts
+on holds minted *after* the edit, never an already-open question.
 
 ## Workflow definitions (`docket workflow`)
 
 A **workflow** is a declarative description of the steps a piece of work goes
-through: what runs, in what order, what each step needs from the ones before
-it, and what happens when something fails. It is a TOML file you register into
-the database; nothing about it is specific to any kind of work or any kind of
-worker.
+through: what runs, in what order, what each step needs from earlier ones,
+and what happens on failure. It is a TOML file registered into the database;
+nothing about it is specific to any kind of work or worker.
 
-For standalone authoring, start from a shipped template, lint the draft,
-then register when the change is ready. Shared-corpus bootstrap follows its
-companion skill instead: activation registers schemas before workflows and
-manually registering early would freeze a version before approval.
+For standalone authoring, start from a shipped template, lint the draft, then
+register when ready. Shared-corpus bootstrap follows its companion skill
+instead: activation registers schemas before workflows, and registering
+early would freeze a version before approval.
 
 ```bash
 docket workflow init --template standard-dev
@@ -144,9 +134,8 @@ docket workflow list --json=v2
 docket workflow show standard-dev --json=v2
 ```
 
-At this stage registration is all that happens: a registered workflow is
-stored, inspectable, and validated, but nothing runs it yet. A repo that never
-registers one runs no workflow.
+Registration only stores, validates, and makes a workflow inspectable;
+nothing runs it yet. A repo that never registers one runs no workflow.
 
 ### Shipped templates
 
@@ -160,7 +149,7 @@ as a hand-authored workflow.
 
 ### Registration is content-addressed and immutable
 
-A registered `name@version` is **frozen**:
+A registered `name@version` is frozen:
 
 | Second registration of… | Result |
 |---|---|
@@ -168,12 +157,10 @@ A registered `name@version` is **frozen**:
 | **different** bytes at the same `name@version` | `CONFLICT` (exit 4), naming both hashes |
 | any bytes at a new `version` | an ordinary registration |
 
-To change a workflow, bump `[pipeline].version`. This exists so that pinning
-means something: a run that pinned `name@version` cannot have the definition
-swapped underneath it.
+To change a workflow, bump `[pipeline].version`: a run that pinned
+`name@version` cannot have the definition swapped underneath it.
 
-`register` accepts `-` to read stdin, so configuration generated in a pipeline
-needs no temp file:
+`register` accepts `-` to read stdin:
 
 ```bash
 generate-workflow | docket workflow register - --json=v2
@@ -182,9 +169,7 @@ generate-workflow | docket workflow register - --json=v2
 ### Checking a draft without registering it (`docket workflow lint`)
 
 Registration is a persistent write: it inserts a row and freezes a
-`name@version`. Checking a draft that way either accumulates versions nobody
-wanted or does not happen at all — so `lint` runs the identical validation and
-**writes nothing**:
+`name@version`. `lint` runs the identical validation and **writes nothing**:
 
 ```bash
 docket workflow lint .docket/config/workflows/standard-dev.toml --json=v2
@@ -194,10 +179,10 @@ generate-workflow | docket workflow lint - --json=v2     # `-` reads stdin
 
 It is the **same pipeline `register` runs**, call for call: grammar and step
 rules, vote rules against the config registry (V26), and threshold fields and
-literals against the registered schemas. The two cannot report different
-verdicts on the same bytes.
+literals against the registered schemas. The two report identical verdicts on
+the same bytes.
 
-The registry is **consulted, never written**, and the verdict says what a real
+The registry is **consulted, never written**; the verdict says what a real
 register would do:
 
 | `registration` | Meaning |
@@ -206,16 +191,15 @@ register would do:
 | `unchanged` | the same bytes are already registered; a register would be an idempotent success |
 | *(refusal)* | **different** bytes hold this `name@version` — `CONFLICT` (exit 4), naming both hashes and the version to bump `[pipeline].version` to |
 
-**The conflict case fails the lint rather than reporting a third outcome.** A
-definition that cannot register as it stands has not passed a check — and that
-case is the trap this verb exists for: an edited file at a frozen `name@version`
-validates cleanly and then refuses the *whole activation* the next time a run
-starts.
+**The conflict case fails the lint rather than reporting a third outcome.**
+This is the trap `lint` exists to catch: an edited file at a frozen
+`name@version` would otherwise validate cleanly and then refuse the *whole
+activation* the next time a run starts.
 
 ### Retiring a version from binding (`docket workflow deprecate`)
 
-A registered **name** binds forever at its highest version, and deleting its
-TOML does not unregister it — nothing removes a `workflows` row. `deprecate`
+A registered **name** binds forever at its highest version; deleting its TOML
+does not unregister it, since nothing removes a `workflows` row. `deprecate`
 retires one version from binding without deleting it:
 
 ```bash
@@ -224,11 +208,11 @@ docket workflow deprecate standard-dev@1 --json=v2 --restore   # back into bindi
 ```
 
 The row survives and stays fully readable: `workflow show` renders it,
-`--source` emits the exact registered bytes, and a run that already **pinned**
-it still resolves it and still completes. Only its candidacy for NEW bindings
-stops — matching picks the highest **non-retired** version of each name, so
-retiring the top version falls back to the one beneath it, and retiring every
-version of a name takes that name out of routing entirely.
+`--source` emits the exact registered bytes, and a run that already
+**pinned** it still resolves it and completes. Only its candidacy for new
+bindings stops. Matching picks the highest **non-retired** version of each
+name, so retiring the top version falls back to the one beneath it, and
+retiring every version of a name takes that name out of routing entirely.
 
 A retired version reports `deprecated_at_ms` under `--json=v2` and prints
 `[deprecated]` in human mode. See `workflow list` in [the CLI reference](../reference.md).
@@ -257,8 +241,8 @@ A retired version reports `deprecated_at_ms` under `--json=v2` and prints
 
 A definition has `[pipeline]`, an optional `[match]`, an optional `[limits]`,
 and one or more `[[step]]` tables. **Unknown keys are an error**, naming the
-key and its step — a typo'd `max_attempt` silently taking a default is exactly
-the bug that makes a workflow behave differently from what its author read.
+key and its step — this catches a typo like `max_attempt` silently taking a
+default.
 
 ```toml
 [pipeline]
@@ -294,21 +278,20 @@ are the only three things a bound on one does.
 | `lease_ttl` | the lease a claim of this class takes, overriding `docket config lease.ttl.<class>` |
 | `max_step_duration` | a **schedule-to-close** bound measured from the claim, **independent of heartbeats** |
 
-`max_step_duration` is the one worth stating plainly: a step past it is reaped
-**even with a live lease and a fresh heartbeat**, which is the whole difference
-between it and a lease TTL. A runaway holder cannot renew forever. It is a
-`[limits]` key on the workflow class — there is no `docket config` key for it.
+A step past `max_step_duration` is reaped **even with a live lease and a
+fresh heartbeat** — the difference from a lease TTL, and how a runaway holder
+is stopped from renewing forever. It is a `[limits]` key on the workflow
+class; there is no `docket config` key for it.
 
-**Both reaps are scoped to an ACTIVE run.** A lease that lapses while a run sits
-in `waiting-human` is not reaped, and neither is a step past its
-`max_step_duration` there. A TTL is a bet that a silent worker is dead and its
-step is better re-offered; on a run that is not active nothing would be offered
-anyway, so the reap is pure loss — it clears a live worker's lease and takes a
-write-reap hold on its class. This is a **suspension, not an exemption**: no
-expiry is rewritten, so the first `next` after the run returns to `active` reaps
-what came due meanwhile. It matters because the state is ordinary rather than
-exotic — a run parks when *any* step is parked, leaving that step's siblings
-legitimately `claimed` at `waiting-human`.
+**Both reaps are scoped to an ACTIVE run.** A lease that lapses while a run
+sits in `waiting-human` is not reaped, nor is a step past its
+`max_step_duration` there: on a run that is not active nothing would be
+re-offered anyway, so the reap would only clear a live worker's lease and
+take a write-reap hold on its class for no benefit. This is a **suspension,
+not an exemption** — no expiry is rewritten, so the first `next` after the
+run returns to `active` reaps what came due meanwhile. A run parks when *any*
+step is parked, leaving that step's siblings legitimately `claimed` at
+`waiting-human`.
 
 `[[step]]` fields, in full:
 
@@ -326,75 +309,76 @@ legitimately `claimed` at `waiting-human`.
 | `voters`, `vote_rule` | [hints], name | **required on `type="vote"`**, forbidden elsewhere |
 | `after` | [step names], **required** except on the first step and `loop = true` steps | predecessors; `[]` means root |
 | `inputs` | [`"<step>.<kind>"` \| `"<step>.*"` \| `"<step>.gate-results"` \| `"<step>.vote-record"` \| `"issue.body"` \| `"issue.diff"` \| `"issue.linked.<relation>.<kind>"` \| `"issue.latest.<kind>"`] | artifacts delivered to the step |
-| `holds_tree` | bool, **default true** | whether this step OCCUPIES its issue's scope while it runs. It is what scope exclusion consults, and what decides whether the step's completion records an `issue.diff` |
+| `holds_tree` | bool, **default true** | whether this step occupies its issue's scope while it runs. Scope exclusion consults it, and it decides whether the step's completion records an `issue.diff` |
 | `gates` | [name \| `{name, source="fence:<tag>", pre=bool}`] | checks; `pre = true` runs at claim |
 | `params` | table | arguments defined by the selected action’s contract; built-in aggregate keys are interpreted and validated |
 | `min_siblings` | int, default = all | how many fanout siblings the join needs |
 | `threshold` | table: routing → predicate | routing computed from the step's results |
-| `on_fail` | `"fix-loop"` \| `"waiting-human"` \| `"skip"` \| `"abandon-issue"`; default `"waiting-human"` | where a failure routes. **Required explicitly on `type="human"` and `type="vote"` steps** — the default is a routing nobody chose |
+| `on_fail` | `"fix-loop"` \| `"waiting-human"` \| `"skip"` \| `"abandon-issue"`; default `"waiting-human"` | where a failure routes. **Required explicitly on `type="human"` and `type="vote"` steps** |
 | `loop` | bool, default false | marks a loop-body step |
 | `serves` | [step names], default = every `fix-loop`-capable step | scopes this `loop = true` step (and its `after_loop` chain) to the named steps' **loop cluster** — entry fires only the bodies serving the step whose routing actually triggered it (the **trigger**). Omitted or empty means "serves every trigger," one cluster for the whole workflow |
 | `after_loop` | step name | where execution re-enters after a loop body |
 | `max_attempts` | int ≥ 1 | per-instance retry budget |
 | `max_fix_loops` | int ≥ 0 | round budget, checked against the issue's one loop-ordinal counter. Declared on a step with no `serves`, it is the **issue-level ceiling**. Declared on a `serves`-scoped body, it is that **cluster's own** budget, counted over ordinals holding that cluster's instances — the issue-level ceiling still governs on top of it |
-| `pass_floor` | `{ field, at }`, optional; requires `payload`, and `at` must be a value of `field`'s declared order (V37/V37a) | exit bar on a `pass` routing: when the routing resolves to `pass` but the step's recorded payload holds an element whose `field` value sits at or above `at`'s position and is neither `held` nor `operator_resolved`, the step parks `waiting-human` instead of exiting, naming `--as override-pass` and `--as fix-round` as the ways out. Opaque tokens compared by position; declared nowhere, nothing changes *(engine commit 2c58fc9; present in the installed nightly-90 build, unused by the corpus as of 2026-09-10)* |
-| `max_stalled_rounds` | int ≥ 0, default 0 (never fires); only on a step that can route `fix-loop` and records an artifact (V38) | non-convergence tolerance over THIS step's routed volume: a `fix-loop` entry after that many consecutive rounds in which the recorded payload's element count never fell below the smallest count any earlier round recorded is refused in the non-convergence park's shape — counter restored, nothing instantiated, `waiting-human` naming `--as fix-round`. A shrinking set never parks; one oscillating around a floor does. The first measured round is only a baseline, so a bound of N needs N+1 measured rounds and fires on loop entry N+1: under `max_fix_loops = 2` only `= 1` can ever fire, on the second entry, when round 1's count did not fall below round 0's *(same commit and status; unused by the corpus — measured on RUN-98, converging loops ran 9→8→3→3, 7→5→3→5 and 2→2→0→0 clusters, and `= 1` would have parked the third one round before it converged)* |
+| `pass_floor` | `{ field, at }`, optional; requires `payload`, and `at` must be a value of `field`'s declared order (V37/V37a) | exit bar on a `pass` routing: if the routing resolves to `pass` but the step's recorded payload holds an element whose `field` value sits at or above `at`'s position and is neither `held` nor `operator_resolved`, the step parks `waiting-human` instead of exiting, naming `--as override-pass` and `--as fix-round` as the ways out. Opaque tokens compared by position *(engine commit 2c58fc9; present in the installed nightly-90 build, unused by the corpus as of 2026-09-10)* |
+| `max_stalled_rounds` | int ≥ 0, default 0 (never fires); only on a step that can route `fix-loop` and records an artifact (V38) | non-convergence tolerance over this step's routed volume: a `fix-loop` entry after that many consecutive rounds where the recorded payload's element count never fell below the smallest count any earlier round recorded is refused — counter restored, nothing instantiated, `waiting-human` naming `--as fix-round`. A shrinking set never parks; one oscillating around a floor does. The first measured round is only a baseline, so a bound of N needs N+1 measured rounds and fires on loop entry N+1: under `max_fix_loops = 2` only `= 1` can ever fire, on the second entry, when round 1's count did not fall below round 0's *(same commit and status; unused by the corpus — measured on RUN-98, converging loops ran 9→8→3→3, 7→5→3→5 and 2→2→0→0 clusters, and `= 1` would have parked the third one round before it converged)* |
 | `expected_cost` | number ≥ 0, default 0 | the step's contribution to the run's budget floor, accrued **per claim**. Per expanded sibling on a fanout — four siblings accrue four times, no proration |
-| `when` | predicate over `kind` / `labels` — `<kind\|labels> <==\|!=\|contains> <value>` or `labels contains-any (a, b, c)` clauses, joined by `and` throughout or `or` throughout | step is skipped when false. `or` needs one clause to hold, `and` needs all; mixing the two connectives in one predicate is rejected at register time (there are no parentheses, so `a and b or c` has no defined reading). `contains-any` holds when the list intersects the issue's labels — the step-level `labels_any` — so `kind == task and labels contains-any (security-change, security)` says "this kind AND any of these labels" without mixing connectives. The engine also accepts a `labels contains_any [a, b, c]` spelling (underscore, square brackets) — spec-doc.toml uses it — but the comma/nesting/whitespace constraints below were verified only against the paren form |
+| `when` | predicate over `kind` / `labels` — `<kind\|labels> <==\|!=\|contains> <value>` or `labels contains-any (a, b, c)` clauses, joined by `and` throughout or `or` throughout | step is skipped when false. `or` needs one clause to hold, `and` needs all; mixing the two connectives in one predicate is rejected at register time (no parentheses, so `a and b or c` has no defined reading). `contains-any` holds when the list intersects the issue's labels, the step-level `labels_any` — so `kind == task and labels contains-any (security-change, security)` combines kind and labels without mixing connectives. The engine also accepts `labels contains_any [a, b, c]` (underscore, square brackets), used by spec-doc.toml, but the comma/nesting/whitespace constraints below were verified only against the paren form |
 | `metadata` | opaque table | recorded and delivered verbatim |
 | `packet` | list of paths, relative to `.docket/config/` | files inlined into the step's rendered work packet, **in declared order**. Each must be pinned by the run (they are, automatically, if they live under `.docket/config/`); an entry the run did not pin is refused **at activation**. An entry may carry the `{executor}` token, substituted with that sibling's executor hint — which is how one `fanout` step gives each sibling a different file. Docket reads their bytes and never interprets them |
 
-**`packet` inlines files; it never points at them.** The rendered packet carries
-each file's **body**, delimited and labeled with its path and hash, so a worker
-receives one document rather than a list of things to go read. Bytes are
-admitted only when they hash to what the run pinned: a file edited after
-activation is `CONFLICT` (exit 4) naming **both** hashes, and one deleted is
-`NOT_FOUND` (exit 2). That is what makes a packet reproducible — same step, same
-packet, byte-identical, even mid-run.
+**`packet` inlines files; it never points at them.** The rendered packet
+carries each file's **body**, delimited and labeled with its path and hash,
+so a worker receives one document rather than a list of things to go read.
+Bytes are admitted only when they hash to what the run pinned: a file edited
+after activation is `CONFLICT` (exit 4) naming **both** hashes, and one
+deleted is `NOT_FOUND` (exit 2). This keeps a packet reproducible: same step,
+same packet, byte-identical, even mid-run.
 
-A packet file may declare more files in a `packet_includes:` frontmatter list,
-and those are inlined immediately after it. **That is the only frontmatter key
-Docket reads** — every other key is ignored entirely, not validated and not
-surfaced — and includes are followed **exactly one level deep**. A malformed
-`packet_includes` is `VALIDATION_ERROR` at render, naming the file; a declared
-include that is missing or unpinned is refused rather than silently omitted.
+A packet file may declare more files in a `packet_includes:` frontmatter
+list, inlined immediately after it. **That is the only frontmatter key
+docket reads** — every other key is ignored, not validated or surfaced —
+and includes are followed **exactly one level deep**. A malformed
+`packet_includes` is `VALIDATION_ERROR` at render, naming the file; a
+declared include that is missing or unpinned is refused rather than silently
+omitted.
 
 #### Engine-produced inputs
 
 The input forms below resolve to engine records or activation-pinned linked
 artifacts rather than an ordinary local step artifact.
 
-`issue.body` is the activation snapshot. `issue.diff` is the run's computed VCS
-diff, and **it is recorded only at the completion of a step that holds the
-tree** — `holds_tree`, default true, the same declaration scope exclusion reads.
-A non-holding step records nothing, and its consumers resolve to the artifact
-the last **holding** step recorded: the reviewed object, pinned at the moment
-the change existed. Non-holding reviewers do not recompute a diff from a live
-tree that may have changed. Action, human, and vote steps record no diff;
-with no diff artifact at all, the input resolves to an **empty
-diff**, never an error and never a live `git diff`.
+`issue.body` is the activation snapshot. `issue.diff` is the run's computed
+VCS diff, recorded only at the completion of a step that holds the tree
+(`holds_tree`, default true, the same field scope exclusion reads). A
+non-holding step records nothing; its consumers resolve to the artifact the
+last **holding** step recorded, the reviewed object pinned at the moment the
+change existed, rather than a diff recomputed from a live tree that may have
+changed. Action, human, and vote steps record no diff; with no diff artifact
+at all, the input resolves to an **empty diff**, never an error and never a
+live `git diff`.
 
-**The bundle carries a machine-readable target ref.** Context
-assembly lifts the resolved `issue.diff` artifact's round record onto the
-bundle as `target_sha` — the commit the diff's tree stood at — and
-`target_worktree` — the producing record's declared worktree path, good while
-that checkout is still on disk (it is swept at integration). Both are omitted
-entirely when the resolved diff carries no round record. The default packet
-template states them in its header, so a reviewing consumer reads the tree
-from these fields instead of a prose convention in the change-summary's first
-line. They are exactly as reproducible as the input they describe.
+**The bundle carries a machine-readable target ref.** Context assembly lifts
+the resolved `issue.diff` artifact's round record onto the bundle as
+`target_sha` (the commit the diff's tree stood at) and `target_worktree` (the
+producing record's declared worktree path, valid while that checkout is
+still on disk; swept at integration). Both are omitted entirely when the
+resolved diff carries no round record. The default packet template states
+them in its header, so a reviewing consumer reads the tree from these fields
+rather than a prose convention in the change-summary's first line.
 
-`<step>.gate-results` is the named step's **recorded** gate results, served from
-the ledger rather than re-run — one input per `done` producer instance, carrying
-a JSON array in the recorded gate-result shape (`gate`, `ordinal`, `argv`, `exit`,
-`duration_ms`, `output`, `truncated`, `verdict`, `pre`, `reason`), the same
-shape a claim response's `pre_gates` carries. Instance selection mirrors
-ordinary artifact resolution — same issue, `done` only, ordinal-scoped with
-the per-input fallback, siblings in index order — with one departure:
-the **requesting step admits itself regardless of status**, so a self-declared
-`<self>.gate-results` reads the step's own claim-time `pre = true` rows (which
-commit before context assembly, while the step is still `claimed`).
-Completion-side rows, not yet recorded at claim, show up as the empty array.
+`<step>.gate-results` is the named step's **recorded** gate results, served
+from the ledger rather than re-run — one input per `done` producer instance,
+carrying a JSON array in the recorded gate-result shape (`gate`, `ordinal`,
+`argv`, `exit`, `duration_ms`, `output`, `truncated`, `verdict`, `pre`,
+`reason`), the same shape a claim response's `pre_gates` carries. Instance
+selection mirrors ordinary artifact resolution (same issue, `done` only,
+ordinal-scoped with the per-input fallback, siblings in index order), with
+one departure: the **requesting step admits itself regardless of status**, so
+a self-declared `<self>.gate-results` reads the step's own claim-time
+`pre = true` rows (which commit before context assembly, while the step is
+still `claimed`). Completion-side rows, not yet recorded at claim, show up
+as the empty array.
 
 ```toml
 inputs = ["implement.change-summary", "implement.gate-results"]
@@ -402,22 +386,21 @@ inputs = ["implement.change-summary", "implement.gate-results"]
 
 The producer **must be a step of this workflow**, but need not declare gates:
 a producer that recorded none resolves to an **empty array**, not an absent
-input, because "this step ran no checks" is an answer a consumer can act on
-while a missing input reads as a resolution failure. (Gates can also arrive
+input, since "this step ran no checks" is an answer a consumer can act on
+while a missing input reads as a resolution failure. Gates can also arrive
 from a `fence:` source the definition does not enumerate, so requiring a
-declaration would refuse correct workflows.) `gate-results` is a **reserved
-kind**: a step emitting it is refused at `workflow register` (V11a), since an
-artifact of that kind could never be addressed — the engine-served form would
-shadow it.
+declaration would refuse correct workflows. `gate-results` is a **reserved
+kind**: a step emitting it is refused at `workflow register` (V11a), since
+the engine-served form would shadow any artifact of that kind.
 
-`<step>.vote-record` is the named **vote step's** recorded tally, as JSON: the
-proposal id, its status, the weighted score, and every cast (`voter`, `role`,
-`verdict`, `confidence`, `rationale`, `findings`) — mirrors `gate-results` in
-shape and instance-selection (same issue, `done` vote-step producers only,
-highest matching ordinal). A vote step an operator moved a run past with
-`docket step resolve` before any proposal opened contributes **no input at
-all**, not an empty record. `vote-record` is a reserved kind exactly like
-`gate-results`: a step declaring `emits = "vote-record"` is refused at
+`<step>.vote-record` is the named **vote step's** recorded tally, as JSON:
+the proposal id, its status, the weighted score, and every cast (`voter`,
+`role`, `verdict`, `confidence`, `rationale`, `findings`) — mirrors
+`gate-results` in shape and instance-selection (same issue, `done` vote-step
+producers only, highest matching ordinal). A vote step an operator moved a
+run past with `docket step resolve` before any proposal opened contributes
+**no input at all**, not an empty record. `vote-record` is a reserved kind
+like `gate-results`: a step declaring `emits = "vote-record"` is refused at
 register time, and so is `<step>.vote-record` naming a producer whose `type`
 is not `"vote"` (rule V11).
 
@@ -428,10 +411,9 @@ inputs = ["gate.vote-record"]
 `issue.linked.<relation>.<kind>` is a **cross-issue** input: the latest
 recorded artifact of `<kind>` held by each issue this issue is linked to by
 `<relation>`, resolved and **pinned by artifact id at activation**, in the
-same transaction that snapshots the issue. `<relation>` is an
-existing relation type or its inverse token — "linked" is not a new relation
-kind, just a way to address either end of an ordinary `docket issue link add`
-edge:
+same transaction that snapshots the issue. `<relation>` is an existing
+relation type or its inverse token — "linked" addresses either end of an
+ordinary `docket issue link add` edge, not a new relation kind:
 
 | Canonical (forward) | Inverse |
 |---|---|
@@ -447,34 +429,33 @@ inputs = ["issue.body", "issue.linked.depends_on.ux-spec"]
 There is no separate "linkable" marking and no project scoping — any recorded
 artifact on any issue this one is linked to is reachable, even across
 projects. `<kind>` names exactly **one** kind; a wildcard (`*`) is refused at
-register time, and so is `gate-results` or `vote-record` as the named kind (no
-linked issue could ever hold either). Resolution happens **once, at
-activation**: an artifact recorded on the linked issue afterward never reaches
-the bundle, and every linked issue holding the kind resolves, ordered by
-linked-issue id. Activation refuses loudly (`VALIDATION_ERROR`, exit 3) rather
-than binding an empty input — an issue with no edge of `<relation>` at all, or
-whose linked issue(s) hold no artifact of `<kind>`, fails the **whole**
-activation, naming `docket issue link add` as the way out.
+register time, and so is `gate-results` or `vote-record` as the named kind
+(no linked issue could ever hold either). Resolution happens **once, at
+activation**: an artifact recorded on the linked issue afterward never
+reaches the bundle, and every linked issue holding the kind resolves,
+ordered by linked-issue id. Activation refuses loudly (`VALIDATION_ERROR`,
+exit 3) rather than binding an empty input — an issue with no edge of
+`<relation>` at all, or whose linked issue(s) hold no artifact of `<kind>`,
+fails the **whole** activation, naming `docket issue link add` as the way
+out.
 
-**`after` is required, and `after = []` is how you declare a root.** Implicit
-topology was a footgun: a step that forgets `after` would silently become a
-root and run first. Only the first step and `loop = true` steps may omit it.
+**`after` is required, and `after = []` is how you declare a root.** A step
+that forgets `after` would otherwise silently become a root and run first.
+Only the first step and `loop = true` steps may omit it.
 
-**Every gate step must declare `on_fail` explicitly — `type="human"` and
-`type="vote"` alike (V13a).** The default is `waiting-human`, so a gate that
+**Every gate step must declare `on_fail` explicitly** — `type="human"` and
+`type="vote"` alike (V13a). The default is `waiting-human`, so a gate that
 declares nothing has a routing its author never chose.
 
-**A `type="human"` step additionally may not route rejects to `waiting-human`**
-(V13): it would park the issue on the resolution of the very thing that just
-rejected it, a deadlock. Legal values there are `fix-loop`, `skip`, and
-`abandon-issue`.
+**A `type="human"` step additionally may not route rejects to
+`waiting-human`** (V13): that would park the issue on the resolution of the
+very thing that just rejected it, a deadlock. Legal values there are
+`fix-loop`, `skip`, and `abandon-issue`.
 
-**A `type="vote"` step MAY route to `waiting-human`**, and often should: on a
-vote gate that routing is the ESCALATION — a tally that did not reach its
+**A `type="vote"` step may route to `waiting-human`**, and often should: on a
+vote gate that routing is the escalation — a tally that did not reach its
 threshold decided nothing, so the question passes to an operator who has not
-been asked yet, which is not a wait on the decider that just declined. All four
-values are legal there. Because both readings are defensible, the grammar makes
-you say which you mean rather than inheriting one silently.
+been asked yet. All four values are legal there.
 
 `threshold` predicates have the shape `agg(field op literal)` with
 `agg ∈ {any, all, count>=n}` and `op ∈ {==, !=, >=, >, <=, <}`; routings are
@@ -483,40 +464,40 @@ as a gate). Routings are evaluated **top to bottom, first match routes**, and
 no match routes `pass`.
 
 **An interposed gate runs only when routed to.** A step named as a step-name
-routing target — author it with `after = [routing-step]` — is latched by
-readiness until a routing predecessor's **recorded** routing names it, and when
-the routing resolves anywhere else it is terminalized `skipped` in the same
+routing target — authored with `after = [routing-step]` — is latched by
+readiness until a routing predecessor's **recorded** routing names it. When
+the routing resolves anywhere else, it is terminalized `skipped` in the same
 routing transaction, so joins and issue completion resolve without it. A
 `next --run` offer may still carry such a gate in its staged closure, marked
 `conditional`: confirm the predecessor actually routed to it before spawning
 anything for it.
 
-**Fields and literals are still opaque tokens to docket — but they are checked
-against your schema.** When a step declares a `payload`, `workflow register`
-verifies that every predicate's field is one the schema declares, that every
-literal is a value that field accepts, and that any ordered operator
-(`>=`, `>`, `<=`, `<`) names a field the schema marks `ordered_enum`. Docket
-learns that `high` comes after `medium` because your document said so; it holds
-no opinion about what either word means.
+**Fields and literals are opaque tokens to docket, but checked against your
+schema.** When a step declares a `payload`, `workflow register` verifies
+that every predicate's field is one the schema declares, that every literal
+is a value that field accepts, and that any ordered operator (`>=`, `>`,
+`<=`, `<`) names a field the schema marks `ordered_enum`. Docket learns that
+`high` comes after `medium` because your document said so; it holds no
+opinion about what either word means.
 
-A step with a `threshold` and **no** `payload` is legal and unchanged:
-equality has never needed an order. An ordered comparison over such a field
-**parks the step** `waiting-human` with a reason naming the predicate — docket
-declines rather than guessing an order.
+A step with a `threshold` and **no** `payload` is legal: equality has never
+needed an order. An ordered comparison over such a field **parks the step**
+`waiting-human` with a reason naming the predicate, rather than docket
+guessing an order.
 
 **Executor hints are opaque.** `executor`, `fanout` entries, `voters`, and
-`class` are strings docket stores, echoes back, and uses as map keys. There is
-no registry of known executors and no behavior keyed on the value: put role
-names, team names, or people's names there and they mean what you intend.
-`metadata` remains opaque. `params` follows the selected action’s contract:
-Docket reads `output`, and the built-in `aggregate` validates and interprets
-its declared keys. See [Action steps](#action-steps--computations-not-workers).
+`class` are strings docket stores, echoes back, and uses as map keys. There
+is no registry of known executors and no behavior keyed on the value: role
+names, team names, or people's names there mean what you intend. `metadata`
+remains opaque. `params` follows the selected action's contract: docket
+reads `output`, and the built-in `aggregate` validates and interprets its
+declared keys. See [Action steps](#action-steps--computations-not-workers).
 
 **`when`'s list form has constraints the table entry above doesn't show.**
 `contains-any` needs at least one element — `labels contains-any ()` is
-rejected — with no leading, trailing, or doubled commas and no nesting;
-whitespace around elements and parens is fine, whitespace inside a bare value
-is not. Values in either clause form may be quoted (`kind == "bug"`,
+rejected — with no leading, trailing, or doubled commas and no nesting.
+Whitespace around elements and parens is fine; whitespace inside a bare
+value is not. Values in either clause form may be quoted (`kind == "bug"`,
 `labels contains-any ("docs", "urgent")`) or bare — they read the same.
 `contains-any` is **`labels`-only**: `kind contains-any (...)` is not a form
 the grammar defines. The mixed-connective refusal (rule V22, register time)
@@ -542,12 +523,12 @@ gates = [{ name = "measure", pre = true }]              # runs at claim, not at 
 never interprets it — there is no registry of known gates, no gate whose name
 has behavior, and no default gate.
 
-**Every gate needs a matching trust entry or it does not run** (see
-[trust contracts](../reference.md#docket-trust--trustgo)). A gate declaration does not authorize
-adding trust; apply the companion policy and existing user authorization. An unmatched gate is recorded
-`verdict: "unmatched"` with null `argv` and null `exit`, nothing spawns, and
-**the step fails** and routes per `on_fail`. A workflow whose check cannot run
-has not passed its check.
+**Every gate needs a matching trust entry or it does not run** (see [trust
+contracts](../reference.md#docket-trust--trustgo)). A gate declaration does
+not authorize adding trust; apply the companion policy and existing user
+authorization. An unmatched gate is recorded `verdict: "unmatched"` with
+null `argv` and null `exit`, nothing spawns, and **the step fails** and
+routes per `on_fail`.
 
 | Spelling | Where the command comes from |
 |---|---|
@@ -568,25 +549,24 @@ measurement the step consumes, and the judging is the step's job. A later step
 reads the same rows by declaring `inputs = ["<step>.gate-results"]` (see
 *Engine-produced inputs* above).
 
-**`skipped` means nothing was measured**, and it is a different fact from
-`fail`. A gate measures the tree its step is about to judge; when that tree
-cannot be bound, docket **records `skipped` rather than measuring a different
-tree**. A pass collected in the shared checkout, while the change under review
-lives somewhere else, is a verdict with no evidence value — and one that reads
-as green.
+**`skipped` means nothing was measured**, a different fact from `fail`. A
+gate measures the tree its step is about to judge; when that tree cannot be
+bound, docket **records `skipped` rather than measuring a different tree**.
+A pass collected in the shared checkout, while the change under review lives
+elsewhere, is a verdict with no evidence value that still reads as green.
 
-Docket tries to avoid the skip first. A worktree that has been swept (integration
-removes them between waves) is **reconstructed from the object database**: the
-commit is still there, so the tree is rebuilt in a throwaway detached checkout,
-measured, and removed. Those rows say so in their `reason`. Only when the commit
-itself is unreachable does the gate skip, and the reason names the sha so you
-know what to fetch.
+Docket tries to avoid the skip first. A worktree that has been swept
+(integration removes them between waves) is **reconstructed from the object
+database**: the commit is still there, so the tree is rebuilt in a throwaway
+detached checkout, measured, and removed, with those rows saying so in their
+`reason`. Only when the commit itself is unreachable does the gate skip, and
+the reason names the sha to fetch.
 
-A step whose gates recorded `skipped` **parks at `waiting-human`** — not its
-`on_fail`. Nothing is known about the change, so a fix loop would ask a worker to
-fix a tree nobody read, and a judge panel would deliberate over an infrastructure
-condition. What *is* known is something an operator can act on. `skipped` is
-counted in its own column in `run report`, beside `pass` and `fail`.
+A step whose gates recorded `skipped` **parks at `waiting-human`**, not its
+`on_fail`: nothing is known about the change, so a fix loop or a judge panel
+would deliberate over an infrastructure condition rather than the change
+itself. `skipped` is counted in its own column in `run report`, beside
+`pass` and `fail`.
 
 #### What a gate's child process sees
 
@@ -610,22 +590,21 @@ Docket then **sets** these itself:
 | `DOCKET_SCOPE` | the issue's declared scope globs, **newline-joined**; absent entirely when there are no globs to carry |
 | `DOCKET_GATE_NETWORK` | the trust entry's declared hosts, comma-joined — set only when it declared any |
 
-`DOCKET_ISSUE` and `DOCKET_SCOPE` are what let a **diff-shaped** gate evaluate
-the change it is actually gating instead of the whole dirty tree. The globs are
+`DOCKET_ISSUE` and `DOCKET_SCOPE` let a **diff-shaped** gate evaluate the
+change it is actually gating instead of the whole dirty tree. The globs are
 newline-joined rather than JSON because the consumer is a shell check reading
-its own environment, where `while IFS= read -r glob` needs no parser. **Absent
-is not empty**: an issue that declared no scope gives the check no narrower
-answer than the tree, and inventing one would be docket deciding what the issue
-touches.
+its own environment, where `while IFS= read -r glob` needs no parser.
+**Absent is not empty**: an issue that declared no scope gives the check no
+narrower answer than the tree, rather than docket inventing one.
 
-The variable carries globs or nothing, so it is the one surface where declaring
-no scope and declaring an empty one look alike — a declared-but-empty scope
-leaves `DOCKET_SCOPE` unset too, rather than setting it to the empty string.
-Everywhere the two are distinguishable they stay distinguished: the `scope`
-key, and the activation lint that warns about the first and not the second. A
-gate that must tell them apart reads `docket issue show`, not its environment.
+The variable carries globs or nothing, so declaring no scope and declaring
+an empty one look alike here: a declared-but-empty scope leaves
+`DOCKET_SCOPE` unset too, rather than setting it to the empty string.
+Elsewhere the two stay distinguished (the `scope` key, and the activation
+lint that warns about the first and not the second). A gate that must tell
+them apart reads `docket issue show`, not its environment.
 
-There is no way to extend the allowlist — no flag, no config key, no trust-entry
+There is no way to extend the allowlist: no flag, config key, or trust-entry
 field.
 
 ### Action steps — computations, not workers
@@ -639,27 +618,28 @@ name    = "reconcile"
 after   = ["synthesize-findings"]
 action  = "aggregate"
 inputs  = ["synthesize-findings.findings"]
-payload = "findings@9"
+payload = "findings@10"
 params  = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
 ```
 
 **Nothing claims an action step.** `docket step claim` refuses one with
-`CONFLICT` — "resolved by the engine, not by a worker" — the same way it refuses
-a `human` or `vote` gate. The engine runs it, records its artifact, and routes.
-It still appears in `docket next --run` so a dispatcher can see what a run is
-doing; the row carries no `executor` to spawn.
+`CONFLICT` — "resolved by the engine, not by a worker" — the same way it
+refuses a `human` or `vote` gate. The engine runs it, records its artifact,
+and routes. It still appears in `docket next --run` so a dispatcher can see
+what a run is doing; the row carries no `executor` to spawn.
 
 **Resolution is builtin-first.** `aggregate` is the one computation docket
-performs itself; every other action name is looked up in your trust store and
-run as a **user-trusted command**, through the same matching, argv resolution,
-env allowlist, timeout, capture, and repo containment a gate goes through. There
-are no exceptions and no second execution path. The name `aggregate` is
-reserved, so a trust entry cannot shadow it — `workflow register` says so rather
-than leaving you to wonder why your command never ran.
+performs itself; every other action name is looked up in your trust store
+and run as a **user-trusted command**, through the same matching, argv
+resolution, env allowlist, timeout, capture, and repo containment a gate
+goes through, with no exceptions and no second execution path. The name
+`aggregate` is reserved, so a trust entry cannot shadow it — `workflow
+register` refuses rather than leaving you to wonder why your command never
+ran.
 
 An unmatched action name records `verdict: "unmatched"` with null `argv` and
-null `exit`, spawns nothing, and **fails the step**, which routes per `on_fail`.
-A computation that could not run has not succeeded.
+null `exit`, spawns nothing, and **fails the step**, which routes per
+`on_fail`.
 
 #### The trusted-command contract
 
@@ -708,11 +688,11 @@ schema must mark `params.field` as `ordered_enum`. Median, max, and min are
 defined only over an order, so an aggregate without one could never compute.
 
 **The input.** The builtin reduces the **concatenated payloads of the step's
-declared `inputs` artifacts**, resolved by the ordinary input rules — `done`
-producers only, in declared order, and scoped to the step's own loop ordinal. So
-`inputs = ["synthesize-findings.findings"]` means "reduce what `synthesize-findings` recorded".
-`inputs` must be non-empty on an `aggregate` step, refused at `workflow
-register`: a step with nothing to read can never compute.
+declared `inputs` artifacts**, resolved by the ordinary input rules (`done`
+producers only, in declared order, scoped to the step's own loop ordinal). So
+`inputs = ["synthesize-findings.findings"]` means "reduce what
+`synthesize-findings` recorded". `inputs` must be non-empty on an
+`aggregate` step, refused at `workflow register`.
 
 Each element of that payload is one cluster. The element's `field` is either an
 **array** of values — the cluster's members — or a **scalar**, which is a
@@ -727,34 +707,32 @@ order, the reduction is `m[0]` for `min`, `m[len-1]` for `max`, and
 `m[(len-1)/2]` for `median` — **the LOWER of the two central values when the
 count is even**. So a cluster of `{low, blocker}` medians to `low`.
 
-That is not caution. Docket does not know which end of your order is worse: a
-rule that took "the more severe of the two" would be docket holding an opinion
-about severities, which is wrong for a `confidence` or a `ripeness`
-enum and invisible when it is. One expression, no special case, and the
-standard lower median for ordinal data where no average exists.
+Docket does not know which end of your order is worse: taking "the more
+severe of the two" would be docket holding an opinion about severities,
+wrong for a `confidence` or `ripeness` enum. The lower median is the
+standard choice for ordinal data where no average exists.
 
-**If that is the wrong end for your order, say so in the schema.** Docket cannot
-know which end is worse, but *your order can*. Add `"conservative_end": "upper"`
-beside the `ordered_enum` annotation and that field's even-count median ties
-resolve toward the top of the declared order instead — `{low, blocker}` medians
-to `blocker`. Declare nothing and the lower median is unchanged, which is what
-keeps a `confidence` or `ripeness` order at the lower median. See
-[The `conservative_end` annotation](schemas.md#the-conservative_end-annotation).
+**If that is the wrong end for your order, say so in the schema.** Add
+`"conservative_end": "upper"` beside the `ordered_enum` annotation and that
+field's even-count median ties resolve toward the top of the declared order
+instead — `{low, blocker}` medians to `blocker`. Declare nothing and the
+lower median is unchanged. See [The `conservative_end`
+annotation](schemas.md#the-conservative_end-annotation).
 
-The direction moves the **median tie and nothing else**: `min` and `max` already
-name an end explicitly, and an odd-count median has no tie to break. If you want
-the top of the order in *every* case and not only on ties, that is `method =
-"max"`, not a direction.
+The direction moves the **median tie and nothing else**: `min` and `max`
+already name an end explicitly, and an odd-count median has no tie to
+break. To get the top of the order in *every* case, not only on ties, use
+`method = "max"` instead.
 
 **Spread and holds.** `spread` is the distance between the extreme members'
 **positions** — so with `["info","low","medium","high","blocker"]`, both
 `{low, high}` and `{low, medium, high}` have spread 2. A cluster holds when
 `hold_spread > 0 && spread >= hold_spread`.
 
-**The demotion trail.** When the computed value's position is strictly below its
-highest member's, the output records `demoted_from` with the value that was not
-taken. When nothing was demoted the key is **absent**, not empty. `max` never
-demotes.
+**The demotion trail.** When the computed value's position is strictly below
+its highest member's, the output records `demoted_from` with the value not
+taken. When nothing was demoted the key is **absent**, not empty. `max`
+never demotes.
 
 **The output**, one element per input element, validated against both the
 shipped `aggregate@1` schema and your own:
@@ -771,26 +749,24 @@ cluster**, named `<step>-held` at the same ordinal with the cluster's payload
 index as its sibling suffix — `reconcile-held@0#0`, `reconcile-held@0#2`, … —
 and the routing step **stops**. Concretely:
 
-- The routing step's status stays `gated`, which is non-terminal, so every
-  downstream step waits. Its threshold is **not** evaluated yet.
-- Each held step is offered by `next --run` immediately, takes no claim and no
-  token, and shows up as an ordinary human gate — or as a vote gate, when
-  `vote.hold.*` is configured (see *Engine configuration*). Everything below is
-  the same either way; a tally answers first, and escalates to the
-  operator's verbs below when it does not pass.
-- Use `guard stop` to inspect whether stopping is currently allowed. A
+- The routing step's status stays `gated`, non-terminal, so every downstream
+  step waits. Its threshold is **not** evaluated yet.
+- Each held step is offered by `next --run` immediately, takes no claim and
+  no token, and shows up as an ordinary human gate, or as a vote gate when
+  `vote.hold.*` is configured (see *Engine configuration*). Either way, a
+  tally answers first and escalates to the operator's verbs below when it
+  does not pass.
+- Use `guard stop` to check whether stopping is currently allowed. A
   `waiting-human` state does not itself forbid stopping; do not approve or
   abandon a held question merely to end a turn.
-- The step-name suffix `-held` is **reserved**: you cannot declare a step whose
-  name ends in it.
-- **`#N` is the cluster's POSITION in the payload, not a cluster id.** A held
-  step names its own provenance so the two cannot be confused: `step show`
-  carries `held_cluster` — `cluster_index`, `cluster_count`, the `artifact`
-  the payload lives on, and the `producer_step` that recorded it — and `step
-  artifacts` on the row, which is legitimately empty because a hold produces
-  nothing, names that artifact instead of stopping at "produced no artifacts".
-  Two clusters of one payload point at the SAME artifact, which is
-  exactly what the index disambiguates.
+- The step-name suffix `-held` is **reserved**: no step name may end in it.
+- **`#N` is the cluster's position in the payload, not a cluster id.** A
+  held step names its own provenance: `step show` carries `held_cluster`
+  (`cluster_index`, `cluster_count`, the `artifact` the payload lives on,
+  and the `producer_step` that recorded it), and `step artifacts` on the
+  row — legitimately empty since a hold produces nothing — names that
+  artifact instead. Two clusters of one payload point at the same artifact,
+  which is what the index disambiguates.
 
 **One step per cluster, so you can answer them differently.** A hold carrying
 four clusters gives you four approve/reject decisions, not one. The suffix is
@@ -806,12 +782,11 @@ second cluster trips materializes `#1` and no `#0`.)
 
 **`--value V` is the corrected value for the cluster's aggregated field.** It
 lands on the **field itself**, so every threshold and every downstream input
-routes on the number the operator actually endorsed, and the computed value it
-replaced is recorded beside it as `operator_set_from` — the two records stay
-distinguishable rather than one overwriting the other. `--note`, when given,
-travels with the decision as `operator_note` on the same element, so a fixer
-reading the resolved payload learns *what was decided* and not merely *that a
-decision happened*.
+routes on the number the operator endorsed; the computed value it replaced is
+recorded beside it as `operator_set_from`, so the two stay distinguishable
+rather than one overwriting the other. `--note`, when given, travels with
+the decision as `operator_note` on the same element, so a fixer reading the
+resolved payload learns what was decided, not just that a decision happened.
 
 | Rule about `--value` | |
 |---|---|
@@ -821,26 +796,25 @@ decision happened*.
 | It applies to **materialized** `<step>-held` steps only | a declared human gate has no payload of its own to correct, so the flag would reach nothing there; that too is a `VALIDATION_ERROR` naming the step |
 | The routing step must declare an aggregated field and a `payload` schema | otherwise there is no field to set and no enum to check against |
 
-The value rides in the `step-approved` event beside the note, so the feed's
-account of the decision carries the decision's content.
+The value rides in the `step-approved` event beside the note.
 
-The routing step waits until **every** cluster has an answer, then routes once:
-per its effective `on_fail` if **any** cluster was rejected, otherwise through
-the threshold over the resolved payload. Reject is the escalating answer, so a
-mixed set does not silently pass — but each cluster keeps its own status,
-routing, and note, so the record stays per-cluster even though what routes is
-one decision.
+The routing step waits until **every** cluster has an answer, then routes
+once: per its effective `on_fail` if **any** cluster was rejected, otherwise
+through the threshold over the resolved payload. Reject is the escalating
+answer, so a mixed set does not silently pass, but each cluster keeps its
+own status, routing, and note.
 
 Approval means *accept the cluster* — at the computed value, or at the one
-`--value` names. The originally-held artifact stays addressable forever: what
-docket computed and what you accepted are two records, not one overwritten one.
+`--value` names. The originally-held artifact stays addressable forever:
+what docket computed and what you accepted are two records, not one
+overwritten one.
 
 A step parked because its clusters were **rejected** cannot be retried:
-`docket step resolve --as retry` refuses there rather than silently re-parking
-it. The rejection is sticky — re-running the aggregate re-reads the same
-rejected decision and routes to the same place, so the attempt counter was never
-what blocked it. What moves such a step is `override-pass`, `skip`, or
-`abandon-issue`, and the rejected verdict stays addressable through all three.
+`docket step resolve --as retry` refuses there rather than silently
+re-parking it. The rejection is sticky — re-running the aggregate re-reads
+the same rejected decision and routes to the same place. What moves such a
+step is `override-pass`, `skip`, or `abandon-issue`, and the rejected
+verdict stays addressable through all three.
 
 A loop entry supersedes an unresolved held step along with everything else at
 that ordinal — the question was about that ordinal's computation, and the loop
@@ -860,12 +834,11 @@ A `fanout` step expands to one sibling per hint, in declared order:
 | `on_fail` applies **per sibling** | one sibling failing routes that sibling. The other three still finish on their own terms. |
 | `min_siblings` is a **quorum**, compared after the join | if fewer than `min_siblings` siblings are `done` once every sibling is terminal, the fanned step routes per its `on_fail`. |
 
-**`min_siblings` does not cancel early.** Reaching the quorum does not release
-the join: docket waits for every sibling to finish and *then* compares. A
-4-way fanout with `min_siblings = 2` and two siblings already `done` still waits
-for the other two. This is deliberate — cancelling work that is already
-running, to save time on a quorum that is already met, is a decision docket
-declines to make on your behalf.
+**`min_siblings` does not cancel early.** Reaching the quorum does not
+release the join: docket waits for every sibling to finish and *then*
+compares. A 4-way fanout with `min_siblings = 2` and two siblings already
+`done` still waits for the other two, rather than docket cancelling work
+already running to save time on a quorum already met.
 
 ### Loops
 
@@ -873,64 +846,67 @@ A `threshold` (or an `on_fail`) that routes `fix-loop` enters a loop. There is
 **no other loop construct** — a threshold routing to a *step name* interposes
 that step as a one-off gate and is not a loop.
 
-**Loop entry is scoped to a cluster.** A `loop = true` step's
-`serves` list scopes it — and its `after_loop` chain — to the named steps'
-`fix-loop` routings, its **loop cluster**. On entry the engine derives the
-**trigger**: the step whose routing actually resolved to `fix-loop` (an
-`-held` approval step maps back to the routing step that names it first).
-Only the bodies **serving that trigger** instantiate, and only their
-`after_loop` downstream is superseded — a second gate elsewhere in the
-workflow stays untouched, still `pending`, not stale. Omitting `serves` (or
-leaving it empty) means "serves every trigger": one cluster spans the whole
-workflow. Input
+**Loop entry is scoped to a cluster.** A `loop = true` step's `serves` list
+scopes it, and its `after_loop` chain, to the named steps' `fix-loop`
+routings, its **loop cluster**. On entry the engine derives the **trigger**:
+the step whose routing actually resolved to `fix-loop` (an `-held` approval
+step maps back to the routing step that names it first). Only the bodies
+**serving that trigger** instantiate, and only their `after_loop` downstream
+is superseded — a second gate elsewhere in the workflow stays untouched,
+still `pending`, not stale. Omitting `serves` (or leaving it empty) means
+"serves every trigger": one cluster spans the whole workflow. Input
 redirection for stale artifacts is still computed workflow-wide, not per
-cluster — only the supersede/instantiate set on entry is cluster-scoped. The
-event feed's `loop-entered` data gains a `trigger` field alongside `ordinal`.
+cluster; only the supersede/instantiate set on entry is cluster-scoped. The
+event feed's `loop-entered` data gains a `trigger` field alongside
+`ordinal`.
 
 What happens on loop entry, in one transaction:
 
 1. **The issue's loop counter increments.** The counter is per-issue, not
-   per-step — one shared sequence even across independent clusters. If the new
-   count would exceed `max_fix_loops`, the routing becomes `waiting-human`
-   instead and no loop is entered — loops are bounded by construction, and the
-   parked step's routing records why. A **cluster-scoped** `max_fix_loops` (one
-   declared on a `serves`-scoped body) bounds only that cluster's own rounds,
-   under the issue-level ceiling declared elsewhere — hitting it parks with
-   `loop round %d for %q would exceed its cluster's max_fix_loops = %d on %s`
-   instead of the issue-wide `loop %d would exceed max_fix_loops = %d on %s`;
-   either way `docket step resolve --as fix-round` authorizes one more round.
-   Two refusals share that park's shape without touching the bound *(engine
-   commit f2dcb58)*: a round whose predecessor moved no bytes in the
-   issue's scope, and one whose routing step recorded the same verdict as
-   the round below it, are refused — nothing superseded, nothing
+   per-step: one shared sequence even across independent clusters. If the
+   new count would exceed `max_fix_loops`, the routing becomes
+   `waiting-human` instead and no loop is entered, with the parked step's
+   routing recording why. A **cluster-scoped** `max_fix_loops` (declared on
+   a `serves`-scoped body) bounds only that cluster's own rounds, under the
+   issue-level ceiling declared elsewhere — hitting it parks with `loop
+   round %d for %q would exceed its cluster's max_fix_loops = %d on %s`
+   instead of the issue-wide `loop %d would exceed max_fix_loops = %d on
+   %s`; either way `docket step resolve --as fix-round` authorizes one more
+   round. Two refusals share that park's shape without touching the bound
+   *(engine commit f2dcb58)*: a round whose predecessor moved no bytes in
+   the issue's scope, and one whose routing step recorded the same verdict
+   as the round below it, are refused — nothing superseded, nothing
    instantiated, `waiting-human` naming `--as fix-round`, which re-enters
-   through the authorized path the refusal does not check. A degenerate diff
-   (empty, or carrying only the unresolved-base marker) never counts as
-   unchanged. Exhaustion itself has no routing of its own: the bound always
-   parks `waiting-human`; a declared exhaustion routing is an open engine
-   request.
-2. **Unclaimed work downstream of the triggered cluster's `after_loop` root(s)
-   is superseded.** Instances at a lower ordinal that are still `pending`
-   become `superseded` — a terminal status, not a deletion. Already-claimed and
-   running instances are **left alone to finish**; their eventual routing is
-   recorded for the ledger but applies no downstream effect, so a slow step
-   from the previous ordinal cannot re-route an issue that has already moved
-   on.
-3. **`loop = true` steps serving the trigger instantiate at the new ordinal**,
-   along with their `after_loop` step and everything transitively after it.
-   Gates re-run and thresholds re-apply on the new instances — they are fresh,
-   with no gate trail and no routing carried over.
+   through the authorized path the refusal does not check. A degenerate
+   diff (empty, or carrying only the unresolved-base marker) never counts
+   as unchanged. Exhaustion itself has no routing of its own: the bound
+   always parks `waiting-human`; a declared exhaustion routing is an open
+   engine request.
+2. **Unclaimed work downstream of the triggered cluster's `after_loop`
+   root(s) is superseded.** Instances at a lower ordinal that are still
+   `pending` become `superseded`, a terminal status, not a deletion.
+   Already-claimed and running instances are **left alone to finish**;
+   their eventual routing is recorded for the ledger but applies no
+   downstream effect, so a slow step from the previous ordinal cannot
+   re-route an issue that has already moved on.
+3. **`loop = true` steps serving the trigger instantiate at the new
+   ordinal**, along with their `after_loop` step and everything
+   transitively after it. Gates re-run and thresholds re-apply on the new
+   instances — they are fresh, with no gate trail and no routing carried
+   over.
 
 Steps **upstream** of `after_loop` do not re-run. That is why `inputs` bind
-**per input**: a step at ordinal 1 resolves each declared input at ordinal 1 if
-something produced it there, and otherwise falls back to the highest earlier
-ordinal that did. A `fix` step at ordinal 1 binds `reconcile.findings` fresh at
-ordinal 1 and `implement.change-summary` from ordinal 0, in the same step.
+**per input**: a step at ordinal 1 resolves each declared input at ordinal 1
+if something produced it there, and otherwise falls back to the highest
+earlier ordinal that did. A `fix` step at ordinal 1 binds
+`reconcile.findings` fresh at ordinal 1 and `implement.change-summary` from
+ordinal 0, in the same step.
 
-**Issue completion is evaluated over highest-ordinal instances only.** A `done`
-step at ordinal 0 whose ordinal-1 instance is still pending does not count as
-finished, and superseded ordinal-0 instances do not block completion. Prior
-instances and their artifacts stay immutable and addressable for the ledger.
+**Issue completion is evaluated over highest-ordinal instances only.** A
+`done` step at ordinal 0 whose ordinal-1 instance is still pending does not
+count as finished, and superseded ordinal-0 instances do not block
+completion. Prior instances and their artifacts stay immutable and
+addressable for the ledger.
 
 ---
 

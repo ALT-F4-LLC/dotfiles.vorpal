@@ -1,7 +1,9 @@
 [pipeline]
-description = "Documentation change: implement with doc-validate and citation gates, one correctness judge, tribunal-filtered review and AC verification, and a bounded fix-loop re-entering at review; the conductor integrates commits, the operator publishes. Design-heavy doc work routes through spec-doc first."
+description = "Documentation change: implement with doc-validate and citation gates, one correctness judge, tribunal-filtered review and AC verification, and a bounded fix loop re-entering at review. The conductor integrates commits; the operator publishes. Design-heavy doc work routes through spec-doc first."
 name = "docs-only"
-version = 25  # 25: `lease_ttl` added to every `[limits]` entry, matched to
+version = 26  # 26: prose-only rewrite for concision; no topology, routing, or
+              #   limit change.
+              # 25: `lease_ttl` added to every `[limits]` entry, matched to
               #   that entry's `max_step_duration`, so a lease lasts exactly
               #   as long as the step may run. A long wave no longer outlives
               #   the write-class lease and no longer draws an ack-reap panel;

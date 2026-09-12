@@ -1,6 +1,6 @@
 ---
 fragment: re-review-rounds
-version: 7
+version: 8
 ---
 # Re-review rounds
 
@@ -15,10 +15,10 @@ invent closure or claim that an unverified defect was reproduced.
 
 Carry forward unresolved findings at their supported severities, including
 `blocker`, unless new evidence or an explicitly accepted requirement change
-justifies reassessment. They remain part of aggregation without being counted
-as new discoveries. A partial fix, moved manifestation, or restatement of the
-same underlying defect updates the existing finding; a new location alone does
-not make a finding new.
+justifies reassessment; they remain part of aggregation without counting as
+new discoveries. A partial fix, moved manifestation, or restatement of the
+same underlying defect updates the existing finding, and a new location alone
+does not make a finding new.
 
 Examine the changes and the behavior they affect, including unchanged callers,
 dependencies, and contracts where needed to establish their effects. Do not
@@ -29,10 +29,10 @@ state the comparison gap and limit claims about origin and closure accordingly.
 
 ## Apply the same top-severity bar on every round
 
-Every `blocker` must meet the governing severity ladder's top rung. Regression or
-recurrence establishes relevance to this round; neither establishes severity
-by itself. A returned minor defect remains minor unless its supported impact
-now meets a higher rung.
+Every `blocker` must meet the governing severity ladder's top rung. Regression
+or recurrence establishes relevance to this round, not severity: a returned
+minor defect remains minor unless its supported impact now meets a higher
+rung.
 
 For a new or reopened `blocker`, identify the triggering conditions, supporting
 evidence, violated requirement or contract, and the applicable Blocker criterion.
@@ -52,11 +52,11 @@ downgrading an unverified claim.
 
 Distance from an ideal fix is not itself a defect or a reason to escalate.
 
-Keep supported lower-severity findings visible at reconcile, in the run record,
-and at the operator gates before publishing. Under max aggregation on a track
-whose ladder starts an automatic fix loop, one top-severity finding can
-trigger another round, so do not promote optional improvements to obtain
-another iteration. Equally, do not suppress or downgrade a supported
-top-severity finding to make the loop finish, or to reach whatever
-convergence point the governing ladder defines. Accept a clean delta when
-warranted; finding counts are diagnostic, never a target that must decrease.
+Keep supported lower-severity findings visible at reconcile, in the run
+record, and at the operator gates before publishing. Under max aggregation on
+a track whose ladder starts an automatic fix loop, one top-severity finding
+can trigger another round: grade each finding on its supported severity alone,
+neither promoting an optional improvement to trigger another round nor
+suppressing or downgrading a supported top-severity finding to finish the
+loop. Accept a clean delta when warranted; finding counts are diagnostic,
+never a target that must decrease.

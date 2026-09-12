@@ -1,14 +1,13 @@
 ---
 fragment: completion-gates
-version: 9
+version: 10
 ---
 # Completion gates
 
 Before `docket step record`, identify every completion gate declared by your step in
 the authoritative workflow definition. Your packet does not list them. Use
 `docket trust list` to resolve each declared gate name to the exact command the engine
-will run. The trust list establishes available commands; the workflow establishes
-which apply. If either the required gate set or a command cannot be resolved, report
+will run. If either the required gate set or a command cannot be resolved, report
 the blocker rather than guess.
 
 Run every required gate after your final edits, from the worktree you will record,
@@ -27,11 +26,10 @@ unavailable prerequisites, or failures requiring broader changes with their evid
 Do not record while a required gate remains unsatisfied unless the workflow explicitly
 provides an exception. A failure reproduced on the base does not itself waive a gate.
 
-The engine runs the gates again at record time, and a failure there parks the step;
-the conductor resolves it under the run's standing rulings or escalates it to the
-operator. Repeated test runs do not substitute for a missing gate; a step that
-never runs `self-hygiene` parks on its findings regardless of how many times
-its tests passed.
+The engine reruns the gates at record time and parks the step on failure; the
+conductor resolves the park under the run's standing rulings or escalates it
+to the operator. A step that never runs `self-hygiene` parks on its findings
+regardless of how many times its tests passed.
 
 A refusal from the permission system, sandbox, or auto-mode classifier is a boundary
 event, whether it concerns a gate or another action. Recognize the refusal from the
@@ -50,8 +48,8 @@ a retry. A later success does not erase the refusal.
 `sandbox-friction-hook.sh` and the friction ledger do not replace your report; report
 observed denials even when no ledger entry is visible.
 
-Never use `git stash` to establish that a failing gate pre-dated your change. Linked
-worktrees share `refs/stash`; a concurrent push can change which entry a bare
+Never use `git stash` to establish that a failing gate pre-dated your change: linked
+worktrees share `refs/stash`, so a concurrent push can change which entry a bare
 `git stash pop` restores.
 
 For a baseline comparison, resolve the intended base to a commit ID and record it
@@ -79,5 +77,5 @@ evidence. A setup failure is inconclusive. If an archive cannot support the gate
 the workflow's approved baseline procedure or report that the comparison is unavailable.
 
 Do not create linked worktrees from this executor: baseline investigation stays
-within the assigned checkout's scope and the step's private directory. Keep your
-working tree and the shared stash unchanged during baseline investigation.
+within the assigned checkout's scope and the step's private directory, and it
+must not change your working tree or the shared stash.

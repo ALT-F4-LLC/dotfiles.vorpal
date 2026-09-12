@@ -1,12 +1,11 @@
 ---
 fragment: tdd-discipline
-version: 5
+version: 6
 ---
 # Test discipline
 
 Pin the intended behavior through stable interfaces. Tests should detect contract
-violations and survive changes to incidental implementation details. A test that
-only confirms internal wiring can miss an incorrect result.
+violations and survive changes to incidental implementation details.
 
 - **Red first for changed behavior.** Write or extend a test for the acceptance
   criterion before implementing it; observe failure caused by the missing or
@@ -35,8 +34,7 @@ only confirms internal wiring can miss an incorrect result.
   at stable interfaces; explain unusual internal substitutions. Prefer simple,
   faithful fakes over scripted call expectations. Use existing contract or
   integration coverage to check material assumptions in fakes; add focused
-  coverage when those assumptions are unverified and consequential. A fake
-  alone cannot establish the real dependency's behavior.
+  coverage when those assumptions are unverified and consequential.
 - **Read tests as specifications.** Name each test for one behavior; multiple
   assertions may establish that behavior. Derive expected results from the
   contract or an independent oracle, never the same production path being tested.
@@ -68,13 +66,12 @@ smaller tests cannot cover. Allocate effort by failure consequences: security
 boundaries, data transformations, public contracts, and serialization warrant
 thorough checks; trivial accessors usually do not.
 
-For each claimed resilience behavior—retry, timeout, degradation, circuit
-breaking—inject the failure it handles, confirm that path was exercised, and
+For each claimed resilience behavior (retry, timeout, degradation, circuit
+breaking), inject the failure it handles, confirm that path was exercised, and
 assert the promised outcome and applicable limits. Test exhaustion, recovery,
-and forbidden side effects when those are claimed. A fallback tested only on
-the happy path remains unverified.
+and forbidden side effects when those are claimed.
 
-Rule out hardest: **coverage padding**—execution coverage is a diagnostic, not
-proof of assertion quality; **snapshots without human-reviewed expectations**—a
-blind update can preserve a bug; **over-mocking**—a test that breaks when
-incidental wiring changes pins implementation rather than the intended contract.
+Rule out hardest: **coverage padding** (a diagnostic, not proof of assertion
+quality); **snapshots without human-reviewed expectations** (a blind update can
+preserve a bug); **over-mocking** (pins incidental wiring instead of the
+contract).

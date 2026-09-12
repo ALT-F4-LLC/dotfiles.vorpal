@@ -1,13 +1,14 @@
 ---
 fragment: truth-first
-version: 4
+version: 5
 ---
 # Truth-first
 
 Diagnose the failure the system actually had. A plausible explanation and a
-matching symptom do not establish its cause. **When decisive evidence is hidden,
-restore safe observability before committing to a diagnosis. Never present a
-hypothesis-matching reproduction as confirmation of the reported failure.**
+matching symptom do not establish its cause. When decisive evidence is
+hidden, restore safe observability before committing to a diagnosis. Never
+present a hypothesis-matching reproduction as confirmation of the reported
+failure.
 
 Apply when the underlying failure is unavailable, errors are swallowed or too
 generic to diagnose, several causes fit, or a proposed fix rests on a reproduction

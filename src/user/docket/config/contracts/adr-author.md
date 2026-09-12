@@ -1,6 +1,6 @@
 ---
 node: adr-author
-version: 8
+version: 9
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
@@ -27,7 +27,7 @@ needed when the work requires resolving several independent choices or specifyin
 their coordinated implementation. Link to an existing design without reproducing
 it. You do not write requirements or interaction design.
 
-Not every decision earns a record. Skip an obvious, reversible, low-impact choice.
+Not every decision needs a record. Skip an obvious, reversible, low-impact choice.
 Record one whose rationale is significant enough to preserve: for example, a
 library or protocol choice, a schema shape, a convention, an accepted residual
 risk, or a deprecation.
@@ -82,7 +82,7 @@ Use stable ADR links and revision-specific references for exact historical
 passages. Link to detailed comparisons and verification evidence.
 
 # Emit
-Engine kind: `doc` (per frontmatter). Document type: `adr` — the new or
+Engine kind: `doc` (per frontmatter). Document type: `adr`, the new or
 updated decision record, with its identifier, title, status,
 known decision date and decision-maker, and evidence of selection or acceptance.
 Use the repository's metadata format. New records and revised drafts retain these
@@ -103,8 +103,7 @@ the work requires a technical design, no record is warranted, or an unchanged
 canonical record already covers the decision. Also use a `gap` when missing
 access, conflicting records, or a material uncertainty prevents reliable
 documentation. An explicitly acknowledged assumption does not by itself block
-recording the choice; preserve its uncertainty and acceptance status.
-
-The `gap` identifies the reason, relevant records or evidence, and the specific
-input or next action needed. Apply these checks before writing. A usable prior
-draft or a supported supersession follows Method rather than the duplicate stop.
+recording the choice; preserve its uncertainty and acceptance status. Apply
+these checks before writing. Identify the reason, relevant records or
+evidence, and the specific input or next action needed. A usable prior draft
+or a supported supersession follows Method rather than this stop.

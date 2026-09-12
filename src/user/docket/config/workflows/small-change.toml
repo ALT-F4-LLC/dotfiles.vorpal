@@ -1,7 +1,9 @@
 [pipeline]
-description = "Small ordinary change, bound by the `small` label: implement with the full gate list, one correctness judge routing a blocker straight to the fix loop, AC verification with a single-seat tribunal on an unverifiable or out-of-scope AC, and a bounded fix loop re-entering at review; the conductor integrates commits, the operator publishes."
+description = "Small ordinary change, bound by the `small` label. Implement with the full gate list; one correctness judge routes a blocker straight to the fix loop. AC verification uses a single-seat tribunal on an unverifiable or out-of-scope AC, and the bounded fix loop re-enters at review. The conductor integrates commits; the operator publishes."
 name = "small-change"
-version = 5  # 5: `lease_ttl` added to every `[limits]` entry, matched to that
+version = 6  # 6: prose-only rewrite for concision; no topology, routing, or
+             #   limit change.
+             # 5: `lease_ttl` added to every `[limits]` entry, matched to that
              #   entry's `max_step_duration`, so a lease lasts exactly as long
              #   as the step may run. A long wave no longer outlives the
              #   write-class lease and no longer draws an ack-reap panel;

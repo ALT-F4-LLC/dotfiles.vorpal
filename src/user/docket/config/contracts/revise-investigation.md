@@ -1,6 +1,6 @@
 ---
 node: revise-investigation
-version: 5
+version: 6
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -90,6 +90,6 @@ its discriminating outcomes, and the access or authority it needs. State when a
 probe can inform only a future occurrence.
 
 Finish independent corrections and preserve supported findings in `investigation`
-alongside the gap. Follow the brief's recording protocol without inventing a
-completion status. Do not claim approval, start another round, or reset the loop;
-the workflow owns exhaustion and escalation to the operator.
+alongside the gap, following the brief's recording protocol without inventing a
+completion status. Do not claim approval, start another round, or reset the
+loop; the workflow owns exhaustion and escalation to the operator.

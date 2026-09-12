@@ -1,7 +1,9 @@
 [pipeline]
-description = "Trivial mechanical change, bound by the `trivial` label: implement with the full gate list, then AC verification with a single-seat tribunal on an unverifiable or out-of-scope AC and one fix round re-entering at verify-ac; no judge; the conductor integrates commits, the operator publishes."
+description = "Trivial mechanical change, bound by the `trivial` label. Implement with the full gate list, then AC verification with a single-seat tribunal on an unverifiable or out-of-scope AC and one fix round re-entering at verify-ac. No judge. The conductor integrates commits; the operator publishes."
 name = "trivial-change"
-version = 4  # 4: `lease_ttl` added to every `[limits]` entry, matched to that
+version = 5  # 5: prose-only rewrite for concision; no topology, routing, or
+             #   limit change.
+             # 4: `lease_ttl` added to every `[limits]` entry, matched to that
              #   entry's `max_step_duration`, so a lease lasts exactly as long
              #   as the step may run. A long wave no longer outlives the
              #   write-class lease and no longer draws an ack-reap panel;

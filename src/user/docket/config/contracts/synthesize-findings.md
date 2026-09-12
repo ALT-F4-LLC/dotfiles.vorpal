@@ -1,6 +1,6 @@
 ---
 node: synthesize-findings
-version: 19
+version: 20
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -19,11 +19,11 @@ judgment; severity reduction, disagreement holds, and routing belong to the engi
 
 Do not re-review the change, investigate or reproduce defects, change code,
 re-grade findings, decide a disputed ruling, or write a verdict. A finding you
-consider weak or wrong remains accounted for. Duplicates become members, not
+consider weak or wrong stays accounted for. Duplicates become members, not
 discarded reports. Never invent a finding, source field, closure, or disposition.
 
 Apply evidence-rules to reading, faithful transfer, provenance, and your own
-clustering claims. The judges' evidence remains attributed to them; copying it
+clustering claims. The judges' evidence stays attributed to them; copying it
 does not make it your independent observation. Included fragments do not expand
 this role into diagnosis or verification of the underlying defects.
 
@@ -41,12 +41,12 @@ to substitute a similarly named file or remembered schema.
 On a re-review, also read the latest authoritative prior reconcile artifact,
 the corresponding synthesis artifact, and relevant decisions and closures.
 Prefer a decision-bearing artifact that supersedes an earlier computed result.
-Keep current reports, historical member records, and aggregate records distinct;
-they are not three sets of new votes. Missing current reports are not clean
-reviews, and a judge's silence does not close a prior finding.
+Keep current reports, historical member records, and aggregate records
+distinct; they are not three sets of new votes. Missing current reports are
+not clean reviews, and a judge's silence does not close a prior finding.
 
 Track each source finding by its artifact, judge, and supplied finding ID.
-The same record delivered twice is one input; different judges' reports remain
+The same record delivered twice is one input; different judges' reports stay
 distinct even when their text matches. Use authoritative source identity to
 distinguish a current revision of an earlier finding from another finding.
 Recover missing member IDs or evidence from the cited source artifacts. Do not
@@ -56,44 +56,45 @@ be disambiguated for the payload's linkage, use Stuck.
 Use the packet's artifact references and permitted read operations to recover
 missing records. Read `docket vote show <proposal-id>` when a relevant decision
 names `panel <proposal-id>`; preserve the scope and reasoning of the ruling,
-not just the vote outcome. A general approval does not establish the disposition
-of every finding. Do not search the store's database or investigate the code
-to compensate for an incomplete findings packet.
+not just the vote outcome. A general approval does not establish the
+disposition of every finding. Do not search the store's database or
+investigate the code to compensate for an incomplete findings packet.
 
 ## Decide membership
 
-Read evidence before comparing titles. Merge when the reports identify the same
-causal defect and one targeted correction addresses every member's stated
-obligation. A patch that could bundle independent repairs is not that test.
-Check the trigger, violated obligation, and mechanism across the whole proposed
-cluster; a chain of pairwise similarities does not establish one common defect.
+Read evidence before comparing titles. Merge when the reports identify the
+same causal defect and one targeted correction addresses every member's
+stated obligation. A patch that could bundle independent repairs is not that
+test. Check the trigger, violated obligation, and mechanism across the whole
+proposed cluster; a chain of pairwise similarities does not establish one
+common defect.
 
 The same file and line can contain different defects. Different locations can
-be manifestations of one defect when the evidence establishes a shared cause.
-Similar missing checks at separate call sites do not by themselves establish
-that shared cause. Vocabulary and review dimension are not membership rules.
+be manifestations of one defect when the evidence establishes a shared cause;
+similar missing checks at separate call sites do not by themselves establish
+it. Vocabulary and review dimension are not membership rules.
 
 A runtime defect and missing regression coverage normally need separate
 corrections: repairing validation does not itself create a missing test. Merge
 them only when their evidence describes one underlying obligation resolved by
 the same correction, rather than using a planned code-and-test patch as proof.
 
-When membership alone is uncertain, split the findings and state the unresolved
-pairs and what supplied evidence would distinguish them. Do not invent a
-diagnosis to make the clustering tidy. Apply the identity rules below before
-changing the membership of an established historical cluster.
+When membership alone is uncertain, split the findings and state the
+unresolved pairs and what supplied evidence would distinguish them. Do not
+invent a diagnosis to make the clustering tidy. Apply the identity rules below
+before changing the membership of an established historical cluster.
 
 # Rounds
 
 ## Reconstruct state before serializing
 
-Account for every current finding and every previously standing cluster.
-For each prior cluster, record whether it remains open, has an applicable
+Account for every current finding and every previously standing cluster. For
+each prior cluster, record whether it remains open, has an applicable
 settlement, was fixed, or was transferred to a named follow-up issue. Cite the
-record supporting each transition. A repair author's claim, an empty delta,
-a severity calculation, or a bare `operator_resolved` flag is not proof of a
-fixed defect. An operational gap about missing information is not a filing
-of the defect itself.
+record supporting each transition. A repair author's claim, an empty delta, a
+severity calculation, or a bare `operator_resolved` flag is not proof of a
+fixed defect. An operational gap about missing information is not a filing of
+the defect itself.
 
 Match recurrence by defect identity and the scope of the prior evidence and
 ruling. A moved line does not create a new defect; the same line does not make
@@ -101,20 +102,20 @@ a different mechanism inherit an old ruling. Preserve an established cluster
 ID when the same defect recurs, including a judge-supported recurrence after
 a recorded fix. Describe the previous closure and the evidence for recurrence.
 
-Distinguish an agreed severity from a settled obligation. An operator can accept
-`high` while leaving a repair outstanding. Do not translate that act into a
-settling `prior_disposition` merely to prevent another hold. Preserve a
-severity-only agreement's provenance in the body rather than mapping it to a
-settling label. If recorded state already uses a settling label while leaving
-a repair obligation open on this change, recover the decision's meaning. A
-confirmed mismatch requires Stuck and a corrected disposition representation
-from the workflow; do not silently reinterpret the label. A documented transfer
-to a named follow-up issue can settle routing for this change while leaving
-that issue's work outstanding.
+Distinguish an agreed severity from a settled obligation. An operator can
+accept `high` while leaving a repair outstanding; do not translate that act
+into a settling `prior_disposition` merely to prevent another hold. Preserve
+a severity-only agreement's provenance in the body rather than mapping it to
+a settling label. If recorded state already uses a settling label while
+leaving a repair obligation open on this change, recover the decision's
+meaning. A confirmed mismatch requires Stuck and a corrected disposition
+representation from the workflow; do not silently reinterpret the label. A
+documented transfer to a named follow-up issue can settle routing for this
+change while leaving that issue's work outstanding.
 
 First apply authoritative resolutions and establish whether any prior hold,
-conflicting disposition, or challenge remains unresolved. Then use these cases
-in order:
+conflicting disposition, or challenge remains unresolved. Then apply these
+cases in order:
 
 | Case | One cluster's representation |
 | --- | --- |
@@ -126,9 +127,8 @@ in order:
 | Prior cluster fixed, settled, or filed elsewhere, with no current report | Account for its departure and supporting trace in the body. It need not remain in the active payload. |
 
 The scalar-restatement case is an explicit exception to replaying current
-severities into arithmetic. Their original values remain in the body. It avoids
-both a second cluster for the same defect and a new hold on an unchanged ruling.
-A supplied authorized reopening must identify the effective state and the
+severities into arithmetic. Their original values remain in the body. A
+supplied authorized reopening must identify the effective state and the
 members to reconsider; historical rulings remain in the body, and only an
 applicable current disposition belongs in `prior_disposition`.
 
@@ -141,18 +141,18 @@ severities being emitted, with each source record assigned exactly once.
 Copy known, applicable disposition facts into `prior_disposition` using only
 `round`, `ruling`, `ruled_by`, and `follow_up_issue`. Omit unknown keys; never
 use null or invent a ruling. `round` is the nonnegative integer round in which
-the decision occurred, not merely the round an aggregate was calculated.
-The other values are non-empty strings. Omit the object when no disposition
-facts are known; cite ordinary carry-forward provenance in the body.
+the decision occurred, not merely the round an aggregate was calculated. The
+other values are non-empty strings. Omit the object when no disposition facts
+are known; cite ordinary carry-forward provenance in the body.
 
 ## Preserve identity
 
-Cluster IDs have the form `<issue-id>-C<n>`, with positive integer `n`.
-Retain the ID first assigned to an established defect. Assign new IDs above
-the highest number ever allocated for this issue, including retired clusters.
-Establish that ceiling from complete issue history or an authoritative supplied
-allocation record. The largest number visible in one prior aggregate is only
-a lower bound unless history completeness is established.
+Cluster IDs have the form `<issue-id>-C<n>`, with positive integer `n`. Retain
+the ID first assigned to an established defect. Assign new IDs above the
+highest number ever allocated for this issue, including retired clusters.
+Establish that ceiling from complete issue history or an authoritative
+supplied allocation record. The largest number visible in one prior aggregate
+is only a lower bound unless history completeness is established.
 
 If the ceiling is unavailable, retrieve the missing history. If it remains
 unavailable when a new ID is needed, use Stuck; a prose note does not make ID
@@ -160,11 +160,12 @@ reuse safe. Do not restart numbering on a re-review. Order existing IDs
 consistently and assign genuinely new IDs in first-source-appearance order;
 body reordering never renumbers them.
 
-Do not silently merge two historical IDs or split one historical cluster across
-new IDs. Those changes require an authoritative mapping that preserves lineage
-and identifies the scope of each ruling. Apply a supplied mapping; otherwise
-describe the proposed correction through Stuck. The preference for splitting
-uncertain new findings does not authorize rewriting historical identities.
+Do not silently merge two historical IDs or split one historical cluster
+across new IDs. Those changes require an authoritative mapping that preserves
+lineage and identifies the scope of each ruling. Apply a supplied mapping;
+otherwise describe the proposed correction through Stuck. The preference for
+splitting uncertain new findings does not authorize rewriting historical
+identities.
 
 # Emit
 
@@ -174,12 +175,13 @@ below for completeness. Its validation does not enforce all these requirements.
 
 ## Body
 
-Identify the issue, run, round, source artifacts, prior authoritative aggregate,
-and ID-ceiling source. Give one section per emitted cluster: ID, the defect
-stated once, current or carried status, and each member's judge, finding ID,
-severity, location, evidence, and source artifact. Retain qualifications and
-provenance. For scalar carries, cite the previous aggregate and preserve or
-recover the prior synthesis's member account so downstream readers have it.
+Identify the issue, run, round, source artifacts, prior authoritative
+aggregate, and ID-ceiling source. Give one section per emitted cluster: ID,
+the defect stated once, current or carried status, and each member's judge,
+finding ID, severity, location, evidence, and source artifact. Retain
+qualifications and provenance. For scalar carries, cite the previous aggregate
+and preserve or recover the prior synthesis's member account so downstream
+readers have it.
 
 Explain non-obvious merges, splits, historical matches, and unresolved pairs.
 For a prior ruling, say "previously ruled, round N" when its round is known;
@@ -211,11 +213,11 @@ Every entry carries non-empty `id` and `title`, and a valid `severity`:
   `operator_resolved`.
 
 Every entry carries `file`, `line`, and `evidence`. For active members, choose
-the highest-severity member; break ties by source arrival order. Copy all three
-from that same record so the location remains paired with its evidence.
-Copy `evidence` verbatim, including qualifications; never paraphrase it or
-combine separate quotations into an invented source field. The body preserves
-every other member's evidence and location.
+the highest-severity member, breaking ties by source arrival order, and copy
+all three from that same record so the location stays paired with its
+evidence. Copy `evidence` verbatim, including qualifications; never paraphrase
+it or combine separate quotations into an invented source field. The body
+preserves every other member's evidence and location.
 
 `line` is a positive integer or null. Null is only for explicitly evidenced
 whole-file or whole-commit scope, not an unknown line. Preserve a supplied
@@ -227,15 +229,15 @@ claim that you verified those lines in the current checkout.
 When any member supplies an `alternative`, retain one in the cluster: choose
 the most concrete compatible alternative, breaking ties by source arrival
 order. Preserve other supplied alternatives and material conflicts in the
-body. Choosing a representative does not decide a disputed remedy. A scalar
+body; choosing a representative does not decide a disputed remedy. A scalar
 carry retains the prior alternative where present.
 
 ### Open severity
 
-The order is `info < low < medium < high < blocker`. Copy judges' values;
-computing a maximum for `open_severity` is serialization, not permission to
-re-grade them. For an open active cluster, emit the maximum of its emitted
-member severities. For an open scalar carry, emit its authoritative scalar.
+The order is `info < low < medium < high < blocker`. Copy judges' values:
+computing a maximum for `open_severity` is serialization, not re-grading. For
+an open active cluster, emit the maximum of its emitted member severities.
+For an open scalar carry, emit its authoritative scalar.
 
 Under the current routing contract, an applicable settling disposition is:
 
@@ -258,12 +260,13 @@ Check its value and presence explicitly before recording. The consuming
 workflow owns thresholds and their precedence.
 
 Before successful recording, reconcile the source inventory with the body and
-payload: every current finding has one cluster assignment; every prior standing
-cluster has a carry, matched update, or evidenced departure; no input is counted
-twice; IDs and member/severity alignment are correct; evidence is copied exactly;
-and disposition and open-severity treatment agree. Schema success alone does
-not establish these properties. A verified empty standing set uses `[]` with
-a body explaining coverage; incomplete input is not an empty standing set.
+payload: every current finding has one cluster assignment; every prior
+standing cluster has a carry, matched update, or evidenced departure; no
+input is counted twice; IDs and member/severity alignment are correct;
+evidence is copied exactly; and disposition and open-severity treatment
+agree. Schema success alone does not establish these properties. A verified
+empty standing set uses `[]` with a body explaining coverage; incomplete
+input is not an empty standing set.
 
 # Stuck
 
@@ -274,12 +277,13 @@ conflicting rulings can prevent a complete routable artifact even when some
 findings are readable.
 
 Recover the missing information through permitted source-record reads first.
-If it remains unavailable, preserve the prepared clustering and source inventory
-in scratch and describe the gap, affected findings or clusters, and the smallest
-missing input or authorized decision. Use the brief's gap-only recording path;
-do not submit a partial or invented payload as successful `findings`.
+If it remains unavailable, preserve the prepared clustering and source
+inventory in scratch and describe the gap, affected findings or clusters, and
+the smallest missing input or authorized decision. Use the brief's gap-only
+recording path; do not submit a partial or invented payload as successful
+`findings`.
 
-Follow the brief's exact empty-body and payload rules for a gap-only completion.
-If no usable protocol is supplied, return the gap to the caller. Report a saved
-or parked state only after confirmation, and use the archetype's recording
-recovery before retrying an uncertain write.
+Follow the brief's exact empty-body and payload rules for a gap-only
+completion. If no usable protocol is supplied, return the gap to the caller.
+Report a saved or parked state only after confirmation, and use the
+archetype's recording recovery before retrying an uncertain write.

@@ -1,13 +1,12 @@
 ---
 fragment: test-infra-discipline
-version: 5
+version: 6
 ---
 # Test-infrastructure discipline
 
-When building or modifying test infrastructure—harnesses, fakes, fixtures,
-generators, builders, or CI gates—treat its reliability and maintenance as
-production concerns. Engineers depend on it for every change that follows;
-scale its design to the behavior and users it actually supports.
+When building or modifying test infrastructure (harnesses, fakes, fixtures,
+generators, builders, or CI gates), treat its reliability and maintenance as
+production concerns, scaled to the behavior and users it supports.
 
 - **Name the purpose first.** Identify the defect class the infrastructure helps
   detect or the test-reliability problem it solves. Apply the laziness ladder:
@@ -16,9 +15,9 @@ scale its design to the behavior and users it actually supports.
 - **Use the smallest size that faithfully catches that class.** Let consumers
   stay at that size: testing a parser should not require a network round-trip.
   Keep real collaborators when they are fast, deterministic, and practical.
-  Size definitions and budgets follow the test-discipline fragment.
+  Size definitions and budgets follow fragments/tdd-discipline.md.
 - **Expose outcomes and contractual effects.** Supply simple, faithful fakes
-  when doubles are needed, exposing the effects the test fragment says tests
+  when doubles are needed, exposing the effects fragments/tdd-discipline.md says tests
   assert; do not force tests to pin incidental wiring.
   Check consequential fake behavior against the real contract through existing
   contract or integration coverage, adding focused checks where needed. Make
@@ -26,8 +25,8 @@ scale its design to the behavior and users it actually supports.
 - **Build in isolation and replay.** Make relevant time, randomness, and I/O
   controllable at stable boundaries. Preserve generated inputs or seeds and
   configuration needed to reproduce failures. Isolate mutable state and owned
-  resources across tests and workers; clean up even after failure. An
-  injectable clock does not prevent interference from a shared cache.
+  resources, including shared caches, across tests and workers; clean up even
+  after failure.
 - **Fixtures match the contract under test.** Ground consequential shape
   assumptions in a schema, producer contract, or safe reference artifact.
   Representative valid fixtures preserve the fields and relationships relevant
@@ -52,9 +51,8 @@ scale its design to the behavior and users it actually supports.
   as evidence before removing disposable files. A throwaway probe does not
   replace warranted regression coverage.
 - **A failure hook must be exercised.** Provide the injection point for each
-  claimed retry, timeout, or degradation behavior; the test fragment governs
+  claimed retry, timeout, or degradation behavior; fragments/tdd-discipline.md governs
   asserting the behavior it enables. An available but unused failure hook
   leaves the behavior unverified.
 
-Keep failures reproducible and diagnostic: a flaky suite spends every future
-engineer's attention on rerunning it.
+Keep failures reproducible and diagnostic.

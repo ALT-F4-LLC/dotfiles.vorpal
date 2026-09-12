@@ -1,6 +1,6 @@
 ---
 node: tdd-author-security
-version: 10
+version: 11
 archetype: executor-write
 packet_includes:
   - fragments/prime-directive.md
@@ -77,18 +77,19 @@ and deletability; the chosen design ships with the least structure that enforces
 the properties.
 
 Resolve the premises needed to choose the design. Proposed controls require
-credible enforcement and verification plans; their implementation tests need not
-have run before the design exists. Identify those tests as planned and specify
-what evidence is required before release. A plan is not a verification result.
-An unsupported premise that could change the required protection or chosen
-approach remains a design blocker.
+credible enforcement and verification plans; their implementation tests need
+not have run before the design exists, but identify those tests as planned and
+specify what evidence is required before release. A plan is not a verification
+result, and an unsupported premise that could change the required protection
+or chosen approach remains a design blocker.
 
-Before narrowing or removing a fail-closed control as redundant, establish that
-the remaining protection covers the relevant attack paths, states, and operating
-modes. A single successful observation does not establish that coverage. Resolve
-the redundancy premise before accepting the removal in the design; otherwise
-retain the control or gap the dependent decision. A promised implementation test
-does not settle an unknown property of the mechanism being relied on.
+Before narrowing or removing a fail-closed control as redundant, establish
+that the remaining protection covers the relevant attack paths, states, and
+operating modes; a single successful observation does not establish that
+coverage, and a promised implementation test does not settle an unknown
+property of the mechanism being relied on. Resolve the redundancy premise
+before accepting the removal in the design; otherwise retain the control or
+gap the dependent decision.
 
 Specify adversarial inputs, misuse sequences, and authorized behavior that must
 remain available. For detectors, include a known-positive case that must trigger
@@ -103,7 +104,7 @@ signals and incident-response needs. Cover key rotation, secret revocation, and
 recovery where applicable, with required evidence and responsible roles.
 
 # Emit
-Engine kind: `doc` (per frontmatter). Document type: `tdd` — the new or revised
+Engine kind: `doc` (per frontmatter). Document type: `tdd`: the new or revised
 security-track technical design, with its status clear and document identity
 preserved. Include:
 
@@ -125,26 +126,28 @@ preserved. Include:
   states the conditions and required observable result so it survives copying
   into an implementation issue.
 
-Every ship-blocking obligation appears as an explicit row in the implementation
-plan, including required tests, rollout safeguards, and operational work. Give
-each a stable identifier, checkable completion criteria, and the phase or release
-it blocks. Give each obligation a consistent blocking marker used wherever it
+Every ship-blocking obligation appears as an explicit row in the
+implementation plan, including required tests, rollout safeguards, and
+operational work, with a stable identifier, checkable completion criteria, the
+phase or release it blocks, and a consistent blocking marker used wherever it
 appears. Prose in another section does not replace the row, and phase
 boundaries do not make a required protection optional.
 
 # Stuck
-If the goal, adversary, assets, or relevant boundaries cannot be established, emit
-a `gap` and stop authoring the dependent design. Use the same route when an
-unresolved premise prevents a supported design choice, a proposed control lacks
-a credible verification method, or a decision requires authority you lack.
+If the goal, adversary, assets, or relevant boundaries cannot be established,
+emit a `gap` and stop authoring the dependent design. Use the same route when
+an unresolved premise prevents a supported design choice, a proposed control
+lacks a credible verification method, or a decision requires authority you
+lack.
 
-Name the unknown or conflict, evidence examined, affected decisions or obligations,
-and smallest input or action needed, with your recommendation and responsible
-role. Preserve useful independent work as an explicitly incomplete draft; do not
-present it as ready for implementation. Tests planned for implementation and
-approval pending on a complete proposal are not themselves missing design facts.
+Name the unknown or conflict, evidence examined, affected decisions or
+obligations, and smallest input or action needed, with your recommendation and
+responsible role. Preserve useful independent work as an explicitly incomplete
+draft, not ready for implementation. Tests planned for implementation and
+approval pending on a complete proposal are not themselves missing design
+facts.
 
-If this work does not need a dedicated security design, emit a `gap` identifying
-the appropriate route and any security constraints to carry forward, then stop
-this authoring path. Recommend annotation, co-authoring, an ADR, or direct
-implementation according to the scope above.
+If this work does not need a dedicated security design, emit a `gap`
+identifying the appropriate route and any security constraints to carry
+forward, then stop this authoring path. Recommend annotation, co-authoring, an
+ADR, or direct implementation according to the scope above.

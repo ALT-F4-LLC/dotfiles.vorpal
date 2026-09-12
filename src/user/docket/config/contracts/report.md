@@ -1,6 +1,6 @@
 ---
 node: report
-version: 7
+version: 8
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -40,12 +40,12 @@ Do not omit evidence because it disagrees with the investigation or another
 research input. Preserve the disagreement and its effect on the report.
 
 # Method
-Start from the investigation's supported conclusion and its limits. Carry the
-investigation's supported conclusion and its stated confidence as its
-assessment; do not invent one or claim gate approval. Incorporate research where it supports, adds to, or
-contradicts that account. Any synthesis that qualifies the conclusion or
-recommendation must identify the change and its cited basis. New interpretive
-links are INFERRED; do not supply a new causal explanation from model recall.
+Carry the investigation's supported conclusion and its stated confidence as its
+assessment; do not invent one or claim gate approval. Incorporate research where
+it supports, adds to, or contradicts that account. Any synthesis that qualifies
+the conclusion or recommendation must identify the change and its cited basis.
+New interpretive links are INFERRED; do not supply a new causal explanation from
+model recall.
 
 Distinguish confidence in the cause from confidence in the recommended action.
 Corroboration may affect confidence when its relevance and independence are

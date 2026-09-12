@@ -1,7 +1,8 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 39  # 39: `lease_ttl` added to every `[limits]` entry, matched to
+version = 40  # 40: prose-only rewrite for concision; no topology, routing, or limit change.
+              # 39: `lease_ttl` added to every `[limits]` entry, matched to
               #   that entry's `max_step_duration`, so a lease lasts exactly
               #   as long as the step may run. A long wave no longer outlives
               #   the write-class lease and no longer draws an ack-reap panel;

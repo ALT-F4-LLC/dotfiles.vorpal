@@ -1,7 +1,9 @@
 [pipeline]
-description = "Read-only root-cause investigation with an optional research step, ending at a tribunal read that sends the report back to a bounded revision loop on rejection."
+description = "Read-only root-cause investigation with an optional research step, ending at a tribunal read. A rejection sends the report back to a bounded revision loop."
 name = "investigation"
-version = 17  # 17: `lease_ttl` added to every `[limits]` entry, matched to
+version = 18  # 18: prose-only rewrite for concision; no topology, routing, or
+              #   limit change.
+              # 17: `lease_ttl` added to every `[limits]` entry, matched to
               #   that entry's `max_step_duration`, so a lease lasts exactly
               #   as long as the step may run. A long wave no longer outlives
               #   the write-class lease and no longer draws an ack-reap panel;

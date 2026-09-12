@@ -14,6 +14,14 @@
 # ALWAYS EXITS 0. A failing test is evidence the verifier should see and weigh,
 # not a reason to refuse the claim — `build` and `tests` are the gates that fail
 # a step, and they run on `implement` where the failure belongs.
+#
+# Covers four commands: `build`, `tests`, `crossref-check`, and `doc-validate`.
+# The last two are corpus-wide gates with no other source of execution evidence,
+# so an AC that depends on them would otherwise come back `unverifiable`.
+#
+# It deliberately does NOT read or execute any commands from an issue body's
+# fenced code blocks — doing so would require an operator trust decision that
+# has not been made, so this script only ever runs the fixed commands above.
 
 set -euo pipefail
 
@@ -61,6 +69,8 @@ echo
 # that drift.
 run build just build
 run tests just tests
+run crossref-check just crossref-check
+run doc-validate just doc-validate
 
 echo "=== end ac-commands ==="
 exit 0

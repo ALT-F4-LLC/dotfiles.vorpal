@@ -40,6 +40,8 @@ jobs:
 
       - run: bash tests/docket-trust-guard-hook.test.sh
 
+      - run: bash tests/finish-skill.test.sh
+
       - run: bash tests/frozen-drift-check.test.sh
 
       - run: bash tests/mutant-rule-crossref.test.sh

@@ -1,6 +1,6 @@
 ---
 node: verify-ac
-version: 13
+version: 14
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -27,8 +27,13 @@ to probe, edit, repair, or amend declarations do not expand it.
 The governing issue body supplies the ACs. Scope metadata and recorded scope
 amendments supply authorization boundaries, not additional acceptance criteria.
 Do not open design documents, UX specifications, mockups, or Figma files, even
-when the issue cites them. If judging an AC requires requirements available
-only there, report the missing issue-body requirement.
+when the issue cites them, unless the document appears in the candidate's
+changed paths or the issue's declared `files` — there it is the candidate
+artifact under evaluation, not a requirements source, and inspecting its
+content is ordinary evidence gathering; requirements and waivers still come
+only from the issue body, and importing either from the document's content
+remains forbidden. If judging an AC requires requirements available only
+there, report the missing issue-body requirement.
 
 **Supplied findings are eligible evidence.** Read `design-qa.findings` when the
 packet carries it, including when an AC names it as its verification source.

@@ -917,8 +917,13 @@ criteria are verifiable from the diff, carrying neither `small` nor
 when the issue declares at most two files in one directory, adds no file,
 and every acceptance criterion is verifiable from the diff or a trusted
 fenced command; apply `trivial` only to a typo, a config value, a doc line,
-or a one-line fix. Never apply either to a security-sensitive issue or to
-one carrying any label in policy's `[security].labels`. When in doubt apply
+or a one-line fix. Never apply either to a security-sensitive issue, to a
+ui-scoped issue (one carrying `ui`, or whose files or scope lie under a TUI or UI
+surface), or to one carrying any label in policy's `[security].labels`. Small-change
+and trivial-change run no copy-verify or render-verify step, so a ui issue cannot
+safely skip those checks. If a ui issue already carries a size label, remove the
+size label, never the `ui` label, since stripping `ui` to satisfy small-change's
+`unless_labels` is the mistake this rule exists to prevent. When in doubt apply
 `small`: an issue carrying both binds the judged small-change track.
 Confirm the binding the same way as every other variant, with `docket
 workflow show small-change` or `docket workflow show trivial-change`.

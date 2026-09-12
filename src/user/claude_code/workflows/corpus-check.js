@@ -15,7 +15,7 @@ const AGENT_CONFIG = {
   discovery: { model: 'haiku', effort: 'low' },
   sizing: { model: 'haiku', effort: 'low' },
   read: { model: 'sonnet', effort: 'low' },
-  coverage: { model: 'haiku', effort: 'low' },
+  coverage: { model: 'opus', effort: 'low' },
   refill: { model: 'sonnet', effort: 'low' },
   crossBoundary: { model: 'fable', effort: 'low' },
   verify: { model: 'haiku', effort: 'low' },

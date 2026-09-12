@@ -1,7 +1,13 @@
 [pipeline]
 description = "Read-only root-cause investigation with an optional research step, ending at a tribunal read that sends the report back to a bounded revision loop on rejection."
 name = "investigation"
-version = 16  # 16: `report-vote` reads `issue.latest.investigation` instead of
+version = 17  # 17: `lease_ttl` added to every `[limits]` entry, matched to
+              #   that entry's `max_step_duration`, so a lease lasts exactly
+              #   as long as the step may run. A long wave no longer outlives
+              #   the write-class lease and no longer draws an ack-reap panel;
+              #   `step heartbeat` could not extend past `max_step_duration`
+              #   anyway, so the ceiling is unchanged. No topology change.
+              # 16: `report-vote` reads `issue.latest.investigation` instead of
               #   `report.investigation`, so a re-run after `revise-investigation`
               #   sees the revised report, as every other loop-gated vote in the
               #   corpus already does; `revise-investigation` gains
@@ -48,10 +54,10 @@ labels_any  = ["investigation"]
 unless_labels = ["blocked", "spec-doc", "spec-project", "release", "retro", "route-direct", "route-loop", "route-tend"]
 
 [limits]
-"investigate" = { max = 16, max_step_duration = "1h" }
-"report" = { max = 16, max_step_duration = "1h" }
-"research" = { max = 16, max_step_duration = "1h" }
-"revise-investigation" = { max = 16, max_step_duration = "1h" }
+"investigate" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"report" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"research" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"revise-investigation" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
 
 [[step]]
 after = []

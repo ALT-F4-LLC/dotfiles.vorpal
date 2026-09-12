@@ -1,88 +1,94 @@
 [pipeline]
 description = "Cross-issue disposition: write the verdict comment and close the carrier, gated on the build/test sanity check and AC verification with a bounded revise loop; no code-review machinery."
 name = "disposition"
-version = 9  # 9: `verify-ac` emits `ac-report@2` (adds `unmet-out-of-scope`)
-             #   and its vote predicate becomes `any(status != met)`, read after
-             #   `fix-loop`'s `any(status == unmet)`: an in-scope unmet still
-             #   loops, an out-of-scope or unverifiable AC goes to the one-seat
-             #   `verify-ac-vote` (approve passes with the gap filed, reject
-             #   routes fix-loop). No topology change; the measurement is on
-             #   standard-change@37.
-             #   Also `route-direct`, `route-loop` and `route-tend` join
-             #   unless_labels: an issue docket-groom routed to the operator's
-             #   own session, the tend queue, or a loop matches zero workflows,
-             #   like `blocked`, until the label changes; `route-run` stays
-             #   bindable.
-             # 8: corpus-wide naming-convention pass (src/user/docket/config/README.md).
-             #   Step renames only, no topology change: `verify` ->
-             #   `verify-ac`, `verify-tribunal` -> `verify-ac-vote` (vote
-             #   steps now uniformly named `<gated-step>-vote`), `revise`
-             #   (this file's dispose loop-back) -> `revise-disposition`
-             #   (a loop-back step's name must differ from its first-pass
-             #   step name — this file's `revise` and investigation.toml's
-             #   `revise` were also two same-named steps resolving to two
-             #   entirely different underlying contracts, which this rename
-             #   also removes). Every `after`, `after_loop`, threshold route
-             #   key, and `<step>.<kind>` input reference updated to match.
-             # 7: `verify` routes `unverifiable` to an interposed
-             #   `verify-tribunal` vote (`tribunal-correctness`, rule
-             #   `tribunal`, `on_fail = "fix-loop"`) instead of `waiting-human`
-             #   — the step docs-only, standard-change, security-change and
-             #   ui-change already carry — and `revise` reads its vote-record.
-             #   Not measured on this track: it has never been activated on
-             #   any project on this machine (0 of 97 runs). It ports the
-             #   baseline track's measurement: in one run, 20 of 21
-             #   waiting-human parks were a verify reporting an AC
-             #   `unverifiable` because the `ac-commands` gate is a stub, and
-             #   the operator resolved every one `override-pass`; this
-             #   track's verify uses that same stub gate. The human backstop
-             #   moves rather than disappears: a rejected vote with
-             #   `on_fail = "fix-loop"` enters the issue's loop, and when the
-             #   next ordinal would exceed `max_fix_loops` (2, read
-             #   workflow-wide off `verify`) the engine parks the vote step
-             #   waiting-human with a reason naming `docket step resolve
-             #   --as fix-round`; a round that changed no bytes in the
-             #   issue's scope parks the same way. `unmet` still loops, and
-             #   both lanes count against the one issue counter, so an
-             #   `unmet` round plus a rejection is two of the two.
-             # 6: `blocked` joins unless_labels: a hold label so an
-             #   issue not yet workable matches zero registered workflows
-             #   until the label is removed.
-             # 5: `docs-only` and `ui` join unless_labels. Neither track
-             #   excludes `disposition`, so an issue labelled `disposition` +
-             #   `docs-only` or `disposition` + `ui` matched two workflows and
-             #   refused activation — the routing sweep in the engine repo
-             #   counts 15 such states across the five kinds. The change-type
-             #   track wins, the same way the security track already does
-             #   (version 3 below): this shape is the verdict-only refinement
-             #   of the standard-change baseline, so it outranks only that
-             #   baseline and yields to every specific track. Yielding the
-             #   other way is not an option: docs-only already outranks
-             #   security-change, which outranks this shape, so making
-             #   docs-only yield here would close the chain into a cycle and
-             #   leave `disposition` + `docs-only` + `security` bound to
-             #   nothing at all.
-             # 4: no behavior change — bumped only because the version-3
-             #   comment below was edited (issue-citation scrubbing) without
-             #   a version bump, splitting registries that already held the
-             #   old comment bytes at version 3 from ones that hadn't seen
-             #   the edit yet. This bump makes the file's current bytes the
-             #   unique source of truth for version 4.
-             # 3: `security` joins unless_labels beside
-             #   `security-change` and `security-load-bearing`, which this
-             #   list already excludes. security-change@26 now matches
-             #   `security`, so without this an issue labelled `disposition` +
-             #   `security` would match two workflows and refuse activation;
-             #   with it the security track wins, as it already does for the
-             #   two sibling labels.
+version = 10  # 10: `lease_ttl` added to every `[limits]` entry, matched to
+              #   that entry's `max_step_duration`, so a lease lasts exactly
+              #   as long as the step may run. A long wave no longer outlives
+              #   the write-class lease and no longer draws an ack-reap panel;
+              #   `step heartbeat` could not extend past `max_step_duration`
+              #   anyway, so the ceiling is unchanged. No topology change.
+              # 9: `verify-ac` emits `ac-report@2` (adds `unmet-out-of-scope`)
+              #   and its vote predicate becomes `any(status != met)`, read after
+              #   `fix-loop`'s `any(status == unmet)`: an in-scope unmet still
+              #   loops, an out-of-scope or unverifiable AC goes to the one-seat
+              #   `verify-ac-vote` (approve passes with the gap filed, reject
+              #   routes fix-loop). No topology change; the measurement is on
+              #   standard-change@37.
+              #   Also `route-direct`, `route-loop` and `route-tend` join
+              #   unless_labels: an issue docket-groom routed to the operator's
+              #   own session, the tend queue, or a loop matches zero workflows,
+              #   like `blocked`, until the label changes; `route-run` stays
+              #   bindable.
+              # 8: corpus-wide naming-convention pass (src/user/docket/config/README.md).
+              #   Step renames only, no topology change: `verify` ->
+              #   `verify-ac`, `verify-tribunal` -> `verify-ac-vote` (vote
+              #   steps now uniformly named `<gated-step>-vote`), `revise`
+              #   (this file's dispose loop-back) -> `revise-disposition`
+              #   (a loop-back step's name must differ from its first-pass
+              #   step name — this file's `revise` and investigation.toml's
+              #   `revise` were also two same-named steps resolving to two
+              #   entirely different underlying contracts, which this rename
+              #   also removes). Every `after`, `after_loop`, threshold route
+              #   key, and `<step>.<kind>` input reference updated to match.
+              # 7: `verify` routes `unverifiable` to an interposed
+              #   `verify-tribunal` vote (`tribunal-correctness`, rule
+              #   `tribunal`, `on_fail = "fix-loop"`) instead of `waiting-human`
+              #   — the step docs-only, standard-change, security-change and
+              #   ui-change already carry — and `revise` reads its vote-record.
+              #   Not measured on this track: it has never been activated on
+              #   any project on this machine (0 of 97 runs). It ports the
+              #   baseline track's measurement: in one run, 20 of 21
+              #   waiting-human parks were a verify reporting an AC
+              #   `unverifiable` because the `ac-commands` gate is a stub, and
+              #   the operator resolved every one `override-pass`; this
+              #   track's verify uses that same stub gate. The human backstop
+              #   moves rather than disappears: a rejected vote with
+              #   `on_fail = "fix-loop"` enters the issue's loop, and when the
+              #   next ordinal would exceed `max_fix_loops` (2, read
+              #   workflow-wide off `verify`) the engine parks the vote step
+              #   waiting-human with a reason naming `docket step resolve
+              #   --as fix-round`; a round that changed no bytes in the
+              #   issue's scope parks the same way. `unmet` still loops, and
+              #   both lanes count against the one issue counter, so an
+              #   `unmet` round plus a rejection is two of the two.
+              # 6: `blocked` joins unless_labels: a hold label so an
+              #   issue not yet workable matches zero registered workflows
+              #   until the label is removed.
+              # 5: `docs-only` and `ui` join unless_labels. Neither track
+              #   excludes `disposition`, so an issue labelled `disposition` +
+              #   `docs-only` or `disposition` + `ui` matched two workflows and
+              #   refused activation — the routing sweep in the engine repo
+              #   counts 15 such states across the five kinds. The change-type
+              #   track wins, the same way the security track already does
+              #   (version 3 below): this shape is the verdict-only refinement
+              #   of the standard-change baseline, so it outranks only that
+              #   baseline and yields to every specific track. Yielding the
+              #   other way is not an option: docs-only already outranks
+              #   security-change, which outranks this shape, so making
+              #   docs-only yield here would close the chain into a cycle and
+              #   leave `disposition` + `docs-only` + `security` bound to
+              #   nothing at all.
+              # 4: no behavior change — bumped only because the version-3
+              #   comment below was edited (issue-citation scrubbing) without
+              #   a version bump, splitting registries that already held the
+              #   old comment bytes at version 3 from ones that hadn't seen
+              #   the edit yet. This bump makes the file's current bytes the
+              #   unique source of truth for version 4.
+              # 3: `security` joins unless_labels beside
+              #   `security-change` and `security-load-bearing`, which this
+              #   list already excludes. security-change@26 now matches
+              #   `security`, so without this an issue labelled `disposition` +
+              #   `security` would match two workflows and refuse activation;
+              #   with it the security track wins, as it already does for the
+              #   two sibling labels.
 
 [match]
 labels_any = ["disposition"]
 unless_labels = ["blocked", "docs-only", "investigation", "spec-doc", "spec-project", "release", "retro", "security", "security-change", "security-load-bearing", "ui", "route-direct", "route-loop", "route-tend"]
 
 [limits]
-"dispose" = { max = 16, max_step_duration = "1h" }
-"verify-ac" = { max = 16, max_step_duration = "1h" }
+"dispose" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"verify-ac" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
 
 [[step]]
 after = []

@@ -1,7 +1,13 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by a research step, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec); a rejection re-enters the bounded revise loop at the doctype's revise step, which then runs review again."
 name = "spec-doc"
-version = 30  # 30: two fixes, no topology change. An earlier changelog entry
+version = 31  # 31: `lease_ttl` added to every `[limits]` entry, matched to
+              #   that entry's `max_step_duration`, so a lease lasts exactly
+              #   as long as the step may run. A long wave no longer outlives
+              #   the write-class lease and no longer draws an ack-reap panel;
+              #   `step heartbeat` could not extend past `max_step_duration`
+              #   anyway, so the ceiling is unchanged. No topology change.
+              # 30: two fixes, no topology change. An earlier changelog entry
               #   cited a stale step count ("15 -> 16") for the vote-record
               #   input split; corrected to the current count ("19 -> 20").
               #   review and synthesize-findings repoint to `findings@10` and
@@ -144,13 +150,13 @@ labels_any = ["spec-doc"]
 unless_labels = ["blocked", "spec-project", "release", "retro", "route-direct", "route-loop", "route-tend"]
 
 [limits]
-"drain-highs" = { max = 16, max_step_duration = "1h" }
-"judge-architecture" = { max = 16, max_step_duration = "1h" }
-"judge-design" = { max = 16, max_step_duration = "1h" }
-"judge-security" = { max = 16, max_step_duration = "1h" }
-"research" = { max = 16, max_step_duration = "1h" }
-"synthesize-findings" = { max = 16, max_step_duration = "1h" }
-"write" = { max = 16, max_step_duration = "2h" }
+"drain-highs" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"judge-architecture" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"judge-design" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"judge-security" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"research" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"synthesize-findings" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"write" = { max = 16, lease_ttl = "2h", max_step_duration = "2h" }
 
 [[step]]
 after = []

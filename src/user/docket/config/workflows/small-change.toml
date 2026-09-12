@@ -1,7 +1,13 @@
 [pipeline]
 description = "Small ordinary change, bound by the `small` label: implement with the full gate list, one correctness judge routing a blocker straight to the fix loop, AC verification with a single-seat tribunal on an unverifiable or out-of-scope AC, and a bounded fix loop re-entering at review; the conductor integrates commits, the operator publishes."
 name = "small-change"
-version = 4  # 4: three fixes, no topology change. Two earlier changelog
+version = 5  # 5: `lease_ttl` added to every `[limits]` entry, matched to that
+             #   entry's `max_step_duration`, so a lease lasts exactly as long
+             #   as the step may run. A long wave no longer outlives the
+             #   write-class lease and no longer draws an ack-reap panel;
+             #   `step heartbeat` could not extend past `max_step_duration`
+             #   anyway, so the ceiling is unchanged. No topology change.
+             # 4: three fixes, no topology change. Two earlier changelog
              #   entries were stale against the current corpus: the
              #   dispatch-chain comment now names `reconcile` among the
              #   second chain's steps, and the label-timing comment no
@@ -88,9 +94,9 @@ unless_labels = [
 ]
 
 [limits]
-"judge-correctness" = { max = 16, max_step_duration = "1h" }
-"verify-ac" = { max = 16, max_step_duration = "1h" }
-"write" = { max = 16, max_step_duration = "2h" }
+"judge-correctness" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"verify-ac" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"write" = { max = 16, lease_ttl = "2h", max_step_duration = "2h" }
 
 [[step]]
 after = []

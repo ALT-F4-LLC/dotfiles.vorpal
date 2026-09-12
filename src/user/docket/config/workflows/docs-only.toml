@@ -1,7 +1,13 @@
 [pipeline]
 description = "Documentation change: implement with doc-validate and citation gates, one correctness judge, tribunal-filtered review and AC verification, and a bounded fix-loop re-entering at review; the conductor integrates commits, the operator publishes. Design-heavy doc work routes through spec-doc first."
 name = "docs-only"
-version = 24  # 24: the review step repoints `payload = "findings@10"` — a
+version = 25  # 25: `lease_ttl` added to every `[limits]` entry, matched to
+              #   that entry's `max_step_duration`, so a lease lasts exactly
+              #   as long as the step may run. A long wave no longer outlives
+              #   the write-class lease and no longer draws an ack-reap panel;
+              #   `step heartbeat` could not extend past `max_step_duration`
+              #   anyway, so the ceiling is unchanged. No topology change.
+              # 24: the review step repoints `payload = "findings@10"` — a
               #   prose-only schema correction (findings@9's stale field
               #   descriptions), no validation-semantics change. No topology
               #   change.
@@ -64,9 +70,9 @@ labels_any = ["docs-only"]
 unless_labels = ["blocked", "investigation", "spec-doc", "spec-project", "release", "retro", "route-direct", "route-loop", "route-tend"]
 
 [limits]
-"judge-correctness" = { max = 16, max_step_duration = "1h" }
-"verify-ac" = { max = 16, max_step_duration = "1h" }
-"write" = { max = 16, max_step_duration = "2h" }
+"judge-correctness" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"verify-ac" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"write" = { max = 16, lease_ttl = "2h", max_step_duration = "2h" }
 
 [[step]]
 after = []

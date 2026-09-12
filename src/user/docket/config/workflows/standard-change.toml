@@ -1,7 +1,13 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 38  # 38: two fixes, no topology change. An earlier changelog entry
+version = 39  # 39: `lease_ttl` added to every `[limits]` entry, matched to
+              #   that entry's `max_step_duration`, so a lease lasts exactly
+              #   as long as the step may run. A long wave no longer outlives
+              #   the write-class lease and no longer draws an ack-reap panel;
+              #   `step heartbeat` could not extend past `max_step_duration`
+              #   anyway, so the ceiling is unchanged. No topology change.
+              # 38: two fixes, no topology change. An earlier changelog entry
               #   cited a resolved tracker reference for the `ac-commands`
               #   gate stub; dropped as stale. review repoints to
               #   `findings@10` — a prose-only schema correction, no
@@ -200,13 +206,13 @@ unless_labels = [
 ]
 
 [limits]
-"drain-highs" = { max = 16, max_step_duration = "1h" }
-"judge-architecture" = { max = 16, max_step_duration = "1h" }
-"judge-correctness" = { max = 16, max_step_duration = "1h" }
-"judge-testing" = { max = 16, max_step_duration = "1h" }
-"synthesize-findings" = { max = 16, max_step_duration = "1h" }
-"verify-ac" = { max = 16, max_step_duration = "1h" }
-"write" = { max = 16, max_step_duration = "2h" }
+"drain-highs" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"judge-architecture" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"judge-correctness" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"judge-testing" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"synthesize-findings" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"verify-ac" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"write" = { max = 16, lease_ttl = "2h", max_step_duration = "2h" }
 
 [[step]]
 after = []

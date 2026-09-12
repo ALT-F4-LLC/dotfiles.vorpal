@@ -1,7 +1,13 @@
 [pipeline]
 description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step, review and reconcile the findings, drain any open highs, and accept by tribunal vote; a rejection re-enters the bounded revise loop at spec authoring and runs review again."
 name = "spec-project"
-version = 22  # 22: three fixes, no topology change. `review` and `spec-vote`
+version = 23  # 23: `lease_ttl` added to every `[limits]` entry, matched to
+              #   that entry's `max_step_duration`, so a lease lasts exactly
+              #   as long as the step may run. A long wave no longer outlives
+              #   the write-class lease and no longer draws an ack-reap panel;
+              #   `step heartbeat` could not extend past `max_step_duration`
+              #   anyway, so the ceiling is unchanged. No topology change.
+              # 22: three fixes, no topology change. `review` and `spec-vote`
               #   read `issue.latest.spec` instead of the first-pass
               #   `spec-author.*`, matching spec-doc's `issue.latest.doc`:
               #   after a fix-loop round through `revise-spec`, the reviewers
@@ -87,13 +93,13 @@ labels_any = ["spec-project"]
 unless_labels = ["blocked", "release", "retro", "route-direct", "route-loop", "route-tend"]
 
 [limits]
-"drain-highs" = { max = 16, max_step_duration = "1h" }
-"judge-architecture" = { max = 16, max_step_duration = "1h" }
-"judge-correctness" = { max = 16, max_step_duration = "1h" }
-"judge-simplicity" = { max = 16, max_step_duration = "1h" }
-"research" = { max = 16, max_step_duration = "1h" }
-"synthesize-findings" = { max = 16, max_step_duration = "1h" }
-"write" = { max = 16, max_step_duration = "2h" }
+"drain-highs" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"judge-architecture" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"judge-correctness" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"judge-simplicity" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"research" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"synthesize-findings" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"write" = { max = 16, lease_ttl = "2h", max_step_duration = "2h" }
 
 [[step]]
 after = []

@@ -1,7 +1,13 @@
 [pipeline]
 description = "Trivial mechanical change, bound by the `trivial` label: implement with the full gate list, then AC verification with a single-seat tribunal on an unverifiable or out-of-scope AC and one fix round re-entering at verify-ac; no judge; the conductor integrates commits, the operator publishes."
 name = "trivial-change"
-version = 3  # 3: `verify-ac` emits `ac-report@2` (adds `unmet-out-of-scope`)
+version = 4  # 4: `lease_ttl` added to every `[limits]` entry, matched to that
+             #   entry's `max_step_duration`, so a lease lasts exactly as long
+             #   as the step may run. A long wave no longer outlives the
+             #   write-class lease and no longer draws an ack-reap panel;
+             #   `step heartbeat` could not extend past `max_step_duration`
+             #   anyway, so the ceiling is unchanged. No topology change.
+             # 3: `verify-ac` emits `ac-report@2` (adds `unmet-out-of-scope`)
              #   and its vote predicate becomes `any(status != met)`, read after
              #   `fix-loop`'s `any(status == unmet)`: an in-scope unmet still
              #   loops, an out-of-scope or unverifiable AC goes to the one-seat
@@ -61,8 +67,8 @@ unless_labels = [
 ]
 
 [limits]
-"verify-ac" = { max = 16, max_step_duration = "1h" }
-"write" = { max = 16, max_step_duration = "2h" }
+"verify-ac" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"write" = { max = 16, lease_ttl = "2h", max_step_duration = "2h" }
 
 [[step]]
 after = []

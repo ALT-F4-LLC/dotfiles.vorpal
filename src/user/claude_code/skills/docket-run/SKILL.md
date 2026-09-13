@@ -1201,7 +1201,7 @@ Promote the header at the same close: `docket issue file add <id>
 <files>` from the gap's `Files:` line, `docket issue edit <id> --scope`
 from its `Scope:` line. The same routing governs everything you file:
 its owning project from the start, `-l conduct` for provenance (never
-`-l shadow` or `-l tribunal`, reserved to those routes).
+`-l shadow`, `-l tribunal`, or `-l loop-bound`, reserved to those routes).
 
 Everything you file carries `-f` for each file the fix touches and
 `--scope` for the bounding globs. Under zsh, quote every glob-shaped

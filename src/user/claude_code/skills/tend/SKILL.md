@@ -92,14 +92,26 @@ After the exclusions, the queue is either:
    naming the blocker (`docket issue comment add <id> -m "..."`), tell the
    operator in your next visible turn, and move on to the next queued
    issue. The same blocked issue does not get retried every tick.
-5. **Done:** when the worker's report is in and checks out, invoke the
-   `commit` skill to land the change (`Skill({skill: "commit"})`): one
-   commit-cycle per issue, never batched across issues, skipped only when
-   the issue changed no files. Then `docket issue comment add <id> --json
-   -m "<what changed, plainly, citing the commit hash(es), and for a
-   non-trivial issue the candidates the worker weighed>"`, then
+5. **Rerun the falsifier.** Before any commit, run the worker's named
+   falsifying check once more in this conversation, on the tree as the
+   worker left it, and read the result yourself. The report is a claim,
+   not evidence: the worker chose its own check and reports its own pass.
+   A fresh pass here is what step 6 rests on. A fresh failure goes back
+   to the worker as the one follow-up round §3 describes, briefed with the
+   command and its output. A check that cannot run in this environment (a
+   tool, service, or permission the orchestrator lacks) is neither a pass
+   nor a failure: it takes the same follow-up round, asking for a check
+   that can run here, and if none can, treat the issue as blocked (step
+   4). Rerunning a stated check is verification, not the chasing of the
+   fix that step 3 forbids.
+6. **Done:** when the rerun passed, invoke the `commit` skill to land the
+   change (`Skill({skill: "commit"})`): one commit-cycle per issue, never
+   batched across issues, skipped only when the issue changed no files.
+   Then `docket issue comment add <id> --json -m "<what changed, plainly,
+   citing the commit hash(es), the rerun command and its result, and for
+   a non-trivial issue the candidates the worker weighed>"`, then
    `docket issue close <id> --json`.
-6. Report the tend in one line: issue id, title, commit hash(es). A tended
+7. Report the tend in one line: issue id, title, commit hash(es). A tended
    issue is a state change and always gets said, never absorbed silently.
 
 ## 3. Seat and spawn a worker
@@ -163,12 +175,14 @@ and why the pick won (or one line on why no search applied), anything left
 undone.
 
 A report that names its verification and shows the evidence goes to step 5
-of §2. A report with no verification evidence gets one follow-up round, not
-a commit: a `Workflow` seat cannot be messaged after its script returns, so
-the follow-up is a fresh `agent()` spawn (same tier, same explicit opts,
-same tier line) briefed with the first report and the check it failed to
-show. If the second report still can't show its check, treat the issue as
-blocked (step 4 of §2).
+of §2, the rerun; the report alone never commits. A report with no
+verification evidence, or one whose named check fails or cannot run on the
+rerun, gets one follow-up round, not a commit: a `Workflow` seat cannot be
+messaged after its script returns, so the follow-up is a fresh `agent()`
+spawn (same tier, same explicit opts, same tier line) briefed with the
+first report and the check it failed to show, or the rerun's command and
+output. If the second report still can't show a check that passes on the
+rerun here, treat the issue as blocked (step 4 of §2).
 
 ## Stop
 

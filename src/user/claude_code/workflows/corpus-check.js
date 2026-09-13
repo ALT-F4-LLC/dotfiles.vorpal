@@ -22,7 +22,28 @@ const AGENT_CONFIG = {
 }
 
 const SHARD_LINES = 1500
-const REFUTERS_PER_BATCH = 3
+// Three refuters on one identical prompt are three correlated votes: seats
+// sharing a model, scaffold and framing converge on the same answer, so their
+// "majority" is one opinion counted three times. Each refuter instead leads
+// from a different angle on the same findings, so a majority is agreement
+// across different approaches, not one approach repeated. Every refuter still
+// judges the whole finding on every ground; the angle changes where it starts
+// and what it weighs, not what can refute.
+const REFUTER_FRAMINGS = [
+  {
+    key: 'quote',
+    angle: 'the QUOTED TEXT. Find each quote in the file at its stated location and read the lines around it. Does it appear verbatim, and is the claimed problem a fair reading of that exact text in place?',
+  },
+  {
+    key: 'counterpart',
+    angle: 'the COUNTERPART. Open each named counterpart and read what it says in its own words. Does it say what the finding claims, and does the tension survive once both sides are read together? A problem that depends on a counterpart the finding never names is unsupported.',
+  },
+  {
+    key: 'reading',
+    angle: 'the READING. Take the quote and counterpart as reported and ask what the file is for. Would a reader who knows its scope and purpose see a problem here, or is the claim consistent under a reasonable reading of the file?',
+  },
+]
+const REFUTERS_PER_BATCH = REFUTER_FRAMINGS.length
 // Verification runs one refuter agent per (file batch, refuter) rather than per
 // finding: a batch carries every finding from one file up to VERIFY_BATCH_MAX,
 // and the refuter returns one verdict per finding. A refuter per finding would
@@ -289,19 +310,22 @@ Counterpart: ${finding.counterpart || '(none stated)'}
 Severity: ${finding.severity}
 Claimed problem: ${finding.summary}`)
     .join('\n')
-  const prompt = `Try to REFUTE each of these ${batch.items.length} corpus coherence finding(s), all in
+  const prompt = (framing) => `Try to REFUTE each of these ${batch.items.length} corpus coherence finding(s), all in
 File: ${batch.file}
 
 ${listing}
 
+Your angle: ${framing.angle}
+
 Read the file once and any named counterpart yourself, then judge every finding
-independently and return one verdict per finding number. Default to refuted=true
+independently and return one verdict per finding number. Work your angle first
+and let it lead, but every ground below still refutes. Default to refuted=true
 unless you can confirm both the quoted text and the problem. Refute inaccurate
 quotes, misrepresented counterparts, claims consistent under a reasonable
 reading, and findings that misunderstand the file's scope. A verdict you omit
 counts as no vote, not as a refutation.`
-  const returns = await parallel(Array.from({ length: REFUTERS_PER_BATCH }, () => () =>
-    agent(prompt, { phase: 'Verify', label: `verify:${batch.file}#${batch.slice}`, schema: BATCH_VERDICT_SCHEMA, ...AGENT_CONFIG.verify })
+  const returns = await parallel(REFUTER_FRAMINGS.map((framing) => () =>
+    agent(prompt(framing), { phase: 'Verify', label: `verify:${batch.file}#${batch.slice}:${framing.key}`, schema: BATCH_VERDICT_SCHEMA, ...AGENT_CONFIG.verify })
   ))
   return applyBatchVerdicts(batch, returns)
 }
@@ -392,7 +416,7 @@ const verificationNote = partial
   ? `Verification PARTIAL: ${unverified.length} of ${rawFindings.length} raw finding(s) unverified (agent budget or no refuter vote); see the unverified list.`
   : 'Verification complete: every raw finding was judged.'
 const summary = rawFindings.length
-  ? `${rawFindings.length} raw findings, ${verifiedCount} verified, ${findings.length} survived adversarial verification (${REFUTERS_PER_BATCH} refuters/batch, majority-uphold)${partial ? `; ${unverified.length} UNVERIFIED` : ''}.`
+  ? `${rawFindings.length} raw findings, ${verifiedCount} verified, ${findings.length} survived adversarial verification (${REFUTERS_PER_BATCH} refuters/batch, one framing each: ${REFUTER_FRAMINGS.map((f) => f.key).join(", ")}; majority-uphold)${partial ? `; ${unverified.length} UNVERIFIED` : ''}.`
   : 'no findings surfaced.'
 
 return {

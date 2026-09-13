@@ -573,6 +573,29 @@ for (const s of seats) {
     log(`  ${s.seat}: role ${lensOf(s.seat).role} @ ${s.model}/${s.effort} (variant ${s.variant})`)
 }
 
+// Panel composition is invisible at the gate unless it is said here. Seats
+// sharing a model, effort, variant and lens converge on the same choice, so
+// agreement among identical seats is not independent evidence; and a seat
+// name with no declared lens decides as a generalist, which the roster never
+// shows. wave.js relays these lines, so the conductor sees both where it
+// reads the tally.
+const lensName = (s) => (lensOf(s.seat).text === WHOLE_SYSTEM_LENS ? 'whole-system' : lensOf(s.seat).role)
+const generalists = seats.filter((s) => lensName(s) === 'whole-system')
+if (generalists.length > 0) {
+    log(`tribunal: WARNING — ${generalists.map((s) => s.seat).join(', ')} fell to the ` +
+        `whole-system lens: no lens is declared for that seat name, so the seat ` +
+        `decides as a generalist rather than in a dimension of its own`)
+}
+if (seats.length > 1) {
+    const composition = (s) => `${s.model}/${s.effort} (variant ${s.variant}, lens ${lensName(s)})`
+    const shared = composition(seats[0])
+    if (seats.every((s) => composition(s) === shared)) {
+        log(`tribunal: WARNING — homogeneous panel: all ${seats.length} seats are ${shared}, ` +
+            `so their casts are correlated and agreement among them is not independent ` +
+            `evidence; read the tally as one opinion counted ${seats.length} times`)
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Judge / Verify
 // ---------------------------------------------------------------------------

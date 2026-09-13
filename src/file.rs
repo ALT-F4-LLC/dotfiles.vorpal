@@ -124,7 +124,7 @@ impl FileCreate {
             name = self.name,
         };
 
-        let step = step::shell(context, self.artifacts, vec![], step_script, vec![]).await?;
+        let step = step::shell(context, &self.artifacts, &[], step_script, &[]).await?;
 
         Artifact::new(
             &format!("{}-file-create", self.name),
@@ -158,7 +158,7 @@ impl FileSource {
             source_path = layout.source_path,
         };
 
-        let step = step::shell(context, vec![], vec![], step_script, vec![]).await?;
+        let step = step::shell(context, &[], &[], step_script, &[]).await?;
 
         let source = ArtifactSource::new(&format!("{}-file-source", self.name), &layout.path)
             .with_includes(layout.includes)

@@ -210,13 +210,17 @@ scheduling loop; do not reconstruct its state from conversation memory.
 
 ## Cast an assigned vote
 
-Inspect the proposal and assigned roster before casting. Each agent seat
-must pass its exact `--voter` identity: the default is `git user.name`,
-which would collapse concurrent seats into one voter. Report only that
-seat's own assessment and measured usage.
+Cast from the assignment: the proposal id, the seat's name and role, and
+the case as briefed. Do not read the proposal record first. `vote show` and
+`vote result` print every cast already recorded, seats run in parallel, and
+a seat that sees a sibling's verdict before deciding is no longer deciding
+alone; the engine tallies the panel. A seat handed an id without the case
+reports that back instead of reading the record. Each agent seat must pass
+its exact `--voter` identity: the default is `git user.name`, which would
+collapse concurrent seats into one voter. Report only that seat's own
+assessment and measured usage.
 
 ```bash
-docket vote show DKT-V3 --json=v2
 docket vote cast DKT-V3 --json=v2 \
   --voter seat-security --role reviewer \
   --verdict approve --confidence 0.9 --domain-relevance 0.8 \
@@ -232,8 +236,9 @@ appear in process listings, so it must contain no secrets. Casts have no
 amendment path: inspect the prepared content and correct seat before
 submitting.
 
-Inspect `vote result` or `gate status` to learn the outcome. `vote commit`
-is an out-of-band decision, not the ordinary final step of agent voting.
+After casting, inspect `vote result` or `gate status` to learn the
+outcome. `vote commit` is an out-of-band decision, not the ordinary final
+step of agent voting.
 Read [voting](references/voting.md) for tally rules, post-approval
 thresholds, held-step escalation, and authorized closure.
 

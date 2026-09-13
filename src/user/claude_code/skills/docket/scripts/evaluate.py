@@ -163,7 +163,7 @@ def grade(answer, case_data=None):
             require(flag(argv, "--json") == "v2" or flag(argv, "--format") == "json", "new commands must select JSON v2")
         if name == "voter-identity":
             votes = [c for c in commands if verb(c, "vote", "cast")]
-            require(len(votes) == 2 and all(verb(c, "vote", "cast") or (verb(c, "vote", "show") and "DKT-V1" in c["argv"]) for c in commands), "expected two vote submissions with optional proposal inspection")
+            require(len(votes) == 2 and all(verb(c, "vote", "cast") for c in commands), "expected exactly two vote submissions and no read of the proposal record")
             require({flag(c["argv"], "--voter") for c in votes} == {"judge-correctness", "judge-testing"}, "assigned voter identities lost")
             for c in votes:
                 require(c["argv"][3:4] == ["DKT-V1"], "wrong proposal")

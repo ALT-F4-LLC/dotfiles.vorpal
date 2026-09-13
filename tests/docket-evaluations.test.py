@@ -104,10 +104,20 @@ class EvaluationTests(unittest.TestCase):
         for value in ("nan", "inf", "not-a-number"):
             self.check_mutation("voter-identity", lambda r: r["commands"][0]["argv"].__setitem__(r["commands"][0]["argv"].index("--confidence") + 1, value))
 
-    def test_optional_proposal_and_recovery_reads_are_valid(self):
+    def test_reading_the_proposal_record_before_casting_fails(self):
+        # A seat casts from its assignment: the record prints every sibling
+        # cast already landed, so reading it first is graded as a failure.
+        for read in (command("vote", "show", "DKT-V1"), command("vote", "result", "DKT-V1")):
+            answer = control()
+            row = next(r for r in answer["cases"] if r["id"] == "voter-identity")
+            row["commands"].insert(0, read)
+            report = EVAL.grade(answer)
+            self.assertFalse(report["passed"])
+            self.assertIn("no read of the proposal record", " ".join(report["cases"]["voter-identity"]["errors"]))
+
+    def test_recovery_reads_are_valid(self):
         answer = control()
         by_id = {row["id"]: row for row in answer["cases"]}
-        by_id["voter-identity"]["commands"].insert(0, command("vote", "show", "DKT-V1"))
         by_id["resume-inspection"]["commands"].extend([
             command("step", "list", "--run", "RUN-7"),
             command("step", "context", "STEP-12"),

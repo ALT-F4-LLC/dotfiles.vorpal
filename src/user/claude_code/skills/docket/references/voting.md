@@ -36,9 +36,12 @@ docket vote create --json=v2 \
 
 Cast only the assigned seat's own assessment. Pass its exact `--voter`: the
 default is `git user.name`, so concurrent agents using the default collide
-under one identity. Verify the roster, proposal, content, and assessment
-before casting; there is no amendment path. Replace the values below with the
-actual assignment and evidence; a file keeps long rationale out of argv:
+under one identity. Verify the seat, proposal id, content, and assessment
+against the assignment before casting; there is no amendment path, and the
+record is not read first: `vote show` and `vote result` print every cast
+already recorded, so a seat that reads them before deciding is no longer
+deciding alone. Replace the values below with the actual assignment and
+evidence; a file keeps long rationale out of argv:
 
 ```bash
 docket vote cast DKT-V1 --json=v2 \

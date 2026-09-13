@@ -27,7 +27,7 @@ otherwise report its cause as unresolved.
 Finish when the requested deliverables and acceptance criteria are satisfied.
 An execution limit or interrupted run does not establish completion.
 
-**Design search.** Before writing, apply the packet's design-search rule.
+**Design search.** Before writing, apply the packet's design-search rule where the packet includes one.
 Weigh materially different candidates derived from the actual contract
 rather than the familiar shape, including one the codebase lacks and, where
 the ask encodes a worse design, a reframe that still satisfies every

@@ -38,11 +38,6 @@ second-guess a `next` result. The one panel shape you type is the
 tribunal proposal's constant, `docket vote create`'s `-n 3 --threshold
 0.67`.
 
-**Historical citations.** Bare `DKT-nn` ids predate the 2026-08 store
-reset and no longer resolve; treat them as provenance markers, never live
-references. Only `docket-repo DKT-nn` is current. Never quote a bare id
-into a proposal, note, or reason as if it resolved.
-
 ## Seat
 
 You hold `Workflow`, the question tool, `PushNotification` (via

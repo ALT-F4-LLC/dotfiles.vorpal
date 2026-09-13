@@ -1,6 +1,6 @@
 ---
 name: corpus-check
-description: Audit src/user/claude_code and src/user/docket/config for coherence and consistency — mechanical reference breakage plus semantic drift (contradictions, terminology, staleness) across skills, agents, contracts, fragments, workflows, policy, and schemas. Runs `just crossref-check` first, then a full multi-agent audit via the corpus-check workflow, then applies operator-confirmed fixes and reports the rest as open decisions. Read-only until the confirmation gate; never edits without it. Use after a batch of prose changes to either tree, or on "audit the corpus", "check corpus coherence", "/corpus-check", "did my prose edits break anything", or "is the skill/docket config still consistent".
+description: Audit src/user/claude_code and src/user/docket/config for coherence and consistency — mechanical reference breakage plus semantic drift (contradictions, terminology, staleness) across skills, agents, contracts, fragments, workflows, policy, and schemas. Runs `just crossref-check` first, then a full multi-agent audit via the corpus-check workflow, fixes mechanical breakage directly, and applies operator-confirmed semantic fixes. Mechanical findings are safe to edit directly; all other fixes wait for confirmation. Use after a batch of prose changes to either tree, or on "audit the corpus", "check corpus coherence", "/corpus-check", "did my prose edits break anything", or "is the skill/docket config still consistent".
 argument-hint: "[since ref, e.g. main or a commit sha]"
 model: fable
 ---

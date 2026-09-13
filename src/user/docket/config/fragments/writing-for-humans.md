@@ -1,6 +1,6 @@
 ---
 fragment: writing-for-humans
-version: 3
+version: 4
 ---
 # Writing for humans
 
@@ -47,6 +47,4 @@ Cut empty qualifiers and stock phrases such as “just,” “simply,” “impo
 Be direct, specific, and calm. Skip flattery, performed enthusiasm, and unnecessary
 apologies. State disagreement with its reason.
 
-Write self-explanatory code. Do not add code comments unless explicitly requested.
-Preserve required directives and existing comments unless the task requires changing
-them.
+Write self-explanatory code. Add code comments to explain intent, constraints, invariants, or behavior readers cannot readily infer from the code; describe current behavior, not edit history. Preserve required directives and existing comments unless the task requires changing them.

@@ -1,6 +1,6 @@
 ---
 fragment: security-review-dimensions
-version: 5
+version: 6
 ---
 # Security review dimensions
 
@@ -36,8 +36,12 @@ check is not a clean result.
    leaves source-dependent claims unverified.
 4. **Cryptography**: primitive, mode, authentication, key management, randomness,
    nonce requirements, and timing-sensitive comparisons. Verify applicable
-   properties and usage against current authoritative guidance and documentation
-   for the implementation in use. Cite them rather than relying on memory.
+   properties and usage against authoritative guidance and documentation for the
+   implementation in use, and cite them rather than relying on memory. Under
+   executor-read, cite documentation present in the checkout, module cache, or
+   vendored sources; when none is available, say so and leave the dependent
+   claims unverified. Cite current web guidance only where the archetype has
+   WebFetch or WebSearch, as executor-write does.
 5. **Trust boundaries**: identify who controls data and authority at each crossing,
    including stored data and external responses. Check new, moved, or removed
    boundaries and unintended delegation, network access, or data disclosure. Check

@@ -368,11 +368,12 @@ ${gateLine}
 THE PROPOSAL:   ${voteId}${step ? targetNote : ''}${workingDirLine ? `\n${workingDirLine}` : ''}${respawnNote}${activationNote}
 ${setupBlock}${caseBlock}${!step ? targetNote : ''}
 
-BOUND YOUR INVESTIGATION — then vote. Measured across seven days, as of 2026-08-19:
-189 tribunal seats spent 5,309,378 output tokens, 68.7% of it on private
-deliberation — the highest ratio of any role in this fleet — over 36 votes
-and 12 decided proposals in which ZERO verdicts were overturned. That is not
-a panel that needed to think harder; it was already right and kept going.${boundInvestigationTail}
+BOUND YOUR INVESTIGATION — then vote. A seat that keeps reading past the
+evidence its verdict rests on does not reach a different verdict; it reaches
+the same one later, at greater cost. Private deliberation is where a seat's
+budget goes, so it is the first thing to question, not the last. A seat that
+keeps going past that point is not thinking harder; it is paying again for a
+verdict it already has.${boundInvestigationTail}
 
   - A handful of targeted reads settles a typical gate. If your next read is
     not answering a question you can NAME, you are past the point of value.

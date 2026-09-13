@@ -1411,7 +1411,9 @@ every row whose verdict is `fail`. Run each row's own `argv` against a
 clean detached checkout of the step's recorded sha, in your own
 environment exactly as it stands (the sandbox rulings this file already
 carries govern that run; this ruling adds nothing to them). Record every
-command, its exit, and the sha in the resolution note.
+command, its exit, the sha, and each failing row's `output_tail` in the
+resolution note; the repeating-signature ruling below compares against
+that tail.
 
 **Auto-pass exactly this, and nothing wider.** When every failing gate
 passed on reproduction, no gate row is `unmatched` or `skipped`, and no
@@ -1432,10 +1434,19 @@ reason) and applies it at routing to every later step of the same run
 that fails the same way, fix-round steps included. The first park
 follows the paragraph above exactly: reproduce, pass, no grant. A later
 step whose `fail` rows all match a signature that reproduced clean once
-already resolves with `docket step resolve STEP-N --as override-pass
---batch`, no reproduction, citing this ruling and the first reproduction
-it rests on. Nothing else widens: an unmatched signature, an `unmatched`
-or `skipped` row, or a security gate stays on the ordinary path. Report
+already is a candidate for the grant, not yet its holder: the signature
+carries no failure text, so a genuine regression can share (gate, exit,
+reason) with an earlier environment flake. Before granting, read `docket
+step gates STEP-N --json` and compare each failing row's `output_tail`
+with the tail the first reproduction's note recorded. A differing tail is
+a new failure and takes the reproduce-then-pass path above, whatever the
+signature says; a false "new failure" reaches the operator, the safe
+direction, and the check costs one read verb per grant. When every tail
+matches, resolve with `docket step resolve STEP-N --as override-pass
+--batch`, no fresh reproduction, citing this ruling, the first
+reproduction it rests on, and the tail match. Nothing else widens: a
+differing tail, an unmatched signature, an `unmatched` or `skipped` row,
+or a security gate stays on the ordinary path. Report
 every grant (id from the `gate-override-granted` event's `detail`,
 `GATE#ID`, in `docket events list --run RUN-N --json --all-projects`;
 signature; first reproduction; reach) and, in later reports, the count of

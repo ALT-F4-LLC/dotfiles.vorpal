@@ -1,6 +1,6 @@
 ---
 fragment: vorpal-toolchain
-version: 11
+version: 12
 ---
 # Vorpal toolchain
 
@@ -61,7 +61,9 @@ Set `GOCACHE` to a fresh subdirectory inside the brief's assigned private step
 directory, `<TMP>/<STEP-N>.d`. `<TMP>` is the literal value pinned from
 `printenv TMPDIR`; that directory is built fresh at claim and is exclusive to
 this session and dispatch. If no directory is assigned, stop and report the
-missing assignment. Use this directory for temporary diff inputs too. Cleanup
+missing assignment; this deliberately narrows the executor archetype's
+$TMPDIR fallback because a Go build cache must not share a scratch root with
+other steps. Use this directory for temporary diff inputs too. Cleanup
 may touch only your own step directory, after its processes have finished.
 
 Explicitly change to the repository root in each build/test call. In Claude

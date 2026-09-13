@@ -382,6 +382,7 @@ impl ClaudeCode {
             .with_permission_allow("Bash(docket step render:*)")
             .with_permission_allow("Bash(docket step show:*)")
             .with_permission_allow("Bash(docket trust list:*)")
+            .with_permission_allow("Bash(docket vote result:*)")
             .with_permission_allow("Bash(docket vote show:*)")
             .with_permission_allow("Bash(docket workflow list:*)")
             .with_permission_allow("Bash(docket workflow show:*)")

@@ -4,7 +4,7 @@ export const meta = {
     whenToUse: 'Invoked on a CONVERSATIONAL gate the docket-run skill routes to a panel (ack-reap, activation, budget, loop-extension, fix-batch), always as Workflow({scriptPath}) — never by name. Engine `type = "vote"` step rows ride the wave since the staged closure: wave.js calls this same script MID-WAVE (passing `step`) to seat their panels, one level of workflow nesting deep, so the seat brief renders from one place. The CALLER creates the proposal, passes its id, and passes every voter WITH its {model, effort, variant}; tribunal.js only fills an open one.',
     phases: [
         { title: 'Judge', detail: 'one seat per voter, each casting docket vote cast' },
-        { title: 'Verify', detail: 'one haiku probe reads the vote record through a schema (conversational mode only)', model: 'haiku' },
+        { title: 'Verify', detail: 'one haiku probe of the vote record (two when the first returns nothing), plus one more after any re-seat (conversational mode only)', model: 'haiku' },
     ],
 }
 

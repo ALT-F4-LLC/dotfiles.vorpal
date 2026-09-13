@@ -1,6 +1,6 @@
 ---
 fragment: scope-discipline
-version: 9
+version: 10
 ---
 # Scope discipline
 
@@ -67,9 +67,10 @@ authorize it. Disclosure records a deviation; it does not authorize one.
   paths with one-line reasons, amendment references, and any remaining
   deviations. If an accidental crossing is discovered, stop further affected
   writes, report it, and remove only this attempt's unauthorized edits where
-  that can be done safely without disturbing others' work. Do not rewrite
-  history or the declaration to conceal it; unresolved restoration needs go to
-  the conductor.
+  that can be done safely without disturbing others' work. Another writer's
+  uncommitted changes found in the assigned worktree are a gap to report,
+  never content to revert, stash, or overwrite. Do not rewrite history or the
+  declaration to conceal it; unresolved restoration needs go to the conductor.
 - **Judge only what the supplied evidence supports.** `verify-ac` owns the
   declaration comparison: the issue body, applicable `files` and `scope`
   metadata, recorded amendments, and the actual candidate diff. Check both

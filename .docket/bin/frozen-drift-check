@@ -51,7 +51,7 @@
 # changed version demands a changed body, and either half alone is drift the
 # next run's `docket run verify-pins` would otherwise discover. Files absent
 # from the merge-base (new contracts) have no prior version and are skipped.
-# policy.toml stays out of scope: it carries no version field.
+# policy.toml stays out of scope: its [policy].version is informational and never frozen or enforced by the engine, so there is no lockstep to check.
 #
 # The reference is the merge-base, not HEAD or the branch tip directly: HEAD
 # moves with every commit on this branch, so comparing against it made a

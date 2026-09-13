@@ -1,6 +1,6 @@
 ---
 fragment: re-review-rounds
-version: 8
+version: 9
 ---
 # Re-review rounds
 
@@ -22,10 +22,16 @@ does not make a finding new.
 
 Examine the changes and the behavior they affect, including unchanged callers,
 dependencies, and contracts where needed to establish their effects. Do not
-re-derive recorded findings whose relevant evidence remains unchanged. New
-evidence can justify reassessment at an unchanged location; identify what changed
-in the evidence. If the previous reviewed state or relevant history is missing,
-state the comparison gap and limit claims about origin and closure accordingly.
+re-derive recorded findings whose relevant evidence remains unchanged; a
+rebuttal or new evidence in the latest change-summary is changed evidence. A
+supported disagreement there is evidence to check against the finding's
+premise: answer it with a closure or with a cited reason the finding stands,
+never by restating the prior verdict. A sibling seat's prior finding and the
+prior aggregate are context for a finding in your own dimension, not evidence
+for it; support each finding on the current state yourself. New evidence can
+justify reassessment at an unchanged location; identify what changed in the
+evidence. If the previous reviewed state or relevant history is missing, state
+the comparison gap and limit claims about origin and closure accordingly.
 
 ## Apply the same top-severity bar on every round
 

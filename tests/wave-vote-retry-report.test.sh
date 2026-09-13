@@ -31,8 +31,9 @@
 # `meta.description` in wave.js must state them; the postscript below
 # cross-checks the prose against the cases so the two cannot drift:
 #   1 probe on a gate already decided when the wave reaches it (case C),
-#   2 on the normal path — one before the panel seats, one after (case E),
-#   3 when a re-seat forces a re-read (case A's healthy re-seat).
+#   3 on the normal path — one before the panel seats, one projection of
+#     the proposal body every seat brief renders, one after (case E),
+#   4 when a re-seat forces a re-read (case A's healthy re-seat).
 #
 # HOW. wave.js fences the gate machinery (probeBrief, probe, gateStatus,
 # gateTarget, heldCluster, gateSuccess, runGate) in TEST-BEGIN/TEST-END
@@ -137,12 +138,12 @@ const agent = (brief, opts) => {
 // "cast" cleanly (absorbed nothing). {throwErr: ...} at the top level of
 // WORKFLOW_SCRIPT makes the whole workflow() call reject, modeling an
 // unreadable tribunal.js path or one of its own arg refusals. Every call is
-// recorded in WORKFLOW_CALLS as {voters, isRespawn} so the suite can assert
+// recorded in WORKFLOW_CALLS as {voters, isRespawn, context} so the suite can assert
 // on what wave.js asked tribunal.js to seat.
 let WORKFLOW_SCRIPT = {}
 let WORKFLOW_CALLS = []
 const workflow = (path, a) => {
-    WORKFLOW_CALLS.push({ voters: a.voters.map((v) => v.seat), isRespawn: Boolean(a.isRespawn) })
+    WORKFLOW_CALLS.push({ voters: a.voters.map((v) => v.seat), isRespawn: Boolean(a.isRespawn), context: a.context })
     for (const v of a.voters) {
         CALLS.push(`${a.step ? a.step.step + ' · ' : ''}seat:${v.seat}${a.isRespawn ? ' (retry)' : ''}`)
     }
@@ -220,10 +221,10 @@ const A = await run({
     'judge-security': [{ error: API_ERR }, {}],
 })
 ok(A.status === 'gate-passed', 'A: tally succeeded -> status is gate-passed')
-// 3 judges + 4 read-only probes (status, outcome x2 — one died — and the
-// re-read after the re-seat); the two retries are the re-seated judge and
-// the probe resubmission.
-ok(A.spawn_accounting === '3 seats, 4 probes, 2 retries',
+// 3 judges + 5 read-only probes (status, the proposal body, outcome x2 —
+// one died — and the re-read after the re-seat); the two retries are the
+// re-seated judge and the probe resubmission.
+ok(A.spawn_accounting === '3 seats, 5 probes, 2 retries',
     `A: seat/probe/retry accounting is explicit and separated (got ${JSON.stringify(A.spawn_accounting)})`)
 ok(!/spawn/.test(A.spawn_accounting),
     'A: probes are never reported as spawns of the panel')
@@ -246,7 +247,9 @@ ok(calls('STEP-2493 · seat:judge-architecture (retry)') === 0 &&
 ok(chainDead(A) === false, 'A: the success result does not kill the issue chain')
 ok(runParked(A) === false, 'A: the success result does not park the run')
 
-// ---- A2: the healthy re-seat — no probe noise — is exactly THREE probes.
+// ---- A2: the healthy re-seat — no probe noise — is exactly FOUR probes:
+// the proposal body is read ONCE and the re-seat is briefed from the same
+// text, never a second read.
 const A2 = await run({
     'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
     'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
@@ -255,8 +258,11 @@ const A2 = await run({
     'STEP-2493 · gate:outcome': [{ text: OPEN_ONE_MISSING }, { text: APPROVED }],
     'STEP-2493 · seat:judge-security (retry)': { text: 'cast recorded' },
 })
-ok(A2.status === 'gate-passed' && A2.spawn_accounting === '3 seats, 3 probes, 1 retry',
+ok(A2.status === 'gate-passed' && A2.spawn_accounting === '3 seats, 4 probes, 1 retry',
     `AC: a re-seat adds exactly one probe (got ${JSON.stringify(A2.spawn_accounting)})`)
+ok(calls('STEP-2493 · gate:proposal') === 1 && WORKFLOW_CALLS.length === 2 &&
+   WORKFLOW_CALLS[0].context === WORKFLOW_CALLS[1].context,
+    `A2: the proposal body is read once and the re-seat is briefed from the same text (got ${JSON.stringify(CALLS)})`)
 ok(LOG.some((l) => l.includes('1 seat(s) returned without a recorded cast (judge-security)')),
     `A2: the log names the seat the engine listed as missing (got ${JSON.stringify(LOG)})`)
 
@@ -339,19 +345,40 @@ ok(calls('STEP-2493 · seat:judge-security (retry)') === 0 &&
 ok(LOG.some((l) => l.includes('probe blocked on content')),
     `D: the block is logged as deterministic (got ${JSON.stringify(LOG)})`)
 
-// ---- E: the healthy gate. One read before the panel, one after: TWO probes,
-// no re-seat, no fallback line anywhere in the log.
+// ---- E: the healthy gate. One read before the panel, one projection of the
+// proposal body, one read after: THREE probes, no re-seat, no fallback line
+// anywhere in the log.
+const BODY = {
+    description: 'security-vote@1 (security-vote)',
+    rationale: 'workflow vote step security-vote@1',
+    files_changed: [], linked_issues: [],
+}
 const E = await run({
     'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
+    'STEP-2493 · gate:proposal': { text: BODY },
     'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
     'STEP-2493 · seat:judge-security':     { text: 'cast recorded' },
     'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
     'STEP-2493 · gate:outcome': { text: APPROVED },
 })
 ok(E.status === 'gate-passed', 'E: the healthy gate passes')
-ok(E.spawn_accounting === '3 seats, 2 probes, 0 retries',
-    `E: status + outcome (got ${JSON.stringify(E.spawn_accounting)})`)
-ok(probes() === 2, `AC: exactly TWO gate status probes on the normal path (got ${JSON.stringify(CALLS)})`)
+ok(E.spawn_accounting === '3 seats, 3 probes, 0 retries',
+    `E: status + proposal body + outcome (got ${JSON.stringify(E.spawn_accounting)})`)
+ok(probes() === 3, `AC: exactly THREE read-only probes on the normal path (got ${JSON.stringify(CALLS)})`)
+// The seat brief's case comes from the proposal body, projected WITHOUT its
+// casts: the probe's schema cannot even carry a vote, a score, or an
+// outcome, and the context handed to tribunal.js is the body's own words.
+const PROPOSAL_PROPS = Object.keys(SCHEMAS['STEP-2493 · gate:proposal'].properties)
+ok(PROPOSAL_PROPS.includes('description') && PROPOSAL_PROPS.includes('rationale') &&
+   !PROPOSAL_PROPS.some((k) => /vote|score|outcome|status|verdict/.test(k)),
+    `AC: the proposal probe's schema carries the body and no cast (got ${JSON.stringify(PROPOSAL_PROPS)})`)
+ok(WORKFLOW_CALLS.length === 1 && typeof WORKFLOW_CALLS[0].context === 'string' &&
+   WORKFLOW_CALLS[0].context.includes('DESCRIPTION: security-vote@1 (security-vote)') &&
+   WORKFLOW_CALLS[0].context.includes('RATIONALE: workflow vote step security-vote@1') &&
+   !/approve|reject|verdict|vote show/.test(WORKFLOW_CALLS[0].context),
+    `AC: tribunal.js is handed the proposal body as context, with no cast in it (got ${JSON.stringify(WORKFLOW_CALLS[0] && WORKFLOW_CALLS[0].context)})`)
+ok(!LOG.some((l) => l.includes('proposal body read returned nothing')),
+    'E: a body that read cleanly logs no fallback line')
 ok(!LOG.some((l) => l.includes('did not parse') || l.includes('falling back')),
     `AC: no parse-fallback line on a healthy tally (got ${JSON.stringify(LOG)})`)
 ok(SCHEMAS['STEP-2493 · gate:status'] && SCHEMAS['STEP-2493 · gate:status'] === SCHEMAS['STEP-2493 · gate:outcome'],
@@ -371,7 +398,7 @@ const E2 = await run({
     'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
     'STEP-2493 · gate:outcome': { text: REJECTED },
 })
-ok(E2.status === 'gate-rejected' && probes() === 2,
+ok(E2.status === 'gate-rejected' && probes() === 3,
     'E2: a rejection is read off the same single post-panel probe')
 
 // A gate that did not clear — every seat cast, the ballot still open.
@@ -384,6 +411,25 @@ const E3 = await run({
 })
 ok(E3.status === 'gate-parked' && LOG.some((l) => l.includes('gate did NOT clear (ready, tally open)')),
     `E3: an undecided ballot parks the gate and the log names the engine's state (got ${JSON.stringify(LOG)})`)
+
+// ---- E4: the proposal body read dies (a dead haiku spawn, resubmitted once
+// and dead again). The panel still seats — the gate's context bundle carries
+// the evidence — tribunal.js is handed an EMPTY context so the brief says the
+// body could not be read, and the two deaths are notes on the success.
+const E4 = await run({
+    'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
+    'STEP-2493 · gate:proposal': [{ reject: API_ERR }, { reject: API_ERR }],
+    'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
+    'STEP-2493 · seat:judge-security':     { text: 'cast recorded' },
+    'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
+    'STEP-2493 · gate:outcome': { text: APPROVED },
+})
+ok(E4.status === 'gate-passed' && WORKFLOW_CALLS.length === 1 && WORKFLOW_CALLS[0].context === '',
+    `E4: a dead proposal read still seats the panel, on an empty context (got ${JSON.stringify(E4)})`)
+ok(LOG.some((l) => l.includes('proposal body read returned nothing')),
+    `E4: the wave log says the seats were briefed without the body (got ${JSON.stringify(LOG)})`)
+ok(E4.spawn_accounting === '3 seats, 4 probes, 1 retry' && Array.isArray(E4.notes) && E4.notes.length === 2,
+    `E4: the dead read and its one resubmission are accounted and noted, never failures (got ${JSON.stringify(E4.spawn_accounting)}, ${JSON.stringify(E4.notes)})`)
 
 // ---- F: a reply that is not the envelope. The old relays lost a brace or
 // 81 chars mid-body and were rescued by regex; a schema reply carries no
@@ -447,7 +493,7 @@ const I = await run({
     'STEP-2493 · gate:outcome': { text: APPROVED },
 }, {}, HELD)
 ok(I.status === 'gate-passed' && calls('STEP-2493 · gate:held-cluster') === 1 &&
-   I.spawn_accounting === '3 seats, 3 probes, 0 retries',
+   I.spawn_accounting === '3 seats, 4 probes, 0 retries',
     `I: a held-cluster gate spends exactly one extra read (got ${JSON.stringify(I.spawn_accounting)})`)
 ok(calls('STEP-2493 · gate:held-cluster') === 1 && !CALLS.some((c) => c.includes('held') && c !== 'STEP-2493 · gate:held-cluster'),
     'I: the cluster read goes through its own schema probe')
@@ -492,7 +538,7 @@ fi
 # The counts above are measured; this asserts wave.js's own meta.description
 # states them, so a conductor sizing a dispatch sees the gate overhead without
 # reading the gate path. Numbers are matched literally against the cases:
-#   C = 1 probe (already-decided), E = 2 (normal), A2 = 3 (re-seat).
+#   C = 1 probe (already-decided), E = 3 (normal), A2 = 4 (re-seat).
 DESC=$(awk '/^    description: /{print; exit}' "$WAVE")
 dpass=0
 dfail=0
@@ -503,16 +549,16 @@ dok() { # <cond-exit> <label>
 [ -n "$DESC" ]; dok $? 'wave.js meta.description line is readable'
 printf '%s' "$DESC" | grep -qi 'probe'; dok $? \
     'meta.description mentions the probe cost per vote row at all'
-printf '%s' "$DESC" | grep -q '2 read-only haiku probes'; dok $? \
-    'it names the 2-probe normal path (case E measured 2 probes)'
+printf '%s' "$DESC" | grep -q '3 read-only haiku probes'; dok $? \
+    'it names the 3-probe normal path (case E measured 3 probes)'
 printf '%s' "$DESC" | grep -q '1 on a gate that was already decided'; dok $? \
     'it names the 1-probe already-decided path (case C measured 1 probe)'
-printf '%s' "$DESC" | grep -q '3 when a re-seat'; dok $? \
-    'it names the 3-probe re-seat path (case A2 measured 3 probes)'
+printf '%s' "$DESC" | grep -q '4 when a re-seat'; dok $? \
+    'it names the 4-probe re-seat path (case A2 measured 4 probes)'
 printf '%s' "$DESC" | grep -q 'gate status'; dok $? \
     'it names the verb so the count can be audited'
 # The pre-collapse numbers must not be restated as current.
-printf '%s' "$DESC" | grep -qE 'five to eight|5-8 probes|3 read-only haiku|up to 5|gate:show'; [ $? -ne 0 ]; dok $? \
+printf '%s' "$DESC" | grep -qE 'five to eight|5-8 probes|2 read-only haiku|3 when a re-seat|up to 5|gate:show'; [ $? -ne 0 ]; dok $? \
     'and it does NOT restate the pre-collapse figures'
 
 printf '\n%s passed, %s failed (meta.description probe accounting)\n' "$dpass" "$dfail"

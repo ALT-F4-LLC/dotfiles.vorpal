@@ -1,6 +1,6 @@
 export const meta = {
     name: 'wave',
-    description: 'Run one dispatched manifest end to end: spawn one executor per executor row at the model/effort the engine rendered on it, seat a judge panel on each vote row from its routed roster, and skip action rows (engine-run at record time). Stages run as awaited groups per issue lane, with the cross-issue cohorts the manifest certifies honored — the staged closure means one wave can carry judges -> gate -> reconcile -> report, and inside a wave no issue idles behind the slower stages of another; writers the engine never co-staged still serialize, so a wave launches at most three such writer cohorts and defers the rest to the next dispatch rather than holding every finished lane behind a long writer ladder. AGENT BUDGET: the Workflow tool caps one invocation at 1000 agents over its lifetime, so the wave reserves each row\'s projected agents at admission (executor 2, vote row seats+3) against a 900-agent budget and defers, on the spot and without holding its lane, every row the remainder cannot cover; the engine re-offers deferred rows at the next dispatch, and a manifest of any size is safe to hand over whole. SHARDS: both caps are per invocation, so one dispatch may launch up to SHARD_CAP (4) waves at once, each handed the FULL manifest plus `shard: {index, of}`; every launch computes the same deterministic partition — whole issue lanes as units, writer lanes the engine never co-staged welded into one unit so they still serialize, units balanced largest-first onto the least-loaded shard — runs only its own lanes, admits only its share of each class\'s certified headroom, and settles every sibling row not-launched-other-shard. PROBE COST PER VOTE ROW: 2 read-only haiku probes of `docket gate status` on the normal path — one before the panel seats (decided yet, which proposal, which target) and one after it returns (missing seats and the tally) — 1 on a gate that was already decided before the wave reached it, and 3 when a re-seat forces a re-read; a gate with no proposal yet spends a `step show` for the engine\'s blocked_reason instead of a panel, and an engine-minted held-cluster gate spends one more read to name its cluster. Each probe answers through a schema, under 1 KB; the per-gate count is reported verbatim in that row\'s spawn_accounting. Invoke by scriptPath ONLY, with args {rows, tribunal, cwd, shard?} as a real object — every row carries model/effort/variant resolved by the engine, and the script reads no policy and cannot read files.',
+    description: 'Run one dispatched manifest end to end: spawn one executor per executor row at the model/effort the engine rendered on it, seat a judge panel on each vote row from its routed roster, and skip action rows (engine-run at record time). Stages run as awaited groups per issue lane, with the cross-issue cohorts the manifest certifies honored — the staged closure means one wave can carry judges -> gate -> reconcile -> report, and inside a wave no issue idles behind the slower stages of another; writers the engine never co-staged still serialize, so a wave launches at most three such writer cohorts and defers the rest to the next dispatch rather than holding every finished lane behind a long writer ladder. AGENT BUDGET: the Workflow tool caps one invocation at 1000 agents over its lifetime, so the wave reserves each row\'s projected agents at admission (executor 2, vote row seats+3) against a 900-agent budget and defers, on the spot and without holding its lane, every row the remainder cannot cover; the engine re-offers deferred rows at the next dispatch, and a manifest of any size is safe to hand over whole. SHARDS: both caps are per invocation, so one dispatch may launch up to SHARD_CAP (4) waves at once, each handed the FULL manifest plus `shard: {index, of}`; every launch computes the same deterministic partition — whole issue lanes as units, writer lanes the engine never co-staged welded into one unit so they still serialize, units balanced largest-first onto the least-loaded shard — runs only its own lanes, admits only its share of each class\'s certified headroom, and settles every sibling row not-launched-other-shard. PROBE COST PER VOTE ROW: 3 read-only haiku probes on the normal path — `docket gate status` before the panel seats (decided yet, which proposal, which target), one projection of the proposal body (the case every seat brief renders verbatim, with no cast in it: seats never read the vote record themselves, since it prints every sibling cast already landed), and `docket gate status` after the panel returns (missing seats and the tally) — 1 on a gate that was already decided before the wave reached it, and 4 when a re-seat forces a re-read; a gate with no proposal yet spends a `step show` for the engine\'s blocked_reason instead of a panel, and an engine-minted held-cluster gate spends one more read to name its cluster. Each probe answers through a schema, under 1 KB; the per-gate count is reported verbatim in that row\'s spawn_accounting. Invoke by scriptPath ONLY, with args {rows, tribunal, cwd, shard?} as a real object — every row carries model/effort/variant resolved by the engine, and the script reads no policy and cannot read files.',
     whenToUse: 'Invoked by the docket-run skill on an open dispatch, always as Workflow({scriptPath}) — never by name, and once per shard when the dispatch is split (the same rows in every launch, `shard: {index, of}` differing). args is {rows, tribunal, cwd, shard?}: `next` rows VERBATIM (executor, vote, and action rows; human rows stay with the conductor), each executor row carrying the model/effort/variant the engine resolved from the run\'s pinned policy.toml and each vote row carrying the same per voter in `voter_assignments` — a row re-typed without those fields is refused. `tribunal` is the absolute installed path to tribunal.js, the one workflow-nesting level this script uses to seat every in-wave panel (it cannot resolve that path itself); `cwd` is the repo the run belongs to. On a dispatch carrying a fix round\'s review fanout, args also carries `integrated` — a map from each such issue to the sha of its prior round\'s INTEGRATION commit — so the wave can assert base ancestry before seating the fanout. There is no policy argument of any kind and no file access.',
 }
 
@@ -11,6 +11,7 @@ const AGENT_CONFIG = {
     probe: { model: 'haiku', effort: 'low' },
     gateStatus: { model: 'haiku', effort: 'low' },
     heldCluster: { model: 'haiku', effort: 'low' },
+    proposal: { model: 'haiku', effort: 'low' },
     blockProbe: { effort: 'low' }, // Deliberately inherit the session model.
 }
 
@@ -1576,6 +1577,79 @@ function heldCluster(step, label, phaseLabel, acct) {
     return retrying(label, acct, once, null)
 }
 
+// The CASE a seat decides — the proposal's own body — is read ONCE per gate
+// here and rendered verbatim into every seat brief, so no seat reads the
+// vote record itself. `docket vote show` prints every recorded cast
+// (verdict, confidence, weight, summary) beside the body, and seats run in
+// parallel: a seat whose read lands after a sibling's cast sees that
+// verdict, and a re-seated judge sees the whole panel — a listings board
+// that turns independent seats into an anchored one. The projection carries
+// the question and nothing decided: no votes, no score, no outcome, no
+// status. Null lists are normalized by jq so the schema always sees arrays.
+const PROPOSAL_SCHEMA = {
+    type: 'object',
+    properties: {
+        description: { type: 'string' },
+        rationale: { type: 'string' },
+        files_changed: { type: 'array', items: { type: 'string' } },
+        linked_issues: { type: 'array', items: { type: 'string' } },
+        error: { type: 'string' },
+    },
+}
+
+const PROPOSAL_JQ =
+    `jq -c '.data | {description, rationale, ` +
+    `files_changed: (.files_changed // []), linked_issues: (.linked_issues // [])}'`
+
+function proposalBrief(voteId, step) {
+    return `Run exactly this one command:
+
+  docket vote show ${voteId} --json | ${PROPOSAL_JQ}
+
+Return the printed object through the structured output, field for field and
+value for value — copy, never summarize; add no field the output did not carry
+and fill none in. If the command errors, return {error: <the error text
+verbatim>} and nothing else.
+
+Do not cast a vote, do not investigate, do not run anything else. You are a
+read-only probe reporting what the record currently says.
+
+WAVE PROBE: not a step execution. Your usage is wave overhead. This read serves
+${step}, which is the step it READS, not a step you run — the usage join must
+not attribute your tokens to it.`
+}
+
+// The body as brief text: its own words, nothing tallied. '' when the read
+// died or answered without a description, so the brief can say so.
+function proposalContext(p) {
+    if (!p || typeof p.description !== 'string') return ''
+    const list = (xs) => Array.isArray(xs) && xs.length > 0 ? xs.join(', ') : '(none recorded)'
+    const rationale = typeof p.rationale === 'string' && p.rationale !== '' ? p.rationale : '(none recorded)'
+    return [
+        `DESCRIPTION: ${p.description}`,
+        `RATIONALE: ${rationale}`,
+        `FILES CHANGED: ${list(p.files_changed)}`,
+        `LINKED ISSUES: ${list(p.linked_issues)}`,
+    ].join('\n')
+}
+
+function proposalBody(voteId, step, label, phaseLabel, acct) {
+    const once = () => {
+        acct.probes++
+        return agent(proposalBrief(voteId, step), {
+            label,
+            phase: phaseLabel,
+            agentType: 'executor-read',
+            ...AGENT_CONFIG.proposal,
+            schema: PROPOSAL_SCHEMA,
+        }).then((p) => {
+            if (p && typeof p.error === 'string') log(`${label}: engine error — ${p.error}`)
+            return proposalContext(p)
+        })
+    }
+    return retrying(label, acct, once, '')
+}
+
 // Successful tallies report recovered agent errors as notes. Failed gates
 // keep their errors and never pass through here. Count seats separately from
 // probes and retries; omit the seats clause when no panel was seated.
@@ -1687,6 +1761,15 @@ async function runGate(row, phaseLabel) {
     log(`${row.step}: ${voteId} — seating ${seats.map((s) => s.seat).join(', ')}` +
         (target ? ` on target ${target.sha || '(no sha)'}${target.worktree ? ` (${target.worktree})` : ''}`
                 : ` with NO target ref on the gate — seats read their own HEAD`))
+    // The case every seat brief renders, read once here and reused on the
+    // re-seat: the record it comes from also prints every cast already
+    // landed, so no seat reads it. A dead read seats the panel anyway — the
+    // gate's context bundle carries the evidence — and the brief says so.
+    const context = await proposalBody(voteId, row.step, `${row.step} · gate:proposal`, phaseLabel, acct)
+    if (!context) {
+        log(`${row.step}: the proposal body read returned nothing — seats are ` +
+            `briefed without it and decide from the gate's context bundle`)
+    }
     acct.seats = seats.length
     // The panel is seated by ONE workflow-nesting level into tribunal.js,
     // passing `step` so it renders the mid-wave brief (target ref, held
@@ -1696,7 +1779,7 @@ async function runGate(row, phaseLabel) {
     // gate-blocked with the error text, same as any other unreadable gate.
     const seatPanel = (panelSeats, isRespawn) =>
         workflow({ scriptPath: args.tribunal }, {
-            voteId, gateKind: row.instance, cwd: args.cwd,
+            voteId, gateKind: row.instance, cwd: args.cwd, context,
             voters: panelSeats.map((s) => ({ seat: s.seat, model: s.model, effort: s.effort, variant: s.variant })),
             step: { step: row.step, instance: row.instance, issue: row.issue, run: row.run },
             target, heldCluster: held, isRespawn: Boolean(isRespawn),

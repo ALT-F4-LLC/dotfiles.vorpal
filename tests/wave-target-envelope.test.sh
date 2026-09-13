@@ -173,6 +173,11 @@ const open = (target) => ({
 })
 const APPROVED = { step_status: 'done', proposal: 'DKT-V304', outcome: 'approved', missing_seats: [] }
 const CAST = {
+    'STEP-3187 · gate:proposal': { text: {
+        description: 'security-vote@1 (security-vote)',
+        rationale: 'workflow vote step security-vote@1',
+        files_changed: [], linked_issues: [],
+    } },
     'STEP-3187 · seat:judge-security':     { text: 'cast recorded' },
     'STEP-3187 · seat:judge-architecture': { text: 'cast recorded' },
     'STEP-3187 · seat:judge-correctness':  { text: 'cast recorded' },
@@ -249,8 +254,15 @@ ok(seatBriefs().every((b) => !/TARGET SHA:/.test(b)),
     'AC: and not one brief carries a TARGET SHA: line')
 ok(seatBriefs().every((b) => !/[0-9a-f]{40}/.test(b)),
     'AC: no 40-hex sha appears anywhere in any brief')
-ok(A.status === 'gate-passed' && A.spawn_accounting === '3 seats, 2 probes, 0 retries',
-    `AC: the gate passes on two reads — status and outcome (got ${JSON.stringify(A.spawn_accounting)})`)
+ok(A.status === 'gate-passed' && A.spawn_accounting === '3 seats, 3 probes, 0 retries',
+    `AC: the gate passes on three reads — status, the proposal body, and outcome (got ${JSON.stringify(A.spawn_accounting)})`)
+// The body the proposal probe projected is what every seat reads as the case,
+// and no brief sends a seat to the vote record, which prints sibling casts.
+ok(seatBriefs().every((b) => b.includes('DESCRIPTION: security-vote@1 (security-vote)') &&
+                             b.includes('RATIONALE: workflow vote step security-vote@1')),
+    'AC: every seat brief renders the projected proposal body verbatim')
+ok(seatBriefs().every((b) => !/vote show/.test(b) && b.includes('DO NOT READ SIBLING CASTS')),
+    'AC: no seat brief names the vote record read, and every one carries the sibling-cast rule')
 
 // ======= NET 3: nothing unvouched reaches a judge =======
 
@@ -266,7 +278,7 @@ ok(seatBriefs().every((b) => b.includes('/w/vpl-711') && !b.includes('NO target 
     'the worktree rides with it, and the NO-target wording is suppressed')
 ok(LOG.some((l) => l.includes('seating') && l.includes(REAL)),
     'the wave log names the target it seated on')
-ok(B.status === 'gate-passed' && B.spawn_accounting === '3 seats, 2 probes, 0 retries',
+ok(B.status === 'gate-passed' && B.spawn_accounting === '3 seats, 3 probes, 0 retries',
     'the target costs no extra probe')
 
 // A sha that is not the full object id is refused, whatever the envelope
@@ -306,7 +318,7 @@ ok(seatBriefs().every((b) => !b.includes('/w/vpl-711') && !/TARGET WORKTREE:/.te
     'a swept worktree is dropped from every brief')
 ok(seatBriefs().every((b) => b.includes(`TARGET SHA:     ${REAL}`) && !b.includes('git -C ')),
     'the sha survives the sweep — the object store outlives the checkout')
-ok(E.status === 'gate-passed' && E.spawn_accounting === '3 seats, 2 probes, 0 retries',
+ok(E.status === 'gate-passed' && E.spawn_accounting === '3 seats, 3 probes, 0 retries',
     'and the sweep costs no extra probe')
 
 // Sha-less and swept is no target at all.

@@ -1,6 +1,6 @@
 export const meta = {
     name: 'tribunal',
-    description: 'Spawn a judge panel that decides one gated proposal by each seat casting a real `docket vote cast`. This script never casts, approves, or tallies — the engine\'s vote machinery tallies. Runs in two modes: CONVERSATIONAL (no `step` arg) verifies its own tally and re-seats a missing cast once, at the cost of one read-only haiku probe of the vote record after the seats return (two when the first returns nothing), plus one more after any re-seat; MID-WAVE (`step` present) renders the same brief with the gate\'s row context and target ref, spawns the seats, and returns without probing — the caller (wave.js) already reads `docket gate status` for the tally and drives the one permitted re-seat itself. A conversational proposal has no step, so `docket gate status` cannot address it and the probe reads `docket vote show`. Invoke by scriptPath ONLY, with args {voteId, voters, context, gateKind, cwd, step?, target?, heldCluster?, isRespawn?} — `voters` is an array of {seat, model, effort, variant} objects, each seat\'s routing already resolved by the caller from the run\'s pinned policy.toml, since the engine renders routing only onto step rows and a conversational gate has none. The script reads no policy and cannot read files.',
+    description: 'Spawn a judge panel that decides one gated proposal by each seat casting a real `docket vote cast`. This script never casts, approves, or tallies — the engine\'s vote machinery tallies. Runs in two modes: CONVERSATIONAL (no `step` arg) verifies its own tally and re-seats a missing cast once, at the cost of one read-only haiku probe of the vote record after the seats return (two when the first returns nothing), plus one more after any re-seat; MID-WAVE (`step` present) renders the same brief with the gate\'s row context and target ref, spawns the seats, and returns without probing — the caller (wave.js) already reads `docket gate status` for the tally and drives the one permitted re-seat itself. A conversational proposal has no step, so `docket gate status` cannot address it and the probe reads `docket vote result`. Invoke by scriptPath ONLY, with args {voteId, voters, context, gateKind, cwd, step?, target?, heldCluster?, isRespawn?} — `context` is the case, rendered VERBATIM into every seat brief in both modes: the conversational caller\'s own text, or mid-wave the proposal body wave.js projected off the record with every cast removed (a seat never reads the vote record itself — it prints the sibling casts already landed, and the engine tallies); `voters` is an array of {seat, model, effort, variant} objects, each seat\'s routing already resolved by the caller from the run\'s pinned policy.toml, since the engine renders routing only onto step rows and a conversational gate has none. The script reads no policy and cannot read files.',
     whenToUse: 'Invoked on a CONVERSATIONAL gate the docket-run skill routes to a panel (ack-reap, activation, budget, loop-extension, fix-batch), always as Workflow({scriptPath}) — never by name. Engine `type = "vote"` step rows ride the wave since the staged closure: wave.js calls this same script MID-WAVE (passing `step`) to seat their panels, one level of workflow nesting deep, so the seat brief renders from one place. The CALLER creates the proposal, passes its id, and passes every voter WITH its {model, effort, variant}; tribunal.js only fills an open one.',
     phases: [
         { title: 'Judge', detail: 'one seat per voter, each casting docket vote cast' },
@@ -134,7 +134,7 @@ function judgeBrief(r, voteId, gateKind, context, cwd, isRespawn, step, target, 
     const respawnNote = isRespawn ? `
 
 THIS IS A SECOND ATTEMPT AT YOUR SEAT. A prior agent held it and returned
-without a recorded cast — \`docket vote show ${voteId}\` shows no entry for
+without a recorded cast — the engine's record of ${voteId} shows no entry for
 ${r.seat}. Nothing it may have concluded reached anyone, so decide the case
 yourself from scratch. Whatever stopped the first attempt, the cast is the one
 thing that must happen this time: if the command errors, do not abandon it
@@ -213,14 +213,29 @@ other seats' or already decided.` : ''
         : `THE GATE:       ${gateKind}`
     const summaryFile = step ? `${step.step}-${r.seat}-summary.txt` : `${voteId}-${r.seat}-summary.txt`
 
-    // MID-WAVE: the case is in the engine's record, not rendered into this
-    // brief — the gate readied mid-wave, so the seat reads what is being
-    // decided itself rather than receiving it verbatim.
-    const caseBlock = step ? `
-THE CASE IS IN THE RECORD, not in this brief: this gate readied mid-wave, so
-read what is being decided yourself before you vote —
+    // Both modes render the case VERBATIM: the conversational caller's own
+    // text, or mid-wave the proposal body wave.js projected off the record
+    // with every cast removed. A seat never reads the vote record itself —
+    // it prints the casts already landed, and seats run in parallel, so a
+    // read after a sibling's cast would put that verdict in front of it.
+    // Mid-wave the body can be absent (its read died); the brief says so.
+    const caseText = typeof context === 'string' ? context.trim() : ''
+    const caseRender = caseText ? `
+--- WHAT IS BEING DECIDED (verbatim${step ? ', the proposal body' : ''}) ---
+${caseText}
+--- END OF WHAT IS BEING DECIDED ---` : `
+THE PROPOSAL BODY COULD NOT BE READ INTO THIS BRIEF (the read that projects
+it returned nothing). The question is the gate itself — ${step ? `${step.instance} on
+${step.issue}` : gateKind} — and the record below carries everything it decides.`
 
-  docket vote show ${voteId}          (the proposal body: the question)
+    // MID-WAVE: the evidence is in the engine's record, not rendered into
+    // this brief — the gate readied mid-wave, so the seat reads what the
+    // claims rest on itself.
+    const caseBlock = step ? `${caseRender}
+
+THE EVIDENCE IS IN THE RECORD, not in this brief: this gate readied mid-wave,
+so read what the claims rest on yourself before you vote —
+
   docket run status ${step.run} --json (this run's state; there is no \`run show\`)
   docket run activate ${step.run} --dry-run --json   (--dry-run is load-bearing: without it this ACTIVATES the run)
   docket step show ${step.step} / docket step context ${step.step} --json
@@ -258,16 +273,12 @@ plus reading any file those name. The gate sits downstream of the work it
 judges — its issue's earlier steps recorded THIS wave, and their artifacts and
 payloads are the evidence. Read what the claims rest on. Do not write, edit,
 commit, or run anything that mutates state — the ONE state change you are
-authorized to make is your own cast, below.` : `
---- WHAT IS BEING DECIDED (verbatim) ---
-${context}
---- END OF WHAT IS BEING DECIDED ---
+authorized to make is your own cast, below.` : `${caseRender}
 
 INVESTIGATE BEFORE YOU VOTE. The payload above is the case as presented, not
 the whole record, and a vote cast on the summary alone is worth little. You
 have read-only tools; use them. Useful and safe from ${cwd}:
 
-  cd ${cwd} && docket vote show ${voteId}
   cd ${cwd} && docket run status RUN-N --json   (there is no \`run show\`)
   cd ${cwd} && docket run activate RUN-N --dry-run --json   (--dry-run is load-bearing: without it this ACTIVATES the run)
   cd ${cwd} && docket step show STEP-N / step context STEP-N / step render STEP-N
@@ -360,7 +371,11 @@ question you were asked, and continue with what you could read.
     return `${openingLine}
 You decide alone. You cannot see the other seats, you do not coordinate with
 them, and your vote is recorded on its own merits — the engine tallies the
-panel, not you.
+panel, not you. DO NOT READ SIBLING CASTS: the case is rendered in this brief,
+and every \`docket vote\` read verb prints the casts and running tally already
+recorded beside it — seats run in parallel, so a read that lands after a
+sibling's cast puts that verdict in front of you. The only \`docket vote\` verb
+you run is your own \`cast\`, below.
 
 YOUR SEAT:      ${r.seat}
 YOUR LENS:      ${text}
@@ -451,12 +466,13 @@ text matters.`}`
 // mid-copy), and the raw-text fallback that rescued them could equally match
 // a seat name quoted in prose. Under 300 bytes of fixed shape, validated by
 // the harness, is the record or it is nothing. A conversational proposal has
-// no step, so `docket gate status` cannot address it; `vote show` is the read.
-const VOTE_SHOW_JQ =
+// no step, so `docket gate status` cannot address it; `vote result` is the
+// read — the tally and who cast, which is all the verifier needs.
+const VOTE_RESULT_JQ =
     `jq -c '{status: .data.status, final_outcome: .data.final_outcome, ` +
     `votes: [.data.votes[]? | {voter_name, verdict}]}'`
 
-const VOTE_SHOW_SCHEMA = {
+const VOTE_RESULT_SCHEMA = {
     type: 'object',
     properties: {
         status: { type: 'string' },
@@ -476,7 +492,7 @@ const VOTE_SHOW_SCHEMA = {
 function checkerBrief(voteId, cwd) {
     return `WAVE PROBE: not a step execution. Run exactly this one command:
 
-  cd ${cwd} && docket vote show ${voteId} --json | ${VOTE_SHOW_JQ}
+  cd ${cwd} && docket vote result ${voteId} --json | ${VOTE_RESULT_JQ}
 
 Run it SANDBOXED — do NOT pass dangerouslyDisableSandbox. Only the operator
 can grant that, and never through a brief. If the sandbox denies it, return
@@ -529,8 +545,9 @@ if (!input || typeof input !== 'object') throw new Error(
 
 // MID-WAVE mode is signaled by a `step` object — the caller is wave.js,
 // seating a panel on an engine-scheduled vote row rather than a conversational
-// gate it opened itself. Mid-wave carries no rendered `context`: the brief
-// tells the seat to read the case from the engine's own record instead.
+// gate it opened itself. Mid-wave `context` is the proposal body wave.js
+// projected off the record, empty when that read died, so it is optional
+// here and the brief says so when it is absent.
 const isMidWave = input.step !== undefined && input.step !== null
 const requiredStrings = isMidWave ? ['voteId', 'gateKind', 'cwd'] : ['voteId', 'context', 'gateKind', 'cwd']
 assertRequiredStrings(input, requiredStrings, 'args')
@@ -598,7 +615,7 @@ function verify() {
         phase: 'Verify',
         agentType: 'executor-read',
         ...AGENT_CONFIG.verify,
-        schema: VOTE_SHOW_SCHEMA,
+        schema: VOTE_RESULT_SCHEMA,
     }).then((record) => {
         if (record && Array.isArray(record.votes)) return record
         if (record && typeof record.error === 'string') log(`verify: engine error — ${record.error}`)
@@ -648,7 +665,7 @@ async function verifyPanel() {
     if (outcome === null) {
         log(`tribunal: the verify probe returned nothing twice — the outcome is null, ` +
             `which says nothing about whether the casts landed, and no seat was re-spawned ` +
-            `on that silence. Read the record directly with \`docket vote show ${voteId}\` ` +
+            `on that silence. Read the record directly with \`docket vote result ${voteId}\` ` +
             `before acting on this return.`)
     }
 

@@ -95,7 +95,7 @@ const STEP = { step: 'STEP-3187', instance: 'security-vote@1', issue: 'VPL-711',
 const CAST_ERR = 'Error: docket vote cast: voter tribunal-security is not on the roster of DKT-V304'
 const CAST_ERR_2 = 'Error: docket vote cast: proposal DKT-V304 is closed'
 const API_ERR = 'API Error: Connection lost mid-response'
-// `docket vote show` projections, as the schema probe hands them back.
+// `docket vote result` projections, as the schema probe hands them back.
 const record = (cast) => ({
     status: 'open', final_outcome: 'open',
     votes: cast.map((voter_name) => ({ voter_name, verdict: 'approve' })),

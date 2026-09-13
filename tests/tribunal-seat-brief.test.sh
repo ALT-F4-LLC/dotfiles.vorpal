@@ -103,6 +103,26 @@ const midWithTarget = judgeBrief(SEAT, 'DKT-V304', undefined, undefined, '/repo'
 ok(midWithTarget.includes('docket run status') && midWithTarget.includes('docket run activate') && midWithTarget.includes('--dry-run'),
     'the safe-read verbs survive alongside a target ref')
 
+// ---- the case is rendered VERBATIM in both modes, and no mode sends a seat
+// to the vote record — it prints every sibling cast already landed, and
+// seats run in parallel.
+ok(conv.includes('the case text'),
+    'conversational brief renders the caller\'s context verbatim')
+const BODY = 'DESCRIPTION: security-vote@1 (security-vote)\nRATIONALE: workflow vote step security-vote@1'
+const midCase = judgeBrief(SEAT, 'DKT-V304', undefined, BODY, '/repo', false, STEP, null, null)
+ok(midCase.includes(BODY) && !midCase.includes('COULD NOT BE READ'),
+    'mid-wave brief renders the projected proposal body verbatim')
+ok(mid.includes('THE PROPOSAL BODY COULD NOT BE READ') && mid.includes(`${STEP.instance} on`),
+    'a mid-wave brief with no context says so and names the gate it decides')
+const respawn = judgeBrief(SEAT, 'DKT-V304', 'activation', 'the case text', '/repo', true)
+for (const [label, b] of [['conversational', conv], ['conversational re-seat', respawn],
+                          ['mid-wave', midCase], ['mid-wave without a body', mid]]) {
+    ok(!/vote show/.test(b) && !/vote result/.test(b),
+        `${label} brief never tells a seat to read the vote record`)
+    ok(b.includes('DO NOT READ SIBLING CASTS') && b.includes('The only `docket vote` verb'),
+        `${label} brief carries the sibling-cast rule`)
+}
+
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)
 JS

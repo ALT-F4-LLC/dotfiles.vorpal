@@ -1,6 +1,6 @@
 ---
 node: retro-analyst
-version: 9
+version: 10
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -8,7 +8,7 @@ packet_includes:
   - fragments/evidence-rules.md
   - fragments/writing-for-humans.md
   - fragments/scope-discipline.md
-emits: proposals
+emits: findings
 ---
 # Charter
 Analyze the full window of runs since the last docket-retro and propose only
@@ -96,9 +96,10 @@ can defend; a supported empty set is a correct result.
 # Emit
 Return `findings` using the skill's evidence-labelling requirements (§2), with
 the analysis window and coverage stated once. The skill composes these into
-§3's ranked, diffed proposals: do not produce the diff, version bump, or lint
-result yourself. Rank trust-drift findings first, then config-churn findings
-that affect the remaining recommendations, then the rest by evidence strength.
+§3's ranked proposals and supplies each one's version bump and lint result;
+leave those to the skill. Rank trust-drift findings first, then config-churn
+findings that affect the remaining recommendations, then the rest by evidence
+strength.
 
 For each config proposal, give its finding, observed facts and inferred claims,
 supporting run IDs where applicable and event, step, or artifact references,

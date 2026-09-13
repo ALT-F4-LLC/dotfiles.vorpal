@@ -1,6 +1,6 @@
 ---
 node: drain-highs
-version: 12
+version: 13
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -18,11 +18,14 @@ issue. Writing a scratch file alone does not drain a cluster.
 
 The workflow controls entry. In standard tracks, reconcile routes here when
 open highs remain and no open blocker matches `fix-loop` first. In the
-security track, an approved security vote routes here and this step drains
-remaining open blockers as well as highs; rejection enters the fix loop, and
-if the vote never convened, the engine skips this step in the same
-transaction as the vote. Draining records unresolved work; publishing
-remains subject to the applicable security policy and operator gates.
+security track, an approved security vote routes here and this step files
+every open High the panel approved past, and only those; a supported
+Critical (emitted `blocker`) never reaches this step, because the panel must
+reject or reclassify it and it stays fix-before-merge or revert. Rejection
+enters the fix loop, and if the vote never convened, the engine skips this
+step in the same transaction as the vote. Draining records unresolved work;
+publishing remains subject to the applicable security policy and operator
+gates.
 
 # Not
 

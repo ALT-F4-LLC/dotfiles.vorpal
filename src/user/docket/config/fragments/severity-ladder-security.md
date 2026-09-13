@@ -1,6 +1,6 @@
 ---
 fragment: severity-ladder-security
-version: 6
+version: 7
 ---
 # Severity ladder: security
 
@@ -50,11 +50,12 @@ payload contract. Map each rung exactly:
 **Security convergence.** On the security track, reconcile routes any open
 Critical or High to the `security-vote` panel: the judge seats the workflow
 declares, tallied by the engine; no person sits on it. A supported Critical
-remains fix-before-merge or revert; the panel may correct or reject its
-classification on evidence, but risk acceptance alone does not clear it. High
-requires a fix or the panel's recorded acceptance: approve-with-concerns casts
-whose rationales stand in the vote record, after which `drain-highs` files
-every open High the panel approved past as a backlog issue. A rejected tally
+remains fix-before-merge or revert; the panel must reject or reclassify it on
+evidence, and risk acceptance alone does not clear it, so a supported Critical
+never reaches `drain-highs` and is never drained. High requires a fix or the
+panel's recorded acceptance: approve-with-concerns casts whose rationales
+stand in the vote record, after which `drain-highs` files every open High the
+panel approved past as a backlog issue, and only those. A rejected tally
 returns the round to the fix loop. Where another track seats this reviewer
 without a security vote, that track's own thresholds route its findings.
 Medium remains recorded and surfaces at the gates and in the backlog; Low and

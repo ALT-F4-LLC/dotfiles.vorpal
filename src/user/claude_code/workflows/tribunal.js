@@ -560,6 +560,13 @@ for (const s of seats) {
 // Judge / Verify
 // ---------------------------------------------------------------------------
 
+// Every spawn attempt (first seating or the conversational re-seat) that ended
+// with text, as {seat, text} in completion order. The brief tells a seat its
+// final text goes nowhere except a verbatim cast error, so this is the one
+// route such an error has to the caller; null and empty replies never land
+// here.
+const replies = []
+
 function spawnJudge(r, respawn) {
     return agent(judgeBrief(r, voteId, gateKind, context, cwd, respawn, step, target, heldCluster), {
         label: `seat:${r.seat}`,
@@ -572,6 +579,9 @@ function spawnJudge(r, respawn) {
             log(`${r.seat}: SPAWN PRODUCED NOTHING (launch blocked, model ${r.model} ` +
                 `unavailable, or the agent died mid-flight) — whether a cast landed is ` +
                 `UNKNOWN; the verify pass below is what settles it`)
+        } else if (typeof text === 'string' && text.trim() !== '') {
+            log(`${r.seat}: ended with text (relayed as replies[]) — ${text}`)
+            replies.push({ seat: r.seat, text })
         }
         return text
     }).catch((err) => {
@@ -654,4 +664,6 @@ const result = isMidWave
     ? { voteId, seatsSpawned: seats.length, absorbed: spawned.filter((seat) => seat && typeof seat === 'object' && typeof seat.error === 'string') }
     : await verifyPanel()
 
-return result
+// `replies` rides both modes so a seat's verbatim cast error reaches the caller;
+// mid-wave `absorbed` stays spawn errors only.
+return { ...result, replies }

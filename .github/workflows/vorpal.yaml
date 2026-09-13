@@ -58,6 +58,8 @@ jobs:
 
       - run: bash tests/session-census-dedupe.test.sh
 
+      - run: bash tests/tribunal-cast-error-surfaced.test.sh
+
       - run: bash tests/tribunal-seat-brief.test.sh
 
       - run: bash tests/wave-agent-budget.test.sh

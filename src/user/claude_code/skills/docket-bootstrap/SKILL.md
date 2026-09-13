@@ -160,6 +160,8 @@ path allowlist and the miners' evidence, then review the diff.
 
 Choose the operator's named smoke issue, or propose one from a verified gap and
 offer a replacement. Identify its intended workflow and acceptance criteria.
+The smoke issue carries the `route-run` label and no other `route-*` label,
+following the routing-label convention established in the corpus.
 Do not create an unseen issue or start an unseen run. Broader work goes to
 `/docket-plan` before activation.
 
@@ -169,7 +171,9 @@ workflow, and include every consumer step. A later issue's labels can bind
 any of them, and a gate declared there with no trust entry bound to this
 repository fails that issue's first gated step `unmatched`, which routes
 per its `on_fail`: `waiting-human` on every first-pass gated step in the
-installed corpus, so it parks. Inspect `docket trust list --all` and treat
+installed corpus, so it parks. When diagnosing why an issue did not match
+a workflow, check first for a `route-direct`, `route-loop`, or `route-tend`
+label, which would prevent workflow matching. Inspect `docket trust list --all` and treat
 an entry bound to another repository as missing here, never as applicable.
 Propose one entry per gate in that union, bound to this repository, each
 carrying the real command the miners found. A gate this repository cannot

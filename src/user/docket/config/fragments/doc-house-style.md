@@ -1,6 +1,6 @@
 ---
 fragment: doc-house-style
-version: 5
+version: 6
 ---
 # Doc house style
 
@@ -29,17 +29,15 @@ not inapplicability.
   client-measured p95 latency for `GET /orders` is below 800 ms." This is
   illustrative, not a project requirement.
 - **Verify before asserting.** Check claims about existing signatures, paths,
-  commands, and behavior against the relevant implementation, tests, or
-  authoritative documentation for the version described. Cite evidence for
-  claims the decision depends on. State proposed behavior as proposed; label
-  unverified premises as assumptions and identify what depends on them. If
-  evidence contradicts a premise, surface the conflict and reassess the
-  affected reasoning and criteria.
+  commands, and behavior for the version the document describes. State proposed
+  behavior as proposed; label unverified premises as assumptions and identify
+  what depends on them. If evidence contradicts a premise, surface the conflict
+  and reassess the affected reasoning and criteria.
 - **Quote what is load-bearing.** When correctness depends on exact wording
   elsewhere, include the shortest quotation that preserves the constraint and
-  its qualifications. Mark it as a quotation; cite its source and version or
-  section. Link to the source for surrounding detail. Otherwise reference the
-  canonical document rather than duplicating it.
+  its qualifications, and give its version or section. Link to the source for
+  surrounding detail. Otherwise reference the canonical document rather than
+  duplicating it.
 
 ## Honesty in the shape of the document
 
@@ -63,12 +61,10 @@ not inapplicability.
 
 ## Fidelity and length
 
-Match weight to risk: write the lightest document that fully answers the
-reader's questions. Use direct wording and readable paragraphs. Keep decision
-records brief, often about a page, without cutting necessary evidence or
-consequences. Retain required headings even for short answers; add optional
-headings only when they help navigation. Diagrams explain relevant boundaries,
-dependencies, or flows; their labels and behavior agree with the prose.
+Match the document's weight to the risk of the decision. Keep decision records
+brief, often about a page. Retain required headings even for short answers.
+Diagrams explain relevant boundaries, dependencies, or flows; their labels and
+behavior agree with the prose.
 
 Resolve questions that could change the decision, acceptance criteria, or safe
 execution before treating that decision as settled. If an answer is
@@ -78,8 +74,6 @@ and deadline or trigger. Mark missing assignments as unassigned. Do not invent
 an answer, assignment, or agreement to make the document appear finished.
 
 Use accepted documents as the baseline. State explicitly when a proposal would
-amend or supersede an earlier decision, and preserve its history. The same
-concept keeps the same name everywhere it appears.
+amend or supersede an earlier decision, and preserve its history.
 
-End on the last decision, consequence, or next action. Omit closing recaps and
-aphorisms. Put any required executive summary where the template calls for it.
+Put any required executive summary where the template calls for it.

@@ -1,7 +1,29 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by research, then validate, review, and vote to accept: the doc-acceptance panel for TDD/ADR, the tribunal for PRD/ux-spec. A rejection re-enters the doctype's revise step, then review, up to the loop bound."
 name = "spec-doc"
-version = 32  # 32: prose-only rewrite for concision; no topology, routing, or limit change.
+version = 33  # 33: the four acceptance votes (`tdd-vote`, `adr-vote`,
+              #   `ux-spec-vote`, `prd-vote`) gain a post-approval `threshold`
+              #   that routes `fix-loop` when one or more casts is a reject,
+              #   so a lone reject on a three-seat panel routes one revise
+              #   round instead of being outvoted by the other two casts'
+              #   confidence decimals. The tally is a weighted mean of each
+              #   cast's confidence times domain relevance, so on a recorded
+              #   panel (DKT-V485, weights 0.62, 0.70, 0.48) a reject cast
+              #   at 0.48 scored 0.73 and passed while the same reject at
+              #   0.81 scored 0.62 and failed: the dissenter's self-declared
+              #   weight, not its evidence, decided. `security-vote` on the
+              #   security track already made a single dissent decisive by
+              #   seating two, and `reconcile` protects a lone high finding
+              #   with `method = "max"`; this is the doc-track equivalent. A
+              #   threshold is a post-approval routing check: the tally
+              #   math, `on_fail`, the loop bound (`max_fix_loops = 2` on
+              #   `reconcile`, parking waiting-human when exceeded) and a
+              #   committed proposal's bypass are unchanged. `waiting-human`
+              #   was the alternative routing; a revise round won because
+              #   the loop bound already backstops it with the operator, as
+              #   a wrong single-seat reject on the single-seat gates costs
+              #   one round, never a park. No topology change.
+              # 32: prose-only rewrite for concision; no topology, routing, or limit change.
               # 31: `lease_ttl` added to every `[limits]` entry, matched to
               #   that entry's `max_step_duration`, so a lease lasts exactly
               #   as long as the step may run. A long wave no longer outlives
@@ -353,6 +375,7 @@ after = ["reconcile"]
 inputs = ["issue.latest.doc", "reconcile.findings"]
 name = "tdd-vote"
 on_fail = "fix-loop"
+threshold = { "fix-loop" = "count>=1(vote == reject)" }
 type = "vote"
 vote_rule = "doc-acceptance"
 # Deliberately judge-*, not tribunal-*: doc-acceptance is the judges' own
@@ -369,6 +392,7 @@ after = ["reconcile"]
 inputs = ["issue.latest.doc", "reconcile.findings"]
 name = "adr-vote"
 on_fail = "fix-loop"
+threshold = { "fix-loop" = "count>=1(vote == reject)" }
 type = "vote"
 vote_rule = "doc-acceptance"
 # judge-*, deliberately — see tdd-vote above.
@@ -380,6 +404,7 @@ after = ["reconcile"]
 inputs = ["issue.latest.doc", "reconcile.findings"]
 name = "ux-spec-vote"
 on_fail = "fix-loop"
+threshold = { "fix-loop" = "count>=1(vote == reject)" }
 type = "vote"
 vote_rule = "tribunal"
 voters = ["tribunal-architecture", "tribunal-security", "tribunal-design"]
@@ -390,6 +415,7 @@ after = ["reconcile"]
 inputs = ["issue.latest.doc", "reconcile.findings"]
 name = "prd-vote"
 on_fail = "fix-loop"
+threshold = { "fix-loop" = "count>=1(vote == reject)" }
 type = "vote"
 vote_rule = "tribunal"
 voters = ["tribunal-architecture", "tribunal-security", "tribunal-design"]

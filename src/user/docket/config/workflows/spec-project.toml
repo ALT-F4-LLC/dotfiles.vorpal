@@ -1,7 +1,15 @@
 [pipeline]
 description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step. Review and reconcile the findings, drain any open highs, and accept by tribunal vote. A rejection re-enters the bounded revise loop at spec authoring and runs review again."
 name = "spec-project"
-version = 24  # 24: prose-only rewrite for concision; no topology, routing, or
+version = 25  # 25: `spec-vote` gains a post-approval `threshold` that routes
+              #   `fix-loop` when one or more casts is a reject, so a lone
+              #   reject on the three-seat tribunal routes one
+              #   revise round instead of being outvoted by the other two
+              #   casts' confidence decimals; spec-doc@33 carries the
+              #   recorded example and the reasoning. The tally, `on_fail`,
+              #   the loop bound and a committed proposal's bypass are
+              #   unchanged. No topology change.
+              # 24: prose-only rewrite for concision; no topology, routing, or
               #   limit change.
               # 23: `lease_ttl` added to every `[limits]` entry, matched to
               #   that entry's `max_step_duration`, so a lease lasts exactly
@@ -205,6 +213,7 @@ after = ["reconcile"]
 inputs = ["issue.latest.spec", "reconcile.findings"]
 name = "spec-vote"
 on_fail = "fix-loop"
+threshold = { "fix-loop" = "count>=1(vote == reject)" }
 type = "vote"
 vote_rule = "tribunal"
 voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]

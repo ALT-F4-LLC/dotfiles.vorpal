@@ -836,13 +836,20 @@ you record with a command beside it, write down the MUTANT: the specific
 edit to the file under check that must make that command go red, and show
 the command's pre-fix output red against the tree as it stands. A check
 whose mutant nobody wrote down is a check nobody has falsified, and it
-passes on files that violate the criterion it claims to enforce. If you
-cannot state the mutant, the criterion does not carry a command: mark it
-**read-verified** explicitly. For an AC you derived, the marking goes in the
-AC text. For an operator-stated one, which is copied verbatim, the marking
-is recorded beside the criterion and never inside its wording. An AC list
-where every line trails a grep, half of which can never go red, is more
-misleading than one that says plainly which criteria a human must read.
+passes on files that violate the criterion it claims to enforce. Before
+recording a fenced command, also check which source will produce its
+evidence at verification: the project's ac-commands pre-gate, which runs
+only its own fixed command set and never a fenced command from an issue
+body, or a `docket trust list` entry. A command neither source will run is
+never executed and lands `unverifiable` on every run. If you cannot state
+the mutant, or neither source will run the command, the criterion does not
+carry a command: mark it **read-verified** explicitly, or restate a derived
+criterion against evidence those sources do produce. For an AC you derived,
+the marking goes in the AC text. For an operator-stated one, which is copied
+verbatim, the marking is recorded beside the criterion and never inside its
+wording. An AC list where every line trails a grep, half of which can never
+go red, is more misleading than one that says plainly which criteria a human
+must read.
 
 **Prefer the section-anchored form over the whole-file grep; restate the
 pattern where the mutant escapes on what it says, not where it looks.**

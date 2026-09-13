@@ -456,13 +456,18 @@ Every acceptance criterion, existing or drafted, must meet §2c and have its
 verification method recorded. A criterion with a verification command must
 carry the written mutant required by
 [docket-plan](../docket-plan/SKILL.md)'s mutant rule: the specific violating
-edit that should make the check fail. A criterion without a command must
-say **read-verified** and specify what to inspect and how to decide pass or
-fail. Repair missing or inadequate verification text through the same
-§3/§4b rules as the criterion itself. Read the local rule as reference if
-needed; do not invoke `docket-plan`. If the rule is unavailable, do not
-invent its format: leave the affected criterion unresolved and report the
-missing reference.
+edit that should make the check fail. Check also which source will produce
+its evidence at verification: the project's ac-commands pre-gate,
+which runs only its own fixed command set and never a fenced command from an
+issue body, or a `docket trust list` entry. A command neither source will
+run is never executed and lands `unverifiable` on every run; mark such a
+criterion **read-verified**, or restate it against evidence those sources do
+produce. A criterion without a command must say **read-verified** and
+specify what to inspect and how to decide pass or fail. Repair missing or
+inadequate verification text through the same §3/§4b rules as the criterion
+itself. Read the local rule as reference if needed; do not invoke
+`docket-plan`. If the rule is unavailable, do not invent its format: leave
+the affected criterion unresolved and report the missing reference.
 
 Grooming verifies the definition and verification design, not completion of
 the work. Record proposed verification text without implementing an issue,

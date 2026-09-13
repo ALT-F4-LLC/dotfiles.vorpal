@@ -1,7 +1,7 @@
 export const meta = {
     name: 'wave-usage',
-    description: 'Measure a completed wave\'s token spend from its agent transcripts and emit the back-fill rows: one row per (step, unit) for `docket dispatch backfill-usage --from-json -`, or per (proposal, voter, unit) for `docket vote backfill-usage --from-json -`. Every agent is partitioned exactly once into judge, claimant, or wave overhead by what its bootstrap brief told it to do. PROBE COST: one low-effort read-only agent per agent-*.jsonl in the directory, plus one scout, plus one re-check for any transcript relayed as bootstrap:false. Invoke by scriptPath ONLY, with args {dir, mode?, exclude?}.',
-    whenToUse: 'Invoked by the docket-run skill the moment a wave returns, launched beside the close rather than ahead of it (the engine measures `dispatch.grace` from the run\'s newest terminal step record — the wave\'s last one — so every step recorded before it is usage PENDING while that record is inside the window, and the join may land after the close; a step still unbilled once the wave\'s last record is past the window is the `usage-rows-missing` refusal it always was), and by the pause and resume paths for a wave whose usage was never back-filled. args is {dir: absolute transcript directory, mode: "steps" (default) | "seats", exclude: [STEP-N...] in steps mode or [seat...] in seats mode}. The script cannot read files itself; its agents run one fixed jq program per transcript and the reduction happens here.',
+    description: 'Measure a completed wave\'s token spend from its agent transcripts and emit the back-fill rows: one row per (step, unit) for `docket dispatch backfill-usage --from-json -`, or per (proposal, voter, unit) for `docket vote backfill-usage --from-json -`. Every agent is partitioned exactly once into judge, claimant, or wave overhead by what its bootstrap brief told it to do. Seats mode also emits a fifth `tool_uses` unit per seat (distinct tool_use blocks in the seat\'s transcript), the investigation-depth signal docket-retro\'s seat-calibration row reads beside the cast\'s self-reported confidence. Steps mode returns a `coordination` section beside the rows (rounds per issue, first-pass gate pass rate, re-seats, claim conflicts, ancestry parks, budget and chain deferrals) when the caller also passes the wave\'s returned statuses and the manifest rows. PROBE COST: one low-effort read-only agent per agent-*.jsonl in the directory, plus one scout, plus one re-check for any transcript relayed as bootstrap:false. Invoke by scriptPath ONLY, with args {dir, mode?, exclude?, rows?, statuses?}.',
+    whenToUse: 'Invoked by the docket-run skill the moment a wave returns, launched beside the close rather than ahead of it (the engine measures `dispatch.grace` from the run\'s newest terminal step record — the wave\'s last one — so every step recorded before it is usage PENDING while that record is inside the window, and the join may land after the close; a step still unbilled once the wave\'s last record is past the window is the `usage-rows-missing` refusal it always was), and by the pause and resume paths for a wave whose usage was never back-filled. args is {dir: absolute transcript directory, mode: "steps" (default) | "seats", exclude: [STEP-N...] in steps mode or [seat...] in seats mode, rows: the manifest rows handed to wave.js, statuses: the wave\'s returned array}; rows and statuses are optional, given together, and read in steps mode only, where they feed the `coordination` section (null without them, and the log says so). The script cannot read files itself; its agents run one fixed jq program per transcript and the reduction happens here.',
     phases: [
         { title: 'Scout', detail: 'one agent lists the agent transcripts' },
         { title: 'Extract', detail: 'one low-effort agent per transcript runs the fixed jq' },
@@ -29,8 +29,9 @@ const DEFAULT_MODE = 'steps'
 //
 // Each agent-<id>.jsonl is read by one agent running EXTRACT_JQ below, which
 // reports what the bootstrap brief (the first user message) told the agent to
-// do and the agent's four typed token units. This script joins, partitions,
-// sums and sorts; agents read, the script decides.
+// do, the agent's four typed token units, its tool-call count, and whether it
+// was a re-seated judge. This script joins, partitions, sums and sorts;
+// agents read, the script decides.
 //
 // Rules carried over from the measured history of this join:
 //
@@ -81,15 +82,43 @@ const DEFAULT_MODE = 'steps'
 //    journals). In seats mode it names a bare seat and drops it under every
 //    proposal. Excluded keys are logged, never silently dropped.
 //
-// args:   {dir, mode?, exclude?}
-//         dir      absolute path of the wave's transcript directory
-//         mode     'steps' (default) or 'seats'
-//         exclude  [STEP-N...] in steps mode, [seat...] in seats mode; [] default
+//  * TOOL USE IS COUNTED BY BLOCK ID, NOT BY MESSAGE ID. The transcript
+//    writes one content block per line under a shared message id (usage
+//    repeated on each line), so the last-wins rule that is right for usage
+//    would keep only the last block's calls: measured 4 of 8, 6 of 9 and 8 of
+//    11 tool_use blocks on three transcripts. A tool_use block carries its
+//    own id, which a rewritten line repeats and `unique` absorbs.
+//    server_tool_use blocks are not counted, matching session-census.js. The
+//    count is an audit signal for docket-retro's seat-calibration row (reads
+//    can be spammed, so it is never a tally input) and reaches the ledger
+//    only in seats mode, as a fifth unit beside the four token units; steps
+//    mode keeps its four-row contract.
+//
+//  * COORDINATION IS A REPORT, NOT A LEDGER ROW. Steps mode returns a
+//    `coordination` section when the caller hands over the wave's returned
+//    statuses and the manifest rows: rounds per issue, first-pass gate pass
+//    rate, re-seats, claim conflicts, ancestry parks, deferrals. Re-seats
+//    come from the transcripts (a re-seated judge's brief says so); every
+//    other count comes from the statuses joined to the rows by step. A
+//    sibling shard's rows (`not-launched-other-shard`) are another launch's
+//    and count nowhere. Instance ordinals are the engine's: `@0` is a step's
+//    first minting (`review@0#k`, `verify-tribunal@0`) and a fix round's rows
+//    carry the round (`fix@2`, `review@2#k`), so first-pass means ordinal 0.
+//
+// args:   {dir, mode?, exclude?, rows?, statuses?}
+//         dir       absolute path of the wave's transcript directory
+//         mode      'steps' (default) or 'seats'
+//         exclude   [STEP-N...] in steps mode, [seat...] in seats mode; [] default
+//         rows      the manifest rows handed to wave.js; {step, instance, issue}
+//                   are read here. Steps mode, optional, given with statuses
+//         statuses  the wave's returned array; {step, status} are read here.
+//                   Steps mode, optional, given with rows
 // return: {rows, overhead: {agents: [{file, label}], sums}, skipped, errors,
-//          model_observations}
+//          model_observations, coordination}
 //         rows     [{step, unit, quantity}] or [{proposal, voter, unit, quantity}],
-//                  four unit rows per key, sorted numerically by step or
-//                  lexicographically by (proposal, voter)
+//                  four token unit rows per step, or those four plus one
+//                  `tool_uses` row per (proposal, voter), sorted numerically
+//                  by step or lexicographically by (proposal, voter)
 //         overhead the agents that recorded no step and cast no ballot, with
 //                  their summed units (steps mode; empty in seats mode)
 //         skipped  [{file, reason: 'seated'|'unattributed'|'excluded', key, label}]
@@ -104,6 +133,17 @@ const DEFAULT_MODE = 'steps'
 //                  Effective effort is not exposed by this transcript shape.
 //                  complete covers parsed, deduplicated usage-bearing messages;
 //                  it does not certify that the transcript or task finished.
+//         coordination steps mode with rows and statuses given: {rows,
+//                  rounds_per_issue, gates: {decided, passed, rejected, parked,
+//                  blocked, skipped, first_pass: {decided, passed, rate}},
+//                  reseats, claim_conflicts, ancestry_parks, spawn_failed,
+//                  deferred: {agent_budget, writer_budget, chain_dead,
+//                  run_parked, total}, unmatched_steps}. `rows` counts the
+//                  statuses this launch owned; `decided` is passed + rejected
+//                  + parked (a parked gate is one whose tally did not clear or
+//                  could not be read); `rate` is passed over decided, null at
+//                  zero; `unmatched_steps` names statuses no manifest row
+//                  explains. null in seats mode or when the args are absent.
 // Throws when the directory holds no agent transcripts, when the fresh
 // re-check of a relayed bootstrap:false fails to return a usable answer,
 // when an executor brief names no step to record, or when a dispatched agent
@@ -123,6 +163,16 @@ if (mode !== 'steps' && mode !== 'seats') {
     throw new Error(`wave-usage: args.mode must be "steps" or "seats", got ${JSON.stringify(mode)}`)
 }
 const exclude = Array.isArray(input.exclude) ? input.exclude.map(String) : []
+const manifestRows = input.rows == null ? null : input.rows
+const waveStatuses = input.statuses == null ? null : input.statuses
+if ((manifestRows == null) !== (waveStatuses == null)) {
+    throw new Error('wave-usage: args.rows and args.statuses are given together or not at all — ' +
+        'the coordination counts join the wave\'s returned statuses to the manifest rows by step')
+}
+if (manifestRows != null && (!Array.isArray(manifestRows) || !Array.isArray(waveStatuses))) {
+    throw new Error(`wave-usage: args.rows and args.statuses must be arrays, got ` +
+        `${JSON.stringify(manifestRows).slice(0, 80)} and ${JSON.stringify(waveStatuses).slice(0, 80)}`)
+}
 
 // TEST-BEGIN wave-usage-extract — extracted by
 // tests/wave-usage-probe-overhead.test.sh and run with the same jq flags as
@@ -150,6 +200,10 @@ const exclude = Array.isArray(input.exclude) ? input.exclude.map(String) : []
 // is required to run. step_mention is NOT a join: it is the loose "which step
 // is this agent looking at" read that labels an overhead agent in the report.
 //
+// reseat is the sentence tribunal.js opens a re-seated judge's brief with.
+// tool_uses counts distinct tool_use block ids over every assistant line, not
+// the deduplicated messages: see TOOL USE IS COUNTED BY BLOCK ID above.
+//
 // Backslashes are doubled once for the template literal: the file the agent
 // writes carries jq source, in which `\\s` is the regex escape.
 const EXTRACT_JQ = `[inputs | fromjson? | select(type == "object")] as $lines
@@ -171,6 +225,12 @@ const EXTRACT_JQ = `[inputs | fromjson? | select(type == "object")] as $lines
         or test("Run exactly this one command:(?:\\\\\\\\n|\\\\s)+\`?docket\\\\s+(?:[a-z-]+\\\\s+)?(?:show|context|list|tally|next|log)\\\\b"))),
     exec: ($b | contains("You are executing one step of a Docket run")),
     step_mention: (($b | [match("STEP-\\\\d+")][0].string) // null),
+    reseat: ($b | contains("THIS IS A SECOND ATTEMPT AT YOUR SEAT")),
+    tool_uses: ([$lines[] | select(.type == "assistant") | .message.content
+                 | if type == "array"
+                   then .[] | select(type == "object" and .type == "tool_use") | .id // empty
+                   else empty end]
+                | unique | length),
     models_observed: ([$messages[].model | select(type == "string" and . != "" and . != "<synthetic>")] | unique),
     model_observation_complete: ($messages | length > 0 and all(.[];
         (.model | type) == "string" and .model != "" and .model != "<synthetic>")),
@@ -193,6 +253,11 @@ const EXTRACT_JQ = `[inputs | fromjson? | select(type == "object")] as $lines
 const UNITS = ['input_tokens', 'output_tokens', 'cache_creation_tokens', 'cache_read_tokens']
 
 const zeroSums = () => Object.fromEntries(UNITS.map((u) => [u, 0]))
+
+// The tool-call count rides beside `sums`, never inside it: the four token
+// units are the engine's per-step contract and the overhead log, and a
+// partial or synthetic extract may carry no count at all.
+const toolUses = (extract) => (Number.isInteger(extract.tool_uses) ? extract.tool_uses : 0)
 
 // The three questions, in the one order that cannot misfile a read: briefed
 // to cast? briefed only to read? briefed to record? First yes wins. `file`
@@ -297,19 +362,97 @@ function reduceRows(results, mode, exclude) {
             continue
         }
         const id = mode === 'seats' ? c.key.join(' ') : c.key
-        if (!totals.has(id)) totals.set(id, { key: c.key, sums: zeroSums() })
+        if (!totals.has(id)) totals.set(id, { key: c.key, sums: zeroSums(), tool_uses: 0 })
         addUsage(totals.get(id).sums, extract.usage)
+        totals.get(id).tool_uses += toolUses(extract)
     }
     const cmp = mode === 'seats'
         ? (a, b) => (a.key[0] < b.key[0] ? -1 : a.key[0] > b.key[0] ? 1 :
                      a.key[1] < b.key[1] ? -1 : a.key[1] > b.key[1] ? 1 : 0)
         : (a, b) => parseInt(a.key.split('-')[1], 10) - parseInt(b.key.split('-')[1], 10)
-    const rows = [...totals.values()].sort(cmp).flatMap(({ key, sums }) =>
-        UNITS.map((unit) => mode === 'seats'
-            ? { proposal: key[0], voter: key[1], unit, quantity: sums[unit] }
-            : { step: key, unit, quantity: sums[unit] }),
+    // Seats mode carries the tool-call count as a fifth unit row; steps mode
+    // keeps the four-row contract docket-run pipes to dispatch backfill-usage.
+    const rows = [...totals.values()].sort(cmp).flatMap(({ key, sums, tool_uses }) =>
+        mode === 'seats'
+            ? [...UNITS.map((unit) => ({ proposal: key[0], voter: key[1], unit, quantity: sums[unit] })),
+               { proposal: key[0], voter: key[1], unit: 'tool_uses', quantity: tool_uses }]
+            : UNITS.map((unit) => ({ step: key, unit, quantity: sums[unit] })),
     )
     return { rows, overhead, skipped, errors, model_observations }
+}
+
+// The wave's coordination counts, for docket-retro's integration-health row
+// rather than for the ledger: what the store cannot see about a wave (a
+// refused claim or close writes no event, a deferred row never claims).
+const DEFERRAL_STATUSES = {
+    'not-launched-agent-budget': 'agent_budget',
+    'not-launched-writer-budget': 'writer_budget',
+    'skipped-chain-dead': 'chain_dead',
+    'not-launched-run-parked': 'run_parked',
+}
+const GATE_STATUSES = {
+    'gate-passed': 'passed',
+    'gate-rejected': 'rejected',
+    'gate-parked': 'parked',
+    'gate-blocked': 'blocked',
+    'gate-skipped': 'skipped',
+}
+const OTHER_SHARD_STATUS = 'not-launched-other-shard'
+const INSTANCE_ORDINAL_RE = /@(\d+)(?:#\d+)?$/
+
+const instanceOrdinal = (row) => {
+    const m = INSTANCE_ORDINAL_RE.exec((row && row.instance) || '')
+    return m ? parseInt(m[1], 10) : null
+}
+
+// results: the extracts as reduceRows takes them; rows: the manifest rows;
+// statuses: the wave's return, one entry per manifest row. null when the
+// caller passed neither, so an unmeasured wave never reads as a clean one.
+function coordinationOf(results, rows, statuses) {
+    if (!Array.isArray(rows) || !Array.isArray(statuses)) return null
+    const rowByStep = new Map(rows.filter((r) => r && r.step).map((r) => [r.step, r]))
+    const out = {
+        rows: 0,
+        rounds_per_issue: {},
+        gates: { decided: 0, passed: 0, rejected: 0, parked: 0, blocked: 0, skipped: 0,
+                 first_pass: { decided: 0, passed: 0, rate: null } },
+        reseats: results.filter((r) => r.extract && r.extract.cast && r.extract.reseat === true).length,
+        claim_conflicts: 0,
+        ancestry_parks: 0,
+        spawn_failed: 0,
+        deferred: { agent_budget: 0, writer_budget: 0, chain_dead: 0, run_parked: 0, total: 0 },
+        unmatched_steps: [],
+    }
+    const decided = (bucket) => bucket === 'passed' || bucket === 'rejected' || bucket === 'parked'
+    for (const s of statuses) {
+        if (!s || typeof s.step !== 'string' || s.status === OTHER_SHARD_STATUS) continue
+        out.rows++
+        const row = rowByStep.get(s.step)
+        if (!row) out.unmatched_steps.push(s.step)
+        const ordinal = instanceOrdinal(row)
+        if (row && row.issue && ordinal != null) {
+            const seen = out.rounds_per_issue[row.issue]
+            out.rounds_per_issue[row.issue] = seen == null ? ordinal : Math.max(seen, ordinal)
+        }
+        if (s.status === 'claim-conflict') out.claim_conflicts++
+        else if (s.status === 'parked-base-ancestry') out.ancestry_parks++
+        else if (s.status === 'spawn-failed') out.spawn_failed++
+        else if (DEFERRAL_STATUSES[s.status]) {
+            out.deferred[DEFERRAL_STATUSES[s.status]]++
+            out.deferred.total++
+        } else if (GATE_STATUSES[s.status]) {
+            const bucket = GATE_STATUSES[s.status]
+            out.gates[bucket]++
+            if (!decided(bucket)) continue
+            out.gates.decided++
+            if (ordinal !== 0) continue
+            out.gates.first_pass.decided++
+            if (bucket === 'passed') out.gates.first_pass.passed++
+        }
+    }
+    const fp = out.gates.first_pass
+    fp.rate = fp.decided > 0 ? fp.passed / fp.decided : null
+    return out
 }
 // TEST-END wave-usage-classify
 
@@ -345,6 +488,8 @@ const EXTRACT_SCHEMA = {
         probe: { type: 'boolean' },
         exec: { type: 'boolean' },
         step_mention: { type: ['string', 'null'] },
+        reseat: { type: 'boolean' },
+        tool_uses: { type: 'integer' },
         models_observed: { type: 'array', items: { type: 'string' } },
         model_observation_complete: { type: 'boolean' },
         usage: usageSchema,
@@ -367,7 +512,7 @@ ${EXTRACT_JQ}JQ
 jq -c -n -R -f "\${TMPDIR:-/tmp}/wave-usage-$$.jq" ${sq(file)}; echo "exit=$?"
 \`\`\`
 ${retry ? '\nThis is a SECOND, independent run of the same command against the same file — a prior run reported bootstrap:false and is being re-checked. Run the command fresh; do not reuse or assume any earlier result.\n' : ''}
-jq prints exactly one JSON object. Return it as the structured output with ok:true and every field copied verbatim — bootstrap, cast, record, probe, exec, step_mention, models_observed, model_observation_complete, usage — including every number exactly as printed. Do not compute, estimate, round, or adjust anything, and do not read the transcript by any other means. Model names come only from the extracted message fields; missing observations remain empty. If jq exits non-zero or prints nothing, return ok:false with the error text in \`error\`.`
+jq prints exactly one JSON object. Return it as the structured output with ok:true and every field copied verbatim — bootstrap, cast, record, probe, exec, step_mention, reseat, tool_uses, models_observed, model_observation_complete, usage — including every number exactly as printed. Do not compute, estimate, round, or adjust anything, and do not read the transcript by any other means. Model names come only from the extracted message fields; missing observations remain empty. If jq exits non-zero or prints nothing, return ok:false with the error text in \`error\`.`
 
 phase('Scout')
 const listing = await agent(scoutBrief, { label: 'scout', phase: 'Scout', schema: FILES_SCHEMA, ...AGENT_CONFIG.scout })
@@ -461,7 +606,8 @@ async function recheckBootstrap(results) {
 
 const results = await recheckBootstrap(initialResults)
 const summary = reduceRows(results, mode, exclude)
-const reduced = { ...summary, errors: [...errors, ...summary.errors] }
+const coordination = mode === 'steps' ? coordinationOf(results, manifestRows, waveStatuses) : null
+const reduced = { ...summary, errors: [...errors, ...summary.errors], coordination }
 
 for (const observation of reduced.model_observations) {
     log(`wave-usage: ${observation.file}: serving models ` +
@@ -486,7 +632,28 @@ if (reduced.overhead.agents.length) {
     const sums = UNITS.map((u) => `${u} ${reduced.overhead.sums[u]}`).join(', ')
     log(`wave-usage: WAVE OVERHEAD: ${reduced.overhead.agents.length} agent(s), ${sums} — no step owns this spend; it is reported, not back-filled`)
 }
-log(`wave-usage: ${reduced.rows.length} row(s) over ${reduced.rows.length / UNITS.length} key(s)`)
+const keyOf = (r) => (mode === 'seats' ? `${r.proposal} ${r.voter}` : r.step)
+log(`wave-usage: ${reduced.rows.length} row(s) over ${new Set(reduced.rows.map(keyOf)).size} key(s)` +
+    (mode === 'seats' ? ' (four token units and tool_uses per seat)' : ''))
+if (mode === 'steps') {
+    if (coordination) {
+        const c = coordination
+        log(`wave-usage: coordination — ${c.rows} row(s) this launch; rounds per issue ` +
+            `${Object.entries(c.rounds_per_issue).map(([i, n]) => `${i}@${n}`).join(', ') || 'none'}; ` +
+            `gates ${c.gates.passed} passed / ${c.gates.rejected} rejected / ${c.gates.parked} parked` +
+            ` (first pass ${c.gates.first_pass.passed} of ${c.gates.first_pass.decided}); ` +
+            `${c.reseats} re-seat(s), ${c.claim_conflicts} claim conflict(s), ` +
+            `${c.ancestry_parks} ancestry park(s), ${c.spawn_failed} spawn failure(s), ` +
+            `${c.deferred.total} deferred` +
+            (c.unmatched_steps.length ? `; no manifest row for ${c.unmatched_steps.join(', ')}` : ''))
+    } else {
+        log('wave-usage: coordination not measured — pass the wave\'s returned statuses and the ' +
+            'manifest rows as args.statuses and args.rows to count rounds, gate passes, ' +
+            're-seats, claim conflicts, ancestry parks and deferrals')
+    }
+} else if (waveStatuses) {
+    log('wave-usage: args.rows and args.statuses are read in steps mode only — ignored here')
+}
 if (reduced.errors.length) {
     for (const e of reduced.errors) log(`wave-usage: ${e}`)
     throw new Error(`wave-usage: ${reduced.errors.length} error(s) — ${reduced.errors.join('; ')}`)

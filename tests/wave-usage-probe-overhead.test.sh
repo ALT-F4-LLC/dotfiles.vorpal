@@ -29,7 +29,11 @@
 # WHAT THIS SUITE CANNOT SEE: it exercises classification, not measurement.
 # The by-message-id dedup (last write wins) and the arithmetic over the four
 # typed units are asserted only far enough to prove a claimant's row carries
-# its own agent's spend and nobody else's.
+# its own agent's spend and nobody else's. The tool-call count is asserted
+# the same way: distinct tool_use block ids across lines, since the
+# transcript writes one content block per line under a shared message id.
+# The coordination section is exercised over a synthetic manifest and wave
+# return, the two inputs the live conductor passes in.
 
 set -uo pipefail
 
@@ -191,9 +195,15 @@ function write(name, bootstrap, outDir = d, listed = false) {
     const model = name === 'agent-aexec2.jsonl' ? undefined : 'claude-opus-5'
     const firstModel = name === 'agent-aexec.jsonl' ? 'stale-stream-model' : model
     const finalModel = name === 'agent-aexec.jsonl' ? 'claude-fable-5-1' : model
-    lines.push({ type: 'assistant', message: { id: 'msg-a', model: firstModel, usage: usage(40) } })
-    lines.push({ type: 'assistant', message: { id: 'msg-a', model: finalModel, usage: usage(100) } })
-    lines.push({ type: 'assistant', message: { id: 'msg-b', model, usage: usage(250) } })
+    // Content blocks arrive one per line under a shared message id, so a
+    // tool_use count keyed by message id (last wins, like usage) would keep
+    // only the last block's calls. Four tool_use lines, three distinct block
+    // ids: the rewritten msg-b line repeats toolu-b2, which must count once.
+    const call = (id) => ({ type: 'tool_use', id, name: 'Bash', input: {} })
+    lines.push({ type: 'assistant', message: { id: 'msg-a', model: firstModel, usage: usage(40), content: [{ type: 'text', text: 'reading' }] } })
+    lines.push({ type: 'assistant', message: { id: 'msg-a', model: finalModel, usage: usage(100), content: [call('toolu-a')] } })
+    lines.push({ type: 'assistant', message: { id: 'msg-b', model, usage: usage(250), content: [call('toolu-b1'), call('toolu-b2')] } })
+    lines.push({ type: 'assistant', message: { id: 'msg-b', model, usage: usage(250), content: [call('toolu-b2')] } })
     fs.writeFileSync(path.join(outDir, name), lines.map((o) => JSON.stringify(o)).join('\n') + '\n')
 }
 
@@ -204,12 +214,23 @@ for (const [name, brief] of Object.entries(AGENTS)) write(name, brief, d, name i
 const driftDir = path.join(path.dirname(d), 'drift')
 fs.mkdirSync(driftDir, { recursive: true })
 write('agent-adrift.jsonl', drifted, driftDir)
+
+// A panel with one re-seated seat, in its own directory so the wave
+// fixture's counts stay what the assertions above say. The sentence is the
+// one tribunal.js opens a re-seated judge's brief with.
+const panelDir = path.join(path.dirname(d), 'panel')
+fs.mkdirSync(panelDir, { recursive: true })
+write('agent-pjudge.jsonl', judge, panelDir)
+write('agent-preseat.jsonl', judge.replace('--voter reviewer', '--voter security') + `
+
+THIS IS A SECOND ATTEMPT AT YOUR SEAT. A prior agent held it and returned
+without a recorded cast.`, panelDir)
 JS
 
 # ---- Run the jq program over every fixture, exactly as an agent would ----------
 # One extract per transcript, collected into {dir: {file: extract}}.
 extracts_ok=0
-for sub in wave drift; do
+for sub in wave drift panel; do
     mkdir -p "${WORK}/extracts/${sub}"
     for f in "${WORK}/${sub}"/agent-*.jsonl; do
         name=$(basename "$f")
@@ -246,6 +267,7 @@ function load(sub) {
 }
 const wave = load('wave')
 const drift = load('drift')
+const panel = load('panel')
 
 // Exercise missing and synthetic model fields through the actual jq extractor,
 // not only the reducer. Bootstrap prose cannot supply runtime observations.
@@ -282,6 +304,10 @@ ok(by(wave, 'agent-adrift.jsonl') === undefined && by(drift, 'agent-adrift.jsonl
 const cast = by(wave, 'agent-ajudge.jsonl').extract.cast
 ok(cast && cast.proposal === 'PROP-77' && cast.voter === 'reviewer',
     'the cast join reads proposal and seat from one match on the cast command')
+ok(by(wave, 'agent-aexec.jsonl').extract.tool_uses === 3,
+    `tool_uses counts distinct tool_use block ids across lines (4 lines, 3 ids), not the last block per message (got ${by(wave, 'agent-aexec.jsonl').extract.tool_uses})`)
+ok(by(wave, 'agent-ajudge.jsonl').extract.reseat === false && by(panel, 'agent-preseat.jsonl').extract.reseat === true,
+    'a re-seated judge is read from the respawn sentence in its bootstrap, a first seating is not')
 
 // ---- Steps mode: only the claimants reach the ledger ----
 const steps = reduceRows(wave, 'steps', [])
@@ -343,6 +369,8 @@ ok(steps.model_observations.filter((o) => o.kind === 'overhead').length === 4,
     'probe observations remain overhead rather than being credited to a step')
 ok(!steps.rows.some((r) => 'model' in r || 'effort' in r),
     'model observations do not change the engine token back-fill row contract')
+ok(!steps.rows.some((r) => r.unit === 'tool_uses'),
+    'steps mode keeps the four-row ledger contract: no tool_uses row reaches dispatch backfill-usage')
 
 // ---- exclude: a key a prior back-fill already carries ----
 const excluded = reduceRows(wave, 'steps', ['STEP-3156'])
@@ -360,8 +388,12 @@ ok(seats.errors.length === 0, 'seats mode reports no error over the same directo
 const seatKeys = [...new Set(seats.rows.map((r) => `${r.proposal}/${r.voter}`))]
 ok(seatKeys.join(',') === 'PROP-77/reviewer',
     'seats mode emits exactly the judge, keyed by (proposal, seat)')
-ok(seats.rows.length === 4 && seats.rows.every((r) => r.proposal === 'PROP-77' && r.voter === 'reviewer'),
-    'and the judge gets four unit rows carrying its proposal and seat')
+ok(seats.rows.length === 5 && seats.rows.every((r) => r.proposal === 'PROP-77' && r.voter === 'reviewer'),
+    'and the judge gets four token unit rows plus tool_uses, all carrying its proposal and seat')
+ok(seats.rows.map((r) => r.unit).join(',') === 'input_tokens,output_tokens,cache_creation_tokens,cache_read_tokens,tool_uses',
+    'the seat rows keep the ledger order with tool_uses last')
+ok(seats.rows.find((r) => r.unit === 'tool_uses').quantity === 3,
+    'the seat\'s tool_uses row carries its own distinct tool calls')
 const un = seats.skipped.filter((s) => s.reason === 'unattributed').map((s) => s.file)
 ok(un.includes('agent-aexec.jsonl') && un.includes('agent-aprobe.jsonl'),
     'and drops the claimants and probes with a named reason, so the modes partition the wave')
@@ -389,6 +421,54 @@ const twoPanels = [
 const order = [...new Set(reduceRows(twoPanels, 'seats', []).rows.map((r) => `${r.proposal}/${r.voter}`))]
 ok(order.join(',') === 'PROP-10/amy,PROP-10/bob,PROP-9/zed',
     'seats rows sort lexicographically by (proposal, voter), grouped per proposal')
+ok(reduceRows(twoPanels, 'seats', []).rows.filter((r) => r.unit === 'tool_uses').every((r) => r.quantity === 0),
+    'an extract without a tool_uses field counts zero calls rather than NaN')
+
+// ---- Coordination: the wave's statuses joined to the manifest rows ----
+// Instance ordinals are the engine's: @0 is a step's first minting, a fix
+// round's rows carry the round number. One sibling-shard row and one status
+// no manifest row explains, so both edges are exercised.
+const manifest = [
+    { step: 'STEP-3150', instance: 'implement@0', issue: 'DOT-1', kind: 'executor' },
+    { step: 'STEP-3146', instance: 'verify-tribunal@0', issue: 'DOT-1', kind: 'vote' },
+    { step: 'STEP-3156', instance: 'fix@2', issue: 'DOT-2', kind: 'executor' },
+    { step: 'STEP-3166', instance: 'review@2#0', issue: 'DOT-2', kind: 'executor' },
+    { step: 'STEP-3158', instance: 'verify-tribunal@2', issue: 'DOT-2', kind: 'vote' },
+    { step: 'STEP-3170', instance: 'synthesize-findings@2', issue: 'DOT-2', kind: 'executor' },
+    { step: 'STEP-3180', instance: 'implement@0', issue: 'DOT-3', kind: 'executor' },
+    { step: 'STEP-3190', instance: 'verify-tribunal@0', issue: 'DOT-3', kind: 'vote' },
+]
+const settled = [
+    { step: 'STEP-3150', status: 'returned', text: 'ok' },
+    { step: 'STEP-3146', status: 'gate-passed', text: '', spawn_accounting: '3 seats, 3 probes, 0 retries' },
+    { step: 'STEP-3156', status: 'claim-conflict', text: 'STEP-3156 CLAIM CONFLICT' },
+    { step: 'STEP-3166', status: 'parked-base-ancestry', text: '' },
+    { step: 'STEP-3158', status: 'gate-rejected', text: '' },
+    { step: 'STEP-3170', status: 'skipped-chain-dead', text: null },
+    { step: 'STEP-3180', status: 'not-launched-agent-budget', text: null },
+    { step: 'STEP-3190', status: 'not-launched-other-shard', text: null },
+    { step: 'STEP-9999', status: 'spawn-failed', text: null },
+]
+const coord = coordinationOf(panel, manifest, settled)
+ok(coord.rows === 8, `a sibling shard's row counts nowhere (got rows ${coord.rows})`)
+ok(JSON.stringify(coord.rounds_per_issue) === JSON.stringify({ 'DOT-1': 0, 'DOT-2': 2, 'DOT-3': 0 }),
+    `rounds per issue is the highest instance ordinal the wave carried per issue (got ${JSON.stringify(coord.rounds_per_issue)})`)
+ok(coord.gates.decided === 2 && coord.gates.passed === 1 && coord.gates.rejected === 1 && coord.gates.parked === 0,
+    'gate outcomes are bucketed from the wave statuses')
+ok(coord.gates.first_pass.decided === 1 && coord.gates.first_pass.passed === 1 && coord.gates.first_pass.rate === 1,
+    'first pass counts only gates at ordinal 0; a fix round\'s gate is not a first pass')
+ok(coord.reseats === 1, 'a re-seated judge is counted from its own brief')
+ok(coord.claim_conflicts === 1 && coord.ancestry_parks === 1 && coord.spawn_failed === 1,
+    'claim conflicts, ancestry parks and spawn failures each count once')
+ok(coord.deferred.agent_budget === 1 && coord.deferred.chain_dead === 1 && coord.deferred.total === 2
+    && coord.deferred.writer_budget === 0 && coord.deferred.run_parked === 0,
+    'deferrals are bucketed by cause, sibling-shard rows excluded')
+ok(coord.unmatched_steps.join(',') === 'STEP-9999',
+    'a status no manifest row explains is named, never silently dropped')
+ok(coordinationOf(panel, undefined, undefined) === null,
+    'without the wave statuses and rows the section is null, so an unmeasured wave never reads as clean')
+ok(coordinationOf(wave, manifest, settled).reseats === 0,
+    'a panel with no respawn sentence counts no re-seats')
 
 // ---- The drift guard survives the new ordering ----
 const drifted = reduceRows(drift, 'steps', [])

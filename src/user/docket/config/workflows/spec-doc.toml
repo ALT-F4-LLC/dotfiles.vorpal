@@ -8,7 +8,7 @@ version = 33  # 33: the four acceptance votes (`tdd-vote`, `adr-vote`,
               #   round instead of being outvoted by the other two casts'
               #   confidence decimals. The tally is a weighted mean of each
               #   cast's confidence times domain relevance, so on a recorded
-              #   panel (DKT-V485, weights 0.62, 0.70, 0.48) a reject cast
+              #   three-seat panel (weights 0.62, 0.70, 0.48) a reject cast
               #   at 0.48 scored 0.73 and passed while the same reject at
               #   0.81 scored 0.62 and failed: the dissenter's self-declared
               #   weight, not its evidence, decided. `security-vote` on the

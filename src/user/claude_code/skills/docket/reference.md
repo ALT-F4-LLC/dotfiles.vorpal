@@ -27,7 +27,7 @@ drift, not changes to runtime semantics or JSON response shapes.
 - [Issues](#issue-commands) · [Documents](#doc-commands) · [Projects](#project-commands)
 - [Planning](#plan-commands) · [Ready work](#next-commands) · [Board](#board-commands) · [Statistics](#stats-commands)
 - [Workflows](#workflow-commands) · [Schemas](#schema-commands) · [Registry audit](#registry-commands)
-- [Runs](#run-commands) · [Steps](#step-commands) · [Dispatches](#dispatch-commands) · [Events](#events-commands)
+- [Runs](#run-commands) · [Executor ledger](#report-commands) · [Steps](#step-commands) · [Dispatches](#dispatch-commands) · [Events](#events-commands)
 - [Voting](#vote-commands) · [Gate status](#gate-commands) · [Model routing](#policy-commands) · [Guards](#guard-commands)
 - [Trust and probes](#trust-commands) · [Environment checks](#doctor-commands)
 - [Initialize](#init-commands) · [Configuration](#config-commands) · [Export](#export-commands) · [Import](#import-commands) · [Version](#version-commands)
@@ -790,6 +790,7 @@ reports zeros, `abandoned` reports the trail up to abandonment.
 | `vote_metadata` | the same key → distinct-value rollup over vote seats' `--metadata` bags |
 | `vote_usage` | per-unit sums of vote seats' `--usage` reports, beside the step ledger's `reported` — never merged with it |
 | `vote_usage_coverage` | `{casts, reported}` — how many seat-casts reported spend at all. **Never omitted**, so "panels ran and said nothing" is distinguishable from "no panels ran" |
+| `findings` | every structured finding the run's panels recorded, one row per entry: `proposal`, `voter`, `role`, `kind` (`blocker` \| `concern` \| `suggestion`), `text`, and the `evidence` it cited — the references `vote cast --findings-json` resolved against this run, in canonical spelling. An entry that cited nothing carries `unsupported: true` (rendered *unsupported: no evidence cited*) rather than an absent list, so an asserted finding and a reproduced one read differently. Casts on a sealed proposal that is still open are withheld, as every read verb withholds them. Omitted when no panel recorded structured findings |
 
 **A status alone does not say what happened**, which is why every step row
 carries its `routing` and the human report prints a *How steps ended*
@@ -1348,6 +1349,38 @@ Absent whenever every pin is sound. Skipped for a terminal run: its pins
 are history.
 
 None of the `run` verbs are watch-eligible.
+
+<a id="report-commands"></a>
+
+### `docket report` — `report_executors.go`
+
+`docket report executors` is the cross-run ledger: what became of the steps
+each executor hint ran and the panels each voter name sat on, over every run
+in a window. Per **executor hint** (the opaque `executor` a step declared):
+`runs`, `steps`, `fix_loop_routes`, `override_passes`, `reaps` and
+`forced_reaps`, and — over every `aggregate` round whose step declares
+`source_field` — the clusters a step with the hint contributed to, as
+`unique_clusters` (one member), `corroborated_clusters` (more than one), and
+`held_clusters`. Per **voter name**: `runs`, `casts`, casts by verdict, and
+how many of the vote steps the name cast on then routed `fix-loop`, were
+resolved `override-pass`, or were held-cluster ballots. A sealed, still-open
+ballot is withheld here as everywhere. `--json` wraps the two lists with
+`runs` (how many the window admitted), `scope` (`project` \| `store`), and
+`since` in canonical form when one was given.
+
+**READ-ONLY and operator-facing.** It writes nothing, `next` never consults
+it, and nothing here reaches a seat: routing policy stays outside the store,
+and a track record fed back into a panel becomes an incentive to agree with
+it. Read it at retro; the engine acts on none of it. `reaps`, `forced_reaps`,
+and `override_passes` count events, so a ruling `events prune` removed
+leaves all three together.
+
+| Flag | Short | Type | Default | Notes |
+|---|---|---|---|---|
+| `--since` | — | string | `""` | keep runs from `RUN-N` on (a bare number is a run id, never a year), or runs created from a date (`2026-09-01`) or RFC 3339 timestamp on |
+| `--all-projects` | — | bool | `false` | read every project's runs instead of the current project's |
+
+Not watch-eligible.
 
 <a id="dispatch-commands"></a>
 
@@ -2681,7 +2714,7 @@ report that quietly checked five things.
 | `--confidence` | — | float64 | `0` | required (when explicitly set) in `--json`; range `[0.0, 1.0]` |
 | `--domain-relevance` | — | float64 | `0` | required (when explicitly set) in `--json`; range `[0.0, 1.0]` |
 | `--findings` | — | string | `""` | `"-"` reads stdin |
-| `--findings-json` | — | string | `""` | `"-"` reads stdin; parsed as `model.Findings` JSON; mutually exclusive with `--findings` for stdin use |
+| `--findings-json` | — | string | `""` | `"-"` reads stdin; `{"blockers": [...], "concerns": [...], "suggestions": [...]}`. Each entry is a bare string, or `{"text": ..., "evidence": ["artifact:ARTIFACT-N", "gate:<name>"]}` naming what the finding rests on: an artifact the run holds (a bare `N` is rewritten to `artifact:ARTIFACT-N`), or a gate name any step of the run recorded a result for. Every reference is resolved against the run whose vote step or reap acknowledgment opened the proposal **before the cast records** — an unresolvable one, or a proposal no run opened, is a `VALIDATION_ERROR` naming the reference, and the seat's one cast is not spent. Entries that cite nothing pass unread and stay bare strings on the wire; the run report's `findings` section marks them `unsupported`. Mutually exclusive with `--findings` for stdin use |
 | `--summary` | — | string | `""` | review summary; `"-"` reads stdin. A seat's rationale is routinely kilobytes of prose, and argv runs it past a shell first — a summary containing backticks was once expanded by the shell and stored expanded, and a voter casts once, so there is no amend path |
 | `--summary-file` | — | string | `""` | read the summary from PATH; mutually exclusive with `--summary`. Use it when stdin already feeds `--findings`/`--findings-json` — stdin can feed only ONE flag per invocation, and asking two is a `VALIDATION_ERROR` naming both |
 | `--metadata` | — | string | `""` | JSON object, 16 KiB cap measured on the **encoded** bag (whitespace does not count, escaping does); the seat's own unverified claim about what cast the vote — see [voting examples](references/voting.md). Stored verbatim and visible in the process list and exports; put nothing secret in it |

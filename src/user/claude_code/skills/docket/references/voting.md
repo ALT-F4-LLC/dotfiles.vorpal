@@ -58,6 +58,12 @@ and the export document, though the human-readable tables do not render it.
 `--usage` records this seat's own measured spend; a relay may backfill usage
 after observing it. Consult the CLI reference for both flags.
 
+`--findings-json` entries may cite what each finding rests on, as
+`{"text": ..., "evidence": ["artifact:ARTIFACT-N", "gate:<name>"]}`. The
+engine resolves every reference against the proposal's run before the cast
+records and refuses the cast when one does not resolve, so cite only what
+the run holds. The CLI reference documents the form.
+
 Valid `--verdict`/`-v` values: `approve`, `approve-with-concerns`, `reject`.
 Valid `--criticality`/`-c` values: `low`, `medium`, `high`, `critical`.
 `--confidence` and `--domain-relevance` are floats in `[0.0, 1.0]`.

@@ -79,7 +79,7 @@ some worker environments.
 
 | Command family | Effect to account for |
 |---|---|
-| `issue show/list/log`, `step show/list/context/artifact/artifacts`, `run status/report`, `events list`, `dispatch verify` | Inspect state without advancing the scheduler |
+| `issue show/list/log`, `step show/list/context/artifact/artifacts`, `run status/report`, `report executors`, `events list`, `dispatch verify` | Inspect state without advancing the scheduler |
 | `next` without `--run` | Inspect work-ready issues |
 | `next --run`, `dispatch open`, `step claim` | Can reap leases or otherwise change scheduling state; `next --run` can expire a dispatch |
 | `trust probe` | Executes trusted checks; treat it as execution, even though its purpose is diagnosis |

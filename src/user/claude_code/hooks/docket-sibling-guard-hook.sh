@@ -75,14 +75,20 @@
 #              `sudo`, `env`, `command`, `xargs`, `nohup`, `timeout` and the
 #              like are stripped: `grep -rn pkill hooks/` is a read a judge of
 #              this very repository makes, and stays allowed.
-#   ENGINE     `docket step reap` always, docket's own global flags skipped.
-#              The verb is token-free by design (the relay that spawned a
-#              holder is the seat that can observe it is dead) and clears
-#              another holder's claim on that assertion; an executor cannot
+#   ENGINE     `docket step reap` and `docket run conduct` always, docket's
+#              own global flags skipped. A reap clears another holder's
+#              claim on the assertion that the holder is dead, which only
+#              the relay that spawned it can observe; an executor cannot
 #              observe a sibling at all, and a reap from one returns a live
-#              step to the pool under a stranger. The token-bound verbs
-#              (`record`, `fail`, `heartbeat`) reach only the caller's own
-#              step and need no clause.
+#              step to the pool under a stranger. The engine binds reap,
+#              with approve, reject, resolve and run pause/resume/abandon,
+#              to the run's conductor capability and refuses them itself;
+#              `run conduct` is the deliberately token-free re-mint of that
+#              capability (a run whose conductor died must stay
+#              recoverable), so an executor running it would retire the
+#              conductor's token and lock it out of its own rulings. The
+#              lease-bound verbs (`record`, `fail`, `heartbeat`) reach only
+#              the caller's own step and need no clause.
 #
 # THE SCOPE, mirroring docket-trust-guard-hook.sh and
 # sandbox-bypass-guard-hook.sh: the three graph-fleet executor archetypes
@@ -113,8 +119,9 @@
 #            here would strand every bootstrap `rm -rf` of a real executor
 #            behind a transcript-delivery gap — this hook family's direction
 #            when the caller or target cannot be identified. `pkill`,
-#            `killall`, `git worktree prune`, `kill <literal pid>` and `docket
-#            step reap` need no own id and still deny.
+#            `killall`, `git worktree prune`, `kill <literal pid>`, `docket
+#            step reap` and `docket run conduct` need no own id and still
+#            deny.
 #
 # Exit 0 allow / exit 2 deny with reason on stderr, this hook family's
 # contract: exit 2 is a pre-permission hard stop the classifier never sees,
@@ -674,7 +681,8 @@ END {
             prev_redirect = (w ~ /^[0-9]*>{1,2}\|?$/ || w ~ /^&>>?$/)
         }
         if (vi == 0) continue
-        # ENGINE: `docket step reap`, past docket own global flags.
+        # ENGINE: `docket step reap` and `docket run conduct`, past docket own
+        # global flags.
         if (verb == "docket") {
             j = vi + 1
             while (j <= n) {
@@ -692,6 +700,7 @@ END {
                 vq = decode(words[k]); vg = D_GROUP; vw = tolower(D_WORD)
                 sub(/[^a-z0-9_-].*$/, "", vw)
                 if (sw == "step" && vw == "reap" && !(dq && sq && vq && dg == sg && sg == vg && !interp)) report("ENGINE", "docket step reap")
+                if (sw == "run" && vw == "conduct" && !(dq && sq && vq && dg == sg && sg == vg && !interp)) report("ENGINE", "docket run conduct")
             }
         }
         # PROCESS: name-addressed kills, and kill by literal pid.
@@ -826,7 +835,10 @@ case "$CLAUSE" in
     BRANCH)
         deny "$REASON_PREFIX deletion of the ref \`${DETAIL}\`: no branch is an executor's to delete. Your hand-back is the commit sha on your own worktree branch, and every other branch belongs to a sibling or the shared tree. Leave it and report the conflict as a finding." ;;
     ENGINE)
-        deny "$REASON_PREFIX \`docket step reap\` clears another holder's claim on the assertion that the holder is dead, which only the relay that spawned it can observe; an executor reaping a sibling returns a live step to the pool under a stranger. If a sibling's claim looks stuck, record that as a finding in your step report and leave the reap to the conductor." ;;
+        case "$DETAIL" in
+            "docket run conduct") deny "$REASON_PREFIX \`docket run conduct\` re-mints the run's conductor capability and retires the token the conductor driving this run holds, locking it out of its own rulings until it re-conducts. The seat is the conductor's, taken from the main conversation that drives the run; an executor is never handed the capability and has no ruling to make. If a ruling on your step looks stuck, record that as a finding in your step report." ;;
+            *) deny "$REASON_PREFIX \`docket step reap\` clears another holder's claim on the assertion that the holder is dead, which only the relay that spawned it can observe; an executor reaping a sibling returns a live step to the pool under a stranger. If a sibling's claim looks stuck, record that as a finding in your step report and leave the reap to the conductor." ;;
+        esac ;;
     PROCESS)
         case "$DETAIL" in
             pkill | killall | killall5) deny "$REASON_PREFIX \`${DETAIL}\` addresses processes by name across the whole machine, including sibling executors' test servers and builds. Stop only what your own call started, by jobspec (\`kill %1\`) or \`kill \$!\`, and report a port or process conflict as a finding in your step report." ;;

@@ -154,6 +154,7 @@ case_acceptance() {
     assert_verdict "git worktree remove /repo/.claude/worktrees/wf_abc-1" executor-write "$WAVE_42" DENY "executor-write: git worktree remove of a checkout it did not create"
     assert_verdict "pkill -f vorpal" executor-read "$WAVE_42" DENY "executor-read: pkill"
     assert_verdict "rm -rf ${OWN_DIR}" executor-write "$WAVE_42" ALLOW "executor-write: own-dir sweep"
+    assert_verdict "docket run conduct RUN-5" executor-read "$WAVE_42" DENY "executor-read: docket run conduct"
 }
 
 # --- The bootstrap and hand-back sequence the brief dictates stays allowed. --
@@ -356,6 +357,22 @@ case_engine_verbs() {
     assert_verdict "docket step show STEP-7 --json=v2" executor-write "$WAVE_42" ALLOW "docket step show"
     assert_verdict "docket issue comment add DOT-1 -d 'the conductor should docket step reap STEP-7'" executor-write "$WAVE_42" ALLOW "reap mentioned inside a quoted prose span"
     assert_verdict "\"docket\" \"step\" \"reap\" STEP-7 --reason x" executor-write "$WAVE_42" DENY "separately-quoted reap words still run the verb"
+    # `docket run conduct` re-mints the run's conductor capability; the engine
+    # refuses the other seven operator verbs itself, so this is the one verb
+    # the hook must keep executors off. Same scope as reap: every executor
+    # archetype denied with or without an own step, the main conversation and
+    # the conductor seat allowed.
+    assert_verdict "docket run conduct RUN-5" executor-write "$WAVE_42" DENY "docket run conduct from a writer"
+    assert_verdict "docket run conduct RUN-5 --json=v2" executor-read "$WAVE_42" DENY "docket run conduct --json=v2 from a reader"
+    assert_verdict "docket run conduct RUN-5" executor-research "$MISSING" DENY "docket run conduct needs no own id to deny"
+    assert_verdict "docket run conduct --help" executor-write "$WAVE_42" DENY "docket run conduct --help (no executor use for the verb)"
+    assert_verdict "docket run conduct RUN-5" "" "$WAVE_42" DENY "agent_type absent, wave brief in transcript: conduct denied"
+    assert_verdict "docket run conduct RUN-5" "" "$OPERATOR" ALLOW "main conversation: conduct is how the conductor takes the seat"
+    assert_verdict "docket run conduct RUN-5 --json=v2" docket-conductor-RUN-5 "$OPERATOR" ALLOW "conductor seat: conduct re-mints its own capability"
+    assert_verdict "docket run status RUN-5 --json=v2" executor-write "$WAVE_42" ALLOW "docket run status"
+    assert_verdict "docket run report RUN-5" executor-read "$WAVE_42" ALLOW "docket run report"
+    assert_verdict "docket issue comment add DOT-1 -d 'the conductor should docket run conduct RUN-5'" executor-write "$WAVE_42" ALLOW "conduct mentioned inside a quoted prose span"
+    assert_verdict "\"docket\" \"run\" \"conduct\" RUN-5" executor-write "$WAVE_42" DENY "separately-quoted conduct words still run the verb"
 }
 
 # --- Probe hardening: the hook must never act on the caller's behalf. -------
@@ -441,6 +458,10 @@ case_verb_spellings() {
     assert_verdict "git() { command git \"\$@\"; }; git worktree prune" executor-write "$WAVE_42" DENY "function wrapper around git"
     assert_verdict "kill() { command kill \"\$@\"; }; kill 1234" executor-write "$WAVE_42" DENY "function wrapper around kill"
     assert_verdict "docket() { command docket \"\$@\"; }; docket step reap STEP-7 --reason x" executor-write "$WAVE_42" DENY "function wrapper around docket"
+    assert_verdict "DOCKET run conduct RUN-5" executor-write "$WAVE_42" DENY "uppercase DOCKET run conduct"
+    assert_verdict "docket --json=v2 run conduct RUN-5" executor-write "$WAVE_42" DENY "docket --json=v2 before run conduct"
+    assert_verdict "docket --format json run conduct RUN-5" executor-write "$WAVE_42" DENY "docket --format json before run conduct"
+    assert_verdict "docket() { command docket \"\$@\"; }; docket run conduct RUN-5" executor-write "$WAVE_42" DENY "function wrapper around docket run conduct"
     assert_verdict "sudo pkill node" executor-write "$WAVE_42" DENY "sudo prefix"
     assert_verdict "xargs pkill < list" executor-write "$WAVE_42" DENY "xargs prefix"
     assert_verdict "timeout 5 pkill node" executor-write "$WAVE_42" DENY "timeout prefix with a duration"
@@ -597,6 +618,9 @@ case_deny_reasons() {
     assert_deny_reason "kill 1234" executor-write "$WAVE_42" "kill 1234" "kill deny echoes the literal pid"
     assert_deny_reason "kill \$(pgrep -f srv)" executor-write "$WAVE_42" "process lookup" "kill deny names the lookup"
     assert_deny_reason "docket step reap STEP-7 --reason x" executor-write "$WAVE_42" "leave the reap to the conductor" "reap deny names the conductor"
+    assert_deny_reason "docket run conduct RUN-5" executor-write "$WAVE_42" "The seat is the conductor's" "conduct deny names the conductor's seat"
+    assert_deny_reason "docket run conduct RUN-5" executor-write "$WAVE_42" "main conversation" "conduct deny names the main conversation's path"
+    assert_deny_reason "docket run conduct RUN-5" executor-write "$WAVE_42" "finding in your step report" "conduct deny names the executor's own path"
     assert_deny_reason ": > ${SIB_DIR}/x" executor-write "$WAVE_42" "cat /dev/null" "structural-redirect deny names the plain spelling"
     assert_deny_reason "{ :; } > ${SIB_DIR}/x" executor-write "$WAVE_42" "compound command" "compound-redirect deny explains the shape"
     assert_deny_reason "_guard_probe() { :; }; ls" executor-write "$WAVE_42" "_guard_probe" "probe-tamper deny names the handler"

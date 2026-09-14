@@ -901,6 +901,15 @@ One transaction, all or nothing:
 **Nothing executes.** No gate, no action, and no command runs during
 activation; files are read only to hash them.
 
+**A first activation mints the run's CONDUCTOR CAPABILITY** and returns it
+exactly once: `conductor_token` in the JSON envelope (`omitempty`, absent
+on a re-activation and under `--dry-run`), its own trailing stdout line in
+human mode. Only its SHA-256 is stored. From then on `step
+approve|reject|resolve|reap` and `run pause|resume|abandon` on the run
+require it; `run conduct` below re-mints it for a session that does not
+hold it. A run conducted while still `planning` keeps that capability
+rather than minting a second.
+
 **Auto-registration — you never run a register verb.** Activation registers
 the current contents of `.docket/config/`, so a definition goes from
 "written" to "registered" by starting a run:
@@ -1059,6 +1068,43 @@ Two of those `CONFLICT`s say more than that they happened:
   re-activations, so this path would treat it as a *first* activation and
   re-scan config.
 
+#### `docket run conduct RUN-N` — `run_conduct.go`
+
+No local flags. Takes (or re-takes) the run's CONDUCTOR SEAT: mints a fresh
+256-bit capability, stores only its hash (`runs.conductor_token_hash`,
+schema v29), retires any standing one, and records a `conductor-seated`
+event whose `data` is `{actor, cwd, rotated}` (`rotated` true when a
+capability already stood). Response (`--json`): `{"run":"RUN-N",
+"token":"<64 hex>","rotated":<bool>}`. Human mode prints `Took the
+conductor seat on RUN-N` (`; the previous capability is retired` when
+rotated) and then the token on its own stdout line, `step claim`'s
+discipline, so a session whose stdout lands in a transcript uses `--json`
+and extracts the field without printing it.
+
+The seven operator verbs — `step approve|reject|resolve|reap`, `run
+pause|resume|abandon` (with or without `--issue`) — require the capability
+on a bound run, via `DOCKET_TOKEN` or stdin, never argv (there is no
+`--token` flag on any verb): none supplied is `VALIDATION_ERROR` (exit 3)
+naming both channels and this verb; a wrong one, a step's lease token
+included, is `AUTH_ERROR` (exit 5). Both messages name `run conduct` and
+never echo the presented token. Every run this binary activates is bound at
+birth (`run activate` above); a run activated before the capability existed
+asks for nothing until it is conducted, and conducting it binds it. A
+`planning` run is conductable (`run abandon` applies to one), and its first
+activation then keeps the capability rather than minting a second.
+
+The verb is **deliberately token-free**: nothing authenticates a caller, and
+a run whose conductor session died must stay pausable and abandonable. That
+makes the seat TAMPER-EVIDENT, not tamper-proof: the taker's token is the
+only valid one from that moment, the displaced conductor's next ruling
+refuses `AUTH_ERROR`, and the `conductor-seated` event names who took it
+and from where. A harness keys its own callers off this one verb (the
+sibling guard denies it to the executor archetypes); the engine keeps them
+off the other seven.
+
+Refusals: `done` or `abandoned` run → `CONFLICT` (exit 4, "there is nothing
+left to conduct"); missing run → `NOT_FOUND` (exit 2).
+
 #### `docket run pause|resume|abandon RUN-N` — `run_lifecycle.go`
 
 | Flag | Short | Type | Default | Notes |
@@ -1069,6 +1115,14 @@ Two of those `CONFLICT`s say more than that they happened:
 `pause` moves `active → waiting-human`; `resume` moves it back; `abandon` is
 terminal from any non-terminal status. A paused run blocks new claims and
 honors in-flight completes.
+
+All three, `abandon --issue` included, require the run's **conductor
+capability** (`run conduct` above) via `DOCKET_TOKEN` or stdin, never argv:
+none supplied is `VALIDATION_ERROR` (exit 3) naming both channels and `run
+conduct`; a wrong one is `AUTH_ERROR` (exit 5). The check runs after the
+run is found and before any status check or write, so a missing token is
+reported before an illegal transition would be. A run activated before the
+capability existed asks for none until it is conducted.
 
 **Abandonment NAMES the run's recorded worktrees.** A relay's
 close-time sweep only covers worktrees its own session created, and an
@@ -1708,7 +1762,7 @@ publishes the per-actor counts:
 | `next` | the scheduler | `step-ready`, `lease-reaped`, `join-completed`, `loop-entered`, `dispatch-abandoned`, `issue-promoted` |
 | `gate` | a deterministic check, actions included | `gate-started`, `gate-recorded`, `gate-unmatched`, `gate-rerun`, `vote-opened`, `vote-tallied` |
 | `threshold` | computed routing | `step-routed`, `step-failed`, `step-superseded`, `step-skipped`, `step-held`, `step-batch-overridden` |
-| `human` | an operator verb, including one a harness relays | `run-*` (`run-started`, `run-activated`, `run-paused`, `run-resumed`, `run-abandoned`, `run-done`, `run-budget-set`, `run-repinned`), `step-claimed`, `step-heartbeat`, `step-recorded`, `step-resolved`, `step-approved`, `step-rejected`, `step-annotated`, `issue-abandoned`, `issue-diff-repinned`, `gate-override-granted`, `spawn-admitted`, `trust-*`, `project-registered`, `dispatch-opened`, `dispatch-closed`, `reap-acknowledged`, `events-pruned` |
+| `human` | an operator verb, including one a harness relays | `run-*` (`run-started`, `run-activated`, `run-paused`, `run-resumed`, `run-abandoned`, `run-done`, `run-budget-set`, `run-repinned`), `step-claimed`, `step-heartbeat`, `step-recorded`, `step-resolved`, `step-approved`, `step-rejected`, `step-annotated`, `issue-abandoned`, `issue-diff-repinned`, `gate-override-granted`, `spawn-admitted`, `trust-*`, `project-registered`, `dispatch-opened`, `dispatch-closed`, `reap-acknowledged`, `conductor-seated`, `events-pruned` |
 
 The three operator lifecycle kinds each carry `data` of `{from, to,
 reason}`, written in the same transaction as the status they record.
@@ -1725,6 +1779,9 @@ breach causes it**, because the transition means "a person must now
 decide"; `data.reason` distinguishes a budget breach from an operator's
 `run pause`. **`events-pruned` is `human`** because nothing in the engine
 prunes on its own — the event exists only because somebody ran the verb.
+**`conductor-seated` is `human`** for the same reason: `run conduct` is an
+operator verb whether a person or a harness relay ran it, and its
+`data.actor` and `data.cwd` say which.
 
 Attribution is computed over the events that *remain*, so a pruned run
 reports fewer transitions than it made. `events-pruned` is what keeps that
@@ -1743,18 +1800,26 @@ then **completed** with an artifact.
 |---|---|---|
 | `step claim STEP-N [--render] [--template F]` | no | CAS claim; mints token; returns token + context (or packet) |
 | `step heartbeat STEP-N` | **yes** | extends the lease; does not touch `attempt` |
-| `step reap STEP-N --reason R` | no | forced reap of a dead holder's claim, without waiting out the lease |
+| `step reap STEP-N --reason R` | **conductor** | forced reap of a dead holder's claim, without waiting out the lease |
 | `step complete STEP-N --artifact-file F …` | **yes** (stages 0–1) | the saga |
 | `step fail STEP-N [--note …] [--metadata …]` | **yes** | routes per `on_fail` when the CLAIM count reaches `max_attempts` (attempt counts claims, never failures); counts the failure into the row's `failed_attempts` (a reap counts into `reaped_claims` instead) |
 | `step annotate STEP-N [--metadata JSON] [--integrated-sha SHA]` | no | merges opaque KV onto a **finished** step's record; `--integrated-sha` verifies ancestry and re-records the step's `issue.diff` from the named commit; event-logged |
-| `step approve\|reject STEP-N [--note …] [--value V]` | no | `type="human"` gate steps, and a materialized held step of either kind (a vote-minted one once a failed tally parks it) |
-| `step resolve STEP-N --as …` | no | `waiting-human` resolutions; `retry` **resets the retry budget** (moves `attempt_base`) — `attempt` itself and the `failed_attempts`/`reaped_claims` breakdown are never reset and not incremented by it |
+| `step approve\|reject STEP-N [--note …] [--value V]` | **conductor** | `type="human"` gate steps, and a materialized held step of either kind (a vote-minted one once a failed tally parks it) |
+| `step resolve STEP-N --as …` | **conductor** | `waiting-human` resolutions; `retry` **resets the retry budget** (moves `attempt_base`) — `attempt` itself and the `failed_attempts`/`reaped_claims` breakdown are never reset and not incremented by it |
 | `step show STEP-N` | no | read-only; effective status |
 | `step list (--run RUN-N \| --issue ISSUE-N)` | no | read-only; steps with id, run, instance, issue, kind, effective status, attempt (plus its `failed_attempts`/`reaped_claims` breakdown when nonzero), expected_cost — in (issue, creation) order. Scope by `--run` (the whole run), `--issue` (that issue across every run holding a step for it), or both (that issue inside that run); at least one is required. The budget-projection enumeration: step ids are a store-wide sequence, so id arithmetic cannot enumerate a run. `--issue` is the issue-shaped question a conductor actually holds. Watch-eligible. |
 | `step context STEP-N [--meta]` | no | re-emits `context` read-only |
 | `step render STEP-N [--template F]` | no | context bundle → rendered work packet |
 | `step artifacts STEP-N` | no | read-only; lists what the step PRODUCED, sizes not bodies |
 | `step artifact ARTIFACT-N [--payload]` | no | read-only; one artifact in full |
+
+**conductor** in the Token column is the run's CONDUCTOR CAPABILITY (`run
+activate` / `run conduct` above), not a lease token: on a bound run the verb
+reads it from `DOCKET_TOKEN` or stdin, never argv, after the step is found
+and before anything is written. None supplied is `VALIDATION_ERROR` (exit
+3) naming both channels and `run conduct`; a wrong one, a step's lease token
+included, is `AUTH_ERROR` (exit 5). A run activated before the capability
+existed asks for none until it is conducted.
 
 `step show` accepts multiple IDs: one returns an object under `data`, two or
 more return an array. An expired but unreaped lease is marked `lease_expired:
@@ -1867,9 +1932,14 @@ and an action step is the engine's own computation — and a claim against one i
 |---|---|---|---|
 | `--reason` | string | `""` | **required**; why the holder is being declared dead |
 
-**Token-free**, like `approve` and `resolve`: the authority is repository
-access plus the recorded assertion that the holder is gone. Liveness is
-otherwise TTL-only, and a TTL cannot be sized right in both directions —
+**No lease token, but the run's conductor capability**, like `approve`,
+`reject` and `resolve` (`docket run conduct` above): the holder's own token
+is exactly what a reap cannot require, so the verb reads the run's
+conductor token from `DOCKET_TOKEN` or stdin (none is `VALIDATION_ERROR`,
+exit 3; a wrong one, a step's lease token included, is `AUTH_ERROR`, exit
+5; a run activated before the capability existed asks for none), and the
+authority for the reap itself is the recorded assertion that the holder is
+gone. Liveness is otherwise TTL-only, and a TTL cannot be sized right in both directions —
 raised to cover healthy long writers, it multiplies how long a dead agent's
 claim blocks its row. The engine cannot probe a process it did not start,
 but the relay that spawned the executor can, and this verb is the channel
@@ -2036,6 +2106,12 @@ Refusals: a step that has not reached a terminal status is `CONFLICT`
 | `--note` | string | why |
 | `--batch` | bool | with `--as override-pass` only: also record one **run-scoped** grant per failed gate |
 
+Every resolution requires the run's **conductor capability** (`docket run
+conduct` above) via `DOCKET_TOKEN` or stdin, checked after the step is
+found and before anything is written: none is `VALIDATION_ERROR` (exit 3),
+a wrong one `AUTH_ERROR` (exit 5); a run activated before the capability
+existed asks for none.
+
 `retry` resets the **step's** attempt budget, a different counter from the
 issue-level attempt trail, which is monotonic and never reset. It also
 **releases the lease**, so the re-execution goes through a fresh claim and
@@ -2148,8 +2224,12 @@ cherry-pick that rewrote the sha but not the content warns about nothing.
 | `--note` | string | `""` | why the gate was approved or rejected |
 | `--value` | string | `""` | (`approve` only) corrected value for a **held cluster's** aggregated field |
 
-Both are **token-free**: a gate is resolved by an operator who never
-claimed it. They apply to `type="human"` steps, and to a **materialized**
+Neither takes a lease token (a gate is never claimed), and both require
+the run's **conductor capability** (`docket run conduct` above) via
+`DOCKET_TOKEN` or stdin: none is `VALIDATION_ERROR` (exit 3), a wrong one
+`AUTH_ERROR` (exit 5), checked after the step is found and before anything
+is written; a run activated before the capability existed asks for none.
+They apply to `type="human"` steps, and to a **materialized**
 `<step>-held` step whichever kind it was minted as — anything else is
 `VALIDATION_ERROR` naming the step's actual class.
 

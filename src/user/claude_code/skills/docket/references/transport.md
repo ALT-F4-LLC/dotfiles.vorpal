@@ -16,6 +16,7 @@ Find the relevant heading before reading a large section:
 - Optimistic concurrency (`--if-version`)
 - Idempotency keys (`--idempotency-key`)
 - Claims, leases, and capability tokens
+- The run's conductor capability
 - Interactive forms
 - Workflow: Watch Mode
 
@@ -177,9 +178,9 @@ read its reason. See [guard contracts](../reference.md).
 |---|---|---|
 | `GENERAL_ERROR` | 1 | Unclassified failure (DB error, I/O error, etc.) |
 | `NOT_FOUND` | 2 | Referenced issue/doc/proposal/label/relation does not exist |
-| `VALIDATION_ERROR` | 3 | Bad input: invalid enum value, missing required flag, mutually exclusive flags, non-interactive environment without required flags, invalid `--json` value, negative `--limit` under v2, `--if-version < 1` |
+| `VALIDATION_ERROR` | 3 | Bad input: invalid enum value, missing required flag, mutually exclusive flags, non-interactive environment without required flags, invalid `--json` value, negative `--limit` under v2, `--if-version < 1`, no capability token supplied to a verb that requires one (a lease verb, or one of the seven operator verbs on a conductor-bound run) |
 | `CONFLICT` | 4 | State conflict: duplicate relation, cycle detected, already-voted, non-empty DB on import without `--merge`/`--replace`, `--if-version` mismatch, a dispatch already open for the run, `next --run` while a dispatch is open or discrepancies exist, `dispatch verify` byte mismatch, `dispatch close` over an unreconciled discrepancy, `dispatch backfill-usage` repeating a `(step, attempt, unit)` already recorded, any dispatch verb finding no manifest open, `step annotate` on a step that has not finished, or `issue move --project` on an issue a run holds |
-| `AUTH_ERROR` | 5 | The supplied capability token does not hold this lease (or the entity is unclaimed) |
+| `AUTH_ERROR` | 5 | The supplied capability token does not hold this lease (or the entity is unclaimed), or is not the run's current conductor capability on `step approve\|reject\|resolve\|reap` / `run pause\|resume\|abandon` |
 | `STALE_LEASE` | 6 | The token is correct but the lease has expired — claim again |
 | `TIMEOUT` | 7 | Reserved — no verb emits this yet |
 | `UNTRUSTED` | 8 | Reserved — no verb emits this yet |
@@ -311,6 +312,46 @@ A database lease does not terminate a process or isolate a worktree. Confirm
 a prior writer has stopped before acknowledging a reap and admitting another
 writer. For step tokens, completion retirement, and dispatch acknowledgments,
 read [the CLI reference](../reference.md).
+
+### The run's conductor capability
+
+A run's first `docket run activate` mints a second kind of capability, the
+run-scoped CONDUCTOR token, returned exactly once (`conductor_token` in the
+`--json`/`--json=v2` envelope, absent on a re-activation; its own trailing
+stdout line in human mode) and stored as a hash only. `docket run conduct
+RUN-N` re-mints it for a session that does not hold it (`{run, token,
+rotated}` under `--json`; human mode prints the token on its own line),
+retiring the standing one and recording a `conductor-seated` event with
+`actor`, `cwd` and `rotated`. That verb is itself token-free, so a run whose
+conductor died stays recoverable; the seat is tamper-evident, not
+tamper-proof, and `events list --run` shows who took it.
+
+On a bound run the seven operator verbs — `step approve`, `step reject`,
+`step resolve`, `step reap`, `run pause`, `run resume`, `run abandon` (with
+or without `--issue`) — read it from `DOCKET_TOKEN` or stdin, never argv,
+after the step or run is found and before anything is written. A run
+activated before the capability existed asks for nothing until it is
+conducted. Executor verbs (`step claim|heartbeat|record|fail`) are
+untouched, and an executor is never handed this token.
+
+| Situation | Code | Exit |
+|---|---|---|
+| No token supplied to one of the seven on a bound run | `VALIDATION_ERROR` | 3 |
+| Token is not the run's current conductor capability (a step's lease token included) | `AUTH_ERROR` | 5 |
+| `run conduct` on a `done` or `abandoned` run | `CONFLICT` | 4 |
+
+Both refusal messages name `docket run conduct RUN-N` as the recovery and
+never echo the presented token. `AUTH_ERROR` on a token that worked a
+moment ago means another caller took the seat.
+
+Supply it per command, never through the ambient environment: a variable
+exported once reaches every child process, and under an agent harness every
+subagent's shell inherits that environment. Redirect an owner-only file into
+stdin (`docket step approve STEP-N --note '…' < <dir>/RUN-N.token`) or set
+`DOCKET_TOKEN` on that one invocation. Do not rely on the stdin fallback
+with nothing redirected: the CLI drains stdin to EOF on a bound run, so a
+harness whose stdin is an open pipe blocks until the tool timeout, while a
+terminal or `</dev/null` fails fast with exit 3.
 
 ### Interactive forms
 

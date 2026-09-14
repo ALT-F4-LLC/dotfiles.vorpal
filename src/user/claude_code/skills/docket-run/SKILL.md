@@ -1,6 +1,6 @@
 ---
 name: docket-run
-description: Drive an activated Docket run to completion. Ask the engine what is ready, dispatch it (the manifest carries the staged closure, ready rows and their dependents up to the `--limit`, which cuts every issue's deepest stages first), launch the wave workflow once per shard (up to four concurrent launches over the same manifest, one issue lane set each), close the dispatch once every shard returns, repeat. Vote gates ride the wave and seat the panel mid-wave; conversational gates go to tribunal.js; three standing rulings answer a park machine-side first (a completion-gate failure that reproduces clean on the same sha auto-passes, a loop-bound park files its residue and passes, a loop-extension panel decides the first fix round past `max_fix_loops` only on a regression); every other non-approval that parks, and every reserved matter, escalates to the operator, and the engine verb runs on the outcome. Invoked as `/docket-run RUN-N` it drives that run explicitly; invoked bare it resolves "the next run" itself (newest active or waiting-human run, else newest planning run, else reports nothing to drive), chaining directly after `/docket-plan`'s bare mode with no question in between. Holds no run state and makes no routing decisions; the engine schedules and wave.js routes. Drives the run in the invoking conversation: the operator sees every dispatch, gate and park where they sit, and a gate that parks one issue while others still have work is rendered and pushed, never blocked on.
+description: Drive an activated Docket run to completion. Ask the engine what is ready, dispatch it (the manifest carries the staged closure, ready rows and their dependents up to the `--limit`, which cuts every issue's deepest stages first), launch the wave workflow once per shard (up to four concurrent launches over the same manifest, one issue lane set each), close the dispatch once every shard returns, repeat. Vote gates ride the wave and seat the panel mid-wave; conversational gates go to tribunal.js; three standing rulings answer a park machine-side first (a completion-gate failure that reproduces clean on the same sha auto-passes, a loop-bound park files its residue and passes, a loop-extension panel decides the first fix round past `max_fix_loops` only on a regression); every other non-approval that parks, and every reserved matter, escalates to the operator, and the engine verb runs on the outcome. Invoked as `/docket-run RUN-N` it drives that run explicitly; invoked bare it resolves "the next run" itself (newest active or waiting-human run, else newest planning run, else reports nothing to drive), chaining directly after `/docket-plan`'s bare mode with no question in between. Holds no run state and makes no routing decisions; the engine schedules and wave.js routes. Drives the run in the invoking conversation: the operator sees every dispatch, gate and park where they sit, and a gate that parks one issue while others still have work is rendered and pushed, never blocked on. Holds the run's conductor capability (returned once by the first `run activate`, re-minted by `docket run conduct`) in one session-private file and redirects that file into every `step approve|reject|resolve|reap` and `run pause|resume|abandon`; no brief, tool output, or resume prompt ever carries the token.
 argument-hint: "[RUN-N]"
 ---
 
@@ -84,6 +84,107 @@ answer their parks once fixed.
 notification and `SendMessage`; its idle notification is not an event.
 `TaskStop` it the moment its report is in hand. A helper never runs an
 engine mutating verb, a trust verb, or a launch; those stay yours.
+
+## The conductor capability
+
+The engine binds the seven operator verbs, `docket step
+approve|reject|resolve|reap` and `docket run pause|resume|abandon` (with
+or without `--issue`), to a run-scoped CONDUCTOR CAPABILITY: a 256-bit
+token a run's first `docket run activate` returns exactly once
+(`conductor_token` in the `--json=v2` envelope; its own trailing stdout
+line in human mode), of which the store keeps only the hash. On a bound
+run each of the seven reads the token from `DOCKET_TOKEN` or stdin, never
+argv, and refuses without it. `docket run conduct RUN-N` re-mints it for
+a session that does not hold it, retiring the standing token and
+recording a `conductor-seated` event that names the caller's `actor` and
+`cwd` and whether a token was `rotated`. A run activated before the
+capability existed asks for nothing until it is conducted. Executor verbs
+(`step claim|heartbeat|record|fail`) are untouched, and no executor is
+ever handed this token.
+
+**Hold it in one session-private file, and nowhere else.** The file is
+`<scratchpad>/conductor.d/$RUN.token`, `<scratchpad>` spelled as the
+literal absolute scratchpad path from your system prompt, never `$TMPDIR`
+(which can resolve differently across consecutive `Bash` calls); the
+directory is mode 0700 and the file 0600 (`umask 077` before creating
+either). The token never goes into argv, an exported variable or shell
+profile (every subagent's Bash inherits this session's environment, so an
+export reaches every executor), a brief, a `run note`, an issue comment,
+a resume prompt, or any tool output you render: a token in a transcript
+under `~/.claude/projects` is readable by every executor. Capture it
+without printing it:
+
+```bash
+umask 077; mkdir -p <scratchpad>/conductor.d
+docket run activate $RUN --reason "approved by <proposal-id>" --json=v2 \
+  > <scratchpad>/conductor.d/$RUN.activate.json
+jq -r '.data.conductor_token // empty' <scratchpad>/conductor.d/$RUN.activate.json \
+  > <scratchpad>/conductor.d/$RUN.token
+jq 'del(.data.conductor_token)' <scratchpad>/conductor.d/$RUN.activate.json
+rm <scratchpad>/conductor.d/$RUN.activate.json
+```
+
+Always `--json=v2` here: human mode prints the token on stdout, straight
+into the tool result. A re-activation mints nothing and leaves the file
+as it was.
+
+**Take the seat when you did not activate.** Attaching to an `active` or
+`waiting-human` run this session did not activate, resuming from a resume
+prompt, or conducting a `planning` run you must abandon: `run conduct` is
+your first mutating verb, under the same capture discipline, with the
+token under `.data.token`:
+
+```bash
+umask 077; mkdir -p <scratchpad>/conductor.d
+docket run conduct $RUN --json=v2 > <scratchpad>/conductor.d/$RUN.conduct.json
+jq -r '.data.token // empty' <scratchpad>/conductor.d/$RUN.conduct.json \
+  > <scratchpad>/conductor.d/$RUN.token
+jq 'del(.data.token)' <scratchpad>/conductor.d/$RUN.conduct.json
+rm <scratchpad>/conductor.d/$RUN.conduct.json
+```
+
+`rotated: true` in that answer means a token stood before yours, a prior
+session's, now retired; that session learns so at its next ruling. A
+`done` or `abandoned` run refuses (`CONFLICT`, exit 4): there is nothing
+left to conduct.
+
+**Supply it per command, by redirecting the file into stdin.** Every one
+of the seven verbs, in every example below and on every path this file
+names (the three standing rulings, the operator escalation, a forced
+reap, a pause, a resume, an abandon), ends in `< <scratchpad>/conductor.d/$RUN.token`:
+
+```bash
+docket step approve STEP-N --note "<their words>" < <scratchpad>/conductor.d/$RUN.token
+```
+
+A missing file fails in the shell before docket runs, and an empty one is
+refused at once. Never run one of the seven with nothing redirected and
+`DOCKET_TOKEN` unset: on a harness whose Bash stdin is an open pipe the
+stdin fallback blocks until the tool timeout, and elsewhere it exits 3.
+`DOCKET_TOKEN="$(cat <file>)" docket …` is the same channel with a worse
+failure (an unreadable file hands docket an empty variable and drops it
+into that fallback); use the redirect.
+
+**Two refusals, and what each means.** `VALIDATION_ERROR` (exit 3, "is
+bound to a conductor capability and … requires it") is your own omission:
+nothing was redirected, or the file is empty. `AUTH_ERROR` (exit 5, "the
+supplied token is not RUN-N's conductor capability") means the seat was
+taken: another session ran `run conduct` and retired your token. Stop
+there. `docket events list --run $RUN --json=v2` carries the
+`conductor-seated` event with the taker's `actor` and `cwd`; put that to
+the operator through the question tool, and re-conduct only on their
+word, since two sessions driving one run is exactly the condition the seat
+exists to make visible. The mechanism is tamper-evident, not tamper-proof:
+`run conduct` is deliberately open to any caller with repository access,
+so a run whose conductor died stays recoverable, and the sibling guard
+keeps executors off that one verb while the engine keeps them off the
+other seven.
+
+**The file lives as long as this session drives the run.** A pause keeps
+it (a same-session resume needs it; a new session re-mints and retires it
+anyway); a done or abandoned run, or a `finish`, removes it (`rm
+<scratchpad>/conductor.d/$RUN.token`). A helper you spawn never receives
+the path or the token; every ruling stays yours.
 
 ## Which run
 
@@ -318,6 +419,12 @@ it in full (`docket doc show DOC-N`) and honor its contents before your
 first mutating verb; none of it is recoverable from the engine. No
 matching doc is not an error: proceed on engine state alone.
 
+**Then take the seat.** A run this session did not activate is bound to a
+conductor capability this session does not hold, and a resume prompt
+never carries the token, by design. `docket run conduct $RUN --json=v2`
+per **The conductor capability** comes before your first ruling; a
+`waiting-human` run's `run resume` is already one.
+
 **A resume prompt's DISPOSITION REQUIRED notes are debts you inherit.**
 `pause` prefixes advisory notes the halted session could not finish with
 `DISPOSITION REQUIRED:`. No engine verb re-raises these. Before your first
@@ -461,7 +568,11 @@ tool call with another:**
 
    Never run `run activate` in the same call as reading the tally.
 3. **Activate**, only on a clean dry-run and an approved tally, passing
-   `--reason "approved by <proposal-id>"`.
+   `--reason "approved by <proposal-id>"`, exactly as **The conductor
+   capability** shows: `--json=v2`, the envelope to a file, the token
+   extracted to `<scratchpad>/conductor.d/$RUN.token` and deleted from
+   what you render. This first activation is the only time the engine
+   returns the token.
 
 Post a successful activation as the first milestone of any standing
 external-tracker obligation, before the first dispatch.
@@ -1106,8 +1217,11 @@ override-pass` is described that way. Check `docket step gates STEP-N
 **A dead spawn is reaped, not waited out.** Reconcile first (`dispatch
 verify`, `docket step show STEP-N`); if the step is still claimed by a
 holder you have established is gone, `docket step reap STEP-N --reason
-"<what you observed>"` returns it to the pool. Liveness is no longer
-TTL-only: do not sit out a long lease.
+"<what you observed>" < <scratchpad>/conductor.d/$RUN.token` returns it to
+the pool. Liveness is no longer TTL-only: do not sit out a long lease.
+The reap is yours alone: the wave's claim-conflict and spawn-failure
+reports name it back to you rather than reaping, and the sibling guard
+denies the verb to executors.
 
 **Sweep the corpse's scratch with the reap.** Once the reap lands, `rm
 -rf <literal $TMPDIR>/STEP-N.d` (plus any legacy flat-root leftovers).
@@ -1178,7 +1292,7 @@ On an approved tally within bounds: `docket run budget $RUN --set <n>
 <the version you read>`. CONFLICT (exit 4) means the cap moved under you:
 re-read and re-ask. A breached run is parked `waiting-human`; raising the
 cap does not restart it, `docket run resume $RUN --reason "<why it is
-moving again>"` does, never bare.
+moving again>" < <scratchpad>/conductor.d/$RUN.token` does, never bare.
 
 **`--accept-missing-usage`.** Never on your own initiative; not a
 panel's to grant either, since it sits on the reserved list in **Gates**.
@@ -1310,7 +1424,8 @@ verdict verbatim; `--files-changed` is the issue's files. Seat the
 constant roster (`tribunal-architecture`, `tribunal-security`,
 `tribunal-correctness`), looked up from pinned policy. An approved tally
 authorizes exactly that one round: `docket step resolve STEP-N --as
-fix-round` citing the proposal id, then `docket vote link` to the issue.
+fix-round < <scratchpad>/conductor.d/$RUN.token` citing the proposal id,
+then `docket vote link` to the issue.
 A rejected tally, a stalled panel, or any round beyond `max_fix_loops +
 1` goes to the operator with the panel's reasoning where there is one.
 Nothing needs tracking: the arithmetic on the next park fails on its own.
@@ -1428,7 +1543,8 @@ that tail.
 passed on reproduction, no gate row is `unmatched` or `skipped`, and no
 failing gate is a security gate (`secret-scan`, `vuln-scan`,
 `sdet-abuse`, and any gate the security track adds), then `docket step
-resolve STEP-N --as override-pass` with a note naming this ruling, the
+resolve STEP-N --as override-pass < <scratchpad>/conductor.d/$RUN.token`
+with a note naming this ruling, the
 reproduction, and the root-cause issue the broken-check rule below
 requires, filed or linked. Report every auto-pass in your next status
 report, one line each. Everything else stays the operator's: a gate that
@@ -1452,7 +1568,8 @@ a new failure and takes the reproduce-then-pass path above, whatever the
 signature says; a false "new failure" reaches the operator, the safe
 direction, and the check costs one read verb per grant. When every tail
 matches, resolve with `docket step resolve STEP-N --as override-pass
---batch`, no fresh reproduction, citing this ruling, the first
+--batch < <scratchpad>/conductor.d/$RUN.token`, no fresh reproduction,
+citing this ruling, the first
 reproduction it rests on, and the tail match. Nothing else widens: a
 differing tail, an unmatched signature, an `unmatched` or `skipped` row,
 or a security gate stays on the ordinary path. Report
@@ -1507,7 +1624,8 @@ acknowledgment that the vote is skipped on purpose:
 
 ```bash
 docket step resolve STEP-N --as override-pass --drop-interposed \
-  --note "loop-bound ruling: residue; filed <ids>; <AC or cluster> out of scope, remedy <home>"
+  --note "loop-bound ruling: residue; filed <ids>; <AC or cluster> out of scope, remedy <home>" \
+  < <scratchpad>/conductor.d/$RUN.token
 ```
 
 Report every such resolution in your next status report, one line each: the
@@ -1672,10 +1790,10 @@ only a panel you convened through a separate `Workflow({scriptPath:
 On their answer:
 
 ```bash
-docket step approve STEP-N --note "<their reasoning, their words>"
-docket step approve STEP-N --value <enum member> --note "<their words>"
-docket step reject  STEP-N --note "<their reasoning, their words>"
-docket step resolve STEP-N --as retry|skip|abandon-issue|override-pass --note "<why>"
+docket step approve STEP-N --note "<their reasoning, their words>" < <scratchpad>/conductor.d/$RUN.token
+docket step approve STEP-N --value <enum member> --note "<their words>" < <scratchpad>/conductor.d/$RUN.token
+docket step reject  STEP-N --note "<their reasoning, their words>" < <scratchpad>/conductor.d/$RUN.token
+docket step resolve STEP-N --as retry|skip|abandon-issue|override-pass --note "<why>" < <scratchpad>/conductor.d/$RUN.token
 ```
 
 Which verb is the step's type, not your reading of the situation:
@@ -1815,8 +1933,10 @@ session.
 A run parked `waiting-human` ends cleanly with the session; it stays
 parked for any later session to pick up from `docket run status --active
 --json`. Resume it with `docket run resume $RUN --reason "<what
-unblocked it>"`, never bare, since the run keeps advertising its park
-reason until a resume overwrites it. While executable work is pending,
+unblocked it>" < <scratchpad>/conductor.d/$RUN.token`, never bare, since
+the run keeps advertising its park reason until a resume overwrites it;
+a later session takes the seat with `run conduct` first (**The conductor
+capability**), because the token this session holds dies with it. While executable work is pending,
 the run-guard blocks the turn-end instead, when installed (check the
 `hooks` key in `~/.claude/settings.json`); without it, the continuous-loop
 obligation is yours alone to keep. Where the guard fires, its deny is not

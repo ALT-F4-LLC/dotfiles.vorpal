@@ -809,7 +809,9 @@ function orphanedClaimReport(step, conflict, show) {
             `identical brief on resume; the claim is what stops the duplicate ` +
             `from doing the work twice). ESTABLISH the holder is gone, then ` +
             `return the step to the pool: \`docket step reap ${step} ` +
-            `--reason '<what you observed>'\` (token-free). Do NOT read this ` +
+            `--reason '<what you observed>'\` under the run's conductor ` +
+            `capability (the token file redirected into stdin; docket-run ` +
+            `SKILL.md, "The conductor capability"). Do NOT read this ` +
             `outcome as "the step never started".`
     } else if (ALREADY_RECORDED.includes(st.status)) {
         headline = `already ${st.status}${at}: the spawn arrived after the ` +
@@ -1023,7 +1025,8 @@ function spawn(row, phaseLabel) {
             `was recorded is UNKNOWN; reconcile via \`docket dispatch verify\` ` +
             `and \`docket step show ${row.step}\`, then, if it is still claimed ` +
             `by this dead spawn, return it to the pool with \`docket step reap ` +
-            `${row.step} --reason '<what you observed>'\` (token-free) before ` +
+            `${row.step} --reason '<what you observed>'\` under the run's ` +
+            `conductor capability before ` +
             `any retry. If that error carries the TRANSIENT classifier ` +
             `signature (\`Stage 2 classifier error\` / \`usually transient\`), ` +
             `redispatch the step UNCHANGED — same brief, never reworded`)

@@ -38,10 +38,13 @@ you act.
 
 ## Graceful halt
 
-1. `docket run pause RUN-N --reason '<why the operator is stepping away>'`
-   immediately. This moves the run to `waiting-human` and blocks new
-   claims, but honors in-flight completes: nothing about it interrupts a
-   step already claimed.
+1. `docket run pause RUN-N --reason '<why the operator is stepping away>'
+   < <scratchpad>/conductor.d/RUN-N.token` immediately, the redirect
+   being the run's conductor capability docket-run holds (its **The
+   conductor capability** section); the verb refuses without it. This
+   moves the run to `waiting-human` and blocks new claims, but honors
+   in-flight completes: nothing about it interrupts a step already
+   claimed.
 2. If a wave is in flight, keep awaiting it exactly as docket-run normally
    does; do not busy-wait and do not abandon the dispatch. A dispatch
    docket-run split into shards is several launches over one manifest:
@@ -84,8 +87,10 @@ Only on an explicit operator ask for immediate stop.
    mid-execution when you stopped watching is orphaned from this
    session's perspective, and its worktree (if it exists) is not cleaned
    up.
-2. `docket run pause RUN-N --reason '<why, naming that this was a hard halt>'`
-   first, before touching the dispatch. The wave is still running, so
+2. `docket run pause RUN-N --reason '<why, naming that this was a hard halt>'
+   < <scratchpad>/conductor.d/RUN-N.token` first, before touching the
+   dispatch, under the same conductor capability as the graceful halt.
+   The wave is still running, so
    pausing first is what stops it claiming anything more. Abandoning a
    manifest while the run is still active leaves a window in which the
    live wave claims against a manifest that no longer exists.
@@ -187,6 +192,13 @@ on — the shared checkout, never a wave worktree.
   file it as an issue, or decline it with a stated reason — and an
   unlabelled lead is one it may silently drop.
 
+**The conductor capability is never written down.** The token docket-run
+holds for this run stays in its session-private file and goes into
+neither the resume doc nor the chat copy: a resume prompt is readable by
+anyone with the store or the transcript. The resuming session re-mints
+it with `docket run conduct RUN-N` as its first action, which retires
+this session's token; the prompt says so, and nothing more.
+
 **Engine-recoverable state — link to it, do not restate it:**
 
 - Run id and current status: `docket run status --active --json` from the
@@ -211,8 +223,10 @@ budget raise has already been used; operator precedent rulings and any
 unexecuted answer; held peer authorization claims; every tribunal
 proposal id with its tally; foreign `wf_*` worktree entries observed;
 every step id the graceful halt refused; whether a live shadow was
-watching and was told to wind down; and every advisory note carrying
-**`DISPOSITION REQUIRED:`**. Check this list as a gate, not from memory.
+watching and was told to wind down; every advisory note carrying
+**`DISPOSITION REQUIRED:`**; and that the first action named is `docket
+run conduct RUN-N` with no token anywhere in the prompt. Check this list
+as a gate, not from memory.
 
 ## Recording and printing the resume prompt
 
@@ -241,8 +255,11 @@ prompt, discard it silently" (this makes a late-firing stale resume
 nudge a no-op) — then run id, the absolute checkout path and branch to
 work from, why it was paused, the halt mode used, a one-paragraph state
 summary (where the run stands, what is unfinished),
-`docket run resume RUN-N --reason '<why>'` as the first action, then the
-session-only state above in full — including whether a live shadow was
+`docket run conduct RUN-N --json=v2` as the first action (captured to a
+session-private file per docket-run's **The conductor capability**, never
+printed; it retires the token this session held), then `docket run resume
+RUN-N --reason '<why>'` redirecting that file, then the session-only
+state above in full — including whether a live shadow was
 watching and was told to wind down, so the resuming session knows to
 seat a fresh one via `/shadow` — then a pointer to `docket-run`'s own
 SKILL.md for everything engine-recoverable.
@@ -268,11 +285,15 @@ unanswered.
 ## Resuming
 
 **In the same session** (operator says resume, no new session involved):
-run `docket run resume RUN-N --reason '<why>'` and hand back to
-`docket-run` — nothing else is needed, since the session still holds
-everything the snapshot above exists to preserve.
+run `docket run resume RUN-N --reason '<why>' <
+<scratchpad>/conductor.d/RUN-N.token` and hand back to `docket-run` —
+nothing else is needed, since the session still holds everything the
+snapshot above exists to preserve, the conductor capability included.
 
-**In a new session**: read the resume prompt (doc or pasted text), run
-`run resume` as its first action, then follow it into `docket-run`'s own
-attach procedure — seat preflight and the stale-install diff happen
-there, not from anything carried in the prompt.
+**In a new session**: read the resume prompt (doc or pasted text), take
+the seat with `docket run conduct RUN-N --json=v2` as the first action
+(docket-run's **The conductor capability** says how to capture the token
+without printing it), run `run resume` under that fresh token, then
+follow it into `docket-run`'s own attach procedure — seat preflight and
+the stale-install diff happen there, not from anything carried in the
+prompt.

@@ -85,6 +85,7 @@ some worker environments.
 | `trust probe` | Executes trusted checks; treat it as execution, even though its purpose is diagnosis |
 | `guard spawn --ack-reap` / `--deciding-vote` | Can record an acknowledgment or audit event; a guard is not a lock |
 | `step record` | Records an artifact, runs gates, and applies routing |
+| `step approve/reject/resolve/reap`, `run pause/resume/abandon` | Require the run's conductor capability on a bound run, via `DOCKET_TOKEN` or stdin; `run conduct` re-mints it and retires the standing one. See [transport](references/transport.md) |
 
 Ordinary error exits are 1 general, 2 not found, 3 validation, 4 conflict,
 5 authorization, 6 stale lease, and 9 expired event cursor (`GONE`). Codes

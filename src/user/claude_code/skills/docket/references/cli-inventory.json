@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "verified_on": "2026-09-05",
-  "binary_version": "docket version nightly-47-gc6e34ba (commit: c6e34ba, built: 2026-09-05T00:54:30Z)",
+  "verified_on": "2026-09-14",
+  "binary_version": "docket version nightly-110-g3457921 (commit: 3457921, built: 2026-09-14T18:21:26Z)",
   "probe_contract": "Only --version and command-path --help; no store operations.",
   "commands": [
     {
@@ -1380,7 +1380,7 @@
     {
       "command": "docket guard gate",
       "usage": [
-        "docket guard gate --step NAME [flags]"
+        "docket guard gate --step NAME [--run RUN-N] [flags]"
       ],
       "aliases": [],
       "flags": [
@@ -1390,6 +1390,10 @@
         {
           "name": "--help",
           "short": "-h"
+        },
+        {
+          "name": "--run",
+          "value": "string"
         },
         {
           "name": "--step",
@@ -3230,6 +3234,33 @@
       ]
     },
     {
+      "command": "docket run conduct",
+      "usage": [
+        "docket run conduct RUN-N [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
       "command": "docket run issue",
       "usage": [
         "docket run issue [command]"
@@ -3866,13 +3897,17 @@
     {
       "command": "docket step annotate",
       "usage": [
-        "docket step annotate STEP-N --metadata JSON [flags]"
+        "docket step annotate STEP-N [--metadata JSON] [--integrated-sha SHA] [flags]"
       ],
       "aliases": [],
       "flags": [
         {
           "name": "--help",
           "short": "-h"
+        },
+        {
+          "name": "--integrated-sha",
+          "value": "string"
         },
         {
           "name": "--metadata",
@@ -4907,6 +4942,9 @@
           "name": "--rationale",
           "short": "-r",
           "value": "string"
+        },
+        {
+          "name": "--sealed"
         },
         {
           "name": "--threshold",

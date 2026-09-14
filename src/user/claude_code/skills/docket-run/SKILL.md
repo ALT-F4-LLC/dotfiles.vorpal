@@ -814,9 +814,13 @@ against an abandon, include the refusal verbatim in the abandon
 `--reason`.
 
 ```
-// 1. the join is a workflow (below); its return carries the rows and you check the shape
+// 1. the join is a workflow (below); its return carries the rows and you check the shape.
+// rows and statuses are this wave's own launch args and completion return, verbatim —
+// pass them together so the join's coordination section reports rounds, gate passes,
+// re-seats, claim conflicts, ancestry parks, and budget/chain deferrals for this wave;
+// omitting either leaves the section `null` and "not measured".
 Workflow({ scriptPath: "<absolute installed path to wave-usage.js>",
-           args: {dir: "<transcript-dir>", mode: "steps", exclude: []} })
+           args: {dir: "<transcript-dir>", mode: "steps", rows, statuses, exclude: []} })
 ```
 
 ```bash
@@ -871,9 +875,14 @@ engine, at most 32 units per call; `budget.unit` names the one unit the
 run's cap counts.
 
 **Launch wave-usage over the transcript directory**, the installed
-`~/.claude/workflows/wave-usage.js`, with `args: {dir, mode: "steps",
-exclude: []}`. It fans one low-effort agent per `agent-*.jsonl` file to
-run a fixed jq program, and returns `rows`: four typed units per step,
+`~/.claude/workflows/wave-usage.js`, with `args: {dir, mode: "steps", rows, statuses, exclude: []}` —
+this wave's own manifest rows and its completion notification's return
+array, passed straight through so the join's coordination section
+(rounds per issue, first-pass gate pass rate, re-seats, claim
+conflicts, ancestry parks, budget and chain deferrals) is measured
+rather than reported `null`. It fans one low-effort agent per
+`agent-*.jsonl` file to run a fixed jq program, and returns `rows`:
+four typed units per step,
 deduplicated by message id, keyed by the step each agent's `docket step
 claim/record STEP-N` obligation names. A read-only probe with no
 claim/record obligation sums into `overhead`, attributed to no step,

@@ -43,9 +43,11 @@
 #              `git worktree remove`/`move` unless every path operand lies
 #              inside the caller's own scratch dir (a throwaway probe checkout
 #              the executor made itself); `git -c alias.<x>=...` (an alias
-#              can spell any of these); and `rm`/`rmdir`/`mv` of a path under
-#              `.claude/worktrees/` or `.git/worktrees/` that is not the
-#              caller's own checkout, the checkout being its `cwd`. The
+#              can spell any of these); and `rm`/`rmdir`/`mv` of, or an
+#              output redirection into, a path under `.claude/worktrees/` or
+#              `.git/worktrees/` that is not the caller's own checkout, the
+#              checkout being its `cwd` (`cat /dev/null > <sibling>/.git`
+#              breaks that checkout as surely as removing it). The
 #              harness creates a writer's worktree and the conductor sweeps
 #              it after integration, so no other checkout is an executor's.
 #              A judge READS a sibling writer's target checkout by design, so
@@ -649,6 +651,7 @@ END {
         verb = ""
         if (vi > 0) { decode(words[vi]); verb = head_of(D_WORD) }
         negated = 0
+        prev_redirect = 0
         for (i = 1; i <= n; i++) {
             if (words[i] == "") continue
             quoted = decode(words[i])
@@ -662,8 +665,11 @@ END {
                 if (verb == "find" && (w == "!" || w == "-not")) negated = 1
                 if (verb == "find" && negated && own_mode == "known" && scratch_token(w) && T_NUM == own) report("SCRATCH", "everything but " T_TOKEN)
             }
-            # WORKTREE by path: a destructive head aimed at another checkout.
+            # WORKTREE by path: a destructive head, or an output redirection,
+            # aimed at another checkout.
             if ((verb == "rm" || verb == "rmdir" || verb == "mv") && foreign_checkout(w)) report("WORKTREE", verb " " w)
+            if (foreign_checkout(w) && (w ~ /^[0-9]*>/ || w ~ /^&>/ || prev_redirect)) report("WORKTREE", "write into " w)
+            prev_redirect = (w ~ /^[0-9]*>{1,2}\|?$/ || w ~ /^&>>?$/)
         }
         if (vi == 0) continue
         # ENGINE: `docket step reap`, past docket own global flags.
@@ -812,7 +818,7 @@ case "$CLAUSE" in
         case "$DETAIL" in
             prune) deny "$REASON_PREFIX \`git worktree prune\` deletes the bookkeeping of every checkout that is momentarily absent, siblings still working included, and is never an executor's to run. Leave the worktree list as it is; the conductor sweeps checkouts after integration." ;;
             "git -c "* | "git -c="* | "git --config="*) deny "$REASON_PREFIX \`${DETAIL}\` defines a git alias for this one call; an alias can spell any worktree or branch verb, so the guard cannot read what it runs. Spell the git subcommand out." ;;
-            rm\ * | rmdir\ * | mv\ *) deny "$REASON_PREFIX \`${DETAIL}\` names another checkout under .claude/worktrees or .git/worktrees; your own checkout is your working directory and nothing else there is yours to remove or move. The conductor sweeps checkouts after integration; if one blocks your step, report that as a finding." ;;
+            rm\ * | rmdir\ * | mv\ * | write\ into\ *) deny "$REASON_PREFIX \`${DETAIL}\` names another checkout under .claude/worktrees or .git/worktrees; your own checkout is your working directory and nothing else there is yours to remove, move or write into. The conductor sweeps checkouts after integration; if one blocks your step, report that as a finding." ;;
             *) deny "$REASON_PREFIX \`git worktree ${DETAIL}\` names a checkout you did not create; ${OWN_TEXT}. The harness created your worktree and the conductor sweeps it after integration; a checkout outside your own <TMP>/STEP-N.d is a sibling's or the shared tree. Leave it and, if it blocks your step, report that as a finding." ;;
         esac ;;
     BRANCH)

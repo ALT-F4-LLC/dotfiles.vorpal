@@ -562,6 +562,18 @@ case_checkout_paths() {
     got=$(verdict_of "$(with_cwd "git -C ${sib_wt} diff HEAD~1" "$own_wt")")
     [ "$got" = "ALLOW" ] && pass "git -C into a sibling's checkout for a diff (ALLOW)" || fail "git -C into a sibling's checkout (want ALLOW, got ${got})"
     assert_verdict "rm -rf /repo/.claude/worktrees/wf_x" executor-write "$WAVE_42" DENY "rm -rf of a checkout with no cwd known"
+    got=$(verdict_of "$(with_cwd "cat /dev/null > ${sib_wt}/.git" "$own_wt")")
+    [ "$got" = "DENY" ] && pass "redirect into a sibling's gitdir pointer (DENY)" || fail "redirect into a sibling's gitdir pointer (want DENY, got ${got})"
+    got=$(verdict_of "$(with_cwd "echo x >> ${sib_wt}/src/main.rs" "$own_wt")")
+    [ "$got" = "DENY" ] && pass "append into a sibling's source file (DENY)" || fail "append into a sibling's source file (want DENY, got ${got})"
+    got=$(verdict_of "$(with_cwd "echo x >${sib_wt}/note" "$own_wt")")
+    [ "$got" = "DENY" ] && pass "glued redirect into a sibling's checkout (DENY)" || fail "glued redirect into a sibling's checkout (want DENY, got ${got})"
+    got=$(verdict_of "$(with_cwd "cargo build 2>&1 > ${own_wt}/build.log" "$own_wt")")
+    [ "$got" = "ALLOW" ] && pass "redirect into own checkout (ALLOW)" || fail "redirect into own checkout (want ALLOW, got ${got})"
+    got=$(verdict_of "$(with_cwd "cat ${sib_wt}/.git" "$own_wt")")
+    [ "$got" = "ALLOW" ] && pass "reading a sibling's gitdir pointer (ALLOW)" || fail "reading a sibling's gitdir pointer (want ALLOW, got ${got})"
+    got=$(verdict_of "$(with_cwd "diff ${own_wt}/a ${sib_wt}/a > ${own_wt}/d.patch" "$own_wt")")
+    [ "$got" = "ALLOW" ] && pass "sibling path as a read operand beside an own-dir redirect (ALLOW)" || fail "sibling read operand with own redirect (want ALLOW, got ${got})"
 }
 
 # Two claims in one opening: the marker must name the same step twice.

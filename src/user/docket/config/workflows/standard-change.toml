@@ -1,7 +1,15 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 40  # 40: prose-only rewrite for concision; no topology, routing, or limit change.
+version = 41  # 41: synthesize-findings repoints `findings-cluster@3` to
+              #   `findings-cluster@4`, which adds an optional `member_sources`
+              #   array alongside `member_ids`, naming each linked member's
+              #   producing step ref; a finding's own `id` is unique only
+              #   within its judge's own payload, so `member_ids` alone cannot
+              #   disambiguate which step a member came from. No topology,
+              #   routing, or validation-semantics change: `member_sources` is
+              #   optional and unread by any threshold or the aggregate builtin.
+              # 40: prose-only rewrite for concision; no topology, routing, or limit change.
               # 39: `lease_ttl` added to every `[limits]` entry, matched to
               #   that entry's `max_step_duration`, so a lease lasts exactly
               #   as long as the step may run. A long wave no longer outlives
@@ -248,7 +256,7 @@ holds_tree = false
 inputs = ["review.*"]
 name = "synthesize-findings"
 packet = ["contracts/{executor}.md"]
-payload = "findings-cluster@3"
+payload = "findings-cluster@4"
 
 [[step]]
 action = "aggregate"

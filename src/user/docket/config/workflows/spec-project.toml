@@ -1,7 +1,15 @@
 [pipeline]
 description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step. Review and reconcile the findings, drain any open highs, and accept by tribunal vote. A rejection re-enters the bounded revise loop at spec authoring and runs review again."
 name = "spec-project"
-version = 25  # 25: `spec-vote` gains a post-approval `threshold` that routes
+version = 26  # 26: synthesize-findings repoints `findings-cluster@3` to
+              #   `findings-cluster@4`, which adds an optional `member_sources`
+              #   array alongside `member_ids`, naming each linked member's
+              #   producing step ref; a finding's own `id` is unique only
+              #   within its judge's own payload, so `member_ids` alone cannot
+              #   disambiguate which step a member came from. No topology,
+              #   routing, or validation-semantics change: `member_sources` is
+              #   optional and unread by any threshold or the aggregate builtin.
+              # 25: `spec-vote` gains a post-approval `threshold` that routes
               #   `fix-loop` when one or more casts is a reject, so a lone
               #   reject on the three-seat tribunal routes one
               #   revise round instead of being outvoted by the other two
@@ -163,7 +171,7 @@ holds_tree = false
 inputs = ["review.*"]
 name = "synthesize-findings"
 packet = ["contracts/{executor}.md"]
-payload = "findings-cluster@3"
+payload = "findings-cluster@4"
 
 [[step]]
 action = "aggregate"

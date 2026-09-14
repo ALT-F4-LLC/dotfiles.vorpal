@@ -42,6 +42,15 @@
           "minLength": 1
         }
       },
+      "member_sources": {
+        "description": "The step ref (e.g. `review@0#0`) that produced each entry of `member_ids`, in the same arrival order — one source per member. A different axis from `member_ids`, not a rival spelling of it: which finding merged into this cluster versus which step emitted it. Needed because a finding's own `id` is unique only within its producing judge's own payload (findings@10), so two judges can emit the same id and `member_ids` alone cannot disambiguate which step a given member came from. Optional wherever `member_ids` is: absent on a historical-only carry or scalar restatement, and absent whenever `member_ids` is absent. When present, has the same length as `member_ids`.",
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
       "file": {
         "description": "Repo-relative path the cluster is anchored to, when its members share one.",
         "type": "string"

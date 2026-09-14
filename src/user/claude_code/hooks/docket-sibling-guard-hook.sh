@@ -137,8 +137,10 @@
 # `sh <<< "rm -rf ..."` carry code in a string exactly as a heredoc does, and
 # the pre-pass's heredoc rule is applied to strings for the same reason.
 #
-# THE PROBE HARDENING, measured on bash 3.2 and pinned in the suite, where
-# this hook's probe departs from the copy the two sibling guards run:
+# THE PROBE HARDENING, measured on bash 3.2 and pinned in the suite. This
+# probe is shared byte-for-byte with docket-trust-guard-hook.sh and
+# docket-commit-guard-hook.sh, which originally ran an unhardened copy;
+# the hardening this hook introduced is now ported into both:
 #   - The probe shell is RESTRICTED (`set -r`) once the trap is armed, so no
 #     redirection can open a file. A vetoed leaf never performs its
 #     redirection anyway (verified: `rm x > marker` leaves the marker

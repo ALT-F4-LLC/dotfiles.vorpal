@@ -77,111 +77,119 @@ COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/nul
 
 # --- Leaf enumeration: ask bash, don't re-derive it. ---------------------
 #
-# LEAVES holds every simple command bash's own grammar would dispatch,
-# `\036` (RS)-separated, each possibly itself multi-line when it embeds a
-# heredoc (the heredoc's body arrives as part of that ONE leaf's text,
-# exactly as bash reconstructs $BASH_COMMAND). PROBE_CAP is written when the
-# 2000-command ceiling below fires — a circuit breaker against a crafted or
-# pathological input driving this into a long-running loop, not a bound
-# expected to matter for an ordinary call (empirically, hundreds of simple
-# commands enumerate in well under a second).
+# PROBE_TEXT holds every simple command bash's own grammar would dispatch,
+# `\036`-framed, each possibly itself multi-line when it embeds a heredoc
+# (the heredoc's body arrives as part of that ONE leaf's text, exactly as
+# bash reconstructs $BASH_COMMAND). The 2000-command ceiling below (exit
+# 113) is a circuit breaker against a crafted or pathological input driving
+# this into a long-running loop, not a bound expected to matter for an
+# ordinary call (empirically, hundreds of simple commands enumerate in
+# well under a second).
 #
-# `eval "$COMMAND"` is how the untrusted text reaches bash as SOURCE rather
-# than as a re-quoted argument: COMMAND travels via the environment, never
-# through string interpolation into this script's own source, so nothing
-# about the outer invocation's quoting can be confused by what the inner
-# text contains — it is parsed exactly once, by bash, exactly as it would
-# be if the real Bash tool ran it. `eval` itself is on the structural
-# allowlist below (it is a control mechanism, not a leaf) so the trap sees
-# straight through it to what is actually inside.
-# No `mktemp`: this hook's dependency set is deliberately fixed at
-# bash/cat/jq/awk (tests/docket-commit-guard-hook.test.sh runs it with PATH
-# restricted to exactly those), and `$$` is unique enough for a file this
-# process creates, writes, reads, and deletes within its own lifetime.
-PROBE_OUT="${TMPDIR:-/tmp}/docket-commit-guard-hook.$$"
-# The cap hit travels in its own file rather than as a token inside
-# PROBE_OUT: that buffer holds the caller's own leaf text, so an in-band
-# marker lets any command that merely quotes it be refused as oversized.
-PROBE_CAP="${PROBE_OUT}.cap"
-: >"$PROBE_OUT" 2>/dev/null || allow_default
-: >"$PROBE_CAP" 2>/dev/null || allow_default
-trap 'rm -f "$PROBE_OUT" "$PROBE_CAP"' EXIT
+REASON_PREFIX="git write blocked:"
 
-PROBE_ERR=$(COMMAND="$COMMAND" PROBE_OUT="$PROBE_OUT" PROBE_CAP="$PROBE_CAP" bash -c '
+if [ "${#COMMAND}" -gt 262144 ]; then
+    deny "$REASON_PREFIX this command is over 256 KiB, more than the commit-guard hook will check in one call. Split it into smaller Bash calls, or write a large body with the Write tool where you have it; a single call this large is refused rather than passed through unchecked."
+fi
+case "$COMMAND" in
+    *$'\035'* | *$'\036'*)
+        deny "$REASON_PREFIX this command carries a control byte (0x1d or 0x1e) the commit-guard hook uses to frame its own analysis, so it cannot be checked. Remove the byte; no shell command needs it." ;;
+esac
+
+# --- Syntax first, on the same bytes the probe will walk. ------------------
+if ! printf '%s' "$COMMAND" | bash -n >/dev/null 2>&1; then
+    deny "$REASON_PREFIX the commit-guard hook could not parse this command to check it (bash reported a syntax error while analyzing it) and refuses rather than guessing. Fix the command's syntax; if it is not actually invalid, that is a hook defect to report separately."
+fi
+
+# `eval "$COMMAND"` is how the untrusted text reaches bash as SOURCE rather
+# than as a re-quoted argument: COMMAND travels on stdin, never through
+# string interpolation into this script's own source, so nothing about the
+# outer invocation's quoting can be confused by what the inner text
+# contains — it is parsed exactly once, by bash, exactly as it would be if
+# the real Bash tool ran it. `eval` itself is on the structural allowlist
+# below (it is a control mechanism, not a leaf) so the trap sees straight
+# through it to what is actually inside.
+#
+# Leaves are printed as \035<text>\036 frames on stdout; bash's stderr is
+# merged into the same capture and recovered from between the frames. Exit
+# codes: 113 the cap, 114 a redirection on a structural builtin. The caller
+# cannot pick either: `exit` and `return` are vetoed, and a vetoed leaf
+# reports success.
+PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
     shopt -s extdebug
     set -T
+    COMMAND=$(cat)
     n=0
     _guard_probe() {
         n=$((n + 1))
         if [ "$n" -gt 2000 ]; then
-            printf 1 >> "$PROBE_CAP"
-            trap - DEBUG
-            return 1
+            exit 113
+        fi
+        # The first firing is this probe own eval line, not a leaf of the
+        # command; recording it would put an interpreter word in every walk.
+        if [ "$n" -eq 1 ] && [ "$BASH_COMMAND" = "eval \"\$COMMAND\"" ]; then
+            return 0
         fi
         local head="${BASH_COMMAND%%[ $'"'"'\t\n'"'"']*}"
         head="${head##*/}"
         case "$head" in
-            eval | for | while | until | if | elif | else | fi | then | do | done | \
-            case | esac | select | function | time | "{" | "}" | "[" | "[[" | : | \
-            true | false)
+            for | select | case | eval)
+                case "$BASH_COMMAND" in
+                    *[\<\>]*) exit 114 ;;
+                esac
+                printf "\035%s\036" "$BASH_COMMAND"
+                return 0 ;;
+            while | until | if | elif | else | fi | then | do | done | \
+            esac | function | time | "{" | "}" | "[" | "[[" | : | \
+            true | false | break | continue)
+                case "$BASH_COMMAND" in
+                    *[\<\>]*) exit 114 ;;
+                esac
                 return 0 ;;
         esac
-        if declare -F "$head" >/dev/null 2>&1; then
+        printf "\035%s\036" "$BASH_COMMAND"
+        if declare -F "$head" >&9 2>&9; then
             return 0
         fi
-        printf "%s\036" "$BASH_COMMAND" >> "$PROBE_OUT"
         return 1
     }
-    # WHY true/false/: RUN FOR REAL rather than vetoed like every other
-    # leaf: a vetoed command is always reported to bash as SUCCEEDED
-    # (verified live: `extdebug`s trap-skip has no way to report failure,
-    # whatever the trap itself returns) -- so `false || git commit ...`
-    # never even reached the right side of || for this probe to see it,
-    # a real gap this fix closes. Letting true/false/: run instead of
-    # skipping them is safe FOR THE SAME REASON eval is on the structural
-    # list: `set -T` (functrace) gives every command substitution its own
-    # independent DEBUG-trap pass, so an argument like `: $(git commit -m
-    # x)` still gets its OWN trap firing for the embedded substitution
-    # before true/false/: ever runs -- verified live, the inner leaf fired
-    # on its own and was vetoed even though the outer `:` was allowed
-    # through. No other builtin is added here: `test`/`[`/`[[` share the
-    # same argument-expansion exposure but are already structural (their
-    # own condition-only role), and anything else (echo, printf, cd, …)
-    # can have a real side effect true/false/: never do.
+    readonly -f _guard_probe
+    exec 9>/dev/null
+    set -r
     trap _guard_probe DEBUG
     eval "$COMMAND"
-' 2>&1 >/dev/null)
-# Nothing runs after eval returns, deliberately: any command here would
-# ALSO be a leaf the still-armed trap intercepts (including a bare
-# "trap - DEBUG" itself, which the trap would veto exactly like any other
-# command, so it would never actually take effect and disarm anything) —
-# proven live: this hook's own attempt at a "trap - DEBUG; exit 0" wrap-up
-# logged ITSELF as two bogus leaves instead of running, which on an eval
-# that failed outright was the only thing that made PROBE_OUT non-empty,
-# masking the failure as an ordinary (and wrong) ALLOW. `trap - DEBUG`
-# inside `_guard_probe` above is a different case: bash suspends a trap
-# while its own handler runs, so that call executes normally and is not
-# itself re-intercepted. The script just ends here; the subshell's own
-# exit status is unused, only $PROBE_OUT is read below.
+' 2>&1)
+PROBE_RC=$?
 
-PROBE_TEXT=$(<"$PROBE_OUT") 2>/dev/null
-
-if [ -z "$PROBE_TEXT" ]; then
-    # No leaf dispatched at all: either the command is genuinely inert (all
-    # comment, all whitespace — safe to allow) or `eval` never got past a
-    # syntax error, in which case bash never reached ANY command including
-    # a guarded one — but this probe could not confirm which, so it is
-    # "could not analyze", not "nothing here", and this hook's own direction
-    # on an unresolvable case is a false DENY over a missed invocation.
-    case "$PROBE_ERR" in
-        *"syntax error"*)
-            deny "git write blocked: the commit-guard hook could not parse this command to check it (bash reported a syntax error while analyzing it) and refuses rather than guessing. Fix the command's syntax; if it is not actually invalid, that is a hook defect to report separately." ;;
-    esac
-    allow_default
+if [ "$PROBE_RC" -eq 113 ]; then
+    deny "$REASON_PREFIX this command has too many parts (over 2000) for the commit-guard hook to finish checking it. Split it into smaller Bash calls; a single call this large is refused rather than passed through unchecked."
+fi
+if [ "$PROBE_RC" -eq 114 ]; then
+    deny "$REASON_PREFIX a redirection on a shell builtin that carries no command (\`: > file\`, \`true > file\`, \`[ ... ] > file\`) cannot be checked for a git write. Truncate or create a file with \`cat /dev/null > <path>\`, so the target is a visible operand."
 fi
 
-if [ -s "$PROBE_CAP" ]; then
-    deny "git write blocked: this command has too many parts (over 2000) for the commit-guard hook to finish checking it. Split it into smaller Bash calls; a single call this large is refused rather than passed through unchecked."
+# Leaves are the framed segments; everything outside a frame is bash's own
+# stderr during the walk.
+PROBE_TEXT=$(printf '%s' "$PROBE_RAW" | awk 'BEGIN { RS = "\036"; ORS = "" } { i = index($0, "\035"); if (i > 0) printf "%s\036", substr($0, i + 1) }')
+PROBE_ERR=$(printf '%s' "$PROBE_RAW" | awk 'BEGIN { RS = "\036"; ORS = "" } { i = index($0, "\035"); if (i > 0) printf "%s", substr($0, 1, i - 1); else printf "%s", $0 }')
+
+case "$PROBE_ERR" in
+    *"restricted: cannot redirect output"*)
+        deny "$REASON_PREFIX a redirection on a compound command (\`{ ... } > file\`, \`( ... ) > file\`, a loop or \`if\` followed by \`> file\`, or a function call \`> file\`) hides its target from this check. Redirect each simple command's output on its own." ;;
+    *"readonly function"*)
+        deny "$REASON_PREFIX this command redefines the commit-guard hook's own probe handler (\`_guard_probe\`). No command needs a function by that name; rename it." ;;
+esac
+
+if [ -z "$PROBE_TEXT" ]; then
+    # No leaf dispatched: the command is inert (all comment, all whitespace,
+    # or only structural builtins), unless bash reported something while
+    # walking it, in which case the walk is "could not analyze" and refuses
+    # -- this hook's own direction on an unresolvable case is a false DENY
+    # over a missed invocation.
+    if [ -n "$PROBE_ERR" ]; then
+        deny "$REASON_PREFIX the commit-guard hook could not analyze this command (bash reported: ${PROBE_ERR%%$'\n'*}) and refuses rather than guessing. Simplify the command; if it is valid, that is a hook defect to report separately."
+    fi
+    allow_default
 fi
 
 # --- Widening: where a heredoc's body stops being inert data. ------------
@@ -210,13 +218,13 @@ fi
 # (bash resolves `\`-continuations before setting $BASH_COMMAND, verified
 # live; only a heredoc body or a literal newline inside a quoted argument
 # adds further lines, and neither can move the verb off line one).
-INTERPRETER_RE='(^|[^A-Za-z0-9_])(sh|bash|dash|zsh|ksh|mksh|csh|tcsh|python[0-9.]*|perl|ruby|node|nodejs|php|lua[0-9.]*|tclsh|expect|osascript|env)([^A-Za-z0-9_]|$)'
+INTERPRETER_RE='(^|[^A-Za-z0-9_])(sh|bash|dash|zsh|ksh|mksh|csh|tcsh|python[0-9.]*|perl|ruby|node|nodejs|php|lua[0-9.]*|tclsh|expect|osascript|env|eval)([^A-Za-z0-9_]|$)'
 WIDEN=0
 if [[ "$PROBE_TEXT" =~ $INTERPRETER_RE ]]; then
     WIDEN=1
 fi
 
-SCAN_TEXT=$(awk -v RS='\036' -v widen="$WIDEN" '
+SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v RS='\036' -v widen="$WIDEN" '
     BEGIN { out = "" }
     {
         leaf = $0
@@ -246,7 +254,7 @@ SCAN_TEXT=$(awk -v RS='\036' -v widen="$WIDEN" '
         }
     }
     END { printf "%s", out }
-' "$PROBE_OUT")
+')
 
 # --- Quote-group marking. ------------------------------------------------
 #

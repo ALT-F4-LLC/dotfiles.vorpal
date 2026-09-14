@@ -622,9 +622,9 @@ case_heredoc_position_edges() {
 
 # ---- Circuit breaker: a cap hit is the probe's finding, not the caller's ---
 #
-# The 2000-leaf ceiling reaches the script through a marker the probe writes
-# beside the leaf buffer, never through a token inside it, so caller text
-# cannot counterfeit one. A command that merely quotes the marker is an
+# The 2000-leaf ceiling reaches the script through the probe subshell's own
+# exit code (113), never through a token inside the leaf text, so caller
+# text cannot counterfeit one. A command that merely quotes the marker is an
 # ordinary command; only a command that really enumerates past the ceiling is
 # refused for size, and it must still say so.
 
@@ -643,6 +643,62 @@ case_leaf_cap_is_out_of_band() {
         *"too many parts (over 2000)"*) pass "a real cap hit still explains itself as size" ;;
         *) fail "cap deny reason changed or missing: ${err}" ;;
     esac
+}
+
+# ---- Probe hardening: nothing the probe walks ever runs for real ----------
+#
+# Ported from docket-sibling-guard-hook.sh, where four reproduced shapes
+# showed the unhardened probe this hook used to run executes part of the
+# caller's command for real, or can be silenced entirely, while
+# "analyzing" it. This hook has no scratch dir or worktree to redirect
+# into, so the marker probes are a plain file rather than a sibling path;
+# the property under test is the same: a vetoed or structural leaf never
+# performs a real side effect.
+
+case_probe_never_acts() {
+    local marker="${SANDBOX}/probe-marker" got
+    plant() { printf 'twelve bytes' >"$marker"; }
+    intact() { [ "$(cat "$marker" 2>/dev/null)" = "twelve bytes" ]; }
+    check() { # <label> <want> <command>
+        plant
+        got=$(verdict_of "$(build_input "$3" executor-write)")
+        [ "$got" = "$2" ] && pass "${1} (${2})" || fail "${1} (want ${2}, got ${got})"
+        intact && pass "${1}: marker untouched" || fail "${1}: the probe altered the marker ($(cat "$marker" 2>/dev/null | head -c 40))"
+    }
+    check "structural redirect (: > file)" DENY ": > ${marker}"
+    check "structural redirect (true > file)" DENY "true > ${marker}"
+    check "structural redirect ([ ] > file)" DENY "[ 1 ] > ${marker}"
+    check "compound redirect ({ } > file)" DENY "{ :; } > ${marker}"
+    check "compound redirect (( ) > file)" DENY "( : ) > ${marker}"
+    check "compound redirect (loop > file)" DENY "while :; do break; done > ${marker}"
+    check "compound redirect (function call > file)" DENY "f() { :; }; f > ${marker}"
+    check "vetoed leaf redirect stays inspectable and inert" ALLOW "cat /dev/null > ${marker}"
+    check "handler redefinition" DENY "_guard_probe() { return 0; }; cat /dev/null > ${marker}"
+    check "handler redefinition, function keyword" DENY "function _guard_probe { :; }; cat /dev/null > ${marker}"
+    check "handler redefinition then the guarded verb" DENY "_guard_probe() { return 0; }; docket trust add erik key"
+    check "cap in a structural loop before the verb" DENY 'while [[ $((++i)) -lt 2100 ]]; do :; done; docket trust add erik key'
+    # The issue's own acceptance text ("while true; do :; touch <m>; break;
+    # done" denies with no marker) is wrong for the HARDENED probe: `break`
+    # now RUNS (that is the fix -- the unhardened probe disarmed the trap on
+    # the cap and fell through to allow, not on break), so the loop ends
+    # after one iteration, `touch` is vetoed same as any other leaf, no
+    # guarded verb ever appears, and the correct verdict is ALLOW with the
+    # marker absent -- not a cap hit at all, since the loop only ran once.
+    rm -f "$marker"
+    got=$(verdict_of "$(build_input "while true; do :; touch ${marker}; break; done" executor-write)")
+    [ "$got" = "ALLOW" ] && pass "break runs and ends the loop: harmless command allows (ALLOW)" \
+        || fail "break runs and ends the loop (want ALLOW, got ${got})"
+    [ -e "$marker" ] && fail "break variant: touch ran for real (marker exists)" \
+        || pass "break variant: touch never ran (no guarded verb, cap never reached)"
+    # The DENY shape is the sibling suite's actual one: no break, so the
+    # loop is genuinely unbounded and only the 2000-leaf cap ends it.
+    rm -f "$marker"
+    got=$(verdict_of "$(build_input "while true; do touch ${marker}; done" executor-write)")
+    [ "$got" = "DENY" ] && pass "unbounded loop with no break hits the cap (DENY)" \
+        || fail "unbounded loop with no break (want DENY, got ${got})"
+    [ -e "$marker" ] && fail "unbounded loop: touch ran for real before the cap (marker exists)" \
+        || pass "unbounded loop: touch never ran for real"
+    rm -f "$marker"
 }
 
 # ---- One long line of quoted groups ---------------------------------------
@@ -769,6 +825,7 @@ case_heredoc_body_destination
 case_comment_regions_are_inert
 case_heredoc_position_edges
 case_leaf_cap_is_out_of_band
+case_probe_never_acts
 case_many_quoted_groups_on_one_line
 case_missing_prepass_file_denies
 case_prepass_copies_identical

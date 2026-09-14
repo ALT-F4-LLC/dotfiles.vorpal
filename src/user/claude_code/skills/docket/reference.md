@@ -13,9 +13,9 @@ actual response before parsing it. A nearby source checkout is not proof of an
 installed binary's behavior unless their commits match.
 
 [references/cli-inventory.json](references/cli-inventory.json) records command
-paths, aliases, usage, and local/inherited flags. Refreshed **2026-09-05 UTC**
-against `nightly-47-gc6e34ba` (commit `c6e34ba`, built `2026-09-05T00:54:30Z`);
-covers 148 public commands. From this skill directory,
+paths, aliases, usage, and local/inherited flags. Refreshed **2026-09-14 UTC**
+against `nightly-112-gcffd10c` (commit `cffd10c`, built `2026-09-14T21:28:29Z`);
+covers 151 public commands. From this skill directory,
 `python3 scripts/cli_inventory.py --check` checks the inventory; `--write`
 refreshes it after a CLI upgrade. The helper invokes only `--help` and
 `--version` and does not read or mutate a Docket store. It detects command/flag

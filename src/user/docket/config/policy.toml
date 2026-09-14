@@ -1,5 +1,16 @@
 [policy]
-version = 31  # 31: comment-only concision rewrite; no routing value changed.
+version = 32  # 32: judge-testing moves opus-low -> sonnet-low as the corpus's
+              # one second-family review seat, a retro-measured experiment in
+              # panel decorrelation rather than a tuning. Every other judge-*
+              # and tribunal-* seat but tribunal-design stands on Opus, so a
+              # panel's seats differed by lens and effort but never by model
+              # family, and the match-rate statistics the workflow changelogs
+              # cite ("the seat matched the panel N of N") say nothing when
+              # the seats share a model. The row comment names the metric that
+              # judges the move (sole-finder clusters, never match rates) and
+              # docket-retro's evidence table reads it. No other routing value
+              # changed; [security] never/ceiling/labels/nodes are byte-identical.
+              # 31: comment-only concision rewrite; no routing value changed.
               # 30: comment-only, no routing value changed. Engine commit
               # ffd117a (docket nightly-101) exempts fable-standing
               # rows from the post-walk fable gate, so fable-low's retry now
@@ -70,8 +81,9 @@ version = 31  # 31: comment-only concision rewrite; no routing value changed.
 
 [variants]
 # Policy 29 adds the three `low` variants. opus-low escalates to opus-high,
-# the tier every opus row left except judge-testing and judge-architecture
-# (left opus-medium; retry lands above it). fable-low escalates to
+# the tier every opus row left except judge-architecture (left opus-medium;
+# retry lands above it); judge-testing left opus-low for sonnet-low in policy
+# 32 and walks within Sonnet. fable-low escalates to
 # fable-medium and stays on Fable for every fable-standing row: since engine
 # commit ffd117a (policy 30) the post-walk fable gate exempts rows already
 # standing on fable, so the redirect to [escalation.fallback] applies only to
@@ -251,13 +263,38 @@ judge-design = { variant = "opus-low" }
 # Retro: findings per review against 1.9; security-vote rejects.
 judge-security = { variant = "opus-low", never = ["fable"], reason = "security-classifier-reroute" }
 judge-simplicity = { variant = "opus-medium" }
-# opus-low (policy 29), from opus-medium, for wall-clock. judge-testing is the
-# slowest seat of 49% of three-judge fanouts; 204 completions at opus-medium
-# ran a median 7.5 min with 1.91 findings per review (0.90 high-severity);
-# nothing measures low on a silent seat. A retry lands on opus-high through
-# opus-low's escalate_to, above today's medium.
-# Retro: fanout median against 7.5 min; findings against 1.91.
-judge-testing = { variant = "opus-low" }
+# sonnet-low (policy 32), from opus-low, as the corpus's one second-family
+# review seat: a retro-measured experiment in panel decorrelation, not a
+# tuning. Every other judge-* and tribunal-* seat but tribunal-design stands
+# on Opus, so a panel's seats differ by lens and effort, never by model
+# family, and seats that share a model share its blind spots: "seat X matched
+# the panel N of N" then measures conformity, not independent detection, and
+# is not evidence for or against any seat. This seat was chosen because it
+# carries the most sole-finder highs of any review seat (clusters no other
+# seat raised: 154 high / 3 blocker across 187 reconciled standard-change
+# rounds, 128 / 0 across 107 ui-change rounds, 103 / 7 across 98
+# security-change rounds), so a family change here is the most measurable.
+# Sonnet rather than Fable: on a security-labelled row [security].never
+# forbids Fable for every seat and the fallback would put this seat back on
+# Opus, and Fable's broader safety classifiers re-run flagged requests on
+# another model with nothing in the step record catching the hop; Sonnet has
+# neither, so the panel mixes families on every track. sonnet-low rather than
+# sonnet-medium: the same effort tier as the row it replaces, and its retry
+# lands on sonnet-medium, still in family, where sonnet-medium's retry would
+# switch to opus-medium on exactly the reap re-runs that dominate high-tier
+# samples. Taken against D2, which places Sonnet 5 at low on chat and
+# non-coding use; a fall in this seat's yield cannot on its own be told apart
+# from that tier placement. At opus-medium this seat ran 204 completions at a
+# median 7.5 min with 1.91 findings per review (0.90 high-severity); it was
+# the slowest seat of 49% of three-judge fanouts.
+# Retro: sole-finder clusters per reconciled round, read from the synthesize
+# step's findings-cluster member_sources traced to this seat's review step,
+# against 0.82 high per round on standard-change, 1.20 on ui-change, 1.05 on
+# security-change; findings per review against 1.91; fanout median against
+# 7.5 min. Never by how often its findings matched the Opus seats'. Partition
+# by the step row's model_requested so a reap re-run that walked onto Opus is
+# read apart.
+judge-testing = { variant = "sonnet-low" }
 # fable-low (policy 29), from fable-medium, for wall-clock. Never run (6
 # steps skipped); D4's knowledge-work class and D5's "at low ... often
 # competitive" are the only ground. A retry walks to fable-medium and stays

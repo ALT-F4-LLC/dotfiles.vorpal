@@ -86,6 +86,7 @@ readonly MIN_CASES=10
 ENFORCING=(
   docket-commit-guard-hook.sh
   docket-run-guard-hook.sh
+  docket-sibling-guard-hook.sh
   docket-spawn-guard-hook.sh
   docket-trust-guard-hook.sh
   sandbox-bypass-guard-hook.sh

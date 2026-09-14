@@ -355,6 +355,12 @@ impl ClaudeCode {
                 Some("Bash"),
                 "bash ~/.claude/hooks/sandbox-bypass-guard-hook.sh",
                 "command",
+            )
+            .with_hook(
+                "PreToolUse",
+                Some("Bash"),
+                "bash ~/.claude/hooks/docket-sibling-guard-hook.sh",
+                "command",
             );
 
         let settings_builder = settings_builder.with_auto_mode(settings::AutoMode {

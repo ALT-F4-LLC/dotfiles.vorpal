@@ -119,14 +119,19 @@ umask 077; mkdir -p <scratchpad>/conductor.d
 docket run activate $RUN --reason "approved by <proposal-id>" --json=v2 \
   > <scratchpad>/conductor.d/$RUN.activate.json
 jq -r '.data.conductor_token // empty' <scratchpad>/conductor.d/$RUN.activate.json \
-  > <scratchpad>/conductor.d/$RUN.token
+  > <scratchpad>/conductor.d/$RUN.token.new
+[ -s <scratchpad>/conductor.d/$RUN.token.new ] \
+  && mv <scratchpad>/conductor.d/$RUN.token.new <scratchpad>/conductor.d/$RUN.token \
+  || rm -f <scratchpad>/conductor.d/$RUN.token.new
 jq 'del(.data.conductor_token)' <scratchpad>/conductor.d/$RUN.activate.json
 rm <scratchpad>/conductor.d/$RUN.activate.json
 ```
 
 Always `--json=v2` here: human mode prints the token on stdout, straight
-into the tool result. A re-activation mints nothing and leaves the file
-as it was.
+into the tool result. The token lands through a `.new` file that is moved
+into place only when non-empty, so an answer carrying no token (a
+re-activation, which mints nothing, or a refusal) leaves the file you hold
+as it was instead of blanking it.
 
 **Take the seat when you did not activate.** Attaching to an `active` or
 `waiting-human` run this session did not activate, resuming from a resume
@@ -138,7 +143,10 @@ token under `.data.token`:
 umask 077; mkdir -p <scratchpad>/conductor.d
 docket run conduct $RUN --json=v2 > <scratchpad>/conductor.d/$RUN.conduct.json
 jq -r '.data.token // empty' <scratchpad>/conductor.d/$RUN.conduct.json \
-  > <scratchpad>/conductor.d/$RUN.token
+  > <scratchpad>/conductor.d/$RUN.token.new
+[ -s <scratchpad>/conductor.d/$RUN.token.new ] \
+  && mv <scratchpad>/conductor.d/$RUN.token.new <scratchpad>/conductor.d/$RUN.token \
+  || rm -f <scratchpad>/conductor.d/$RUN.token.new
 jq 'del(.data.token)' <scratchpad>/conductor.d/$RUN.conduct.json
 rm <scratchpad>/conductor.d/$RUN.conduct.json
 ```

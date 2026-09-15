@@ -1,3 +1,13 @@
+export const meta = {
+    name: 'session-census',
+    description: 'Internal: launched through scriptPath by the shadow skill; measures deliberation and course-correction cost across Claude Code transcripts, main and subagent separately. Read-only. Args and cost in the header comment.',
+    whenToUse: 'Never by name. Run before and after a harness change and diff the two returns; the caller picks the window because a 7-day fleet sweep is hundreds of transcripts.',
+    phases: [
+        { title: 'Scout', detail: 'one agent finds the transcripts newer than the cutoff' },
+        { title: 'Extract', detail: 'one low-effort agent per transcript runs the fixed jq, plus one retry for any transcript that came back empty or incomplete' },
+    ],
+}
+
 // ---------------------------------------------------------------------------
 // CONTRACT FOR CALLERS (the listing's description is deliberately one line;
 // this block is the single copy of what it used to carry).
@@ -17,15 +27,6 @@
 // extract came back empty or with missing count fields; a 7-day fleet window
 // is hundreds of files, so the conductor picks the window.
 // ---------------------------------------------------------------------------
-export const meta = {
-    name: 'session-census',
-    description: 'Internal: launched through scriptPath by the shadow skill; measures deliberation and course-correction cost across Claude Code transcripts, main and subagent separately. Read-only. Args and cost in the header comment.',
-    whenToUse: 'Never by name. Run before and after a harness change and diff the two returns; the caller picks the window because a 7-day fleet sweep is hundreds of transcripts.',
-    phases: [
-        { title: 'Scout', detail: 'one agent finds the transcripts newer than the cutoff' },
-        { title: 'Extract', detail: 'one low-effort agent per transcript runs the fixed jq, plus one retry for any transcript that came back empty or incomplete' },
-    ],
-}
 
 // TEST-BEGIN session-census-config — include before either pure test region.
 // scout/extract only relay a fixed shell command's output through a schema

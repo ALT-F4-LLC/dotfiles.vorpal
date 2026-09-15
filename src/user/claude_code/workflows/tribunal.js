@@ -1,3 +1,13 @@
+export const meta = {
+    name: 'tribunal',
+    description: 'Internal: launched through scriptPath by docket-run (conversational gates) and by wave.js mid-wave; seats a judge panel that casts real `docket vote cast` votes on one gated proposal. Args and probe cost in the header comment.',
+    whenToUse: 'Never by name. The caller creates the proposal, passes its id, and passes every voter with its {model, effort, variant}; this script only fills an open one.',
+    phases: [
+        { title: 'Judge', detail: 'one seat per voter, each casting docket vote cast' },
+        { title: 'Verify', detail: 'one haiku probe of the vote record (two when the first returns nothing), plus one more after any re-seat (conversational mode only)', model: 'haiku' },
+    ],
+}
+
 // ---------------------------------------------------------------------------
 // CONTRACT FOR CALLERS (the listing's description is deliberately one line;
 // this block is the single copy of what it used to carry).
@@ -36,15 +46,6 @@
 // proposal, passes its id, and passes every voter WITH its {model, effort,
 // variant}; tribunal.js only fills an open one.
 // ---------------------------------------------------------------------------
-export const meta = {
-    name: 'tribunal',
-    description: 'Internal: launched through scriptPath by docket-run (conversational gates) and by wave.js mid-wave; seats a judge panel that casts real `docket vote cast` votes on one gated proposal. Args and probe cost in the header comment.',
-    whenToUse: 'Never by name. The caller creates the proposal, passes its id, and passes every voter with its {model, effort, variant}; this script only fills an open one.',
-    phases: [
-        { title: 'Judge', detail: 'one seat per voter, each casting docket vote cast' },
-        { title: 'Verify', detail: 'one haiku probe of the vote record (two when the first returns nothing), plus one more after any re-seat (conversational mode only)', model: 'haiku' },
-    ],
-}
 
 // Verifier settings are local; judges keep caller routing from pinned policy.
 const AGENT_CONFIG = {

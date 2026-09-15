@@ -1,3 +1,13 @@
+export const meta = {
+    name: 'sandbox-friction',
+    description: 'Internal: launched through scriptPath by the sandbox-friction skill; groups the sandbox friction ledger by denied path, host, or classifier reason and optionally files one dotfiles issue per group. Args in the header comment.',
+    whenToUse: 'Never by name. Read-only unless `file` is true; the ledger comes from sandbox-friction-hook.sh.',
+    phases: [
+        { title: 'Group', detail: 'one agent ranks the ledger by denied subject' },
+        { title: 'File', detail: 'one agent per group files a sandbox issue from the dotfiles checkout, plus one retry for any filing agent that returned nothing' },
+    ],
+}
+
 // ---------------------------------------------------------------------------
 // CONTRACT FOR CALLERS (the listing's description is deliberately one line;
 // this block is the single copy of what it used to carry).
@@ -14,15 +24,6 @@
 // classifier denial from any session in any project; this reads that ledger.
 // Read-only unless file is true.
 // ---------------------------------------------------------------------------
-export const meta = {
-    name: 'sandbox-friction',
-    description: 'Internal: launched through scriptPath by the sandbox-friction skill; groups the sandbox friction ledger by denied path, host, or classifier reason and optionally files one dotfiles issue per group. Args in the header comment.',
-    whenToUse: 'Never by name. Read-only unless `file` is true; the ledger comes from sandbox-friction-hook.sh.',
-    phases: [
-        { title: 'Group', detail: 'one agent ranks the ledger by denied subject' },
-        { title: 'File', detail: 'one agent per group files a sandbox issue from the dotfiles checkout, plus one retry for any filing agent that returned nothing' },
-    ],
-}
 
 // group relays a fixed jq program's output through a schema (no judgment
 // involved), so a cheap model is pinned rather than inherited — the same

@@ -1,3 +1,13 @@
+export const meta = {
+    name: 'wave-usage',
+    description: 'Internal: launched through scriptPath by docket-run when a wave returns; measures a completed wave\'s token spend from its agent transcripts and emits the back-fill rows for `docket dispatch backfill-usage` or `docket vote backfill-usage`. Args and probe cost in the header comment.',
+    whenToUse: 'Never by name. Launched beside the dispatch close, and by the pause and resume paths for a wave never back-filled.',
+    phases: [
+        { title: 'Scout', detail: 'one agent lists the agent transcripts' },
+        { title: 'Extract', detail: 'one low-effort agent per transcript runs the fixed jq' },
+    ],
+}
+
 // ---------------------------------------------------------------------------
 // CONTRACT FOR CALLERS (the listing's description is deliberately one line;
 // this block is the single copy of what it used to carry).
@@ -35,15 +45,6 @@
 // them, and the log says so). The script cannot read files itself; its agents
 // run one fixed jq program per transcript and the reduction happens here.
 // ---------------------------------------------------------------------------
-export const meta = {
-    name: 'wave-usage',
-    description: 'Internal: launched through scriptPath by docket-run when a wave returns; measures a completed wave\'s token spend from its agent transcripts and emits the back-fill rows for `docket dispatch backfill-usage` or `docket vote backfill-usage`. Args and probe cost in the header comment.',
-    whenToUse: 'Never by name. Launched beside the dispatch close, and by the pause and resume paths for a wave never back-filled.',
-    phases: [
-        { title: 'Scout', detail: 'one agent lists the agent transcripts' },
-        { title: 'Extract', detail: 'one low-effort agent per transcript runs the fixed jq' },
-    ],
-}
 
 // scout/extract/recheck only relay a fixed command's output through a schema
 // (no judgment involved), so a cheap model is pinned rather than inherited —

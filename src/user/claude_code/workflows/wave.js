@@ -1,3 +1,9 @@
+export const meta = {
+    name: 'wave',
+    description: 'Internal: launched through scriptPath by docket-run, once per shard, to run one dispatched manifest end to end (executors, vote panels, staged issue lanes). Per vote row it spends 3 read-only haiku probes of `docket gate status` on the normal path, 1 on a gate that was already decided, and 4 when a re-seat is needed. Budget, shard, lane and reply-tail contract in the header comment.',
+    whenToUse: 'Never by name. Args are {rows, tribunal, cwd, shard?, integrated?} with the `next` rows verbatim; the full argument contract is in the header comment.',
+}
+
 // ---------------------------------------------------------------------------
 // CONTRACT FOR CALLERS (the listing's description is deliberately one line;
 // this block is the single copy of what it used to carry).
@@ -58,11 +64,6 @@
 // INTEGRATION commit — so the wave can assert base ancestry before seating the
 // fanout. There is no policy argument of any kind and no file access.
 // ---------------------------------------------------------------------------
-export const meta = {
-    name: 'wave',
-    description: 'Internal: launched through scriptPath by docket-run, once per shard, to run one dispatched manifest end to end (executors, vote panels, staged issue lanes). Per vote row it spends 3 read-only haiku probes of `docket gate status` on the normal path, 1 on a gate that was already decided, and 4 when a re-seat is needed. Budget, shard, lane and reply-tail contract in the header comment.',
-    whenToUse: 'Never by name. Args are {rows, tribunal, cwd, shard?, integrated?} with the `next` rows verbatim; the full argument contract is in the header comment.',
-}
 
 // TEST-BEGIN configuration — shared by the extracted behavior suites.
 // Only helper probes use these defaults. Executors and panel seats retain

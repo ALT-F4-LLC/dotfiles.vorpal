@@ -1,6 +1,6 @@
 ---
 fragment: code-philosophy
-version: 10
+version: 11
 ---
 # Code philosophy
 
@@ -45,11 +45,15 @@ task's scope.
    logging to one responsible boundary. Broken invariants fail visibly at the
    appropriate isolation boundary, without continuing in invalid state. Never
    turn an unhandled failure into apparent success.
-7. **Write code that needs no comments.** Do not add explanatory comments,
-   docstrings, or section banners. Express intent through precise names,
-   useful types, and direct control flow. Simplify unclear code before
-   explaining it; do not add helpers or layers merely to avoid a comment. Put
-   necessary rationale in the change summary. Preserve required tooling
+7. **Write code that explains itself; comment only what it cannot.** Express
+   intent through precise names, useful types, and direct control flow, and
+   simplify unclear code before explaining it; do not add helpers or layers
+   merely to avoid a comment. A comment or docstring is warranted only for
+   intent, a constraint, an invariant, or behavior a reader cannot infer from
+   the code, and it describes current behavior, never edit history. Never add
+   section banners, compliance notes, or restatements of what the code
+   already says. Put rationale that belongs to the change, not the code, in
+   the change summary. Preserve required tooling
    directives and repository-required notices.
 8. **Tests pin behavior through the seam.** Tests should survive refactoring
    that preserves the contract. Arrange only what the behavior depends on, and

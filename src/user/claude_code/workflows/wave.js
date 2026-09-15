@@ -352,9 +352,10 @@ ${claimCommands(true).map((c) => `   \`${c}\``).join('\n')}
 2. Execute the brief you were handed. It is your entire contract.${isWrite ? `
    Ship the issue's declared change list and NOTHING beyond it: unrequested
    hardening, extra controls, and adjacent cleanups go into gap files
-   (obligation 3), never into the diff — reviewers reject what nobody asked
-   for. The one exception: a defect you find that is actively exploitable is
-   REPORTED in your return immediately, not merely gap-filed.` : ''}
+   (obligation 3), never into the diff — verify-ac reports every undeclared
+   change as an out-of-scope entry that sends the issue to a vote instead of
+   integrating it. The one exception: a defect you find that is actively
+   exploitable is REPORTED in your return immediately, not merely gap-filed.` : ''}
 ${!isWrite ? `
 2r. THE CHECKOUT YOU STAND IN MAY PREDATE THE CHANGE YOUR BRIEF DESCRIBES.
    Write-class siblings work in PRIVATE worktrees and hand work back as a

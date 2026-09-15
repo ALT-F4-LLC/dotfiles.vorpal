@@ -1,6 +1,6 @@
 ---
 node: verify-ac
-version: 15
+version: 16
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -174,10 +174,16 @@ Report each overrun separately: affected paths or hunks, the boundary
 crossed, evidence and attribution limits, and whether the change summary
 disclosed it as deliberate or omitted it. Disclosure is not authorization.
 Record a later amendment without concealing an established earlier crossing.
-Gap overruns that need an authorized disposition or additional review,
-stating the reason. Do not change unrelated AC statuses because of an
-overrun; if an AC itself restricts the change scope, evaluate that criterion
-normally against the same evidence.
+An established overrun is a status, not a gap: emit one synthetic payload
+entry per overrun, id `SCOPE-<n>`, status `unmet-out-of-scope`, evidence
+naming the paths or hunks and the declaration they fall outside. That status
+is what routes the verify vote (`any(status != met)`), so the panel accepts
+the overrun or rejects it into a fix round; a gap alone routes nothing and
+the change would integrate with the overrun filed afterward. Gap only an
+overrun the comparison could not establish (missing declaration or candidate
+evidence), stating what is missing. Do not change unrelated AC statuses
+because of an overrun; if an AC itself restricts the change scope, evaluate
+that criterion normally against the same evidence.
 
 # Emit
 `ac-report`: a markdown body and the `ac-report` payload using the supplied
@@ -195,9 +201,12 @@ schema, which has no `unmet-out-of-scope` value: there, report such an AC as
   or authority, and the smallest next action for the responsible owner or role.
 
 The payload contains exactly one entry per inventoried AC, preserving its ID
-and a status in `met|unmet|unmet-out-of-scope|unverifiable`. Keep body and
-payload consistent; do not add statuses for classifications, blockers, or
-gaps. Use the brief's gap and artifact protocol without inventing fields or
+and a status in `met|unmet|unmet-out-of-scope|unverifiable`, plus one
+`SCOPE-<n>` entry per established scope overrun at `unmet-out-of-scope` (the
+scope reconciliation above); the schema's `id` field admits that synthetic
+id, and the body's scope section is where a reader learns what it names.
+Keep body and payload consistent; do not add statuses for classifications,
+blockers, or gaps. Use the brief's gap and artifact protocol without inventing fields or
 filing external issues yourself. Routing is computed from the payload and
 gate results; draw no overall verdict and never relabel a result to force a
 route.

@@ -287,19 +287,26 @@ Record these findings alongside the value decision:
   exactly one of `route-run`, `route-direct`, `route-tend`, `route-loop`,
   the family [brief](../brief/SKILL.md)'s route rules define and
   docket-plan, tend, brief, and every workflow's `unless_labels` read.
-  Apply it as a safe edit when the criteria clearly hold, from the issue's
-  body, files, scope, and labels: `route-run` when the work is
-  security-sensitive or its boundary is unknown, when its size is bounded
-  or needs design, or when it needs the review evidence a run produces;
-  `route-tend` when it is one-shot, non-security, fits one working turn,
-  and leaves no decision open, so a worker finishes it without a question;
-  `route-direct` when it is that small but leaves a decision or a judgment
-  to the operator; `route-loop` when the ask is explicitly recurring and
-  the body states the per-pass action, cadence, and stop policy with a
-  trivial pass. Correct a label the issue has outgrown the way a stale size
-  label is corrected. When no rule clearly holds, apply nothing and list the
-  issue in the report as unrouted with what would settle it, since bare
-  `docket-plan` excludes unrouted issues. Epics carry no routing label.
+  Judge it from the issue's body, files, scope, and labels: `route-run`
+  when the work is security-sensitive or its boundary is unknown, when its
+  size is bounded or needs design, or when it needs the review evidence a
+  run produces; `route-tend` when it is one-shot, non-security, fits one
+  working turn, and leaves no decision open, so a worker finishes it
+  without a question; `route-direct` when it is that small but leaves a
+  decision or a judgment to the operator; `route-loop` when the ask is
+  explicitly recurring and the body states the per-pass action, cadence,
+  and stop policy with a trivial pass. `route-run` and `route-direct` apply
+  as safe edits when the criteria clearly hold: the first only makes the
+  issue a plan candidate behind docket-plan's own confirmation round, and
+  the second sends it to the operator's own session. `route-tend` and
+  `route-loop` are approval-gated: either label alone admits the issue to
+  an autonomous worker or a scheduled loop that commits with no further
+  operator turn, so propose them through §4b with the criteria evidence
+  and apply them only on approval. Correct a label the issue has outgrown
+  the way a stale size label is corrected, under the same split. When no
+  rule clearly holds, apply nothing and list the issue in the report as
+  unrouted with what would settle it, since bare `docket-plan` excludes
+  unrouted issues. Epics carry no routing label.
 - **Ungrouped:** a retained non-epic issue with no parent, or whose parent
   is not the epic its outcome serves. Match the issue to an open epic in its
   owning project by shared outcome, using the same one-sentence-defense test
@@ -414,7 +421,8 @@ adds information; reuse existing findings instead of repeating them.
 Non-destructive edits land directly, no questions asked: labels (e.g.
 `stale` on §2's stale findings, or removing a §2 stale-binding label once
 its workflow-narrowing effect is confirmed), priority, comments, and field
-fills. On run-included or claimed issues, only comments and labels with
+fills. Two labels are the exception: `route-tend` and `route-loop` admit
+the issue to autonomous work, so they go through §4b. On run-included or claimed issues, only comments and labels with
 confirmed unchanged workflow eligibility apply directly; other edits route
 to §4. Use existing label conventions and do not add a value label whose
 workflow effect is unknown. Ledger decisions are not Docket statuses or
@@ -547,8 +555,9 @@ these blockers remain, report an incomplete pass under §5 and stop.
 Closures and merges never apply without the operator's say-so. Batch the
 proposals from §2: value-based closures, duplicate merges, rescopes,
 repairs to acceptance criteria, relation corrections, epic creations,
-re-parents, confirmed workflow holds, and edits §1 rerouted here. Each
-proposal must contain:
+re-parents, confirmed workflow holds, `route-tend` and `route-loop`
+labels (each admits the issue to autonomous work), and edits §1 rerouted
+here. Each proposal must contain:
 
 - A stable number, kind, and every issue ID with its owning project.
 - A one-sentence defense tied to the surveyed evidence.

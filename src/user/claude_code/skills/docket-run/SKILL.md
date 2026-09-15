@@ -49,7 +49,9 @@ operator the same read a permission prompt here would stall on.
 **Cadence.** Report at activation, at each dispatch open (steps handed to
 the wave), at each dispatch close (how each step ended, ids filed), at
 each gate outcome (tally and every verdict, per **Gates**), and once at
-done. All other iterations are silent.
+done. All other iterations are silent. Ending a turn means replying
+with no tool call: a `true` or `sleep` call is a tool call and keeps the
+turn open.
 
 **A gate that parks one issue does not stop the run or you.** A park
 holds its issue (engine R2b); the run stays `active` and `next` keeps
@@ -571,7 +573,7 @@ tool call with another:**
 
    ```bash
    docket vote backfill-usage <proposal-id> --source "tribunal:<wfId>" \
-     --from-json - < "$TMPDIR/panel.json"   # `rows` from the return, written verbatim
+     --from-json - < "$TMPDIR/panel.json"   # the return's `rows` ARRAY, not the whole envelope
    ```
 
    Never run `run activate` in the same call as reading the tally.
@@ -666,9 +668,13 @@ docket next --run $RUN --json=v2 | jq '{
   refusal: .error }'
 ```
 
-`shards` is the number of wave launches step 2 makes: one per issue lane
-up to wave.js's `SHARD_CAP` of four. Pass it through as `of`; wave.js
-computes the partition.
+`shards` is an UPPER bound on the wave launches step 2 makes: one per
+issue lane up to wave.js's `SHARD_CAP` of four. The number you launch is
+the lane-unit count from step 2's **Count the lane units**, because
+wave.js welds every writer lane the engine never co-staged into one unit
+and an idle shard still costs a full manifest relay (one 192-row manifest
+cost 29,758 output tokens per launch, and this bound would have paid it
+three more times for shards wave.js reported idle).
 
 Pass no `--limit` on the `--run` form, and read v2: only v2 carries the
 pre-cut `total` and an explicit `truncated`. `writers` is the wave-length
@@ -744,7 +750,13 @@ won't match): run `dispatch verify`, `dispatch abandon` naming the size
 constraint in `--reason`, then reopen smaller. To inspect an oversized
 answer safely, pipe `jq -c '.data.rows[]' > rows.jsonl` and page it with
 `Read`'s `offset`/`limit`, never reconstructing rows by hand for the
-`Workflow` call.
+`Workflow` call. The same paging is how the rows reach the launch at all:
+`Read` truncates a single-line file near 25K tokens (a 192-row manifest is
+70 KB), so write the kept rows one per line with `jq -c '.[]'`, `Read`
+that file in pages of at most 96 lines until every row is in context,
+then emit the whole array as the literal `rows` value, once per shard.
+Never emit from a truncated view, and never spend turns probing byte
+offsets or splitting the file: the paged read is the only path.
 
 **No policy crosses a launch.** Every row carries `model`, `effort`,
 `variant` resolved by the engine from pinned policy.toml. Never `cat`,
@@ -783,7 +795,7 @@ Workflow({ scriptPath: "<absolute installed path to wave.js>", args: {rows, trib
 …one launch per index, 0 through N-1, all in this same turn
 ```
 
-**A dispatch is N wave launches, N being step 1's `shards`**, since the
+**A dispatch is N wave launches, N being the lane-unit count above**, since the
 Workflow tool bounds one invocation at 16 concurrent agents and 1000
 lifetime and a nested workflow shares both with its parent. Every launch
 gets the same `rows` verbatim and a `shard: {index, of}` differing only in
@@ -851,6 +863,43 @@ manifest carries the staged closure: `staged` rows become claimable when
 their stage arrives, per the wave's own scheduling. A `kind: "human"` row
 passed through is the one mistake the wave still refuses.
 
+**Count the lane units before you launch.** From the kept rows (the file
+you wrote after the kind filter), reproduce wave.js's partition: writer
+lanes (`class == "write"`, or `executor == "write"` when `class` is
+absent) that never share a manifest `stage` are welded into one unit;
+every other lane is a unit of its own; N is the unit count capped at
+four. Launch N shards, never step 1's bound:
+
+```bash
+python3 - "$ROWS_FILE" <<'PY'
+import json, sys
+rows = json.load(open(sys.argv[1]))
+stage = lambda r: r["stage"] if isinstance(r.get("stage"), int) else 0
+cls = lambda r: r["class"] if isinstance(r.get("class"), str) and r["class"] else (r.get("executor") or "")
+lane = lambda r: str(r["issue"]) if r.get("issue") else "row:" + r["step"]
+writer = lambda r: r.get("kind") not in ("action", "vote") and cls(r) == "write"
+by_stage = {}
+for r in rows:
+    if writer(r) and r.get("issue"):
+        by_stage.setdefault(stage(r), set()).add(lane(r))
+certified = {frozenset((a, b)) for lanes in by_stage.values() for a in lanes for b in lanes if a != b}
+parent = {}
+def find(x):
+    parent.setdefault(x, x)
+    while parent[x] != x:
+        parent[x] = parent[parent[x]]
+        x = parent[x]
+    return x
+writers = sorted({lane(r) for r in rows if writer(r) and r.get("issue")})
+for i, a in enumerate(writers):
+    for b in writers[i + 1:]:
+        if frozenset((a, b)) not in certified:
+            parent[find(b)] = find(a)
+units = {("unit:" + find(l)) if l in parent else ("lane:" + l) for l in {lane(r) for r in rows}}
+print(max(1, min(4, len(units))))
+PY
+```
+
 You carry no policy for a wave dispatch: never read, check, or interpret
 policy.toml. Pass rows through unchanged beyond the kind filter, with no
 reordering, dropping, or adding, since the manifest is hashed, and never
@@ -888,7 +937,11 @@ the join). A reap the open itself performed rides on that open's own
 wave's return as rows, not a verdict: `not-launched-run-parked`,
 `not-launched-writer-budget`, `not-launched-agent-budget`, and
 `skipped-chain-dead` are all re-offered next dispatch; `not-launched-
-other-shard` belongs to a sibling launch's own notification. Read a
+other-shard` belongs to a sibling launch's own notification.
+`bootstrap-denied` is re-offered too, but never re-dispatch on it: the
+row's text quotes a guard or permission denial of the executor's own
+scratch dir, worktree or checkout, nothing was claimed, and the same
+dispatch dies the same way until that gap is fixed. Read a
 sharded dispatch's outcome as the union of its shards' returns.
 
 **A wave's early steps do not refuse the close just for running past the
@@ -1030,7 +1083,9 @@ Workflow({ scriptPath: "<absolute installed path to wave-usage.js>",
 ```
 
 ```bash
-# `rows` landed on disk with the Write tool, copied byte for byte from the return.
+# The return's `rows` ARRAY landed on disk with the Write tool, each row exactly as
+# returned. The verb reads a bare array of {voter, unit, quantity} (extra keys such as
+# `proposal` are ignored); the whole {rows, overhead, skipped} envelope is refused.
 docket vote backfill-usage <proposal-id> --source "tribunal:<wfId>" \
   --from-json - < "$TMPDIR/panel.json"
 ```
@@ -1456,11 +1511,26 @@ conversational gate has no row, so each `voters` entry carries its own
 a choice:
 
 ```bash
-python3 - <<'PY'
-import json, os, tomllib
-p = tomllib.load(open(os.path.expanduser("~/.docket/config/policy.toml"), "rb"))
-seats = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
-print(json.dumps([{"seat": s, "variant": p["executors"][s]["variant"], **p["variants"][p["executors"][s]["variant"]]} for s in seats]))
+python3 - tribunal-architecture,tribunal-security,tribunal-correctness <<'PY'
+import json, os, re, sys
+# No tomllib before Python 3.11 (the operator's python3 has been 3.9): read the
+# two inline tables directly. [executors] rows are `seat = { variant = "..." }`,
+# [variants] rows are `name = { model = "...", effort = "...", ... }`.
+txt = open(os.path.expanduser("~/.docket/config/policy.toml")).read()
+def table(name):
+    m = re.search(r"^\[" + re.escape(name) + r"\][^\n]*\n(.*?)(?=^\[|\Z)", txt, re.S | re.M)
+    return m.group(1) if m else ""
+def inline(tbl, key):
+    m = re.search(r"^" + re.escape(key) + r"\s*=\s*\{([^}]*)\}", tbl, re.M)
+    return dict(re.findall(r"([A-Za-z_]+)\s*=\s*\"([^\"]*)\"", m.group(1))) if m else {}
+executors, variants = table("executors"), table("variants")
+out = []
+for seat in sys.argv[1].split(","):
+    variant = inline(executors, seat).get("variant")
+    v = inline(variants, variant) if variant else {}
+    out.append({"seat": seat, "model": v.get("model"), "effort": v.get("effort"), "variant": variant})
+assert all(all(o.values()) for o in out), out   # a null field means the seat or variant is not in the file
+print(json.dumps(out))
 PY
 ```
 
@@ -1953,6 +2023,18 @@ and let them decide. For a deliberate mid-progress halt, use
 `~/.claude/skills/pause/SKILL.md` rather than a bare `docket run pause`,
 which captures none of this session's own state (in-flight wave ids,
 un-integrated shas, Workflow args for a resume, budget-raise usage).
+
+**An operator stop while a wave is in flight** ("stop the run", "stop and
+check what went wrong") is that deliberate halt, in this order: `TaskStop`
+every shard; read each killed shard's `journal.jsonl` and the last reply
+of every launched agent under its transcript dir before answering any
+"why" (an executor that hit a guard quotes the denial verbatim there, and
+a `PreToolUse:Bash hook error` is a hook's exit 2, decided before the
+permission layer, which no permission mode or allow rule changes);
+reconcile with `dispatch verify` and `docket step show STEP-N` for every
+launched step, reaping the holders you have established are dead (**A
+dead spawn is reaped**); then `/pause`. Report the executors' actual
+blocker and every live lease, never a diagnosis read off settings alone.
 
 **A session that walks away from a conversational gate closes its own
 proposal.** `run abandon` auto-closes only ballots the run's own vote

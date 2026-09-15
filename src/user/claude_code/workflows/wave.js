@@ -818,6 +818,11 @@ function runParked(res) {
 // tail is recorded whatever its prose quotes (a judge naming RECORD BLOCKED in
 // a finding keeps its chain); a reply with neither is `unrecorded`, and the
 // engine's `step show` — not the prose — says what actually happened.
+// COMMIT BLOCKED is deliberately NOT in this list: the write brief has the
+// executor report it and continue to record (the conductor commits on its
+// behalf), so it is a report inside a recorded reply, and a reply that ends
+// on it with no tail is `unrecorded` — the step may have recorded before the
+// executor died, and `step show` decides, not the prose.
 const STOP_SIGNALS = [
     'CLAIM FAILED', 'CLAIM INCOMPLETE', 'NETWORK GATE BLOCKED',
     'RECORD BLOCKED', 'WRITE BLOCKED',

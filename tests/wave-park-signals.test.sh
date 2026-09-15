@@ -247,6 +247,16 @@ ok(stopSignal('The judge noted the prior RECORD BLOCKED incident.\n\nSTEP-12 rec
     'a recorded reply that quotes a signal in prose is not stopped')
 ok(stopSignal('We saw a RECORD BLOCKED situation last week and moved on.') === null,
     'a signal mid-sentence is not the mandated line')
+const COMMIT_BLOCKED = [
+    'COMMIT BLOCKED: git write blocked: a git write needs an APPROVED commit-gate step; worktree /tmp/wt/STEP-12',
+    'Left the worktree as it is for the conductor to commit.',
+    '',
+    'STEP-12 recorded (done)',
+].join('\n')
+ok(recordTail(COMMIT_BLOCKED) === 'done' && stopSignal(COMMIT_BLOCKED) === null,
+    'COMMIT BLOCKED is a report the executor records past, not a stop signal')
+ok(stopSignal('COMMIT BLOCKED: git write blocked by the commit guard') === null,
+    'a reply that ends on COMMIT BLOCKED with no tail carries no signal and settles unrecorded')
 ok(chainDead({ status: 'blocked', signal: 'RECORD BLOCKED', text: RECORD_BLOCKED }),
     'a blocked settle kills the chain for this wave')
 ok(chainDead({ status: 'unrecorded', text: 'I did some things and stopped.' }),

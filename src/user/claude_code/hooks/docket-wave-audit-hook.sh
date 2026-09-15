@@ -2,8 +2,9 @@
 
 # wave-audit (03 §5, TDD §4.5) — PostToolUse: Workflow.
 #
-# Shim over `docket guard record`. ADVISORY: surfaces the guard's reason on
-# stderr but always exits 0. It used to deny (exit 2), which was correct when
+# Shim over `docket guard record`. ADVISORY: surfaces the guard's reason to the
+# conductor as PostToolUse `additionalContext` on stdout (the only exit-0
+# channel the model sees) and always exits 0. It used to deny (exit 2), which was correct when
 # Workflow returned at wave COMPLETION — but Workflow now returns at LAUNCH,
 # so an open dispatch at this hook point is the normal mid-flight state and a
 # blocking exit denied every legitimate wave (observed on an early run).
@@ -62,7 +63,20 @@ if [ "$?" -eq 2 ]; then
     # dispatch close and `next` refuses while it stands. Anything unexpected
     # (a missing run, a failed read) lands here too, so the line quotes the
     # engine rather than asserting which of the two it is.
-    *) echo "wave-audit (advisory): \`docket guard record\` denies, and NOT for the normal open-dispatch reason — read it: $ERR" >&2 ;;
+    *)
+      # THE ADVISORY MUST REACH THE CONDUCTOR. On exit 0 the harness sends stderr
+      # to the debug log only — nobody reads it — and parses stdout as JSON, so
+      # the one channel that lands in the model's context is a PostToolUse
+      # `additionalContext` envelope. Before this, docket-run told the conductor
+      # to read a line it could never see. jq is the same dependency the guard
+      # hooks already carry; without it, the stderr line is the best effort.
+      MSG="wave-audit (advisory): \`docket guard record\` denies, and NOT for the normal open-dispatch reason — a standing discrepancy on this run survives the dispatch close and \`next\` refuses while it stands. Read it: $ERR"
+      if command -v jq >/dev/null 2>&1; then
+        jq -cn --arg m "$MSG" '{hookSpecificOutput: {hookEventName: "PostToolUse", additionalContext: $m}}'
+      else
+        printf '%s\n' "$MSG" >&2
+      fi
+      ;;
   esac
 fi
 exit 0

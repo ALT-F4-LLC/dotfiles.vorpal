@@ -79,8 +79,14 @@ if [ -n "$RUNS" ]; then
         [ "$?" -eq 4 ] || { ALL_DRIFTED=0; break; }
     done
     if [ "$ALL_DRIFTED" = "1" ]; then
-        printf 'run-guard: stop allowed; every live run here (%s) has drifted pins. Inspect `docket run verify-pins <run>` before resuming dispatch.\n' \
-            "${RUNS//$'\n'/ }" >&2
+        NOTE="run-guard: stop allowed; every live run here (${RUNS//$'\n'/ }) has drifted pins. Inspect \`docket run verify-pins <run>\` before resuming dispatch."
+        # stderr on exit 0 reaches only the debug log; the harness parses stdout
+        # as JSON, and `systemMessage` is the field it shows the operator. Both
+        # channels carry the note so the debug log keeps its record.
+        printf '%s\n' "$NOTE" >&2
+        if command -v jq >/dev/null 2>&1; then
+            jq -cn --arg m "$NOTE" '{systemMessage: $m}'
+        fi
         allow
     fi
 fi

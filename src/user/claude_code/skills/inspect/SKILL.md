@@ -1,6 +1,15 @@
 ---
 name: inspect
-description: Walk a checkout the way a home inspector walks a house, during or after the build, and turn every observation the operator makes into a worker-ready Docket issue with no routing label, so docket-groom triages it through the normal paths. The operator is the inspector; Claude carries the clipboard, prompts with a per-system checklist, resolves each item to a location and an acceptance check, dedupes, and files. `inspect reinspect` is the final walkthrough: it re-checks previously filed inspection items against the current checkout and reports pass, fail, or unverifiable per item. Never fixes anything. Use on "inspect", "/inspect", "punch list", "walk through the build", "let me list what I want changed", "final walkthrough", or "re-inspect". Distinct from shadow, which observes sessions rather than the product, and from finish, which files a session's own leftovers.
+description: >-
+  Use on "inspect", "/inspect", "punch list", "walk through the build", "let
+  me list what I want changed", "final walkthrough", or "re-inspect". Walks a
+  checkout the way a home inspector walks a house: the operator observes,
+  Claude carries the clipboard, prompts per system, resolves each item to a
+  location and an acceptance check, dedupes, and files worker-ready Docket
+  issues with no routing label for docket-groom to triage. `inspect reinspect`
+  re-checks filed items against the current checkout and reports pass, fail,
+  or unverifiable. Never fixes anything. Distinct from shadow, which observes
+  sessions, and finish, which files a session's own leftovers.
 argument-hint: "[area or path to walk | reinspect [ISSUE-ID ... | since <date> | <scope glob>]]"
 ---
 

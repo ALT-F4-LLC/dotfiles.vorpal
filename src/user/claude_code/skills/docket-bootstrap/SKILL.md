@@ -1,6 +1,11 @@
 ---
 name: docket-bootstrap
-description: "Bind a repository to the shared docket corpus: inspect the repo, prepare its configuration and trust proposals, and activate one operator-approved smoke issue without dispatching it. Use for initial setup or to diagnose a missing workflow match. For lasting project specs plan a run on the spec-project workflow through docket-plan; for an established binding use docket-retro."
+description: >-
+  Use for initial setup of a repository against the shared docket corpus, or
+  to diagnose a missing workflow match. Inspects the repo, prepares its
+  configuration and trust proposals, and activates one operator-approved smoke
+  issue without dispatching it. For lasting project specs, plan a spec-project
+  run through docket-plan; for an established binding, use docket-retro.
 model: fable
 ---
 

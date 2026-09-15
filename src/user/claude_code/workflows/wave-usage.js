@@ -1,7 +1,44 @@
+// ---------------------------------------------------------------------------
+// CONTRACT FOR CALLERS (the listing's description is deliberately one line;
+// this block is the single copy of what it used to carry).
+//
+// What it does:
+// Measure a completed wave's token spend from its agent transcripts and emit
+// the back-fill rows: one row per (step, unit) for `docket dispatch backfill-
+// usage --from-json -`, or per (proposal, voter, unit) for `docket vote
+// backfill-usage --from-json -`. Every agent is partitioned exactly once into
+// judge, claimant, or wave overhead by what its bootstrap brief told it to do.
+// Seats mode also emits a fifth `tool_uses` unit per seat (distinct tool_use
+// blocks in the seat's transcript), the investigation-depth signal docket-
+// retro's seat-calibration row reads beside the cast's self-reported
+// confidence. Steps mode returns a `coordination` section beside the rows
+// (rounds per issue, first-pass gate pass rate, re-seats, claim conflicts,
+// ancestry parks, budget and chain deferrals) when the caller also passes the
+// wave's returned statuses and the manifest rows. PROBE COST: one low-effort
+// read-only agent per agent-*.jsonl in the directory, plus one scout, plus one
+// re-check for any transcript relayed as bootstrap:false. Invoke by scriptPath
+// ONLY, with args {dir, mode?, exclude?, rows?, statuses?}.
+//
+// When and how it is invoked:
+// Invoked by the docket-run skill the moment a wave returns, launched beside
+// the close rather than ahead of it (the engine measures `dispatch.grace` from
+// the run's newest terminal step record — the wave's last one — so every step
+// recorded before it is usage PENDING while that record is inside the window,
+// and the join may land after the close; a step still unbilled once the wave's
+// last record is past the window is the `usage-rows-missing` refusal it always
+// was), and by the pause and resume paths for a wave whose usage was never
+// back-filled. args is {dir: absolute transcript directory, mode: "steps"
+// (default) | "seats", exclude: [STEP-N...] in steps mode or [seat...] in
+// seats mode, rows: the manifest rows handed to wave.js, statuses: the wave's
+// returned array}; rows and statuses are optional, given together, and read in
+// steps mode only, where they feed the `coordination` section (null without
+// them, and the log says so). The script cannot read files itself; its agents
+// run one fixed jq program per transcript and the reduction happens here.
+// ---------------------------------------------------------------------------
 export const meta = {
     name: 'wave-usage',
-    description: 'Measure a completed wave\'s token spend from its agent transcripts and emit the back-fill rows: one row per (step, unit) for `docket dispatch backfill-usage --from-json -`, or per (proposal, voter, unit) for `docket vote backfill-usage --from-json -`. Every agent is partitioned exactly once into judge, claimant, or wave overhead by what its bootstrap brief told it to do. Seats mode also emits a fifth `tool_uses` unit per seat (distinct tool_use blocks in the seat\'s transcript), the investigation-depth signal docket-retro\'s seat-calibration row reads beside the cast\'s self-reported confidence. Steps mode returns a `coordination` section beside the rows (rounds per issue, first-pass gate pass rate, re-seats, claim conflicts, ancestry parks, budget and chain deferrals) when the caller also passes the wave\'s returned statuses and the manifest rows. PROBE COST: one low-effort read-only agent per agent-*.jsonl in the directory, plus one scout, plus one re-check for any transcript relayed as bootstrap:false. Invoke by scriptPath ONLY, with args {dir, mode?, exclude?, rows?, statuses?}.',
-    whenToUse: 'Invoked by the docket-run skill the moment a wave returns, launched beside the close rather than ahead of it (the engine measures `dispatch.grace` from the run\'s newest terminal step record — the wave\'s last one — so every step recorded before it is usage PENDING while that record is inside the window, and the join may land after the close; a step still unbilled once the wave\'s last record is past the window is the `usage-rows-missing` refusal it always was), and by the pause and resume paths for a wave whose usage was never back-filled. args is {dir: absolute transcript directory, mode: "steps" (default) | "seats", exclude: [STEP-N...] in steps mode or [seat...] in seats mode, rows: the manifest rows handed to wave.js, statuses: the wave\'s returned array}; rows and statuses are optional, given together, and read in steps mode only, where they feed the `coordination` section (null without them, and the log says so). The script cannot read files itself; its agents run one fixed jq program per transcript and the reduction happens here.',
+    description: 'Internal: launched through scriptPath by docket-run when a wave returns; measures a completed wave\'s token spend from its agent transcripts and emits the back-fill rows for `docket dispatch backfill-usage` or `docket vote backfill-usage`. Args and probe cost in the header comment.',
+    whenToUse: 'Never by name. Launched beside the dispatch close, and by the pause and resume paths for a wave never back-filled.',
     phases: [
         { title: 'Scout', detail: 'one agent lists the agent transcripts' },
         { title: 'Extract', detail: 'one low-effort agent per transcript runs the fixed jq' },

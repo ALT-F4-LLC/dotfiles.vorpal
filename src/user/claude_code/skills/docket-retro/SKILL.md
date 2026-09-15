@@ -1,6 +1,11 @@
 ---
 name: docket-retro
-description: Evolve the shared docket corpus (src/user/docket/config/, operator-installed by `just activate`) and a repo's own optional .docket/config/ additions from run evidence — read run reports and the event log, find what recent runs actually cost and caught, and propose versioned config edits for approval. Operator-invoked only; suggest it after about five completed runs.
+description: >-
+  Use on the operator's request only, after about five completed runs:
+  "retro", "what did the runs cost", "evolve the corpus from the runs". Reads
+  run reports and the event log, finds what recent runs cost and caught, and
+  proposes versioned edits to the shared docket corpus and a repo's optional
+  .docket/config additions for approval.
 model: fable
 ---
 

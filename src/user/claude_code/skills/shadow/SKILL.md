@@ -1,6 +1,14 @@
 ---
 name: shadow
-description: Observe Claude Code sessions for evidence-backed friction across skills, workflows, agents, hooks, configuration, memory, models, and Docket. Use for a session audit or live execution shadow. An explicit session ID selects one session; bare invocation observes this session's active execution, otherwise sweeps all projects for the past seven days. Never apply fixes. After affected work ends, file eligible findings in their owning Docket projects and report the results.
+description: >-
+  Use for a session audit or a live execution shadow: "shadow this session",
+  "shadow <session-id>", "audit last week's sessions". Observes Claude Code
+  sessions for evidence-backed friction across skills, workflows, agents,
+  hooks, configuration, memory, models, and Docket. An explicit session ID
+  selects one session; bare invocation observes this session's active
+  execution, otherwise sweeps all projects for the past seven days. Never
+  applies fixes; after affected work ends, files eligible findings in their
+  owning Docket projects.
 argument-hint: "[session-id]"
 ---
 

@@ -1,7 +1,67 @@
+// ---------------------------------------------------------------------------
+// CONTRACT FOR CALLERS (the listing's description is deliberately one line;
+// this block is the single copy of what it used to carry).
+//
+// What it does:
+// Run one dispatched manifest end to end: spawn one executor per executor row
+// at the model/effort the engine rendered on it, seat a judge panel on each
+// vote row from its routed roster, and skip action rows (engine-run at record
+// time). Stages run as awaited groups per issue lane, with the cross-issue
+// cohorts the manifest certifies honored — the staged closure means one wave
+// can carry judges -> gate -> reconcile -> report, and inside a wave no issue
+// idles behind the slower stages of another; writers the engine never co-
+// staged still serialize, so a wave launches at most three such writer cohorts
+// and defers the rest to the next dispatch rather than holding every finished
+// lane behind a long writer ladder. AGENT BUDGET: the Workflow tool caps one
+// invocation at 1000 agents over its lifetime, so the wave reserves each row's
+// projected agents at admission (executor 2, vote row seats+4) against a
+// 900-agent budget and defers, on the spot and without holding its lane, every
+// row the remainder cannot cover; the engine re-offers deferred rows at the
+// next dispatch, and a manifest of any size is safe to hand over whole.
+// SHARDS: both caps are per invocation, so one dispatch may launch up to
+// SHARD_CAP (4) waves at once, each handed the FULL manifest plus `shard:
+// {index, of}`; every launch computes the same deterministic partition — whole
+// issue lanes as units, writer lanes the engine never co-staged welded into
+// one unit so they still serialize, units balanced largest-first onto the
+// least-loaded shard — runs only its own lanes, admits only its share of each
+// class's certified headroom, and settles every sibling row not-launched-
+// other-shard. PROBE COST PER VOTE ROW: 3 read-only haiku probes on the normal
+// path — `docket gate status` before the panel seats (decided yet, which
+// proposal, which target), one projection of the proposal body (the case every
+// seat brief renders verbatim, with no cast in it: seats never read the vote
+// record themselves, since it prints every sibling cast already landed), and
+// `docket gate status` after the panel returns (missing seats and the tally) —
+// 1 on a gate that was already decided before the wave reached it, and 4 when
+// a re-seat forces a re-read; a gate with no proposal yet spends a `step show`
+// for the engine's blocked_reason instead of a panel, and an engine-minted
+// held-cluster gate spends one more read to name its cluster. Each probe
+// answers through a schema, under 1 KB; the per-gate count is reported
+// verbatim in that row's spawn_accounting. Invoke by scriptPath ONLY, with
+// args {rows, tribunal, cwd, shard?} as a real object — every row carries
+// model/effort/variant resolved by the engine, and the script reads no policy
+// and cannot read files.
+//
+// When and how it is invoked:
+// Invoked by the docket-run skill on an open dispatch, always as
+// Workflow({scriptPath}) — never by name, and once per shard when the dispatch
+// is split (the same rows in every launch, `shard: {index, of}` differing).
+// args is {rows, tribunal, cwd, shard?}: `next` rows VERBATIM (executor, vote,
+// and action rows; human rows stay with the conductor), each executor row
+// carrying the model/effort/variant the engine resolved from the run's pinned
+// policy.toml and each vote row carrying the same per voter in
+// `voter_assignments` — a row re-typed without those fields is refused.
+// `tribunal` is the absolute installed path to tribunal.js, the one workflow-
+// nesting level this script uses to seat every in-wave panel (it cannot
+// resolve that path itself); `cwd` is the repo the run belongs to. On a
+// dispatch carrying a fix round's review fanout, args also carries
+// `integrated` — a map from each such issue to the sha of its prior round's
+// INTEGRATION commit — so the wave can assert base ancestry before seating the
+// fanout. There is no policy argument of any kind and no file access.
+// ---------------------------------------------------------------------------
 export const meta = {
     name: 'wave',
-    description: 'Run one dispatched manifest end to end: spawn one executor per executor row at the model/effort the engine rendered on it, seat a judge panel on each vote row from its routed roster, and skip action rows (engine-run at record time). Stages run as awaited groups per issue lane, with the cross-issue cohorts the manifest certifies honored — the staged closure means one wave can carry judges -> gate -> reconcile -> report, and inside a wave no issue idles behind the slower stages of another; writers the engine never co-staged still serialize, so a wave launches at most three such writer cohorts and defers the rest to the next dispatch rather than holding every finished lane behind a long writer ladder. AGENT BUDGET: the Workflow tool caps one invocation at 1000 agents over its lifetime, so the wave reserves each row\'s projected agents at admission (executor 2, vote row seats+4) against a 900-agent budget and defers, on the spot and without holding its lane, every row the remainder cannot cover; the engine re-offers deferred rows at the next dispatch, and a manifest of any size is safe to hand over whole. SHARDS: both caps are per invocation, so one dispatch may launch up to SHARD_CAP (4) waves at once, each handed the FULL manifest plus `shard: {index, of}`; every launch computes the same deterministic partition — whole issue lanes as units, writer lanes the engine never co-staged welded into one unit so they still serialize, units balanced largest-first onto the least-loaded shard — runs only its own lanes, admits only its share of each class\'s certified headroom, and settles every sibling row not-launched-other-shard. PROBE COST PER VOTE ROW: 3 read-only haiku probes on the normal path — `docket gate status` before the panel seats (decided yet, which proposal, which target), one projection of the proposal body (the case every seat brief renders verbatim, with no cast in it: seats never read the vote record themselves, since it prints every sibling cast already landed), and `docket gate status` after the panel returns (missing seats and the tally) — 1 on a gate that was already decided before the wave reached it, and 4 when a re-seat forces a re-read; a gate with no proposal yet spends a `step show` for the engine\'s blocked_reason instead of a panel, and an engine-minted held-cluster gate spends one more read to name its cluster. Each probe answers through a schema, under 1 KB; the per-gate count is reported verbatim in that row\'s spawn_accounting. Invoke by scriptPath ONLY, with args {rows, tribunal, cwd, shard?} as a real object — every row carries model/effort/variant resolved by the engine, and the script reads no policy and cannot read files.',
-    whenToUse: 'Invoked by the docket-run skill on an open dispatch, always as Workflow({scriptPath}) — never by name, and once per shard when the dispatch is split (the same rows in every launch, `shard: {index, of}` differing). args is {rows, tribunal, cwd, shard?}: `next` rows VERBATIM (executor, vote, and action rows; human rows stay with the conductor), each executor row carrying the model/effort/variant the engine resolved from the run\'s pinned policy.toml and each vote row carrying the same per voter in `voter_assignments` — a row re-typed without those fields is refused. `tribunal` is the absolute installed path to tribunal.js, the one workflow-nesting level this script uses to seat every in-wave panel (it cannot resolve that path itself); `cwd` is the repo the run belongs to. On a dispatch carrying a fix round\'s review fanout, args also carries `integrated` — a map from each such issue to the sha of its prior round\'s INTEGRATION commit — so the wave can assert base ancestry before seating the fanout. There is no policy argument of any kind and no file access.',
+    description: 'Internal: launched through scriptPath by docket-run, once per shard, to run one dispatched manifest end to end (executors, vote panels, staged issue lanes). Per vote row it spends 3 read-only haiku probes of `docket gate status` on the normal path, 1 on a gate that was already decided, and 4 when a re-seat is needed. Budget, shard, lane and reply-tail contract in the header comment.',
+    whenToUse: 'Never by name. Args are {rows, tribunal, cwd, shard?, integrated?} with the `next` rows verbatim; the full argument contract is in the header comment.',
 }
 
 // TEST-BEGIN configuration — shared by the extracted behavior suites.

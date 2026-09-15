@@ -1,12 +1,11 @@
 ---
 name: brief
 description: >-
-  Turn a freeform work request into a faithful, checkable brief. Clarify
-  material decisions through successive question rounds, then confirm the
-  brief and route it to /docket-plan, /loop, another suitable orchestration
-  skill, or direct execution. Use for "brief this", "brief this request",
-  or "help me think this through" when the operator wants to clarify work
-  before starting. Also use to revise an existing brief.
+  Use for "brief this", "brief this request", "help me think this through", or
+  to revise an existing brief. Turns a freeform work request into a faithful,
+  checkable brief: clarifies material decisions in up to three question
+  rounds, then confirms the brief and routes it to /docket-plan, /loop,
+  another orchestration skill, or direct execution.
 model: fable
 argument-hint: "<freeform work request or revision to an existing brief>"
 ---

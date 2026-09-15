@@ -1,6 +1,12 @@
 ---
 name: pause
-description: Halt a Docket run that a docket-run session is driving, mid-progress, and leave behind a resume prompt sufficient for a brand-new session to pick the run back up without reading this session's transcript. Use on "pause", "pause the run", "pause this run", "halt the run", "pause now, kill the wave", "stop for now, I'll resume later", or any operator request to walk away from a driven run without abandoning it. Distinct from the bare engine verb `docket run pause`, which only parks the run and captures none of this session's state — this skill is the sanctioned way to invoke it.
+description: >-
+  Use on "pause", "pause the run", "halt the run", "pause now, kill the wave",
+  "stop for now, I'll resume later", or any request to walk away from a driven
+  Docket run without abandoning it. Halts the run mid-progress and leaves a
+  resume prompt sufficient for a new session to pick it up without this
+  transcript. The sanctioned way to invoke `docket run pause`, which alone
+  captures none of the session's state.
 ---
 
 # pause

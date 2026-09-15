@@ -1,6 +1,14 @@
 ---
 name: docket-plan
-description: Turn a work request or the current Docket backlog into an activatable run. Converse in the main session and prefer the largest feasible complete run, using later waves for known dependencies or safely serialized overlaps. Budget is unlimited unless the operator specifies a limit; show cost forecasts without turning them into caps. Offer concrete smaller-run alternatives when useful. Record the request, plan, issues, routing, scopes, dependencies, and verbatim acceptance criteria; then stop. Invoked bare, select and bind existing backlog issues directly. Use to plan new work, select the next backlog run, or extend a run after findings. Never execute the planned work.
+description: >-
+  Use to plan new work as a Docket run ("plan this", "plan a run"), to select
+  the next backlog run (invoked bare, it binds route-run issues directly), or
+  to extend a run after findings. Converses in the main session, prefers the
+  largest feasible complete run, shows cost forecasts without capping, offers
+  smaller alternatives, and records the request, plan, issues, routing,
+  scopes, dependencies, and verbatim acceptance criteria, then stops. Never
+  executes the planned work and never activates the run; activation is docket-
+  run's.
 model: fable
 ---
 

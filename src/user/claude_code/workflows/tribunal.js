@@ -1,7 +1,45 @@
+// ---------------------------------------------------------------------------
+// CONTRACT FOR CALLERS (the listing's description is deliberately one line;
+// this block is the single copy of what it used to carry).
+//
+// What it does:
+// Spawn a judge panel that decides one gated proposal by each seat casting a
+// real `docket vote cast`. This script never casts, approves, or tallies — the
+// engine's vote machinery tallies. Runs in two modes: CONVERSATIONAL (no
+// `step` arg) verifies its own tally and re-seats a missing cast once, at the
+// cost of one read-only haiku probe of the vote record after the seats return
+// (two when the first returns nothing), plus one more after any re-seat; MID-
+// WAVE (`step` present) renders the same brief with the gate's row context and
+// target ref, spawns the seats, and returns without probing — the caller
+// (wave.js) already reads `docket gate status` for the tally and drives the
+// one permitted re-seat itself. A conversational proposal has no step, so
+// `docket gate status` cannot address it and the probe reads `docket vote
+// result`. Invoke by scriptPath ONLY, with args {voteId, voters, context,
+// gateKind, cwd, step?, target?, heldCluster?, isRespawn?} — `context` is the
+// case, rendered VERBATIM into every seat brief in both modes: the
+// conversational caller's own text, or mid-wave the proposal body wave.js
+// projected off the record with every cast removed (a seat never reads the
+// vote record itself — it prints the sibling casts already landed, and the
+// engine tallies); `voters` is an array of {seat, model, effort, variant}
+// objects, each seat's routing already resolved by the caller from the run's
+// pinned policy.toml, since the engine renders routing only onto step rows and
+// a conversational gate has none. The script reads no policy and cannot read
+// files.
+//
+// When and how it is invoked:
+// Invoked on a CONVERSATIONAL gate the docket-run skill routes to a panel
+// (ack-reap, activation, budget, loop-extension, fix-batch), always as
+// Workflow({scriptPath}) — never by name. Engine `type = "vote"` step rows
+// ride the wave since the staged closure: wave.js calls this same script MID-
+// WAVE (passing `step`) to seat their panels, one level of workflow nesting
+// deep, so the seat brief renders from one place. The CALLER creates the
+// proposal, passes its id, and passes every voter WITH its {model, effort,
+// variant}; tribunal.js only fills an open one.
+// ---------------------------------------------------------------------------
 export const meta = {
     name: 'tribunal',
-    description: 'Spawn a judge panel that decides one gated proposal by each seat casting a real `docket vote cast`. This script never casts, approves, or tallies — the engine\'s vote machinery tallies. Runs in two modes: CONVERSATIONAL (no `step` arg) verifies its own tally and re-seats a missing cast once, at the cost of one read-only haiku probe of the vote record after the seats return (two when the first returns nothing), plus one more after any re-seat; MID-WAVE (`step` present) renders the same brief with the gate\'s row context and target ref, spawns the seats, and returns without probing — the caller (wave.js) already reads `docket gate status` for the tally and drives the one permitted re-seat itself. A conversational proposal has no step, so `docket gate status` cannot address it and the probe reads `docket vote result`. Invoke by scriptPath ONLY, with args {voteId, voters, context, gateKind, cwd, step?, target?, heldCluster?, isRespawn?} — `context` is the case, rendered VERBATIM into every seat brief in both modes: the conversational caller\'s own text, or mid-wave the proposal body wave.js projected off the record with every cast removed (a seat never reads the vote record itself — it prints the sibling casts already landed, and the engine tallies); `voters` is an array of {seat, model, effort, variant} objects, each seat\'s routing already resolved by the caller from the run\'s pinned policy.toml, since the engine renders routing only onto step rows and a conversational gate has none. The script reads no policy and cannot read files.',
-    whenToUse: 'Invoked on a CONVERSATIONAL gate the docket-run skill routes to a panel (ack-reap, activation, budget, loop-extension, fix-batch), always as Workflow({scriptPath}) — never by name. Engine `type = "vote"` step rows ride the wave since the staged closure: wave.js calls this same script MID-WAVE (passing `step`) to seat their panels, one level of workflow nesting deep, so the seat brief renders from one place. The CALLER creates the proposal, passes its id, and passes every voter WITH its {model, effort, variant}; tribunal.js only fills an open one.',
+    description: 'Internal: launched through scriptPath by docket-run (conversational gates) and by wave.js mid-wave; seats a judge panel that casts real `docket vote cast` votes on one gated proposal. Args and probe cost in the header comment.',
+    whenToUse: 'Never by name. The caller creates the proposal, passes its id, and passes every voter with its {model, effort, variant}; this script only fills an open one.',
     phases: [
         { title: 'Judge', detail: 'one seat per voter, each casting docket vote cast' },
         { title: 'Verify', detail: 'one haiku probe of the vote record (two when the first returns nothing), plus one more after any re-seat (conversational mode only)', model: 'haiku' },

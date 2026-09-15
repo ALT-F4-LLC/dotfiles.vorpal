@@ -1,6 +1,18 @@
 ---
 name: docket-groom
-description: Groom every open issue in the current Docket project and the Docket engine project in the main session until retained work is easy to consume. Validate value and engine relevance, verify and repair every acceptance criterion, triage issues needing operator decisions through AskUserQuestion, retire approved obsolete or duplicate work, group retained work under relevant Docket epics, and close gaps in requirements, files, scope, dependencies, and workflow fit. Safe edits apply directly; closures, merges, scope changes, epic creation, re-parenting, and protected-issue edits require operator approval. One survey across both projects with an optional stale window, including decision follow-through; no implementation or watch. Use on "groom the backlog", "/groom", "clean up the backlog", "triage operator decisions", "which issues are still worth doing", or "make the backlog run-ready".
+description: >-
+  Use on "groom the backlog", "/groom", "clean up the backlog", "triage
+  operator decisions", "which issues are still worth doing", or "make the
+  backlog run-ready". Grooms every open issue in the current Docket project
+  and the engine project, in the main session, until retained work is easy to
+  consume: validates value, verifies and repairs acceptance criteria, triages
+  operator decisions through AskUserQuestion, retires approved obsolete or
+  duplicate work, groups work under epics, and closes requirement, file,
+  scope, dependency, and workflow-fit gaps. Safe edits apply directly;
+  closures, merges, scope changes, epic creation, re-parenting, protected-
+  issue edits, and the route-tend and route-loop labels need operator
+  approval. One survey per invocation; no implementation, no watch. Distinct
+  from tend, which works route-tend issues.
 argument-hint: "[stale window, e.g. 14d]"
 model: fable
 ---

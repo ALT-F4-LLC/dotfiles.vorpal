@@ -1,6 +1,15 @@
 ---
 name: tend
-description: Watch the current Docket project's issue queue — the `route-tend` issues in the existing backlog and whatever gets added after — and work them one at a time by delegating each to a right-sized subagent while this conversation orchestrates — no `/docket-plan`, no `/docket-run`, no docket run. Spawns a worker seated for the job (stronger models and efforts than the loop itself), lands the result via the `commit` skill, and closes the issue with a summary comment, then, under `/loop`, goes quiet once the queue is empty until the next issue appears (invoked bare it does one pass instead). Meant to run under `/loop` (self-pacing, e.g. `/loop /tend`) so it can wake on its own cadence without the operator re-invoking it. Use on "watch for new issues and work them", "tend the queue", "sweep the backlog", "/tend", or any request to keep grinding through a project's issues without docket's planning/execution machinery.
+description: >-
+  Use on "tend the queue", "/tend", "watch for new issues and work them",
+  "sweep the backlog", or any request to keep grinding through a project's
+  route-tend issues without docket's planning and run machinery; meant to run
+  under /loop (for example `/loop /tend`). Watches the current Docket
+  project's route-tend queue and works issues one at a time, each delegated to
+  a right-sized worker while this conversation orchestrates; lands the result
+  via the commit skill, closes the issue with a summary comment, and goes
+  quiet when the queue is empty (bare invocation does one pass). Distinct from
+  docket-groom, which routes issues and never implements.
 ---
 
 # tend

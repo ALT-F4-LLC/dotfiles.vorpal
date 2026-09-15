@@ -1,6 +1,13 @@
 ---
 name: finish
-description: End this session cleanly, leaving nothing behind — every agent this session spawned stopped, every schedule and watch it created cancelled, every question in both directions answered, its own uncommitted changes committed, and every unfinished item filed as an issue. Use on "finish", "finish up", "we're done", "wrap up", "end the session", "I'm done for good", or "close this out". Distinct from `pause`, which parks a driven Docket run to come back to; finish is for walking away for good, and hands a live run to `pause` rather than halting it. Distinct from the harness EndConversation tool, which ends the conversation and sweeps nothing.
+description: >-
+  Use on "finish", "finish up", "we're done", "wrap up", "end the session",
+  "I'm done for good", or "close this out". Ends the session cleanly: stops
+  every agent it spawned, cancels its schedules and watches, answers open
+  questions in both directions, commits its own changes, and files every
+  unfinished item as an issue. Hands a live Docket run to pause rather than
+  halting it. Distinct from the harness EndConversation tool, which sweeps
+  nothing.
 ---
 
 # finish

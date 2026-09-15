@@ -1,6 +1,18 @@
 ---
 name: docket-refit
-description: Redesign one definition in the shared docket corpus under src/user/docket/config — a workflow, policy.toml, an executor contract, a packet fragment, or a payload schema. Sweeps the target's blast radius across every consumer, mines run evidence across every project that exercised it, iterates the target spec with the operator, verifies every claimed capability against the live docket engine (and wave.js) source, surfaces each engine-forced deviation as an explicit decision, renders the settled design as a visual Artifact for approval before implementing, then lands the full co-change closure (workflow TOML, contracts, fragments, policy rows, vote-seat lenses, schemas), lints every consumer, files engine issues for real gaps, and commits. Invoked bare (`/refit` with nothing named), it runs corpus mode instead: mine run evidence across every surface in the corpus (workflows and policy, contracts, fragments, schemas), triage then deep-dive, verdict each one, and carry every refit, removal, and addition the evidence calls for through the same §1–§8 process to a landed commit, target by target, with the same per-target deviation gates and artifact approval as single mode. Use on "refit the ui-change workflow", "/refit standard-change", "/refit policy.toml", "tighten the implement contract", "refit the findings schema", "refactor a docket workflow", "optimize the standard-change pipeline", "add a phase to security-change", "redesign the investigation pipeline", bare "/refit" to redesign the whole corpus, or any request to change or improve what any definition under src/user/docket/config does.
+description: >-
+  Use on "refit the ui-change workflow", "/refit standard-change", "/refit
+  policy.toml", "tighten the implement contract", "refit the findings schema",
+  "add a phase to security-change", "redesign the investigation pipeline",
+  bare "/refit" for the whole corpus, or any request to change what a
+  definition under src/user/docket/config does. Redesigns one workflow,
+  policy.toml, contract, fragment, or schema: sweeps every consumer, mines run
+  evidence, iterates the spec with the operator, verifies each capability
+  against the engine source, surfaces engine-forced deviations as decisions,
+  renders the design as an Artifact for approval, lands the full co-change
+  closure, lints consumers, files engine issues, and commits. Bare invocation
+  runs corpus mode over every surface. Runs in the main session so its gates
+  are real questions.
 ---
 
 # docket-refit

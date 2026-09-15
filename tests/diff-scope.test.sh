@@ -109,6 +109,22 @@ expect "control paths: a hooks/ edit is refused on small" small 1 "$r"
 r=$(fresh_repo ctrl-absent); printf 'x\n' >> "$r/hooks/guard.sh"
 expect "control paths: no pattern file means no control check" trivial 0 "$r"
 
+# ---- harness scaffolding is nobody's change --------------------------------
+# A sandboxed executor's git status carries untracked `.claude/` mounts and an
+# `.mcp.json` under its working directories; the gate must not count them.
+scaffold() { mkdir -p "$1/.claude/hooks" "$1/src/a/.claude"; printf '{}\n' > "$1/.claude/settings.json"; printf 'x\n' > "$1/src/a/.claude/loop.md"; printf '{}\n' > "$1/.mcp.json"; }
+r=$(fresh_repo scaffold-only); scaffold "$r"
+expect "scaffolding: untracked .claude/ and .mcp.json alone pass docs-only" docs-only 0 "$r"
+expect "scaffolding: untracked .claude/ and .mcp.json alone pass trivial" trivial 0 "$r"
+r=$(fresh_repo scaffold-code); scaffold "$r"; printf 'fn a() { 1 }\n' > "$r/src/a/lib.rs"
+expect "scaffolding: ignored beside a one-file code edit on trivial" trivial 0 "$r"
+expect "scaffolding: ignored beside a one-file code edit on small" small 0 "$r"
+
+r=$(fresh_repo scaffold-tracked); mkdir -p "$r/.claude"; printf '{}\n' > "$r/.claude/settings.json"
+(cd "$r" && git add -A && git commit -qm scaffold)
+printf '{"a":1}\n' > "$r/.claude/settings.json"; printf 'fn a() { 1 }\n' > "$r/src/a/lib.rs"
+expect "scaffolding: a TRACKED .claude/ file this step modified still counts (two paths on trivial)" trivial 1 "$r"
+
 # ---- edges -----------------------------------------------------------------
 r=$(fresh_repo clean)
 expect "a clean tree passes every track" docs-only 0 "$r"

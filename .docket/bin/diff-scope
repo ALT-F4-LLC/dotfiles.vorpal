@@ -83,6 +83,16 @@ while IFS= read -r -d '' rec; do
             ;;
     esac
     [ -n "$path" ] || continue
+    # A sandboxed session mounts its own `.claude/` scaffolding and `.mcp.json`
+    # under whatever directory it runs from; git reports them untracked, and
+    # they are nobody's change. Skip them only while UNTRACKED: a tracked file
+    # under a `.claude/` path that this step modified still counts.
+    if [ "$xy" = '??' ]; then
+        case "/$path" in
+            */.claude/*|*/.claude) continue ;;
+            */.mcp.json) continue ;;
+        esac
+    fi
     paths+=("$path")
     case "$xy" in
         '??'|A*|*A) added+=("$path") ;;

@@ -94,12 +94,16 @@ case "${1:-}" in
                     printf 'panic: engine unavailable'
                     exit 0
                 fi
+                # Models the engine's list: active-only by default, --all
+                # widens to done and abandoned runs. The retired --active flag
+                # falls through to the unknown-flag exit, so a hook that still
+                # passes it reads an empty answer, as it does from the engine.
                 limit=50
-                active=false
+                all=false
                 shift 2
                 while [ "$#" -gt 0 ]; do
                     case "$1" in
-                        --active) active=true ;;
+                        --all) all=true ;;
                         --limit) shift; limit="$1" ;;
                         --json) ;;
                         *) exit 64 ;;
@@ -107,8 +111,8 @@ case "${1:-}" in
                     shift
                 done
                 RUNS=$(build_runs_json)
-                printf '%s' "$RUNS" | jq -c --argjson active "$active" --argjson limit "$limit" '
-                    (if $active then map(select(.status != "done" and .status != "abandoned")) else . end) as $runs
+                printf '%s' "$RUNS" | jq -c --argjson all "$all" --argjson limit "$limit" '
+                    (if $all then . else map(select(.status != "done" and .status != "abandoned")) end) as $runs
                     | {ok:true, data:{total:($runs | length),
                         runs:(if $limit > 0 then $runs[:$limit] else $runs end)}}'
                 exit "${RUN_STATUS_EXIT:-0}"

@@ -201,8 +201,7 @@ this session's token; the prompt says so, and nothing more.
 
 **Engine-recoverable state — link to it, do not restate it:**
 
-- Run id and current status: `docket run status --active --json` from the
-  repo cwd.
+- Run id and current status: `docket run status --json` from the repo cwd.
 - Dispatch existence, step/gate states, budget position:
   `docket run status RUN-N`, `docket step list --run RUN-N`,
   `docket run report RUN-N`.

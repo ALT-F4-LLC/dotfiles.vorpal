@@ -204,7 +204,7 @@ asking, the same split `shadow` and `docket-plan` use.
 - **Bare `/docket-run`**: resolve "the next run" from the engine:
 
   ```bash
-  docket run status --active --json
+  docket run status --json
   ```
 
   This lists every non-terminal run (`planning`, `active`,
@@ -1939,8 +1939,8 @@ session.
 ## Ending and resuming
 
 A run parked `waiting-human` ends cleanly with the session; it stays
-parked for any later session to pick up from `docket run status --active
---json`. Resume it with `docket run resume $RUN --reason "<what
+parked for any later session to pick up from `docket run status --json`.
+Resume it with `docket run resume $RUN --reason "<what
 unblocked it>" < <scratchpad>/conductor.d/$RUN.token`, never bare, since
 the run keeps advertising its park reason until a resume overwrites it;
 a later session takes the seat with `run conduct` first (**The conductor

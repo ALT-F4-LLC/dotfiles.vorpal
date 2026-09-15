@@ -81,7 +81,7 @@ Run these commands from each project's own checkout:
 
 ```bash
 docket issue list --json=v2 --limit 1000 -s backlog -s todo -s in-progress -s review
-docket run status --active --json
+docket run status --json
 ```
 
 Project resolves from cwd's git identity, same as every other docket verb.
@@ -112,7 +112,7 @@ epic's children under `sub_issues`.
 
 Two kinds of issue are in scope to read but not yours to freely edit:
 
-- **Run-included.** For each run `docket run status --active --json`
+- **Run-included.** For each run `docket run status --json`
   returns, `docket issue list --run <ref> --json=v2 --limit 1000` names that
   run's roster. An open issue on any of those rosters belongs to a
   docket-plan/docket-run session, even while the run is parked.

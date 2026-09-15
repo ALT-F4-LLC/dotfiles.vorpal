@@ -162,7 +162,7 @@ bodies.
 ```bash
 docket next --json=v2 --limit 1000                    # ready: no open blockers, in backlog/todo
 docket issue list --json=v2 --limit 1000 -s backlog -s todo   # every field the ranking reads
-docket run status --active --json                     # runs that already own issues
+docket run status --json                              # runs that already own issues
 docket issue list --run <ref> --json=v2 --limit 1000  # one per run above: its roster
 ```
 
@@ -226,7 +226,7 @@ definitions are the ones `docket-groom` and `tend` already use:
   excluded before ranking starts, never scored against the priority or
   parallel rules below.
 - **Run-included.** An open issue on any active run's roster (`docket run
-  status --active --json`, then `docket issue list --run <ref> --limit
+  status --json`, then `docket issue list --run <ref> --limit
   1000` per run: planning, active, or paused, anything not done or
   abandoned) belongs to that run's docket-plan/docket-run session, even
   while the run is parked.

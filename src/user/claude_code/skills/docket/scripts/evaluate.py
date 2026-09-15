@@ -201,7 +201,8 @@ def grade(answer, case_data=None):
         elif name == "pagination":
             require(len(commands) == 1 and verb(commands[0], "run", "status"), "expected complete active-run read")
             if commands:
-                require("--active" in commands[0]["argv"] and flag(commands[0]["argv"], "--limit") == "0", "active query is incomplete")
+                require(flag(commands[0]["argv"], "--limit") == "0", "active query is incomplete")
+                require("--active" not in commands[0]["argv"] and "--all" not in commands[0]["argv"], "active query is not the bare active-only list")
         elif name == "literal-description":
             require(len(commands) == 1 and verb(commands[0], "issue", "create"), "expected one idempotent retry")
             if commands:

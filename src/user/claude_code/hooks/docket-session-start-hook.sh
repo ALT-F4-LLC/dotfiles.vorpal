@@ -2,7 +2,7 @@
 
 # SessionStart injection (03 §7, TDD §4.5) — SessionStart.
 #
-# One-line shim over `docket run status --active --json`, so a fresh session in
+# One-line shim over `docket run status --json`, so a fresh session in
 # the repo knows the run state with no handoff document (AC-4.4). That verb is
 # documented READ-ONLY — "computes effective status and WRITES NOTHING" — which
 # is what makes it safe to fire on every session start, including the
@@ -14,7 +14,8 @@
 # only add a jq dependency and a failure mode to a hook whose whole job is to
 # hand over one document.
 #
-# SILENT WHEN THERE IS NO RUN. `--active` over an empty engine returns
+# SILENT WHEN THERE IS NO RUN. The bare list is active-only (done and abandoned
+# runs need `--all`), and over an empty engine it returns
 # `{"ok":true,"data":{"runs":null,"total":0}}` [OBSERVED]. Injecting that into
 # every non-graph session would spend context to say nothing, so the no-run case
 # prints nothing at all and the session boots exactly as it does today. This is
@@ -29,7 +30,7 @@ set -uo pipefail
 
 command -v docket >/dev/null 2>&1 || exit 0
 
-STATUS=$(docket run status --active --json 2>/dev/null) || exit 0
+STATUS=$(docket run status --json 2>/dev/null) || exit 0
 [ -n "$STATUS" ] || exit 0
 
 # No active run: inject nothing. Uses a substring test rather than jq so the
@@ -38,5 +39,5 @@ case "$STATUS" in
     *'"total":0'*) exit 0 ;;
 esac
 
-printf 'Active Docket engine runs in this repo (docket run status --active --json):\n%s\n' "$STATUS"
+printf 'Active Docket engine runs in this repo (docket run status --json):\n%s\n' "$STATUS"
 exit 0

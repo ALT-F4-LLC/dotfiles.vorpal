@@ -25,7 +25,7 @@ do one pass and say so; there will be no next tick.
 
 ```bash
 docket issue list --json --limit 1000 -s backlog -s todo
-docket run status --active --json
+docket run status --json
 ```
 
 Project resolves from cwd's git identity, same as every other docket verb
@@ -43,7 +43,7 @@ a prior tick never reappears (see §2's blocked case).
 
 Exclude two more kinds before picking; this queue isn't tend's alone:
 
-- **Run-included.** For each run `docket run status --active --json` returns
+- **Run-included.** For each run `docket run status --json` returns
   (planning, active, or paused — anything not done or abandoned),
   `docket issue list --run <ref> --json --limit 1000` names that run's whole
   roster. Any backlog/todo issue on any of those rosters belongs to a

@@ -35,13 +35,14 @@ if [ "$RECORD_EXIT" -eq 2 ]; then
     [[ "$RECORD_REASON" =~ $OPEN_REASON || "$RECORD_REASON" =~ $RECONCILE_REASON ]] && allow
 fi
 
-# --active filters before --limit; zero removes the run list's default cap
-# of 50. Check total as well so a partial response never hides an older run.
+# The bare list is active-only (done and abandoned runs need --all) and filters
+# before --limit; zero removes the list's default cap of 50. Check total as
+# well so a partial response never hides an older run.
 # Empty means unknown here. An affirmative empty list does not override a
 # denial from the project-scoped engine guard.
 LIVE_RUNS=""
 if command -v jq >/dev/null 2>&1; then
-    LIVE_RUNS=$(docket run status --active --limit 0 --json 2>/dev/null \
+    LIVE_RUNS=$(docket run status --limit 0 --json 2>/dev/null \
         | jq -sce '
             select(length == 1) | .[0]
             | select(.ok == true) | .data

@@ -25,7 +25,7 @@
   },
   {
     "id": "pagination",
-    "request": "run status --json=v2 returned 50 terminal runs, total:51, truncated:true. Determine whether there are any active runs in the project before allowing a stop. Propose a complete active-run inspection; the unseen row's state is unknown."
+    "request": "run status --all --json=v2 returned 50 terminal runs, total:51, truncated:true. Determine whether there are any active runs in the project before allowing a stop. Propose a complete active-run inspection; the unseen row's state is unknown."
   },
   {
     "id": "literal-description",

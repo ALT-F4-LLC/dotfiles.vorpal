@@ -9,7 +9,7 @@
 # TWO THINGS ARE PINNED.
 #
 # First, that the hook asks `guard spawn --active` and never resolves a run
-# itself. An earlier version asked about `runs[0]` of `run status --active`,
+# itself. An earlier version asked about `runs[0]` of `run status`,
 # the newest run, so with two concurrent active runs the older run's reap hold
 # went unasked. The fake engine below models the engine's documented --active
 # semantics — walk the active runs oldest-first, deny on the first that holds,

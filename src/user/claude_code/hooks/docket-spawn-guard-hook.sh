@@ -16,7 +16,7 @@
 # translated into a permissionDecision envelope.
 #
 # --active, NOT --run. An earlier version resolved "the active run" as
-# `runs[0]` of `docket run status --active`, which is the newest run, so with
+# `runs[0]` of `docket run status`, which is the newest run, so with
 # two concurrent active runs the older run's reap hold went unasked: measured
 # with an older run holding and a newer run clean, this hook allowed while
 # wave-audit's `guard record`, which answers over every run, denied naming the

@@ -29,7 +29,7 @@ def control():
     by_id["interrupted-record"]["commands"] = [command("step", "show", "STEP-12"), command("step", "artifacts", "STEP-12")]
     by_id["expired-lease"]["commands"] = [command("step", "claim", "STEP-12", "--owner", "eval-worker")]
     by_id["wrong-project"]["commands"] = [command("issue", "show", "DKT-42")]
-    by_id["pagination"]["commands"] = [command("run", "status", "--active", "--limit", "0")]
+    by_id["pagination"]["commands"] = [command("run", "status", "--limit", "0")]
     by_id["literal-description"]["commands"] = [command("issue", "create", "-t", "Literal text", "-d", "-", "--idempotency-key", "eval-create-1", stdin=EVAL.LITERAL)]
     by_id["claim-attribution"]["commands"] = [command("step", "claim", "STEP-12", "--owner", "eval-worker", "--metadata", json.dumps({"model_requested": "opus", "effort_requested": "high", "variant": "opus-high"}))]
     by_id["gap-headers"]["files"] = [{"path": "gap.md", "content": "Missing timeout\nSeverity: high\nKind: bug\nLabels: reliability, timeout\n\nThe HTTP client can wait forever.\n"}]
@@ -197,7 +197,8 @@ class EvaluationTests(unittest.TestCase):
 
     def test_project_and_pagination(self):
         self.check_mutation("wrong-project", lambda r: r["commands"][0].update(cwd="/tmp/other"))
-        self.check_mutation("pagination", lambda r: r.update(commands=[command("run", "status", "--active")]))
+        self.check_mutation("pagination", lambda r: r.update(commands=[command("run", "status")]))
+        self.check_mutation("pagination", lambda r: r.update(commands=[command("run", "status", "--all", "--limit", "0")]))
 
     def test_literal_text_and_retry_identity(self):
         self.check_mutation("literal-description", lambda r: r["commands"][0].update(stdin=EVAL.LITERAL.replace("$(echo substituted)", "substituted")))

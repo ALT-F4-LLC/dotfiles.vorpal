@@ -204,6 +204,9 @@ case_own_bootstrap_allows() {
     assert_verdict "rm -rf ${OWN_DIR}/probe-copy" executor-read "$WAVE_42" ALLOW "own: rm of a probe copy inside own dir"
     assert_verdict "find ${OWN_DIR} -name '*.pid' -delete" executor-write "$WAVE_42" ALLOW "own: find -delete inside own dir"
     assert_verdict "git add -A" executor-write "$WAVE_42" ALLOW "own: git add (commit guard's domain)"
+    # The probe's leaf counter shares a shell with the analyzed command; a
+    # command that assigns `n` used to move the counter and trip the cap.
+    assert_verdict 'for n in 100 833 922 1324 2026; do echo "$n"; done' executor-write "$WAVE_42" ALLOW "own: for n in … loop (the probe counter does not collide with the command)"
     assert_verdict "git commit -m 'feat(x): y'" executor-write "$WAVE_42" ALLOW "own: git commit (commit guard's domain)"
     assert_verdict "git rev-parse HEAD" executor-write "$WAVE_42" ALLOW "own: git rev-parse"
     assert_verdict "cargo test --locked --offline" executor-write "$WAVE_42" ALLOW "own: cargo test"

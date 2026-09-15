@@ -308,15 +308,15 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
     shopt -s extdebug
     set -T
     COMMAND=$(cat)
-    n=0
+    _leaf_n=0   # not `n`: the analyzed command shares this shell, and `for n in …` collided with the counter
     _guard_probe() {
-        n=$((n + 1))
-        if [ "$n" -gt 2000 ]; then
+        _leaf_n=$((_leaf_n + 1))
+        if [ "$_leaf_n" -gt 2000 ]; then
             exit 113
         fi
         # The first firing is this probe own eval line, not a leaf of the
         # command; recording it would put an interpreter word in every walk.
-        if [ "$n" -eq 1 ] && [ "$BASH_COMMAND" = "eval \"\$COMMAND\"" ]; then
+        if [ "$_leaf_n" -eq 1 ] && [ "$BASH_COMMAND" = "eval \"\$COMMAND\"" ]; then
             return 0
         fi
         local head="${BASH_COMMAND%%[ $'"'"'\t\n'"'"']*}"
@@ -596,4 +596,4 @@ function decode(raw,    inner, cpos) {
 if [ "$CONDUCTOR" = "1" ]; then
     deny "trust-store write blocked: \`docket trust add/rm\` is operator-reserved and never the conductor's to run, \`--help\` included: a background seat's permission ask has nobody at a terminal to answer it, and one conductor has held one for hours. Send the trust matter to \`main\` as its own \`question:\` (never bundled with another gate) and end your turn; the operator's own terminal is the only path to that store."
 fi
-deny "trust-store write blocked: \`docket trust add/rm\` is operator-reserved and never in scope for an executor step, whatever the brief says. If your step genuinely needs a trust entry changed, that is a routing defect: record the mismatch as your step's finding through the gap channel your brief names, and do not retry this call. If this command performs no trust-store write, the matcher has false-positived on the phrase appearing as prose or as an interpreter's code argument (known limitation): to read or search a file's content, use the Read or Grep tool instead (bypasses this matcher entirely); to write prose that names the phrase, put it in a file via the Write/Edit tool rather than a Bash heredoc or an inline code argument."
+deny "trust-store write blocked: \`docket trust add/rm\` is operator-reserved and never in scope for an executor step, whatever the brief says. If your step genuinely needs a trust entry changed, that is a routing defect: record the mismatch as your step's finding through the gap channel your brief names, and do not retry this call. If this command performs no trust-store write, the matcher has false-positived on the phrase appearing as prose or as an interpreter's code argument (known limitation): to read or search a file's content, use the Read or Grep tool instead (bypasses this matcher entirely); to write prose that names the phrase, put it in a file through the Write tool where your archetype has one, and where it does not (executor-read has no Write), report the phrase in your return instead of passing it through Bash."

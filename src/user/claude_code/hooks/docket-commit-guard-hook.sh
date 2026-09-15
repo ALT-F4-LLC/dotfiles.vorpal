@@ -74,6 +74,69 @@ TOOL_NAME=$(printf '%s' "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null) || a
 
 COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null) || allow_default
 [ -n "$COMMAND" ] || allow_default
+# Install integrity before anything else: a hook copy with no sibling lexer
+# file cannot decide whether a git write is present and must fail CLOSED,
+# whatever the engine would say.
+HOOK_DIR="${0%/*}"
+PREPASS_AWK="${HOOK_DIR}/docket-guard-prepass.awk"
+[ -r "$PREPASS_AWK" ] || deny "git write blocked: the commit-guard hook's shared pre-pass file (docket-guard-prepass.awk) is missing or unreadable beside this hook, so it cannot check this command. This is a hook installation defect, not a caller mistake -- report it rather than retrying."
+
+# ENGINE FIRST, PROBE ONLY WHEN A GATE STANDS. The gate query below is one
+# cheap engine call; the DEBUG-trap probe further down is about a dozen
+# processes per Bash call. No workflow in the shared corpus declares a
+# `commit-gate` step today, so before this ordering every git write in
+# every session paid the full probe and then allowed on the not-applicable
+# arm. Now an absent or approved gate allows here, and the probe runs only
+# to decide whether THIS command is a git write against a standing,
+# unapproved gate.
+# --- The decision: engine gate query, replacing the old hook's permission_mode
+# --- case split. See this file's header for why an approved gate authorizes the
+# --- write in any permission mode.
+command -v docket >/dev/null 2>&1 || allow_default
+
+if docket guard gate --step commit-gate >/dev/null 2>&1; then
+    allow_default
+fi
+
+GATE_REASON=$(docket guard gate --step commit-gate 2>&1 >/dev/null) || true
+[ -n "$GATE_REASON" ] || GATE_REASON="no approved commit-gate step in any active run"
+
+# NOT-APPLICABLE IS NOT A DENIAL. [OBSERVED] internal/engine/guard.go:138-147 —
+# the engine returns exactly three verdicts, and only ONE of them is this
+# guard's business:
+#
+#   approved -> allow                                            (handled above)
+#   found    -> `gate "commit-gate" is <state>, not approved`    (DENY: the case
+#               this guard exists for — a run whose pipeline HAS a commit-gate
+#               step that the operator has not yet approved)
+#   default  -> `no type="human" step named "commit-gate" in any active run`
+#               (ALLOW: the gate is ABSENT, not unapproved)
+#
+# The `default` arm is reached by a single query (`:101-108`) that joins steps
+# to runs WHERE the run is active AND the step name matches AND kind=human. So
+# ONE reason string covers two situations that are both "this guard has no
+# opinion": no active run at all, and an active run whose pipeline simply has
+# no commit-gate step (a retro or investigation pipeline, say). Denying either
+# would brick every git write in a session that is not conducting a
+# commit-bearing pipeline — which is exactly what the operator's no-run check
+# found.
+#
+# Allowing here adds no guard where the engine declined to give one: under this
+# repo's auto-mode allow rules (src/user/claude_code.rs, AUTO_MODE_ALLOW_RULES)
+# `git add` and `git commit` are auto-allowed, so an absent gate means a commit
+# no hook checks, by design, not a permission ask.
+# manufacture a verdict where the engine has declined to give one.
+# "no docket database found" joins the not-applicable set for the same reason
+# as the absent-gate arm: no DB means no run means this guard has no opinion.
+# [MEASURED] every guard verb exits 2 with that error in a repo
+# with no .docket up-tree — without this arm, this hook denies every git
+# commit/push/add in every non-docket repo. Engine-side fix (NOT_FOUND off
+# the deny channel) filed; this is the hook-side mitigation.
+case $GATE_REASON in
+    *'in any active run'*) allow_default ;;
+    *'no docket database found'*) allow_default ;;
+esac
+
 
 # --- Leaf enumeration: ask bash, don't re-derive it. ---------------------
 #
@@ -119,15 +182,15 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
     shopt -s extdebug
     set -T
     COMMAND=$(cat)
-    n=0
+    _leaf_n=0   # not `n`: the analyzed command shares this shell, and `for n in …` collided with the counter
     _guard_probe() {
-        n=$((n + 1))
-        if [ "$n" -gt 2000 ]; then
+        _leaf_n=$((_leaf_n + 1))
+        if [ "$_leaf_n" -gt 2000 ]; then
             exit 113
         fi
         # The first firing is this probe own eval line, not a leaf of the
         # command; recording it would put an interpreter word in every walk.
-        if [ "$n" -eq 1 ] && [ "$BASH_COMMAND" = "eval \"\$COMMAND\"" ]; then
+        if [ "$_leaf_n" -eq 1 ] && [ "$BASH_COMMAND" = "eval \"\$COMMAND\"" ]; then
             return 0
         fi
         local head="${BASH_COMMAND%%[ $'"'"'\t\n'"'"']*}"
@@ -287,10 +350,7 @@ SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v RS='\036' -v widen="$WIDEN" '
 # is a bash parameter expansion on `$0` rather than a call to the external
 # `dirname`: this hook's dependency set is fixed at bash/cat/jq/awk, and the
 # test suite runs it with PATH restricted to exactly those.
-HOOK_DIR="${0%/*}"
 [ "$HOOK_DIR" = "$0" ] && HOOK_DIR="."
-PREPASS_AWK="${HOOK_DIR}/docket-guard-prepass.awk"
-[ -r "$PREPASS_AWK" ] || deny "git write blocked: the commit-guard hook's shared pre-pass file (docket-guard-prepass.awk) is missing or unreadable beside this hook, so it cannot check this command. This is a hook installation defect, not a caller mistake -- report it rather than retrying."
 STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk -f "$PREPASS_AWK" 2>/dev/null) || allow_default
 
 # THE MATCH: `git (commit|push|add)`, head-normalized on `git` and skipping
@@ -390,52 +450,5 @@ function decode(raw,    inner, cpos) {
 ' 2>/dev/null)
 [ "$MATCH" = "MATCH" ] || allow_default
 
-# --- The decision: engine gate query, replacing the old hook's permission_mode
-# --- case split. See this file's header for why an approved gate authorizes the
-# --- write in any permission mode.
-command -v docket >/dev/null 2>&1 || allow_default
 
-if docket guard gate --step commit-gate >/dev/null 2>&1; then
-    allow_default
-fi
-
-GATE_REASON=$(docket guard gate --step commit-gate 2>&1 >/dev/null) || true
-[ -n "$GATE_REASON" ] || GATE_REASON="no approved commit-gate step in any active run"
-
-# NOT-APPLICABLE IS NOT A DENIAL. [OBSERVED] internal/engine/guard.go:138-147 —
-# the engine returns exactly three verdicts, and only ONE of them is this
-# guard's business:
-#
-#   approved -> allow                                            (handled above)
-#   found    -> `gate "commit-gate" is <state>, not approved`    (DENY: the case
-#               this guard exists for — a run whose pipeline HAS a commit-gate
-#               step that the operator has not yet approved)
-#   default  -> `no type="human" step named "commit-gate" in any active run`
-#               (ALLOW: the gate is ABSENT, not unapproved)
-#
-# The `default` arm is reached by a single query (`:101-108`) that joins steps
-# to runs WHERE the run is active AND the step name matches AND kind=human. So
-# ONE reason string covers two situations that are both "this guard has no
-# opinion": no active run at all, and an active run whose pipeline simply has
-# no commit-gate step (a retro or investigation pipeline, say). Denying either
-# would brick every git write in a session that is not conducting a
-# commit-bearing pipeline — which is exactly what the operator's no-run check
-# found.
-#
-# Allowing here does NOT make those commits unguarded: `git commit` remains a
-# `Bash(git commit:*)` permission-ask (E3), which is the whole of the remaining
-# defense now that the old fleet's guard-no-commit-hook.sh is deleted. This hook
-# re-keys the DECISION to engine truth where engine truth exists; it does not
-# manufacture a verdict where the engine has declined to give one.
-# "no docket database found" joins the not-applicable set for the same reason
-# as the absent-gate arm: no DB means no run means this guard has no opinion.
-# [MEASURED] every guard verb exits 2 with that error in a repo
-# with no .docket up-tree — without this arm, this hook denies every git
-# commit/push/add in every non-docket repo. Engine-side fix (NOT_FOUND off
-# the deny channel) filed; this is the hook-side mitigation.
-case $GATE_REASON in
-    *'in any active run'*) allow_default ;;
-    *'no docket database found'*) allow_default ;;
-esac
-
-deny "git write blocked: ${GATE_REASON}. A git write needs an APPROVED commit-gate step on an active run — approve it with \`docket step approve\`, then retry. If this command performs no git write, the retained text matcher has false-positived on git-write wording inside it (known limitation): to read a file's content, use the Read or Grep tool instead (bypasses this matcher entirely); only if the command must pass literal content through as an argument, write that content to a file and pass the path instead."
+deny "git write blocked: ${GATE_REASON}. A git write needs an APPROVED commit-gate step on an active run — report COMMIT BLOCKED with this reason and do not retry: approval is the conductor's decision through the run's gate, never this caller's verb. If this command performs no git write, the retained text matcher has false-positived on git-write wording inside it (known limitation): to read a file's content, use the Read or Grep tool instead (bypasses this matcher entirely); only if the command must pass literal content through as an argument, write that content to a file and pass the path instead."

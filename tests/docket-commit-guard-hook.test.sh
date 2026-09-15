@@ -285,6 +285,11 @@ case_must_allow_terminal_fix_negative_controls() {
     assert_verdict 'which git' ALLOW 'which git (query, no subcommand follows)'
     assert_verdict 'type git' ALLOW 'type git (query, no subcommand follows)'
     assert_verdict 'nice -n 10 echo hi' ALLOW 'nice -n 10 <non-git command>'
+    # The probe's leaf counter shares a shell with the analyzed command; a
+    # command that assigns `n` used to move the counter (a five-iteration
+    # `for n in` loop was denied as "over 2000 parts").
+    assert_verdict 'for n in 100 833 922 1324 2026; do echo "$n"; done' ALLOW \
+        'for n in … loop: the probe counter does not collide with the command'
 }
 
 # ---- MUST ALLOW: computed subcommand, accepted residual -------------------

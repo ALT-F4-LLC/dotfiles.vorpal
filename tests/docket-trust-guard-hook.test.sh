@@ -183,6 +183,10 @@ case_ordinary_docket_verbs_allow() {
         "executor: unrelated docket verb"
     assert_verdict "docket trust show erik" executor-write ALLOW \
         "executor: docket trust show (not add/rm)"
+    # The probe's leaf counter shares a shell with the analyzed command; a
+    # command that assigns `n` used to move the counter and trip the cap.
+    assert_verdict 'for n in 100 833 922 1324 2026; do echo "$n"; done' executor-write ALLOW \
+        "executor: for n in … loop (the probe counter does not collide with the command)"
 }
 
 # ---- MUST NOT CATCH: prose / read-only, from an executor -------------------

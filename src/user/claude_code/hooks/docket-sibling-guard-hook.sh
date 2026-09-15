@@ -423,15 +423,15 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
     shopt -s extdebug
     set -T
     COMMAND=$(cat)
-    n=0
+    _leaf_n=0   # not `n`: the analyzed command shares this shell, and `for n in …` collided with the counter
     _guard_probe() {
-        n=$((n + 1))
-        if [ "$n" -gt 2000 ]; then
+        _leaf_n=$((_leaf_n + 1))
+        if [ "$_leaf_n" -gt 2000 ]; then
             exit 113
         fi
         # The first firing is this probe own eval line, not a leaf of the
         # command; recording it would put an interpreter word in every walk.
-        if [ "$n" -eq 1 ] && [ "$BASH_COMMAND" = "eval \"\$COMMAND\"" ]; then
+        if [ "$_leaf_n" -eq 1 ] && [ "$BASH_COMMAND" = "eval \"\$COMMAND\"" ]; then
             return 0
         fi
         local head="${BASH_COMMAND%%[ $'"'"'\t\n'"'"']*}"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# synthesize-findings.md restates findings-cluster@4's top-level key names in
+# synthesize-findings.md restates findings-cluster@5's top-level key names in
 # prose (a fenced sentence, CLUSTER-KEYS-BEGIN/END, in its ## Payload
 # section). Nothing else compares the restatement to the schema: if the
 # schema gains, drops, or renames a key, the prose can go stale silently and
@@ -23,7 +23,7 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 CORPUS="${CORPUS_DIR:-${SCRIPT_DIR}/../src/user/docket/config}"
 
 CONTRACT="${CORPUS}/contracts/synthesize-findings.md"
-SCHEMA="${CORPUS}/schemas/findings-cluster@4.json"
+SCHEMA="${CORPUS}/schemas/findings-cluster@5.json"
 
 if ! command -v jq >/dev/null 2>&1; then
     echo "contract-cluster-keys: FAIL — jq is required and not on PATH." >&2
@@ -70,21 +70,21 @@ fail=0
 comm -23 "${WORK}/fence" "${WORK}/schema-properties" > "${WORK}/fence-only"
 while read -r key; do
     [ -n "$key" ] || continue
-    echo "FAIL ${key}: fenced in the contract but not a findings-cluster@4 property"
+    echo "FAIL ${key}: fenced in the contract but not a findings-cluster@5 property"
     fail=1
 done < "${WORK}/fence-only"
 
 comm -13 "${WORK}/fence" "${WORK}/schema-properties" > "${WORK}/schema-only"
 while read -r key; do
     [ -n "$key" ] || continue
-    echo "FAIL ${key}: a findings-cluster@4 property the contract's fence omits"
+    echo "FAIL ${key}: a findings-cluster@5 property the contract's fence omits"
     fail=1
 done < "${WORK}/schema-only"
 
 comm -23 "${WORK}/schema-required" "${WORK}/fence" > "${WORK}/required-missing"
 while read -r key; do
     [ -n "$key" ] || continue
-    echo "FAIL ${key}: required by findings-cluster@4 but not named in the contract's fence"
+    echo "FAIL ${key}: required by findings-cluster@5 but not named in the contract's fence"
     fail=1
 done < "${WORK}/required-missing"
 
@@ -92,4 +92,4 @@ if [ "$fail" -ne 0 ]; then
     echo "contract-cluster-keys: FAIL" >&2
     exit 1
 fi
-echo "contract-cluster-keys: PASS ($(wc -l < "${WORK}/fence" | tr -d ' ') keys checked against findings-cluster@4)"
+echo "contract-cluster-keys: PASS ($(wc -l < "${WORK}/fence" | tr -d ' ') keys checked against findings-cluster@5)"

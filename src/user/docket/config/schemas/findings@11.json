@@ -61,7 +61,7 @@
         "type": "string"
       },
       "members": {
-        "description": "The cluster's member severities, in arrival order. Present on the `aggregate` output ONLY. It is NOT how synthesize-findings carries a cluster: synthesize declares `payload = \"findings-cluster@3\"`, whose scalar-or-array `severity` is the `aggregate` builtin's INPUT contract, reading member severities from each input element's own `severity` field rather than from a `members` array; the linkage between elements of one cluster is carried in `member_ids` (findings-cluster@3), not here. Values are the same ladder as `severity`; the constraint is not repeated as an `enum` here because `aggregate@1` leaves `members` unconstrained and the conjunction of the two documents must stay satisfiable.",
+        "description": "The cluster's member severities, in arrival order. Present on the `aggregate` output ONLY. It is NOT how synthesize-findings carries a cluster: synthesize declares `payload = \"findings-cluster@5\"`, whose scalar-or-array `severity` is the `aggregate` builtin's INPUT contract, reading member severities from each input element's own `severity` field rather than from a `members` array; the linkage between elements of one cluster is carried in `member_ids` (findings-cluster@5), not here. Values are the same ladder as `severity`; the constraint is not repeated as an `enum` here because `aggregate@1` leaves `members` unconstrained and the conjunction of the two documents must stay satisfiable.",
         "type": "array",
         "minItems": 1
       },

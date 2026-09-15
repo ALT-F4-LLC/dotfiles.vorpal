@@ -6,7 +6,7 @@ packet_includes:
   - fragments/prime-directive.md
   - fragments/evidence-rules.md
 emits: findings
-payload: findings-cluster@4
+payload: findings-cluster@5
 ---
 # Charter
 
@@ -34,7 +34,7 @@ this role into diagnosis or verification of the underlying defects.
 Identify the issue, run, review round, current judge artifacts, and declared
 schema. Read each artifact's body and payload, including evidence limitations
 and dispositions. Use the schema supplied for this step; if it is absent,
-retrieve it with `docket schema show findings-cluster@4 --body` from the assigned
+retrieve it with `docket schema show findings-cluster@5 --body` from the assigned
 checkout. An unavailable registered schema is a missing input, not permission
 to substitute a similarly named file or remembered schema.
 
@@ -170,7 +170,7 @@ identities.
 # Emit
 
 Emit `findings` as a markdown body and the array payload, following the brief's
-recording protocol. Use `findings-cluster@4` for structure and the requirements
+recording protocol. Use `findings-cluster@5` for structure and the requirements
 below for completeness. Its validation does not enforce all these requirements.
 
 ## Body
@@ -193,11 +193,11 @@ Keep explanations brief without abbreviating required evidence.
 ## Payload
 
 <!-- CLUSTER-KEYS-BEGIN: tests/contract-cluster-keys.test.sh diffs this
-     sentence's backticked names against findings-cluster@4's top-level
+     sentence's backticked names against findings-cluster@5's top-level
      `.items.properties` keys. Edit both together. -->
-findings-cluster@4's top-level keys are `id`, `title`, `severity`,
-`member_ids`, `member_sources`, `file`, `line`, `evidence`, `alternative`, and
-`prior_disposition`.
+findings-cluster@5's top-level keys are `id`, `title`, `severity`,
+`open_severity`, `member_ids`, `member_sources`, `file`, `line`, `evidence`,
+`alternative`, and `prior_disposition`.
 <!-- CLUSTER-KEYS-END -->
 
 Every entry carries non-empty `id` and `title`, and a valid `severity`:

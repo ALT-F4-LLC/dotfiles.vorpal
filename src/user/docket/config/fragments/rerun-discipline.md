@@ -1,6 +1,6 @@
 ---
 fragment: rerun-discipline
-version: 10
+version: 11
 ---
 # Re-run discipline
 
@@ -29,12 +29,14 @@ include staged, unstaged, or untracked candidate changes; include all relevant
 candidate inputs in the private snapshot before relying on its results. If the
 intended state cannot be established, keep the dependent conclusion unverified.
 
-Create a fresh, uniquely allocated directory beneath the inherited `$TMPDIR`
-for each step attempt and set `STEP_PRIVATE_TMP` to it; creating the directory
-alone does not redirect those writes. Set each command's `TMPDIR` and relevant
-tool-specific paths to redirect its private temporary, build-output, and
-writable cache paths beneath it, including `GOCACHE`; for Go, account for
-`GOTMPDIR` and `GOMODCACHE` as well.
+Allocate each attempt's scratch inside your assigned private step directory
+(the brief's `<TMP>/<STEP-N>.d`, by the literal path the brief pins once;
+never re-resolve `$TMPDIR` mid-step, since a sandboxed and an unsandboxed
+call can resolve it differently) and set `STEP_PRIVATE_TMP` to that
+directory; creating it alone does not redirect writes. Set each command's
+`TMPDIR` and relevant tool-specific paths to redirect its private temporary,
+build-output, and writable cache paths beneath it, including `GOCACHE`; for
+Go, account for `GOTMPDIR` and `GOMODCACHE` as well.
 Follow the evidence rules for fresh execution versus cached results. Use a
 private source copy when a command can write into the source tree or sibling
 edits could change its inputs. Isolate other mutable resources the command uses,
@@ -58,13 +60,15 @@ to that copy and preserve the control result and mutation diff as evidence.
 Never plant or undo a scratch mutation in the shared checkout.
 
 Never use `git stash` to obtain a clean tree: the stash stack is shared by the
-repository's worktrees. For a committed comparison base, resolve the intended
-base to a commit ID, set `STEP_BASE_COMMIT` to it, and export that commit with
-`git archive` into a fresh directory beneath `$STEP_PRIVATE_TMP`, extracting
-the archive into a `tree` subdirectory there. Use `HEAD` only when verified to
-be the intended base. An archive omits Git metadata and submodule contents;
-when the comparison needs them, report the comparison as unavailable rather
-than creating a linked worktree.
+repository's worktrees. For a committed comparison base, use the one baseline
+export sequence the corpus defines (completion-gates: resolve the intended
+base to a commit ID in `STEP_BASE_COMMIT`, `mktemp -d` a `base.XXXXXX`
+directory under `$STEP_PRIVATE_TMP` as `gate_baseline_dir`, `git archive`
+that commit into it, and extract into its `tree` subdirectory), so a judge's
+probe and a gate's baseline land in the same root. Use `HEAD` only when
+verified to be the intended base. An archive omits Git metadata and
+submodule contents; when the comparison needs them, report the comparison as
+unavailable rather than creating a linked worktree.
 
 Keep logs, comparison files, and state records outside disposable export
 directories, and retain them for review and reconciliation. Remove only export

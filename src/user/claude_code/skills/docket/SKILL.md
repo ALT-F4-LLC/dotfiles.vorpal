@@ -1,11 +1,14 @@
 ---
 name: docket
-description: >
-  Use the Docket CLI for issues, documents, votes, and workflow definitions
-  when the operator names Docket or the conversation already uses a Docket
-  project. Includes inspection, safe mutations, and engine diagnostics;
-  routes Docket planning, bootstrap, and run execution to their companion
-  skills.
+description: >-
+  Use when the operator names Docket or asks about issues, documents, votes,
+  runs, or gates in a repository bound to a Docket project: inspection, safe
+  tracker mutations, run and gate inspection, and engine diagnostics. Routes
+  planning to docket-plan, driving to docket-run, binding to docket-bootstrap,
+  registry work to docket-reconcile, corpus authoring to docket-refit, backlog
+  grooming to docket-groom, and the route-tend queue to tend. Inspecting a run
+  never starts or advances it, and recording an issue never authorizes the
+  work.
 ---
 
 # Docket
@@ -212,7 +215,9 @@ survive between calls, and remove it when no longer needed.
   failure.
 
 Use [transport](references/transport.md) for issue leases and
-[the step/dispatch contracts](reference.md) for worker claims, packets,
+[the step contracts](../docket-run/references/step.md#docket-step--stepgo) and
+[dispatch contracts](../docket-run/references/dispatch.md#docket-dispatch--dispatchgo)
+for worker claims, packets,
 usage, worktrees, records, and reconciliation. The run conductor owns the
 scheduling loop; do not reconstruct its state from conversation memory.
 
@@ -262,7 +267,8 @@ contents list; search for the command or heading before loading a section.
 | [Workflows](references/workflows.md) | Engine config, workflow registration/lint, matching, gates, packets, actions, fanout, loops |
 | [Schemas](references/schemas.md) | Immutable schemas, validation, ordered enums, conservative median ties |
 | [Voting](references/voting.md) | Proposals, named seats, weighted tallies, post-approval routing |
-| [CLI reference](reference.md) | Exact flags, response shapes, run/step/dispatch/guard/trust contracts |
+| [Queue ownership](references/queue-ownership.md) | Which open issues a backlog-reading skill may take (run-included, claimed, routed elsewhere), the `--limit 1000` rule, and what to do without AskUserQuestion; shared by docket-plan, docket-groom, and tend |
+| [CLI reference](reference.md#contents) | Exact flags and response shapes for the tracker and authoring verbs; the engine families (run, step, dispatch, events, guard, trust, gate, policy, registry, report, doctor) are under [docket-run's references](../docket-run/references/run.md) |
 
 For live diagnosis, prefer `doctor` for attachment checks, `gate status`
 for a gate's outcome and missing seats, and `run report` for status,

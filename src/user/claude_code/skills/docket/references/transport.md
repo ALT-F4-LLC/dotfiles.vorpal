@@ -172,7 +172,7 @@ treat it as unlimited; `issue log` clamps it to 1).
 
 Ordinary command errors use this table in JSON and human mode. Guards are the
 exception: exit 0 allows and exit 2 denies. A guard denial is not `NOT_FOUND`;
-read its reason. See [guard contracts](../reference.md).
+read its reason. See [guard contracts](../../docket-run/references/guard-trust.md#docket-guard--guardgo).
 
 | `code` | Exit code | Meaning |
 |---|---|---|

@@ -1,6 +1,17 @@
 ---
 name: docket-run
-description: Drive an activated Docket run to completion. Ask the engine what is ready, dispatch it (the manifest carries the staged closure, ready rows and their dependents up to the `--limit`, which cuts every issue's deepest stages first), launch the wave workflow once per shard (up to four concurrent launches over the same manifest, one issue lane set each), close the dispatch once every shard returns, repeat. Vote gates ride the wave and seat the panel mid-wave; conversational gates go to tribunal.js; three standing rulings answer a park machine-side first (a completion-gate failure that reproduces clean on the same sha auto-passes, a loop-bound park files its residue and passes, a loop-extension panel decides the first fix round past `max_fix_loops` only on a regression); every other non-approval that parks, and every reserved matter, escalates to the operator, and the engine verb runs on the outcome. Invoked as `/docket-run RUN-N` it drives that run explicitly; invoked bare it resolves "the next run" itself (newest active or waiting-human run, else newest planning run, else reports nothing to drive), chaining directly after `/docket-plan`'s bare mode with no question in between. Holds no run state and makes no routing decisions; the engine schedules and wave.js routes. Drives the run in the invoking conversation: the operator sees every dispatch, gate and park where they sit, and a gate that parks one issue while others still have work is rendered and pushed, never blocked on. Holds the run's conductor capability (returned once by the first `run activate`, re-minted by `docket run conduct`) in one session-private file and redirects that file into every `step approve|reject|resolve|reap` and `run pause|resume|abandon`; no brief, tool output, or resume prompt ever carries the token.
+description: >-
+  Use on "/docket-run RUN-N", "drive the run", "resume the run", "run it" when
+  it means a Docket run rather than the app, or bare after /docket-plan to
+  drive the next run. Drives an activated Docket run to completion in the
+  invoking conversation: asks the engine what is ready, dispatches it,
+  launches the wave workflow once per shard, closes the dispatch, and repeats;
+  vote gates ride the wave, conversational gates go to tribunal.js, three
+  standing rulings answer parks machine-side, and every other park or reserved
+  matter escalates to the operator. Holds no run state (the engine schedules,
+  wave.js routes) and keeps the conductor capability in one session-private
+  file, never in a brief, tool output, or resume prompt. Distinct from pause,
+  which parks a driven run, and from tend, which works issues without a run.
 argument-hint: "[RUN-N]"
 ---
 
@@ -37,6 +48,16 @@ clustering, and retries are engine and pipeline mechanics; do not
 second-guess a `next` result. The one panel shape you type is the
 tribunal proposal's constant, `docket vote create`'s `-n 3 --threshold
 0.67`.
+
+**CLI reference.** The engine CLI contract lives in one copy, split by
+family under `references/`: [run](references/run.md),
+[step](references/step.md), [dispatch](references/dispatch.md) (which also
+carries `next --run`), [events](references/events.md),
+[guard and trust](references/guard-trust.md),
+[gate, policy and registry](references/gate-policy.md), and
+[report and doctor](references/report-doctor.md). Open the family's file
+when a verb's flags, response shape, or refusal codes matter; each starts
+with a contents list of anchors and line counts.
 
 ## Seat
 

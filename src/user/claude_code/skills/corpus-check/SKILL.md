@@ -1,6 +1,14 @@
 ---
 name: corpus-check
-description: Audit src/user/claude_code and src/user/docket/config for coherence and consistency — mechanical reference breakage plus semantic drift (contradictions, terminology, staleness) across skills, agents, contracts, fragments, workflows, policy, and schemas. Runs `just crossref-check` first, then a full multi-agent audit via the corpus-check workflow, fixes mechanical breakage directly, and applies operator-confirmed semantic fixes. Mechanical findings are safe to edit directly; all other fixes wait for confirmation. Use after a batch of prose changes to either tree, or on "audit the corpus", "check corpus coherence", "/corpus-check", "did my prose edits break anything", or "is the skill/docket config still consistent".
+description: >-
+  Use after a batch of prose changes to src/user/claude_code or
+  src/user/docket/config, or on "audit the corpus", "check corpus coherence",
+  "/corpus-check", "did my prose edits break anything", or "is the
+  skill/docket config still consistent". Audits both trees for mechanical
+  reference breakage (runs crossref-check first) and semantic drift
+  (contradictions, terminology, staleness) through a multi-agent workflow;
+  fixes mechanical breakage directly and applies semantic fixes only after
+  operator confirmation.
 argument-hint: "[since ref, e.g. main or a commit sha]"
 model: fable
 ---
@@ -75,9 +83,10 @@ Workflow({ scriptPath: "<absolute installed path to corpus-check.js>", args: {si
 ```
 
 This fans out one agent per file over both trees (sharded by line range for
-any file over roughly 1500 lines — `docket-run/SKILL.md`,
-`docket/reference.md`, and `workflows/wave.js` are the known cases as of
-writing; the workflow measures sizes itself at run time), runs a
+any file over roughly 1500 lines — `docket-run/SKILL.md` and
+`workflows/wave.js` are the known cases as of writing, since
+`docket/reference.md` was split by consumer; the workflow measures sizes
+itself at run time), runs a
 completeness pass that re-dispatches any file or range nothing covered,
 then a cross-boundary pass pairing claims one tree makes about the other,
 then verifies raw findings in per-file batches (independent skeptics voting

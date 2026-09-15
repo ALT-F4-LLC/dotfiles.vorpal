@@ -274,7 +274,7 @@ are the only three things a bound on one does.
 
 | Key | Bounds |
 |---|---|
-| `max` | how many steps of the class may be `claimed`/`running` at once. A **finite** `max` is also what makes the class write-class for [dispatch reap acknowledgments](../reference.md#docket-dispatch--dispatchgo) — a class with no `max` gets neither ack rows nor a headroom hold |
+| `max` | how many steps of the class may be `claimed`/`running` at once. A **finite** `max` is also what makes the class write-class for [dispatch reap acknowledgments](../../docket-run/references/dispatch.md#docket-dispatch--dispatchgo) — a class with no `max` gets neither ack rows nor a headroom hold |
 | `lease_ttl` | the lease a claim of this class takes, overriding `docket config lease.ttl.<class>` |
 | `max_step_duration` | a **schedule-to-close** bound measured from the claim, **independent of heartbeats** |
 
@@ -524,7 +524,7 @@ never interprets it — there is no registry of known gates, no gate whose name
 has behavior, and no default gate.
 
 **Every gate needs a matching trust entry or it does not run** (see [trust
-contracts](../reference.md#docket-trust--trustgo)). A gate declaration does
+contracts](../../docket-run/references/guard-trust.md#docket-trust--trustgo)). A gate declaration does
 not authorize adding trust; apply the companion policy and existing user
 authorization. An unmatched gate is recorded `verdict: "unmatched"` with
 null `argv` and null `exit`, nothing spawns, and **the step fails** and

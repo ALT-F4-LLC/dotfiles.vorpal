@@ -13,6 +13,7 @@ description: >-
   closure, lints consumers, files engine issues, and commits. Bare invocation
   runs corpus mode over every surface. Runs in the main session so its gates
   are real questions.
+model: fable
 ---
 
 # docket-refit

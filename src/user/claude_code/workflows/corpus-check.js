@@ -250,7 +250,7 @@ Check for:
 4. Prose violations: filler, promotional adjectives, edit-history narration
    instead of current behavior, and issue-tracker references outside marked
    evidence citations. If CLAUDE.md is in scope, first read its
-   "Prose, simplicity, and harness rules" section.
+   "Prose rules" section.
 
 Do not flag "user" versus "operator" in src/user/claude_code/references/working-agreement.md
 or CLAUDE.md: they are the operator's own charter, outside this corpus's style authority.

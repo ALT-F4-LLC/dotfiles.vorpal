@@ -1,9 +1,8 @@
 ---
 node: revise-investigation
-version: 6
+version: 7
 archetype: executor-read
 packet_includes:
-  - fragments/prime-directive.md
   - fragments/truth-first.md
   - fragments/evidence-rules.md
   - fragments/writing-for-humans.md

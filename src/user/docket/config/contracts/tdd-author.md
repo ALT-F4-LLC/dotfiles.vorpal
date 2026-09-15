@@ -1,9 +1,8 @@
 ---
 node: tdd-author
-version: 10
+version: 11
 archetype: executor-write
 packet_includes:
-  - fragments/prime-directive.md
   - fragments/doc-house-style.md
   - fragments/writing-for-humans.md
   - fragments/code-philosophy.md

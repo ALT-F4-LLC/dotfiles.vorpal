@@ -1,9 +1,8 @@
 ---
 node: judge-testing
-version: 13
+version: 14
 archetype: executor-read
 packet_includes:
-  - fragments/prime-directive.md
   - fragments/design-search.md
   - fragments/tdd-discipline.md
   - fragments/severity-ladder-general.md

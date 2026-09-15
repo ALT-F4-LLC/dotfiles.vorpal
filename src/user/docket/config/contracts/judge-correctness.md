@@ -1,9 +1,8 @@
 ---
 node: judge-correctness
-version: 20
+version: 21
 archetype: executor-read
 packet_includes:
-  - fragments/prime-directive.md
   - fragments/design-search.md
   - fragments/hard-gates.md
   - fragments/severity-ladder-general.md

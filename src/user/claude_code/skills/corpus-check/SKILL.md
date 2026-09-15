@@ -23,9 +23,10 @@ the working tree, the same reasoning `frozen-drift-check` uses):
 
 Out of scope unless the operator explicitly widens it: `hooks/`,
 `settings.rs`, `statusline.sh`, `allowed_signers`, `src/user/docket/bin`.
-Never edit `fragments/prime-directive.md` — it is a verbatim copy of the
-operator's own global `~/.claude/CLAUDE.md` charter, owned outside this
-corpus; report drift there as an operator decision, never as a fix to apply.
+Never edit `src/user/claude_code/references/working-agreement.md` or
+`src/user/claude_code/CLAUDE.md` — they are the operator's own working
+agreement, owned outside this corpus's style authority; report drift there
+as an operator decision, never as a fix to apply.
 Never run `just activate`.
 
 `$ARGUMENTS` optionally names a git ref (branch or SHA). Pass it through as

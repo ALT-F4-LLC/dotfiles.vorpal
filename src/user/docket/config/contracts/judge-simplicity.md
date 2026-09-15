@@ -1,9 +1,8 @@
 ---
 node: judge-simplicity
-version: 16
+version: 17
 archetype: executor-read
 packet_includes:
-  - fragments/prime-directive.md
   - fragments/design-search.md
   - fragments/code-philosophy.md
   - fragments/laziness-ladder.md

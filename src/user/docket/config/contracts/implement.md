@@ -1,9 +1,8 @@
 ---
 node: implement
-version: 14
+version: 15
 archetype: executor-write
 packet_includes:
-  - fragments/prime-directive.md
   - fragments/code-philosophy.md
   - fragments/design-search.md
   - fragments/laziness-ladder.md

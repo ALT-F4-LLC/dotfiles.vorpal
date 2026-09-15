@@ -1,9 +1,8 @@
 ---
 node: research
-version: 7
+version: 8
 archetype: executor-research
 packet_includes:
-  - fragments/prime-directive.md
   - fragments/design-search.md
   - fragments/evidence-rules.md
   - fragments/writing-for-humans.md

@@ -1,9 +1,8 @@
 ---
 node: spec-author
-version: 8
+version: 9
 archetype: executor-write
 packet_includes:
-  - fragments/prime-directive.md
   - fragments/design-search.md
   - fragments/doc-house-style.md
   - fragments/writing-for-humans.md

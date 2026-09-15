@@ -1,9 +1,8 @@
 ---
 node: adr-author
-version: 9
+version: 10
 archetype: executor-write
 packet_includes:
-  - fragments/prime-directive.md
   - fragments/design-search.md
   - fragments/doc-house-style.md
   - fragments/writing-for-humans.md

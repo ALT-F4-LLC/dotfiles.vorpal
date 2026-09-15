@@ -1,9 +1,8 @@
 ---
 node: synthesize-findings
-version: 22
+version: 23
 archetype: executor-read
 packet_includes:
-  - fragments/prime-directive.md
   - fragments/evidence-rules.md
 emits: findings
 payload: findings-cluster@5

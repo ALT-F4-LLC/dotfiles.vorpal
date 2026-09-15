@@ -252,8 +252,8 @@ Check for:
    evidence citations. If CLAUDE.md is in scope, first read its
    "Prose, simplicity, and harness rules" section.
 
-Do not flag "user" versus "operator" in fragments/prime-directive.md:
-it copies the operator's external charter, outside this corpus's style authority.
+Do not flag "user" versus "operator" in src/user/claude_code/references/working-agreement.md
+or CLAUDE.md: they are the operator's own charter, outside this corpus's style authority.
 Do not invent defects. Return empty findings and a one-line note for a clean file.
 Set needsOperatorDecision=true for fixes touching schemas/*.json, conflicting
 defensible rules with no clear dominant answer, or unexplained deliberate-looking

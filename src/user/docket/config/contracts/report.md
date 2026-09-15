@@ -1,9 +1,8 @@
 ---
 node: report
-version: 8
+version: 9
 archetype: executor-read
 packet_includes:
-  - fragments/prime-directive.md
   - fragments/truth-first.md
   - fragments/evidence-rules.md
   - fragments/writing-for-humans.md

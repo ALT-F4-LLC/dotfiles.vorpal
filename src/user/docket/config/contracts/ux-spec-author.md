@@ -1,9 +1,8 @@
 ---
 node: ux-spec-author
-version: 11
+version: 12
 archetype: executor-write
 packet_includes:
-  - fragments/prime-directive.md
   - fragments/design-search.md
   - fragments/doc-house-style.md
   - fragments/writing-for-humans.md

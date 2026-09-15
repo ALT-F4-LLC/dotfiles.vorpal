@@ -1,9 +1,8 @@
 ---
 node: drain-highs
-version: 13
+version: 14
 archetype: executor-read
 packet_includes:
-  - fragments/prime-directive.md
   - fragments/evidence-rules.md
   - fragments/writing-for-humans.md
 emits: drain-report

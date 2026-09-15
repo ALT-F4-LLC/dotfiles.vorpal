@@ -1,9 +1,8 @@
 ---
 node: dispose
-version: 9
+version: 10
 archetype: executor-write
 packet_includes:
-  - fragments/prime-directive.md
   - fragments/evidence-rules.md
   - fragments/writing-for-humans.md
   - fragments/scope-discipline.md

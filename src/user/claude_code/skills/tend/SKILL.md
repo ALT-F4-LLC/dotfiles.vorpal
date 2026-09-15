@@ -79,8 +79,15 @@ After the exclusions, the queue is either:
    crypto, sandbox/permissions, a trust boundary, supply chain, or untrusted
    input at a privilege boundary, ask the operator via `AskUserQuestion` —
    proceed anyway, skip it, or take it themselves — before touching
-   anything. Everything else, any kind, any size, gets tended: seat a
-   worker (§3) and go.
+   anything. "Skip it" and "take it themselves" are state changes, not
+   things to remember: `docket issue move <id> review` with a comment
+   naming the answer (`docket issue comment add <id> -m "tend: operator
+   skipped, security-sensitive"` or `... -m "tend: operator takes it"`),
+   the same exit the blocked case in step 4 uses, so the `-s backlog -s
+   todo` query never re-offers the issue and no later tick asks the same
+   question again. Selection is lowest-id-first, so a skip that changed no
+   state would block every issue behind it. Everything else, any kind, any
+   size, gets tended: seat a worker (§3) and go.
 3. Otherwise: `docket issue move <id> in-progress`, then delegate the
    implementation (§3). You orchestrate; you do not implement. Read or grep
    in this conversation only as far as seating the worker requires — the

@@ -20,8 +20,12 @@
 # HOW. tribunal.js fences its brief renderer (judgeBrief and its helpers) in
 # TEST-BEGIN/TEST-END `seat-brief` markers. This suite extracts that region
 # plus the `lensOf`/`TARGET_SHA_RE` globals it reaches for outside the
-# markers, stubs `lensOf`, and asserts the rendered brief — conversational AND
-# mid-wave — names both safe-read verbs.
+# markers, stubs `lensOf`, and asserts the rendered brief names the safe-read
+# verbs: `docket run status` in both modes, `docket run activate --dry-run`
+# ONLY in conversational mode (an activation gate previews the bind it would
+# make). A mid-wave step vote previews nothing, so its brief must not carry
+# the activation verb at all — a read-only seat holding a verb one dropped
+# flag away from activating the run is an incident waiting for a typo.
 
 set -uo pipefail
 
@@ -88,20 +92,24 @@ ok(conv.includes('--dry-run is load-bearing'),
     'conversational brief explains why --dry-run matters')
 
 // ---- mid-wave mode: `step` present ----
+// A step vote previews no activation, so the mid-wave brief must NOT hand a
+// read-only seat `docket run activate --dry-run`: the verb is one dropped flag
+// from activating the run, and nothing a step vote reads comes from it.
 const mid = judgeBrief(SEAT, 'DKT-V304', undefined, undefined, '/repo', false, STEP, null, null)
 ok(mid.includes(`docket run status ${STEP.run} --json`),
     `mid-wave brief names docket run status for its own run (got a brief lacking it: ${JSON.stringify(mid.slice(0, 300))})`)
-ok(mid.includes(`docket run activate ${STEP.run} --dry-run --json`),
-    'mid-wave brief names docket run activate --dry-run for its own run')
-ok(mid.includes('--dry-run is load-bearing'),
-    'mid-wave brief explains why --dry-run matters')
+ok(!mid.includes('docket run activate'),
+    'mid-wave brief never names docket run activate, even with --dry-run')
+ok(mid.includes(`docket step show ${STEP.step}`),
+    'mid-wave brief names docket step show for its own step')
 
-// Neither verb is gated behind a target ref or held cluster — every seat sees
-// them regardless of what else the gate carries.
+// The status read is not gated behind a target ref or held cluster — every
+// seat sees it regardless of what else the gate carries — and the activation
+// verb stays absent there too.
 const midWithTarget = judgeBrief(SEAT, 'DKT-V304', undefined, undefined, '/repo', false, STEP,
     { sha: 'a6533be112700bd1c5e0e7c5f0d4a53a4b2c7f19', worktree: '/w' }, null)
-ok(midWithTarget.includes('docket run status') && midWithTarget.includes('docket run activate') && midWithTarget.includes('--dry-run'),
-    'the safe-read verbs survive alongside a target ref')
+ok(midWithTarget.includes('docket run status') && !midWithTarget.includes('docket run activate'),
+    'the status read survives alongside a target ref and the activation verb stays absent')
 
 // ---- the case is rendered VERBATIM in both modes, and no mode sends a seat
 // to the vote record — it prints every sibling cast already landed, and

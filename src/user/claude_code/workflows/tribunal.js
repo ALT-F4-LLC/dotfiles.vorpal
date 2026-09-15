@@ -237,8 +237,9 @@ THE EVIDENCE IS IN THE RECORD, not in this brief: this gate readied mid-wave,
 so read what the claims rest on yourself before you vote —
 
   docket run status ${step.run} --json (this run's state; there is no \`run show\`)
-  docket run activate ${step.run} --dry-run --json   (--dry-run is load-bearing: without it this ACTIVATES the run)
   docket step show ${step.step} / docket step context ${step.step} --json
+  (no \`run activate --dry-run\` here: a step vote previews no activation, and
+   the verb is one dropped flag from activating the run)
   git log --oneline -20 / git diff / git show <sha>
 
 THE EVIDENCE HANGS OFF THE CONTEXT BUNDLE, NOT OFF THE GATE STEP. A vote step

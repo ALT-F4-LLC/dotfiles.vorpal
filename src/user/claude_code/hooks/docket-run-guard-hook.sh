@@ -92,4 +92,4 @@ if [ -n "$RUNS" ]; then
 fi
 
 [ -n "$REASON" ] || REASON="an active run still has work in flight"
-deny "Session stop blocked by run-guard: ${REASON}. Finish or dispatch the named work. If an external dependency, permission, or operator decision blocks it, report that blocker; the next Stop-hook attempt is allowed. Paused and planning runs permit stopping when every live run is in one of those states."
+deny "Session stop blocked by run-guard: ${REASON}. This is a state report, not an instruction to take over the run: if you are conducting it, continue the loop (docket-run's own steps say how); if you are not, report the blocker in your reply and end the turn. If an external dependency, permission, or operator decision blocks the work, report that blocker; the next Stop-hook attempt is allowed. Paused and planning runs permit stopping when every live run is in one of those states."

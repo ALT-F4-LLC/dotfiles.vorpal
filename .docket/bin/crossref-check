@@ -221,8 +221,19 @@ done < <(tokens '(^|[^A-Za-z0-9_./-])/docket-[a-z]+(-[a-z]+)*')
 # A description hands off by name: every docket-<x> in it is a skill
 # directory, and a backticked short form of a docket- skill is refused.
 for f in "$claude_tree"/skills/*/SKILL.md; do
-  desc="$(awk 'NR == 1 && $0 != "---" { exit } NR > 1 && $0 == "---" { exit } index($0, "description:") == 1 { sub(/^description:[[:space:]]*/, ""); print; exit }' "$f")"
+  # The description may be a one-line scalar or a folded block (`>` / `>-`)
+  # whose continuation lines are indented; read the whole entry either way.
+  desc="$(awk 'NR == 1 && $0 != "---" { exit } NR > 1 && $0 == "---" { exit }
+    in_desc && /^[A-Za-z-]+:/ { exit }
+    in_desc { sub(/^[[:space:]]+/, ""); printf "%s ", $0; next }
+    index($0, "description:") == 1 { sub(/^description:[[:space:]]*/, ""); sub(/^>-?[[:space:]]*/, ""); if (length($0)) printf "%s ", $0; in_desc = 1 }' "$f")"
   [ -n "$desc" ] || continue
+  # The listing the harness builds from every description is paid on every
+  # turn of every session, and it truncates entries near 1,500 characters,
+  # silently dropping whatever trigger phrases sit past the cut. Keep each
+  # description a trigger surface, not a manual: at most 1000 characters.
+  desc_len=$(printf '%s' "$desc" | sed 's/ *$//' | wc -c | tr -d ' ')
+  [ "$desc_len" -le 1000 ] || fail skill "$f" 1 "description is ${desc_len} characters; the listing truncates near 1500 and the ceiling is 1000 — lead with the trigger phrases and move the rest into the body"
   while IFS= read -r name; do
     [ -n "$name" ] || continue
     [ -d "$claude_tree/skills/$name" ] || fail skill "$f" 1 "description names $name, not a skill under $claude_tree/skills"
@@ -231,7 +242,10 @@ for f in "$claude_tree"/skills/*/SKILL.md; do
     [ -n "$short" ] || continue
     [ -d "$claude_tree/skills/$short" ] && continue
     [ -d "$claude_tree/skills/docket-$short" ] && fail skill "$f" 1 "description names \`$short\`; the skill is docket-$short"
-  done < <(grep -oE '\`[a-z]+(-[a-z]+)*\`' <<< "$desc" | tr -d '\`' | sort -u)
+  # A bare backtick inside single quotes is literal to bash; the escaped form
+  # `\\`` is GNU grep's start-of-buffer anchor, which never matched, so this
+  # rule was silent on Linux.
+  done < <(grep -oE '`[a-z]+(-[a-z]+)*`' <<< "$desc" | tr -d '`' | sort -u)
 done
 
 # --- schema: <name>@<N> resolves to a shipped schema file --------------------
@@ -314,6 +328,17 @@ check_name() {
   [ "$got" = "$3" ] || fail name "$1" 1 "$2 is '${got:-<missing>}', expected '$3'"
 }
 for f in "$claude_tree"/skills/*/SKILL.md; do check_name "$f" name "$(basename "$(dirname "$f")")"; done
+# Workflow scripts' meta.description and meta.whenToUse land in the same
+# per-session listing; the same ceiling applies to each line.
+for f in "$claude_tree"/workflows/*.js; do
+  [ -f "$f" ] || continue   # a fixture corpus may ship no workflow scripts
+  for key in description whenToUse; do
+    line_len=$(awk -v k="$key" 'index($0, "    " k ": ") == 1 || index($0, "  " k ": ") == 1 { print length($0); exit }' "$f")
+    [ -n "$line_len" ] || continue
+    [ "$line_len" -le 1000 ] || fail workflow "$f" 1 "meta.$key is ${line_len} characters; keep it under 1000 and put the contract in the header comment"
+  done
+done
+
 for f in "$claude_tree"/agents/*.md; do check_name "$f" name "$(basename "$f" .md)"; done
 for f in "$docket_tree"/contracts/*.md; do check_name "$f" node "$(basename "$f" .md)"; done
 for f in "$docket_tree"/fragments/*.md; do check_name "$f" fragment "$(basename "$f" .md)"; done

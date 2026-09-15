@@ -289,9 +289,15 @@ impl ClaudeCode {
             .with_env("OTEL_METRIC_EXPORT_INTERVAL", "15000");
 
         let settings_builder = settings_builder
+            // Workflow only: docket-run launches waves, tribunals and joins
+            // through the Workflow tool, never the Agent tool, so the
+            // project-wide `guard spawn --active` hold has nothing to stop on
+            // an Agent spawn. Matching `Agent` too blocked every Explore
+            // helper and tend worker in every session of the repo whenever one
+            // write-class reap went unacknowledged.
             .with_hook(
                 "PreToolUse",
-                Some("Workflow|Agent"),
+                Some("Workflow"),
                 "bash ~/.claude/hooks/docket-spawn-guard-hook.sh",
                 "command",
             )
@@ -325,10 +331,15 @@ impl ClaudeCode {
                 "bash ~/.claude/hooks/docket-session-start-hook.sh",
                 "command",
             )
+            // herdr installs this hook itself, through the ~/.claude/hooks
+            // symlink into the current store; the corpus does not ship it and
+            // the next `just activate` rebuilds without it. Guard the wiring so
+            // a rebuilt store does not raise a hook error on every session
+            // start until herdr reinstalls.
             .with_hook_timeout(
                 "SessionStart",
                 Some("*"),
-                "bash ~/.claude/hooks/herdr-agent-state.sh session",
+                "test -x ~/.claude/hooks/herdr-agent-state.sh && bash ~/.claude/hooks/herdr-agent-state.sh session || true",
                 "command",
                 10,
             )

@@ -1,6 +1,9 @@
 #!/bin/bash
 
-# spawn-guard (03 §5, TDD §4.5) — PreToolUse: Workflow/Agent.
+# spawn-guard (03 §5, TDD §4.5) — PreToolUse: Workflow (the Agent tool is no
+# longer matched: docket-run launches every dispatch-bearing unit through
+# Workflow, and matching Agent blocked unrelated helpers repo-wide on one
+# unacknowledged reap).
 #
 # Shim over `docket guard spawn --active`. The predicate is the engine's: no
 # write-class reap may be unacknowledged on any active run of the project.

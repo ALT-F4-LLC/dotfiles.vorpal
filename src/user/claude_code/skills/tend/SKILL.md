@@ -41,16 +41,11 @@ the operator's own brief, or a loop: skip it silently. The query is
 `-s backlog -s todo`, so an issue you moved to `in-progress` or `review` in
 a prior tick never reappears (see §2's blocked case).
 
-Exclude two more kinds before picking; this queue isn't tend's alone:
-
-- **Run-included.** For each run `docket run status --json` returns
-  (planning, active, or paused — anything not done or abandoned),
-  `docket issue list --run <ref> --json --limit 1000` names that run's whole
-  roster. Any backlog/todo issue on any of those rosters belongs to a
-  docket-plan/docket-run session, even while the run is parked: skip it.
-- **Claimed.** Tend never sets `assignee` on the issues it works, so a
-  populated `assignee` means someone or something else already has it. Skip
-  it.
+Exclude what is not free before picking; this queue isn't tend's alone.
+The run-included and claimed rules, and the `--limit 1000` rule for reading
+the whole queue, live once in the docket skill's
+[queue ownership reference](../docket/references/queue-ownership.md): read
+it and apply it here rather than a remembered version.
 
 After the exclusions, the queue is either:
 

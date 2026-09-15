@@ -22,8 +22,11 @@ context that discards the operator's answers.
 Run the `AskUserQuestion` rounds below with their existing batching and
 ordering, as many rounds as the ambiguity needs. If that tool is unavailable,
 stop before recording and report that this skill requires an interactive main
-session; do not substitute inferred answers or confirmations. Reading the
-repo, asking the operator, and recording the run are all yours to do here.
+session, per the rule the docket skill's
+[queue ownership reference](../docket/references/queue-ownership.md) states
+for every approval-gated skill; do not substitute inferred answers or
+confirmations. Reading the repo, asking the operator, and recording the run
+are all yours to do here.
 
 Rules you must not fight:
 
@@ -168,11 +171,12 @@ docket issue list --run <ref> --json=v2 --limit 1000  # one per run above: its r
 
 Project resolves from cwd's git identity, same as every other docket verb.
 A `VALIDATION_ERROR` naming no project, or no store reachable, means this
-repo isn't bound: say so and stop. `--limit 1000` is not optional: `issue
-list` caps at 50 and `next` at 10 by default, and neither output flags the
-truncation; the same limit binds `/docket-groom` and `/tend`. If any result
-reaches the requested limit, use the CLI's help-verified pagination or
-unlimited form to finish the survey before claiming coverage. Do not infer
+repo isn't bound: say so and stop. `--limit 1000` is not optional, for the
+reasons the docket skill's
+[queue ownership reference](../docket/references/queue-ownership.md) states
+once for this skill, `/docket-groom`, and `/tend`: the default caps flag no
+truncation, and a result that reaches the limit is finished through the
+CLI's help-verified pagination before claiming coverage. Do not infer
 blocking from absence in a truncated result. `docket next` identifies issues
 ready now, with no incomplete `depends_on` blocker. Join its ids against the
 `issue list` rows, which carry `priority`, `labels`, `scope`, `assignee`,
@@ -219,19 +223,16 @@ choice at the top of the eventual proposal, plainly, so the
 asked for.
 
 **Exclude what is not free.** This queue isn't docket-plan's alone; the
-definitions are the ones `docket-groom` and `tend` already use:
+run-included and claimed definitions are the ones in the docket skill's
+[queue ownership reference](../docket/references/queue-ownership.md), shared
+with `docket-groom` and `tend`, and are applied here as written there:
 
 - **Off-scope.** Any issue whose kind or labels fall outside the alignment
   round's kind filter (a `feature` issue when "bugs only" was chosen, say),
   excluded before ranking starts, never scored against the priority or
   parallel rules below.
-- **Run-included.** An open issue on any active run's roster (`docket run
-  status --json`, then `docket issue list --run <ref> --limit
-  1000` per run: planning, active, or paused, anything not done or
-  abandoned) belongs to that run's docket-plan/docket-run session, even
-  while the run is parked.
-- **Claimed.** Any issue with a non-empty `assignee`: someone or something
-  else already has it.
+- **Run-included or claimed.** As the reference defines them; an issue on
+  a run's roster or with a non-empty `assignee` is never ranked here.
 - **Unrouted or routed elsewhere.** Only an issue carrying `route-run` is a
   candidate. An issue with no routing label is unrouted: count it, name the
   count in the proposal with a pointer to `/docket-groom`, and never rank

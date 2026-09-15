@@ -92,11 +92,12 @@ issue in both projects: everything not closed, all statuses, both whole
 backlogs, including engine-related issues filed in the invoking project.
 Discovery must not depend on an engine label, age, or a link from a local
 issue. Check the installed CLI's help for any additional open statuses and
-pagination; if results are truncated or reach the limit, retrieve the
-remaining issues using supported options, and apply the same completeness
-check to run rosters. If either checkout or project cannot be resolved, or
-the full survey cannot be obtained, report the missing coverage and stop
-before editing; a capped result or an omitted project is not a full pass.
+pagination, and apply the `--limit 1000` rule from the docket skill's
+[queue ownership reference](../docket/references/queue-ownership.md) to
+every list and run roster. If either checkout or project cannot be
+resolved, or the full survey cannot be obtained, report the missing
+coverage and stop before editing; a capped result or an omitted project is
+not a full pass.
 
 Keep each issue's owning project, checkout, and store context throughout the
 pass. Read files, resolve workflows, inspect active runs and their rosters,
@@ -111,13 +112,10 @@ parent in the ledger before judging anything. `docket issue show` lists an
 epic's children under `sub_issues`.
 
 Two kinds of issue are in scope to read but not yours to freely edit:
-
-- **Run-included.** For each run `docket run status --json`
-  returns, `docket issue list --run <ref> --json=v2 --limit 1000` names that
-  run's roster. An open issue on any of those rosters belongs to a
-  docket-plan/docket-run session, even while the run is parked.
-- **Claimed.** Any issue with a non-empty `assignee` already belongs to
-  someone or something else.
+run-included and claimed, as the docket skill's
+[queue ownership reference](../docket/references/queue-ownership.md) defines
+them (read it; the definitions are shared with docket-plan and tend and are
+not restated here).
 
 Both still get comments and labels that leave workflow eligibility unchanged
 (§3); every other edit travels through §4. Workflow-affecting labels,

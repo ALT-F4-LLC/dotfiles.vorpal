@@ -1,7 +1,12 @@
 [pipeline]
 description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step. Review and reconcile the findings, drain any open highs, and accept by tribunal vote. A rejection re-enters the bounded revise loop at spec authoring and runs review again."
 name = "spec-project"
-version = 26  # 26: synthesize-findings repoints `findings-cluster@3` to
+version = 27  # 27: synthesize-findings declares `findings-cluster@5` and reconcile
+              #   declares `findings@11`; both require `open_severity` on every open
+              #   cluster (omitted only behind a settling ruling), so a payload that
+              #   drops it no longer routes every threshold false and passes a
+              #   blocker. No topology or routing change.
+              # 26: synthesize-findings repoints `findings-cluster@3` to
               #   `findings-cluster@4`, which adds an optional `member_sources`
               #   array alongside `member_ids`, naming each linked member's
               #   producing step ref; a finding's own `id` is unique only
@@ -171,7 +176,7 @@ holds_tree = false
 inputs = ["review.*"]
 name = "synthesize-findings"
 packet = ["contracts/{executor}.md"]
-payload = "findings-cluster@4"
+payload = "findings-cluster@5"
 
 [[step]]
 action = "aggregate"
@@ -180,7 +185,7 @@ inputs = ["synthesize-findings.findings"]
 max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
-payload = "findings@10"
+payload = "findings@11"
 threshold = { "fix-loop" = "any(open_severity >= blocker)", "drain-highs" = "any(open_severity >= high)" }
 
 [[step]]

@@ -1,6 +1,6 @@
 ---
 node: synthesize-findings
-version: 21
+version: 22
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -262,8 +262,12 @@ leaves a repair obligation open on this change, use Stuck rather than silently
 suppressing routing.
 
 On a settled entry, omit `open_severity` entirely. On an open entry, include
-it; never use null or a floor value to encode absence. `open_severity` passes
-through `findings-cluster@4` as an extra property and is not validated there.
+it; never use null or a floor value to encode absence. `findings-cluster@5`
+enforces exactly this split: an entry with no settling ruling (the list
+above) must carry `open_severity` or the record is refused with a
+VALIDATION_ERROR, and a settled entry must omit it. A refusal naming
+`open_severity` means an open cluster lost its value; supply it from the
+members and re-record, never by inventing a ruling to settle the entry.
 Check its value and presence explicitly before recording. The consuming
 workflow owns thresholds and their precedence.
 

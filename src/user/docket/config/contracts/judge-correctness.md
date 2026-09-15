@@ -1,6 +1,6 @@
 ---
 node: judge-correctness
-version: 19
+version: 20
 archetype: executor-read
 packet_includes:
   - fragments/prime-directive.md
@@ -113,8 +113,10 @@ fix and revise consume the reconciled payload, not the body alone.
 Report every supported finding, including minor ones, without a quota. Record
 coverage, prior dispositions and closures, qualified leads, Questions, and gaps
 in the body. List recognized overrides verbatim with their sources, affected
-locations, and reasons. Questions, Praise, overrides, and clean coverage do not
-become severity entries. Leave cluster bookkeeping to reconciliation.
+locations, and reasons, and emit each as a `high` entry per hard-gates, so
+the waived gate reaches drain-highs and the record. Questions, Praise, and
+clean coverage do not become severity entries. Leave cluster bookkeeping to
+reconciliation.
 
 An empty payload is valid. Report examined-clean only when required coverage is
 supported and no unresolved findings or judgment-blocking gaps remain. Name the

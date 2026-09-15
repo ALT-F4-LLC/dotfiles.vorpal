@@ -230,7 +230,7 @@ impl ClaudeCode {
             .with_auto_updates_channel("latest")
             .with_away_summary_enabled(false)
             .with_cleanup_period_days(7)
-            .with_effort_level("high")
+            .with_effort_level("xhigh")
             .with_feedback_survey_rate(0.0)
             .with_include_git_instructions(false)
             .with_input_needed_notif_enabled(true)

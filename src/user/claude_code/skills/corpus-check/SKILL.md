@@ -48,9 +48,12 @@ for the exact rule set.
 
 If it fails, read every failure line. These are unambiguous (a name either
 resolves or it doesn't) and safe to fix directly, no confirmation needed.
-Rerun the gate until it passes before moving to the semantic audit: a
-mechanically broken corpus is not a useful base for a judgment-driven
-audit.
+Rerun the gate after each batch of fixes, at most three passes, before
+moving to the semantic audit: a mechanically broken corpus is not a
+useful base for a judgment-driven audit. If the third pass still fails,
+stop and report the remaining failure lines instead of fixing again; a
+fix that keeps producing new breakage is a design question, not a
+mechanical one.
 
 ## 2. Semantic audit
 

@@ -85,7 +85,11 @@ some worker environments.
 | `trust probe` | Executes trusted checks; treat it as execution, even though its purpose is diagnosis |
 | `guard spawn --ack-reap` / `--deciding-vote` | Can record an acknowledgment or audit event; a guard is not a lock |
 | `step record` | Records an artifact, runs gates, and applies routing |
-| `step approve/reject/resolve/reap`, `run pause/resume/abandon` | Require the run's conductor capability on a bound run, via `DOCKET_TOKEN` or stdin; `run conduct` re-mints it and retires the standing one. See [transport](references/transport.md) |
+| `step approve/reject/resolve/reap`, `run pause/resume/abandon` | Require the run's conductor capability on a bound run, via `DOCKET_TOKEN` on that one invocation or an owner-only file redirected into stdin. Never call one with nothing redirected: the CLI drains stdin to EOF on a bound run, so an open pipe blocks until the tool timeout and a retry hangs the same way. `run conduct` re-mints it and retires the standing one. See [transport](references/transport.md) |
+
+Never pass `--watch` or `--follow` from an agent: nothing ends them, the
+call dies at the tool timeout, and its output is lost. Poll with one-shot
+reads and a stop condition instead.
 
 Ordinary error exits are 1 general, 2 not found, 3 validation, 4 conflict,
 5 authorization, 6 stale lease, and 9 expired event cursor (`GONE`). Codes
@@ -144,8 +148,11 @@ docket issue close DKT-42 --json=v2 --if-version 8
 
 Read the current `.data.version` before a compare-and-set mutation;
 replace the example versions with those reads. On a version conflict,
-read again and reconcile the change rather than blindly replaying a
-stale edit.
+read again, reconcile the change, and retry once. A second CONFLICT on
+the same edit means another writer is moving the record faster than you
+can read it: report the conflict with both versions and stop, rather
+than replaying a stale edit or looping on the read. The same one-retry
+bound applies to a `STALE_LEASE` re-claim.
 
 - `issue edit -f` **replaces** the file list; `issue file add` is
   additive. `--scope` declares expected path globs, separate from

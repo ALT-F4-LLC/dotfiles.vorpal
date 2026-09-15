@@ -117,10 +117,12 @@ recommendation when evidence supports one; do not recommend guesses about
 facts.
 
 Fold answers into the brief and continue when they expose another
-material decision. There is no fixed round limit. Stop when the brief and
-route are sufficiently determined, leaving execution questions for the
-selected workflow. Do not exhaust hypothetical branches or fill optional
-fields through interrogation.
+material decision, up to three rounds. Stop when the brief and route are
+sufficiently determined, leaving execution questions for the selected
+workflow; after the third round, emit the brief with the remaining
+decisions listed under Open questions rather than asking again. Do not
+exhaust hypothetical branches or fill optional fields through
+interrogation.
 
 A clear request can skip clarification. A structured request still needs
 questions if it contains material omissions or contradictions.

@@ -206,8 +206,9 @@ this session's token; the prompt says so, and nothing more.
   `docket run status RUN-N`, `docket step list --run RUN-N`,
   `docket run report RUN-N`.
 - Crashed-relay reconciliation and the attach-preflight a new session runs
-  on arrival: docket-run's own sections cover this; do not duplicate its
-  procedure in the prompt, just point at it.
+  on arrival: docket-run's **Crashed-relay reconciliation** (under its
+  step 3, Close the dispatch) and **Seat** sections cover this; do not
+  duplicate the procedure in the prompt, just point at those sections.
 
 **Must be re-done fresh in the new session, never carried forward:** seat
 preflight (`docket doctor`), the stale-install diffs against the last

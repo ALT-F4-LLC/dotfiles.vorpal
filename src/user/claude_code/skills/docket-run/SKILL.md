@@ -703,7 +703,12 @@ Read `next` as a summary, never as rows: the rows you launch are what
   (`dispatch close` takes no reason flag; JSON reports it under
   `close_reason`) or abandon. Never open a second one.
 - **Refuses with `usage-rows-missing`** → you skipped the back-fill. Run
-  it, then ask again.
+  it, then ask again, once. A second identical refusal for the same step
+  after a join that returned no rows for it means the journal genuinely
+  lacks that step's usage (the executor died before writing a transcript):
+  stop looping, and put `--accept-missing-usage` to the operator with the
+  empty join as evidence, since that flag is theirs alone (see
+  **`--accept-missing-usage`** below). Never a third join.
 
 Any other refusal from `next` is a real stall: report it verbatim and
 stop.
@@ -830,9 +835,11 @@ shard's launch. Emit it as a literal JSON value, never hand-stringified.
 There is no `policyPath`/`policyText`; routing is on the rows. Pass rows
 verbatim as `next` returned them, with `model`/`effort`/`variant` intact.
 
-**wave-audit's stderr line is never noise.** A clean launch produces
-none; any line it prints is a standing discrepancy to read, not scroll
-past.
+**wave-audit's advisory is never noise.** It arrives as additional
+context right after the Workflow tool returns (the hook emits it on the
+PostToolUse channel the model sees; its stderr goes only to the debug
+log). A clean launch produces none; any advisory it delivers is a
+standing discrepancy to read, not scroll past.
 
 **A dispatch carrying a fix round's review fanout also carries
 `integrated`.** For instances `name@N#k` with N ≥ 2, map each such issue
@@ -927,6 +934,21 @@ the retry passes, and the deny is not an instruction to keep working. A
 teammate idle notification is not an event; speak only when the message
 carries content.
 
+**A shard that never notifies is a stall, not a wait.** The completion
+notification is the only status surface, and nothing in the harness
+bounds it: a shard whose Workflow died (a harness restart, a stray
+`TaskStop`) sends nothing, the run-guard allows the stop because the
+dispatch is open, and the dispatch stays open until a later session's
+`next` refuses it. So the bound is yours. Once a launched shard has been
+silent for three times the run's `dispatch.grace` (read it from
+`docket run status $RUN --json`) with no phase advancing in its task
+output, stop waiting: run `docket dispatch verify --run $RUN` and
+`docket step show STEP-N` for every step that shard launched. A step that
+recorded is fine and only the notification was lost; a step still claimed
+by a spawn whose task is gone is the crashed-relay case in step 3's
+**Crashed-relay reconciliation**. Never end the session on an open
+dispatch you have stopped waiting for without that check.
+
 ### 3. Close the dispatch
 
 On a wave's completion notification, in this order. A sharded dispatch
@@ -943,13 +965,22 @@ names an unacknowledged reap, so convene the ack-reap panel now, beside
 the join). A reap the open itself performed rides on that open's own
 `reaped`/`reap_hold` fields instead. End the turn on the join. Read the
 wave's return as rows, not a verdict: `not-launched-run-parked`,
-`not-launched-writer-budget`, `not-launched-agent-budget`, and
-`skipped-chain-dead` are all re-offered next dispatch; `not-launched-
-other-shard` belongs to a sibling launch's own notification.
+`not-launched-writer-budget`, `not-launched-agent-budget`, `agent-cap`
+(the harness's lifetime spawn cap reached mid-wave; nothing launched),
+and `skipped-chain-dead` are all re-offered next dispatch;
+`not-launched-other-shard` belongs to a sibling launch's own
+notification.
 `bootstrap-denied` is re-offered too, but never re-dispatch on it: the
 row's text quotes a guard or permission denial of the executor's own
 scratch dir, worktree or checkout, nothing was claimed, and the same
-dispatch dies the same way until that gap is fixed. Read a
+dispatch dies the same way until that gap is fixed. `blocked` means the
+executor stopped on one of its brief's stop signals (CLAIM FAILED, CLAIM
+INCOMPLETE, NETWORK GATE BLOCKED, RECORD BLOCKED, WRITE BLOCKED; the row's
+`signal` names which) and recorded nothing: resolve what the reply
+reports before the engine re-offers the row. `unrecorded` means the
+reply ended in neither a record tail nor a stop signal: `docket step show
+STEP-N` is the only account of what happened, and a step still claimed
+by that spawn is a reap candidate. Read a
 sharded dispatch's outcome as the union of its shards' returns.
 
 **A wave's early steps do not refuse the close just for running past the
@@ -988,10 +1019,28 @@ no longer in the ready set, so verify exits 4 for work that went exactly
 right. Confirm with `docket step show STEP-N` that it recorded, then
 close. A mismatch is a finding only when the named step did not record.
 
-The same order governs the crashed-relay exit: back-fill before `dispatch
-abandon` too, since abandon has no later window. If the back-fill refuses
-against an abandon, include the refusal verbatim in the abandon
-`--reason`.
+#### Crashed-relay reconciliation
+
+The relay crashed when a launched shard is gone without a completion
+notification (step 2's dead-shard check) or a session resumes onto a
+dispatch whose wave no longer exists. The order is the same as a normal
+close, with one difference at the end:
+
+1. Back-fill first: launch the `wave-usage.js` join over whatever
+   transcripts exist, before anything else, since abandon has no later
+   window.
+2. `docket dispatch verify --run $RUN`, then `docket step show STEP-N` for
+   every launched step. A recorded step needs nothing. A step still
+   claimed by a spawn whose task is gone is a dead holder: establish that
+   with the evidence **`--ack-reap`** below requires, and convene that
+   panel before any reap.
+3. Close when every launched step is recorded or reaped. Abandon
+   (`docket dispatch abandon`, reserved to the conductor, never a panel's)
+   only when a step can neither record nor be reaped; if the back-fill
+   refused against the abandon, include the refusal verbatim in the
+   abandon `--reason`.
+
+`pause` and a resume prompt point here rather than restating it.
 
 ```
 // 1. the join is a workflow (below); its return carries the rows and you check the shape.
@@ -1306,8 +1355,9 @@ it on your own initiative: it is the panel's word, a conversational gate
 per **Gates**.
 
 Establish the holder is actually gone before convening anything (the
-wave reported `spawn-failed`, the agent returned RECORD BLOCKED or died
-in front of you, `step show` still reads claimed), and carry that
+wave reported `spawn-failed`, `blocked` or `unrecorded`, the agent
+returned RECORD BLOCKED or died in front of you, `step show` still reads
+claimed), and carry that
 evidence verbatim in the proposal's rationale and context, alongside the
 `lease-reaped` event's seq. On an approved tally:
 

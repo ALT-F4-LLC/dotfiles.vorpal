@@ -14,9 +14,9 @@ const GIT_ALLOWED_SIGNERS_INSTALL_PATH: &str = "${HOME}/.config/git/allowed_sign
 const GIT_AGENT_SIGNING_KEY_PATH: &str = "~/.ssh/agent-signing";
 const GIT_AGENT_SIGNING_KEY_PUBLIC_PATH: &str = "~/.ssh/agent-signing.pub";
 const OTEL_LOGS_ENDPOINT_LOKI: &str =
-    "https://alloy-forwarder.bulbasaur.eks.altf4.internal/v1/metrics";
-const OTEL_METRICS_ENDPOINT_MIMIR: &str =
     "https://alloy-forwarder.bulbasaur.eks.altf4.internal/v1/logs";
+const OTEL_METRICS_ENDPOINT_MIMIR: &str =
+    "https://alloy-forwarder.bulbasaur.eks.altf4.internal/v1/metrics";
 const OTEL_OTLP_PROTOCOL: &str = "http/protobuf";
 const SANDBOX_AGENT_MEMORY_PATH: &str = "~/.claude/agent-memory";
 const SANDBOX_BARE_REPO_ROOT: &str = "~/Development/repository/github.com/ALT-F4-LLC";

@@ -447,6 +447,14 @@ dispatch, give each one of exactly three dispositions, stated aloud:
 
 Dropping it is never available, labelled or not.
 
+A note shaped like "permission surface" or "allowlist gap" is a claim
+about *why* a call was refused, and that has at least two independent,
+indistinguishable-from-outside causes: the permission classifier and any
+PreToolUse hook. Investigating it means checking `~/.claude/friction/`
+for a hook denial in the same window before touching `settings.json` —
+re-deriving the same allowlist read the prior session already made is
+not an investigation, it is repeating the guess.
+
 **Pins vs disk, and this is the one that actually bites.** A run's pins
 are a third set of bytes that can disagree with both source and install:
 the engine froze them at activation, and every `just activate` since has

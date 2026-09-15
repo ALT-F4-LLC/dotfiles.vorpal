@@ -274,6 +274,21 @@ instead of re-tried. Phrase it as a dated, session-scoped observation
 with a re-test instruction: "observed denied on <date> in session <id>;
 try first, escalate only if denied again."
 
+**The same caution covers a claim about *why*, not only an observed
+denial.** An inference from `settings.json`, an allowlist, or hook
+config — "no mutating docket verb is allowed, so waves will hit
+classifier prompts" — is exactly as provisional as an observed denial,
+and reads as just as settled once it is in a state summary. A refused
+Bash call has at least two independent, indistinguishable-from-outside
+sources: the permission classifier and any PreToolUse hook. Before
+writing a permission-surface or allowlist finding, check
+`~/.claude/friction/` for a hook denial in the same window; a match
+there means the hook is the cause, whatever the allowlist looks like,
+and the finding belongs in the hook's own log, not in a permission
+conclusion. Route any such claim through the same
+`DISPOSITION REQUIRED:` discipline below rather than the state summary —
+it is a lead to check, not a result to report.
+
 Give the advisory notes their own list in the prompt, each one carrying
 its **`DISPOSITION REQUIRED:`** prefix, never folded into the state
 summary. State plainly, once, above that list: each requires an explicit

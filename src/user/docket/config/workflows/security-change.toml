@@ -1,7 +1,12 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 41  # 41: synthesize-findings repoints `findings-cluster@3` to
+version = 42  # 42: reconcile regains the `fix-loop` route, declared first so an
+              #   open blocker loops before `security-vote` can see it. v23 had
+              #   made the two-seat panel a blocker's only exit, briefed by the
+              #   generic lens rather than the security ladder, so two approvals
+              #   passed a blocker to drain-highs. No other topology change.
+              # 41: synthesize-findings repoints `findings-cluster@3` to
               #   `findings-cluster@4`, which adds an optional `member_sources`
               #   array alongside `member_ids`, naming each linked member's
               #   producing step ref; a finding's own `id` is unique only
@@ -341,7 +346,11 @@ max_fix_loops = 3
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
 payload = "findings@10"
-threshold = { "security-vote" = "any(open_severity >= high)" }
+# First-match, declared order: an open blocker always gets a fix round before
+# the panel sees the change. v23 had removed this route and left the two-seat
+# vote as a blocker's only exit, so two approvals could pass a blocker to
+# drain-highs; v42 restores it ahead of the vote, matching every other track.
+threshold = { "fix-loop" = "any(open_severity >= blocker)", "security-vote" = "any(open_severity >= high)" }
 
 [[step]]
 name = "fix"

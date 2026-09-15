@@ -166,9 +166,49 @@ ok(!chainDead(returned(CONFLICT_FINDING)),
 // judge fanout, and the issue's later per-round rows die with it.
 for (const status of ['gate-parked', 'gate-blocked', 'gate-rejected',
                       'skipped-not-claimable', 'skipped-not-ready',
-                      'spawn-failed', 'parked-base-ancestry']) {
+                      'spawn-failed', 'parked-base-ancestry', 'bootstrap-denied']) {
     ok(chainDead({ status, text: null }), `status ${status} kills the chain`)
 }
+
+// ---- bootstrap-denied: a denied bootstrap never claimed ----
+// RUN-103 wave 1 (wf_a7b528f4-b7f), STEP-9527's reply verbatim in shape: the
+// sibling guard refused the executor's own scratch dir, the executor stopped
+// as briefed, and the wave launched the issue's three judges three seconds
+// later; all died on claim CONFLICT ("an `after` predecessor is not done").
+const DENIED_9527 = [
+    'The guard refuses any command naming my own step scratch dir, preventing the mandated claim chain. Per obligation 0, this is a permission gap: report and stop without claiming.',
+    '',
+    'BOOTSTRAP DENIED',
+    '',
+    'Both mandated scratch-dir commands from obligation 1 were refused by the `docket-sibling-guard-hook.sh` PreToolUse hook. Verbatim denial:',
+    '',
+    '```',
+    'PreToolUse:Bash hook error: [bash ~/.claude/hooks/docket-sibling-guard-hook.sh]: sibling-destructive verb blocked: this command names another step\'s scratch directory (STEP-9527.d); this seat holds no step claim, so no STEP-N.d directory, worktree or branch is yours.',
+    '```',
+].join('\n')
+ok(isBootstrapDenied(DENIED_9527), 'the literal on a line of its own is a denied bootstrap')
+ok(chainDead(returned(DENIED_9527)), 'a denied bootstrap kills its issue\'s chain for this wave')
+ok(!runParked(returned(DENIED_9527)), 'a denied bootstrap is not a park')
+ok(!laneParked(returned(DENIED_9527)), 'a denied bootstrap is not a lane park')
+ok(isBootstrapDenied('BOOTSTRAP DENIED\n\nrm -rf refused by the sandbox: Operation not permitted'),
+    'the mandated first-line form is read')
+ok(isBootstrapDenied('**BOOTSTRAP DENIED**\n\nquoted denial follows'),
+    'the line still reads wrapped in markdown emphasis')
+const DENIED_FINDING = [
+    'Reviewed wave.js bootstrap handling.',
+    '',
+    '- **F-1 (medium)** wave.js:238 tells an executor to say BOOTSTRAP DENIED and stop, but the',
+    '  ladder never reads the phrase, so the next stage launches into a refused claim.',
+    '- **F-2 (low)** the skip log does not say which predicate fired.',
+    '',
+    'STEP-701 recorded (done)',
+].join('\n')
+ok(!isBootstrapDenied(DENIED_FINDING), 'a finding that names the phrase mid-sentence is not a denial')
+ok(!chainDead(returned(DENIED_FINDING)), 'and keeps its chain')
+ok(!isBootstrapDenied('BOOTSTRAP DENIED\n\nthen the guard was re-read and the claim landed anyway\n\nSTEP-9605 recorded (done)'),
+    'a record tail after the phrase is a recorded step, not a denial')
+ok(!isBootstrapDenied('bootstrap denied by the sandbox, stopping'),
+    'the lowercase prose form is not the mandated literal')
 ok(!chainDead({ status: 'returned', text: 'STEP-9 recorded (done)' }),
     'a plain done reply does not kill the chain')
 ok(!chainDead({ status: 'engine-run', text: null }),

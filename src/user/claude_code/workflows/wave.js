@@ -235,9 +235,13 @@ function bootstrap(row, r, isolated, isWrite) {
       your worktree on the run's HEAD, so this is normally a no-op — verify,
       never assume.
 
-   If any of these is DENIED by the guard or the permission system, say
-   \`BOOTSTRAP DENIED\`, quote the denial verbatim, and STOP — that is an
-   operator permission gap, not a repository-state problem. If a command
+   If any of these is DENIED by the guard or the permission system, put
+   \`BOOTSTRAP DENIED\` on a line of its own as the FIRST line of your
+   reply, quote the denial verbatim under it, and STOP — that is an
+   operator permission gap, not a repository-state problem. No advisor,
+   reviewer, or second reading of the guard lifts this: a refused
+   bootstrap is never re-spelled, moved to another path, or claimed
+   around; the wave reads the denial and the conductor owns the fix. If a command
    fails on its own output instead, report that verbatim and STOP either way;
    do not hunt, do not guess, and NEVER claim after a failed bootstrap — an
    unclaimed step re-dispatches for free, a claimed one strands a token. Once
@@ -678,6 +682,20 @@ function isConflictReport(text) {
         <= CONFLICT_REPORT_MAX_LINES
 }
 
+// Obligation 0's denial reply. The brief mandates the literal `BOOTSTRAP
+// DENIED` on a line of its own when the guard or the permission layer refuses
+// the scratch-dir, worktree or checkout bootstrap, and no claim after it, so
+// nothing was recorded and every later `after` row of the issue would die at
+// claim. Read as a whole line, never as a substring: a judge that names the
+// phrase inside a finding keeps its chain, and a reply that ends in a record
+// tail is a recorded step whatever its prose says. RUN-103 wave 1 launched
+// six judges behind two denied writers before this predicate existed.
+function isBootstrapDenied(text) {
+    if (typeof text !== 'string' || !text.includes('BOOTSTRAP DENIED')) return false
+    if (/recorded \((?:done|waiting-human|paused)\)[\s*_`.]*$/.test(lastLine(text))) return false
+    return text.split('\n').some((l) => /^[\s*_`>#]*BOOTSTRAP DENIED[\s*_`.:!]*$/.test(l))
+}
+
 // Two park signals, both in-band, and they now mean DIFFERENT scopes. The
 // record-status tail of the agent whose own record parked ('STEP-N recorded
 // (waiting-human)') parks that ISSUE: the engine's R2b refuses every later
@@ -1035,6 +1053,18 @@ function spawn(row, phaseLabel) {
     const handle = (text, retried) => {
         if (text != null) {
             const returned = { step: row.step, status: 'returned', text }
+            // A denied bootstrap never claimed: nothing to reap, nothing
+            // recorded, and the issue's later `after` rows cannot become
+            // claimable this wave. Settle it under its own status so the
+            // lane stops here and the conductor reads a guard or permission
+            // gap, not a finished row.
+            if (isBootstrapDenied(text)) {
+                log(`${row.step}: BOOTSTRAP DENIED, the guard or permission layer ` +
+                    `refused the executor's own bootstrap before any claim; nothing ` +
+                    `to reap; this issue's later stages are skipped this wave and ` +
+                    `the engine re-offers the row once the gap is fixed`)
+                return { step: row.step, status: 'bootstrap-denied', text }
+            }
             // The ONE refusal whose face value inverts the truth.
             // "not ready to claim: the step is not pending" reads as "never
             // started" and means "already claimed" — ask the engine what the
@@ -2289,12 +2319,14 @@ const CHAIN_DEAD_STATUSES = [
     'gate-parked', 'gate-blocked', 'gate-rejected',
     'skipped-not-claimable', 'skipped-not-ready',
     'spawn-failed', 'claim-conflict', 'parked-base-ancestry',
+    'bootstrap-denied',
 ]
 
 function chainDead(res) {
     if (res == null) return false
     return CHAIN_DEAD_STATUSES.includes(res.status) || laneParked(res) ||
-        (res.status === 'returned' && isConflictReport(res.text))
+        (res.status === 'returned' &&
+            (isConflictReport(res.text) || isBootstrapDenied(res.text)))
 }
 
 // A CHAIN-DEAD LANE IS NOT THE SAME AS A DEAD CHAIN. chainDead()
@@ -2822,6 +2854,10 @@ async function runLane(name, laneRows) {
                       `${d.status} ("${d.deferral}"); ask next after close. Nothing ` +
                       `failed: the predecessor is progressing and the engine re-offers ` +
                       `this row (the issue itself is untouched)`
+                    : d.status === 'bootstrap-denied'
+                    ? `${row.step}: skipped, predecessor ${d.step}'s bootstrap was ` +
+                      `DENIED by the guard or the permission layer; fix that gap ` +
+                      `before the next dispatch (the issue itself is untouched)`
                     : `${row.step}: skipped — this wave's chain died at an earlier ` +
                       `stage (the issue itself is untouched)`)
                 return false

@@ -573,6 +573,18 @@ impl ClaudeCode {
         .build(context)
         .await?;
 
+        // On-demand reading material CLAUDE.md points at (the full working
+        // agreement and harness guidance) so the per-turn memory file carries
+        // only the rules every turn needs. Nothing under ~/.claude/references
+        // loads on its own.
+        let references = FileSource::new(
+            &component_name(&self.name, "references"),
+            "src/user/claude_code/references",
+            self.systems.clone(),
+        )
+        .build(context)
+        .await?;
+
         let memory = FileCreate::new(
             &component_name(&self.name, "memory"),
             self.systems.clone(),
@@ -622,6 +634,7 @@ impl ClaudeCode {
                 ),
                 claude_home("settings.json"),
             ),
+            (get_env_key(&references), claude_home("references")),
             (get_env_key(&skills), claude_home("skills")),
             (
                 FileCreate::output_file_path(
@@ -638,6 +651,7 @@ impl ClaudeCode {
             allowed_signers,
             hooks,
             memory,
+            references,
             settings,
             skills,
             statusline,

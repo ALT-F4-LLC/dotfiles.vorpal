@@ -917,7 +917,7 @@ the current contents of `.docket/config/`, so a definition goes from
 
 | Directory | What activation does |
 |---|---|
-| `config/schemas/*.json` | **registers** as a payload schema, named for the file (`findings@9.json` → `findings@9`) |
+| `config/schemas/*.json` | **registers** as a payload schema, named for the file (`findings@10.json` → `findings@10`) |
 | `config/workflows/*.toml` | **registers** as a workflow definition, named by its own `[pipeline]` block |
 | everything else under `config/` | **pins** by content hash and registers nothing — contracts, fragments, templates, `policy.toml` |
 

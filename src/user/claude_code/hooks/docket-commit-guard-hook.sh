@@ -78,6 +78,7 @@ COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/nul
 # file cannot decide whether a git write is present and must fail CLOSED,
 # whatever the engine would say.
 HOOK_DIR="${0%/*}"
+[ "$HOOK_DIR" = "$0" ] && HOOK_DIR="."   # bare-name invocation: no slash to strip
 PREPASS_AWK="${HOOK_DIR}/docket-guard-prepass.awk"
 [ -r "$PREPASS_AWK" ] || deny "git write blocked: the commit-guard hook's shared pre-pass file (docket-guard-prepass.awk) is missing or unreadable beside this hook, so it cannot check this command. This is a hook installation defect, not a caller mistake -- report it rather than retrying."
 
@@ -125,7 +126,6 @@ GATE_REASON=$(docket guard gate --step commit-gate 2>&1 >/dev/null) || true
 # repo's auto-mode allow rules (src/user/claude_code.rs, AUTO_MODE_ALLOW_RULES)
 # `git add` and `git commit` are auto-allowed, so an absent gate means a commit
 # no hook checks, by design, not a permission ask.
-# manufacture a verdict where the engine has declined to give one.
 # "no docket database found" joins the not-applicable set for the same reason
 # as the absent-gate arm: no DB means no run means this guard has no opinion.
 # [MEASURED] every guard verb exits 2 with that error in a repo
@@ -350,7 +350,8 @@ SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v RS='\036' -v widen="$WIDEN" '
 # is a bash parameter expansion on `$0` rather than a call to the external
 # `dirname`: this hook's dependency set is fixed at bash/cat/jq/awk, and the
 # test suite runs it with PATH restricted to exactly those.
-[ "$HOOK_DIR" = "$0" ] && HOOK_DIR="."
+# HOOK_DIR and PREPASS_AWK are resolved at the top of this file, in the
+# install-integrity check that runs before the engine query.
 STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk -f "$PREPASS_AWK" 2>/dev/null) || allow_default
 
 # THE MATCH: `git (commit|push|add)`, head-normalized on `git` and skipping

@@ -1006,9 +1006,13 @@ Do not keep the plan in your head for later; it is in Docket now, which is
 the point.
 
 If the operator asks for activation in this session, that is a direct
-instruction that outranks the panel that would otherwise vote on it: run the
-activate verb on their words (`--dry-run` first, since it is the same
-transaction rolled back) and then hand off to `docket-run` in-session by
-invoking the skill. The handoff through `docket-run`, which surfaces the
-drive/park/abandon choice to the operator, is the designed path even when
-you activate directly; a silent stop is not permission to skip it.
+instruction that outranks the panel that would otherwise vote on it, but it
+is not yours to execute: `run activate` mints the run's conductor token, and
+only `docket-run`'s Seat procedure captures that token into a
+session-private file instead of printing it into a transcript every
+executor can read. Hand off to `docket-run` in-session by invoking the
+skill, carrying the operator's words; it activates under its own token
+capture (`--dry-run` first, since it is the same transaction rolled back)
+and surfaces the drive/park/abandon choice to the operator. A silent stop
+is not permission to skip the handoff, and a planning session never runs
+the activate verb itself.

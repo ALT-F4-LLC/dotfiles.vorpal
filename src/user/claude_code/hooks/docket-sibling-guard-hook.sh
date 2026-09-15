@@ -96,6 +96,20 @@
 # first. When `agent_type` is absent (the Workflow-spawned-seat shape the
 # sandbox-bypass guard measured), the transcript's own opening is read for
 # the wave executor brief marker above; nothing else puts a caller in scope.
+#
+# WHICH TRANSCRIPT. Inside a subagent the harness's `transcript_path` names
+# the PARENT conversation's file, not the seat's own: measured 2026-09-15 on
+# Claude Code 2.1.272, where 25 denials in one wave logged `own_mode: none`
+# while every executor's own `agent-<id>.jsonl` carried the marker 1.3 KiB
+# in, and this scan run by hand over those files found it. When the payload
+# carries `agent_id`, the seat's own transcript is resolved from it
+# (`<session dir>/subagents/agent-<id>.jsonl` for an Agent-tool seat,
+# `<session dir>/subagents/workflows/*/agent-<id>.jsonl` for a Workflow
+# seat; the session dir is `transcript_path` minus `.jsonl`, else
+# `<dirname>/<session_id>`), and ONLY that file is read. A seat whose own
+# transcript cannot be located, or is still empty because the harness writes
+# it asynchronously, is `unknown`, never `none`: `none` is a verdict about
+# the caller's own opening and says nothing about a stranger's file.
 # An identified non-executor seat (a `docket-conductor-RUN-N` sweeping a dead
 # executor's dir, a groomer, `general-purpose`) and the main conversation are
 # out of scope, on purpose: the conductor's sweep and the operator's own
@@ -113,7 +127,9 @@
 #            archetype that holds no step (a tribunal seat, a worker spawned
 #            for an ordinary issue) has no scratch dir of its own, so every
 #            `STEP-M.d`, worktree and branch is a stranger's.
-#   unknown  no readable transcript: the SCRATCH, WORKTREE-path and BRANCH
+#   unknown  no readable, non-empty own transcript (none named, unreadable,
+#            still empty, or an `agent_id` whose file is not under the
+#            session directory): the SCRATCH, WORKTREE-path and BRANCH
 #            clauses are skipped and the call is allowed, logged to
 #            ~/.claude/friction so the shape gets confirmed, because denying
 #            here would strand every bootstrap `rm -rf` of a real executor
@@ -255,14 +271,18 @@ log_decision() {  # <decision> <clause>
         --arg own_mode "$OWN_MODE" \
         --arg own_step "$OWN_STEP" \
         --arg session "$(printf '%s' "$INPUT" | jq -r '.session_id // ""' 2>/dev/null)" \
+        --arg agent_id "${AGENT_ID:-}" \
+        --arg own_transcript "${OWN_TRANSCRIPT:-}" \
         --argjson payload_keys "$keys" \
-        '{at:$at, hook:"docket-sibling-guard", decision:$decision, clause:$clause, detected_via:$detected_via, agent_type:$agent_type, own_mode:$own_mode, own_step:$own_step, session:$session, payload_keys:$payload_keys}' \
+        '{at:$at, hook:"docket-sibling-guard", decision:$decision, clause:$clause, detected_via:$detected_via, agent_type:$agent_type, own_mode:$own_mode, own_step:$own_step, session:$session, agent_id:$agent_id, own_transcript:$own_transcript, payload_keys:$payload_keys}' \
         >>"$FRICTION_LOG" 2>/dev/null || true
 }
 
-# Reads the opening of the caller's transcript for the wave executor brief
-# marker and sets OWN_STEP (the digits of STEP-N) and OWN_MODE
-# (known|none|unknown). Bounded: at most 64 KiB, read with `read -n` so a
+# Reads the opening of the caller's OWN transcript (own_transcript_path
+# below) for the wave executor brief marker and sets OWN_STEP (the digits of
+# STEP-N) and OWN_MODE (known|none|unknown). An empty file is `unknown`: the
+# harness writes transcripts asynchronously, and an opening not yet flushed
+# is not an opening without the marker. Bounded: at most 64 KiB, read with `read -n` so a
 # pathological first line cannot be slurped whole (bash 3.2 has no `read
 # -N`), and line by line so a transcript whose first record is not the brief
 # still finds it within the bound. Measured on real executor transcripts the
@@ -274,7 +294,7 @@ scan_transcript() {  # <transcript-path>
     local re='docket step claim STEP-([0-9]+) --owner wave:STEP-([0-9]+):'
     OWN_STEP=""
     OWN_MODE="unknown"
-    [ -n "$t" ] && [ -r "$t" ] && [ -f "$t" ] || return 0
+    [ -n "$t" ] && [ -r "$t" ] && [ -f "$t" ] && [ -s "$t" ] || return 0
     OWN_MODE="none"
     while [ "$total" -lt "$budget" ]; do
         chunk=""
@@ -293,6 +313,52 @@ scan_transcript() {  # <transcript-path>
     return 0
 }
 
+# Resolves the caller's OWN transcript (WHICH TRANSCRIPT above). Prints the
+# payload's transcript_path unchanged when no agent_id is present or when
+# that path already names the seat's own file; with an agent_id, prints the
+# first readable `agent-<id>.jsonl` under the session directory (Agent-tool
+# shape first, then any Workflow run's directory), or nothing when none is
+# found, which scan_transcript reads as `unknown`. Builtins only.
+own_transcript_path() {  # <transcript_path> <agent_id> <session_id>
+    local t="$1" agent="$2" session="$3" base dir candidate
+    local dirs=()
+    if [ -z "$agent" ]; then
+        printf '%s' "$t"
+        return 0
+    fi
+    [ -n "$t" ] || return 0
+    case "${t##*/}" in
+        "agent-${agent}.jsonl")
+            printf '%s' "$t"
+            return 0
+            ;;
+    esac
+    case "$t" in
+        *.jsonl) dirs+=("${t%.jsonl}") ;;
+    esac
+    if [ -n "$session" ]; then
+        base="${t%/*}"
+        [ "$base" = "$t" ] && base="."
+        dirs+=("${base}/${session}")
+    fi
+    # ${dirs[@]+...}: bash 3.2 under `set -u` treats an empty array as unbound.
+    for dir in ${dirs[@]+"${dirs[@]}"}; do
+        [ -d "$dir" ] || continue
+        candidate="${dir}/subagents/agent-${agent}.jsonl"
+        if [ -f "$candidate" ]; then
+            printf '%s' "$candidate"
+            return 0
+        fi
+        for candidate in "${dir}"/subagents/workflows/*/"agent-${agent}.jsonl"; do
+            if [ -f "$candidate" ]; then
+                printf '%s' "$candidate"
+                return 0
+            fi
+        done
+    done
+    return 0
+}
+
 INPUT=$(cat 2>/dev/null) || allow_default
 [ -n "$INPUT" ] || allow_default
 
@@ -302,20 +368,23 @@ TOOL_NAME=$(printf '%s' "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null) || a
 [ "$TOOL_NAME" = "Bash" ] || allow_default
 
 AGENT_TYPE=$(printf '%s' "$INPUT" | jq -r '.agent_type // empty' 2>/dev/null) || allow_default
+AGENT_ID=$(printf '%s' "$INPUT" | jq -r '.agent_id // empty' 2>/dev/null) || AGENT_ID=""
+SESSION_ID=$(printf '%s' "$INPUT" | jq -r '.session_id // empty' 2>/dev/null) || SESSION_ID=""
 TRANSCRIPT_PATH=$(printf '%s' "$INPUT" | jq -r '.transcript_path // empty' 2>/dev/null) || TRANSCRIPT_PATH=""
 CALLER_CWD=$(printf '%s' "$INPUT" | jq -r '.cwd // empty' 2>/dev/null) || CALLER_CWD=""
+OWN_TRANSCRIPT=$(own_transcript_path "$TRANSCRIPT_PATH" "$AGENT_ID" "$SESSION_ID")
 
 OWN_STEP=""
 OWN_MODE="unknown"
 DETECTED_VIA=""
 if is_executor_archetype "$AGENT_TYPE"; then
     DETECTED_VIA="agent_type"
-    scan_transcript "$TRANSCRIPT_PATH"
+    scan_transcript "$OWN_TRANSCRIPT"
 elif [ -z "$AGENT_TYPE" ]; then
     # Unidentified caller: only a transcript that opens with a wave executor
     # brief puts it in scope. The main conversation, whose first message is
     # the operator's, never carries that exact spelling.
-    scan_transcript "$TRANSCRIPT_PATH"
+    scan_transcript "$OWN_TRANSCRIPT"
     [ "$OWN_MODE" = "known" ] || allow_default
     DETECTED_VIA="transcript-brief"
 else

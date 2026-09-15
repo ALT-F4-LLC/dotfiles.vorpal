@@ -82,6 +82,24 @@ OPERATOR="${WORK}/operator.jsonl"
 printf '%s\n' '{"type":"user","message":{"role":"user","content":"help me clean up /tmp/claude-501/STEP-7.d, and read the docket skill: docket step claim, docket vote cast"}}' >"$OPERATOR"
 MISSING="${WORK}/does-not-exist.jsonl"
 
+# Own-transcript resolution fixtures. Inside a subagent the harness hands the
+# hook the PARENT conversation's transcript_path; the seat's own file sits
+# under the session directory keyed by agent_id (Workflow seats under
+# subagents/workflows/<run>/, Agent-tool seats directly under subagents/).
+# RUN-103's first wave was stranded on exactly this shape: every executor
+# read as `none` off the operator's transcript while its own carried the
+# marker.
+SESS_DIR="${WORK}/projects/proj/sess-1"
+PARENT="${WORK}/projects/proj/sess-1.jsonl"
+mkdir -p "${SESS_DIR}/subagents/workflows/wf_a"
+cp "$OPERATOR" "$PARENT"
+cp "$WAVE_42" "${SESS_DIR}/subagents/workflows/wf_a/agent-a1.jsonl"
+cp "$WAVE_9393" "${SESS_DIR}/subagents/agent-a5.jsonl"
+cp "$SEAT" "${SESS_DIR}/subagents/workflows/wf_a/agent-a4.jsonl"
+: >"${SESS_DIR}/subagents/workflows/wf_a/agent-a3.jsonl"
+UNRELATED="${WORK}/projects/proj/unrelated.jsonl"
+cp "$OPERATOR" "$UNRELATED"
+
 # Classifies one hook run as DENY (exit 2) or ALLOW (exit 0). No
 # permissionDecision envelope is emitted -- exit 2 is a pre-permission hard
 # stop and exit 0 is silence -- so the exit code is the entire verdict.
@@ -103,6 +121,24 @@ build_input() {
         {tool_name:"Bash", tool_input:{command:$c}}
         | if $a != "" then .agent_type = $a else . end
         | if $t != "" then .transcript_path = $t else . end'
+}
+
+# build_sub_input <command> <agent_type> <agent_id> <session_id> <transcript_path>
+build_sub_input() {
+    jq -nc --arg c "$1" --arg a "$2" --arg id "$3" --arg s "$4" --arg t "$5" '
+        {tool_name:"Bash", tool_input:{command:$c}, agent_id:$id, session_id:$s, transcript_path:$t}
+        | if $a != "" then .agent_type = $a else . end'
+}
+
+# assert_sub_verdict <command> <agent_type> <agent_id> <session_id> <transcript_path> <ALLOW|DENY> <label>
+assert_sub_verdict() {
+    local got
+    got=$(verdict_of "$(build_sub_input "$1" "$2" "$3" "$4" "$5")")
+    if [ "$got" = "$6" ]; then
+        pass "$7 ($6)"
+    else
+        fail "$7 (want $6, got ${got})"
+    fi
 }
 
 # assert_verdict <command> <agent_type> <transcript> <ALLOW|DENY> <label>
@@ -214,6 +250,45 @@ case_own_step_states() {
     assert_verdict "killall node" executor-write "$MISSING" DENY "unknown: killall still denied"
     assert_verdict "git worktree prune" executor-write "$MISSING" DENY "unknown: worktree prune still denied"
     assert_verdict "kill 1234" executor-write "$MISSING" DENY "unknown: kill by literal pid still denied"
+}
+
+# --- Own transcript resolved from agent_id. --------------------------------
+case_own_transcript_from_agent_id() {
+    # The shape that stranded RUN-103: agent_type present, transcript_path is
+    # the parent's, the seat's own file under subagents/workflows/ carries the
+    # marker. Resolution must find it: own dir allowed, a sibling's denied.
+    assert_sub_verdict "rm -rf ${OWN_DIR}" executor-read a1 sess-1 "$PARENT" ALLOW "agent_id: workflow seat's own sweep allowed off its own transcript"
+    assert_sub_verdict "mkdir -m 700 ${OWN_DIR}" executor-write a1 sess-1 "$PARENT" ALLOW "agent_id: workflow seat's own mkdir allowed"
+    assert_sub_verdict "rm -rf ${SIB_DIR}" executor-read a1 sess-1 "$PARENT" DENY "agent_id: workflow seat still denied a sibling's dir"
+    # Agent-tool shape: the file sits directly under subagents/.
+    assert_sub_verdict "rm -rf /tmp/claude-501/STEP-9393.d" executor-write a5 sess-1 "$PARENT" ALLOW "agent_id: Agent-tool seat's own sweep allowed"
+    assert_sub_verdict "rm -rf /tmp/claude-501/STEP-93.d" executor-write a5 sess-1 "$PARENT" DENY "agent_id: Agent-tool seat denied a sibling's dir"
+    # The session directory can also come from session_id when transcript_path
+    # is not <session>.jsonl.
+    assert_sub_verdict "rm -rf ${OWN_DIR}" executor-read a1 sess-1 "$UNRELATED" ALLOW "agent_id: session_id locates the session directory"
+    # transcript_path that already IS the seat's own file is read as before.
+    assert_sub_verdict "rm -rf ${OWN_DIR}" executor-read a1 sess-1 "${SESS_DIR}/subagents/workflows/wf_a/agent-a1.jsonl" ALLOW "agent_id: an own transcript_path is read directly"
+    # No own file (not flushed yet, or an unknown layout) is UNKNOWN, never
+    # none: the bootstrap goes through, pkill still does not.
+    assert_sub_verdict "rm -rf ${SIB_DIR}" executor-write a2 sess-1 "$PARENT" ALLOW "agent_id: no own transcript found is unknown, allowed"
+    assert_sub_verdict "pkill -f node" executor-write a2 sess-1 "$PARENT" DENY "agent_id: unknown still denies pkill"
+    # An own file that is still empty (asynchronous write) is unknown too.
+    assert_sub_verdict "rm -rf ${SIB_DIR}" executor-read a3 sess-1 "$PARENT" ALLOW "agent_id: an empty own transcript is unknown, allowed"
+    # No candidate directory at all (a transcript_path without .jsonl and no
+    # session_id): the empty candidate list must not trip bash 3.2's `set -u`;
+    # the seat is unknown, and pkill still denies.
+    assert_sub_verdict "rm -rf ${SIB_DIR}" executor-write a2 "" "${WORK}/no-extension" ALLOW "agent_id: no candidate directory is unknown, allowed"
+    assert_sub_verdict "pkill -f node" executor-write a2 "" "${WORK}/no-extension" DENY "agent_id: no candidate directory still denies pkill"
+    # A located own transcript without the marker is a seat that holds no
+    # step: none, denied, exactly as before.
+    assert_sub_verdict "rm -rf ${SIB_DIR}" executor-read a4 sess-1 "$PARENT" DENY "agent_id: tribunal seat's own transcript has no marker, foreign dir denied"
+    # Unidentified caller (no agent_type) resolves the same way.
+    assert_sub_verdict "rm -rf ${SIB_DIR}" "" a1 sess-1 "$PARENT" DENY "agent_id, no agent_type: wave brief found through agent_id, foreign dir denied"
+    assert_sub_verdict "rm -rf ${OWN_DIR}" "" a1 sess-1 "$PARENT" ALLOW "agent_id, no agent_type: own sweep allowed"
+    # The pre-fix shape, pinned so a regression is a visible diff: without an
+    # agent_id the parent transcript is all the hook has, and it carries no
+    # marker, so the seat reads as none and its own dir as foreign.
+    assert_verdict "rm -rf ${OWN_DIR}" executor-read "$PARENT" DENY "no agent_id: parent transcript reads as none (the RUN-103 shape without the fix)"
 }
 
 # --- Scratch-dir token shapes. ---------------------------------------------
@@ -711,6 +786,14 @@ case_friction_log_records_decisions() {
     fi
 
     : >"$log_file"
+    HOME="$home_dir" "$BASH_BIN" "$HOOK" >/dev/null 2>&1 <<<"$(build_sub_input "rm -rf ${SIB_DIR}" executor-read a1 sess-1 "$PARENT")"
+    if [ -s "$log_file" ] && jq -e --arg own "${SESS_DIR}/subagents/workflows/wf_a/agent-a1.jsonl" '.agent_id == "a1" and .own_transcript == $own and .own_mode == "known" and .own_step == "42"' "$log_file" >/dev/null 2>&1; then
+        pass "friction log names the agent_id and the own transcript it read"
+    else
+        fail "friction log missing agent_id/own_transcript after an agent_id deny"
+    fi
+
+    : >"$log_file"
     HOME="$home_dir" "$BASH_BIN" "$HOOK" >/dev/null 2>&1 <<<"$(build_input "rm -rf ${SIB_DIR}" executor-write "$MISSING")"
     if [ -s "$log_file" ] && jq -e '.decision == "allow" and .clause == "own-unknown" and .own_mode == "unknown"' "$log_file" >/dev/null 2>&1; then
         pass "friction log records an own-unknown allow"
@@ -733,6 +816,7 @@ case_acceptance
 case_own_bootstrap_allows
 case_scope
 case_own_step_states
+case_own_transcript_from_agent_id
 case_scratch_shapes
 case_command_shapes
 case_prose

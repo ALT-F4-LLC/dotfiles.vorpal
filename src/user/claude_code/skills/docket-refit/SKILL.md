@@ -1,9 +1,6 @@
 ---
 name: docket-refit
 description: Redesign one definition in the shared docket corpus under src/user/docket/config — a workflow, policy.toml, an executor contract, a packet fragment, or a payload schema. Sweeps the target's blast radius across every consumer, mines run evidence across every project that exercised it, iterates the target spec with the operator, verifies every claimed capability against the live docket engine (and wave.js) source, surfaces each engine-forced deviation as an explicit decision, renders the settled design as a visual Artifact for approval before implementing, then lands the full co-change closure (workflow TOML, contracts, fragments, policy rows, vote-seat lenses, schemas), lints every consumer, files engine issues for real gaps, and commits. Invoked bare (`/refit` with nothing named), it runs corpus mode instead: mine run evidence across every surface in the corpus (workflows and policy, contracts, fragments, schemas), triage then deep-dive, verdict each one, and carry every refit, removal, and addition the evidence calls for through the same §1–§8 process to a landed commit, target by target, with the same per-target deviation gates and artifact approval as single mode. Use on "refit the ui-change workflow", "/refit standard-change", "/refit policy.toml", "tighten the implement contract", "refit the findings schema", "refactor a docket workflow", "optimize the standard-change pipeline", "add a phase to security-change", "redesign the investigation pipeline", bare "/refit" to redesign the whole corpus, or any request to change or improve what any definition under src/user/docket/config does.
-context: fork
-agent: general-purpose
-model: fable
 ---
 
 # docket-refit
@@ -16,16 +13,17 @@ never a silent downgrade; only then do you implement, lint, and commit.
 Source only: nothing under `~/.claude` or `~/.docket` is edited, and the
 operator's `just activate` is the only installer.
 
-You run in a forked subagent dedicated to this refit. `context: fork` spawns
-you fresh on every invocation, and the deviation decisions, the spec
-iteration, and the artifact approval gate below run exactly as written,
-through `AskUserQuestion` and `Artifact`. You carry none of the parent
-conversation's history — no consumer sweep, no run evidence, no earlier
-discussion of the target — only `$ARGUMENTS` (the named target, or nothing
-for corpus mode). Read the corpus and the engine source yourself rather than
-assuming anything was read for you. Your final report is the only thing
-that reaches the parent, so it names the commit landed and every decision
-the operator made along the way.
+You run in the main conversation, never in a forked subagent: the deviation
+decisions, the spec iteration, and the artifact approval gate below are real
+questions through `AskUserQuestion` and `Artifact`, and a fork has neither
+tool, so it would infer the answers and land a corpus change nobody
+approved. Treat whatever the conversation already discussed as background,
+not evidence: read the corpus and the engine source yourself rather than
+assuming anything was read for you, and start from `$ARGUMENTS` (the named
+target, or nothing for corpus mode). If `AskUserQuestion` is unavailable in
+the session, stop before §6 and report the decisions still open instead of
+implementing. Your closing report names the commit landed and every
+decision the operator made along the way.
 
 The corpus has five refittable surfaces, all under
 `src/user/docket/config/`, and any one of them can be the named target:

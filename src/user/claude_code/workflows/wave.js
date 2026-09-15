@@ -21,6 +21,7 @@ const WRITER_LADDER_BUDGET = 3
 const AGENT_LIFETIME_CAP = 1000
 const AGENT_BUDGET_RESERVE = 100
 const AGENT_BUDGET = AGENT_LIFETIME_CAP - AGENT_BUDGET_RESERVE
+let agentsLaunched = 0   // real agent() calls made this invocation (countedAgent below)
 const EXECUTOR_AGENT_COST = 2
 const VOTE_PROBE_COST = 4
 const DEFAULT_PANEL_SEATS = 3
@@ -32,6 +33,24 @@ const HARNESS_CAP = 16
 // copies of a 240-row manifest is ~340 KB of launch args per dispatch, which
 // is the ceiling this constant holds.
 const SHARD_CAP = 4
+// REAL SPAWNS, COUNTED. The reservation ladder projects agents per row before
+// launch; nothing counted the agent() calls actually made, so the harness's
+// lifetime cap arrived as a rejected spawn that read as a dead executor
+// ("reconcile and reap"). Every agent() call in this file goes through here:
+// at the cap it rejects with AgentCapError, which the spawn path settles as an
+// explicit `agent-cap` outcome the conductor reads as a budget deferral, and
+// the count is logged when the wave returns.
+class AgentCapError extends Error {
+    constructor() {
+        super(`agent-cap: ${AGENT_LIFETIME_CAP} agent() calls launched this invocation`)
+        this.name = 'AgentCapError'
+    }
+}
+function countedAgent(brief, options) {
+    if (agentsLaunched >= AGENT_LIFETIME_CAP) return Promise.reject(new AgentCapError())
+    agentsLaunched++
+    return agent(brief, options)
+}
 // TEST-END configuration
 
 // ---------------------------------------------------------------------------
@@ -629,9 +648,13 @@ ${isolated ? `
 
 4. End your reply with exactly this line, filled in from the record
    response: <step-id> recorded (<status>) — for example "STEP-12 recorded
-   (done)" or "STEP-12 recorded (waiting-human)". The wave parses this tail
-   to stop launching this issue's later stages once it parks; do not
-   paraphrase it.`
+   (done)" or "STEP-12 recorded (waiting-human)". If instead you STOPPED on
+   one of the signals above (CLAIM FAILED, CLAIM INCOMPLETE, NETWORK GATE
+   BLOCKED, RECORD BLOCKED, WRITE BLOCKED), that signal opens its own line and
+   nothing recorded. The wave parses the tail: a record tail lets this
+   issue's later stages launch, a stop signal defers them, and a reply
+   ending in neither is treated as unrecorded and deferred too. Do not
+   paraphrase either shape.`
 }
 // TEST-END bootstrap
 
@@ -720,6 +743,41 @@ function runParked(res) {
     if (res == null || res.status !== 'returned' ||
         typeof res.text !== 'string') return false
     return isConflictReport(res.text) && res.text.includes('run is not active')
+}
+
+// THE REPLY-TAIL CONTRACT. A returned executor reply ends in exactly one of
+// two shapes: the mandated record tail `STEP-N recorded (<status>)`, read at
+// the END like the park tail above, or one of the brief's own stop signals on
+// a line of its own — CLAIM FAILED, CLAIM INCOMPLETE, NETWORK GATE BLOCKED,
+// RECORD BLOCKED, WRITE BLOCKED — every one of which means the step was NOT
+// recorded. Before this contract only BOOTSTRAP DENIED and a short CONFLICT
+// were read: a RECORD BLOCKED reply settled `returned`, the issue's next stage
+// launched blind, and a full executor at the routed model died at claim. The
+// signal is diagnostic; the safety property is the tail. A reply with a record
+// tail is recorded whatever its prose quotes (a judge naming RECORD BLOCKED in
+// a finding keeps its chain); a reply with neither is `unrecorded`, and the
+// engine's `step show` — not the prose — says what actually happened.
+const STOP_SIGNALS = [
+    'CLAIM FAILED', 'CLAIM INCOMPLETE', 'NETWORK GATE BLOCKED',
+    'RECORD BLOCKED', 'WRITE BLOCKED',
+]
+
+function recordTail(text) {
+    if (typeof text !== 'string') return null
+    const m = lastLine(text).match(/recorded \((done|waiting-human|paused)\)[\s*_`.]*$/)
+    return m ? m[1] : null
+}
+
+function stopSignal(text) {
+    if (typeof text !== 'string' || recordTail(text)) return null
+    const lines = text.split('\n')
+    for (const sig of STOP_SIGNALS) {
+        if (!text.includes(sig)) continue
+        // The signal opens its line; what follows the colon is the report.
+        const re = new RegExp('^[\\s*_`>#]*' + sig + '(?:[\\s*_`.:!—-].*)?$')
+        if (lines.some((l) => re.test(l))) return sig
+    }
+    return null
 }
 // TEST-END park-signals
 
@@ -1066,6 +1124,25 @@ function spawn(row, phaseLabel) {
                     `the engine re-offers the row once the gap is fixed`)
                 return { step: row.step, status: 'bootstrap-denied', text }
             }
+            // The reply-tail contract (recordTail / stopSignal in the
+            // park-signals region). A reply that ends in neither shape did not
+            // demonstrably record, and launching this issue's next stage on it
+            // is a full executor dying at claim. A CONFLICT report keeps its
+            // own path below; everything else settles here.
+            if (!recordTail(text) && !isConflictReport(text)) {
+                const signal = stopSignal(text)
+                if (signal) {
+                    log(`${row.step}: the executor stopped on ${signal} — nothing ` +
+                        `recorded; this issue's later stages are deferred this wave ` +
+                        `and the conductor resolves the block from the reply`)
+                    return { step: row.step, status: 'blocked', signal, text }
+                }
+                log(`${row.step}: the reply ends in neither a record tail nor a stop ` +
+                    `signal — settling it unrecorded; this issue's later stages are ` +
+                    `deferred this wave; \`docket step show ${row.step}\` says what ` +
+                    `actually happened`)
+                return { step: row.step, status: 'unrecorded', text }
+            }
             // The ONE refusal whose face value inverts the truth.
             // "not ready to claim: the step is not pending" reads as "never
             // started" and means "already claimed" — ask the engine what the
@@ -1164,7 +1241,7 @@ function spawn(row, phaseLabel) {
         // thing that could relaunch an agent the operator skipped.
         function notRecorded() {
             if (retried) return escalate()
-            return agent(blockProbeBrief(stepLabel), {
+            return countedAgent(blockProbeBrief(stepLabel), {
                 label: `${row.step} · block-probe`,
                 phase: phaseLabel,
                 agentType: 'executor-read',
@@ -1198,7 +1275,7 @@ function spawn(row, phaseLabel) {
         }
     }
     const launch = (iso, retried) =>
-        agent(bootstrap(row, r, iso, isWrite), opts(iso)).then((text) => handle(text, retried))
+        countedAgent(bootstrap(row, r, iso, isWrite), opts(iso)).then((text) => handle(text, retried))
     // EXACTLY ONCE, and only from the top-level catch: same brief bytes, same
     // opts, same isolation. `retried` rides through so a retry that resolves
     // null does not probe-and-retry again. A second failure returns
@@ -1214,6 +1291,11 @@ function spawn(row, phaseLabel) {
     }
     return launch(isolated)
         .catch((err) => {
+            if (err instanceof AgentCapError) {
+                log(`${row.step}: ${err.message} — not a dead executor: nothing was ` +
+                    `launched; the engine re-offers the row at the next dispatch`)
+                return { step: row.step, status: 'agent-cap', text: err.message }
+            }
             if (transientClassifierBlock(err)) return retryTransient(err, isolated)
             if (isolated && /base branch|worktree/i.test(String(err))) {
                 log(`${row.step}: worktree isolation unavailable (${err}) — retrying ` +
@@ -1343,7 +1425,7 @@ function probe(command, label, phaseLabel, servingStep, acct) {
         // A probe is wave overhead, NEVER a seat: it lands in its own bucket
         // so the gate summary can say "3 seats, 3 probes".
         if (acct) acct.probes++
-        return agent(probeBrief(command, servingStep), {
+        return countedAgent(probeBrief(command, servingStep), {
             label,
             phase: phaseLabel,
             agentType: 'executor-read',
@@ -1404,7 +1486,7 @@ not attribute your tokens to it.`
 // normalized object. Never regexed: a malformed schema reply is treated the
 // same as an empty one rather than salvaged.
 function stepShow(step, label, phaseLabel) {
-    const once = () => agent(stepShowBrief(step), {
+    const once = () => countedAgent(stepShowBrief(step), {
         label,
         phase: phaseLabel,
         agentType: 'executor-read',
@@ -1503,7 +1585,7 @@ not attribute your tokens to it.`
 function gateStatus(step, label, phaseLabel, acct) {
     const once = () => {
         acct.probes++
-        return agent(gateStatusBrief(step), {
+        return countedAgent(gateStatusBrief(step), {
             label,
             phase: phaseLabel,
             agentType: 'executor-read',
@@ -1600,7 +1682,7 @@ function parseHeldCluster(hc) {
 function heldCluster(step, label, phaseLabel, acct) {
     const once = () => {
         acct.probes++
-        return agent(heldClusterBrief(step), {
+        return countedAgent(heldClusterBrief(step), {
             label,
             phase: phaseLabel,
             agentType: 'executor-read',
@@ -1670,7 +1752,7 @@ function proposalContext(p) {
 function proposalBody(voteId, step, label, phaseLabel, acct) {
     const once = () => {
         acct.probes++
-        return agent(proposalBrief(voteId, step), {
+        return countedAgent(proposalBrief(voteId, step), {
             label,
             phase: phaseLabel,
             agentType: 'executor-read',
@@ -2321,6 +2403,10 @@ const CHAIN_DEAD_STATUSES = [
     'skipped-not-claimable', 'skipped-not-ready',
     'spawn-failed', 'claim-conflict', 'parked-base-ancestry',
     'bootstrap-denied',
+    // The reply-tail contract: a stop signal, or no record tail at all.
+    'blocked', 'unrecorded',
+    // The harness lifetime cap, reached knowingly (countedAgent).
+    'agent-cap',
 ]
 
 function chainDead(res) {
@@ -2536,6 +2622,10 @@ log(`wave: ${lanes.size} issue lane(s): ` + [...lanes.entries()].map(([name, lan
     const ks = [...new Set(laneRows.map(stageOf))].sort((a, b) => a - b)
     return `${name}×${laneRows.length}${ks.length > 1 ? ` (stages ${ks.join('→')})` : ''}`
 }).join(', '))
+log('wave: no wall-clock deadline exists in this harness — a hung seat holds its ' +
+    'stage, lane and harness slot until the Workflow returns; a phase that stops ' +
+    'advancing in the task output is the only tell, and the conductor\'s dead-shard ' +
+    'check (docket-run §2) is the bound')
 
 // Bound long writer queues so finished lanes can reach the next dispatch.
 // Depth counts earlier stages with uncertified writers in OTHER lanes; a
@@ -2891,6 +2981,7 @@ await parallel([...lanes.entries()].map(([name, laneRows]) => () => runLane(name
 // One entry per MANIFEST row, in manifest order, whichever shard this is: a
 // sibling shard's row settles not-launched-other-shard here — nothing
 // failed, another launch of this same dispatch owns it.
+log(`wave: ${agentsLaunched} agent() call(s) launched this invocation (harness cap ${AGENT_LIFETIME_CAP})`)
 return rows.map((row) => byStep.get(row.step) ||
     (mine.has(row.step)
         ? { step: row.step, status: parked ? 'not-launched-run-parked' : 'spawn-failed' }

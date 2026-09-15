@@ -221,6 +221,39 @@ ok(!laneParked({ status: 'engine-run', text: 'STEP-9 recorded (waiting-human)' }
     'only a RETURNED agent reply is read for lane parks')
 ok(!laneParked(null), 'a null result is not a lane park')
 
+// ---- The reply-tail contract: a record tail, a stop signal, or neither ----
+// A RECORD BLOCKED reply used to settle `returned` and the issue's next stage
+// launched blind into a claim that could only die.
+ok(recordTail('Did the work.\n\nSTEP-12 recorded (done)') === 'done',
+    'recordTail reads the mandated done tail')
+ok(recordTail('**STEP-12 recorded (waiting-human)**') === 'waiting-human',
+    'recordTail tolerates markdown emphasis around the tail')
+ok(recordTail('STEP-12 recorded (done)\n\nand then some more prose') === null,
+    'a paragraph after the tail means there is no tail')
+ok(recordTail(null) === null && recordTail('') === null,
+    'recordTail is null on nothing')
+const RECORD_BLOCKED = [
+    'Implemented the change and ran the gates.',
+    '',
+    'RECORD BLOCKED: STEP-12, "the lease has expired" on the second record; parked <TMP>/STEP-12.d/STEP-12.token',
+].join('\n')
+ok(stopSignal(RECORD_BLOCKED) === 'RECORD BLOCKED',
+    'a RECORD BLOCKED line with its report after the colon is the stop signal')
+ok(stopSignal('CLAIM FAILED\n{"error":"claim refused"}') === 'CLAIM FAILED',
+    'a bare CLAIM FAILED line is the stop signal')
+ok(stopSignal('> NETWORK GATE BLOCKED — tests, host pypi.org') === 'NETWORK GATE BLOCKED',
+    'a quoted NETWORK GATE BLOCKED line is the stop signal')
+ok(stopSignal('The judge noted the prior RECORD BLOCKED incident.\n\nSTEP-12 recorded (done)') === null,
+    'a recorded reply that quotes a signal in prose is not stopped')
+ok(stopSignal('We saw a RECORD BLOCKED situation last week and moved on.') === null,
+    'a signal mid-sentence is not the mandated line')
+ok(chainDead({ status: 'blocked', signal: 'RECORD BLOCKED', text: RECORD_BLOCKED }),
+    'a blocked settle kills the chain for this wave')
+ok(chainDead({ status: 'unrecorded', text: 'I did some things and stopped.' }),
+    'an unrecorded settle kills the chain for this wave')
+ok(!chainDead({ status: 'returned', text: 'Reviewed.\n\nSTEP-12 recorded (done)' }),
+    'a returned reply with a record tail keeps its chain')
+
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)
 JS

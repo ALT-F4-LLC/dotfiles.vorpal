@@ -1,0 +1,160 @@
+#!/usr/bin/env bash
+#
+# diff-scope — refuse a change whose working-tree footprint exceeds what its
+# track promised.
+#
+# Wired as `diff-scope-docs`, `diff-scope-trivial` and `diff-scope-small` on
+# the implement and fix steps of docs-only, trivial-change and small-change
+# (src/user/docket/config/workflows/). Those tracks bind on a LABEL alone:
+# `docs-only`, `trivial`, `small`. Nothing in the engine reads the diff, so
+# before this gate an issue labelled docs-only could ship a code change past
+# document-only gates (no build, tests, secret-scan, vuln-scan, threat model
+# or security vote), and a 400-line change labelled trivial met zero judges.
+# The plan skill's sizing rule describes the footprint each label promises;
+# this script is the mechanical half of that promise.
+#
+# Scope is the working tree against HEAD, staged and unstaged, plus untracked
+# files: a gate runs while a step holds the tree, so the question is "what did
+# this step actually touch". Renames count as one path (the new name).
+#
+# Rules, per track:
+#   docs-only  every touched path is a document (see is_doc below);
+#   trivial    at most one path, no added or deleted file, at most
+#              TRIVIAL_MAX_LINES changed lines (insertions + deletions);
+#   small      at most two paths, all in one directory, no added file.
+# Every track: a touched path matching a line of the optional repo-local
+# pattern file .docket/scope-control-paths (one shell glob per line, `#`
+# comments) fails — a change under a control class never rides a light track,
+# which is what the plan skill's "never apply either to a security-sensitive
+# issue" means once labels are out of the loop. Absent file, no control check.
+#
+# Exit 0 on pass with one summary line; exit 1 on refusal listing every
+# reason; exit 2 on usage or a non-git cwd (fail closed: an unreadable tree is
+# not a small one).
+
+set -euo pipefail
+
+TRIVIAL_MAX_LINES="${DIFF_SCOPE_TRIVIAL_MAX_LINES:-10}"
+CONTROL_FILE="${DIFF_SCOPE_CONTROL_FILE:-.docket/scope-control-paths}"
+
+usage() {
+    echo "usage: diff-scope docs-only|trivial|small" >&2
+    exit 2
+}
+
+[ "$#" -eq 1 ] || usage
+TRACK="$1"
+case "$TRACK" in
+    docs-only|trivial|small) ;;
+    *) usage ;;
+esac
+
+git rev-parse --show-toplevel >/dev/null 2>&1 || {
+    echo "diff-scope: not inside a git work tree; refusing (cannot read the footprint)" >&2
+    exit 2
+}
+
+is_doc() { # <path>
+    local p="$1" base
+    base=$(basename "$p")
+    case "$p" in
+        docs/*|doc/*|documentation/*|*/docs/*|*/doc/*) return 0 ;;
+    esac
+    case "$base" in
+        *.md|*.mdx|*.markdown|*.txt|*.rst|*.adoc) return 0 ;;
+        README*|LICENSE*|LICENCE*|CHANGELOG*|CONTRIBUTING*|CODEOWNERS|NOTICE*|AUTHORS*) return 0 ;;
+    esac
+    return 1
+}
+
+# ---- collect the footprint ------------------------------------------------
+# `git status --porcelain=v1 -z` is stable across git versions and locales.
+# XY path[\0orig] for renames/copies (the second record is the ORIGINAL path).
+paths=()      # every touched path, deduplicated
+added=()      # new files: index A, or untracked
+deleted=()    # removed files
+while IFS= read -r -d '' rec; do
+    xy=${rec:0:2}
+    path=${rec:3}
+    case "$xy" in
+        R*|C*|*R|*C)
+            # consume the original-path record that follows
+            IFS= read -r -d '' _orig || true
+            ;;
+    esac
+    [ -n "$path" ] || continue
+    paths+=("$path")
+    case "$xy" in
+        '??'|A*|*A) added+=("$path") ;;
+        D*|*D) deleted+=("$path") ;;
+    esac
+done < <(git status --porcelain=v1 -z --untracked-files=all)
+
+# dedupe while preserving order
+if [ "${#paths[@]}" -gt 0 ]; then
+    mapfile -t paths < <(printf '%s\n' "${paths[@]}" | awk '!seen[$0]++')
+fi
+nfiles=${#paths[@]}
+
+# changed lines: tracked changes against HEAD plus every line of an untracked file
+lines=0
+while IFS=$'\t' read -r ins del _p; do
+    [ -n "${ins:-}" ] || continue
+    [ "$ins" = "-" ] && ins=0   # binary
+    [ "$del" = "-" ] && del=0
+    lines=$((lines + ins + del))
+done < <(git diff HEAD --numstat 2>/dev/null || true)
+for p in "${added[@]:-}"; do
+    [ -n "$p" ] || continue
+    if git ls-files --error-unmatch -- "$p" >/dev/null 2>&1; then continue; fi  # staged adds are in numstat already
+    [ -f "$p" ] && lines=$((lines + $(wc -l < "$p")))
+done
+
+# ---- judge -----------------------------------------------------------------
+reasons=()
+
+if [ -f "$CONTROL_FILE" ]; then
+    while IFS= read -r glob; do
+        glob=${glob%%#*}; glob=${glob//[[:space:]]/}
+        [ -n "$glob" ] || continue
+        for p in "${paths[@]:-}"; do
+            [ -n "$p" ] || continue
+            # shellcheck disable=SC2254
+            case "$p" in
+                $glob) reasons+=("control-class path touched (matches '$glob' in $CONTROL_FILE): $p; a change under a control class never rides a light track") ;;
+            esac
+        done
+    done < "$CONTROL_FILE"
+fi
+
+case "$TRACK" in
+    docs-only)
+        for p in "${paths[@]:-}"; do
+            [ -n "$p" ] || continue
+            is_doc "$p" || reasons+=("not a document: $p")
+        done
+        ;;
+    trivial)
+        [ "$nfiles" -le 1 ] || reasons+=("$nfiles paths touched; trivial allows one")
+        [ "${#added[@]}" -eq 0 ] || reasons+=("added file(s): ${added[*]}; trivial adds nothing")
+        [ "${#deleted[@]}" -eq 0 ] || reasons+=("deleted file(s): ${deleted[*]}; trivial deletes nothing")
+        [ "$lines" -le "$TRIVIAL_MAX_LINES" ] || reasons+=("$lines changed lines; trivial allows $TRIVIAL_MAX_LINES")
+        ;;
+    small)
+        [ "$nfiles" -le 2 ] || reasons+=("$nfiles paths touched; small allows two")
+        [ "${#added[@]}" -eq 0 ] || reasons+=("added file(s): ${added[*]}; small adds no file")
+        if [ "$nfiles" -eq 2 ]; then
+            d1=$(dirname "${paths[0]}"); d2=$(dirname "${paths[1]}")
+            [ "$d1" = "$d2" ] || reasons+=("paths span two directories ($d1, $d2); small stays in one")
+        fi
+        ;;
+esac
+
+if [ "${#reasons[@]}" -gt 0 ]; then
+    echo "diff-scope: REFUSED for track '$TRACK' ($nfiles paths, $lines changed lines):"
+    printf '  - %s\n' "${reasons[@]}"
+    echo "  The change outgrew its size label. Either narrow the change to what the label promises, or ask the operator to relabel the issue for a track whose gates match the footprint (standard-change runs judges, build, tests and scans)."
+    exit 1
+fi
+
+echo "diff-scope: ok ($TRACK: $nfiles paths, $lines changed lines)"

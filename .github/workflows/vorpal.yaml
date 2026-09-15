@@ -24,6 +24,8 @@ jobs:
 
       - run: bash tests/crossref-check.test.sh
 
+      - run: bash tests/diff-scope.test.sh
+
       - run: bash tests/doc-validate.test.sh
 
       - run: bash tests/docket-cli-inventory.test.sh

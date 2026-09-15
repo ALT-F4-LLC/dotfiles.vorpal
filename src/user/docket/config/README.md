@@ -92,7 +92,12 @@ throughout this corpus (`ac-commands`, `secret-scan`,
 `blocked`). This file states the shape for new additions; it does not
 mandate renaming anything that already conforms.
 
-Most gate names are this repo's own `just` recipes. A gate a workflow names
+Most gate names are this repo's own `just` recipes. The three light tracks
+(docs-only, trivial-change, small-change) bind on a label alone, so each
+carries a `diff-scope-<track>` gate on implement and fix that refuses a
+working-tree footprint the label does not promise (`.docket/bin/diff-scope`);
+a repository bound to the corpus supplies those three recipes like any other
+gate. A gate a workflow names
 that this repo doesn't provide belongs to the target project instead:
 `ui-change.toml`'s `render-verify` and `copy-verify` are supplied by
 whatever repository's own justfile the workflow runs against, not by this

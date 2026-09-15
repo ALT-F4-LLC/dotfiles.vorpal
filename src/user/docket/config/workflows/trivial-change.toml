@@ -1,7 +1,12 @@
 [pipeline]
 description = "Trivial mechanical change, bound by the `trivial` label. Implement with the full gate list, then AC verification with a single-seat tribunal on an unverifiable or out-of-scope AC and one fix round re-entering at verify-ac. No judge. The conductor integrates commits; the operator publishes."
 name = "trivial-change"
-version = 5  # 5: prose-only rewrite for concision; no topology, routing, or
+version = 6  # 6: `diff-scope-trivial` joins the implement and fix gate lists: the
+             #   track binds on the `trivial` label alone, so a 400-line change
+             #   labelled trivial met zero judges. The gate refuses more than one
+             #   touched path, any added or deleted file, or more than ten changed
+             #   lines. No topology or routing change.
+             # 5: prose-only rewrite for concision; no topology, routing, or
              #   limit change.
              # 4: `lease_ttl` added to every `[limits]` entry, matched to that
              #   entry's `max_step_duration`, so a lease lasts exactly as long
@@ -78,7 +83,7 @@ class = "write"
 emits = "change-summary"
 executor = "implement"
 expected_cost = 1.50
-gates = ["build", "tests", "self-hygiene", "secret-scan", "vuln-scan", "doc-validate"]
+gates = ["diff-scope-trivial", "build", "tests", "self-hygiene", "secret-scan", "vuln-scan", "doc-validate"]
 inputs = ["issue.body"]
 max_attempts = 2
 name = "implement"
@@ -91,7 +96,7 @@ class = "write"
 emits = "change-summary"
 executor = "fix"
 expected_cost = 1.00
-gates = ["build", "tests", "self-hygiene", "secret-scan", "vuln-scan", "doc-validate"]
+gates = ["diff-scope-trivial", "build", "tests", "self-hygiene", "secret-scan", "vuln-scan", "doc-validate"]
 inputs = ["implement.change-summary", "issue.latest.change-summary", "issue.latest.ac-report", "verify-ac-vote.vote-record"]
 loop = true
 name = "fix"

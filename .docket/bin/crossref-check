@@ -108,8 +108,11 @@ fail() {
 # --- corpus files and their checkable lines ---------------------------------
 
 corpus_files() {
-  find "$claude_tree" "$docket_tree" -type f \( -name '*.md' -o -name '*.toml' \) \
-    -not -path "$claude_tree/hooks/*" | sort
+  # Hidden directories are never corpus: a sandboxed session mounts its own
+  # `.claude/` scaffolding under whatever directory it runs from, and an
+  # unreadable file there must not abort the check.
+  find "$claude_tree" "$docket_tree" -name '.*' -prune -o -type f \
+    \( -name '*.md' -o -name '*.toml' \) -not -path "$claude_tree/hooks/*" -print | sort
 }
 
 # Emit "file<TAB>line<TAB>text" for every line the checks read. For TOML,

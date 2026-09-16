@@ -571,6 +571,100 @@ if (files.length === 0) {
     throw new Error(`wave-usage: no agent-*.jsonl under ${dir} — nothing to measure, which is a finding, not an empty batch`)
 }
 
+// TEST-BEGIN wave-usage-recheck-pipeline — extracted and exercised by
+// tests/wave-usage-recheck-pipeline.test.sh; EXTRACT_SCHEMA requires only
+// `ok`, so a schema-valid reply can still omit `usage` — reduceRows
+// dereferences extract.usage[u] unguarded. Shared by the first-attempt
+// classification and the bootstrap-recheck retry stage below, so neither
+// path can reintroduce the gap the other one guards against.
+function hasUsage(extract) {
+    return Boolean(extract && extract.usage && typeof extract.usage === 'object')
+}
+
+// The test stubs `agent`, `pipeline`, `log`, `phase`, `extractBrief`,
+// `EXTRACT_SCHEMA`, `AGENT_CONFIG` and sets `files` (an array of full paths)
+// per case; `basename` is self-contained inside this region. One continuous
+// pipeline, extract then a
+// conditional bootstrap-recheck stage, instead of two separate pipeline()
+// calls with a plain-JS filter between them (the extract-to-initialResults
+// filter, then recheckBootstrap's own pipeline over the suspect subset). Two
+// calls is a barrier in disguise: nothing in the recheck stage could start
+// for a transcript reporting bootstrap:false until every OTHER transcript in
+// the whole batch had finished its own first extract, even though this
+// transcript's own recheck need is known the moment its own extract
+// classifies. Folding the recheck into a conditional stage of the SAME
+// pipeline lets it begin the instant this item's own classification decides
+// it is needed, independent of its siblings.
+//
+// agent() can reject (schema validation exhausted, a spawn error) rather
+// than resolve to null; both agent() calls below catch explicitly into the
+// null the original two-pipeline shape's own `!r` branch already handled,
+// so a rejection takes the same accounted path a resolved-to-null call
+// would (see census-retry-pipeline's own comment in session-census.js for
+// why an UNCAUGHT rejection here would be a real regression, not just a
+// style question, once two pipeline() calls become stages of one).
+//
+// STAGE 2's four-branch precedence is NOT simplifiable to "retry if
+// bootstrap:false, else keep": a failed first attempt (null, !ok, no usage)
+// pushes to `errors` and returns null (excluded from `results`, and NEVER
+// retried — wave-usage only rechecks a confirmed-good extract that merely
+// reported no bootstrap, never a failure); a GOOD extract with
+// bootstrap !== false passes straight through, unretried; only
+// bootstrap === false triggers stage 3's retry.
+const errors = []
+function classifyFirstAttempt(r, file, i) {
+    if (!r) {
+        log(`wave-usage: ${file}: extraction agent returned nothing`)
+        errors.push(`${file}: extraction agent returned nothing`)
+        return null
+    }
+    if (!r.extract || !r.extract.ok) {
+        const why = (r.extract && r.extract.error) || 'no error text'
+        log(`wave-usage: ${file}: jq failed — ${why}`)
+        errors.push(`${file}: jq failed — ${why}`)
+        return null
+    }
+    if (!hasUsage(r.extract)) {
+        log(`wave-usage: ${file}: extract reported ok but carried no usage`)
+        errors.push(`${file}: extract reported ok but carried no usage`)
+        return null
+    }
+    return { ...r, path: files[i] }
+}
+
+// STAGE 3: fires only when stage 2 marked the item bootstrap-suspect.
+// Every dispatched agent has a bootstrap brief, so a repeated bootstrap:false
+// answer is treated as a relay misreport rather than a true bootstrap-free
+// transcript, and rechecked once before trusting it.
+function recheckBootstrap(prev) {
+    if (!prev || prev.extract.bootstrap !== false) return prev
+    log(`wave-usage: ${prev.file}: reported bootstrap:false — re-checking before trusting it`)
+    return agent(extractBrief(prev.path, true), {
+        label: `${prev.file} · extract (retry)`,
+        phase: 'Extract',
+        schema: EXTRACT_SCHEMA,
+        ...AGENT_CONFIG.recheck,
+    }).catch((err) => {
+        log(`wave-usage: ${prev.file}: recheck agent error: ${err}`)
+        return null
+    }).then((second) => {
+        if (second && second.ok && second.bootstrap === false) {
+            log(`wave-usage: ${prev.file}: bootstrap:false confirmed on a second, independent read — treating as a misreport and recording as overhead, not an error`)
+            return { ...prev, extract: { ...prev.extract, bootstrapFallback: true } }
+        }
+        if (second && second.ok && hasUsage(second)) {
+            log(`wave-usage: ${prev.file}: bootstrap:false did not repeat on retry — using the retry's answer`)
+            return { ...prev, extract: second }
+        }
+        if (second && second.ok) {
+            log(`wave-usage: ${prev.file}: retry reported ok but carried no usage — reporting the original error rather than a reply reduceRows cannot use`)
+        } else {
+            log(`wave-usage: ${prev.file}: retry could not confirm or refute the first answer — reporting the original error`)
+        }
+        return prev
+    })
+}
+
 phase('Extract')
 const basename = (f) => f.slice(f.lastIndexOf('/') + 1)
 const extracted = await pipeline(
@@ -580,75 +674,16 @@ const extracted = await pipeline(
         phase: 'Extract',
         schema: EXTRACT_SCHEMA,
         ...AGENT_CONFIG.extract,
+    }).catch((err) => {
+        log(`wave-usage: ${basename(file)}: extract agent error: ${err}`)
+        return null
     }),
     (extract, file) => ({ file: basename(file), extract }),
+    (r, file, i) => classifyFirstAttempt(r, basename(file), i),
+    recheckBootstrap,
 )
-
-// EXTRACT_SCHEMA requires only `ok`, so a schema-valid reply can still omit
-// `usage` — reduceRows dereferences extract.usage[u] unguarded. Shared by
-// the initial pass and recheckBootstrap's retry branch below, so neither
-// path can reintroduce the gap the other one guards against.
-function hasUsage(extract) {
-    return Boolean(extract && extract.usage && typeof extract.usage === 'object')
-}
-
-const errors = []
-const initialResults = extracted.flatMap((r, i) => {
-    const file = basename(files[i])
-    if (!r) {
-        log(`wave-usage: ${file}: extraction agent returned nothing`)
-        errors.push(`${file}: extraction agent returned nothing`)
-        return []
-    }
-    if (!r.extract || !r.extract.ok) {
-        const why = (r.extract && r.extract.error) || 'no error text'
-        log(`wave-usage: ${file}: jq failed — ${why}`)
-        errors.push(`${file}: jq failed — ${why}`)
-        return []
-    }
-    if (!hasUsage(r.extract)) {
-        log(`wave-usage: ${file}: extract reported ok but carried no usage`)
-        errors.push(`${file}: extract reported ok but carried no usage`)
-        return []
-    }
-    return [{ ...r, path: files[i] }]
-})
-
-// Every dispatched agent has a bootstrap brief. Recheck missing briefs once
-// before treating a repeated answer as a relay misreport and wave overhead.
-async function recheckBootstrap(results) {
-    const suspect = results.filter((r) => r.extract.bootstrap === false)
-    if (!suspect.length) return results
-
-    log(`wave-usage: ${suspect.length} transcript(s) reported bootstrap:false — re-checking before trusting it`)
-    const recheck = await pipeline(
-        suspect,
-        (r) => agent(extractBrief(r.path, true), {
-            label: `${r.file} · extract (retry)`,
-            phase: 'Extract',
-            schema: EXTRACT_SCHEMA,
-            ...AGENT_CONFIG.recheck,
-        }),
-    )
-    const replacements = new Map()
-    recheck.forEach((second, i) => {
-        const r = suspect[i]
-        if (second && second.ok && second.bootstrap === false) {
-            log(`wave-usage: ${r.file}: bootstrap:false confirmed on a second, independent read — treating as a misreport and recording as overhead, not an error`)
-            replacements.set(r, { ...r, extract: { ...r.extract, bootstrapFallback: true } })
-        } else if (second && second.ok && hasUsage(second)) {
-            log(`wave-usage: ${r.file}: bootstrap:false did not repeat on retry — using the retry's answer`)
-            replacements.set(r, { ...r, extract: second })
-        } else if (second && second.ok) {
-            log(`wave-usage: ${r.file}: retry reported ok but carried no usage — reporting the original error rather than a reply reduceRows cannot use`)
-        } else {
-            log(`wave-usage: ${r.file}: retry could not confirm or refute the first answer — reporting the original error`)
-        }
-    })
-    return results.map((r) => replacements.get(r) || r)
-}
-
-const results = await recheckBootstrap(initialResults)
+const results = extracted.filter(Boolean)
+// TEST-END wave-usage-recheck-pipeline
 const summary = reduceRows(results, mode, exclude)
 const coordination = mode === 'steps' ? coordinationOf(results, manifestRows, waveStatuses) : null
 const reduced = { ...summary, errors: [...errors, ...summary.errors], coordination }

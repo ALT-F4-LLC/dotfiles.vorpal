@@ -113,9 +113,9 @@ else
     echo "$schemas_json" >&2
     exit 2
   fi
-  if ! workflows_json="$(docket workflow list --json 2>&1)" \
+  if ! workflows_json="$(docket workflow list --deprecated --json 2>&1)" \
      || ! echo "$workflows_json" | jq -e '.ok == true' >/dev/null 2>&1; then
-    echo "frozen-drift-check FAILED: 'docket workflow list --json' did not return ok:" >&2
+    echo "frozen-drift-check FAILED: 'docket workflow list --deprecated --json' did not return ok:" >&2
     echo "$workflows_json" >&2
     exit 2
   fi
@@ -155,7 +155,7 @@ candidates_for() {
 # in the TSV row: tab is IFS whitespace and an empty interior field would
 # collapse, shifting every field after it one place left.
 schema_rows="$(echo "$schemas_json" \
-  | jq -r '.data.schemas[] | [.name, (.version|tostring), .source_sha256, ((.builtin // false)|tostring), (.source_path // "")] | @tsv')"
+  | jq -r '(.data.schemas // [])[] | [.name, (.version|tostring), .source_sha256, ((.builtin // false)|tostring), (.source_path // "")] | @tsv')"
 
 while IFS=$'\t' read -r name version reg_sha builtin source_path; do
   [ -n "$name" ] || continue
@@ -187,7 +187,7 @@ done <<< "$schema_rows"
 # --- workflows: highest registered version per name; a byte change is fine
 # --- only when the file's declared [pipeline].version is above it ----------
 workflow_rows="$(echo "$workflows_json" \
-  | jq -r '.data.workflows | group_by(.name) | map(max_by(.version)) | .[] | [.name, (.version|tostring), .source_sha256, (.source_path // "")] | @tsv')"
+  | jq -r '(.data.workflows // []) | group_by(.name) | map(max_by(.version)) | .[] | [.name, (.version|tostring), .source_sha256, (.source_path // "")] | @tsv')"
 
 declared_version_of() {
   awk '/^\[pipeline\]/{s=1;next} /^\[/{s=0} s && /^version[[:space:]]*=/{match($0,/[0-9]+/); print substr($0,RSTART,RLENGTH); exit}' "$1"

@@ -148,6 +148,7 @@ Use this field order:
 ```text
 Goal: <done-state or ongoing condition>
 Motivation: <operator's stated reason, or "not stated">
+Role: <domain-specific role the agent assumes for this conversation, or "not stated">
 Scope: <included surfaces and boundaries>
 Out-of-scope: <explicit exclusions, or "not specified">
 Acceptance criteria:
@@ -170,6 +171,20 @@ Loop details: <not applicable, or the details below>
 Keep Goal to one sentence. Motivation supplies context; its absence does
 not block progress. Constraints and exclusions come from the operator or
 requirements they adopted.
+
+**Role** names the domain-specific role the agent assumes for the rest of
+this conversation, such as a database administrator or a technical writer,
+so its reasoning and vocabulary come from that domain. It is
+operator-stated. When the request names a domain but no role, the brief
+may offer one as a labeled `proposal` for the operator to accept or strike
+at confirmation; never ask for it, and leave it "not stated" otherwise,
+since preserving intent without expanding it applies here as everywhere
+in this skill. Like Motivation, its absence does not block progress. A
+role shapes judgment and vocabulary only: it grants no authority the
+confirmed brief does not, changes neither the Security-sensitive value nor
+the route rules in §3, and never relaxes the working agreement or a
+route's contract. It is distinct from docket's vote-seat `--role`, which
+names a judge's seat on a panel, not this conversation's stance.
 
 For cross-cutting requests, specify the search boundary and completeness
 requirement. Do not mistake a preliminary file list for exhaustive scope.
@@ -289,24 +304,37 @@ metadata. Follow the loaded workflow.
 The selected workflow's required checks remain in force; settled briefing
 questions need no repeating.
 
+A confirmed Role takes effect at confirmation and holds for the rest of
+this conversation on every route, for as long as the confirmed brief
+remains in context; it is a brief field, not a harness setting, so context
+compaction can drop it. It reaches work outside this conversation only
+where a route bullet below says so.
+
 - **`/docket-plan`:** Invoke `docket-plan` with the confirmed brief or
   handoff as `args`. Planning, tracking, and verification now belong to
   that workflow. For a one-shot request with Security-sensitive `no`, a
   Size hint of `trivial` proposes the `trivial` size label in the
   handoff and `bounded` work confined to one or two files proposes
   `small`; the planner confirms either under its own sizing rule before
-  recording it.
+  recording it. The Role holds for the planning conversation, which runs
+  here, and does not reach issue bodies or executors: executors take
+  their framing from the bound workflow's contracts, and writing a
+  conversation role into a body is the planner's decision under its own
+  rules.
 - **`/loop`:** Invoke `loop` from the main conversation with the confirmed
   brief and Loop details. Ensure the repeated task preserves scope,
-  exclusions, constraints, per-pass action, and the stop/cancel policy, and
+  exclusions, constraints, per-pass action, the stop/cancel policy, and
+  the Role, since each pass receives the task text verbatim, and
   report the schedule actually established and any relevant lifetime limit.
 - **`/tend`:** tend takes work from the `route-tend` queue, not from an
   `args` payload. Ensure a `route-tend`-labeled issue carrying the brief's
   scope and acceptance criteria exists, filing one if it does not, and
-  report that the work waits for the next tend tick.
+  report that the work waits for the next tend tick. The Role does not
+  reach the worker, whose brief is the issue verbatim.
 - **Another orchestration skill:** Invoke its available entry point with
   the confirmed brief or handoff and follow its workflow.
-- **Direct:** Perform the work under the confirmed brief without creating
+- **Direct:** Perform the work under the confirmed brief, and under its
+  Role when one is stated, without creating
   docket issues, plan artifacts, schedules, or teams. Verify the acceptance
   criteria using checks appropriate to the work. For an issue routed
   `route-direct` or `route-tend`, close it once the criteria are verified:

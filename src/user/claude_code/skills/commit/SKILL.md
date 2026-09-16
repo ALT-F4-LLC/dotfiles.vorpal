@@ -2,9 +2,6 @@
 name: commit
 description: Turn the requested working-tree changes into logical conventional commits. Use on "commit", "commit this", "commit my changes", "make a commit", or "/commit". Commit without a separate approval step once scope is clear. Never push.
 argument-hint: "[paths | intent | all]"
-context: fork
-background: false
-agent: general-purpose
 model: fable
 ---
 

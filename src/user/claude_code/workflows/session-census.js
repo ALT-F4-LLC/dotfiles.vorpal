@@ -677,17 +677,14 @@ ${SANDBOX_RULE}
 Return the JSON object jq printed, field for field, unchanged: no rounding, no renaming, no interpretation. If jq printed an error instead, return the error text in a field named "error".`
 }
 
-phase('Extract')
-const results = await pipeline(files,
-    (f, _item, i) => agent(extractPrompt(f), {
-        label: `extract:${f.kind}:${i + 1}/${files.length}`,
-        phase: 'Extract',
-        ...AGENT_CONFIG.extract,
-        schema: EXTRACT_SCHEMA,
-    }),
-    (r, f) => (r ? { ...r, path: f.path, kind: f.kind } : null),
-)
-
+// TEST-BEGIN census-retry-pipeline — include session-census-config. Exercised
+// directly (not through wave.js's ladder-style marker convention, but the
+// same idea): a test sets `files` and `cutoff`, stubs `agent`, `phase`,
+// `log`, `extractPrompt`, `EXTRACT_SCHEMA`, `AGENT_CONFIG`, `COUNT_FIELDS`,
+// `ERROR_TEXT_CHARS`, and a no-barrier `pipeline` matching the real one's
+// throw-to-null rule, then awaits this region wrapped as an async function
+// and reads the returned `usable`.
+//
 // 'retryable': null (agent returned nothing) or missing count fields — both
 // plausibly a transient harness failure, not a defect in the transcript
 // itself. A jq error is excluded: the fixed program is deterministic, so an
@@ -711,29 +708,71 @@ function classifyExtract(result, file) {
     return { usable: true }
 }
 
-const classified = files.map((file, i) => ({ file, i, ...classifyExtract(results[i], file) }))
-const retryable = classified.filter((c) => c.retryable)
-if (retryable.length) {
-    log(`session-census: ${retryable.length} transcript(s) came back empty or incomplete — retrying once before dropping`)
-    const retried = await pipeline(retryable, (c) => agent(extractPrompt(c.file), {
-        label: `extract:${c.file.kind}:retry:${c.i + 1}/${files.length}`,
+// One continuous pipeline, extract then a conditional retry stage, instead
+// of two separate pipeline() calls with a plain-JS filter between them. Two
+// calls is a barrier in disguise: nothing in the retry stage could start for
+// a fast item until every item in the FIRST pipeline — including the
+// slowest transcript in the whole batch — had resolved, even though a
+// fast item's own retry need is known the moment its own extract returns.
+// Folding the retry into the same pipeline as a per-item conditional stage
+// lets each item's retry begin as soon as ITS OWN first attempt is
+// classified, independent of its siblings.
+// agent() rejects on some failures (schema validation exhausted after
+// retries, a spawn error) rather than resolving to null. The original
+// two-pipeline shape let the harness's own rejection propagate out of the
+// FIRST pipeline() call, where it collapses that item to null per the
+// authoring reference's own rule ("a stage that throws drops that item to
+// null and skips its remaining stages") — classifyExtract(null) then still
+// marked it retryable, so a rejected first attempt still got its retry in
+// the SECOND pipeline() call. Folded into one pipeline, an uncaught
+// rejection in stage 1 would instead skip stages 2 AND 3 entirely — no
+// classification, no retry, no DROPPED line, the item just silently
+// disappears from `extracted`. Catching explicitly inside each stage keeps
+// every rejection inside the SAME classify/retry path a resolved value
+// would take.
+phase('Extract')
+let retriedCount = 0
+const extracted = await pipeline(files,
+    (f, _item, i) => agent(extractPrompt(f), {
+        label: `extract:${f.kind}:${i + 1}/${files.length}`,
         phase: 'Extract',
         ...AGENT_CONFIG.extract,
         schema: EXTRACT_SCHEMA,
-    }))
-    retried.forEach((r, j) => {
-        const c = retryable[j]
-        const second = classifyExtract(r ? { ...r, path: c.file.path, kind: c.file.kind } : null, c.file)
-        if (second.usable) {
-            log(`session-census: ${c.file.path}: retry succeeded`)
-            results[c.i] = { ...r, path: c.file.path, kind: c.file.kind }
-            classified[c.i].usable = true
-        } else {
-            log(`session-census: DROPPED ${c.file.path} (retry did not recover it)`)
-        }
-    })
-}
-const usable = classified.filter((c) => c.usable).map((c) => results[c.i])
+    }).catch((err) => {
+        log(`session-census: ${f.path}: extract agent error: ${err}`)
+        return null
+    }),
+    (r, f) => {
+        const result = r ? { ...r, path: f.path, kind: f.kind } : null
+        return { result, ...classifyExtract(result, f) }
+    },
+    (first, f, i) => {
+        if (!first.retryable) return first
+        retriedCount++
+        log(`session-census: ${f.path}: extract came back empty or incomplete — retrying once before dropping`)
+        return agent(extractPrompt(f), {
+            label: `extract:${f.kind}:retry:${i + 1}/${files.length}`,
+            phase: 'Extract',
+            ...AGENT_CONFIG.extract,
+            schema: EXTRACT_SCHEMA,
+        }).catch((err) => {
+            log(`session-census: ${f.path}: extract retry agent error: ${err}`)
+            return null
+        }).then((r) => {
+            const result = r ? { ...r, path: f.path, kind: f.kind } : null
+            const second = classifyExtract(result, f)
+            if (second.usable) {
+                log(`session-census: ${f.path}: retry succeeded`)
+            } else {
+                log(`session-census: DROPPED ${f.path} (retry did not recover it)`)
+            }
+            return { result, ...second }
+        })
+    },
+)
+if (retriedCount) log(`session-census: ${retriedCount} transcript(s) retried`)
+const usable = extracted.filter((c) => c && c.usable).map((c) => c.result)
+// TEST-END census-retry-pipeline
 log(`session-census: ${usable.length}/${files.length} transcripts extracted`)
 
 const census = aggregate(usable)

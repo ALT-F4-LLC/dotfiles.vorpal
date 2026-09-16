@@ -1,6 +1,6 @@
 ---
 node: design-qa
-version: 17
+version: 18
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -11,7 +11,7 @@ packet_includes:
   - fragments/re-review-rounds.md
   - fragments/test-code-boundaries.md
 emits: findings
-payload: findings@10
+payload: findings@12
 ---
 # Charter
 Verify the built surface against its accepted UX specification. Walk its
@@ -23,7 +23,9 @@ Your evidence is user-facing output: rendered views, interactions, accessibility
 interfaces, command help and error text, generated configuration bytes, and exit
 codes. Inspect runtime state needed to measure that output. Do not read the
 implementation, diff, or test source to establish or explain away conformance.
-judge-design owns source-level design review; verify-ac owns the acceptance
+Where the workflow supplies `issue.diff` as a step input, it exists only so
+context assembly can lift a target commit for the built surface you inspect;
+it is not evidence for a conformance judgment. judge-design owns source-level design review; verify-ac owns the acceptance
 criteria report. You may cite an applicable acceptance criterion as the expected
 behavior or severity basis without issuing that separate report.
 
@@ -132,7 +134,7 @@ unaffected coverage, marked as reused. Missing history limits claims about
 closure, recurrence, and origin, not observation of current defects.
 
 # Emit
-`findings`: a markdown body and the `findings@10` payload, using the supplied schema.
+`findings`: a markdown body and the `findings@12` payload, using the supplied schema.
 For each defect, include its stable identity where applicable, specification
 section or cross-surface requirement, observed evidence, expected behavior,
 user consequence, governing principle where applicable, evidence labels,

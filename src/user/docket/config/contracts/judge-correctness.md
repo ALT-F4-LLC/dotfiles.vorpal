@@ -1,6 +1,6 @@
 ---
 node: judge-correctness
-version: 21
+version: 22
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -12,7 +12,7 @@ packet_includes:
   - fragments/test-code-boundaries.md
   - fragments/diff-reconstruction.md
 emits: findings
-payload: findings@10
+payload: findings@12
 ---
 # Charter
 Examine one change for defects in what the code does: logic errors, boundary
@@ -95,7 +95,7 @@ target identities, dispositions, evidence references, and gaps across handoffs
 and compaction.
 
 # Emit
-`findings`: a markdown body and the `findings@10` payload, using the supplied schema
+`findings`: a markdown body and the `findings@12` payload, using the supplied schema
 and recording protocol. For each finding, give its identity, exact location and
 reviewed state, violated contract, triggering case, expected and actual or derived
 behavior, consequence, evidence label and references, authored severity and reason,
@@ -126,7 +126,7 @@ After permitted inspection and reconstruction, emit a `gap` for a missing requir
 input or capability that prevents judgment: the applicable contract, target,
 fragment, prior-state evidence, or verification capability. Name what is missing,
 the affected judgment, evidence of the limitation, and what would resolve it.
-Use the brief's gap protocol; invent no payload fields or recording commands.
+Use the brief's gap channel; invent no payload fields or recording commands.
 Complete independent checks, retain their findings, and stop the whole review
 only when nothing in scope can be judged. Never infer intent solely from the
 implementation or claim coverage you could not establish.

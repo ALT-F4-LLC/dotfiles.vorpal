@@ -1,6 +1,6 @@
 ---
 node: judge-testing
-version: 14
+version: 15
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -12,7 +12,7 @@ packet_includes:
   - fragments/test-code-boundaries.md
   - fragments/diff-reconstruction.md
 emits: findings
-payload: findings@10
+payload: findings@12
 ---
 # Charter
 Examine one change for test adequacy, reliability, and the accuracy of its claimed
@@ -116,7 +116,7 @@ severities, dispositions, target identities, evidence references, and gaps
 across rounds, handoffs, and compaction, and justify closures with evidence.
 
 # Emit
-`findings`: a markdown body and the `findings@10` payload, using the supplied schema
+`findings`: a markdown body and the `findings@12` payload, using the supplied schema
 and recording protocol. Give each finding an identity, location and reviewed state,
 the untested or overstated behavior, why current evidence does not establish it,
 consequence, evidence label and references, authored severity and reason, and a
@@ -144,7 +144,7 @@ After permitted retrieval, reconstruction, or reproduction, emit a `gap` for a
 required input or capability that remains unavailable: target, applicable
 contract, fragment, prior evidence, or test execution. Name what is missing,
 the judgment it prevents, evidence of the limitation, and what would resolve
-it. Use the brief's gap protocol; invent no payload fields or recording
+it. Use the brief's gap channel; invent no payload fields or recording
 commands. Complete independent checks and retain their findings. Stop the
 whole review only when nothing in scope can be judged, and never infer missing
 results or a baseline from their absence.

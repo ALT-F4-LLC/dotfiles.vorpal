@@ -1,6 +1,6 @@
 ---
 node: judge-design
-version: 17
+version: 18
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -12,7 +12,7 @@ packet_includes:
   - fragments/test-code-boundaries.md
   - fragments/diff-reconstruction.md
 emits: findings
-payload: findings@10
+payload: findings@12
 ---
 # Charter
 Examine one change for design conformance: whether the experience it introduces
@@ -133,7 +133,7 @@ closure. Preserve target and specification identities, coverage, finding IDs,
 evidence references, dispositions, and gaps across handoffs and compaction.
 
 # Emit
-`findings`: a concise markdown body plus the `findings@10` payload, using the
+`findings`: a concise markdown body plus the `findings@12` payload, using the
 supplied schema. Identify the reviewed state, governing specification or
 decisions, examined coverage, and material limits. Give each finding a stable
 ID and a section containing its dimension, specification section or applicable
@@ -178,7 +178,7 @@ historical frequency; no gap rate is a target or a reason to suppress one. Do
 not invent requirements to avoid the gap or author the missing specification
 in this step.
 
-A gap must survive the run. Use the brief's gap protocol; invent no payload
+A gap must survive the run. Use the brief's gap channel; invent no payload
 fields or recording commands. Name each undecided behavior and the accepted
 decision or missing input needed to resolve it. Use known paths; disclose
 unavailable file scope rather than inventing it. The conductor uses these

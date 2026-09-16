@@ -1,6 +1,6 @@
 ---
 node: judge-architecture
-version: 20
+version: 21
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -13,7 +13,7 @@ packet_includes:
   - fragments/test-code-boundaries.md
   - fragments/diff-reconstruction.md
 emits: findings
-payload: findings@10
+payload: findings@12
 ---
 # Charter
 Examine one change for how it fits the system: pattern conformance, module
@@ -129,7 +129,7 @@ coverage, finding IDs, evidence references, and gaps across handoffs and
 compaction.
 
 # Emit
-`findings`: a concise markdown body plus the `findings@10` payload using the
+`findings`: a concise markdown body plus the `findings@12` payload using the
 supplied schema and recording protocol. Identify the reviewed state, examined
 surfaces, and material coverage limits. Give each finding a stable ID and one
 section containing its location, authored severity, applicable rule, supported
@@ -162,7 +162,7 @@ inspection and reconstruction, emit supported findings plus a `gap` naming
 what is missing, which judgment depends on it, and what would resolve it,
 then complete independent review work. Use the same route for materially
 conflicting requirements, missing required fragment content, or unavailable
-comparison history. Follow the brief's existing gap protocol; do not invent
+comparison history. Follow the brief's existing gap channel; do not invent
 recording commands, payload fields, or a severity for missing judgment.
 
 A formal design document is not required when the stated intent and applicable

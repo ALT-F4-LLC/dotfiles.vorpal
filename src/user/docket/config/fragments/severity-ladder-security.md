@@ -1,6 +1,6 @@
 ---
 fragment: severity-ladder-security
-version: 7
+version: 8
 ---
 # Severity ladder: security
 
@@ -48,26 +48,29 @@ payload contract. Map each rung exactly:
 | Info | `info` |
 
 **Security convergence.** On the security track, reconcile routes any open
-Critical or High to the `security-vote` panel: the judge seats the workflow
-declares, tallied by the engine; no person sits on it. A supported Critical
-remains fix-before-merge or revert; the panel must reject or reclassify it on
-evidence, and risk acceptance alone does not clear it, so a supported Critical
-never reaches `drain-highs` and is never drained. High requires a fix or the
-panel's recorded acceptance: approve-with-concerns casts whose rationales
-stand in the vote record, after which `drain-highs` files every open High the
-panel approved past as a backlog issue, and only those. A rejected tally
-returns the round to the fix loop. Where another track seats this reviewer
-without a security vote, that track's own thresholds route its findings.
-Medium remains recorded and surfaces at the gates and in the backlog; Low and
-Info remain available for downstream consideration.
+Critical to the fix loop before the panel sees the change, and any open
+Critical or High still open after the fix loop to the `security-vote` panel:
+the judge seats the workflow declares, tallied by the engine; no person sits
+on it. A supported Critical remains fix-before-merge or revert; the panel
+must reject or reclassify it on evidence, and risk acceptance alone does not
+clear it, so a supported Critical never reaches `drain-highs` and is never
+drained. High requires a fix or the panel's recorded acceptance:
+approve-with-concerns casts whose rationales stand in the vote record, after
+which `drain-highs` files every open High the panel approved past as a
+backlog issue, and only those. A rejected tally returns the round to the fix
+loop. Where another track seats this reviewer without a security vote, that
+track's own thresholds route its findings. Medium remains recorded and
+surfaces at the gates and in the backlog; Low and Info remain available for
+downstream consideration.
 
-No severity starts an automatic fix loop in this track. Retain the supplied
-re-review contract's finding identities, evidence, carry-forward, and closure
-rules, but use this ladder's terms and convergence policy. Unresolved findings
-remain unresolved when a review ends. Neither an absent `blocker` nor a
-completed vote proves readiness: required checks, applicable gates, and
-judgment-blocking gaps still apply. A gate override alone is not acceptance of
-an independently supported security risk.
+Only an open Critical starts the automatic fix loop in this track; High and
+below reach the panel directly, without a loop attempt first. Retain the
+supplied re-review contract's finding identities, evidence, carry-forward,
+and closure rules, but use this ladder's terms and convergence policy.
+Unresolved findings remain unresolved when a review ends. Neither an absent
+`blocker` nor a completed vote proves readiness: required checks, applicable
+gates, and judgment-blocking gaps still apply. A gate override alone is not
+acceptance of an independently supported security risk.
 
 **Report low-severity findings; do not omit them.** Preserve all in-scope
 findings, including scanner-duplicable vulnerabilities, Low improvements, and

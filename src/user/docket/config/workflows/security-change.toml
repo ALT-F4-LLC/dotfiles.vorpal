@@ -1,7 +1,33 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 43  # 43: synthesize-findings declares `findings-cluster@5` and reconcile
+version = 44  # 44: four comment-only corrections plus one behavior change, no
+              #   topology change. `max_fix_loops` drops from 3 to 2, matching
+              #   every other multi-round workflow in the corpus; the row
+              #   carried no recorded reason for the outlier. The v37 comment
+              #   now marks its tribunal-design/tribunal-architecture tiers as
+              #   historical, since policy 29 moved them since. The v23
+              #   comment no longer calls `security-vote` "human": the
+              #   current step definition (v34 on) seats only judge-security
+              #   and judge-correctness, tallied by the engine, matching
+              #   severity-ladder-security.md's "no person sits on it".
+              #   fragments/severity-ladder-security.md (v8) is updated to
+              #   match: it previously said no severity starts an automatic
+              #   fix loop, contradicting this file's own v42 comment
+              #   restoring the blocker fix-loop route. `review` also
+              #   repoints `payload = "findings@10"` to `findings@12`:
+              #   findings@10's own description incorrectly still claimed
+              #   reconcile-step usage, which reconcile itself moved off in
+              #   an earlier version; findings@12 corrects the description
+              #   to say review/design-qa only. Same shape, byte-identical
+              #   constraints. The v30 comment's "first-match in sorted
+              #   order" claim is corrected to "declared order", confirmed
+              #   against `ThresholdOrder` in the engine source
+              #   (feature/engine-improvements at the time of checking):
+              #   TOML tables decode into Go maps, which lose declaration
+              #   order, so the engine reconstructs it from source text
+              #   specifically to keep first-match-wins deterministic.
+              # 43: synthesize-findings declares `findings-cluster@5` and reconcile
               #   declares `findings@11`; both require `open_severity` on every open
               #   cluster (omitted only behind a settling ruling), so a payload that
               #   drops it no longer routes every threshold false and passes a
@@ -36,7 +62,9 @@ version = 43  # 43: synthesize-findings declares `findings-cluster@5` and reconc
               #   (policy 23 moved tribunal-architecture and
               #   tribunal-correctness to opus-high, matching judge-* except
               #   judge-architecture/simplicity/testing at opus-medium; only
-              #   tribunal-design still sits at fable-high). No topology
+              #   tribunal-design sat at fable-high at the time (policy 29
+              #   later moved tribunal-architecture to opus-low and
+              #   tribunal-design to fable-low)). No topology
               #   change.
               # 36: `verify-ac` emits `ac-report@2` (adds `unmet-out-of-scope`)
               #   and its vote predicate becomes `any(status != met)`, read after
@@ -127,7 +155,12 @@ version = 43  # 43: synthesize-findings declares `findings-cluster@5` and reconc
               #   them; one run's conductor noticed 12 of them after the run
               #   was already done and hand-filed four follow-ups. Placement
               #   is deliberate: the engine's threshold is first-match in
-              #   sorted order, so `drain-highs` beside `security-vote` on
+              #   declared order (confirmed against `ThresholdOrder` in the
+              #   engine source: TOML tables decode into Go maps, which lose
+              #   declaration order, so the engine reconstructs it from the
+              #   source text specifically so first-match-wins is
+              #   deterministic, never sorted), so `drain-highs` beside
+              #   `security-vote` on
               #   reconcile would fire first and terminalize the vote as
               #   skipped; and draining before the vote would file issues a
               #   rejected vote's fix round then fixes. After approval is the
@@ -248,8 +281,8 @@ version = 43  # 43: synthesize-findings declares `findings-cluster@5` and reconc
               #   to match the corpus convention; see findings@9.json's
               #   `open_severity` field description for the open-vs-settled
               #   distinction this relies on.
-              # 23: `reconcile` sends High and above to the human
-              #   `security-vote` again, and the `fix-loop` route added at
+              # 23: `reconcile` sends High and above to the `security-vote`
+              #   panel again, and the `fix-loop` route added at
               #   22 is removed. The trail: an earlier commit raised this
               #   threshold from `>= high` to `>= blocker`, which left a high-
               #   severity finding with no route at all and no vote; that gap
@@ -329,7 +362,7 @@ holds_tree = false
 inputs = ["implement.change-summary", "threat-model.threat-model", "issue.diff"]
 name = "review"
 packet = ["contracts/{executor}.md"]
-payload = "findings@10"
+payload = "findings@12"
 
 [[step]]
 after = ["review"]
@@ -346,8 +379,7 @@ payload = "findings-cluster@5"
 action = "aggregate"
 after = ["synthesize-findings"]
 inputs = ["synthesize-findings.findings"]
-# One round above every other track's reconcile (2); no recorded reason.
-max_fix_loops = 3
+max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
 payload = "findings@11"

@@ -1,7 +1,13 @@
 [pipeline]
 description = "Documentation change: implement with doc-validate and citation gates, one correctness judge, tribunal-filtered review and AC verification, and a bounded fix loop re-entering at review. The conductor integrates commits; the operator publishes. Design-heavy doc work routes through spec-doc first."
 name = "docs-only"
-version = 27  # 27: `diff-scope-docs` joins the implement and fix gate lists: the
+version = 28  # 28: `review` repoints `payload = "findings@10"` to `findings@12`:
+              #   findings@10's own description incorrectly still claimed
+              #   reconcile-step usage, which every workflow's reconcile step
+              #   moved off in an earlier version; findings@12 corrects the
+              #   description to say review/design-qa only. Same shape,
+              #   byte-identical constraints. No topology or routing change.
+              # 27: `diff-scope-docs` joins the implement and fix gate lists: the
               #   track binds on the `docs-only` label alone, so before this gate a
               #   code diff labelled docs-only shipped past document-only gates
               #   with no build, tests, scans, threat model or security vote. The
@@ -104,7 +110,7 @@ holds_tree = false
 inputs = ["implement.change-summary", "issue.diff"]
 name = "review"
 packet = ["contracts/{executor}.md"]
-payload = "findings@10"
+payload = "findings@12"
 threshold = { "review-vote" = "any(severity >= blocker)" }
 
 [[step]]

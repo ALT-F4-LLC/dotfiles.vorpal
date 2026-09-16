@@ -1,7 +1,18 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by research, then validate, review, and vote to accept: the doc-acceptance panel for TDD/ADR, the tribunal for PRD/ux-spec. A rejection re-enters the doctype's revise step, then review, up to the loop bound."
 name = "spec-doc"
-version = 35  # 35: synthesize-findings declares `findings-cluster@5` and reconcile
+version = 36  # 36: fixes a self-contradiction in the v33 comment, which called
+              #   the workflow's vote gates both "three-seat" and, two lines
+              #   later, "single-seat"; every vote step here seats three
+              #   voters (confirmed against the step definitions below).
+              #   `review` also repoints `payload = "findings@10"` to
+              #   `findings@12`: findings@10's own description incorrectly
+              #   still claimed reconcile-step usage, which reconcile moved
+              #   off in an earlier version; findings@12 corrects the
+              #   description to say review/design-qa only. Same shape,
+              #   byte-identical constraints. No topology, routing, or limit
+              #   change.
+              # 35: synthesize-findings declares `findings-cluster@5` and reconcile
               #   declares `findings@11`; both require `open_severity` on every open
               #   cluster (omitted only behind a settling ruling), so a payload that
               #   drops it no longer routes every threshold false and passes a
@@ -34,7 +45,7 @@ version = 35  # 35: synthesize-findings declares `findings-cluster@5` and reconc
               #   committed proposal's bypass are unchanged. `waiting-human`
               #   was the alternative routing; a revise round won because
               #   the loop bound already backstops it with the operator, as
-              #   a wrong single-seat reject on the single-seat gates costs
+              #   a wrong single-seat reject on the three-seat gates costs
               #   one round, never a park. No topology change.
               # 32: prose-only rewrite for concision; no topology, routing, or limit change.
               # 31: `lease_ttl` added to every `[limits]` entry, matched to
@@ -284,7 +295,7 @@ holds_tree = false
 inputs = ["issue.latest.doc", "issue.body"]
 name = "review"
 packet = ["contracts/{executor}.md"]
-payload = "findings@10"
+payload = "findings@12"
 
 [[step]]
 after = ["review"]

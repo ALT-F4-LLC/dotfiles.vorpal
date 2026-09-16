@@ -1,7 +1,13 @@
 [pipeline]
 description = "Small ordinary change, bound by the `small` label. Implement with the full gate list; one correctness judge routes a blocker straight to the fix loop. AC verification uses a single-seat tribunal on an unverifiable or out-of-scope AC, and the bounded fix loop re-enters at review. The conductor integrates commits; the operator publishes."
 name = "small-change"
-version = 7  # 7: `diff-scope-small` joins the implement and fix gate lists: the
+version = 8  # 8: `review` repoints `payload = "findings@10"` to `findings@12`:
+             #   findings@10's own description incorrectly still claimed
+             #   reconcile-step usage, which every workflow's reconcile step
+             #   moved off in an earlier version; findings@12 corrects the
+             #   description to say review/design-qa only. Same shape,
+             #   byte-identical constraints. No topology or routing change.
+             # 7: `diff-scope-small` joins the implement and fix gate lists: the
              #   track binds on the `small` label alone. The gate enforces the plan
              #   skill's sizing rule mechanically: at most two touched paths in one
              #   directory and no added file. No topology or routing change.
@@ -127,7 +133,7 @@ inputs = ["implement.change-summary", "issue.diff"]
 max_fix_loops = 2
 name = "review"
 packet = ["contracts/{executor}.md"]
-payload = "findings@10"
+payload = "findings@12"
 threshold = { "fix-loop" = "any(severity >= blocker)" }
 
 [[step]]

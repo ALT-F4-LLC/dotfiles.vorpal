@@ -1,7 +1,13 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 42  # 42: synthesize-findings declares `findings-cluster@5` and reconcile
+version = 43  # 43: `review` repoints `payload = "findings@10"` to `findings@12`:
+              #   findings@10's own description incorrectly still claimed
+              #   reconcile-step usage, which every workflow's reconcile step
+              #   moved off in an earlier version; findings@12 corrects the
+              #   description to say review/design-qa only. Same shape,
+              #   byte-identical constraints. No topology or routing change.
+              # 42: synthesize-findings declares `findings-cluster@5` and reconcile
               #   declares `findings@11`; both require `open_severity` on every open
               #   cluster (omitted only behind a settling ruling), so a payload that
               #   drops it no longer routes every threshold false and passes a
@@ -248,7 +254,7 @@ after = ["implement"]
 fanout = ["judge-correctness", "judge-architecture", "judge-testing"]
 emits = "findings"
 packet = ["contracts/{executor}.md"]
-payload = "findings@10"
+payload = "findings@12"
 expected_cost = 0.60
 inputs = ["implement.change-summary", "issue.diff"]
 

@@ -1,6 +1,6 @@
 ---
 node: judge-simplicity
-version: 17
+version: 18
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -11,7 +11,7 @@ packet_includes:
   - fragments/rerun-discipline.md
   - fragments/re-review-rounds.md
 emits: findings
-payload: findings@10
+payload: findings@12
 ---
 # Charter
 Examine the complete authored artifact or artifact set assigned by the brief
@@ -98,7 +98,7 @@ artifact identities, applicable requirements, finding IDs, dispositions, evidenc
 references, examined coverage, and gaps across handoffs and compaction.
 
 # Emit
-`findings`: a concise markdown body and the `findings@10` payload using the supplied
+`findings`: a concise markdown body and the `findings@12` payload using the supplied
 schema and recording protocol. Identify the reviewed artifacts and state, examined
 coverage, and material limits. Give each finding a stable ID and one section with
 its location, authored severity, named principle, evidence and limitations,
@@ -128,6 +128,6 @@ clean result. Acceptance belongs to the workflow.
 After permitted inspection, emit supported findings plus a `gap` for any missing
 artifact, requirement, fragment, prior-state evidence, or capability that prevents
 a judgment. State what is missing, which judgment depends on it, and what would
-resolve it. Use the brief's existing gap protocol; invent no payload fields or
+resolve it. Use the brief's existing gap channel; invent no payload fields or
 recording commands. Complete independent review work and keep the dependent
 judgment open. Never invent intent or recommend deletion to fill an evidence gap.

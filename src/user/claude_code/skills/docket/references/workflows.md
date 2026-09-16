@@ -618,7 +618,7 @@ name    = "reconcile"
 after   = ["synthesize-findings"]
 action  = "aggregate"
 inputs  = ["synthesize-findings.findings"]
-payload = "findings@10"
+payload = "findings@11"
 params  = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
 ```
 

@@ -1,6 +1,6 @@
 ---
 node: judge-security
-version: 17
+version: 18
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -12,7 +12,7 @@ packet_includes:
   - fragments/test-code-boundaries.md
   - fragments/diff-reconstruction.md
 emits: findings
-payload: findings@10
+payload: findings@12
 ---
 # Charter
 Examine one change for security defects: vulnerabilities introduced, exposed,
@@ -104,7 +104,7 @@ Preserve reviewed states, coverage, finding IDs, dispositions, evidence referenc
 and gaps across handoffs and compaction.
 
 # Emit
-`findings`: a concise markdown body plus the `findings@10` payload, using the
+`findings`: a concise markdown body plus the `findings@12` payload, using the
 supplied schema and recording protocol. Identify the reviewed state, assessed
 deployment conditions, coverage, and material limits. Give each finding a stable
 ID and a section containing its exact location, evidence labels and references,

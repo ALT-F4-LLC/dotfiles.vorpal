@@ -1,6 +1,13 @@
 [pipeline]
 name = "ui-change"
-version = 33  # 33: synthesize-findings declares `findings-cluster@5` and reconcile
+version = 34  # 34: `review` and `design-qa` repoint `payload = "findings@10"`
+              #   to `findings@12`: findings@10's own description
+              #   incorrectly still claimed reconcile-step usage, which
+              #   reconcile moved off in an earlier version; findings@12
+              #   corrects the description to say review/design-qa only.
+              #   Same shape, byte-identical constraints. No topology or
+              #   routing change.
+              # 33: synthesize-findings declares `findings-cluster@5` and reconcile
               #   declares `findings@11`; both require `open_severity` on every open
               #   cluster (omitted only behind a settling ruling), so a payload that
               #   drops it no longer routes every threshold false and passes a
@@ -192,7 +199,7 @@ holds_tree = false
 inputs = ["implement.change-summary", "issue.diff"]
 name = "review"
 packet = ["contracts/{executor}.md"]
-payload = "findings@10"
+payload = "findings@12"
 
 [[step]]
 after = ["review"]
@@ -248,7 +255,7 @@ holds_tree = false
 inputs = ["issue.body", "issue.diff", "implement.change-summary", "design-qa.gate-results"]
 name = "design-qa"
 packet = ["contracts/{executor}.md"]
-payload = "findings@10"
+payload = "findings@12"
 threshold = { "fix-loop" = "any(severity >= blocker)" }
 
 [[step]]

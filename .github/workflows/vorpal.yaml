@@ -60,6 +60,8 @@ jobs:
 
       - run: bash tests/sensitive-path-guard-hook.test.sh
 
+      - run: bash tests/session-census-agent-cap.test.sh
+
       - run: bash tests/session-census-dedupe.test.sh
 
       - run: bash tests/tribunal-cast-error-surfaced.test.sh

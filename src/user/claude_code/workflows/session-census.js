@@ -25,7 +25,13 @@ export const meta = {
 // and diff the two returns. Cost: one scout, plus one low-effort agent per
 // transcript newer than the cutoff, plus one retry per transcript whose
 // extract came back empty or with missing count fields; a 7-day fleet window
-// is hundreds of files, so the caller picks the window.
+// is hundreds of files, so the caller picks the window. AGENT CAP: the
+// Workflow tool caps one invocation at 1000 agents over its lifetime, so
+// planAgentCap() projects the extract-plus-retry cost against that cap
+// before the Extract phase starts; a window that would exceed it is
+// truncated to the largest prefix (in scout order — no mtime to prefer
+// recency) that fits, with the drop logged plainly rather than failing
+// mid-sweep on an unattributed cap error.
 // ---------------------------------------------------------------------------
 
 // TEST-BEGIN session-census-config — include before either pure test region.
@@ -44,7 +50,36 @@ const ROLE_BRIEF_CHARS = 300
 const ERROR_TEXT_CHARS = 200
 const EFFORT_RANK = {low: 0, medium: 1, high: 2, xhigh: 3, max: 4}
 const UNKNOWN_EFFORT_RANK = 9
+// Agent budget: the Workflow tool caps one invocation at 1000 agent() calls
+// over its lifetime. This script's own header says a fleet window can be
+// "hundreds of files," and trusts the caller (the shadow skill) to pick a
+// window that fits — but nothing here ever checked that trust against the
+// real cap, unlike corpus-check.js's AGENT_CAP/AGENT_CAP_MARGIN pattern.
+// SCOUT_AGENTS is the one scout call; RETRY_ESTIMATE_FRACTION projects a
+// worst-case retry cost from observed fleet behavior (most sweeps see a
+// small single-digit retryable fraction; this over-estimates so the warning
+// fires before the real run, not after it starts failing on the cap).
+const AGENT_CAP = 1000
+const AGENT_CAP_MARGIN = 10
+const SCOUT_AGENTS = 1
+const RETRY_ESTIMATE_FRACTION = 0.1
 // TEST-END session-census-config
+
+// TEST-BEGIN session-census-agent-cap — include session-census-config. Pure
+// function: no workflow globals, no I/O, safe to call directly in a test.
+// Projects extract-plus-retry cost against the budget and returns the plan
+// the caller (the scout-result handling below) acts on and logs from.
+function planAgentCap(fileCount) {
+    const budget = AGENT_CAP - AGENT_CAP_MARGIN - SCOUT_AGENTS
+    const projected = Math.ceil(fileCount * (1 + RETRY_ESTIMATE_FRACTION))
+    const overBudget = projected > budget
+    const maxFiles = overBudget ? Math.max(0, Math.floor(budget / (1 + RETRY_ESTIMATE_FRACTION))) : fileCount
+    return {
+        budget, projected, maxFiles,
+        nearBudget: !overBudget && projected > budget * 0.8,
+    }
+}
+// TEST-END session-census-agent-cap
 
 // ---------------------------------------------------------------------------
 // Why these rules exist:
@@ -550,12 +585,36 @@ Return every path the command printed, one entry per path, none dropped or dedup
 )
 
 if (!scouted) throw new Error('session-census: the scout agent returned nothing; no transcript list to census')
-const files = scouted.files.map((f) => {
+let files = scouted.files.map((f) => {
     const kind = f.path.includes('/subagents/') ? 'subagent' : 'main'
     if (kind !== f.kind) log(`session-census: scout labelled ${f.path} as ${f.kind}; path rule says ${kind} (path rule wins)`)
     return {path: f.path, kind}
 })
 if (files.length === 0) throw new Error(`session-census: no transcripts under ${root} newer than ${cutoff}; nothing to measure`)
+
+// Agent-cap pre-flight: one extract agent per file, plus a projected worst-
+// case retry cost, against the 1000-agent lifetime cap. A caller-chosen
+// window this script never bounded itself could otherwise run straight into
+// the harness's own cap mid-sweep, dying with an unattributed AgentCapError
+// instead of a clear, up-front account of what was dropped and why.
+const capPlan = planAgentCap(files.length)
+if (capPlan.maxFiles < files.length) {
+    // The scout returns paths only, no mtime, so there is no recency signal
+    // here to prefer — truncating is a deterministic first-N cut of
+    // whatever order `find` printed, named plainly as such rather than
+    // implying a "most recent" selection this script cannot make.
+    log(`session-census: ${files.length} transcript(s) newer than ${cutoff} project to ` +
+        `~${capPlan.projected} agent() calls with retries, against a budget of ${capPlan.budget} ` +
+        `(the ${AGENT_CAP}-agent lifetime cap less a ${AGENT_CAP_MARGIN}-agent reserve and the scout) — ` +
+        `keeping the first ${capPlan.maxFiles} of ${files.length} in scout order and DROPPING the ` +
+        `remaining ${files.length - capPlan.maxFiles} (no mtime to prefer recency; narrow the caller's ` +
+        `window — a shorter cutoff or a smaller root — to cover the rest in a later sweep)`)
+    files = files.slice(0, capPlan.maxFiles)
+} else if (capPlan.nearBudget) {
+    log(`session-census: ${files.length} transcript(s) project to ~${capPlan.projected} agent() ` +
+        `calls with retries, within the ${capPlan.budget}-agent budget but past 80% of it — a wider ` +
+        `window next sweep may truncate`)
+}
 const nMain = files.filter((f) => f.kind === 'main').length
 log(`session-census: ${files.length} transcripts newer than ${cutoff} (${nMain} main, ${files.length - nMain} subagent); one extract agent each`)
 

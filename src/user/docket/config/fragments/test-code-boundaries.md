@@ -1,6 +1,6 @@
 ---
 fragment: test-code-boundaries
-version: 6
+version: 7
 ---
 # When the change under review is test code
 
@@ -45,8 +45,9 @@ findings need not concern separate defects or separate harms.
 Author each supported finding with its own evidence and severity. Let
 synthesize-findings cluster findings that describe the same underlying defect,
 preserving the contributing seats and their severities under synthesize-findings'
-clustering rules and the engine's aggregation. Sharing a file or using similar words alone does not
-establish that two findings describe the same defect.
+clustering rules and the engine's aggregation. Sharing a file or using
+similar words alone does not establish that two findings describe the same
+defect.
 
 If your only supported claim is "this branch is untested", "coverage here is
 thin", "this needs a negative control", or "the suite stays green without the

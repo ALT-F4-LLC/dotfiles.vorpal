@@ -1,6 +1,6 @@
 ---
 fragment: scope-discipline
-version: 10
+version: 11
 ---
 # Scope discipline
 
@@ -87,6 +87,6 @@ from available evidence. A criterion shown false stays `unmet` or
 `unmet-out-of-scope` even when its repair is outside write scope; `verify-ac`
 defines which status applies and what filing that requires. Name the missing
 evidence or authorized repair route, and preserve independently supported
-judgments. `retro-analyst` uses its issues-to-file route and `dispose` its
+judgments. `retro-analyst` uses its issue-to-file description and `dispose` its
 named follow-up. Judges emit findings and `gap` notes under their own contract,
 rather than these per-item verdicts.

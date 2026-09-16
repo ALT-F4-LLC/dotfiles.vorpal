@@ -1,6 +1,6 @@
 ---
 node: investigate
-version: 9
+version: 10
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -25,7 +25,7 @@ Describe a needed fix or instrumentation change and route it. Fragment guidance
 about adding diagnostics or validating fixes does not expand this authority.
 
 Use the `executor-read` archetype's permitted scratch workspace for diagnostic
-probes that write, including tests, builds, and bisection. Preserve the checkout
+probes that write, including tests and builds. Preserve the checkout
 and shared repository metadata throughout execution. Isolate scratch execution
 from writes to live services or shared application state; report the probe as
 blocked if those effects cannot be contained within the permitted surface. When
@@ -64,9 +64,12 @@ inputs, identity, dependencies, and state. Identical code alone does not isolate
 persisted state as the cause. Treat an error's named location or index as an
 inspection starting point, then trace how the failing value reached it.
 
-Use bisection when the comparison can be narrowed with a reliable predicate for
-the same failure. Preserve valid inputs and relevant conditions. An untestable
-case is neither passing nor failing; account for variability before using
+Narrow the comparison with a reliable predicate for the same failure when
+one is available: export the candidate revisions one at a time under
+rerun-discipline's archive sequence into separate scratch directories and
+compare their behavior, rather than checking out each revision in place.
+Preserve valid inputs and relevant conditions. An untestable case is
+neither passing nor failing; account for variability before using
 inconsistent results to eliminate candidates. A boundary revision or minimal
 failing input narrows the cause but does not explain it.
 

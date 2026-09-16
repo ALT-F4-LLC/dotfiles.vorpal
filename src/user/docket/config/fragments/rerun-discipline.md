@@ -1,6 +1,6 @@
 ---
 fragment: rerun-discipline
-version: 11
+version: 12
 ---
 # Re-run discipline
 
@@ -32,11 +32,13 @@ intended state cannot be established, keep the dependent conclusion unverified.
 Allocate each attempt's scratch inside your assigned private step directory
 (the brief's `<TMP>/<STEP-N>.d`, by the literal path the brief pins once;
 never re-resolve `$TMPDIR` mid-step, since a sandboxed and an unsandboxed
-call can resolve it differently) and set `STEP_PRIVATE_TMP` to that
-directory; creating it alone does not redirect writes. Set each command's
-`TMPDIR` and relevant tool-specific paths to redirect its private temporary,
+call can resolve it differently) and use that literal `<TMP>/<STEP-N>.d`
+path directly wherever a private-step-directory reference is needed;
+creating it alone does not redirect writes. Set each command's `TMPDIR` and
+relevant tool-specific paths to redirect its private temporary,
 build-output, and writable cache paths beneath it, including `GOCACHE`; for
-Go, account for `GOTMPDIR` and `GOMODCACHE` as well.
+Go, account for `GOTMPDIR` as well, but never override the shared
+`GOMODCACHE` (see vorpal-toolchain).
 Follow the evidence rules for fresh execution versus cached results. Use a
 private source copy when a command can write into the source tree or sibling
 edits could change its inputs. Isolate other mutable resources the command uses,
@@ -63,8 +65,9 @@ Never use `git stash` to obtain a clean tree: the stash stack is shared by the
 repository's worktrees. For a committed comparison base, use the one baseline
 export sequence the corpus defines (completion-gates: resolve the intended
 base to a commit ID in `STEP_BASE_COMMIT`, `mktemp -d` a `base.XXXXXX`
-directory under `$STEP_PRIVATE_TMP` as `gate_baseline_dir`, `git archive`
-that commit into it, and extract into its `tree` subdirectory), so a judge's
+directory under the brief's `<TMP>/<STEP-N>.d` as `gate_baseline_dir`, `git
+archive` that commit into it, and extract into its `tree` subdirectory), so
+a judge's
 probe and a gate's baseline land in the same root. Use `HEAD` only when
 verified to be the intended base. An archive omits Git metadata and
 submodule contents; when the comparison needs them, report the comparison as

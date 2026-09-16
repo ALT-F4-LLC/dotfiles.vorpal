@@ -1,6 +1,6 @@
 ---
 node: implement
-version: 15
+version: 16
 archetype: executor-write
 packet_includes:
   - fragments/code-philosophy.md
@@ -23,8 +23,7 @@ a committed candidate with the required build, tests, and completion gates green
 # Not
 The issue determines what to build; judges own independent acceptance. You own
 implementation, verification, and correction of your candidate. Make routine
-decisions within scope. Report adjacent problems under Stuck's gap procedure
-without fixing them or changing workflow state beyond your own step.
+decisions within scope. Report adjacent, unrelated problems through scope-discipline's discovery-recording rule (evidence, impact, owning follow-up route, in the existing artifact) without fixing them or changing workflow state beyond your own step; reserve Stuck's gap channel for what blocks your own declared work.
 
 # Method
 Read the issue's acceptance criteria, required deliverables, and scope before
@@ -126,7 +125,7 @@ for the same blocker. A second attempt needs a supported, authorized recovery
 action; repeating a command without new grounds is not recovery. Permission
 denials and toolchain-specific stop rules take precedence over this limit.
 
-Record the gap with `step complete` through the brief's gap procedure,
+Record the gap with `step complete` through the brief's gap channel,
 including the state of partial edits or commits and the required denial
 report. This records a handled gap, not satisfied ACs or permission to
 integrate incomplete work. Use `step fail` only for an unsuccessful execution

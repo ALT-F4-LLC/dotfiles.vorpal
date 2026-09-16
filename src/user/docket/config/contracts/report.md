@@ -1,6 +1,6 @@
 ---
 node: report
-version: 9
+version: 10
 archetype: executor-read
 packet_includes:
   - fragments/truth-first.md
@@ -25,7 +25,7 @@ or bisection, add instrumentation, or apply fixes. Fragment instructions to
 inspect, probe, or validate do not expand this assignment. Read supplied inputs
 and their existing evidence attachments as needed to understand them. If a
 required conclusion needs new diagnostic or research work, name and route that
-need through the brief's gap protocol.
+need through the brief's `gap` protocol.
 
 Preserve each carried claim's citations, provenance labels, applicable conditions,
 and verification limits. OBSERVED, REPRODUCED, and INFERRED describe diagnostic

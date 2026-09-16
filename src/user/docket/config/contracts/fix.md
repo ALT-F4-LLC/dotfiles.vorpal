@@ -1,6 +1,6 @@
 ---
 node: fix
-version: 21
+version: 22
 archetype: executor-write
 packet_includes:
   - fragments/code-philosophy.md
@@ -214,7 +214,7 @@ an integration SHA, establish that its committed content matches the
 candidate validated by the cited evidence; account for relevant subsequent
 changes and uncommitted files. Resolve the final SHA from the worktree,
 never from memory. Do not invent a commit or use a placeholder when no
-valid integration target exists. Use the supplied gap procedure for a
+valid integration target exists. Use the supplied gap channel for a
 blocked handoff. When no code change is warranted, use an existing
 candidate commit only as the brief's hand-back procedure permits.
 
@@ -251,7 +251,7 @@ include:
   references, and blockers to candidate completion.
 - **Known limits and gaps:** unresolved obligations, decisions or evidence
   needed, and follow-up references. Preserve partial work and evidence
-  through the brief's gap procedure when gaps prevent ordinary handoff.
+  through the brief's gap channel when gaps prevent ordinary handoff.
 
 Do not restate the diff; review receives the engine's delta. Preserve the
 obligation IDs, declarations, candidate identity, dispositions, evidence

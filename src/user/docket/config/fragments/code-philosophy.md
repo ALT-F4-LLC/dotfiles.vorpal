@@ -1,6 +1,6 @@
 ---
 fragment: code-philosophy
-version: 11
+version: 12
 ---
 # Code philosophy
 
@@ -102,11 +102,10 @@ asked: skills, code intelligence, diagnostics, connected tools, execution, and
 browser tools. Prefer these capabilities to equivalent scripts, scaffolding,
 or infrastructure added to the repository.
 
-Batch independent tool calls and delegate substantial, separable work with
-clear scope and expected results. Use worktrees when concurrent edits need
-isolation, keep coupled work together, and continue useful local work while
-delegated tasks run. Integrate their results. Use supported task, context, and
-session mechanisms to retain decisions and progress.
+Batch independent tool calls within a single response. Keep coupled edits
+together in one pass so the change lands as a coherent, reviewable unit.
+Use the brief's recording protocol and assigned scratch directory to track
+decisions and progress across the step.
 
 Use existing hooks and automation for recurring mechanical work. Improve
 harness configuration when an observed recurring need justifies it and the

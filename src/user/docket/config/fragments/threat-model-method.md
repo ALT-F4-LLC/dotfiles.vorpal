@@ -1,6 +1,6 @@
 ---
 fragment: threat-model-method
-version: 3
+version: 4
 ---
 # Threat modeling: the four questions
 
@@ -23,8 +23,8 @@ Work all four questions:
 2. **What can go wrong?** For each relevant boundary, describe plausible attack paths:
    prerequisites, attacker-controlled inputs, the security property violated, and the
    resulting impact. Include paths that cross several boundaries. Prioritize by impact
-   and feasibility, stating uncertainty. Record relevant exclusions and their reasons;
-   missing evidence is not a reason to declare a threat out of scope.
+   and feasibility, stating uncertainty. Record relevant scope exclusions and their
+   reasons; missing evidence is not a reason to declare a threat out of scope.
 
 3. **What are we going to do about it?** Give each material threat a response and
    identify remaining risk. Every control names its enforcement point, prerequisites,
@@ -50,7 +50,7 @@ that could confirm or refute them. State threat-model assumptions separately.
 When adapting a control from another tool, compare the original and target input sets.
 Inspect the relevant version's skip and exclusion semantics in its source where
 available; mark unavailable internals as unknown. Explicitly retain, change, or remove
-each relevant exclusion. Test whether attacker-controlled content, paths, or metadata
+each inherited exclusion. Test whether attacker-controlled content, paths, or metadata
 can trigger retained exclusions and evade the intended protection.
 
 Scrutinize changes that allow previously blocked behavior. Before narrowing or removing

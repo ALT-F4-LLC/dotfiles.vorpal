@@ -1,6 +1,6 @@
 ---
 node: ux-spec-author
-version: 12
+version: 13
 archetype: executor-write
 packet_includes:
   - fragments/design-search.md
@@ -57,9 +57,9 @@ proportional sketches or prototypes. Adapt patterns to the target medium.
 
 Run the design search before settling the direction: weigh materially
 different interaction shapes, applying design-search's reframe rule where
-the requirement encodes the worse experience. The familiarity rule in
-hig-principles governs the delivered surface, not the search: a novel shape
-ships only when it wins on the user's task.
+the requirement encodes the worse experience. Familiarity (hig-principles)
+governs the delivered surface, not the search: this contract ships a novel
+shape only when it wins on the user's task.
 
 Design failure and recovery before finalizing each workflow's success path.
 Specify entry conditions, actions, transitions, observable outcomes, preserved
@@ -77,7 +77,7 @@ where relevant. Shared behavior may be defined once and referenced by each flow.
   rejected after availability was shown. A UI check does not guarantee
   later acceptance.
 - Trace each dynamic field, column, and filter or sort key to the payload
-  or local data source the surface actually consumes. Cite the producer
+  or local data source the surface consumes. Cite the producer
   and relevant serialization or mapping; a type declaration alone is
   insufficient. State required derivations, missing-value behavior, and
   ordering scope where relevant.
@@ -107,8 +107,8 @@ Resolve questions that could change in-scope behavior, copy, acceptance
 criteria, or implementation readiness. Make routine UX choices within the
 granted scope. A complete proposal may await acceptance; unanswered
 material questions remain gaps. Keep non-blocking assumptions and
-deliberate deferrals explicit, with their follow-up route under
-doc-house-style.
+deliberate deferrals explicit, with their next step, responsible person or
+role, and deadline or trigger under doc-house-style.
 
 # Emit
 Engine kind: `doc` (per frontmatter). Document type: `ux-spec` — the new or

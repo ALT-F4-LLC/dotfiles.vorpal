@@ -1,6 +1,6 @@
 ---
 fragment: doc-house-style
-version: 6
+version: 7
 ---
 # Doc house style
 
@@ -76,4 +76,4 @@ an answer, assignment, or agreement to make the document appear finished.
 Use accepted documents as the baseline. State explicitly when a proposal would
 amend or supersede an earlier decision, and preserve its history.
 
-Put any required executive summary where the template calls for it.
+Put any required executive summary where the contract's Emit section calls for it.

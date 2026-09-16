@@ -1,6 +1,6 @@
 ---
 node: synthesize-findings
-version: 23
+version: 24
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -262,9 +262,11 @@ suppressing routing.
 
 On a settled entry, omit `open_severity` entirely. On an open entry, include
 it; never use null or a floor value to encode absence. `findings-cluster@5`
-enforces exactly this split: an entry with no settling ruling (the list
-above) must carry `open_severity` or the record is refused with a
-VALIDATION_ERROR, and a settled entry must omit it. A refusal naming
+enforces one direction of this split: an entry with no settling ruling (the
+list above) must carry `open_severity` or the record is refused with a
+VALIDATION_ERROR. Omitting `open_severity` on a settled entry is this
+contract's own convention, not schema-enforced — the schema does not refuse
+its presence there. A refusal naming
 `open_severity` means an open cluster lost its value; supply it from the
 members and re-record, never by inventing a ruling to settle the entry.
 Check its value and presence explicitly before recording. The consuming

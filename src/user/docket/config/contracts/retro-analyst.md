@@ -1,6 +1,6 @@
 ---
 node: retro-analyst
-version: 11
+version: 12
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -108,7 +108,9 @@ why it won, or the one-line reason the search did not apply. For an inferred
 remedy, state the unresolved alternative or assumption that matters to approval.
 
 For file changes, show a diff against the inspected current file and identify
-that state. For store settings or trust entries, identify the current state,
+that state. Any comment or rationale written into the diff itself must stay
+free of run IDs, dates, shas, and issue ids, since the proposal packet (not
+the file) carries that provenance. For store settings or trust entries, identify the current state,
 exact key or entry, proposed change, and project or global scope; do not invent
 a file for a store-backed target. Leave versioning and application to the skill.
 

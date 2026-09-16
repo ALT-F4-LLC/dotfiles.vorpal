@@ -1,6 +1,6 @@
 ---
 node: research
-version: 8
+version: 9
 archetype: executor-research
 packet_includes:
   - fragments/design-search.md
@@ -67,7 +67,7 @@ or metadata could change the answer, leave the affected conclusion unresolved.
 If only a summary is available, label the lead `summary-derived` and the dependent
 claim UNVERIFIED. An additional model's agreement cannot promote it to `quoted`.
 Do not use summary-derived leads as premises for the answer or recommendation.
-Request inspectable source content through the gap protocol when it is required.
+Request inspectable source content through the gap channel when it is required.
 
 Keep paraphrase and inference distinct from quotations. An inference names its
 verified premises and remaining uncertainty. Faithful quotation and a

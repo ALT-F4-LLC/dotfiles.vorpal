@@ -1,7 +1,14 @@
 [pipeline]
 description = "Cross-issue disposition: write the verdict comment and close the carrier. Gated on the build/test sanity check and AC verification, with a bounded revise loop. No code-review machinery."
 name = "disposition"
-version = 11  # 11: prose-only rewrite for concision; no topology, routing, or
+version = 12  # 12: `[limits]` keys the write class by its generic `"write"`
+              #   name instead of the first-pass step's own name (`"dispose"`),
+              #   matching sibling workflows' convention; the old keying left
+              #   `revise-disposition`, also `class = "write"`, with no
+              #   matching limits entry, so its lease never got the
+              #   `max_step_duration`-matched TTL version 10 gave every other
+              #   write-class step. No topology or routing change.
+              # 11: prose-only rewrite for concision; no topology, routing, or
               #   limit change.
               # 10: `lease_ttl` added to every `[limits]` entry, matched to
               #   that entry's `max_step_duration`, so a lease lasts exactly
@@ -89,7 +96,7 @@ labels_any = ["disposition"]
 unless_labels = ["blocked", "docs-only", "investigation", "spec-doc", "spec-project", "release", "retro", "security", "security-change", "security-load-bearing", "ui", "route-direct", "route-loop", "route-tend"]
 
 [limits]
-"dispose" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"write" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
 "verify-ac" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
 
 [[step]]

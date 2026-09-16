@@ -1,5 +1,23 @@
 [policy]
-version = 32  # 32: judge-testing moves opus-low -> sonnet-low as the corpus's
+version = 33  # 33: comment-only corrections, no routing value changed. Fixes
+              # five stale or inconsistent row comments surfaced by a corpus
+              # audit: the v24 comment claiming `investigate`'s tier at the
+              # time was `fable-high` now says so explicitly as history (both
+              # rows stand at `fable-low` today, moved by a later policy); the
+              # verify-ac-vote comment's stale `judge-correctness` tier
+              # (opus-high -> its actual current opus-medium) and stale
+              # escalation claim (removed; the seat is vote-only with no
+              # attempt walk); the tribunal-architecture comment's dead step
+              # name (`accept-vote` -> `spec-vote`, spec-project's step name
+              # since v19) and wrong co-seated voters for the spec-project
+              # case (tribunal-security/tribunal-correctness, not
+              # tribunal-design); the D5 comment's stale claim that only
+              # judge-correctness hops opus-medium -> opus-high, now noting
+              # judge-architecture and judge-testing moved to opus-low and
+              # sonnet-low respectively; and two `Docket-retro` capitalizations
+              # normalized to `docket-retro` for consistency with every other
+              # reference to the skill.
+              # 32: judge-testing moves opus-low -> sonnet-low as the corpus's
               # one second-family review seat, a retro-measured experiment in
               # panel decorrelation rather than a tuning. Every other judge-*
               # and tribunal-* seat but tribunal-design stands on Opus, so a
@@ -65,8 +83,10 @@ version = 32  # 32: judge-testing moves opus-low -> sonnet-low as the corpus's
               # `report` and `revise-investigation`, promoted from borrowing
               # `investigate`'s policy row (investigation.toml renamed their
               # steps to match their own executor identity). Both inherit
-              # `investigate`'s current `fable-high` tier absent evidence to
-              # retune it. No existing row renamed or retuned.
+              # `investigate`'s then-current `fable-high` tier absent evidence
+              # to retune it (both rows now stand at `fable-low`, moved with
+              # `investigate` by a later policy). No existing row renamed or
+              # retuned at 24.
 
 # `blocked`: the hold label. Apply it to an issue not yet workable — blocked
 # on a missing capability, or needing a design session first. It matches zero
@@ -226,7 +246,9 @@ investigate = { variant = "fable-low" }
 # 215 min, judge-architecture 191 min) against implement's 16%. D4 has Opus 5
 # at medium giving up about 2 points for half the cost, with re-running
 # failures at the default recovering the pass rate — the escalation ladder is
-# that re-run: a judge seat that fails hops opus-medium -> opus-high. D5 keeps
+# that re-run: a judge seat that fails hops opus-medium -> opus-high (as
+# judge-correctness still does; judge-architecture and judge-testing have
+# since moved to opus-low and sonnet-low respectively). D5 keeps
 # this on Opus rather than a smaller model at a higher effort. The
 # correctness lens keeps the default: it is the seat whose misses reach the tree.
 # opus-low (policy 29), from opus-medium, for wall-clock. 211 completions at
@@ -372,11 +394,14 @@ threat-model = { variant = "opus-low", never = ["fable"], reason = "security-cla
 # for Fable — architecture decisions and precedent — is the
 # conversational-gate case; verify-ac-vote weighs an AC report against a
 # diff, the review-executor work judge-correctness already does at
-# opus-high. A failed seat still escalates opus-high -> fable-high.
+# opus-medium (its current tier). This seat is vote-only and, like other
+# vote seats, has no attempt walk.
 #
 # tribunal-architecture names no change-track step at all: its only current
-# seats are spec-project's accept-vote and spec-doc's ux-spec-vote/prd-vote,
-# doc-authoring gates alongside tribunal-design. See tribunal-design's own
+# seats are spec-project's spec-vote (seated with tribunal-security and
+# tribunal-correctness, not tribunal-design) and spec-doc's
+# ux-spec-vote/prd-vote, doc-authoring gates alongside tribunal-design. See
+# tribunal-design's own
 # note below for the open question this leaves.
 # opus-low (policy 29), from opus-high, for wall-clock. 328 casts across six
 # tiers with a reject rate that did not track the tier (fable-high 4 of 32,
@@ -493,7 +518,7 @@ reason = "Fable's safety classifiers cover more categories than Opus 5's cyber-o
 # those fields. Teaching it to hop on failed attempts only is an engine
 # change, filed against the engine, not a value this file can express.
 #
-# Docket-retro ruling: the shipped default stays `one-hop`. The waste sits
+# docket-retro ruling: the shipped default stays `one-hop`. The waste sits
 # in the resolver's arithmetic, not the default; lowering the default would
 # stop genuine failures from escalating to buy back a cost the arithmetic
 # fix removes outright. Until the engine change lands, an acknowledged reap
@@ -514,7 +539,7 @@ on_failure = "one-hop"
 # ordinal (review@N judges, synthesize@N, verify@N) are deliberately not
 # listed and keep their standing variants.
 on_round = "one-hop"
-# Docket-retro: DECLINED — `fix` does not start one hop up on
+# docket-retro: DECLINED — `fix` does not start one hop up on
 # security-labelled issues. Measured across 19 fix-loop runs (15
 # security-flavored: RUN-25/29/30/34/35/36/38/48/49/50/51/52/58/59/60; 4
 # contrast: RUN-32/53/56/61): round-1 fixers already at opus-medium

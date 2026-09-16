@@ -1984,6 +1984,18 @@ async function runGate(row, phaseLabel) {
             step: { step: row.step, instance: row.instance, issue: row.issue, run: row.run },
             target, heldCluster: held, isRespawn: Boolean(isRespawn),
         }).then((res) => {
+            // The Workflow tool shares one agent counter between a parent and
+            // a nested workflow() child (documented: "the child shares this
+            // run's... agent counter"), so every seat tribunal.js spawns is a
+            // real agent() call against THIS invocation's 1000-call lifetime
+            // cap — but wave.js's own countedAgent() never sees those calls,
+            // since they happen inside the child. tribunal.js reports its own
+            // spawn count as `seatsSpawned` (mid-wave: exactly seats.length,
+            // the number of Judge-phase agent() calls it made); folding that
+            // into agentsLaunched here is the only way this invocation's
+            // logged total and its AgentCapError threshold reflect what the
+            // harness actually spent.
+            agentsLaunched += (res && Number.isInteger(res.seatsSpawned)) ? res.seatsSpawned : panelSeats.length
             for (const a of (res && res.absorbed) || []) {
                 const label = `${row.step} · seat:${a.seat}` + (isRespawn ? ' (retry)' : '')
                 log(`${row.step} seat ${a.seat}: ${isRespawn ? 'respawn' : 'spawn'} error: ${a.error}`)
@@ -1991,6 +2003,9 @@ async function runGate(row, phaseLabel) {
             }
             return res
         }).catch((err) => {
+            // A throw here (unreadable scriptPath, tribunal's own arg
+            // refusal, a child syntax error) means tribunal.js never ran, so
+            // no agents were actually spawned — agentsLaunched is left alone.
             log(`${row.step}: tribunal panel spawn error: ${err}`)
             for (const s of panelSeats) {
                 const label = `${row.step} · seat:${s.seat}` + (isRespawn ? ' (retry)' : '')

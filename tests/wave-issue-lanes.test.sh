@@ -93,6 +93,10 @@ let input = {}
 const LOG = []
 const log = (m) => LOG.push(String(m))
 const parallel = (fns) => Promise.all(fns.map((f) => f()))
+// budget: no target set by default (matches an ordinary turn with no
+// "+500k"-style directive) — budget.remaining() is Infinity, so wave.js's
+// token-budget check never fires unless a case below overrides it.
+const budget = { total: null, spent: () => 0, remaining: () => Infinity }
 // Every row the ladder launched, in launch order; gate rows land in GATES.
 let SPAWNED = []
 let GATES = []

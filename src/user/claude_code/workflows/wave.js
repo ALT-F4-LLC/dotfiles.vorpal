@@ -2983,6 +2983,27 @@ function pump() {
             w.resolve('budget')
             continue
         }
+        // The session's own output-token target (a "+500k"-style directive),
+        // a DIFFERENT budget from AGENT_BUDGET above: that one counts agent()
+        // CALLS against the Workflow tool's 1000-agent lifetime cap, this one
+        // counts TOKENS spent across the whole turn, main loop and every
+        // workflow pooled. budget.total is null when the operator set no
+        // target, in which case remaining() is Infinity and this never
+        // fires. Checked once the target is already exhausted (<= 0), not
+        // against this row's own projected cost: a workflow script cannot
+        // know how many tokens one more agent() call will spend before it
+        // runs, so there is no forward projection to make here the way
+        // AGENT_BUDGET's agentCost() can. Without this check, an agent()
+        // call made after the target is exhausted throws, and that throw
+        // was landing in spawn's catch (wave.js's own AgentCapError handler
+        // does not match it) as a bare spawn error, read by the conductor as
+        // a dead executor to reap rather than a budget deferral it should
+        // wait out or the operator should raise.
+        if (budget.total && budget.remaining() <= 0) {
+            waiting.splice(i, 1)
+            w.resolve('token-budget')
+            continue
+        }
         const why = blocker(w.row)
         if (why) {
             if (!w.held) {
@@ -3108,6 +3129,20 @@ function runRow(row, label) {
             }
             return { step: row.step, status: 'not-launched-agent-budget', text: null }
         }
+        if (go === 'token-budget') {
+            // Same settle shape as the agent-count budget above, but this
+            // one is the operator's own token target, exhausted independent
+            // of how many agent() calls remain in AGENT_BUDGET's count.
+            log(`${row.step}: not launched — token budget: the session's target is exhausted ` +
+                `(${budget.spent()} of ${budget.total} spent); the engine re-offers it next ` +
+                `dispatch, or the operator raises the target` +
+                (row.issue ? ` (issue ${row.issue}'s later stages deferred)` : ''))
+            if (row.issue) {
+                deadIssues.set(row.issue, { step: row.step, status: 'not-launched-token-budget',
+                    deferral: 'token budget: the session\'s own output-token target is exhausted' })
+            }
+            return { step: row.step, status: 'not-launched-token-budget', text: null }
+        }
         if (go !== 'launch') {
             log(`${row.step}: not launched — the run parked while it waited`)
             return { step: row.step, status: 'not-launched-run-parked', text: null }
@@ -3202,6 +3237,19 @@ await parallel([...lanes.entries()].map(([name, laneRows]) => () => runLane(name
     log(`wave: agent budget — ${agentsReserved} of ${AGENT_BUDGET} projected agents ` +
         `reserved this launch` + (deferred > 0
             ? `; ${deferred} row(s) deferred to the next dispatch for want of budget`
+            : ''))
+}
+// The session's own token target, a separate budget from the one above —
+// reported only when a target was set at all, since remaining() is
+// Infinity otherwise and there is nothing to say.
+if (budget.total) {
+    const tokenDeferred = rows.filter((row) => {
+        const out = byStep.get(row.step)
+        return out && out.status === 'not-launched-token-budget'
+    }).length
+    log(`wave: token budget — ${budget.spent()} of ${budget.total} spent this turn` +
+        (tokenDeferred > 0
+            ? `; ${tokenDeferred} row(s) deferred to the next dispatch for want of budget`
             : ''))
 }
 

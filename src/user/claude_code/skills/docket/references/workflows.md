@@ -255,6 +255,8 @@ description = "…"              # optional
 kind          = ["task", "bug"]
 labels_any    = ["…"]
 labels_all    = ["…"]
+sizes_any     = ["…"]          # the issue's declared model.Size (schema v34); "any of these"
+domain_paths  = ["…"]          # advisory only — binds nothing; see below
 unless_labels = ["…"]          # evaluated last and wins
 
 [limits]                       # per executor CLASS, not per step
@@ -268,6 +270,19 @@ executor = "author"
 class = "write"                # accounted under [limits].write above
 emits = "check-report"
 ```
+
+**`[match]` clauses.** `kind`, `labels_any`, `labels_all`, and `sizes_any` are
+inclusion clauses — an issue must satisfy every one it declares — evaluated
+in that order, then `unless_labels` last, which wins over all of them. An
+absent clause matches anything. `sizes_any` reads the issue's declared
+`model.Size` (schema v34: `trivial`, `small`, `bounded`, `needs-design`,
+`unknown`) the same way `labels_any` reads labels — "the issue's size is one
+of these" — and is the engine-side way to bind a workflow on size instead of
+a `small`/`trivial` label convention. `domain_paths` is the one advisory
+clause: it declares the path globs a workflow's domain occupies for the
+binding lint (an issue scoped entirely inside a domain while lacking that
+workflow's labels is flagged at activation) and binds nothing on its own —
+declaring it changes no `Matches` verdict.
 
 **`[limits]` keys, and what each bounds.** A class is an opaque string; these
 are the only three things a bound on one does.

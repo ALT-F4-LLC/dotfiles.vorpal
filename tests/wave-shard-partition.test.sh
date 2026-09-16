@@ -200,9 +200,15 @@ ok(otherShard(launched[1].out).length === 12, "split: shard 1 reads the other tw
 }
 ok(launched[0].log.some((l) => l.includes('wave: shard 1 of 2') && l.includes('12 of 18 row(s)')),
     'split: the shard log names its index, the count, and its row share')
+// write is certified at 3 (all three issues' write rows share stage 0), not
+// 2: shard 0 holds two of the three write rows (A, C) and shard 1 holds one
+// (B), but headroom is a manifest-wide count, so BOTH shards hold the class
+// and split 3 over 2 holding shards — shard 0 (rank 0 among holders [0, 1])
+// takes the remainder and gets 2, shard 1 gets 1, summing to the certified 3
+// rather than the pre-remainder-fix 1+1=2.
 ok(launched[0].log.some((l) => l.includes('class headroom divided')) &&
-   launched[0].log.some((l) => l.includes('write≤1')),
-    'split: the write class sits in both shards, so each admits half its certified two')
+   launched[0].log.some((l) => l.includes('write≤2 (this shard\'s share of 2)')),
+    'split: the write class sits in both shards; shard 0 (rank 0) takes the remainder')
 
 // ---- (3) uncertified writers weld into one shard; readers go elsewhere --
 // A and B: writers never co-staged (B rationed to stage 1). C: reader-only.
@@ -254,7 +260,7 @@ run = start(HEADROOM(), { shard: { index: 1, of: 2 }, hold: ['A-1a'] })
 await settle()
 ok(SPAWNED.includes('A-0') && SPAWNED.includes('A-1a') && !SPAWNED.includes('A-1b'),
     'headroom: the second judge waits while the first holds the shard share of one')
-ok(logged('judge≤1 (certified 2+ over 2 shards)'), 'headroom: the log names the divided cap')
+ok(logged('judge≤1 (this shard\'s share of 2)'), 'headroom: the log names the divided cap')
 ok(logged('1 row(s) of class judge in flight — the manifest certifies at most 1 concurrent'),
     'headroom: the wait names the shard-local bound')
 await finish('A-1a')
@@ -262,6 +268,44 @@ out = await run
 ok(SPAWNED.includes('A-1b') && statusOf(out, 'A-1b') === 'returned',
     'headroom: the second judge launches once the first returns')
 ok(!SPAWNED.includes('B-0') && otherShard(out).length === 4, "headroom: HRN-2's rows belong to shard 0")
+
+// ---- (5b) headroom remainder: a certified count not evenly divisible ----
+// judge is certified at three (three issues, each co-staging one judge row
+// at stage 1 — certifiedClass takes the LARGEST same-stage same-class count
+// across the whole manifest, so three same-named rows at the same stage,
+// each in its own issue, certify judge at 3 even though no single issue
+// co-stages more than one). Three certified-disjoint issues split 2/1
+// across 2 shards, so judge sits in both and 3 does not divide evenly by 2.
+// Floor division alone would floor BOTH shards to 1, admitting 2 in sum
+// against a certification of 3 — the remainder must land on exactly one
+// shard, never both, never neither, and the split must be the same on a
+// repeated launch of the same shard.
+const REMAINDER = () => [
+    ex('X-0', 'RMD-1', 0, 'write'),
+    ex('X-1', 'RMD-1', 1, 'judge'),
+    ex('Y-0', 'RMD-2', 0, 'write'),
+    ex('Y-1', 'RMD-2', 1, 'judge'),
+    ex('Z-0', 'RMD-3', 0, 'write'),
+    ex('Z-1', 'RMD-3', 1, 'judge'),
+]
+const rshareOf = (log) => {
+    const line = log.find((l) => l.includes('judge≤'))
+    const m = line && line.match(/judge≤(\d+)/)
+    return m ? parseInt(m[1], 10) : null
+}
+const shares = []
+for (let index = 0; index < 2; index++) {
+    out = await start(REMAINDER(), { shard: { index, of: 2 } })
+    shares.push(rshareOf(LOG))
+}
+ok(shares.every((s) => s !== null), 'remainder: both shards log a judge share')
+ok(shares.reduce((a, b) => a + b, 0) === 3,
+    `remainder: the shares sum to the certified 3, never under- or over-admitting (got ${shares.join('+')})`)
+ok(shares.every((s) => s >= 1), 'remainder: no shard is starved to zero')
+{
+    await start(REMAINDER(), { shard: { index: 0, of: 2 } })
+    ok(rshareOf(LOG) === shares[0], 'remainder: the split is deterministic across a repeated launch')
+}
 
 // ---- (6) determinism: the same launch twice picks the same lanes -------
 const first = [...(await start(THREE(), { shard: { index: 0, of: 2 } }), SPAWNED)]

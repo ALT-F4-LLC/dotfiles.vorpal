@@ -2648,7 +2648,13 @@ function shardPartition(rows, spec) {
         index, of, effective,
         rows: rows.filter((row) => laneShard.get(laneOf(row)) === index),
         laneShard,
-        classShards: new Map([...classShards].map(([c, set]) => [c, set.size])),
+        // Sorted shard-index lists, not just the count: distributing a
+        // certification remainder needs each shard's RANK among the shards
+        // that actually hold the class, since the holding shards are not
+        // necessarily 0..n-1 (a class can sit in, say, shards {1, 3}).
+        // Every launch computes this identically from the same rows and
+        // spec, so no two shards can claim the same remainder slot.
+        classShards: new Map([...classShards].map(([c, set]) => [c, [...set].sort((a, b) => a - b)])),
     }
 }
 const shard = shardPartition(rows, input.shard)
@@ -2664,10 +2670,23 @@ if (shard.of > 1) {
     if (shard.index >= shard.effective) {
         log('wave: idle shard — nothing to launch; the sibling shards carry every lane')
     }
-    for (const [c, n] of shard.classShards) {
+    for (const [c, holders] of shard.classShards) {
+        const n = holders.length
         if (n > 1) {
             const certified = certifiedClass.get(c) || 1
-            certifiedClass.set(c, Math.max(1, Math.floor(certified / n)))
+            // Floor division alone strands a remainder: certified 5 over 4
+            // shards would floor every shard to 1, admitting 4 in sum instead
+            // of the certified 5. Give the remainder to this shard's lowest-
+            // ranked siblings AMONG THE SHARDS THAT HOLD THE CLASS (not raw
+            // shard.index, which can outrun `holders` when the class skips a
+            // shard) — deterministic, since every launch computes the same
+            // sorted `holders` list from the same rows and spec, so no two
+            // shards can claim the same remainder slot.
+            const rank = holders.indexOf(shard.index)
+            const base = Math.floor(certified / n)
+            const remainder = certified % n
+            const share = rank >= 0 && rank < remainder ? base + 1 : base
+            certifiedClass.set(c, Math.max(1, share))
             if (certified < n) {
                 log(`wave: class ${c || '(no class)'} is certified at ${certified} but ` +
                     `sits in ${n} shards — one per shard can exceed the certification ` +
@@ -2675,10 +2694,14 @@ if (shard.of > 1) {
             }
         }
     }
-    if ([...shard.classShards.values()].some((n) => n > 1)) {
+    if ([...shard.classShards.values()].some((holders) => holders.length > 1)) {
+        // Each launch only knows its OWN post-split share, not the sibling
+        // shards' shares, so the log names this shard's share and the holder
+        // count rather than reconstructing a cross-shard sum no single
+        // launch can observe.
         log(`wave: class headroom divided across shards — this launch admits ` +
-            [...shard.classShards].filter(([, n]) => n > 1)
-                .map(([c, n]) => `${c || '(no class)'}≤${certifiedClass.get(c)} (certified ${certifiedClass.get(c) * n}+ over ${n} shards)`)
+            [...shard.classShards].filter(([, holders]) => holders.length > 1)
+                .map(([c, holders]) => `${c || '(no class)'}≤${certifiedClass.get(c)} (this shard's share of ${holders.length})`)
                 .join(', '))
     }
 }

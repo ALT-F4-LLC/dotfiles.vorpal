@@ -125,7 +125,30 @@ establish byte ownership before any repair.
 
 ## 3. Mine the repository
 
-Delegate three independent seams, combining them only when the repo is
+Run the mining fan-out through `Workflow`, launched by `scriptPath`, always,
+at the installed path `~/.claude/workflows/docket-bootstrap.js`, expanding
+`~` to a literal absolute path yourself first. The Workflow tool does not
+expand `~` and resolves a relative path against the target repo's cwd, not
+the dotfiles source tree. The installed copy under `~/.claude/workflows` is
+also the only one the tool is permitted to launch, and the only one
+guaranteed to match this session's own build. A missing installed file means
+the corpus was never activated after this script was added: report that,
+then fall back to running the three seams below yourself, inline, rather
+than launching the source copy or refusing to bootstrap.
+
+Enumerate the gate/check candidates inline first (the script cannot inspect
+files or run commands itself):
+
+```
+Workflow({ scriptPath: "<absolute installed path to docket-bootstrap.js>", args: {
+  stage: "mine",
+  checkoutRoot: "<absolute path of the repository being bound>",
+  gateCandidates: [{ path, kind }, ...],   // kind: build | ci | check | other
+  smallRepo: <true when this repo is small enough to combine the three seams>,
+} })
+```
+
+Delegates three independent seams, combining them only when the repo is
 small:
 
 - Build/CI: real build and check commands, CI jobs, prerequisites, and merge
@@ -135,10 +158,15 @@ small:
 - Docs/history: the seven specs, README/CONTRIBUTING, recent commit
   subjects, review practices, and evidence of earlier docket configuration.
 
-Require `claim → source path:line` evidence, uncertainties, and concise
-reports. Specs are maps to source files, not proof of their claims. Derive
-scopes from the real module and test layout. A gap in tests or CI is a
-finding; never invent a successful gate to fill it.
+Every agent it spawns is an `executor-read` agent, whose tool set carries no
+write verb; nothing in it edits, mutates, or asks the operator anything. The
+return's `mining` field carries `claim → source path:line` evidence,
+uncertainties, and concise reports per seam. Specs are maps to source files,
+not proof of their claims. Derive scopes from the real module and test
+layout. A gap in tests or CI is a finding; never invent a successful gate to
+fill it. Report `uncovered` entries as uncovered, never as clean; if the
+workflow throws or returns nothing, say so and stop rather than substituting
+a manual grep or a from-memory answer.
 
 Classify command side effects before any check execution. Run eligible
 checks in the checkout and in an explicit HEAD worktree under the actual
@@ -172,22 +200,44 @@ Do not create an unseen issue or start an unseen run. Broader work goes to
 
 Derive gates, pre-gates, and actions by parsing every workflow TOML in the
 installed corpus and any local addition, not only the smoke issue's
-workflow, and include every consumer step. A later issue's labels can bind
-any of them, and a gate declared there with no trust entry bound to this
-repository fails that issue's first gated step `unmatched`, which routes
-per its `on_fail`: `waiting-human` on every first-pass gated step in the
-installed corpus, so it parks. When diagnosing why an issue did not match
-a workflow, check first for a `route-direct`, `route-loop`, or `route-tend`
-label, which would prevent workflow matching. Inspect `docket trust list --all` and treat
+workflow, and include every consumer step. Run this parse through the same
+`Workflow` script as §3, `~/.claude/workflows/docket-bootstrap.js`, at the
+installed path (expand `~` yourself; a missing installed file means the
+corpus was never activated after this script was added — report that and
+fall back to reading the workflow files yourself, inline, never launching
+the source copy):
+
+```
+Workflow({ scriptPath: "<absolute installed path to docket-bootstrap.js>", args: {
+  stage: "gate-union",
+  workflowFiles: ["<absolute path>", ...],   // every workflow TOML: installed corpus plus any local addition
+  trustEntries: <parsed `docket trust list --all` output, run inline in main>,
+  projectName: "<this repository's registered project name, or checkout basename>",
+} })
+```
+
+One `executor-read` agent per workflow file parses its gates, pre-gates,
+actions, and consumer steps and returns them with `file:line` citations;
+nothing in it edits or mutates. The script unions the results and marks
+each gate matched or unmatched against the passed `trustEntries`, treating
 an entry bound to another repository as missing here, never as applicable.
-Propose one entry per gate in that union, bound to this repository, each
-carrying the real command the miners found. A gate this repository cannot
-yet satisfy gets no argv and no stub: list it as a known unmatched gate
-with the workflows it would park and the consequence stated plainly, so
-the operator decides whether to close the gap before or after activation.
-Include the installed `doc-record` action even if today's issue will not
-use it, marking its future-use status explicitly. Propose `commit-exec`
-only if a local workflow actually consumes it.
+A later issue's labels can bind any workflow in that union, and a gate
+declared there with no trust entry bound to this repository fails that
+issue's first gated step `unmatched`, which routes per its `on_fail`:
+`waiting-human` on every first-pass gated step in the installed corpus, so
+it parks. When diagnosing why an issue did not match a workflow, check
+first for a `route-direct`, `route-loop`, or `route-tend` label, which
+would prevent workflow matching. Report the returned `uncovered` entries as
+uncovered, never as clean.
+
+From the returned union, propose one entry per gate, bound to this
+repository, each carrying the real command the miners found. A gate this
+repository cannot yet satisfy gets no argv and no stub: list it as a known
+unmatched gate with the workflows it would park and the consequence stated
+plainly, so the operator decides whether to close the gap before or after
+activation. Include the installed `doc-record` action even if today's issue
+will not use it, marking its future-use status explicitly. Propose
+`commit-exec` only if a local workflow actually consumes it.
 
 Prepare exact proposed changes: project/store initialization if needed,
 prefix, config keys with current and proposed values and scopes, local

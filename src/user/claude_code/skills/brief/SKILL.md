@@ -305,15 +305,21 @@ information, report the incompatibility.
 
 ## 4. Confirm
 
-Present the complete brief verbatim, followed by the recommended route and
-a one-sentence reason. If the downstream input requires a different
-structure, show the prepared handoff as well.
+Present the complete brief verbatim, followed by every route this skill
+can select: `/docket-plan`, `/loop`, `/tend`, direct execution, and any
+orchestration alternative weighed under §3. Always show the full list,
+including routes §3 excludes: give each route one line stating why it
+fits or which §3 rule excludes it, and mark the recommended route. If
+the downstream input requires a different structure, show the prepared
+handoff as well.
 
 Then use `AskUserQuestion` to confirm the displayed brief, route, and any
 prepared handoff. For multiple briefs, confirm the set and its routes
-together. Put the recommendation first, any useful eligible alternatives
-next, and `Just give me the brief` last. Keep choices concise; show the
-brief before the question rather than inside an option. Do not spend an
+together. Put the recommendation first, eligible alternatives next in
+the order of the route list until the four-option cap is reached, and
+`Just give me the brief` last; the route list above carries any eligible
+route the cap leaves out. Keep choices concise; show the brief before
+the question rather than inside an option. Do not spend an
 option on a proposed Role: the operator swaps or strikes it through the
 free-text answer. Fold that in; repeat confirmation only when the answer
 did not also confirm the brief.

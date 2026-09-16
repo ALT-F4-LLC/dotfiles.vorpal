@@ -1931,9 +1931,18 @@ async function runGate(row, phaseLabel) {
         return { step: row.step, status: 'gate-blocked', text: asText(gate) }
     }
     const seats = roster.map((a) => voterToSeat(a && a.voter, a))
-    const held = HELD_INSTANCE_RE.test(row.instance || '')
-        ? await heldCluster(row.step, `${row.step} · gate:held-cluster`, phaseLabel, acct)
-        : null
+    // Neither read depends on the other's result — heldCluster asks only
+    // about this step's instance suffix, proposalBody asks only about the
+    // vote record — so they fan out together instead of paying two
+    // sequential haiku round-trips. Both share `acct`, but a workflow script
+    // has no preemption between awaited steps, so the probes/absorbed/retries
+    // increments inside each never interleave.
+    const [held, context] = await parallel([
+        () => HELD_INSTANCE_RE.test(row.instance || '')
+            ? heldCluster(row.step, `${row.step} · gate:held-cluster`, phaseLabel, acct)
+            : Promise.resolve(null),
+        () => proposalBody(voteId, row.step, `${row.step} · gate:proposal`, phaseLabel, acct),
+    ])
     // Name the round's target ref in every seat's brief. Seats are NOT seated
     // on the checkout the round was written in — writers work in private
     // worktrees — so without this a judge reads its own lagging HEAD, finds
@@ -1943,11 +1952,11 @@ async function runGate(row, phaseLabel) {
     log(`${row.step}: ${voteId} — seating ${seats.map((s) => s.seat).join(', ')}` +
         (target ? ` on target ${target.sha || '(no sha)'}${target.worktree ? ` (${target.worktree})` : ''}`
                 : ` with NO target ref on the gate — seats read their own HEAD`))
-    // The case every seat brief renders, read once here and reused on the
-    // re-seat: the record it comes from also prints every cast already
-    // landed, so no seat reads it. A dead read seats the panel anyway — the
-    // gate's context bundle carries the evidence — and the brief says so.
-    const context = await proposalBody(voteId, row.step, `${row.step} · gate:proposal`, phaseLabel, acct)
+    // The case every seat brief renders, read once here (fetched above,
+    // concurrently with heldCluster) and reused on the re-seat: the record it
+    // comes from also prints every cast already landed, so no seat reads it.
+    // A dead read seats the panel anyway — the gate's context bundle carries
+    // the evidence — and the brief says so.
     if (!context) {
         log(`${row.step}: the proposal body read returned nothing — seats are ` +
             `briefed without it and decide from the gate's context bundle`)

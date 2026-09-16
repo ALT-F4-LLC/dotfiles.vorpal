@@ -38,7 +38,8 @@ export const meta = {
 //
 // When and how it is invoked:
 // Invoked on a CONVERSATIONAL gate the docket-run skill routes to a panel
-// (ack-reap, activation, budget, loop-extension, fix-batch), always as
+// (ack-reap, activation, budget, loop-extension, fix-batch, retro-batch),
+// always as
 // Workflow({scriptPath}) — never by name. Engine `type = "vote"` step rows
 // ride the wave since the staged closure: wave.js calls this same script MID-
 // WAVE (passing `step`) to seat their panels, one level of workflow nesting
@@ -154,9 +155,9 @@ const TARGET_SHA_RE = /^[0-9a-f]{40}$/
 
 // TEST-BEGIN seat-brief — extracted and exercised by
 // tests/tribunal-seat-brief.test.sh and tests/wave-target-envelope.test.sh,
-// which stub `lensOf` (the only global this reaches for) and assert what a
-// mode and a target ref do and do not put in front of a judge. Keep every
-// other dependency inside the markers.
+// which stub `lensOf` and `TARGET_SHA_RE` (the only globals this reaches
+// for) and assert what a mode and a target ref do and do not put in front
+// of a judge. Keep every other dependency inside the markers.
 function judgeBrief(r, voteId, gateKind, context, cwd, isRespawn, step, target, heldCluster) {
     const { role, text } = lensOf(r.seat)
     // Provenance claim recorded on the cast (--metadata): which seat/variant/
@@ -336,8 +337,12 @@ state — the merits of the work itself get their own gates once artifacts
 exist, and pre-reviewing the codebase here duplicates them. A budget gate
 decides a number against evidence of spend; an ack-reap gate decides whether a
 holder is gone; a fix-batch gate decides whether the conductor's batch of fixes
-may land as one unit, judged on the files the batch changed; a loop-extension
-gate decides whether ONE more fix round is
+may land as one unit, judged on the files the batch changed; a retro-batch
+gate decides whether a docket-retro batch of shared-corpus config edits may
+land as one unit, judged on the mined evidence cited for each proposal and
+the diff against the current file — a different decision from fix-batch's,
+though both land a batch of edits; a loop-extension gate decides whether ONE
+more fix round is
 likely to converge, read from the loop history in the rationale — rounds
 against the cap, consecutive rejections, the tiers served, spend, and the
 finding-volume trend — not from re-reviewing the work, which the loop's own

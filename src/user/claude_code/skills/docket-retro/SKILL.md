@@ -46,11 +46,14 @@ the corpus already defines for exactly this, plus §2's table verbatim.
 `retro-analyst` carries no `policy.toml` row and no workflow dispatches it
 through the wave: no issue carries the retro label, and this skill runs the
 analyze/vote/apply loop itself. The skill-side spawn below is the only path
-this node has, so seat each analyst through the built-in `Workflow` tool's
-`agent()` call with the intended `model` and `effort` set explicitly in its
-opts. They run the verbs and return evidence-labelled findings; you compose
-§3's proposals and hold the approval conversation. The verbs, for their
-briefs:
+this node has, so seat each analyst through
+`Workflow({scriptPath: "<home>/.claude/workflows/retro-seat.js", args: {
+analysts: [{brief, model, effort}, ...]}})` (source in the dotfiles
+checkout: `src/user/claude_code/workflows/retro-seat.js`), one array entry
+per analyst, with the intended `model` and `effort` set explicitly since
+retro-analyst has no policy row for the script to resolve them from. They
+run the verbs and return evidence-labelled findings; you compose §3's
+proposals and hold the approval conversation. The verbs, for their briefs:
 
 ```bash
 docket run report RUN-N --json                        # per run; read-only, never advances a run
@@ -66,8 +69,9 @@ one run is an anecdote. With no prior retro, the window is every run in the
 store. The docket events store is machine-global, but `events list` is
 cwd-scoped by default, so a cwd-scoped query — `--run RUN-N` included — can
 return `ok:true, total 0` for a run recorded from a different project's
-working directory. Always pass `--all-projects`, as every verb above now
-does. Every docket verb opens the store read-write and migrates forward, so
+working directory. Always pass `--all-projects` on every `docket events list` call above; the
+other three verbs (`docket run report`, `docket step artifacts`, `docket
+step artifact`) do not take the flag. Every docket verb opens the store read-write and migrates forward, so
 these run sandboxed only where the store path is itself writable under the
 sandbox's policy; check the store path against the write allowlist rather
 than assuming an unsandboxed shell is needed. Where it is not writable,
@@ -222,7 +226,7 @@ Workflow({scriptPath: "<home>/.claude/workflows/tribunal.js", args: {
   voteId: "<id>",
   voters: [{seat: "tribunal-architecture", model, effort, variant}, {seat: "tribunal-security", ...}, {seat: "tribunal-correctness", ...}],
   context: "<every proposal with its evidence, its diff, and its bump>",
-  gateKind: "fix-batch", cwd: "<the repo the edits target>"}})
+  gateKind: "retro-batch", cwd: "<the repo the edits target>"}})
 ```
 
 By `scriptPath` only and never by name, `args` a real object, each voter

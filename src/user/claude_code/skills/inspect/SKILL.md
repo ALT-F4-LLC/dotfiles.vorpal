@@ -92,7 +92,7 @@ here", move on.
 retry logic in the client is wrong"; you open the client, find the retry
 code, quote the lines, and ask what wrong means if it is not already
 clear. You do not sweep the codebase looking for defects on your own.
-That is what the operator invoked `/code-review` or `/shadow` for.
+That is what the operator invoked `/code-review` for.
 
 ## Write each item down
 
@@ -142,7 +142,9 @@ owning checkout.
 The filing contract is shadow's
 [worker-ready issue contract](../shadow/references/filing.md#worker-ready-issue-contract)
 with these substitutions: the label is `inspect`, the type set above
-applies, and the description follows this structure:
+applies, priority follows the grade table above (not shadow's own
+load-bearing/friction/paper-cut mapping), and the description follows this
+structure:
 
 ```text
 [Only when the remedy touches authn/authz, secrets, crypto,
@@ -188,7 +190,7 @@ The contractor says the work is done. Walk the list again.
 **Select the items.** The argument picks them: explicit issue ids; `since
 <date>` for every `inspect` issue created after that date; a scope glob for
 every one whose scope matches; bare `reinspect` for every open `inspect`
-issue plus those closed since the last walkthrough the punch list records.
+issue.
 
 **Check each one against the current checkout**, at the sha you record
 now, and give exactly one verdict:

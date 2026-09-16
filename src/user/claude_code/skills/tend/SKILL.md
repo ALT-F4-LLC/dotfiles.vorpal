@@ -19,7 +19,7 @@ an issue, hand the implementation to a subagent seated for the job, then
 commit, close, and move on. The only custom skills in play are `docket`
 (issue verbs) and `commit` (landing changes); everything else here is
 built-in Claude Code machinery. Report when you tend an issue, when one
-blocks you, or when you must ask. Say nothing on a tick that found nothing.
+blocks you, or when you must ask.
 
 **Never invoke the `docket-plan` or `docket-run` skills, and never create or
 activate a docket run.** That machinery is exactly what this skill exists to
@@ -33,8 +33,8 @@ do one pass and say so; there will be no next tick.
 ## 1. Each tick
 
 ```bash
-docket issue list --json --limit 1000 -s backlog -s todo
-docket run status --json
+docket issue list --json=v2 --limit 1000 -s backlog -s todo
+docket run status --json=v2
 ```
 
 Project resolves from cwd's git identity, same as every other docket verb
@@ -66,8 +66,8 @@ After the exclusions, the queue is either:
 - **Non-empty:** sort by id ascending (lowest = oldest = created first), take
   the first one, tend it (§2), then **loop back to re-poll immediately** —
   don't schedule a wakeup between queued issues. Only go quiet once a poll
-  comes back empty. Keep strictly one issue in flight at a time: workers
-  share this working tree, so never have two issues' workers alive at once.
+  comes back empty. Keep strictly one issue in flight at a time (see §3: one
+  worker at a time, ever).
 
   An issue carrying the `review-gap` label was filed by `drain-highs` from a
   prior run's review findings, not by hand; its body names the filing run's
@@ -77,7 +77,7 @@ After the exclusions, the queue is either:
 
 ## 2. Tend one issue
 
-1. `docket issue show <id> --json` — full detail: description, acceptance
+1. `docket issue show <id> --json=v2` — full detail: description, acceptance
    criteria, comments.
 2. **Security-sensitive gate.** If the issue touches authn/authz, secrets,
    crypto, sandbox/permissions, a trust boundary, supply chain, or untrusted
@@ -85,8 +85,9 @@ After the exclusions, the queue is either:
    proceed anyway, skip it, or take it themselves — before touching
    anything. "Skip it" and "take it themselves" are state changes, not
    things to remember: `docket issue move <id> review` with a comment
-   naming the answer (`docket issue comment add <id> -m "tend: operator
-   skipped, security-sensitive"` or `... -m "tend: operator takes it"`),
+   naming the answer (`docket issue comment add <id> --json=v2 -m "tend:
+   operator skipped, security-sensitive"` or `... -m "tend: operator takes
+   it"`),
    the same exit the blocked case in step 4 uses, so the `-s backlog -s
    todo` query never re-offers the issue and no later tick asks the same
    question again. Selection is lowest-id-first, so a skip that changed no
@@ -100,7 +101,7 @@ After the exclusions, the queue is either:
 4. **Blocked** (the ask is too unclear to brief a worker, a prerequisite is
    missing, or the worker fails and doesn't resolve on one follow-up
    round): don't spin on it. `docket issue move <id> review` with a comment
-   naming the blocker (`docket issue comment add <id> -m "..."`), tell the
+   naming the blocker (`docket issue comment add <id> --json=v2 -m "..."`), tell the
    operator in your next visible turn, and move on to the next queued
    issue. The same blocked issue does not get retried every tick.
 5. **Rerun the falsifier.** Before any commit, run the worker's named
@@ -118,10 +119,10 @@ After the exclusions, the queue is either:
 6. **Done:** when the rerun passed, invoke the `commit` skill to land the
    change (`Skill({skill: "commit"})`): one commit-cycle per issue, never
    batched across issues, skipped only when the issue changed no files.
-   Then `docket issue comment add <id> --json -m "<what changed, plainly,
+   Then `docket issue comment add <id> --json=v2 -m "<what changed, plainly,
    citing the commit hash(es), the rerun command and its result, and for
    a non-trivial issue the candidates the worker weighed>"`, then
-   `docket issue close <id> --json`.
+   `docket issue close <id> --json=v2`.
 7. Report the tend in one line: issue id, title, commit hash(es). A tended
    issue is a state change and always gets said, never absorbed silently.
 

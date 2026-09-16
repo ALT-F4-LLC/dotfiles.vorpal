@@ -16,14 +16,20 @@ arguments are absent. Ask only if the scope cannot reasonably be determined.
 Perform analysis and verification within the existing task authorization;
 propose mitigations unless their implementation is also within scope.
 
+This skill and the shared `threat-model-method` fragment Docket contracts
+include both derive from the same four-question method; question 3's
+design-search discipline is that fragment's own governing rule
+(`fragments/design-search.md`), applied here directly since this skill has
+no packet to include it through.
+
 ## Establish the frame
 
 Identify the **system and change in scope**, the **adversary's initial access and
 capabilities**, the **assets and security properties** at stake, and the **acceptable
 residual risk** and who accepts it. Identify which inputs the adversary controls.
 Treat prompt injection and supply-chain compromise as attack mechanisms, not
-substitutes for capabilities. If risk tolerance is unspecified, record it as
-unresolved and continue without inventing acceptance.
+substitutes for specifying capabilities. If risk tolerance is unspecified,
+record it as unresolved and continue without inventing acceptance.
 
 ## Answer all four questions
 
@@ -40,26 +46,27 @@ unresolved and continue without inventing acceptance.
    and feasibility, stating uncertainty. Record relevant exclusions and their reasons;
    missing evidence is not a reason to declare a threat out of scope.
 
-3. **What are we going to do about it?** Weigh alternatives before recommending:
-   for each material threat, at least one mitigation that is not the familiar
-   control for that threat class, and a reframe of the boundary itself when
-   moving or removing it would eliminate the path rather than guard it. Choose
-   on coverage against the stated adversary, enforcement locality, bypass
-   surface, and maintenance burden, then recommend the winner and record the
-   alternatives weighed and why it won. Give each material threat a response
-   and identify remaining risk. Every control names its enforcement point,
-   prerequisites, and bypass paths; distinguish existing controls from
-   proposed ones. A compensating control must provide comparable protection
-   against the threats addressed by the control it replaces. Explain coverage
-   and gaps, including when enforcement moves to another boundary.
+3. **What are we going to do about it?** Apply the design-search discipline
+   before recommending: for each material threat, at least one mitigation
+   that is not the familiar control for that threat class, and a reframe of
+   the boundary itself when moving or removing it would eliminate the path
+   rather than guard it. Choose on coverage against the stated adversary,
+   enforcement locality, bypass surface, and maintenance burden, then
+   recommend the winner and record the alternatives weighed and why it won.
+   Give each material threat a response and identify remaining risk. Every
+   control names its enforcement point, prerequisites, and bypass paths;
+   distinguish existing controls from proposed ones. A compensating control
+   must provide comparable protection against the threats addressed by the
+   control it replaces. Explain coverage and gaps, including when enforcement
+   moves to another boundary.
 
 4. **Did we do a good enough job?** Review the model's coverage, assumptions, threat
    responses, and residual risk. For each control, specify an abuse case and expected
    blocking or detection, plus a benign case that should remain allowed. Where
    practical, verify in an isolated test setup that deliberately breaking the control
    makes its verification fail. Record expected and actual results, with checks marked
-   passed, failed, or not run. A verification plan is not a result. Identify
-   unresolved work and any pending risk-acceptance decision.
+   passed, failed, or not run. A verification plan is not a verification
+   result. Identify unresolved work and any pending risk-acceptance decision.
 
 ## Ground claims in evidence
 

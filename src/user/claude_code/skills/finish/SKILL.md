@@ -86,7 +86,8 @@ task and ends with `CronDelete` on the id you created. These are different
 mechanisms: clearing a wakeup says nothing about a cron, and cancelling a
 cron says nothing about a wakeup. Answer both rows.
 
-**Artifact watches this session opened.** `unwatch` each one.
+**Artifact watches this session opened.** Stop each with `ArtifactComments`,
+`action: "watch"`, `on: false`.
 
 **A live `shadow-live` agent.** If pause already handled it, that row is
 done. Otherwise wind it down exactly the way `skills/pause/SKILL.md` does in

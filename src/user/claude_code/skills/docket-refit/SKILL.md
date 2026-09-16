@@ -34,7 +34,7 @@ approved. Treat whatever the conversation already discussed as background,
 not evidence: read the corpus and the engine source yourself rather than
 assuming anything was read for you, and start from `$ARGUMENTS` (the named
 target, or nothing for corpus mode). If `AskUserQuestion` is unavailable in
-the session, stop before §6 and report the decisions still open instead of
+the session, stop before §4 and report the decisions still open instead of
 implementing. Your closing report names the commit landed and every
 decision the operator made along the way.
 
@@ -133,11 +133,12 @@ every target it deep-dives — don't re-mine a target on entry to its own
   approval on the blast-radius picture, then execute the removal — delete
   the file, retire the references that named it — through §7–§8, landing
   its own commit.
-- **addition** — a named gap the evidence shows the corpus not covering.
-  Design its shape on the surface the gap demands (workflow, policy row,
-  contract, fragment, or schema), then run §4 for any deviation the design
-  forces, §5 for approval, and §6–§8 to implement and land it as its own
-  commit.
+- **addition** — a named gap the evidence shows the corpus not covering. Run
+  §1's blast-radius sweep (even an empty consumer set is worth recording for
+  a wholly new definition) and §3's engine verification alongside designing
+  its shape on the surface the gap demands (workflow, policy row, contract,
+  fragment, or schema), then run §4 for any deviation the design forces, §5
+  for approval, and §6–§8 to implement and land it as its own commit.
 
 Report each target's verdict and evidence in plain language as it's reached,
 not held back for an end-of-run summary. The operator sees the corpus-wide
@@ -237,8 +238,12 @@ not what a sibling definition appears to imply. Engines move, and a design
 promised on a stale assumption fails at activation or, worse, at ordinal 3
 of a live run. Two authorities cover the corpus:
 
-The docket engine checkout lives beside this repo
-(`.../github.com/ALT-F4-LLC/docket.git/main`); its load-bearing files:
+The docket engine checkout normally lives beside this repo
+(`.../github.com/ALT-F4-LLC/docket.git/main`), but that worktree may not be
+present in every environment (a bare clone with no checked-out `main`, for
+instance). Confirm it resolves before reading from it; if it does not,
+report engine verification as unavailable rather than proceeding from
+memory of these files. Its load-bearing files:
 
 - `internal/workflow/parse.go` — every legal `[[step]]` field and form
 - `internal/workflow/validate.go` — the V-rules lint enforces (`after`,
@@ -327,12 +332,15 @@ activation refuses or a wave refuses to route:
   `name@version` is frozen, and activation rejects changed bytes at an
   unchanged version.
 - **Contracts** (`src/user/docket/config/contracts/<executor>.md`) — one
-  per new executor, in the house shape: frontmatter (`node`, `version`,
-  `archetype`, `packet_includes`, `emits`) then Charter / Not / Method /
-  Emit / Stuck. Editing an existing shared contract is a blast-radius
-  change: bump its `version` and verify the edit against every consuming
-  workflow, not just the one in hand — a rule needed by only one pipeline
-  belongs in a step-level packet fragment instead.
+  per new executor, in the house shape named by
+  `src/user/docket/config/README.md`'s naming convention: frontmatter
+  (`node`, `version`, `archetype`, `packet_includes`, `emits`) then Charter /
+  Not / Method / Emit / Stuck. Editing an existing shared contract is a
+  blast-radius change: bump its `version` and verify the edit against every
+  consuming workflow, not just the one in hand — a rule needed by only one
+  pipeline belongs in a step-level packet fragment instead. Add README.md to
+  this checklist as touched whenever a naming exception or convention
+  changes, not-applicable otherwise.
 - **Fragments** (`src/user/docket/config/fragments/`) — rules shared across nodes (a
   protocol, a store convention) live once in a fragment appended to each
   consumer's packet, never copy-pasted into contracts. A fragment edit is
@@ -374,6 +382,7 @@ measured or observed, in plain words, inline in the comment.
 
 ```bash
 docket workflow lint src/user/docket/config/workflows/<name>.toml
+just frozen-drift-check
 ```
 
 Lint the target workflow, and when the change entered from a shared
@@ -386,10 +395,16 @@ can lag the corpus: before blaming your edit, lint the installed known-good
 version of the same workflow — an identical failure is environmental.
 A missing corpus schema registers from its source file
 (`docket schema register <kind@n> src/user/docket/config/schemas/<kind@n>.json`), then
-re-lint. The acceptance floor is a clean lint across every consumer at the
-bumped versions; anything the lint cannot see (live loop behavior, seat
-quality, whether a fragment's rule actually lands in outputs) is reported
-as unverified, not claimed.
+re-lint. Schema registration into the local project's engine store is a
+lint prerequisite this skill may perform directly, unlike a genuinely new
+vote rule (§6), which is a global, higher-stakes store mutation reserved
+for the operator: a schema registered here binds only the one project being
+worked on and does not change routing anywhere else, while a vote-rule
+threshold set with `--global` changes every project's tally at once. The
+acceptance floor is a clean lint across every consumer at the bumped
+versions; anything the lint cannot see (live loop behavior, seat quality,
+whether a fragment's rule actually lands in outputs) is reported as
+unverified, not claimed.
 
 ## 8. Land
 

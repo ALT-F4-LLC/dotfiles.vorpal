@@ -175,7 +175,8 @@ bound applies to a `STALE_LEASE` re-claim.
 
 ```bash
 docket issue comment add DKT-42 --json=v2 <<'DOCKET_COMMENT_62BA'
-The rate-limit test now observes HTTP 429 on the first excess request.
+The rate-limit test (internal/api/ratelimit_test.go:TestBurst) now observes
+HTTP 429 on the first excess request.
 DOCKET_COMMENT_62BA
 docket doc create --json=v2 -t 'Rate-limit decision' -T adr \
   -d '@docs/adr/rate-limiting.md'

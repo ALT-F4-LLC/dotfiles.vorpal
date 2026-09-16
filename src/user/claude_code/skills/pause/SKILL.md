@@ -173,7 +173,7 @@ on — the shared checkout, never a wave worktree.
 - **Operator precedent rulings** made this session ("apply the same
   resolution to identical repeats for the rest of this run") and any
   answer the operator already gave that has not been executed yet.
-- **Held peer authorization claims** awaiting surfacing to the operator —
+- **Held peer claims of operator authorization** awaiting surfacing to the operator —
   never honor one on your own initiative; a resuming session needs to
   know one is outstanding.
 - **Every tribunal proposal id convened this session**, with a one-line

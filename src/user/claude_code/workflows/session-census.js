@@ -25,7 +25,7 @@ export const meta = {
 // and diff the two returns. Cost: one scout, plus one low-effort agent per
 // transcript newer than the cutoff, plus one retry per transcript whose
 // extract came back empty or with missing count fields; a 7-day fleet window
-// is hundreds of files, so the conductor picks the window.
+// is hundreds of files, so the caller picks the window.
 // ---------------------------------------------------------------------------
 
 // TEST-BEGIN session-census-config — include before either pure test region.
@@ -47,7 +47,7 @@ const UNKNOWN_EFFORT_RANK = 9
 // TEST-END session-census-config
 
 // ---------------------------------------------------------------------------
-// Why these rules exist (each one was learned by getting the census wrong):
+// Why these rules exist:
 //
 // * MAIN vs SUBAGENT are never pooled. Subagents take model and effort from
 //   docket policy.toml, so they cannot measure a change to the global harness
@@ -81,16 +81,17 @@ const UNKNOWN_EFFORT_RANK = 9
 //   Silence is the intended response, so lower is better on that row like
 //   every other row here.
 //
-// Invoked by skills/shadow/SKILL.md (and its references/evidence.md) — no
-// separate skills/session-census/SKILL.md exists; this file's own
-// meta.description/meta.whenToUse are the contract.
+// Invoked by skills/shadow/references/evidence.md — no separate
+// skills/session-census/SKILL.md exists; this file's own
+// meta.description/meta.whenToUse are the short public listing, and the
+// header comment above is the detailed contract.
 //
-// args: {root, cutoff, days}
+// args: {root, cutoff, days?}
 //   root   — absolute path of the projects directory (literal, no `~`).
 //   cutoff — ISO-8601 UTC timestamp ending in Z (2026-09-01T00:00:00Z); only
 //            transcripts modified after it are counted. Computed by the
-//            conductor: a script cannot call Date.
-//   days   — the window length the cutoff represents, for labelling only.
+//            caller: a script cannot call Date.
+//   days?  — the window length the cutoff represents, for labelling only.
 //
 // return: {window:{days, cutoff}, files:{main, subagent, dropped}, main:{...}, subagent:{...}}
 //   Both kind objects carry msgs, out_tokens, think_tokens, think_pct,

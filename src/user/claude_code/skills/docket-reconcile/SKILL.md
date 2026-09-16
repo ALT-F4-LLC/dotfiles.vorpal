@@ -24,7 +24,7 @@ binding whatever it last registered, with stale rows looking healthy in
 `docket workflow list`.
 
 **The invariant you are establishing:** for every workflow name declared by
-a file in any instance-config root, the version that file declares is
+a file in any root, the version that file declares is
 registered and binding, and every other registered version of that name is
 retired. After a successful pass, `docket workflow list` and the corpus
 files agree name-for-name and version-for-version, with a binding count
@@ -57,9 +57,6 @@ Never `grep` a version out of these files: the version line carries a
 trailing changelog comment full of digits, so piping `grep -m1 version`
 through a digit filter concatenates the version with that comment and
 reports `security-change@2525792` for `@25`. Never hand-parse them either.
-`tomllib` needs Python 3.11+; if `python3 -c 'import tomllib'` fails, the
-interpreter predates it.
-
 `docket workflow lint <file> --json=v2` is the parser, and it is the same parse
 `docket workflow register` runs:
 
@@ -229,7 +226,9 @@ print('binding count:', len(items))
 
 Then re-run the planner. A clean pass prints no `REGISTER`, `RESTORE`, or
 `DEPRECATE` line, and a binding count equal to the target binding set
-printed by the planner. `CONFLICT`, `INVALID`, and `ORPHAN` lines are
+printed by the planner, excluding any name currently under CONFLICT (which
+leaves other bound versions of that name untouched until the version bump
+lands). `CONFLICT`, `INVALID`, and `ORPHAN` lines are
 reported outcomes, not unfinished work; the `action(s)` count includes
 them. Any remaining actionable line means the pass did not finish; say so
 plainly rather than reporting success.

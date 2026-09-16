@@ -81,9 +81,12 @@ Rules:
 
 Survey both the invoking project and the Docket engine project. The engine
 checkout normally lives at `.../github.com/ALT-F4-LLC/docket.git/main`,
-beside this dotfiles repository. Confirm its location and project/store
-identity using the checkout and supported read-only CLI inspection; do not
-infer ownership from an issue prefix. Follow
+beside this dotfiles repository, but that worktree may not be present in
+every environment (a bare clone with no checked-out `main`, for instance).
+Confirm its location and project/store identity using the checkout and
+supported read-only CLI inspection; do not infer ownership from an issue
+prefix. If the checkout does not resolve, report the engine-project survey
+as unavailable rather than proceeding from memory. Follow
 [Docket's context rules](../docket/SKILL.md#establish-context) for store
 resolution. Do not initialize a store or bind a project during grooming. If
 the invoking project is already the engine project in the same store, survey

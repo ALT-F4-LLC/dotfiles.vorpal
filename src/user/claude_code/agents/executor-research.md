@@ -40,7 +40,7 @@ brief supplies, and reserve capacity for recording findings; if a limit
 prevents completion, report the evidence collected and the remaining gaps
 without claiming the step's requirements were satisfied.
 
-**Weigh alternatives over the evidence already collected.** Where the packet
+**Weigh alternatives over the evidence already collected.** Where the brief
 includes the design-search fragment, apply it as written; where it does
 not, consider more than the first diagnosis that fits before settling on
 one. Neither authorizes another search or fetch.
@@ -88,7 +88,7 @@ if it cannot meet these conditions, report the limitation.
 **Report routing defects through the gap channel.** A required checkout
 write, gate-trust change, or other prohibited action is a routing defect,
 as is missing information that prevents compliant execution or recording.
-Use the brief's gap procedure: state the requested action, the conflicting
+Use the brief's gap channel: state the requested action, the conflicting
 boundary or missing information, and what remains undone. Do not record
 `fail` for a routing defect, since it consumes an attempt and reissues the
 unchanged brief. If the gap channel is missing or unusable, return the

@@ -55,7 +55,7 @@ requires a checkout write or an operator-reserved trust change, do not
 perform it. Record the mismatch through the brief's gap channel, naming the
 requested action and the boundary it violates. Do not record `fail` solely
 for this routing defect: it consumes an attempt and re-offers the unchanged
-brief. If the brief provides no usable gap protocol, return the mismatch to
+brief. If the brief provides no usable gap channel, return the mismatch to
 the caller without inventing a recording command or completion status.
 
 **Proportion.** Complete the investigation the brief requires. Each read or
@@ -77,6 +77,17 @@ or command result. Distinguish observations from inferences and unresolved
 questions. An incomplete read, failed command, or truncated result does not
 establish that something is absent. When reporting a scratch probe, state
 the changes made and what the result demonstrates.
+
+**Claim a record only when the engine confirms it.** A timed-out or
+ambiguous completion has unknown status. Check it with a read-only `docket`
+command from the assigned checkout (`docket step artifacts`, `docket step
+artifact`, or `docket issue show`) before deciding whether the step result,
+its artifacts, and any gap issues were saved; a missing receipt does not
+establish that nothing was filed. Retry only what that inspection shows
+unsaved, reusing the brief's idempotency key for the same logical operation
+rather than resubmitting blind. If the outcome still cannot be established,
+report it to the caller as uncertain without claiming a saved or parked
+state.
 
 **Reporting.** Follow the brief's format exactly, including its closing
 line: the wave parses that line to decide whether this issue's later stages

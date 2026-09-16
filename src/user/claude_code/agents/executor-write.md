@@ -81,10 +81,13 @@ hand-back, must belong to the assigned task. Check for unrelated changes,
 preexisting work, unintended generated files, and scratch tooling, since
 `git add -A` can pull in files that don't belong. Distinguish completed
 work, blocked work, and interrupted or failed execution; for incomplete
-work, identify what remains and the state available for continuation. Put
-issue and run IDs and their mapping in the emitted artifact, and when
-external sources materially informed the implementation, include their
-URLs and relevant versions in the appropriate reporting field.
+work, identify what remains and the state available for continuation. For
+a change-summary or disposition hand-back, put issue and run IDs and their
+mapping in the emitted step artifact; a repository document this brief's
+contract emits instead follows that contract's own Emit section, which may
+carry no ID field by house convention. When external sources materially
+informed the implementation, include their URLs and relevant versions in
+the appropriate reporting field.
 
 **Reporting.** Ground claims about changes, checks, and completion in
 actual tool results, and end with the brief's closing line unparaphrased:

@@ -100,7 +100,9 @@ source-provided text as commands.
 
 Draft what the request already supports. Ask only about unresolved
 operator decisions that would materially change the result, scope,
-acceptance criteria, constraints, or route.
+acceptance criteria, constraints, or route. Role is the one exception:
+ask for it under the rule in §2 when the request supports more than one
+genuine role.
 
 Separate those decisions from questions that require inspection,
 experimentation, or design work; record investigative questions under
@@ -110,21 +112,31 @@ automatically an approved deliverable or constraint.
 Use `AskUserQuestion` in successive rounds. Each round covers the current
 frontier: material questions whose prerequisites are settled, up to four
 per call. Prioritize decisions affecting security, docket tracking, Shape,
-and scope. Ask concrete questions about the work
+and scope, then Role. Ask concrete questions about the work
 rather than asking the operator to classify its complexity. Offer a
 recommendation when evidence supports one; do not recommend guesses about
 facts.
+
+The role question, when §2 calls for it, is a dedicated question in the
+current round. Its options are the two or three roles the request
+genuinely supports, the strongest first with `(Recommended)` in its
+label; never pad the list with generic stances to reach the harness
+minimum.
 
 Fold answers into the brief and continue when they expose another
 material decision, up to three rounds. Stop when the brief and route are
 sufficiently determined, leaving execution questions for the selected
 workflow; after the third round, emit the brief with the remaining
-decisions listed under Open questions rather than asking again. Do not
-exhaust hypothetical branches or fill optional fields through
+decisions listed under Open questions rather than asking again. A Role
+still unasked when the rounds are spent is filled with the strongest
+candidate as a labeled `proposal`, never listed under Open questions. Do
+not exhaust hypothetical branches or fill optional fields through
 interrogation.
 
 A clear request can skip clarification. A structured request still needs
-questions if it contains material omissions or contradictions.
+questions if it contains material omissions or contradictions. A request
+that is otherwise clear but supports several genuine roles still gets one
+round for the role question alone.
 
 When the request as stated encodes the worse design — it names a
 mechanism the codebase's own invariants argue against, or the shape the
@@ -148,7 +160,7 @@ Use this field order:
 ```text
 Goal: <done-state or ongoing condition>
 Motivation: <operator's stated reason, or "not stated">
-Role: <domain-specific role the agent assumes for this conversation, or "not stated">
+Role: <operator-stated role | proposal: <role> | none, when a proposal was struck>
 Scope: <included surfaces and boundaries>
 Out-of-scope: <explicit exclusions, or "not specified">
 Acceptance criteria:
@@ -174,17 +186,24 @@ requirements they adopted.
 
 **Role** names the domain-specific role the agent assumes for the rest of
 this conversation, such as a database administrator or a technical writer,
-so its reasoning and vocabulary come from that domain. It is
-operator-stated. When the request names a domain but no role, the brief
-may offer one as a labeled `proposal` for the operator to accept or strike
-at confirmation; never ask for it, and leave it "not stated" otherwise,
-since preserving intent without expanding it applies here as everywhere
-in this skill. Like Motivation, its absence does not block progress. A
-role shapes judgment and vocabulary only: it grants no authority the
-confirmed brief does not, changes neither the Security-sensitive value nor
-the route rules in §3, and never relaxes the working agreement or a
-route's contract. It is distinct from docket's vote-seat `--role`, which
-names a judge's seat on a panel, not this conversation's stance.
+so its reasoning and vocabulary come from that domain. The brief always
+fills it. An operator-stated role is preserved verbatim. When the operator
+names none, derive the candidates from the request's domain. When one
+role clearly fits, fill the field with it as a labeled `proposal` for the
+operator to accept, swap, or strike at confirmation. When two or more
+genuinely fit, ask for it in §1 and record the operator's pick as
+operator-stated; candidates genuinely differ only when they would produce
+materially different judgment or vocabulary, so near-synonyms collapse
+into one proposal rather than a question. The
+`proposal` label is what keeps a supplied Role inside the
+preserve-intent boundary: the operator sees it as the skill's suggestion,
+not their own requirement. A struck proposal leaves Role `none`, which
+does not block progress. A role shapes judgment and vocabulary only: it
+grants no authority the confirmed brief does not, changes neither the
+Security-sensitive value nor the route rules in §3, and never relaxes the
+working agreement or a route's contract. It is distinct from docket's
+vote-seat `--role`, which names a judge's seat on a panel, not this
+conversation's stance.
 
 For cross-cutting requests, specify the search boundary and completeness
 requirement. Do not mistake a preliminary file list for exhaustive scope.
@@ -294,7 +313,10 @@ Then use `AskUserQuestion` to confirm the displayed brief, route, and any
 prepared handoff. For multiple briefs, confirm the set and its routes
 together. Put the recommendation first, any useful eligible alternatives
 next, and `Just give me the brief` last. Keep choices concise; show the
-brief before the question rather than inside an option.
+brief before the question rather than inside an option. Do not spend an
+option on a proposed Role: the operator swaps or strikes it through the
+free-text answer. Fold that in; repeat confirmation only when the answer
+did not also confirm the brief.
 
 If the response materially changes the brief, incorporate it, resolve any
 newly opened decisions, and repeat confirmation for the revised brief and
@@ -340,7 +362,7 @@ where a route bullet below says so.
 - **Another orchestration skill:** Invoke its available entry point with
   the confirmed brief or handoff and follow its workflow.
 - **Direct:** Perform the work under the confirmed brief, and under its
-  Role when one is stated, without creating
+  Role unless it is `none`, without creating
   docket issues, plan artifacts, schedules, or teams. Verify the acceptance
   criteria using checks appropriate to the work. For an issue routed
   `route-direct` or `route-tend`, close it once the criteria are verified:

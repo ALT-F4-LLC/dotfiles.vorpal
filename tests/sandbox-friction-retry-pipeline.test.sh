@@ -15,7 +15,7 @@
 # retry into a conditional stage of the SAME pipeline lets it begin the
 # instant this item's own attempt is known to need one.
 #
-# WHY RETRYING A SIDE-EFECTING AGENT IS SAFE HERE. filePrompt's own
+# WHY RETRYING A SIDE-EFFECTING AGENT IS SAFE HERE. filePrompt's own
 # idempotency check — `docket issue list --label sandbox ... | grep -qF --
 # <subject>` — runs fresh INSIDE the agent's own shell command on every
 # attempt, first or retry. A retry whose first attempt actually filed the

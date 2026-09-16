@@ -307,6 +307,52 @@ ok(shares.every((s) => s >= 1), 'remainder: no shard is starved to zero')
     ok(rshareOf(LOG) === shares[0], 'remainder: the split is deterministic across a repeated launch')
 }
 
+// ---- (5c) unit size is PROJECTED AGENT COST, not row count --------------
+// Lane X: a single vote row with no voter_assignments — costs
+// DEFAULT_PANEL_SEATS(3) + VOTE_PROBE_COST(4) = 7, agentCost's fallback for
+// an under-specified vote row. Lane Y: three executor rows at
+// EXECUTOR_AGENT_COST(2) each = 6. By ROW COUNT, Y (3 rows) looks larger
+// than X (1 row) and would take the load-balancer's first pick; by
+// PROJECTED COST, X (7) outweighs Y (6) and must be placed first instead.
+// Two shards: whichever lane the balancer picks FIRST goes to shard 0 (the
+// only shard with room before the second lane's own placement), so this
+// scenario is a direct probe of which ordering the balancer actually uses.
+const COST_WEIGHTED = () => [
+    { step: 'X-0', issue: 'CST-X', stage: 0, kind: 'vote', voters: ['judge-correctness'] },
+    { step: 'Y-0', issue: 'CST-Y', stage: 0, kind: 'executor', executor: 'research', class: 'research' },
+    { step: 'Y-1', issue: 'CST-Y', stage: 0, kind: 'executor', executor: 'research', class: 'research' },
+    { step: 'Y-2', issue: 'CST-Y', stage: 0, kind: 'executor', executor: 'research', class: 'research' },
+]
+{
+    const outs = []
+    for (let index = 0; index < 2; index++) {
+        await start(COST_WEIGHTED(), { shard: { index, of: 2 } })
+        // X-0 is a vote row: it runs through runGate() and lands in GATES,
+        // never SPAWNED. Y's rows are executors and land in SPAWNED.
+        outs.push([...SPAWNED, ...GATES])
+    }
+    // Both lanes are single-stage, certified-disjoint (different issues,
+    // never co-staged), so each is its own unit — no writer-weld distorts
+    // this. If row count decided placement, Y (3 rows) would be "larger"
+    // and win any tie-break precedence over X (1 row); with cost deciding,
+    // X (7) is heavier than Y (6) and is placed first. The union-find/
+    // load-balance loop places larger-first, ties by name — X sorts before
+    // Y alphabetically too, so this scenario is unambiguous either way on
+    // TIE-BREAK, but the SIZE ordering itself (largest-first) is what
+    // determines which one the balancer considers "first" when computing
+    // load; the assertion below is on the placement's WEIGHT, not name
+    // order, to make the cost-vs-count distinction unambiguous.
+    const xShard = outs.findIndex((spawned) => spawned.includes('X-0'))
+    const yShard = outs.findIndex((spawned) => spawned.includes('Y-0'))
+    ok(xShard !== -1 && yShard !== -1 && xShard !== yShard,
+        `cost-weighted: X and Y land in different shards (got X in ${xShard}, Y in ${yShard})`)
+    // The load-balance loop assigns the LARGEST unit to shard 0 first (both
+    // shards start at load 0, and shard 0 is the tie-break default target).
+    // With cost deciding size, X (7) is the largest and takes shard 0.
+    ok(xShard === 0,
+        `cost-weighted: X (cost 7) is heavier than Y (3 rows, cost 6) and is placed first, in shard 0 (got shard ${xShard})`)
+}
+
 // ---- (6) determinism: the same launch twice picks the same lanes -------
 const first = [...(await start(THREE(), { shard: { index: 0, of: 2 } }), SPAWNED)]
 const second = [...(await start(THREE(), { shard: { index: 0, of: 2 } }), SPAWNED)]

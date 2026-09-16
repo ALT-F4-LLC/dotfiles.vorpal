@@ -2663,13 +2663,21 @@ function shardPartition(rows, spec) {
     const writerLanes = writerLanesOf(rows)
     for (const [a, b] of pairsOf(writerLanes)) if (!scopeCertified(a, b)) union(a, b)
 
+    // Units are sized by PROJECTED AGENT COST (agentCost, hoisted — see its
+    // own comment), not row count: a vote row alone can project as many
+    // agents as several executor rows (seats + VOTE_PROBE_COST), and a
+    // 5-stage writer chain is a serial ladder that occupies its shard far
+    // longer than a same-sized stage-0 reader lane that finishes in one
+    // round. Balancing by row count treated those as identical load, which
+    // could put two cost-heavy units on one shard and two cost-light units
+    // on another while both read as "2 units apiece."
     const laneRows = groupRows(rows, laneOf)
     const units = new Map()   // unit key -> { lanes, size }
     for (const [lane, members] of laneRows) {
         const key = parent.has(lane) ? `unit:${find(lane)}` : `lane:${lane}`
         if (!units.has(key)) units.set(key, { lanes: [], size: 0 })
         units.get(key).lanes.push(lane)
-        units.get(key).size += members.length
+        units.get(key).size += members.reduce((n, row) => n + agentCost(row), 0)
     }
     const effective = Math.max(1, Math.min(of, units.size))
     const load = new Array(effective).fill(0)

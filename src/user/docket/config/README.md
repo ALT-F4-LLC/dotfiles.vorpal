@@ -109,7 +109,7 @@ Routing labels form one family, `route-<destination>`, and an issue
 carries at most one: `route-run` (a docket-plan run, the only value a
 workflow may bind), `route-direct` (the operator's own session, through
 brief), `route-tend` (the tend queue), `route-loop` (a scheduled loop).
-docket-groom sets them from the brief skill's route rules. docket-plan's
+docket-groom sets them from the brief skill's route rules; brief files `route-tend` issues under its own rule 5, and docket-plan adds `route-run` when it records a run. docket-plan's
 bare mode selects on `route-run` alone. Every workflow lists the other
 three in `unless_labels`, so a routed-away issue matches zero workflows
 until the label changes, exactly as `blocked` does. An issue with no

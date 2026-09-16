@@ -109,8 +109,8 @@ automatically an approved deliverable or constraint.
 
 Use `AskUserQuestion` in successive rounds. Each round covers the current
 frontier: material questions whose prerequisites are settled, up to four
-per call. Prioritize decisions affecting security, docket tracking,
-operating pattern, and scope. Ask concrete questions about the work
+per call. Prioritize decisions affecting security, docket tracking, Shape,
+and scope. Ask concrete questions about the work
 rather than asking the operator to classify its complexity. Offer a
 recommendation when evidence supports one; do not recommend guesses about
 facts.
@@ -234,7 +234,13 @@ that it has been satisfied.
 Apply these rules in order:
 
 1. **Security-sensitive `yes`:** `/docket-plan` is required, whatever
-   routing label the issue carries; report the label as a conflict.
+   routing label the issue carries; report the label as a conflict. A label
+   other than `route-run` binds no workflow (every workflow's
+   `unless_labels` excludes `route-direct`, `route-tend`, and `route-loop`),
+   so note that the issue must be relabeled `route-run` — by hand or through
+   `/docket-groom` — before `/docket-plan` can bind it. The same relabel
+   need applies when rule 4 recommends `/docket-plan` for a `route-loop`
+   issue.
 2. **Docket tracking required:** follow the tracked issue's routing label.
    `route-run` means `/docket-plan` is required; an issue with no label
    reaches `/docket-plan` only when the operator names it explicitly (it
@@ -257,9 +263,9 @@ Apply these rules in order:
    queue.
 6. **Other one-shot work:** recommend `/docket-plan`.
 
-Resolve an unknown operating pattern before recommending execution.
-Investigative uncertainty may travel with a docket brief; an unresolved
-operator decision needed to authorize the work may not.
+Resolve an unknown Shape before recommending execution. Investigative
+uncertainty may travel with a docket brief; an unresolved operator decision
+needed to authorize the work may not.
 
 Consider other orchestration skills available in this session when one
 materially fits better; alternatives must satisfy the same docket and

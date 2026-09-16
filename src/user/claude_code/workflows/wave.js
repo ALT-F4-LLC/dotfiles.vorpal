@@ -42,10 +42,15 @@ export const meta = {
 // for the engine's blocked_reason instead of a panel, and an engine-minted
 // held-cluster gate spends one more read to name its cluster. Each probe
 // answers through a schema, under 1 KB; the per-gate count is reported
-// verbatim in that row's spawn_accounting. Invoke by scriptPath ONLY, with
-// args {rows, tribunal, cwd, shard?} as a real object — every row carries
-// model/effort/variant resolved by the engine, and the script reads no policy
-// and cannot read files.
+// verbatim in that row's spawn_accounting. HARNESS CONCURRENCY: admission
+// weighs each row against the harness's own per-invocation concurrency cap
+// (executor 1, vote row = its seat count — the peak the panel's own
+// `parallel()` fan-out draws, a DIFFERENT quantity from the agent-budget
+// projection above), narrowed to the conductor-reported `harnessCap` when
+// present. Invoke by scriptPath ONLY, with args {rows, tribunal, cwd, shard?,
+// harnessCap?} as a real object — every row carries model/effort/variant
+// resolved by the engine, and the script reads no policy and cannot read
+// files.
 //
 // When and how it is invoked:
 // Invoked by the docket-run skill on an open dispatch, always as
@@ -2789,6 +2794,29 @@ function agentCost(row) {
     }
     return EXECUTOR_AGENT_COST
 }
+// A DIFFERENT quantity from agentCost() above: agentCost projects a row's
+// LIFETIME agent() call total against the 1000-agent budget (spawn plus one
+// retry, or seats plus every probe a gate spends), where every call happens
+// one after another, not at once. concurrencyWeight is how many of those
+// calls are ever SIMULTANEOUSLY in flight for one row — the quantity the
+// harness's own per-invocation concurrency cap actually bounds. An executor
+// row's spawn, pre-claim probe, ancestry probes, and null-recovery probe
+// never overlap within the same row (each is awaited before the next
+// starts), so an executor is weight 1 regardless of agentCost's total. A
+// vote row's panel is the one place this script genuinely fans out
+// concurrently — tribunal.js seats every judge via `parallel(seats.map(...))`
+// — so its weight is the seat count, the peak simultaneous draw across the
+// row's whole runGate lifetime (the probes before and after the panel run
+// at weight 1 or 2, never above the seat count, so this is a safe over-
+// approximation, not an exact per-phase count).
+function concurrencyWeight(row) {
+    if (row.kind === 'action') return 0
+    if (row.kind === 'vote') {
+        return Array.isArray(row.voter_assignments) && row.voter_assignments.length > 0
+            ? row.voter_assignments.length : DEFAULT_PANEL_SEATS
+    }
+    return 1
+}
 let agentsReserved = 0
 const agentsProjected = shardRows.reduce((n, r) => n + agentCost(r), 0)
 if (agentsProjected > AGENT_BUDGET) {
@@ -2864,12 +2892,36 @@ if (input.harnessCap === undefined) {
             ? `, which is not a positive integer — ignoring it and using the ${HARNESS_CAP}-agent ceiling`
             : `, clamped to the ${HARNESS_CAP}-agent ceiling (a reported cap above it cannot widen this script's own bound)`))
 }
+// Weighted harness-slot occupancy, tracked separately from `inFlight`
+// (which stays executor-rows-only, since class certification and the
+// writer-coupling rule below are executor concepts a vote row's empty
+// class (classOf returns '' for a kind:"vote" row, which carries no
+// `class`/`executor` field) must never compete in or trip). Every row that
+// actually reaches the harness — an executor spawn, or a vote row's panel —
+// occupies concurrencyWeight() slots for as long as it is in flight (the
+// panel's peak simultaneous draw, held for the row's whole runGate lifetime
+// — see concurrencyWeight's own comment for why exact per-phase tracking
+// is not attempted here). Before this weighting, admission counted ROWS,
+// not concurrent agent() calls, and never counted vote rows at all — the
+// exact gap that let 21 judge agents once queue past a harness cap the wave
+// believed still had room, each settling on a claim refusal.
+//
+// CLAMP, not a refusal: a row whose OWN weight exceeds effectiveHarnessCap
+// (a panel larger than the harness's own concurrency cap) is clamped to
+// that cap rather than blocked forever — the harness itself queues the
+// excess agent() calls beyond its slot count and runs them as slots free,
+// so admitting an over-weight row when nothing else is in flight is safe;
+// refusing to ever admit it would be a deadlock strictly worse than the
+// pre-fix behavior of never gating vote rows at all.
+let harnessWeight = 0
 function blocker(row) {
-    if (!isExecutorRow(row)) return null
-    if (inFlight.size >= effectiveHarnessCap) {
-        return `${inFlight.size} row(s) in flight — the harness runs at most ` +
+    const weight = Math.min(concurrencyWeight(row), effectiveHarnessCap)
+    if (harnessWeight + weight > effectiveHarnessCap) {
+        return `${harnessWeight} of ${effectiveHarnessCap} harness slot(s) in flight ` +
+            `(this row needs ${weight}) — the harness runs at most ` +
             `${effectiveHarnessCap} agents concurrently`
     }
+    if (!isExecutorRow(row)) return null
     const c = classOf(row)
     let live = 0
     for (const other of inFlight.values()) {
@@ -2934,6 +2986,7 @@ function pump() {
         }
         waiting.splice(i, 1)
         agentsReserved += agentCost(w.row)
+        harnessWeight += Math.min(concurrencyWeight(w.row), effectiveHarnessCap)
         if (isExecutorRow(w.row)) inFlight.set(w.row.step, w.row)
         if (w.held) log(`${w.row.step}: released — launching`)
         w.resolve('launch')
@@ -2948,8 +3001,16 @@ function admission(row) {
         pump()
     })
 }
+// Called exactly once per row that reached 'launch' (every call site is
+// inside the go === 'launch' branch in runRow below), so decrementing
+// harnessWeight unconditionally here is safe — there is no double-release
+// or release-without-admission path into this function. The clamp mirrors
+// pump()'s admission-time clamp exactly, so a row's release always
+// subtracts precisely what its admission added.
 function release(row) {
-    if (inFlight.delete(row.step)) pump()
+    harnessWeight -= Math.min(concurrencyWeight(row), effectiveHarnessCap)
+    inFlight.delete(row.step)
+    pump()
 }
 function observePark(res) {
     if (parked || !runParked(res)) return

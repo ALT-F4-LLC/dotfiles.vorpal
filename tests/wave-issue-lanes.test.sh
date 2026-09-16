@@ -415,7 +415,7 @@ ok(capHeld.slice(0, 16).every((s) => SPAWNED.includes(s)),
     'DOT-1603: sixteen rows reach the harness (the documented min(16, CPUs-2) ceiling)')
 ok(!SPAWNED.includes(capHeld[16]),
     'DOT-1603: the seventeenth row does not launch — it queues behind the cap')
-ok(logged('waiting — 16 row(s) in flight — the harness runs at most 16 agents concurrently'),
+ok(logged('waiting — 16 of 16 harness slot(s) in flight (this row needs 1) — the harness runs at most 16 agents concurrently'),
     'DOT-1603: the wait names the harness cap, not a class or writer rule')
 // The held row that returns is one of the sixteen already in the harness;
 // its refusal is the run-wide park signal, observed while the seventeenth is

@@ -96,6 +96,8 @@ jobs:
 
       - run: bash tests/wave-usage-probe-overhead.test.sh
 
+      - run: bash tests/wave-vote-harness-weight.test.sh
+
       - run: bash tests/wave-vote-retry-report.test.sh
 
       - run: bash tests/workflow-module-parse.test.sh

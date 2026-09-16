@@ -163,7 +163,7 @@ const logged = (frag) => LOG.some((l) => l.includes(frag))
         `case 1: only 6 of 20 rows admit — the tighter harnessCap gates them (got ${SPAWNED.length})`)
     ok(logged('conductor reported 6, using 6') || logged('using 6 (min of that and the 16-agent ceiling)'),
         `case 1: the log names the tighter effective cap (got ${JSON.stringify(LOG.filter((l) => l.includes('harness concurrency cap')))})`)
-    ok(logged('6 row(s) in flight — the harness runs at most 6 agents concurrently'),
+    ok(logged('6 of 6 harness slot(s) in flight (this row needs 1) — the harness runs at most 6 agents concurrently'),
         'case 1: a queued row is held on the tighter bound, not the loose 16')
     for (const r of rowsOf(20)) await finish(r.step)
     await run

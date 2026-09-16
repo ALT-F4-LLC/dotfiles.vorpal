@@ -223,16 +223,25 @@ function bootstrap(row, r, isolated, isWrite) {
     // re-mint can only ever touch the caller's own earlier attempt. The
     // script has no process id and no dispatch/launch id on the row (a
     // manifest carries neither), and Math.random()/Date.now() throw in a
-    // workflow script (they would break resume) — a counter on `bootstrap`
-    // itself, incremented once per rendered claim command, is the one
-    // resumable source of a number that is unique per LAUNCH of this
-    // function rather than per wave: two concurrent launches for the same
-    // step (an original and a retry the wave issues before the first
-    // process exits) never collide, though two separate wave invocations
-    // over their lifetimes can eventually repeat a low count — the engine's
-    // guard only needs launches truly in flight together to differ.
-    bootstrap.launches = (bootstrap.launches || 0) + 1
-    const ownerDiscriminator = bootstrap.launches
+    // workflow script (they would break resume) — a counter PER STEP,
+    // incremented once per rendered claim command for that step, is the
+    // resumable source: two concurrent launches for the SAME step (an
+    // original and a retry the wave issues before the first process exits)
+    // never collide, because the first is always :1 and a retry is always
+    // :2, regardless of what any other step's own launches did. A counter
+    // shared across every step (keyed only on call order, not on the step
+    // itself) would instead depend on the order bootstrap() happens to be
+    // called in — which follows agent completion order (release() timing),
+    // not manifest order — so a resumed wave whose agents settle in a
+    // different order would render a different owner string for the same
+    // step and miss the resume cache on it, even though nothing about that
+    // step's own retry state changed. Keying per step removes that
+    // dependency entirely: this step's own discriminator is deterministic
+    // no matter what order the wave launched everyone else in.
+    bootstrap.launchesByStep = bootstrap.launchesByStep || new Map()
+    const priorLaunches = bootstrap.launchesByStep.get(row.step) || 0
+    bootstrap.launchesByStep.set(row.step, priorLaunches + 1)
+    const ownerDiscriminator = priorLaunches + 1
     // `docket step claim` exits 0 with `ok: true` when the
     // lease committed but a later stage failed: the response carries the
     // live token plus a non-empty `.data.claim_error` instead of the

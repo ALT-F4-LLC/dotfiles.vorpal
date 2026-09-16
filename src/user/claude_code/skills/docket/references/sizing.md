@@ -26,7 +26,10 @@ paths under `-f`, the number of distinct **directories** those paths span,
 and the number of acceptance **criteria**. An outcome is independent when
 a worker could deliver and verify it without delivering the others; the
 tell is a criterion that names a different subsystem, a different
-verification command, or a different artifact from its neighbours.
+verification command, or a different artifact from its neighbours. A
+filing that carries `--scope` globs and no `-f` path counts each distinct
+glob root (the path before its first wildcard) as one directory and one
+verification surface, so a scope-only filing is never read as zero-width.
 
 ## The tiers and the `size` field
 
@@ -119,6 +122,36 @@ Both thresholds come from where the sample's cost and rework actually
 step up, not from an invented target. When a later retro can correlate
 structure with recorded usage across more runs, revisit these two numbers
 first.
+
+The ceiling was re-checked against the conduct filing path on
+2026-09-16: the 55 done issues carrying `conduct` or `tribunal` across
+the engine and dotfiles projects (no `loop-bound` issue existed yet).
+Eight had gone through a run; 47 were worked directly. The check found
+no reason to move either number:
+
+- The one conduct-path issue with usage recorded after the wave-usage
+  attribution fixes, a panel condition at 7 files and 4 directories, cost
+  70,600 implement output tokens and is already one of the three
+  over-ceiling anchors above.
+- In the four earlier runs, whose absolute usage predates those fixes and
+  serves only to order steps inside one run, the one filing over the
+  directory line (4 files, 3 directories) was its run's most expensive
+  implement step: two attempts and four to six times its peers'
+  cache-creation tokens.
+- The two under-ceiling filings that needed a second review round and a
+  fix round were one file each but bundled five and six panel conditions
+  from distinct clusters. That is the multi-outcome ground, which the
+  one-condition-one-issue rule now applies at filing; the ceiling did not
+  catch them and is not meant to.
+- The gap on this path is measurement input, not the threshold: 36 of
+  the 55 stored no `-f` path, so the file count read zero at the gate,
+  while nine landed at 5 to 11 files and seven of those nine had declared
+  at most one path. The `-f` requirement on every conduct filing and the
+  scope-root rule under The measures close this.
+- One 10-file, one-directory config edit inside a single corpus sat over
+  the file line and landed cheaply as a small route-tend issue. It is the
+  mechanical single-surface case the decomposition prompt above already
+  covers, not a reason to raise the line.
 
 ## The gate at filing
 

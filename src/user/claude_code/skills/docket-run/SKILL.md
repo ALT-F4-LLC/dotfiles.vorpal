@@ -1028,6 +1028,11 @@ between different dispatches.** When more than one dispatch or panel is
 genuinely in flight, launch their `wave-usage.js` joins concurrently;
 each join still precedes its own dispatch's write, verify, and close.
 
+"Precedes" above is the order of calls (join, then verify, then close), not
+a claim about when the join's own usage record lands: the engine's grace
+window can still bill a step after the close call returns, which
+`wave-usage.js`'s own header comment explains.
+
 Two ways the back-fill gets skipped, both losing the run's only record of
 its spend:
 

@@ -42,8 +42,9 @@ carrying five fields, each a read verb away:
   Budget block plus each `run-budget-set` event's `from=`/`to=`/`reason=`.
 - **Finding-volume trend across rounds**, cluster and blocker counts from
   each round's aggregate artifact (`docket step artifacts STEP-N`, then
-  `docket step artifact ARTIFACT-N --payload`). Note when
-  `max_stalled_rounds` worth of rounds show flat counts.
+  `docket step artifact ARTIFACT-N --payload`). Note when consecutive
+  rounds show flat cluster and blocker counts (no workflow sets
+  `max_stalled_rounds`; standard-change@37 declined it).
 
 Assembling the line is your work; the engine computes every field. This
 governs what the gate presents; **Standing ruling: a loop-bound park**

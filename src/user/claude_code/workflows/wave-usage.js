@@ -30,8 +30,10 @@ export const meta = {
 // ONLY, with args {dir, mode?, exclude?, rows?, statuses?}.
 //
 // When and how it is invoked:
-// Invoked by the docket-run skill the moment a wave returns, launched beside
-// the close rather than ahead of it (the engine measures `dispatch.grace` from
+// Invoked by the docket-run skill the moment a wave returns. On the normal
+// path, launched in docket-run's back-fill step, ahead of the close call in
+// that step's own call order, but the join's usage record can still land
+// after the close call returns (the engine measures `dispatch.grace` from
 // the run's newest terminal step record — the wave's last one — so every step
 // recorded before it is usage PENDING while that record is inside the window,
 // and the join may land after the close; a step still unbilled once the wave's
@@ -112,8 +114,12 @@ const DEFAULT_MODE = 'steps'
 //    gate read, block probe and ancestry read. Its spend is real but no step
 //    owns it, so it is summed and reported, never keyed to the step it read
 //    and never dropped silently. A conductor runs both modes over a wave and
-//    counts every agent at most once; it does not exclude vote steps to
-//    compensate.
+//    counts every agent at most once; where a vote-kind step would otherwise
+//    double-count against both the steps-mode and seats-mode back-fill, the
+//    caller passes it in `exclude` (docket-run's own rule: vote-kind steps
+//    are always refused a steps-mode claim, so they are filtered out there
+//    and left to seats mode) — this script never infers the exclusion
+//    itself.
 //
 //  * `exclude` drops a key a PRIOR dispatch's back-fill already carries (a
 //    gate probed in one wave and seated in the next emits usage in both

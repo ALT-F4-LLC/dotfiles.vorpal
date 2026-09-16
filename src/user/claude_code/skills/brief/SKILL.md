@@ -349,8 +349,9 @@ where a route bullet below says so.
   that workflow. For a one-shot request with Security-sensitive `no`, a
   Size hint of `trivial` proposes the `trivial` size label in the
   handoff and `bounded` work confined to one or two files proposes
-  `small`; the planner confirms either under its own sizing rule before
-  recording it. The Role holds for the planning conversation, which runs
+  `small`; the planner confirms either under the docket skill's
+  [sizing reference](../docket/references/sizing.md) before recording it,
+  and splits any issue that reference's cap rejects. The Role holds for the planning conversation, which runs
   here, and does not reach issue bodies or executors: executors take
   their framing from the bound workflow's contracts, and writing a
   conversation role into a body is the planner's decision under its own

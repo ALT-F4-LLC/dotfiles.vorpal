@@ -248,8 +248,15 @@ with `docket-groom` and `tend`, and are applied here as written there:
   belongs to another route (the operator's own brief, the tend queue, a
   loop): list it as routed elsewhere (step 4 covers why activation would
   refuse it anyway if named for this run).
+- **Unsized or oversized.** An issue whose `size` is null or `unknown`,
+  or whose criteria describe two or more independent outcomes under the
+  [sizing reference](../docket/references/sizing.md)'s cap, has not
+  passed the size gate: count it beside the unrouted count with a pointer
+  to `/docket-groom`, which sizes and splits, and never rank it. A
+  `route-run` label on such an issue predates the gate and does not
+  override it.
 
-List all three kinds in the proposal under "not free"/"off-scope"; never
+List all four kinds in the proposal under "not free"/"off-scope"; never
 drop them silently.
 
 **Build the largest feasible roster, then schedule its waves.** Apply all
@@ -599,7 +606,8 @@ Run these, in this order, once you know what shape they take:
 
 ```bash
 docket issue create -t "<title>" -T <kind> --idempotency-key <key> \
-  -l <label> -f <file> -f <file> --scope '<glob>' -d - < <body-file>  # one per unit of work; -f and --scope are never omitted
+  --size <trivial|small|bounded|needs-design> \
+  -l <label> -f <file> -f <file> --scope '<glob>' -d - < <body-file>  # one per unit of work; --size, -f, and --scope are never omitted
 docket issue link add DKT-<n> depends_on DKT-<m>  # the graph's edges
 docket run start --request-file <path> \
   --budget <declared-cap-or-0> --usage-budget <usage-cap-or-0> \
@@ -745,7 +753,13 @@ operator answer behind it, no restated obviousness, no padding.
 **The issues**, one per unit of work, carry kind, labels, scope globs, and
 the ACs in the body. When a draft spans several prefixes with separable
 ACs, split along those boundaries and budget each resulting issue's full
-workflow and rework allowance.
+workflow and rework allowance. A unit of work sits within the
+[sizing reference](../docket/references/sizing.md)'s cap; a draft above
+it, on either the multi-outcome ground or the bounded ceiling, is two or
+more issues, not one large one. Bias toward `small` and `trivial`: a
+worker fed one small, well-scoped issue lands it in one round with no
+back-and-forth, and that outcome is worth decomposing for even when
+"one issue" reads as tidier while drafting.
 
 Never split one cohesive edit or manufacture a criterion to increase
 the count. Independent units that touch the same file may share a run only
@@ -797,21 +811,24 @@ and the plan artifact, never by omission.
 **Size labels are yours to apply at filing, and their absence is the same
 tell.** A one- or two-file issue that adds no file and whose acceptance
 criteria are verifiable from the diff, carrying neither `small` nor
-`trivial`, binds the full `standard-change` chain silently. Apply `small`
-when the issue declares at most two files in one directory, adds no file,
-and every acceptance criterion is verifiable from the diff or a trusted
-fenced command; apply `trivial` only to a typo, a config value, a doc line,
-or a one-line fix. Never apply either to a security-sensitive issue, to a
-ui-scoped issue (one carrying `ui`, or whose files or scope lie under a TUI
-or UI surface), or to one carrying any label in policy's `[security].labels`.
-Small-change and trivial-change run no copy-verify or render-verify step,
-so a ui issue cannot safely skip those checks. If a ui issue already
-carries a size label, remove the size label, never the `ui` label, since
-stripping `ui` to satisfy small-change's `unless_labels` is the mistake
-this rule exists to prevent. An issue meeting both the `small` and
-`trivial` conditions binds the judged small-change track, so apply `small`.
-Confirm the binding the same way as every other variant, with `docket
-workflow show small-change` or `docket workflow show trivial-change`.
+`trivial`, binds the full `standard-change` chain silently. The tiers,
+their criteria, and the ui and security exclusions are the docket skill's
+[sizing reference](../docket/references/sizing.md), the one statement of
+the rule; measure every issue you are about to file against its table,
+pass its tier as `--size` on every create, and apply the `small` or
+`trivial` label where the table says so. Never strip `ui` to satisfy
+small-change's `unless_labels`; that is the mistake the reference's
+exclusion exists to prevent. Confirm the binding the same way as every
+other variant, with `docket workflow show small-change` or
+`docket workflow show trivial-change`.
+
+**The same measurement is the size gate.** An issue above the reference's
+cap, two or more independent outcomes, is not one unit of work: file one
+issue per outcome instead, each with its own files, scope, and criteria,
+and link them with `depends_on` only where one cannot start before
+another. Do this in §1 when the decomposition first shows the bundle, and
+check it again here, since a scope widen or a criteria repair the operator
+approved can push an issue over the cap after the decomposition settled.
 
 **Every issue carries both file surfaces the engine keys collision on: `-f`
 for each concrete file its change will touch, and `--scope` for the globs

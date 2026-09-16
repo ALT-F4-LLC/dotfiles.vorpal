@@ -117,7 +117,7 @@ per invocation; use a file flag for a second field when supported.
 
 ```bash
 docket issue create --json=v2 \
-  -t 'Add rate limiting to API' -s todo -p high -T feature \
+  -t 'Add rate limiting to API' -s todo -p high -T feature --size small \
   -f internal/api/router.go --scope 'internal/api/**' \
   -d - <<'DOCKET_DESCRIPTION_8F31'
 Prevent abuse on public endpoints.
@@ -125,9 +125,10 @@ Acceptance: requests above the configured limit return HTTP 429.
 DOCKET_DESCRIPTION_8F31
 ```
 
-Add a stable, task-specific `--idempotency-key` when retrying an uncertain
-create could duplicate work, reusing that key only for the same logical
-operation. Supported verbs are issue/doc/vote creation, `run start`, and
+`--size` is the [sizing reference](references/sizing.md)'s tier and is
+never omitted on a non-epic create. Add a stable, task-specific
+`--idempotency-key` when retrying an uncertain create could duplicate
+work, reusing that key only for the same logical operation. Supported verbs are issue/doc/vote creation, `run start`, and
 issue/doc comment addition. Read the result back when verifying exact
 stored text matters.
 
@@ -268,6 +269,7 @@ contents list; search for the command or heading before loading a section.
 | [Workflows](references/workflows.md) | Engine config, workflow registration/lint, matching, gates, packets, actions, fanout, loops |
 | [Schemas](references/schemas.md) | Immutable schemas, validation, ordered enums, conservative median ties |
 | [Voting](references/voting.md) | Proposals, named seats, weighted tallies, post-approval routing |
+| [Sizing](references/sizing.md) | Size tiers and labels, the cap above which an issue must split, the gate every filer applies before `issue create`, and the split shape groom proposes |
 | [Queue ownership](references/queue-ownership.md) | Which open issues a backlog-reading skill may take (run-included, claimed, routed elsewhere), the `--limit 1000` rule, and what to do without AskUserQuestion; shared by docket-plan, docket-groom, and tend |
 | [CLI reference](reference.md#contents) | Exact flags and response shapes for the tracker and authoring verbs; the engine families (run, step, dispatch, events, guard, trust, gate, policy, registry, report, doctor) are under [docket-run's references](../docket-run/references/run.md) |
 

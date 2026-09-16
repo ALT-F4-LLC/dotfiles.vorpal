@@ -194,7 +194,11 @@ path allowlist and the miners' evidence, then review the diff.
 Choose the operator's named smoke issue, or propose one from a verified gap and
 offer a replacement. Identify its intended workflow and acceptance criteria.
 The smoke issue carries the `route-run` label and no other `route-*` label,
-following the routing-label convention established in the corpus.
+following the routing-label convention established in the corpus, and it
+sits within the docket skill's
+[sizing reference](../docket/references/sizing.md)'s cap with its tier
+stored in `size`: one outcome, so the first run exercises the pipeline,
+not a bundle.
 Do not create an unseen issue or start an unseen run. Broader work goes to
 `/docket-plan` before activation.
 

@@ -333,7 +333,7 @@ stdin through a quoted heredoc:
 
 ```bash
 docket issue create -t "<gate> fails on clean HEAD" -T bug -p medium \
-  -l conduct --scope 'internal/routing/**' -d - <<'DESC'
+  -l conduct --size bounded --scope 'internal/routing/**' -d - <<'DESC'
 <what fails, its exit, the probe's log tail, and why it is pre-existing>
 DESC
 ```
@@ -1497,10 +1497,21 @@ this: it quotes command names, argv, and other agents' output.
 
 ```bash
 docket issue create -t "<title>" -T <type> -p <priority> -l conduct \
-  -f <file the fix touches> --scope '<glob bounding it>' -d - <<'DESC'
+  --size <tier> -f <file the fix touches> --scope '<glob bounding it>' -d - <<'DESC'
 <markdown body — backticks, $(…), and quotes all land verbatim>
 DESC
 ```
+
+**Every conduct filing is one outcome and carries `--size`.** Measure it
+against the docket skill's
+[sizing reference](../docket/references/sizing.md) before the create and
+pass the tier (`--size bounded` for most gaps): a gap, gate failure,
+condition, or residue item that describes two or more independent
+outcomes is two or more issues. A conductor has no time mid-wave to
+decompose a bundle it cannot see the edges of, so when the split is
+unclear, file the one issue under the reference's conduct exception
+(`--size unknown`, `-l blocked`, the `Oversized:` first line) and groom
+splits it.
 
 **A scope correction on an issue already in this run is two acts.**
 `docket issue edit --scope` moves the live column the scheduler reads;
@@ -1786,11 +1797,12 @@ class:
 
 **Residue files and passes; you do not ask.** Run the premise check first:
 an open issue already carrying the residue is linked, never refiled. Then,
-per residue item without a home:
+per residue item without a home, one item per issue under the sizing rule
+in **3. Close the dispatch**:
 
 ```bash
 docket issue create -t "<the defect in one line>" -T <bug|task> -p <priority from severity> \
-  -l loop-bound -f <every file the evidence names> --scope '<glob bounding the fix>' -d - <<'DESC'
+  -l loop-bound --size <tier> -f <every file the evidence names> --scope '<glob bounding the fix>' -d - <<'DESC'
 <the artifact's own evidence for the item, verbatim — criterion, file:line, judgment>
 source-run: RUN-N, <step instance>, loop-bound at round N of a cap of M
 DESC

@@ -125,7 +125,8 @@ exists only in this transcript — becomes one Docket issue each, filed from
 the checkout of the project it belongs to, since cwd picks the project:
 
 ```bash
-docket issue create -t "<the item in one line>" -T <task|bug> -d - <<'DESC'
+docket issue create -t "<the item in one line>" -T <task|bug> \
+  --size <trivial|small|bounded|needs-design|unknown> -d - <<'DESC'
 Current state: <what exists now, including any sha, branch, or artifact id>
 Next step: <the concrete next action, specific enough to act on cold>
 DESC
@@ -133,7 +134,13 @@ DESC
 
 File with **no routing label**; `/docket-groom` assigns the route. One item
 per issue: a single issue holding three unrelated leftovers gets groomed as
-one and two of them disappear. Nothing stays only in this transcript.
+one and two of them disappear. One item is at most one independent
+outcome under the docket skill's
+[sizing reference](../docket/references/sizing.md), whose tier goes in
+`--size`; a leftover that is several outcomes is several issues, and one
+you have no time to decompose takes that reference's conduct exception
+(`--size unknown`, `-l blocked`, the `Oversized:` first line). Nothing
+stays only in this transcript.
 
 ## Check before you close
 

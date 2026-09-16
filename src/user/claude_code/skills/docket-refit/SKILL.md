@@ -366,8 +366,11 @@ operator has not picked.
 Every genuine engine gap accepted as a deviation is **filed as an issue in
 the engine's own docket project in the same session** (`docket issue create`
 from the engine checkout): what the definition needed, what the engine
-provides, a concrete proposal. Engine defects and gaps are filed, never
-patched in place.
+provides, a concrete proposal. One gap is one issue, within the docket
+skill's [sizing reference](../docket/references/sizing.md)'s cap and
+carrying its tier as `--size`; a deviation that needs two independent
+engine changes is two filings.
+Engine defects and gaps are filed, never patched in place.
 
 ## 5. Visualize before implementing
 

@@ -74,14 +74,17 @@ to the proposal, id in the close report:
 
 ```bash
 docket issue create -t "<condition>" -T task -p high -l tribunal \
-  -f <file the condition touches> --scope '<glob bounding it>' -d - <<'DESC'
+  --size <tier> -f <file the condition touches> --scope '<glob bounding it>' -d - <<'DESC'
 <the seat's rationale, verbatim — backticks and quotes intact>
 DESC
 ```
 
 `-l tribunal` lets a later census separate panel conditions from
 everything else; `-l shadow` is never it. A condition living only in a
-vote rationale, never filed, vanishes.
+vote rationale, never filed, vanishes. One condition is one issue, within
+the [sizing reference](../../docket/references/sizing.md)'s cap and
+carrying its tier as `--size`; a rationale naming several independent
+conditions is several filings.
 
 **When the park followed a step's gates, read the verdicts before you
 present or characterize the outcome.** `docket step gates STEP-N --json`

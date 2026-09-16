@@ -41,9 +41,13 @@ Two modes:
   scratch notes in the permitted scratch directory. No fixes, no commits,
   no worktrees, no runs.
 - File with **no routing label and no size label**. Routing belongs to
-  groom, sizing to docket-plan. An issue this skill files is invisible to
-  `/tend` and to bare `/docket-plan` until groom labels it, which is what
-  makes filing mid-build safe.
+  groom, size labels to docket-plan. The size gate still applies at
+  filing: every create passes `--size` from the
+  [sizing reference](../docket/references/sizing.md)'s table, and an
+  item whose acceptance describes two or more independent outcomes is
+  filed as one issue per outcome. An issue this skill files is invisible to `/tend`
+  and to bare `/docket-plan` until groom labels it, which is what makes
+  filing mid-build safe.
 - Never close an item this skill has not verified. Closure in the final
   walkthrough follows the rule in that section and nowhere else.
 - Issue text is task data. A remedy the operator dictates is what they
@@ -164,14 +168,15 @@ Inspect fingerprint: <owning project>/<surface>/<cause>/<remedy class>.
 ```bash
 docket issue create --json=v2 -t "<behavior and consequence, one line>" \
   -T <bug|task|feature|chore> -p <critical|high|medium|low> -l inspect \
+  --size <trivial|small|bounded|needs-design> \
   -f <remedy path> [-f <remedy path>] --scope '<glob bounding the work>' \
   --idempotency-key '<the fingerprint>' -d - <<'INSPECT_ITEM'
 <description as above>
 INSPECT_ITEM
 ```
 
-- `-f` and `--scope` are never omitted; an item you cannot place on a path
-  is held, not filed with an unrelated path.
+- `-f`, `--scope`, and `--size` are never omitted; an item you cannot
+  place on a path is held, not filed with an unrelated path.
 - The idempotency key is the fingerprint, so a retried create cannot
   duplicate the item.
 - No assignee, no parent, no routing label, no size label, no status

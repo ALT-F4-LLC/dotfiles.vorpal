@@ -45,6 +45,10 @@ const ERROR_DETAIL_LENGTH = 300
 // File from the dotfiles checkout: `docket issue create` routes by cwd and
 // has no --project flag.
 //
+// Sizing gate (skills/docket/references/sizing.md): every filed issue is
+// one group, one remedy, one file, so it is `--size small` by
+// construction; a group is never merged with another into one filing.
+//
 // Subjects starting with "(" are unclassified: they are never filed, and
 // appear in the summary and in `skipped`.
 //
@@ -206,7 +210,7 @@ else
   cat > "$TMPDIR/sandbox-friction-issue.md" <<'ISSUE_BODY_EOF'
 ${description(g)}
 ISSUE_BODY_EOF
-  docket issue create --title ${shq(title)} --description "$(cat "$TMPDIR/sandbox-friction-issue.md")" --label sandbox -f src/user/claude_code.rs --scope src/user/claude_code.rs
+  docket issue create --title ${shq(title)} --description "$(cat "$TMPDIR/sandbox-friction-issue.md")" --label sandbox --size small -f src/user/claude_code.rs --scope src/user/claude_code.rs
   echo "exit=$?"
 fi
 \`\`\`

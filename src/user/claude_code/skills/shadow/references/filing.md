@@ -76,7 +76,12 @@ interpret a missing response as proof that creation failed.
 ## Worker-ready issue contract
 
 Create one issue per distinct load-bearing or friction defect; batch paper-cuts
-only when they share an owning surface and coherent remedy. Retain the original
+only when they share an owning surface and coherent remedy. Before each
+create, measure the issue against the docket skill's
+[sizing reference](../../docket/references/sizing.md): pass its tier as
+`--size` on every create, file a remedy whose acceptance describes two or
+more independent outcomes as one issue per outcome, and keep a paper-cut
+batch under the cap or split it into batches that are. Retain the original
 local metadata contract when supported by the installed CLI:
 
 - Title: concrete behavior and consequence, one line. Session/run IDs go in the

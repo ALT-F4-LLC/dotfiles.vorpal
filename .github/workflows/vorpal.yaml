@@ -56,6 +56,8 @@ jobs:
 
       - run: bash tests/sandbox-friction-hook.test.sh
 
+      - run: bash tests/sandbox-friction-retry-pipeline.test.sh
+
       - run: bash tests/sdet-abuse.test.sh
 
       - run: bash tests/sensitive-path-guard-hook.test.sh

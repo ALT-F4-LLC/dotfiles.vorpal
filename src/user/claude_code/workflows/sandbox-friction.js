@@ -162,6 +162,12 @@ for (const g of groups) {
     log(`  ${g.count}/${g.bypasses}/${g.repos} ${g.kind} ${g.subject}  e.g. ${g.example.slice(0, EXAMPLE_LENGTH)}`)
 }
 
+// TEST-BEGIN sandbox-friction-file — extracted and exercised by
+// tests/sandbox-friction-retry-pipeline.test.sh, which stubs `agent`,
+// `pipeline`, `log`, `phase`, `shq`, `ERROR_DETAIL_LENGTH`, `EXAMPLE_LENGTH`,
+// `SANDBOX_RULE`, `AGENT_CONFIG` (all declared outside this region) and sets
+// `checkout` per case. Keep everything between the markers free of other
+// outer-scope dependencies.
 const CLASSIFIER_REMEDY = `Auto mode denied this, so the command never ran. These accumulate toward auto
 mode's pause threshold — 3 consecutive or 20 total, not configurable — and once
 it pauses, prompting resumes and an unattended executor stalls on a question
@@ -233,20 +239,36 @@ async function fileGroups(groups) {
         phase: 'File',
         ...AGENT_CONFIG.file,
         schema: FILE_SCHEMA,
+    }).catch((err) => {
+        log(`sandbox-friction: file:${i + 1}/${actionable.length}${retry ? ' (retry)' : ''} agent error: ${err}`)
+        return null
     })
 
-    const outcomes = await pipeline(actionable, (g, _item, i) => fileOnce(g, i))
-
-    // filePrompt's own idempotency check (docket issue list before create)
-    // makes a retry safe: a null result means the agent returned nothing,
-    // not that filing was attempted and failed, so one re-dispatch is
-    // worth the cost before permanently dropping the group.
-    const nullIndexes = outcomes.flatMap((o, i) => o ? [] : [i])
-    if (nullIndexes.length) {
-        log(`sandbox-friction: ${nullIndexes.length} filing agent(s) returned nothing — retrying once`)
-        const retried = await pipeline(nullIndexes, (i) => fileOnce(actionable[i], i, true))
-        nullIndexes.forEach((i, j) => { outcomes[i] = retried[j] })
-    }
+    // One continuous pipeline, file then a conditional retry stage, instead
+    // of two separate pipeline() calls with a plain-JS null-filter between
+    // them. Two calls is a barrier: a fast group's retry could not start
+    // until every group in the whole batch — including the slowest filing
+    // agent — had resolved, even though a null result is known the instant
+    // that group's own attempt returns. filePrompt's own idempotency check
+    // (docket issue list before create, run fresh inside the agent's own
+    // shell command on every attempt, first or retry) is what makes this
+    // retry safe: a retry whose first attempt actually filed but whose
+    // reply was merely lost re-runs the SAME check, finds the issue already
+    // filed, and reports "already-filed" rather than double-filing — the
+    // safety lives in the command, not in script-side bookkeeping, so
+    // folding the retry into the same pipeline changes nothing about it.
+    let retriedCount = 0
+    const outcomes = await pipeline(
+        actionable,
+        (g, _item, i) => fileOnce(g, i),
+        (first, g, i) => {
+            if (first) return first
+            retriedCount++
+            log(`sandbox-friction: file:${i + 1}/${actionable.length} returned nothing — retrying once`)
+            return fileOnce(g, i, true)
+        },
+    )
+    if (retriedCount) log(`sandbox-friction: ${retriedCount} filing agent(s) returned nothing on the first attempt — retried once`)
 
     const results = actionable.map(({subject}, index) => {
         const outcome = outcomes[index]
@@ -271,6 +293,7 @@ async function fileGroups(groups) {
         skipped: [...skipped, ...results.filter((result) => result.why !== null)],
     }
 }
+// TEST-END sandbox-friction-file
 
 // A workflow body may return only once, at column 0, at the end: the parse
 // gate neutralizes that one keyword and nothing else.

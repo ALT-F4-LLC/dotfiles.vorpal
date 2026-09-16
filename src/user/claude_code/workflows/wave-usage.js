@@ -636,8 +636,10 @@ function classifyFirstAttempt(r, file, i) {
 // Every dispatched agent has a bootstrap brief, so a repeated bootstrap:false
 // answer is treated as a relay misreport rather than a true bootstrap-free
 // transcript, and rechecked once before trusting it.
+let bootstrapRechecked = 0
 function recheckBootstrap(prev) {
     if (!prev || prev.extract.bootstrap !== false) return prev
+    bootstrapRechecked++
     log(`wave-usage: ${prev.file}: reported bootstrap:false — re-checking before trusting it`)
     return agent(extractBrief(prev.path, true), {
         label: `${prev.file} · extract (retry)`,
@@ -684,6 +686,7 @@ const extracted = await pipeline(
 )
 const results = extracted.filter(Boolean)
 // TEST-END wave-usage-recheck-pipeline
+if (bootstrapRechecked) log(`wave-usage: ${bootstrapRechecked} transcript(s) reported bootstrap:false and were rechecked`)
 const summary = reduceRows(results, mode, exclude)
 const coordination = mode === 'steps' ? coordinationOf(results, manifestRows, waveStatuses) : null
 const reduced = { ...summary, errors: [...errors, ...summary.errors], coordination }

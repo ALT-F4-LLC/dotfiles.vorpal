@@ -85,8 +85,8 @@ const AUTO_MODE_ALLOW_RULES: &[&str] = &[
     "Local git operations in trusted repositories — add, commit, worktree, cherry-pick, stash, archive, cat-file, rev-parse, and other repo-local verbs, whether run from the checkout or via `git -C <trusted checkout>`, with commit messages passed inline, via a heredoc, or via `-F <file under the scratch root>`; `git push` publishes and stays outside this rule",
     "Bash(vorpal:*) in ALT-F4-LLC repositories — the org's own build tool, same standing as docket",
     "Read-only cluster reads against bulbasaur — kubectl get/describe/logs, flux get; mutations against the cluster stay outside this rule (production)",
-    "Read-only search and inspection inside trusted checkouts and the Claude scratch roots (/tmp/claude-501, /private/tmp/claude-501, $TMPDIR) — grep, rg, find, ls, cat, head, tail, sed -n, wc, diff, strings, jq, and python3/perl one-liners that only read — including a relative path or glob after `cd` into one of those roots; the sensitive home paths (~/.ssh, ~/.aws, ~/.gnupg, credential stores) are refused by the sandbox at the syscall level and by the sensitive-path-guard hook, and a relative path under these roots cannot reach them",
-    "File operations confined to the Claude scratch roots (/tmp/claude-501, /private/tmp/claude-501, $TMPDIR) — mkdir, cp -R, rm -rf, mv, tar/git-archive mirrors of a trusted checkout, and in-place edits (sed -i, perl -pi, python3 heredocs) of files under them; these are per-session throwaway workspaces the sandbox already lets every session write, so deleting or mutating them affects no repo",
+    "Read-only search and inspection inside trusted checkouts and the Claude scratch roots (/tmp/claude-501, /private/tmp/claude-501, $TMPDIR) — grep, rg, find, ls, cat, head, tail, sed -n, wc, diff, strings, jq — including a relative path or glob after `cd` into one of those roots; the sensitive home paths (~/.ssh, ~/.aws, ~/.gnupg, credential stores) are refused by the sandbox at the syscall level and by the sensitive-path-guard hook, and a relative path under these roots cannot reach them; interpreter code arguments and exec wrappers are shell indirection and stay outside this rule",
+    "File operations confined to the Claude scratch roots (/tmp/claude-501, /private/tmp/claude-501, $TMPDIR) — mkdir, cp -R, rm -rf, mv, tar/git-archive mirrors of a trusted checkout, and in-place edits (sed -i) of files under them; these are per-session throwaway workspaces the sandbox already lets every session write, so deleting or mutating them affects no repo; interpreter code arguments and exec wrappers are shell indirection and stay outside this rule",
     "Read-only inspection under ~/.claude — session transcripts and tool-results under ~/.claude/projects, the friction ledger, installed skills, workflows, and hooks — the operator's own harness state; edits there stay outside this rule (source-only, installed via `just activate`)",
     "Read-only gh reads against ALT-F4-LLC repositories — gh pr view/checks/list/diff, gh run list/view, gh issue view/list; every other gh verb, including every one on an ask rule, stays outside this rule",
 ];
@@ -103,6 +103,57 @@ const PUBLISHING_ASK_VERBS: &[&str] = &[
     "gh pr merge",
     "gh pr ready",
     "git push",
+];
+
+/// Shell indirection: an interpreter handed code as an argument, or a wrapper
+/// that runs its argument as a command the permission rules never see. A
+/// `Bash(rm *)` deny stops `rm -rf build/` but not `bash -c 'rm -rf build/'`
+/// (permissions reference, "What a Bash rule doesn't match"), so every such
+/// form is denied outright. Deny rules match each subcommand, including one
+/// nested in a subshell, a substitution, or a loop body, and are evaluated
+/// before the auto-mode classifier. The `-*c` / `-*e` shapes catch combined
+/// flags (`bash -lc`, `perl -pi -e`, `python3 -uc`) at the cost of a rare
+/// false positive on an unrelated `-c`/`-e` flag after the program name.
+/// Wrappers the harness itself strips (`timeout`, `nice`, `nohup`, bare
+/// `xargs`) need no row: the rules already see the inner command.
+/// AUTO_MODE_HARD_DENY_RULES restates the same rule as prose for the
+/// spellings a text pattern cannot enumerate.
+const SHELL_INDIRECTION_DENY_PATTERNS: &[&str] = &[
+    "Bash(. *)",
+    "Bash(bash -*c *)",
+    "Bash(dash -*c *)",
+    "Bash(env *)",
+    "Bash(eval *)",
+    "Bash(find * -delete*)",
+    "Bash(find * -exec*)",
+    "Bash(find * -ok*)",
+    "Bash(flock *)",
+    "Bash(node -*e *)",
+    "Bash(node -*p *)",
+    "Bash(node --eval *)",
+    "Bash(node --print *)",
+    "Bash(osascript -*e *)",
+    "Bash(perl -*e *)",
+    "Bash(python* -*c *)",
+    "Bash(ruby -*e *)",
+    "Bash(script *)",
+    "Bash(setsid *)",
+    "Bash(sh -*c *)",
+    "Bash(source *)",
+    "Bash(sudo *)",
+    "Bash(watch *)",
+    "Bash(xargs -*)",
+    "Bash(zsh -*c *)",
+];
+
+/// Classifier-side restatement of SHELL_INDIRECTION_DENY_PATTERNS. The deny
+/// rules run first and stop the enumerable text forms; this prose reaches the
+/// spellings they cannot, such as code on stdin or an absolute path to the
+/// same interpreter. `$defaults` keeps the built-in exfiltration rule: a list
+/// without it replaces the section.
+const AUTO_MODE_HARD_DENY_RULES: &[&str] = &[
+    "$defaults",
+    "Shell indirection is never allowed, in any spelling: a shell or interpreter handed code as an argument (`bash -c`, `sh -c`, `zsh -c`, `dash -c`, `eval`, `source` or `.`, `python -c`, `perl -e`, `node -e`/`-p`, `ruby -e`, `osascript -e`), code fed to an interpreter on stdin or through a heredoc, and wrappers that run their argument as a command the permission rules cannot see (`env`, `xargs` with flags, `find -exec`/`-execdir`/`-delete`, `sudo`, `watch`, `setsid`, `flock`, `script`). A combined-flag spelling (`bash -lc`, `perl -pi -e`) or an absolute path to the same interpreter (`/bin/bash -c`) is the same command and is refused the same way; no allow rule and no user instruction clears it",
 ];
 
 const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
@@ -384,7 +435,10 @@ impl ClaudeCode {
                 .map(|s| s.to_string())
                 .collect(),
             classify_all_shell: None,
-            hard_deny: Vec::new(),
+            hard_deny: AUTO_MODE_HARD_DENY_RULES
+                .iter()
+                .map(|s| s.to_string())
+                .collect(),
             soft_deny: Vec::new(),
         });
 
@@ -459,6 +513,15 @@ impl ClaudeCode {
                 .chain(SENSITIVE_PATHS_DENY_EDIT_ONLY)
                 .copied(),
         );
+
+        // Shell indirection is denied before the classifier runs. The rows
+        // are already `Bash(...)` patterns, so they fold in unwrapped; a test
+        // pins the set to an explicit literal the way the ask rows are pinned.
+        let settings_builder = SHELL_INDIRECTION_DENY_PATTERNS
+            .iter()
+            .fold(settings_builder, |builder, pattern| {
+                builder.with_permission_deny(pattern)
+            });
 
         // No Read() deny rules on purpose. With any Read() deny configured the
         // harness turns every `cd <dir> && grep <relative path>` into a hard
@@ -666,10 +729,11 @@ impl ClaudeCode {
 mod tests {
     use super::{
         claude_home, component_name, permission_ask_patterns, sandbox_filesystem_allow_read_paths,
-        sandbox_filesystem_deny_read_paths, sorted_permission_patterns, AUTO_MODE_ALLOW_RULES,
-        GIT_ALLOWED_SIGNERS_CONFIG_PATH, GIT_ALLOWED_SIGNERS_INSTALL_PATH, PUBLISHING_ASK_VERBS,
-        SANDBOX_CLAUDE_SCRATCH_ROOT, SANDBOX_CLAUDE_SCRATCH_ROOT_PRIVATE, SENSITIVE_PATHS,
-        SENSITIVE_PATHS_DENY_EDIT_ONLY, SENSITIVE_PATHS_DENY_READ_ONLY,
+        sandbox_filesystem_deny_read_paths, settings, sorted_permission_patterns,
+        AUTO_MODE_ALLOW_RULES, AUTO_MODE_HARD_DENY_RULES, GIT_ALLOWED_SIGNERS_CONFIG_PATH,
+        GIT_ALLOWED_SIGNERS_INSTALL_PATH, PUBLISHING_ASK_VERBS, SANDBOX_CLAUDE_SCRATCH_ROOT,
+        SANDBOX_CLAUDE_SCRATCH_ROOT_PRIVATE, SENSITIVE_PATHS, SENSITIVE_PATHS_DENY_EDIT_ONLY,
+        SENSITIVE_PATHS_DENY_READ_ONLY, SHELL_INDIRECTION_DENY_PATTERNS,
     };
     use crate::file::FileCreate;
 
@@ -1021,6 +1085,166 @@ mod tests {
                 "{verb} is invoked by the pr skill but has no permission-ask row"
             );
         }
+    }
+
+    #[test]
+    fn shell_indirection_deny_patterns_equal_an_explicit_literal_set() {
+        // Independent ground truth, not derived from the constant: a row
+        // quietly dropped from SHELL_INDIRECTION_DENY_PATTERNS fails here.
+        let mut expected = vec![
+            "Bash(. *)",
+            "Bash(bash -*c *)",
+            "Bash(dash -*c *)",
+            "Bash(env *)",
+            "Bash(eval *)",
+            "Bash(find * -delete*)",
+            "Bash(find * -exec*)",
+            "Bash(find * -ok*)",
+            "Bash(flock *)",
+            "Bash(node --eval *)",
+            "Bash(node --print *)",
+            "Bash(node -*e *)",
+            "Bash(node -*p *)",
+            "Bash(osascript -*e *)",
+            "Bash(perl -*e *)",
+            "Bash(python* -*c *)",
+            "Bash(ruby -*e *)",
+            "Bash(script *)",
+            "Bash(setsid *)",
+            "Bash(sh -*c *)",
+            "Bash(source *)",
+            "Bash(sudo *)",
+            "Bash(watch *)",
+            "Bash(xargs -*)",
+            "Bash(zsh -*c *)",
+        ];
+        let mut actual: Vec<&str> = SHELL_INDIRECTION_DENY_PATTERNS.to_vec();
+        expected.sort_unstable();
+        actual.sort_unstable();
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn shell_indirection_deny_patterns_are_bash_rules_sorted_and_unique() {
+        let mut sorted: Vec<&str> = SHELL_INDIRECTION_DENY_PATTERNS.to_vec();
+        sorted.sort_unstable();
+        sorted.dedup();
+        assert_eq!(sorted, SHELL_INDIRECTION_DENY_PATTERNS.to_vec());
+
+        for pattern in SHELL_INDIRECTION_DENY_PATTERNS {
+            assert!(
+                pattern.starts_with("Bash(") && pattern.ends_with(')'),
+                "{pattern} is not a Bash permission pattern"
+            );
+        }
+    }
+
+    #[test]
+    fn no_hand_added_permission_deny_rows_beside_the_folds() {
+        // Two folds may call `with_permission_deny`: the sensitive-path Edit()
+        // fold and the shell-indirection fold. A row added beside either would
+        // bypass the literal-set assertions that pin what each fold emits.
+        let source = include_str!("claude_code.rs");
+        let body = &source[..source.find("#[cfg(test)]").expect("tests follow the impl")];
+        let occurrences = body.matches("with_permission_deny(").count();
+        assert_eq!(
+            occurrences, 2,
+            "with_permission_deny must be called only inside the two deny folds"
+        );
+    }
+
+    #[test]
+    fn auto_mode_hard_deny_keeps_the_defaults_and_names_every_indirection_form() {
+        // Without `$defaults` the list replaces the built-in exfiltration
+        // rule instead of extending it (auto-mode configuration reference,
+        // "Override the block and allow rules").
+        assert_eq!(AUTO_MODE_HARD_DENY_RULES[0], "$defaults");
+
+        let prose = AUTO_MODE_HARD_DENY_RULES[1..].join("\n");
+        for form in [
+            "bash -c",
+            "sh -c",
+            "zsh -c",
+            "dash -c",
+            "eval",
+            "source",
+            "python -c",
+            "perl -e",
+            "node -e",
+            "ruby -e",
+            "osascript -e",
+            "stdin",
+            "heredoc",
+            "env",
+            "xargs",
+            "find -exec",
+            "-delete",
+            "sudo",
+            "watch",
+            "setsid",
+            "flock",
+            "script",
+        ] {
+            assert!(prose.contains(form), "hard_deny prose does not name {form}");
+        }
+    }
+
+    #[test]
+    fn auto_mode_allow_rules_never_clear_shell_indirection() {
+        // The two scratch-root rules once allowed python3/perl one-liners and
+        // python3 heredocs; those are indirection and now sit under the deny
+        // rules, so no allow rule may name an interpreter again.
+        for rule in AUTO_MODE_ALLOW_RULES {
+            for word in ["python", "perl", "one-liner", "bash -c", "eval", "xargs"] {
+                assert!(
+                    !rule.contains(word),
+                    "{word} is named in an allow rule: {rule}"
+                );
+            }
+        }
+
+        let scoped: Vec<&&str> = AUTO_MODE_ALLOW_RULES
+            .iter()
+            .filter(|r| r.contains("scratch roots"))
+            .collect();
+        assert_eq!(scoped.len(), 2, "expected the search and file-op rules");
+        for rule in scoped {
+            assert!(
+                rule.contains("shell indirection") && rule.contains("outside this rule"),
+                "scratch-root rule must exclude shell indirection: {rule}"
+            );
+        }
+    }
+
+    #[test]
+    fn auto_mode_deny_lists_serialize_in_snake_case() {
+        // The live schema reads `hard_deny`/`soft_deny` while the rest of the
+        // block is camelCase. A camelCased key is silently ignored, which
+        // would drop the indirection rule and, worse, the `$defaults` splice.
+        let mode = settings::AutoMode {
+            environment: vec!["$defaults".to_string()],
+            allow: vec!["$defaults".to_string()],
+            soft_deny: vec!["$defaults".to_string()],
+            hard_deny: AUTO_MODE_HARD_DENY_RULES
+                .iter()
+                .map(|s| s.to_string())
+                .collect(),
+            classify_all_shell: Some(false),
+        };
+        let json = serde_json::to_value(&mode).expect("AutoMode serializes");
+        let keys: Vec<&str> = json
+            .as_object()
+            .expect("AutoMode is an object")
+            .keys()
+            .map(String::as_str)
+            .collect();
+
+        assert!(keys.contains(&"hard_deny"), "keys: {keys:?}");
+        assert!(keys.contains(&"soft_deny"), "keys: {keys:?}");
+        assert!(keys.contains(&"classifyAllShell"), "keys: {keys:?}");
+        assert!(!keys.contains(&"hardDeny"), "keys: {keys:?}");
+        assert!(!keys.contains(&"softDeny"), "keys: {keys:?}");
+        assert_eq!(json["hard_deny"][0], "$defaults");
     }
 
     #[test]

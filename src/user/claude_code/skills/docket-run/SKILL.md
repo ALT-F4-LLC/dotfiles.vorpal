@@ -534,17 +534,14 @@ Walk the pins by hand (`.data.pins`; `.data.steps` is a status/count
 bucket, not step rows):
 
 ```bash
-docket run status $RUN --json | python3 -c '
-import json,sys,subprocess,os
-pins = json.load(sys.stdin)["data"].get("pins", [])
-print("file pins:", sum(1 for p in pins if p.get("kind") == "file"))
-for p in pins:
-    if p.get("kind") != "file": continue          # name@version refs live in the DB, not on disk
-    path = os.path.expanduser("~/.docket/config/" + p["ref"])
-    got = subprocess.run(["shasum","-a","256",path],capture_output=True,text=True).stdout.split()
-    if not got or got[0] != p["sha256"]:
-        print("PIN MISMATCH", p["ref"], "disk", (got[0][:12] if got else "MISSING"), "pinned", p["sha256"][:12])
-'
+docket run status $RUN --json | jq -r '.data.pins // [] | map(select(.kind == "file"))
+  | "file pins: \(length)",
+    (.[] | "\(.ref) \(.sha256)")' \
+  | { read -r count_line; echo "$count_line"; while read -r ref sha256; do
+        path=~/.docket/config/"$ref"                  # name@version refs live in the DB, not on disk
+        got_line=$(shasum -a 256 "$path" 2>/dev/null); got=${got_line%% *}
+        [ -n "$got" ] && [ "$got" = "$sha256" ] || echo "PIN MISMATCH $ref disk ${got:-MISSING} pinned $sha256"
+      done; }
 ```
 
 Count the rows before believing the verdict: `.pins[]` alone selects
@@ -1655,7 +1652,7 @@ tally.
 
 Read a decided proposal with plain `docket vote show <id>`; reach for
 `--json` only for extraction the plain form lacks, and never pipe it
-through `python3 -c` reflexively.
+through an inline interpreter reflexively — `jq` covers it.
 
 **A tally is an engine-computed outcome, never operator authority.** Cite
 it by proposal id ("the panel approved, 3/3"), never imply the operator
@@ -1901,15 +1898,11 @@ not say how a run ended. Before characterizing it or re-presenting a
 parked decision, read that run's terminal events by kind:
 
 ```bash
-docket events list --run $RUN --json --tail 400 | python3 -c '
-import json,sys
-WANT = {"issue-abandoned","step-resolved","step-approved","step-rejected","run-done","run-abandoned"}
-d = json.load(sys.stdin)["data"]
-evs = d if isinstance(d, list) else d["events"]      # KeyError beats a silent empty read
-for e in evs:
-    if e["kind"] in WANT:
-        print(e["seq"], e["kind"], e.get("issue",""), e.get("step",""), json.dumps(e["data"]))
-'
+docket events list --run $RUN --json --tail 400 | jq -r '
+  (if type == "object" and has("data") then .data else . end)
+  | (if type == "array" then . else .events end)     # missing .events beats a silent empty read
+  | .[] | select(.kind as $k | ["issue-abandoned","step-resolved","step-approved","step-rejected","run-done","run-abandoned"] | index($k))
+  | "\(.seq) \(.kind) \(.issue // "") \(.step // "") \(.data | tojson)"'
 ```
 
 **Filter on the `kind` field; never keyword-grep the detail text.** Words

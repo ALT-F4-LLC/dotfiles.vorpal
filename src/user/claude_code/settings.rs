@@ -348,12 +348,16 @@ pub struct AutoMode {
     pub environment: Vec<String>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub allow: Vec<String>,
-    // LANDMINE (latent — with_auto_mode is never called): struct-level camelCase renames these
-    // two keys to `softDeny`/`hardDeny`. Before wiring auto_mode, verify the live settings schema's
-    // casing; if it requires snake_case add `#[serde(rename = "soft_deny")]` / `"hard_deny"` here.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    // The live schema spells these two keys in snake_case while every other
+    // `autoMode` key (`classifyAllShell`) is camelCase, so the struct-level
+    // rename is overridden here. Verified against the auto-mode configuration
+    // reference (code.claude.com/docs/en/auto-mode-config, "Override the block
+    // and allow rules"): `autoMode.hard_deny`, `autoMode.soft_deny`. A list
+    // set without the literal `"$defaults"` replaces the built-in rules for
+    // that section, so every entry list here starts with it.
+    #[serde(rename = "soft_deny", skip_serializing_if = "Vec::is_empty", default)]
     pub soft_deny: Vec<String>,
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    #[serde(rename = "hard_deny", skip_serializing_if = "Vec::is_empty", default)]
     pub hard_deny: Vec<String>,
     /// Send every shell command through the classifier, even ones a narrow
     /// allow rule matches.

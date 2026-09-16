@@ -213,15 +213,11 @@ DEPRECATE, so no name is ever left with nothing eligible to bind.
 Then verify — do not eyeball a table, assert the invariant:
 
 ```bash
-docket workflow list --limit 500 --json=v2 | python3 -c "
-import json,sys
-items = json.load(sys.stdin)['data']['items']
-by = {}
-for i in items: by.setdefault(i['name'], []).append(i['version'])
-dupes = {n: sorted(v) for n, v in by.items() if len(v) > 1}
-print('names with >1 binding version:', dupes or 'none')
-print('binding count:', len(items))
-"
+docket workflow list --limit 500 --json=v2 | jq -r '
+  .data.items as $items
+  | ($items | group_by(.name) | map(select(length > 1) | {(.[0].name): (map(.version) | sort)}) | add) as $dupes
+  | "names with >1 binding version: \($dupes // "none" | if . == "none" then . else tojson end)",
+    "binding count: \($items | length)"'
 ```
 
 Then re-run the planner. A clean pass prints no `REGISTER`, `RESTORE`, or

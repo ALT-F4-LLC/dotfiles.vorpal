@@ -1,7 +1,7 @@
 export const meta = {
     name: 'wave',
     description: 'Internal: launched through scriptPath by docket-run, once per shard, to run one dispatched manifest end to end (executors, vote panels, staged issue lanes). Per vote row it spends 3 read-only haiku probes of `docket gate status` on the normal path, 1 on a gate that was already decided, and 4 when a re-seat is needed. Budget, shard, lane and reply-tail contract in the header comment.',
-    whenToUse: 'Never by name. Args are {rows, tribunal, cwd, shard?, integrated?} with the `next` rows verbatim; the full argument contract is in the header comment.',
+    whenToUse: 'Never by name. Args are {rows, tribunal, cwd, shard?, harnessCap?, integrated?} with the `next` rows verbatim; the full argument contract is in the header comment.',
 }
 
 // ---------------------------------------------------------------------------
@@ -51,18 +51,24 @@ export const meta = {
 // Invoked by the docket-run skill on an open dispatch, always as
 // Workflow({scriptPath}) — never by name, and once per shard when the dispatch
 // is split (the same rows in every launch, `shard: {index, of}` differing).
-// args is {rows, tribunal, cwd, shard?}: `next` rows VERBATIM (executor, vote,
-// and action rows; human rows stay with the conductor), each executor row
-// carrying the model/effort/variant the engine resolved from the run's pinned
-// policy.toml and each vote row carrying the same per voter in
+// args is {rows, tribunal, cwd, shard?, harnessCap?}: `next` rows VERBATIM
+// (executor, vote, and action rows; human rows stay with the conductor), each
+// executor row carrying the model/effort/variant the engine resolved from the
+// run's pinned policy.toml and each vote row carrying the same per voter in
 // `voter_assignments` — a row re-typed without those fields is refused.
 // `tribunal` is the absolute installed path to tribunal.js, the one workflow-
 // nesting level this script uses to seat every in-wave panel (it cannot
-// resolve that path itself); `cwd` is the repo the run belongs to. On a
-// dispatch carrying a fix round's review fanout, args also carries
-// `integrated` — a map from each such issue to the sha of its prior round's
-// INTEGRATION commit — so the wave can assert base ancestry before seating the
-// fanout. There is no policy argument of any kind and no file access.
+// resolve that path itself); `cwd` is the repo the run belongs to.
+// `harnessCap` is the conductor's own `nproc`-derived reading of the real
+// per-invocation agent() concurrency cap (this script cannot read the
+// machine's CPU count itself); when present and a positive integer, the
+// wave admits against min(16, harnessCap) instead of the loose 16-agent
+// ceiling it would otherwise assume, and logs which bound it used either
+// way — a caller that omits the field is not refused. On a dispatch
+// carrying a fix round's review fanout, args also carries `integrated` — a
+// map from each such issue to the sha of its prior round's INTEGRATION
+// commit — so the wave can assert base ancestry before seating the fanout.
+// There is no policy argument of any kind and no file access.
 // ---------------------------------------------------------------------------
 
 // TEST-BEGIN configuration — shared by the extracted behavior suites.
@@ -2817,22 +2823,52 @@ const waiting = []           // { row, seq, resolve, held }
 let submitted = 0
 // The Workflow tool documents its own agent() concurrency cap as
 // min(16, CPUs-2) per launch — this script cannot read the machine's CPU
-// count, so 16 is the loosest bound it can assert, and on a machine under 18
-// cores the real cap is tighter than this. A row that clears admission() but
-// then queues behind that harness cap was launching into a park the wave had
-// already observed: 21 judge agents once queued minutes ahead of a mid-wave
-// park and all started into it, each settling on a claim refusal 10-20s
-// later. Bounding admission itself to this cap keeps the queue in `waiting`,
-// where pump() already flushes it not-launched-run-parked the moment a park
-// lands — the fix belongs here, not at the agent() call site: nothing in a
-// workflow script runs between the harness dequeuing a call and that call's
-// body starting, so a check placed there would see the park too late to
-// matter.
+// count itself, so HARNESS_CAP (16) is the loosest bound it can assert on
+// its own, and on a machine under 18 cores the real cap is tighter than
+// that. A row that clears admission() but then queues behind that harness
+// cap was launching into a park the wave had already observed: 21 judge
+// agents once queued minutes ahead of a mid-wave park and all started into
+// it, each settling on a claim refusal 10-20s later. Bounding admission
+// itself to this cap keeps the queue in `waiting`, where pump() already
+// flushes it not-launched-run-parked the moment a park lands — the fix
+// belongs here, not at the agent() call site: nothing in a workflow script
+// runs between the harness dequeuing a call and that call's body starting,
+// so a check placed there would see the park too late to matter.
+//
+// The conductor CAN read the machine's CPU count (it runs `nproc` in Bash
+// before launching), so it passes the real figure as `input.harnessCap`; a
+// caller that omits it — an older SKILL.md, a direct scriptPath launch, or
+// a resumed run whose original args predate this field — leaves the loose
+// 16-agent bound in force rather than refusing to route, since a tighter
+// bound this script cannot verify is advisory, not a contract.
+const effectiveHarnessCap = (Number.isInteger(input.harnessCap) && input.harnessCap > 0)
+    ? Math.min(HARNESS_CAP, input.harnessCap)
+    : HARNESS_CAP
+if (input.harnessCap === undefined) {
+    log(`wave: harness concurrency cap — no harnessCap in args, using the ` +
+        `${HARNESS_CAP}-agent ceiling as a loose bound (the real per-machine cap may be tighter)`)
+} else if (effectiveHarnessCap !== HARNESS_CAP) {
+    // A tighter reported cap narrows admission.
+    log(`wave: harness concurrency cap — conductor reported ${input.harnessCap}, ` +
+        `using ${effectiveHarnessCap} (min of that and the ${HARNESS_CAP}-agent ceiling)`)
+} else if (input.harnessCap !== HARNESS_CAP) {
+    // A reported cap that clamps DOWN to exactly HARNESS_CAP (at or above
+    // it, or malformed and falling back) still deserves a line: silence here
+    // read as "harnessCap took no effect" when it actually clamped a caller-
+    // reported figure above this script's own ceiling, or discarded a
+    // malformed one, neither of which is the same as a caller omitting the
+    // field entirely (the branch above).
+    const malformed = !Number.isInteger(input.harnessCap) || input.harnessCap <= 0
+    log(`wave: harness concurrency cap — conductor reported ${JSON.stringify(input.harnessCap)}` +
+        (malformed
+            ? `, which is not a positive integer — ignoring it and using the ${HARNESS_CAP}-agent ceiling`
+            : `, clamped to the ${HARNESS_CAP}-agent ceiling (a reported cap above it cannot widen this script's own bound)`))
+}
 function blocker(row) {
     if (!isExecutorRow(row)) return null
-    if (inFlight.size >= HARNESS_CAP) {
+    if (inFlight.size >= effectiveHarnessCap) {
         return `${inFlight.size} row(s) in flight — the harness runs at most ` +
-            `${HARNESS_CAP} agents concurrently`
+            `${effectiveHarnessCap} agents concurrently`
     }
     const c = classOf(row)
     let live = 0

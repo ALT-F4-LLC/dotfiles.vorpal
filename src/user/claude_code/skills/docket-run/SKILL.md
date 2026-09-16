@@ -823,9 +823,25 @@ never a fallback, and a source file edited since the last `just activate`
 is bytes no session runs. A missing installed file is drift: stop and
 report it, never hunt for another copy.
 
+**Report the machine's own concurrency cap so wave.js does not have to guess
+it.** The Workflow tool's real per-invocation cap is `min(16, CPUs-2)`, but a
+wave script cannot read the CPU count itself; you can, so run `nproc` before
+launching:
+
+```bash
+nproc
 ```
-Workflow({ scriptPath: "<absolute installed path to wave.js>", args: {rows, tribunal, cwd, shard: {index: 0, of: N}} })
-Workflow({ scriptPath: "<absolute installed path to wave.js>", args: {rows, tribunal, cwd, shard: {index: 1, of: N}} })
+
+Compute `harnessCap = min(16, that number - 2)`, floored at 1 (a single-core
+or two-core box would otherwise compute zero or negative), and pass it in
+every shard's `args`. wave.js uses `min(HARNESS_CAP, harnessCap)` as its own
+admission bound and logs which it used; omitting the field is never a
+refusal — an older resume or a direct scriptPath launch that predates this
+field still runs, on the loose 16-agent ceiling the field exists to narrow.
+
+```
+Workflow({ scriptPath: "<absolute installed path to wave.js>", args: {rows, tribunal, cwd, harnessCap, shard: {index: 0, of: N}} })
+Workflow({ scriptPath: "<absolute installed path to wave.js>", args: {rows, tribunal, cwd, harnessCap, shard: {index: 1, of: N}} })
 …one launch per index, 0 through N-1, all in this same turn
 ```
 
@@ -850,11 +866,12 @@ needs the full original `args` again, verbatim.
 snapshot. `scriptPath` is the only invocation that provably runs the
 current file.
 
-Pass `args` as `{rows, tribunal, cwd, shard}`, plus `integrated` when the
-dispatch carries a fix round's review fanout, the same map in every
-shard's launch. Emit it as a literal JSON value, never hand-stringified.
-There is no `policyPath`/`policyText`; routing is on the rows. Pass rows
-verbatim as `next` returned them, with `model`/`effort`/`variant` intact.
+Pass `args` as `{rows, tribunal, cwd, shard, harnessCap}`, plus `integrated`
+when the dispatch carries a fix round's review fanout, the same map in
+every shard's launch. Emit it as a literal JSON value, never
+hand-stringified. There is no `policyPath`/`policyText`; routing is on the
+rows. Pass rows verbatim as `next` returned them, with
+`model`/`effort`/`variant` intact.
 
 **wave-audit's advisory is never noise.** It arrives as additional
 context right after the Workflow tool returns (the hook emits it on the

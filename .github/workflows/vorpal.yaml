@@ -78,6 +78,8 @@ jobs:
 
       - run: bash tests/wave-fix-round-ancestry.test.sh
 
+      - run: bash tests/wave-harness-cap.test.sh
+
       - run: bash tests/wave-issue-lanes.test.sh
 
       - run: bash tests/wave-model-attribution.test.sh

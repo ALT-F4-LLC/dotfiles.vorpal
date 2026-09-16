@@ -337,14 +337,18 @@ const sinceRefNote = sinceRef
 if (sinceRef) log(`Staleness hint passed to readers: sinceRef=${sinceRef} (informational only — every file is still read in full)`)
 
 phase('Discover')
-const claudeFileList = await agent(
-  'List every file under src/user/claude_code matching: CLAUDE.md itself, skills/**/*.md, agents/*.md, workflows/*.js. Return one path per line, repo-relative, nothing else.',
-  { phase: 'Discover', label: 'discover:claude_code', ...AGENT_CONFIG.discovery }
-)
-const docketFileList = await agent(
-  'List every file under src/user/docket/config matching: contracts/*.md, fragments/*.md, workflows/*.toml, policy.toml, schemas/*.json, README.md. Return one path per line, repo-relative, nothing else.',
-  { phase: 'Discover', label: 'discover:docket_config', ...AGENT_CONFIG.discovery }
-)
+// The two trees are independent discovery targets with no shared state, so
+// they fan out together instead of paying two sequential agent hops.
+const [claudeFileList, docketFileList] = await parallel([
+  () => agent(
+    'List every file under src/user/claude_code matching: CLAUDE.md itself, skills/**/*.md, agents/*.md, workflows/*.js. Return one path per line, repo-relative, nothing else.',
+    { phase: 'Discover', label: 'discover:claude_code', ...AGENT_CONFIG.discovery }
+  ),
+  () => agent(
+    'List every file under src/user/docket/config matching: contracts/*.md, fragments/*.md, workflows/*.toml, policy.toml, schemas/*.json, README.md. Return one path per line, repo-relative, nothing else.',
+    { phase: 'Discover', label: 'discover:docket_config', ...AGENT_CONFIG.discovery }
+  ),
+])
 const files = [...parseLines(claudeFileList), ...parseLines(docketFileList)]
 log(`Discovered ${files.length} files across both trees`)
 

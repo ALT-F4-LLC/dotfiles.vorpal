@@ -1,5 +1,17 @@
 [policy]
-version = 33  # 33: comment-only corrections, no routing value changed. Fixes
+version = 34  # 34: comment-only correction to [escalation], no routing value
+              # changed. The paragraph beginning "The on_failure walk is
+              # keyed on the row's claim count" described a since-resolved
+              # engine limitation: the installed engine's resolver now keys
+              # the on_failure walk on recorded failures (the row's
+              # FailedAttempts field, claims that ended in an explicit `step
+              # fail`) rather than the bare claim count, and a claim that
+              # ended in a reap re-runs at the tier it was reaped from
+              # instead of walking one hop up. The paragraph is rewritten to
+              # state this. `on_failure = "one-hop"` and every other
+              # [escalation] value are byte-identical; this is a comment
+              # correction, not a policy change.
+              # 33: comment-only corrections, no routing value changed. Fixes
               # five stale or inconsistent row comments surfaced by a corpus
               # audit: the v24 comment claiming `investigate`'s tier at the
               # time was `fable-high` now says so explicitly as history (both
@@ -495,37 +507,26 @@ nodes = ["judge-security", "threat-model", "tdd-author-security", "spec-author-s
 reason = "Fable's safety classifiers cover more categories than Opus 5's cyber-only set and flag security review by its nature; Claude Code then re-runs the request on the fallback model (cyber → Opus 4.8), so a Fable seat here pays Fable's rate for an Opus 4.8 run and the ledger credits a model that never ran. Name Opus up front. Residual: Opus 5 itself re-runs cyber-flagged requests on Opus 4.8, and nothing in the step record catches that hop: the wave records `model_resolved` as unknown unless the runtime supplies an observation, so the serving model is visible only in the transcript-read usage back-fill, which reports the models it observed to the conductor apart from requested routing, while the ledger rows it writes carry units and quantities only."
 
 [escalation]
-# The on_failure walk is keyed on the row's claim count. The engine counts a
-# claim whether it ended in a recorded failure or a lease reap (a session
-# kill, a dead relay, a lapsed lease), and the resolver walks one escalate_to
-# hop per prior claim, so a step whose only prior claim was reaped re-runs
-# one tier up — e.g. an opus-high judge on a security-labelled issue walks to
-# fable-high, is redirected by `never`, and lands on [escalation.fallback]
-# opus-xhigh, on a row that never failed. Measured across a window of seven
-# runs in three projects: 79 re-runs of reaped claims, none with a recorded
-# failure behind its second attempt. 52 of the 79 were served a tier up and
-# 27 were not, on the same claim count; verify-ac and the four review judges
-# made up 62 of the 79. Attempt-matched output medians show the higher tier
-# produced no more work than the first attempt (0.4x to 1.5x per executor),
-# so the hop bought a higher price per token for the same output.
+# The engine's resolver keys the on_failure walk on recorded failures: the
+# row's `failed_attempts` field, claims that ended in an explicit `step
+# fail`. A claim that ended in a lease reap (a session kill, a dead relay, a
+# lapsed lease) is not a failed attempt, and the re-run it triggers resolves
+# back to the tier it was reaped from rather than walking one escalate_to hop
+# up. Only a genuine failure advances the walk.
 #
-# The row now carries the distinction the walk needs: `failed_attempts` and
-# `reaped_claims` count how each prior claim ended, and `prior_attempt_end`
-# names how the most recent one ended ("reaped" | "failed"), on every
-# next/dispatch-open/step-show row; the installed engine has this schema,
-# and 67 of the 79 hops above ran under it. The engine's policy resolver,
-# which ports the wave's walk, still reads the bare claim count and ignores
-# those fields. Teaching it to hop on failed attempts only is an engine
-# change, filed against the engine, not a value this file can express.
+# Historical context: a prior measurement across a window of seven runs in
+# three projects found 79 re-runs of reaped claims, none with a recorded
+# failure behind its second attempt, 52 of which were served a needless tier
+# up on the same claim count; attempt-matched output medians showed the
+# higher tier produced no more work than the first attempt (0.4x to 1.5x per
+# executor). That waste no longer occurs under the current resolver.
 #
-# docket-retro ruling: the shipped default stays `one-hop`. The waste sits
-# in the resolver's arithmetic, not the default; lowering the default would
-# stop genuine failures from escalating to buy back a cost the arithmetic
-# fix removes outright. Until the engine change lands, an acknowledged reap
-# that is re-dispatched still re-runs one tier up. Acknowledging it (the
-# docket-run ack-reap gate) does not currently surface that cost to the
-# panel: the gate's required evidence is the holder confirmed gone and the
-# error verbatim, not the tier hop.
+# docket-retro ruling: the shipped default stays `one-hop`. A genuine failure
+# still escalates as designed; a reap no longer does. Acknowledging a reap
+# (the docket-run ack-reap gate) does not currently surface tier information
+# to the panel: the gate's required evidence is the holder confirmed gone and
+# the error verbatim, not the resolved tier — thin evidence, but no cost
+# remains for it to surface, since the resolver's own fix removed the hop.
 on_failure = "one-hop"
 # Round-based escalation. A fix-loop round is a FRESH step id —
 # `docket step resolve --as fix-round` mints fix@N+1 at attempt 0 — so

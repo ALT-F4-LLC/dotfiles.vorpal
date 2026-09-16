@@ -1,7 +1,30 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by research, then validate, review, and vote to accept: the doc-acceptance panel for TDD/ADR, the tribunal for PRD/ux-spec. A rejection re-enters the doctype's revise step, then review, up to the loop bound."
 name = "spec-doc"
-version = 36  # 36: fixes a self-contradiction in the v33 comment, which called
+version = 37  # 37: `reconcile` repoints `payload = "findings@11"` to `findings@13`.
+              #   findings@11 added a conditional requiring `open_severity` on
+              #   every open cluster, enforced at the aggregate step; engine
+              #   rule V30 validates a declared aggregate-step schema against a
+              #   synthetic probe built only from that schema's own declared
+              #   fields plus the four keys `aggregate` always writes
+              #   (severity, members, held, operator_resolved), so the probe
+              #   never carries open_severity or prior_disposition and always
+              #   fails findings@11's conditional -- no if/else on an
+              #   aggregate-step schema can ever pass it, and findings@11
+              #   could never register. The check was also redundant:
+              #   findings-cluster@5 (synthesize's own payload) already
+              #   requires open_severity on every open cluster before
+              #   reconcile runs, and aggregate carries every non-severity key
+              #   of its input through to its output verbatim, so nothing
+              #   reconcile's schema checked was ever at risk of going
+              #   missing between the two steps. findings@13 is byte-identical
+              #   to findings@10 in every constraint, dropping only the
+              #   unenforceable conditional; open_severity keeps
+              #   ordered_enum: true, since this step's own threshold
+              #   predicates are ordered comparisons the engine defines only
+              #   over a field whose registered schema declares that order.
+              #   No topology or routing change.
+              # 36: fixes a self-contradiction in the v33 comment, which called
               #   the workflow's vote gates both "three-seat" and, two lines
               #   later, "single-seat"; every vote step here seats three
               #   voters (confirmed against the step definitions below).
@@ -315,7 +338,7 @@ inputs = ["synthesize-findings.findings"]
 max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
-payload = "findings@11"
+payload = "findings@13"
 threshold = { "fix-loop" = "any(open_severity >= blocker)", "drain-highs" = "any(open_severity >= high)" }
 
 [[step]]

@@ -5,7 +5,8 @@ description: >-
   to diagnose a missing workflow match. Inspects the repo, prepares its
   configuration and trust proposals, and activates one operator-approved smoke
   issue without dispatching it. For lasting project specs, plan a spec-project
-  run through docket-plan; for an established binding, use docket-retro.
+  run through docket-plan; for an established binding, use docket-retro to
+  evolve it and docket-reconcile to sync its workflow registry.
 model: fable
 ---
 
@@ -205,11 +206,8 @@ Do not create an unseen issue or start an unseen run. Broader work goes to
 Derive gates, pre-gates, and actions by parsing every workflow TOML in the
 installed corpus and any local addition, not only the smoke issue's
 workflow, and include every consumer step. Run this parse through the same
-`Workflow` script as §3, `~/.claude/workflows/docket-bootstrap.js`, at the
-installed path (expand `~` yourself; a missing installed file means the
-corpus was never activated after this script was added — report that and
-fall back to reading the workflow files yourself, inline, never launching
-the source copy):
+`Workflow` script as §3, same installed path and `~`-expansion rule, falling
+back to reading the workflow files yourself, inline, on the same condition:
 
 ```
 Workflow({ scriptPath: "<absolute installed path to docket-bootstrap.js>", args: {
@@ -221,18 +219,16 @@ Workflow({ scriptPath: "<absolute installed path to docket-bootstrap.js>", args:
 ```
 
 One `executor-read` agent per workflow file parses its gates, pre-gates,
-actions, and consumer steps and returns them with `file:line` citations;
-nothing in it edits or mutates. The script unions the results and marks
-each gate matched or unmatched against the passed `trustEntries`, treating
-an entry bound to another repository as missing here, never as applicable.
-A later issue's labels can bind any workflow in that union, and a gate
-declared there with no trust entry bound to this repository fails that
-issue's first gated step `unmatched`, which routes per its `on_fail`:
-`waiting-human` on every first-pass gated step in the installed corpus, so
-it parks. When diagnosing why an issue did not match a workflow, check
-first for a `route-direct`, `route-loop`, or `route-tend` label, which
-would prevent workflow matching. Report the returned `uncovered` entries as
-uncovered, never as clean.
+actions, and consumer steps and returns them with `file:line` citations. The
+script unions the results and marks each gate matched or unmatched against
+the passed `trustEntries`, treating an entry bound to another repository as
+missing here, never as applicable. A later issue's labels can bind any
+workflow in that union, and a gate declared there with no trust entry bound
+to this repository fails that issue's first gated step `unmatched`, which
+routes per its `on_fail`: `waiting-human` on every first-pass gated step in
+the installed corpus, so it parks. When diagnosing why an issue did not
+match a workflow, check first for a `route-direct`, `route-loop`, or
+`route-tend` label, which would prevent workflow matching.
 
 From the returned union, propose one entry per gate, bound to this
 repository, each carrying the real command the miners found. A gate this
@@ -288,11 +284,9 @@ operator's answer or infer it from silence.
    repo path in its proposal. Apply only that approved entry with
    `trust add --yes`, flags before `--`, then read back the effective
    entry. Show any conflict with an existing entry to the operator and
-   apply only what they choose; never silently remove existing trust. The
-   proposal set is the corpus-wide gate union from §4, longer than the
-   smoke issue's workflow alone; a gate the operator declines or defers
-   stays in the activation summary as unmatched, with the workflows it
-   will park.
+   apply only what they choose; never silently remove existing trust. A
+   gate the operator declines or defers stays in the activation summary as
+   unmatched, with the workflows it will park.
 4. **Finish preparation.** After the last bootstrap reader finishes, remove
    only unchanged, session-owned working specs using the ownership
    manifest, before activation. Recheck local files, HEAD, policy, trust,
@@ -343,5 +337,6 @@ A clone on a configured machine reads the shared corpus directly. Another
 machine still needs docket, the installed corpus, and applicable
 trust/configuration; absolute-path trust may need fresh approval after a
 move. Shared changes belong in the dotfiles source and install between
-runs with required version bumps. Deprecating workflows belongs to
-`/docket-retro`.
+runs with required version bumps. Retiring one superseded version of a
+still-used workflow is `/docket-reconcile`'s registry sync; retiring an
+entire workflow name is a `/docket-retro` decision.

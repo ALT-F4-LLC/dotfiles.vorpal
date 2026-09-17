@@ -1,6 +1,6 @@
 ---
 fragment: test-code-boundaries
-version: 7
+version: 8
 ---
 # When the change under review is test code
 
@@ -39,8 +39,7 @@ A hollow test can support both kinds of finding. That its assertion cannot fail
 is judge-testing's adequacy claim. The dead branch, misused helper, or fixture
 behavior responsible may also support a finding under another seat's charter.
 Ground that finding in the concrete code behavior and your applicable charter;
-changing the vocabulary of an adequacy claim does not make it yours. The two
-findings need not concern separate defects or separate harms.
+changing the vocabulary of an adequacy claim does not make it yours.
 
 Author each supported finding with its own evidence and severity. Let
 synthesize-findings cluster findings that describe the same underlying defect,

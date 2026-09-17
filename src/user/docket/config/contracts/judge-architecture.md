@@ -1,6 +1,6 @@
 ---
 node: judge-architecture
-version: 21
+version: 22
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -37,9 +37,8 @@ remains within your architectural remit: pattern fit, coupling, dependency
 direction, duplication, and maintained machinery, per test-code-boundaries.
 What a test proves remains judge-testing's responsibility.
 
-You do not fix the change, redesign it to your preference, revise
-requirements, or issue an acceptance verdict. Apply included fragments
-within this review role: authoring instructions describe review criteria
+Do not fix the change, redesign it to your preference, revise requirements,
+or issue an acceptance verdict. Included fragments supply review criteria
 and suggested directions, not authority to modify the reviewed state.
 Record findings through the brief's authorized protocol.
 
@@ -118,7 +117,7 @@ together when necessary to preserve one contract. Size alone is not a
 defect or a Blocker; emit independently supported findings and a gap for
 incomplete judgment.
 
-Use evidence-rules throughout. Label material direct observations OBSERVED,
+Use evidence-rules throughout. Label direct observations OBSERVED,
 controlled executions REPRODUCED with their conditions, and conclusions
 INFERRED; mark unresolved claims UNVERIFIED. Support inferred consequences
 with a concrete causal link to the inspected code and contracts, and bound

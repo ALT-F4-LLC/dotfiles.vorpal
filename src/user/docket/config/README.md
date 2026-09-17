@@ -13,12 +13,12 @@ or `<role>-<domain>`, kebab-case (`verify-ac`, `judge-correctness`,
 partially drops that executor's name: no `author-tdd` for executor
 `tdd-author`, no `verify` for executor `verify-ac`. An executor may be
 position-named (`fix`, `revise-investigation`) when the position is
-genuinely its own distinct identity, the way `fix` already differs from
+genuinely its own distinct identity, as `fix` already differs from
 `implement`.
 
 The contract file stem always equals the executor name
 (`contracts/<executor>.md`), so `packet = ["contracts/{executor}.md", ...]`
-resolves for every executor without a literal path — except the one
+resolves for every executor without a literal path, except the one
 documented exception below.
 
 **Named exception (an executor family sharing one contract file):**
@@ -97,23 +97,25 @@ Most gate names are this repo's own `just` recipes. The three light tracks
 carries a `diff-scope-<track>` gate on implement and fix that refuses a
 working-tree footprint the label does not promise (`.docket/bin/diff-scope`);
 a repository bound to the corpus supplies those three recipes like any other
-gate. A gate a workflow names
-that this repo doesn't provide belongs to the target project instead:
-`ui-change.toml`'s `render-verify` and `copy-verify` are supplied by
-whatever repository's own justfile the workflow runs against, not by this
-one. `.docket/bin/crossref-check`'s `PROJECT_GATES` list is the authority
-for which gate names are cross-repo by design; a gate absent from both
-`just --summary` and that list is drift, not a deliberate exception.
+gate. A gate a workflow names that this repo doesn't provide belongs to the
+target project instead: `ui-change.toml`'s `render-verify` and
+`copy-verify` are supplied by whatever repository's own justfile the
+workflow runs against, not by this one. `.docket/bin/crossref-check`'s
+`PROJECT_GATES` list is the authority for which gate names are cross-repo
+by design; a gate absent from both `just --summary` and that list is
+drift, not a deliberate exception.
 
-Routing labels form one family, `route-<destination>`, and an issue
-carries at most one: `route-run` (a docket-plan run, the only value a
-workflow may bind), `route-direct` (the operator's own session, through
-brief), `route-tend` (the tend queue), `route-loop` (a scheduled loop).
-docket-groom sets them from the brief skill's route rules; brief files `route-tend` issues under its own rule 5, and docket-plan adds `route-run` when it records a run. docket-plan's
-bare mode selects on `route-run` alone. Every workflow lists the other
-three in `unless_labels`, so a routed-away issue matches zero workflows
-until the label changes, exactly as `blocked` does. An issue with no
-routing label is unrouted, not run work.
+Routing labels form one family, `route-<destination>`, and an issue carries
+at most one: `route-run` (a docket-plan run, the only value a workflow may
+bind), `route-direct` (the operator's own session, through brief),
+`route-tend` (the tend queue), `route-loop` (a scheduled loop).
+docket-groom sets them from the brief skill's route rules; brief files
+`route-tend` issues under its own rule 5, and docket-plan adds `route-run`
+when it records a run. docket-plan's bare mode selects on `route-run`
+alone. Every workflow lists the other three in `unless_labels`, so a
+routed-away issue matches zero workflows until the label changes, exactly
+as `blocked` does. An issue with no routing label is unrouted, not run
+work.
 
 ## What this convention does not cover
 

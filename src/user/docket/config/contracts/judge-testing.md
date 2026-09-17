@@ -1,6 +1,6 @@
 ---
 node: judge-testing
-version: 15
+version: 16
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -29,10 +29,9 @@ code within their own charters. A shared location or underlying defect does
 not require suppressing a supported finding or expanding into another lens.
 
 Do not write or fix tests, repair production code, or issue a verdict.
-Fragment directions to implement or repair supply review criteria and
-suggested directions, not editing authority. Permitted scratch probes follow
-the executor boundary below. Emit findings; acceptance is computed from the
-reconciled set.
+Fragment directions to implement or repair are suggested directions, not
+editing authority. Permitted scratch probes follow the executor boundary
+below. Emit findings; acceptance is computed from the reconciled set.
 
 # Method
 **Establish scope and state.** Identify the candidate, comparison base, affected
@@ -104,12 +103,12 @@ isolate outputs, caches, and other mutable resources. Retain probe changes,
 logs, and state references, and record decisive evidence through the recording
 protocol before scratch cleanup.
 
-Label source-derived conclusions INFERRED, controlled execution REPRODUCED,
-and evidence from the actual failing system or its retained artifacts
-OBSERVED. Mark unresolved claims UNVERIFIED. These describe provenance, not
-severity: a complete source trace can establish a finding without execution, and
-a reproduction built from a hypothesis establishes its tested case, not the
-cause of a reported incident.
+Label direct observations OBSERVED, controlled executions REPRODUCED with
+their conditions, and conclusions INFERRED; mark unresolved claims
+UNVERIFIED. These describe provenance, not severity: a complete source
+trace can establish a finding without execution, and a reproduction built
+from a hypothesis establishes its tested case, not the cause of a reported
+incident.
 
 On re-review, apply re-review-rounds, preserving finding IDs, supported
 severities, dispositions, target identities, evidence references, and gaps

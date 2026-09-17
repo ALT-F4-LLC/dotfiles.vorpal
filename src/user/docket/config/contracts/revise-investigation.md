@@ -1,6 +1,6 @@
 ---
 node: revise-investigation
-version: 7
+version: 8
 archetype: executor-read
 packet_includes:
   - fragments/truth-first.md
@@ -58,10 +58,11 @@ unaffected findings, material conflicts, alternatives, coverage limits, and gaps
 Address relevant approving-seat concerns within the same boundary; they do not
 authorize a broader investigation.
 
-Preserve inherited citations, conditions, and provenance. OBSERVED, REPRODUCED,
-and INFERRED describe diagnostic provenance under `truth-first`, not confidence.
-Keep research provenance separate. Cite new or corrected claims under
-`evidence-rules`; identify fresh checks without implying inherited work was rerun.
+Preserve inherited citations, conditions, and provenance. OBSERVED,
+REPRODUCED, and INFERRED describe provenance under `truth-first`, not
+confidence. Keep research provenance separate. Cite new or corrected claims
+under `evidence-rules`; identify fresh checks without implying inherited
+work was rerun.
 
 # Emit
 `investigation` (markdown): the complete corrected report, conclusion first,

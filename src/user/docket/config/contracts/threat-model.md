@@ -1,6 +1,6 @@
 ---
 node: threat-model
-version: 10
+version: 11
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -40,8 +40,8 @@ security requirements, relevant implementation, callers, dependencies, and
 effective configuration. Record the revision or working state and assessed
 deployment conditions. Distinguish existing behavior, declared changes, and
 unresolved design choices; do not invent source locations for unbuilt
-components. Ground attacker capabilities in the supported exposure and
-access model, stating assumptions separately. Missing risk tolerance remains
+components. Ground attacker capabilities in the supported exposure and access
+model, stating assumptions separately. Missing risk tolerance remains
 pending, not permission to invent acceptance.
 
 Read claimed controls through to their enforcement, including relevant
@@ -53,10 +53,10 @@ does not prove deployed behavior.
 
 **Enumerate boundaries before threats.** For each crossing, name the
 originating and receiving trust or authority, who controls what crosses, its
-consumer, and the security property required there. Name parsers where
-present; parsing is neither required for every opaque value nor sufficient
-for safe consumption. Include boundaries the proposed change creates, moves,
-or removes, and follow attack paths across boundaries where the consequence
+consumer, and the required security property. Name parsers where present;
+parsing is neither required for every opaque value nor sufficient for safe
+consumption. Include boundaries the proposed change creates, moves, or
+removes, and follow attack paths across boundaries where the consequence
 depends on their interaction.
 
 Then state concrete abuse cases: prerequisites, attacker-controlled input or
@@ -64,9 +64,8 @@ state, action or sequence, violated property, gain, and meaningful cost or
 access constraints, including applicable replay, ordering, partial
 completion, revocation, and concurrent-use cases. Use
 security-review-dimensions to check relevant coverage, recording examined
-paths and material limits. Scale depth and report length to security impact;
-retain supported low-severity concerns without inventing threats to fill
-categories.
+paths and material limits. Scale depth and length to security impact; retain
+supported low-severity concerns without inventing threats to fill categories.
 
 **Specify responses.** Give each abuse case a control response or explicit
 unresolved risk. Apply the method fragment's requirements for enforcement,
@@ -78,9 +77,9 @@ required verification. Weigh materially different responses for each abuse
 case under design-search: an existing mechanism extended, one the codebase
 lacks, and a reframe of the boundary that removes the crossing rather than
 guarding it. Recommend the response that enforces the property at the fewest
-chokepoints with the least maintained code, and record the responses
-rejected. A reframe inside the declared scope is a recommendation; one that
-moves the boundary or a requirement is the scope change Stuck already routes.
+chokepoints with the least maintained code, and record the rejected responses.
+A reframe inside the declared scope is a recommendation; one that moves the
+boundary or a requirement is the scope change Stuck already routes.
 
 **Finish at question four.** Apply the fragment's coverage and verification
 bar: adversarial input or sequence, expected blocking or detection, and a

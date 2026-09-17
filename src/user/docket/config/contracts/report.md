@@ -1,6 +1,6 @@
 ---
 node: report
-version: 10
+version: 11
 archetype: executor-read
 packet_includes:
   - fragments/truth-first.md
@@ -27,13 +27,13 @@ and their existing evidence attachments as needed to understand them. If a
 required conclusion needs new diagnostic or research work, name and route that
 need through the brief's `gap` protocol.
 
-Preserve each carried claim's citations, provenance labels, applicable conditions,
-and verification limits. OBSERVED, REPRODUCED, and INFERRED describe diagnostic
-provenance, not confidence ranks. Preserve research labels such as `quoted` and
-`summary-derived` separately; documentation is not observation of the affected
-system. Summary-derived material remains non-load-bearing; retain it as an
-unverified lead or limitation. Do not invent or silently correct missing or
-inconsistent provenance.
+Preserve each carried claim's citations, provenance labels, applicable
+conditions, and verification limits. OBSERVED, REPRODUCED, and INFERRED
+describe provenance, not confidence ranks. Preserve research labels such as
+`quoted` and `summary-derived` separately; documentation is not observation
+of the affected system. Summary-derived material remains non-load-bearing;
+retain it as an unverified lead or limitation. Do not invent or silently
+correct missing or inconsistent provenance.
 
 Do not omit evidence because it disagrees with the investigation or another
 research input. Preserve the disagreement and its effect on the report.

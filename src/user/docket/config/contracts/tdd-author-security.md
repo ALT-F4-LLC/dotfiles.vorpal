@@ -1,6 +1,6 @@
 ---
 node: tdd-author-security
-version: 12
+version: 13
 archetype: executor-write
 packet_includes:
   - fragments/design-search.md
@@ -36,8 +36,8 @@ When architecture and security each require substantial independent design,
 recommend co-authoring with explicit ownership and shared boundary contracts;
 author only the assigned portion. Use an ADR for one selected decision whose
 rationale warrants preservation and needs no further design. Route clear
-implementation work directly. A dependency, secret path, or supply-chain change
-does not by itself determine the document type.
+implementation work directly. A dependency, secret path, or supply-chain
+change does not alone determine the document type.
 
 # Method
 Apply the included fragments within the TDD structure below. Use
@@ -58,12 +58,13 @@ response, remaining risk, and verification. Put enforcement decisions in the
 architecture and actionable verification in testing and operational readiness.
 Review coverage and unresolved assumptions as part of the fourth question.
 
-Read the relevant code, effective configuration, interfaces, controls, and accepted
-documents. Name external precedent and its applicable version: specifications,
-publications, and the implementation's own documentation. Distinguish established
-behavior from proposed behavior. Document each relevant inherited, changed, or
-dropped exclusion under threat-model-method's adapted-control rule, including how the
-target input set and attacker control affect its safety.
+Read the relevant code, effective configuration, interfaces, controls, and
+accepted documents. Name external precedent and its applicable version:
+specifications, publications, and the implementation's own documentation.
+Distinguish established from proposed behavior. Document each relevant
+inherited, changed, or dropped exclusion under threat-model-method's
+adapted-control rule, including how the target input set and attacker control
+affect its safety.
 
 Weigh materially different designs under design-search before choosing: at least
 one mechanism the codebase lacks, and a reframe of the trust boundary or the
@@ -78,23 +79,23 @@ the properties.
 Resolve the premises needed to choose the design. Proposed controls require
 credible enforcement and verification plans; their implementation tests need
 not have run before the design exists, but identify those tests as planned and
-specify what evidence is required before release. A plan is not a verification
-result, and an unsupported premise that could change the required protection
-or chosen approach remains a design blocker.
+specify what evidence release requires. A plan is not a verification result,
+and an unsupported premise that could change the required protection or
+chosen approach remains a design blocker.
 
 Before narrowing or removing a fail-closed control as redundant, establish
 that the remaining protection covers the relevant attack paths, states, and
 operating modes; a single successful observation does not establish that
 coverage, and a promised implementation test does not settle an unknown
-property of the mechanism being relied on. Resolve the redundancy premise
-before accepting the removal in the design; otherwise retain the control or
-gap the dependent decision.
+property of the relied-on mechanism. Resolve the redundancy premise before
+accepting the removal in the design; otherwise retain the control or gap the
+dependent decision.
 
 Specify adversarial inputs, misuse sequences, and authorized behavior that must
 remain available. For detectors, include a known-positive case that must trigger
 and a known-negative case that must remain quiet. For preventive controls, state
 both required denial and permitted operation. Tie cases to controls, conditions,
-and observable outcomes; distinguish planned checks from results already obtained.
+and observable outcomes; distinguish planned checks from obtained results.
 
 Describe how protection holds during migration, partial rollout, failure, and
 rollback. Name the rollback unit and limits; do not prescribe restoring a known

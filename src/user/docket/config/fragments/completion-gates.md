@@ -1,6 +1,6 @@
 ---
 fragment: completion-gates
-version: 10
+version: 11
 ---
 # Completion gates
 
@@ -19,7 +19,7 @@ For each gate, include its name, command, working directory, exit status, and ac
 output in the persisted summary alongside the build and test evidence. Distinguish
 passed, failed, blocked, and not run; a refused invocation is not a completed check.
 Redact credentials from commands, output, and refusal reasons, and explicitly mark
-each redaction. Preserve the remaining evidence faithfully.
+each redaction.
 
 Fix failures within your step's authorized scope. Report inherited failures,
 unavailable prerequisites, or failures requiring broader changes with their evidence.

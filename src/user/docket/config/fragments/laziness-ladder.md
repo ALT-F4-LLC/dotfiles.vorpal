@@ -1,11 +1,11 @@
 ---
 fragment: laziness-ladder
-version: 6
+version: 7
 ---
 # Laziness ladder
 
 Lazy means efficient, not incomplete. Deliver the requested behavior with the
-least code and machinery to maintain. Correctness and readability come first.
+least code and machinery to maintain.
 
 The ladder orders delivery, not the design search that precedes it: weigh the
 alternatives first, then stop at the first rung that satisfies the actual

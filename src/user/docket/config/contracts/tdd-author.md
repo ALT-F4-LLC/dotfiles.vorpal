@@ -1,6 +1,6 @@
 ---
 node: tdd-author
-version: 11
+version: 12
 archetype: executor-write
 packet_includes:
   - fragments/doc-house-style.md
@@ -75,9 +75,9 @@ Run applicable existing checks within the executor's permitted scope when
 making claims about executable behavior; before claiming existing test
 coverage, read the assertions and establish what they exercise. Separate
 checks performed from checks planned for implementation, and identify new
-tests, fixtures, or tooling a phase must provide. A need for implementation
-experiments outside this node's authority is a dependency to route, not
-permission to write code.
+tests, fixtures, or tooling a phase must provide. Implementation experiments
+outside this node's authority are a dependency to route, not permission to
+write code.
 
 Specify component responsibilities and the contracts at changed seams. Cover the
 data and interface invariants, ownership, failure and recovery behavior, and

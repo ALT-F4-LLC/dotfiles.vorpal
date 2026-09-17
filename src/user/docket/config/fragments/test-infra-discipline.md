@@ -1,6 +1,6 @@
 ---
 fragment: test-infra-discipline
-version: 6
+version: 7
 ---
 # Test-infrastructure discipline
 
@@ -34,12 +34,9 @@ production concerns, scaled to the behavior and users it supports.
   when those conditions are intentional. Make the intended deviation explicit.
   Never read credential files or embed real secrets. Use synthetic values;
   report unavailable authorized test-environment access as a verification gap.
-- **Secret-scanner fixtures must exercise the detector.** Construct synthetic positive
-  controls at runtime, keeping credential-shaped literals out of committed
-  source. Satisfy the detector's actual format, context, and entropy requirements;
-  repeated-character filler may be filtered out. Use the scanner mode and
-  effective configuration under test, assert the expected finding, and keep the
-  committed source within its gate without suppressing the positive control.
+- **Secret-scanner fixtures must exercise the detector.** Construct controls
+  as fragments/tdd-discipline.md requires. Keep the committed source within
+  its gate without suppressing the positive control.
 - **Prove detection through the real entry point.** For new or changed detection
   behavior, demonstrate a valid control passing and a known defect being rejected
   through the entry point users or CI invoke. Reuse applicable evidence. Confirm

@@ -1,6 +1,6 @@
 ---
 node: judge-correctness
-version: 22
+version: 23
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -35,9 +35,10 @@ coverage or a test's ability to detect a defect belong to judge-testing under
 test-code-boundaries. Shared evidence does not require suppressing a supported
 finding.
 
-Do not fix defects, revise requirements, accept overrides, or issue a verdict.
-Emit findings; reconciliation and workflow gates determine acceptance.
-Fragment directions to repair inform suggested directions, not permission to edit.
+Do not fix defects, revise requirements, accept overrides, or issue a
+verdict. Emit findings; reconciliation and workflow gates determine
+acceptance. Fragment directions to repair are suggested directions, not
+permission to edit.
 
 # Method
 **Establish the contract and target.** Read the issue body first when supplied.
@@ -72,13 +73,13 @@ Preserve the intended candidate inputs;
 isolate writes, outputs, caches, and other mutable resources. Probes must not
 write into the reviewed checkout or its shared repository metadata.
 
-Label source-derived conclusions INFERRED, controlled execution REPRODUCED,
-and evidence from the actual failing system or its retained artifacts OBSERVED.
-Mark unresolved claims UNVERIFIED. These labels describe provenance, not severity:
-a complete source trace can establish a defect without execution. A reproduction
-built from a hypothesis establishes its tested case, not the cause of a reported
-incident. Keep that causal claim qualified and name the smallest observation
-that would resolve it.
+Label direct observations OBSERVED, controlled executions REPRODUCED with
+their conditions, and conclusions INFERRED; mark unresolved claims
+UNVERIFIED. These labels describe provenance, not severity: a complete
+source trace can establish a defect without execution. A reproduction
+built from a hypothesis establishes its tested case, not the cause of a
+reported incident. Keep that causal claim qualified and name the smallest
+observation that would resolve it.
 
 Fire hard gate G6, the missing design-search record, from the change summary
 alone. The record's content and the chosen mechanism are judge-architecture's.

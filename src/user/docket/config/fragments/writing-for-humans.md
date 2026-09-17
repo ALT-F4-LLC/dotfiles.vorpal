@@ -1,15 +1,11 @@
 ---
 fragment: writing-for-humans
-version: 6
+version: 7
 ---
 # Writing for humans
 
 Lead with the answer. Keep to one idea per sentence, plain active words, no
-filler, no preambles or recaps, and length matched to the task. An executor
-runs on its agent file, the rendered brief, and packet fragments only — it
-cannot be assumed to run inside the operator's own interactive session, so
-this fragment states its rules on their own rather than relying on the
-operator's personal prose preferences to reach it.
+filler, no preambles or recaps, and length matched to the task.
 
 Provenance is part of the finding. Distinguish direct evidence from inference
 and from unresolved uncertainty; when uncertain, say what is uncertain and why,

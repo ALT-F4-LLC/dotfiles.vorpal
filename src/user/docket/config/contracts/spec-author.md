@@ -1,6 +1,6 @@
 ---
 node: spec-author
-version: 9
+version: 10
 archetype: executor-write
 packet_includes:
   - fragments/design-search.md
@@ -49,10 +49,10 @@ revision.
 
 Sibling specs may be authored concurrently. Use stable pre-existing specs as
 navigation, verifying retained claims against applicable repository evidence.
-Do not rely on unfinished sibling drafts or wait for a sibling. At boundaries,
-name the owning canonical spec path without implying it is complete. Keep
-enough context for this axis to make sense: style, idiom, and naming
-conventions belong to code quality; test architecture belongs to testing.
+Do not rely on unfinished sibling drafts or wait for one. At boundaries, name
+the owning canonical spec path without implying it is complete. Keep enough
+context for this axis to make sense: style, idiom, and naming conventions
+belong to code quality; test architecture belongs to testing.
 
 # Method
 Apply the included fragments within this descriptive task. House-style

@@ -1,6 +1,6 @@
 ---
 fragment: severity-ladder-general
-version: 7
+version: 8
 ---
 # Severity ladder: general
 
@@ -61,15 +61,13 @@ substitute for a Question or Praise. Use the contract's existing
 representation; do not invent fields or encode missing judgment as a defect
 severity.
 
-**Only a Blocker opens a fix round.** Concerns remain visible for resolution or
-explicit justification at reconcile and operator gates. Suggestions remain
-recorded. Neither recruits another automatic fix round. Preserve unresolved
-findings and their identities under the re-review contract; do not suppress a
-supported Blocker to finish the loop or promote a preference to continue it.
-No Blockers means
-no severity-triggered fix round, not permission to publish: required checks,
-unresolved judgment-blocking gaps, and operator dispositions still govern
-readiness.
+**Only a Blocker opens a fix round.** Neither a Concern nor a Suggestion
+recruits another automatic fix round. Preserve unresolved findings and their
+identities under the re-review contract; do not suppress a supported
+Blocker to finish the loop or promote a preference to continue it. No
+Blockers means no severity-triggered fix round, not permission to publish:
+required checks, unresolved judgment-blocking gaps, and operator
+dispositions still govern readiness.
 
 **Aggregation does not set severity.** Under max aggregation, a `low` member
 cannot raise a cluster already at `medium` or above. Keep Suggestion at `low`

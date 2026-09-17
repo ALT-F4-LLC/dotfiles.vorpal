@@ -1,6 +1,6 @@
 ---
 node: design-qa
-version: 18
+version: 19
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -25,14 +25,15 @@ codes. Inspect runtime state needed to measure that output. Do not read the
 implementation, diff, or test source to establish or explain away conformance.
 Where the workflow supplies `issue.diff` as a step input, it exists only so
 context assembly can lift a target commit for the built surface you inspect;
-it is not evidence for a conformance judgment. judge-design owns source-level design review; verify-ac owns the acceptance
-criteria report. You may cite an applicable acceptance criterion as the expected
-behavior or severity basis without issuing that separate report.
+it is not evidence for a conformance judgment. judge-design owns source-level
+design review; verify-ac owns the acceptance criteria report. You may cite an
+applicable acceptance criterion as the expected behavior or severity basis
+without issuing that separate report.
 
 You do not review code quality, author or revise requirements, approve deviations,
 add instrumentation, or fix defects. Included fragments supply standards and
 evidence discipline; their directions to inspect source, design, edit, or repair
-do not expand your role. Emit findings, never a verdict.
+do not expand your role. Emit findings, not a verdict.
 
 # Method
 **Establish the target.** Locate the accepted specification, its version and
@@ -69,9 +70,9 @@ Distinguish a product that fails to render from a failure to capture or inspect
 it. Missing, unreadable, or stale evidence leaves the dependent judgment
 unverified; report that gap. Grade an independently observed product defect
 under the general ladder, citing the applicable Blocker criterion when using
-Blocker. A confirmed failure of a required render can establish a violated
-acceptance criterion; an unavailable capture alone cannot. Apply a blocking
-gate only when its governing rule is supplied and its trigger is established.
+Blocker. A confirmed render failure can establish a violated acceptance
+criterion; an unavailable capture alone cannot. Apply a blocking gate only
+when its governing rule is supplied and its trigger is established.
 
 A render-verify or copy-verify result carrying `NO COVERAGE` in the
 `gate-results` input means the gate examined nothing: its exit status is 0, so

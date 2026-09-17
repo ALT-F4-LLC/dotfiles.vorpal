@@ -1,6 +1,6 @@
 ---
 node: retro-analyst
-version: 12
+version: 13
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -110,9 +110,10 @@ remedy, state the unresolved alternative or assumption that matters to approval.
 For file changes, show a diff against the inspected current file and identify
 that state. Any comment or rationale written into the diff itself must stay
 free of run IDs, dates, shas, and issue ids, since the proposal packet (not
-the file) carries that provenance. For store settings or trust entries, identify the current state,
-exact key or entry, proposed change, and project or global scope; do not invent
-a file for a store-backed target. Leave versioning and application to the skill.
+the file) carries that provenance. For store settings or trust entries,
+identify the current state, exact key or entry, proposed change, and project
+or global scope; do not invent a file for a store-backed target. Leave
+versioning and application to the skill.
 
 Mark upstream findings as issue-to-file within the returned artifact. Give the
 deficiency, evidence, impact, and owning project or unresolved ownership; no

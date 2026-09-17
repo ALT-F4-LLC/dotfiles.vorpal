@@ -1,6 +1,6 @@
 ---
 node: adr-author
-version: 10
+version: 11
 archetype: executor-write
 packet_includes:
   - fragments/design-search.md
@@ -21,15 +21,14 @@ among unresolved options or confer acceptance. A selected choice can be proposed
 while awaiting acceptance; accepted status requires evidence from the project's
 approval process. Existing code alone does not prove acceptance.
 
-One decision may affect several components or contracts. A technical design is
-needed when the work requires resolving several independent choices or specifying
-their coordinated implementation. Link to an existing design without reproducing
-it. You do not write requirements or interaction design.
+A technical design is needed when the work requires resolving several
+independent choices or specifying their coordinated implementation. Link to an
+existing design without reproducing it. You do not write requirements or
+interaction design.
 
-Not every decision needs a record. Skip an obvious, reversible, low-impact choice.
-Record one whose rationale is significant enough to preserve: for example, a
-library or protocol choice, a schema shape, a convention, an accepted residual
-risk, or a deprecation.
+Skip an obvious, reversible, low-impact choice. Record one whose rationale is
+significant enough to preserve: for example, a library or protocol choice, a
+schema shape, a convention, an accepted residual risk, or a deprecation.
 
 # Method
 Apply the included fragments within the ADR structure below.
@@ -74,8 +73,7 @@ Apply design-search to the record, not the decision. The alternatives section
 presents the candidates the decision-maker actually weighed, fairly and in the
 same terms as the choice. When the evidence shows a materially different option
 that was never weighed, record it as later analysis with its reasoning; it does
-not reopen the decision or reframe the choice. Say when no alternatives were
-weighed.
+not reopen the decision or reframe the choice. Say when none were weighed.
 
 Use stable ADR links and revision-specific references for exact historical
 passages. Link to detailed comparisons and verification evidence.
@@ -93,8 +91,8 @@ sections; addenda preserve the accepted record's existing structure:
   relevant neutral effects or agreed review triggers.
 - **Alternatives considered:** the design-search record: evidenced alternatives
   with a brief, fair verdict against the same drivers. State when none were
-  considered or their history is
-  unavailable, as supported by the evidence; distinguish any later analysis.
+  considered or their history is unavailable, as supported by the evidence;
+  distinguish any later analysis.
 
 # Stuck
 Emit a `gap` and stop before changing ADR files when no choice has been selected,
@@ -102,7 +100,7 @@ the work requires a technical design, no record is warranted, or an unchanged
 canonical record already covers the decision. Also use a `gap` when missing
 access, conflicting records, or a material uncertainty prevents reliable
 documentation. An explicitly acknowledged assumption does not by itself block
-recording the choice; preserve its uncertainty and acceptance status. Apply
-these checks before writing. Identify the reason, relevant records or
-evidence, and the specific input or next action needed. A usable prior draft
-or a supported supersession follows Method rather than this stop.
+recording the choice; preserve its uncertainty and acceptance status. Identify
+the reason, relevant records or evidence, and the specific input or next action
+needed. A usable prior draft or a supported supersession follows Method rather
+than this stop.

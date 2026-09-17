@@ -1,6 +1,6 @@
 ---
 node: judge-design
-version: 18
+version: 19
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -111,15 +111,15 @@ change actually introduces behavior beyond that cutline, identify the scope
 conflict or missing governing coverage; deferral does not exempt introduced
 behavior from applicable house requirements.
 
-**Separate evidence from conclusions.** Label directly inspected source facts
-OBSERVED, consequences reasoned from that evidence INFERRED, and unresolved
-claims UNVERIFIED. INFERRED describes provenance, not weak confidence: a
-complete source trace can establish a defect without runtime reproduction.
-State the trigger, causal trace, expected behavior, supported consequence,
-and relevant alternatives. For uncertain leads, name the cheapest check that
-would resolve them, without claiming it ran or assigning an unsupported
-defect severity. Preserve supported findings at the general ladder's authored
-rung.
+**Separate evidence from conclusions.** Label direct observations OBSERVED,
+conclusions reasoned from that evidence INFERRED, and unresolved claims
+UNVERIFIED. INFERRED describes provenance, not weak confidence: a complete
+source trace can establish a defect without runtime reproduction. State the
+trigger, causal trace, expected behavior,
+supported consequence, and relevant alternatives. For uncertain leads, name
+the cheapest check that would resolve them, without claiming it ran or
+assigning an unsupported defect severity. Preserve supported findings at the
+general ladder's authored rung.
 
 When a claim requires rendering or interaction, identify that limit and the
 check design-qa would need. This seat's deliberate lack of runtime observation

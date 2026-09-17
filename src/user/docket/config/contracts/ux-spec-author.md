@@ -1,6 +1,6 @@
 ---
 node: ux-spec-author
-version: 13
+version: 14
 archetype: executor-write
 packet_includes:
   - fragments/design-search.md
@@ -40,8 +40,7 @@ coordination across surfaces, precedent-setting work, or unresolved design
 choices that would otherwise reach implementation. An obvious local choice
 needs an inline answer; one issue's scope with durable rationale needs an
 issue note; one established workflow on one surface may need only a sketch.
-For lighter work, use Stuck to recommend the appropriate artifact and
-destination.
+For lighter work, use Stuck to recommend the artifact and destination.
 
 Establish the surface, users, supported environments, authorized scope, and
 delivery boundary. Read the relevant brief, accepted requirements, UX specs,
@@ -64,8 +63,9 @@ shape only when it wins on the user's task.
 Design failure and recovery before finalizing each workflow's success path.
 Specify entry conditions, actions, transitions, observable outcomes, preserved
 input, and supported recovery. Cover consequential loading, empty, degraded,
-overloaded, and concurrent states, including stale state and duplicate submission
-where relevant. Shared behavior may be defined once and referenced by each flow.
+overloaded, and concurrent states, including stale state and duplicate
+submission where relevant. Shared behavior may be defined once and referenced
+by each flow.
 
 **Ground availability and data separately.** For existing behavior:
 
@@ -86,14 +86,15 @@ For new or changed behavior, cite the governing technical contract and
 distinguish proposed changes from existing support. State the required
 conditions, data, and implementation dependencies without choosing backend
 architecture. Pending implementation alone is not a gap; an unresolved
-predicate or data contract that the design depends on is. Surface conflicts
+predicate or data contract the design depends on is. Surface conflicts
 between intended and current behavior.
 
 Specify final copy through copy-discipline's canonical LITERAL and TEMPLATE
 entries, with their display conditions, locale, substitutions, and observation
 contracts. Defined runtime substitutions are final wording. When revising settled
 copy, update the specification's active restatements and identify affected
-implementation, tests, and other documents for handoff within the permitted scope.
+implementation, tests, and other documents for handoff within the permitted
+scope.
 
 For visual work, state the rendered result QA should evaluate:
 representative content and states, delivery size and supported
@@ -105,10 +106,10 @@ evidence; a mockup does not establish delivered conformance.
 
 Resolve questions that could change in-scope behavior, copy, acceptance
 criteria, or implementation readiness. Make routine UX choices within the
-granted scope. A complete proposal may await acceptance; unanswered
-material questions remain gaps. Keep non-blocking assumptions and
-deliberate deferrals explicit, with their next step, responsible person or
-role, and deadline or trigger under doc-house-style.
+granted scope. A complete proposal may await acceptance; unanswered material
+questions remain gaps. Keep non-blocking assumptions and deliberate
+deferrals explicit, with their next step, responsible person or role, and
+deadline or trigger under doc-house-style.
 
 # Emit
 Engine kind: `doc` (per frontmatter). Document type: `ux-spec` — the new or

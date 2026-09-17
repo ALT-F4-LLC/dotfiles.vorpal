@@ -88,9 +88,9 @@ and listing the registered ones. `required_voters` comes from the step's own
 `voters` list, not the rule: the rule sets *how strictly to tally*, the step
 sets *who casts*.
 
-**Held steps by tally.** A materialized `<step>-held` step is the one row in a
-run no author wrote, so it has no `[[step]]` table to carry `voters` and
-`vote_rule`. `vote.hold.rule` and `vote.hold.voters` supply them instead:
+**Held steps by tally.** A materialized `<step>-held` step has no `[[step]]`
+table to carry `voters` and `vote_rule`. `vote.hold.rule` and
+`vote.hold.voters` supply them instead:
 
 ```bash
 docket config set vote.rule.panel.threshold 0.6
@@ -110,8 +110,8 @@ The escalation is one-directional:
   can confirm the engine's own computation but cannot overrule it.
 
 The minted kind persists: config supplies the roster, the step row supplies
-the question's type. Editing or clearing these keys mid-run changes who casts
-on holds minted *after* the edit, never an already-open question.
+the question's type. Editing or clearing these keys mid-run changes who
+casts on holds minted *after* the edit, never an already-open question.
 
 ## Workflow definitions (`docket workflow`)
 
@@ -191,10 +191,10 @@ register would do:
 | `unchanged` | the same bytes are already registered; a register would be an idempotent success |
 | *(refusal)* | **different** bytes hold this `name@version` — `CONFLICT` (exit 4), naming both hashes and the version to bump `[pipeline].version` to |
 
-**The conflict case fails the lint rather than reporting a third outcome.**
-This is the trap `lint` exists to catch: an edited file at a frozen
-`name@version` would otherwise validate cleanly and then refuse the *whole
-activation* the next time a run starts.
+**The conflict case fails the lint rather than reporting a third outcome** —
+the trap `lint` exists to catch: an edited file at a frozen `name@version`
+would otherwise validate cleanly and refuse the *whole activation* at the
+next run start.
 
 ### Retiring a version from binding (`docket workflow deprecate`)
 
@@ -300,13 +300,10 @@ class; there is no `docket config` key for it.
 
 **Both reaps are scoped to an ACTIVE run.** A lease that lapses while a run
 sits in `waiting-human` is not reaped, nor is a step past its
-`max_step_duration` there: on a run that is not active nothing would be
-re-offered anyway, so the reap would only clear a live worker's lease and
-take a write-reap hold on its class for no benefit. This is a **suspension,
-not an exemption** — no expiry is rewritten, so the first `next` after the
-run returns to `active` reaps what came due meanwhile. A run parks when *any*
-step is parked, leaving that step's siblings legitimately `claimed` at
-`waiting-human`.
+`max_step_duration` there. This is a **suspension, not an exemption** — no
+expiry is rewritten, so the first `next` after the run returns to `active`
+reaps what came due meanwhile. A run parks when *any* step is parked,
+leaving that step's siblings legitimately `claimed` at `waiting-human`.
 
 `[[step]]` fields, in full:
 
@@ -343,12 +340,11 @@ step is parked, leaving that step's siblings legitimately `claimed` at
 | `packet` | list of paths, relative to `.docket/config/` | files inlined into the step's rendered work packet, **in declared order**. Each must be pinned by the run (they are, automatically, if they live under `.docket/config/`); an entry the run did not pin is refused **at activation**. An entry may carry the `{executor}` token, substituted with that sibling's executor hint — which is how one `fanout` step gives each sibling a different file. Docket reads their bytes and never interprets them |
 
 **`packet` inlines files; it never points at them.** The rendered packet
-carries each file's **body**, delimited and labeled with its path and hash,
-so a worker receives one document rather than a list of things to go read.
+carries each file's **body**, delimited and labeled with its path and hash.
 Bytes are admitted only when they hash to what the run pinned: a file edited
 after activation is `CONFLICT` (exit 4) naming **both** hashes, and one
-deleted is `NOT_FOUND` (exit 2). This keeps a packet reproducible: same step,
-same packet, byte-identical, even mid-run.
+deleted is `NOT_FOUND` (exit 2). This keeps a packet reproducible: same
+step, same packet, byte-identical, even mid-run.
 
 A packet file may declare more files in a `packet_includes:` frontmatter
 list, inlined immediately after it. **That is the only frontmatter key
@@ -399,12 +395,12 @@ as the empty array.
 inputs = ["implement.change-summary", "implement.gate-results"]
 ```
 
-The producer **must be a step of this workflow**, but need not declare gates:
-a producer that recorded none resolves to an **empty array**, not an absent
-input, since "this step ran no checks" is an answer a consumer can act on
-while a missing input reads as a resolution failure. Gates can also arrive
-from a `fence:` source the definition does not enumerate, so requiring a
-declaration would refuse correct workflows. `gate-results` is a **reserved
+The producer **must be a step of this workflow**, but need not declare
+gates: a producer that recorded none resolves to an **empty array**, not an
+absent input — "this step ran no checks" is an actionable answer, while a
+missing input reads as a resolution failure. Gates can also arrive from a
+`fence:` source the definition does not enumerate, so a declaration
+requirement would refuse correct workflows. `gate-results` is a **reserved
 kind**: a step emitting it is refused at `workflow register` (V11a), since
 the engine-served form would shadow any artifact of that kind.
 
@@ -441,26 +437,17 @@ ordinary `docket issue link add` edge, not a new relation kind:
 inputs = ["issue.body", "issue.linked.depends_on.ux-spec"]
 ```
 
-There is no separate "linkable" marking and no project scoping — any recorded
-artifact on any issue this one is linked to is reachable, even across
-projects. `<kind>` names exactly **one** kind; a wildcard (`*`) is refused at
-register time, and so is `gate-results` or `vote-record` as the named kind
-(no linked issue could ever hold either). Resolution happens **once, at
-activation**: an artifact recorded on the linked issue afterward never
-reaches the bundle, and every linked issue holding the kind resolves,
-ordered by linked-issue id. Activation refuses loudly (`VALIDATION_ERROR`,
-exit 3) rather than binding an empty input — an issue with no edge of
-`<relation>` at all, or whose linked issue(s) hold no artifact of `<kind>`,
-fails the **whole** activation, naming `docket issue link add` as the way
-out.
-
-**`after` is required, and `after = []` is how you declare a root.** A step
-that forgets `after` would otherwise silently become a root and run first.
-Only the first step and `loop = true` steps may omit it.
-
-**Every gate step must declare `on_fail` explicitly** — `type="human"` and
-`type="vote"` alike (V13a). The default is `waiting-human`, so a gate that
-declares nothing has a routing its author never chose.
+There is no separate "linkable" marking and no project scoping — any
+recorded artifact on any issue this one is linked to is reachable, even
+across projects. `<kind>` names exactly **one** kind; a wildcard (`*`) is
+refused at register time, and so is `gate-results` or `vote-record` as the
+named kind. Resolution happens **once, at activation**: an artifact
+recorded on the linked issue afterward never reaches the bundle, and every
+linked issue holding the kind resolves, ordered by linked-issue id.
+Activation refuses loudly (`VALIDATION_ERROR`, exit 3) rather than binding
+an empty input — an issue with no edge of `<relation>` at all, or whose
+linked issue(s) hold no artifact of `<kind>`, fails the **whole**
+activation, naming `docket issue link add` as the way out.
 
 **A `type="human"` step additionally may not route rejects to
 `waiting-human`** (V13): that would park the issue on the resolution of the
@@ -478,27 +465,21 @@ been asked yet. All four values are legal there.
 as a gate). Routings are evaluated **top to bottom, first match routes**, and
 no match routes `pass`.
 
-**An interposed gate runs only when routed to.** A step named as a step-name
-routing target — authored with `after = [routing-step]` — is latched by
-readiness until a routing predecessor's **recorded** routing names it. When
-the routing resolves anywhere else, it is terminalized `skipped` in the same
-routing transaction, so joins and issue completion resolve without it. A
-`next --run` offer may still carry such a gate in its staged closure, marked
-`conditional`: confirm the predecessor actually routed to it before spawning
-anything for it.
+**An interposed gate runs only when routed to.** A step named as a
+step-name routing target — authored with `after = [routing-step]` — is
+latched by readiness until a routing predecessor's **recorded** routing
+names it. When the routing resolves anywhere else, it is terminalized
+`skipped` in the same routing transaction, so joins and issue completion
+resolve without it. A `next --run` offer may still carry such a gate in its
+staged closure, marked `conditional`: confirm the predecessor actually
+routed to it before spawning anything.
 
 **Fields and literals are opaque tokens to docket, but checked against your
-schema.** When a step declares a `payload`, `workflow register` verifies
-that every predicate's field is one the schema declares, that every literal
-is a value that field accepts, and that any ordered operator (`>=`, `>`,
-`<=`, `<`) names a field the schema marks `ordered_enum`. Docket learns that
-`high` comes after `medium` because your document said so; it holds no
-opinion about what either word means.
-
-A step with a `threshold` and **no** `payload` is legal: equality has never
-needed an order. An ordered comparison over such a field **parks the step**
-`waiting-human` with a reason naming the predicate, rather than docket
-guessing an order.
+schema** when a step declares a `payload` — see [register-time
+checks](schemas.md#register-schemas-before-the-workflows-that-name-them). A
+step with a `threshold` and **no** `payload` is legal: equality has never
+needed an order, and an ordered comparison over such a field parks the step
+`waiting-human` rather than docket guessing one.
 
 **Executor hints are opaque.** `executor`, `fanout` entries, `voters`, and
 `class` are strings docket stores, echoes back, and uses as map keys. There
@@ -552,8 +533,8 @@ routes per `on_fail`.
 | `{name, pre=true}` | runs at **claim**, with its result in the context bundle rather than judging the step |
 
 A fence tag is opaque too: `source = "fence:checks"` harvests ```` ```checks ````
-blocks and docket never knows what the word means. Fenced commands are matched
-**per line**, each its own decision with its own recorded result.
+blocks. Fenced commands are matched **per line**, each its own decision with
+its own recorded result.
 
 Gate results are recorded as `{gate, ordinal, argv, exit, duration_ms, output,
 truncated, verdict, pre, reason}` with
@@ -607,17 +588,14 @@ Docket then **sets** these itself:
 
 `DOCKET_ISSUE` and `DOCKET_SCOPE` let a **diff-shaped** gate evaluate the
 change it is actually gating instead of the whole dirty tree. The globs are
-newline-joined rather than JSON because the consumer is a shell check reading
-its own environment, where `while IFS= read -r glob` needs no parser.
-**Absent is not empty**: an issue that declared no scope gives the check no
-narrower answer than the tree, rather than docket inventing one.
-
-The variable carries globs or nothing, so declaring no scope and declaring
-an empty one look alike here: a declared-but-empty scope leaves
-`DOCKET_SCOPE` unset too, rather than setting it to the empty string.
-Elsewhere the two stay distinguished (the `scope` key, and the activation
-lint that warns about the first and not the second). A gate that must tell
-them apart reads `docket issue show`, not its environment.
+newline-joined rather than JSON since the consumer is a shell check reading
+its own environment. **Absent is not empty**: an issue that declared no
+scope gives the check no narrower answer than the tree, rather than docket
+inventing one; a declared-but-empty scope leaves `DOCKET_SCOPE` unset too,
+rather than setting it to the empty string, so the two states look alike
+here even though the `scope` key and the activation lint distinguish them
+elsewhere. A gate that must tell them apart reads `docket issue show`, not
+its environment.
 
 There is no way to extend the allowlist: no flag, config key, or trust-entry
 field.
@@ -649,8 +627,7 @@ and run as a **user-trusted command**, through the same matching, argv
 resolution, env allowlist, timeout, capture, and repo containment a gate
 goes through, with no exceptions and no second execution path. The name
 `aggregate` is reserved, so a trust entry cannot shadow it — `workflow
-register` refuses rather than leaving you to wonder why your command never
-ran.
+register` refuses instead.
 
 An unmatched action name records `verdict: "unmatched"` with null `argv` and
 null `exit`, spawns nothing, and **fails the step**, which routes per
@@ -666,10 +643,10 @@ null `exit`, spawns nothing, and **fails the step**, which routes per
 | **non-zero exit** | failure; the step routes per `on_fail`, the captured output is recorded, and **no artifact is written** |
 | **unparseable stdout on exit 0** | failure, with the first 200 bytes quoted back with control characters escaped |
 
-An object rather than "stdout is the payload", because every artifact has a
+An object rather than "stdout is the payload," since every artifact has a
 human-readable body and a command needs a channel for it. `stderr` is the
-diagnostic stream and is what `action_results.output` records; it cannot corrupt
-the document docket parses.
+diagnostic stream and what `action_results.output` records; it cannot
+corrupt the document docket parses.
 
 If the step declares a `payload`, the produced payload is validated against that
 schema exactly as a worker's is. A failure there is a step failure routed per
@@ -684,9 +661,8 @@ the **last** one deciding the routing.
 
 #### `aggregate` — the one builtin
 
-`aggregate` reduces clustered values to one value per cluster, over an order
-**your schema declares**. It works for severities, priorities, tiers, T-shirt
-sizes, or ripeness grades alike: docket knows position, never significance.
+`aggregate` reduces clustered values to one value per cluster, over an
+order **your schema declares**.
 
 | Param | Type | Required | Meaning |
 |---|---|---|---|
@@ -696,7 +672,7 @@ sizes, or ripeness grades alike: docket knows position, never significance.
 | `output` | string | yes | the artifact kind this step produces |
 
 No other keys are accepted — a typo'd `method = "medain"` is refused at
-`workflow register`, not discovered hours into a run.
+`workflow register`.
 
 An `aggregate` step **must** declare `payload = "name@version"`, and that
 schema must mark `params.field` as `ordered_enum`. Median, max, and min are
@@ -713,31 +689,22 @@ Each element of that payload is one cluster. The element's `field` is either an
 **array** of values — the cluster's members — or a **scalar**, which is a
 one-member cluster. Every other key of the element is carried through verbatim.
 
-Over a flat payload of scalars, `aggregate` is the **identity**: every value
-passes through, nothing is held, nothing is demoted. You can introduce
-clustering later without a behavior change anywhere else.
+Over a flat payload of scalars, `aggregate` is the **identity**: every
+value passes through, nothing is held, nothing is demoted.
 
 **The even-count rule.** With members sorted by their position in your declared
 order, the reduction is `m[0]` for `min`, `m[len-1]` for `max`, and
 `m[(len-1)/2]` for `median` — **the LOWER of the two central values when the
 count is even**. So a cluster of `{low, blocker}` medians to `low`.
 
-Docket does not know which end of your order is worse: taking "the more
-severe of the two" would be docket holding an opinion about severities,
-wrong for a `confidence` or `ripeness` enum. The lower median is the
-standard choice for ordinal data where no average exists.
-
-**If that is the wrong end for your order, say so in the schema.** Add
-`"conservative_end": "upper"` beside the `ordered_enum` annotation and that
-field's even-count median ties resolve toward the top of the declared order
-instead — `{low, blocker}` medians to `blocker`. Declare nothing and the
-lower median is unchanged. See [The `conservative_end`
-annotation](schemas.md#the-conservative_end-annotation).
-
-The direction moves the **median tie and nothing else**: `min` and `max`
-already name an end explicitly, and an odd-count median has no tie to
-break. To get the top of the order in *every* case, not only on ties, use
-`method = "max"` instead.
+An even-count median takes the **lower** value unless the schema declares
+`"conservative_end": "upper"` beside `ordered_enum`, in which case it takes
+the upper one instead — see [the `conservative_end`
+annotation](schemas.md#the-conservative_end-annotation). The direction
+moves the **median tie and nothing else**: `min` and `max` already name an
+end explicitly, and an odd-count median has no tie to break; to get the
+top of the order in *every* case, not only on ties, use `method = "max"`
+instead.
 
 **Spread and holds.** `spread` is the distance between the extreme members'
 **positions** — so with `["info","low","medium","high","blocker"]`, both
@@ -783,12 +750,9 @@ and the routing step **stops**. Concretely:
   artifact instead. Two clusters of one payload point at the same artifact,
   which is what the index disambiguates.
 
-**One step per cluster, so you can answer them differently.** A hold carrying
-four clusters gives you four approve/reject decisions, not one. The suffix is
-the cluster's index in the payload, which is stable across re-reads of the same
-immutable artifact — so a resumed saga re-derives the same step for the same
-cluster, and a cluster that was never held has no step. (A hold where only the
-second cluster trips materializes `#1` and no `#0`.)
+**One step per cluster, so you can answer them differently.** A hold
+carrying four clusters gives you four approve/reject decisions, not one. (A
+hold where only the second cluster trips materializes `#1` and no `#0`.)
 
 | Verb | Effect |
 |---|---|
@@ -796,12 +760,11 @@ second cluster trips materializes `#1` and no `#0`.)
 | `docket step reject <held> [--note N]` | records **no** artifact for that cluster, marks the held step `done` |
 
 **`--value V` is the corrected value for the cluster's aggregated field.** It
-lands on the **field itself**, so every threshold and every downstream input
-routes on the number the operator endorsed; the computed value it replaced is
-recorded beside it as `operator_set_from`, so the two stay distinguishable
+lands on the **field itself**, so every threshold and downstream input
+routes on the number the operator endorsed; the computed value it replaced
+is recorded beside it as `operator_set_from`, keeping the two distinguishable
 rather than one overwriting the other. `--note`, when given, travels with
-the decision as `operator_note` on the same element, so a fixer reading the
-resolved payload learns what was decided, not just that a decision happened.
+the decision as `operator_note` on the same element.
 
 | Rule about `--value` | |
 |---|---|
@@ -821,8 +784,7 @@ own status, routing, and note.
 
 Approval means *accept the cluster* — at the computed value, or at the one
 `--value` names. The originally-held artifact stays addressable forever:
-what docket computed and what you accepted are two records, not one
-overwritten one.
+what docket computed and what you accepted are two records, not one.
 
 A step parked because its clusters were **rejected** cannot be retried:
 `docket step resolve --as retry` refuses there rather than silently
@@ -838,8 +800,8 @@ has moved past it.
 ### Fanout and joins
 
 A `fanout` step expands to one sibling per hint, in declared order:
-`review@0#0 … review@0#3`. A step declaring `after = ["review"]` waits for the
-**join**, and the rules are worth knowing exactly:
+`review@0#0 … review@0#3`. A step declaring `after = ["review"]` waits for
+the **join**:
 
 | Rule | Behavior |
 |---|---|
@@ -900,10 +862,9 @@ What happens on loop entry, in one transaction:
 2. **Unclaimed work downstream of the triggered cluster's `after_loop`
    root(s) is superseded.** Instances at a lower ordinal that are still
    `pending` become `superseded`, a terminal status, not a deletion.
-   Already-claimed and running instances are **left alone to finish**;
-   their eventual routing is recorded for the ledger but applies no
-   downstream effect, so a slow step from the previous ordinal cannot
-   re-route an issue that has already moved on.
+   Already-claimed and running instances are **left alone to finish**; their
+   eventual routing is recorded for the ledger but applies no downstream
+   effect.
 3. **`loop = true` steps serving the trigger instantiate at the new
    ordinal**, along with their `after_loop` step and everything
    transitively after it. Gates re-run and thresholds re-apply on the new

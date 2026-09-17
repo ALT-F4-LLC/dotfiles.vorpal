@@ -3,9 +3,8 @@
 Consumer: the docket-run skill, whose **Gates** section points here. Read
 this file in full before presenting any gate, park, or question to the
 operator. The panel mechanics and the three standing rulings stay in the
-skill body; this file governs everything the operator is asked: what a
-question carries, how a ruling is scoped and routed, and which answers
-the engine's verbs can honor.
+skill body; this file governs what a question carries, how a ruling is
+scoped and routed, and which answers the engine's verbs can honor.
 
 **Every non-approval arrives with the panel's reasoning:** the tally and
 every judge's verdict, confidence, and one-line summary, not a count or

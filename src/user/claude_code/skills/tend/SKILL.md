@@ -14,12 +14,12 @@ description: >-
 
 # tend
 
-You keep one Docket project's issue queue empty as an orchestrator. You read
-an issue, hand the implementation to a subagent seated for the job, then
-commit, close, and move on. The only custom skills in play are `docket`
-(issue verbs) and `commit` (landing changes); everything else here is
-built-in Claude Code machinery. Report when you tend an issue, when one
-blocks you, or when you must ask.
+You keep one Docket project's issue queue empty as an orchestrator: read an
+issue, hand implementation to a subagent seated for the job, then commit,
+close, and move on. The only custom skills in play are `docket` (issue
+verbs) and `commit` (landing changes); everything else here is built-in
+Claude Code machinery. Report when you tend an issue, when one blocks you,
+or when you must ask.
 
 **Never invoke the `docket-plan` or `docket-run` skills, and never create or
 activate a docket run.** That machinery is exactly what this skill exists to
@@ -47,14 +47,14 @@ without a question. The pre-existing backlog is fair game, not only issues
 filed after you started watching. An issue with no routing label, or with
 `route-run`, `route-direct`, or `route-loop`, belongs to grooming, a run,
 the operator's own brief, or a loop: skip it silently. The query is
-`-s backlog -s todo`, so an issue you moved to `in-progress` or `review` in
-a prior tick never reappears (see §2's blocked case).
+`-s backlog -s todo`, so an issue moved to `in-progress` or `review` in a
+prior tick never reappears (see §2's blocked case).
 
 Exclude what is not free before picking; this queue isn't tend's alone.
 The run-included and claimed rules, and the `--limit 1000` rule for reading
 the whole queue, live once in the docket skill's
 [queue ownership reference](../docket/references/queue-ownership.md): read
-it and apply it here rather than a remembered version.
+and apply it here rather than a remembered version.
 
 After the exclusions, the queue is either:
 
@@ -72,8 +72,8 @@ After the exclusions, the queue is either:
   An issue carrying the `review-gap` label was filed by `drain-highs` from a
   prior run's review findings, not by hand; its body names the filing run's
   `source-run:`. Tending it is unchanged — the label only lets the queue and
-  a later `docket-retro` pass tell drain-highs filings apart from issues
-  filed any other way.
+  a later `docket-retro` pass tell drain-highs filings apart from other
+  issues.
 
 ## 2. Tend one issue
 
@@ -87,35 +87,34 @@ After the exclusions, the queue is either:
    things to remember: `docket issue move <id> review` with a comment
    naming the answer (`docket issue comment add <id> --json=v2 -m "tend:
    operator skipped, security-sensitive"` or `... -m "tend: operator takes
-   it"`),
-   the same exit the blocked case in step 4 uses, so the `-s backlog -s
-   todo` query never re-offers the issue and no later tick asks the same
+   it"`), the same exit the blocked case in step 4 uses, so the `-s backlog
+   -s todo` query never re-offers the issue and no later tick asks the same
    question again. Selection is lowest-id-first, so a skip that changed no
    state would block every issue behind it. Everything else, any kind, any
    size, gets tended: seat a worker (§3) and go.
 3. Otherwise: `docket issue move <id> in-progress`, then delegate the
    implementation (§3). You orchestrate; you do not implement. Read or grep
    in this conversation only as far as seating the worker requires — the
-   moment you are editing files or chasing the fix yourself, you have taken
-   the worker's job.
+   moment you edit files or chase the fix yourself, you have taken the
+   worker's job.
 4. **Blocked** (the ask is too unclear to brief a worker, a prerequisite is
    missing, or the worker fails and doesn't resolve on one follow-up
    round): don't spin on it. `docket issue move <id> review` with a comment
-   naming the blocker (`docket issue comment add <id> --json=v2 -m "..."`), tell the
-   operator in your next visible turn, and move on to the next queued
-   issue. The same blocked issue does not get retried every tick.
+   naming the blocker (`docket issue comment add <id> --json=v2 -m "..."`),
+   tell the operator in your next visible turn, and move to the next
+   queued issue. The same blocked issue does not get retried every tick.
 5. **Rerun the falsifier.** Before any commit, run the worker's named
    falsifying check once more in this conversation, on the tree as the
    worker left it, and read the result yourself. The report is a claim,
    not evidence: the worker chose its own check and reports its own pass.
-   A fresh pass here is what step 6 rests on. A fresh failure goes back
-   to the worker as the one follow-up round §3 describes, briefed with the
+   A fresh pass here is what step 6 rests on. A fresh failure goes back to
+   the worker as the one follow-up round §3 describes, briefed with the
    command and its output. A check that cannot run in this environment (a
    tool, service, or permission the orchestrator lacks) is neither a pass
    nor a failure: it takes the same follow-up round, asking for a check
-   that can run here, and if none can, treat the issue as blocked (step
-   4). Rerunning a stated check is verification, not the chasing of the
-   fix that step 3 forbids.
+   that can run here, and if none can, treat the issue as blocked (step 4).
+   Rerunning a stated check is verification, not the fix-chasing step 3
+   forbids.
 6. **Done:** when the rerun passed, invoke the `commit` skill to land the
    change (`Skill({skill: "commit"})`): one commit-cycle per issue, never
    batched across issues, skipped only when the issue changed no files.
@@ -124,15 +123,15 @@ After the exclusions, the queue is either:
    a non-trivial issue the candidates the worker weighed>"`, then
    `docket issue close <id> --json=v2`.
 7. Report the tend in one line: issue id, title, commit hash(es). A tended
-   issue is a state change and always gets said, never absorbed silently.
+   issue is a state change; always say so, never absorb it silently.
 
 ## 3. Seat and spawn a worker
 
 One worker at a time, ever: no parallel workers within an issue, no
 parallel work across issues. The worker spawns into this working tree with
-no worktree isolation, so strict sequence is required. Built-in agent types
-only — `general-purpose` to implement, `Explore` for a pure read-only
-investigation — never a custom agent definition.
+no worktree isolation, so strict sequence is required. Built-in agent
+types only — `general-purpose` to implement, `Explore` for a pure
+read-only investigation — never a custom agent definition.
 
 One seating mechanism, always: the built-in `Workflow` tool's `agent()`
 call, whose opts take `agentType`, `model`, and `effort`. Every seat sets
@@ -151,16 +150,16 @@ through it runs at this session's own default instead of a chosen one.
 
    Choose effort with the same judgment that sized the model: a mechanical
    edit has no use for deep reasoning, gnarly always gets `max`, and neither
-   choice echoes the session's own default. Write the ruling down as one
-   line, the tier named (mechanical / ordinary / gnarly) plus why this issue
-   fits it, and carry it into the spawn as step 2 shows.
+   choice echoes the session's own default. Write the ruling as one line,
+   the tier named (mechanical / ordinary / gnarly) plus why this issue fits
+   it, and carry it into the spawn as step 2 shows.
 
 2. **Spawn through `Workflow`**, the worker brief embedded in the script.
    The statement immediately before the `agent()` call is a `log()` line
    carrying step 1's ruling verbatim, so every seat's transcript shows the
    tier, the reason, and the explicit `model`/`effort` pair together. A
-   spawn missing the tier line, or missing either opt, is mis-seated
-   regardless of tier:
+   spawn missing the tier line, or either opt, is mis-seated regardless of
+   tier:
 
    ```js
    export const meta = {name: 'tend-issue', description: '<issue title>',
@@ -173,7 +172,7 @@ through it runs at this session's own default instead of a chosen one.
 
    `model` and `effort` take effect only inside `agent()`'s opts, as above.
    Setting either on a `meta.phases` entry instead is display-only and
-   silently seats the session default, with no error.
+   silently seats the session default, no error.
 
 **The worker brief** carries the whole contract: the repo's absolute path,
 the issue id, title, description, and acceptance criteria verbatim, plus
@@ -193,11 +192,11 @@ rerun, gets one follow-up round, not a commit: a `Workflow` seat cannot be
 messaged after its script returns, so the follow-up is a fresh `agent()`
 spawn (same tier, same explicit opts, same tier line) briefed with the
 first report and the check it failed to show, or the rerun's command and
-output. If the second report still can't show a check that passes on the
+output. If the second report still can't show a check passing on the
 rerun here, treat the issue as blocked (step 4 of §2).
 
 ## Stop
 
 The loop ends when the operator stops it (`ScheduleWakeup({stop: true})`
 under self-pacing, or telling you to stop) or ends the `/loop`. There is no
-other terminal condition; an empty queue is a rest, not a finish.
+other terminal condition: an empty queue is a rest, not a finish.

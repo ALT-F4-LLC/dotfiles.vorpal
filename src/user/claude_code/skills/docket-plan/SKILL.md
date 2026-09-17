@@ -33,8 +33,7 @@ stop before recording and report that this skill requires an interactive main
 session, per the rule the docket skill's
 [queue ownership reference](../docket/references/queue-ownership.md) states
 for every approval-gated skill; do not substitute inferred answers or
-confirmations. Reading the repo, asking the operator, and recording the run
-are all yours to do here.
+confirmations.
 
 Rules you must not fight:
 
@@ -66,18 +65,18 @@ Rules you must not fight:
   condition. An operator-stated criterion that joins alternatives with "or"
   or bundles several outcomes is put to the operator in the question round
   as a proposed split, one criterion per condition, and their answer is
-  recorded verbatim, never split silently. A verify seat judges a criterion
-  as written, so every bundled case is a fix round for the fixer to discover.
+  recorded verbatim, never split silently: a verify seat judges a criterion
+  as written.
 - **A criterion that encodes the worse design is a reframe, put to the
   operator before it is recorded.** Verbatim copying fixes wording, not
   design. When the read shows the stated done-ness would force a mechanism
   the codebase's own invariants argue against, or a shape generic to any
   repo while this one needs something else, offer the reframe as an option
-  in the question round beside the criterion as stated. The operator's pick
-  is recorded verbatim, and the losing reframe is noted in the plan artifact
-  so a writer does not rediscover it. A reframe inside the issue's scope
-  that still satisfies every recorded criterion is the writer's
-  implementation choice and needs no question.
+  in the question round beside the criterion as stated. The operator's
+  pick is recorded verbatim, and the losing reframe is noted in the plan
+  artifact so a writer does not rediscover it. A reframe inside the
+  issue's scope that still satisfies every recorded criterion is the
+  writer's implementation choice and needs no question.
 - **A derived AC that predicts command output is run before it is
   recorded.** Execute the command, non-mutating check commands only, which
   is all this class of AC ever quotes, against the committed tree the run
@@ -136,15 +135,12 @@ The five things you need:
 | **Security sensitivity** | Does this touch authn/authz, secrets, crypto, sandbox, trust, or supply chain |
 | **Size** | Whether the full shape is knowable; include all feasible issues by default, with any explicit issue-count limit treated as a hard cap |
 
-Apply the largest-complete-run preference to request intake, single-issue
-decomposition, and backlog selection; do not ask the operator to restate it
-on every invocation. Offer the run-shape alternatives in §1b when they
-expose a useful tradeoff. For new work, stay within the supplied request
-rather than adding unrelated backlog items to increase the count. Required
-coverage of the agreed goal and ACs is a hard constraint: do not drop
-necessary work merely to increase the count or fit an explicit budget
-limit. Obtain agreement to a concrete scope reduction or budget increase
-when such a limit prevents the agreed work.
+Offer the run-shape alternatives in §1b when they expose a useful tradeoff.
+For new work, stay within the supplied request rather than adding
+unrelated backlog items to increase the count. Required coverage of the
+agreed goal and ACs is a hard constraint: do not drop necessary work
+merely to increase the count or fit an explicit budget limit (§3's
+scope-or-budget rule).
 
 Security sensitivity is asked, not inferred: it sets labels that pin
 routing later, and a wrong guess is silent, so if the answer is not obvious
@@ -177,9 +173,9 @@ docket run status --json                              # runs that already own is
 docket issue list --run <ref> --json=v2 --limit 1000  # one per run above: its roster
 ```
 
-Project resolves from cwd's git identity, same as every other docket verb.
-A `VALIDATION_ERROR` naming no project, or no store reachable, means this
-repo isn't bound: say so and stop. `--limit 1000` is not optional, for the
+Project resolves from cwd's git identity. A `VALIDATION_ERROR` naming no
+project, or no store reachable, means this repo isn't bound: say so and
+stop. `--limit 1000` is not optional, for the
 reasons the docket skill's
 [queue ownership reference](../docket/references/queue-ownership.md) states
 once for this skill, `/docket-groom`, and `/tend`: the default caps flag no
@@ -198,10 +194,9 @@ Resolve what this run should cover, batching missing decisions into one
 `AskUserQuestion` round under §1's discipline. These answers constrain the
 candidate set, not the ACs inside it. Skip the round when everything is
 already settled. A ranked proposal with a which-variant choice does not
-replace this alignment. Reuse settled answers and the standing
-maximum-run preference and unlimited-budget default; ask only for missing
-decisions. The final confirmation approves the concrete roster, showing
-Unlimited or the operator's explicit cap separately from the cost forecast.
+replace this alignment. The final confirmation approves the concrete
+roster, showing Unlimited or the operator's explicit cap separately from
+the cost forecast.
 
 - **Kind filter**: which kinds of work belong in this batch: every kind
   (Recommended), bugs only, features only, or a kind/label the operator
@@ -318,8 +313,8 @@ and parallel width decide between equally large feasible rosters.
    `depends_on` in the plan. Only the parallel-only option has no internal
    open dependency by construction.
 4. **Run-ready**: every §3 recording obligation, checked here because
-   activation will not catch most of them (a missing scope draws a warning
-   and activates anyway; only a graph cycle refuses): the body carries
+   activation will not catch most of them (§3's scope-warning rule): the
+   body carries
    acceptance criteria (at least one checkable item, not a restated title);
    `--scope` is set and every glob matches at least one file in this
    checkout; the row's `files` list is non-empty, naming the concrete files
@@ -396,10 +391,8 @@ and parallel width decide between equally large feasible rosters.
    in a capability the engine does not have (read the issue's related gap
    issues, where an earlier run has usually said so) is not bound under
    this issue. Split it out as its own issue in the owning project, or
-   record it as a dependency, and say so in the proposal. Bound anyway, it
-   can never be `met`: at best verify reports it `unmet-out-of-scope` and a
-   vote passes it with a filing, at worst it routes `fix-loop` to the cap and
-   parks on every run that carries it.
+   record it as a dependency, and say so in the proposal: bound anyway, it
+   can never be `met`.
 
 5. **Forecast cost; fit only an explicit limit.** Size every issue by §3's
    arithmetic; include the full amount for every issue across all waves,
@@ -540,10 +533,9 @@ too, via `when`-gated steps: a `spec-doc` issue picks its author by the
 colon-form doc label (`doc:tdd`, `doc:adr`, `doc:ux-spec`; no doc label
 means PRD), and `security` / `security-change` push a TDD to the security
 author, so file doc-producing issues with `doc:<type>` or accept the PRD
-default (the hyphen spellings route nothing). `needs-research` gates an
-optional research step ahead of authoring in `spec-doc`, `spec-project`, and
-`investigation`; apply it per §1's rule, never because a workflow happens
-to support it. `git log --format='%s' -30` tells you the repo's
+default (the hyphen spellings route nothing). Apply `needs-research` per
+§1's rule, never because a workflow happens to support it. `git log
+--format='%s' -30` tells you the repo's
 conventions. Existing issues (`docket issue list`) tell you whether some of
 this is already tracked. Any probe you run must itself be non-mutating and
 sandbox-feasible: a command that writes state (installs a package, syncs a
@@ -598,9 +590,8 @@ this run is settled (the decomposition from §1, or the batch from §1b),
 the working title. `TaskUpdate` each to `in_progress` right before its own
 `issue create` call and to `completed` once the id comes back, rewriting
 the subject to the real `DKT-N: <title>`. This is a display for the
-operator watching the batch land; it is never where you read the roster
-back from, since the roster is what the create/link calls themselves
-returned.
+operator watching the batch land; read the roster back from the create/link
+calls' own returns, never from here.
 
 Run these, in this order, once you know what shape they take:
 
@@ -649,8 +640,8 @@ reconcile any mismatch with this policy in the run being planned.
 **Cost forecast, not an automatic cap.** Calculate the proposed run's
 declared-cost floor and normal rework allowance in both budget modes. With
 Unlimited, the total is informational. With an explicit declared-cost cap,
-it is also the admission check. A measured-usage cap remains separate and
-requires evidence in its own unit; never compare it to workflow cost units.
+it is also the admission check. A measured-usage cap remains separate,
+per above.
 
 The floor is the bound workflow's expected-cost sum with its when-gated
 steps included: a `when` you cannot evaluate at plan time is a step that may
@@ -703,9 +694,8 @@ them from the tomls rather than trusting this list: it is a worked example
 of the read, not a substitute for it, and every one of these files is
 versioned.
 
-The sizing rules below concern finite caps. They explain accurate
-forecasting and admission under an explicit limit; they do not authorize
-imposing a cap when the operator left the budget unlimited.
+The sizing rules below concern finite caps only, per the unlimited-budget
+rule above.
 
 Two things are forbidden, both measured. Never budget a fixed number of
 rounds the workflow did not declare: security-change declares three, and
@@ -761,13 +751,13 @@ worker fed one small, well-scoped issue lands it in one round with no
 back-and-forth, and that outcome is worth decomposing for even when
 "one issue" reads as tidier while drafting.
 
-Never split one cohesive edit or manufacture a criterion to increase
-the count. Independent units that touch the same file may share a run only
-when their real dependencies and the engine's verified serialization make
-that safe; do not rely on claim failures to order them. Keep every scope
-wide enough for its actual change. A smaller or sequential run may be the
-honest result of these constraints, but an arbitrary preferred batch size is
-not a constraint.
+Never manufacture a criterion to increase the count. Independent units
+that touch the same file may share a run only when their
+real dependencies and the engine's verified serialization make that safe;
+do not rely on claim failures to order them. Keep every scope wide enough
+for its actual change. A smaller or sequential run may be the honest
+result of these constraints, but an arbitrary preferred batch size is not
+a constraint.
 
 Before recording, check the full dependency graph and both collision surfaces
 against the engine's plan and scheduling rules. Record total issue count,
@@ -883,17 +873,15 @@ Extract the bullet or block the criterion is about first, then assert on
 that extract, since a bare `grep -n 'some string' <file>` over a long
 document tests only that the string exists somewhere in it. Anchoring the
 extract fixes a mutant that deletes or moves the target text but not one
-that rewrites the substance while leaving a matched keyword in place: for
-example, a revision-range check anchored on the verb still passes a mutant
-that turns a two-dot range into a bare ref, or a refusal check anchored on
-`rev-parse HEAD` still passes a mutant that softens "refuse" into "note and
-continue." For those, restate the pattern to assert the property itself,
-the full range shape or the refusal verb alongside the command, rather
-than just narrowing where it looks. Where an extract can hold more than one
-matching site, assert the negative (the mutated form absent) rather than a
-positive match, since a positive pattern can match a sibling site and pass
-while the mutant survives. Split the remedy by failure mode: anchor for
-scope, restate the pattern for property.
+that rewrites the substance while leaving a matched keyword in place: a
+revision-range check anchored on the verb still passes a mutant that turns
+a two-dot range into a bare ref. For those, restate the pattern to assert
+the property itself, the full range shape alongside the command, rather
+than just narrowing where it looks. Where an extract
+can hold more than one matching site, assert the negative (the mutated
+form absent) rather than a positive match, since a positive pattern can
+match a sibling site and pass while the mutant survives. Split the remedy
+by failure mode: anchor for scope, restate the pattern for property.
 
 **An AC that needs a live cluster is post-merge by construction, not an AC.**
 On GitOps repos, author acceptance criteria as statically verifiable render
@@ -911,9 +899,8 @@ of this one (same title/kind/labels/scope/idempotency-key/body shape) and
 record at most a `relates_to` pointer here. A scope glob matching zero
 files in this repository is the cheap tell: check every glob against the
 tree before recording, and stop-and-ask on a miss. Binding such an issue
-anyway is not a plan the run can execute: the executor's isolation contract
-and sandbox confine it to this repository, so the step can only gap-file
-while the downstream pipeline runs over nothing. The same routing governs
+anyway is not a plan the run can execute: the executor is confined to this
+repository, so the step can only gap-file. The same routing governs
 side-findings: an engine defect or another repository's bug surfaced by the
 scope read or premise verification files in the owning repo's project, with
 at most a `relates_to` pointer here, never as an issue in this run's
@@ -924,10 +911,9 @@ Issue bodies snapshot at the activation that binds them, frozen from that
 moment: the body is what gets rendered into every brief. Comments added
 later never reach a brief. Any operator ruling, settled semantics, resolved
 ambiguity, or decision that came out of the conversation above must be
-written into the body now, in the issue it governs. "We agreed X in chat" is
-not a channel; "it's in a comment on the issue" is not a channel. If a
-ruling arrives mid-run, it cannot be back-fitted: it goes into the *next*
-planning pass, in a body.
+written into the body now, in the issue it governs. If a ruling arrives
+mid-run, it cannot be back-fitted: it goes into the *next* planning pass,
+in a body.
 
 **Scope** is a path glob checked mechanically against the diff: write the
 narrowest glob that can honestly hold the change, since scope overlap is
@@ -951,10 +937,7 @@ rather than appending; pass every glob you mean to keep. `issue edit -f`
 replaces the file list the same way, and `issue file add` appends to it.
 Prefer `internal/engine/dispatch/**` over `internal/engine/**`, and several
 narrow globs over one wide one. Widen only when the change genuinely spans
-that much. An issue that holds the tree and declares no scope draws a scope
-warning at activation, not a refusal: the engine will ship it, so the
-warning is yours to act on, and the way to answer it is narrow globs, never
-a wide one that silences it by colliding with everything.
+that much.
 
 **The edges**, recorded as `depends_on` links, are real dependencies only: a
 false edge serializes work that could have run in parallel, and a missing
@@ -962,20 +945,17 @@ one lets a step run before its input exists. The default is no edge: an
 edge is a thing you justify, never a thing you assume. Before writing one,
 name the input in a phrase you could put in the plan artifact: the file,
 artifact, schema, or decision that B's step reads and A's step is what
-produces. "B builds on A", "A should land first", "it reads more naturally
-in that order", and "same subsystem" are orderings, not dependencies: drop
-the false edges and place the issues in their earliest safe waves. Two
-issues whose scopes are prefix-disjoint rarely carry a true edge between
-them, so when you find yourself writing one anyway, suspect the
-decomposition before the ordering: the shared thing usually belongs inside
-one issue, or in a third that both of them depend on, which costs one edge
-each instead of a chain. Prefer a shallow fan (many issues depending on one
-root) to a chain (each depending on the last): the fan lets the children
-become dependency-ready together, while the chain releases one at a time;
-collisions still constrain which children can run concurrently. Count the
-edges you are about to record and check the resulting graph's width against
-the wave arithmetic above; a package where every issue depends on the one
-before it is a serial plan wearing a graph's clothes.
+produces. "B builds on A" and "same subsystem" are orderings, not
+dependencies: drop the false edges and place the issues in their earliest
+safe waves. Two issues whose scopes are prefix-disjoint rarely carry a true
+edge between them, so when you find yourself writing one anyway, suspect
+the decomposition before the ordering: the shared thing usually belongs
+inside one issue, or in a third that both of them depend on, which costs
+one edge each instead of a chain. Prefer a shallow fan (many issues
+depending on one root) to a chain (each depending on the last): the fan
+lets the children become dependency-ready together, while the chain
+releases one at a time. Count the edges you are about to record and check
+the resulting graph's width against the wave arithmetic above.
 
 **Planning from a single existing backlog issue** (`/docket-plan DKT-N`):
 four obligations, each checked independently before recording. This is the
@@ -983,8 +963,7 @@ single-issue intake only: DKT-N here is a finding or a problem statement the
 run decomposes into fresh issues. The bare-`/docket-plan` batch (§1b) is the
 other case: its members have already passed the run-readiness check and
 are the units of work, so §1b binds them with `--issue` directly and none of
-the four obligations below apply to them. The two paths do not contradict
-each other; they answer different questions about what the issue is:
+the four obligations below apply to them:
 
 - DKT-N itself stays out of the run: the fresh issues you create are the
   ones you `run start --issue`; never name DKT-N itself there.
@@ -1010,9 +989,6 @@ pair of verbs: `docket step artifacts STEP-N` lists ids, then `docket step
 artifact ARTIFACT-N [--payload]` prints one; there is no `docket artifact`
 command. Activation lints the extension like any other graph.
 
-This is a designed shape, not a fallback. Use it whenever the honest answer to
-"what are the phase-two issues" is "that depends on what phase one finds."
-
 ## 5. Present and stop
 
 If §1 or §1b concludes with nothing to record (the operator chose "propose
@@ -1023,13 +999,10 @@ Otherwise, once the recording commands above have run, present the recorded
 run: total issue count, the issues, their edges, scopes, Unlimited or explicit
 budget limits, the separate cost forecast, planned waves, and `First-wave
 width` accounting for both dependencies and collisions. State why any
-otherwise eligible work remains outside this run, and say plainly where the
-approval to activate lives now: it is a tribunal vote that `docket-run`
-convenes and surfaces when the run is driven. Then stop.
-
-Do not offer to activate it yourself as a convenience. Do not start the run.
-Do not keep the plan in your head for later; it is in Docket now, which is
-the point.
+otherwise eligible work remains outside this run, and say plainly that
+activation is `docket-run`'s tribunal vote. Then stop; do not offer to
+activate it yourself as a convenience. Do not keep the plan in your head
+for later; it is in Docket now, which is the point.
 
 If the operator asks for activation in this session, that is a direct
 instruction that outranks the panel that would otherwise vote on it, but it

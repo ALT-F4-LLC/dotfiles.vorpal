@@ -16,8 +16,8 @@ model: fable
 # corpus-check
 
 Run this skill inline in the main session. It uses `AskUserQuestion` to
-confirm fixes before landing them. Do not delegate the confirmation gate or
-the fix application to a subagent.
+confirm fixes before landing them. Do not delegate the confirmation gate
+or the fix application to a subagent.
 
 ## Scope
 
@@ -32,37 +32,36 @@ the working tree, the same reasoning `frozen-drift-check` uses):
 Out of scope unless the operator explicitly widens it: `hooks/`,
 `settings.rs`, `statusline.sh`, `allowed_signers`, `src/user/docket/bin`.
 Never edit `src/user/claude_code/references/working-agreement.md` or
-`src/user/claude_code/CLAUDE.md` — they are the operator's own working
-agreement, owned outside this corpus's style authority; report drift there
-as an operator decision, never as a fix to apply.
-Never run `just activate`.
+`src/user/claude_code/CLAUDE.md` — the operator's own working agreement,
+owned outside this corpus's style authority; report drift there as an
+operator decision, never as a fix to apply. Never run `just activate`.
 
 `$ARGUMENTS` optionally names a git ref (branch or SHA). Pass it through as
 the workflow's `sinceRef` arg (step 2) when given, else pass `null`. It is
 informational context only, passed to every reading agent as a note about
 what changed recently: it never skips or deprioritizes a file. The workflow
-reads every file in full and runs every cross-boundary check regardless of
-this value, since drift a stale reference introduces is not confined to
-files the diff touched.
+reads every file in full and runs every cross-boundary check regardless,
+since drift a stale reference introduces is not confined to files the diff
+touched.
 
 ## 1. Mechanical gate
 
-Run `just crossref-check` first, from the repository root. This is fast,
-free of judgment calls, and catches dead paths, dead relative links and
-heading anchors, dead `/docket-*` references and skill names in a
-description, schema references with no file on disk, undeclared workflow
-executors, gate names with no `just` recipe or `PROJECT_GATES` row, bad
-routing labels, and name/stem mismatches. Read `.docket/bin/crossref-check`
-for the exact rule set.
+Run `just crossref-check` first, from the repository root. It is fast, free
+of judgment calls, and catches dead paths, dead relative links and heading
+anchors, dead `/docket-*` references and skill names in a description,
+schema references with no file on disk, undeclared workflow executors,
+gate names with no `just` recipe or `PROJECT_GATES` row, bad routing
+labels, and name/stem mismatches. Read `.docket/bin/crossref-check` for the
+exact rule set.
 
 If it fails, read every failure line. These are unambiguous (a name either
 resolves or it doesn't) and safe to fix directly, no confirmation needed.
 Rerun the gate after each batch of fixes, at most three passes, before
 moving to the semantic audit: a mechanically broken corpus is not a
 useful base for a judgment-driven audit. If the third pass still fails,
-stop and report the remaining failure lines instead of fixing again; a
-fix that keeps producing new breakage is a design question, not a
-mechanical one.
+stop and report the remaining failure lines instead of fixing again; a fix
+that keeps producing new breakage is a design question, not a mechanical
+one.
 
 ## 2. Semantic audit
 
@@ -71,9 +70,9 @@ Invoke by `scriptPath`, always, at the installed path
 path yourself first (`echo ~` or your session's known home). The Workflow
 tool does not expand `~` and resolves a relative path against the target
 repo's cwd, not the dotfiles source tree. The installed copy under
-`~/.claude/workflows` is also the only one the tool is permitted to launch,
-and the only one guaranteed to match this session's own build (the source
-file under `src/user/claude_code/workflows/corpus-check.js` may have moved
+`~/.claude/workflows` is also the only one the tool may launch, and the
+only one guaranteed to match this session's own build (the source file
+under `src/user/claude_code/workflows/corpus-check.js` may have moved
 since the last `just activate`). A missing installed file means the corpus
 was never activated after this skill was added: report that, don't launch
 the source copy instead.
@@ -86,11 +85,11 @@ This fans out one agent per file over both trees (sharded by line range for
 any file over roughly 1500 lines — `docket-run/SKILL.md` and
 `workflows/wave.js` are the known cases as of writing, since
 `docket/reference.md` was split by consumer; the workflow measures sizes
-itself at run time), runs a
-completeness pass that re-dispatches any file or range nothing covered,
-then a cross-boundary pass pairing claims one tree makes about the other,
-then verifies raw findings in per-file batches (independent skeptics voting
-refute/uphold) within an agent budget it fixes before the read fan-out.
+itself at run time), runs a completeness pass that re-dispatches any file
+or range nothing covered, then a cross-boundary pass pairing claims one
+tree makes about the other, then verifies raw findings in per-file batches
+(independent skeptics voting refute/uphold) within an agent budget fixed
+before the read fan-out.
 `findings` holds only majority-survived findings, each carrying its file,
 location, quote, counterpart, severity, and a proposed fix. `unverified`
 holds every finding the budget could not cover or that received no vote;
@@ -98,11 +97,11 @@ holds every finding the budget could not cover or that received no vote;
 verification got, and `coverageNote` states it in words. Read the summary
 line for what was refuted and what could not be covered. When
 `verificationPartial` is true, report the unverified findings by file as
-unaudited, never as clean, and do not report exhaustive coverage the run
+unaudited, never clean, and never report exhaustive coverage the run
 itself flagged as partial.
 
 If the workflow throws or returns nothing, say so and stop. Do not
-substitute a smaller manual read as if it satisfied this step.
+substitute a smaller manual read as if it satisfied the step.
 
 ## 3. Classify each returned finding
 
@@ -115,8 +114,8 @@ substitute a smaller manual read as if it satisfied this step.
 - **Needs operator decision** (two files each state a currently-correct but
   incompatible design choice, a deliberate-looking deviation with no
   recorded reason, a schema correction whose cascade is expensive, or
-  anything the workflow itself flagged as unresolved): do not stage it, and
-  carry it to the final report instead.
+  anything the workflow flagged as unresolved): do not stage it; carry it
+  to the final report instead.
 
 ## 4. Confirm the staged batch before landing it
 
@@ -128,9 +127,9 @@ Frozen-file edits need a version bump, decided by the file changed:
   above the previous one, in this corpus's existing style.
 - `schemas/*.json`: cannot be edited in place. A fix here means a new
   `<name>@<N+1>.json` plus a `payload =` update in every workflow step that
-  declared the old version. Treat this as expensive by default — surface it
-  as an operator-decision item rather than staging it, unless the operator
-  has already asked for the schema cascade.
+  declared the old version. Treat this as expensive by default — surface
+  it as an operator-decision item rather than staging it, unless the
+  operator already asked for the schema cascade.
 - `policy.toml`: carries a `[policy].version`, but `frozen-drift-check` does
   not gate it; free to edit directly. Bump `version` and extend its
   version-history comment block when the body changes.
@@ -141,21 +140,20 @@ Never spend a version bump on a comment that only flags an unresolved
 question (a TODO, a "needs operator decision" note) with no other content
 change; that forces a second bump later for no reason. Land such notes as
 an unversioned comment addition when the file is a policy/README file, or
-fold the flag into your final report instead of touching a frozen file at
-all.
+fold the flag into your final report instead of touching a frozen file.
 
 Present the staged batch to the operator with `AskUserQuestion`: group by
-file, show each fix's before/after and the version bump it implies. Options
-are the whole batch, a filtered subset, or none. An ambiguous or skipped
-response is not confirmation; do not land anything without an explicit
-yes.
+file, show each fix's before/after and the version bump it implies.
+Options are the whole batch, a filtered subset, or none. An ambiguous or
+skipped response is not confirmation; do not land anything without an
+explicit yes.
 
 ## 5. Apply and verify
 
 Apply confirmed fixes one file at a time, serially, in this session, not
 inside the workflow and not through parallel subagents: audits routinely
 overlap on the same file, and a parallel writer would race or need
-worktree isolation this task doesn't warrant. After every batch of edits:
+worktree isolation this task does not warrant. After every batch of edits:
 
 ```bash
 just crossref-check
@@ -170,8 +168,8 @@ bash tests/mutant-rule-crossref.test.sh
 bash tests/ci-suite-wiring.test.sh
 ```
 
-A failure here means a fix was wrong or incomplete, not that the suite is
-stale. Diagnose and correct before reporting completion.
+A failure here means a fix was wrong or incomplete, not a stale suite.
+Diagnose and correct before reporting completion.
 
 ## 6. Report
 
@@ -180,6 +178,6 @@ audit found and verified, what landed with its version bumps, and every
 item left for an operator decision, with enough context to act on it
 without re-reading this session. Name any file or line range the workflow
 could not cover so "audited" never reads as "audited everything" when it
-wasn't. Do not claim `just activate` was run; it wasn't, and the installed
+wasn't. Do not claim `just activate` ran; it didn't, and the installed
 corpus under `~/.docket/config` and `~/.claude` now lags this checkout
 until the operator runs it.

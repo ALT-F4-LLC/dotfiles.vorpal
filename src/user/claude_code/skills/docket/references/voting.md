@@ -18,10 +18,9 @@ is legal there and means escalate to an operator, unlike on a human gate
 where it is refused. The proposal's id rides on the step row as `proposal`,
 and the roster as `voters`, so a caller holding a `next` row can cast without
 reading the pinned definition; there is no new verb beyond `docket vote
-cast`. The step names a `vote_rule`, a pair of
-`vote.rule.<name>.*` config keys, and `required_voters` is the length of its
-own `voters` list. Nothing casts a vote automatically; a voter is a person or
-a process running the CLI.
+cast`. The step names a `vote_rule`, a pair of `vote.rule.<name>.*` config
+keys, and `required_voters` is the length of its own `voters` list. Nothing
+casts a vote automatically; a voter is a person or a process running the CLI.
 
 Create a proposal:
 
@@ -38,8 +37,8 @@ Cast only the assigned seat's own assessment. Pass its exact `--voter`: the
 default is `git user.name`, so concurrent agents using the default collide
 under one identity. Verify the seat, proposal id, content, and assessment
 against the assignment before casting; there is no amendment path, and the
-record is not read first: `vote show` and `vote result` print every cast
-already recorded, so a seat that reads them before deciding is no longer
+record is not read first — `vote show` and `vote result` print every cast
+already recorded, and a seat that reads them before deciding is no longer
 deciding alone. Replace the values below with the actual assignment and
 evidence; a file keeps long rationale out of argv:
 
@@ -52,11 +51,11 @@ docket vote cast DKT-V1 --json=v2 \
 
 `--metadata` is optional and opaque. Populate model and effort fields only
 from observed runtime facts; do not infer a model from a role or fabricate
-measurements. Treat it as public: it is stored and exported verbatim, with no
-redaction, and reads back through `vote show --json`, `vote result --json`,
-and the export document, though the human-readable tables do not render it.
-`--usage` records this seat's own measured spend; a relay may backfill usage
-after observing it. Consult the CLI reference for both flags.
+measurements. Treat it as public: it is stored and exported verbatim, with
+no redaction, and reads back through `vote show --json`, `vote result
+--json`, and the export document, though the human-readable tables do not
+render it. `--usage` records this seat's own measured spend; a relay may
+backfill usage after observing it. Consult the CLI reference for both flags.
 
 `--findings-json` entries may cite what each finding rests on, as
 `{"text": ..., "evidence": ["artifact:ARTIFACT-N", "gate:<name>"]}`. The
@@ -79,12 +78,11 @@ docket vote unlink DKT-V1 --json=v2 --issue DKT-1
 ```
 
 `vote commit` records an authorized out-of-band decision and bypasses the
-normal workflow threshold. It is not a routine finalization step after agent
+normal workflow threshold; it is not a routine finalization step after agent
 casts. `vote close` retires an open proposal whose decision happened another
-way; use it only after that actual decision. A proposal an engine vote step
-opened refuses `vote close` (`CONFLICT`); move that run with `docket step
-resolve` instead. Neither verb grants authority to override a human-only
-matter.
+way, and only after that decision. A proposal an engine vote step opened
+refuses `vote close` (`CONFLICT`); move that run with `docket step resolve`
+instead. Neither verb grants authority to override a human-only matter.
 
 A vote step may add a `threshold`, evaluated over the cast set once an
 approved tally comes back, before the step is allowed to route `pass`. It
@@ -109,9 +107,10 @@ A rejected tally is untouched: it still routes per `on_fail`, threshold or
 not. A committed proposal (an operator's manual `vote commit`) skips the
 threshold too, since that decision was made out of band. A step declaring no
 `threshold` routes on the tally alone. `approve-with-concerns` tallies as a
-full approval weight; the threshold is a post-approval routing check and does
-not change the tally math. The step's own recorded tally is readable
-downstream as an input; see [engine-produced inputs](workflows.md#engine-produced-inputs).
+full approval weight; the threshold is a post-approval routing check and
+does not change the tally math. The step's own recorded tally is readable
+downstream as an input; see
+[engine-produced inputs](workflows.md#engine-produced-inputs).
 
 ---
 

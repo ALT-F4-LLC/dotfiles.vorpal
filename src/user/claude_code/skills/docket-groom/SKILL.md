@@ -36,13 +36,11 @@ Run this skill in the main session: the survey, the ledger, every edit,
 the proposal gate, and the final report live here, since §4 needs the main
 session's `AskUserQuestion` tool. One part is delegated, and only one: §2's
 per-issue reading and judging runs through the read-only `docket-groom`
-Workflow script installed at `~/.claude/workflows/docket-groom.js`, which
-seats one registry probe per project, one judge per surveyed non-epic
-issue, and one clustering analyst per project, and returns a ledger. The
-script edits nothing, runs no docket mutation,
-and never asks the operator anything. Do not delegate the survey, the
-approval gate, or any edit to a subagent, and never rely on one to ask the
-operator, send a live message, or arrange a later handoff.
+Workflow script installed at `~/.claude/workflows/docket-groom.js`, detailed
+in §2. The script edits nothing, runs no docket mutation, and never asks
+the operator anything. Do not delegate the survey, the approval gate, or
+any edit to a subagent, and never rely on one to ask the operator, send a
+live message, or arrange a later handoff.
 
 Take a fresh survey for this invocation. Use `$ARGUMENTS` for the optional
 stale window and honor the operator's explicit constraints in this session,
@@ -54,9 +52,9 @@ One pass includes the decision rounds and affected-issue rechecks needed to
 finish grooming the surveyed backlog; it does not end at the first operator
 question. It takes no parameter beyond the optional stale window, does not
 repeat the survey or watch for new work, schedules no wakeups, and never
-touches the code the issues describe. If a gap cannot be resolved within the
-pass's authority or available evidence, report that work as incomplete
-rather than inventing a resolution.
+touches the code the issues describe. If a gap cannot be resolved within
+the pass's authority or available evidence, report it as incomplete rather
+than inventing a resolution.
 
 Rules:
 
@@ -71,13 +69,10 @@ Rules:
   `docket run status`, `docket workflow list`, `docket workflow show`, and CLI
   help are also permitted. Confirm exact command syntax through the relevant
   `--help`.
-- **Safe edits are yours; approval-gated edits are not.** Labels, priority,
-  comments, field fills, and parenting an unparented retained issue to an
-  existing epic apply directly, subject to §1's exclusions and §3's rule on
-  eligibility-narrowing hold labels. Closures, merges, splits, changes to
-  existing requirements or relations, epic creation, moving an issue
-  between parents, and edits rerouted by those exclusions go through §4;
-  only run `docket issue close` for a proposal the operator approved there.
+- **Safe edits are yours; approval-gated edits are not.** Apply §3's safe
+  edits directly; everything else, including any edit §3 reroutes, goes
+  through §4. Only run `docket issue close` for a proposal the operator
+  approved there.
 - **Judge from evidence.** A duplicate call you cannot defend in one sentence
   is not a duplicate. When a cluster is ambiguous, resolve the missing
   evidence or operator decision through §4a before proposing a merge. An
@@ -92,15 +87,14 @@ Rules:
 Survey both the invoking project and the Docket engine project. The engine
 checkout normally lives at `.../github.com/ALT-F4-LLC/docket.git/main`,
 beside this dotfiles repository, but that worktree may not be present in
-every environment (a bare clone with no checked-out `main`, for instance).
-Confirm its location and project/store identity using the checkout and
-supported read-only CLI inspection; do not infer ownership from an issue
-prefix. If the checkout does not resolve, report the engine-project survey
-as unavailable rather than proceeding from memory. Follow
-[Docket's context rules](../docket/SKILL.md#establish-context) for store
-resolution. Do not initialize a store or bind a project during grooming. If
-the invoking project is already the engine project in the same store, survey
-it once.
+every environment. Confirm its location and project/store identity using
+the checkout and supported read-only CLI inspection; do not infer
+ownership from an issue prefix. If the checkout does not resolve, report
+the engine-project survey as unavailable rather than proceeding from
+memory. Follow [Docket's context rules](../docket/SKILL.md#establish-context)
+for store resolution. Do not initialize a store or bind a project during
+grooming. If the invoking project is already the engine project in the
+same store, survey it once.
 
 Run these commands from each project's own checkout:
 
@@ -109,14 +103,13 @@ docket issue list --json=v2 --limit 1000 -s backlog -s todo -s in-progress -s re
 docket run status --json
 ```
 
-Project resolves from cwd's git identity, same as every other docket verb.
-A `VALIDATION_ERROR` naming no project means that repo isn't bound: say so
-and stop. If no store is reachable, report that failure and stop; do not
-infer the repo's binding from a connection failure. Scope is every open
-issue in both projects: everything not closed, all statuses, both whole
-backlogs, including engine-related issues filed in the invoking project.
-Discovery must not depend on an engine label, age, or a link from a local
-issue. Check the installed CLI's help for any additional open statuses and
+Project resolves from cwd's git identity. A `VALIDATION_ERROR` naming no
+project means that repo isn't bound: say so and stop. If no store is
+reachable, report that failure and stop; do not infer the repo's binding
+from a connection failure. Scope is every open issue in both projects,
+including engine-related issues filed in the invoking project. Discovery
+must not depend on an engine label, age, or a link from a local issue.
+Check the installed CLI's help for any additional open statuses and
 pagination, and apply the `--limit 1000` rule from the docket skill's
 [queue ownership reference](../docket/references/queue-ownership.md) to
 every list and run roster. If either checkout or project cannot be
@@ -124,29 +117,24 @@ resolved, or the full survey cannot be obtained, report the missing
 coverage and stop before editing; a capped result or an omitted project is
 not a full pass.
 
-Keep each issue's owning project, checkout, and store context throughout the
-pass. Read files, resolve workflows, inspect active runs and their rosters,
-and execute issue commands in that owning context. Review an issue only once
-even if it appears through several queries or references.
+Keep each issue's owning project, checkout, and store context throughout
+the pass: read files, resolve workflows, inspect active runs and their
+rosters, and execute issue commands in that owning context. Review an
+issue only once even if it appears through several queries or references.
 
 Epics arrive through the same survey: a row whose `kind` is `epic` is an
-epic, and every row's `parent_id` names its epic when it has one. Do not run
-a separate epic query; the survey's explicit status flags already cover
-every open status. Record each project's open epics and each issue's current
-parent in the ledger before judging anything. `docket issue show` lists an
-epic's children under `sub_issues`.
+epic, and every row's `parent_id` names its epic when it has one. Do not
+run a separate epic query. Record each project's open epics and each
+issue's current parent in the ledger before judging anything. `docket
+issue show` lists an epic's children under `sub_issues`.
 
 Two kinds of issue are in scope to read but not yours to freely edit:
 run-included and claimed, as the docket skill's
-[queue ownership reference](../docket/references/queue-ownership.md) defines
-them (read it; the definitions are shared with docket-plan and tend and are
-not restated here).
+[queue ownership reference](../docket/references/queue-ownership.md)
+defines them.
 
-Both still get comments and labels that leave workflow eligibility unchanged
-(§3); every other edit travels through §4. Workflow-affecting labels,
-priority, and content changes can alter work mid-flight, so if a label's
-effect on eligibility cannot be established, route that protected issue's
-label edit through §4 too.
+§3 sets what direct edit a run-included or claimed issue may still take;
+everything else travels through §4.
 
 ## 2. Read and judge
 
@@ -178,8 +166,8 @@ stands only when its cited evidence supports it; re-read the issue and the
 cited files yourself for any entry you would not defend in one sentence,
 for every closure, merge, rescope, or split candidate, and for every issue
 `uncovered` names, which you judge inline under the rules below. If the
-script cannot launch or returns nothing, judge every issue inline; the
-pass does not stop, it slows down.
+script cannot launch or returns nothing, judge every issue inline instead;
+the pass does not stop, it slows down.
 
 Build one ledger covering every issue, including issues with no hygiene
 defects. Record its owning project and store, ID, value decision,
@@ -259,8 +247,7 @@ Assign exactly one decision, keeping readiness as a separate assessment:
   supported change to the existing contract through §4. When the issue is
   over the [sizing reference](../docket/references/sizing.md)'s cap, the
   rescope is a split proposal under §4b, one piece per independent
-  outcome. The pieces of an approved split and an approved epic are the
-  only issues a pass creates.
+  outcome.
 - **Merge:** another retained issue can represent the same outcome after
   preserving this issue's unique information. Use §4's merge proposal.
 - **Close:** propose closure through §4 with a specific reason: fully
@@ -352,11 +339,9 @@ Record these findings alongside the value decision:
 - **Oversized:** the issue is above the sizing reference's cap: its
   acceptance criteria describe two or more independent outcomes, or a
   single outcome exceeds the bounded ceiling (files, directories, or
-  verification surfaces). Bias toward finding the split: the reference's
-  mined evidence shows a wide single-outcome issue costs sharply more and
-  needs extra review and fix rounds even with no bundled criterion, so
-  treat an issue past the ceiling as a decomposition to find, not a
-  large-but-legitimate unit to wave through. Record the four measures
+  verification surfaces). Bias toward finding the split, per the sizing
+  reference: treat an issue past the ceiling as a decomposition to find,
+  not a large-but-legitimate unit to wave through. Record the four measures
   (independent outcomes, files, directories, criteria) and the outcome or
   file-group boundaries in the ledger, and draft the pieces for a
   **split** proposal under §4b: one piece per outcome, or per
@@ -504,12 +489,12 @@ adds information; reuse existing findings instead of repeating them.
 Non-destructive edits land directly, no questions asked: labels (e.g.
 `stale` on §2's stale findings, or removing a §2 stale-binding label once
 its workflow-narrowing effect is confirmed), priority, comments, and field
-fills. Two labels are the exception: `route-tend` and `route-loop` admit
-the issue to autonomous work, so they go through §4b. On run-included or claimed issues, only comments and labels with
-confirmed unchanged workflow eligibility apply directly; other edits route
-to §4. Use existing label conventions and do not add a value label whose
-workflow effect is unknown. Ledger decisions are not Docket statuses or
-labels and do not authorize status changes.
+fills, except `route-tend` and `route-loop`, which §2b routes through §4b.
+On run-included or claimed issues, only comments and labels with confirmed
+unchanged workflow eligibility apply directly; other edits route to §4. Use
+existing label conventions and do not add a value label whose workflow
+effect is unknown. Ledger decisions are not Docket statuses or labels and
+do not authorize status changes.
 
 Parenting is a safe edit under one condition: the issue is retained, has no
 parent, is neither run-included nor claimed, and the target is an existing
@@ -519,9 +504,8 @@ then comment the one-sentence defense on the child. Parent and kind route
 nothing in any registered workflow and activation does not freeze them, so
 this edit changes no eligibility. Moving an issue between parents, parenting
 a run-included or claimed issue, and detaching an issue go through §4b.
-Adding `blocked` to an epic that lacks it is a direct label edit here, since
-the corpus policy documents its exclusion effect. Never remove `blocked`
-from an epic during grooming.
+Adding `blocked` to an epic that lacks it (§2b) is a direct label edit
+here. Never remove `blocked` from an epic during grooming.
 
 Do not automatically broaden workflow eligibility for issues whose value is
 unresolved or whose closure, merge, or rescope is pending. Identify any such
@@ -642,8 +626,8 @@ Closures, merges, and splits never apply without the operator's say-so.
 Batch the proposals from §2: value-based closures, duplicate merges,
 rescopes, splits, repairs to acceptance criteria, relation corrections,
 epic creations, re-parents, confirmed workflow holds, `route-tend` and
-`route-loop` labels (each admits the issue to autonomous work), and edits
-§1 rerouted here. Each proposal must contain:
+`route-loop` labels, and edits §1 rerouted here. Each proposal must
+contain:
 
 - A stable number, kind, and every issue ID with its owning project.
 - A one-sentence defense tied to the surveyed evidence.
@@ -744,11 +728,10 @@ Then the `depends_on` links, then the rescope of the original in one
 -f <file> --scope '<glob>' -d -` from a fresh read (`edit -f` and
 `--scope` replace the stored lists, so every kept path is named), then
 the comment on the original. Piece ids are named placeholders resolved
-from each create's JSON output. The idempotency key derives from the
-project, the proposal's stable number, and the piece number, so a retry
-after an uncertain outcome returns the same issue. Routing and size
-labels are re-judged per piece after the split lands, under §2b, never
-copied from the original.
+from each create's JSON output. The idempotency key adds the piece number
+to the epic's project-plus-proposal-number scheme, for the same reason.
+Routing and size labels are re-judged per piece after the split lands,
+under §2b, never copied from the original.
 
 A **re-parent** shows each affected issue's current parent and proposed
 parent, or `none` when detaching, with the evidence for the move. Use it
@@ -826,19 +809,16 @@ deliverable, scope and files, checkable acceptance criteria, required
 context, settled operator decisions, true prerequisites, intended
 workflow, and routing label from the issue and its explicit references,
 and the issue must sit within the sizing reference's cap as finally
-stored, including each piece of an applied split.
-Check that decisions are reflected consistently in the body, criteria,
-labels, and relations, with superseded directions in comment history
-clearly identified. Route any remaining resolvable gap through §3 or §4
-within this pass. Re-read each retained issue's entire final
-acceptance-criteria set against §2c, including unchanged criteria and
-requirement coverage. Only mark the criteria well-defined after every
-criterion passes and all required outcomes are covered. An absent, vague,
-contradictory, or unverifiable criterion keeps that issue's grooming
-incomplete until properly set and verified in the stored issue. That
-recheck applies to non-epic issues. An epic's recheck is that it carries
-`blocked`, that every open child is retained or has a recorded gap, and
-that each membership has its one-sentence defense in the ledger.
+stored, including each piece of an applied split. Check that decisions
+are reflected consistently in the body, criteria, labels, and relations,
+with superseded directions in comment history clearly identified. Route
+any remaining resolvable gap through §3 or §4 within this pass. Re-apply
+§2c to each retained issue's entire final acceptance-criteria set,
+including unchanged criteria; grooming stays incomplete for an issue until
+every criterion passes and all required outcomes are covered in the stored
+issue. That recheck applies to non-epic issues. An epic's recheck is that
+it carries `blocked`, that every open child is retained or has a recorded
+gap, and that each membership has its one-sentence defense in the ledger.
 
 Grooming is complete only when every surveyed issue has a verified
 disposition and retained work has no unresolved grooming gaps. Distinguish
@@ -850,11 +830,9 @@ evidence, required but unapproved edits, or failed mutations make grooming
 incomplete for the affected work. Report those limits explicitly.
 
 Before reporting, check the summary and each proposal's one-sentence
-defense against §2's evidence: no hedged claim standing without the value,
-relevance, duplicate, staleness, or priority fact behind it, no vague label
-("seems off") standing in for the reason. Verify the resulting issue state
-for edits reported as applied; distinguish attempted operations from
-confirmed changes.
+defense against §2's evidence: no hedged or vague claim standing in for
+the fact behind it. Verify the resulting issue state for edits reported as
+applied; distinguish attempted operations from confirmed changes.
 
 One summary in the main session, plain language: how many issues surveyed,
 how many received a value review, the stale window used, and counts by
@@ -878,5 +856,5 @@ still needing refinement. Separately name pending, outdated, failed, or
 partially applied proposals, unresolved value questions, and ambiguous
 findings. Do not claim only valuable issues remain when retirement
 proposals were declined or pending, or value could not be established.
-Then stop: no wakeup, no follow-up pass. The next docket-groom happens when
-the operator invokes it again.
+Then stop. The next docket-groom happens when the operator invokes it
+again.

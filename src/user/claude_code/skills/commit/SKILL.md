@@ -11,8 +11,7 @@ Invocation scope: $ARGUMENTS
 
 Survey the changes, settle scope, group, guard, commit, and report. You run
 in an isolated subagent without the parent conversation's history. Use the
-invocation and repository state; do not assume you know what the parent
-edited.
+invocation and repository state; do not assume what the parent edited.
 
 **Commit immediately once scope and guards are satisfied.** Do not ask for
 approval of messages or a staging plan. If scope requires clarification,
@@ -31,7 +30,7 @@ add it.
 
 ## 1. Survey and scope
 
-Work from the repository root. Record the branch and HEAD, then inspect:
+Work from the repository root. Record branch and HEAD, then inspect:
 
 ```bash
 git status --porcelain=v2 --branch --untracked-files=all
@@ -43,7 +42,7 @@ git log --oneline -5
 Read the contents, not just filenames or statistics. Read candidate untracked
 files explicitly; neither diff command includes them. Account for deletions,
 both sides of renames, file modes, and binary changes. Use NUL-delimited
-output when parsing paths.
+output to parse paths.
 
 Stop for unresolved conflicts or an active merge, rebase, cherry-pick,
 revert, or sequencer operation. Missing history on an unborn branch is
@@ -61,16 +60,16 @@ The invocation defines the authorized scope:
    contradicts the apparent scope, return the groups and individual paths
    to the parent for clarification before committing.
 
-Concurrent sessions may edit the same feature or file. Do not override
-evidence that changes are outside scope merely because they fit the same
-theme. With a usable narrower scope, commit independent, clearly authorized
-groups and report the rest.
+Concurrent sessions may edit the same feature or file. Fitting the same
+theme does not override evidence that changes are outside scope. With a
+usable narrower scope, commit independent, clearly authorized groups and
+report the rest.
 
 Inspect staged and unstaged versions separately. Existing staging does not
 expand scope. Use the reviewed working-tree version only when the request
-covers its complete contents. Do not overwrite a different staged version
-or lose edits that exist only in the index without clear authority to
-replace them. Defer unresolved paths and their dependent changes.
+covers its complete contents. Without clear authority to replace it, do not
+overwrite a different staged version or lose edits that exist only in the
+index. Defer unresolved paths and their dependent changes.
 
 ## 2. Group
 
@@ -82,7 +81,7 @@ Use one commit per logical unit, grouped by intent:
   changes. Do not split merely to reach a commit count.
 - A file may appear in only one commit. Never hunk-split. If unrelated
   units share a file and cannot satisfy this rule, defer that file and
-  its dependent changes rather than assign it to a "dominant" intent.
+  its dependent changes rather than assign it a "dominant" intent.
 - Order groups by dependency. Each commit must stand on its parent; an
   uncommitted dependency in the working tree does not make it complete.
 
@@ -106,8 +105,8 @@ Never stage:
   are eligible after inspection.
 
 If proposed content appears to contain a live secret, defer the entire
-group and its dependents. Continue with independent clean groups. Report
-the path and kind of finding without reproducing the value.
+group and its dependents, then continue with independent clean groups.
+Report the path and kind of finding without reproducing the value.
 
 Do not add unexplained or uninspected files. Do not edit `.gitignore` as
 a side task. Record every exclusion and its reason.
@@ -118,8 +117,8 @@ Use `type(scope): summary`.
 
 Types: `feat`, `fix`, `docs`, `refactor`, `test`, `perf`, `build`, `ci`,
 `chore`. Choose the scope from the area changed, reusing the repository's
-scope vocabulary when useful. Use an imperative summary, no trailing period,
-at most 72 characters for the entire subject.
+scope vocabulary when useful. Use an imperative summary with no trailing
+period, at most 72 characters for the entire subject.
 
 Use `type(scope)!: summary` for a breaking public-contract change, and
 explain the break and required migration in short body bullets.
@@ -129,7 +128,7 @@ line followed by short `- ` bullets, not prose paragraphs or file lists.
 
 Make messages understandable without session context. Omit issue IDs,
 orchestration vocabulary, agent names, and policy citations. Describe a
-motivating incident directly; dates, timestamps, and commit hashes are not
+motivating incident directly: dates, timestamps, and commit hashes are not
 substitutes for an explanation.
 
 ## 5. Commit
@@ -139,7 +138,7 @@ arguments, put `--` before paths, and use `git --literal-pathspecs` for
 path-selecting commands. Use file paths, not broad directory pathspecs.
 Keep temporary message files outside the repository.
 
-Before each attempt, recheck the branch, HEAD, index, and selected files
+Before each attempt, recheck branch, HEAD, index, and selected files
 against the reviewed state. Re-survey unexpected changes. If the state
 keeps changing, stop and report concurrent activity. These checks do not
 lock other writers out of a shared checkout.
@@ -166,7 +165,7 @@ For each group, in dependency order:
    ```
 
 Substitute every exact path in the group. `--only` uses those paths' current
-working-tree contents and excludes unrelated pre-existing staged changes. It
+working-tree contents and excludes unrelated pre-existing staged changes; it
 does not freeze the files or prevent hooks from changing the proposed
 commit.
 
@@ -193,8 +192,8 @@ bypass hooks or repeatedly retry a rejection.
 
 ## 6. Report
 
-Run a fresh status listing every untracked file. Reconcile the initial
-survey, landed commits, and final state.
+Run a fresh status listing every untracked file. Reconcile initial survey,
+landed commits, and final state.
 
 Report:
 

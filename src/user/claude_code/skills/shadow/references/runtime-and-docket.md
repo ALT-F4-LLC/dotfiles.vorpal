@@ -10,16 +10,17 @@ Use the installed tool schema and returned task/agent identity. A named launch
 can be a teammate when agent teams are enabled; an ordinary background subagent
 has native completion delivery. An addressable observer may also send interim
 findings through `SendMessage`. Retain the log-before-delivery recovery path
-without assuming every final answer disappears. Monitor behavior and message
-latency should be recorded for the actual mode and build. Neither a message
+without assuming every final answer disappears. Record monitor behavior and
+message latency for the actual mode and build. Neither a message
 acknowledgment nor a collected event proves the receiver processed it.
 [Tools reference](https://code.claude.com/docs/en/tools-reference#agent-tool-behavior).
 
 An existing custom observer definition can specify effort and a smaller tool
 surface while remaining addressable. Do not invent an `effort` field on a tool
-that does not expose it. Do not install or edit an agent definition during an
-audit. A prompt boundary alone is not enforced containment; unrestricted shell
-and write-capable MCP tools can exceed a nominally read-only tool selection.
+that does not expose it, and do not install or edit an agent definition during
+an audit. A prompt boundary alone is not enforced containment; unrestricted
+shell and write-capable MCP tools can exceed a nominally read-only tool
+selection.
 [Subagents](https://code.claude.com/docs/en/sub-agents).
 
 As checked 2026-09-11, Fable 5.1 (`claude-fable-5-1`), Opus 5 (`claude-opus-5`),

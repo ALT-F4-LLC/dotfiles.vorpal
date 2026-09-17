@@ -8,8 +8,8 @@ to JSON shapes require runtime fixtures, not just a help comparison.
 ## Behavioral comparisons
 
 `scripts/evaluate.py` compares a candidate and optional baseline across exact
-model IDs and effort settings. It supplies the entry point and lets Claude
-read supporting references as needed. The twelve independent scenarios in
+model IDs and effort settings, supplying the entry point while Claude reads
+supporting references as needed. The twelve independent scenarios in
 `evals/cases.json` cover voter identity, accepted records with failing gates,
 confirmed success, interrupted recording, lease expiry, project selection,
 pagination, literal descriptions and idempotency, claim attribution, gap
@@ -38,10 +38,10 @@ python3 scripts/evaluate.py --baseline /path/to/saved/docket \
 Each invocation has its own budget threshold and wall timeout. Claude checks
 the budget between requests; an in-flight request can exceed the threshold.
 The initial plan prints the matrix size and summed thresholds. A baseline
-doubles the number of invocations. Add `--efforts low medium high xhigh max`
-or `--repetitions 3` only when the comparison warrants the additional cost.
-The default, one invocation per model/variant at high effort, suits a smoke
-comparison rather than a statistically reliable ranking.
+doubles the invocation count. Add `--efforts low medium high xhigh max` or
+`--repetitions 3` only when the comparison warrants the added cost. The
+default, one invocation per model/variant at high effort, suits a smoke
+comparison, not a statistically reliable ranking.
 
 The output records frozen source/case/evaluator/inventory hashes, requested
 model/effort, Claude's result metadata (including observed `modelUsage`,
@@ -59,10 +59,9 @@ native Skill loading, an executor's tool permissions, physical shell
 quoting, or real context compaction. Literal-text execution uses a
 shell-free argv transport. `--prefix-chars N` adds a synthetic
 prefix-retention probe with the full skill still readable from disk, testing
-recovery with retrieval available. N counts characters, not model tokens,
-and must not be reported as Claude Code's compaction result. The resume
-scenario tests decisions from a retained handoff, not compaction's ability
-to preserve that handoff.
+recovery with retrieval available. N counts characters, not model tokens, and
+is not Claude Code's compaction result. The resume scenario tests decisions
+from a retained handoff, not compaction's ability to preserve one.
 
 Before promoting a substantially changed skill, also inspect a
 representative Claude Code run for correct discovery, companion-skill
@@ -81,11 +80,12 @@ preserve it until Docket-specific results justify a change.
 
 - Sonnet 5 benefits from explicitly scoped requirements and concrete output
   contracts, particularly at lower effort.
-- Opus 5 needs the task's actual gates and acceptance criteria; repeated generic
-  instructions to verify everything can add unnecessary work.
-- Fable 5.1 should be compared across effort levels on completed-task quality,
-  cost and latency. Low effort can retrieve less, so verify live CLI discovery
-  on unfamiliar commands. Request concise progress updates on long operations.
+- Opus 5 needs the task's actual gates and acceptance criteria; repeated
+  generic instructions to verify everything can add unnecessary work.
+- Fable 5.1 should be compared across effort levels on completed-task
+  quality, cost, and latency. Low effort can retrieve less, so verify live
+  CLI discovery on unfamiliar commands. Request concise progress updates on
+  long operations.
 
 Sources: [Claude skill evaluation guidance](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices),
 [Sonnet 5](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-sonnet-5),

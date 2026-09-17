@@ -21,12 +21,12 @@ current source, affected work, and existing issue state. Use this disposition:
 
 A run is terminal only with reliable run/task evidence and settled relevant
 children. A loop also requires confirmed scheduling stop and settled current
-work. Paused/waiting-human is not terminal. Unknown state stays pending. Recheck
-before each batch that could wake a queue consumer; these checks do not lock
-the repository or guarantee no other session can begin afterward. If the
-required noninterference needs an atomic guarantee, hold the finding until an
-explicitly non-dispatchable intake mechanism is available. Never invent a safe
-issue state or stop queue consumers to create one.
+work. Paused/waiting-human is not terminal, and unknown state stays pending.
+Recheck before each batch that could wake a queue consumer; these checks do
+not lock the repository or guarantee no other session can begin afterward. If
+the required noninterference needs an atomic guarantee, hold the finding
+until an explicitly non-dispatchable intake mechanism is available. Never
+invent a safe issue state or stop queue consumers to create one.
 
 ## Route by owner and store
 
@@ -36,11 +36,11 @@ A bug in an observed repository belongs to that repository. An instance
 override belongs in the policy referral unless it exposes a shipped defect.
 
 Resolve the owner's actual checkout and Git identity from trustworthy project
-metadata and filesystem evidence. Do not assume a primary worktree is named
-`main`. Verify the selected store as well as the checkout: explicit store
-overrides and legacy local stores can defeat machine-global assumptions.
-Project-scoped listings must answer for this owner. Never create in the launch
-repo intending to move the issue afterward.
+metadata and filesystem evidence; do not assume a primary worktree is named
+`main`. Verify the selected store as well as the checkout, since explicit
+store overrides and legacy local stores can defeat machine-global
+assumptions. Project-scoped listings must answer for this owner. Never
+create in the launch repo intending to move the issue afterward.
 
 Filing requires an installed compatible Docket binary whose startup effects
 are understood. An issue write does not authorize unrelated schema migrations

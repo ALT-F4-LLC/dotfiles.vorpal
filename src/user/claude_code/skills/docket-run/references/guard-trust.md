@@ -1,19 +1,18 @@
 # Docket engine CLI — `docket guard` and `docket trust`
 
-Covers the `docket guard` and `docket trust` families. Consumer: the docket-run
-skill; this file is the single copy of the engine CLI contract for these verbs,
-split out of docket's reference.md, whose [JSON envelope
-section](../../docket/reference.md#json-envelope--per-verb-data-shapes) still
-holds the response-shape contract and parsing traps. Command and flag inventory
-verified 2026-09-14 against `docket nightly-112-gcffd10c` (commit `cffd10c`,
-built `2026-09-14T21:28:29Z`) by `--help` and `--version` only; behavioral
-claims and JSON examples were not re-run.
+Covers the `docket guard` and `docket trust` families, the single copy of this
+engine CLI contract, split out of docket's
+[reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
+(consumer: the docket-run skill), which still holds the response-shape
+contract and parsing traps. Verified 2026-09-14 against `docket
+nightly-112-gcffd10c` (commit `cffd10c`, built `2026-09-14T21:28:29Z`) by
+`--help`/`--version` only; behavior and JSON examples were not re-run.
 
 <a id="contents"></a>
 
 ## Contents
 
-- [`docket guard`](#guard-commands) — 114 lines
+- [`docket guard`](#guard-commands) — 113 lines
   - [`guard record`](#guard-record) — 18 lines
   - [`guard spawn`](#guard-spawn) — 45 lines
 - [`docket trust`](#trust-commands) — 186 lines
@@ -38,11 +37,10 @@ Deterministic predicates over engine state, for hooks.
 | `guard spawn --run RUN-N` | the proposed rows byte-match the open dispatch **and** no write-class reap is unacknowledged (or `--deciding-vote PROPOSAL-N` names the open proposal this batch exists to decide — the reap half only) |
 | `guard spawn --active` | the reap half over **every** active run of the project: denies on the oldest run that would deny, its reason prefixed `RUN-N: `. Mutually exclusive with `--run`, and it does not take `--deciding-vote` — the carve-out admits a batch onto one run, so name that run with `--run`. The `--json` deny envelope is `{ok:false, error, code}` with no run field; the id is the reason's prefix |
 
-**Exit 0 = allow, exit 2 = deny with a reason.** That contract is
-independent of the ordinary command error taxonomy: a guard's caller
-tests a boolean, so exit 2 here means "denied", not "not found". The
-reason goes to stderr in human mode and into the envelope's `error` under
-`--json`.
+**Exit 0 = allow, exit 2 = deny with a reason**, independent of the ordinary
+command error taxonomy: a guard's caller tests a boolean, so exit 2 here
+means "denied," not "not found." The reason goes to stderr in human mode and
+into the envelope's `error` under `--json`.
 
 **When the resolved store has no database, a guard ALLOWS (exit 0)
 rather than denying.** A repo with no engine has no engine state to

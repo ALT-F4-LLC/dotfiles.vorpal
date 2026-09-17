@@ -1,14 +1,12 @@
 # Docket engine CLI — `docket dispatch` and `docket next --run`
 
-Covers the `docket dispatch` family and `docket next` in step mode (`--run`).
-Consumer: the docket-run skill; this file is the single copy of the engine CLI
-contract for these verbs, split out of docket's reference.md, whose [JSON
-envelope
-section](../../docket/reference.md#json-envelope--per-verb-data-shapes) still
-holds the response-shape contract and parsing traps. Command and flag inventory
-verified 2026-09-14 against `docket nightly-112-gcffd10c` (commit `cffd10c`,
-built `2026-09-14T21:28:29Z`) by `--help` and `--version` only; behavioral
-claims and JSON examples were not re-run.
+Covers the `docket dispatch` family and `docket next` in step mode (`--run`),
+the single copy of this engine CLI contract, split out of docket's
+[reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
+(consumer: the docket-run skill), which still holds the response-shape
+contract and parsing traps. Verified 2026-09-14 against `docket
+nightly-112-gcffd10c` (commit `cffd10c`, built `2026-09-14T21:28:29Z`) by
+`--help`/`--version` only; behavior and JSON examples were not re-run.
 
 <a id="contents"></a>
 

@@ -41,20 +41,20 @@ length to read. The engine families live in docket-run's references:
 [gate, policy and registry](../docket-run/references/gate-policy.md),
 [report and doctor](../docket-run/references/report-doctor.md).
 
-- [JSON envelope](#json-output) — 71 lines
+- [JSON envelope](#json-output) — 63 lines
 - [Command & Flag Reference](#command-reference) — 9 lines
-- [`docket issue` (alias `i`)](#issue-commands) — 294 lines
+- [`docket issue` (alias `i`)](#issue-commands) — 269 lines
   - [`issue create`](#issue-create) — 18 lines
-  - [`issue edit [id]`](#issue-edit) — 34 lines
-  - [`issue show [id]`](#issue-show) — 25 lines
-  - [`issue list`](#issue-list) — 43 lines
+  - [`issue edit [id]`](#issue-edit) — 27 lines
+  - [`issue show [id]`](#issue-show) — 19 lines
+  - [`issue list`](#issue-list) — 35 lines
   - [`issue close [id]`](#issue-close) — 12 lines
   - [`issue claim <id>`](#issue-claim) — 16 lines
   - [`issue heartbeat <id>`](#issue-heartbeat) — 12 lines
   - [`issue release <id>`](#issue-release) — 8 lines
-  - [`issue move <id> <status>`](#issue-move) — 37 lines
+  - [`issue move <id> <status>`](#issue-move) — 35 lines
   - [`issue reopen [id]`](#issue-reopen) — 10 lines
-  - [`issue delete <id>`](#issue-delete) — 16 lines
+  - [`issue delete <id>`](#issue-delete) — 14 lines
   - [`issue log [id]`](#issue-log) — 10 lines
   - [`issue comment add [id]`](#issue-comment) — 11 lines
   - [`issue file add/remove/list`](#issue-file) — 8 lines
@@ -74,12 +74,12 @@ length to read. The engine families live in docket-run's references:
   - [`schema register <name@version> <file.json>`](#schema-register) — 17 lines
   - [`schema list`](#schema-list) — 14 lines
   - [`schema show <name>[@<version>]`](#schema-show) — 16 lines
-- [`docket vote` (alias `v`)](#vote-commands) — 149 lines
+- [`docket vote` (alias `v`)](#vote-commands) — 137 lines
   - [`vote create`](#vote-create) — 17 lines
   - [`vote cast <id>`](#vote-cast) — 18 lines
   - [`vote commit <id>`](#vote-commit) — 9 lines
-  - [`vote close <id>`](#vote-close) — 44 lines
-  - [`vote backfill-usage <id>`](#vote-backfill-usage) — 23 lines
+  - [`vote close <id>`](#vote-close) — 35 lines
+  - [`vote backfill-usage <id>`](#vote-backfill-usage) — 20 lines
   - [`vote link <proposal-id>`](#vote-link) — 8 lines
   - [`vote list`](#vote-list) — 14 lines
   - [`vote result <id>`](#vote-result) — 6 lines
@@ -97,13 +97,13 @@ length to read. The engine families live in docket-run's references:
 - [`docket board`](#board-commands) — 14 lines
 - [`docket stats`](#stats-commands) — 6 lines
 - [`docket init`](#init-commands) — 14 lines
-- [`docket project`](#project-commands) — 63 lines
+- [`docket project`](#project-commands) — 52 lines
   - [`project list`](#project-list) — 10 lines
-  - [`project delete <prefix|name|identity|id>`](#project-delete) — 13 lines
-  - [`project set-prefix PREFIX`](#project-set-prefix) — 32 lines
+  - [`project delete <prefix|name|identity|id>`](#project-delete) — 11 lines
+  - [`project set-prefix PREFIX`](#project-set-prefix) — 23 lines
 - [`docket version`](#version-commands) — 6 lines
-- [`docket config`](#config-commands) — 24 lines
-  - [`config set <key> <value>`](#config-set-get) — 17 lines
+- [`docket config`](#config-commands) — 23 lines
+  - [`config set <key> <value>`](#config-set-get) — 16 lines
 
 <a id="json-output"></a>
 
@@ -131,17 +131,9 @@ core shapes, not exhaustive field lists; additive fields can appear.
 | `vote list` (`--all` for resolved) | `{proposals: [...], total: <int>}` | `{items: [...], total, truncated}` |
 | `vote show VOTE-ID` | `{id, status, weighted_score, threshold, required_voters, criticality, final_outcome, escalation_reason, description, rationale, domain_tags, files_changed, linked_issues, linked_docs, created_by, created_at, updated_at, votes: [...]}` | identical |
 
-Current help documents two more shape distinctions: `issue show ID` and
-`step show ID` return one object under `data`; two or more IDs return an array
-of those objects. Issue summaries from `issue list`, `next`, `plan`, and
-`board` omit `description` by default and carry `description_bytes`; pass
-`--with-body` for full descriptions. An omitted body is not an empty
-description.
-
-For `step complete` / `step record`, `ok: true` means the artifact recorded.
-Check the step status and `failed_gates`: a recorded artifact can still fail
-its gates and leave the step `waiting-human`. Guard verbs have a separate exit
-contract: 0 allows, 2 denies; do not read their exit 2 as ordinary `NOT_FOUND`.
+Two more shape distinctions: single vs. multiple IDs on [`issue
+show`](#issue-show) and `step show`, and `description`/`description_bytes`
+on summary rows (see [`issue list`](#issue-list)).
 
 Four parsing traps from the earlier runtime checks:
 
@@ -225,21 +217,15 @@ noninteractive values explicitly rather than relying on a terminal form.
 | `--if-version` | — | int | `0` | apply only at this version; `CONFLICT` otherwise |
 
 **`--scope` is not `--file`.** `--file` records the concrete paths an issue
-concerns; `docket plan` uses them to split colliding work. `--scope` is a list
-of path **globs** declaring what an issue is *expected* to touch — a judgment
-made ahead of the work, snapshotted at activation and used by the scheduler
-for mutual exclusion between steps. They differ in cardinality, semantics
-(actual vs. intended), and matching rule (equality vs. glob intersection).
-
-An issue created without `--scope` stores SQL `NULL`, not `[]`: "no scope
-declared" and "declared to touch nothing" are different facts. An `issue edit`
-that never mentions `--scope` leaves an earlier declaration alone.
-
-**Reading it back:** `issue show` and `issue list` carry `scope` **when the
-issue declares one**, under plain `--json` and `--json=v2`. The three states
-are distinguishable on the wire: no key at all is undeclared, `[]` is
-declared-to-touch-nothing, and a populated array is the declaration. A
-declared scope also survives `export`/`import` intact, `NULL` included.
+concerns; `docket plan` uses them to split colliding work. `--scope` is a
+list of path **globs** declaring what an issue is *expected* to touch,
+snapshotted at activation and used by the scheduler for mutual exclusion
+between steps. An issue created without `--scope` stores SQL `NULL`, not
+`[]`, so "no scope declared" and "declared to touch nothing" stay
+distinguishable on the wire (no key vs. `[]` vs. a populated array) through
+`issue show`, `issue list`, and `export`/`import`. An `issue edit` that
+never mentions `--scope` leaves an
+earlier declaration alone.
 
 <a id="issue-show"></a>
 
@@ -253,18 +239,12 @@ object: use `data.title`, not `data.issue.title`. Batch already-known IDs in
 one call when their complete details are needed.
 
 Abandoning an issue's run work leaves its tracker status unchanged. Check
-`run_disposition` before treating `todo` or `review` as untouched work.
-`issue show` prints the run, deciding step when present, timestamp, and
-reason; `--json` carries `run_disposition` `{run, disposition, by, reason,
-at}`, emitted **only when a run abandoned its work**, so an ordinary issue's
-payload is unchanged. `by` is absent when an operator abandoned the issue from
-outside the graph with `run abandon --issue`, where no step decided it.
-
-It is the **latest** such ruling, keyed by ISSUE and not bound to any run: an
-issue abandoned two runs ago and never resurfaced still reports the run that
-stopped. It survives `issue reopen` too — a dated fact about a run, not a
-claim about the issue's current status, and usually what a reopened issue
-most needs. Earlier rulings stay in `events list`.
+`run_disposition` before treating `todo` or `review` as untouched work:
+`--json` carries it as `{run, disposition, by, reason, at}`, emitted
+**only when a run abandoned its work** (`by` absent when an operator
+abandoned from outside the graph with `run abandon --issue`). It is the
+**latest** such ruling, keyed by ISSUE and not bound to any run, and
+survives `issue reopen`; earlier rulings stay in `events list`.
 
 <a id="issue-list"></a>
 
@@ -294,20 +274,12 @@ the run project's prefix. An unknown run is `NOT_FOUND`; `--run` and
 `--project` together are refused because the run already defines the project.
 
 Listing is otherwise cwd-scoped: the project the working directory resolves
-to. `--project` is the escape hatch a machine-global store needs — without
-it, reading another project's issues means changing directory into it, which
-is impossible for a checkout not on this machine. Ids render under the NAMED
-project's prefix, not the caller's, for the same reason
-`events list --all-projects` does: the prefix is the only thing on the row
-that says whose issue it is.
-
-**The target resolves four ways** — exact `identity` path, numeric row `id`,
-`name`, or display `prefix` (name and prefix case-insensitively) — every
-column `docket project list` prints, through the same resolver `issue move
---project` and `project delete` use. The PREFIX matters most: it is the only
-project identifier an issue id carries (`FLX-141`), so it is the one a reader
-has actually seen. An ambiguous name or prefix is a `VALIDATION_ERROR` naming
-the candidates (id, name, identity) rather than a guess.
+to. Ids render under the NAMED project's prefix, not the caller's, since the
+prefix is the only thing on the row that says whose issue it is. The target
+resolves four ways — exact `identity` path, numeric row `id`, `name`, or
+display `prefix` (case-insensitively) — through the same resolver `issue
+move --project` and `project delete` use; an ambiguous name or prefix is a
+`VALIDATION_ERROR` naming the candidates.
 
 <a id="issue-close"></a>
 
@@ -376,16 +348,14 @@ close` (shorthand for this move) states: the holder must supply its token
 unclaimed issue needs no token.
 
 **Migration (`--project`)** re-homes work that landed in the wrong project —
-most commonly a gap recorded by `step complete --gap-file`, which lands in the
-run's own project unconditionally. The target resolves in order: exact
-`identity`, then numeric `id`, then unique `name`, then unique `prefix`
-(name/prefix matches are case-insensitive) — the same resolver `issue list
---project` and `project delete` use; an ambiguous name or prefix is a
-`VALIDATION_ERROR` naming the candidates. Labels re-map **by name** into the
-target project (created there when missing, color preserved); comments,
-relations, and activity ride along untouched — ids are store-wide, so nothing
-referencing the issue goes stale. The response carries the target project and
-the full list of migrated ids.
+most commonly a gap recorded by `step complete --gap-file`, which lands in
+the run's own project unconditionally. The target resolves through the same
+four-key resolver as [`issue list --project`](#issue-list); an ambiguous
+name or prefix is a `VALIDATION_ERROR` naming the candidates. Labels re-map
+**by name** into the target project (created there when missing, color
+preserved); comments, relations, and activity ride along untouched, since
+ids are store-wide. The response carries the target project and the full
+list of migrated ids.
 
 | Refusal | Code | Exit |
 |---|---|---|
@@ -414,11 +384,9 @@ Only transitions if currently `done`, sets status to `backlog`.
 | `--yes` | `-y` | bool | `false` | alias for `--force` |
 | `--orphan` | — | bool | `false` | promote sub-issues to root; mutually exclusive with `--force` |
 
-`--yes` is an ALIAS, not a third behavior: the confirmation it answers is a
-three-way choice (cascade, orphan, cancel), and a flag meaning "yes" with
-nothing to say yes to would pick one silently. `--force` names the choice;
-`--yes` is the spelling scripted cleanup reaches for. An issue with no
-sub-issues never asks anything and needs neither flag.
+`--yes` is an ALIAS for `--force`, not a third behavior; scripted cleanup
+uses either spelling. An issue with no sub-issues never asks anything and
+needs neither flag.
 
 <a id="issue-log"></a>
 
@@ -719,11 +687,11 @@ None of the `schema` verbs are watch-eligible; `--watch` on any of them is a
 | `--confidence` | — | float64 | `0` | required (when explicitly set) in `--json`; range `[0.0, 1.0]` |
 | `--domain-relevance` | — | float64 | `0` | required (when explicitly set) in `--json`; range `[0.0, 1.0]` |
 | `--findings` | — | string | `""` | `"-"` reads stdin |
-| `--findings-json` | — | string | `""` | `"-"` reads stdin; `{"blockers": [...], "concerns": [...], "suggestions": [...]}`. Each entry is a bare string, or `{"text": ..., "evidence": ["artifact:ARTIFACT-N", "gate:<name>"]}` naming what the finding rests on: an artifact the run holds (a bare `N` is rewritten to `artifact:ARTIFACT-N`), or a gate name any step of the run recorded a result for. Every reference is resolved against the run whose vote step or reap acknowledgment opened the proposal **before the cast records** — an unresolvable one, or a proposal no run opened, is a `VALIDATION_ERROR` naming the reference, and the seat's one cast is not spent. Entries that cite nothing pass unread and stay bare strings on the wire; the run report's `findings` section marks them `unsupported`. Mutually exclusive with `--findings` for stdin use |
-| `--summary` | — | string | `""` | review summary; `"-"` reads stdin. A seat's rationale is routinely kilobytes of prose, and argv runs it past a shell first — a summary containing backticks was once expanded by the shell and stored expanded, and a voter casts once, so there is no amend path |
+| `--findings-json` | — | string | `""` | `"-"` reads stdin; `{"blockers": [...], "concerns": [...], "suggestions": [...]}`. Each entry is a bare string, or `{"text": ..., "evidence": ["artifact:ARTIFACT-N", "gate:<name>"]}` naming an artifact the run holds (a bare `N` is rewritten to `artifact:ARTIFACT-N`) or a gate name any step of the run recorded a result for. Every reference is resolved against the run whose vote step or reap acknowledgment opened the proposal **before the cast records** — an unresolvable one, or a proposal no run opened, is a `VALIDATION_ERROR` naming the reference, and the seat's cast is not spent. Entries citing nothing pass unread and stay bare strings; the run report's `findings` section marks them `unsupported`. Mutually exclusive with `--findings` for stdin use |
+| `--summary` | — | string | `""` | review summary; `"-"` reads stdin. Prefer `--summary-file` for prose containing backticks or other shell metacharacters — argv runs it past a shell first, and a voter casts once, with no amend path |
 | `--summary-file` | — | string | `""` | read the summary from PATH; mutually exclusive with `--summary`. Use it when stdin already feeds `--findings`/`--findings-json` — stdin can feed only ONE flag per invocation, and asking two is a `VALIDATION_ERROR` naming both |
 | `--metadata` | — | string | `""` | JSON object, 16 KiB cap measured on the **encoded** bag (whitespace does not count, escaping does); the seat's own unverified claim about what cast the vote — see [voting examples](references/voting.md). Stored verbatim and visible in the process list and exports; put nothing secret in it |
-| `--usage` | — | string | `""` | `{"unit": n, ...}` — this seat's own spend report, recorded per seat in the `vote_usage` ledger inside the cast's transaction and summed per unit in the run report's `vote_usage` section. Same rules as `step complete --usage`: at most 32 units, finite non-negative numbers, opaque unit names. Exists because a vote step is never claimed (attempt stays 0), so the step ledger's key cannot hold per-seat rows. A relay that measures a seat's spend AFTER the cast records it with `docket vote backfill-usage` instead; the two stay distinguishable by `vote_usage.source` (v17) |
+| `--usage` | — | string | `""` | `{"unit": n, ...}` — this seat's own spend report, recorded per seat in the `vote_usage` ledger inside the cast's transaction and summed per unit in the run report's `vote_usage` section. Same rules as `step complete --usage`: at most 32 units, finite non-negative numbers, opaque unit names. A vote step is never claimed (attempt stays 0), so the step ledger's key cannot hold per-seat rows. A relay measuring a seat's spend AFTER the cast uses `docket vote backfill-usage` instead; the two stay distinguishable by `vote_usage.source` (v17) |
 
 <a id="vote-commit"></a>
 
@@ -742,20 +710,17 @@ None of the `schema` verbs are watch-eligible; `--watch` on any of them is a
 |---|---|---|---|---|
 | `--reason` | — | string | `""` | **required**; why the proposal is being closed without a tally |
 
-Closes an **open** proposal whose underlying decision was made another
-way — an operator authorized the guarded action directly, or the question
-was superseded — and which would otherwise sit open forever. `closed` is
-terminal and is **never a verdict**: no vote was counted, and the reason
-lands in the proposal's `final_outcome`. Refusals: a decided proposal
+Closes an **open** proposal whose underlying decision was made another way,
+which would otherwise sit open forever. `closed` is terminal and is
+**never a verdict**: no vote was counted, and the reason lands in the
+proposal's `final_outcome`. Refusals: a decided proposal
 (`approved`/`rejected`/`committed`/`closed`) is `CONFLICT` (exit 4); a
 proposal opened by an engine **vote step** is `CONFLICT` too, naming
 `docket step resolve` as the way to move a run past an uncast vote. A
 closed proposal refuses further casts (`CONFLICT`), exactly as any
 finalized one does.
 
-**Three closures happen automatically**, because an open proposal is not
-inert: `vote list` shows it as outstanding work, and it is what a
-spawn-guard carve-out points at.
+**Three closures happen automatically:**
 
 | Transition | What it closes |
 |---|---|
@@ -763,20 +728,14 @@ spawn-guard carve-out points at.
 | an acknowledged reap (`--ack-reap SEQ`) | the ack ballot registered under `reap-ack:<run>:<seq>`, if one exists |
 | a fix loop entering a later ordinal | the ballot of each vote step the sweep supersedes |
 
-Each rides **inside the transition's own transaction**, so a close cannot be
-lost while the transition stands. Only `open` rows move, exactly as the verb
-insists — every other status is the record of a decision.
+Each rides inside the transition's own transaction, so a close cannot be
+lost while the transition stands. Only `open` rows move. The reason written
+into `final_outcome` names the **transition**, never a verdict, so a
+stale-open row stays distinguishable from a decided one.
 
-The reason written into `final_outcome` names the **transition**, never a
-verdict: these ballots reached none, and an outcome that read like one would
-replace an honest stale-open row with a dishonest decided one. A reader can
-spot the first and cannot spot the second.
-
-**`reap-ack:<run>:<seq>` is the key convention a conductor should use** when it
-opens a ballot to decide a reap. The engine defines it even though the
-conductor creates the ballot, because only one of the two can be the definition
-and it has to be the side that must *find* the row later. A conductor that does
-not use it simply gets no auto-close, exactly as before.
+**`reap-ack:<run>:<seq>` is the key convention a conductor should use** when
+it opens a ballot to decide a reap. A conductor that does not use it simply
+gets no auto-close.
 
 <a id="vote-backfill-usage"></a>
 
@@ -790,16 +749,13 @@ not use it simply gets no auto-close, exactly as before.
 | `--from-json` | — | string | `""` | JSON array of `{"voter","unit","quantity"}`; `-` reads stdin |
 | `--source` | — | string | `"backfilled"` | who measured it; recorded on every row (v17) |
 
-The vote-scoped back-fill. `vote cast --usage` is the seat's OWN report at
-cast time; a relay that measures panel cost from its transcripts afterward
-needs this verb, since tribunal seats carry a proposal id, never a step
-id, so `dispatch backfill-usage` (step-keyed by design) cannot receive
-them. Rows attach to each seat's **cast**: a seat that never cast is
-refused by name (`VALIDATION_ERROR`), a repeat of a `(seat, unit)`
-already recorded — by an earlier back-fill or by the seat itself — is
-`CONFLICT`, and the whole batch is one transaction. `vote_usage.source`
-(schema v17) keeps the relay's reconstruction distinguishable from the
-seats' own reports.
+The vote-scoped back-fill, for a relay measuring panel cost from transcripts
+after the cast (tribunal seats carry a proposal id, not a step id, so
+`dispatch backfill-usage` cannot receive them). Rows attach to each seat's
+**cast**: a seat that never cast is refused by name (`VALIDATION_ERROR`), a
+repeat of a `(seat, unit)` already recorded is `CONFLICT`, and the whole
+batch is one transaction. `vote_usage.source` (schema v17) keeps the
+relay's reconstruction distinguishable from the seats' own reports.
 
 <a id="vote-link"></a>
 
@@ -994,44 +950,33 @@ claims it; `(unclaimed)` renders when none has. A `Collection` under
 
 No local flags. Removes an EMPTY project row. It refuses any project that
 an issue, run, document, proposal, workflow, schema, or label still
-references (`CONFLICT`, naming the counts), and refuses the default
-project outright (`VALIDATION_ERROR`). To empty a project first, re-home
-its issues with `issue move --project`. The argument takes the same four
-keys `--project` does — display prefix, name, identity path, or row id —
-through the same resolver; an ambiguous name or prefix is refused with the
-candidates named.
+references (`CONFLICT`, naming the counts), and refuses the default project
+outright (`VALIDATION_ERROR`). To empty a project first, re-home its issues
+with `issue move --project`. The argument resolves through the same
+four-key resolver as [`issue list --project`](#issue-list).
 
 <a id="project-set-prefix"></a>
 
 #### `docket project set-prefix PREFIX`
 
 Sets the prefix this project's issue ids render and parse with. The prefix is
-**display only**: the number is the identity, global across the store. A bare
-number always works, so references in old commit messages and other projects'
-run records never go stale.
+**display only**: the number is the identity, global across the store, so a
+bare number always works and references never go stale.
 
 **An id renders under the prefix of the project that OWNS it, not the one
-you are reading from**. Ids are minted from one store-wide sequence, so
-two issues in two different projects can land one number apart; rendering
-under the caller's own prefix instead of the owner's would let
-cross-project linking confirm success while naming the wrong project's
-issue.
+you are reading from.** Ids are minted from one store-wide sequence, so two
+issues in different projects can land one number apart. **A prefixed
+reference that disagrees with the row's owner is refused**, naming both
+projects, rather than silently resolving the bare number under the
+caller's own project; a correctly prefixed reference still resolves
+cross-project.
 
-**A prefixed reference that disagrees with the row's owner is refused**,
-naming both projects, rather than silently discarding the given prefix
-and resolving the bare number under the caller's own project. Cross-project
-reads stay legal: a prefixed reference resolves the issue that number
-really belongs to, which is what makes `issue list --project`'s output
-round-trip.
-
-A prefix is 1–8 letters (upcased); `DOC`, `RUN`, and `STEP` are reserved
-for their own entities (`VALIDATION_ERROR`). A prefix ANOTHER project
-already holds is refused (`CONFLICT`, naming the holder): the prefix is a
-project's only discriminator in a listing, an event feed, or a report, so
-two projects sharing one makes every id in the store ambiguous about its
-owner. Registration derives a unique prefix from the project's name —
-initials for a multi-word name, first three letters otherwise. The rest
-of the invocation renders under the new prefix immediately.
+A prefix is 1–8 letters (upcased); `DOC`, `RUN`, and `STEP` are reserved for
+their own entities (`VALIDATION_ERROR`). A prefix ANOTHER project already
+holds is refused (`CONFLICT`, naming the holder). Registration derives a
+unique prefix from the project's name — initials for a multi-word name,
+first three letters otherwise. The rest of the invocation renders under the
+new prefix immediately.
 
 <a id="version-commands"></a>
 
@@ -1051,12 +996,11 @@ to report that fact). Watch-eligible.
 #### `docket config set <key> <value>` / `docket config get [key]` — `config_set.go`
 
 Engine defaults, stored in the `meta` table. **Not** `skipDB` — unlike the
-bare verb these need the database. `get` with no key lists every value
-with its source (`set` or `default`); under `--json=v2` the listing is a
-standard `{items,total,truncated}` collection. A key that is unset AND
-has no shipped default prints `<unset>` in human mode rather than an
-empty line, which is indistinguishable from a key set to `""`. `--json`
-is unchanged: `source` already carries the distinction there. Unknown
+bare verb these need the database. `get` with no key lists every value with
+its source (`set` or `default`); under `--json=v2` the listing is a
+standard `{items,total,truncated}` collection. A key that is unset AND has
+no shipped default prints `<unset>` in human mode, distinct from an empty
+line (`--json`'s `source` field already carries the distinction). Unknown
 keys and ill-typed values are `VALIDATION_ERROR` (exit 3) at `set` time.
 Both take `--global`: `set --global` writes the store-wide default rather
 than this project's override, and `get --global` reads the store-wide

@@ -17,11 +17,9 @@ splits and where trust is involved, after the operator does (§3).
 
 Run in the invoking conversation: §1 seats its analysts through `Workflow`,
 and §3's approval conversation runs through `AskUserQuestion`, and a forked
-subagent has neither (it can seat analysts only through the plain `Agent`
-tool, which takes no effort parameter, and can only hand the panel and the
-operator's questions back to the conversation it forked from). Gathering
-and aggregation are the analysts' work (§1); this conversation reads their
-findings, composes the proposals, and holds the approval conversation.
+subagent has neither. Gathering and aggregation are the analysts' work
+(§1); this conversation reads their findings, composes the proposals, and
+holds the approval conversation.
 Assume nothing was read for you — no run reports from earlier in the
 session, no nudge that prompted this — and gather through §1 every time,
 from `$ARGUMENTS`. The §5 report is delivered here and carries every
@@ -50,9 +48,9 @@ this node has, so seat each analyst through
 `Workflow({scriptPath: "<home>/.claude/workflows/retro-seat.js", args: {
 analysts: [{brief, model, effort}, ...]}})` (source in the dotfiles
 checkout: `src/user/claude_code/workflows/retro-seat.js`), one array entry
-per analyst, with the intended `model` and `effort` set explicitly since
-retro-analyst has no policy row for the script to resolve them from. They
-run the verbs and return evidence-labelled findings; you compose §3's
+per analyst, with the intended `model` and `effort` set explicitly since the
+script has no row to resolve them from. They run the verbs and return
+evidence-labelled findings; you compose §3's
 proposals and hold the approval conversation. The verbs, for their briefs:
 
 ```bash
@@ -86,14 +84,14 @@ than assuming an unsandboxed shell is needed. Where it is not writable,
 | Dedup rate | duplicate findings across a fanout's artifacts — the report is an index and carries no bodies, so read them with `step artifacts` then `step artifact` | under 10% at width ≤ 4 across 5 runs → propose exact-locus dedup instead of `synthesize-findings` |
 | Recurring shapes | the same topology planned ≥ 3 times | migrate it into a workflow template — never leave the planner to re-improvise |
 | Gate health | `gates` pass/fail/**unmatched**, `gate_trail` (its `output` rides non-pass rows only, last 2000 bytes) | any `unmatched` is a missing trust entry, not a failing check |
-| Intervention profile | `run-paused`, `step-held`, and `step-routed` with destination `waiting-human` — that string is a run/step STATUS, not an event kind, so filtering events on it returns nothing; `lease-reaped` behind the holds — query with `--all-projects`, since the run being investigated may have been driven from another project's cwd | designed gate vs breach vs held — three different fixes; a hold behind a `lease-reaped` carrying `data.forced` was a relay declaring a dead spawn, not a slow step |
+| Intervention profile | `run-paused`, `step-held`, and `step-routed` with destination `waiting-human` — that string is a run/step STATUS, not an event kind, so filtering events on it returns nothing; `lease-reaped` behind the holds — query with `--all-projects` | designed gate vs breach vs held — three different fixes; a hold behind a `lease-reaped` carrying `data.forced` was a relay declaring a dead spawn, not a slow step |
 | Attempt pressure | `attempts`, loop ordinals | a step repeatedly at `max_attempts` wants a smaller charter, not a bigger budget |
 | Integration health | the store half, from the event feed with `--all-projects`: `step-annotated` per write-class step recorded (one integration each; its payload cannot tell a verbatim pick from a hand-resolved one), `dispatch-closed` whose `reason` is not `reconciled` (an override such as `--skip-integration-check`), `loop-entered` ordinals and `step-routed` with detail `fix-loop` (rounds per issue), `lease-reaped`. The conversation half: cherry-pick conflicts resolved by hand, `dispatch close` CONFLICT refusals (a refusal writes no event), `parked-base-ancestry`, claim CONFLICTs, re-seats, budget and chain deferrals reach only the conversation that drove the wave, as wave-usage.js's `coordination` section (steps mode, with the wave's returned statuses and the manifest rows passed in) | an issue repeatedly reaching `fix@3`, or parking on ancestry, means parallel writers collide on the same files: serialize those lanes or split the charter, not a bigger budget; a first-pass gate pass rate falling across runs while spend holds is the review stage catching what implement should; a store-only retro sees the store half alone and says so instead of reporting a clean row |
 | Trust drift | `trust-added`/`trust-removed` (store-level; query with `--all-projects` — visible either way, but only that flag proves you saw all of them) | **an entry the operator does not recognize is a finding, and you raise it first** |
 | Config churn | your own proposals per run over time | churn trending up means docket-bootstrap mined the repo wrong; fix the source, not each symptom |
 | Routing drift | the requested pair only, from step rows: `model_requested` / `effort_requested` (below). The resolved pair on a step row is `unknown` unless the runtime supplied an observation, so it measures nothing. The serving model reaches only the driving conversation, as `model_observations` from wave-usage.js (see the four metadata keys below) | a served model that differs from the requested one, in the driving conversation's wave-usage results, means policy asks for a model it does not get; a store-only retro cannot see it and says so instead of reporting a clean row |
 | Vote calibration | `vote_rule` outcomes vs the threshold | a rule that never fails, or always fails, is a threshold not doing work |
-| Seat calibration | per cast, from `docket vote show <proposal>` (the proposal per vote step is on `run report`'s step `vote`): `confidence`, `domain_relevance`, `effective_weight` (their product), `verdict`. Investigation depth is the `tool_uses` unit the seats-mode wave-usage.js join back-fills per seat: `run report`'s `vote_usage` shows it summed per run only, and the per-seat rows reach only the conversation that drove the panel, like the serving model above. The later outcome is the same issue's later trail, with `--all-projects`: `step-routed` with detail `fix-loop` or `waiting-human`, a `fix-round` resolution, a `review-gap` issue filed against it | a seat whose confidence stays high while its tool use stays near zero, or whose approvals precede a later park or fix round on the same item, is mis-calibrated: **inferred** until about five runs carry the pattern, never observed from one, since one run cannot tell a confident seat from a lucky one. Operator-facing only: never fed back into a seat's brief, and never a tally input |
+| Seat calibration | per cast, from `docket vote show <proposal>` (the proposal per vote step is on `run report`'s step `vote`): `confidence`, `domain_relevance`, `effective_weight` (their product), `verdict`. Investigation depth is the `tool_uses` unit the seats-mode wave-usage.js join back-fills per seat: `run report`'s `vote_usage` shows it summed per run only, and the per-seat rows reach only the conversation that drove the panel, like the serving model above. The later outcome is the same issue's later trail, with `--all-projects`: `step-routed` with detail `fix-loop` or `waiting-human`, a `fix-round` resolution, a `review-gap` issue filed against it | a seat whose confidence stays high while its tool use stays near zero, or whose approvals precede a later park or fix round on the same item, is mis-calibrated: **inferred** until about five runs carry the pattern, never observed from one. Operator-facing only: never fed back into a seat's brief, and never a tally input |
 | Variant fit | `[executors]` rows vs attempts + cost at that variant | a row failing repeatedly at its variant is mis-sized, not under-budgeted |
 | Family decorrelation | a seat whose `[executors]` row stands on a second model family while the rest of its panel stands on one (its row comment says so and names the baseline): its sole-finder clusters per reconciled round, the clusters whose `member_sources` on the synthesize step's findings-cluster payload all trace to that seat's review step (the step row's `executor` names the seat; the `producer` ordinal alone does not), plus findings per review, and for a vote seat its lone-rejecter casts from `docket vote show`; partition by the step row's `model_requested` so a reap re-run that walked onto the panel's family is read apart | the seat's sole-finder rate holding or rising against the baseline means the lens carried its value and the second family came free; a fall is the model or its tier (the row comment names the documented confound), not a verdict on mixing families; how often the seat's findings or cast matched the rest of the panel is not evidence either way while the other seats share a model, and stays out of the proposal |
 | Review-yield | output tokens per stage (review vs implement vs verify, from `metadata`/`budget`); distinct clusters the review stage found; distinct issues `drain-highs` filed, post-dedupe; how many of those routed to a fix round; how many prior runs' `review-gap` issues (`docket issue list --label review-gap --json`) have since closed | review spend far exceeding implement's own, or a low post-dedupe filed-to-found ratio, means the stage is expensive relative to what survives it; a flat or falling closed count across runs means filed `review-gap` backlog is accumulating unworked |
@@ -138,28 +136,19 @@ either, and a corpus workflow naming a rule (today `tribunal`,
 `security-acceptance`, and `doc-acceptance`) fails `docket workflow lint`
 with `vote_rule "<name>" is not registered` until the `config set` above
 runs. Read `docket config get vote.rule.<name>.threshold` before assuming a
-rule exists; empty means the job is creating it, not calibrating it. Sizing
-these from evidence, and creating the missing ones, is docket-retro's job.
-A rule whose outcome never differs from a plain human gate is a rule to
-question, not tune.
+rule exists; empty means the job is creating it, not calibrating it. A rule
+whose outcome never differs from a plain human gate is a rule to question,
+not tune.
 
 **The four metadata keys, two of them observed.** Every completed step
-carries `model_requested` / `effort_requested` (what policy asked for) and
-`model_resolved` / `effort_resolved` (what actually served). Today only the
-requested pair is observed: the wave writes the resolved pair as `unknown`
-at claim time and tells executors to leave it so unless the runtime
-supplies an observation, and none does today, so a completed step
-contributes only the requested pair. The serving model is recorded nowhere
-in the store; wave-usage.js reads it from each transcript's assistant
-messages and returns it as `model_observations` to the conversation that
-drove the wave, apart from the usage rows it back-fills. Read the requested
-pair off the step itself (`docket step show` / `step context`): `run
-report`'s `metadata` is a rollup of key to distinct values with counts, so
-it can show aggregate skew but never which step asked for what. A failed or
-crashed step contributes none of the four keys, and a completed step
-contributes only the requested two, so drift is invisible here by
-construction; measure it from the driving conversation's wave-usage
-results, or state that it was not measured. Read attempt counts alongside.
+carries `model_requested` / `effort_requested` and `model_resolved` /
+`effort_resolved`; only the requested pair is observed. Read it off the
+step itself (`docket step show` /
+`step context`): `run report`'s `metadata` is a rollup of key to distinct
+values with counts, so it shows aggregate skew but never which step asked
+for what. A failed or crashed step contributes none of the four keys;
+measure drift from the driving conversation's wave-usage results, or state
+that it was not measured. Read attempt counts alongside.
 
 **Lease and duration limits, if steps are being reaped mid-work.** Liveness
 combines TTL and heartbeat: `step heartbeat` extends a live claim, `step
@@ -207,10 +196,7 @@ reads it. Write what was actually found, in plain words, in the comment
 itself; the file has to justify itself without you standing next to it.
 
 That packet is the panel's entire input, so it travels to them whole rather
-than summarized. A batch nobody can evaluate line by line gets approved
-blindly, which is why the line-by-line burden is the panel's now, three
-readers against one batch, and why the operator sees only what the panel
-could not settle. Open the proposal from the repo the edits target:
+than summarized. Open the proposal from the repo the edits target:
 
 ```bash
 docket vote create -d "<what the batch changes, plainly>" \
@@ -235,29 +221,23 @@ docket-run's tribunal launch does (its python lookup, pasted verbatim); the
 script reads no files and parses no policy. The path is the installed
 `<home>/.claude/workflows/tribunal.js` with `<home>` expanded to a literal
 absolute path (the tool expands no `~`), and there is no source-tree
-fallback: the Workflow tool launches only a scriptPath under the session's
-cwd or a directory added to the session, and the settings corpus adds
-exactly `~/.claude/workflows` (`permissions.additionalDirectories`). The
-source copy in the dotfiles checkout is refused verbatim from any other
-seat, and since the install lags source until the operator's `just
-activate`, un-activated source bytes are bytes no session runs anyway. An
-absent installed file means the corpus was never activated here: stop and
-report it rather than hunting for another copy. Then `docket vote result
-<id>`: approved is the authority to apply, and §4 runs immediately, with no
-follow-up question about whether to apply now or later. A rejection or a
-split goes to the operator through the built-in question tool, recommended
-option first, labelled "(Recommended)", carrying every judge's verdict,
-confidence, and summary verbatim, because they are ruling on the dispute
-and a tally you have condensed is not one. Only what they approve is
-applied.
+fallback: the tool launches only under the session's cwd or
+`permissions.additionalDirectories`, which adds exactly
+`~/.claude/workflows`. An absent installed file means the corpus was never
+activated here: stop and report it rather than hunting for another copy. Then `docket
+vote result <id>`: approved is the authority to apply, and §4 runs
+immediately, with no follow-up question about whether to apply now or
+later. A rejection or a split goes to the operator through the built-in
+question tool, recommended option first, labelled "(Recommended)", carrying
+every judge's verdict, confidence, and summary verbatim. Only what they
+approve is applied.
 
 A docket-retro that proposes nothing because five runs went cleanly is a
 correct docket-retro: say so rather than manufacturing work, and convene no
 panel to hear it.
 
-Never propose a change that adds manual upkeep for the operator; that
-violates zero-touch on its face. The answer is config or engine, not a
-step in someone's routine.
+Never propose a change that adds manual upkeep for the operator. The answer
+is config or engine, not a step in someone's routine.
 
 **A trust proposal is the operator's alone, and rides no batch.** Follow
 docket-bootstrap's rule — argue `re-runnable`, `tree`, `flaky` per command,
@@ -268,9 +248,9 @@ four-item bundle is approved in one click without being read.
 
 ## 4. Apply what was approved
 
-Apply only the approved items — whether the panel approved them or the
-operator did on escalation — the moment the result is in, not after asking
-again. Applied by an `executor-write` agent carrying the approved diffs,
+Apply only the approved items, whether the panel approved them or the
+operator did on escalation, applied by an `executor-write` agent carrying
+the approved diffs,
 with the dry-run verification below performed by an `executor-read` agent;
 you relay approvals and read their reports. Same variant caveat as §1:
 spawned from here, neither agent carries a `policy.toml` variant.
@@ -281,10 +261,9 @@ store path replaced wholesale by `just activate`. Never edit there even
 when the filesystem lets you, because the next install silently reverts it.
 Edit `src/user/docket/config/` instead (`contracts/`, `fragments/`,
 `schemas/`, `workflows/`, `policy.toml`); the operator installs it with
-`just activate`, between runs, because an install changes what
-already-pinned refs resolve to. Every repo sharing the corpus reads the
-same bytes, so a corpus edit at an unchanged `name@version` refuses the
-next activation in all of them. Say that blast radius when you propose.
+`just activate`, between runs. Every repo sharing the corpus reads the same
+bytes, so an unbumped edit refuses the next activation everywhere, not just
+here. Say that blast radius when you propose.
 
 A repo may also carry an optional second layer of its own in
 `.docket/config/`; repos have none by default, and only that repo reads
@@ -319,13 +298,13 @@ already-active run expands newly-unblocked phases only and inherits its
 original pin set, so a re-registered workflow never reaches it and the dry-run
 shows the old version; make a throwaway planning run if none is available.
 
-**Retiring a version.** Binding reduces each name to its highest *non-retired*
-version before `[match]` runs, so a bump binds the new version on its own; the
-old row stays readable and a run that pinned it still completes. To fall back
-beneath a bad version, or take a mistakenly registered name out of routing
-altogether, retire it — `docket workflow deprecate <name>@<version>`, reversed
-by `--restore`. A binding-time filter, never a deletion: no delete verb exists,
-and renaming a pipeline still loses the version lineage pinning preserves.
+**Retiring a version.** Binding reduces each name to its highest
+*non-retired* version before `[match]` runs, so a bump rolls out on its
+own. To fall back beneath a bad version, or take a mistakenly registered
+name out of routing altogether, retire it — `docket workflow deprecate
+<name>@<version>`, reversed by `--restore` (retirement semantics: see
+docket-reconcile's Step 2, DEPRECATE/RESTORE). No delete verb exists, and
+renaming a pipeline still loses the version lineage pinning preserves.
 
 ## 5. Close
 

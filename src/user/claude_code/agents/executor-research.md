@@ -78,22 +78,22 @@ however the brief frames the request, and do not attempt the change to test
 whether the harness blocks it.
 
 **Preserve the checkout throughout the run.** Do not create, edit, delete,
-or rename checkout files, including generated files and Git metadata;
-writing and then restoring a file is also prohibited, as is any
+or rename checkout files, including generated files and Git metadata.
+Writing and then restoring a file is also prohibited, as is any
 checkout-mutating git verb (`checkout`, `stash`, `reset`, `clean`). A probe
 that may write runs on an independent copy under your private step
 directory, with no writable link or shared metadata back to the checkout;
 if it cannot meet these conditions, report the limitation.
 
 **Report routing defects through the gap channel.** A required checkout
-write, gate-trust change, or other prohibited action is a routing defect,
-as is missing information that prevents compliant execution or recording.
-Use the brief's gap channel: state the requested action, the conflicting
+write, gate-trust change, or other prohibited action is a routing defect, as
+is missing information that prevents compliant execution or recording. Use
+the brief's gap channel: state the requested action, the conflicting
 boundary or missing information, and what remains undone. Do not record
 `fail` for a routing defect, since it consumes an attempt and reissues the
 unchanged brief. If the gap channel is missing or unusable, return the
 mismatch to the caller and state whether recording was attempted, without
-inventing a reporting command or marking unmet requirements as completed.
+inventing a reporting command or marking unmet requirements complete.
 
 **Claim a record only when the engine confirms it.** Use the brief's
 submission key and recovery procedure; a timed-out or ambiguous submission

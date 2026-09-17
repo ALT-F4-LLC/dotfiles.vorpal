@@ -25,7 +25,7 @@ what the panel could not or must not.
 **One seat drives a run: this conversation.** `/docket-run` runs the
 engine verbs, launches the workflows, and puts gates to the operator in
 this same conversation. A background conductor agent lacks the `Workflow`
-tool, forcing every launch through a message relay instead. One
+tool and must relay every launch through a message instead. One
 conversation drives one run; a second run is a second conversation.
 
 **Load the `workflow-authoring` skill first, every time, before anything
@@ -44,7 +44,7 @@ quoted brief string to attach a file and line to an escalation) but never
 edit it or choose routes yourself.
 
 **You size no panels and reconcile nothing.** Fan-out widths, thresholds,
-clustering, and retries are engine and pipeline mechanics; do not
+clustering, and retries are engine and pipeline mechanics; never
 second-guess a `next` result. The one panel shape you type is the
 tribunal proposal's constant, `docket vote create`'s `-n 3 --threshold
 0.67`.
@@ -204,8 +204,7 @@ taken: another session ran `run conduct` and retired your token. Stop
 there. `docket events list --run $RUN --json=v2` carries the
 `conductor-seated` event with the taker's `actor` and `cwd`; put that to
 the operator through the question tool, and re-conduct only on their
-word, since two sessions driving one run is exactly the condition the seat
-exists to make visible. The mechanism is tamper-evident, not tamper-proof:
+word. The mechanism is tamper-evident, not tamper-proof:
 `run conduct` is deliberately open to any caller with repository access,
 so a run whose conductor died stays recoverable, and the sibling guard
 keeps executors off that one verb while the engine keeps them off the
@@ -239,17 +238,16 @@ asking, the same split `shadow` and `docket-plan` use.
   2. **Else any `planning` run**: highest `RUN-N` if several. This is
      what `/docket-plan`'s bare mode leaves behind.
   3. **Else nothing to drive.** Say so plainly and stop; do not invent a
-     run or ask the operator, since the only honest answer is "there
-     isn't one." `/docket-plan` puts one in front of you next.
+     run or ask the operator. `/docket-plan` puts one in front of you next.
 
-  Rule 2 is what makes `/loop /docket-groom /docket-plan /docket-run`
-  work as a bare-invoked loop with no operator turn in between. Rule 1
-  keeps a run already being driven from being abandoned for a fresher one
+  Rule 2 makes `/loop /docket-groom /docket-plan /docket-run` work as a
+  bare-invoked loop with no operator turn in between. Rule 1 keeps a run
+  already being driven from being abandoned for a fresher one
   `/docket-plan` just recorded.
 
-  Once `$RUN` has a value, treat it exactly as the targeted mode would:
-  same activation path if `planning`, same "Resuming or attaching" path
-  if `active`/`waiting-human`.
+  Once `$RUN` has a value, treat it as the targeted mode would: same
+  activation path if `planning`, same "Resuming or attaching" path if
+  `active`/`waiting-human`.
 
 ## Before the loop
 
@@ -315,8 +313,7 @@ none.
 sits at a detached head with no `worktree-wf_*` branch, invisible to the
 close sweep's branch-derived set, so its tracked path is the only way
 back into the sweep. Spell that path under this session's scratchpad
-literally, never `$TMPDIR` (which can resolve differently across
-consecutive `Bash` calls). Remove yours when done, or carry it to
+literally, never `$TMPDIR`. Remove yours when done, or carry it to
 close-out.
 
 A gate that fails on clean HEAD is not caused by this run's changes,
@@ -354,8 +351,8 @@ $RUN` reads back what workers were already told. It is legal while
 planning, active, or parked; refused once done or abandoned; and
 append-only (a changed ruling is a new note, never an edit).
 
-A duplicate gap can still occur, since a note reaches only packets
-rendered after it lands. Dedupe with `docket issue comment add <dup> -m
+A note reaches only packets rendered after it lands, so a duplicate gap
+can still occur. Dedupe with `docket issue comment add <dup> -m
 "Duplicate of <tracking>"`, then `docket issue close <dup>` (it carries no
 `--note`, only `--if-version`).
 
@@ -476,11 +473,11 @@ for a hook denial in the same window before touching `settings.json` —
 re-deriving the same allowlist read the prior session already made is
 not an investigation, it is repeating the guess.
 
-**Pins vs disk, and this is the one that actually bites.** A run's pins
-are a third set of bytes that can disagree with both source and install:
-the engine froze them at activation, and every `just activate` since has
-moved the install out from under them. On an already-active run, before
-the first dispatch, ask the engine about the pins:
+**Pins vs disk.** A run's pins are a third set of bytes that can disagree
+with both source and install: the engine froze them at activation, and
+every `just activate` since has moved the install out from under them. On
+an already-active run, before the first dispatch, ask the engine about
+the pins:
 
 ```bash
 docket run verify-pins $RUN --json
@@ -631,12 +628,11 @@ request prose.
 **Read the roster straight out of the dry-run JSON.** `bound_issues[]`
 lists it by id, `promoted_issues[]` names what activation promotes, and
 `issues_bound` counts them. After activation, `docket next --run $RUN
---json=v2` reports what is ready; disagreement with what you presented is
-a stop-and-report. Pass no `--limit` on the `--run` form, and read v2:
-only v2 carries the pre-cut `total` and a `truncated` flag. Also check
-`events list --run $RUN` for `issue-promoted`, since activation can
-promote a fix-issue at the last instant and its steps can surface first
-in `dispatch open` rather than `next`.
+--json=v2` reports what is ready (pass no `--limit`, per **1. Ask what is
+ready** below); disagreement with what you presented is a stop-and-report.
+Also check `events list --run $RUN` for `issue-promoted`, since activation
+can promote a fix-issue at the last instant and its steps can surface
+first in `dispatch open` rather than `next`.
 
 **The roster can legally grow after activation.** `docket run issue add
 $RUN <ids>` binds and snapshots at the next `run activate`. `run issue
@@ -786,8 +782,8 @@ answer safely, pipe `jq -c '.data.rows[]' > rows.jsonl` and page it with
 70 KB), so write the kept rows one per line with `jq -c '.[]'`, `Read`
 that file in pages of at most 96 lines until every row is in context,
 then emit the whole array as the literal `rows` value, once per shard.
-Never emit from a truncated view, and never spend turns probing byte
-offsets or splitting the file: the paged read is the only path.
+Never emit from a truncated view or spend turns probing byte offsets or
+splitting the file.
 
 **No policy crosses a launch.** Every row carries `model`, `effort`,
 `variant` resolved by the engine from pinned policy.toml. Never `cat`,
@@ -950,11 +946,10 @@ print(max(1, min(4, len(units))))
 PY
 ```
 
-You carry no policy for a wave dispatch: never read, check, or interpret
-policy.toml. Pass rows through unchanged beyond the kind filter, with no
-reordering, dropping, or adding, since the manifest is hashed, and never
-sequence or hold rows back yourself; wave.js's own `stage` labels are one
-global schedule, and offering a `staged` row ahead of readiness is the
+Pass rows through unchanged beyond the kind filter, with no reordering,
+dropping, or adding, since the manifest is hashed, and never sequence or
+hold rows back yourself; wave.js's own `stage` labels are one global
+schedule, and offering a `staged` row ahead of readiness is the
 mechanism, not a mistake.
 
 Then end your turn and await one completion notification per shard, in
@@ -1133,10 +1128,10 @@ Excluding a class does not mean its spend is counted elsewhere: seats
 never record usage at `docket vote cast`, so seat spend reaches the
 ledger only through the transcripts, in the panel back-fill below.
 
-Read `verify`'s answer by shape, not exit alone: a mismatch means the
-named step did not record (dead lease, reaped claim). `step show` it
-before closing. `close`'s own reconciliation (`close_reason:
-"reconciled"`) remains authoritative and refuses outright on a genuine
+Read `verify`'s answer by shape, not exit alone, per the refusal rule
+above (dead lease, reaped claim). `close`'s own reconciliation
+(`close_reason: "reconciled"`) remains authoritative and refuses outright
+on a genuine
 discrepancy.
 
 **This is the transcript-token path, not a workaround for one.** An
@@ -1147,14 +1142,11 @@ engine, at most 32 units per call; `budget.unit` names the one unit the
 run's cap counts.
 
 **Launch wave-usage over the transcript directory**, the installed
-`~/.claude/workflows/wave-usage.js`, with `args: {dir, mode: "steps", rows, statuses, exclude: []}` —
-this wave's own manifest rows and its completion notification's return
-array, passed straight through so the join's coordination section
-(rounds per issue, first-pass gate pass rate, re-seats, claim
-conflicts, ancestry parks, budget and chain deferrals) is measured
-rather than reported `null`. It fans one low-effort agent per
-`agent-*.jsonl` file to run a fixed jq program, and returns `rows`:
-four typed units per step,
+`~/.claude/workflows/wave-usage.js`, with `args: {dir, mode: "steps", rows, statuses, exclude: []}`
+(pass `rows`/`statuses` verbatim, per the crashed-relay join's own comment
+above, so the coordination section is measured rather than reported
+`null`). It fans one low-effort agent per `agent-*.jsonl` file to run a
+fixed jq program, and returns `rows`: four typed units per step,
 deduplicated by message id, keyed by the step each agent's `docket step
 claim/record STEP-N` obligation names. A read-only probe with no
 claim/record obligation sums into `overhead`, attributed to no step,
@@ -1168,8 +1160,8 @@ actually are** below. Either way, check the shape (every dispatched step
 present, quantities integers) before piping.
 
 A background helper is invisible to `ListAgents` while it runs; its
-completion notification is the only status surface. `TaskStop` it the
-moment its report is in hand, for every agent you spawn.
+completion notification is the only status surface (**Seat**'s
+`TaskStop` rule applies here too).
 
 **A panel you convened yourself gets the same treatment, keyed by
 seat.** A tribunal.js seat carries a proposal id, never a step id, so

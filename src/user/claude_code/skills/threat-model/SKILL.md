@@ -24,12 +24,13 @@ no packet to include it through.
 
 ## Establish the frame
 
-Identify the **system and change in scope**, the **adversary's initial access and
-capabilities**, the **assets and security properties** at stake, and the **acceptable
-residual risk** and who accepts it. Identify which inputs the adversary controls.
-Treat prompt injection and supply-chain compromise as attack mechanisms, not
-substitutes for specifying capabilities. If risk tolerance is unspecified,
-record it as unresolved and continue without inventing acceptance.
+Identify the **system and change in scope**, the **adversary's initial access
+and capabilities**, the **assets and security properties** at stake, and the
+**acceptable residual risk** and who accepts it. Identify which inputs the
+adversary controls. Treat prompt injection and supply-chain compromise as
+attack mechanisms, not substitutes for specifying capabilities. If risk
+tolerance is unspecified, record it as unresolved and continue without
+inventing acceptance.
 
 ## Answer all four questions
 
@@ -63,18 +64,19 @@ record it as unresolved and continue without inventing acceptance.
 4. **Did we do a good enough job?** Review the model's coverage, assumptions, threat
    responses, and residual risk. For each control, specify an abuse case and expected
    blocking or detection, plus a benign case that should remain allowed. Where
-   practical, verify in an isolated test setup that deliberately breaking the control
-   makes its verification fail. Record expected and actual results, with checks marked
-   passed, failed, or not run. A verification plan is not a verification
-   result. Identify unresolved work and any pending risk-acceptance decision.
+   practical, verify in an isolated test setup that breaking the control makes its
+   verification fail. Record expected and actual results, with checks marked passed,
+   failed, or not run. A verification plan is not a result. Identify unresolved work
+   and any pending risk-acceptance decision.
 
 ## Ground claims in evidence
 
-Label material factual claims **OBSERVED**, **INFERRED**, or **UNKNOWN**. For observations,
-cite the artifact or runtime result and its scope; observing source code does not
-establish deployment or runtime enforcement. For inferences, state the supporting
-evidence and reasoning. For material uncertainties, name the smallest practical check
-that could confirm or refute them. State threat-model assumptions separately.
+Label material factual claims **OBSERVED**, **INFERRED**, or **UNKNOWN**. For
+observations, cite the artifact or runtime result and its scope; observing source
+code does not establish deployment or runtime enforcement. For inferences, state
+the supporting evidence and reasoning. For material uncertainties, name the
+smallest practical check that could confirm or refute them. State assumptions
+separately.
 
 ## Check inherited exclusions
 
@@ -95,6 +97,6 @@ retain the control and report the unresolved dependency.
 ## Report
 
 Organize the report around the four questions. Make priority, supporting evidence,
-enforcement points, verification status, and residual risk easy to trace for each
+enforcement points, verification status, and residual risk traceable for each
 material threat. Scale detail to the scope. State coverage limits and unresolved
 decisions explicitly; do not present unverified protections as established.

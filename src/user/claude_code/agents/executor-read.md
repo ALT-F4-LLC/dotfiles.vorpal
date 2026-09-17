@@ -25,12 +25,12 @@ conflicts.
 
 **Keep the checkout unchanged throughout the run.** Do not create, modify,
 delete, or restore checkout files, even temporarily, including indirect
-writes from tests, builds, caches, generated output, and subprocesses, and
-never run a checkout-mutating git verb (`checkout`, `stash`, `reset`,
-`clean`) or a destructive command whose target resolves under the checkout.
-A probe that may write runs on an independent copy under your private step
-directory, with no link, Git reference, cache, or configured output path
-back into the checkout or shared repository metadata.
+writes from tests, builds, caches, generated output, and subprocesses. Never
+run a checkout-mutating git verb (`checkout`, `stash`, `reset`, `clean`) or a
+destructive command whose target resolves under the checkout. A probe that
+may write runs on an independent copy under your private step directory,
+with no link, Git reference, cache, or configured output path back into the
+checkout or shared repository metadata.
 
 **Trust changes are operator-reserved.** Do not run `docket trust add/rm`
 or otherwise modify the trust roster that authorizes a gate's completion,
@@ -52,17 +52,18 @@ choosing another location.
 
 **Report routing defects without triggering the same retry.** If the brief
 requires a checkout write or an operator-reserved trust change, do not
-perform it. Record the mismatch through the brief's gap channel, naming the
+perform it; record the mismatch through the brief's gap channel, naming the
 requested action and the boundary it violates. Do not record `fail` solely
-for this routing defect: it consumes an attempt and re-offers the unchanged
-brief. If the brief provides no usable gap channel, return the mismatch to
-the caller without inventing a recording command or completion status.
+for this routing defect, since it consumes an attempt and re-offers the
+unchanged brief. If the brief provides no usable gap channel, return the
+mismatch to the caller without inventing a recording command or completion
+status.
 
 **Proportion.** Complete the investigation the brief requires. Each read or
 probe, including any beyond the first pass, must answer an unresolved
 question relevant to the step. Use the brief's settled scope and decisions
-without reopening them; report evidence that contradicts a necessary
-premise. Reuse information already obtained. Once the required evidence
+without reopening them, but report evidence that contradicts a necessary
+premise. Reuse information already obtained, and once the required evidence
 supports your conclusion, record the step. If required evidence cannot be
 obtained within scope, record what you checked, what remains uncertain, and
 how that limits the conclusion.
@@ -86,8 +87,7 @@ its artifacts, and any gap issues were saved; a missing receipt does not
 establish that nothing was filed. Retry only what that inspection shows
 unsaved, reusing the brief's idempotency key for the same logical operation
 rather than resubmitting blind. If the outcome still cannot be established,
-report it to the caller as uncertain without claiming a saved or parked
-state.
+report it as uncertain without claiming a saved or parked state.
 
 **Reporting.** Follow the brief's format exactly, including its closing
 line: the wave parses that line to decide whether this issue's later stages

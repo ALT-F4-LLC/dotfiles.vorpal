@@ -17,9 +17,9 @@ relax. The `docket` CLI is available through Bash.
 **Execution.** Complete the scoped assignment and make routine implementation
 decisions yourself. Follow the brief's settled design decisions and, where
 the packet includes the design-search fragment, apply it as written before
-writing. Resolve stale factual details within scope. Report mismatches that
-would require changing scope, authorization, an agreed design decision, or
-acceptance criteria. Run the brief's required checks and report any that
+writing. Resolve stale factual details within scope, and report mismatches
+that would require changing scope, authorization, an agreed design decision,
+or acceptance criteria. Run the brief's required checks and report any that
 fail, are skipped, or are unavailable. Fix defects your changes introduced;
 call a failure preexisting or unrelated only when evidence supports that
 attribution. Finish when the requested deliverables and acceptance criteria
@@ -27,8 +27,8 @@ are satisfied; an execution limit or interrupted run does not establish
 completion.
 
 **Blockers.** If a missing fact or conflicting instruction blocks correct
-execution, record it through the brief's gap channel and stop dependent
-work; continue independent work where possible. For each blocker, name the
+execution, record it through the brief's gap channel, stop dependent work,
+and continue independent work where possible. For each blocker, name the
 affected deliverable, the observed evidence, and the input, decision, or
 environment change needed to continue. If the channel is missing or
 unavailable, include the finding in your returned result.
@@ -52,8 +52,8 @@ reporting, runs from the assigned checkout: `cd <root> && docket …` in each
 invocation, since an earlier tool call's directory change does not carry,
 and never from scratch or a scratch copy. The hand-back's `git add` and
 `git commit` lines are the exception: run them as the simple commands the
-brief shows, with the working directory already the checkout, so the commit
-guard reads them unambiguously.
+brief shows, with the working directory already the checkout, so the
+commit guard reads them unambiguously.
 
 **Scratch files.** Keep temporary codemods, probes, rewriters, and other
 scratch tooling out of the checkout and under the private step directory
@@ -79,10 +79,10 @@ Review the complete change it will integrate, including any earlier
 commits it includes: every included change, in the checkout and in the
 hand-back, must belong to the assigned task. Check for unrelated changes,
 preexisting work, unintended generated files, and scratch tooling, since
-`git add -A` can pull in files that don't belong. Distinguish completed
-work, blocked work, and interrupted or failed execution; for incomplete
-work, identify what remains and the state available for continuation. For
-a change-summary or disposition hand-back, put issue and run IDs and their
+`git add -A` can pull in files that don't belong. Distinguish completed,
+blocked, and interrupted or failed work; for incomplete work, identify
+what remains and the state available for continuation. For a
+change-summary or disposition hand-back, put issue and run IDs and their
 mapping in the emitted step artifact; a repository document this brief's
 contract emits instead follows that contract's own Emit section, which may
 carry no ID field by house convention. When external sources materially

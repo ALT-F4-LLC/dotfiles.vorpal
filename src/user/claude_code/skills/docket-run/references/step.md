@@ -1,27 +1,26 @@
 # Docket engine CLI — `docket step`
 
-Covers the `docket step` family. Consumer: the docket-run skill; this file is
-the single copy of the engine CLI contract for these verbs, split out of
-docket's reference.md, whose [JSON envelope
-section](../../docket/reference.md#json-envelope--per-verb-data-shapes) still
-holds the response-shape contract and parsing traps. Command and flag inventory
-verified 2026-09-14 against `docket nightly-112-gcffd10c` (commit `cffd10c`,
-built `2026-09-14T21:28:29Z`) by `--help` and `--version` only; behavioral
-claims and JSON examples were not re-run.
+Covers the `docket step` family, the single copy of this engine CLI contract,
+split out of docket's
+[reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
+(consumer: the docket-run skill), which still holds the response-shape
+contract and parsing traps. Verified 2026-09-14 against `docket
+nightly-112-gcffd10c` (commit `cffd10c`, built `2026-09-14T21:28:29Z`) by
+`--help`/`--version` only; behavior and JSON examples were not re-run.
 
 <a id="contents"></a>
 
 ## Contents
 
-- [`docket step`](#step-commands) — 513 lines
+- [`docket step`](#step-commands) — 504 lines
   - [`step artifacts`](#step-artifacts) — 68 lines
   - [`step claim`](#step-claim) — 34 lines
-  - [`step reap`](#step-reap) — 40 lines
+  - [`step reap`](#step-reap) — 37 lines
   - [`step complete`](#step-complete) — 68 lines
   - [`step fail`](#step-fail) — 23 lines
   - [`step annotate`](#step-annotate) — 49 lines
-  - [`step resolve`](#step-resolve) — 121 lines
-  - [`step approve|reject`](#step-approve-reject) — 44 lines
+  - [`step resolve`](#step-resolve) — 118 lines
+  - [`step approve|reject`](#step-approve-reject) — 41 lines
   - [`step context`](#step-context) — 26 lines
 
 <a id="step-commands"></a>
@@ -175,17 +174,14 @@ and an action step is the engine's own computation — and a claim against one i
 | `--reason` | string | `""` | **required**; why the holder is being declared dead |
 
 **No lease token, but the run's conductor capability**, like `approve`,
-`reject` and `resolve` (`docket run conduct`, in [run.md](run.md)): the holder's own token
-is exactly what a reap cannot require, so the verb reads the run's
-conductor token from `DOCKET_TOKEN` or stdin (none is `VALIDATION_ERROR`,
-exit 3; a wrong one, a step's lease token included, is `AUTH_ERROR`, exit
-5; a run activated before the capability existed asks for none), and the
-authority for the reap itself is the recorded assertion that the holder is
-gone. Liveness is otherwise TTL-only, and a TTL cannot be sized right in both directions —
+`reject`, and `resolve` (the **conductor** contract above): the holder's own
+token is exactly what a reap cannot require, so the authority for the reap
+itself is the recorded assertion that the holder is gone. Liveness is
+otherwise TTL-only, and a TTL cannot be sized right in both directions —
 raised to cover healthy long writers, it multiplies how long a dead agent's
-claim blocks its row. The engine cannot probe a process it did not start,
-but the relay that spawned the executor can, and this verb is the channel
-for what it observed.
+claim blocks its row. The engine cannot probe a process it did not start, but
+the relay that spawned the executor can, and this verb is the channel for
+what it observed.
 
 **Every consequence is the expiry reap's own**: the same `lease-reaped`
 event (carrying `data.forced` and the reason, which is how a reader tells
@@ -356,11 +352,8 @@ Refusals: a step that has not reached a terminal status is `CONFLICT`
 | `--note` | string | why |
 | `--batch` | bool | with `--as override-pass` only: also record one **run-scoped** grant per failed gate |
 
-Every resolution requires the run's **conductor capability** (`docket run
-conduct`, in [run.md](run.md)) via `DOCKET_TOKEN` or stdin, checked after the step is
-found and before anything is written: none is `VALIDATION_ERROR` (exit 3),
-a wrong one `AUTH_ERROR` (exit 5); a run activated before the capability
-existed asks for none.
+Every resolution requires the run's conductor capability, same channels and
+refusals as the **conductor** contract above.
 
 `retry` resets the **step's** attempt budget, a different counter from the
 issue-level attempt trail, which is monotonic and never reset. It also
@@ -476,12 +469,9 @@ cherry-pick that rewrote the sha but not the content warns about nothing.
 | `--note` | string | `""` | why the gate was approved or rejected |
 | `--value` | string | `""` | (`approve` only) corrected value for a **held cluster's** aggregated field |
 
-Neither takes a lease token (a gate is never claimed), and both require
-the run's **conductor capability** (`docket run conduct`, in [run.md](run.md)) via
-`DOCKET_TOKEN` or stdin: none is `VALIDATION_ERROR` (exit 3), a wrong one
-`AUTH_ERROR` (exit 5), checked after the step is found and before anything
-is written; a run activated before the capability existed asks for none.
-They apply to `type="human"` steps, and to a **materialized**
+Neither takes a lease token (a gate is never claimed); both require the run's
+conductor capability, same channels and refusals as the **conductor**
+contract above. They apply to `type="human"` steps, and to a **materialized**
 `<step>-held` step whichever kind it was minted as — anything else is
 `VALIDATION_ERROR` naming the step's actual class.
 

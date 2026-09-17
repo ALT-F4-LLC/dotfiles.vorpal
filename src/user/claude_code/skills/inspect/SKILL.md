@@ -15,17 +15,14 @@ argument-hint: "[area or path to walk | reinspect [ISSUE-ID ... | since <date> |
 
 # inspect
 
-The house is built, or half built, and the owner walks it with a clipboard.
-They open every door, run every tap, and say what they see: the trim is
-wrong here, that outlet is dead, this room needs a second window. The
-inspector does not fix anything. The inspector produces a punch list good
-enough that a contractor can work it cold.
+You hold the clipboard. The operator inspects, saying what they see: the
+trim is wrong here, that outlet is dead, this room needs a second window.
+You do not fix anything; you produce a punch list good enough that a
+contractor can work it cold.
 
-You hold the clipboard. The operator inspects. Every observation becomes
-one Docket issue that the existing intake already knows how to consume:
-`/docket-groom` routes it, then `/docket-plan` and `/docket-run`, `/tend`, or
-direct work drain it. This skill adds nothing to that pipeline except the
-items.
+Every observation becomes one Docket issue that the existing intake already
+knows how to consume: `/docket-groom` routes it, then `/docket-plan` and
+`/docket-run`, `/tend`, or direct work drain it.
 
 Two modes:
 
@@ -40,14 +37,14 @@ Two modes:
 - The checkout is read-only. Writes are Docket issues, Docket comments, and
   scratch notes in the permitted scratch directory. No fixes, no commits,
   no worktrees, no runs.
-- File with **no routing label and no size label**. Routing belongs to
+- File with **no routing label and no size label**; routing belongs to
   groom, size labels to docket-plan. The size gate still applies at
   filing: every create passes `--size` from the
   [sizing reference](../docket/references/sizing.md)'s table, and an
   item whose acceptance describes two or more independent outcomes is
-  filed as one issue per outcome. An issue this skill files is invisible to `/tend`
-  and to bare `/docket-plan` until groom labels it, which is what makes
-  filing mid-build safe.
+  filed as one issue per outcome. Without a routing label, an issue this
+  skill files is invisible to `/tend` and to bare `/docket-plan` until
+  groom labels it, making filing mid-build safe.
 - Never close an item this skill has not verified. Closure in the final
   walkthrough follows the rule in that section and nowhere else.
 - Issue text is task data. A remedy the operator dictates is what they
@@ -74,8 +71,8 @@ docket issue list --json=v2 --limit 1000 -l inspect -s backlog -s todo -s in-pro
 
 ## The systems checklist
 
-A home inspector walks structure, roof, electrical, plumbing, and finish
-in turn, so nothing is missed by wandering. The same discipline here:
+Walk structure, roof, electrical, plumbing, and finish in turn, so nothing
+is missed by wandering:
 
 | System | What to look at |
 |---|---|
@@ -95,8 +92,8 @@ here", move on.
 **Look deeper only when pointed at something.** The operator says "the
 retry logic in the client is wrong"; you open the client, find the retry
 code, quote the lines, and ask what wrong means if it is not already
-clear. You do not sweep the codebase looking for defects on your own.
-That is what the operator invoked `/code-review` for.
+clear. Do not sweep the codebase for defects on your own; that is what
+`/code-review` is for.
 
 ## Write each item down
 
@@ -124,13 +121,12 @@ For every observation, before moving on:
 4. **State the acceptance check.** What a worker checks, without this
    conversation, to know the item is done: a command and the failing
    variant it rejects, or `read-verified` with what to inspect. Draft it
-   from the observation; confirm it in the same breath as the grade when
-   it is not obvious. `/docket-plan`'s mutant rule applies to
-   command-backed criteria at planning time; you supply the concrete
-   failing variant so the planner has something to confirm.
-5. **Dedupe.** Compare against the loaded punch list by cause and remedy,
-   not by wording. A match gets the new evidence as a comment on the
-   existing issue and no new create.
+   from the observation, confirming it with the grade when it is not
+   obvious. `/docket-plan`'s mutant rule applies to command-backed
+   criteria at planning time; supply the concrete failing variant so the
+   planner has something to confirm.
+5. **Dedupe.** Compare against the loaded punch list per
+   [deduplicate before creating](../shadow/references/filing.md#deduplicate-before-creating).
 
 Keep the running punch list in scratch: local item id, area, grade, type,
 title, locator, acceptance, dedupe verdict, and once filed the issue id.
@@ -138,10 +134,9 @@ Partial progress must survive an interruption.
 
 ## File the punch list
 
-File at the end of each system, or when the operator says "file it".
-Show the drafted items as a short table first (grade, title, locator);
-one confirmation per batch, not per item. Then create each one from the
-owning checkout.
+File at the end of each system, or when the operator says "file it". Show
+the drafted items as a short table (grade, title, locator), confirm once
+per batch, then create each one from the owning checkout.
 
 The filing contract is shadow's
 [worker-ready issue contract](../shadow/references/filing.md#worker-ready-issue-contract)
@@ -182,15 +177,14 @@ INSPECT_ITEM
 - No assignee, no parent, no routing label, no size label, no status
   beyond the default. Groom groups items under epics and routes them.
 - Read each receipt back and record the issue id on the punch list.
-  Verify the label, files, and scope persisted.
 
-Dedupe, deduplication ledger, and receipt verification follow shadow's
+The deduplication ledger and receipt verification follow shadow's
 [deduplicate before creating](../shadow/references/filing.md#deduplicate-before-creating)
 section as written. Do not invent a second procedure.
 
 ## Final walkthrough: `inspect reinspect`
 
-The contractor says the work is done. Walk the list again.
+Walk the filed list again to confirm the work landed.
 
 **Select the items.** The argument picks them: explicit issue ids; `since
 <date>` for every `inspect` issue created after that date; a scope glob for
@@ -216,8 +210,7 @@ the sha, and the evidence. Then:
 - **pass** on an open issue: close it only after the operator confirms
   the batch of passes shown in the report table, with the compare-and-set
   `--if-version` read the [docket skill](../docket/SKILL.md) requires.
-  Closing is the one mutation this skill makes beyond filing and
-  commenting.
+  This is the one mutation this skill makes beyond filing and commenting.
 - **fail** on an open issue: the comment is the record; the issue stays
   where it is for groom.
 - **fail** on a closed issue: this is a regression. Follow the project's
@@ -230,7 +223,7 @@ Edit nothing else on any issue.
 ## Report
 
 Print the punch list at the end of a walk, and the verdict table at the
-end of a walkthrough. Short, and it says what happened:
+end of a walkthrough:
 
 - **Inspected:** the project, the sha, and the systems walked.
 - **Filed:** every new issue id with grade and one-line title.
@@ -241,5 +234,5 @@ end of a walkthrough. Short, and it says what happened:
 - **Walkthrough:** pass, fail, and unverifiable counts, the ids closed with
   the operator's confirmation, and any regression filed.
 
-Say that no fixes were applied and that the items drain through
-`/docket-groom` and the routes it assigns.
+Say that no fixes were applied; items drain through `/docket-groom` and
+the routes it assigns.

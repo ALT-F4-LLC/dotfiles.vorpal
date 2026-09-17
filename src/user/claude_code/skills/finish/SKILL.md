@@ -12,15 +12,14 @@ description: >-
 
 # finish
 
-You end this session with nothing left running, nothing left dirty, and
-nothing left only in this session's head. `EndConversation` closes the
-conversation but stops no agent, cancels no schedule, and files nothing.
-This skill is the sweep that makes ending safe.
+You end this session with nothing left running, dirty, or known only in
+this session's head. `EndConversation` closes the conversation but stops
+no agent, cancels no schedule, and files nothing. This skill is the sweep
+that makes ending safe.
 
 **The session being finished runs this skill.** What this session spawned,
 scheduled, watched, and created is known only here; no list surface
-reconstructs it, and a forked subagent cannot see it. Run the sweep in this
-conversation.
+reconstructs it, and a forked subagent cannot see it. Run the sweep here.
 
 **Walking away, not parking.** If the operator means to come back to a
 driven run, that is `pause`, not this. Finish still handles a live run: it
@@ -32,18 +31,17 @@ hands the run to `pause` and continues sweeping everything else.
 ownership** — the agent or task id returned when you spawned it, the cron
 id returned when you created it, the watch you opened, the `wfId` and
 `worktree-wf_<id>-*` branches of a wave you launched. That record lives in
-this conversation. Work from it.
+this conversation; work from it.
 
 `ListAgents` and `CronList` show more than this session's own, and neither
 tags an entry with the session that created it. They are a cross-check
 against your own record, never the source of truth: a background helper you
 spawned is invisible to `ListAgents` while it runs
-(`skills/docket-run/SKILL.md`), so an entry missing from a list does not
-mean it is gone, and an entry present in one that is not in your record is
-not yours.
+(`skills/docket-run/SKILL.md`), so a missing entry does not mean it is
+gone, and one present there but absent from your record is not yours.
 
 **Where ownership cannot be established, report it and do not stop it.**
-Name the entry and why it was ambiguous in the closing report, as an
+Name the entry and why it was ambiguous, in the closing report, as an
 operator-cleanup candidate. Never touch another session's agents, crons,
 worktrees, or watches.
 
@@ -58,13 +56,13 @@ and never `dispatch abandon` (that verb discards live work unconditionally
 and belongs to pause's hard halt alone). Do not re-derive pause's steps
 here.
 
-Then continue the sweep. Pause winds down a live `shadow-live` in both of
-its halt modes, so once it returns, the shadow row below is already
-handled: record it as such and do not message the observer a second time.
+Then continue the sweep. Pause winds down a live `shadow-live` in both
+halt modes, so once it returns, the shadow row below is already handled:
+record it as such and do not message the observer a second time.
 
 ## Sweep
 
-Work the rows in order. Each one is answered, swept or marked not
+Work the rows in order, each one answered, swept, or marked not
 applicable, never skipped.
 
 **Subagents and Workflow tasks this session spawned.** For each one in your
@@ -77,7 +75,7 @@ bound, `TaskStop` anyway and say so in the report, naming what it was
 doing.
 
 **Background Bash and Monitor tasks this session started.** Stop each one.
-Monitors are not restored across a resume, so one left armed is only noise
+Monitors do not restore across a resume, so one left armed is only noise
 for whoever inherits the machine.
 
 **Schedules this session created.** A self-paced `/loop` wakeup ends with
@@ -90,9 +88,9 @@ cron says nothing about a wakeup. Answer both rows.
 `action: "watch"`, `on: false`.
 
 **A live `shadow-live` agent.** If pause already handled it, that row is
-done. Otherwise wind it down exactly the way `skills/pause/SKILL.md` does in
-its own shadow section: one message telling it to stop observing and run
-the shadow skill's close-out, with no polling for the review afterwards.
+done. Otherwise wind it down exactly the way `skills/pause/SKILL.md` does
+in its own shadow section: one message telling it to stop observing and
+run the shadow skill's close-out, with no polling for the review after.
 
 **Git worktrees this session created.** Check each against
 `git worktree list` and your own `wfId` record. **Never remove a worktree
@@ -107,7 +105,7 @@ removed.
 
 - Questions the operator asked this session that never got an answer:
   something deferred while other work ran, a "can you also check…"
-  overtaken by events. Answer each one now, or say plainly that it is
+  overtaken by events. Answer each one now, or say plainly it is
   unanswered and why.
 - `AskUserQuestion` rounds this session raised that the operator never
   answered. Do not re-ask at the end of a session. Carry each one into the
@@ -134,8 +132,8 @@ DESC
 
 File with **no routing label**; `/docket-groom` assigns the route. One item
 per issue: a single issue holding three unrelated leftovers gets groomed as
-one and two of them disappear. One item is at most one independent
-outcome under the docket skill's
+one and two of them disappear. One item is at most one independent outcome
+under the docket skill's
 [sizing reference](../docket/references/sizing.md), whose tier goes in
 `--size`; a leftover that is several outcomes is several issues, and one
 you have no time to decompose takes that reference's conduct exception
@@ -161,9 +159,9 @@ or explicitly marked not applicable, never silently dropped:
 - unfinished work, one issue each
 - anything whose ownership could not be established
 
-This is the same sweep as above, checked as a gate rather than trusted as a
-memory. A row you cannot answer is reported as unanswered: that is a valid
-outcome, and a silent gap is not.
+This is the same sweep as above, checked as a gate rather than trusted as
+memory. A row you cannot answer is reported as unanswered: a valid outcome,
+unlike a silent gap.
 
 ## The closing report
 
@@ -177,8 +175,8 @@ says what happened:
 - **Filed:** every issue id with its one-line title.
 - **Handed to pause:** the run id and which halt mode pause used, or none.
 - **Left, and why:** foreign changes, foreign `wf_*` worktrees and agents,
-  worktrees kept for an un-integrated sha (with sha, path, and branch),
-  anything whose ownership could not be established, and any question that
-  stayed unanswered.
+  worktrees kept for an un-integrated sha (with sha, path, and branch), any
+  ownership that could not be established, and any question left
+  unanswered.
 
 The session is safe to end once this report is printed.

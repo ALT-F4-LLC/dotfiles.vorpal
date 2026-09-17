@@ -54,11 +54,12 @@ valid records rather than discarding the remaining file.
 
 Detect truncation/replacement before advancing a cursor. If a session resumes
 or changes transcript ID, use explicit resume/parent metadata or corroborated
-continuity evidence: cwd and recency find candidates but do not prove identity.
-An event retention gap or missing old transcript remains a gap in the review.
+continuity evidence, since cwd and recency find candidates but do not prove
+identity. An event retention gap or missing old transcript remains a gap in
+the review.
 
-Compact text/tool previews are for navigation. A claim about a command, a gate,
-or a worker return must cite the complete relevant input/result. Retain
+Compact text/tool previews are for navigation only. A claim about a command,
+gate, or worker return must cite the complete relevant input/result. Retain
 original locators even when previews flatten or shorten text. Quietness and
 file size alone establish neither progress nor completion.
 
@@ -81,10 +82,10 @@ explicit assignment record, or the installed `wave-usage` obligation
 classifier: claimant (step record), judge (vote cast), and wave overhead
 (read-only probes) have different owners. The first `STEP-N` in a prompt can be
 something a probe read. For tend, prefer an explicit launch record binding
-project, issue, agent, and workflow identity. Otherwise require an unambiguous
-assignment statement in the bootstrap brief; a regex finding an issue ID in
-quoted descriptions is insufficient. Preserve unattributed work as a count and
-limitation; never force a plausible join.
+project, issue, agent, and workflow identity; otherwise require an unambiguous
+assignment statement in the bootstrap brief, since a regex finding an issue ID
+in quoted descriptions is insufficient. Preserve unattributed work as a count
+and limitation; never force a plausible join.
 
 Separate requested routing from actual serving models. Spawn metadata and the
 orchestrator's model/effort options establish the request. Deduplicated
@@ -147,10 +148,10 @@ normal procedure.
 
 ## Repetition and extraction proposals
 
-Propose a small deterministic helper when repeated parsing, joins, arithmetic,
-or command reconstruction causes material cost or mistakes. Name the inputs,
-returned schema, explicit failures, call sites, and ownership. Prefer extending
-an existing correct reader over duplicating its logic in a new workflow.
+Propose a small deterministic helper when repeated parsing, joins, arithmetic, or
+command reconstruction causes material cost or mistakes. Name the inputs, returned
+schema, explicit failures, call sites, and ownership. Prefer extending an existing
+correct reader over duplicating its logic.
 
 A proposed Workflow implementation inherits its sandbox constraints: no direct
 filesystem/shell access, and clock-dependent values arrive through arguments.

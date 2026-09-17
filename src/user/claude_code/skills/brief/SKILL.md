@@ -28,11 +28,10 @@ to the confirmed route.
 
 Preserve the operator's intent without expanding it. Label derived
 requirements and proposals; leave unsupported details unspecified.
-Distinguish unavailable evidence from facts that need investigation.
+Distinguish unavailable evidence from facts needing investigation.
 
 Use established conversation context without asking the operator to
-repeat it. If referenced history is unavailable, ask for the missing
-information.
+repeat it. If referenced history is unavailable, ask for it.
 
 The operator may request only the brief at any point. Emit its current
 state, identify unresolved items, and stop.
@@ -45,8 +44,8 @@ same choice again. Delegation does not establish unknown facts or remove
 the final confirmation gate.
 
 When the requested deliverable is an assessment, diagnosis, comparison, or
-recommendation, define completion around that output and its supporting
-evidence; include implementation only when the operator requests it.
+recommendation, define completion around that output and its evidence;
+include implementation only when the operator requests it.
 
 When revising an existing brief, preserve settled requirements, update
 affected fields, and reopen only decisions whose answers may have changed.
@@ -68,8 +67,8 @@ When an accepted artifact establishes a requirement, quote the relevant
 wording with its locator: file and line, issue and comment ID, or URL and
 section. Verify quotations against content read during this briefing. Mark
 wording you cannot locate `unverified quote — <reason>`; claim source
-drift only when there is evidence of a change. A quotation establishes
-what a source says, not whether its diagnosis or proposed fix is correct;
+drift only with evidence of a change. A quotation establishes what a
+source says, not whether its diagnosis or proposed fix is correct;
 preserve an unverified diagnosis as the operator's stated position.
 
 Resolve each operator-named reference through one bounded lookup sequence:
@@ -86,7 +85,7 @@ Recency alone does not give a comment authority; surface material
 conflicts instead of choosing silently.
 
 On lookup failure, retain what is known and mark affected information
-`unavailable — <reason>`. If only an issue ID is known, say that its
+`unavailable — <reason>`. If only an issue ID is known, say its
 requirements remain unavailable. Do not retry repeatedly or turn reference
 resolution into the investigation being requested.
 
@@ -119,9 +118,8 @@ facts.
 
 The role question, when §2 calls for it, is a dedicated question in the
 current round. Its options are the two or three roles the request
-genuinely supports, the strongest first with `(Recommended)` in its
-label; never pad the list with generic stances to reach the harness
-minimum.
+genuinely supports, strongest first with `(Recommended)` in its label;
+never pad the list with generic stances to reach the harness minimum.
 
 Fold answers into the brief and continue when they expose another
 material decision, up to three rounds. Stop when the brief and route are
@@ -194,16 +192,15 @@ operator to accept, swap, or strike at confirmation. When two or more
 genuinely fit, ask for it in §1 and record the operator's pick as
 operator-stated; candidates genuinely differ only when they would produce
 materially different judgment or vocabulary, so near-synonyms collapse
-into one proposal rather than a question. The
-`proposal` label is what keeps a supplied Role inside the
-preserve-intent boundary: the operator sees it as the skill's suggestion,
-not their own requirement. A struck proposal leaves Role `none`, which
-does not block progress. A role shapes judgment and vocabulary only: it
-grants no authority the confirmed brief does not, changes neither the
-Security-sensitive value nor the route rules in §3, and never relaxes the
-working agreement or a route's contract. It is distinct from docket's
-vote-seat `--role`, which names a judge's seat on a panel, not this
-conversation's stance.
+into one proposal rather than a question. The `proposal` label is what
+keeps a supplied Role inside the preserve-intent boundary: the operator
+sees it as the skill's suggestion, not their own requirement. A struck
+proposal leaves Role `none`, which does not block progress. A role shapes
+judgment and vocabulary only: it grants no authority the confirmed brief
+does not, changes neither the Security-sensitive value nor the route
+rules in §3, and never relaxes the working agreement or a route's
+contract. It is distinct from docket's vote-seat `--role`, which names a
+judge's seat on a panel, not this conversation's stance.
 
 For cross-cutting requests, specify the search boundary and completeness
 requirement. Do not mistake a preliminary file list for exhaustive scope.
@@ -351,11 +348,11 @@ where a route bullet below says so.
   handoff and `bounded` work confined to one or two files proposes
   `small`; the planner confirms either under the docket skill's
   [sizing reference](../docket/references/sizing.md) before recording it,
-  and splits any issue that reference's cap rejects. The Role holds for the planning conversation, which runs
-  here, and does not reach issue bodies or executors: executors take
-  their framing from the bound workflow's contracts, and writing a
-  conversation role into a body is the planner's decision under its own
-  rules.
+  and splits any issue that reference's cap rejects. The Role holds for
+  the planning conversation, which runs here, and does not reach issue
+  bodies or executors: executors take their framing from the bound
+  workflow's contracts, and writing a conversation role into a body is
+  the planner's decision under its own rules.
 - **`/loop`:** Invoke `loop` from the main conversation with the confirmed
   brief and Loop details. Ensure the repeated task preserves scope,
   exclusions, constraints, per-pass action, the stop/cancel policy, and

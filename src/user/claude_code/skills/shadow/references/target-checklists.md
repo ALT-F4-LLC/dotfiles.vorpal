@@ -5,7 +5,7 @@ installed definition and the version evidenced by the run. These rules
 summarize the supplied Docket/tend contracts: they establish no universal
 engine semantics and authorize no observed operation. If this file and the
 target disagree, record the disagreement, establish which contract applied,
-and never judge a past execution solely against a newer checklist.
+and never judge a past execution against a newer checklist alone.
 
 ## Docket-run conductor
 
@@ -28,8 +28,8 @@ and never judge a past execution solely against a newer checklist.
 | Exceptional acknowledgments | `--ack-reap` and `--accept-missing-usage` have the explicit, applicable operator authorization required by the target. Unrelated permission or silence does not supply it. |
 
 No completed wave, final assistant message, or report size alone closes the
-observation. Integration, outstanding agents, parked gates, and final run state
-remain part of the arc.
+observation. Integration, outstanding agents, parked gates, and final run
+state remain part of the arc.
 
 ## Wave and executors
 
@@ -63,5 +63,5 @@ remain part of the arc.
 | Stop | The operator can stop recurrence; expiration or runtime failure may also stop it and must be reported accurately. Empty queue is not completion of a still-armed loop. Settle current work separately. |
 
 For another execution skill, derive an equivalent bounded checklist of
-observable obligations and evidence surfaces from its actual contract. A
+observable obligations and evidence surfaces from its actual contract; a
 disagreement or omission matters through its consequence.

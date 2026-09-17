@@ -104,10 +104,9 @@ Success:
 ```json
 {"ok": true, "data": { ... }, "message": "Created DKT-1: Fix login bug"}
 ```
-`message` is optional. Parse the result fields, not human-readable message text.
-For `step record`, a successful envelope means the recording succeeded; gates
-can still fail. Inspect `failed_gates` and the step’s status/routing before
-reporting that the work passed.
+`message` is optional. Parse the result fields, not human-readable message
+text. See [SKILL.md](../SKILL.md) on `step record`'s success-vs-passed
+distinction.
 
 Error:
 ```json
@@ -143,14 +142,12 @@ depend on an exact serialized key set or byte sequence across releases.
 ### Primary-key naming (`id` vs the noun)
 
 Issue payloads expose both `id` and `issue`, with the same displayed ID, in
-v1 and v2, including nested sub-issues and issues returned by mutations. Use
-either spelling consistently. Other engine responses may use noun keys, but
-their nesting and value types are verb-specific: `run status` carries a
-nested run object and step status counts, not full step rows. Consult
-[per-verb response shapes](../reference.md#json-envelope--per-verb-data-shapes).
+v1 and v2. Use either spelling consistently. See [per-verb response
+shapes](../reference.md#json-envelope--per-verb-data-shapes) for other
+verbs' key nesting.
 
-Under **`--json=v2`**, list commands return a uniform envelope instead of their
-per-command key (`issues`, `docs`, `proposals`, `entries`):
+Under **`--json=v2`**, list commands return a uniform envelope instead of
+their per-command key (`issues`, `docs`, `proposals`, `entries`):
 
 ```json
 {"ok": true, "data": {"items": [...], "total": 42, "truncated": true}}
@@ -159,14 +156,9 @@ per-command key (`issues`, `docs`, `proposals`, `entries`):
 - `total` is the number of matching records **before** `--limit` is applied.
 - `truncated` is `true` when `--limit` dropped records.
 
-Single-entity responses remain verb-specific. Versioned issue responses add
-`version` under v2 for optimistic concurrency. `issue show` and `step show`
-with one ID return an object under `data`; with multiple IDs, an array of
-those objects. Do not assume every show verb carries the same fields.
-
-Under v2, a **negative** `--limit` is a `VALIDATION_ERROR` on every list verb.
-Under v1 the legacy behaviors are preserved unchanged (`issue list` and `next`
-treat it as unlimited; `issue log` clamps it to 1).
+Under v2, a **negative** `--limit` is a `VALIDATION_ERROR` on every list
+verb. Under v1 the legacy behaviors are preserved unchanged (`issue list`
+and `next` treat it as unlimited; `issue log` clamps it to 1).
 
 ### Error codes & exit codes
 
@@ -185,9 +177,6 @@ read its reason. See [guard contracts](../../docket-run/references/guard-trust.m
 | `TIMEOUT` | 7 | Reserved — no verb emits this yet |
 | `UNTRUSTED` | 8 | Reserved — no verb emits this yet |
 | `GONE` | 9 | `events list --since` names a cursor below the retained minimum: those events no longer exist |
-
-Codes 1-4 retain their established numbers. Codes 5 and 6 are used by
-capability/lease operations; 7 and 8 remain reserved; new codes append.
 
 `events list --since` can return `GONE` after `events prune` removed the
 requested history. No automatic retention sweep runs; without an explicit
@@ -382,9 +371,9 @@ docket board --watch                       # human-mode live board, default 2s i
 docket vote result DKT-V1 --watch --interval 1s
 ```
 
-Watch mode runs until `Ctrl-C` (SIGINT) or SIGTERM. In an agent session, give
-a watch an explicit stop condition, keep it off a blocking foreground tool
-call when the user needs continued interaction, and do not start indefinite
-watching for a one-time status request.
+Watch mode runs until `Ctrl-C` (SIGINT) or SIGTERM: an interactive-terminal
+mechanism only. Never pass `--watch` or `--follow` from an agent; nothing
+ends them there, the call dies at the tool timeout, and its output is lost.
+Poll with one-shot reads and a stop condition instead (see [SKILL.md](../SKILL.md)).
 
 ---

@@ -26,22 +26,19 @@ never a silent downgrade; only then do you implement, lint, and commit.
 Source only: nothing under `~/.claude` or `~/.docket` is edited, and the
 operator's `just activate` is the only installer.
 
+
 You run in the main conversation, never in a forked subagent: the deviation
 decisions, the spec iteration, and the artifact approval gate below are real
-questions through `AskUserQuestion` and `Artifact`, and a fork has neither
-tool, so it would infer the answers and land a corpus change nobody
-approved. The evidence the gates rest on is agent work: the blast-radius
-sweep, the cross-project mining, the engine-source verification, and
-corpus mode's triage each fan out through the read-only workflow script
-described next, and this conversation reads what comes back, composes the
-proposals, and holds every gate. Treat whatever the conversation already
-discussed as background, not evidence: read the target and launch the
-evidence stages yourself rather than assuming anything was read for you,
-and start from `$ARGUMENTS` (the named target, or nothing for corpus mode).
-If `AskUserQuestion` is unavailable in the session, stop before §4 and
-report the decisions still open instead of implementing. Your closing
-report names the commit landed and every decision the operator made along
-the way.
+questions through `AskUserQuestion` and `Artifact`, and a fork has neither.
+The evidence the gates rest on is agent work: the blast-radius sweep, the
+cross-project mining, the engine-source verification, and corpus mode's
+triage each fan out through the read-only workflow script described next.
+Treat whatever the conversation already discussed as background, not
+evidence: read the target and launch the evidence stages yourself, and
+start from `$ARGUMENTS` (the named target, or nothing for corpus mode). If
+`AskUserQuestion` is unavailable, stop before §4 and report the decisions
+still open instead of implementing. Your closing report names the commit
+landed and every decision the operator made along the way.
 
 The corpus has five refittable surfaces, all under
 `src/user/docket/config/`, and any one of them can be the named target:
@@ -57,13 +54,13 @@ The corpus has five refittable surfaces, all under
   threshold predicates agree on.
 
 **You change definitions; you never run them.** No `docket run`, no issue
-grooming, no executing the pipeline you just changed (`docket-run` does that).
-A live run is out of scope unless the operator asks for one afterward.
+grooming, no executing the pipeline you just changed (`docket-run` does
+that). A live run is out of scope unless the operator asks for one
+afterward.
 
-Two modes, dispatched on the invocation: a named target enters single mode,
-running §1–§8 on that one definition; no parameter at all enters corpus mode
-(below), which runs the same §1–§8 across the whole corpus, one target at a
-time.
+Two modes: a named target enters single mode, running §1–§8 on that one
+definition; no parameter enters corpus mode (below), running the same
+§1–§8 across the whole corpus, one target at a time.
 
 ## The evidence workflow
 
@@ -72,13 +69,10 @@ Every read-only evidence phase runs through one script, launched by
 `~/.claude/workflows/docket-refit.js`, expanding `~` to a literal absolute
 path yourself first (`echo ~` or your session's known home). The Workflow
 tool does not expand `~` and resolves a relative path against the target
-repo's cwd, not the dotfiles source tree. The installed copy under
-`~/.claude/workflows` is also the only one the tool is permitted to launch,
-and the only one guaranteed to match this session's own build (the source
-file under `src/user/claude_code/workflows/docket-refit.js` may have moved
-since the last `just activate`). A missing installed file means the corpus
-was never activated after this script was added: report that, don't launch
-the source copy instead.
+repo's cwd, not the dotfiles source tree. The installed copy under `~/.claude/workflows` is also the only one the
+tool may launch. A missing installed file means the corpus was never
+activated after this script was added: report that, don't launch the
+source copy instead.
 
 The script runs one stage per launch, selected by `args.stage`, because the
 capability questions §3 verifies exist only once the operator's spec is
@@ -95,25 +89,25 @@ Workflow({ scriptPath: "<absolute installed path to docket-refit.js>", args: {
 } })
 ```
 
-Scout the arguments inline before launching: resolve the target and read
-it whole, list the projects with `docket project list --json`, and resolve
-the engine checkout (§3) — the script cannot inspect files or run commands
+Scout the arguments inline before launching: resolve the target and read it
+whole, list the projects with `docket project list --json`, and resolve the
+engine checkout (§3) — the script cannot inspect files or run commands
 itself. Every agent it spawns is an `executor-read` agent, whose tool set
 carries no write verb: sweeps grep the corpus and the harness scripts,
-mining analysts run `docket` read verbs from each project's checkout
-root, verifiers read engine source. Nothing in it edits, mutates a store,
-or asks the operator anything. Each return carries a
-`summary` line and an `uncovered` list naming every agent that returned
-nothing, every project whose checkout could not be entered, and every pair
-a fan-out bound dropped; report those as uncovered, never as clean. If the
-workflow throws or returns nothing, say so and stop. Do not substitute a
-manual grep or a from-memory answer as if it satisfied the stage.
+mining analysts run `docket` read verbs from each project's checkout root,
+verifiers read engine source. Nothing in it edits, mutates a store, or asks
+the operator anything. Each return carries a `summary` line and an
+`uncovered` list naming every agent that returned nothing, every project
+whose checkout could not be entered, and every pair a fan-out bound
+dropped; report those as uncovered, never as clean. If the workflow throws
+or returns nothing, say so and stop rather than substituting a manual grep
+or a from-memory answer.
 
 ## Design canon
 
 The corpus is a production configuration system serving every project on
-this machine. These practices are working vocabulary for every proposal you
-make, on any surface, not limited to the five above:
+this machine. These practices are working vocabulary for every proposal,
+on any surface, not only the five above:
 
 - **Change control via frozen versions.** A registered `name@version` is
   immutable: changed bytes demand a version bump. In-flight runs finish on
@@ -148,9 +142,9 @@ calls for a change through the full §1–§8 process to a landed commit,
 target by target, in the same session. Every definition gets triaged and
 verdicted, and every non-`keep` verdict proceeds straight into its own
 §1–§8 run; there is no upfront action list to approve before work starts.
-The operator checkpoints are the same ones single mode already has — §4's
-deviation gate and §5's artifact approval — hit per target, as each is
-reached, not batched.
+The operator checkpoints are the same ones single mode has — §4's deviation
+gate and §5's artifact approval — hit per target, as each is reached, not
+batched.
 
 **Triage, then deep-dive, in one launch.** Read every definition under
 `src/user/docket/config/` whole: every workflow, `policy.toml`, every
@@ -162,28 +156,22 @@ fragments, schemas, and policy rows those workflows consume) plus one
 static consumer census over the corpus tree (fragments and schemas with
 zero consumers, policy rows routing nothing, version skew), merges the
 flags, and then runs §2's full mining and §1's sweep only on what the
-aggregate flagged: never-run workflows, chronic parks or budget
-exhaustions, gates that never reject or never pass, cost far off
-`expected_cost`, executors whose emits chronically fail their schema or
-draw judge rejections, policy rows routing nothing, fragments and schemas
-with zero consumers. The return separates `suspects` (each with its
-`reasons`, its `sweep`, and its per-project `mining`) from `cleared` (each
-with the aggregate that cleared it). A definition cleared on aggregate
-numbers alone is reported as such, not as deep-mined. This launch
-satisfies §1's sweep and §2's mining for every suspect — don't relaunch
-`evidence` for a target on entry to its own §1–§8 run; carry the
-suspect's `sweep` and `mining` forward as the finding.
+aggregate or census flagged. The return separates `suspects` (each with its
+`reasons`, `sweep`, and per-project `mining`) from `cleared` (each with the
+aggregate that cleared it). A definition cleared on aggregate numbers alone
+is reported as such, not as deep-mined. This launch satisfies §1's sweep and
+§2's mining for every suspect — don't relaunch `evidence` for a target on
+entry to its own §1–§8 run; carry the suspect's `sweep` and `mining` forward
+as the finding.
 
 **Verdicts drive the target, not a suggestion.** Every definition gets one:
 
 - **keep** — evidence shows it earning its shape. Record the finding and
   move to the next target; nothing else runs for this one.
 - **refit** — name what needs changing and why, citing numbers. That
-  evidence-backed shape is the target spec for this run: §1's "iterate a
-  vague ask with the operator" is what single mode does when the operator
-  supplies the ask; here the mining already produced one. Weigh the shapes
-  (§1), then run §3 through §8 on this target, landing its own commit
-  before moving to the next.
+  evidence-backed shape is the target spec for this run, since the mining
+  already produced it. Weigh the shapes (§1), then run §3 through §8 on
+  this target, landing its own commit before moving to the next.
 - **remove** — no runs, superseded, or overlapping a sibling that already
   covers it. Confirm from the suspect's sweep that nothing still depends
   on it, gate the removal through §4 like any other deviation, get §5
@@ -199,9 +187,8 @@ suspect's `sweep` and `mining` forward as the finding.
   implement and land it as its own commit.
 
 Report each target's verdict and evidence in plain language as it's reached,
-not held back for an end-of-run summary. The operator sees the corpus-wide
-shape of the sweep as it happens, and the §4/§5 gates are where they weigh
-in on any one target.
+not held back for an end-of-run summary; the §4/§5 gates are where the
+operator weighs in on any one target.
 
 ## 1. Intake
 
@@ -305,9 +292,9 @@ definition being redesigned.)
 ## 3. Verify against the engine
 
 **Source is the only capability authority** — not memory, not this file,
-not what a sibling definition appears to imply. Engines move, and a design
-promised on a stale assumption fails at activation or, worse, at ordinal 3
-of a live run. Two authorities cover the corpus:
+not what a sibling definition appears to imply: engines move, and a design
+promised on a stale assumption fails at activation or worse. Two
+authorities cover the corpus:
 
 The docket engine checkout normally lives beside this repo
 (`.../github.com/ALT-F4-LLC/docket.git/main`), but that worktree may not be
@@ -370,7 +357,6 @@ provides, a concrete proposal. One gap is one issue, within the docket
 skill's [sizing reference](../docket/references/sizing.md)'s cap and
 carrying its tier as `--size`; a deviation that needs two independent
 engine changes is two filings.
-Engine defects and gaps are filed, never patched in place.
 
 ## 5. Visualize before implementing
 
@@ -391,10 +377,9 @@ shows depends on the target:
   version consumed, tier moved, field added, rule tightened) and consumers
   explicitly unaffected marked as such.
 
-Either way, the picture lets the operator catch a wrong edge, or an
-unconsidered consumer, cheaper than a wrong implementation. It also carries
-the §1 comparison: the shapes weighed, the one chosen, and the reason, so
-the operator approves a decision and not only a drawing.
+The picture also carries the §1 comparison: the shapes weighed, the one
+chosen, and the reason, so the operator approves a decision and not only a
+drawing.
 
 Present the artifact link and ask for approval via `AskUserQuestion`
 (approve / revise). A revision request loops back through §4's gates if it
@@ -409,12 +394,10 @@ A corpus change is rarely one file, whichever surface it enters from. The
 blast-radius list from §1 is the worklist: land the target and every
 consumer edit it forces, in one change, serially, in this session — never
 through the workflow script and never through parallel subagents, since
-consumers routinely share files and a parallel writer would race. Skipping
-a surface is how activation refuses or a wave refuses to route:
+consumers routinely share files and a parallel writer would race.
 
-- **Workflow TOML** — redesigned steps, plus a `version` bump: a registered
-  `name@version` is frozen, and activation rejects changed bytes at an
-  unchanged version.
+- **Workflow TOML** — redesigned steps, plus a `version` bump (frozen
+  versions, see the design canon above).
 - **Contracts** (`src/user/docket/config/contracts/<executor>.md`) — one
   per new executor, in the house shape named by
   `src/user/docket/config/README.md`'s naming convention: frontmatter
@@ -425,10 +408,11 @@ a surface is how activation refuses or a wave refuses to route:
   pipeline belongs in a step-level packet fragment instead. Add README.md to
   this checklist as touched whenever a naming exception or convention
   changes, not-applicable otherwise.
-- **Fragments** (`src/user/docket/config/fragments/`) — rules shared across nodes (a
-  protocol, a store convention) live once in a fragment appended to each
-  consumer's packet, never copy-pasted into contracts. A fragment edit is
-  reviewed against every including contract; bump its `version`.
+- **Fragments** (`src/user/docket/config/fragments/`) — rules shared across
+  nodes (a protocol, a store convention) live once in a fragment appended to
+  each consumer's packet (one source of truth, see the design canon above).
+  A fragment edit is reviewed against every including contract; bump its
+  `version`.
 - **policy.toml** — an `[executors]` row for every new executor and every
   new vote seat (the wave refuses to route or seat anything without a row),
   plus the policy version bump. Match variant tiers to comparable existing
@@ -444,23 +428,19 @@ a surface is how activation refuses or a wave refuses to route:
   registration (`docket config set --global vote.rule.<name>.threshold`)
   the operator runs; name it in the report rather than mutating the store
   yourself.
-- **Schemas** (`src/user/docket/config/schemas/`) — a new `payload` kind needs a schema
-  file and threshold predicates that match its fields. Changing an existing
-  kind is a new `kind@n+1` file, both sides of the contract moved together:
-  every emitting contract and every reading predicate updated to the new
-  version in the same change. The old version stays until no registered
-  workflow references it; its removal is a later, separate change.
+- **Schemas** (`src/user/docket/config/schemas/`) — a new `payload` kind
+  needs a schema file and threshold predicates that match its fields.
+  Changing an existing kind is a new `kind@n+1` file, both sides moved
+  together: every emitting contract and every reading predicate updated to
+  the new version in the same change (deprecate, don't break — see the
+  design canon above).
 
 Before moving to §7, write one line per surface above — touched, or
-not-applicable and why — even when the answer is obvious. A surface skipped
-by oversight looks identical to one skipped on purpose until it is named;
-the checklist tells them apart before a lint or an activation does.
+not-applicable and why — even when the answer is obvious.
 
 Whatever rationale you write into any of these files, write the finding
-itself, not a pointer to it. A date, timestamp, sha, or issue id means
-nothing to whoever reads the comment after the run it came from is gone,
-the commit is rewritten, or the issue is closed. Say what was actually
-measured or observed, in plain words, inline in the comment.
+itself, not a pointer (date, timestamp, sha, issue id) to it; say what was
+measured, in plain words, inline (see docket-retro §3 for why).
 
 ## 7. Validate
 
@@ -482,12 +462,11 @@ A missing corpus schema registers from its source file
 (`docket schema register <kind@n> src/user/docket/config/schemas/<kind@n>.json`), then
 re-lint. Schema registration into the local project's engine store is a
 lint prerequisite this skill may perform directly, unlike a genuinely new
-vote rule (§6), which is a global, higher-stakes store mutation reserved
-for the operator: a schema registered here binds only the one project being
-worked on and does not change routing anywhere else, while a vote-rule
-threshold set with `--global` changes every project's tally at once. The
-acceptance floor is a clean lint across every consumer at the bumped
-versions; anything the lint cannot see (live loop behavior, seat quality,
+vote rule (§6), reserved for the operator: a schema registered here binds
+only the one project being worked on, while a vote-rule threshold set with
+`--global` changes every project's tally at once. The acceptance floor is a
+clean lint across every consumer at the bumped versions; anything the lint
+cannot see (live loop behavior, seat quality,
 whether a fragment's rule actually lands in outputs) is reported as
 unverified, not claimed.
 

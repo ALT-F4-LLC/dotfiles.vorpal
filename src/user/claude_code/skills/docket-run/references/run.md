@@ -1,19 +1,18 @@
 # Docket engine CLI — `docket run`
 
-Covers the `docket run` family. Consumer: the docket-run skill; this file is
-the single copy of the engine CLI contract for these verbs, split out of
-docket's reference.md, whose [JSON envelope
-section](../../docket/reference.md#json-envelope--per-verb-data-shapes) still
-holds the response-shape contract and parsing traps. Command and flag inventory
-verified 2026-09-14 against `docket nightly-112-gcffd10c` (commit `cffd10c`,
-built `2026-09-14T21:28:29Z`) by `--help` and `--version` only; behavioral
-claims and JSON examples were not re-run.
+Covers the `docket run` family, the single copy of this engine CLI contract,
+split out of docket's
+[reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
+(consumer: the docket-run skill), which still holds the response-shape
+contract and parsing traps. Verified 2026-09-14 against `docket
+nightly-112-gcffd10c` (commit `cffd10c`, built `2026-09-14T21:28:29Z`) by
+`--help`/`--version` only; behavior and JSON examples were not re-run.
 
 <a id="contents"></a>
 
 ## Contents
 
-- [`docket run`](#run-commands) — 743 lines
+- [`docket run`](#run-commands) — 740 lines
   - [`run start`](#run-start) — 49 lines
   - [`run issue add|remove RUN-N DKT-N...`](#run-issue) — 38 lines
   - [`run note add|list`](#run-note) — 22 lines
@@ -21,7 +20,7 @@ claims and JSON examples were not re-run.
   - [`run report RUN-N`](#run-report) — 101 lines
   - [`run activate RUN-N`](#run-activate) — 204 lines
   - [`run conduct RUN-N`](#run-conduct) — 39 lines
-  - [`run pause|resume|abandon RUN-N`](#run-lifecycle) — 87 lines
+  - [`run pause|resume|abandon RUN-N`](#run-lifecycle) — 84 lines
   - [`run repin RUN-N --reason R`](#run-repin) — 65 lines
   - [`run budget RUN-N [--set N]`](#run-budget) — 70 lines
   - [`run status [RUN-N]`](#run-status) — 29 lines
@@ -531,13 +530,10 @@ left to conduct"); missing run → `NOT_FOUND` (exit 2).
 terminal from any non-terminal status. A paused run blocks new claims and
 honors in-flight completes.
 
-All three, `abandon --issue` included, require the run's **conductor
-capability** (`run conduct` above) via `DOCKET_TOKEN` or stdin, never argv:
-none supplied is `VALIDATION_ERROR` (exit 3) naming both channels and `run
-conduct`; a wrong one is `AUTH_ERROR` (exit 5). The check runs after the
-run is found and before any status check or write, so a missing token is
-reported before an illegal transition would be. A run activated before the
-capability existed asks for none until it is conducted.
+All three, `abandon --issue` included, require the run's conductor
+capability, same channels and refusals as `run conduct` above. The check
+runs after the run is found and before any status check or write, so a
+missing token is reported before an illegal transition would be.
 
 **Abandonment NAMES the run's recorded worktrees.** A relay's
 close-time sweep only covers worktrees its own session created, and an

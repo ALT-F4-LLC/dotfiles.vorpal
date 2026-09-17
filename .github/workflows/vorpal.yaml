@@ -30,6 +30,8 @@ jobs:
 
       - run: bash tests/docket-cli-inventory.test.sh
 
+      - run: bash tests/docket-cli-sweep.test.sh
+
       - run: bash tests/docket-evaluations.test.sh
 
       - run: bash tests/docket-commit-guard-hook.test.sh

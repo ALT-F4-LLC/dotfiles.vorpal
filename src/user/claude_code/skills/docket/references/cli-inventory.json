@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "verified_on": "2026-09-14",
-  "binary_version": "docket version nightly-112-gcffd10c (commit: cffd10c, built: 2026-09-14T21:28:29Z)",
+  "verified_on": "2026-09-17",
+  "binary_version": "docket version nightly-136-g835f706 (commit: 835f706, built: 2026-09-17T01:02:08Z)",
   "probe_contract": "Only --version and command-path --help; no store operations.",
   "commands": [
     {
@@ -70,6 +70,10 @@
         {
           "name": "--priority",
           "short": "-p",
+          "value": "strings"
+        },
+        {
+          "name": "--size",
           "value": "strings"
         },
         {
@@ -499,6 +503,37 @@
           "name": "--source",
           "value": "string",
           "default": "\"backfilled\""
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket dispatch extend",
+      "usage": [
+        "docket dispatch extend [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--run",
+          "value": "string"
         }
       ],
       "inherited_flags": [
@@ -1871,6 +1906,10 @@
           "value": "strings"
         },
         {
+          "name": "--size",
+          "value": "string"
+        },
+        {
           "name": "--status",
           "short": "-s",
           "value": "string",
@@ -1983,6 +2022,10 @@
         {
           "name": "--scope",
           "value": "strings"
+        },
+        {
+          "name": "--size",
+          "value": "string"
         },
         {
           "name": "--status",
@@ -2510,6 +2553,10 @@
           "value": "string"
         },
         {
+          "name": "--size",
+          "value": "strings"
+        },
+        {
           "name": "--sort",
           "value": "string"
         },
@@ -2759,6 +2806,10 @@
           "value": "string"
         },
         {
+          "name": "--size",
+          "value": "strings"
+        },
+        {
           "name": "--status",
           "short": "-s",
           "value": "strings"
@@ -2825,6 +2876,10 @@
         {
           "name": "--root",
           "value": "string"
+        },
+        {
+          "name": "--size",
+          "value": "strings"
         },
         {
           "name": "--status",
@@ -3190,6 +3245,14 @@
       "aliases": [],
       "flags": [
         {
+          "name": "--authority",
+          "value": "string"
+        },
+        {
+          "name": "--authority-ref",
+          "value": "string"
+        },
+        {
           "name": "--help",
           "short": "-h"
         },
@@ -3499,6 +3562,14 @@
       "aliases": [],
       "flags": [
         {
+          "name": "--authority",
+          "value": "string"
+        },
+        {
+          "name": "--authority-ref",
+          "value": "string"
+        },
+        {
           "name": "--help",
           "short": "-h"
         },
@@ -3708,7 +3779,7 @@
       "aliases": [],
       "flags": [
         {
-          "name": "--active"
+          "name": "--all"
         },
         {
           "name": "--help",
@@ -3997,6 +4068,14 @@
       ],
       "aliases": [],
       "flags": [
+        {
+          "name": "--authority",
+          "value": "string"
+        },
+        {
+          "name": "--authority-ref",
+          "value": "string"
+        },
         {
           "name": "--help",
           "short": "-h"
@@ -4402,6 +4481,14 @@
       "aliases": [],
       "flags": [
         {
+          "name": "--authority",
+          "value": "string"
+        },
+        {
+          "name": "--authority-ref",
+          "value": "string"
+        },
+        {
           "name": "--help",
           "short": "-h"
         },
@@ -4469,6 +4556,14 @@
       "flags": [
         {
           "name": "--as",
+          "value": "string"
+        },
+        {
+          "name": "--authority",
+          "value": "string"
+        },
+        {
+          "name": "--authority-ref",
           "value": "string"
         },
         {

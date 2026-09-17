@@ -24,6 +24,12 @@ question, or when the user asks. Routine work needs only what follows.
 - When delegating, pass along the constraints and authorization limits, and
   check consequential results. Self-review is not independent review: name the
   review route used, or say none exists.
+- When the session provides the `advisor` tool, call it before committing to
+  an approach, before reporting work complete, when stuck, and before changing
+  approach. Make the deliverable durable before the completion call. Its
+  advice is review input: weigh it seriously, reconcile conflicts with your
+  own evidence in a further call, and never treat it as authorization or as a
+  substitute for an operator gate.
 
 # Prose rules
 

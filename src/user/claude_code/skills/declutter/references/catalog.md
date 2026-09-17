@@ -515,8 +515,7 @@ worker never touches, and what looks like cruft and is not.
 
 ### Generic name
 - Signal: `Manager`, `Processor`, `Helper`, `Handler`, `Util`, `Data`,
-  `Info`, `Service` as a type's whole name; `enhanced`, `improved`, `new`,
-  `v2`, or a digit suffix on an internal symbol.
+  `Info`, `Service` as a type's whole name.
 - Why: the name says that something is done, not what.
 - Simplification: rename to the responsibility, updating every caller.
   When no specific name exists, the type lacks one responsibility; report
@@ -525,8 +524,26 @@ worker never touches, and what looks like cruft and is not.
   are frozen.
 - Proof: `probe` at the callers.
 - Source: Kevlin Henney, "Seven Ineffective Coding Habits of Many
-  Programmers" (secondary summary);
-  https://arxiv.org/pdf/2506.12014 for the length and suffix trend.
+  Programmers" (secondary summary).
+
+### Superseded-version naming
+- Signal: an identifier matching `\b\w*(Enhanced|Improved|New|Updated|
+  Refactored|Final)\w*\b`, or a `_v2`, `_new`, `_old` suffix, especially
+  where both the suffixed and unsuffixed (or `_old`) symbol still exist.
+- Why: residue of a generation that wrote a new version beside the old one
+  instead of editing in place; the tree carries two symbols with no clear
+  signal of which is live.
+- Simplification: confirm which version every caller actually uses, delete
+  the superseded one and its now-unused imports, then rename the survivor
+  to drop the suffix and update its callers.
+- Risk: both symbols may still be called from different places as a real,
+  unfinished migration rather than leftover residue. Check every call site
+  of both names; when both are live, this entry does not apply.
+- Proof: `reachability` for the deleted symbol, `probe` at the survivor's
+  renamed call sites.
+- Source: unsourced; https://arxiv.org/pdf/2506.12014 found generated code
+  trends toward longer and digit-suffixed names, adjacent evidence for the
+  naming-length pattern but not a direct claim about this specific tell.
 
 ### Mixed convention for one concept
 - Signal: `userId` and `user_id` in one module for the same value.

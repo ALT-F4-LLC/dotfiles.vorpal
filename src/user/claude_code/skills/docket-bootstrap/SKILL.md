@@ -214,15 +214,17 @@ Workflow({ scriptPath: "<absolute installed path to docket-bootstrap.js>", args:
   stage: "gate-union",
   workflowFiles: ["<absolute path>", ...],   // every workflow TOML: installed corpus plus any local addition
   trustEntries: <parsed `docket trust list --all` output, run inline in main>,
-  projectName: "<this repository's registered project name, or checkout basename>",
+  checkoutRoot: "<this checkout's absolute root path>",
 } })
 ```
 
 One `executor-read` agent per workflow file parses its gates, pre-gates,
 actions, and consumer steps and returns them with `file:line` citations. The
 script unions the results and marks each gate matched or unmatched against
-the passed `trustEntries`, treating an entry bound to another repository as
-missing here, never as applicable. A later issue's labels can bind any
+the passed `trustEntries`: a `--global` entry always applies, and a
+repo-scoped entry applies only when its `repo` (the absolute checkout path
+`trust list` records, not a project name) equals `checkoutRoot`; every other
+entry is missing here, never applicable. A later issue's labels can bind any
 workflow in that union, and a gate declared there with no trust entry bound
 to this repository fails that issue's first gated step `unmatched`, which
 routes per its `on_fail`: `waiting-human` on every first-pass gated step in

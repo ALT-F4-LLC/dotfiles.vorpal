@@ -41,9 +41,13 @@ export const meta = {
 //                  args.trustEntries, treating an entry bound to another
 //                  repository as missing here (SKILL.md §4).
 //
-// args: {stage, checkoutRoot, gateCandidates, smallRepo, workflowFiles, trustEntries, projectName}
+// args: {stage, checkoutRoot, gateCandidates, smallRepo, workflowFiles, trustEntries}
 //   stage          — "mine" | "gate-union".
-//   checkoutRoot   — absolute path of the repository being bound. Mine only.
+//   checkoutRoot   — absolute path of the repository being bound. Mine: used
+//                    to prompt the mining agents. Gate-union: compared
+//                    against each trust entry's `repo` field (the absolute
+//                    checkout path `trust list` records, never a project
+//                    name) to decide whether the entry binds here.
 //   gateCandidates — [{path, kind}] scripts/CI entrypoints the skill
 //                    enumerated inline in §1/§3, kind one of build | ci |
 //                    check | other. Mine only.
@@ -57,9 +61,9 @@ export const meta = {
 //                    Gate-union only.
 //   trustEntries   — the parsed `docket trust list --all` output, run inline
 //                    in main. Gate-union only.
-//   projectName    — this repository's registered project name (or checkout
-//                    basename), used to decide whether a trust entry binds
-//                    here. Gate-union only.
+//                    each trust entry's `repo` field (the absolute checkout
+//                    path `trust list` records, never a project name) to
+//                    decide whether the entry binds here. Gate-union only.
 //
 // return (fields absent for the stage that did not run):
 //   mining      — {buildCi, gatesScripts, docsHistory} each
@@ -120,6 +124,9 @@ if (input.stage === 'gate-union') {
     }
     if (!Array.isArray(input.trustEntries)) {
         throw new Error('docket-bootstrap: stage "gate-union" needs args.trustEntries, the parsed `docket trust list --all` output')
+    }
+    if (typeof input.checkoutRoot !== 'string' || input.checkoutRoot === '') {
+        throw new Error('docket-bootstrap: stage "gate-union" needs args.checkoutRoot (this checkout\'s absolute root path)')
     }
 }
 
@@ -292,7 +299,7 @@ async function runMine() {
 // ---- Stage: gate-union -------------------------------------------------
 
 async function runGateUnion() {
-    const { workflowFiles, trustEntries, projectName } = input
+    const { workflowFiles, trustEntries, checkoutRoot } = input
     const files = workflowFiles.slice(0, GATE_UNION_CAP)
     for (const dropped of workflowFiles.slice(GATE_UNION_CAP)) {
         uncovered.push({ what: `gate parse of ${dropped}`, why: `beyond the gate-union bound of ${GATE_UNION_CAP}` })
@@ -313,9 +320,11 @@ async function runGateUnion() {
     })
 
     // Union every gate across every workflow, matching each against the
-    // passed trust entries. An entry bound to another repository counts as
-    // missing here, never as applicable (SKILL.md §4).
-    const boundEntries = (trustEntries || []).filter((e) => !e.repository || e.repository === projectName)
+    // passed trust entries. A global entry always applies; a repo-scoped
+    // entry applies only when its `repo` (the absolute checkout path
+    // `trust list` records, not a project name) matches this checkout. Any
+    // other entry counts as missing here, never as applicable (SKILL.md §4).
+    const boundEntries = (trustEntries || []).filter((e) => e.global || e.repo === checkoutRoot)
     const gates = []
     for (const r of results.filter(Boolean)) {
         if (r.readOk === false) continue
@@ -327,7 +336,7 @@ async function runGateUnion() {
                 step: g.step,
                 onFail: g.onFail,
                 matched: Boolean(trust),
-                trustPath: trust ? (trust.path || trust.command || null) : null,
+                trustPath: trust ? (Array.isArray(trust.argv) ? trust.argv.join(' ') : null) : null,
                 evidence: g.evidence,
             })
         }

@@ -980,6 +980,9 @@ plausible the context makes it look.
    pending required check — it silently **arms an unattended merge** that
    fires later with no session present. `auto` is that same arming, asked
    for out loud, which is the whole difference.
+
+   When the advisor tool is available, call it on the precondition results
+   before proceeding to the merge call.
 4. Merge method: the word given in the invocation (`squash`, `rebase`,
    `merge`) when present; otherwise the first of `rebase`, `merge`,
    `squash` that `gh repo view <owner>/<repo> --json

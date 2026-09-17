@@ -751,6 +751,8 @@ another proposal would split.
 
 If there is nothing to propose, finish any remaining §4a triage; proceed to
 §5 only when no further decisions or authorized edits can be completed.
+When the advisor tool is available, call it on the proposal batch before
+showing it, and fold its input in with the rest of the batch.
 When proposals are ready, show the numbered proposals in chat, including
 their proposed content and `Commands:`, then make an initial
 `AskUserQuestion` call for that batch in the main session:

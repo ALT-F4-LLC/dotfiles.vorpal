@@ -995,6 +995,10 @@ If §1 or §1b concludes with nothing to record (the operator chose "propose
 only", or no feasible startable run remains after the full checks), present
 your reasoning as given and stop; run no further commands.
 
+When the advisor tool is available, call it on the composed run (or the
+proposal to record nothing) before presenting it, and fold its input in with
+the rest of the presentation.
+
 Otherwise, once the recording commands above have run, present the recorded
 run: total issue count, the issues, their edges, scopes, Unlimited or explicit
 budget limits, the separate cost forecast, planned waves, and `First-wave

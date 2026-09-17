@@ -69,6 +69,10 @@ inventing acceptance.
    failed, or not run. A verification plan is not a result. Identify unresolved work
    and any pending risk-acceptance decision.
 
+   When the advisor tool is available, call it on the model before this question
+   settles: this question is self-review, and the working agreement treats
+   self-review as distinct from independent review.
+
 ## Ground claims in evidence
 
 Label material factual claims **OBSERVED**, **INFERRED**, or **UNKNOWN**. For

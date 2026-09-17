@@ -233,6 +233,10 @@ watching and was told to wind down; every advisory note carrying
 run conduct RUN-N` with no token anywhere in the prompt. Check this list
 as a gate, not from memory.
 
+When the advisor tool is available, call it on the filled-in checklist before
+recording the prompt, and fold its input in as a further check, not a
+replacement for the list above.
+
 ## Recording and printing the resume prompt
 
 The prompt is a single document, delivered both ways, not either:

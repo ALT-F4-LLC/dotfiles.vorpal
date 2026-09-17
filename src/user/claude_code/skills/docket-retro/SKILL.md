@@ -187,6 +187,9 @@ defend — and give every one of them, before anything is written:
   the edited checkout bytes (§4 explains what it proves)
 - what it costs if you are wrong
 
+When the advisor tool is available, call it on the packet before opening
+the proposal to the panel.
+
 The proposal packet may cite run IDs: the panel is deciding now, against a
 store that still holds them. The diff may not: whatever comment or
 rationale lands in the file is read years later by someone with no run

@@ -114,7 +114,8 @@ After the exclusions, the queue is either:
    nor a failure: it takes the same follow-up round, asking for a check
    that can run here, and if none can, treat the issue as blocked (step 4).
    Rerunning a stated check is verification, not the fix-chasing step 3
-   forbids.
+   forbids. When the advisor tool is available, call it on the rerun result
+   before treating it as a pass.
 6. **Done:** when the rerun passed, invoke the `commit` skill to land the
    change (`Skill({skill: "commit"})`): one commit-cycle per issue, never
    batched across issues, skipped only when the issue changed no files.

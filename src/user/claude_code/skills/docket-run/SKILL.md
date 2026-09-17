@@ -709,7 +709,8 @@ Read `next` as a summary, never as rows: the rows you launch are what
 - **Rows returned** → step 2.
 - **Empty, nothing running** → run the roster-coverage check (termination
   condition 3): covered → seat-coverage check below, then report done;
-  uncovered → report phase quiesced and surface the re-activation gate.
+  uncovered → report phase quiesced and surface the re-activation gate. When
+  the advisor tool is available, call it on that verdict before reporting it.
   Read the report from `docket run status $RUN`, then stop.
 - **A dispatch is already open** → `next --run` refuses rather than
   returning empty. Reconcile in step 3's order: back-fill usage first,

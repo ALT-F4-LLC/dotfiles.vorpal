@@ -200,6 +200,9 @@ version of a name removes it from routing altogether, which is a routing
 change: surface it to the operator and let them decide. Never fold it into
 the approved batch on your own initiative.
 
+When the advisor tool is available, call it on the plan before presenting
+it for that decision.
+
 ## Step 3 — apply, then verify by assertion
 
 Run the approved commands in plan order: REGISTER and RESTORE before

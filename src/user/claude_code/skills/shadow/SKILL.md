@@ -223,6 +223,9 @@ deduplication, and closure: route by verified checkout and store, preserve the
 trust-boundary notice, never assign work, and record every result. If filing is
 blocked, finish the review with complete pending writeups.
 
+When the session filing this batch has the advisor tool, call it on the
+reconciled findings before filing.
+
 Collect helper results and stop only still-running helpers/monitors owned by
 this audit, using the runtime's supported lifecycle operations. Never stop the
 observed workers or loop. Deliver the complete review through native result

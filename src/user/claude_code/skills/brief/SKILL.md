@@ -310,6 +310,9 @@ fits or which §3 rule excludes it, and mark the recommended route. If
 the downstream input requires a different structure, show the prepared
 handoff as well.
 
+When the advisor tool is available, call it on the drafted brief and route
+before presenting them, and fold its input in with the rest of the draft.
+
 Then use `AskUserQuestion` to confirm the displayed brief, route, and any
 prepared handoff. For multiple briefs, confirm the set and its routes
 together. Put the recommendation first, eligible alternatives next in

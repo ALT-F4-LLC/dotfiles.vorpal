@@ -140,6 +140,9 @@ you have no time to decompose takes that reference's conduct exception
 (`--size unknown`, `-l blocked`, the `Oversized:` first line). Nothing
 stays only in this transcript.
 
+When the advisor tool is available, call it on the drafted items before
+filing them.
+
 ## Check before you close
 
 Before printing the report, check it against this list — each row filled in

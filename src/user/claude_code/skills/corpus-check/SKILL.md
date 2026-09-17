@@ -142,6 +142,9 @@ change; that forces a second bump later for no reason. Land such notes as
 an unversioned comment addition when the file is a policy/README file, or
 fold the flag into your final report instead of touching a frozen file.
 
+When the advisor tool is available, call it on the staged batch before
+presenting it, and fold its input in with the rest of the classification.
+
 Present the staged batch to the operator with `AskUserQuestion`: group by
 file, show each fix's before/after and the version bump it implies.
 Options are the whole batch, a filtered subset, or none. An ambiguous or

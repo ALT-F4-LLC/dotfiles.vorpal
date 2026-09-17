@@ -316,8 +316,9 @@ load-bearing files, which the verifiers are pointed at:
   supersede sweep, budgets and parks, vote tally and rule resolution
 - `internal/workflow/packet.go` — packet assembly: what `packet_includes` and
   step-level fragments become in the rendered packet
-- `docket <verb> --help` and `docket config` — registered vote rules,
-  schemas, doc-store verbs
+- `docket <verb> --help`, `docket schema list`/`show`, and `docket doc --help`
+  — registered schemas, doc-store verbs; `docket config get` for registered
+  vote-rule thresholds
 
 The wave runner, `src/user/claude_code/workflows/wave.js`, is the authority
 for everything the engine never sees: how policy rows resolve to a variant

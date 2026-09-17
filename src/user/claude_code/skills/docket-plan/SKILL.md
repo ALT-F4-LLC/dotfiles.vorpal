@@ -646,20 +646,25 @@ per above.
 The floor is the bound workflow's expected-cost sum with its when-gated
 steps included: a `when` you cannot evaluate at plan time is a step that may
 well run, and a floor that omits it is a floor for a run that did not
-happen. You read that sum, you never estimate it: `docket workflow show`
-does not print step costs, so the only surface that has them is the bound
-workflow's source: `grep -n expected_cost
+happen. You read that sum, you never estimate it: `docket workflow show <wf>`
+prints each step's `cost=` and an `expected_cost total` line that is already
+fanout-expanded and includes when-gated and loop steps — read that total (or
+`definition.steps[].expected_cost` under `--json`) for the workflow's
+registered, bound version. Fall back to `grep -n expected_cost
 ~/.docket/config/workflows/<wf>.toml`, summed over every line it returns,
 with each `fanout` step's cost multiplied by its sibling count (`grep -n
 'fanout =' ~/.docket/config/workflows/<wf>.toml` gives the list; the tomls
-annotate those lines `# per expanded sibling`). Standard-change's review is
-0.60 × three judges = 1.80, security-change's and ui-change's are 0.60 ×
-four, spec-doc's 0.60 × three, and spec-project's `spec-author` fans out
-seven ways at 1.00 apiece. The per-track total is the sum you read, never a
-figure copied from prose: these tomls are versioned (`grep version
-~/.docket/config/workflows/<wf>.toml` gives the current number) and a total
-frozen into prose goes stale silently. If the read did not happen, the
-number is an estimate and the proposal must say so in those words.
+annotate those lines `# per expanded sibling`), only when comparing against a
+candidate or unregistered source file `workflow show` cannot see.
+Standard-change's review is 0.60 × three judges = 1.80, security-change's and
+ui-change's are 0.60 × four, spec-doc's 0.60 × three, and spec-project's
+`spec-author` fans out seven ways at 1.00 apiece. The per-track total is the
+sum you read, never a figure copied from prose: `docket workflow show <wf>`
+reports the current registered version directly, and the toml fallback stays
+versioned (`grep version ~/.docket/config/workflows/<wf>.toml` gives the
+current number) so a total frozen into prose goes stale silently either way.
+If the read did not happen, the number is an estimate and the proposal must
+say so in those words.
 
 On top of the floor goes rework headroom, read the same way, never guessed:
 for every admitted issue, its bound workflow's `rework_round_cost` × that

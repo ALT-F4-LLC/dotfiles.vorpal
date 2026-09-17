@@ -43,8 +43,13 @@ Engine defaults live in the database, read by the claim machinery:
 | `context.error_bytes` | int ≥ 0 | `131072` | context size that triggers an error |
 | `vote.rule.<name>.threshold` | float in (0,1] | (unset) | approval threshold a `vote_rule` tallies at |
 | `vote.rule.<name>.criticality` | low\|medium\|high\|critical | `medium` | the proposal's criticality |
+| `vote.rule.<name>.sealed` | bool | (unset) | withholds each cast's verdict, weights, findings and summary until the tally closes; same effect as a vote step's `sealed` field |
 | `vote.hold.rule` | rule name or `""` | `""` | vote rule a **materialized held step** is tallied under. Empty (the default) mints held steps as `human` for one operator to decide |
 | `vote.hold.voters` | comma-separated names or `""` | `""` | who casts on a materialized held step. Empty (the default) mints held steps as `human` |
+| `vote.hold.cost` | number ≥ 0 | `0` | meaning unverified — the known-keys list names it, but no help text or fixture in this audit describes what it configures |
+| `budget.usage.default` | number ≥ 0 | `0` | default per-run cap over measured usage (`budget.usage.unit`); separate from `budget.default`, which counts declared step costs |
+| `budget.usage.unit` | unit name or `""` | `""` | which recorded usage unit `budget.usage.default` counts |
+| `registration.auto` | bool | `true` | auto-register workflows and schemas at `run activate` from the instance-config roots |
 
 A step without an explicit `class` uses its executor hint as the class.
 Declare `class = "read"` or `class = "write"` to configure those keys;
@@ -317,7 +322,7 @@ leaving that step's siblings legitimately `claimed` at `waiting-human`.
 | — | | **exactly one** of `executor` / `action` / `type` / `fanout` per step |
 | `class` | string, default = the `executor` value | the key `[limits]` accounts against |
 | `emits` | artifact-kind string | **required on executor steps**; what the step records |
-| `payload` | `name@version` | a registered payload schema; the step's `--payload-file` is validated against it at `step record`, from the bytes the run pinned |
+| `payload` | `name@version` | a registered payload schema; the step's `--payload-file` is validated against it at `step complete` (`record` is an identical alias), from the bytes the run pinned |
 | `voters`, `vote_rule` | [hints], name | **required on `type="vote"`**, forbidden elsewhere |
 | `after` | [step names], **required** except on the first step and `loop = true` steps | predecessors; `[]` means root |
 | `inputs` | [`"<step>.<kind>"` \| `"<step>.*"` \| `"<step>.gate-results"` \| `"<step>.vote-record"` \| `"issue.body"` \| `"issue.diff"` \| `"issue.linked.<relation>.<kind>"` \| `"issue.latest.<kind>"`] | artifacts delivered to the step |

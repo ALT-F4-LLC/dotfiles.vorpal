@@ -4,9 +4,11 @@ Covers the `docket guard` and `docket trust` families, the single copy of this
 engine CLI contract, split out of docket's
 [reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
 (consumer: the docket-run skill), which still holds the response-shape
-contract and parsing traps. Verified 2026-09-14 against `docket
-nightly-112-gcffd10c` (commit `cffd10c`, built `2026-09-14T21:28:29Z`) by
-`--help`/`--version` only; behavior and JSON examples were not re-run.
+contract and parsing traps. Verified 2026-09-17 against `docket
+nightly-136-g835f706` (commit `835f706`, built `2026-09-17T01:02:08Z`) by
+`--help`/`--version` and the docket-cli-audit skill's runtime sweep
+(`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
+examples reflect the swept commands as of that build.
 
 <a id="contents"></a>
 
@@ -168,6 +170,7 @@ These verbs need no `.docket/` database: the store is user-level.
 | `--tree` | bool | `false` | touches the working tree; serializes against other such gates |
 | `--flaky` | bool | `false` | may fail intermittently; re-runs on failure, each attempt recorded |
 | `--stub` | bool | `false` | this is a **placeholder**, not the check its name implies; every result it produces is flagged `stub` in `step gates` and counted in the run report |
+| `--stub-reason` | string | `""` | free-text reason recorded and shown alongside `stub` in `trust list` and its rendering; requires `--stub` |
 | `--network` | stringSlice | `nil` | hosts this command must reach (repeatable). **Declares a requirement; grants nothing.** A gate that names any receives the proxy variables and `DOCKET_GATE_NETWORK`; one that names none is unchanged |
 | `--timeout` | duration | `5m` | per-command timeout |
 | `--yes` | bool | `false` | skip the interactive confirmation (the argv is **still** disclosed) |
@@ -230,10 +233,11 @@ and the `--prefix` warning print on every add and ride in the JSON response.
 | `--all` | bool | every repository's entries, not just this one's |
 
 A `Collection`, so `--json=v2` renders `{items, total, truncated}`. Argvs print
-with control characters escaped. Every item carries `class`: `gate` for an
-entry a workflow names in `gates`, `action` for one a workflow declares via
-`action = "<name>"` — an engine ACTION fed a JSON bundle on stdin at record
-time, which nothing but the engine can run.
+with control characters escaped. Under `--format json` (v2), every item
+carries `class`: `gate` for an entry a workflow names in `gates`, `action`
+for one a workflow declares via `action = "<name>"` — an engine ACTION fed a
+JSON bundle on stdin at record time, which nothing but the engine can run.
+The v1 `--json` envelope's entries omit `class`.
 
 <a id="trust-probe"></a>
 

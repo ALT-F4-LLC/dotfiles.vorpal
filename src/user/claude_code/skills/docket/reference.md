@@ -10,21 +10,28 @@ gate, policy, registry, report, doctor) are documented for the docket-run
 skill under [docket-run/references](../docket-run/references/run.md) and
 are not repeated here.
 
-The additions below were checked on **2026-09-04 against
-`docket nightly-46-g4f256e1` (commit `4f256e1`, built `2026-09-04T05:39:02Z`)**,
-using `--help` and `--version` only; other behavioral claims and JSON examples
-were not re-run. When installed behavior differs, use its help and inspect the
-actual response before parsing it. A nearby source checkout is not proof of an
-installed binary's behavior unless their commits match.
+When installed behavior differs, use its help and inspect the actual response
+before parsing it. A nearby source checkout is not proof of an installed
+binary's behavior unless their commits match.
 
 [references/cli-inventory.json](references/cli-inventory.json) records command
-paths, aliases, usage, and local/inherited flags. Refreshed **2026-09-14 UTC**
-against `nightly-112-gcffd10c` (commit `cffd10c`, built `2026-09-14T21:28:29Z`);
-covers 151 public commands. From this skill directory,
+paths, aliases, usage, and local/inherited flags. Refreshed **2026-09-17 UTC**
+against `nightly-136-g835f706` (commit `835f706`, built `2026-09-17T01:02:08Z`);
+covers 152 public commands. The JSON envelope table and behavioral notes below
+were checked against that same build's runtime fixtures
+([../docket-cli-audit/references/cli-fixtures.json](../docket-cli-audit/references/cli-fixtures.json)),
+which cover the swept commands' exit codes and both JSON dialects; a flag path
+the swept scenario did not exercise remains a previously-observed claim, not
+a re-checked one. From this skill directory,
 `python3 scripts/cli_inventory.py --check` checks the inventory; `--write`
 refreshes it after a CLI upgrade. The helper invokes only `--help` and
 `--version` and does not read or mutate a Docket store. It detects command/flag
-drift, not changes to runtime semantics or JSON response shapes.
+drift, not changes to runtime semantics or JSON response shapes; those are
+recorded by the docket-cli-audit skill's sweep in
+[../docket-cli-audit/references/cli-fixtures.json](../docket-cli-audit/references/cli-fixtures.json),
+which drives every inventoried command against a scratch store and keeps each
+exit code, message and both JSON dialects. Run `/docket-cli-audit` after a
+CLI upgrade to refresh both and audit the prose against them.
 
 <a id="contents"></a>
 
@@ -112,8 +119,8 @@ length to read. The engine families live in docket-run's references:
 Every `--json` response is `{"ok": <bool>, "data": <verb-specific>}` (errors are
 `{"ok": false, "error": "...", "code": "..."}` with no `data` key at all). The
 envelope is stable; the shape of `data` is NOT, and guessing it is what crashes
-hand-rolled parsers. The table below preserves earlier runtime observations,
-not re-executed as part of the help-only verification above. Probe the
+hand-rolled parsers. The table below is checked against the docket-cli-audit
+sweep's fixtures for the covered verbs (see the header above); probe the
 relevant read response when adapting a parser to a different binary. These are
 core shapes, not exhaustive field lists; additive fields can appear.
 
@@ -122,10 +129,10 @@ core shapes, not exhaustive field lists; additive fields can appear.
 | `events list` (incl. `--run`, `--tail N`) | `{events: [...], total: <int>}` | `{items: [...], total, truncated}` |
 | `issue list` | `{issues: [...], total: <int>}` | `{items: [...], total, truncated}` |
 | `step list --run RUN-N` | `{steps: [...], total: <int>}` | `{items: [...], total, truncated}` |
-| `run status` (no id) | `{runs: [...], total: <int>}` | `{items: [...], total, truncated}` |
+| `run status` (no id) | `{runs: [...] \| null, total: <int>}` | `{items: [...], total, truncated}` |
 | `run status RUN-N` | `{run: {...}, issues: <int>, steps: [...], pins: [...]}` | identical |
 | `run budget RUN-N` | `{run, budget, source, floor, reported, spend, row_version}` | identical |
-| `step artifact ARTIFACT-N --payload` | the payload itself — array, object, **or `null`** | identical |
+| `step artifact ARTIFACT-N --payload` | the payload itself — array or object; `NOT_FOUND` (not `data: null`) when the artifact has no structured payload | identical |
 | `step artifact ARTIFACT-N` (no `--payload`) | `{artifact, kind, producer, body, payload, bytes, payload_bytes, sha256, created_at_ms}` | identical |
 | `step artifacts STEP-N` | `{step: "STEP-N", artifacts: [...]}` | identical |
 | `vote list` (`--all` for resolved) | `{proposals: [...], total: <int>}` | `{items: [...], total, truncated}` |
@@ -153,9 +160,15 @@ Four parsing traps from the earlier runtime checks:
 - **`total` is the match count, not the returned length.** `events list` with
   no `--tail` returned `len(events) == 100` against `total == 278`. Paging off
   `total` without checking the array length reads the same first page forever.
-- **`--payload` can hand you `null`.** Artifacts of kind `findings` carry an
-  array, `issue.diff` an object, and `doc`/`gap` carry no structured payload —
-  `data` is JSON `null`. Type-check before subscripting.
+- **`run status` with no id returns `runs: null`, not `[]`, when nothing
+  matches.** Confirmed on the empty case; `--format json`'s `items` stays
+  `[]` either way. Contrast with `next`'s issue mode, whose `.data.issues` is
+  documented as always an array.
+- **`--payload` refuses instead of handing you `null`.** An artifact with no
+  structured payload (confirmed for a `check-report` artifact) is `NOT_FOUND`
+  ("...has no structured payload; omit --payload to read its body"), not a
+  success envelope carrying `data: null`. Whether `doc`/`gap` kinds behave the
+  same is unconfirmed by the swept scenario; check before relying on it.
 
 Every serialized issue carries both `issue` and `id` with the same ID string,
 on v1 and v2, including nested `sub_issues`, list rows, and mutation
@@ -197,6 +210,7 @@ noninteractive values explicitly rather than relying on a terminal form.
 | `--assignee` | `-a` | string | `""` | |
 | `--parent` | — | string | `""` | parent issue ID |
 | `--scope` | — | stringSlice | `nil` | repeatable; path glob this issue is expected to touch |
+| `--size` | — | string | `""` | one of `trivial`\|`small`\|`bounded`\|`needs-design`\|`unknown`; invalid value is `VALIDATION_ERROR` |
 | `--idempotency-key` | — | string | `""` | replay protection; repeat returns the original issue |
 
 <a id="issue-edit"></a>
@@ -214,6 +228,7 @@ noninteractive values explicitly rather than relying on a terminal form.
 | `--file` | `-f` | stringSlice | `nil` | repeatable; **replaces** existing file list |
 | `--parent` | — | string | `""` | `"0"` or `"none"` clears parent |
 | `--scope` | — | stringSlice | `nil` | repeatable; **replaces** the declaration, `--scope=` clears it |
+| `--size` | — | string | `""` | only applied when explicitly set; same enum as `issue create` |
 | `--if-version` | — | int | `0` | apply only at this version; `CONFLICT` otherwise |
 
 **`--scope` is not `--file`.** `--file` records the concrete paths an issue
@@ -258,6 +273,7 @@ survives `issue reopen`; earlier rulings stay in `events list`.
 | `--type` | `-T` | stringSlice | `nil` | repeatable |
 | `--assignee` | `-a` | string | `""` | |
 | `--parent` | — | string | `""` | |
+| `--size` | — | stringSlice | `nil` | repeatable |
 | `--roots` | — | bool | `false` | root issues only |
 | `--tree` | — | bool | `false` | indented hierarchy |
 | `--sort` | — | string | `""` | `field:direction`, e.g. `priority:asc` |
@@ -459,6 +475,7 @@ Watch-eligible.
 | `--priority` | `-p` | stringSlice | `nil` | repeatable |
 | `--type` | `-T` | stringSlice | `nil` | repeatable |
 | `--assignee` | `-a` | string | `""` | |
+| `--size` | — | stringSlice | `nil` | repeatable |
 
 Watch-eligible. Cycle in the dependency graph → `CONFLICT`. `--json` output
 additionally includes per-issue `blocked_by` (array of formatted blocker IDs,
@@ -483,6 +500,7 @@ selected IDs.
 | `--priority` | `-p` | stringSlice | `nil` | repeatable |
 | `--label` | `-l` | stringSlice | `nil` | repeatable |
 | `--type` | `-T` | stringSlice | `nil` | repeatable |
+| `--size` | — | stringSlice | `nil` | repeatable; issue mode only |
 | `--limit` | — | int | `10` | issue mode: always applies, default 10. **Step mode (`--run`): unlimited unless `--limit` is explicitly passed** — even an explicit `--limit 0` still means unlimited (`0` is the engine's no-limit sentinel); only an explicit `--limit N` with `N > 0` truncates |
 | `--run` | — | string | `""` | switches to STEP mode: lists a run's offer (ready steps + staged closure) |
 | `--with-body` | — | bool | `false` | include full descriptions in issue-mode JSON rows; otherwise they carry `description_bytes` |
@@ -505,11 +523,16 @@ write, its refusals, and the `next row` shape are in docket-run's
 | Flag | Short | Type | Default | Notes |
 |---|---|---|---|---|
 | `--json` | — | string | `""` | inherited; `v1` or `v2` |
+| `--project` | — | string | `""` | register in this project instead of the one cwd resolves to |
+| `--all-projects` | — | bool | `false` | register in every project, reporting each project's own outcome |
 
 Positional argument required; `-` reads the definition from stdin. Parses,
 validates, and lints, then inserts at `name@version`. Identical bytes at an
 existing `name@version` are an idempotent success returning the existing row;
-differing bytes are `CONFLICT` (exit 4) naming both hashes.
+differing bytes are `CONFLICT` (exit 4) naming both hashes. `--project` or
+`--all-projects` switches the response to a fan-out shape:
+`{operation, subject, scope, results: [{project_id, project, identity, prefix,
+outcome, ...}], succeeded, failed}`.
 
 <a id="workflow-lint"></a>
 
@@ -534,13 +557,16 @@ bump to — this **fails** the lint rather than reporting a third
 | Flag | Short | Type | Default | Notes |
 |---|---|---|---|---|
 | `--restore` | — | bool | `false` | return a retired version to binding |
+| `--project` | — | string | `""` | retire the version in this project instead of the one cwd resolves to |
+| `--all-projects` | — | bool | `false` | retire the version in every project, reporting each project's own outcome |
 
 Retires one registered version from binding without deleting it; the row
 stays readable and runs that pinned it are unaffected. The version is
 **required** — a bare name is a `VALIDATION_ERROR` (exit 3), since it would
 silently mean whichever version is highest today. An already-retired version
 is `CONFLICT` (exit 4); an unregistered name or version is `NOT_FOUND`
-(exit 2).
+(exit 2). `--project` or `--all-projects` switches the response to the same
+fan-out shape `workflow register` uses.
 
 <a id="workflow-list"></a>
 
@@ -614,6 +640,8 @@ None of the `workflow` verbs are watch-eligible; `--watch` on any of them is a
 | Flag | Short | Type | Default | Notes |
 |---|---|---|---|---|
 | `--json` | — | string | `""` | inherited; `v1` or `v2` |
+| `--project` | — | string | `""` | register in this project instead of the one cwd resolves to |
+| `--all-projects` | — | bool | `false` | register in every project, reporting each project's own outcome |
 
 Both positional arguments are required. `name@version` uses the same grammar a
 step's `payload` field does, so what a workflow may reference and what the
@@ -622,7 +650,9 @@ at registration — a schema that does not compile is refused while an author is
 looking at it, not hours into a run. The `ordered_enum` index is derived once
 and stored beside the bytes it came from. Identical bytes at an existing
 `name@version` are an idempotent success returning the existing row; differing
-bytes are `CONFLICT` (exit 4) naming both hashes.
+bytes are `CONFLICT` (exit 4) naming both hashes. `--project` or
+`--all-projects` switches the response to the same fan-out shape `workflow
+register` uses.
 
 <a id="schema-list"></a>
 
@@ -902,6 +932,7 @@ Watch-eligible.
 | `--priority` | `-p` | stringSlice | `nil` | repeatable |
 | `--assignee` | `-a` | string | `""` | |
 | `--expand` | — | bool | `false` | show sub-issues individually instead of rolling up into parent |
+| `--size` | — | stringSlice | `nil` | repeatable |
 | `--with-body` | — | bool | `false` | include descriptions in JSON rows; otherwise rows carry `description_bytes` |
 
 Watch-eligible.

@@ -1469,7 +1469,7 @@ respective projects (whichever repo owns the fix owns the issue). Scan
 the gap file's second line, `Home: <repo>`, never the title, and re-home
 with `docket issue move <id> --project <target>`. Where migrate refuses,
 re-file with `docket issue create` from that repo's checkout, link the
-pair, and close the local copy (`docket issue move done < /dev/null`).
+pair, and close the local copy (`docket issue move <id> done < /dev/null`).
 The engine has no cross-project routing on `--gap-file`; until it does,
 this migration is the conductor's.
 Promote the header at the same close: `docket issue file add <id>

@@ -4,9 +4,11 @@ Covers the `docket run` family, the single copy of this engine CLI contract,
 split out of docket's
 [reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
 (consumer: the docket-run skill), which still holds the response-shape
-contract and parsing traps. Verified 2026-09-14 against `docket
-nightly-112-gcffd10c` (commit `cffd10c`, built `2026-09-14T21:28:29Z`) by
-`--help`/`--version` only; behavior and JSON examples were not re-run.
+contract and parsing traps. Verified 2026-09-17 against `docket
+nightly-136-g835f706` (commit `835f706`, built `2026-09-17T01:02:08Z`) by
+`--help`/`--version` and the docket-cli-audit skill's runtime sweep
+(`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
+examples reflect the swept commands as of that build.
 
 <a id="contents"></a>
 
@@ -184,7 +186,9 @@ reports zeros, `abandoned` reports the trail up to abandonment.
 
 | Section | Contents |
 |---|---|
-| `run` | id, status, reason, request, wall clock (activation → now, or → the terminal transition) |
+| `run` | id, status, reason, request |
+| `wall_clock_ms` | its own top-level key, not nested in `run`: activation → now, or → the terminal transition |
+| `pinned_workflows` | the run's pinned workflow refs: `{ref, name, pinned_version, current_version, behind}` |
 | `budget` | effective `cap` and its `cap_source` (`run` \| `config` \| `unlimited`), the `floor`, `reported` per unit, the `budget_unit` the cap counts, `spend` = max(reported, floor), `burn_rate` (floor per wall-clock hour), and `breach_reason` when a budget paused the run |
 | `steps` | count by **effective** status, plus per-step `attempts`, each row carrying its `issue`, its `routing` (how the step ended, with its reason) and — for a vote step — `vote` (its proposal and how it tallied) |
 | `issues` | the run's **issue-level terminal rulings**: per abandoned issue, `{issue, disposition, by, reason}` — the operator's recorded rationale, verbatim. Rendered as a *How issues ended* section |
@@ -193,6 +197,7 @@ reports zeros, `abandoned` reports the trail up to abandonment.
 | `artifacts` | the **index**: id, kind, producer instance, producer `executor` and `issue`, sha256, bytes — never the bodies |
 | `metadata` | step `metadata` keys → distinct values with counts, verbatim and uninterpreted — over the **merged** bag, so both what a definition declared and what a worker reported via `step complete --metadata` are counted |
 | `actors` | per-actor event counts (`next` / `gate` / `threshold` / `human`) — the attribution rollup described under `docket events` below, computed over the events that remain |
+| `authorities` | per-`authority` value event counts — the companion rollup to `actors`, reflecting the `--authority` flag on `run pause`/`abandon` and `step approve`/`reject`/`resolve` |
 | `step_usage` | the usage **ledger** row by row: each row's `step`, `instance`, `attempt`, `unit`, `quantity`, and `source` — the detail behind `budget`'s per-unit `reported` sums, and what a duplicate back-fill refusal points at |
 | `vote_metadata` | the same key → distinct-value rollup over vote seats' `--metadata` bags |
 | `vote_usage` | per-unit sums of vote seats' `--usage` reports, beside the step ledger's `reported` — never merged with it |
@@ -525,6 +530,8 @@ left to conduct"); missing run → `NOT_FOUND` (exit 2).
 |---|---|---|---|---|
 | `--reason` | — | string | `""` | required on `abandon` (with or without `--issue`) |
 | `--issue` | — | string | `""` | (`abandon` only) abandon only this issue's remaining steps; the run and its other issues continue |
+| `--authority` | — | string | `""` | **required on `pause` and `abandon`**: `operator`\|`standing-grant`\|`conductor`. Names what entitled the decision; refused as `VALIDATION_ERROR` (exit 3) without it. `resume` does not take this flag |
+| `--authority-ref` | — | string | `""` | required alongside `--authority standing-grant`; names the standing authorization |
 
 `pause` moves `active → waiting-human`; `resume` moves it back; `abandon` is
 terminal from any non-terminal status. A paused run blocks new claims and
@@ -585,10 +592,14 @@ silently applied — pausing an already-paused run must not report success.
 `abandon` without `--reason` is `VALIDATION_ERROR` (exit 3).
 
 **Each of the three writes its event in the same transaction as the
-status** — `run-paused`, `run-resumed`, `run-abandoned`, with `data`
-carrying `{from, to, reason}`. There is no `run-done` here: no operator verb
-moves a run to `done` — that is the reconciliation rollup's transition, and
-it logs itself.
+status** — `run-paused`, `run-resumed`, `run-abandoned`. `run-abandoned`'s
+`data` carries `{from, to, reason, authority, authority_ref?}` (confirmed:
+`authority_ref` appears only alongside `standing-grant`). `run-paused`
+likely carries the same `authority` fields since `pause` now requires the
+flag too, but this was not directly confirmed against a fixture. `run-resumed`
+stays `{from, to, reason}`, since `resume` takes no `--authority`. There is no
+`run-done` here: no operator verb moves a run to `done` — that is the
+reconciliation rollup's transition, and it logs itself.
 
 **`resume` states pin drift unprompted.** Resuming is exactly the moment a
 parked run's steps are about to claim again, and a corpus install that
@@ -663,7 +674,9 @@ running `repin` twice — or against a run that turns out to be sound — is
 always safe.
 
 Response: `{run, repinned: [{kind, ref, old_sha256, new_sha256, path}],
-unchanged}`, `repinned` empty (never `null`) on a no-op. `run-repinned` is
+dropped: [...], added: [...], unchanged}` — `dropped` carries the refs
+retired via `--drop`/`--drop-unresolvable`, `added` carries newly-adopted
+pins; all three arrays empty (never `null`) on a no-op. `run-repinned` is
 attributed to `human` (Attribution, below).
 
 <a id="run-budget"></a>

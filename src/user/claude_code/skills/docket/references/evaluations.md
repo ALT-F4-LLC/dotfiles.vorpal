@@ -1,9 +1,13 @@
 # Maintaining and evaluating the Docket skill
 
-Keep mechanical command discovery in `scripts/cli_inventory.py`. Check its
-versioned inventory after a CLI upgrade; update authored semantics only after
-checking the corresponding help, source version, or isolated behavior. Changes
-to JSON shapes require runtime fixtures, not just a help comparison.
+Keep mechanical command discovery in `scripts/cli_inventory.py`. After a CLI
+upgrade run the docket-cli-audit skill: it refreshes the versioned inventory,
+re-records runtime fixtures (exit codes, messages, both JSON dialects) for
+every command against a scratch store through
+`../docket-cli-audit/scripts/cli_sweep.py`, and audits the prose against both.
+Changes to JSON shapes are checked against those fixtures, not a help
+comparison; update authored semantics only after checking the corresponding
+help, fixture record, or isolated behavior.
 
 ## Behavioral comparisons
 

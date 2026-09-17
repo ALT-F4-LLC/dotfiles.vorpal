@@ -43,13 +43,14 @@ not infer hard from tone alone, and say which mode you use before you act.
 
 ## Graceful halt
 
-1. `docket run pause RUN-N --reason '<why the operator is stepping away>'
-   < <scratchpad>/conductor.d/RUN-N.token` immediately, the redirect
-   being the run's conductor capability docket-run holds (its **The
-   conductor capability** section); the verb refuses without it. This
-   moves the run to `waiting-human` and blocks new claims, but honors
-   in-flight completes: nothing about it interrupts a step already
-   claimed.
+1. `docket run pause RUN-N --authority operator --reason '<why the operator is
+   stepping away>' < <scratchpad>/conductor.d/RUN-N.token` immediately, the
+   redirect being the run's conductor capability docket-run holds (its **The
+   conductor capability** section); the verb refuses without either the
+   token or `--authority` (`operator` names that a person asked for this
+   pause, through whatever channel reached this session). This moves the
+   run to `waiting-human` and blocks new claims, but honors in-flight
+   completes: nothing about it interrupts a step already claimed.
 2. If a wave is in flight, keep awaiting it exactly as docket-run normally
    does; do not busy-wait and do not abandon the dispatch. A dispatch
    docket-run split into shards is several launches over one manifest:
@@ -92,9 +93,10 @@ Only on an explicit operator ask for immediate stop.
    mid-execution when you stopped watching is orphaned from this
    session's perspective, and its worktree (if it exists) is not cleaned
    up.
-2. `docket run pause RUN-N --reason '<why, naming that this was a hard halt>'
-   < <scratchpad>/conductor.d/RUN-N.token` first, before touching the
-   dispatch, under the same conductor capability as the graceful halt.
+2. `docket run pause RUN-N --authority operator --reason '<why, naming that
+   this was a hard halt>' < <scratchpad>/conductor.d/RUN-N.token` first,
+   before touching the dispatch, under the same conductor capability as the
+   graceful halt.
    The wave is still running, so pausing first is what stops it claiming
    anything more. Abandoning a manifest while the run is still active
    leaves a window in which the live wave claims against a manifest that

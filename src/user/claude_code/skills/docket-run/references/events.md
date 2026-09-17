@@ -87,10 +87,13 @@ repository at all, so a `--tail` in one repository is not diluted by trust
 rows recorded against others.
 
 **Ids render under their OWNING project's prefix**, not the querying
-project's. Rows also carry `project` — the owning project's name, omitted
-in a single-project feed and shown as a column under `--all-projects`,
-since two projects can both hold a `fix@1` and a `RUN-6` and the ids alone
-do not say whose.
+project's. Rows also carry `project` — the owning project's name. It is
+present on events scoped to a run or issue even in a single-project feed
+(confirmed by the docket-cli-audit sweep); only a genuinely project-less,
+run-less row (the initial `project-registered` event) omits it.
+`--all-projects` widens which projects' rows appear, not whether the field
+itself is present, and is shown as a column there since two projects can
+both hold a `fix@1` and a `RUN-6` and the ids alone do not say whose.
 
 **`at_ms` is monotonic with `seq`.** `gate-rerun` and `gate-unmatched` stamp
 `at_ms` at emission, and the writer clamps every event up to its
@@ -160,9 +163,11 @@ The prune **records itself** as an `events-pruned` event whose `seq` is
 above everything it removed, so a consumer that hits `GONE` and resumes at
 the new minimum reads the explanation for its own gap first.
 
-The answer is `{pruned, retained_minimum, held_by_retention?, dry_run?}`.
-The retained minimum lets a consumer reset its cursor without a second
-call.
+The answer is `{pruned, retained_minimum, dry_run?, before?, before_run?,
+held_by_retention?}` — it also echoes back whichever of `--before`/
+`--before-run` selected the target (confirmed for both); `held_by_retention`
+was not observed in the fixtures exercised, not confirmed absent. The
+retained minimum lets a consumer reset its cursor without a second call.
 
 Pruning costs the audit trail `docket run report` computes over: a trimmed
 run reports fewer transitions than it actually made. Trim whole finished

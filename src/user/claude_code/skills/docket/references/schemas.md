@@ -137,10 +137,10 @@ aggregate@1                  1e0a0be39394  builtin
 `aggregate` action step. It is inert unless such a step runs; nothing else in
 the registry arrives without someone registering it.
 
-### Validation at `step record`
+### Validation at `step complete`
 
 A step that declares `payload = "name@version"` has its `--payload-file`
-validated by `step record` (`complete` is an identical alias). A successful
+validated by `step complete` (`record` is an identical alias). A successful
 recording can still yield failed gates or waiting-human routing: payload
 acceptance alone does not establish that the work passed. A validation
 refusal looks like:

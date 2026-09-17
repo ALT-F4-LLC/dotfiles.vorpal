@@ -120,12 +120,14 @@ with a reason.
 | Verb | Writes | Effect |
 |---|---|---|
 | `dispatch open --run RUN-N` | yes | computes the offer exactly as `next --run` does and records it |
+| `dispatch extend --run RUN-N` | yes | appends the steps that became ready since the open to the same manifest |
 | `dispatch verify --run RUN-N` | **no** | recomputes and compares to the manifest, byte for byte |
 | `dispatch close --run RUN-N` | yes | reconciles and closes — refused while a discrepancy exists |
 | `dispatch abandon --run RUN-N` | yes | gives up on the manifest **unconditionally** |
 | `dispatch backfill-usage --run RUN-N` | yes | records usage a relay measured but the claimant could not report |
+| `dispatch waive-target --run RUN-N --step ... --target ...` | yes | records that a stale-target warning was investigated and ruled acceptable |
 
-`--run` is required on all five. None are watch-eligible.
+`--run` is required on all seven. None are watch-eligible.
 
 <a id="dispatch-open"></a>
 
@@ -138,8 +140,9 @@ with a reason.
 | `--ack-reap` | int64Slice | `nil` | acknowledge a write-class reap by its `lease-reaped` event `seq`; repeatable |
 
 Response is engine-spec §11.4's `dispatch` shape: `{dispatch, run, opened_seq,
-expires_ms, rows: [<next row>…]}`, plus `reaped` and `reap_hold` (both
-`omitempty`, absent when this open reaped nothing). Each row is stored as its
+expires_ms, rows: [<next row>…], total, truncated}`, plus `reaped` and
+`reap_hold` (both `omitempty`, absent when this open reaped nothing);
+`truncated` reflects whether `--limit` sliced the manifest. Each row is stored as its
 canonical JSON bytes plus a sha256, so `verify` compares bytes rather than a
 re-serialization that could differ in key order.
 

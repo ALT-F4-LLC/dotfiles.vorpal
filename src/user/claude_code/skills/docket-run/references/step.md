@@ -4,9 +4,11 @@ Covers the `docket step` family, the single copy of this engine CLI contract,
 split out of docket's
 [reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
 (consumer: the docket-run skill), which still holds the response-shape
-contract and parsing traps. Verified 2026-09-14 against `docket
-nightly-112-gcffd10c` (commit `cffd10c`, built `2026-09-14T21:28:29Z`) by
-`--help`/`--version` only; behavior and JSON examples were not re-run.
+contract and parsing traps. Verified 2026-09-17 against `docket
+nightly-136-g835f706` (commit `835f706`, built `2026-09-17T01:02:08Z`) by
+`--help`/`--version` and the docket-cli-audit skill's runtime sweep
+(`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
+examples reflect the swept commands as of that build.
 
 <a id="contents"></a>
 
@@ -39,8 +41,8 @@ then **completed** with an artifact.
 | `step complete STEP-N --artifact-file F …` | **yes** (stages 0–1) | the saga |
 | `step fail STEP-N [--note …] [--metadata …]` | **yes** | routes per `on_fail` when the CLAIM count reaches `max_attempts` (attempt counts claims, never failures); counts the failure into the row's `failed_attempts` (a reap counts into `reaped_claims` instead) |
 | `step annotate STEP-N [--metadata JSON] [--integrated-sha SHA]` | no | merges opaque KV onto a **finished** step's record; `--integrated-sha` verifies ancestry and re-records the step's `issue.diff` from the named commit; event-logged |
-| `step approve\|reject STEP-N [--note …] [--value V]` | **conductor** | `type="human"` gate steps, and a materialized held step of either kind (a vote-minted one once a failed tally parks it) |
-| `step resolve STEP-N --as …` | **conductor** | `waiting-human` resolutions; `retry` **resets the retry budget** (moves `attempt_base`) — `attempt` itself and the `failed_attempts`/`reaped_claims` breakdown are never reset and not incremented by it |
+| `step approve\|reject STEP-N --authority A [--authority-ref R] [--note …] [--value V]` | **conductor** | `type="human"` gate steps, and a materialized held step of either kind (a vote-minted one once a failed tally parks it) |
+| `step resolve STEP-N --as … --authority A [--authority-ref R]` | **conductor** | `waiting-human` resolutions; `retry` **resets the retry budget** (moves `attempt_base`) — `attempt` itself and the `failed_attempts`/`reaped_claims` breakdown are never reset and not incremented by it |
 | `step show STEP-N` | no | read-only; effective status |
 | `step list (--run RUN-N \| --issue ISSUE-N)` | no | read-only; steps with id, run, instance, issue, kind, effective status, attempt (plus its `failed_attempts`/`reaped_claims` breakdown when nonzero), expected_cost — in (issue, creation) order. Scope by `--run` (the whole run), `--issue` (that issue across every run holding a step for it), or both (that issue inside that run); at least one is required. The budget-projection enumeration: step ids are a store-wide sequence, so id arithmetic cannot enumerate a run. `--issue` is the issue-shaped question a conductor actually holds. Watch-eligible. |
 | `step context STEP-N [--meta]` | no | re-emits `context` read-only |
@@ -55,6 +57,11 @@ and before anything is written. None supplied is `VALIDATION_ERROR` (exit
 3) naming both channels and `run conduct`; a wrong one, a step's lease token
 included, is `AUTH_ERROR` (exit 5). A run activated before the capability
 existed asks for none until it is conducted.
+
+`step approve`, `step reject`, and `step resolve` also require `--authority`
+(`operator`\|`standing-grant`\|`conductor`), refused as `VALIDATION_ERROR`
+without it, the same attribution `run pause`/`abandon` require; supply
+`--authority-ref` alongside `standing-grant`.
 
 `step show` accepts multiple IDs: one returns an object under `data`, two or
 more return an array. An expired but unreaped lease is marked `lease_expired:

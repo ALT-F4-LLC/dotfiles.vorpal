@@ -292,7 +292,7 @@ its \`.body\` and \`.payload\` in full. Read there, and spend
 \`docket step artifact ARTIFACT-N --payload\` only on an id the bundle named.
 
 THEIR FLAGS, since guessing one costs you a turn and teaches you nothing:
-\`step context\` takes \`--meta\` and NOTHING else; \`step artifact\` takes
+\`step context\` takes \`--meta\` and \`--live\`; \`step artifact\` takes
 \`--payload\`; \`events list\` takes \`--tail N\` (the verb is \`events list\`,
 not \`event list\`); \`--json\` is global and works on any of them. None of
 these READ verbs takes \`--verbose\`, \`-v\`, or \`--version\` — \`-v\` belongs

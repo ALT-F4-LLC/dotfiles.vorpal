@@ -134,8 +134,11 @@ may instead update the specific mutable entry; do not invent a source file for
 runtime memory. If required file/scope metadata cannot represent that target,
 hold it with a precise routing limitation rather than supplying unrelated paths.
 
-Verify each receipt's project, ID, title, files, scopes, labels, and empty
-assignee through a permitted read path. Correct only the coordinator's own
+Verify each receipt's ID, title, files, labels, and empty assignee through a
+permitted read path (`docket issue show`); verify scope from the create or
+edit response itself, since `issue show` does not return it. Name the owning
+project from the create call's target, not from a subsequent read. Correct
+only the coordinator's own
 filing metadata when authorized and necessary; do not use this allowance to
 edit other issue content or re-home unrelated work. A wrong-project receipt is
 a filing error to surface, not a successful item to count.

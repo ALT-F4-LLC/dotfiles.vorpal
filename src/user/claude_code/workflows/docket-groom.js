@@ -1,6 +1,6 @@
 export const meta = {
     name: 'docket-groom',
-    description: 'Internal: launched through scriptPath by docket-groom; reads and judges every surveyed open issue read-only (value, quality and execution fit, size against the cap, every acceptance criterion) with one judge per issue and one clustering analyst per project, and returns a ledger. Args and cost in the header comment.',
+    description: 'Internal: launched through scriptPath by docket-groom; reads and judges every open issue the caller judges this pass read-only (value, quality and execution fit, size against the cap, every acceptance criterion) with one judge per issue and one clustering analyst per project, and returns a ledger. Args and cost in the header comment.',
     whenToUse: 'Never by name. Read-only: every agent runs docket read verbs and reads checkouts, and writes nothing. The caller keeps the survey, every operator gate, every edit, and the report in the main session.',
     phases: [
         { title: 'Registry', detail: 'one probe per project reads the workflow registry and every match block' },
@@ -31,21 +31,25 @@ export const meta = {
 //   checkoutRoot   — absolute path of the dotfiles checkout; the skill and
 //                    references are read at <checkoutRoot>/src/user/claude_code/skills.
 //   projects       — [{name, prefix, root, engine}] from `docket project list --json`
-//                    and §1's resolution. root is the checkout every docket
+//                    and §1's resolution: the judged projects only (the
+//                    invoking project, plus the engine project when §1 puts
+//                    it in the judged scope). root is the checkout every docket
 //                    read verb for that project runs from; engine is true for
 //                    the Docket engine project. An unreadable root is reported
 //                    by that project's agents, not guessed around.
 //   issues         — [{project, id, kind, parent_id, title, labels, assignee,
-//                    status, size, runIncluded}] — every surveyed row, both
-//                    projects, as §1 established them. runIncluded is true
-//                    when the id is on any planning, active, or paused run's
-//                    roster; the script never re-derives it.
+//                    status, size, runIncluded}] — every surveyed row of the
+//                    judged projects, as §1 established them. runIncluded is
+//                    true when the id is on any planning, active, or paused
+//                    run's roster; the script never re-derives it.
 //   staleWindowDays — the stale window §2b applies (30 unless the operator
 //                    named another).
 //   todayIso       — today's date as YYYY-MM-DD; scripts cannot read the clock.
 //   engineRoot     — absolute path of the engine checkout, or null when it did
 //                    not resolve, in which case every engine-need check comes
-//                    back as unverified rather than answered from memory.
+//                    back as unverified rather than answered from memory. Passed
+//                    whether or not the engine project is judged: engine-related
+//                    issues in the invoking project still take the check.
 //
 // return:
 //   registry  — [{project, checkoutOk, workflows:[{name, version, kind,
@@ -74,7 +78,7 @@ const AGENT_CONFIG = {
     cluster: { model: 'sonnet', effort: 'medium' },
 }
 
-// One judge per open issue over two backlogs is normally tens of agents; the
+// One judge per open issue over one or two backlogs is normally tens of agents; the
 // bound keeps a runaway backlog inside the Workflow tool's lifetime cap.
 // Issues beyond it are returned as uncovered, never silently dropped, and
 // the skill judges them inline.

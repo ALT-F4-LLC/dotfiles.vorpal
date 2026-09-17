@@ -4,9 +4,9 @@ The one statement of how large a Docket issue may be, what its `size`
 field and size label say, and when it must split. Every skill that files
 an issue measures it here and passes `--size` on `docket issue create`;
 `docket-plan` also applies the `small` and `trivial` labels at filing;
-`docket-groom` re-measures every open issue on each pass, sizes the
-unsized, and proposes the split when an issue is over the cap. A change to
-a rule lands here once.
+`docket-groom` re-measures every open issue in the projects it judges on
+each pass, sizes the unsized, and proposes the split when an issue is over
+the cap. A change to a rule lands here once.
 
 ## Why size is gated
 
@@ -172,7 +172,8 @@ contract says.
 
 ## The gate at groom
 
-`docket-groom` measures every open non-epic issue on each pass:
+`docket-groom` measures every open non-epic issue in the projects it judges
+on each pass:
 
 - **Unsized:** `size` is null or `unknown`. Measure it and set the field as
   a field fill, after confirming with `docket workflow show` that no

@@ -3,27 +3,32 @@ name: docket-groom
 description: >-
   Use on "groom the backlog", "/groom", "clean up the backlog", "triage
   operator decisions", "which issues are still worth doing", or "make the
-  backlog run-ready". Grooms every open issue in the current Docket project
-  and the engine project until retained work is easy to consume: validates
-  value, verifies and repairs acceptance criteria, sizes every issue and
-  proposes splits over the cap, triages operator decisions through
-  AskUserQuestion, retires approved obsolete or duplicate work, groups work
-  under epics, and closes readiness gaps. Reads and judges through the
-  read-only docket-groom Workflow script; the survey, every edit, every
-  gate, and the report stay in the main session. Safe edits apply directly;
-  closures, merges, splits, rescopes, epic creation, re-parenting,
-  protected-issue edits, and the route-tend and route-loop labels need
-  operator approval. One survey per invocation; no implementation, no
-  watch. Distinct from tend, which works route-tend issues.
-argument-hint: "[stale window, e.g. 14d]"
+  backlog run-ready". Grooms every open issue in the current Docket project,
+  plus the engine project from its checkout or with the engine argument,
+  until retained work is easy to consume: validates value, verifies and
+  repairs acceptance criteria, sizes every issue and proposes splits over
+  the cap, triages operator decisions, retires approved obsolete or
+  duplicate work, groups work under epics, and closes readiness gaps.
+  Judges through the read-only docket-groom Workflow script; the survey,
+  every edit, every gate, and the report stay in the main session. Safe
+  edits apply directly; closures, merges, splits, rescopes, epic creation,
+  re-parenting, protected-issue edits, and the route-tend and route-loop
+  labels need operator approval. One survey per invocation; no
+  implementation, no watch. Distinct from tend, which works route-tend
+  issues.
+argument-hint: "[stale window, e.g. 14d] [engine]"
 model: fable
 ---
 
 # docket-groom
 
-Run one grooming pass over the current project's open issues and the
-Docket engine project's open issues, including engine defects and capability
-gaps filed by other Docket skills. Close every grooming gap so retained work
+Run one grooming pass over the current project's open issues. The Docket
+engine project's open issues, including engine defects and capability gaps
+filed by other Docket skills, are judged only when the pass runs from the
+engine checkout or the word `engine` appears in `$ARGUMENTS`; a pass from
+any other project surveys the engine project and reports what awaits
+grooming there, so no consumer backlog pays to re-judge an engine backlog
+that has not changed. Close every grooming gap so retained work
 is valuable, clear, and consumable without reconstructing context or asking
 the operator to re-settle an existing ambiguity: judge value, resolve missing
 facts, triage operator decisions, group retained work under the epics it
@@ -43,15 +48,17 @@ any edit to a subagent, and never rely on one to ask the operator, send a
 live message, or arrange a later handoff.
 
 Take a fresh survey for this invocation. Use `$ARGUMENTS` for the optional
-stale window and honor the operator's explicit constraints in this session,
+stale window and the optional word `engine`, in either order, and honor the
+operator's explicit constraints in this session,
 but treat earlier issue reads or backlog discussion as stale, not current
 evidence. Maintain one ledger through approval and execution so the report
 covers the whole pass.
 
 One pass includes the decision rounds and affected-issue rechecks needed to
 finish grooming the surveyed backlog; it does not end at the first operator
-question. It takes no parameter beyond the optional stale window, does not
-repeat the survey or watch for new work, schedules no wakeups, and never
+question. It takes no parameter beyond the optional stale window and
+`engine`, does not repeat the survey or watch for new work, schedules no
+wakeups, and never
 touches the code the issues describe. If a gap cannot be resolved within
 the pass's authority or available evidence, report it as incomplete rather
 than inventing a resolution.
@@ -84,19 +91,35 @@ Rules:
 
 ## 1. Survey
 
-Survey both the invoking project and the Docket engine project. The engine
-checkout normally lives at `.../github.com/ALT-F4-LLC/docket.git/main`,
+Survey both the invoking project and the Docket engine project, then fix
+the judged scope: the projects whose issues §2 reads and judges and §3 and
+§4 edit. The invoking project is always in it. The engine project joins it
+in two cases only: the invoking project is the engine project in the same
+store (survey it once), or the word `engine` appears anywhere in
+`$ARGUMENTS`. Otherwise the engine survey is count-only: record, over its
+non-epic rows, how many are open, how many are unrouted (none of
+`route-run`, `route-direct`, `route-tend`, `route-loop`), and how many are
+unsized (`size` absent or `unknown`) for §5's report; seat no judge for
+them and apply no edit to them. Engine issues need grooming before engine
+planning binds them, and that pass runs from the engine checkout; a
+consumer pass that re-judged an unchanged engine backlog would pay for it
+again in every project.
+
+The engine checkout normally lives at `.../github.com/ALT-F4-LLC/docket.git/main`,
 beside this dotfiles repository, but that worktree may not be present in
 every environment. Confirm its location and project/store identity using
 the checkout and supported read-only CLI inspection; do not infer
 ownership from an issue prefix. If the checkout does not resolve, report
 the engine-project survey as unavailable rather than proceeding from
-memory. Follow [Docket's context rules](../docket/SKILL.md#establish-context)
+memory: that stops the pass when the engine project is in the judged
+scope, and is reported in §5 without stopping the pass when its survey is
+count-only. Follow [Docket's context rules](../docket/SKILL.md#establish-context)
 for store resolution. Do not initialize a store or bind a project during
-grooming. If the invoking project is already the engine project in the
-same store, survey it once.
+grooming.
 
-Run these commands from each project's own checkout:
+Run these commands from each project's own checkout; a count-only engine
+survey needs only the first, since run inclusion protects edits it never
+makes:
 
 ```bash
 docket issue list --json=v2 --limit 1000 -s backlog -s todo -s in-progress -s review
@@ -106,16 +129,17 @@ docket run status --json
 Project resolves from cwd's git identity. A `VALIDATION_ERROR` naming no
 project means that repo isn't bound: say so and stop. If no store is
 reachable, report that failure and stop; do not infer the repo's binding
-from a connection failure. Scope is every open issue in both projects,
-including engine-related issues filed in the invoking project. Discovery
-must not depend on an engine label, age, or a link from a local issue.
+from a connection failure. The survey covers every open issue in both
+projects, including engine-related issues filed in the invoking project,
+which the judged scope always includes. Discovery must not depend on an
+engine label, age, or a link from a local issue.
 Check the installed CLI's help for any additional open statuses and
 pagination, and apply the `--limit 1000` rule from the docket skill's
 [queue ownership reference](../docket/references/queue-ownership.md) to
-every list and run roster. If either checkout or project cannot be
-resolved, or the full survey cannot be obtained, report the missing
-coverage and stop before editing; a capped result or an omitted project is
-not a full pass.
+every list and run roster. If a judged project's checkout or project
+cannot be resolved, or its full survey cannot be obtained, report the
+missing coverage and stop before editing; a capped result or an omitted
+judged project is not a full pass.
 
 Keep each issue's owning project, checkout, and store context throughout
 the pass: read files, resolve workflows, inspect active runs and their
@@ -124,8 +148,8 @@ issue only once even if it appears through several queries or references.
 
 Epics arrive through the same survey: a row whose `kind` is `epic` is an
 epic, and every row's `parent_id` names its epic when it has one. Do not
-run a separate epic query. Record each project's open epics and each
-issue's current parent in the ledger before judging anything. `docket
+run a separate epic query. Record each judged project's open epics and
+each issue's current parent in the ledger before judging anything. `docket
 issue show` lists an epic's children under `sub_issues`.
 
 Two kinds of issue are in scope to read but not yours to freely edit:
@@ -141,14 +165,17 @@ everything else travels through §4.
 This section's reading runs through the `docket-groom` Workflow script.
 Launch it once, by `scriptPath` at its installed path under
 `~/.claude/workflows`, with the survey as its input: `checkoutRoot` (this
-dotfiles checkout), `projects` (name, prefix, root, and whether it is the
-engine project, from `docket project list --json` and §1's resolution),
-`issues` (every surveyed row with its project, id, kind, parent, title,
-labels, assignee, status, stored size, and `runIncluded` as §1
-established them), `staleWindowDays`, `todayIso` (today's date, since a
-script cannot read the clock), and `engineRoot` (the engine checkout §1
-resolved, or null, in which case every engine-need check returns
-unverified). The script seats one registry probe per project, which
+dotfiles checkout), `projects` (the judged projects only: name, prefix,
+root, and whether it is the engine project, from `docket project list
+--json` and §1's resolution), `issues` (every surveyed row of those
+projects with its project, id, kind, parent, title, labels, assignee,
+status, stored size, and `runIncluded` as §1 established them),
+`staleWindowDays`, `todayIso` (today's date, since a script cannot read
+the clock), and `engineRoot` (the engine checkout §1 resolved, or null,
+in which case every engine-need check returns unverified; pass it whether
+or not the engine project is judged, since engine-related issues in the
+invoking project still take the engine-need check). The script seats one
+registry probe per project, which
 reads every registered workflow's match block; one `executor-read` judge
 per non-epic issue, which runs `docket issue show <id> --json=v2` from
 the owning checkout, reads the repo only as far as the judgment needs,
@@ -169,8 +196,9 @@ for every closure, merge, rescope, or split candidate, and for every issue
 script cannot launch or returns nothing, judge every issue inline instead;
 the pass does not stop, it slows down.
 
-Build one ledger covering every issue, including issues with no hygiene
-defects. Record its owning project and store, ID, value decision,
+Build one ledger covering every issue in the judged scope, including
+issues with no hygiene defects; count-only engine rows enter §5's survey
+counts, not the ledger. Record its owning project and store, ID, value decision,
 one-sentence reason, evidence references, readiness gaps, size measures,
 and any proposed action. For each gap, track the evidence or decision
 needed, affected issues, resolution, and verification or remaining
@@ -192,8 +220,9 @@ Where a conclusion depends on current external behavior, verify the
 relevant authoritative source if available. Report inaccessible evidence
 instead of assuming what it would say.
 
-For every engine-related issue in either project, check its original
-failure or missing capability against current engine source and tests,
+For every engine-related issue in the judged scope, in either project,
+check its original failure or missing capability against current engine
+source and tests,
 linked fixes, and the consuming workflow or configuration where relevant.
 Record the engine revision and any installed or released version relevant
 to the claim, and confirm whether the need remains, was fully or partly
@@ -839,17 +868,21 @@ applied; distinguish attempted operations from confirmed changes.
 One summary in the main session, plain language: how many issues surveyed,
 how many received a value review, the stale window used, and counts by
 value decision, with survey and review counts for each project. Explicitly
-report engine coverage and which engine needs remain, are resolved or
-superseded, or could not be verified. Present retained work grouped by
-epic, per project: each epic's ID, title, and its retained members with
-their readiness, followed by the retained issues that have no epic and the
-reason each stayed ungrouped. Include a compact ledger of owning projects,
-issue IDs, decisions, reasons, and evidence references so every retention
-and proposed retirement is reviewable. Report automatic edits, proposals,
-operator decisions, and confirmed applications separately, by kind and
-issue ID; list parent edits and epic creations under their own kinds. State
-whether grooming is complete, which gaps were closed, and which remain
-with the specific input or action needed to close each one.
+report engine coverage: when the engine project was judged, which engine
+needs remain, are resolved or superseded, or could not be verified; when
+its survey was count-only, its open, unrouted, and unsized non-epic counts
+and that engine judging waits for a pass from the engine checkout or with
+`engine`; when its survey was unavailable, say so. Present retained work
+grouped by epic, per project: each epic's ID, title, and its retained
+members with their readiness, followed by the retained issues that have no
+epic and the reason each stayed ungrouped. Include a compact ledger of
+owning projects, issue IDs, decisions, reasons, and evidence references so
+every retention and proposed retirement is reviewable. Report automatic
+edits, proposals, operator decisions, and confirmed applications
+separately, by kind and issue ID; list parent edits and epic creations
+under their own kinds. State whether grooming is complete, which gaps were
+closed, and which remain with the specific input or action needed to close
+each one.
 
 Name the most consequential opportunities to reduce wasted work: redundant
 outcomes, unnecessary scope, obsolete assumptions, or blockers needing a

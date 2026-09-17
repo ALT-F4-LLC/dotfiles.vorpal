@@ -1,35 +1,33 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 44  # 44: `reconcile` repoints `payload = "findings@11"` to `findings@13`.
+version = 45  # 45: prose-only rewrite for concision; no topology, routing, or
+              #   limit change.
+              # 44: `reconcile` repoints `payload = "findings@11"` to `findings@13`.
               #   findings@11 added a conditional requiring `open_severity` on
-              #   every open cluster, enforced at the aggregate step; engine
-              #   rule V30 validates a declared aggregate-step schema against a
-              #   synthetic probe built only from that schema's own declared
-              #   fields plus the four keys `aggregate` always writes
-              #   (severity, members, held, operator_resolved), so the probe
-              #   never carries open_severity or prior_disposition and always
-              #   fails findings@11's conditional -- no if/else on an
-              #   aggregate-step schema can ever pass it, and findings@11
-              #   could never register. The check was also redundant:
-              #   findings-cluster@5 (synthesize's own payload) already
-              #   requires open_severity on every open cluster before
-              #   reconcile runs, and aggregate carries every non-severity key
-              #   of its input through to its output verbatim, so nothing
-              #   reconcile's schema checked was ever at risk of going
-              #   missing between the two steps. findings@13 is byte-identical
-              #   to findings@10 in every constraint, dropping only the
-              #   unenforceable conditional; open_severity keeps
-              #   ordered_enum: true, since this step's own threshold
-              #   predicates are ordered comparisons the engine defines only
-              #   over a field whose registered schema declares that order.
-              #   No topology or routing change.
+              #   every open cluster; engine rule V30 validates a declared
+              #   aggregate-step schema against a synthetic probe built only
+              #   from that schema's own declared fields plus the four keys
+              #   `aggregate` always writes (severity, members, held,
+              #   operator_resolved), so the probe never carries
+              #   open_severity or prior_disposition and always fails
+              #   findings@11's conditional -- no if/else on an aggregate-step
+              #   schema can ever pass it, and findings@11 could never
+              #   register. The check was also redundant: findings-cluster@5
+              #   (synthesize's own payload) already requires open_severity on
+              #   every open cluster before reconcile runs, and aggregate
+              #   carries every non-severity key of its input through to its
+              #   output verbatim. findings@13 is byte-identical to findings@10
+              #   in every constraint, dropping only the unenforceable
+              #   conditional; open_severity keeps ordered_enum: true, since
+              #   this step's own threshold predicates are ordered comparisons
+              #   the engine defines only over a field whose registered schema
+              #   declares that order. No topology or routing change.
               # 43: `review` repoints `payload = "findings@10"` to `findings@12`:
-              #   findings@10's own description incorrectly still claimed
-              #   reconcile-step usage, which every workflow's reconcile step
-              #   moved off in an earlier version; findings@12 corrects the
-              #   description to say review/design-qa only. Same shape,
-              #   byte-identical constraints. No topology or routing change.
+              #   the description incorrectly still claimed reconcile-step
+              #   usage, moved off in an earlier version; findings@12 corrects
+              #   it to say review/design-qa only. Same shape, byte-identical
+              #   constraints. No topology or routing change.
               # 42: synthesize-findings declares `findings-cluster@5` and reconcile
               #   declares `findings@11`; both require `open_severity` on every open
               #   cluster (omitted only behind a settling ruling), so a payload that
@@ -99,22 +97,22 @@ version = 44  # 44: `reconcile` repoints `payload = "findings@11"` to `findings@
               #   faster than a 21-100-line change (23.5 h) or one over 400 lines
               #   (17.2 h). Seat time by stage here: the three judges 35%, implement
               #   28%, verify 25%, fix 4%, synthesize 4%, drain-highs 4%. The elapsed
-              #   time was not seat time: every finished chain crossed three
+              #   time exceeded seat time because every finished chain crossed three
               #   dispatches (implement; the three judges and synthesize; drain, verify
               #   and the tribunal), and the waits at those boundaries were about two
-              #   thirds of it, so the lever a lighter track pulls is rows per issue
-              #   and serial stages, not model tiers. Nine of the 35 issues recorded no
-              #   diff at all (their acceptance criteria were already met at HEAD) and
-              #   still walked every stage; they drew 3 of this track's 4 blocker fix
-              #   rounds and all 3 of its parked fix rounds — a stale-backlog class for
+              #   thirds of it, so a lighter track's lever is rows per issue and serial
+              #   stages, not model tiers. Nine of the 35 issues recorded no diff at
+              #   all (their acceptance criteria were already met at HEAD) and still
+              #   walked every stage; they drew 3 of this track's 4 blocker fix rounds
+              #   and all 3 of its parked fix rounds — a stale-backlog class for
               #   grooming to retire before activation, not a lane this file can
               #   express, because `[match]` and a step's `when` read issue kind and
               #   labels only, never the diff. Across every project's ledger (225
               #   distinct issues bound here) round-0 reconcile routed a blocker fix
               #   round on 7 of 64 changes of 20 lines or fewer and 12 of 92 of 21-100
-              #   lines, so this three-judge review is kept as the default for an
-              #   unlabelled change; the lighter tracks bind only by a label a person,
-              #   the groomer or the planner applied.
+              #   lines, so this three-judge review stays the default for an unlabelled
+              #   change; the lighter tracks bind only by a label a person, the
+              #   groomer or the planner applied.
               # 34: two edits on the review stage, no topology change. (1)
               #   `verify-tribunal` seats `tribunal-correctness` alone instead of the
               #   three-seat tribunal roster. Measured across every verify-tribunal
@@ -153,12 +151,12 @@ version = 44  # 44: `reconcile` repoints `payload = "findings@11"` to `findings@
               #   `fix` reads its vote-record. RUN-90 measured the old
               #   routing: 20 of its 21 parks were a verify reporting an AC
               #   `unverifiable` because the `ac-commands` gate is a stub;
-              #   every one parked the whole run and every one
-              #   the operator resolved `override-pass`. A vote rides the
-              #   wave and parks nothing; a below-threshold tally still
-              #   routes to the fixer, never to a silent pass. Cost: three
-              #   seats per verify that reports an unverifiable AC — most of
-              #   them while the gate stays a stub. `unmet` still loops.
+              #   every one parked the whole run, and the operator resolved
+              #   every one `override-pass`. A vote rides the wave and parks
+              #   nothing; a below-threshold tally still routes to the fixer,
+              #   never to a silent pass. Cost: three seats per verify that
+              #   reports an unverifiable AC — most of them while the gate
+              #   stays a stub. `unmet` still loops.
               # 30: two input edits on `fix`, no topology change. (1)
               #   `synthesize.findings` joins `reconcile.findings`: the
               #   aggregate reaches the fixer as cluster titles and member ids
@@ -192,8 +190,8 @@ version = 44  # 44: `reconcile` repoints `payload = "findings@11"` to `findings@
               #   reads the same label list, so the lane could never fire
               #   again. Measured across every project's ledger: 4 executions,
               #   all on versions 26 and earlier; 24 skips, 8 of them on 27.
-              #   The security judge still runs where the label routes, on
-              #   the security-change track. Nothing else changes: a false
+              #   The security judge still runs on the security-change track
+              #   where the label routes. Nothing else changes: a false
               #   `when` already expanded the step as `skipped`, so the
               #   topology every run actually walked is exactly this one.
               # 28: reconcile gains the `drain-highs` routing on
@@ -201,7 +199,7 @@ version = 44  # 44: `reconcile` repoints `payload = "findings@11"` to `findings@
               #   step it names, which files each still-open high cluster
               #   (not held, not operator-resolved) as a `--gap-file` backlog
               #   issue at its completion; see ui-change@22 for the full
-              #   trail (open highs completed rounds recorded only in
+              #   trail (completed rounds' open highs were recorded only in
               #   reconcile artifacts nothing downstream reads — the fix-loop
               #   threshold worked as configured, but an open high had no
               #   drain path at all). `fix-loop` stays first and

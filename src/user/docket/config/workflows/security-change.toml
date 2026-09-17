@@ -1,29 +1,28 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 45  # 45: `reconcile` repoints `payload = "findings@11"` to `findings@13`.
+version = 46  # 46: prose-only rewrite for concision; no topology, routing, or
+              #   limit change.
+              # 45: `reconcile` repoints `payload = "findings@11"` to `findings@13`.
               #   findings@11 added a conditional requiring `open_severity` on
-              #   every open cluster, enforced at the aggregate step; engine
-              #   rule V30 validates a declared aggregate-step schema against a
-              #   synthetic probe built only from that schema's own declared
-              #   fields plus the four keys `aggregate` always writes
-              #   (severity, members, held, operator_resolved), so the probe
-              #   never carries open_severity or prior_disposition and always
-              #   fails findings@11's conditional -- no if/else on an
-              #   aggregate-step schema can ever pass it, and findings@11
-              #   could never register. The check was also redundant:
-              #   findings-cluster@5 (synthesize's own payload) already
-              #   requires open_severity on every open cluster before
-              #   reconcile runs, and aggregate carries every non-severity key
-              #   of its input through to its output verbatim, so nothing
-              #   reconcile's schema checked was ever at risk of going
-              #   missing between the two steps. findings@13 is byte-identical
-              #   to findings@10 in every constraint, dropping only the
-              #   unenforceable conditional; open_severity keeps
-              #   ordered_enum: true, since this step's own threshold
-              #   predicates are ordered comparisons the engine defines only
-              #   over a field whose registered schema declares that order.
-              #   No topology or routing change.
+              #   every open cluster; engine rule V30 validates a declared
+              #   aggregate-step schema against a synthetic probe built only
+              #   from that schema's own declared fields plus the four keys
+              #   `aggregate` always writes (severity, members, held,
+              #   operator_resolved), so the probe never carries
+              #   open_severity or prior_disposition and always fails
+              #   findings@11's conditional -- no if/else on an aggregate-step
+              #   schema can ever pass it, and findings@11 could never
+              #   register. The check was also redundant: findings-cluster@5
+              #   (synthesize's own payload) already requires open_severity on
+              #   every open cluster before reconcile runs, and aggregate
+              #   carries every non-severity key of its input through to its
+              #   output verbatim. findings@13 is byte-identical to findings@10
+              #   in every constraint, dropping only the unenforceable
+              #   conditional; open_severity keeps ordered_enum: true, since
+              #   this step's own threshold predicates are ordered comparisons
+              #   the engine defines only over a field whose registered schema
+              #   declares that order. No topology or routing change.
               # 44: four comment-only corrections plus one behavior change, no
               #   topology change. `max_fix_loops` drops from 3 to 2, matching
               #   every other multi-round workflow in the corpus; the row
@@ -38,11 +37,10 @@ version = 45  # 45: `reconcile` repoints `payload = "findings@11"` to `findings@
               #   match: it previously said no severity starts an automatic
               #   fix loop, contradicting this file's own v42 comment
               #   restoring the blocker fix-loop route. `review` also
-              #   repoints `payload = "findings@10"` to `findings@12`:
-              #   findings@10's own description incorrectly still claimed
-              #   reconcile-step usage, which reconcile itself moved off in
-              #   an earlier version; findings@12 corrects the description
-              #   to say review/design-qa only. Same shape, byte-identical
+              #   repoints `payload = "findings@10"` to `findings@12`: the
+              #   description incorrectly still claimed reconcile-step usage,
+              #   moved off in an earlier version; findings@12 corrects it to
+              #   say review/design-qa only. Same shape, byte-identical
               #   constraints. The v30 comment's "first-match in sorted
               #   order" claim is corrected to "declared order", confirmed
               #   against `ThresholdOrder` in the engine source
@@ -117,14 +115,14 @@ version = 45  # 45: `reconcile` repoints `payload = "findings@11"` to `findings@
               #   reproduced 84 outcomes, missed one rejection (architecture alone
               #   rejected) and flipped one approval (correctness alone rejected).
               #   judge-security was never the lone rejecter in 118 casts;
-              #   correctness was six times. With two voters under the 0.67 rule one
-              #   reject scores about 0.5 and rejects, so a three-seat panel's 2-1
-              #   coin flip (twenty such tallies, ten each way, decided by confidence
+              #   correctness was six times. Two voters under the 0.67 rule score a
+              #   lone reject about 0.5 and reject, so a three-seat panel's 2-1 coin
+              #   flip (twenty such tallies, ten each way, decided by confidence
               #   decimals) disappears. The removed seat ran at opus-medium; the vote
               #   convenes on 95% of reconciled rounds (93 of 98). (2)
               #   `verify-tribunal` seats tribunal-correctness alone: all 10
               #   tribunals decided here approved and every seat matched 10 of 10;
-              #   corpus-wide the correctness seat matched 25 of 25 decided outcomes,
+              #   corpus-wide the correctness seat matched all 25 decided outcomes,
               #   and one voter tallies deterministically. KEPT on evidence: the
               #   four-seat fan-out (the security seat is the sole finder of 18 high
               #   and 1 blocker clusters, testing 103 / 7, architecture 56 / 0,
@@ -183,17 +181,17 @@ version = 45  # 45: `reconcile` repoints `payload = "findings@11"` to `findings@
               #   declaration order, so the engine reconstructs it from the
               #   source text specifically so first-match-wins is
               #   deterministic, never sorted), so `drain-highs` beside
-              #   `security-vote` on
-              #   reconcile would fire first and terminalize the vote as
-              #   skipped; and draining before the vote would file issues a
-              #   rejected vote's fix round then fixes. After approval is the
-              #   first moment the open highs are known to stay open. Accepted
-              #   deviation: a skipped interposed gate is terminal to the
-              #   readiness join, so on a round where reconcile found no high
-              #   (3 of 81 vote instances) the drain still runs and reports
-              #   nothing to drain; the engine has no "only if the gate fired"
-              #   edge, filed as an engine gap. On a rejected vote the fix
-              #   loop's supersede sweep clears the pending drain and the next
+              #   `security-vote` on reconcile would fire first and
+              #   terminalize the vote as skipped; and draining before the
+              #   vote would file issues a rejected vote's fix round then
+              #   fixes. After approval is the first moment the open highs
+              #   are known to stay open. Accepted deviation: a skipped
+              #   interposed gate is terminal to the readiness join, so on a
+              #   round where reconcile found no high (3 of 81 vote
+              #   instances) the drain still runs and reports nothing to
+              #   drain; the engine has no "only if the gate fired" edge,
+              #   filed as an engine gap. On a rejected vote the fix loop's
+              #   supersede sweep clears the pending drain and the next
               #   ordinal re-instantiates it after the new vote.
               # 29: no step edits — bumped to carry the panel-depth docket-refit's
               #   findings, with the one behavior change landing in
@@ -219,15 +217,15 @@ version = 45  # 45: `reconcile` repoints `payload = "findings@11"` to `findings@
               #     exists. judge-security is never the lone rejecter on
               #     security-vote (correctness 6, architecture 2, security 0);
               #     tribunal-security is the most-rejecting held-panel seat.
-              #   - verify-tribunal: KEPT as is. Already gated on
-              #     `any(status == unverifiable)`; it fired 4 times in 52
-              #     issues (3 approved, 1 rejected, all unanimous).
+              #   - verify-tribunal: KEPT as is, already gated on
+              #     `any(status == unverifiable)`; fired 4 times in 52 issues
+              #     (3 approved, 1 rejected, all unanimous).
               #   - reconcile `hold_spread = 3`: KEPT. 41 held panels: 36
               #     approved, 5 rejected, 39 unanimous, 7.8 min median. Every
               #     held cluster observed had a spread of exactly 3, so a
               #     spread of 4 would disable holds in practice, and the 5
-              #     rejections were real catches by seats the security-vote
-              #     does not seat.
+              #     rejections were real catches by seats security-vote does
+              #     not seat.
               #   - security-vote itself: 27 approved / 47 rejected, 56 of 74
               #     unanimous; a working gate, not a rubber stamp.
               # 28: three input edits, no topology change. (1) `fix` adds
@@ -254,8 +252,8 @@ version = 45  # 45: `reconcile` repoints `payload = "findings@11"` to `findings@
               #   security-vote panel was briefed a fabricated sha a probe
               #   invented into that void). With it the bundle and the packet
               #   header carry target_sha/target_worktree. The wave's own log
-              #   line still needs `step show` to surface the field, which is
-              #   an engine change tracked separately.
+              #   line still needs `step show` to surface the field, an engine
+              #   change tracked separately.
               #   NOT changed here: `synthesize`'s `review.*` already binds to
               #   the current round only; the previous-round raw judge payloads
               #   in a re-review synthesize packet (263KB at one round 2) come
@@ -273,20 +271,20 @@ version = 45  # 45: `reconcile` repoints `payload = "findings@11"` to `findings@
               #   policy.toml's [security].labels route to this track. The two
               #   vocabularies had diverged: policy named three labels, this
               #   [match] named two, so an issue labelled only `security` took
-              #   the security MODEL routing (opus-max ceiling, no Fable) and
+              #   the security MODEL routing (opus-max ceiling, no Fable) but
               #   the ORDINARY standard-change pipeline — no threat model, no
-              #   security-vote, no abuse-case gate — and nothing detected it,
-              #   because `run activate --dry-run` refuses zero matches and
-              #   several but an exactly-one-WRONG match is structurally
-              #   invisible to it. Reconciled toward routing rather than by
-              #   deleting the label from policy: deletion would have left the
-              #   same silent baseline binding and dropped the Opus floor too.
-              #   Co-change, so nothing can match this workflow AND another:
+              #   security-vote, no abuse-case gate — undetected, because
+              #   `run activate --dry-run` refuses zero matches and several
+              #   but an exactly-one-WRONG match is structurally invisible to
+              #   it. Reconciled toward routing rather than by deleting the
+              #   label from policy: deletion would have left the same silent
+              #   baseline binding and dropped the Opus floor too. Co-change,
+              #   so nothing can match this workflow AND another:
               #   standard-change@27, ui-change@21 and disposition@3 add
               #   `security` to their unless_labels beside the two siblings
-              #   they already exclude. The remaining workflows need no change
-              #   — docs-only, investigation, spec-doc and spec-project are
-              #   already on this [match]'s unless_labels.
+              #   they already exclude. docs-only, investigation, spec-doc and
+              #   spec-project need no change — already on this [match]'s
+              #   unless_labels.
               # 25: comment on `security-vote`'s judge-* voters:
               #   deliberately judge-*, not tribunal-* (different policy.toml
               #   tier, different remit); documentation only, no behavior
@@ -407,9 +405,10 @@ name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
 payload = "findings@13"
 # First-match, declared order: an open blocker always gets a fix round before
-# the panel sees the change. v23 had removed this route and left the two-seat
-# vote as a blocker's only exit, so two approvals could pass a blocker to
-# drain-highs; v42 restores it ahead of the vote, matching every other track.
+# the panel sees the change. v42 restores this route ahead of the vote,
+# matching every other track, after v23 had removed it and left the two-seat
+# vote as a blocker's only exit, letting two approvals pass a blocker to
+# drain-highs.
 threshold = { "fix-loop" = "any(open_severity >= blocker)", "security-vote" = "any(open_severity >= high)" }
 
 [[step]]
@@ -433,11 +432,11 @@ type = "vote"
 vote_rule = "security-acceptance"
 # Deliberately judge-*, not tribunal-*: this is the security-acceptance panel,
 # not the operator-stand-in tribunal, and the two seat families are routed
-# separately in policy.toml even where their current tiers coincide.
-# As voters these seats are briefed by the workflow scripts' LENSES table, not
+# separately in policy.toml even where their current tiers coincide. As
+# voters these seats are briefed by the workflow scripts' LENSES table, not
 # by contracts/judge-*.md — one name, two remits. Two seats: under the 0.67
-# security-acceptance rule one reject of two scores about 0.5 and rejects, so
-# a single dissent decides, which a three-seat 2-1 tally never reliably did.
+# security-acceptance rule a lone reject of two scores about 0.5 and rejects,
+# so a single dissent decides, which a three-seat 2-1 tally never reliably did.
 voters = ["judge-security", "judge-correctness"]
 
 [[step]]

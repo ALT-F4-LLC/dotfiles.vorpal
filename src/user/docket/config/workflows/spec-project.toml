@@ -1,35 +1,33 @@
 [pipeline]
 description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step. Review and reconcile the findings, drain any open highs, and accept by tribunal vote. A rejection re-enters the bounded revise loop at spec authoring and runs review again."
 name = "spec-project"
-version = 29  # 29: `reconcile` repoints `payload = "findings@11"` to `findings@13`.
+version = 30  # 30: prose-only rewrite for concision; no topology, routing, or
+              #   limit change.
+              # 29: `reconcile` repoints `payload = "findings@11"` to `findings@13`.
               #   findings@11 added a conditional requiring `open_severity` on
-              #   every open cluster, enforced at the aggregate step; engine
-              #   rule V30 validates a declared aggregate-step schema against a
-              #   synthetic probe built only from that schema's own declared
-              #   fields plus the four keys `aggregate` always writes
-              #   (severity, members, held, operator_resolved), so the probe
-              #   never carries open_severity or prior_disposition and always
-              #   fails findings@11's conditional -- no if/else on an
-              #   aggregate-step schema can ever pass it, and findings@11
-              #   could never register. The check was also redundant:
-              #   findings-cluster@5 (synthesize's own payload) already
-              #   requires open_severity on every open cluster before
-              #   reconcile runs, and aggregate carries every non-severity key
-              #   of its input through to its output verbatim, so nothing
-              #   reconcile's schema checked was ever at risk of going
-              #   missing between the two steps. findings@13 is byte-identical
-              #   to findings@10 in every constraint, dropping only the
-              #   unenforceable conditional; open_severity keeps
-              #   ordered_enum: true, since this step's own threshold
-              #   predicates are ordered comparisons the engine defines only
-              #   over a field whose registered schema declares that order.
-              #   No topology or routing change.
+              #   every open cluster; engine rule V30 validates a declared
+              #   aggregate-step schema against a synthetic probe built only
+              #   from that schema's own declared fields plus the four keys
+              #   `aggregate` always writes (severity, members, held,
+              #   operator_resolved), so the probe never carries
+              #   open_severity or prior_disposition and always fails
+              #   findings@11's conditional -- no if/else on an aggregate-step
+              #   schema can ever pass it, and findings@11 could never
+              #   register. The check was also redundant: findings-cluster@5
+              #   (synthesize's own payload) already requires open_severity on
+              #   every open cluster before reconcile runs, and aggregate
+              #   carries every non-severity key of its input through to its
+              #   output verbatim. findings@13 is byte-identical to findings@10
+              #   in every constraint, dropping only the unenforceable
+              #   conditional; open_severity keeps ordered_enum: true, since
+              #   this step's own threshold predicates are ordered comparisons
+              #   the engine defines only over a field whose registered schema
+              #   declares that order. No topology or routing change.
               # 28: `review` repoints `payload = "findings@10"` to `findings@12`:
-              #   findings@10's own description incorrectly still claimed
-              #   reconcile-step usage, which every workflow's reconcile step
-              #   moved off in an earlier version; findings@12 corrects the
-              #   description to say review/design-qa only. Same shape,
-              #   byte-identical constraints. No topology or routing change.
+              #   the description incorrectly still claimed reconcile-step
+              #   usage, moved off in an earlier version; findings@12 corrects
+              #   it to say review/design-qa only. Same shape, byte-identical
+              #   constraints. No topology or routing change.
               # 27: synthesize-findings declares `findings-cluster@5` and reconcile
               #   declares `findings@11`; both require `open_severity` on every open
               #   cluster (omitted only behind a settling ruling), so a payload that
@@ -45,12 +43,11 @@ version = 29  # 29: `reconcile` repoints `payload = "findings@11"` to `findings@
               #   optional and unread by any threshold or the aggregate builtin.
               # 25: `spec-vote` gains a post-approval `threshold` that routes
               #   `fix-loop` when one or more casts is a reject, so a lone
-              #   reject on the three-seat tribunal routes one
-              #   revise round instead of being outvoted by the other two
-              #   casts' confidence decimals; spec-doc@33 carries the
-              #   recorded example and the reasoning. The tally, `on_fail`,
-              #   the loop bound and a committed proposal's bypass are
-              #   unchanged. No topology change.
+              #   reject on the three-seat tribunal routes one revise round
+              #   instead of being outvoted by the other two casts' confidence
+              #   decimals; spec-doc@33 carries the recorded example and the
+              #   reasoning. The tally, `on_fail`, the loop bound and a
+              #   committed proposal's bypass are unchanged. No topology change.
               # 24: prose-only rewrite for concision; no topology, routing, or
               #   limit change.
               # 23: `lease_ttl` added to every `[limits]` entry, matched to
@@ -108,14 +105,14 @@ version = 29  # 29: `reconcile` repoints `payload = "findings@11"` to `findings@
               #   the two judge-panel rejections on the same track, one
               #   looped without operator involvement and the other hit the
               #   loop bound and was resolved `fix-round` by the operator.
-              #   The human backstop moves rather than
-              #   disappears: a rejected vote with `on_fail = "fix-loop"`
-              #   enters the issue's loop, and when the next ordinal would
-              #   exceed `max_fix_loops` (2, declared on `reconcile`; one
-              #   counter per issue, shared with reconcile's blocker rounds)
-              #   the engine parks the vote step waiting-human with a reason
-              #   naming `docket step resolve --as fix-round`. Description
-              #   no longer says "escalates to the operator".
+              #   The human backstop moves rather than disappears: a
+              #   rejected vote with `on_fail = "fix-loop"` enters the
+              #   issue's loop, and when the next ordinal would exceed
+              #   `max_fix_loops` (2, declared on `reconcile`; one counter
+              #   per issue, shared with reconcile's blocker rounds) the
+              #   engine parks the vote step waiting-human, naming
+              #   `docket step resolve --as fix-round`. Description no
+              #   longer says "escalates to the operator".
               # 16: `blocked` joins unless_labels: a hold label so
               #   an issue not yet workable matches zero registered workflows
               #   until the label is removed.

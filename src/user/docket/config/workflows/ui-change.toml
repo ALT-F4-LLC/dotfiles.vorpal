@@ -1,35 +1,33 @@
 [pipeline]
 name = "ui-change"
-version = 35  # 35: `reconcile` repoints `payload = "findings@11"` to `findings@13`.
+version = 36  # 36: prose-only rewrite for concision; no topology, routing, or
+              #   limit change.
+              # 35: `reconcile` repoints `payload = "findings@11"` to `findings@13`.
               #   findings@11 added a conditional requiring `open_severity` on
-              #   every open cluster, enforced at the aggregate step; engine
-              #   rule V30 validates a declared aggregate-step schema against a
-              #   synthetic probe built only from that schema's own declared
-              #   fields plus the four keys `aggregate` always writes
-              #   (severity, members, held, operator_resolved), so the probe
-              #   never carries open_severity or prior_disposition and always
-              #   fails findings@11's conditional -- no if/else on an
-              #   aggregate-step schema can ever pass it, and findings@11
-              #   could never register. The check was also redundant:
-              #   findings-cluster@5 (synthesize's own payload) already
-              #   requires open_severity on every open cluster before
-              #   reconcile runs, and aggregate carries every non-severity key
-              #   of its input through to its output verbatim, so nothing
-              #   reconcile's schema checked was ever at risk of going
-              #   missing between the two steps. findings@13 is byte-identical
-              #   to findings@10 in every constraint, dropping only the
-              #   unenforceable conditional; open_severity keeps
-              #   ordered_enum: true, since this step's own threshold
-              #   predicates are ordered comparisons the engine defines only
-              #   over a field whose registered schema declares that order.
-              #   No topology or routing change.
+              #   every open cluster; engine rule V30 validates a declared
+              #   aggregate-step schema against a synthetic probe built only
+              #   from that schema's own declared fields plus the four keys
+              #   `aggregate` always writes (severity, members, held,
+              #   operator_resolved), so the probe never carries
+              #   open_severity or prior_disposition and always fails
+              #   findings@11's conditional -- no if/else on an aggregate-step
+              #   schema can ever pass it, and findings@11 could never
+              #   register. The check was also redundant: findings-cluster@5
+              #   (synthesize's own payload) already requires open_severity on
+              #   every open cluster before reconcile runs, and aggregate
+              #   carries every non-severity key of its input through to its
+              #   output verbatim. findings@13 is byte-identical to findings@10
+              #   in every constraint, dropping only the unenforceable
+              #   conditional; open_severity keeps ordered_enum: true, since
+              #   this step's own threshold predicates are ordered comparisons
+              #   the engine defines only over a field whose registered schema
+              #   declares that order. No topology or routing change.
               # 34: `review` and `design-qa` repoint `payload = "findings@10"`
-              #   to `findings@12`: findings@10's own description
-              #   incorrectly still claimed reconcile-step usage, which
-              #   reconcile moved off in an earlier version; findings@12
-              #   corrects the description to say review/design-qa only.
-              #   Same shape, byte-identical constraints. No topology or
-              #   routing change.
+              #   to `findings@12`: the description incorrectly still claimed
+              #   reconcile-step usage, moved off in an earlier version;
+              #   findings@12 corrects it to say review/design-qa only. Same
+              #   shape, byte-identical constraints. No topology or routing
+              #   change.
               # 33: synthesize-findings declares `findings-cluster@5` and reconcile
               #   declares `findings@11`; both require `open_severity` on every open
               #   cluster (omitted only behind a settling ruling), so a payload that
@@ -75,7 +73,7 @@ version = 35  # 35: `reconcile` repoints `payload = "findings@11"` to `findings@
               #   dependency on `design-qa` is preserved under its new name `verify-ac`.
               # 26: three edits on the review stage, no topology change.
               #   (1) `verify-tribunal` seats tribunal-correctness alone: its own
-              #   cast matched 9 of 9 decided outcomes on this track and 25 of 25
+              #   cast matched 9 of 9 decided outcomes on this track and all 25
               #   corpus-wide, rejections included, and one voter tallies 1.0 or 0.0
               #   against the 0.67 rule where a three-seat 2-1 tally landed either
               #   side of it by confidence decimals. (2) `verify-tribunal` routes a
@@ -106,27 +104,27 @@ version = 35  # 35: `reconcile` repoints `payload = "findings@11"` to `findings@
               #   aggregate reaches the fixer as cluster titles and member ids
               #   with no evidence, while the synthesize artifact's body lists
               #   every member's judge, id, severity and evidence — one fixer
-              #   on this track, handed eight title-only clusters, spent
-              #   fourteen calls (run reports, step shows, a raw open of the
-              #   store's database) hunting for member bodies. ordinalScoped
-              #   binds it to the round that just judged the fixer's base.
-              #   (2) `fix` adds `issue.latest.change-summary` beside
+              #   here, handed eight title-only clusters, spent fourteen calls
+              #   (run reports, step shows, a raw open of the store's
+              #   database) hunting for member bodies. ordinalScoped binds it
+              #   to the round that just judged the fixer's base. (2) `fix`
+              #   adds `issue.latest.change-summary` beside
               #   `implement.change-summary`: the engine never rebinds a loop
               #   body's own inputs, so at fix@2 and later the packet carried
               #   implement@0's account and omitted fix@(N-1)'s, the tree the
-              #   fixer actually stands on (three fix@2 packets in one run on
-              #   this track all bound to implement@0). `issue.latest.<kind>`
-              #   is the engine's named form for exactly this; at fix@1 both
-              #   entries resolve to implement@0 and the bundle de-duplicates
-              #   them. (3) `issue.diff` joins `verify-tribunal`: without it
-              #   context assembly lifts no target_sha, wave.js seats the
-              #   panel with "NO target ref — seats read their own HEAD", and
-              #   each seat re-derives the judged tree (one reconstructed it
-              #   under its temp directory via git archive, another diffed two
-              #   shas it found in the ac-report's prose). With it the bundle
-              #   and the packet header carry target_sha/target_worktree. The
-              #   wave's own log line still needs `step show` to surface the
-              #   field, which is an engine change tracked separately.
+              #   fixer actually stands on (three fix@2 packets in one run
+              #   here all bound to implement@0). `issue.latest.<kind>` is the
+              #   engine's named form for exactly this; at fix@1 both entries
+              #   resolve to implement@0 and the bundle de-duplicates them.
+              #   (3) `issue.diff` joins `verify-tribunal`: without it context
+              #   assembly lifts no target_sha, wave.js seats the panel with
+              #   "NO target ref — seats read their own HEAD", and each seat
+              #   re-derives the judged tree (one reconstructed it under its
+              #   temp directory via git archive, another diffed two shas it
+              #   found in the ac-report's prose). With it the bundle and the
+              #   packet header carry target_sha/target_worktree. The wave's
+              #   own log line still needs `step show` to surface the field,
+              #   an engine change tracked separately.
               #   NOT changed: `synthesize`'s `review.*` already binds to the
               #   current round only; previous-round raw judge payloads in a
               #   re-review synthesize packet come from the engine's
@@ -149,10 +147,10 @@ version = 35  # 35: `reconcile` repoints `payload = "findings@11"` to `findings@
               #   Blocker opens a fix round). Blocker routing is unchanged:
               #   `fix-loop` stays first and ThresholdOrder evaluates it
               #   first, so a round with any open blocker still loops and
-              #   highs drain only once blockers are cleared; a round with
-              #   nothing open at high or above routes `pass` and the drain
-              #   step is terminalized `skipped` — never claimed, no cost
-              #   accrued. Same change: standard-change@28, spec-doc@21,
+              #   highs drain only once blockers clear; a round with nothing
+              #   open at high or above routes `pass` and the drain step is
+              #   terminalized `skipped` — never claimed, no cost accrued.
+              #   Same change: standard-change@28, spec-doc@21,
               #   spec-project@15; new contracts/drain-highs.md; policy@19
               #   seats the executor.
               # 21: `security` joins unless_labels beside

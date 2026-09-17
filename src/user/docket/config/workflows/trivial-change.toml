@@ -1,7 +1,9 @@
 [pipeline]
 description = "Trivial mechanical change, bound by the `trivial` label. Implement with the full gate list, then AC verification with a single-seat tribunal on an unverifiable or out-of-scope AC and one fix round re-entering at verify-ac. No judge. The conductor integrates commits; the operator publishes."
 name = "trivial-change"
-version = 6  # 6: `diff-scope-trivial` joins the implement and fix gate lists: the
+version = 7  # 7: prose-only rewrite for concision; no topology, routing, or
+             #   limit change.
+             # 6: `diff-scope-trivial` joins the implement and fix gate lists: the
              #   track binds on the `trivial` label alone, so a 400-line change
              #   labelled trivial met zero judges. The gate refuses more than one
              #   touched path, any added or deleted file, or more than ten changed
@@ -47,10 +49,10 @@ version = 6  # 6: `diff-scope-trivial` joins the implement and fix gate lists: t
              #   a step-level fragment saying the AC report is its whole work list.
              #   Forecast rather than measured, from the same run's medians: 2
              #   executor seats and about 21 seat-minutes (implement 12.8, verify
-             #   7.8), plus one tribunal seat when an AC is unverifiable, over a chain
-             #   of two dispatches instead of three. The label is applied before
-             #   activation because `[match]` and `when` read issue kind and labels
-             #   only, never the diff.
+             #   7.8), plus one tribunal seat when an AC is unverifiable, over two
+             #   dispatches instead of three. The label is applied before activation
+             #   because `[match]` and `when` read issue kind and labels only, never
+             #   the diff.
 
 [match]
 labels_any = ["trivial"]

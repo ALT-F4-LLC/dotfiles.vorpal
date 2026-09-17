@@ -1,40 +1,38 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by research, then validate, review, and vote to accept: the doc-acceptance panel for TDD/ADR, the tribunal for PRD/ux-spec. A rejection re-enters the doctype's revise step, then review, up to the loop bound."
 name = "spec-doc"
-version = 37  # 37: `reconcile` repoints `payload = "findings@11"` to `findings@13`.
+version = 38  # 38: prose-only rewrite for concision; no topology, routing, or
+              #   limit change.
+              # 37: `reconcile` repoints `payload = "findings@11"` to `findings@13`.
               #   findings@11 added a conditional requiring `open_severity` on
-              #   every open cluster, enforced at the aggregate step; engine
-              #   rule V30 validates a declared aggregate-step schema against a
-              #   synthetic probe built only from that schema's own declared
-              #   fields plus the four keys `aggregate` always writes
-              #   (severity, members, held, operator_resolved), so the probe
-              #   never carries open_severity or prior_disposition and always
-              #   fails findings@11's conditional -- no if/else on an
-              #   aggregate-step schema can ever pass it, and findings@11
-              #   could never register. The check was also redundant:
-              #   findings-cluster@5 (synthesize's own payload) already
-              #   requires open_severity on every open cluster before
-              #   reconcile runs, and aggregate carries every non-severity key
-              #   of its input through to its output verbatim, so nothing
-              #   reconcile's schema checked was ever at risk of going
-              #   missing between the two steps. findings@13 is byte-identical
-              #   to findings@10 in every constraint, dropping only the
-              #   unenforceable conditional; open_severity keeps
-              #   ordered_enum: true, since this step's own threshold
-              #   predicates are ordered comparisons the engine defines only
-              #   over a field whose registered schema declares that order.
-              #   No topology or routing change.
+              #   every open cluster; engine rule V30 validates a declared
+              #   aggregate-step schema against a synthetic probe built only
+              #   from that schema's own declared fields plus the four keys
+              #   `aggregate` always writes (severity, members, held,
+              #   operator_resolved), so the probe never carries
+              #   open_severity or prior_disposition and always fails
+              #   findings@11's conditional -- no if/else on an aggregate-step
+              #   schema can ever pass it, and findings@11 could never
+              #   register. The check was also redundant: findings-cluster@5
+              #   (synthesize's own payload) already requires open_severity on
+              #   every open cluster before reconcile runs, and aggregate
+              #   carries every non-severity key of its input through to its
+              #   output verbatim. findings@13 is byte-identical to findings@10
+              #   in every constraint, dropping only the unenforceable
+              #   conditional; open_severity keeps ordered_enum: true, since
+              #   this step's own threshold predicates are ordered comparisons
+              #   the engine defines only over a field whose registered schema
+              #   declares that order. No topology or routing change.
               # 36: fixes a self-contradiction in the v33 comment, which called
               #   the workflow's vote gates both "three-seat" and, two lines
               #   later, "single-seat"; every vote step here seats three
               #   voters (confirmed against the step definitions below).
               #   `review` also repoints `payload = "findings@10"` to
-              #   `findings@12`: findings@10's own description incorrectly
-              #   still claimed reconcile-step usage, which reconcile moved
-              #   off in an earlier version; findings@12 corrects the
-              #   description to say review/design-qa only. Same shape,
-              #   byte-identical constraints. No topology, routing, or limit
-              #   change.
+              #   `findings@12`: the description incorrectly still claimed
+              #   reconcile-step usage, moved off in an earlier version;
+              #   findings@12 corrects it to say review/design-qa only. Same
+              #   shape, byte-identical constraints. No topology, routing, or
+              #   limit change.
               # 35: synthesize-findings declares `findings-cluster@5` and reconcile
               #   declares `findings@11`; both require `open_severity` on every open
               #   cluster (omitted only behind a settling ruling), so a payload that
@@ -62,14 +60,14 @@ version = 37  # 37: `reconcile` repoints `payload = "findings@11"` to `findings@
               #   security track already made a single dissent decisive by
               #   seating two, and `reconcile` protects a lone high finding
               #   with `method = "max"`; this is the doc-track equivalent. A
-              #   threshold is a post-approval routing check: the tally
-              #   math, `on_fail`, the loop bound (`max_fix_loops = 2` on
+              #   threshold is a post-approval routing check: the tally math,
+              #   `on_fail`, the loop bound (`max_fix_loops = 2` on
               #   `reconcile`, parking waiting-human when exceeded) and a
-              #   committed proposal's bypass are unchanged. `waiting-human`
-              #   was the alternative routing; a revise round won because
-              #   the loop bound already backstops it with the operator, as
-              #   a wrong single-seat reject on the three-seat gates costs
-              #   one round, never a park. No topology change.
+              #   committed proposal's bypass are unchanged. A revise round
+              #   won over the alternative, `waiting-human`, because the loop
+              #   bound already backstops it with the operator, as a wrong
+              #   single-seat reject on the three-seat gates costs one round,
+              #   never a park. No topology change.
               # 32: prose-only rewrite for concision; no topology, routing, or limit change.
               # 31: `lease_ttl` added to every `[limits]` entry, matched to
               #   that entry's `max_step_duration`, so a lease lasts exactly
@@ -119,20 +117,20 @@ version = 37  # 37: `reconcile` repoints `payload = "findings@11"` to `findings@
               #   and `revise-ux-spec` now read `accept-tribunal.vote-record`
               #   — the engine serves the same recorded proposal under the
               #   new step name — and `record.after` names the new name.
-              #   Same `vote_rule = "tribunal"`, same `on_fail = "fix-loop"`,
-              #   same `after = ["reconcile"]`, same `when`. (b) The
-              #   version-25 note below is corrected in place. It said the
-              #   judge-panel gate's three decisions on one issue were two
-              #   rejections that looped with no operator involvement and a
-              #   third that hit the loop bound. The store shows one
-              #   rejection at 3-0 that looped with no operator involvement,
-              #   one rejection at 2-1 (weighted 0.36) that hit the loop
-              #   bound, parked waiting-human, and was resolved `fix-round`
-              #   twelve minutes later, and one approval at 2-1 (weighted
-              #   0.63): two rejections, not three, and only one looped. The
-              #   note's mechanism claim, the loop bound as the human
-              #   backstop, stands. A registered version's bytes are frozen,
-              #   so the edited bytes are a new version.
+              #   Same `vote_rule = "tribunal"`, `on_fail = "fix-loop"`,
+              #   `after = ["reconcile"]` and `when`. (b) The version-25 note
+              #   below is corrected in place. It said the judge-panel gate's
+              #   three decisions on one issue were two rejections that
+              #   looped with no operator involvement and a third that hit
+              #   the loop bound. The store shows one rejection at 3-0 that
+              #   looped with no operator involvement, one rejection at 2-1
+              #   (weighted 0.36) that hit the loop bound, parked
+              #   waiting-human, and was resolved `fix-round` twelve minutes
+              #   later, and one approval at 2-1 (weighted 0.63): two
+              #   rejections, not three, and only one looped. The note's
+              #   mechanism claim, the loop bound as the human backstop,
+              #   stands. A registered version's bytes are frozen, so the
+              #   edited bytes are a new version.
               # 25: `accept-human` routes a rejection to `fix-loop` instead
               #   of `waiting-human`, matching `accept-vote-tdd` and
               #   `accept-vote-adr` in this file (same `after`, same re-entry
@@ -152,11 +150,11 @@ version = 37  # 37: `reconcile` repoints `payload = "findings@11"` to `findings@
               #   issue's loop, and when the next ordinal would exceed
               #   `max_fix_loops` (2, declared on `reconcile`; one counter
               #   per issue, shared with reconcile's blocker rounds) the
-              #   engine parks the vote step waiting-human with a reason
-              #   naming `docket step resolve --as fix-round`. Thin evidence,
-              #   stated as such; the change leans on the file's own two
-              #   sibling gates. Description no longer says "escalating to
-              #   the operator".
+              #   engine parks the vote step waiting-human, naming
+              #   `docket step resolve --as fix-round`. Thin evidence, stated
+              #   as such; the change leans on the file's own two sibling
+              #   gates. Description no longer says "escalating to the
+              #   operator".
               # 24: `blocked` joins unless_labels: a hold label so
               #   an issue not yet workable matches zero registered workflows
               #   until the label is removed.
@@ -195,7 +193,7 @@ version = 37  # 37: `reconcile` repoints `payload = "findings@11"` to `findings@
               #   ledger: two ux-spec, one tdd-security-alt); this closes it on
               #   design judgment, not measurement. It costs a whole lane pair
               #   because a step-level `when` admits only conjunctions — the
-              #   engine splits on ` and ` and knows no `or` — which is also
+              #   engine splits on ` and ` and knows no `or`, which is also
               #   why the `-alt` lane exists. `author-tdd` and `revise-tdd`
               #   add `labels != security-load-bearing` so the lanes stay
               #   disjoint. An engine issue asks for an any-of connective so

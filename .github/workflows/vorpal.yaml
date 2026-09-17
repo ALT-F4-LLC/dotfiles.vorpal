@@ -68,6 +68,8 @@ jobs:
 
       - run: bash tests/session-census-extract-retry-pipeline.test.sh
 
+      - run: bash tests/tighten-decide.test.sh
+
       - run: bash tests/tribunal-cast-error-surfaced.test.sh
 
       - run: bash tests/tribunal-seat-brief.test.sh

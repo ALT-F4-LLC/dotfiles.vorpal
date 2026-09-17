@@ -24,11 +24,12 @@
 #     the ruling falsifies it. A bare fragment ("with the sandbox lifted")
 #     survives a rewrite that keeps the words and reverses the meaning, so the
 #     literals are sentence-sized where the sentence is what rules.
-#   * The worktree-cleanup paragraph is section-sized (~400 words, four
-#     distinct rulings), so its three lift literals are asserted against the
-#     ONE SENTENCE that rules on the hard refusal, not against the paragraph.
-#     The `git branch -D` bound is a separate sentence and stays on the
-#     paragraph.
+#   * The worktree-cleanup paragraph is section-sized (~400 words, several
+#     distinct rulings), so its lift literals are asserted against the ONE
+#     SENTENCE that rules on the hard refusal, not against the paragraph.
+#   * The cherry-pick paragraph carries both the (a) cherry-pick-lift ruling
+#     and the (b) signing-refusal ruling; both are asserted against the same
+#     paragraph extract rather than two separate ones.
 #
 # (e) is an absence claim and is whole-file by nature: every SENTENCE that
 # names a sandbox lift must be one of the three pinned ruling sentences, so a
@@ -56,46 +57,39 @@
 #       s5 the census key matched against a string absent from the corpus,
 #          against a fixture with a brand-new unanchored lift paragraph —
 #          proven caught by the real census, proven missed by s5's copy
-#   (a) cherry-pick lift
+#   (a) cherry-pick lift (shares its paragraph with (b), signing)
 #       p-a reword the paragraph's anchor sentence, so no paragraph carries
 #          it — the census is pinned to the ruling SENTENCE, not the anchor,
 #          so p-a/p-b/p-c leave it green; only the paragraph() check reds
 #       a1 delete the "Operation not permitted" refusal from the paragraph
 #       a2 drop .claude/skills/** from the sentence naming the failing diff
-#       a3 delete "Verify the sha as always"
-#       a4 replace "this run's steps produced" with "look plausible"
-#       a5 delete "retry that pick with the sandbox lifted", leaving the
-#          paragraph with no ruling
-#   (b) signing, which must NOT be lifted around
-#       p-b reword the paragraph's anchor sentence
-#       b1 delete the "Couldn't load public key" refusal text
-#       b2 delete "need no lift for the signature"
+#       a3 delete "verify the sha and paths"
+#       a4 delete "then retry with the sandbox lifted", leaving the sentence
+#          with no ruling
+#   (b) signing, which must NOT be lifted around (same paragraph as (a))
+#       b1 delete the "missing `agent-signing.pub` key" refusal text
+#       b2 delete "tell the operator to run `just activate`"
 #       b3 invert the ruling to "DO lift the sandbox around it", keeping the
-#          words "do not lift the sandbox" elsewhere in the paragraph; this
-#          one reds b3's and b4's assertion (b4's literal contains b3's) AND
+#          words "lift the sandbox" elsewhere in the paragraph; this reds
 #          the census, since the mutated sentence still names a lift but no
 #          longer equals the pinned sentence
-#       b4 detach the remedy: end the `just activate` sentence before the
-#          ruling clause, which leaves b3's assertion green
 #   (c) worktree-remove lift
 #       p-c reword the paragraph's anchor sentence
-#       s-c repeat the "A hard ... from the remove" opener in a second
-#          sentence of the same paragraph, so no ONE sentence rules
-#       c1 delete the "A hard ... from the remove" sentence opener, which
+#       s-c repeat the "A hard `Operation not permitted` is sandbox-caused"
+#          opener in a second sentence of the same paragraph, so no ONE
+#          sentence rules
+#       c1 delete the "A hard ... is sandbox-caused" sentence opener, which
 #          leaves no sentence to rule; s-c and c1 are the two directions of
 #          the same guard
-#       c2 widen the single-call scope: replace "with its paired common-dir
-#          write" with "with its paired writes"
+#       c2 delete "never extending the lift to `git branch -D`"
 #       c3 invert the ruling to "WITHOUT lifting the sandbox", keeping "with
 #          the sandbox lifted" elsewhere in the paragraph; also reds the
 #          census, since the mutated sentence names a lift but no longer
 #          equals the pinned sentence
-#       c4 delete the "The lift never extends to the git branch -D" bound
 #   (d) module-cache unsandboxed retry
 #       p-d reword the paragraph's anchor sentence
-#       d1 delete "the unsandboxed retry is the sanctioned path"
-#       d2 delete the conductor-only bound ("that retry existing HERE and not
-#          in executors")
+#       d1 delete "the unsandboxed retry is sanctioned here because it fills
+#          the shared cache every executor reads"
 #   (e) lift census
 #       e1 insert a new paragraph granting an unconditioned lift
 #       e2 insert the same unconditioned-lift sentence INSIDE one of the
@@ -203,7 +197,7 @@ if [ -z "${DOCKET_RUN_SKILL_INNER:-}" ]; then
         bad "self-check: the repository's own skill file is missing: ${REPO_SKILL}"
     else
         cp "$REPO_SKILL" "${WORK}/self-clean.md"
-        sed 's/need no lift for the signature/[ruling deleted]/' \
+        sed 's/Never lift the sandbox around this or inspect/[ruling deleted] or inspect/' \
             "${WORK}/self-clean.md" > "${WORK}/self-broken.md"
 
         if cmp -s "${WORK}/self-clean.md" "${WORK}/self-broken.md"; then
@@ -243,13 +237,15 @@ if [ -z "${DOCKET_RUN_SKILL_INNER:-}" ]; then
                  s/grep -F -- "\$1" "\${WORK}\/flat" > "\$2"$/cp "${WORK}\/flat" "$2"/
              }' "$SELF" > "${WORK}/degraded-paragraph.sh"
 
-        # Fixture: delete "Verify the sha as always..." from its own
-        # cherry-pick paragraph and reinsert the bare literal, unrelated, next
-        # to a DIFFERENT anchored paragraph (module cache). paragraph()'s
-        # exact extract no longer carries it; a whole-file "extract" still
-        # does.
-        sed "s/Verify the sha as always AND that the touched \`.claude\/skills\` paths are ones/Confirm the touched \`.claude\/skills\` paths are ones/;
-             s/\*\*Warm the Go module cache before dispatching into a Go repo\.\*\*/Verify the sha as always, a wholly unrelated aside about repository hygiene.\n\n**Warm the Go module cache before dispatching into a Go repo.**/" \
+        # Fixture: delete "verify the sha and paths..." from its own
+        # cherry-pick/signing paragraph and reinsert the bare literal,
+        # unrelated, next to a DIFFERENT anchored paragraph (module cache).
+        # paragraph()'s exact extract no longer carries it; a whole-file
+        # "extract" still does. The reinserted text is the verbatim admitted
+        # census sentence (not a paraphrase), so this fixture isolates the
+        # paragraph() defect alone without also tripping the census.
+        sed "s/the unlink; verify the sha and paths, then retry with the sandbox lifted\\./the unlink./;
+             s/\*\*Warm the Go module cache before dispatching into a Go repo\.\*\*/A wholly unrelated aside about repository hygiene: verify the sha and paths, then retry with the sandbox lifted.\n\n**Warm the Go module cache before dispatching into a Go repo.**/" \
             "${WORK}/self-clean.md" > "${WORK}/paragraph-mutant.md"
 
         if cmp -s "${WORK}/self-clean.md" "${WORK}/paragraph-mutant.md"; then
@@ -273,28 +269,20 @@ if [ -z "${DOCKET_RUN_SKILL_INNER:-}" ]; then
             { print }
         ' "$SELF" > "${WORK}/degraded-sentences.sh"
 
-        # Fixture: invert the worktree-remove ruling sentence to "WITHOUT
-        # lifting the sandbox", then reintroduce the untouched literal "and
-        # nothing else, with the sandbox lifted" as a LATER sentence in the
-        # SAME paragraph. sentence() finds exactly one sentence carrying the
-        # anchor, which no longer states the ruling; sentences() degraded to
-        # identity treats the paragraph as one sentence, so the reintroduced
-        # literal still counts as "in" the anchor sentence and passes.
-        awk '
-            BEGIN { done = 0 }
-            {
-                if (!done && $0 == "paired common-dir write and nothing else, with the sandbox lifted instead of") {
-                    print "paired common-dir write and nothing else, WITHOUT lifting the sandbox instead of"
-                    getline nxt; print nxt
-                    getline nxt; print nxt
-                    print "Retry that ONE call, the `git worktree remove` with its paired common-dir"
-                    print "write and nothing else, with the sandbox lifted."
-                    done = 1
-                    next
-                }
-                print
-            }
-        ' "${WORK}/self-clean.md" > "${WORK}/sentences-mutant.md"
+        # Fixture: invert the worktree-remove ruling sentence to "do NOT
+        # retry", then reintroduce the untouched literal "retry that one call
+        # with the sandbox lifted, never extending the lift to `git branch
+        # -D`" as a LATER sentence in the SAME paragraph. sentence() finds
+        # exactly one sentence carrying the anchor ("A hard `Operation not
+        # permitted` is sandbox-caused"), which after inversion no longer
+        # states the ruling; sentences() degraded to identity treats the
+        # whole paragraph as one "sentence", so the reintroduced literal
+        # still counts as "in" the anchor sentence and both pinned states()
+        # checks pass regardless of the inversion. The prose wraps mid-clause
+        # in the source, so the pattern tolerates `\s+` wherever the file may
+        # break a line.
+        perl -0pe 's/(A hard `Operation not permitted` is\s+sandbox-caused \(the common-dir write sits outside the write allowlist\):\s+)retry that one call with the sandbox lifted, never extending the lift to\s+`git branch -D`\.(\s+At run close)/$1do NOT retry that one call, and never lift the sandbox for it, contradicting the real ruling below. At run close, before sweeping, note: retry that one call with the sandbox lifted, never extending the lift to `git branch -D`.$2/s' \
+            "${WORK}/self-clean.md" > "${WORK}/sentences-mutant.md"
 
         if cmp -s "${WORK}/self-clean.md" "${WORK}/sentences-mutant.md"; then
             bad "self-check: the sentences() fixture's mutation did not apply — proves nothing"
@@ -333,71 +321,64 @@ if [ -z "${DOCKET_RUN_SKILL_INNER:-}" ]; then
         fi
     fi
 fi
-# (a) The cherry-pick lift is conditioned on verifying the sha and on the
-# touched skill paths being this run's own output.
-if paragraph 'A cherry-pick whose diff touches' "${WORK}/pick"; then
-    ok "cherry-pick lift: exactly one paragraph rules on the skills-path pick"
+# (a) The cherry-pick lift is conditioned on verifying the sha and paths, and
+# a signing failure in the same paragraph must never be answered with a lift.
+if paragraph 'A cherry-pick touching `.claude/skills/**` can fail under the sandbox' "${WORK}/pick"; then
+    ok "cherry-pick lift: exactly one paragraph rules on the skills-path pick and signing"
     states "cherry-pick lift: states the refusal it answers" \
-        "${WORK}/pick" 'Operation not permitted'
+        "${WORK}/pick" 'fail under the sandbox on the unlink'
     states "cherry-pick lift: names the diff that provokes it" \
         "${WORK}/pick" '.claude/skills/**'
-    states "cherry-pick lift: precondition — the sha is verified" \
-        "${WORK}/pick" 'Verify the sha as always'
-    states "cherry-pick lift: precondition — the paths are this run's output" \
-        "${WORK}/pick" "this run's steps produced"
+    states "cherry-pick lift: precondition — the sha and paths are verified" \
+        "${WORK}/pick" 'verify the sha and paths'
     states "cherry-pick lift: the ruling is to retry the pick lifted" \
-        "${WORK}/pick" 'retry that pick with the sandbox lifted'
+        "${WORK}/pick" 'then retry with the sandbox lifted'
 else
-    bad "cherry-pick lift: no single paragraph carries 'A cherry-pick whose diff touches'"
+    bad "cherry-pick lift: no single paragraph carries 'A cherry-pick touching \`.claude/skills/**\` can fail under the sandbox'"
 fi
 
 # (b) Signing needs no lift, and a signing failure must never be answered with
-# one: this paragraph is the refusal, not a grant. The ruling literals carry
-# their own sentence, so an inversion that keeps the words is red.
-if paragraph 'A signed pick or commit signs INSIDE the sandbox' "${WORK}/signing"; then
+# one: this is a refusal, not a grant. The ruling literal carries its own
+# sentence, so an inversion that keeps the words is red.
+if paragraph 'A cherry-pick touching `.claude/skills/**` can fail under the sandbox' "${WORK}/signing"; then
     ok "signing: exactly one paragraph rules on the signing failure"
     states "signing: states the refusal it answers" \
-        "${WORK}/signing" "Couldn't load public key"
-    states "signing: signing itself needs no lift" \
-        "${WORK}/signing" 'need no lift for the signature'
-    states "signing: lifting around the failure is forbidden" \
-        "${WORK}/signing" 'do not lift the sandbox around it'
+        "${WORK}/signing" "missing \`agent-signing.pub\` key"
     states "signing: precondition — the operator's just activate is the fix" \
-        "${WORK}/signing" 'tell the operator to run `just activate`; do not lift the sandbox around it'
+        "${WORK}/signing" 'tell the operator to'
+    states "signing: lifting around the failure is forbidden" \
+        "${WORK}/signing" 'Never lift the sandbox around this'
 else
-    bad "signing: no single paragraph carries 'A signed pick or commit signs INSIDE the sandbox'"
+    bad "signing: no single paragraph carries 'A cherry-pick touching \`.claude/skills/**\` can fail under the sandbox'"
 fi
 
 # (c) The worktree-remove lift is scoped to that one call, and stops short of
 # `git branch -D`. The paragraph is the whole worktree-cleanup block and rules
-# on four separate things, so the lift literals are asserted against the one
+# on several separate things, so the lift literals are asserted against the one
 # sentence that rules on the hard refusal.
-if paragraph 'Worktrees clean themselves up ONLY when UNCHANGED' "${WORK}/worktree"; then
+if paragraph 'Worktrees clean themselves up only when unchanged' "${WORK}/worktree"; then
     ok "worktree-remove lift: exactly one paragraph rules on the remove"
-    if sentence 'A hard `Operation not permitted` from the remove' \
+    if sentence 'A hard `Operation not permitted` is sandbox-caused' \
         "${WORK}/worktree" "${WORK}/worktree-ruling"; then
         ok "worktree-remove lift: exactly one sentence states the refusal it answers"
         states "worktree-remove lift: precondition — single-call scope" \
-            "${WORK}/worktree-ruling" 'retry that ONE call, the `git worktree remove` with its paired common-dir write and nothing else'
-        states "worktree-remove lift: the ruling is to retry that call lifted" \
-            "${WORK}/worktree-ruling" 'and nothing else, with the sandbox lifted'
+            "${WORK}/worktree-ruling" 'retry that one call with the sandbox lifted'
+        states "worktree-remove lift: the lift stops short of git branch -D" \
+            "${WORK}/worktree-ruling" 'never extending the lift to `git branch -D`'
     else
-        bad "worktree-remove lift: no single sentence carries 'A hard \`Operation not permitted\` from the remove'"
+        bad "worktree-remove lift: no single sentence carries 'A hard \`Operation not permitted\` is sandbox-caused'"
     fi
-    states "worktree-remove lift: the lift stops short of git branch -D" \
-        "${WORK}/worktree" 'The lift never extends to the `git branch -D`'
 else
-    bad "worktree-remove lift: no single paragraph carries 'Worktrees clean themselves up ONLY when UNCHANGED'"
+    bad "worktree-remove lift: no single paragraph carries 'Worktrees clean themselves up only when unchanged'"
 fi
 
 # (d) The module-cache retry is the fourth relaxation ruling in the file, and
-# the only one granted to the conductor alone.
+# the only one granted to the conductor alone (dispatched before any executor
+# exists, so no executor-side equivalent could apply).
 if paragraph 'Warm the Go module cache before dispatching into a Go repo' "${WORK}/modcache"; then
     ok "module cache: exactly one paragraph rules on warming the cache"
-    states "module cache: the unsandboxed retry is the sanctioned path" \
-        "${WORK}/modcache" 'the unsandboxed retry is the sanctioned path when the sandboxed attempt hits the wall'
-    states "module cache: the retry is the conductor's, not an executor's" \
-        "${WORK}/modcache" 'that retry existing HERE and not in executors'
+    states "module cache: the unsandboxed retry is sanctioned here" \
+        "${WORK}/modcache" 'the unsandboxed retry is sanctioned here because it fills the shared cache every executor reads'
 else
     bad "module cache: no single paragraph carries 'Warm the Go module cache before dispatching into a Go repo'"
 fi
@@ -418,9 +399,9 @@ while IFS= read -r sent; do
         *) continue ;;
     esac
     case "$sent" in
-        *'retry that pick with the sandbox lifted'*) ;;
-        *'do not lift the sandbox around it'*) ;;
-        *'and nothing else, with the sandbox lifted'*) ;;
+        *'then retry with the sandbox lifted.'*) ;;
+        *'Never lift the sandbox around this or inspect'*) ;;
+        *'retry that one call with the sandbox lifted, never extending the lift'*) ;;
         *)
             bad "lift census: an unpinned sentence rules on a sandbox lift: ${sent:0:140}"
             census=1

@@ -269,6 +269,9 @@ worker never touches, and what looks like cruft and is not.
   tree for a second implementer before collapsing.
 - Proof: `probe` at the call sites that change type.
 - Source: https://www.symphonious.net/2011/06/18/the-single-implementation-fallacy/;
+  https://mortoray.com/the-false-abstraction-antipattern/ names a
+  single implementation suffixed "Impl" against an interface suffixed
+  "Interface" as an explicit warning sign of the same pattern;
   https://managed-code.com/blog-post/ai-slop-in-code names interfaces with
   one implementation as a generated-code pattern.
 
@@ -293,7 +296,10 @@ worker never touches, and what looks like cruft and is not.
 - Risk: none when every field is required and unvalidated; otherwise the
   builder is doing work and stays.
 - Proof: `probe`.
-- Source: unsourced.
+- Source: unsourced for this specific construction pattern;
+  https://mortoray.com/the-false-abstraction-antipattern/ argues the
+  general case (an interface, base class, or adaptor introduced without
+  the complexity that would justify it) by analogy, not by name.
 
 ### Injected dependency with one binding
 - Signal: a constructor parameter or container binding for which the tree
@@ -319,8 +325,13 @@ worker never touches, and what looks like cruft and is not.
   runtime stays, because an external setter is unobservable from the tree.
 - Proof: `reachability` for the removed read path, plus `probe` at the
   site that consumed it.
-- Source: unsourced; an application of Speculative Generality,
-  https://sourcemaking.com/refactoring/smells.
+- Source: an application of Speculative Generality,
+  https://sourcemaking.com/refactoring/smells, and of YAGNI,
+  https://martinfowler.com/bliki/Yagni.html (Fowler's own bliki entry) and
+  https://google.github.io/eng-practices/review/reviewer/looking-for.html
+  (Google's reviewer guide names over-engineering by name and instructs
+  building for the problem known now, not a speculative later one); no
+  source names a constant-valued config field specifically.
 
 ### Lazy class
 - Signal: a class or module with one field, one trivial method, or only
@@ -415,7 +426,11 @@ worker never touches, and what looks like cruft and is not.
 - Source: https://refactoring.com/catalog/ (Extract Function,
   Parameterize Function);
   https://sandimetz.com/blog/2016/1/20/the-wrong-abstraction;
-  https://understandlegacycode.com/blog/refactoring-rule-of-three/.
+  https://understandlegacycode.com/blog/refactoring-rule-of-three/;
+  https://caseymuratori.com/blog_0015 (Semantic Compression: the same
+  wait-for-real-duplication gate from a different angle, write the
+  concrete cases first and extract only once genuine duplication is
+  visible).
 
 ### Repeated compound condition
 - Signal: the same boolean expression of three or more operators in more

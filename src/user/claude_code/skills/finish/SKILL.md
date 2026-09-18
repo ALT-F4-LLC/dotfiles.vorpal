@@ -27,11 +27,11 @@ hands the run to `pause` and continues sweeping everything else.
 
 ## Ownership: stop only what this session owns
 
-**This session's own record of what it created is the proof of
-ownership** — the agent or task id returned when you spawned it, the cron
-id returned when you created it, the watch you opened, the `wfId` and
-`worktree-wf_<id>-*` branches of a wave you launched. That record lives in
-this conversation; work from it.
+Every stop below is bounded by one rule. **This session's own record of what
+it created is the proof of ownership** — the agent or task id returned when
+you spawned it, the cron id returned when you created it, the watch you
+opened, the `wfId` and `worktree-wf_<id>-*` branches of a wave you launched.
+That record lives in this conversation. Work from it.
 
 `ListAgents` and `CronList` show more than this session's own, and neither
 tags an entry with the session that created it. They are a cross-check
@@ -51,10 +51,9 @@ If this session is driving a Docket run, do this before anything else, so
 the rest of the sweep happens against a settled run.
 
 Invoke `/pause` for the run and let it complete its own procedure. **Finish
-never halts a run itself**: it issues no `run pause`, no `dispatch close`,
-and never `dispatch abandon` (that verb discards live work unconditionally
-and belongs to pause's hard halt alone). Do not re-derive pause's steps
-here.
+never halts a run itself** — it issues no `run pause`, no `dispatch close`,
+and never `dispatch abandon`; that verb discards live work unconditionally
+and belongs to pause's hard halt alone. Do not re-derive pause's steps here.
 
 Then continue the sweep. Pause winds down a live `shadow-live` in both
 halt modes, so once it returns, the shadow row below is already handled:

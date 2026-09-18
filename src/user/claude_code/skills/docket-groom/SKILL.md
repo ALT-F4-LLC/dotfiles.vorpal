@@ -117,7 +117,7 @@ the invoking checkout with `docket issue list --project <name>` when
 `docket project list --json`, run there, lists a row whose identity path
 names the docket checkout; that row's identity, never its prefix,
 establishes which project it is, and `docket doctor` is not a survey
-command, since it registers a project row as a side effect. When no such
+command, since older engines register a project row through it. When no such
 row exists, report the count-only survey as unavailable in §5 and
 continue. Judging always needs the checkout, since judges read engine
 source. Follow [Docket's context rules](../docket/SKILL.md#establish-context)

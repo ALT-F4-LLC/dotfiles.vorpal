@@ -41,14 +41,12 @@ tests:
 # The suites that pin exact skill sentences: a ruling, a trailer name, a
 # halting verb, a mutant rule. A prose pass runs this after every landing so
 # a reworded ruling fails here, in the pass that reworded it, not on the pull
-# request. Every suite here also runs under `tests`.
+# request. Every suite here also runs under `tests`. One recipe line rather
+# than a shebang body: a shebang recipe needs a temp directory just cannot
+# always create in a sandboxed session, and a gate that errors before it
+# judges reads as green to the pass that runs it.
 prose-gates:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    for suite in tests/*-skill.test.sh tests/*-attribution.test.sh tests/mutant-rule-crossref.test.sh; do
-        echo "==> $suite"
-        bash "$suite"
-    done
+    for suite in tests/*-skill.test.sh tests/*-attribution.test.sh tests/mutant-rule-crossref.test.sh; do echo "==> $suite"; bash "$suite" || exit 1; done
 
 self-hygiene:
     cargo fmt --all -- --check

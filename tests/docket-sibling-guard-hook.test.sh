@@ -115,18 +115,23 @@ verdict_of() {
 }
 
 # build_input <command> <agent_type or ""> <transcript_path or "">
+#
+# The command travels on jq's stdin (-Rs), never as a --arg: an argument is
+# one argv string, and Linux caps a single argument at 128 KiB, so a 300 KiB
+# command passed by --arg makes jq fail and the builder emit nothing, which
+# the hook then reads as an empty payload and allows.
 build_input() {
     local cmd="$1" agent="${2:-}" transcript="${3:-}"
-    jq -nc --arg c "$cmd" --arg a "$agent" --arg t "$transcript" '
-        {tool_name:"Bash", tool_input:{command:$c}}
+    printf '%s' "$cmd" | jq -Rsc --arg a "$agent" --arg t "$transcript" '
+        {tool_name:"Bash", tool_input:{command:.}}
         | if $a != "" then .agent_type = $a else . end
         | if $t != "" then .transcript_path = $t else . end'
 }
 
 # build_sub_input <command> <agent_type> <agent_id> <session_id> <transcript_path>
 build_sub_input() {
-    jq -nc --arg c "$1" --arg a "$2" --arg id "$3" --arg s "$4" --arg t "$5" '
-        {tool_name:"Bash", tool_input:{command:$c}, agent_id:$id, session_id:$s, transcript_path:$t}
+    printf '%s' "$1" | jq -Rsc --arg a "$2" --arg id "$3" --arg s "$4" --arg t "$5" '
+        {tool_name:"Bash", tool_input:{command:.}, agent_id:$id, session_id:$s, transcript_path:$t}
         | if $a != "" then .agent_type = $a else . end'
 }
 

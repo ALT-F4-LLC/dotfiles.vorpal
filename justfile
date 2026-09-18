@@ -38,6 +38,18 @@ tests:
         bash "$suite"
     done
 
+# The suites that pin exact skill sentences: a ruling, a trailer name, a
+# halting verb, a mutant rule. A prose pass runs this after every landing so
+# a reworded ruling fails here, in the pass that reworded it, not on the pull
+# request. Every suite here also runs under `tests`.
+prose-gates:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for suite in tests/*-skill.test.sh tests/*-attribution.test.sh tests/mutant-rule-crossref.test.sh; do
+        echo "==> $suite"
+        bash "$suite"
+    done
+
 self-hygiene:
     cargo fmt --all -- --check
     cargo clippy --locked --offline --all-targets -- -D warnings

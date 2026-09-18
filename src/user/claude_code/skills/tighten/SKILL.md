@@ -65,10 +65,11 @@ and candidate, and rejects a candidate where any differs. Never run
    and stop if any target is modified or staged: a pass lands as one
    commit, and pre-existing edits would be swept into it or lost by the
    revert in §3. Report the dirty paths instead.
-3. Record the gate's baseline. Run `just crossref-check` from the
-   repository root and keep its failure lines, if any. Failures already
-   present before the pass belong to other work; §3 compares against this
-   list so the pass is charged only for what it introduced.
+3. Record the gates' baseline. Run `just crossref-check` and
+   `just prose-gates` from the repository root and keep their failure
+   lines, if any. Failures already present before the pass belong to
+   other work; §3 compares against this list so the pass is charged only
+   for what it introduced.
 4. Choose a scratch directory under `$TMPDIR`, empty and unique to this
    pass, for candidate files (for example
    `$TMPDIR/tighten/pass-<n>`, incrementing `<n>` from earlier passes in
@@ -111,16 +112,20 @@ the order returned:
 cp "<candidate>" "<file>"
 ```
 
-Then run `just crossref-check` from the repository root and compare its
-failure lines with the baseline from §1. A line absent from the baseline
-that names a landed file is this pass's breakage (a dead anchor, a renamed
-reference the mechanical check could not see). Revert that file to its
+Then run `just crossref-check` and `just prose-gates` from the repository
+root and compare their failure lines with the baseline from §1. A line
+absent from the baseline that names a landed file, or the skill it
+belongs to, is this pass's breakage: a dead anchor, a renamed reference
+the mechanical check could not see, or a sentence a guard suite pins
+verbatim, which no rewording may touch. Revert that file to its
 committed state with `git checkout -- <file>`, drop it from the accepted
-list with the failure line as its reason, and rerun the gate. At most two
+list with the failure line as its reason, and rerun the gates. At most two
 rounds; if new failures remain, revert every file this pass landed,
 report the failure lines, and stop. Baseline failures, and new failures
 naming files this pass did not land, are reported and never acted on;
-the revert touches only files this pass landed.
+the revert touches only files this pass landed. A pinned sentence changes
+only in a commit that re-anchors its test in the same change, which is
+never this skill's.
 
 Nothing accepted, or everything reverted, means the pass landed nothing.
 Skip §4 and go to §5.

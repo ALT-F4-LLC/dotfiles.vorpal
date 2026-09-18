@@ -167,12 +167,15 @@ bash tests/contract-cluster-keys.test.sh
 bash tests/frozen-drift-check.test.sh
 bash tests/crossref-check.test.sh
 just doc-validate
-bash tests/mutant-rule-crossref.test.sh
+just prose-gates
 bash tests/ci-suite-wiring.test.sh
 ```
 
 A failure here means a fix was wrong or incomplete, not a stale suite.
-Diagnose and correct before reporting completion.
+Diagnose and correct before reporting completion. A `prose-gates` failure
+means a fix reworded a sentence a suite pins verbatim: restore that
+sentence, or re-anchor the pin in the same batch when the rewording was
+the confirmed fix.
 
 ## 6. Report
 

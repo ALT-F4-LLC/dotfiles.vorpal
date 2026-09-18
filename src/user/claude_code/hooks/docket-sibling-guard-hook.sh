@@ -516,6 +516,69 @@ if [[ "$FIRST_LINES" =~ $INTERPRETER_RE ]]; then
 fi
 
 SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v RS='\036' -v widen="$WIDEN" '
+    # Drops every balanced arithmetic span from a line: $((...)), ((...))
+    # and $[...]. A shift operator inside one is never a heredoc operator.
+    # An unbalanced opener is kept verbatim with everything after it, so
+    # the heredoc scan still reads any << there and errs toward widening.
+    function strip_arith(s,   out, i, n, c, depth, start) {
+        out = ""
+        i = 1
+        n = length(s)
+        while (i <= n) {
+            c = substr(s, i, 1)
+            if (substr(s, i, 3) == "$((" || substr(s, i, 2) == "((") {
+                start = i
+                i += (c == "$") ? 3 : 2
+                depth = 2
+                while (i <= n && depth > 0) {
+                    c = substr(s, i, 1)
+                    if (c == "(") depth++
+                    else if (c == ")") depth--
+                    i++
+                }
+                if (depth > 0) return out substr(s, start)
+                continue
+            }
+            if (substr(s, i, 2) == "$[") {
+                start = i
+                i += 2
+                depth = 1
+                while (i <= n && depth > 0) {
+                    c = substr(s, i, 1)
+                    if (c == "[") depth++
+                    else if (c == "]") depth--
+                    i++
+                }
+                if (depth > 0) return out substr(s, start)
+                continue
+            }
+            out = out c
+            i++
+        }
+        return out
+    }
+    # True when any heredoc operator on the line has an unquoted delimiter.
+    # Checked per operator rather than per line: a quoted delimiter must not
+    # mask an unquoted one beside it, whose body bash expands before any
+    # consumer sees it. A here-string (<<<) is skipped as one unit. After <<
+    # come an optional dash and blanks, then the delimiter: a quote or a
+    # backslash there means quoted; anything else, end of line included,
+    # means unquoted.
+    function unquoted_heredoc(s,   rest, p, after, c) {
+        rest = s
+        while ((p = index(rest, "<<")) > 0) {
+            after = substr(rest, p + 2)
+            if (substr(after, 1, 1) == "<") {
+                rest = substr(after, 2)
+                continue
+            }
+            sub(/^-?[ \t]*/, "", after)
+            c = substr(after, 1, 1)
+            if (c != "\047" && c != "\042" && c != "\\") return 1
+            rest = after
+        }
+        return 0
+    }
     BEGIN { out = "" }
     {
         leaf = $0
@@ -523,7 +586,11 @@ SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v RS='\036' -v widen="$WIDEN" '
         eol = index(leaf, "\n")
         line1 = (eol == 0 ? leaf : substr(leaf, 1, eol - 1))
         leaf_widen = (widen == "1")
-        if (!leaf_widen && line1 ~ /<</ && line1 !~ /<<-?[ \t]*[\x27\x22\\]/) {
+        # An unquoted heredoc delimiter on this leafs own first line, judged
+        # per operator by unquoted_heredoc above so that a quoted delimiter
+        # never masks an unquoted one on the same line, and with arithmetic
+        # shifts stripped first.
+        if (!leaf_widen && index(line1, "<<") > 0 && unquoted_heredoc(strip_arith(line1))) {
             leaf_widen = 1
         }
         if (leaf_widen) {

@@ -109,17 +109,25 @@ The engine checkout normally lives at `.../github.com/ALT-F4-LLC/docket.git/main
 beside this dotfiles repository, but that worktree may not be present in
 every environment. Confirm its location and project/store identity using
 the checkout and supported read-only CLI inspection; do not infer
-ownership from an issue prefix. If the checkout does not resolve, report
-the engine-project survey as unavailable rather than proceeding from
-memory: that stops the pass when the engine project is in the judged
-scope, and is reported in §5 without stopping the pass when its survey is
-count-only. Follow [Docket's context rules](../docket/SKILL.md#establish-context)
+ownership from an issue prefix. If the checkout does not resolve while the
+engine project is in the judged scope, report the engine-project survey as
+unavailable rather than proceeding from memory, and stop the pass. If it
+does not resolve and the engine survey is count-only, take the counts from
+the invoking checkout with `docket issue list --project <name>` when
+`docket project list --json`, run there, lists a row whose identity path
+names the docket checkout; that row's identity, never its prefix,
+establishes which project it is, and `docket doctor` is not a survey
+command, since it registers a project row as a side effect. When no such
+row exists, report the count-only survey as unavailable in §5 and
+continue. Judging always needs the checkout, since judges read engine
+source. Follow [Docket's context rules](../docket/SKILL.md#establish-context)
 for store resolution. Do not initialize a store or bind a project during
 grooming.
 
 Run these commands from each project's own checkout; a count-only engine
-survey needs only the first, since run inclusion protects edits it never
-makes:
+survey needs only the first, from the engine checkout or, as above, from
+the invoking checkout with `--project`, since run inclusion protects edits
+it never makes:
 
 ```bash
 docket issue list --json=v2 --limit 1000 -s backlog -s todo -s in-progress -s review

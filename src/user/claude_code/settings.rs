@@ -39,10 +39,17 @@ pub struct Permissions {
     pub additional_directories: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default_mode: Option<String>,
+    /// The string `"disable"`; any other value is not documented.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub disable_bypass_permissions_mode: Option<String>,
+    /// Refuse Read, Grep, Glob, and LSP outside the working directories in
+    /// every permission mode. A `true` from any settings source applies.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub skip_dangerous_mode_permission_prompt: Option<bool>,
+    pub block_reads_outside_working_directories: Option<bool>,
+    /// The string `"disable"`. The same key is also accepted at the top
+    /// level; see [`ClaudeCodeSettings::with_disable_auto_mode`].
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub disable_auto_mode: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -152,8 +159,17 @@ pub struct SandboxCredentialSigv4 {
 pub struct Spellcheck {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enabled: Option<bool>,
+    /// `"aspell"`, `"hunspell"`, `"ispell"`, or `"auto"` (the default, the
+    /// first of the three found on `PATH`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub checker: Option<String>,
+    /// Passed to the checker as its dictionary name.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
+    /// Underline color: a terminal color name, `#rrggbb`, `rgb(r,g,b)`, or
+    /// `ansi256(n)`. Defaults to the theme's error color.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
 }
 
 /// One footer badge rule: a regex over turn output plus a URL template whose
@@ -253,8 +269,10 @@ pub struct Sandbox {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ripgrep: Option<SandboxRipgrep>,
     /// Silence violation reports for paths a command is expected to probe.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub ignore_violations: Vec<String>,
+    /// Keyed by a command substring; each value lists violation substrings,
+    /// usually paths.
+    #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
+    pub ignore_violations: BTreeMap<String, Vec<String>>,
 }
 
 /// A `ripgrep` binary the sandbox should use instead of the bundled one.
@@ -267,6 +285,7 @@ pub struct SandboxRipgrep {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct Attribution {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub commit: Option<String>,
@@ -282,21 +301,34 @@ pub struct Attribution {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct McpServerRule {
+    /// Set exactly one of the three keys per rule.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub server_name: Option<String>,
+    /// The command and its arguments, matched exactly.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub server_command: Option<String>,
+    pub server_command: Option<Vec<String>>,
+    /// A URL pattern with `*` wildcards.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub server_url: Option<String>,
 }
 
+/// A command-rendered status line. `subagentStatusLine` documents only
+/// `type` and `command`; the optional fields apply to `statusLine`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct StatusLine {
     #[serde(rename = "type")]
     pub status_type: String,
     pub command: String,
+    /// Horizontal spacing in characters.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub padding: Option<u32>,
+    /// Re-run the command every this many seconds, minimum `1`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub refresh_interval: Option<u32>,
+    /// Hide the built-in vim mode indicator when the script renders its own.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hide_vim_mode_indicator: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -327,8 +359,17 @@ pub struct Voice {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct SpinnerTipsOverride {
+    /// Each entry is a plain string or an object with `id`, `text`, and
+    /// optional `cooldownSessions` and `priority`. Project and local
+    /// settings contribute plain strings only.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub tips: Vec<String>,
+    pub tips: Vec<Value>,
+    /// Absolute or `~/` path to a JSON file of the same entries (v2.1.247+).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tips_file: Option<String>,
+    /// Prefix shown before these tips, up to 40 characters; default `Tip`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub exclude_default: Option<bool>,
 }
@@ -368,12 +409,18 @@ pub struct AutoMode {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Worktree {
+    /// `"fresh"` (the default) or `"head"`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub base_ref: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub symlink_directories: Vec<String>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub sparse_paths: Vec<String>,
+    /// `"worktree"` (the default) blocks Edit and Write in the main checkout
+    /// until a background session calls `EnterWorktree`; `"none"` lets
+    /// background jobs edit the working copy directly.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bg_isolation: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -386,8 +433,6 @@ pub struct SshConfig {
     pub ssh_port: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ssh_identity_file: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub start_directory: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -559,10 +604,6 @@ pub struct ClaudeCodeSettings {
     allowed_channel_plugins: Vec<ChannelPlugin>,
 
     // ---- Skills ----
-    /// Deprecated by upstream, absent from current docs — use
-    /// [`skill_listing_max_desc_chars`] instead.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    max_skill_description_chars: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     skill_listing_budget_fraction: Option<f64>,
     #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
@@ -667,8 +708,7 @@ pub struct ClaudeCodeSettings {
     // Keys documented for Claude Code 2.1.236 that this builder could not
     // previously express. Every one is Option/Vec and skipped when empty, so
     // adding them changes no emitted settings file until something sets one.
-    // `ultracode` is deliberately absent — the docs state it is not read from
-    // settings.json — as is `teammateDefaultModel`, removed in v2.1.234.
+    // `teammateDefaultModel` is absent: removed in v2.1.234.
     // ================================================================
 
     // ---- Models and sessions ----
@@ -695,13 +735,9 @@ pub struct ClaudeCodeSettings {
     #[serde(skip_serializing_if = "Option::is_none")]
     respond_to_bash_commands: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    permission_explainer_enabled: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     prompt_suggestion_enabled: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     emoji_completion_enabled: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    external_editor_context: Option<bool>,
     #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
     vim_insert_mode_remaps: BTreeMap<String, String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -739,14 +775,6 @@ pub struct ClaudeCodeSettings {
     /// Deprecated by upstream — use [`enable_artifact`] instead.
     #[serde(skip_serializing_if = "Option::is_none")]
     disable_artifact: Option<bool>,
-
-    // ---- IDE ----
-    #[serde(skip_serializing_if = "Option::is_none")]
-    auto_connect_ide: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    auto_install_ide_extension: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    diff_tool: Option<String>,
 
     // ---- Remote control, notifications, cross-session ----
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -792,15 +820,11 @@ pub struct ClaudeCodeSettings {
     force_login_gateway_url: Option<String>,
 
     // ================================================================
-    // Keys documented on the latest published settings reference
-    // (code.claude.com/docs/en/settings-reference) that
-    // this builder could not previously express. Every one is Option/Vec/
-    // BTreeMap and skipped when empty, so adding them changes no emitted
-    // settings file until something sets one. Coverage note: the reference
-    // page's key index could be fetched and cross-verified in full only for
-    // keys alphabetically up to `teammateDefaultModel`; repeated fetches of
-    // the tail (keys sorting after it) returned mutually contradictory
-    // results and were treated as unreliable rather than transcribed here.
+    // Keys documented on the published settings reference
+    // (code.claude.com/docs/en/settings-reference) that this builder could
+    // not previously express. Every one is Option/Vec/BTreeMap and skipped
+    // when empty, so adding them changes no emitted settings file until
+    // something sets one.
     // ================================================================
 
     // ---- Model and responses ----
@@ -810,10 +834,12 @@ pub struct ClaudeCodeSettings {
     model_pricing: Option<Value>,
     #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
     model_settings: BTreeMap<String, Value>,
+    /// `"5m"` or `"1h"`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    prompt_cache_ttl: Option<u32>,
+    prompt_cache_ttl: Option<String>,
+    /// `"5m"` or `"1h"`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    subagent_prompt_cache_ttl: Option<u32>,
+    subagent_prompt_cache_ttl: Option<String>,
 
     // ---- Permissions ----
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -832,6 +858,8 @@ pub struct ClaudeCodeSettings {
     // ---- Interface ----
     #[serde(skip_serializing_if = "Option::is_none")]
     auto_continue_at_usage_limit: Option<bool>,
+    /// Deprecated by upstream since v2.1.261 and has no effect; the prompt
+    /// always follows readline conventions. Still accepted in settings files.
     #[serde(skip_serializing_if = "Option::is_none")]
     keybinding_flavor: Option<String>,
 
@@ -846,12 +874,74 @@ pub struct ClaudeCodeSettings {
     // ---- Privacy / telemetry ----
     #[serde(skip_serializing_if = "Option::is_none")]
     desktop_session_cleanup_period_days: Option<u32>,
+    /// `"notify"` (the default), `"quiet"`, or `"off"`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    feedback_drafts: Option<bool>,
+    feedback_drafts: Option<String>,
 
     // ---- Enterprise / managed ----
     #[serde(skip_serializing_if = "Option::is_none")]
     managed_sources_behavior: Option<String>,
+
+    // ================================================================
+    // Keys added by auditing this builder against the settings reference
+    // current for Claude Code 2.1.280. Keys the reference scopes to
+    // `Global config` (`~/.claude.json` only) are not modeled: settings.json
+    // never reads them. Removed keys (`taskOutputMaxChars`,
+    // `permissionExplainerEnabled`, `teammateDefaultModel`) are absent.
+    // ================================================================
+
+    // ---- Model and responses ----
+    /// `"low"`, `"medium"`, `"high"`, `"xhigh"`, or `"max"` (no cap). The
+    /// lowest cap across scopes applies.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    max_effort_level: Option<String>,
+    /// Start sessions at `xhigh` effort with ultracode on.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ultracode: Option<bool>,
+
+    // ---- Permissions ----
+    /// Skip the confirmation dialog before entering `bypassPermissions`.
+    /// Read from user, local, and managed settings only.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    skip_dangerous_mode_permission_prompt: Option<bool>,
+
+    // ---- Tools ----
+    /// Characters of successful command output Claude receives inline,
+    /// clamped to 4000-128000. Default 30000.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    bash_output_max_chars: Option<u32>,
+    /// Record files changed while a Bash command ran, in every permission
+    /// mode. A `true` counts from user, `--settings`, or managed settings only.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    bash_edit_diff_enabled: Option<bool>,
+
+    // ---- Interface ----
+    /// Show the session name set with `/rename` as the terminal tab title.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    terminal_title_from_rename: Option<bool>,
+    /// `"auto"`, `"12-hour"`, `"24-hour"`, or `"24-hour-utc"` (v2.1.257+).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    time_format: Option<String>,
+    /// An IANA time zone name such as `"UTC"` or `"Europe/Dublin"`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    time_zone: Option<String>,
+
+    // ---- Plugins ----
+    /// `false` stops downloading and loading plugins enabled for the
+    /// claude.ai account. Read from user, local, and managed settings only.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    sync_claude_ai_plugins: Option<bool>,
+
+    // ---- Managed-only governance ----
+    /// Remote MCP servers provided to every user, keyed by server name; each
+    /// entry has the `.mcp.json` shape for an `http` or `sse` server
+    /// (v2.1.259+). Dropped with a warning outside managed settings.
+    #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
+    managed_mcp_servers: BTreeMap<String, Value>,
+    /// At most four non-overlapping public IPv4 CIDR blocks, `/8` to `/32`,
+    /// that `/login` accepts a cloud gateway on (v2.1.268+).
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    gateway_internal_networks: Vec<String>,
 }
 
 impl ClaudeCodeSettings {
@@ -931,7 +1021,6 @@ impl ClaudeCodeSettings {
             allowed_channel_plugins: Vec::new(),
 
             // Skills
-            max_skill_description_chars: None,
             skill_listing_budget_fraction: None,
             skill_overrides: BTreeMap::new(),
             disable_skill_shell_execution: None,
@@ -1003,10 +1092,8 @@ impl ClaudeCodeSettings {
             ask_user_question_timeout: None,
             dialog_expiry: None,
             respond_to_bash_commands: None,
-            permission_explainer_enabled: None,
             prompt_suggestion_enabled: None,
             emoji_completion_enabled: None,
-            external_editor_context: None,
             vim_insert_mode_remaps: BTreeMap::new(),
             spellcheck: None,
             theme: None,
@@ -1022,9 +1109,6 @@ impl ClaudeCodeSettings {
             skill_listing_max_desc_chars: None,
             enable_artifact: None,
             disable_artifact: None,
-            auto_connect_ide: None,
-            auto_install_ide_extension: None,
-            diff_tool: None,
             remote_control_at_startup: None,
             agent_push_notif_enabled: None,
             input_needed_notif_enabled: None,
@@ -1063,6 +1147,20 @@ impl ClaudeCodeSettings {
             desktop_session_cleanup_period_days: None,
             feedback_drafts: None,
             managed_sources_behavior: None,
+
+            // Settings-reference audit additions — all unset, all skipped
+            // when empty.
+            max_effort_level: None,
+            ultracode: None,
+            skip_dangerous_mode_permission_prompt: None,
+            bash_output_max_chars: None,
+            bash_edit_diff_enabled: None,
+            terminal_title_from_rename: None,
+            time_format: None,
+            time_zone: None,
+            sync_claude_ai_plugins: None,
+            managed_mcp_servers: BTreeMap::new(),
+            gateway_internal_networks: Vec::new(),
         }
     }
 
@@ -1324,10 +1422,26 @@ impl ClaudeCodeSettings {
     }
 
     #[allow(dead_code)]
-    pub fn with_permission_skip_dangerous_mode_prompt(mut self, skip: bool) -> Self {
+    pub fn with_permission_block_reads_outside_working_directories(mut self, block: bool) -> Self {
         let mut perms = self.permissions.unwrap_or_default();
-        perms.skip_dangerous_mode_permission_prompt = Some(skip);
+        perms.block_reads_outside_working_directories = Some(block);
         self.permissions = Some(perms);
+        self
+    }
+
+    /// The nested form of `disableAutoMode`; `value` is `"disable"`.
+    #[allow(dead_code)]
+    pub fn with_permission_disable_auto_mode(mut self, value: &str) -> Self {
+        let mut perms = self.permissions.unwrap_or_default();
+        perms.disable_auto_mode = Some(value.to_string());
+        self.permissions = Some(perms);
+        self
+    }
+
+    /// Top-level key; the reference does not nest it under `permissions`.
+    #[allow(dead_code)]
+    pub fn with_skip_dangerous_mode_permission_prompt(mut self, skip: bool) -> Self {
+        self.skip_dangerous_mode_permission_prompt = Some(skip);
         self
     }
 
@@ -1774,12 +1888,6 @@ impl ClaudeCodeSettings {
     // =====================================================================
 
     #[allow(dead_code)]
-    pub fn with_max_skill_description_chars(mut self, chars: u32) -> Self {
-        self.max_skill_description_chars = Some(chars);
-        self
-    }
-
-    #[allow(dead_code)]
     pub fn with_skill_listing_budget_fraction(mut self, fraction: f64) -> Self {
         self.skill_listing_budget_fraction = Some(fraction);
         self
@@ -1830,6 +1938,8 @@ impl ClaudeCodeSettings {
             status_type: "command".to_string(),
             command: command.to_string(),
             padding: None,
+            refresh_interval: None,
+            hide_vim_mode_indicator: None,
         });
         self
     }
@@ -1838,6 +1948,23 @@ impl ClaudeCodeSettings {
     pub fn with_status_line_padding(mut self, padding: u32) -> Self {
         if let Some(ref mut sl) = self.status_line {
             sl.padding = Some(padding);
+        }
+        self
+    }
+
+    /// Re-run the status line command every `seconds`, minimum 1.
+    #[allow(dead_code)]
+    pub fn with_status_line_refresh_interval(mut self, seconds: u32) -> Self {
+        if let Some(ref mut sl) = self.status_line {
+            sl.refresh_interval = Some(seconds);
+        }
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_status_line_hide_vim_mode_indicator(mut self, hide: bool) -> Self {
+        if let Some(ref mut sl) = self.status_line {
+            sl.hide_vim_mode_indicator = Some(hide);
         }
         self
     }
@@ -2007,6 +2134,15 @@ impl ClaudeCodeSettings {
         self
     }
 
+    /// `"worktree"` (the default) or `"none"`.
+    #[allow(dead_code)]
+    pub fn with_worktree_bg_isolation(mut self, isolation: &str) -> Self {
+        let mut wt = self.worktree.unwrap_or_default();
+        wt.bg_isolation = Some(isolation.to_string());
+        self.worktree = Some(wt);
+        self
+    }
+
     // =====================================================================
     // SSH
     // =====================================================================
@@ -2166,12 +2302,6 @@ impl ClaudeCodeSettings {
     }
 
     #[allow(dead_code)]
-    pub fn with_permission_explainer_enabled(mut self, enabled: bool) -> Self {
-        self.permission_explainer_enabled = Some(enabled);
-        self
-    }
-
-    #[allow(dead_code)]
     pub fn with_prompt_suggestion_enabled(mut self, enabled: bool) -> Self {
         self.prompt_suggestion_enabled = Some(enabled);
         self
@@ -2180,12 +2310,6 @@ impl ClaudeCodeSettings {
     #[allow(dead_code)]
     pub fn with_emoji_completion_enabled(mut self, enabled: bool) -> Self {
         self.emoji_completion_enabled = Some(enabled);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_external_editor_context(mut self, enabled: bool) -> Self {
-        self.external_editor_context = Some(enabled);
         self
     }
 
@@ -2280,25 +2404,6 @@ impl ClaudeCodeSettings {
     #[allow(dead_code)]
     pub fn with_disable_artifact(mut self, disable: bool) -> Self {
         self.disable_artifact = Some(disable);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_auto_connect_ide(mut self, connect: bool) -> Self {
-        self.auto_connect_ide = Some(connect);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_auto_install_ide_extension(mut self, install: bool) -> Self {
-        self.auto_install_ide_extension = Some(install);
-        self
-    }
-
-    /// `"auto"` or `"terminal"`.
-    #[allow(dead_code)]
-    pub fn with_diff_tool(mut self, tool: &str) -> Self {
-        self.diff_tool = Some(tool.to_string());
         self
     }
 
@@ -2503,10 +2608,18 @@ impl ClaudeCodeSettings {
         self
     }
 
+    /// Silence violations whose text contains one of `violations` for
+    /// commands whose text contains `command`.
     #[allow(dead_code)]
-    pub fn with_sandbox_ignore_violations(mut self, paths: Vec<String>) -> Self {
+    pub fn with_sandbox_ignore_violations(
+        mut self,
+        command: &str,
+        violations: Vec<String>,
+    ) -> Self {
         let mut sandbox = self.sandbox.unwrap_or_default();
-        sandbox.ignore_violations = paths;
+        sandbox
+            .ignore_violations
+            .insert(command.to_string(), violations);
         self.sandbox = Some(sandbox);
         self
     }
@@ -2541,15 +2654,17 @@ impl ClaudeCodeSettings {
         self
     }
 
+    /// `"5m"` or `"1h"`.
     #[allow(dead_code)]
-    pub fn with_prompt_cache_ttl(mut self, seconds: u32) -> Self {
-        self.prompt_cache_ttl = Some(seconds);
+    pub fn with_prompt_cache_ttl(mut self, ttl: &str) -> Self {
+        self.prompt_cache_ttl = Some(ttl.to_string());
         self
     }
 
+    /// `"5m"` or `"1h"`.
     #[allow(dead_code)]
-    pub fn with_subagent_prompt_cache_ttl(mut self, seconds: u32) -> Self {
-        self.subagent_prompt_cache_ttl = Some(seconds);
+    pub fn with_subagent_prompt_cache_ttl(mut self, ttl: &str) -> Self {
+        self.subagent_prompt_cache_ttl = Some(ttl.to_string());
         self
     }
 
@@ -2615,15 +2730,86 @@ impl ClaudeCodeSettings {
         self
     }
 
+    /// `"notify"` (the default), `"quiet"`, or `"off"`.
     #[allow(dead_code)]
-    pub fn with_feedback_drafts(mut self, enabled: bool) -> Self {
-        self.feedback_drafts = Some(enabled);
+    pub fn with_feedback_drafts(mut self, mode: &str) -> Self {
+        self.feedback_drafts = Some(mode.to_string());
         self
     }
 
     #[allow(dead_code)]
     pub fn with_managed_sources_behavior(mut self, behavior: &str) -> Self {
         self.managed_sources_behavior = Some(behavior.to_string());
+        self
+    }
+
+    // =====================================================================
+    // Settings-reference audit additions
+    // =====================================================================
+
+    /// `"low"`, `"medium"`, `"high"`, `"xhigh"`, or `"max"` (no cap).
+    #[allow(dead_code)]
+    pub fn with_max_effort_level(mut self, level: &str) -> Self {
+        self.max_effort_level = Some(level.to_string());
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_ultracode(mut self, enabled: bool) -> Self {
+        self.ultracode = Some(enabled);
+        self
+    }
+
+    /// Clamped upstream to 4000-128000 characters.
+    #[allow(dead_code)]
+    pub fn with_bash_output_max_chars(mut self, chars: u32) -> Self {
+        self.bash_output_max_chars = Some(chars);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_bash_edit_diff_enabled(mut self, enabled: bool) -> Self {
+        self.bash_edit_diff_enabled = Some(enabled);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_terminal_title_from_rename(mut self, enabled: bool) -> Self {
+        self.terminal_title_from_rename = Some(enabled);
+        self
+    }
+
+    /// `"auto"`, `"12-hour"`, `"24-hour"`, or `"24-hour-utc"`.
+    #[allow(dead_code)]
+    pub fn with_time_format(mut self, format: &str) -> Self {
+        self.time_format = Some(format.to_string());
+        self
+    }
+
+    /// An IANA time zone name.
+    #[allow(dead_code)]
+    pub fn with_time_zone(mut self, zone: &str) -> Self {
+        self.time_zone = Some(zone.to_string());
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_sync_claude_ai_plugins(mut self, enabled: bool) -> Self {
+        self.sync_claude_ai_plugins = Some(enabled);
+        self
+    }
+
+    /// `server` has the `.mcp.json` shape for an `http` or `sse` server.
+    #[allow(dead_code)]
+    pub fn with_managed_mcp_server(mut self, name: &str, server: Value) -> Self {
+        self.managed_mcp_servers.insert(name.to_string(), server);
+        self
+    }
+
+    /// At most four non-overlapping public IPv4 CIDR blocks.
+    #[allow(dead_code)]
+    pub fn with_gateway_internal_networks(mut self, networks: Vec<String>) -> Self {
+        self.gateway_internal_networks = networks;
         self
     }
 

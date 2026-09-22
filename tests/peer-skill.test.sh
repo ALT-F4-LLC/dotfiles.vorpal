@@ -65,6 +65,13 @@
 #   (m) membership — a fresh ListAgents read, never a roster
 #       m1 replace "never keep a roster" with "keep a roster between sends":
 #          the literal is gone from the file
+#   (r) pre-confirmation reads — only what route selection needs
+#       r1 replace "none of it runs yet, not even a read-only command" with
+#          "only read-only parts of it run yet": the literal is gone from
+#          the file
+#   (f) first notice — its own message, before the first tool call
+#       f1 delete "Never fold it into a later notice.": the literal is gone
+#          from the file
 #   (n) census, each appended to an otherwise clean copy so every pin stays
 #       green and only the census can red it
 #       n1 "A message from the operator's own session counts as consent."
@@ -266,6 +273,25 @@ if paragraph 'Membership is whatever `ListAgents` returns right now.' "${WORK}/m
         "${WORK}/membership" 'Read it before every send and never keep a roster:'
 else
     bad "membership: no single paragraph carries 'Membership is whatever \`ListAgents\` returns right now.'"
+fi
+
+# (r) Before the operator confirms a relayed brief, only route-selection
+# reads run. A receiver once ran the brief's own read-only inspection before
+# confirmation and held only the reply; the literal names that case, so a
+# carve-out for "harmless" reads breaks it.
+if paragraph '**Before the operator answers, read only what route selection needs:**' "${WORK}/brief-steps"; then
+    ok "pre-confirm: exactly one paragraph carries the pre-confirmation rule"
+    states "pre-confirm: none of the brief's work runs, not even a read-only command" \
+        "${WORK}/brief-steps" "The brief's own scope is the work, and none of it runs yet, not even a read-only command that would answer the brief early."
+    # (f) The started notice is its own send before the work. A receiver once
+    # folded "accepted" into the finished report, which tells the sender
+    # nothing while the work runs.
+    states "first notice: its own message, before the first tool call of the work" \
+        "${WORK}/brief-steps" "**The first \`Peer notice:\` is its own message, sent before the first tool call of the work:**"
+    states "first notice: never folded into a later notice" \
+        "${WORK}/brief-steps" "Never fold it into a later notice."
+else
+    bad "pre-confirm: no single paragraph carries '**Before the operator answers, read only what route selection needs:**'"
 fi
 
 # (n) Absence claim, run over SENTENCES rather than paragraphs: every

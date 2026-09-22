@@ -287,6 +287,10 @@ impl ClaudeCode {
             .with_input_needed_notif_enabled(true)
             .with_isolate_peer_machines(true)
             .with_model("opus")
+            .with_model_setting(
+                "claude-opus-5-5",
+                serde_json::json!({ "effortLevel": "high" }),
+            )
             .with_output_style("Concise")
             .with_permission_default_mode("auto")
             .with_permission_disable_bypass_permissions_mode("disable")

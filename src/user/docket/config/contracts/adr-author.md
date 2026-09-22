@@ -1,6 +1,6 @@
 ---
 node: adr-author
-version: 11
+version: 12
 archetype: executor-write
 packet_includes:
   - fragments/design-search.md
@@ -8,6 +8,7 @@ packet_includes:
   - fragments/writing-for-humans.md
   - fragments/evidence-rules.md
   - fragments/completion-gates.md
+  - fragments/scope-discipline.md
 emits: doc
 ---
 # Charter

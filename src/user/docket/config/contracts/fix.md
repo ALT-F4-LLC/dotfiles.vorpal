@@ -1,6 +1,6 @@
 ---
 node: fix
-version: 22
+version: 23
 archetype: executor-write
 packet_includes:
   - fragments/code-philosophy.md
@@ -110,7 +110,7 @@ pre-fix failure, then the post-fix pass. Setup, discovery, and unrelated
 failures do not establish red. A test that starts green requires
 investigation, not a manufactured defect; retain the fragment's exceptions
 for characterization, pure refactoring, and invalid or obsolete expectations.
-Construct synthetic secret-scanner controls as fragments/tdd-discipline.md requires.
+Construct synthetic secret-scanner controls as tdd-discipline requires.
 
 For a finding about enforcement by a control or guard, drive the real entry
 point and assert the required result and consequential forbidden effects.
@@ -137,7 +137,7 @@ a substitute project merely to run a regression.
 
 For behavior that cannot be expressed as a test, cite the inspected location,
 evaluated state, and reasoning, naming what execution remains unavailable.
-Use the evidence and truth-first vocabulary: `OBSERVED`, `REPRODUCED`, or
+Use the evidence-rules and truth-first vocabulary: `OBSERVED`, `REPRODUCED`, or
 `INFERRED` as appropriate, and `UNVERIFIED` for unsupported conclusions. A
 controlled reproduction does not by itself establish a historical incident's
 cause.

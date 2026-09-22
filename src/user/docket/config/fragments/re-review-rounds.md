@@ -1,6 +1,6 @@
 ---
 fragment: re-review-rounds
-version: 9
+version: 10
 ---
 # Re-review rounds
 
@@ -48,7 +48,7 @@ had this exact defect appeared in round 0 under the same requirements, would
 the same evidence and stated impact have made it a Blocker? If not, use the
 lower rung the ladder supports.
 
-A fix that independently meets the Blocker rung remains a Blocker, including
+A defect that independently meets the Blocker rung remains a Blocker, including
 data loss, a security regression, a broken build or test, or a violated
 acceptance criterion as defined by the ladder. Grade missing tests, adjacent
 cases, broader remedies, and maintainability risks by their demonstrated impact.

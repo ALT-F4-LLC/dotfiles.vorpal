@@ -1,6 +1,6 @@
 ---
 node: revise-investigation
-version: 8
+version: 9
 archetype: executor-read
 packet_includes:
   - fragments/truth-first.md
@@ -25,7 +25,7 @@ unsupported certifications, and state uncertainty where the evidence requires it
 Every rejecting rationale receives a supported answer or an explicit gap.
 
 Do not change the checkout, shared repository metadata, or the affected system.
-Use the archetype's isolated scratch workspace for permitted probes that write.
+Use the `executor-read` archetype's permitted scratch workspace for permitted probes that write.
 Fragment guidance about instrumentation or repairs does not authorize those
 changes here. Use only the brief's authorized artifact and engine-recording paths.
 

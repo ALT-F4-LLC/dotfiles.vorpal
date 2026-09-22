@@ -1,12 +1,13 @@
 ---
 node: investigate
-version: 10
+version: 11
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
   - fragments/truth-first.md
   - fragments/evidence-rules.md
   - fragments/writing-for-humans.md
+  - fragments/rerun-discipline.md
 emits: investigation
 ---
 # Charter

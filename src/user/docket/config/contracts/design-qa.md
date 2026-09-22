@@ -1,6 +1,6 @@
 ---
 node: design-qa
-version: 19
+version: 20
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -151,7 +151,7 @@ limits across handoffs.
 Include actual coverage, prior finding dispositions, documented accepted
 deviations, and what worked well in the body. Apply the general ladder's
 emit-time mapping to eligible findings only; praise, clean coverage, and
-non-blocking questions have no severity entry. Use the brief's gap route for
+non-blocking questions have no severity entry. Use the workflow's gap route for
 judgment-blocking unknowns; do not invent payload fields or severities.
 
 An empty findings payload is valid. Report examined-clean only when the

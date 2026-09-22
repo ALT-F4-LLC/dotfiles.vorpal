@@ -391,7 +391,8 @@ Record these findings alongside the value decision:
 - **Missing or stale routing label:** every retained non-epic issue carries
   exactly one of `route-run`, `route-direct`, `route-tend`, `route-loop`,
   the family [brief](../brief/SKILL.md)'s route rules define and
-  docket-plan, tend, brief, and every workflow's `unless_labels` read.
+  docket-plan, tend, and brief read; every workflow's `unless_labels` lists
+  the three non-run values.
   Judge it from the issue's body, files, scope, and labels: `route-run`
   when the work is security-sensitive or its boundary is unknown, when its
   size is bounded or needs design, or when it needs the review evidence a

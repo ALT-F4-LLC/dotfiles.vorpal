@@ -38,8 +38,8 @@ brief's obligation 0 announces worktree isolation when the step is
 isolated; its absence means the shared checkout. Report an unexpected
 checkout or isolation mismatch before making changes. Repository edits stay
 within the issue's declared scope regardless of isolation: verify-ac reports
-every undeclared change as an out-of-scope criterion that sends the issue to
-a vote instead of integrating it. Preserve preexisting changes and other
+an established undeclared change as an out-of-scope criterion that routes the
+issue to a vote or a fix round instead of integrating it. Preserve preexisting changes and other
 writers' work.
 
 **Gate authorization.** Never run `docket trust add` or `docket trust rm`,

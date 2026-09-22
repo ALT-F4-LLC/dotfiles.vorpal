@@ -667,8 +667,8 @@ If the read did not happen, the number is an estimate and the proposal must
 say so in those words.
 
 On top of the floor goes rework headroom, read the same way, never guessed:
-for every admitted issue, its bound workflow's `rework_round_cost` × that
-workflow's own declared `max_fix_loops`, summed across the batch. Both
+for every admitted issue, the cost of one rework round on its bound workflow
+× that workflow's own declared `max_fix_loops`, summed across the batch. Both
 factors are in the pinned definition. `grep -n max_fix_loops
 ~/.docket/config/workflows/<wf>.toml` gives the bound: it lives on the step
 that owns the loop, which is `reconcile` on standard-change, ui-change,
@@ -688,7 +688,7 @@ fires, so its round carries 1.50 once, not five times.
 
 The corpus as it reads today, round × declared loops = reserved per issue:
 standard-change 1.0 + 1.80 + 0.60 = 3.4 × 2 = 6.8; ui-change 4.0 × 2 = 8.0;
-security-change 1.0 + 2.40 + 0.60 = 4.0 × 3 = 12.0; spec-doc 1.50 + 1.80 +
+security-change 1.0 + 2.40 + 0.60 = 4.0 × 2 = 8.0; spec-doc 1.50 + 1.80 +
 0.60 = 3.9 × 2 = 7.8; spec-project (`revise-spec` fans out seven ways at
 0.70) 4.90 + 1.80 + 0.60 = 7.3 × 2 = 14.6; docs-only 0.60 + 0.60 +
 verify-ac 0.40 = 1.6 × 2 = 3.2; disposition 0.40 + verify-ac 0.40 = 0.8 × 2
@@ -703,9 +703,8 @@ The sizing rules below concern finite caps only, per the unlimited-budget
 rule above.
 
 Two things are forbidden, both measured. Never budget a fixed number of
-rounds the workflow did not declare: security-change declares three, and
-rejection-driven loops are that track's normal case, so sizing on fewer
-rounds under-forecasts the reserved headroom the definition already commits
+rounds the workflow did not declare: size on the definition's own
+`max_fix_loops`, because sizing on fewer rounds under-forecasts the reserved headroom the definition already commits
 to. And never divide by issue count: every admitted issue reserves its own
 workflow's full `max_fix_loops`, because loops are per issue and the batch
 is what makes them concurrent, not what makes them share. A number that
@@ -890,8 +889,8 @@ by failure mode: anchor for scope, restate the pattern for property.
 
 **An AC that needs a live cluster is post-merge by construction, not an AC.**
 On GitOps repos, author acceptance criteria as statically verifiable render
-assertions (a `kustomize build` / manifest-render check the verify-ac step
-can actually run) and record cluster-runtime commands (`kubectl`, `flux`
+assertions (a `kustomize build` / manifest-render check the `ac-commands`
+pre-gate can run and verify-ac reads from `gate-results`) and record cluster-runtime commands (`kubectl`, `flux`
 against the live cluster) in the issue body as post-merge checks instead.
 The sandbox cannot reach a cluster, so a runtime AC is unverifiable on every
 run by construction.

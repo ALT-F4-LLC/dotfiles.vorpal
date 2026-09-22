@@ -15,7 +15,8 @@ export const meta = {
 // Seats one or more `retro-analyst` agents in parallel, each briefed by the
 // caller with the retro-analyst contract, the docket-retro skill's §2
 // evidence table, and its own assigned run window. Each analyst runs
-// read-only docket verbs and returns its findings as free-form text; this
+// read-only docket verbs and returns its findings, or a gap, in the shape
+// the retro-analyst contract defines; this
 // script neither reads policy nor interprets the findings — it only spawns
 // the seats and hands each result back verbatim, in the same order as the
 // `analysts` array. Invoke by scriptPath ONLY, with args

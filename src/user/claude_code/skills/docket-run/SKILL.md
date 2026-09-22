@@ -996,7 +996,9 @@ names an unacknowledged reap, so convene the ack-reap panel now, beside
 the join). A reap the open itself performed rides on that open's own
 `reaped`/`reap_hold` fields instead. End the turn on the join. Read the
 wave's return as rows, not a verdict: `not-launched-run-parked`,
-`not-launched-writer-budget`, `not-launched-agent-budget`, `agent-cap`
+`not-launched-writer-budget`, `not-launched-agent-budget`,
+`not-launched-token-budget` (the session's output-token target is
+exhausted), `agent-cap`
 (the harness's lifetime spawn cap reached mid-wave; nothing launched),
 and `skipped-chain-dead` are all re-offered next dispatch;
 `not-launched-other-shard` belongs to a sibling launch's own
@@ -1814,8 +1816,8 @@ docket step resolve STEP-N --as override-pass --drop-interposed \
 
 Report every such resolution in your next status report, one line each: the
 issue, the round against the cap, the class, and the ids filed or linked.
-`loop-bound` is the provenance label a later census filters on, as `tribunal`
-and `review-gap` are for their routes.
+`loop-bound` is the provenance label reserved to this route, as `tribunal`
+and `review-gap` are to theirs.
 
 **Only a regression buys a round, and only through the panel.** A
 regression at round `max_fix_loops + 1` is what the loop-extension gate

@@ -9,8 +9,8 @@ export const meta = {
 }
 
 // ---------------------------------------------------------------------------
-// CONTRACT FOR CALLERS (the listing's description is deliberately one line;
-// this block is the single copy of what it used to carry).
+// CONTRACT FOR CALLERS (the listing's description stays one line; this block
+// is the full contract).
 //
 // What it does:
 // Measure deliberation and course-correction cost across Claude Code
@@ -51,10 +51,9 @@ const ERROR_TEXT_CHARS = 200
 const EFFORT_RANK = {low: 0, medium: 1, high: 2, xhigh: 3, max: 4}
 const UNKNOWN_EFFORT_RANK = 9
 // Agent budget: the Workflow tool caps one invocation at 1000 agent() calls
-// over its lifetime. This script's own header says a fleet window can be
-// "hundreds of files," and trusts the caller (the shadow skill) to pick a
-// window that fits — but nothing here ever checked that trust against the
-// real cap, unlike corpus-check.js's AGENT_CAP/AGENT_CAP_MARGIN pattern.
+// over its lifetime. A fleet window can be "hundreds of files," so
+// planAgentCap() checks the caller's window against that cap, the same
+// AGENT_CAP/AGENT_CAP_MARGIN pattern corpus-check.js uses.
 // SCOUT_AGENTS is the one scout call; RETRY_ESTIMATE_FRACTION projects a
 // worst-case retry cost from observed fleet behavior (most sweeps see a
 // small single-digit retryable fraction; this over-estimates so the warning

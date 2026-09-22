@@ -325,6 +325,7 @@ leaving that step's siblings legitimately `claimed` at `waiting-human`.
 | `payload` | `name@version` | a registered payload schema; the step's `--payload-file` is validated against it at `step complete` (`record` is an identical alias), from the bytes the run pinned |
 | `voters`, `vote_rule` | [hints], name | **required on `type="vote"`**, forbidden elsewhere |
 | `after` | [step names], **required** except on the first step and `loop = true` steps | predecessors; `[]` means root |
+| `after_fired` | [step names], each also in `after` (V39a) | the step is terminalized `skipped` in the same transaction that skips a named predecessor, cascading through steps that name it in turn. A predecessor that ended `failed-routed` counts as fired |
 | `inputs` | [`"<step>.<kind>"` \| `"<step>.*"` \| `"<step>.gate-results"` \| `"<step>.vote-record"` \| `"issue.body"` \| `"issue.diff"` \| `"issue.linked.<relation>.<kind>"` \| `"issue.latest.<kind>"`] | artifacts delivered to the step |
 | `holds_tree` | bool, **default true** | whether this step occupies its issue's scope while it runs. Scope exclusion consults it, and it decides whether the step's completion records an `issue.diff` |
 | `gates` | [name \| `{name, source="fence:<tag>", pre=bool}`] | checks; `pre = true` runs at claim |
@@ -616,7 +617,7 @@ name    = "reconcile"
 after   = ["synthesize-findings"]
 action  = "aggregate"
 inputs  = ["synthesize-findings.findings"]
-payload = "findings@11"
+payload = "findings@13"
 params  = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
 ```
 

@@ -12,9 +12,9 @@ nightly-112-gcffd10c` (commit `cffd10c`, built `2026-09-14T21:28:29Z`) by
 
 ## Contents
 
-- [`docket events`](#events-commands) — 189 lines
-  - [`events list`](#events-list) — 98 lines
-  - [`events prune`](#events-prune) — 46 lines
+- [`docket events`](#events-commands) — 194 lines
+  - [`events list`](#events-list) — 101 lines
+  - [`events prune`](#events-prune) — 48 lines
   - [Attribution](#events-attribution) — 37 lines
 
 <a id="events-commands"></a>

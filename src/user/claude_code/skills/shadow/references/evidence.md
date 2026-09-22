@@ -104,10 +104,9 @@ accepted arg. If the script cannot express the required window, label its raw
 result with its actual scope or leave that metric unavailable. Do not quote it
 as a correct seven-day census.
 
-The installed `session-census` workflow's `assistant_row` function sums usage
-per assistant message with no message-ID dedup anywhere in the script, so its
-totals can count streamed rewrites more than once. Report this limitation once
-and continue the qualitative audit.
+The installed `session-census` workflow dedups assistant usage by message ID:
+a repeated ID retracts its earlier observation before the later one is added,
+so streamed rewrites count once.
 
 Validate usage extraction against the installed `wave-usage` semantics:
 

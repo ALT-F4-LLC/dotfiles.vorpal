@@ -14,16 +14,16 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket run`](#run-commands) — 740 lines
+- [`docket run`](#run-commands) — 751 lines
   - [`run start`](#run-start) — 49 lines
   - [`run issue add|remove RUN-N DKT-N...`](#run-issue) — 38 lines
   - [`run note add|list`](#run-note) — 22 lines
   - [`run refresh-scope`](#run-refresh-scope) — 31 lines
-  - [`run report RUN-N`](#run-report) — 101 lines
+  - [`run report RUN-N`](#run-report) — 104 lines
   - [`run activate RUN-N`](#run-activate) — 204 lines
   - [`run conduct RUN-N`](#run-conduct) — 39 lines
-  - [`run pause|resume|abandon RUN-N`](#run-lifecycle) — 84 lines
-  - [`run repin RUN-N --reason R`](#run-repin) — 65 lines
+  - [`run pause|resume|abandon RUN-N`](#run-lifecycle) — 90 lines
+  - [`run repin RUN-N --reason R`](#run-repin) — 67 lines
   - [`run budget RUN-N [--set N]`](#run-budget) — 70 lines
   - [`run status [RUN-N]`](#run-status) — 29 lines
 

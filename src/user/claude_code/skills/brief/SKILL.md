@@ -231,7 +231,8 @@ the described scope supports it.
 performed against an existing issue; a background citation to an issue
 does not itself require tracking. A referenced issue's routing label
 (`route-run`, `route-direct`, `route-tend`, `route-loop`, set by
-docket-groom) is the operator's standing route decision: record it here
+docket-groom, by this skill when it files a `route-tend` issue, or by
+docket-plan when it records a run) is the operator's standing route decision: record it here
 and follow it in §3. Tracking for `route-direct` and `route-tend` work is
 satisfied by closing the issue with a summary comment when the work
 lands, not by a run.

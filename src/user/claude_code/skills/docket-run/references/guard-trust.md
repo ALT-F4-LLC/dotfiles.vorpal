@@ -17,13 +17,13 @@ examples reflect the swept commands as of that build.
 - [`docket guard`](#guard-commands) — 113 lines
   - [`guard record`](#guard-record) — 18 lines
   - [`guard spawn`](#guard-spawn) — 45 lines
-- [`docket trust`](#trust-commands) — 186 lines
-  - [`trust add <name> -- <argv...>`](#trust-add) — 64 lines
-  - [`trust list`](#trust-list) — 15 lines
+- [`docket trust`](#trust-commands) — 189 lines
+  - [`trust add <name> -- <argv...>`](#trust-add) — 65 lines
+  - [`trust list`](#trust-list) — 16 lines
   - [`trust probe [--run RUN-N]`](#trust-probe) — 23 lines
   - [`trust rm <name>`](#trust-rm) — 10 lines
   - [The tenancy audit trail](#trust-tenancy-audit) — 18 lines
-  - [The trust audit trail](#trust-audit) — 36 lines
+  - [The trust audit trail](#trust-audit) — 37 lines
 
 <a id="guard-commands"></a>
 
@@ -204,11 +204,11 @@ trusted in one project does not execute in a clone of another; moving a
 repository invalidates its entries (`trust list --all` shows the stale binding
 so you can see why a gate went `unmatched`).
 
-**The unmatched diagnostic leads with the case you are actually in**. When
+**The unmatched diagnostic leads with the case you are in**. When
 an entry of the gate's name exists only in ANOTHER repository, the
 message leads with `no trust entry for this repo; approve it with docket
 trust add`, and mentions the other binding as an aside, since the common
-case is that this repo simply never had an entry, not that it moved. A
+case is that this repo never had an entry, not that it moved. A
 gate whose name IS trusted here but whose argv differs says so directly.
 
 `--yes` suppresses the prompt, **never the disclosure**: the argv, the binding,
@@ -306,11 +306,12 @@ OS username and then to `unknown`) and `cwd` (where the verb ran from).
 
 **Neither is authenticated.** `git config user.name` is whatever the
 invoking environment says it is; this is an attribution claim on the same
-footing as step metadata, not a verified identity. It is worth recording
-anyway — a grant is the one act in the system that widens what code may
+footing as step metadata, not a verified identity. Record it anyway: a
+grant is the one act in the system that widens what code may
 execute.
 
-**Recording is mandatory inside a repository, not best-effort.** The
+**Recording is mandatory inside a repository with a database, not
+best-effort.** The
 event is written *before* the store, as a hook inside the store's own
 lock: if it cannot be recorded, the verb fails with `GENERAL_ERROR`
 (exit 1) and **nothing is granted**.
@@ -322,7 +323,7 @@ nothing to record.
 do.** The store is user-level, so requiring a database to manage it would
 mean somebody who installed docket could not approve a command until they
 created a tracker. When the repository cannot be resolved, or there is
-simply no database at the resolved path, the change is applied and a
+no database at the resolved path, the change is applied and a
 **warning** says it was not recorded and that nothing will show it later.
 The warning prints on stderr and rides in the JSON response's `warnings`
 array; like the argv disclosure, it is not suppressible.

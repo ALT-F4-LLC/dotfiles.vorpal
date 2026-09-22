@@ -258,7 +258,7 @@ contents list: search for the command or heading before loading a section.
 | [Voting](references/voting.md) | Proposals, named seats, weighted tallies, post-approval routing |
 | [Sizing](references/sizing.md) | Size tiers and labels, the cap above which an issue must split, the gate every filer applies before `issue create`, and the split shape groom proposes |
 | [Queue ownership](references/queue-ownership.md) | Which open issues a backlog-reading skill may take (run-included, claimed, routed elsewhere), the `--limit 1000` rule, and what to do without AskUserQuestion; shared by docket-plan, docket-groom, and tend |
-| [CLI reference](reference.md#contents) | Exact flags and response shapes for the tracker and authoring verbs; the engine families (run, step, dispatch, events, guard, trust, gate, policy, registry, report, doctor) are under [docket-run's references](../docket-run/references/run.md) |
+| [CLI reference](reference.md#contents) | Exact flags and response shapes for the tracker and authoring verbs; the engine families are in docket-run's references: [run](../docket-run/references/run.md), [step](../docket-run/references/step.md), [dispatch](../docket-run/references/dispatch.md), [events](../docket-run/references/events.md), [guard and trust](../docket-run/references/guard-trust.md), [gate, policy, and registry](../docket-run/references/gate-policy.md), [report and doctor](../docket-run/references/report-doctor.md) |
 
 For live diagnosis, prefer `doctor` for attachment checks, `gate status` for
 a gate's outcome and missing seats, and `run report` for status, artifacts,

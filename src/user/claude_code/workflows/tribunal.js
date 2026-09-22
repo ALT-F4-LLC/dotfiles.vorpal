@@ -25,8 +25,8 @@ export const meta = {
 // one permitted re-seat itself. A conversational proposal has no step, so
 // `docket gate status` cannot address it and the probe reads `docket vote
 // result`. Invoke by scriptPath ONLY, with args {voteId, voters, context,
-// gateKind, cwd, step?, target?, heldCluster?, isRespawn?} — `context` is the
-// case, rendered VERBATIM into every seat brief in both modes: the
+// gateKind, cwd, step?, target?, heldCluster?, isRespawn?} — `context` is
+// required conversationally and optional mid-wave; it is the case, rendered VERBATIM into every seat brief in both modes: the
 // conversational caller's own text, or mid-wave the proposal body wave.js
 // projected off the record with every cast removed (a seat never reads the
 // vote record itself — it prints the sibling casts already landed, and the
@@ -147,10 +147,9 @@ function lensOf(seat) {
 // ---------------------------------------------------------------------------
 
 // A sha reaches a brief only when it is SHAPED like the full object id the
-// engine records — 40 lowercase hex, never an abbreviation, never prose. One
-// wave relayed a fabricated 40-hex sha that existed in no repository and
-// briefed three judges with it; this check stands behind every render so no
-// caller can route around it.
+// engine records — 40 lowercase hex, never an abbreviation, never prose. This
+// check stands behind every render, so no caller can route a fabricated or
+// truncated sha into a judge's brief.
 const TARGET_SHA_RE = /^[0-9a-f]{40}$/
 
 // TEST-BEGIN seat-brief — extracted and exercised by
@@ -506,10 +505,9 @@ text matters.`}`
 // TEST-END seat-brief
 
 // The probe answers a jq projection through a schema, never the raw record
-// as text: the full envelope is ~10KB on a 3-seat proposal, two haiku probes
-// on one wave corrupted verbatim copies of it (a dropped brace, 81 chars lost
-// mid-copy), and the raw-text fallback that rescued them could equally match
-// a seat name quoted in prose. Under 300 bytes of fixed shape, validated by
+// as text: the full envelope is ~10KB on a 3-seat proposal, too large
+// to copy verbatim reliably, and raw-text matching can false-match a seat
+// name quoted in prose. Under 300 bytes of fixed shape, validated by
 // the harness, is the record or it is nothing. A conversational proposal has
 // no step, so `docket gate status` cannot address it; `vote result` is the
 // read — the tally and who cast, which is all the verifier needs.

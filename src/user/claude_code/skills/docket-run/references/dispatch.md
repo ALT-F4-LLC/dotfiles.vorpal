@@ -13,8 +13,8 @@ nightly-112-gcffd10c` (commit `cffd10c`, built `2026-09-14T21:28:29Z`) by
 ## Contents
 
 - [`docket next` in step mode](#next-run) — 81 lines
-- [`docket dispatch`](#dispatch-commands) — 266 lines
-  - [`dispatch open`](#dispatch-open) — 73 lines
+- [`docket dispatch`](#dispatch-commands) — 269 lines
+  - [`dispatch open`](#dispatch-open) — 74 lines
   - [`dispatch verify`](#dispatch-verify) — 37 lines
   - [`dispatch close`](#dispatch-close) — 39 lines
   - [`dispatch backfill-usage`](#dispatch-backfill-usage) — 49 lines

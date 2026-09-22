@@ -48,13 +48,13 @@ length to read. The engine families live in docket-run's references:
 [gate, policy and registry](../docket-run/references/gate-policy.md),
 [report and doctor](../docket-run/references/report-doctor.md).
 
-- [JSON envelope](#json-output) — 63 lines
+- [JSON envelope](#json-output) — 69 lines
 - [Command & Flag Reference](#command-reference) — 9 lines
-- [`docket issue` (alias `i`)](#issue-commands) — 269 lines
-  - [`issue create`](#issue-create) — 18 lines
-  - [`issue edit [id]`](#issue-edit) — 27 lines
+- [`docket issue` (alias `i`)](#issue-commands) — 273 lines
+  - [`issue create`](#issue-create) — 19 lines
+  - [`issue edit [id]`](#issue-edit) — 29 lines
   - [`issue show [id]`](#issue-show) — 19 lines
-  - [`issue list`](#issue-list) — 35 lines
+  - [`issue list`](#issue-list) — 36 lines
   - [`issue close [id]`](#issue-close) — 12 lines
   - [`issue claim <id>`](#issue-claim) — 16 lines
   - [`issue heartbeat <id>`](#issue-heartbeat) — 12 lines
@@ -68,17 +68,17 @@ length to read. The engine families live in docket-run's references:
   - [`issue link add/remove/list`](#issue-link) — 7 lines
   - [`issue label add/rm/list/delete`](#issue-label) — 11 lines
   - [`issue graph [id]`](#issue-graph) — 12 lines
-- [`docket plan`](#plan-commands) — 26 lines
-- [`docket next`](#next-commands) — 21 lines
-- [`docket workflow` (alias `wf`)](#workflow-commands) — 109 lines
-  - [`workflow register <file.toml>`](#workflow-register) — 13 lines
+- [`docket plan`](#plan-commands) — 27 lines
+- [`docket next`](#next-commands) — 22 lines
+- [`docket workflow` (alias `wf`)](#workflow-commands) — 117 lines
+  - [`workflow register <file.toml>`](#workflow-register) — 18 lines
   - [`workflow lint <file.toml>`](#workflow-lint) — 16 lines
-  - [`workflow deprecate <name>@<version>`](#workflow-deprecate) — 15 lines
+  - [`workflow deprecate <name>@<version>`](#workflow-deprecate) — 18 lines
   - [`workflow list`](#workflow-list) — 26 lines
   - [`workflow show <name>[@<version>]`](#workflow-show) — 17 lines
   - [`workflow init`](#workflow-init) — 18 lines
-- [`docket schema`](#schema-commands) — 51 lines
-  - [`schema register <name@version> <file.json>`](#schema-register) — 17 lines
+- [`docket schema`](#schema-commands) — 55 lines
+  - [`schema register <name@version> <file.json>`](#schema-register) — 21 lines
   - [`schema list`](#schema-list) — 14 lines
   - [`schema show <name>[@<version>]`](#schema-show) — 16 lines
 - [`docket vote` (alias `v`)](#vote-commands) — 137 lines
@@ -101,7 +101,7 @@ length to read. The engine families live in docket-run's references:
   - [`doc comment add [id]`](#doc-comment) — 11 lines
 - [`docket export`](#export-commands) — 11 lines
 - [`docket import <file>`](#import-commands) — 10 lines
-- [`docket board`](#board-commands) — 14 lines
+- [`docket board`](#board-commands) — 15 lines
 - [`docket stats`](#stats-commands) — 6 lines
 - [`docket init`](#init-commands) — 14 lines
 - [`docket project`](#project-commands) — 52 lines
@@ -142,7 +142,7 @@ Two more shape distinctions: single vs. multiple IDs on [`issue
 show`](#issue-show) and `step show`, and `description`/`description_bytes`
 on summary rows (see [`issue list`](#issue-list)).
 
-Four parsing traps from the earlier runtime checks:
+Five parsing traps from the earlier runtime checks:
 
 - **`items` is the v2 key, never the v1 key.** `--json` (v1, the bare flag)
   names the collection after the verb — `events`, `issues`, `steps`, `runs`,
@@ -962,7 +962,7 @@ the global one, so subsequent commands find it without any flag.
 ### `docket project` — `project.go`
 
 The shared store's tenancy surface. Under `~/.docket` every repository is a
-row, and these verbs are the operator's view of that dimension. Neither is
+row, and these verbs are the operator's view of that dimension. None is
 watch-eligible.
 
 <a id="project-list"></a>

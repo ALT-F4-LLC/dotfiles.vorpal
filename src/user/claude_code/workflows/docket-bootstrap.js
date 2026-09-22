@@ -56,7 +56,7 @@ export const meta = {
 //                    in, never decided by the script. Mine only.
 //   workflowFiles  — [absolute path] every workflow TOML in the installed
 //                    corpus plus any local addition, enumerated inline by
-//                    the skill per SKILL.md:173-174 ("parsing every workflow
+//                    the skill per SKILL.md §4 ("parsing every workflow
 //                    TOML ... not only the smoke issue's workflow").
 //                    Gate-union only.
 //   trustEntries   — the parsed `docket trust list --all` output, run inline
@@ -96,9 +96,8 @@ const AGENT_CONFIG = {
     gateUnion: { model: 'sonnet', effort: 'medium' },
 }
 
-// The installed corpus holds on the order of dozens of workflow
-// definitions; this bound keeps one launch well inside the Workflow tool's
-// lifetime agent cap. Files beyond the bound are returned as uncovered,
+// This bound sits far above the installed corpus's workflow count and keeps
+// one launch well inside the Workflow tool's lifetime agent cap. Files beyond the bound are returned as uncovered,
 // never silently dropped.
 const GATE_UNION_CAP = 200
 

@@ -400,13 +400,14 @@ consumer edit it forces, in one change, serially, in this session — never
 through the workflow script and never through parallel subagents, since
 consumers routinely share files and a parallel writer would race.
 
-- **Workflow TOML** — redesigned steps, plus a `version` bump (frozen
-  versions, see the design canon above).
+- **Workflow TOML** — redesigned steps, plus a `[pipeline].version`
+  bump (frozen versions, see the design canon above).
 - **Contracts** (`src/user/docket/config/contracts/<executor>.md`) — one
-  per new executor, in the house shape named by
-  `src/user/docket/config/README.md`'s naming convention: frontmatter
-  (`node`, `version`, `archetype`, `packet_includes`, `emits`) then Charter /
-  Not / Method / Emit / Stuck. Editing an existing shared contract is a
+  per new executor, in the house shape its siblings
+  follow (`contracts/implement.md` is the precedent): frontmatter (`node`,
+  `version`, `archetype`, `packet_includes`, `emits`) then Charter / Not /
+  Method / Emit / Stuck. `src/user/docket/config/README.md`'s naming
+  convention fixes the file stem, the `# Charter` H1, and the `node:` field. Editing an existing shared contract is a
   blast-radius change: bump its `version` and verify the edit against every
   consuming workflow, not just the one in hand — a rule needed by only one
   pipeline belongs in a step-level packet fragment instead. Add README.md to
@@ -419,7 +420,8 @@ consumers routinely share files and a parallel writer would race.
   `version`.
 - **policy.toml** — an `[executors]` row for every new executor and every
   new vote seat (the wave refuses to route or seat anything without a row),
-  plus the policy version bump. Match variant tiers to comparable existing
+  plus the informational `[policy].version` bump, which
+  frozen-drift-check does not enforce. Match variant tiers to comparable existing
   seats — least-capable tier that meets the bar, exceptions carrying an
   explicit `reason` — and prove the `[security]` invariants (`never`
   models, ceiling, node list) still hold for every touched row.

@@ -149,7 +149,7 @@ loop wrapping it, do one pass and say so; there will be no next tick.
    updating a caller of a renamed symbol; the change reads as a rewrite
    rather than a removal or a flattening. A refused pass is ledgered as
    `refused` with the reason.
-6. **Land.** Invoke the `commit` skill (`Skill({skill: "commit"})`) with
+6. **Land.** Invoke the `commit` skill (`Skill({skill: "commit", args: "<unit's paths>"})`) with
    the unit's paths as its argument: one commit cycle per unit, never
    batched across units, never sweeping in files the pass did not touch.
 7. **Report** in one line: the unit, the catalog entries applied with their

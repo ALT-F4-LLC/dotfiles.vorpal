@@ -14,7 +14,7 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket step`](#step-commands) — 504 lines
+- [`docket step`](#step-commands) — 510 lines
   - [`step artifacts`](#step-artifacts) — 68 lines
   - [`step claim`](#step-claim) — 34 lines
   - [`step reap`](#step-reap) — 37 lines
@@ -48,6 +48,7 @@ then **completed** with an artifact.
 | `step context STEP-N [--meta]` | no | re-emits `context` read-only |
 | `step render STEP-N [--template F]` | no | context bundle → rendered work packet |
 | `step artifacts STEP-N` | no | read-only; lists what the step PRODUCED, sizes not bodies |
+| `step gates STEP-N [--gate NAME…] [--full]` | no | read-only; the step's recorded gate results: verdict, exit, argv, duration, and `output_tail` on every non-passing row, `stub` flagged; `--full` adds complete output |
 | `step artifact ARTIFACT-N [--payload]` | no | read-only; one artifact in full |
 
 **conductor** in the Token column is the run's CONDUCTOR CAPABILITY (`run

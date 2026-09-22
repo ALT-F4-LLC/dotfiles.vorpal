@@ -137,7 +137,7 @@ aggregate@1                  1e0a0be39394  builtin
 `aggregate` action step. It is inert unless such a step runs; nothing else in
 the registry arrives without someone registering it.
 
-### Validation at `step complete`
+### Validation at `step record`
 
 A step that declares `payload = "name@version"` has its `--payload-file`
 validated by `step complete` (`record` is an identical alias). A successful

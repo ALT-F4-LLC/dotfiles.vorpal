@@ -66,6 +66,7 @@ Skills support the team:
 | Skill | Location | Purpose |
 |-------|----------|---------|
 | **docket-bootstrap** | `src/user/claude_code/skills/docket-bootstrap/` | Binds a repo to the shared Docket corpus, writing throwaway `docs/spec/` working specs it mines during setup and removes before hand-off |
+| **peer** | `src/user/claude_code/skills/peer/` | Coordinates the operator's independent Claude Code sessions on one machine through cross-session messaging: dispatches a confirmed brief to a named peer, asks and answers peer questions, broadcasts findings, and reports completion back; a relayed brief runs only after the operator confirms it at that session's keyboard |
 
 ## Symlinks
 

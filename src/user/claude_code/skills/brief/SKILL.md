@@ -5,7 +5,7 @@ description: >-
   to revise an existing brief. Turns a freeform work request into a faithful,
   checkable brief: clarifies material decisions in up to three question
   rounds, then confirms the brief and routes it to /docket-plan, /loop,
-  another orchestration skill, or direct execution.
+  /peer, another orchestration skill, or direct execution.
 model: fable
 argument-hint: "<freeform work request or revision to an existing brief>"
 ---
@@ -289,6 +289,20 @@ materially fits better; alternatives must satisfy the same docket and
 security requirements. Exclude `/brief` itself, and do not offer
 `workflow` as a standalone route.
 
+**Peer relay.** `/peer` is a relay route, not an executing one: it hands
+the confirmed brief to one of the operator's other live sessions on this
+machine, and the peer skill there selects the executing route by the rules
+of this section, under its own project, and asks the operator at that
+keyboard to confirm once; it opens no clarification rounds, since the
+requirements are settled. Confirmation here authorizes the send only, so
+rules 1 through 6 are applied again there and none of them is satisfied
+by the relay. Offer it
+when the operator names a live session as where the work should run, or
+when the scope's surfaces belong to another checkout that has a live
+session; one `ListAgents` read to check is a narrow read-only check. The
+[peer](../peer/SKILL.md) skill's input contract is the brief block
+verbatim.
+
 Recommend only routes whose entry points and required capabilities are
 available. If a required route is unavailable, emit the brief with the
 blocker rather than silently downgrading to direct execution or another
@@ -304,8 +318,8 @@ information, report the incompatibility.
 ## 4. Confirm
 
 Present the complete brief verbatim, followed by every route this skill
-can select: `/docket-plan`, `/loop`, `/tend`, direct execution, and any
-orchestration alternative weighed under §3. Always show the full list,
+can select: `/docket-plan`, `/loop`, `/tend`, `/peer`, direct execution,
+and any orchestration alternative weighed under §3. Always show the full list,
 including routes §3 excludes: give each route one line stating why it
 fits or which §3 rule excludes it, and mark the recommended route. If
 the downstream input requires a different structure, show the prepared
@@ -367,6 +381,14 @@ where a route bullet below says so.
   scope and acceptance criteria exists, filing one if it does not, and
   report that the work waits for the next tend tick. The Role does not
   reach the worker, whose brief is the issue verbatim.
+- **`/peer`:** Invoke `peer` with `dispatch <session>` and the confirmed
+  brief block verbatim as `args`. The peer skill in the receiving session
+  re-selects the route by §3 under its own project and confirms it there
+  with one question, without invoking this skill's rounds; the
+  Role travels inside the block as text and takes effect there only if
+  that operator confirms it. Report the send result and what signal will
+  settle the work: the peer's own notice, with the idle notice as the
+  fallback. A sent brief is pending, never done.
 - **Another orchestration skill:** Invoke its available entry point with
   the confirmed brief or handoff and follow its workflow.
 - **Direct:** Perform the work under the confirmed brief, and under its

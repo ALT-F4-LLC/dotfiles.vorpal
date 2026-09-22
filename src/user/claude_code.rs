@@ -285,6 +285,7 @@ impl ClaudeCode {
             .with_feedback_survey_rate(0.0)
             .with_include_git_instructions(false)
             .with_input_needed_notif_enabled(true)
+            .with_isolate_peer_machines(true)
             .with_model("opus")
             .with_output_style("Concise")
             .with_permission_default_mode("auto")

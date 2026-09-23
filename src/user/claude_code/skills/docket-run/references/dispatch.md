@@ -203,6 +203,29 @@ rather than a check-then-insert: two relays racing produce one manifest and one
 `CONFLICT`, never two manifests. The loser's computation is discarded, not
 merged — a merge would produce a manifest neither relay saw.
 
+<a id="dispatch-extend"></a>
+
+#### `docket dispatch extend`
+
+| Flag | Type | Default | Notes |
+|---|---|---|---|
+| `--run` | string | — | **required** |
+
+Appends the steps that became ready since the open to the **same** open
+manifest. A fix round is minted when the step whose routing chose `fix-loop`
+records, not when a manifest opens. Without this verb, every loop round,
+held-cluster gate, `on_fail` route, and limit-cut chain tail waited for the
+whole wave to return and a new dispatch to open.
+
+Appended rows are byte-hashed exactly as opened rows are, so
+`dispatch verify` and `guard spawn --rows` treat them identically. There is
+still exactly **one** open manifest, and `next --run` still refuses while it
+is open.
+
+Rows already on the manifest are dropped, so extending twice with nothing new
+appends nothing and **succeeds**. An appended row nobody launches stays
+pending and is not a discrepancy at close.
+
 <a id="dispatch-verify"></a>
 
 #### `docket dispatch verify`

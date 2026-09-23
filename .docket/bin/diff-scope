@@ -100,9 +100,13 @@ while IFS= read -r -d '' rec; do
     esac
 done < <(git status --porcelain=v1 -z --untracked-files=all)
 
-# dedupe while preserving order
+# dedupe while preserving order (bash-3.2-compatible read loop)
 if [ "${#paths[@]}" -gt 0 ]; then
-    mapfile -t paths < <(printf '%s\n' "${paths[@]}" | awk '!seen[$0]++')
+    deduped=()
+    while IFS= read -r p; do
+        deduped+=("$p")
+    done < <(printf '%s\n' "${paths[@]}" | awk '!seen[$0]++')
+    paths=("${deduped[@]}")
 fi
 nfiles=${#paths[@]}
 

@@ -88,7 +88,7 @@ worker environments.
 | `trust probe` | Executes trusted checks; treat it as execution, even though its purpose is diagnosis |
 | `guard spawn --ack-reap` / `--deciding-vote` | Can record an acknowledgment or audit event; a guard is not a lock |
 | `step record` | Records an artifact, runs gates, and applies routing |
-| `step approve/reject/resolve/reap`, `run pause/resume/abandon` | Require the run's conductor capability on a bound run, via `DOCKET_TOKEN` on that one invocation or an owner-only file on stdin, never with nothing redirected. See [transport](references/transport.md) |
+| `step approve/reject/resolve/reap`, `run pause/resume/abandon` | Require the run's conductor capability on a bound run, via `DOCKET_TOKEN` on that one invocation or an owner-only file on stdin, never with nothing redirected. `step approve`, `step reject`, `step resolve`, `run pause` and `run abandon` also require `--authority` with one of `operator`, `standing-grant` or `conductor`, plus `--authority-ref` when it is `standing-grant`; `step reap` and `run resume` take no `--authority`. See [transport](references/transport.md) |
 
 Never pass `--watch` or `--follow` from an agent: nothing ends them, the
 call dies at the tool timeout, and its output is lost. Poll with one-shot

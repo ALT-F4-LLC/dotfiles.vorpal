@@ -320,8 +320,13 @@ On a bound run the seven operator verbs — `step approve`, `step reject`,
 or without `--issue`) — read it from `DOCKET_TOKEN` or stdin, never argv,
 after the step or run is found and before anything is written. A run
 activated before the capability existed asks for nothing until it is
-conducted. Executor verbs (`step claim|heartbeat|record|fail`) are
-untouched, and an executor is never handed this token.
+conducted. Five of them, `step approve`, `step reject`, `step resolve`,
+`run pause` and `run abandon`, also require `--authority` from the closed
+set `operator`, `standing-grant`, `conductor`, with `--authority-ref`
+required alongside `standing-grant` and refused otherwise; `step reap` and
+`run resume` take no `--authority`. Executor verbs
+(`step claim|heartbeat|record|fail`) are untouched, and an executor is
+never handed this token.
 
 | Situation | Code | Exit |
 |---|---|---|

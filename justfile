@@ -38,6 +38,11 @@ tests:
         bash "$suite"
     done
 
+# The project-supplied gate security-change binds on its write steps. Here the
+# QA suite is the whole test suite: the gate scripts' own suites run under it.
+qa-test:
+    just tests
+
 # The suites that pin exact skill sentences: a ruling, a trailer name, a
 # halting verb, a mutant rule. A prose pass runs this after every landing so
 # a reworded ruling fails here, in the pass that reworded it, not on the pull

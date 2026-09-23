@@ -17,11 +17,11 @@ examples reflect the swept commands as of that build.
 - [`docket guard`](#guard-commands) — 113 lines
   - [`guard record`](#guard-record) — 18 lines
   - [`guard spawn`](#guard-spawn) — 45 lines
-- [`docket trust`](#trust-commands) — 189 lines
+- [`docket trust`](#trust-commands) — 199 lines
   - [`trust add <name> -- <argv...>`](#trust-add) — 65 lines
   - [`trust list`](#trust-list) — 16 lines
   - [`trust probe [--run RUN-N]`](#trust-probe) — 23 lines
-  - [`trust rm <name>`](#trust-rm) — 10 lines
+  - [`trust rm <name>`](#trust-rm) — 20 lines
   - [The tenancy audit trail](#trust-tenancy-audit) — 18 lines
   - [The trust audit trail](#trust-audit) — 37 lines
 
@@ -265,6 +265,16 @@ gate exited 0; a `stub` entry's pass is hollow and marked. Refuses outright
 <a id="trust-rm"></a>
 
 #### `docket trust rm <name>`
+
+Removes an approved command. The trust store is **published first**, and the
+trust-removed event is recorded only after that publish succeeds. A revocation
+recorded ahead of the write could leave an entry that still authorizes
+execution while the event log said it was revoked.
+
+Two failures remain, and each names what happened. If the store cannot be
+published, nothing is removed and nothing is recorded. If the store is
+published and the event cannot be recorded, the entry **is** removed and the
+command says so; the log then still shows the entry as trusted.
 
 | Flag | Type | Notes |
 |---|---|---|

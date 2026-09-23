@@ -89,6 +89,7 @@ const AUTO_MODE_ALLOW_RULES: &[&str] = &[
     "File operations confined to the Claude scratch roots (/tmp/claude-501, /private/tmp/claude-501, $TMPDIR) — mkdir, cp -R, rm -rf, mv, tar/git-archive mirrors of a trusted checkout, and in-place edits (sed -i) of files under them; these are per-session throwaway workspaces the sandbox already lets every session write, so deleting or mutating them affects no repo; interpreter code arguments and exec wrappers are shell indirection and stay outside this rule",
     "Read-only inspection under ~/.claude — session transcripts and tool-results under ~/.claude/projects, the friction ledger, installed skills, workflows, and hooks — the operator's own harness state; edits there stay outside this rule (source-only, installed via `just activate`)",
     "Read-only gh reads against ALT-F4-LLC repositories — gh pr view/checks/list/diff, gh run list/view, gh issue view/list; every other gh verb, including every one on an ask rule, stays outside this rule",
+    "Editing Claude Code and Docket definition source in the dotfiles.vorpal checkout — src/user/claude_code/{skills,agents,workflows,references}/**, src/user/claude_code/CLAUDE.md, and src/user/docket/config/** — is routine project work, not self-modification: it is source only and stays inert until the operator runs `just activate`; settings.rs, claude_code.rs, src/user/claude_code/hooks/**, the permission, sandbox and autoMode rules, and the installed trees (~/.claude, ~/.docket/config) stay outside this rule",
 ];
 
 /// Verbs that publish or read secrets: they ask before running, and no
@@ -908,6 +909,40 @@ mod tests {
         rules.sort_unstable();
         rules.dedup();
         assert_eq!(rules.len(), AUTO_MODE_ALLOW_RULES.len());
+    }
+
+    #[test]
+    fn auto_mode_definition_source_rule_excludes_the_harness_controls() {
+        // Agents may edit skill and workflow prose without a self-modification
+        // refusal, but never the files that define their own permissions,
+        // sandbox, or hooks. Dropping an exclusion must fail this test.
+        let rules: Vec<&&str> = AUTO_MODE_ALLOW_RULES
+            .iter()
+            .filter(|r| r.starts_with("Editing Claude Code and Docket definition source"))
+            .collect();
+        assert_eq!(
+            rules.len(),
+            1,
+            "expected exactly one definition-source rule"
+        );
+
+        let (_, excluded) = rules[0]
+            .split_once("just activate`;")
+            .expect("the rule names its exclusions after the activation clause");
+        for control in [
+            "settings.rs",
+            "claude_code.rs",
+            "src/user/claude_code/hooks/**",
+            "permission, sandbox and autoMode rules",
+            "~/.claude",
+            "~/.docket/config",
+        ] {
+            assert!(
+                excluded.contains(control),
+                "{control} must stay outside the rule"
+            );
+        }
+        assert!(excluded.contains("stay outside this rule"));
     }
 
     #[test]

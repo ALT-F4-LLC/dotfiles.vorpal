@@ -187,9 +187,15 @@ const usage = (out) => ({
     cache_creation_input_tokens: 1000, cache_read_input_tokens: 2000,
 })
 
-function write(name, bootstrap, outDir = d, listed = false) {
+// The harness may open a transcript with a relay of the operator's request,
+// ahead of the brief. Its text is shaped after a live transcript's.
+const RELAY = `[Workflow harness — user request] The harness relays, verbatim and indented below, the user request that triggered this workflow run. Where the computed task conflicts with this request, this request wins:
+  The harness has been patched.`
+
+function write(name, bootstrap, outDir = d, listed = false, relayed = false) {
     const content = listed ? [{ type: 'text', text: bootstrap }] : bootstrap
     const lines = [{ type: 'user', message: { content } }]
+    if (relayed) lines.unshift({ type: 'user', message: { content: RELAY } })
     // msg-a is written twice with a GROWING output count: the dedup keeps the
     // last, so this agent's output total is 100 + 250, not 40 + 250.
     const model = name === 'agent-aexec2.jsonl' ? undefined : 'claude-opus-5'
@@ -225,12 +231,20 @@ write('agent-preseat.jsonl', judge.replace('--voter reviewer', '--voter security
 
 THIS IS A SECOND ATTEMPT AT YOUR SEAT. A prior agent held it and returned
 without a recorded cast.`, panelDir)
+
+// Relayed transcripts, in their own directory: the relay comes first and the
+// brief second, so a selector that reads the first user message sees no
+// obligation and no probe marker.
+const relayDir = path.join(path.dirname(d), 'relay')
+fs.mkdirSync(relayDir, { recursive: true })
+write('agent-arelayexec.jsonl', executor.replace(/STEP-3156/g, 'STEP-3175'), relayDir, false, true)
+write('agent-arelayprobe.jsonl', probe.replace(/STEP-3146/g, 'STEP-3176'), relayDir, false, true)
 JS
 
 # ---- Run the jq program over every fixture, exactly as an agent would ----------
 # One extract per transcript, collected into {dir: {file: extract}}.
 extracts_ok=0
-for sub in wave drift panel; do
+for sub in wave drift panel relay; do
     mkdir -p "${WORK}/extracts/${sub}"
     for f in "${WORK}/${sub}"/agent-*.jsonl; do
         name=$(basename "$f")
@@ -268,6 +282,7 @@ function load(sub) {
 const wave = load('wave')
 const drift = load('drift')
 const panel = load('panel')
+const relay = load('relay')
 
 // Exercise missing and synthetic model fields through the actual jq extractor,
 // not only the reducer. Bootstrap prose cannot supply runtime observations.
@@ -476,6 +491,17 @@ ok(drifted.errors.length === 1 && drifted.rows.length === 0 && drifted.overhead.
     'an executor brief with no claim/record obligation is a hard error, not overhead')
 ok(drifted.errors[0].includes('have drifted'),
     'and the failure names the drift rather than emptying the ledger silently')
+
+// ---- A harness relay ahead of the brief is skipped, not read as the brief ----
+ok(by(relay, 'agent-arelayexec.jsonl').extract.record === 'STEP-3175',
+    `a relay-first transcript reads the obligation from the brief behind the relay (got ${by(relay, 'agent-arelayexec.jsonl').extract.record})`)
+const relayed = reduceRows(relay, 'steps', [])
+ok(relayed.errors.length === 0 && [...new Set(relayed.rows.map((r) => r.step))].join(',') === 'STEP-3175'
+    && JSON.stringify(unitsOf(relayed.rows, 'STEP-3175')) === JSON.stringify(want),
+    'and steps mode attributes that agent\'s own spend to its claimed step')
+ok(by(relay, 'agent-arelayprobe.jsonl').extract.probe === true
+    && overheadLabel(relayed, 'agent-arelayprobe.jsonl') === 'read-only probe, mentions STEP-3176',
+    'a relay followed by a probe brief is still classified as a probe')
 
 // ---- Silence must not look like success ----
 const silent = [{ file: 'agent-quiet.jsonl', extract: {

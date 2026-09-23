@@ -68,10 +68,10 @@ const DEFAULT_MODE = 'steps'
 // units a claimant CAN measure at source.
 //
 // Each agent-<id>.jsonl is read by one agent running EXTRACT_JQ below, which
-// reports what the bootstrap brief (the first user message) told the agent to
-// do, the agent's four typed token units, its tool-call count, and whether it
-// was a re-seated judge. This script joins, partitions, sums and sorts;
-// agents read, the script decides.
+// reports what the bootstrap brief (the first user message after any harness
+// relay) told the agent to do, the agent's four typed token units, its
+// tool-call count, and whether it was a re-seated judge. This script joins,
+// partitions, sums and sorts; agents read, the script decides.
 //
 // Rules carried over from the measured history of this join:
 //
@@ -225,10 +225,18 @@ if (manifestRows != null && (!Array.isArray(manifestRows) || !Array.isArray(wave
 // Run as `jq -c -n -R -f <this> <transcript>`: raw lines, so a line that is
 // not JSON is skipped instead of aborting the file. Prints ONE object.
 //
-// The bootstrap is the first user message's content: a string as-is, a
-// content array JSON-encoded, so its line breaks arrive as a literal
-// backslash-n. Every marker below is therefore newline-free, and READ_JOB's
-// regex accepts either a real newline or that two-byte sequence.
+// The bootstrap is the content of the first user message that is not the
+// harness's user-request relay: a string as-is, a content array JSON-encoded,
+// so its line breaks arrive as a literal backslash-n. Every marker below is
+// therefore newline-free, and READ_JOB's regex accepts either a real newline
+// or that two-byte sequence.
+//
+// The relay is skipped because the harness may prepend it ahead of the
+// brief: a string opening "[Workflow harness — user request]" that carries
+// the operator's words and none of the markers below, so reading it would
+// file every agent as not a wave agent. Only that prefix is skipped, never
+// searched past: the later user messages are tool results, and their output
+// can quote a `docket step record STEP-N` it merely read.
 //
 // probe is the four-way read test: the explicit declaration wave.js's
 // probeBrief() opens with, the block probe's opening sentence, the legacy
@@ -251,7 +259,10 @@ if (manifestRows != null && (!Array.isArray(manifestRows) || !Array.isArray(wave
 // Backslashes are doubled once for the template literal: the file the agent
 // writes carries jq source, in which `\\s` is the regex escape.
 const EXTRACT_JQ = `[inputs | fromjson? | select(type == "object")] as $lines
-| ([$lines[] | select(.type == "user")] | .[0]) as $first
+| ([$lines[] | select(.type == "user")
+    | select(.message.content | type == "string"
+        and startswith("[Workflow harness — user request]") | not)]
+   | .[0]) as $first
 | (if $first == null then null
    else ($first.message.content | if type == "string" then . else tojson end) end) as $boot
 | ($boot // "") as $b

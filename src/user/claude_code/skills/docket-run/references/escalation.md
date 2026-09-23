@@ -144,10 +144,10 @@ only a panel you convened through a separate `Workflow({scriptPath:
 On their answer:
 
 ```bash
-docket step approve STEP-N --note "<their reasoning, their words>" < <scratchpad>/conductor.d/$RUN.token
-docket step approve STEP-N --value <enum member> --note "<their words>" < <scratchpad>/conductor.d/$RUN.token
-docket step reject  STEP-N --note "<their reasoning, their words>" < <scratchpad>/conductor.d/$RUN.token
-docket step resolve STEP-N --as retry|skip|abandon-issue|override-pass --note "<why>" < <scratchpad>/conductor.d/$RUN.token
+docket step approve STEP-N --authority operator --note "<their reasoning, their words>" < <scratchpad>/conductor.d/$RUN.token
+docket step approve STEP-N --value <enum member> --authority operator --note "<their words>" < <scratchpad>/conductor.d/$RUN.token
+docket step reject  STEP-N --authority operator --note "<their reasoning, their words>" < <scratchpad>/conductor.d/$RUN.token
+docket step resolve STEP-N --as retry|skip|abandon-issue|override-pass --authority operator --note "<why>" < <scratchpad>/conductor.d/$RUN.token
 ```
 
 Which verb is the step's type, not your reading of the situation:

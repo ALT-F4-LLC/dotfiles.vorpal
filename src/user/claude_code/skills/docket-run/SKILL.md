@@ -185,7 +185,7 @@ names (the three standing rulings, the operator escalation, a forced
 reap, a pause, a resume, an abandon), ends in `< <scratchpad>/conductor.d/$RUN.token`:
 
 ```bash
-docket step approve STEP-N --note "<their words>" < <scratchpad>/conductor.d/$RUN.token
+docket step approve STEP-N --authority operator --note "<their words>" < <scratchpad>/conductor.d/$RUN.token
 ```
 
 A missing file fails in the shell before docket runs, and an empty one is
@@ -1594,7 +1594,8 @@ verdict verbatim; `--files-changed` is the issue's files. Seat the
 constant roster (`tribunal-architecture`, `tribunal-security`,
 `tribunal-correctness`), looked up from pinned policy. An approved tally
 authorizes exactly that one round: `docket step resolve STEP-N --as
-fix-round < <scratchpad>/conductor.d/$RUN.token` citing the proposal id,
+fix-round --authority standing-grant --authority-ref <proposal id>
+< <scratchpad>/conductor.d/$RUN.token` citing the proposal id,
 then `docket vote link` to the issue.
 A rejected tally, a stalled panel, or any round beyond `max_fix_loops +
 1` goes to the operator with the panel's reasoning where there is one.
@@ -1748,7 +1749,8 @@ an earlier environment flake's grant. The first park follows the
 paragraph above exactly: reproduce, pass, no grant. A later step whose
 `fail` rows all match a signature that reproduced clean once already
 takes the grant: resolve with `docket step resolve STEP-N --as
-override-pass --batch < <scratchpad>/conductor.d/$RUN.token`, no fresh
+override-pass --batch --authority standing-grant --authority-ref batch-grant
+< <scratchpad>/conductor.d/$RUN.token`, no fresh
 reproduction, citing this ruling and the first reproduction it rests
 on. An empty fingerprint marks a pre-v30 grant that matches nothing, so
 a step it would have covered parks and re-asks the operator instead of
@@ -1807,6 +1809,7 @@ acknowledgment that the vote is skipped on purpose:
 
 ```bash
 docket step resolve STEP-N --as override-pass --drop-interposed \
+  --authority standing-grant --authority-ref loop-bound \
   --note "loop-bound ruling: residue; filed <ids>; <AC or cluster> out of scope, remedy <home>" \
   < <scratchpad>/conductor.d/$RUN.token
 ```

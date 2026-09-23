@@ -1740,24 +1740,21 @@ presented however clean the reproduction looks.
 
 **A repeating signature gets one run-scoped grant, on its second park.**
 The engine keys a `--batch` grant on the failure signature (gate, exit,
-reason) and applies it at routing to every later step of the same run
-that fails the same way, fix-round steps included. The first park
-follows the paragraph above exactly: reproduce, pass, no grant. A later
-step whose `fail` rows all match a signature that reproduced clean once
-already is a candidate for the grant, not yet its holder: the signature
-carries no failure text, so a genuine regression can share (gate, exit,
-reason) with an earlier environment flake. Before granting, read `docket
-step gates STEP-N --json` and compare each failing row's `output_tail`
-with the tail the first reproduction's note recorded. A differing tail is
-a new failure and takes the reproduce-then-pass path above, whatever the
-signature says; a false "new failure" reaches the operator, the safe
-direction, and the check costs one read verb per grant. When every tail
-matches, resolve with `docket step resolve STEP-N --as override-pass
---batch < <scratchpad>/conductor.d/$RUN.token`, no fresh reproduction,
-citing this ruling, the first
-reproduction it rests on, and the tail match. Nothing else widens: a
-differing tail, an unmatched signature, an `unmatched` or `skipped` row,
-or a security gate stays on the ordinary path. Report
+reason, and the content fingerprint of the failure output) and applies
+it at routing to every later step of the same run that fails the same
+way, fix-round steps included. The engine compares the fingerprint
+itself, so a genuine regression with different output does not match
+an earlier environment flake's grant. The first park follows the
+paragraph above exactly: reproduce, pass, no grant. A later step whose
+`fail` rows all match a signature that reproduced clean once already
+takes the grant: resolve with `docket step resolve STEP-N --as
+override-pass --batch < <scratchpad>/conductor.d/$RUN.token`, no fresh
+reproduction, citing this ruling and the first reproduction it rests
+on. An empty fingerprint marks a pre-v30 grant that matches nothing, so
+a step it would have covered parks and re-asks the operator instead of
+applying it. Nothing else widens: an unmatched signature, an
+`unmatched` or `skipped` row, or a security gate stays on the ordinary
+path. Report
 every grant (id from the `gate-override-granted` event's `detail`,
 `GATE#ID`, in `docket events list --run RUN-N --json --all-projects`;
 signature; first reproduction; reach) and, in later reports, the count of

@@ -1,6 +1,14 @@
 lockfile = 1
 
 [[sources]]
+name = "agento11y"
+path = "https://github.com/grafana/agento11y/releases/download/plugins/agento11y/v0.48.0/agento11y_0.48.0_darwin_arm64.tar.gz"
+includes = []
+excludes = []
+digest = "a4f01bc2f0151dde397517bdfcdab4bd88b0781deee0f9d69f949b0af743fbae"
+platform = "aarch64-darwin"
+
+[[sources]]
 name = "awscli2"
 path = "https://awscli.amazonaws.com/AWSCLIV2-2.33.1.pkg"
 includes = []
@@ -1026,10 +1034,10 @@ platform = "x86_64-linux"
 
 [[sources]]
 name = "herdr"
-path = "https://github.com/ogulcancelik/herdr/releases/download/v0.8.2/herdr-macos-aarch64"
+path = "https://github.com/herdrdev/herdr/releases/download/v0.9.1/herdr-macos-aarch64"
 includes = []
 excludes = []
-digest = "8820e2338c57f8870e3e48ffd86f3ffd9845ef46b275f5091de8d0d31ce3e934"
+digest = "b5f51b22c76acbd25fcb5cb05e47f9198a86526e8aa04ee7fd7f232bd844b9ee"
 platform = "aarch64-darwin"
 
 [[sources]]

@@ -2008,7 +2008,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 [[package]]
 name = "vorpal-artifacts"
 version = "0.1.0"
-source = "git+https://github.com/ALT-F4-LLC/artifacts.vorpal.git?branch=main#47014461ad006a8f99aaa5e27a2fcabeed732cae"
+source = "git+https://github.com/ALT-F4-LLC/artifacts.vorpal.git?branch=main#630e1339e0faae15c73b6b7e26a60e537772a554"
 dependencies = [
  "anyhow",
  "indoc",

@@ -74,8 +74,12 @@ Which of the six apply depends on the mode, and each mode's step 1 names its
 own set. Precondition 6 states which modes read a base and why: `open` has
 no PR yet, and `ready`, `checks`, and `close` neither push nor diff.
 
-1. `gh auth status` exits 0. Its stdout is consumed for the exit code only
-   and never quoted into the report; `--show-token` is never used.
+1. `gh auth status` exits 0. It runs as one bare command, the shape **gh
+   under the sandbox** below requires, and its exit status is the tool
+   result's: never `gh auth status >/dev/null`, and never an appended
+   `; echo $?`. Either drops the sandbox exclusion and fails this
+   precondition for a reason that is not authentication. Its output is
+   never quoted into the report; `--show-token` is never used.
 2. `origin` is a GitHub remote (`git remote get-url origin` resolves to a
    `github.com` host).
 3. HEAD is a branch, not detached (`git symbolic-ref -q HEAD`).
@@ -155,6 +159,49 @@ run the command on its own, read its exit status, refuse or report the
 failure by name, and only then use the output, capturing to a file first
 when a later command has to consume it. The sites below cite this rule
 rather than restate it, so a command shape added later inherits it.
+
+## gh under the sandbox — one bare `gh` command per Bash call
+
+`gh` reads its credentials from `~/.config/gh`, which this harness's sandbox
+denies to every sandboxed command. The sandbox configuration excludes `gh *`
+so that `gh` runs unsandboxed, but the exclusion covers a Bash call only
+when the whole call is one bare `gh` command. `git` carries no exclusion
+and always runs sandboxed.
+
+Measured on this host (Linux, 2026-09-23, one sample per shape; re-measure
+rather than trust it elsewhere): the exclusion held for a bare call, and
+survived `2>&1`, a `$VAR` expansion inside an argument, a quoted argument
+(multi-line, or carrying `@`), and a trailing-backslash continuation. It
+was lost, so `gh` ran sandboxed and reported "not logged into any GitHub
+hosts", for a `;` or `&&` list, a `|` pipeline, a `cd` prefix, a `>`
+redirect to `/dev/null` or to a file, and a `$(...)` substitution.
+
+So, for every `gh` call in this file:
+
+- **One bare `gh` command is the whole Bash call.** Nothing before it,
+  nothing after it, no pipe, no redirect. The measured survivors above are
+  not promoted into the rule; the rule is the bare command.
+- **Exit status is the tool result's.** The harness reports a non-zero
+  exit on the call itself. A "not logged in" failure on a call that is not
+  bare is a shape fault, not an authentication fault: fix the shape before
+  reporting precondition 1 failed.
+- **Output is read from the tool result, never captured through a
+  redirect.** Where *Command shapes* says to capture to a file for a later
+  command, a `gh` call cannot: the redirect drops the exclusion. `checks`
+  step 4 is the one site that needs a `gh` output on disk, and it states
+  what that costs.
+- **Paths are literal and absolute.** An excluded `gh` call runs with a
+  different environment: `$TMPDIR` resolved to `/tmp` there and to
+  `/tmp/claude-1000` in the sandboxed call that ran `mktemp -d` beside it.
+  Every `@<file>` field and every other path in a `gh` call is the
+  absolute path `mktemp -d` printed, spelled out, never `$TMPDIR/...`.
+
+`git` runs sandboxed, so `git fetch origin` (precondition 6) and every push
+reach the remote only where the sandbox profile reaches an SSH agent and a
+`known_hosts`. That is sandbox configuration, owned outside this file. When
+the fetch fails on host-key verification or a missing agent, refuse at
+precondition 6 and name that cause, so the report points at the sandbox
+rather than at this skill.
 
 ## Push rules
 
@@ -302,8 +349,10 @@ would otherwise catch.
 **Publish title and body as files, never as shell strings.** Generated text
 is branch-derived: a filename, a commit subject, or a diff hunk containing
 `$(...)` or a backtick becomes shell code the moment it lands in command
-text, and `gh` and `git` run outside the filesystem sandbox. No byte of
-generated text may appear in a command this skill constructs. **One
+text, and an excluded `gh` call (**gh under the sandbox**) runs that code
+with the operator's full filesystem and credentials, while `git` runs
+sandboxed. No byte of generated text may appear in a command this skill
+constructs. **One
 mechanism, and nothing else**: `gh api` with file-valued fields. This is the
 single authoritative copy of the publish command; `open` and `update` point
 here rather than restating it.
@@ -348,9 +397,9 @@ with `grep -n PUBLISHING_ASK_VERBS src/user/claude_code.rs`), rather than on
 **Do not wrap a `gh pr` command in `xargs` or any other launcher** to reach
 the same place: an ask rule is a prefix match on the command as written, so
 the wrapper's own argv[0] is what it sees, and the wrapper removes the ask
-instead of preserving it. (`xargs -0 -a <file>` also cannot run here: `-a`
-is a GNU flag, and BSD `xargs`, the only one on this machine, exits 1 on
-it.)
+instead of preserving it. (`xargs -0 -a <file>` is no exception: `-a` is a
+GNU flag that BSD `xargs` exits 1 on, and where GNU `xargs` exists the
+wrapper still hides the verb.)
 
 **The ban is on the crossing, not the tool: no generated byte may appear in
 command TEXT.** A shell writer that puts generated text into command source
@@ -391,6 +440,11 @@ match, **refuse the publish and report** — never fall back to a shell
 writer to route around it, the crossing **Explicitly forbidden** below
 rules out. A matching readback confirms the scratch directory works for
 both, for this invocation, not assumed for every one.
+
+The excluded `gh` call is a third resolver, and it does not share the
+sandboxed call's `$TMPDIR` (**gh under the sandbox**). The readback proves
+the file exists at the absolute path `mktemp -d` printed, and that absolute
+path, spelled out, is what the `@<file>` fields carry.
 
 **The title file has no trailing newline**, because `gh api` sends a file's
 bytes verbatim and a trailing newline would publish inside the single-line
@@ -446,11 +500,12 @@ never by judgment at publish time: the strip list holds whole-line
 attribution scaffolding and nothing else; everything else — a repo path, a
 tracker id, an attribution word inside a sentence — refuses.
 
-**Matcher: `/usr/bin/grep -inE -f <list-file> <text-file>`** — BSD grep by
-absolute path, present on every macOS. This repo's own package definitions
-build for Linux too (`src/lib.rs`'s `SYSTEMS` lists both Darwin and Linux
-targets); this rule holds only where `/usr/bin/grep` is BSD grep, not on
-Linux, where `/usr/bin/grep` is GNU. Never the `grep` on PATH, which is
+**Matcher: `/usr/bin/grep -inE -f <list-file> <text-file>`** — the system
+grep by absolute path: BSD grep on macOS, GNU grep on Linux (this repo's
+`src/lib.rs` `SYSTEMS` lists both targets). The pinned path is the rule;
+both engines read these lists and the body template with the same result
+(GNU grep 3.11 measured on this host, 2026-09-23, and the `perl`
+de-terminate step below with it). Never the `grep` on PATH, which is
 whatever the store put first (ugrep, at the time of writing). Neither list
 uses `\b`: BSD grep honors it, but `/usr/bin/sed -E` silently matches
 nothing on it, and ugrep and ripgrep match nothing on the `[[:<:]]` form the
@@ -806,24 +861,35 @@ be checked is not evidence the branch has no PR.
    subsequent one). `--fail-fast` is not used, so every check is observed on
    each poll. When the deadline is reached before every check concludes,
    stop polling, report "still pending" for whatever remains, and return
-   control rather than blocking indefinitely.
+   control rather than blocking indefinitely. Each poll is its own bare
+   `gh` call (**gh under the sandbox**); the wait between polls is a
+   separate call or the harness's own waiting mechanism, never
+   `sleep 30 && gh pr checks …`, which drops the exclusion.
 3. Report a per-check table: name, status/conclusion, link.
 4. For each failed check that is a GitHub Actions run, append the tail of
    its log:
 
    ```
-   gh run view <run-id> -R <owner>/<repo> --log-failed > <log-file> || echo "log unavailable (gh exit $?)"
+   gh run view <run-id> -R <owner>/<repo> --log-failed > <log-file>
    ```
 
-   Capture and disposition are one command — `$?` is read inside the same
-   shell invocation that ran `gh run view`, not a later one. If that
-   command's own output is the `log unavailable (gh exit N)` line, report
-   exactly that for this check and **stop — do not run the next command**;
-   the per-check table from step 3 still carries the failure either way, so
-   a missing log costs a diagnostic and never a verdict. Otherwise — the
-   command produced no output, per *Command shapes* above, so its exit
-   status decides, never its output alone — run the tail as its own,
-   separate command:
+   One command, and its exit status is the tool result's — never an
+   appended `|| echo "log unavailable (gh exit $?)"`, and never a separate
+   `echo $?`: both make the call a list, which drops `gh`'s sandbox
+   exclusion (**gh under the sandbox**). The redirect drops it too, so
+   under a profile whose sandbox denies `~/.config/gh` this command exits
+   non-zero on every check (measured here: gh exit 4, "please run gh auth
+   login"). On any non-zero exit, report `log unavailable (gh exit N)` for
+   this check, with N from the tool result, and **stop — do not run the
+   next command**; the per-check table from step 3 still carries the
+   failure either way, so a missing log costs a diagnostic and never a
+   verdict. **A bare `gh run view … --log-failed` with no redirect is not
+   the fallback**: it keeps the exclusion by handing the whole log to this
+   context unbounded, which removes the intake cap below. Making the log
+   tail reachable again is sandbox configuration, outside this file.
+   Otherwise — the command produced no output, per *Command shapes* above,
+   so its exit status decides, never its output alone — run the tail as
+   its own, separate command:
 
    ```
    tail -n 50 <log-file>

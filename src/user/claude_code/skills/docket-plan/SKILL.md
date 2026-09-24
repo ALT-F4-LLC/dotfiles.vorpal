@@ -724,7 +724,11 @@ the encoded caps at `0` regardless of the forecast. If an explicit cap is
 too small, fit the roster without dropping agreed deliverables, or obtain
 agreement to a concrete scope reduction or budget increase before
 recording. Never silently replace the budget policy with the computed
-forecast.
+forecast. Expect `docket run activate --dry-run`'s `expected_cost_total` to
+read lower than this forecast: it sums only the steps activation
+materializes, so it excludes `loop = true` steps, which instantiate only on
+loop entry, and the max_fix_loops rework headroom this forecast adds on
+top.
 
 Ids render with each project's prefix: the store is machine-global and the
 number is the identity, so `DKT-<n>` and a bare number parse in any

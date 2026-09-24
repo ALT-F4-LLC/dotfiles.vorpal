@@ -2,6 +2,14 @@ lockfile = 1
 
 [[sources]]
 name = "agento11y"
+path = "https://github.com/grafana/agento11y/releases/download/plugins/agento11y/v0.48.0/agento11y_0.48.0_linux_amd64.tar.gz"
+includes = []
+excludes = []
+digest = "2232e8485c22456404b64c2ced05177d4499039bf48de212728d9fb35fc7d848"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "agento11y"
 path = "https://github.com/grafana/agento11y/releases/download/plugins/agento11y/v0.48.0/agento11y_0.48.0_darwin_arm64.tar.gz"
 includes = []
 excludes = []
@@ -1026,19 +1034,19 @@ platform = "x86_64-linux"
 
 [[sources]]
 name = "herdr"
-path = "https://github.com/ogulcancelik/herdr/releases/download/v0.8.2/herdr-linux-x86_64"
-includes = []
-excludes = []
-digest = "6d3a8f517b62996e54951e355f8d3ae3cc71c3785041ea4a19c36ba40c63f45b"
-platform = "x86_64-linux"
-
-[[sources]]
-name = "herdr"
 path = "https://github.com/herdrdev/herdr/releases/download/v0.9.1/herdr-macos-aarch64"
 includes = []
 excludes = []
 digest = "b5f51b22c76acbd25fcb5cb05e47f9198a86526e8aa04ee7fd7f232bd844b9ee"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "herdr"
+path = "https://github.com/herdrdev/herdr/releases/download/v0.9.1/herdr-linux-x86_64"
+includes = []
+excludes = []
+digest = "fd2074db63ed6c8af0c577d878078eb4f63d5ac658d868c285db1f9ddfe5a93b"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "hunk"

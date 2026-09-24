@@ -595,10 +595,12 @@ impl ClaudeCode {
             .with_sandbox_filesystem_allow_read(sandbox_filesystem_allow_read_paths())
             .with_sandbox_network_allowed_domains(vec![
                 "api.github.com".to_string(),
+                "api.osv.dev".to_string(),
                 "crates.io".to_string(),
                 "github.com".to_string(),
                 "proxy.golang.org".to_string(),
                 "static.crates.io".to_string(),
+                "sum.golang.org".to_string(),
                 "vuln.go.dev".to_string(),
             ])
             // Each entry becomes a seatbelt subpath rule for both bind and

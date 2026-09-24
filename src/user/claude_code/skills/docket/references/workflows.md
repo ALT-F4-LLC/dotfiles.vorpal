@@ -884,8 +884,8 @@ What happens on loop entry, in one transaction:
    *(engine commit 9d70870, branch `feature/engine-improvements`)*. Only
    `waiting-human` parks, with the parked step's routing recording why;
    `abandon-issue` or a named step routes without parking. A
-   **cluster-scoped** `max_fix_loops` (declared on a `serves`-scoped body) bounds only that cluster's own rounds, under the
-   issue-level ceiling declared elsewhere — hitting it parks with `loop
+   **cluster-scoped** `max_fix_loops` (declared on a `serves`-scoped body)
+   bounds only that cluster's own rounds, under the issue-level ceiling declared elsewhere — hitting it parks with `loop
    round %d for %q would exceed its cluster's max_fix_loops = %d on %s`
    instead of the issue-wide `loop %d would exceed max_fix_loops = %d on
    %s`; either way, when the exhaustion parks, `docket step resolve --as

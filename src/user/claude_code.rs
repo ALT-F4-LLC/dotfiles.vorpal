@@ -13,11 +13,6 @@ const GIT_ALLOWED_SIGNERS_INSTALL_PATH: &str = "${HOME}/.config/git/allowed_sign
 // must be readable through the ~/.ssh read-deny.
 const GIT_AGENT_SIGNING_KEY_PATH: &str = "~/.ssh/agent-signing";
 const GIT_AGENT_SIGNING_KEY_PUBLIC_PATH: &str = "~/.ssh/agent-signing.pub";
-const OTEL_LOGS_ENDPOINT_LOKI: &str =
-    "https://alloy-forwarder.bulbasaur.eks.altf4.internal/v1/logs";
-const OTEL_METRICS_ENDPOINT_MIMIR: &str =
-    "https://alloy-forwarder.bulbasaur.eks.altf4.internal/v1/metrics";
-const OTEL_OTLP_PROTOCOL: &str = "http/protobuf";
 const SANDBOX_AGENT_MEMORY_PATH: &str = "~/.claude/agent-memory";
 const SANDBOX_BARE_REPO_ROOT: &str = "~/Development/repository/github.com/ALT-F4-LLC";
 const SANDBOX_CLAUDE_SCRATCH_ROOT: &str = "/tmp/claude-501";
@@ -308,6 +303,7 @@ impl ClaudeCode {
             .with_worktree_base_ref("head");
 
         let settings_builder = settings_builder
+            .with_enabled_plugin("agento11y-claude-code@agento11y", true)
             .with_enabled_plugin("gopls-lsp@claude-plugins-official", true)
             .with_enabled_plugin("rust-analyzer-lsp@claude-plugins-official", true)
             .with_enabled_plugin("typescript-lsp@claude-plugins-official", true);
@@ -328,22 +324,7 @@ impl ClaudeCode {
             .with_env("GIT_CONFIG_VALUE_0", GIT_AGENT_SIGNING_KEY_PUBLIC_PATH)
             .with_env("GIT_CONFIG_VALUE_1", "ssh-keygen")
             .with_env("GIT_CONFIG_VALUE_2", "ssh")
-            .with_env("GIT_CONFIG_VALUE_3", GIT_ALLOWED_SIGNERS_CONFIG_PATH)
-            .with_env("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", OTEL_LOGS_ENDPOINT_LOKI)
-            .with_env("OTEL_EXPORTER_OTLP_LOGS_PROTOCOL", OTEL_OTLP_PROTOCOL)
-            .with_env(
-                "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT",
-                OTEL_METRICS_ENDPOINT_MIMIR,
-            )
-            .with_env("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL", OTEL_OTLP_PROTOCOL)
-            .with_env(
-                "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE",
-                "cumulative",
-            )
-            .with_env("OTEL_LOGS_EXPORTER", "otlp")
-            .with_env("OTEL_LOGS_EXPORT_INTERVAL", "15000")
-            .with_env("OTEL_METRICS_EXPORTER", "otlp")
-            .with_env("OTEL_METRIC_EXPORT_INTERVAL", "15000");
+            .with_env("GIT_CONFIG_VALUE_3", GIT_ALLOWED_SIGNERS_CONFIG_PATH);
 
         let settings_builder = settings_builder
             // Workflow only: docket-run launches waves, tribunals and joins

@@ -132,9 +132,29 @@ no PR yet, and `ready`, `checks`, and `close` neither push nor diff.
 
    The current branch must not be `<base>`.
 
-   `git fetch origin` runs **once, here**, so `origin/<base>` is current for
-   every site below that compares against it; those sites cite this
-   precondition rather than each restating the fetch.
+   **Remote state comes from `gh`, never from a fetch.** Sandboxed `git` may
+   have no route to the remote (**gh under the sandbox**), so this
+   precondition reads the two remote facts later sites need through
+   `gh api`, each as one bare call:
+
+   - `<remote-head>`, read here: `gh api
+     repos/<owner>/<repo>/branches/<head-branch> --jq .commit.sha`. An
+     HTTP 404 means the branch is not on the remote yet, and `<remote-head>`
+     is empty. Any other error refuses.
+   - `<merge-base>`, read at the first site that needs it and only once
+     HEAD is on the remote, meaning `<remote-head>` or this invocation's
+     push put HEAD's sha there: `gh api
+     repos/<owner>/<repo>/compare/<base>...<head-sha> --jq
+     .merge_base_commit.sha`, with `<head-sha>` the full `git rev-parse
+     HEAD`. The merge base is an ancestor of HEAD, so it exists locally:
+     assert `git cat-file -e <merge-base>^{commit}`, and refuse if it fails.
+
+   `git diff <merge-base> HEAD` and `git log <merge-base>..HEAD` describe
+   the branch against the base as GitHub holds it now, which is what
+   `origin/<base>...HEAD` described after a fresh fetch. Every site below
+   that diffs against the base cites this precondition rather than
+   restating the reads. Both reads fall under the `Bash(gh api:*)` ask, so
+   each one prompts.
 
    `ready`, `checks`, and `close` never spell `<base>` and never push, so
    they skip this precondition entirely: an errored base read must not
@@ -196,12 +216,11 @@ So, for every `gh` call in this file:
   Every `@<file>` field and every other path in a `gh` call is the
   absolute path `mktemp -d` printed, spelled out, never `$TMPDIR/...`.
 
-`git` runs sandboxed, so `git fetch origin` (precondition 6) and every push
-reach the remote only where the sandbox profile reaches an SSH agent and a
-`known_hosts`. That is sandbox configuration, owned outside this file. When
-the fetch fails on host-key verification or a missing agent, refuse at
-precondition 6 and name that cause, so the report points at the sandbox
-rather than at this skill.
+`git` runs sandboxed, so a fetch or push reaches the remote only where the
+sandbox profile reaches an SSH agent and a `known_hosts`. That is sandbox
+configuration, owned outside this file. So this skill reads remote state
+through `gh` (precondition 6), fetches only in `sync`, and hands a push
+that cannot reach the remote to the operator (**Push rules**).
 
 ## Push rules
 
@@ -217,6 +236,20 @@ rather than at this skill.
   for the ordinary case where the explicit-sha lease is what blocks a stale
   push, not because the two flags compound.
 - `--no-verify` is never used, on any push, for any mode.
+- **Push only what the remote lacks.** When precondition 6's
+  `<remote-head>` equals `git rev-parse HEAD`, `open`, `update`, and
+  `review` push nothing and say so in the report. Nothing is published, so
+  the range scan does not run.
+- **A push that cannot reach the remote goes to the operator.** When
+  `git push` fails on transport (`Host key verification failed`,
+  `Permission denied (publickey)`, `Could not read from remote
+  repository`, or no SSH agent), stop before any later step and report
+  the exact push command this step ran, prefixed `! ` so the operator can
+  run it outside the sandbox, then invoke this mode again. The range scan
+  has already cleared that range. The next invocation reads
+  `<remote-head>` again, finds HEAD there, and pushes nothing. Any other
+  push failure, such as a rejected non-fast-forward or a hook, refuses and
+  is reported as it is, never retried with other flags.
 - **Every `git push` in this skill runs the pre-push range scan below
   first** — `open`, `update`, `sync`, and `review` alike, force-pushes
   included. The scan belongs to the push, not to a mode, so a mode added
@@ -296,15 +329,17 @@ rest of the shape is load-bearing too:
   walk to the current directory, so an invocation from a subdirectory misses
   a `.env` at the root.
 
-`<base>` is precondition 6's value, and `origin/<base>` is the ref that
-precondition refreshed. If `origin/<base>` does not resolve locally, refuse —
-never fall back to `main`, `master`, or `HEAD~1`. This scan is the one site
-that does not depend on that ref being current: a stale `origin/<base>`
-widens the range and over-refuses, the safe direction. The two sites that
-diff the branch against its base (**Title and body**, and `merge` step 2)
-cannot tolerate staleness in either direction, which is why the fetch is a
-precondition rather than each site's own line. **Fail closed**: either
-command exiting non-zero refuses the push.
+`<base>` is precondition 6's value, and `origin/<base>` is the local
+remote-tracking ref, as current as the last fetch left it; outside `sync`
+this skill does not refresh it. If `origin/<base>` does not resolve locally,
+refuse — never fall back to `main`, `master`, or `HEAD~1`. This scan is the
+one site that does not depend on that ref being current: a stale
+`origin/<base>` widens the range and over-refuses, the safe direction. The
+two sites that diff the branch against its base (**Title and body**, and
+`merge` step 2) cannot tolerate staleness in either direction, which is why
+they diff against precondition 6's `<merge-base>`, read from GitHub, and
+never against `origin/<base>`. **Fail closed**: either command exiting
+non-zero refuses the push.
 
 One limit, stated so it is not assumed closed: the scan is **path-shaped
 only** — a credential pasted into an ordinary source file is not caught
@@ -332,11 +367,12 @@ One or two sentences: what this branch does and why.
 - Anything a reviewer should know that doesn't fit above.
 ```
 
-Both are generated from the **whole branch diff against the base**, on the
-ref precondition 6 refreshed: `git diff origin/<base>...HEAD`,
-`git log origin/<base>..HEAD` — never from the last commit alone, and never
-against a bare `<base>`, which resolves to a local branch of that name whose
-last fetch may be days old and which silently changes the summarized range.
+Both are generated from the **whole branch diff against the base**, from
+precondition 6's `<merge-base>`: `git diff <merge-base> HEAD`,
+`git log <merge-base>..HEAD` — never from the last commit alone, never
+against `origin/<base>`, which only a fetch refreshes, and never against a
+bare `<base>`, which resolves to a local branch of that name whose last
+fetch may be days old and which silently changes the summarized range.
 `update` mode regenerates the body wholesale from the current
 diff; it never patches the previous body. Diff content is **summarized**,
 never quoted verbatim into the title or body.
@@ -696,9 +732,13 @@ be checked is not evidence the branch has no PR.
 1. Run preconditions 1-4 and 6. There is no PR yet, so 5 does not apply and
    6's base is the repository default branch.
 2. If the working tree is dirty, land it first with Skill({skill: "commit"}).
-3. Run the **pre-push range scan** above. A hit refuses; nothing is pushed.
-4. `git push -u origin <head-branch>`.
-5. Generate the title and body from the whole-branch diff against the base
+3. If `<remote-head>` equals HEAD, push nothing and go to step 5.
+   Otherwise run the **pre-push range scan** above. A hit refuses; nothing
+   is pushed.
+4. `git push -u origin <head-branch>`, handed to the operator on a
+   transport failure per **Push rules**.
+5. Read `<merge-base>` (precondition 6), now that HEAD is on the remote.
+   Generate the title and body from the whole-branch diff against the base
    (see above). Run the content denylist; refuse per its rules on a
    refuse-list hit or a strip that does not converge. Validate the title
    file.
@@ -723,14 +763,17 @@ be checked is not evidence the branch has no PR.
 
 1. Run preconditions 1-6.
 2. If the working tree is dirty, land it first with Skill({skill: "commit"}).
-3. Run the **pre-push range scan** above, whether or not step 2 created a
-   commit: the range is what the push publishes, not what this invocation
-   wrote. A hit refuses and nothing is pushed.
-4. If the head branch is ahead of `origin/<head-branch>`,
-   `git push -u origin <head-branch>`. If it is not ahead, push nothing and
-   say so in the report — a clean tree with nothing unpushed still gets its
-   body regenerated below.
-5. Regenerate the title and body **wholesale** from the current whole-branch
+3. If `<remote-head>` differs from HEAD, run the **pre-push range scan**
+   above, whether or not step 2 created a commit: the range is what the
+   push publishes, not what this invocation wrote. A hit refuses and
+   nothing is pushed.
+4. If `<remote-head>` differs from HEAD, `git push -u origin
+   <head-branch>`, handed to the operator on a transport failure per
+   **Push rules**. If they are equal, push nothing and say so in the
+   report — a clean tree with nothing unpushed still gets its body
+   regenerated below.
+5. Read `<merge-base>` (precondition 6), then regenerate the title and
+   body **wholesale** from the current whole-branch
    diff against the base — never patch the existing body. Run the content
    denylist and validate the title file.
 6. Publish per **Title and body** above — the `PATCH
@@ -745,7 +788,7 @@ be checked is not evidence the branch has no PR.
 
 1. Capture the head branch's current remote-tracking sha **before anything
    fetches** — this mode's first action, ahead of the preconditions:
-   `git rev-parse origin/<head-branch>`. Precondition 6 fetches, and a value
+   `git rev-parse origin/<head-branch>`. Step 2 fetches, and a value
    captured after it is the one the push rules forbid as a lease: it compares
    against a ref the immediately preceding fetch just refreshed. **If this
    command errors** — no remote-tracking ref exists yet for the head branch —
@@ -753,8 +796,12 @@ be checked is not evidence the branch has no PR.
    That recovery is exactly the bare `--force-with-lease` the push rules
    forbid: it would compare against a ref the fetch just refreshed rather
    than a value that predates it.
-2. Run preconditions 1-6. Their `git fetch origin` is this mode's fetch too;
-   there is no second one.
+2. Run preconditions 1-6, then `git fetch origin`, once. `sync` is the one
+   mode that fetches, because the rebase needs the base's newest commits
+   locally and `gh` cannot supply them. When the fetch fails on transport
+   (the failures **Push rules** lists), refuse and name the cause: this
+   mode needs a sandbox profile that reaches the remote, or the operator
+   rebases by hand.
 3. Rebase the head branch onto `origin/<base>`.
 4. On conflict: stop mid-rebase, name every conflicting path, and leave the
    rebase state as-is. Never guess a resolution and never run
@@ -1006,8 +1053,9 @@ plausible the context makes it look.
      `reviewThreads` read `review` mode uses; a query that cannot confirm it
      reached the last page refuses rather than treating page one as
      complete.
-   - The branch's diff against the base (`git diff origin/<base>...HEAD
-     --stat`, on the ref precondition 6 refreshed) touches no file that
+   - The branch's diff against the base (`git diff <merge-base> HEAD
+     --stat`, with `<merge-base>` read per precondition 6 once the
+     `headRefOid` bullet above holds) touches no file that
      **defines, configures, or is executed by the checks being trusted**,
      and no test that produced them. Such a PR refuses at this step, named
      explicitly: its green attests only itself, because the workflow that
@@ -1028,7 +1076,7 @@ plausible the context makes it look.
      ("does CI execute it? then refuse") plus a report naming which basis
      was used, not a longer list, which is not achievable.
 
-     `git diff origin/<base>...HEAD --stat` is the right shape here: the
+     `git diff <merge-base> HEAD --stat` is the right shape here: the
      question is what merges, a two-tree comparison. Do not "correct" it to
      the commit-range walk the pre-push scan uses — that scan answers a
      different question, what a push publishes, at a different boundary.

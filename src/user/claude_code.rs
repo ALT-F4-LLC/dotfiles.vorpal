@@ -26,6 +26,9 @@ const SENSITIVE_PATHS_DENY_READ_ONLY: &[&str] = &["~/.aws/**"];
 
 const SENSITIVE_PATHS: &[&str] = &[
     "~/.claude.json",
+    // config.env carries the Grafana Cloud access-policy token that
+    // `agento11y login` writes; the plugin hooks read it outside the sandbox.
+    "~/.config/agento11y/**",
     "~/.config/gh/**",
     "~/.doppler/**",
     "~/.gemini/**",
@@ -303,6 +306,13 @@ impl ClaudeCode {
             .with_worktree_base_ref("head");
 
         let settings_builder = settings_builder
+            // The plugin id names this marketplace, so a fresh machine needs
+            // its source declared here rather than in the live plugin state
+            // an `agento11y claude` launch leaves behind.
+            .with_extra_known_marketplace(
+                "agento11y",
+                serde_json::json!({ "source": { "source": "github", "repo": "grafana/agento11y" } }),
+            )
             .with_enabled_plugin("agento11y-claude-code@agento11y", true)
             .with_enabled_plugin("gopls-lsp@claude-plugins-official", true)
             .with_enabled_plugin("rust-analyzer-lsp@claude-plugins-official", true)
@@ -313,7 +323,6 @@ impl ClaudeCode {
             .with_env("ANTHROPIC_DEFAULT_HAIKU_MODEL", "claude-haiku-4-5")
             .with_env("ANTHROPIC_DEFAULT_OPUS_MODEL", "claude-opus-5-5")
             .with_env("ANTHROPIC_DEFAULT_SONNET_MODEL", "claude-sonnet-5")
-            .with_env("CLAUDE_CODE_ENABLE_TELEMETRY", "1")
             .with_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1")
             .with_env("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", "0") // REASON: Must be 0 for 'with_permission_default_mode('auto')'
             .with_env("GIT_CONFIG_COUNT", "4")

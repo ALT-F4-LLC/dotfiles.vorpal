@@ -96,6 +96,7 @@ read_allow() { assert_verdict Read file_path "$1" "${2:-$REPO}" ALLOW "Read $1";
 case_every_root_denies() {
     read_deny '~/.aws/credentials'
     read_deny '~/.claude.json'
+    read_deny '~/.config/agento11y/config.env'
     read_deny '~/.config/gh/hosts.yml'
     read_deny '~/.doppler/.doppler.yaml'
     read_deny '~/.gemini/settings.json'

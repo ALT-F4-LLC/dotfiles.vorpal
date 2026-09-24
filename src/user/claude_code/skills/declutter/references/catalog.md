@@ -335,14 +335,18 @@ worker never touches, and what looks like cruft and is not.
 
 ### Lazy class
 - Signal: a class or module with one field, one trivial method, or only
-  delegating methods.
+  delegating methods. A Poltergeist variant: a short-lived, stateless
+  class that only invokes another class, often named Manager or
+  Controller.
 - Why: a file to open and a name to look up for no behavior.
 - Simplification: Inline Class into its one user; Collapse Hierarchy for a
   near-empty subclass or superclass.
 - Risk: a seam for tests or a published type stays.
 - Proof: `probe`.
 - Source: https://sourcemaking.com/refactoring/smells (Lazy Class);
-  https://refactoring.com/catalog/ (Inline Class, Collapse Hierarchy).
+  https://refactoring.com/catalog/ (Inline Class, Collapse Hierarchy);
+  https://en.wikipedia.org/wiki/Poltergeist_(computer_programming)
+  (secondary summary; primary: Brown et al., AntiPatterns (1998)).
 
 ### Single-caller trivial function
 - Signal: a function with exactly one caller, no test of its own, and a

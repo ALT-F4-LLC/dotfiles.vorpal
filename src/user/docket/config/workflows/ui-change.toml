@@ -1,6 +1,10 @@
 [pipeline]
 name = "ui-change"
-version = 36  # 36: prose-only rewrite for concision; no topology, routing, or
+version = 37  # 37: `domain_paths = ["internal/tui/**"]` added to `[match]` so the
+              #   engine binding_warnings lint can fire when an issue's scope lies
+              #   in internal/tui/** without the ui label; no binding, topology,
+              #   or routing change.
+              # 36: prose-only rewrite for concision; no topology, routing, or
               #   limit change.
               # 35: `reconcile` repoints `payload = "findings@11"` to `findings@13`.
               #   findings@11 added a conditional requiring `open_severity` on
@@ -171,6 +175,7 @@ description = "UI change bound to an accepted ux-spec cited in the issue body. D
 
 [match]
 labels_any = ["ui"]
+domain_paths = ["internal/tui/**"]
 unless_labels = [
   "blocked",
   "docs-only",

@@ -1,37 +1,10 @@
-# Lines configured by zsh-newuser-install
-HISTFILE=~/.zsh_history
-HISTSIZE=1000
-SAVEHIST=1000
-setopt autocd histignorealldups sharehistory
-bindkey -v
-bindkey '^R' history-incremental-search-backward
-# End of lines configured by zsh-newuser-install
-# The following lines were added by compinstall
-zstyle :compinstall filename '/home/${USER}/.zshrc'
-
-autoload -Uz compinit
-compinit
-
-zstyle ':completion:*' auto-description 'specify: %d'
-zstyle ':completion:*' completer _expand _complete _correct _approximate
-zstyle ':completion:*' format 'Completing %d'
-zstyle ':completion:*' group-name ''
-zstyle ':completion:*' menu select=2
-eval "$(dircolors -b)"
-zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
-zstyle ':completion:*' list-colors ''
-zstyle ':completion:*' list-prompt %SAt %p: Hit TAB for more, or the character to insert%s
-zstyle ':completion:*' matcher-list '' 'm:{a-z}={A-Z}' 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=* l:|=*'
-zstyle ':completion:*' menu select=long
-zstyle ':completion:*' select-prompt %SScrolling active: current selection at %p%s
-zstyle ':completion:*' use-compctl false
-zstyle ':completion:*' verbose true
-
-zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
-zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'
-# End of lines added by compinstall
-
 # START MIGRATION: Needs to be moved to Vorpal
+
+export HISTSIZE=100000
+# Maximum lines saved to $HISTFILE
+export SAVEHIST=100000
+# Like INC_APPEND_HISTORY + re-read history whenever accessing it
+setopt SHARE_HISTORY
 
 ## Claude Code
 c () {
@@ -138,8 +111,41 @@ eval "$(starship init zsh)"
 ## Zoxide
 eval "$(zoxide init zsh)"
 
+## Key bindings
+# Vi mode keeps Esc for normal mode. Insert mode gets the emacs-style
+# defaults back, since vi mode drops most of them.
+bindkey -v
+bindkey -M viins '^A' beginning-of-line
+bindkey -M viins '^B' backward-char
+bindkey -M viins '^D' delete-char-or-list
+bindkey -M viins '^E' end-of-line
+bindkey -M viins '^F' forward-char
+bindkey -M viins '^H' backward-delete-char
+bindkey -M viins '^?' backward-delete-char
+bindkey -M viins '^K' kill-line
+bindkey -M viins '^N' down-line-or-history
+bindkey -M viins '^P' up-line-or-history
+bindkey -M viins '^R' history-incremental-search-backward
+bindkey -M viins '^T' transpose-chars
+bindkey -M viins '^U' kill-whole-line
+bindkey -M viins '^W' backward-kill-word
+bindkey -M viins '^Y' yank
+bindkey -M viins '^_' undo
+bindkey -M viins '^[b' backward-word
+bindkey -M viins '^[d' kill-word
+bindkey -M viins '^[f' forward-word
+bindkey -M viins '^[.' insert-last-word
+
 # END MIGRATION: Needs to be moved to Vorpal
 
 # Added by LM Studio CLI (lms)
-export PATH="$PATH:/Users/${USER}/.lmstudio/bin"
+export PATH="$PATH:${HOME}/.lmstudio/bin"
 # End of LM Studio CLI section
+
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+# Added by Devin
+export PATH="${HOME}/.codeium/windsurf/bin:$PATH"

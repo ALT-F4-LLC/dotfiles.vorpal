@@ -1,6 +1,6 @@
 use crate::user::{
     bat::Bat, claude_code::ClaudeCode, docket::Docket, ghostty::Ghostty, go::Go, k9s::K9s,
-    neovim::Neovim,
+    neovim::Neovim, zsh::Zsh,
 };
 use anyhow::{bail, Result};
 use std::collections::BTreeSet;
@@ -14,6 +14,7 @@ mod go;
 mod k9s;
 mod neovim;
 mod utilities;
+mod zsh;
 
 pub struct UserEnvironment {
     name: String,
@@ -76,6 +77,10 @@ impl UserEnvironment {
             .build(context)
             .await?;
 
+        let zsh = Zsh::new(&self.name, self.systems.clone())
+            .build(context)
+            .await?;
+
         let artifacts = binaries
             .into_iter()
             .chain(bat.0)
@@ -85,6 +90,7 @@ impl UserEnvironment {
             .chain(go.0)
             .chain(k9s.0)
             .chain(neovim.0)
+            .chain(zsh.0)
             .collect();
 
         let symlinks_chain: Vec<(String, String)> = bat
@@ -96,6 +102,7 @@ impl UserEnvironment {
             .chain(go.1)
             .chain(k9s.1)
             .chain(neovim.1)
+            .chain(zsh.1)
             .collect();
 
         let duplicates = duplicate_symlink_targets(&symlinks_chain);

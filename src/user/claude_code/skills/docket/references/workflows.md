@@ -231,6 +231,8 @@ A retired version reports `deprecated_at_ms` under `--json=v2` and prints
 | A threshold names a field its declared schema does not declare | `VALIDATION_ERROR` | 3 |
 | A threshold literal is not a value its declared schema allows | `VALIDATION_ERROR` | 3 |
 | An ordered comparison (`>=`, `>`, `<=`, `<`) on a field with no `ordered_enum` | `VALIDATION_ERROR` | 3 |
+| A reserved `diff.*` predicate on a step that holds no tree (V45), a non-integer count literal (V46), or an ordered operator or non-boolean literal on `diff.empty` (V47) | `VALIDATION_ERROR` | 3 |
+| `on_exhausted` on a step that does not route `fix-loop` or declares no positive `max_fix_loops`, or naming a step that is not a vote or executor step of the workflow or whose `after` omits this step (V41) | `VALIDATION_ERROR` | 3 |
 | A step emitting the reserved kind `gate-results` or `vote-record` | `VALIDATION_ERROR` | 3 |
 | `<step>.vote-record` naming a producer whose `type` is not `"vote"` (V11) | `VALIDATION_ERROR` | 3 |
 | `issue.linked.<relation>.<kind>` naming `*`, `gate-results`, or `vote-record` as the kind | `VALIDATION_ERROR` | 3 |
@@ -333,6 +335,7 @@ leaving that step's siblings legitimately `claimed` at `waiting-human`.
 | `min_siblings` | int, default = all | how many fanout siblings the join needs |
 | `threshold` | table: routing → predicate | routing computed from the step's results |
 | `on_fail` | `"fix-loop"` \| `"waiting-human"` \| `"skip"` \| `"abandon-issue"`; default `"waiting-human"` | where a failure routes. **Required explicitly on `type="human"` and `type="vote"` steps** |
+| `on_exhausted` | `"waiting-human"` \| `"abandon-issue"` \| the name of a `type="vote"` step of this workflow \| the name of an executor step of this workflow; default `"waiting-human"`; only on a step that routes `fix-loop` under a positive `max_fix_loops` (V41) | where fix-loop exhaustion routes: a `fix-loop` entry whose next ordinal would exceed `max_fix_loops` plus `fix-round` grants ([Loops](#loops), item 1). `waiting-human` parks for an operator, as every exhaustion did before the key existed; `abandon-issue` stops the run's work on the issue; a vote step name opens that panel's proposal, which is how a loop-extension vote under a hard ceiling is declared; an executor step name runs that step, so a file-and-stop default runs machine-side. A named step is an interposed target, read as `on_fail` reads one, and its `after` must include this step (V41). It is the exhaustion's routing, not a second bound: the `max_fix_loops` arithmetic is unchanged *(engine commit 9d70870, branch `feature/engine-improvements`)* |
 | `loop` | bool, default false | marks a loop-body step |
 | `serves` | [step names], default = every `fix-loop`-capable step | scopes this `loop = true` step (and its `after_loop` chain) to the named steps' **loop cluster** — entry fires only the bodies serving the step whose routing actually triggered it (the **trigger**). Omitted or empty means "serves every trigger," one cluster for the whole workflow |
 | `after_loop` | step name | where execution re-enters after a loop body |
@@ -471,6 +474,32 @@ been asked yet. All four values are legal there.
 as a gate). Routings are evaluated **top to bottom, first match routes**, and
 no match routes `pass`.
 
+**Three field names are reserved for the engine's own measurement of the
+change** *(engine commits 0cecefd, f781c15, 94e7795, 7955d74, 79ad8e4, branch
+`feature/engine-improvements`)*: `diff.lines` (added plus removed content
+lines), `diff.files` (files touched), and `diff.empty` (whether the recorded
+body holds a change). They measure what a tree-holding executor or fanout
+step recorded, not its payload, and are evaluated at record time over the
+step's in-scope `issue.diff`, the object a review reads. The aggregation is
+not applied: each is one value per step, so `any(diff.lines > 20)` and
+`all(diff.lines > 20)` say the same thing. The counts compare numerically
+with no `ordered_enum` and never park. A step that recorded nothing
+evaluates as `diff.empty == true`, `diff.lines == 0`, and `diff.files == 0`,
+a decided answer rather than an unknown field. No schema declares them, so
+the schema cross-checks (V21a–V21c) skip exactly these three names; a
+lookalike such as `diff.bogus` is still refused as undeclared. Register time
+refuses instead:
+
+- **V45:** a `diff.*` predicate on an `action` or `type` step, or on an
+  executor or fanout step declaring `holds_tree = false`, where no
+  measurement exists.
+- **V46:** a non-integer literal on `diff.lines` or `diff.files`, under any
+  operator.
+- **V47:** an ordered operator, or a non-boolean literal, on `diff.empty`.
+
+A change track can route on size:
+`threshold = { "review" = "any(diff.lines > 20)", "review-lite" = "all(diff.lines <= 20)" }`.
+
 **An interposed gate runs only when routed to.** A step named as a
 step-name routing target — authored with `after = [routing-step]` — is
 latched by readiness until a routing predecessor's **recorded** routing
@@ -485,7 +514,9 @@ schema** when a step declares a `payload` — see [register-time
 checks](schemas.md#register-schemas-before-the-workflows-that-name-them). A
 step with a `threshold` and **no** `payload` is legal: equality has never
 needed an order, and an ordered comparison over such a field parks the step
-`waiting-human` rather than docket guessing one.
+`waiting-human` rather than docket guessing one. The reserved `diff.lines`
+and `diff.files` counts are the exception: the engine measured them, knows
+their order, and never parks on them.
 
 **Executor hints are opaque.** `executor`, `fanout` entries, `voters`, and
 `class` are strings docket stores, echoes back, and uses as map keys. There
@@ -847,24 +878,33 @@ What happens on loop entry, in one transaction:
 
 1. **The issue's loop counter increments.** The counter is per-issue, not
    per-step: one shared sequence even across independent clusters. If the
-   new count would exceed `max_fix_loops`, the routing becomes
-   `waiting-human` instead and no loop is entered, with the parked step's
-   routing recording why. A **cluster-scoped** `max_fix_loops` (declared on
-   a `serves`-scoped body) bounds only that cluster's own rounds, under the
+   new count would exceed `max_fix_loops` (plus any `fix-round` grants), no
+   loop is entered: the counter is restored and the exhausted entry routes
+   per the **triggering step's `on_exhausted`**, default `waiting-human`
+   *(engine commit 9d70870, branch `feature/engine-improvements`)*. Only
+   `waiting-human` parks, with the parked step's routing recording why;
+   `abandon-issue` or a named step routes without parking. A
+   **cluster-scoped** `max_fix_loops` (declared on a `serves`-scoped body) bounds only that cluster's own rounds, under the
    issue-level ceiling declared elsewhere — hitting it parks with `loop
    round %d for %q would exceed its cluster's max_fix_loops = %d on %s`
    instead of the issue-wide `loop %d would exceed max_fix_loops = %d on
-   %s`; either way `docket step resolve --as fix-round` authorizes one more
-   round. Two refusals share that park's shape without touching the bound
-   *(engine commit f2dcb58)*: a round whose predecessor moved no bytes in
-   the issue's scope, and one whose routing step recorded the same verdict
-   as the round below it, are refused — nothing superseded, nothing
-   instantiated, `waiting-human` naming `--as fix-round`, which re-enters
-   through the authorized path the refusal does not check. A degenerate
-   diff (empty, or carrying only the unresolved-base marker) never counts
-   as unchanged. Exhaustion itself has no routing of its own: the bound
-   always parks `waiting-human`; a declared exhaustion routing is an open
-   engine request.
+   %s`; either way, when the exhaustion parks, `docket step resolve --as
+   fix-round` authorizes one more round. An exhausted entry, issue-level or
+   cluster-scoped, also writes three **loop-history keys** on the triggering
+   step's row, in the same transaction as the routing decision:
+   `loop_rounds_run` (the rounds that ran against the cap),
+   `loop_trigger_step` (the triggering instance, `name@k#i`), and
+   `loop_latest_verdict` (the routing verdict the last round ended on). Read
+   them from `docket step show STEP-N --json=v2`; they are omitted on every
+   row outside an exhaustion. Two refusals share the park's shape without
+   touching the bound *(engine commit f2dcb58)*: a round whose predecessor
+   moved no bytes in the issue's scope, and one whose routing step recorded
+   the same verdict as the round below it, are refused — nothing superseded,
+   nothing instantiated, `waiting-human` naming `--as fix-round` **regardless
+   of `on_exhausted`**, which re-enters through the authorized path the
+   refusal does not check. They are not exhaustions and write no loop
+   history. A degenerate diff (empty, or carrying only the unresolved-base
+   marker) never counts as unchanged.
 2. **Unclaimed work downstream of the triggered cluster's `after_loop`
    root(s) is superseded.** Instances at a lower ordinal that are still
    `pending` become `superseded`, a terminal status, not a deletion.

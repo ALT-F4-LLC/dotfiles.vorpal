@@ -33,6 +33,9 @@ tests:
     #!/usr/bin/env bash
     set -euo pipefail
     cargo test --locked --offline
+    # The suites commit into throwaway repos; keep those commits off the
+    # operator's signing agent. Scoped to this recipe's process only.
+    export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=commit.gpgsign GIT_CONFIG_VALUE_0=false
     for suite in tests/*.test.sh; do
         echo "==> $suite"
         bash "$suite"

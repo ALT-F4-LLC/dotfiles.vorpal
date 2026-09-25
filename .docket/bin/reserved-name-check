@@ -57,11 +57,12 @@ fi
 
 # Committed range, then staged + unstaged + untracked: a staged-only file
 # appears in neither a bare working-tree diff nor the untracked list.
+# Deletions are excluded: removing a path cannot claim a name.
 changed=$( { if [ -n "$committed_range" ]; then
-               git diff --name-only "$committed_range" -- docs/spec
+               git diff --name-only --diff-filter=d "$committed_range" -- docs/spec
              fi
-             git diff --cached --name-only -- docs/spec
-             git diff --name-only -- docs/spec
+             git diff --cached --name-only --diff-filter=d -- docs/spec
+             git diff --name-only --diff-filter=d -- docs/spec
              git ls-files --others --exclude-standard -- docs/spec
            } | sort -u )
 

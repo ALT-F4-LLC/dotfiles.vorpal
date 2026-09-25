@@ -90,6 +90,14 @@ expect() { # <name> <want-rc> <stdout|stderr> <needle>
     fi
 }
 
+# Fixtures are fresh repos, so a leaked base never resolves in them: no gate
+# case can observe a leak. This case pins the unset above directly.
+if [ -z "${DOCKET_GATE+x}" ] && [ -z "${DOCKET_GATE_BASE+x}" ]; then
+    pass "suite environment: DOCKET_GATE and DOCKET_GATE_BASE unset"
+else
+    fail "suite environment: DOCKET_GATE or DOCKET_GATE_BASE inherited from the caller"
+fi
+
 # Committed since the base: a clean tree must not hide the change.
 for rel in docs/spec/nested/thing.md docs/spec/notes.txt; do
     d="${WORK}/committed-${rel//\//_}"
@@ -101,6 +109,29 @@ for rel in docs/spec/nested/thing.md docs/spec/notes.txt; do
     run_gate "$d" DOCKET_GATE=reserved-name-check "DOCKET_GATE_BASE=${prior}"
     expect "committed ${rel} since the base is refused" 1 stderr "$rel"
 done
+
+d="${WORK}/committed-reserved"
+build_repo "$d"
+prior=$(git -C "$d" rev-parse HEAD)
+printf '# Architecture\n' > "${d}/docs/spec/architecture.md"
+commit_all "$d"
+run_gate "$d" DOCKET_GATE=reserved-name-check "DOCKET_GATE_BASE=${prior}"
+expect "committed reserved name since the base passes" 0 stdout "docs/spec/architecture.md -> reserved (spec-author)"
+
+# Deleting a stray path, committed or not, removes it from the namespace.
+d="${WORK}/deleted"
+build_repo "$d"
+mkdir -p "${d}/docs/spec/legacy"
+printf '# Old\n' > "${d}/docs/spec/legacy/old.md"
+printf 'old\n' > "${d}/docs/spec/legacy.txt"
+commit_all "$d"
+prior=$(git -C "$d" rev-parse HEAD)
+git -C "$d" rm -q docs/spec/legacy/old.md
+commit_all "$d"
+git -C "$d" rm -q --cached docs/spec/legacy.txt
+rm "${d}/docs/spec/legacy.txt"
+run_gate "$d" DOCKET_GATE=reserved-name-check "DOCKET_GATE_BASE=${prior}"
+expect "deleted stray paths are not refused" 0 stdout "no docs/spec/ changes"
 
 # Uncommitted with the base at HEAD: the tree still counts.
 d="${WORK}/modified"

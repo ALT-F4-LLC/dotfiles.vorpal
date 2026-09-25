@@ -14,7 +14,8 @@
 #     and nothing else. A gate demanding a convention the repo never had
 #     trains people to route around the gate.
 #
-# Scope is CHANGED docs only — staged, unstaged, and untracked — because a
+# Scope is CHANGED docs only — committed since DOCKET_GATE_BASE, staged,
+# unstaged, and untracked — because a
 # gate runs while a step holds the tree, and a malformed doc that predates
 # the step is not the step's doing.
 #
@@ -33,7 +34,24 @@ if ! repo_root="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null)"; 
 fi
 cd "$repo_root"
 
-changed=$( { git diff --cached --name-only -- 'docs/*.md' 'src/user/claude_code/skills/*.md'
+# The engine commits a step's work before its record-time gate rerun, so the
+# uncommitted tree alone is empty by then. DOCKET_GATE_BASE (exported by the
+# engine to completion gates) adds the committed range base..HEAD. Running as
+# this gate without a usable base fails closed; any other caller without one
+# (the ac-commands pre-gate, a `tests` run, a hand run) scans the tree only.
+committed_range=""
+base="${DOCKET_GATE_BASE:-}"
+if [ -n "$base" ] && git rev-parse --verify --quiet "${base}^{commit}" >/dev/null; then
+  committed_range="${base}..HEAD"
+elif [ "${DOCKET_GATE:-}" = "doc-validate" ]; then
+  echo "doc-validate FAILED: DOCKET_GATE_BASE is unset or does not resolve to a commit ('${base}'); cannot select committed docs." >&2
+  exit 2
+fi
+
+changed=$( { if [ -n "$committed_range" ]; then
+               git diff --name-only "$committed_range" -- 'docs/*.md' 'src/user/claude_code/skills/*.md'
+             fi
+             git diff --cached --name-only -- 'docs/*.md' 'src/user/claude_code/skills/*.md'
              git diff --name-only -- 'docs/*.md' 'src/user/claude_code/skills/*.md'
              git ls-files --others --exclude-standard -- 'docs/*.md' 'src/user/claude_code/skills/*.md'
            } | sort -u )

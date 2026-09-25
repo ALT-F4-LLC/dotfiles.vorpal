@@ -25,6 +25,10 @@
 
 set -uo pipefail
 
+# A `tests` gate run leaks the engine's DOCKET_GATE and the real repo's
+# DOCKET_GATE_BASE into this suite; each case sets exactly what it tests.
+unset DOCKET_GATE DOCKET_GATE_BASE
+
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO_ROOT=$(cd "${SCRIPT_DIR}/.." && pwd)
 GATE="${DOC_VALIDATE_GATE:-${REPO_ROOT}/.docket/bin/doc-validate}"
@@ -76,12 +80,34 @@ Body text.
 MD
     git -C "$dir" add -A
     git -C "$dir" commit -q -m init
+    git -C "$dir" tag baseline
 }
 
-# run_gate <dir>; runs the fixture's own copy of the gate, printing combined
+# run_gate <dir>; runs the fixture's own copy of the gate as the engine does,
+# with DOCKET_GATE_BASE at the fixture's baseline commit, printing combined
 # stdout+stderr and returning its exit code.
 run_gate() { # <dir>
-    ( cd "$1" && bash .docket/bin/doc-validate 2>&1 )
+    ( cd "$1" && DOCKET_GATE_BASE="$(git rev-parse baseline)" bash .docket/bin/doc-validate 2>&1 )
+}
+
+# run_gate_without_base <dir> [gate-name]; runs the gate with no
+# DOCKET_GATE_BASE, and DOCKET_GATE set to gate-name when one is given.
+run_gate_without_base() { # <dir> [gate-name]
+    if [ $# -gt 1 ]; then
+        ( cd "$1" && DOCKET_GATE="$2" bash .docket/bin/doc-validate 2>&1 )
+    else
+        ( cd "$1" && bash .docket/bin/doc-validate 2>&1 )
+    fi
+}
+
+# write_untitled_doc <dir>; replaces the fixture's docs/ file with one that
+# lacks the required '# ' title.
+write_untitled_doc() { # <dir>
+    cat > "${1}/docs/facts/sample.md" <<'MD'
+Sample Fact
+
+Body text with no title line.
+MD
 }
 
 # ---- clean tree, nothing changed: exits 0, "no docs changed" -----------
@@ -191,11 +217,7 @@ fi
 # ---- a docs/ file without a '# ' title fails ---------------------------
 FIX="${WORK}/docs-no-title"
 build_repo "$FIX"
-cat > "${FIX}/docs/facts/sample.md" <<'MD'
-Sample Fact
-
-Body text with no title line.
-MD
+write_untitled_doc "$FIX"
 if out=$(run_gate "$FIX"); then
     fail "docs file without title: expected non-zero exit, gate passed"
 else
@@ -206,6 +228,63 @@ else
         printf '%s\n' "$out" | sed 's/^/    /'
     fi
 fi
+
+# ---- a COMMITTED docs/ file without a title fails against the base -----
+# The engine commits a step's work before the record-time rerun, so the
+# uncommitted tree is clean; only base..HEAD carries the bad doc.
+FIX="${WORK}/committed-no-title"
+build_repo "$FIX"
+write_untitled_doc "$FIX"
+git -C "$FIX" commit -q -am "untitled doc"
+if out=$(run_gate "$FIX"); then
+    fail "committed doc without title: expected non-zero exit, gate passed"
+    printf '%s\n' "$out" | sed 's/^/    /'
+else
+    if printf '%s\n' "$out" | grep -q "does not open with a '# ' title"; then
+        pass "committed doc without title: gate fails"
+    else
+        fail "committed doc without title: gate failed but not with the expected message"
+        printf '%s\n' "$out" | sed 's/^/    /'
+    fi
+fi
+
+# ---- running as the doc-validate gate without a usable base: exit 2 ----
+FIX="${WORK}/own-gate-no-base"
+build_repo "$FIX"
+out=$(run_gate_without_base "$FIX" doc-validate); rc=$?
+if [ "$rc" -eq 2 ] && printf '%s\n' "$out" | grep -q "DOCKET_GATE_BASE"; then
+    pass "own gate, base unset: exits 2 naming DOCKET_GATE_BASE"
+else
+    fail "own gate, base unset: expected exit 2 naming DOCKET_GATE_BASE, got ${rc}"
+    printf '%s\n' "$out" | sed 's/^/    /'
+fi
+
+out=$( cd "$FIX" && DOCKET_GATE=doc-validate DOCKET_GATE_BASE=0000000000000000000000000000000000000000 bash .docket/bin/doc-validate 2>&1 ); rc=$?
+if [ "$rc" -eq 2 ] && printf '%s\n' "$out" | grep -q "DOCKET_GATE_BASE"; then
+    pass "own gate, base unresolvable: exits 2 naming DOCKET_GATE_BASE"
+else
+    fail "own gate, base unresolvable: expected exit 2 naming DOCKET_GATE_BASE, got ${rc}"
+    printf '%s\n' "$out" | sed 's/^/    /'
+fi
+
+# ---- no base, DOCKET_GATE unset or another gate: working-tree scan -----
+for gate_name in "" ac-commands; do
+    label="DOCKET_GATE=${gate_name:-<unset>}, base unset"
+    FIX="${WORK}/no-base-${gate_name:-unset}"
+    build_repo "$FIX"
+    write_untitled_doc "$FIX"
+    if [ -n "$gate_name" ]; then
+        out=$(run_gate_without_base "$FIX" "$gate_name"); rc=$?
+    else
+        out=$(run_gate_without_base "$FIX"); rc=$?
+    fi
+    if [ "$rc" -eq 1 ] && printf '%s\n' "$out" | grep -q "does not open with a '# ' title"; then
+        pass "${label}: scans the working tree"
+    else
+        fail "${label}: expected exit 1 from a working-tree scan, got ${rc}"
+        printf '%s\n' "$out" | sed 's/^/    /'
+    fi
+done
 
 echo
 if [ "$FAIL" -gt 0 ]; then

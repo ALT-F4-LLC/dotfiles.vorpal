@@ -407,7 +407,13 @@ fi
 # (bash resolves `\`-continuations before setting $BASH_COMMAND, verified
 # live; only a heredoc body or a literal newline inside a quoted argument
 # adds further lines, and neither can move the verb off line one).
-INTERPRETER_RE='(^|[^A-Za-z0-9_])(sh|bash|dash|zsh|ksh|mksh|csh|tcsh|python[0-9.]*|perl|ruby|node|nodejs|php|lua[0-9.]*|tclsh|expect|osascript|env|eval)([^A-Za-z0-9_]|$)'
+#
+# The boundary on either side of an interpreter name is any byte that is not
+# a word character and not a dot. The dot is what separates a file name from
+# its extension, so a target named `cases.sh`, `x.env` or `run.node` is not
+# an interpreter and does not widen; every spelling that can run
+# one still does (`sh`, `/bin/sh`, `"sh"`, `$(sh`, a backtick, `;sh`).
+INTERPRETER_RE='(^|[^A-Za-z0-9_.])(sh|bash|dash|zsh|ksh|mksh|csh|tcsh|python[0-9.]*|perl|ruby|node|nodejs|php|lua[0-9.]*|tclsh|expect|osascript|env|eval)([^A-Za-z0-9_.]|$)'
 WIDEN=0
 if [[ "$PROBE_TEXT" =~ $INTERPRETER_RE ]]; then
     WIDEN=1

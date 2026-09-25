@@ -557,6 +557,20 @@ case_heredoc_body_destination() {
         executor-write DENY "quoted heredoc fed to a pathed interpreter"
     assert_verdict "tee \"\$TMPDIR/f.txt\" <<'EOF'"$'\n'"the rule says ${inv} is operator-reserved"$'\nEOF' \
         executor-write ALLOW "quoted heredoc fed to tee: body is prose"
+    # A file extension is not an interpreter: a target named cases.sh or
+    # .env once widened the whole command on its own suffix.
+    assert_verdict "cat > \"\$TMPDIR/probe/cases.sh\" <<'EOF'"$'\n'"${inv}"$'\nEOF' \
+        executor-write ALLOW "quoted heredoc to a .sh target: body is data"
+    assert_verdict "cat > \"\$TMPDIR/probe/.env\" <<'EOF'"$'\n'"${inv}"$'\nEOF' \
+        executor-write ALLOW "quoted heredoc to a .env target: body is data"
+    assert_verdict "\"sh\" <<'EOF'"$'\n'"${inv}"$'\nEOF' \
+        executor-write DENY "quoted heredoc fed to a double-quoted sh"
+    assert_verdict "'/bin/sh' <<'EOF'"$'\n'"${inv}"$'\nEOF' \
+        executor-write DENY "quoted heredoc fed to a single-quoted pathed sh"
+    assert_verdict "x=\$(sh <<'EOF'"$'\n'"${inv}"$'\nEOF\n)' \
+        executor-write DENY "quoted heredoc fed to sh inside an assignment's substitution"
+    assert_verdict "x=\`sh <<'EOF'"$'\n'"${inv}"$'\nEOF\n`' \
+        executor-write DENY "quoted heredoc fed to sh inside an assignment's backticks"
 }
 
 # ---- COMMENTS: inert to bash, so inert here ---------------------------------

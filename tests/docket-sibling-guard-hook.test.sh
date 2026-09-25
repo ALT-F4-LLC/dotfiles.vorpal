@@ -536,6 +536,10 @@ case_artifact_heredoc_bodies() {
     assert_verdict $'"sh" <<\'EOF\'\nrm -rf '"${SIB_DIR}"$'\nEOF' executor-write "$WAVE_42" DENY "heredoc fed to a double-quoted sh is code"
     assert_verdict $'\'/bin/sh\' <<\'EOF\'\nrm -rf '"${SIB_DIR}"$'\nEOF' executor-write "$WAVE_42" DENY "heredoc fed to a single-quoted /bin/sh is code"
     assert_verdict $'sh<<\'EOF\'\nrm -rf '"${SIB_DIR}"$'\nEOF' executor-write "$WAVE_42" DENY "heredoc fed to sh with no blank before the operator is code"
+    # An interpreter glued to the substitution that runs it: a whitespace-only
+    # boundary missed these and let the body run unread.
+    assert_verdict $'x=$(sh <<\'EOF\'\nrm -rf '"${SIB_DIR}"$'\nEOF\n)' executor-write "$WAVE_42" DENY "heredoc fed to sh inside an assignment's substitution is code"
+    assert_verdict $'x=`sh <<\'EOF\'\nrm -rf '"${SIB_DIR}"$'\nEOF\n`' executor-write "$WAVE_42" DENY "heredoc fed to sh inside an assignment's backticks is code"
     assert_verdict "${sh_target}"$'\ngrep -rn \'STEP-[0-9]*\' .\nEOF' executor-read "$WAVE_42" ALLOW "own .sh target: quoted body carrying the glob-form step token"
     assert_verdict "${sh_target}"$'\nFound a leftover STEP-7.d beside my own dir.\nEOF' executor-read "$WAVE_42" ALLOW "own .sh target: quoted body naming a sibling dir"
     assert_verdict "cat > ${OWN_DIR}/probe/.env <<'EOF'"$'\nrm -rf '"${SIB_DIR}"$'\nEOF' executor-write "$WAVE_42" ALLOW "own .env target: quoted body is still inert"

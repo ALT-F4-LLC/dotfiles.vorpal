@@ -165,7 +165,7 @@ const DEFAULT_MODE = 'steps'
 //                  by step or lexicographically by (proposal, voter)
 //         overhead the agents that recorded no step and cast no ballot, with
 //                  their summed units (steps mode; empty in seats mode)
-//         skipped  [{file, reason: 'seated'|'unattributed'|'excluded', key, label}]
+//         skipped  [{file, reason: 'seated'|'unattributed'|'excluded'|'dead-spawn', key, label}]
 //         errors   [string]; when non-empty the script throws after logging
 //                  each one, because silence must not look like success
 //         model_observations [{file, kind, key, models, complete, source,
@@ -391,6 +391,14 @@ function reduceRows(results, mode, exclude) {
     const errors = []
     const model_observations = []
     const excluded = new Set(exclude || [])
+    // A claimant transcript with no usage is judged AFTER the whole batch is
+    // summed, not in line: wave.js re-spawns a claimant whose first spawn
+    // died before its first assistant turn, and that dead transcript still
+    // opens with the step's brief. Beside a live transcript for the same
+    // key it is a dead spawn and is skipped; alone, silence is still an
+    // error, not a zero row. Directory order does not decide which of the
+    // two is read first, hence the deferral.
+    const silent = []
     for (const { file, extract } of results) {
         const c = classify(extract, mode, file)
         if (c.bucket === 'error') {
@@ -412,14 +420,21 @@ function reduceRows(results, mode, exclude) {
             skipped.push({ file, reason: 'excluded', key: c.key, label: c.label })
             continue
         }
+        const id = mode === 'seats' ? c.key.join(' ') : c.key
         if (!UNITS.some((u) => extract.usage[u] > 0)) {
-            errors.push(`${file} (${c.label}): transcript carries no usage`)
+            silent.push({ file, id, c })
             continue
         }
-        const id = mode === 'seats' ? c.key.join(' ') : c.key
         if (!totals.has(id)) totals.set(id, { key: c.key, sums: zeroSums(), tool_uses: 0 })
         addUsage(totals.get(id).sums, extract.usage)
         totals.get(id).tool_uses += toolUses(extract)
+    }
+    for (const { file, id, c } of silent) {
+        if (totals.has(id)) {
+            skipped.push({ file, reason: 'dead-spawn', key: c.key, label: c.label })
+        } else {
+            errors.push(`${file} (${c.label}): transcript carries no usage`)
+        }
     }
     const cmp = mode === 'seats'
         ? (a, b) => (a.key[0] < b.key[0] ? -1 : a.key[0] > b.key[0] ? 1 :
@@ -566,7 +581,9 @@ cat > "\${TMPDIR:-/tmp}/wave-usage-$$.jq" <<'JQ'
 ${EXTRACT_JQ}JQ
 jq -c -n -R -f "\${TMPDIR:-/tmp}/wave-usage-$$.jq" ${sq(file)}; echo "exit=$?"
 \`\`\`
-${retry ? '\nThis is a SECOND, independent run of the same command against the same file — a prior run reported bootstrap:false and is being re-checked. Run the command fresh; do not reuse or assume any earlier result.\n' : ''}
+
+The transcript path is exact and must be copied character for character. A hyphen where a dot might be expected (\`github-com\`) is correct and is not a typo; do not "correct" any part of the path.
+${retry === 'path' ? '\nThis is a SECOND run: the first run reported that jq could not open the file, which means the path was retyped incorrectly. Copy the path from the command above byte for byte.\n' : retry ? '\nThis is a SECOND, independent run of the same command against the same file — a prior run reported bootstrap:false and is being re-checked. Run the command fresh; do not reuse or assume any earlier result.\n' : ''}
 jq prints exactly one JSON object. Return it as the structured output with ok:true and every field copied verbatim — bootstrap, cast, record, probe, exec, step_mention, reseat, tool_uses, models_observed, model_observation_complete, usage — including every number exactly as printed. Do not compute, estimate, round, or adjust anything, and do not read the transcript by any other means. Model names come only from the extracted message fields; missing observations remain empty. If jq exits non-zero or prints nothing, return ok:false with the error text in \`error\`.`
 
 phase('Scout')
@@ -621,8 +638,16 @@ function hasUsage(extract) {
 // retried — wave-usage only rechecks a confirmed-good extract that merely
 // reported no bootstrap, never a failure); a GOOD extract with
 // bootstrap !== false passes straight through, unretried; only
-// bootstrap === false triggers stage 3's retry.
+// bootstrap === false triggers stage 3's retry. ONE exception, stage 2b:
+// a jq failure whose text says the FILE could not be opened is not a
+// transcript failure at all but a relay one — the agent retyped the path
+// (measured on one conductor session: a slug carrying `github-com` came
+// back as `github.com` or `github_com` in nine extracts, and each sank a
+// whole shard's join). That shape alone is retried once with a
+// fresh agent; a second miss is then the error, so nothing is retried
+// more than once and no other failure is retried at all.
 const errors = []
+const PATH_MISS_RE = /could not open file|no such file or directory/i
 function classifyFirstAttempt(r, file, i) {
     if (!r) {
         log(`wave-usage: ${file}: extraction agent returned nothing`)
@@ -631,6 +656,10 @@ function classifyFirstAttempt(r, file, i) {
     }
     if (!r.extract || !r.extract.ok) {
         const why = (r.extract && r.extract.error) || 'no error text'
+        if (PATH_MISS_RE.test(why)) {
+            log(`wave-usage: ${file}: jq could not open the file (${why}) — the relay likely retyped the path; retrying once with a fresh agent`)
+            return { file, path: files[i], pathMiss: why }
+        }
         log(`wave-usage: ${file}: jq failed — ${why}`)
         errors.push(`${file}: jq failed — ${why}`)
         return null
@@ -641,6 +670,41 @@ function classifyFirstAttempt(r, file, i) {
         return null
     }
     return { ...r, path: files[i] }
+}
+
+// STAGE 2b: fires only when stage 2 marked the item a path miss. The retry
+// brief names the miss so the fresh agent copies the path byte for byte;
+// its reply takes the same first-attempt classification, minus the retry.
+let pathRetried = 0
+function retryPathMiss(prev) {
+    if (!prev || !prev.pathMiss) return prev
+    pathRetried++
+    return agent(extractBrief(prev.path, 'path'), {
+        label: `${prev.file} · extract (path retry)`,
+        phase: 'Extract',
+        schema: EXTRACT_SCHEMA,
+        ...AGENT_CONFIG.extract,
+    }).catch((err) => {
+        log(`wave-usage: ${prev.file}: path-retry agent error: ${err}`)
+        return null
+    }).then((second) => {
+        if (!second) {
+            errors.push(`${prev.file}: jq failed — ${prev.pathMiss} (path retry returned nothing)`)
+            return null
+        }
+        if (!second.ok) {
+            const why = second.error || 'no error text'
+            log(`wave-usage: ${prev.file}: path retry also failed — ${why}`)
+            errors.push(`${prev.file}: jq failed — ${prev.pathMiss} (path retry: ${why})`)
+            return null
+        }
+        if (!hasUsage(second)) {
+            errors.push(`${prev.file}: path retry reported ok but carried no usage`)
+            return null
+        }
+        log(`wave-usage: ${prev.file}: path retry succeeded`)
+        return { file: prev.file, extract: second, path: prev.path }
+    })
 }
 
 // STAGE 3: fires only when stage 2 marked the item bootstrap-suspect.
@@ -693,10 +757,12 @@ const extracted = await pipeline(
     }),
     (extract, file) => ({ file: basename(file), extract }),
     (r, file, i) => classifyFirstAttempt(r, basename(file), i),
+    retryPathMiss,
     recheckBootstrap,
 )
 const results = extracted.filter(Boolean)
 // TEST-END wave-usage-recheck-pipeline
+if (pathRetried) log(`wave-usage: ${pathRetried} transcript(s) had their path retyped by the relay and were retried once`)
 if (bootstrapRechecked) log(`wave-usage: ${bootstrapRechecked} transcript(s) reported bootstrap:false and were rechecked`)
 const summary = reduceRows(results, mode, exclude)
 const coordination = mode === 'steps' ? coordinationOf(results, manifestRows, waveStatuses) : null
@@ -714,6 +780,8 @@ for (const s of reduced.skipped) {
         log(`wave-usage: ${s.file}: no seat (never cast) — dropped here; steps mode carries it if it recorded a step, and reports it as wave overhead if it did not`)
     } else if (s.reason === 'seated') {
         log(`wave-usage: ${s.label}: cast a ballot — skipped here, carried by seats mode`)
+    } else if (s.reason === 'dead-spawn') {
+        log(`wave-usage: ${s.file} (${s.label}): dead spawn — no usage, and another transcript carries this ${mode === 'seats' ? 'seat' : 'step'}; skipped, not thrown`)
     } else {
         log(`wave-usage: ${s.file} (${s.label}): excluded — a prior back-fill already carries this ${mode === 'seats' ? 'seat' : 'step'}`)
     }

@@ -220,6 +220,57 @@ const GOOD = (bootstrap) => ({ ok: true, bootstrap, usage: USAGE, tool_uses: 0 }
         `case e: the failure is pushed to errors with the jq error text (got ${JSON.stringify(errors)})`)
     ok(!CALLS.includes('agent-F.jsonl · extract (retry)'),
         'case e: a failed first attempt is NEVER retried — only bootstrap:false triggers a recheck')
+    ok(!CALLS.includes('agent-F.jsonl · extract (path retry)'),
+        'case e: a jq parse failure is not a path miss and gets no path retry either')
+}
+
+// ---- (f) a jq "could not open file" failure is a relay path miss: retried
+// ONCE with a fresh agent, and the retry's good extract is used -----------
+{
+    reset()
+    files = ['/dir/github-com/agent-G.jsonl']
+    SCRIPT = {
+        'agent-G.jsonl · extract': { ok: false, error: 'jq: error: Could not open /dir/github.com/agent-G.jsonl: No such file or directory' },
+        'agent-G.jsonl · extract (path retry)': GOOD(true),
+    }
+    const { results, errors } = await run()
+    ok(CALLS.includes('agent-G.jsonl · extract (path retry)'),
+        `case f: a could-not-open failure triggers one path retry (got calls: ${JSON.stringify(CALLS)})`)
+    ok(results.length === 1 && results[0].extract.bootstrap === true && results[0].path === '/dir/github-com/agent-G.jsonl',
+        `case f: the retry's extract is used, with the original path kept (got ${JSON.stringify(results)})`)
+    ok(errors.length === 0, `case f: a recovered path miss is not an error (got ${JSON.stringify(errors)})`)
+}
+
+// ---- (g) a path miss that misses AGAIN is the error, and is not retried a
+// second time ---------------------------------------------------------------
+{
+    reset()
+    files = ['/dir/github-com/agent-H.jsonl']
+    SCRIPT = {
+        'agent-H.jsonl · extract': { ok: false, error: 'Could not open file: No such file or directory' },
+        'agent-H.jsonl · extract (path retry)': { ok: false, error: 'Could not open file: No such file or directory' },
+    }
+    const { results, errors } = await run()
+    ok(results.length === 0, `case g: a twice-missed path is excluded from results (got ${results.length})`)
+    ok(errors.length === 1 && errors[0].includes('jq failed') && errors[0].includes('path retry'),
+        `case g: the error names both misses (got ${JSON.stringify(errors)})`)
+    ok(CALLS.filter((c) => c.includes('path retry')).length === 1,
+        `case g: exactly one path retry, never two (got calls: ${JSON.stringify(CALLS)})`)
+}
+
+// ---- (h) a path retry whose extract reports bootstrap:false still gets the
+// bootstrap recheck: the stages chain ------------------------------------
+{
+    reset()
+    files = ['/dir/agent-I.jsonl']
+    SCRIPT = {
+        'agent-I.jsonl · extract': { ok: false, error: 'No such file or directory' },
+        'agent-I.jsonl · extract (path retry)': GOOD(false),
+        'agent-I.jsonl · extract (retry)': GOOD(true),
+    }
+    const { results } = await run()
+    ok(CALLS.includes('agent-I.jsonl · extract (retry)') && results.length === 1 && results[0].extract.bootstrap === true,
+        `case h: path retry then bootstrap recheck both fire and the final extract is the recheck's (got calls ${JSON.stringify(CALLS)}, results ${JSON.stringify(results)})`)
 }
 
 console.log(`\n${pass} passed, ${fail} failed`)

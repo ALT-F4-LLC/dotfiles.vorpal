@@ -511,6 +511,22 @@ const silent = [{ file: 'agent-quiet.jsonl', extract: {
 const quiet = reduceRows(silent, 'steps', [])
 ok(quiet.errors.length === 1 && quiet.errors[0].includes('carries no usage'),
     'a claimant whose transcript carries no usage is an error, not a zero row')
+// ---- ...unless a live transcript carries the same step: then it is a dead spawn ----
+// wave.js re-spawns a claimant whose first spawn died before its first
+// assistant turn; the dead transcript still opens with the step's brief and
+// carries no usage. One wave lost a whole shard's rows to that error.
+const live = by(wave, 'agent-aexec.jsonl')
+const deadFirst = [silent[0], live]
+const deadResult = reduceRows(deadFirst, 'steps', [])
+ok(deadResult.errors.length === 0,
+    'a no-usage claimant beside a live transcript for the same step is not an error')
+ok(deadResult.skipped.length === 1 && deadResult.skipped[0].reason === 'dead-spawn' && deadResult.skipped[0].file === 'agent-quiet.jsonl',
+    'and lands in skipped with reason dead-spawn')
+ok(JSON.stringify(unitsOf(deadResult.rows, live.extract.record)) === JSON.stringify(unitsOf(reduceRows([live], 'steps', []).rows, live.extract.record)),
+    'and the live transcript\'s row is exactly what it would be alone')
+const deadLast = reduceRows([live, silent[0]], 'steps', [])
+ok(deadLast.errors.length === 0 && deadLast.skipped.length === 1 && deadLast.skipped[0].reason === 'dead-spawn',
+    'directory order does not matter: the dead transcript listed after the live one is skipped too')
 const unread = [{ file: 'agent-blank.jsonl', extract: {
     bootstrap: false, cast: null, record: null, probe: false, exec: false, step_mention: null, usage: want,
 } }]

@@ -38,9 +38,11 @@ stop and say so — fixing it is `docket-refit`'s contract.
 Every docket registry verb resolves its project from the working directory.
 Never `cd` out of the checkout you are reconciling; pass corpus files as
 absolute paths instead. `register` and `deprecate` also take `--project
-<ref>` to write to another project from here; `workflow list` and `workflow
-lint` do not, so reading another project means running them with that
-project's checkout as the child process's cwd (see Scope below).
+<ref>` to write to another project from here. From docket `nightly-209`,
+`workflow list` and `workflow lint` take `--project <ref>` too, so another
+project's registry can be read without its checkout; on an older build,
+reading another project means running them with that project's checkout as
+the child process's cwd (see Scope below).
 
 `~/.docket/config/` belongs to no project, so linting from inside it
 resolves to whatever project the shell happens to sit in and can report a

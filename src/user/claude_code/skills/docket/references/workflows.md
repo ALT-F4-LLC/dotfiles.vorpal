@@ -201,6 +201,18 @@ the trap `lint` exists to catch: an edited file at a frozen `name@version`
 would otherwise validate cleanly and refuse the *whole activation* at the
 next run start.
 
+The verdict is **per project**. By default references resolve and the probe
+runs against the project the cwd resolves to. `--project <ref>` (prefix,
+name, identity path, or row id) judges against another project's registry
+instead, returning the verdict `workflow register --project <ref>` would
+reach, so a project whose checkout is missing from this machine can still be
+checked. `--all-projects` lints against every project and writes the same
+per-project report `register --all-projects` does, with `new`, `unchanged`,
+`conflict`, or `invalid` as each project's outcome; it exits non-zero when
+any project would refuse. `workflow list --project <ref>` likewise lists
+another project's registry, with `--deprecated`, `--orphans`, and `--name`
+applying there. Both flags need docket `nightly-209` or later.
+
 ### Retiring a version from binding (`docket workflow deprecate`)
 
 A registered **name** binds forever at its highest version; deleting its TOML
@@ -239,6 +251,8 @@ A retired version reports `deprecated_at_ms` under `--json=v2` and prints
 | Definition file not found | `NOT_FOUND` | 2 |
 | Re-registering different bytes at an existing `name@version` | `CONFLICT` | 4 |
 | `workflow lint` on a draft whose `name@version` is registered with different bytes | `CONFLICT` | 4 |
+| `payload` names a schema version that is registered but retired | `VALIDATION_ERROR` | 3 |
+| `workflow list` or `workflow lint` with an unknown `--project` ref | `NOT_FOUND` | 2 |
 | `workflow show` on an unregistered name or version | `NOT_FOUND` | 2 |
 | `workflow init` target exists without `--force` | `CONFLICT` | 4 |
 | `workflow deprecate` without an explicit `@version` | `VALIDATION_ERROR` | 3 |

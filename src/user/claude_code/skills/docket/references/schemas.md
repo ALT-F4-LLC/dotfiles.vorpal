@@ -12,6 +12,7 @@ Find the relevant heading before reading a large section:
 - Registration is content-addressed and immutable
 - Register schemas before the workflows that name them
 - The one shipped schema
+- Retiring a schema version (`docket schema deprecate`)
 - Validation at `step record`
 - `docket schema` refusals
 
@@ -137,6 +138,39 @@ aggregate@1                  1e0a0be39394  builtin
 `aggregate` action step. It is inert unless such a step runs; nothing else in
 the registry arrives without someone registering it.
 
+### Retiring a schema version (`docket schema deprecate`)
+
+A registered schema is never deleted. `deprecate` retires one version from
+service, the schema half of `workflow deprecate`:
+
+```bash
+docket schema deprecate risk-report@1 --json=v2
+docket schema deprecate risk-report@1 --json=v2 --restore   # back into service
+docket schema deprecate canary@1 --project DOT              # another project
+docket schema deprecate canary@1 --all-projects             # every project, per-project outcomes
+```
+
+The row survives: `schema show risk-report@1` still renders it (with a
+`status: DEPRECATED` line), `--body` still emits the registered bytes, and a
+run that already **pinned** it keeps validating payloads against it. What
+stops is **new references**: `workflow register`, `workflow lint`, and
+activation's auto-registration refuse a step whose `payload` names a retired
+version, naming the schema and the `--restore` remedy. `schema list` hides
+retired versions unless `--deprecated`; a bare `schema show NAME` resolves the
+highest version still in service. `docket registry audit` reports an orphaned
+schema whose every version is retired as `retired: true`.
+
+Two refusals the workflow verb lacks. A version that a workflow **still in
+service** names as `payload` is refused with `CONFLICT`, listing the
+referencing `name@version`s; there is no override, so retire or re-version
+those workflows first (a retired workflow does not block). The builtin
+`aggregate@1` cannot be retired, since it is visible to every project. Under
+`--all-projects` each project reports its own outcome: `deprecated`,
+`already-deprecated`, `not-registered`, or `in-use`.
+
+Needs docket `nightly-209` or later; the store migrates to schema version 36
+on first open.
+
 ### Validation at `step record`
 
 A step that declares `payload = "name@version"` has its `--payload-file`
@@ -168,7 +202,12 @@ token gets `AUTH_ERROR` and learns nothing about the schema.
 | Malformed JSON, or a document that does not compile as JSON Schema | `VALIDATION_ERROR` | 3 |
 | `ordered_enum` without a usable sibling `enum` | `VALIDATION_ERROR` | 3, naming the property path |
 | Re-registering different bytes at an existing `name@version` | `CONFLICT` | 4 |
-| `schema show` on an unregistered name or version | `NOT_FOUND` | 2 |
+| `schema show` on an unregistered name or version, or a bare name whose every version is retired | `NOT_FOUND` | 2 |
+| `schema deprecate` on an already-retired version | `CONFLICT` | 4 |
+| `schema deprecate` on a version a workflow still in service names as `payload` | `CONFLICT` | 4, listing the referencing workflows |
+| `schema deprecate` on the builtin `aggregate@1` | `VALIDATION_ERROR` | 3 |
+| `schema deprecate` on an unregistered name or version | `NOT_FOUND` | 2 |
+| `workflow register` or `workflow lint` naming a retired schema as `payload` | `VALIDATION_ERROR` | 3 |
 | `--payload-file` fails the step's declared schema at `step record` | `VALIDATION_ERROR` | 3 |
 | `--payload-file` omitted on a step that declares `payload` | `VALIDATION_ERROR` | 3 |
 

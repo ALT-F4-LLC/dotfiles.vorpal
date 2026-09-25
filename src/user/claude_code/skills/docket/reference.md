@@ -70,17 +70,18 @@ length to read. The engine families live in docket-run's references:
   - [`issue graph [id]`](#issue-graph) — 12 lines
 - [`docket plan`](#plan-commands) — 27 lines
 - [`docket next`](#next-commands) — 22 lines
-- [`docket workflow` (alias `wf`)](#workflow-commands) — 117 lines
+- [`docket workflow` (alias `wf`)](#workflow-commands) — 126 lines
   - [`workflow register <file.toml>`](#workflow-register) — 18 lines
-  - [`workflow lint <file.toml>`](#workflow-lint) — 16 lines
+  - [`workflow lint <file.toml>`](#workflow-lint) — 24 lines
   - [`workflow deprecate <name>@<version>`](#workflow-deprecate) — 18 lines
-  - [`workflow list`](#workflow-list) — 26 lines
+  - [`workflow list`](#workflow-list) — 27 lines
   - [`workflow show <name>[@<version>]`](#workflow-show) — 17 lines
   - [`workflow init`](#workflow-init) — 18 lines
-- [`docket schema`](#schema-commands) — 55 lines
+- [`docket schema`](#schema-commands) — 85 lines
   - [`schema register <name@version> <file.json>`](#schema-register) — 21 lines
-  - [`schema list`](#schema-list) — 14 lines
-  - [`schema show <name>[@<version>]`](#schema-show) — 16 lines
+  - [`schema list`](#schema-list) — 16 lines
+  - [`schema show <name>[@<version>]`](#schema-show) — 17 lines
+  - [`schema deprecate <name>@<version>`](#schema-deprecate) — 27 lines
 - [`docket vote` (alias `v`)](#vote-commands) — 137 lines
   - [`vote create`](#vote-create) — 17 lines
   - [`vote cast <id>`](#vote-cast) — 18 lines
@@ -541,6 +542,8 @@ outcome, ...}], succeeded, failed}`.
 | Flag | Short | Type | Default | Notes |
 |---|---|---|---|---|
 | `--json` | — | string | `""` | inherited; `v1` or `v2` |
+| `--project` | — | string | `""` | lint against this project's registry instead of the one cwd resolves to (`nightly-209`+) |
+| `--all-projects` | — | bool | `false` | lint against every project, reporting each project's own verdict (`nightly-209`+) |
 
 Positional argument required; `-` reads the definition from stdin. Runs the
 exact validation `register` runs and **writes nothing** — no row, no frozen
@@ -548,7 +551,13 @@ exact validation `register` runs and **writes nothing** — no row, no frozen
 `registration` ∈ `new` \| `unchanged`; different bytes at an existing
 `name@version` is `CONFLICT` (exit 4), naming both hashes and the version to
 bump to — this **fails** the lint rather than reporting a third
-`registration` value.
+`registration` value. A `payload` naming a retired schema version is a
+`VALIDATION_ERROR` (exit 3). `--project` takes the write verbs' ref forms and
+unknown-ref error and returns the verdict `register --project` would reach
+there. `--all-projects` switches the response to the fan-out shape `workflow
+register` uses, with `new` / `unchanged` / `conflict` / `invalid` as each
+project's `outcome`, exiting non-zero when any project would refuse. The two
+flags are mutually exclusive.
 
 <a id="workflow-deprecate"></a>
 
@@ -578,6 +587,7 @@ fan-out shape `workflow register` uses.
 | `--limit` | — | int | `50` | `0` means no limit |
 | `--deprecated` | — | bool | `false` | include retired versions (`deprecated_at_ms` set); without it only versions still eligible to bind are listed |
 | `--orphans` | — | bool | `false` | narrow to registered names no file in any config root declares; a per-name filesystem verdict, so `--deprecated` has no effect under it and retired rows are listed as they are |
+| `--project` | — | string | `""` | list this project's registry instead of the one cwd resolves to; the write verbs' ref forms and unknown-ref error (`nightly-209`+) |
 
 The plain listing shows every version still eligible to bind, so a
 superseded but unretired version appears beside the binding one and lineage
@@ -662,11 +672,13 @@ register` uses.
 |---|---|---|---|---|
 | `--name` | — | string | `""` | filter to one schema name |
 | `--limit` | — | int | `50` | `0` means no limit |
+| `--deprecated` | — | bool | `false` | include retired versions; without it only versions still in service are listed (`nightly-209`+) |
 
 A `Collection`: under `--json=v2` the payload is `{items, total, truncated}`,
 where `total` is the true pre-limit count. Each row carries `name`, `version`,
 `source_sha256`, `ordered_fields`, `builtin`, and `created_at_ms`; `row_version`
-appears under v2 only.
+appears under v2 only, and so does `deprecated_at_ms`, omitted while the
+version is in service. Human mode marks a retired row `[deprecated]`.
 
 <a id="schema-show"></a>
 
@@ -676,10 +688,38 @@ appears under v2 only.
 |---|---|---|---|---|
 | `--body` | — | bool | `false` | emit the stored schema document verbatim |
 
-Omitting `@version` selects the highest registered version. An unregistered name
-or version is `NOT_FOUND` (exit 2). `--body` returns the exact registered
-bytes — the ones `source_sha256` hashes and the ones a run validates payloads
-against, so `docket schema show risk-report@1 --body > risk-report.json` round-trips.
+Omitting `@version` selects the highest version still in service (from
+`nightly-209`; earlier builds take the highest registered). An unregistered
+name or version, or a bare name whose every version is retired, is
+`NOT_FOUND` (exit 2). An explicit `@version` still resolves a retired version,
+with a `status: DEPRECATED` line in human mode. `--body` returns the exact
+registered bytes — the ones `source_sha256` hashes and the ones a run
+validates payloads against, so `docket schema show risk-report@1 --body >
+risk-report.json` round-trips.
+
+<a id="schema-deprecate"></a>
+
+#### `docket schema deprecate <name>@<version>` — `schema_deprecate.go`
+
+| Flag | Short | Type | Default | Notes |
+|---|---|---|---|---|
+| `--restore` | — | bool | `false` | return a retired version to service |
+| `--project` | — | string | `""` | retire the version in this project instead of the one cwd resolves to |
+| `--all-projects` | — | bool | `false` | retire the version in every project, reporting each project's own outcome |
+
+Added in `nightly-209` with store schema version 36. Retires one registered
+schema version from service without deleting it: the row stays readable and
+runs that pinned it keep validating against it, but new `payload` references
+to it are refused by `workflow register`, `workflow lint`, and activation.
+The version is **required**; a bare name is a `VALIDATION_ERROR` (exit 3). A
+version a workflow **still in service** names as `payload` is `CONFLICT`
+(exit 4) listing the referencing workflows, with no override. An
+already-retired version is `CONFLICT` (exit 4); the builtin `aggregate@1` is
+a `VALIDATION_ERROR` (exit 3); an unregistered name or version is `NOT_FOUND`
+(exit 2). `--restore` on a version in service is an idempotent success.
+`--project` or `--all-projects` switches the response to the fan-out shape
+`workflow register` uses, with `in-use` as the per-project outcome for the
+referenced-version refusal.
 
 None of the `schema` verbs are watch-eligible; `--watch` on any of them is a
 `VALIDATION_ERROR`.

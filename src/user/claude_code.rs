@@ -4,8 +4,10 @@ use vorpal_sdk::{api::artifact::ArtifactSystem, artifact::get_env_key, context::
 
 mod settings;
 
+// Git expands only a leading `~/`; activation expands `${HOME}`. The install
+// spelling derives from this one through `home_install`, so the symlink and
+// the git config always name the same file.
 const GIT_ALLOWED_SIGNERS_CONFIG_PATH: &str = "~/.config/git/allowed_signers";
-const GIT_ALLOWED_SIGNERS_INSTALL_PATH: &str = "${HOME}/.config/git/allowed_signers";
 // The agent signing key is a plain file pair on purpose: it lives outside
 // 1Password so an executor's commit never waits on the operator approving a
 // signature. ssh-keygen resolves the .pub through SSH_AUTH_SOCK first and,
@@ -13,15 +15,15 @@ const GIT_ALLOWED_SIGNERS_INSTALL_PATH: &str = "${HOME}/.config/git/allowed_sign
 // must be readable through the ~/.ssh read-deny.
 const GIT_AGENT_SIGNING_KEY_PATH: &str = "~/.ssh/agent-signing";
 const GIT_AGENT_SIGNING_KEY_PUBLIC_PATH: &str = "~/.ssh/agent-signing.pub";
-const SANDBOX_AGENT_MEMORY_PATH: &str = "~/.claude/agent-memory";
-const SANDBOX_BARE_REPO_ROOT: &str = "~/Development/repository/github.com/ALT-F4-LLC";
 const SANDBOX_CLAUDE_SCRATCH_ROOT: &str = "/tmp/claude-501";
 const SANDBOX_CLAUDE_SCRATCH_ROOT_PRIVATE: &str = "/private/tmp/claude-501";
-const SANDBOX_DARWIN_TEMP_ROOT: &str = "/var/folders";
-const SANDBOX_DOCKET_STORE_PATH: &str = "~/.docket";
-const SANDBOX_DOCKET_CONFIG_PATH: &str = "~/.config/docket";
-const SANDBOX_DOCS_CACHE_PATH: &str = "~/.claude/cache/docs";
-const SANDBOX_FRICTION_LEDGER_PATH: &str = "~/.claude/friction";
+/// The per-session throwaway workspaces every session may write. The scratch
+/// Edit() allows and the unix-socket list derive from this pair; the
+/// auto-mode prose names both roots and a test keeps it in step.
+const SANDBOX_SCRATCH_ROOTS: &[&str] = &[
+    SANDBOX_CLAUDE_SCRATCH_ROOT,
+    SANDBOX_CLAUDE_SCRATCH_ROOT_PRIVATE,
+];
 const SENSITIVE_PATHS_DENY_READ_ONLY: &[&str] = &["~/.aws/**"];
 
 const SENSITIVE_PATHS: &[&str] = &[
@@ -172,6 +174,95 @@ const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
     "~/go/pkg/mod",
 ];
 
+/// Sandbox write allowances beyond the toolchain caches: harness state, the
+/// checkouts, and the scratch roots.
+const SANDBOX_ALLOW_WRITE_PATHS: &[&str] = &[
+    "~/.claude/agent-memory",
+    "~/Development/repository/github.com/ALT-F4-LLC",
+    SANDBOX_CLAUDE_SCRATCH_ROOT,
+    SANDBOX_CLAUDE_SCRATCH_ROOT_PRIVATE,
+    "/var/folders",
+    "~/.claude/cache/docs",
+    "~/.docket",
+    // The whole config directory, not just trust.toml.lock: `docket trust
+    // add` writes a temp file beside trust.toml and renames it, so a
+    // lock-only allowance failed every sandboxed trust write. The Edit()
+    // deny on trust.toml and the trust-guard hook still hold the executor
+    // line.
+    "~/.config/docket",
+    "~/.claude/friction",
+];
+
+// Re-opens only the signing key pair inside the ~/.ssh read-deny; every
+// other sensitive path stays unreadable.
+const SANDBOX_ALLOW_READ_PATHS: &[&str] = &[
+    GIT_AGENT_SIGNING_KEY_PATH,
+    GIT_AGENT_SIGNING_KEY_PUBLIC_PATH,
+];
+
+/// Git configuration every session carries, exported as the
+/// `GIT_CONFIG_KEY_n` / `GIT_CONFIG_VALUE_n` pairs git reads from the
+/// environment; `GIT_CONFIG_COUNT` follows the list length.
+const GIT_CONFIG: &[(&str, &str)] = &[
+    ("user.signingkey", GIT_AGENT_SIGNING_KEY_PUBLIC_PATH),
+    ("gpg.ssh.program", "ssh-keygen"),
+    ("gpg.format", "ssh"),
+    (
+        "gpg.ssh.allowedSignersFile",
+        GIT_ALLOWED_SIGNERS_CONFIG_PATH,
+    ),
+];
+
+const PERMISSION_ALLOW_RULES: &[&str] = &[
+    "Bash(docket config get:*)",
+    "Bash(docket events list:*)",
+    "Bash(docket issue list:*)",
+    "Bash(docket issue show:*)",
+    "Bash(docket project list:*)",
+    "Bash(docket run report:*)",
+    "Bash(docket run status:*)",
+    "Bash(docket step artifact:*)",
+    "Bash(docket step artifacts:*)",
+    "Bash(docket step render:*)",
+    "Bash(docket step show:*)",
+    "Bash(docket trust list:*)",
+    "Bash(docket vote result:*)",
+    "Bash(docket vote show:*)",
+    "Bash(docket workflow list:*)",
+    "Bash(docket workflow show:*)",
+    "Bash(git add:*)",
+    "Bash(git branch:*)",
+    "Bash(git commit:*)",
+    "Bash(git diff:*)",
+    "Bash(git log:*)",
+    "Bash(git show:*)",
+    "Bash(git status:*)",
+    "Bash(git worktree list:*)",
+    "Bash(go build:*)",
+    "Bash(go test:*)",
+    "Bash(go tool golangci-lint:*)",
+    "Bash(go vet:*)",
+    "Bash(gofmt:*)",
+    "Bash(~/.claude/workflows/*)",
+    "WebFetch(domain:api.github.com)",
+    "WebFetch(domain:claude.ai)",
+    "WebFetch(domain:code.claude.com)",
+    "WebFetch(domain:crates.io)",
+    "WebFetch(domain:docs.claude.ai)",
+    "WebFetch(domain:github.com)",
+    "WebFetch(domain:mimir.bulbasaur.altf4.domains)",
+    "WebFetch(domain:raw.githubusercontent.com)",
+    "WebSearch",
+    "Workflow",
+];
+
+/// Directory components installed as `~/.claude/<name>` from
+/// `src/user/claude_code/<name>`. `references` is on-demand reading material
+/// CLAUDE.md points at (the full working agreement and harness guidance) so
+/// the per-turn memory file carries only the rules every turn needs; nothing
+/// under it loads on its own.
+const DIRECTORY_COMPONENTS: &[&str] = &["agents", "hooks", "references", "skills", "workflows"];
+
 pub struct ClaudeCode {
     name: String,
     systems: Vec<ArtifactSystem>,
@@ -185,6 +276,17 @@ fn claude_home(entry: &str) -> String {
     format!("${{HOME}}/.claude/{entry}")
 }
 
+/// The activation spelling of a `~/`-relative path: activation expands
+/// `${HOME}`, not `~`.
+fn home_install(config_path: &str) -> String {
+    let relative = config_path.strip_prefix("~/").unwrap_or(config_path);
+    format!("${{HOME}}/{relative}")
+}
+
+fn owned(rows: &[&str]) -> Vec<String> {
+    rows.iter().map(|s| s.to_string()).collect()
+}
+
 fn sorted_permission_patterns(
     wrap: impl Fn(&str) -> String,
     paths: impl IntoIterator<Item = &'static str>,
@@ -192,16 +294,6 @@ fn sorted_permission_patterns(
     let mut paths: Vec<&str> = paths.into_iter().collect();
     paths.sort_unstable();
     paths.into_iter().map(wrap).collect()
-}
-
-fn deny_sensitive_paths(
-    builder: settings::ClaudeCodeSettings,
-    wrap: impl Fn(&str) -> String,
-    paths: impl IntoIterator<Item = &'static str>,
-) -> settings::ClaudeCodeSettings {
-    sorted_permission_patterns(wrap, paths)
-        .iter()
-        .fold(builder, |b, p| b.with_permission_deny(p))
 }
 
 fn sandbox_filesystem_deny_read_paths() -> Vec<String> {
@@ -214,21 +306,12 @@ fn sandbox_filesystem_deny_read_paths() -> Vec<String> {
     paths
 }
 
-// Re-opens only the signing key pair inside the ~/.ssh read-deny; every
-// other sensitive path stays unreadable.
-fn sandbox_filesystem_allow_read_paths() -> Vec<String> {
-    vec![
-        GIT_AGENT_SIGNING_KEY_PATH.to_string(),
-        GIT_AGENT_SIGNING_KEY_PUBLIC_PATH.to_string(),
-    ]
-}
-
 // The complete set of `Bash(...)` permission-ask patterns this build emits:
 // the two docket trust-store writes plus every PUBLISHING_ASK_VERBS row,
-// each wrapped the same way `build()` wraps it. A test asserts this against
-// an explicit literal set independent of PUBLISHING_ASK_VERBS, so a verb
-// quietly dropped from that list, or a hand-added `with_permission_ask` row
-// added beside the fold instead of through it, both change what this
+// each wrapped the same way `settings()` wraps it. A test asserts this
+// against an explicit literal set independent of PUBLISHING_ASK_VERBS, so a
+// verb quietly dropped from that list, or a hand-added `with_permission_ask`
+// row added beside the fold instead of through it, both change what this
 // function returns relative to that literal -- neither could pass silently
 // by construction the way a loop keyed on the same list they are supposed
 // to guard against drifting from would.
@@ -239,6 +322,306 @@ fn permission_ask_patterns() -> Vec<String> {
     ];
     patterns.extend(PUBLISHING_ASK_VERBS.iter().map(|v| format!("Bash({v}:*)")));
     patterns
+}
+
+/// The settings.json this build emits, before it is written to the store.
+/// Pure so a test can serialize it without a build context.
+fn settings(name: &str, systems: Vec<ArtifactSystem>) -> settings::ClaudeCodeSettings {
+    let builder = settings::ClaudeCodeSettings::new(name, systems)
+        .with_advisor_model("fable")
+        .with_agent_push_notif_enabled(true)
+        .with_always_thinking_enabled(false)
+        .with_attribution_commit("")
+        .with_attribution_pr("")
+        .with_attribution_session_url(false)
+        .with_auto_memory_enabled(false)
+        .with_auto_updates_channel("latest")
+        .with_away_summary_enabled(false)
+        .with_cleanup_period_days(7)
+        .with_effort_level("high")
+        .with_feedback_survey_rate(0.0)
+        .with_include_git_instructions(false)
+        .with_input_needed_notif_enabled(true)
+        .with_isolate_peer_machines(true)
+        .with_model("opus")
+        .with_model_setting(
+            "claude-opus-5-5",
+            serde_json::json!({ "effortLevel": "high" }),
+        )
+        .with_output_style("Concise")
+        .with_permission_default_mode("auto")
+        .with_permission_disable_bypass_permissions_mode("disable")
+        .with_preferred_notif_channel("ghostty")
+        .with_remote_control_at_startup(false)
+        .with_sandbox_enabled(true)
+        .with_show_thinking_summaries(true)
+        .with_skill_listing_budget_fraction(0.02)
+        .with_spinner_tips_enabled(false)
+        .with_status_line("bash ~/.claude/statusline.sh")
+        .with_status_line_padding(0)
+        .with_teammate_mode("in-process")
+        .with_tui("fullscreen")
+        .with_worktree_base_ref("head")
+        // The plugin id names this marketplace, so a fresh machine needs its
+        // source declared here rather than in the live plugin state an
+        // `agento11y claude` launch leaves behind.
+        .with_extra_known_marketplace(
+            "agento11y",
+            serde_json::json!({ "source": { "source": "github", "repo": "grafana/agento11y" } }),
+        )
+        .with_enabled_plugin("agento11y-claude-code@agento11y", true)
+        .with_enabled_plugin("gopls-lsp@claude-plugins-official", true)
+        .with_enabled_plugin("rust-analyzer-lsp@claude-plugins-official", true)
+        .with_enabled_plugin("typescript-lsp@claude-plugins-official", true)
+        .with_env("ANTHROPIC_DEFAULT_FABLE_MODEL", "claude-fable-5-1")
+        .with_env("ANTHROPIC_DEFAULT_HAIKU_MODEL", "claude-haiku-4-5")
+        .with_env("ANTHROPIC_DEFAULT_OPUS_MODEL", "claude-opus-5-5")
+        .with_env("ANTHROPIC_DEFAULT_SONNET_MODEL", "claude-sonnet-5")
+        .with_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1")
+        .with_env("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", "0") // REASON: Must be 0 for 'with_permission_default_mode('auto')'
+        .with_env("GIT_CONFIG_COUNT", &GIT_CONFIG.len().to_string());
+
+    let builder = GIT_CONFIG
+        .iter()
+        .enumerate()
+        .fold(builder, |builder, (i, (key, value))| {
+            builder
+                .with_env(&format!("GIT_CONFIG_KEY_{i}"), key)
+                .with_env(&format!("GIT_CONFIG_VALUE_{i}"), value)
+        });
+
+    // Hooks stay as literal `.with_hook(...)` rows on a `settings_builder`
+    // chain: the sdet-abuse gate reads this source text to prove every
+    // enforcing hook is registered.
+    let settings_builder = builder
+        // Workflow only: docket-run launches waves, tribunals and joins
+        // through the Workflow tool, never the Agent tool, so the
+        // project-wide `guard spawn --active` hold has nothing to stop on
+        // an Agent spawn. Matching `Agent` too blocked every Explore
+        // helper and tend worker in every session of the repo whenever one
+        // write-class reap went unacknowledged.
+        .with_hook(
+            "PreToolUse",
+            Some("Workflow"),
+            "bash ~/.claude/hooks/docket-spawn-guard-hook.sh",
+            "command",
+        )
+        .with_hook(
+            "PostToolUse",
+            Some("Workflow"),
+            "bash ~/.claude/hooks/docket-wave-audit-hook.sh",
+            "command",
+        )
+        .with_hook(
+            "Stop",
+            None,
+            "bash ~/.claude/hooks/docket-run-guard-hook.sh",
+            "command",
+        )
+        .with_hook(
+            "PreToolUse",
+            Some("Bash"),
+            "bash ~/.claude/hooks/docket-trust-guard-hook.sh",
+            "command",
+        )
+        .with_hook(
+            "PreToolUse",
+            Some("Bash"),
+            "bash ~/.claude/hooks/docket-commit-guard-hook.sh",
+            "command",
+        )
+        .with_hook(
+            "SessionStart",
+            None,
+            "bash ~/.claude/hooks/docket-session-start-hook.sh",
+            "command",
+        )
+        // herdr installs this hook itself, through the ~/.claude/hooks
+        // symlink into the current store; the corpus does not ship it and
+        // the next `just activate` rebuilds without it. Guard the wiring so
+        // a rebuilt store does not raise a hook error on every session
+        // start until herdr reinstalls.
+        .with_hook_timeout(
+            "SessionStart",
+            Some("*"),
+            "test -x ~/.claude/hooks/herdr-agent-state.sh && bash ~/.claude/hooks/herdr-agent-state.sh session || true",
+            "command",
+            10,
+        )
+        .with_hook(
+            "PostToolUse",
+            Some("Bash"),
+            "bash ~/.claude/hooks/sandbox-friction-hook.sh",
+            "command",
+        )
+        .with_hook(
+            "PermissionDenied",
+            Some("Bash"),
+            "bash ~/.claude/hooks/sandbox-friction-hook.sh",
+            "command",
+        )
+        .with_hook(
+            "PreToolUse",
+            Some("Read|Grep|Glob"),
+            "bash ~/.claude/hooks/sensitive-path-guard-hook.sh",
+            "command",
+        )
+        .with_hook(
+            "PreToolUse",
+            Some("Bash"),
+            "bash ~/.claude/hooks/sandbox-bypass-guard-hook.sh",
+            "command",
+        )
+        .with_hook(
+            "PreToolUse",
+            Some("Bash"),
+            "bash ~/.claude/hooks/docket-sibling-guard-hook.sh",
+            "command",
+        )
+        .with_auto_mode(settings::AutoMode {
+            allow: owned(AUTO_MODE_ALLOW_RULES),
+            environment: owned(AUTO_MODE_ENVIRONMENT_CONTEXT),
+            hard_deny: owned(AUTO_MODE_HARD_DENY_RULES),
+            ..Default::default()
+        });
+
+    let builder = PERMISSION_ALLOW_RULES
+        .iter()
+        .fold(settings_builder, |builder, rule| {
+            builder.with_permission_allow(rule)
+        });
+
+    let builder = SANDBOX_SCRATCH_ROOTS
+        .iter()
+        .fold(builder, |builder, root| {
+            builder.with_permission_allow(&format!("Edit({root}/**)"))
+        })
+        // DOT-952: Workflow scriptPath requires the directory to be readable
+        // as an added directory; the Bash(~/.claude/workflows/*) allow above
+        // covers only Bash invocations.
+        .with_permission_additional_directories(owned(&["~/.claude/workflows"]));
+
+    // Every `gh pr` verb the `pr` skill invokes that publishes text or
+    // changes who can act on a PR asks first, so the human sees the
+    // bytes before they are public. This list is keyed to the verbs the
+    // skills invoke; a skill that adds a publishing `gh` verb adds a row
+    // here. `gh run view` is deliberately absent: it only reads CI logs,
+    // and the `pr` skill already treats that output as untrusted data
+    // rather than instructions.
+    let builder = permission_ask_patterns()
+        .iter()
+        .fold(builder, |builder, pattern| {
+            builder.with_permission_ask(pattern)
+        });
+
+    let builder = sorted_permission_patterns(
+        |p| format!("Edit({p})"),
+        SENSITIVE_PATHS
+            .iter()
+            .chain(SENSITIVE_PATHS_DENY_EDIT_ONLY)
+            .copied(),
+    )
+    .iter()
+    .fold(builder, |builder, pattern| {
+        builder.with_permission_deny(pattern)
+    });
+
+    // Shell indirection is denied before the classifier runs. The rows
+    // are already `Bash(...)` patterns, so they fold in unwrapped; a test
+    // pins the set to an explicit literal the way the ask rows are pinned.
+    let builder = SHELL_INDIRECTION_DENY_PATTERNS
+        .iter()
+        .fold(builder, |builder, pattern| {
+            builder.with_permission_deny(pattern)
+        });
+
+    // No Read() deny rules on purpose. With any Read() deny configured the
+    // harness turns every `cd <dir> && grep <relative path>` into a hard
+    // ask the auto-mode classifier may not answer (its
+    // deniedPathInsideDirectory circuit breaker); the sensitive roots are
+    // refused instead by the sandbox denyRead list for Bash and by the
+    // sensitive-path-guard hook for Read/Grep/Glob.
+
+    builder
+        .with_sandbox_allow_unsandboxed_commands(false)
+        .with_sandbox_auto_allow_bash(true)
+        .with_sandbox_fail_if_unavailable(true)
+        // Commands that need a network the sandbox cannot grant (the
+        // bulbasaur cluster, AWS, the Doppler API) run unsandboxed rather
+        // than through a per-call lift; the permission rules and the
+        // auto-mode classifier still gate what they do.
+        //
+        // MEASURED (DOT-1263, 2026-09-03, no dangerouslyDisableSandbox,
+        // ~/Desktop deny-read): the match is over TOP-LEVEL simple
+        // commands of the whole Bash call, not the call's first token —
+        // `cd /tmp/claude && git --version && ls ~/Desktop`,
+        // `ls ~/Desktop; git --version`, and `set -e; git --version; ls
+        // ~/Desktop` all ran the ENTIRE call unsandboxed (`ls ~/Desktop`
+        // succeeded) once `git *` was in this list, whichever position
+        // the excluded command sat in and whatever preceded or followed
+        // it. Excluded only when the matching command sits inside a
+        // control-flow construct instead of appearing as a top-level
+        // simple command: `cd /tmp/claude && set -e; for x in 1; do git
+        // --version; done; ls ~/Desktop` ran sandboxed (the loop hid
+        // `git` from the matcher). A `cd`/env-var PREFIX on the matching
+        // command itself, as opposed to a separate command joined by
+        // `&&`/`;`, was not probed. So: any entry in this list makes the
+        // WHOLE call run unsandboxed the moment that command appears
+        // anywhere at top level in it, including alongside unrelated
+        // commands this list was never meant to exempt — an executor
+        // whose sandbox lift was denied can run anything unsandboxed by
+        // appending `; git --version` (or any other listed command) to
+        // its call. `git` is removed below for exactly this reason:
+        // local git needs no network (`github.com`/`api.github.com` are
+        // already in the network allowlist for what does), so nothing
+        // here needed the exclusion. The other entries were not
+        // re-probed and keep the same fail-open exclusion shape —
+        // narrowing this list further, or replacing it with a
+        // command-position-aware mechanism, is unassessed.
+        .with_sandbox_excluded_commands(owned(&[
+            "aws *",
+            "docker *",
+            "doppler *",
+            "gh *",
+            "kubectl *",
+            "terraform *",
+            "vorpal *",
+        ]))
+        .with_sandbox_filesystem_allow_write(
+            SANDBOX_TOOLCHAIN_CACHE_PATHS
+                .iter()
+                .chain(SANDBOX_ALLOW_WRITE_PATHS)
+                .map(|p| p.to_string())
+                .collect(),
+        )
+        .with_sandbox_filesystem_deny_read(sandbox_filesystem_deny_read_paths())
+        .with_sandbox_filesystem_allow_read(owned(SANDBOX_ALLOW_READ_PATHS))
+        .with_sandbox_network_allowed_domains(owned(&[
+            "api.github.com",
+            "api.osv.dev",
+            "crates.io",
+            "github.com",
+            "proxy.golang.org",
+            "static.crates.io",
+            "sum.golang.org",
+            "vuln.go.dev",
+        ]))
+        // Each entry becomes a seatbelt subpath rule for both bind and
+        // connect. The scratch roots are listed so test suites that listen
+        // on a unix socket under their step directory run sandboxed; with
+        // only the two service sockets below, every such bind was refused.
+        .with_sandbox_network_allow_unix_sockets(
+            [
+                "~/.orbstack/run/docker.sock",
+                "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock",
+            ]
+            .iter()
+            .chain(SANDBOX_SCRATCH_ROOTS)
+            .map(|p| p.to_string())
+            .collect(),
+        )
+        .with_sandbox_network_allow_mach_lookup(owned(&["com.apple.trustd.agent"]))
+        .with_sandbox_network_allow_local_binding(true)
 }
 
 impl ClaudeCode {
@@ -253,471 +636,70 @@ impl ClaudeCode {
         self,
         context: &mut ConfigContext,
     ) -> Result<(Vec<String>, Vec<(String, String)>)> {
-        let agents = FileSource::new(
-            &component_name(&self.name, "agents"),
-            "src/user/claude_code/agents",
-            self.systems.clone(),
-        )
-        .build(context)
-        .await?;
+        let mut artifacts = Vec::new();
+        let mut symlinks = Vec::new();
 
-        let hooks = FileSource::new(
-            &component_name(&self.name, "hooks"),
-            "src/user/claude_code/hooks",
-            self.systems.clone(),
-        )
-        .build(context)
-        .await?;
-
-        let settings_builder = settings::ClaudeCodeSettings::new(&self.name, self.systems.clone())
-            .with_advisor_model("fable")
-            .with_agent_push_notif_enabled(true)
-            .with_always_thinking_enabled(false)
-            .with_attribution_commit("")
-            .with_attribution_pr("")
-            .with_attribution_session_url(false)
-            .with_auto_memory_enabled(false)
-            .with_auto_updates_channel("latest")
-            .with_away_summary_enabled(false)
-            .with_cleanup_period_days(7)
-            .with_effort_level("high")
-            .with_feedback_survey_rate(0.0)
-            .with_include_git_instructions(false)
-            .with_input_needed_notif_enabled(true)
-            .with_isolate_peer_machines(true)
-            .with_model("opus")
-            .with_model_setting(
-                "claude-opus-5-5",
-                serde_json::json!({ "effortLevel": "high" }),
+        for component in DIRECTORY_COMPONENTS {
+            let artifact = FileSource::new(
+                &component_name(&self.name, component),
+                &format!("src/user/claude_code/{component}"),
+                self.systems.clone(),
             )
-            .with_output_style("Concise")
-            .with_permission_default_mode("auto")
-            .with_permission_disable_bypass_permissions_mode("disable")
-            .with_preferred_notif_channel("ghostty")
-            .with_remote_control_at_startup(false)
-            .with_sandbox_enabled(true)
-            .with_show_thinking_summaries(true)
-            .with_skill_listing_budget_fraction(0.02)
-            .with_spinner_tips_enabled(false)
-            .with_status_line("bash ~/.claude/statusline.sh")
-            .with_status_line_padding(0)
-            .with_teammate_mode("in-process")
-            .with_tui("fullscreen")
-            .with_worktree_base_ref("head");
-
-        let settings_builder = settings_builder
-            // The plugin id names this marketplace, so a fresh machine needs
-            // its source declared here rather than in the live plugin state
-            // an `agento11y claude` launch leaves behind.
-            .with_extra_known_marketplace(
-                "agento11y",
-                serde_json::json!({ "source": { "source": "github", "repo": "grafana/agento11y" } }),
-            )
-            .with_enabled_plugin("agento11y-claude-code@agento11y", true)
-            .with_enabled_plugin("gopls-lsp@claude-plugins-official", true)
-            .with_enabled_plugin("rust-analyzer-lsp@claude-plugins-official", true)
-            .with_enabled_plugin("typescript-lsp@claude-plugins-official", true);
-
-        let settings_builder = settings_builder
-            .with_env("ANTHROPIC_DEFAULT_FABLE_MODEL", "claude-fable-5-1")
-            .with_env("ANTHROPIC_DEFAULT_HAIKU_MODEL", "claude-haiku-4-5")
-            .with_env("ANTHROPIC_DEFAULT_OPUS_MODEL", "claude-opus-5-5")
-            .with_env("ANTHROPIC_DEFAULT_SONNET_MODEL", "claude-sonnet-5")
-            .with_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1")
-            .with_env("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", "0") // REASON: Must be 0 for 'with_permission_default_mode('auto')'
-            .with_env("GIT_CONFIG_COUNT", "4")
-            .with_env("GIT_CONFIG_KEY_0", "user.signingkey")
-            .with_env("GIT_CONFIG_KEY_1", "gpg.ssh.program")
-            .with_env("GIT_CONFIG_KEY_2", "gpg.format")
-            .with_env("GIT_CONFIG_KEY_3", "gpg.ssh.allowedSignersFile")
-            .with_env("GIT_CONFIG_VALUE_0", GIT_AGENT_SIGNING_KEY_PUBLIC_PATH)
-            .with_env("GIT_CONFIG_VALUE_1", "ssh-keygen")
-            .with_env("GIT_CONFIG_VALUE_2", "ssh")
-            .with_env("GIT_CONFIG_VALUE_3", GIT_ALLOWED_SIGNERS_CONFIG_PATH);
-
-        let settings_builder = settings_builder
-            // Workflow only: docket-run launches waves, tribunals and joins
-            // through the Workflow tool, never the Agent tool, so the
-            // project-wide `guard spawn --active` hold has nothing to stop on
-            // an Agent spawn. Matching `Agent` too blocked every Explore
-            // helper and tend worker in every session of the repo whenever one
-            // write-class reap went unacknowledged.
-            .with_hook(
-                "PreToolUse",
-                Some("Workflow"),
-                "bash ~/.claude/hooks/docket-spawn-guard-hook.sh",
-                "command",
-            )
-            .with_hook(
-                "PostToolUse",
-                Some("Workflow"),
-                "bash ~/.claude/hooks/docket-wave-audit-hook.sh",
-                "command",
-            )
-            .with_hook(
-                "Stop",
-                None,
-                "bash ~/.claude/hooks/docket-run-guard-hook.sh",
-                "command",
-            )
-            .with_hook(
-                "PreToolUse",
-                Some("Bash"),
-                "bash ~/.claude/hooks/docket-trust-guard-hook.sh",
-                "command",
-            )
-            .with_hook(
-                "PreToolUse",
-                Some("Bash"),
-                "bash ~/.claude/hooks/docket-commit-guard-hook.sh",
-                "command",
-            )
-            .with_hook(
-                "SessionStart",
-                None,
-                "bash ~/.claude/hooks/docket-session-start-hook.sh",
-                "command",
-            )
-            // herdr installs this hook itself, through the ~/.claude/hooks
-            // symlink into the current store; the corpus does not ship it and
-            // the next `just activate` rebuilds without it. Guard the wiring so
-            // a rebuilt store does not raise a hook error on every session
-            // start until herdr reinstalls.
-            .with_hook_timeout(
-                "SessionStart",
-                Some("*"),
-                "test -x ~/.claude/hooks/herdr-agent-state.sh && bash ~/.claude/hooks/herdr-agent-state.sh session || true",
-                "command",
-                10,
-            )
-            .with_hook(
-                "PostToolUse",
-                Some("Bash"),
-                "bash ~/.claude/hooks/sandbox-friction-hook.sh",
-                "command",
-            )
-            .with_hook(
-                "PermissionDenied",
-                Some("Bash"),
-                "bash ~/.claude/hooks/sandbox-friction-hook.sh",
-                "command",
-            )
-            .with_hook(
-                "PreToolUse",
-                Some("Read|Grep|Glob"),
-                "bash ~/.claude/hooks/sensitive-path-guard-hook.sh",
-                "command",
-            )
-            .with_hook(
-                "PreToolUse",
-                Some("Bash"),
-                "bash ~/.claude/hooks/sandbox-bypass-guard-hook.sh",
-                "command",
-            )
-            .with_hook(
-                "PreToolUse",
-                Some("Bash"),
-                "bash ~/.claude/hooks/docket-sibling-guard-hook.sh",
-                "command",
-            );
-
-        let settings_builder = settings_builder.with_auto_mode(settings::AutoMode {
-            allow: AUTO_MODE_ALLOW_RULES
-                .iter()
-                .map(|s| s.to_string())
-                .collect(),
-            environment: AUTO_MODE_ENVIRONMENT_CONTEXT
-                .iter()
-                .map(|s| s.to_string())
-                .collect(),
-            classify_all_shell: None,
-            hard_deny: AUTO_MODE_HARD_DENY_RULES
-                .iter()
-                .map(|s| s.to_string())
-                .collect(),
-            soft_deny: Vec::new(),
-        });
-
-        let settings_builder = settings_builder
-            .with_permission_allow("Bash(docket config get:*)")
-            .with_permission_allow("Bash(docket events list:*)")
-            .with_permission_allow("Bash(docket issue list:*)")
-            .with_permission_allow("Bash(docket issue show:*)")
-            .with_permission_allow("Bash(docket project list:*)")
-            .with_permission_allow("Bash(docket run report:*)")
-            .with_permission_allow("Bash(docket run status:*)")
-            .with_permission_allow("Bash(docket step artifact:*)")
-            .with_permission_allow("Bash(docket step artifacts:*)")
-            .with_permission_allow("Bash(docket step render:*)")
-            .with_permission_allow("Bash(docket step show:*)")
-            .with_permission_allow("Bash(docket trust list:*)")
-            .with_permission_allow("Bash(docket vote result:*)")
-            .with_permission_allow("Bash(docket vote show:*)")
-            .with_permission_allow("Bash(docket workflow list:*)")
-            .with_permission_allow("Bash(docket workflow show:*)")
-            .with_permission_allow("Bash(git add:*)")
-            .with_permission_allow("Bash(git branch:*)")
-            .with_permission_allow("Bash(git commit:*)")
-            .with_permission_allow("Bash(git diff:*)")
-            .with_permission_allow("Bash(git log:*)")
-            .with_permission_allow("Bash(git show:*)")
-            .with_permission_allow("Bash(git status:*)")
-            .with_permission_allow("Bash(git worktree list:*)")
-            .with_permission_allow("Bash(go build:*)")
-            .with_permission_allow("Bash(go test:*)")
-            .with_permission_allow("Bash(go tool golangci-lint:*)")
-            .with_permission_allow("Bash(go vet:*)")
-            .with_permission_allow("Bash(gofmt:*)")
-            .with_permission_allow("Bash(~/.claude/workflows/*)")
-            .with_permission_allow("Edit(/private/tmp/claude-501/**)")
-            .with_permission_allow("Edit(/tmp/claude-501/**)")
-            .with_permission_allow("WebFetch(domain:api.github.com)")
-            .with_permission_allow("WebFetch(domain:claude.ai)")
-            .with_permission_allow("WebFetch(domain:code.claude.com)")
-            .with_permission_allow("WebFetch(domain:crates.io)")
-            .with_permission_allow("WebFetch(domain:docs.claude.ai)")
-            .with_permission_allow("WebFetch(domain:github.com)")
-            .with_permission_allow("WebFetch(domain:mimir.bulbasaur.altf4.domains)")
-            .with_permission_allow("WebFetch(domain:raw.githubusercontent.com)")
-            .with_permission_allow("WebSearch")
-            .with_permission_allow("Workflow");
-
-        // DOT-952: Workflow scriptPath requires the directory to be readable as an
-        // added directory; the Bash(~/.claude/workflows/*) allow above covers only
-        // Bash invocations.
-        let settings_builder = settings_builder
-            .with_permission_additional_directories(vec!["~/.claude/workflows".to_string()]);
-
-        // Every `gh pr` verb the `pr` skill invokes that publishes text or
-        // changes who can act on a PR asks first, so the human sees the
-        // bytes before they are public. This list is keyed to the verbs the
-        // skills invoke; a skill that adds a publishing `gh` verb adds a row
-        // here. `gh run view` is deliberately absent: it only reads CI logs,
-        // and the `pr` skill already treats that output as untrusted data
-        // rather than instructions.
-        let settings_builder = permission_ask_patterns()
-            .iter()
-            .fold(settings_builder, |builder, pattern| {
-                builder.with_permission_ask(pattern)
-            });
-
-        let settings_builder = deny_sensitive_paths(
-            settings_builder,
-            |p| format!("Edit({p})"),
-            SENSITIVE_PATHS
-                .iter()
-                .chain(SENSITIVE_PATHS_DENY_EDIT_ONLY)
-                .copied(),
-        );
-
-        // Shell indirection is denied before the classifier runs. The rows
-        // are already `Bash(...)` patterns, so they fold in unwrapped; a test
-        // pins the set to an explicit literal the way the ask rows are pinned.
-        let settings_builder = SHELL_INDIRECTION_DENY_PATTERNS
-            .iter()
-            .fold(settings_builder, |builder, pattern| {
-                builder.with_permission_deny(pattern)
-            });
-
-        // No Read() deny rules on purpose. With any Read() deny configured the
-        // harness turns every `cd <dir> && grep <relative path>` into a hard
-        // ask the auto-mode classifier may not answer (its
-        // deniedPathInsideDirectory circuit breaker); the sensitive roots are
-        // refused instead by the sandbox denyRead list for Bash and by the
-        // sensitive-path-guard hook for Read/Grep/Glob.
-
-        let settings = settings_builder
-            .with_sandbox_allow_unsandboxed_commands(false)
-            .with_sandbox_auto_allow_bash(true)
-            .with_sandbox_fail_if_unavailable(true)
-            // Commands that need a network the sandbox cannot grant (the
-            // bulbasaur cluster, AWS, the Doppler API) run unsandboxed rather
-            // than through a per-call lift; the permission rules and the
-            // auto-mode classifier still gate what they do.
-            //
-            // MEASURED (DOT-1263, 2026-09-03, no dangerouslyDisableSandbox,
-            // ~/Desktop deny-read): the match is over TOP-LEVEL simple
-            // commands of the whole Bash call, not the call's first token —
-            // `cd /tmp/claude && git --version && ls ~/Desktop`,
-            // `ls ~/Desktop; git --version`, and `set -e; git --version; ls
-            // ~/Desktop` all ran the ENTIRE call unsandboxed (`ls ~/Desktop`
-            // succeeded) once `git *` was in this list, whichever position
-            // the excluded command sat in and whatever preceded or followed
-            // it. Excluded only when the matching command sits inside a
-            // control-flow construct instead of appearing as a top-level
-            // simple command: `cd /tmp/claude && set -e; for x in 1; do git
-            // --version; done; ls ~/Desktop` ran sandboxed (the loop hid
-            // `git` from the matcher). A `cd`/env-var PREFIX on the matching
-            // command itself, as opposed to a separate command joined by
-            // `&&`/`;`, was not probed. So: any entry in this list makes the
-            // WHOLE call run unsandboxed the moment that command appears
-            // anywhere at top level in it, including alongside unrelated
-            // commands this list was never meant to exempt — an executor
-            // whose sandbox lift was denied can run anything unsandboxed by
-            // appending `; git --version` (or any other listed command) to
-            // its call. `git` is removed below for exactly this reason:
-            // local git needs no network (`github.com`/`api.github.com` are
-            // already in the network allowlist for what does), so nothing
-            // here needed the exclusion. The other entries were not
-            // re-probed and keep the same fail-open exclusion shape —
-            // narrowing this list further, or replacing it with a
-            // command-position-aware mechanism, is unassessed.
-            .with_sandbox_excluded_commands(vec![
-                "aws *".to_string(),
-                "docker *".to_string(),
-                "doppler *".to_string(),
-                "gh *".to_string(),
-                "kubectl *".to_string(),
-                "terraform *".to_string(),
-                "vorpal *".to_string(),
-            ])
-            .with_sandbox_filesystem_allow_write(
-                SANDBOX_TOOLCHAIN_CACHE_PATHS
-                    .iter()
-                    .chain(std::iter::once(&SANDBOX_AGENT_MEMORY_PATH))
-                    .chain(std::iter::once(&SANDBOX_BARE_REPO_ROOT))
-                    .chain(std::iter::once(&SANDBOX_CLAUDE_SCRATCH_ROOT))
-                    .chain(std::iter::once(&SANDBOX_CLAUDE_SCRATCH_ROOT_PRIVATE))
-                    .chain(std::iter::once(&SANDBOX_DARWIN_TEMP_ROOT))
-                    .chain(std::iter::once(&SANDBOX_DOCS_CACHE_PATH))
-                    .chain(std::iter::once(&SANDBOX_DOCKET_STORE_PATH))
-                    // The whole config directory, not just trust.toml.lock:
-                    // `docket trust add` writes a temp file beside trust.toml
-                    // and renames it, so a lock-only allowance failed every
-                    // sandboxed trust write. The Edit() deny on trust.toml
-                    // and the trust-guard hook still hold the executor line.
-                    .chain(std::iter::once(&SANDBOX_DOCKET_CONFIG_PATH))
-                    .chain(std::iter::once(&SANDBOX_FRICTION_LEDGER_PATH))
-                    .map(|p| p.to_string())
-                    .collect(),
-            )
-            .with_sandbox_filesystem_deny_read(sandbox_filesystem_deny_read_paths())
-            .with_sandbox_filesystem_allow_read(sandbox_filesystem_allow_read_paths())
-            .with_sandbox_network_allowed_domains(vec![
-                "api.github.com".to_string(),
-                "api.osv.dev".to_string(),
-                "crates.io".to_string(),
-                "github.com".to_string(),
-                "proxy.golang.org".to_string(),
-                "static.crates.io".to_string(),
-                "sum.golang.org".to_string(),
-                "vuln.go.dev".to_string(),
-            ])
-            // Each entry becomes a seatbelt subpath rule for both bind and
-            // connect. The scratch roots are listed so test suites that listen
-            // on a unix socket under their step directory run sandboxed; with
-            // only the two service sockets below, every such bind was refused.
-            .with_sandbox_network_allow_unix_sockets(vec![
-                "~/.orbstack/run/docker.sock".to_string(),
-                "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock".to_string(),
-                SANDBOX_CLAUDE_SCRATCH_ROOT.to_string(),
-                SANDBOX_CLAUDE_SCRATCH_ROOT_PRIVATE.to_string(),
-            ])
-            .with_sandbox_network_allow_mach_lookup(vec!["com.apple.trustd.agent".to_string()])
-            .with_sandbox_network_allow_local_binding(true)
             .build(context)
             .await?;
 
-        let skills = FileSource::new(
-            &component_name(&self.name, "skills"),
-            "src/user/claude_code/skills",
-            self.systems.clone(),
-        )
-        .build(context)
-        .await?;
+            symlinks.push((get_env_key(&artifact), claude_home(component)));
+            artifacts.push(artifact);
+        }
 
-        let workflows = FileSource::new(
-            &component_name(&self.name, "workflows"),
-            "src/user/claude_code/workflows",
-            self.systems.clone(),
-        )
-        .build(context)
-        .await?;
+        let settings = settings(&self.name, self.systems.clone())
+            .build(context)
+            .await?;
 
-        // On-demand reading material CLAUDE.md points at (the full working
-        // agreement and harness guidance) so the per-turn memory file carries
-        // only the rules every turn needs. Nothing under ~/.claude/references
-        // loads on its own.
-        let references = FileSource::new(
-            &component_name(&self.name, "references"),
-            "src/user/claude_code/references",
-            self.systems.clone(),
-        )
-        .build(context)
-        .await?;
-
-        let memory = FileCreate::new(
-            &component_name(&self.name, "memory"),
-            self.systems.clone(),
-            include_str!("claude_code/CLAUDE.md"),
-        )
-        .build(context)
-        .await?;
-
-        let allowed_signers = FileCreate::new(
-            &component_name(&self.name, "allowed-signers"),
-            self.systems.clone(),
-            include_str!("claude_code/allowed_signers"),
-        )
-        .build(context)
-        .await?;
-
-        let statusline = FileCreate::new(
-            &component_name(&self.name, "statusline"),
-            self.systems,
-            include_str!("claude_code/statusline.sh"),
-        )
-        .with_executable(true)
-        .build(context)
-        .await?;
-
-        let symlinks = vec![
-            (get_env_key(&agents), claude_home("agents")),
-            (
-                FileCreate::output_file_path(
-                    &get_env_key(&allowed_signers),
-                    &component_name(&self.name, "allowed-signers"),
-                ),
-                GIT_ALLOWED_SIGNERS_INSTALL_PATH.to_string(),
+        symlinks.push((
+            FileCreate::output_file_path(
+                &get_env_key(&settings),
+                &component_name(&self.name, "settings"),
             ),
-            (get_env_key(&hooks), claude_home("hooks")),
+            claude_home("settings.json"),
+        ));
+        artifacts.push(settings);
+
+        // Single-file components: (component, content, executable, install path).
+        let files = [
             (
-                FileCreate::output_file_path(
-                    &get_env_key(&memory),
-                    &component_name(&self.name, "memory"),
-                ),
+                "memory",
+                include_str!("claude_code/CLAUDE.md"),
+                false,
                 claude_home("CLAUDE.md"),
             ),
             (
-                FileCreate::output_file_path(
-                    &get_env_key(&settings),
-                    &component_name(&self.name, "settings"),
-                ),
-                claude_home("settings.json"),
+                "allowed-signers",
+                include_str!("claude_code/allowed_signers"),
+                false,
+                home_install(GIT_ALLOWED_SIGNERS_CONFIG_PATH),
             ),
-            (get_env_key(&references), claude_home("references")),
-            (get_env_key(&skills), claude_home("skills")),
             (
-                FileCreate::output_file_path(
-                    &get_env_key(&statusline),
-                    &component_name(&self.name, "statusline"),
-                ),
+                "statusline",
+                include_str!("claude_code/statusline.sh"),
+                true,
                 claude_home("statusline.sh"),
             ),
-            (get_env_key(&workflows), claude_home("workflows")),
         ];
 
-        let artifacts = vec![
-            agents,
-            allowed_signers,
-            hooks,
-            memory,
-            references,
-            settings,
-            skills,
-            statusline,
-            workflows,
-        ];
+        for (component, content, executable, target) in files {
+            let name = component_name(&self.name, component);
+            let artifact = FileCreate::new(&name, self.systems.clone(), content)
+                .with_executable(executable)
+                .build(context)
+                .await?;
+
+            symlinks.push((
+                FileCreate::output_file_path(&get_env_key(&artifact), &name),
+                target,
+            ));
+            artifacts.push(artifact);
+        }
 
         Ok((artifacts, symlinks))
     }
@@ -726,17 +708,36 @@ impl ClaudeCode {
 #[cfg(test)]
 mod tests {
     use super::{
-        claude_home, component_name, permission_ask_patterns, sandbox_filesystem_allow_read_paths,
+        claude_home, component_name, home_install, permission_ask_patterns,
         sandbox_filesystem_deny_read_paths, settings, sorted_permission_patterns,
         AUTO_MODE_ALLOW_RULES, AUTO_MODE_HARD_DENY_RULES, GIT_ALLOWED_SIGNERS_CONFIG_PATH,
-        GIT_ALLOWED_SIGNERS_INSTALL_PATH, PUBLISHING_ASK_VERBS, SANDBOX_CLAUDE_SCRATCH_ROOT,
-        SANDBOX_CLAUDE_SCRATCH_ROOT_PRIVATE, SENSITIVE_PATHS, SENSITIVE_PATHS_DENY_EDIT_ONLY,
-        SENSITIVE_PATHS_DENY_READ_ONLY, SHELL_INDIRECTION_DENY_PATTERNS,
+        PUBLISHING_ASK_VERBS, SANDBOX_ALLOW_READ_PATHS, SANDBOX_SCRATCH_ROOTS, SENSITIVE_PATHS,
+        SENSITIVE_PATHS_DENY_EDIT_ONLY, SENSITIVE_PATHS_DENY_READ_ONLY,
+        SHELL_INDIRECTION_DENY_PATTERNS,
     };
     use crate::file::FileCreate;
 
-    // A rule may name a `gh pr <sub>` verb in slash-compressed form (line 89
-    // uses "gh pr view/checks/list/diff" for four verbs in one phrase) rather
+    /// The module body before the tests: the source text the call-site
+    /// counting tests below guard.
+    fn impl_source() -> &'static str {
+        let source = include_str!("claude_code.rs");
+        &source[..source.find("#[cfg(test)]").expect("tests follow the impl")]
+    }
+
+    /// The two auto-mode allow rules keyed to the scratch roots: read-only
+    /// search and confined file operations.
+    fn scratch_root_rules() -> Vec<&'static str> {
+        let rules: Vec<&str> = AUTO_MODE_ALLOW_RULES
+            .iter()
+            .copied()
+            .filter(|r| r.contains("scratch roots"))
+            .collect();
+        assert_eq!(rules.len(), 2, "expected the search and file-op rules");
+        rules
+    }
+
+    // A rule may name a `gh pr <sub>` verb in slash-compressed form (the gh
+    // reads rule uses "gh pr view/checks/list/diff" for four verbs) rather
     // than spelling the whole verb out as a literal substring. Whole-literal
     // `rule.contains(verb)` misses that spelling entirely: DOT-1472 measured
     // an allow rule naming "gh pr view/edit/ready, gh pr view/close/comment"
@@ -768,15 +769,15 @@ mod tests {
     }
 
     #[test]
-    fn allowed_signers_install_and_config_paths_name_the_same_file() {
+    fn allowed_signers_install_path_names_the_file_git_reads() {
         // Activation expands `${HOME}`; git expands only a leading `~/`. The
         // spellings must differ and still resolve to one file, or the symlink
         // lands somewhere git never looks and %G? goes back to N.
-        assert_eq!(
-            GIT_ALLOWED_SIGNERS_INSTALL_PATH.replace("${HOME}", "~"),
-            GIT_ALLOWED_SIGNERS_CONFIG_PATH
-        );
         assert!(GIT_ALLOWED_SIGNERS_CONFIG_PATH.starts_with("~/"));
+        assert_eq!(
+            home_install(GIT_ALLOWED_SIGNERS_CONFIG_PATH),
+            "${HOME}/.config/git/allowed_signers"
+        );
     }
 
     #[test]
@@ -860,11 +861,8 @@ mod tests {
     #[test]
     fn sandbox_read_allowances_reopen_only_the_agent_signing_key_pair() {
         assert_eq!(
-            sandbox_filesystem_allow_read_paths(),
-            vec![
-                "~/.ssh/agent-signing".to_string(),
-                "~/.ssh/agent-signing.pub".to_string(),
-            ]
+            SANDBOX_ALLOW_READ_PATHS,
+            ["~/.ssh/agent-signing", "~/.ssh/agent-signing.pub"]
         );
         assert!(sandbox_filesystem_deny_read_paths().contains(&"~/.ssh".to_string()));
     }
@@ -942,15 +940,10 @@ mod tests {
         // The read-only search and scratch-mutation rules are keyed to the
         // same roots the sandbox lets every session write. If the scratch
         // roots move, the classifier rules must move with them.
-        let scoped: Vec<&&str> = AUTO_MODE_ALLOW_RULES
-            .iter()
-            .filter(|r| r.contains("scratch roots"))
-            .collect();
-
-        assert_eq!(scoped.len(), 2, "expected the search and file-op rules");
-        for rule in scoped {
-            assert!(rule.contains(SANDBOX_CLAUDE_SCRATCH_ROOT));
-            assert!(rule.contains(SANDBOX_CLAUDE_SCRATCH_ROOT_PRIVATE));
+        for rule in scratch_root_rules() {
+            for root in SANDBOX_SCRATCH_ROOTS {
+                assert!(rule.contains(root), "{root} is missing from: {rule}");
+            }
         }
     }
 
@@ -1020,8 +1013,7 @@ mod tests {
         // A single Read() deny rule re-arms the harness's compound-cd ask
         // (see the comment where the Edit() denies are built). Guard the
         // source text: the only deny wrappers may be Edit().
-        let source = include_str!("claude_code.rs");
-        let body = &source[..source.find("#[cfg(test)]").expect("tests follow the impl")];
+        let body = impl_source();
         assert!(
             !body.contains("format!(\"Read({p})\")"),
             "a Read() permission deny wrapper is back"
@@ -1062,8 +1054,7 @@ mod tests {
         // assertion above -- it bypasses ground truth by construction. Guard
         // the source text instead: the fold in `build()` is the only call
         // site `with_permission_ask` may have.
-        let source = include_str!("claude_code.rs");
-        let body = &source[..source.find("#[cfg(test)]").expect("tests follow the impl")];
+        let body = impl_source();
         let occurrences = body.matches("with_permission_ask(").count();
         assert_eq!(
             occurrences, 1,
@@ -1079,8 +1070,8 @@ mod tests {
         // entries) still leaves this assertion with something independent
         // to fail against, since the skill file the verbs are extracted
         // from does not move when the constant does. `gh pr view`,
-        // `checks`, `list`, and `diff` are read verbs (the exact set
-        // AUTO_MODE_ALLOW_RULES:89 allow-lists); every OTHER `gh pr <verb>`
+        // `checks`, `list`, and `diff` are read verbs (the exact set the gh
+        // reads rule in AUTO_MODE_ALLOW_RULES lists); every OTHER `gh pr <verb>`
         // the skill invokes, plus a bare `gh api`, must have an ask row.
         const READ_GH_PR_VERBS: &[&str] = &["view", "checks", "list", "diff"];
 
@@ -1157,18 +1148,12 @@ mod tests {
     }
 
     #[test]
-    fn shell_indirection_deny_patterns_are_bash_rules_sorted_and_unique() {
+    fn shell_indirection_deny_patterns_are_sorted() {
+        // Uniqueness and the `Bash(...)` shape follow from the literal-set
+        // test above; source order is the one property it does not pin.
         let mut sorted: Vec<&str> = SHELL_INDIRECTION_DENY_PATTERNS.to_vec();
         sorted.sort_unstable();
-        sorted.dedup();
         assert_eq!(sorted, SHELL_INDIRECTION_DENY_PATTERNS.to_vec());
-
-        for pattern in SHELL_INDIRECTION_DENY_PATTERNS {
-            assert!(
-                pattern.starts_with("Bash(") && pattern.ends_with(')'),
-                "{pattern} is not a Bash permission pattern"
-            );
-        }
     }
 
     #[test]
@@ -1176,8 +1161,7 @@ mod tests {
         // Two folds may call `with_permission_deny`: the sensitive-path Edit()
         // fold and the shell-indirection fold. A row added beside either would
         // bypass the literal-set assertions that pin what each fold emits.
-        let source = include_str!("claude_code.rs");
-        let body = &source[..source.find("#[cfg(test)]").expect("tests follow the impl")];
+        let body = impl_source();
         let occurrences = body.matches("with_permission_deny(").count();
         assert_eq!(
             occurrences, 2,
@@ -1235,12 +1219,7 @@ mod tests {
             }
         }
 
-        let scoped: Vec<&&str> = AUTO_MODE_ALLOW_RULES
-            .iter()
-            .filter(|r| r.contains("scratch roots"))
-            .collect();
-        assert_eq!(scoped.len(), 2, "expected the search and file-op rules");
-        for rule in scoped {
+        for rule in scratch_root_rules() {
             assert!(
                 rule.contains("shell indirection") && rule.contains("outside this rule"),
                 "scratch-root rule must exclude shell indirection: {rule}"

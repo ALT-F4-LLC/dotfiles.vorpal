@@ -221,7 +221,11 @@
 # whatever words it carries, because the interpreter test that widens a body
 # into the scan reads leaf heads only — a findings artifact that mentions
 # `node`, `sh` or `.env` in passing is the sanctioned record path for
-# executor-read and executor-research, which have no Write tool.
+# executor-read and executor-research, which have no Write tool. A search
+# for the glob-form token itself (`grep -rn 'STEP-[0-9]*'` on the step's own
+# dir) is a false DENY too; the deny reason offers `STEP.[0-9]+` instead,
+# which is safe only as a regex operand (grep -E, rg): as a pathname glob it
+# joins the glob-outside-the-id residual above.
 #
 # Fail-open on unparseable stdin and a missing `jq`, exactly as the sibling
 # guards do and for the reason the trust guard's header measures (a hook's
@@ -960,7 +964,7 @@ fi
 log_decision "deny" "$CLAUSE"
 case "$CLAUSE" in
     SCRATCH)
-        deny "$REASON_PREFIX this command names another step's scratch directory (${DETAIL}); ${OWN_TEXT}. A sibling's leftover dir is the conductor's to sweep at reap, never an executor's. If it blocks your step, record that as a finding in your step report and do not retry. If this command performs no operation on that directory and only mentions it in prose, write the prose through a heredoc with a quoted delimiter (<<'EOF'), which this guard does not read, or with the Write tool where you have it." ;;
+        deny "$REASON_PREFIX this command names another step's scratch directory (${DETAIL}); ${OWN_TEXT}. A sibling's leftover dir is the conductor's to sweep at reap, never an executor's. If it blocks your step, record that as a finding in your step report and do not retry. If this command performs no operation on that directory and only mentions it in prose, write the prose through a heredoc with a quoted delimiter (<<'EOF'), which this guard does not read, or with the Write tool where you have it. If a search pattern must match a step id and the command operates on no sibling directory, spell the pattern \`STEP.[0-9]+\` (with grep -E or rg), which this guard does not read as a scratch directory. Otherwise, rewording a command that operates on another step's directory is not authorized." ;;
     WORKTREE)
         case "$DETAIL" in
             prune) deny "$REASON_PREFIX \`git worktree prune\` deletes the bookkeeping of every checkout that is momentarily absent, siblings still working included, and is never an executor's to run. Leave the worktree list as it is; the conductor sweeps checkouts after integration." ;;

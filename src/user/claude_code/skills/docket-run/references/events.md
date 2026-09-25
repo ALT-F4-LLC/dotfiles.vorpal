@@ -4,18 +4,20 @@ Covers the `docket events` family, the single copy of this engine CLI
 contract, split out of docket's
 [reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
 (consumer: the docket-run skill), which still holds the response-shape
-contract and parsing traps. Verified 2026-09-14 against `docket
-nightly-112-gcffd10c` (commit `cffd10c`, built `2026-09-14T21:28:29Z`) by
-`--help`/`--version` only; behavior and JSON examples were not re-run.
+contract and parsing traps. Verified 2026-09-25 against `docket
+nightly-209-ga348156` (commit `a348156`, built `2026-09-25T01:58:12Z`) by
+`--help`/`--version` and the docket-cli-audit skill's runtime sweep
+(`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
+examples reflect the swept commands as of that build.
 
 <a id="contents"></a>
 
 ## Contents
 
-- [`docket events`](#events-commands) — 194 lines
+- [`docket events`](#events-commands) — 199 lines
   - [`events list`](#events-list) — 101 lines
   - [`events prune`](#events-prune) — 48 lines
-  - [Attribution](#events-attribution) — 37 lines
+  - [Attribution](#events-attribution) — 42 lines
 
 <a id="events-commands"></a>
 
@@ -183,13 +185,18 @@ publishes the per-actor counts:
 
 | Actor | Meaning | Kinds |
 |---|---|---|
-| `next` | the scheduler | `step-ready`, `lease-reaped`, `join-completed`, `loop-entered`, `dispatch-abandoned`, `issue-promoted` |
+| `next` | the scheduler | `step-ready`, `lease-reaped`, `join-completed`, `loop-entered`, `dispatch-abandoned`, `issue-promoted`, `issue-in-progress`, `issue-review` |
 | `gate` | a deterministic check, actions included | `gate-started`, `gate-recorded`, `gate-unmatched`, `gate-rerun`, `vote-opened`, `vote-tallied` |
 | `threshold` | computed routing | `step-routed`, `step-failed`, `step-superseded`, `step-skipped`, `step-held`, `step-batch-overridden` |
-| `human` | an operator verb, including one a harness relays | `run-*` (`run-started`, `run-activated`, `run-paused`, `run-resumed`, `run-abandoned`, `run-done`, `run-budget-set`, `run-repinned`), `step-claimed`, `step-heartbeat`, `step-recorded`, `step-resolved`, `step-approved`, `step-rejected`, `step-annotated`, `issue-abandoned`, `issue-diff-repinned`, `gate-override-granted`, `spawn-admitted`, `trust-*`, `project-registered`, `dispatch-opened`, `dispatch-closed`, `reap-acknowledged`, `conductor-seated`, `events-pruned` |
+| `human` | an operator verb, including one a harness relays | `run-*` (`run-started`, `run-activated`, `run-paused`, `run-resumed`, `run-abandoned`, `run-done`, `run-budget-set`, `run-repinned`, `run-note-added`), `step-claimed`, `step-heartbeat`, `step-recorded`, `step-resolved`, `step-approved`, `step-rejected`, `step-annotated`, `issue-abandoned`, `issue-diff-repinned`, `issue-scope-refreshed`, `issue-body-refreshed`, `gate-override-granted`, `stale-target-waived`, `spawn-admitted`, `trust-*`, `project-registered`, `dispatch-opened`, `dispatch-closed`, `dispatch-extended`, `reap-acknowledged`, `conductor-seated`, `events-pruned`, `config-changed` |
 
 The three operator lifecycle kinds each carry `data` of `{from, to,
-reason}`, written in the same transaction as the status they record.
+reason}`, written in the same transaction as the status they record. A
+`run-paused` or `run-abandoned` written by `run pause` or `run abandon` also
+carries `authority`, plus `authority_ref` when `--authority-ref` was given;
+`run-resumed` carries neither. A budget breach writes its own `run-paused`
+with `data.reason = "budget"`, and the rollup's automatic pause and resume
+carry no `data`.
 `lease-reaped` is attributed to `next` whether the lease expired or
 `docket step reap` forced it; `data.forced` plus the operator's `reason`
 separates the two.

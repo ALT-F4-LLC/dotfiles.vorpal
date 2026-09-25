@@ -166,7 +166,9 @@ referencing `name@version`s; there is no override, so retire or re-version
 those workflows first (a retired workflow does not block). The builtin
 `aggregate@1` cannot be retired, since it is visible to every project. Under
 `--all-projects` each project reports its own outcome: `deprecated`,
-`already-deprecated`, `not-registered`, or `in-use`.
+`already-deprecated`, `not-registered`, or `in-use`. The report carries
+`ok: true` even when a project failed; the exit code and `failed` count are
+the verdict, so an `already-deprecated` project exits 4.
 
 Needs docket `nightly-209` or later; the store migrates to schema version 36
 on first open.

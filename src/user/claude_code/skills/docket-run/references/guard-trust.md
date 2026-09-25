@@ -4,8 +4,8 @@ Covers the `docket guard` and `docket trust` families, the single copy of this
 engine CLI contract, split out of docket's
 [reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
 (consumer: the docket-run skill), which still holds the response-shape
-contract and parsing traps. Verified 2026-09-17 against `docket
-nightly-136-g835f706` (commit `835f706`, built `2026-09-17T01:02:08Z`) by
+contract and parsing traps. Verified 2026-09-25 against `docket
+nightly-209-ga348156` (commit `a348156`, built `2026-09-25T01:58:12Z`) by
 `--help`/`--version` and the docket-cli-audit skill's runtime sweep
 (`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
 examples reflect the swept commands as of that build.
@@ -14,9 +14,9 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket guard`](#guard-commands) — 113 lines
+- [`docket guard`](#guard-commands) — 115 lines
   - [`guard record`](#guard-record) — 18 lines
-  - [`guard spawn`](#guard-spawn) — 45 lines
+  - [`guard spawn`](#guard-spawn) — 46 lines
 - [`docket trust`](#trust-commands) — 199 lines
   - [`trust add <name> -- <argv...>`](#trust-add) — 65 lines
   - [`trust list`](#trust-list) — 16 lines
@@ -37,12 +37,14 @@ Deterministic predicates over engine state, for hooks.
 | `guard gate --step NAME` | a **passed** `type="human"` **or** `type="vote"` step of that name exists for an active run — an approval on the one, a tallied approval on the other. Both kinds answer, so converting a gate to a vote does not silently stop the hooks that check it; a vote still being cast reads as undecided and denies |
 | `guard record [--run RUN-N]` | no unreconciled dispatch exists — no open manifest, and no discrepancy |
 | `guard spawn --run RUN-N` | the proposed rows byte-match the open dispatch **and** no write-class reap is unacknowledged (or `--deciding-vote PROPOSAL-N` names the open proposal this batch exists to decide — the reap half only) |
-| `guard spawn --active` | the reap half over **every** active run of the project: denies on the oldest run that would deny, its reason prefixed `RUN-N: `. Mutually exclusive with `--run`, and it does not take `--deciding-vote` — the carve-out admits a batch onto one run, so name that run with `--run`. The `--json` deny envelope is `{ok:false, error, code}` with no run field; the id is the reason's prefix |
+| `guard spawn --active` | the reap half over **every** active run of the project: denies on the oldest run that would deny, its reason prefixed `RUN-N: `. Mutually exclusive with `--run`, and it takes neither `--deciding-vote` nor `--rows` (exit 3) — the carve-out and a proposed batch each belong to one run, so name that run with `--run`. The `--json` deny envelope is `{ok:false, error, code}` with no run field; the id is the reason's prefix |
 
 **Exit 0 = allow, exit 2 = deny with a reason**, independent of the ordinary
 command error taxonomy: a guard's caller tests a boolean, so exit 2 here
 means "denied," not "not found." The reason goes to stderr in human mode and
-into the envelope's `error` under `--json`.
+into the envelope's `error` under `--json`. That envelope's `code` is
+`NOT_FOUND` on every denial, because the engine reuses the code to exit 2; do
+not branch on it.
 
 **When the resolved store has no database, a guard ALLOWS (exit 0)
 rather than denying.** A repo with no engine has no engine state to
@@ -70,10 +72,9 @@ first dispatch or first step transition, including work performed
 without a manifest.
 
 Guards answer over the **current project's** runs by default. `guard stop`,
-`guard gate`, and `guard record` accept `--all-projects` to answer over every
-project's runs in the store instead — the same vocabulary as
-`events list --all-projects`. (`guard spawn` is inherently per-run and has no
-such flag.)
+`guard gate`, `guard record`, and `guard spawn` accept `--all-projects` to
+answer over every project's runs in the store instead — the same vocabulary
+as `events list --all-projects`.
 
 <a id="guard-record"></a>
 
@@ -101,9 +102,10 @@ run. Preserve that uncertainty when interpreting a hook result.
 |---|---|---|---|
 | `--run` | string | `""` | the run whose batch is being spawned; mutually exclusive with `--active` |
 | `--active` | bool | `false` | check reap holds over every active run of the current project |
-| `--rows` | string | `""` | file holding the JSON array of rows about to be spawned (`-` for stdin) |
-| `--ack-reap` | int64Slice | `nil` | acknowledge a write-class reap by its `lease-reaped` event `seq` (repeatable) |
+| `--rows` | string | `""` | file holding the JSON array of rows about to be spawned (`-` for stdin); refused with `--active` |
+| `--ack-reap` | lease-reaped | `[]` | acknowledge a write-class reap by its `lease-reaped` event `seq` (repeatable) |
 | `--deciding-vote` | string | `""` | admit this batch past a reap hold because it exists to DECIDE the named OPEN proposal (`PROPOSAL-N`); event-logged |
+| `--all-projects` | bool | `false` | answer over every project's runs, not just the current project's |
 
 Both halves must hold. With **no** open dispatch and **no** `--rows`, the
 row half is vacuously satisfied and the reap half still answers, so a

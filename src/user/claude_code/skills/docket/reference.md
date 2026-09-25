@@ -15,9 +15,9 @@ before parsing it. A nearby source checkout is not proof of an installed
 binary's behavior unless their commits match.
 
 [references/cli-inventory.json](references/cli-inventory.json) records command
-paths, aliases, usage, and local/inherited flags. Refreshed **2026-09-17 UTC**
-against `nightly-136-g835f706` (commit `835f706`, built `2026-09-17T01:02:08Z`);
-covers 152 public commands. The JSON envelope table and behavioral notes below
+paths, aliases, usage, and local/inherited flags. Refreshed **2026-09-25 UTC**
+against `nightly-209-ga348156` (commit `a348156`, built `2026-09-25T01:58:12Z`);
+covers 155 public commands. The JSON envelope table and behavioral notes below
 were checked against that same build's runtime fixtures
 ([../docket-cli-audit/references/cli-fixtures.json](../docket-cli-audit/references/cli-fixtures.json)),
 which cover the swept commands' exit codes and both JSON dialects; a flag path
@@ -70,8 +70,8 @@ length to read. The engine families live in docket-run's references:
   - [`issue graph [id]`](#issue-graph) — 12 lines
 - [`docket plan`](#plan-commands) — 27 lines
 - [`docket next`](#next-commands) — 22 lines
-- [`docket workflow` (alias `wf`)](#workflow-commands) — 126 lines
-  - [`workflow register <file.toml>`](#workflow-register) — 18 lines
+- [`docket workflow` (alias `wf`)](#workflow-commands) — 130 lines
+  - [`workflow register <file.toml>`](#workflow-register) — 22 lines
   - [`workflow lint <file.toml>`](#workflow-lint) — 24 lines
   - [`workflow deprecate <name>@<version>`](#workflow-deprecate) — 18 lines
   - [`workflow list`](#workflow-list) — 27 lines
@@ -533,7 +533,11 @@ existing `name@version` are an idempotent success returning the existing row;
 differing bytes are `CONFLICT` (exit 4) naming both hashes. `--project` or
 `--all-projects` switches the response to a fan-out shape:
 `{operation, subject, scope, results: [{project_id, project, identity, prefix,
-outcome, ...}], succeeded, failed}`.
+outcome, ...}], succeeded, failed}`. The report is always written with
+`ok: true`. When `failed` is non-zero the process exits with the failing
+projects' shared code (exit 4 for `already-deprecated` or a conflict), or
+exit 1 when their codes differ. Judge a
+fan-out by its exit code and `failed`, never by `ok`.
 
 <a id="workflow-lint"></a>
 

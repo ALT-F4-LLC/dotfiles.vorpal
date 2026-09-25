@@ -44,9 +44,10 @@ Engine defaults live in the database, read by the claim machinery:
 | `vote.rule.<name>.threshold` | float in (0,1] | (unset) | approval threshold a `vote_rule` tallies at |
 | `vote.rule.<name>.criticality` | low\|medium\|high\|critical | `medium` | the proposal's criticality |
 | `vote.rule.<name>.sealed` | bool | (unset) | withholds each cast's verdict, weights, findings and summary until the tally closes; same effect as a vote step's `sealed` field |
+| `vote.rule.<name>.hold_on_dissent` | bool | `false` | under this rule, an APPROVED tally carrying at least one `reject` parks the vote step for the operator instead of passing. The tally itself is unchanged, and the park only displaces a pass, never a fail route |
 | `vote.hold.rule` | rule name or `""` | `""` | vote rule a **materialized held step** is tallied under. Empty (the default) mints held steps as `human` for one operator to decide |
 | `vote.hold.voters` | comma-separated names or `""` | `""` | who casts on a materialized held step. Empty (the default) mints held steps as `human` |
-| `vote.hold.cost` | number ≥ 0 | `0` | meaning unverified — the known-keys list names it, but no help text or fixture in this audit describes what it configures |
+| `vote.hold.cost` | number ≥ 0 | `0` | declared `expected_cost` a materialized held **vote** step is minted with, so a held panel accrues to the budget floor. Applies only when both `vote.hold.*` keys above are set; a hold minted `human` ignores it |
 | `budget.usage.default` | number ≥ 0 | `0` | default per-run cap over measured usage (`budget.usage.unit`); separate from `budget.default`, which counts declared step costs |
 | `budget.usage.unit` | unit name or `""` | `""` | which recorded usage unit `budget.usage.default` counts |
 | `registration.auto` | bool | `true` | auto-register workflows and schemas at `run activate` from the instance-config roots |

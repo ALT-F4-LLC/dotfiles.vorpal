@@ -91,8 +91,12 @@ docket registry audit --json=v2
 
 One call reports every project's drift against the shared corpus: `behind`
 (the highest registered version of a name is below the corpus version) and
-`orphaned` (no scanned file declares the name, with `retired` per name). Use
-it to size the pass and to tell the operator how many projects are affected.
+`orphaned` (no scanned file declares the name, with `retired` per name). Each
+entry carries a `kind` of `workflow` or `schema`. This skill acts on workflow
+entries only: report a schema orphan to the operator with its remedy,
+`docket schema deprecate <name>@<version>`, and leave it out of the plan and
+the pass size. Use the workflow entries to size the pass and to tell the
+operator how many projects are affected.
 It repairs nothing, and it does not replace the planner: it compares only
 the highest registered version, so it misses an older version still binding
 beside the current one, and its help does not say whether a retired version

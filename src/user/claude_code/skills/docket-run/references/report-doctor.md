@@ -4,17 +4,19 @@ Covers the `docket report` and `docket doctor` families, the single copy of
 this engine CLI contract, split out of docket's
 [reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
 (consumer: the docket-run skill), which still holds the response-shape
-contract and parsing traps. Verified 2026-09-14 against `docket
-nightly-112-gcffd10c` (commit `cffd10c`, built `2026-09-14T21:28:29Z`) by
-`--help`/`--version` only; behavior and JSON examples were not re-run.
+contract and parsing traps. Verified 2026-09-25 against `docket
+nightly-209-ga348156` (commit `a348156`, built `2026-09-25T01:58:12Z`) by
+`--help`/`--version` and the docket-cli-audit skill's runtime sweep
+(`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
+examples reflect the swept commands as of that build.
 
 <a id="contents"></a>
 
 ## Contents
 
 - [`docket report`](#report-commands) — 32 lines
-- [`docket doctor`](#doctor-commands) — 27 lines
-  - [`doctor [--run RUN-N] [--source PATH]`](#doctor-check) — 23 lines
+- [`docket doctor`](#doctor-commands) — 28 lines
+  - [`doctor [--run RUN-N] [--source PATH]`](#doctor-check) — 24 lines
 
 <a id="report-commands"></a>
 
@@ -56,7 +58,7 @@ Not watch-eligible.
 
 #### `docket doctor [--run RUN-N] [--source PATH]`
 
-The six checks a conductor clears before the first dispatch of an attach, in
+The seven checks a conductor clears before the first dispatch of an attach, in
 one call. READ-ONLY; no lease reap, no re-pin, no migration beyond what any
 read verb performs. Every check ALWAYS RUNS and the return carries one row
 per check: `{check, verdict, detail}`, verdict `OK` | `FAIL` | `DRIFT` |
@@ -66,6 +68,7 @@ per check: `{check, verdict, detail}`, verdict `OK` | `FAIL` | `DRIFT` |
 |---|---|
 | `seat` | cwd is the git toplevel, not a subdirectory |
 | `store` | the store opens read-write from this seat |
+| `project` | the cwd resolves to a registered project; reported only, never registered by this verb, so an unbound repository reads FAIL |
 | `install-drift` | `--source`'s `src/user/docket/{config,bin}` match `~/.docket/{config,bin}`; SKIP without `--source` |
 | `pins` | `run verify-pins` for `--run`; SKIP without it |
 | `link-farm` | no symlinks under `<cwd>/.docket/config` (retired link-farm debris, resolving or not) |
@@ -74,4 +77,4 @@ per check: `{check, verdict, detail}`, verdict `OK` | `FAIL` | `DRIFT` |
 `--json` data: `{clean, skipped, checks}`. `clean` is true only when every
 check is OK; `skipped` is true when any check is SKIP, and a `--run` omitted
 on an active run reads `clean: false, skipped: true` rather than a clean
-report that quietly checked five things.
+report that quietly checked six things instead of seven.

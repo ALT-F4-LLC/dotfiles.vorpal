@@ -4,17 +4,19 @@ Covers the `docket dispatch` family and `docket next` in step mode (`--run`),
 the single copy of this engine CLI contract, split out of docket's
 [reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
 (consumer: the docket-run skill), which still holds the response-shape
-contract and parsing traps. Verified 2026-09-14 against `docket
-nightly-112-gcffd10c` (commit `cffd10c`, built `2026-09-14T21:28:29Z`) by
-`--help`/`--version` only; behavior and JSON examples were not re-run.
+contract and parsing traps. Verified 2026-09-25 against `docket
+nightly-209-ga348156` (commit `a348156`, built `2026-09-25T01:58:12Z`) by
+`--help`/`--version` and the docket-cli-audit skill's runtime sweep
+(`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
+examples reflect the swept commands as of that build.
 
 <a id="contents"></a>
 
 ## Contents
 
-- [`docket next` in step mode](#next-run) — 81 lines
-- [`docket dispatch`](#dispatch-commands) — 269 lines
-  - [`dispatch open`](#dispatch-open) — 74 lines
+- [`docket next` in step mode](#next-run) — 84 lines
+- [`docket dispatch`](#dispatch-commands) — 292 lines
+  - [`dispatch open`](#dispatch-open) — 97 lines
   - [`dispatch verify`](#dispatch-verify) — 37 lines
   - [`dispatch close`](#dispatch-close) — 39 lines
   - [`dispatch backfill-usage`](#dispatch-backfill-usage) — 49 lines
@@ -99,6 +101,9 @@ The `next row` shape (engine-spec §11.4):
 | `lease_ttl_s` | lease TTL in **seconds** |
 | `stage` | start-order constraint **within this offer**: do not start a row until every lower-stage row in the set has completed; rows sharing a stage run concurrently. `0` (omitted) means unstaged. NOT a priority — for `ready` rows it is a hint, for `staged` rows `claim` itself enforces the predicate |
 | `conditional` | `true` on a staged row sitting (transitively) behind a HOLD-CAPABLE in-offer predecessor — an `aggregate` declaring `hold_spread`, whose completion may hold for an operator instead of routing. Advisory, like `stage`: confirm the predecessor actually ROUTED before spawning such a row, or defer it to the next offer — spawning at the stage boundary risks paying a full boot for a claim refusal. Omitted when false |
+| `bump` | why the row sits at its stage rather than where its own dependencies put it, on every offer row: `none` (nothing moved it), `headroom` (its bounded class was already full in the earlier stage), or `scope` (another issue's tree-holding scope occupied that stage and intersects this row's). A `headroom` bump is cohort packing and may be rescheduled once a slot frees; a `scope` bump is a writer conflict that must stay serialized. Advisory and set-relative; `dispatch verify` ignores it |
+| `bump_issue` | on a `scope` bump only: the issue whose held scope intersected this row's |
+| `scope` | the row's issue's declared scope globs, so a reader can test intersection for pairs the engine never co-staged. Omitted when the issue declares none |
 | `status` | effective status, never stored — `ready`, or `staged` on a closure row offered ahead of its readiness (claimable only once its lower-stage predecessors record) |
 | `metadata` | the definition's opaque KV, verbatim |
 
@@ -137,7 +142,7 @@ with a reason.
 |---|---|---|---|
 | `--run` | string | — | **required** |
 | `--limit` | int | `0` | maximum manifest rows; 0 is no limit. Slices *after* ordering, so a limited manifest holds the highest-priority steps |
-| `--ack-reap` | int64Slice | `nil` | acknowledge a write-class reap by its `lease-reaped` event `seq`; repeatable |
+| `--ack-reap` | lease-reaped | `[]` | acknowledge a write-class reap by its `lease-reaped` event `seq`; repeatable |
 
 Response is engine-spec §11.4's `dispatch` shape: `{dispatch, run, opened_seq,
 expires_ms, rows: [<next row>…], total, truncated}`, plus `reaped` and

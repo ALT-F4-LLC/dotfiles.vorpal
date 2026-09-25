@@ -4,8 +4,8 @@ Covers the `docket gate`, `docket policy`, and `docket registry` families, the
 single copy of this engine CLI contract, split out of docket's
 [reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
 (consumer: the docket-run skill), which still holds the response-shape
-contract and parsing traps. Verified 2026-09-17 against `docket
-nightly-136-g835f706` (commit `835f706`, built `2026-09-17T01:02:08Z`) by
+contract and parsing traps. Verified 2026-09-25 against `docket
+nightly-209-ga348156` (commit `a348156`, built `2026-09-25T01:58:12Z`) by
 `--help`/`--version` and the docket-cli-audit skill's runtime sweep
 (`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
 examples reflect the swept commands as of that build.

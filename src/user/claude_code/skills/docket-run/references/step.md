@@ -4,8 +4,8 @@ Covers the `docket step` family, the single copy of this engine CLI contract,
 split out of docket's
 [reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
 (consumer: the docket-run skill), which still holds the response-shape
-contract and parsing traps. Verified 2026-09-17 against `docket
-nightly-136-g835f706` (commit `835f706`, built `2026-09-17T01:02:08Z`) by
+contract and parsing traps. Verified 2026-09-25 against `docket
+nightly-209-ga348156` (commit `a348156`, built `2026-09-25T01:58:12Z`) by
 `--help`/`--version` and the docket-cli-audit skill's runtime sweep
 (`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
 examples reflect the swept commands as of that build.
@@ -14,14 +14,14 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket step`](#step-commands) — 510 lines
+- [`docket step`](#step-commands) — 512 lines
   - [`step artifacts`](#step-artifacts) — 68 lines
   - [`step claim`](#step-claim) — 34 lines
   - [`step reap`](#step-reap) — 37 lines
   - [`step complete`](#step-complete) — 68 lines
   - [`step fail`](#step-fail) — 23 lines
   - [`step annotate`](#step-annotate) — 49 lines
-  - [`step resolve`](#step-resolve) — 118 lines
+  - [`step resolve`](#step-resolve) — 120 lines
   - [`step approve|reject`](#step-approve-reject) — 41 lines
   - [`step context`](#step-context) — 26 lines
 
@@ -359,6 +359,8 @@ Refusals: a step that has not reached a terminal status is `CONFLICT`
 | `--as` | string | **required**: `retry` \| `rerun-gates` \| `skip` \| `abandon-issue` \| `override-pass` \| `fix-round` |
 | `--note` | string | why |
 | `--batch` | bool | with `--as override-pass` only: also record one **run-scoped** grant per failed gate |
+| `--drop-interposed` | bool | with `--as override-pass` on a step whose threshold interposes other steps: acknowledge that the generic pass skips them without evaluating the threshold. Without it such a resolution is refused before anything commits; a step with no interposed steps never needs it |
+| `--worktree` | string | with `--as override-pass` or `rerun-gates`: re-pin the step's recorded `issue.diff` and target sha to this checkout's tree before resolving, as a new artifact superseding the previous one; with `rerun-gates` the gates re-run there too |
 
 Every resolution requires the run's conductor capability, same channels and
 refusals as the **conductor** contract above.

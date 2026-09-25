@@ -184,7 +184,7 @@ CLI's help-verified pagination before claiming coverage. Do not infer
 blocking from absence in a truncated result. `docket next` identifies issues
 ready now, with no incomplete `depends_on` blocker. Join its ids against the
 `issue list` rows, which carry `priority`, `labels`, `scope`, `assignee`,
-and `description` (verified on `--json=v2`). Inspect the other open issues'
+`size`, and `description` (verified on `--json=v2`). Inspect the other open issues'
 dependency links too: they can join later waves when every open prerequisite
 can be included in this same run under the checks below. Absence from
 `next` alone no longer excludes an issue from the complete run.

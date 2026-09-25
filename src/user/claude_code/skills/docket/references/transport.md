@@ -113,6 +113,10 @@ Error:
 {"ok": false, "error": "issue DKT-99 not found", "code": "NOT_FOUND"}
 ```
 
+A registry fan-out (`--project` or `--all-projects` on a registry write or
+lint) is the exception: its per-project report is always `ok: true`, and a
+failing project shows only in `failed` and a non-zero exit.
+
 ### `--json` values (v1 vs v2)
 
 `--json` is a string flag with `NoOptDefVal = "v1"`, so a bare `--json` behaves
@@ -163,15 +167,16 @@ and `next` treat it as unlimited; `issue log` clamps it to 1).
 ### Error codes & exit codes
 
 Ordinary command errors use this table in JSON and human mode. Guards are the
-exception: exit 0 allows and exit 2 denies. A guard denial is not `NOT_FOUND`;
-read its reason. See [guard contracts](../../docket-run/references/guard-trust.md#docket-guard--guardgo).
+exception: exit 0 allows and exit 2 denies. A guard denial's `--json` envelope
+carries `code: "NOT_FOUND"` only because the engine reuses that code to exit
+2; it means denied, not missing. Branch on the exit code and read the reason. See [guard contracts](../../docket-run/references/guard-trust.md#docket-guard--guardgo).
 
 | `code` | Exit code | Meaning |
 |---|---|---|
 | `GENERAL_ERROR` | 1 | Unclassified failure (DB error, I/O error, etc.) |
 | `NOT_FOUND` | 2 | Referenced issue/doc/proposal/label/relation does not exist |
 | `VALIDATION_ERROR` | 3 | Bad input: invalid enum value, missing required flag, mutually exclusive flags, non-interactive environment without required flags, invalid `--json` value, negative `--limit` under v2, `--if-version < 1`, no capability token supplied to a verb that requires one (a lease verb, or one of the seven operator verbs on a conductor-bound run) |
-| `CONFLICT` | 4 | State conflict: duplicate relation, cycle detected, already-voted, non-empty DB on import without `--merge`/`--replace`, `--if-version` mismatch, a dispatch already open for the run, `next --run` while a dispatch is open or discrepancies exist, `dispatch verify` byte mismatch, `dispatch close` over an unreconciled discrepancy, `dispatch backfill-usage` repeating a `(step, attempt, unit)` already recorded, any dispatch verb finding no manifest open, `step annotate` on a step that has not finished, or `issue move --project` on an issue a run holds |
+| `CONFLICT` | 4 | State conflict: duplicate relation, cycle detected, already-voted, non-empty project on import without `--merge`/`--replace`, `--if-version` mismatch, a dispatch already open for the run, `next --run` while a dispatch is open or discrepancies exist, `dispatch verify` byte mismatch, `dispatch close` over an unreconciled discrepancy, `dispatch backfill-usage` repeating a `(step, attempt, unit)` already recorded, any dispatch verb finding no manifest open, `step annotate` on a step that has not finished, or `issue move --project` on an issue a run holds |
 | `AUTH_ERROR` | 5 | The supplied capability token does not hold this lease (or the entity is unclaimed), or is not the run's current conductor capability on `step approve\|reject\|resolve\|reap` / `run pause\|resume\|abandon` |
 | `STALE_LEASE` | 6 | The token is correct but the lease has expired — claim again |
 | `TIMEOUT` | 7 | Reserved — no verb emits this yet |

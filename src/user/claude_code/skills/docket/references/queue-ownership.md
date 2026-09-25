@@ -8,7 +8,7 @@ restating it; a change to a rule lands here once.
 ## Not free to take or edit
 
 - **Run-included.** For each run `docket run status --json` returns
-  (planning, active, or paused: anything not done or abandoned),
+  (planning, active, or waiting-human: anything not done or abandoned),
   `docket issue list --run <ref> --json=v2 --limit 1000` names that run's
   roster. An open issue on any of those rosters belongs to a docket-plan/
   docket-run session, even while parked. Skip it; groom may still add
@@ -26,7 +26,8 @@ restating it; a change to a rule lands here once.
 ## Read the whole backlog
 
 `--limit 1000` is not optional: `issue list` caps at 50 and `next` at 10 by
-default, and neither flags the truncation. If a result reaches the requested
+default. The default `--json` (v1) shape does not flag the truncation;
+`--json=v2` adds a `truncated` field. If a result reaches the requested
 limit, use the CLI's help-verified pagination or unlimited form to finish the
 survey before claiming coverage. A capped result or an omitted project is not
 a full pass: report the missing coverage and stop before editing.

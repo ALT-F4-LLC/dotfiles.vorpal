@@ -402,8 +402,10 @@ docket doctor --run $RUN --source ~/Development/repository/github.com/ALT-F4-LLC
 diff -rq "$CC_SRC/workflows" ~/.claude/workflows; diff -rq "$CC_SRC/hooks" ~/.claude/hooks   # $CC_SRC = <that checkout>/src/user/claude_code
 ```
 
-`doctor` writes nothing and runs six checks without short-circuiting: seat
-location, store access, both staleness trees, `run verify-pins`, the
+`doctor` writes nothing and runs seven checks without short-circuiting: seat
+location, store access, project binding (the cwd resolves to a registered
+project, reported and never registered by this verb), both staleness trees,
+`run verify-pins`, the
 `.docket/config` symlink debris check below, and a straggler report.
 Read its return, not its last line: `clean` requires every check OK;
 `skipped` on the pin check means you gave no `--run`, not a pass on an

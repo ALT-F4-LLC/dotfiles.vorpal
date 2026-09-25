@@ -203,8 +203,8 @@ file contents, 1 MiB cap), or `-` (stdin, 1 MiB cap).
 
 A shared store can contain several projects. Confirm the intended store,
 export scope, and destination before transferring data. `--replace` wipes
-the database; use it only for an explicitly authorized replacement, and
-choose one import mode below.
+this project's existing data, not the whole store; use it only for an
+explicitly authorized replacement, and choose one import mode below.
 
 ```bash
 docket export --json=v2 -o json -f backup.json
@@ -212,14 +212,20 @@ docket export -o csv -f issues.csv -s todo -s in-progress
 docket export -o markdown > issues.md
 
 docket import backup.json --json=v2 --merge          # skip duplicates by ID
-docket import backup.json --json=v2 --replace --yes  # destructive: wipes DB first; --yes required in every output mode
-docket import backup.json --json=v2                  # default: requires an EMPTY database, else CONFLICT
+docket import backup.json --json=v2 --replace --yes  # destructive: wipes this project's data first; --yes required in every output mode
+docket import backup.json --json=v2                  # default: requires an EMPTY project, else CONFLICT
 ```
 
 `export` streams to stdout when `-f`/`--file` is omitted. `import` requires
-`--merge` XOR `--replace`, or an empty database: passing both is a
-`VALIDATION_ERROR`, and importing into a non-empty DB without either flag is
-a `CONFLICT`.
+`--merge` XOR `--replace`, or an empty project: passing both is a
+`VALIDATION_ERROR`, and importing into a non-empty project without either
+flag is a `CONFLICT`.
+
+`--merge` is not reliable yet. Re-importing a project's own export with
+labeled issues can fail with `GENERAL_ERROR` (exit 1) on a foreign-key
+constraint while inserting an issue-label mapping, instead of skipping the
+duplicates. The import runs in one transaction, so the failure writes
+nothing. Verify a merge's exit code; do not assume duplicates were skipped.
 
 ---
 

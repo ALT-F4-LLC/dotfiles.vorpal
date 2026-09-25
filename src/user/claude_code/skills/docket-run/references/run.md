@@ -1,11 +1,12 @@
 # Docket engine CLI — `docket run`
 
-Covers the `docket run` family, the single copy of this engine CLI contract,
+Covers the `docket run` family and `docket pin show`, the single copy of this
+engine CLI contract,
 split out of docket's
 [reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
 (consumer: the docket-run skill), which still holds the response-shape
-contract and parsing traps. Verified 2026-09-17 against `docket
-nightly-136-g835f706` (commit `835f706`, built `2026-09-17T01:02:08Z`) by
+contract and parsing traps. Verified 2026-09-25 against `docket
+nightly-209-ga348156` (commit `a348156`, built `2026-09-25T01:58:12Z`) by
 `--help`/`--version` and the docket-cli-audit skill's runtime sweep
 (`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
 examples reflect the swept commands as of that build.
@@ -14,16 +15,17 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket run`](#run-commands) — 751 lines
+- [`docket run`](#run-commands) — 772 lines
   - [`run start`](#run-start) — 49 lines
   - [`run issue add|remove RUN-N DKT-N...`](#run-issue) — 38 lines
   - [`run note add|list`](#run-note) — 22 lines
   - [`run refresh-scope`](#run-refresh-scope) — 31 lines
   - [`run report RUN-N`](#run-report) — 104 lines
-  - [`run activate RUN-N`](#run-activate) — 204 lines
+  - [`run activate RUN-N`](#run-activate) — 210 lines
   - [`run conduct RUN-N`](#run-conduct) — 39 lines
   - [`run pause|resume|abandon RUN-N`](#run-lifecycle) — 90 lines
   - [`run repin RUN-N --reason R`](#run-repin) — 67 lines
+  - [`pin show RUN-N PATH`](#pin-show) — 15 lines
   - [`run budget RUN-N [--set N]`](#run-budget) — 70 lines
   - [`run status [RUN-N]`](#run-status) — 29 lines
 
@@ -303,7 +305,13 @@ One transaction, all or nothing:
 2. **Lint** the work graph for dependency cycles.
 3. **Pin** each bound workflow at its registered `source_sha256`, plus every
    `--pin` file at its own. Pinning is never partial: one unreadable path
-   refuses the whole activation and writes nothing.
+   refuses the whole activation and writes nothing. The engine reads a
+   `--pin` path relative to the cwd and records it verbatim, but `pin show`,
+   `run verify-pins`, and packets resolve a recorded ref config-relative at
+   each instance-config root, then as the legacy absolute form a pre-v12
+   run recorded. A repo-relative path such as
+   `.docket/config/workflows/x.toml` therefore activates and never resolves
+   again. Pin from the config root with a config-relative path.
 4. **Snapshot** each issue's body, title, kind, labels, and scope. Steps read
    the snapshot, never the live issue.
 5. **Harvest** fenced command blocks whose tag a bound workflow's gates declare
@@ -678,6 +686,21 @@ dropped: [...], added: [...], unchanged}` — `dropped` carries the refs
 retired via `--drop`/`--drop-unresolvable`, `added` carries newly-adopted
 pins; all three arrays empty (never `null`) on a no-op. `run-repinned` is
 attributed to `human` (Attribution, below).
+
+<a id="pin-show"></a>
+
+#### `docket pin show RUN-N PATH`
+
+Prints the bytes RUN-N pinned at PATH when it activated, so a worker can read
+a pinned file a packet names only by ref and sha256. READ-ONLY: no lease, no
+lock, no event. PATH resolves as a packet entry does: config-relative at each
+instance-config root, then the legacy absolute form a pre-v12 run recorded.
+
+Response: `{run, path, body}`, with `body` the pinned bytes verbatim; human
+mode prints the body alone. A path the run never pinned is `VALIDATION_ERROR`
+(exit 3) even when the file exists on disk, and the message says whether it
+does. A file edited since activation is refused too, naming both hashes;
+`run verify-pins` reports the same drift across the whole pin set.
 
 <a id="run-budget"></a>
 

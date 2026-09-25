@@ -915,9 +915,11 @@ function isOrphanedClaimConflict(text) {
 
 // `docket step show STEP-N --json` read the way the rest of this file reads
 // engine JSON: named fields, matched wherever they sit in the envelope, each
-// one independently OPTIONAL. Absence is normal (a lease block is absent on an
-// unclaimed step; `failed_attempts`/`reaped_claims` are omitted at 0), and
-// nothing here is asserted that the text did not actually carry.
+// one independently OPTIONAL. Absence is normal (`lease_expired` appears only
+// in the expired-but-unreaped window; `failed_attempts`/`reaped_claims` are
+// omitted at 0), and nothing here is asserted that the text did not actually
+// carry. `step show` names no lease holder: the step row carries no owner and
+// no lease object, only `lease_expired`.
 function parseStepShow(show) {
     // stepShow() below already returns this exact shape (absence as '', not
     // undefined) — pass it through rather than re-stringifying and
@@ -931,8 +933,7 @@ function parseStepShow(show) {
     return {
         status: grab('status', '"([a-z-]+)"'),
         attempt: grab('attempt', '(\\d+)'),
-        owner: grab('owner', '"([^"]*)"'),
-        live: grab('live', '(true|false)'),
+        leaseExpired: grab('lease_expired', '(true|false)'),
         failed: grab('failed_attempts', '(\\d+)'),
         reaped: grab('reaped_claims', '(\\d+)'),
     }
@@ -955,8 +956,7 @@ function orphanedClaimReport(step, conflict, show) {
     const facts = [
         `status=${st.status}`,
         st.attempt !== '' ? `attempt=${st.attempt}` : '',
-        st.owner ? `owner=${JSON.stringify(st.owner)}` : '',
-        st.live !== '' ? `lease live=${st.live}` : '',
+        st.leaseExpired !== '' ? `lease_expired=${st.leaseExpired}` : '',
         st.failed !== '' ? `failed_attempts=${st.failed}` : '',
         st.reaped !== '' ? `reaped_claims=${st.reaped}` : '',
     ].filter(Boolean).join(', ')
@@ -1533,8 +1533,7 @@ const STEP_SHOW_SCHEMA = {
     properties: {
         status: { type: 'string' },
         attempt: { type: 'integer' },
-        owner: { type: 'string' },
-        live: { type: 'boolean' },
+        lease_expired: { type: 'boolean' },
         failed_attempts: { type: 'integer' },
         reaped_claims: { type: 'integer' },
         blocked_reason: { type: 'string' },
@@ -1548,13 +1547,11 @@ function stepShowBrief(step) {
   docket step show ${step} --json
 
 Return the command's \`data\` object through the structured output, field for
-field: status as data.status, attempt as data.attempt, owner as
-data.lease.owner, live as data.lease.live, failed_attempts as
-data.failed_attempts, reaped_claims as data.reaped_claims, blocked_reason as
-data.blocked_reason. Copy each value exactly as printed; add no field the
-output did not carry and fill none in — omit a field entirely when the
-envelope does not carry it (an absent lease block means omit owner and live
-both). If the command errors or prints no \`data\` object, return {error:
+field: status as data.status, attempt as data.attempt, lease_expired as
+data.lease_expired, failed_attempts as data.failed_attempts, reaped_claims as
+data.reaped_claims, blocked_reason as data.blocked_reason. Copy each value
+exactly as printed; add no field the output did not carry and fill none in —
+omit a field entirely when the envelope does not carry it. If the command errors or prints no \`data\` object, return {error:
 <the error text verbatim>} and nothing else.
 
 Do not cast a vote, do not investigate, do not run anything else. You are a
@@ -1585,8 +1582,7 @@ function stepShow(step, label, phaseLabel) {
         return {
             status: typeof g.status === 'string' ? g.status : '',
             attempt: typeof g.attempt === 'number' ? String(g.attempt) : '',
-            owner: typeof g.owner === 'string' ? g.owner : '',
-            live: typeof g.live === 'boolean' ? String(g.live) : '',
+            leaseExpired: typeof g.lease_expired === 'boolean' ? String(g.lease_expired) : '',
             blockedReason: typeof g.blocked_reason === 'string' ? g.blocked_reason : '',
             failed: typeof g.failed_attempts === 'number' ? String(g.failed_attempts) : '',
             reaped: typeof g.reaped_claims === 'number' ? String(g.reaped_claims) : '',

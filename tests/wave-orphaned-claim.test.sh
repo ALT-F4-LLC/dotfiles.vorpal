@@ -104,11 +104,16 @@ const INTO_PARK = [
 ].join('\n')
 
 // `docket step show STEP-2760 --json` for the RUN-61 state: the interrupted
-// executor's claim still on the row, one claim spent, nothing recorded.
+// executor's claim still on the row, one claim spent, nothing recorded. The
+// shape is the installed engine's: a step row names no lease holder, so there
+// is no lease object to read.
 const SHOW_CLAIMED = '{"ok":true,"data":{"step":"STEP-2760","instance":"fix@1",' +
-    '"issue":"DOT-800","run":"RUN-61","kind":"executor","status":"claimed",' +
-    '"attempt":1,"lease":{"owner":"wave:STEP-2760","expires_ms":1756150000000,' +
-    '"live":true}}}'
+    '"issue":"DOT-800","run":"RUN-61","kind":"executor","attempt":1,' +
+    '"expected_cost":0,"lease_ttl_s":900,"status":"claimed"}}'
+// The expired-but-unreaped window: the row still holds the claim, the lease
+// lapsed, and `status` already renders the reap's answer.
+const SHOW_EXPIRED = '{"ok":true,"data":{"step":"STEP-2760","attempt":1,' +
+    '"status":"ready","lease_expired":true}}'
 const SHOW_DONE = '{"ok":true,"data":{"step":"STEP-2760","status":"done","attempt":1}}'
 const SHOW_PENDING = '{"ok":true,"data":{"step":"STEP-2760","status":"pending","attempt":0}}'
 
@@ -159,8 +164,8 @@ ok(diag !== null && diag.status === 'claim-conflict',
     'AC2: a claimed step yields a diagnosed result, not a bare relay')
 ok(diag.text.includes('status=claimed'), 'AC2: the report names the step STATUS')
 ok(diag.text.includes('attempt=1'), 'AC2: the report names the ATTEMPT')
-ok(diag.text.includes('owner="wave:STEP-2760"'),
-    'AC2: the report names the HOLDER the row still carries')
+ok(!diag.text.includes('owner=') && !diag.text.includes('lease_expired='),
+    'AC2: the report invents no holder or lease fact the row did not carry')
 ok(/claimed at attempt 1, holder returned nothing/.test(diag.text) &&
    /likely orphaned claim, reap needed/.test(diag.text),
     'AC2: it reads as an orphaned claim needing a reap, not as a claim refusal')
@@ -197,6 +202,9 @@ ok(done.text.includes('already RECORDED (done)') && !done.text.includes('reap ST
 const pending = orphanedClaimReport('STEP-2760', NOT_PENDING, SHOW_PENDING)
 ok(pending.text.includes('disagree') && pending.text.includes('pending'),
     'a status that contradicts the refusal is reported as a disagreement to reconcile')
+const expired = orphanedClaimReport('STEP-2760', NOT_PENDING, SHOW_EXPIRED)
+ok(expired.text.includes('lease_expired=true') && expired.text.includes('disagree'),
+    'an expired-but-unreaped lease is named in the facts line')
 
 // ---- Degradation: an empty or unusable probe relays the refusal ----
 ok(orphanedClaimReport('STEP-2760', NOT_PENDING, '') === null,
@@ -207,7 +215,7 @@ ok(orphanedClaimReport('STEP-2760', NOT_PENDING,
 
 // ---- parseStepShow: absence is normal, and nothing is invented ----
 const bare = parseStepShow('{"data":{"status":"claimed"}}')
-ok(bare.status === 'claimed' && bare.attempt === '' && bare.owner === '' &&
+ok(bare.status === 'claimed' && bare.attempt === '' && bare.leaseExpired === '' &&
    bare.failed === '' && bare.reaped === '',
     'omitted fields parse as absent rather than as zeros')
 ok(!orphanedClaimReport('STEP-9', NOT_PENDING, '{"data":{"status":"claimed"}}')

@@ -364,6 +364,7 @@ case_prose() {
     assert_verdict "echo STEP-7.d" executor-write "$WAVE_42" DENY "a lone unquoted token is not prose (accepted false deny)"
     assert_verdict "grep -rn 'STEP-[0-9]*' ${OWN_DIR}" executor-read "$WAVE_42" DENY "glob-form token as a search pattern (accepted false deny)"
     assert_verdict "grep -rnE 'STEP.[0-9]+' ${OWN_DIR}" executor-read "$WAVE_42" ALLOW "the deny reason's search spelling is not a scratch token"
+    assert_verdict "grep -rnE 'STEP.[0-9]+' ${SIB_DIR}" executor-read "$WAVE_42" DENY "the search spelling aimed at a sibling's dir is still refused"
     assert_verdict "git log --grep kill" executor-write "$WAVE_42" ALLOW "kill as an argument word with no operands"
     assert_verdict "echo 'please kill 1234 later'" executor-write "$WAVE_42" ALLOW "kill inside a quoted prose span"
 }

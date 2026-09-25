@@ -362,6 +362,8 @@ case_prose() {
     assert_verdict $'cat > '"${OWN_DIR}"$'/STEP-42-findings.md <<EOF\nFound a leftover STEP-7.d beside my own dir.\nEOF' executor-write "$WAVE_42" DENY "unquoted-delimiter heredoc body is scanned (accepted false deny)"
     assert_verdict $'cat <<\'EOF\' | sh\nrm -rf '"${SIB_DIR}"$'\nEOF' executor-write "$WAVE_42" DENY "quoted heredoc piped into an interpreter is code"
     assert_verdict "echo STEP-7.d" executor-write "$WAVE_42" DENY "a lone unquoted token is not prose (accepted false deny)"
+    assert_verdict "grep -rn 'STEP-[0-9]*' ${OWN_DIR}" executor-read "$WAVE_42" DENY "glob-form token as a search pattern (accepted false deny)"
+    assert_verdict "grep -rnE 'STEP.[0-9]+' ${OWN_DIR}" executor-read "$WAVE_42" ALLOW "the deny reason's search spelling is not a scratch token"
     assert_verdict "git log --grep kill" executor-write "$WAVE_42" ALLOW "kill as an argument word with no operands"
     assert_verdict "echo 'please kill 1234 later'" executor-write "$WAVE_42" ALLOW "kill inside a quoted prose span"
 }
@@ -693,6 +695,8 @@ case_deny_reasons() {
     assert_deny_reason "rm -rf ${SIB_DIR}" executor-write "$WAVE_42" "your own scratch dir is <TMP>/STEP-42.d" "scratch deny names the caller's own dir"
     assert_deny_reason "rm -rf ${SIB_DIR}" executor-write "$WAVE_42" "STEP-7.d" "scratch deny names the offending dir"
     assert_deny_reason "rm -rf ${SIB_DIR}" executor-write "$WAVE_42" "Write tool" "scratch deny names the prose path"
+    assert_deny_reason "grep -rn 'STEP-[0-9]*' ${OWN_DIR}" executor-read "$WAVE_42" "STEP.[0-9]+" "scratch deny names the search-pattern spelling"
+    assert_deny_reason "grep -rn 'STEP-[0-9]*' ${OWN_DIR}" executor-read "$WAVE_42" "rewording a command that operates on another step's directory is not authorized" "scratch deny forbids rewording a sibling operation"
     assert_deny_reason "rm -rf ${SIB_DIR}" executor-read "$SEAT" "holds no step claim" "scratch deny with no own step says so"
     assert_deny_reason "git worktree prune" executor-write "$WAVE_42" "git worktree prune" "prune deny names the verb"
     assert_deny_reason "git worktree remove /repo/.claude/worktrees/wf_x" executor-write "$WAVE_42" "did not create" "worktree deny explains ownership"

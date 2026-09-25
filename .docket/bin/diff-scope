@@ -13,9 +13,13 @@
 # The plan skill's sizing rule describes the footprint each label promises;
 # this script is the mechanical half of that promise.
 #
-# Scope is the working tree against HEAD, staged and unstaged, plus untracked
-# files: a gate runs while a step holds the tree, so the question is "what did
-# this step actually touch". Renames count as one path (the new name).
+# Scope is what the step touched: the committed range DOCKET_GATE_BASE..HEAD
+# (a two-endpoint tree diff, since steps commit their candidate before record)
+# plus the working tree against HEAD, staged and unstaged, plus untracked
+# files. The engine exports DOCKET_GATE_BASE to completion gates; when it is
+# unset or does not resolve to a commit the gate exits 2 on every track rather
+# than measure the working tree alone, which is empty after a commit. Renames
+# count as one path (the new name).
 #
 # Rules, per track:
 #   docs-only  every touched path is a document (see is_doc below);
@@ -29,8 +33,8 @@
 # issue" means once labels are out of the loop. Absent file, no control check.
 #
 # Exit 0 on pass with one summary line; exit 1 on refusal listing every
-# reason; exit 2 on usage or a non-git cwd (fail closed: an unreadable tree is
-# not a small one).
+# reason; exit 2 on usage, a non-git cwd, or a missing or unresolvable base
+# (fail closed: an unreadable footprint is not a small one).
 
 set -euo pipefail
 
@@ -54,6 +58,19 @@ git rev-parse --show-toplevel >/dev/null 2>&1 || {
     exit 2
 }
 
+[ -n "${DOCKET_GATE_BASE:-}" ] || {
+    echo "diff-scope: DOCKET_GATE_BASE is unset; refusing (cannot read the committed footprint)" >&2
+    exit 2
+}
+base=$(git rev-parse --verify --quiet --end-of-options "${DOCKET_GATE_BASE}^{commit}") || {
+    echo "diff-scope: DOCKET_GATE_BASE '${DOCKET_GATE_BASE}' does not resolve to a commit; refusing" >&2
+    exit 2
+}
+head=$(git rev-parse --verify --quiet 'HEAD^{commit}') || {
+    echo "diff-scope: HEAD does not resolve to a commit; refusing" >&2
+    exit 2
+}
+
 is_doc() { # <path>
     local p="$1" base
     base=$(basename "$p")
@@ -71,8 +88,24 @@ is_doc() { # <path>
 # `git status --porcelain=v1 -z` is stable across git versions and locales.
 # XY path[\0orig] for renames/copies (the second record is the ORIGINAL path).
 paths=()      # every touched path, deduplicated
-added=()      # new files: index A, or untracked
+added=()      # new files: committed or index A, or untracked
 deleted=()    # removed files
+
+# Committed range first: `--name-status -z` emits status\0path\0, or
+# status\0orig\0new\0 for a rename or copy. No path is skipped here: a
+# committed file is the step's change wherever it lives.
+while IFS= read -r -d '' status; do
+    IFS= read -r -d '' path || break
+    case "$status" in
+        R*|C*) IFS= read -r -d '' path || break ;;
+    esac
+    paths+=("$path")
+    case "$status" in
+        A*) added+=("$path") ;;
+        D*) deleted+=("$path") ;;
+    esac
+done < <(git diff --no-ext-diff --no-textconv -M -z --name-status "$base" "$head")
+
 while IFS= read -r -d '' rec; do
     xy=${rec:0:2}
     path=${rec:3}
@@ -110,14 +143,16 @@ if [ "${#paths[@]}" -gt 0 ]; then
 fi
 nfiles=${#paths[@]}
 
-# changed lines: tracked changes against HEAD plus every line of an untracked file
+# changed lines: the committed range, tracked changes against HEAD, and every
+# line of an untracked file. A path edited in both commits and the working
+# tree counts in both.
 lines=0
 while IFS=$'\t' read -r ins del _p; do
     [ -n "${ins:-}" ] || continue
     [ "$ins" = "-" ] && ins=0   # binary
     [ "$del" = "-" ] && del=0
     lines=$((lines + ins + del))
-done < <(git diff HEAD --numstat 2>/dev/null || true)
+done < <(git diff --no-ext-diff --no-textconv -M --numstat "$base" "$head"; git diff HEAD --numstat 2>/dev/null || true)
 for p in "${added[@]:-}"; do
     [ -n "$p" ] || continue
     if git ls-files --error-unmatch -- "$p" >/dev/null 2>&1; then continue; fi  # staged adds are in numstat already

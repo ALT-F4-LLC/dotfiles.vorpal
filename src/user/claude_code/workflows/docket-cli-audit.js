@@ -197,7 +197,7 @@ function evidenceNote(evidence, protectedFiles) {
 Evidence, all read-only:
 - Digest of every command's recorded behavior (read this first, in full): ${evidence.digest}
 - Help surface, exact commands/aliases/flags/defaults: ${evidence.inventory} (grep by "command": "docket ...")
-- Runtime fixtures, exact exit codes, JSON shapes, messages: ${evidence.fixtures} (grep by record id from the digest, or by argv)
+- Runtime fixtures, exact exit codes, JSON shapes, messages: ${evidence.fixtures} (grep by record id from the digest, or by argv). The sweep ran with NO_COLOR=1 and TERM=dumb, which strip the status glyphs (✔, ✘) from human output; a hook sees them, so a missing glyph in a fixture is not evidence against prose that quotes one.
 - ${diffs.join('\n- ')}
 Protected files (report findings, never propose an edit; set proposedFix to "report only" and needsOperatorDecision to true): ${protectedFiles.join(', ') || 'none'}.`
 }

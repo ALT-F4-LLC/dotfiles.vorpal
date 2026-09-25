@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "verified_on": "2026-09-17",
-  "binary_version": "docket version nightly-136-g835f706 (commit: 835f706, built: 2026-09-17T01:02:08Z)",
-  "inventory_version": "docket version nightly-136-g835f706 (commit: 835f706, built: 2026-09-17T01:02:08Z)",
-  "scenario_sha256": "547f54f6d896bef33552d54b159259c8235bc704dfa6bd8cb885342621904e46",
+  "verified_on": "2026-09-25",
+  "binary_version": "docket version nightly-209-ga348156 (commit: a348156, built: 2026-09-25T01:58:12Z)",
+  "inventory_version": "docket version nightly-209-ga348156 (commit: a348156, built: 2026-09-25T01:58:12Z)",
+  "scenario_sha256": "0d6d2e28b2b2961ff1c220ec2030d9308f440954159388cb482035393ec7a1ad",
   "probe_contract": "Every probe runs against a scratch HOME, XDG config and git repository; the trust roster is empty for every run- and step-level verb; --watch, --follow, --interval and 'trust probe' are refused.",
   "coverage": {
     "exercised": [
@@ -83,6 +83,8 @@
       "docket issue reopen",
       "docket issue show",
       "docket next",
+      "docket pin",
+      "docket pin show",
       "docket plan",
       "docket policy",
       "docket policy resolve",
@@ -114,6 +116,7 @@
       "docket run status",
       "docket run verify-pins",
       "docket schema",
+      "docket schema deprecate",
       "docket schema list",
       "docket schema register",
       "docket schema show",
@@ -174,7 +177,7 @@
         "docket"
       ],
       "exit": 0,
-      "stdout": "Local-first CLI issue tracker\n\nUsage:\n  docket [command]\n\nAvailable Commands:\n  board Show Kanban board\n  completion Generate the autocompletion script for the specified shell\n  config Display docket configuration\n  dispatch Record and reconcile batch manifests for a run\n  doc Manage documents\n  doctor Six read-only environment checks in one call\n  events Read the engine's event log\n  export Export issues to JSON, CSV, or Markdown\n  gate Read a gate step's decision state\n  guard Deterministic predicates over engine state, for hooks\n  help Help about any command\n  import Import issues from a JSON export file\n  init Initialize a new docket database\n  issue Manage issues\n  next Show work-ready issues\n  plan Show execution plan with phased grouping\n  policy Read the routing a run's pinned policy.toml assigns\n  project Inspect and configure the store's projects\n  registry Inspect the store's workflow and schema registries\n  report Read-only rollups across runs, for retro\n  run Start, activate, and inspect workflow runs\n  schema Register and inspect payload schemas\n  stats Show summary statistics for the issue database\n  step Claim, complete, and inspect a run's steps\n  trust Manage the allowlist of commands docket may execute\n  version Print docket version information\n  vote Manage consensus proposals\n  workflow Register and inspect workflow definitions\n\nFlags:\n      --format string Output format: json (alias for --json=v2)\n  -h, --help help for docket\n      --interval duration Poll interval for --watch and --follow, with a unit (e.g. <DURATION>, <DURATION>; minimum <DURATION>) (default <DURATION>)\n      --json string[=\"v1\"] Output in JSON format (--json, or --json=v2)\n  -q, --quiet Suppress non-essential output\n  -v, --version version for docket\n  -w, --watch Watch for changes and refresh output\n\nUse \"docket [command] --help\" for more information about a command.\n",
+      "stdout": "Local-first CLI issue tracker\n\nUsage:\n  docket [command]\n\nAvailable Commands:\n  board Show Kanban board\n  completion Generate the autocompletion script for the specified shell\n  config Display docket configuration\n  dispatch Record and reconcile batch manifests for a run\n  doc Manage documents\n  doctor Seven read-only environment checks in one call\n  events Read the engine's event log\n  export Export issues to JSON, CSV, or Markdown\n  gate Read a gate step's decision state\n  guard Deterministic predicates over engine state, for hooks\n  help Help about any command\n  import Import issues from a JSON export file\n  init Initialize a new docket database\n  issue Manage issues\n  next Show work-ready issues\n  pin Read what a run pinned\n  plan Show execution plan with phased grouping\n  policy Read the routing a run's pinned policy.toml assigns\n  project Inspect and configure the store's projects\n  registry Inspect the store's workflow and schema registries\n  report Read-only rollups across runs, for retro\n  run Start, activate, and inspect workflow runs\n  schema Register and inspect payload schemas\n  stats Show summary statistics for the issue database\n  step Claim, complete, and inspect a run's steps\n  trust Manage the allowlist of commands docket may execute\n  version Print docket version information\n  vote Manage consensus proposals\n  workflow Register and inspect workflow definitions\n\nFlags:\n      --format string Output format: json (alias for --json=v2)\n  -h, --help help for docket\n      --interval duration Poll interval for --watch and --follow, with a unit (e.g. <DURATION>, <DURATION>; minimum <DURATION>) (default <DURATION>)\n      --json string[=\"v1\"] Output in JSON format (--json, or --json=v2)\n  -q, --quiet Suppress non-essential output\n  -v, --version version for docket\n  -w, --watch Watch for changes and refresh output\n\nUse \"docket [command] --help\" for more information about a command.\n",
       "stderr": ""
     },
     {
@@ -185,7 +188,7 @@
         "version"
       ],
       "exit": 0,
-      "stdout": "docket version nightly-136-g835f706 (commit: 835f706, built: <TIMESTAMP>)\n",
+      "stdout": "docket version nightly-209-ga348156 (commit: a348156, built: <TIMESTAMP>)\n",
       "stderr": ""
     },
     {
@@ -200,11 +203,11 @@
       "json": {
         "ok": true,
         "data": {
-          "version": "nightly-136-g835f706",
-          "commit": "835f706",
+          "version": "nightly-209-ga348156",
+          "commit": "a348156",
           "build_date": "<TIMESTAMP>"
         },
-        "message": "docket version nightly-136-g835f706 (commit: 835f706, built: <TIMESTAMP>)"
+        "message": "docket version nightly-209-ga348156 (commit: a348156, built: <TIMESTAMP>)"
       },
       "stderr": ""
     },
@@ -221,11 +224,11 @@
       "json": {
         "ok": true,
         "data": {
-          "version": "nightly-136-g835f706",
-          "commit": "835f706",
+          "version": "nightly-209-ga348156",
+          "commit": "a348156",
           "build_date": "<TIMESTAMP>"
         },
-        "message": "docket version nightly-136-g835f706 (commit: 835f706, built: <TIMESTAMP>)"
+        "message": "docket version nightly-209-ga348156 (commit: a348156, built: <TIMESTAMP>)"
       },
       "stderr": ""
     },
@@ -254,7 +257,7 @@
         "data": {
           "path": "<SCRATCH>/home/.docket",
           "db_path": "<SCRATCH>/home/.docket/issues.db",
-          "schema_version": 34,
+          "schema_version": 36,
           "created": true
         },
         "message": "Initialized docket database"
@@ -287,7 +290,7 @@
         "data": {
           "path": "<SCRATCH>/home/.docket",
           "db_path": "<SCRATCH>/home/.docket/issues.db",
-          "schema_version": 34,
+          "schema_version": 36,
           "created": false
         },
         "message": "Database already initialized"
@@ -302,7 +305,7 @@
         "help"
       ],
       "exit": 0,
-      "stdout": "Local-first CLI issue tracker\n\nUsage:\n  docket [command]\n\nAvailable Commands:\n  board Show Kanban board\n  completion Generate the autocompletion script for the specified shell\n  config Display docket configuration\n  dispatch Record and reconcile batch manifests for a run\n  doc Manage documents\n  doctor Six read-only environment checks in one call\n  events Read the engine's event log\n  export Export issues to JSON, CSV, or Markdown\n  gate Read a gate step's decision state\n  guard Deterministic predicates over engine state, for hooks\n  help Help about any command\n  import Import issues from a JSON export file\n  init Initialize a new docket database\n  issue Manage issues\n  next Show work-ready issues\n  plan Show execution plan with phased grouping\n  policy Read the routing a run's pinned policy.toml assigns\n  project Inspect and configure the store's projects\n  registry Inspect the store's workflow and schema registries\n  report Read-only rollups across runs, for retro\n  run Start, activate, and inspect workflow runs\n  schema Register and inspect payload schemas\n  stats Show summary statistics for the issue database\n  step Claim, complete, and inspect a run's steps\n  trust Manage the allowlist of commands docket may execute\n  version Print docket version information\n  vote Manage consensus proposals\n  workflow Register and inspect workflow definitions\n\nFlags:\n      --format string Output format: json (alias for --json=v2)\n  -h, --help help for docket\n      --interval duration Poll interval for --watch and --follow, with a unit (e.g. <DURATION>, <DURATION>; minimum <DURATION>) (default <DURATION>)\n      --json string[=\"v1\"] Output in JSON format (--json, or --json=v2)\n  -q, --quiet Suppress non-essential output\n  -v, --version version for docket\n  -w, --watch Watch for changes and refresh output\n\nUse \"docket [command] --help\" for more information about a command.\n",
+      "stdout": "Local-first CLI issue tracker\n\nUsage:\n  docket [command]\n\nAvailable Commands:\n  board Show Kanban board\n  completion Generate the autocompletion script for the specified shell\n  config Display docket configuration\n  dispatch Record and reconcile batch manifests for a run\n  doc Manage documents\n  doctor Seven read-only environment checks in one call\n  events Read the engine's event log\n  export Export issues to JSON, CSV, or Markdown\n  gate Read a gate step's decision state\n  guard Deterministic predicates over engine state, for hooks\n  help Help about any command\n  import Import issues from a JSON export file\n  init Initialize a new docket database\n  issue Manage issues\n  next Show work-ready issues\n  pin Read what a run pinned\n  plan Show execution plan with phased grouping\n  policy Read the routing a run's pinned policy.toml assigns\n  project Inspect and configure the store's projects\n  registry Inspect the store's workflow and schema registries\n  report Read-only rollups across runs, for retro\n  run Start, activate, and inspect workflow runs\n  schema Register and inspect payload schemas\n  stats Show summary statistics for the issue database\n  step Claim, complete, and inspect a run's steps\n  trust Manage the allowlist of commands docket may execute\n  version Print docket version information\n  vote Manage consensus proposals\n  workflow Register and inspect workflow definitions\n\nFlags:\n      --format string Output format: json (alias for --json=v2)\n  -h, --help help for docket\n      --interval duration Poll interval for --watch and --follow, with a unit (e.g. <DURATION>, <DURATION>; minimum <DURATION>) (default <DURATION>)\n      --json string[=\"v1\"] Output in JSON format (--json, or --json=v2)\n  -q, --quiet Suppress non-essential output\n  -v, --version version for docket\n  -w, --watch Watch for changes and refresh output\n\nUse \"docket [command] --help\" for more information about a command.\n",
       "stderr": ""
     },
     {
@@ -388,7 +391,7 @@
         "config"
       ],
       "exit": 0,
-      "stdout": "Database path: <SCRATCH>/home/.docket/issues.db\nDatabase size: <SIZE>\nSchema version: 34\nIssue prefix: DKT\nStore source: global\nExec root: <SCRATCH>/repo\nProject: <SCRATCH>/repo\nDOCKET_PATH: (not set)\n",
+      "stdout": "Database path: <SCRATCH>/home/.docket/issues.db\nDatabase size: <SIZE>\nSchema version: 36\nIssue prefix: DKT\nStore source: global\nExec root: <SCRATCH>/repo\nProject: <SCRATCH>/repo\nDOCKET_PATH: (not set)\n",
       "stderr": ""
     },
     {
@@ -405,7 +408,7 @@
         "data": {
           "db_path": "<SCRATCH>/home/.docket/issues.db",
           "db_size_bytes": "<N>",
-          "schema_version": 34,
+          "schema_version": 36,
           "issue_prefix": "DKT",
           "docket_path_env": "",
           "docket_path_set": false,
@@ -413,7 +416,7 @@
           "exec_root": "<SCRATCH>/repo",
           "identity": "<SCRATCH>/repo"
         },
-        "message": "Database path: <SCRATCH>/home/.docket/issues.db\nDatabase size: <SIZE>\nSchema version: 34\nIssue prefix: DKT\nStore source: global\nExec root: <SCRATCH>/repo\nProject: <SCRATCH>/repo\nDOCKET_PATH: (not set)"
+        "message": "Database path: <SCRATCH>/home/.docket/issues.db\nDatabase size: <SIZE>\nSchema version: 36\nIssue prefix: DKT\nStore source: global\nExec root: <SCRATCH>/repo\nProject: <SCRATCH>/repo\nDOCKET_PATH: (not set)"
       },
       "stderr": ""
     },
@@ -432,7 +435,7 @@
         "data": {
           "db_path": "<SCRATCH>/home/.docket/issues.db",
           "db_size_bytes": "<N>",
-          "schema_version": 34,
+          "schema_version": 36,
           "issue_prefix": "DKT",
           "docket_path_env": "",
           "docket_path_set": false,
@@ -440,7 +443,7 @@
           "exec_root": "<SCRATCH>/repo",
           "identity": "<SCRATCH>/repo"
         },
-        "message": "Database path: <SCRATCH>/home/.docket/issues.db\nDatabase size: <SIZE>\nSchema version: 34\nIssue prefix: DKT\nStore source: global\nExec root: <SCRATCH>/repo\nProject: <SCRATCH>/repo\nDOCKET_PATH: (not set)"
+        "message": "Database path: <SCRATCH>/home/.docket/issues.db\nDatabase size: <SIZE>\nSchema version: 36\nIssue prefix: DKT\nStore source: global\nExec root: <SCRATCH>/repo\nProject: <SCRATCH>/repo\nDOCKET_PATH: (not set)"
       },
       "stderr": ""
     },
@@ -819,7 +822,7 @@
       ],
       "exit": 3,
       "stdout": "",
-      "stderr": "Error: unknown config key: \"no.such.key\" (known keys: lease.ttl.default, attempt.max, budget.default, budget.unit, budget.usage.default, budget.usage.unit, dispatch.ttl, dispatch.grace, events.retain, vote.hold.rule, vote.hold.voters, vote.hold.cost, registration.auto, context.warn_bytes, context.error_bytes, lease.ttl.<class>, vote.rule.<name>.threshold, vote.rule.<name>.criticality, vote.rule.<name>.sealed)\n"
+      "stderr": "Error: unknown config key: \"no.such.key\" (known keys: lease.ttl.default, attempt.max, budget.default, budget.unit, budget.usage.default, budget.usage.unit, dispatch.ttl, dispatch.grace, events.retain, vote.hold.rule, vote.hold.voters, vote.hold.cost, registration.auto, context.warn_bytes, context.error_bytes, lease.ttl.<class>, vote.rule.<name>.threshold, vote.rule.<name>.criticality, vote.rule.<name>.sealed, vote.rule.<name>.hold_on_dissent)\n"
     },
     {
       "id": "config-set-invalid",
@@ -835,7 +838,7 @@
       "exit": 3,
       "json": {
         "ok": false,
-        "error": "unknown config key: \"no.such.key\" (known keys: lease.ttl.default, attempt.max, budget.default, budget.unit, budget.usage.default, budget.usage.unit, dispatch.ttl, dispatch.grace, events.retain, vote.hold.rule, vote.hold.voters, vote.hold.cost, registration.auto, context.warn_bytes, context.error_bytes, lease.ttl.<class>, vote.rule.<name>.threshold, vote.rule.<name>.criticality, vote.rule.<name>.sealed)",
+        "error": "unknown config key: \"no.such.key\" (known keys: lease.ttl.default, attempt.max, budget.default, budget.unit, budget.usage.default, budget.usage.unit, dispatch.ttl, dispatch.grace, events.retain, vote.hold.rule, vote.hold.voters, vote.hold.cost, registration.auto, context.warn_bytes, context.error_bytes, lease.ttl.<class>, vote.rule.<name>.threshold, vote.rule.<name>.criticality, vote.rule.<name>.sealed, vote.rule.<name>.hold_on_dissent)",
         "code": "VALIDATION_ERROR"
       },
       "stderr": ""
@@ -850,7 +853,7 @@
         "<CHECKOUT>"
       ],
       "exit": 0,
-      "stdout": "seat OK cwd is the git toplevel\nstore OK <SCRATCH>/home/.docket/issues.db opens read-write\ninstall-drift FAIL missing entirely, nothing to compare: [<CHECKOUT>/src/user/docket/config (source) <CHECKOUT>/src/user/docket/bin (source)]\npins SKIP no --run given\nlink-farm OK <SCRATCH>/repo/.docket/config does not exist; nothing to check\nstragglers OK no detached worktrees under a scratch path\nclean: false, skipped: true\n",
+      "stdout": "seat OK cwd is the git toplevel\nstore OK <SCRATCH>/home/.docket/issues.db opens read-write\nproject OK bound to project DKT (repo, id 1) for <SCRATCH>/repo\ninstall-drift FAIL missing entirely, nothing to compare: [<CHECKOUT>/src/user/docket/config (source) <CHECKOUT>/src/user/docket/bin (source)]\npins SKIP no --run given\nlink-farm OK <SCRATCH>/repo/.docket/config does not exist; nothing to check\nstragglers OK no detached worktrees under a scratch path\nclean: false, skipped: true\n",
       "stderr": ""
     },
     {
@@ -879,6 +882,11 @@
               "check": "store",
               "verdict": "OK",
               "detail": "<SCRATCH>/home/.docket/issues.db opens read-write"
+            },
+            {
+              "check": "project",
+              "verdict": "OK",
+              "detail": "bound to project DKT (repo, id 1) for <SCRATCH>/repo"
             },
             {
               "check": "install-drift",
@@ -932,6 +940,11 @@
               "check": "store",
               "verdict": "OK",
               "detail": "<SCRATCH>/home/.docket/issues.db opens read-write"
+            },
+            {
+              "check": "project",
+              "verdict": "OK",
+              "detail": "bound to project DKT (repo, id 1) for <SCRATCH>/repo"
             },
             {
               "check": "install-drift",
@@ -1331,6 +1344,7 @@
               ],
               "files": [],
               "docs": [],
+              "size": "small",
               "created_at": "<TIMESTAMP>",
               "updated_at": "<TIMESTAMP>"
             },
@@ -1420,6 +1434,7 @@
               ],
               "files": [],
               "docs": [],
+              "size": "small",
               "created_at": "<TIMESTAMP>",
               "updated_at": "<TIMESTAMP>",
               "version": 1
@@ -1521,6 +1536,7 @@
               ],
               "files": [],
               "docs": [],
+              "size": "small",
               "created_at": "<TIMESTAMP>",
               "updated_at": "<TIMESTAMP>"
             },
@@ -1700,6 +1716,7 @@
               ],
               "files": [],
               "docs": [],
+              "size": "small",
               "created_at": "<TIMESTAMP>",
               "updated_at": "<TIMESTAMP>"
             },
@@ -4102,6 +4119,7 @@
               ],
               "files": [],
               "docs": [],
+              "size": "small",
               "created_at": "<TIMESTAMP>",
               "updated_at": "<TIMESTAMP>"
             },
@@ -4123,6 +4141,7 @@
                 "src/**",
                 "docs/**"
               ],
+              "size": "bounded",
               "created_at": "<TIMESTAMP>",
               "updated_at": "<TIMESTAMP>"
             }
@@ -4163,6 +4182,7 @@
               ],
               "files": [],
               "docs": [],
+              "size": "small",
               "created_at": "<TIMESTAMP>",
               "updated_at": "<TIMESTAMP>",
               "version": 1
@@ -4185,6 +4205,7 @@
                 "src/**",
                 "docs/**"
               ],
+              "size": "bounded",
               "created_at": "<TIMESTAMP>",
               "updated_at": "<TIMESTAMP>",
               "version": 2
@@ -4288,6 +4309,7 @@
                   ],
                   "files": [],
                   "docs": [],
+                  "size": "small",
                   "created_at": "<TIMESTAMP>",
                   "updated_at": "<TIMESTAMP>",
                   "blocked_by": []
@@ -4310,6 +4332,7 @@
                     "src/**",
                     "docs/**"
                   ],
+                  "size": "bounded",
                   "created_at": "<TIMESTAMP>",
                   "updated_at": "<TIMESTAMP>",
                   "blocked_by": []
@@ -4384,6 +4407,7 @@
                   ],
                   "files": [],
                   "docs": [],
+                  "size": "small",
                   "created_at": "<TIMESTAMP>",
                   "updated_at": "<TIMESTAMP>",
                   "blocked_by": []
@@ -4406,6 +4430,7 @@
                     "src/**",
                     "docs/**"
                   ],
+                  "size": "bounded",
                   "created_at": "<TIMESTAMP>",
                   "updated_at": "<TIMESTAMP>",
                   "blocked_by": []
@@ -4543,6 +4568,7 @@
                   ],
                   "files": [],
                   "docs": [],
+                  "size": "small",
                   "created_at": "<TIMESTAMP>",
                   "updated_at": "<TIMESTAMP>"
                 },
@@ -4564,6 +4590,7 @@
                     "src/**",
                     "docs/**"
                   ],
+                  "size": "bounded",
                   "created_at": "<TIMESTAMP>",
                   "updated_at": "<TIMESTAMP>"
                 },
@@ -4644,6 +4671,7 @@
                   ],
                   "files": [],
                   "docs": [],
+                  "size": "small",
                   "created_at": "<TIMESTAMP>",
                   "updated_at": "<TIMESTAMP>"
                 },
@@ -4665,6 +4693,7 @@
                     "src/**",
                     "docs/**"
                   ],
+                  "size": "bounded",
                   "created_at": "<TIMESTAMP>",
                   "updated_at": "<TIMESTAMP>"
                 },
@@ -7710,7 +7739,7 @@
         "schema"
       ],
       "exit": 0,
-      "stdout": "Register and inspect payload schemas.\n\nA schema is JSON Schema plus one annotation: `ordered_enum`. Marking a\nproperty's `enum` as ordered declares that its values run from first to\nlast, and that declaration is what makes ordered threshold comparisons —\n`any(risk >= medium)` — mean something. Docket learns the ORDER from the\ndocument; it never learns what the values mean.\n\nA registered name@version is frozen, exactly as a workflow is: re-registering\nthe same bytes is a success that changes nothing, and re-registering different\nbytes is a CONFLICT. A run pins the schema its payloads are validated against,\nso the bytes cannot be swapped underneath it.\n\nUsage:\n  docket schema [command]\n\nAvailable Commands:\n  list List registered payload schemas\n  register Register a payload schema\n  show Show a registered payload schema\n\nFlags:\n  -h, --help help for schema\n\nGlobal Flags:\n      --format string Output format: json (alias for --json=v2)\n      --json string[=\"v1\"] Output in JSON format (--json, or --json=v2)\n  -q, --quiet Suppress non-essential output\n\nUse \"docket schema [command] --help\" for more information about a command.\n",
+      "stdout": "Register and inspect payload schemas.\n\nA schema is JSON Schema plus one annotation: `ordered_enum`. Marking a\nproperty's `enum` as ordered declares that its values run from first to\nlast, and that declaration is what makes ordered threshold comparisons —\n`any(risk >= medium)` — mean something. Docket learns the ORDER from the\ndocument; it never learns what the values mean.\n\nA registered name@version is frozen, exactly as a workflow is: re-registering\nthe same bytes is a success that changes nothing, and re-registering different\nbytes is a CONFLICT. A run pins the schema its payloads are validated against,\nso the bytes cannot be swapped underneath it.\n\nA registered version is never deleted. `schema deprecate` retires one\nfrom service: it stays readable and keeps serving the runs that pinned it, but\nnew payload references to it are refused and `schema list` hides it\nunless --deprecated is passed.\n\nUsage:\n  docket schema [command]\n\nAvailable Commands:\n  deprecate Retire a registered schema version from service\n  list List registered payload schemas\n  register Register a payload schema\n  show Show a registered payload schema\n\nFlags:\n  -h, --help help for schema\n\nGlobal Flags:\n      --format string Output format: json (alias for --json=v2)\n      --json string[=\"v1\"] Output in JSON format (--json, or --json=v2)\n  -q, --quiet Suppress non-essential output\n\nUse \"docket schema [command] --help\" for more information about a command.\n",
       "stderr": ""
     },
     {
@@ -8247,6 +8276,94 @@
         "ok": false,
         "error": "workflow broken: step \"a\" must declare exactly one of `executor`, `action`, `type`, `fanout`; it declares none",
         "code": "VALIDATION_ERROR"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "workflow-lint-project",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "workflow",
+        "lint",
+        ".docket/config/workflows/sweep-park.toml",
+        "--project",
+        "DKT"
+      ],
+      "exit": 0,
+      "stdout": "sweep-park@1 is valid (new; nothing written)\n",
+      "stderr": ""
+    },
+    {
+      "id": "workflow-lint-project",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "workflow",
+        "lint",
+        ".docket/config/workflows/sweep-park.toml",
+        "--project",
+        "DKT",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "name": "sweep-park",
+          "version": 1,
+          "sha256": "<HEX64>",
+          "registration": "new"
+        },
+        "message": "sweep-park@1 is valid (new; nothing written)"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "workflow-lint-all-projects",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "workflow",
+        "lint",
+        ".docket/config/workflows/sweep-park.toml",
+        "--all-projects"
+      ],
+      "exit": 0,
+      "stdout": "workflow lint sweep-park@1 — every project in the store (1 target(s))\n\n  repo (DKT) new sweep-park@1\n\n1 project(s) succeeded.\n",
+      "stderr": ""
+    },
+    {
+      "id": "workflow-lint-all-projects",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "workflow",
+        "lint",
+        ".docket/config/workflows/sweep-park.toml",
+        "--all-projects",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "operation": "workflow lint",
+          "subject": "sweep-park@1",
+          "scope": "all-projects",
+          "results": [
+            {
+              "project_id": 1,
+              "project": "repo",
+              "identity": "<SCRATCH>/repo",
+              "prefix": "DKT",
+              "outcome": "new",
+              "ref": "sweep-park@1"
+            }
+          ],
+          "succeeded": 1,
+          "failed": 0
+        }
       },
       "stderr": ""
     },
@@ -8850,6 +8967,116 @@
       "stderr": ""
     },
     {
+      "id": "workflow-list-project",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "workflow",
+        "list",
+        "--project",
+        "DKT",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "workflows": [
+            {
+              "name": "sweep-dev",
+              "version": 1,
+              "description": "Sweep: one worker step, then a person approves.",
+              "source_path": ".docket/config/workflows/sweep-dev.toml",
+              "source_sha256": "<HEX64>",
+              "created_at_ms": "<N>",
+              "definition": {
+                "pipeline": {
+                  "name": "sweep-dev",
+                  "version": 1,
+                  "description": "Sweep: one worker step, then a person approves."
+                },
+                "match": {
+                  "labels_all": [
+                    "sweep-dev"
+                  ]
+                },
+                "steps": [
+                  {
+                    "name": "check",
+                    "executor": "prober",
+                    "class": "prober",
+                    "emits": "check-report",
+                    "after": [],
+                    "on_fail": "fix-loop",
+                    "loop": false,
+                    "expected_cost": 0,
+                    "holds_tree": true
+                  },
+                  {
+                    "name": "approve",
+                    "type": "human",
+                    "after": [
+                      "check"
+                    ],
+                    "on_fail": "fix-loop",
+                    "loop": false,
+                    "expected_cost": 0,
+                    "holds_tree": true
+                  },
+                  {
+                    "name": "fix",
+                    "executor": "prober",
+                    "class": "prober",
+                    "emits": "fix-summary",
+                    "after": null,
+                    "on_fail": "waiting-human",
+                    "loop": true,
+                    "after_loop": "check",
+                    "expected_cost": 0,
+                    "holds_tree": true
+                  }
+                ]
+              }
+            },
+            {
+              "name": "sweep-stdin",
+              "version": 1,
+              "description": "Registered from stdin.",
+              "source_sha256": "<HEX64>",
+              "created_at_ms": "<N>",
+              "definition": {
+                "pipeline": {
+                  "name": "sweep-stdin",
+                  "version": 1,
+                  "description": "Registered from stdin."
+                },
+                "match": {
+                  "labels_all": [
+                    "never-used"
+                  ]
+                },
+                "steps": [
+                  {
+                    "name": "only",
+                    "executor": "prober",
+                    "class": "prober",
+                    "emits": "report",
+                    "after": [],
+                    "on_fail": "waiting-human",
+                    "loop": false,
+                    "expected_cost": 0,
+                    "holds_tree": true
+                  }
+                ]
+              }
+            }
+          ],
+          "total": 2
+        }
+      },
+      "stderr": ""
+    },
+    {
       "id": "workflow-show",
       "mode": "text",
       "argv": [
@@ -9106,7 +9333,7 @@
         "audit"
       ],
       "exit": 0,
-      "stdout": "scanned 1 instance-config root(s) for current versions:\n  <SCRATCH>/repo/.docket/config\n\nrepo (DKT)\n  orphaned schema findings registered @13\n  orphaned workflow sweep-stdin registered @1\n\n1 of 1 project(s) carry findings: 0 name(s) behind, 2 orphaned.\nA behind name is adopted by the next `docket run activate` in that project; an orphaned one is retired with `docket workflow deprecate`.\n",
+      "stdout": "scanned 1 instance-config root(s) for current versions:\n  <SCRATCH>/repo/.docket/config\n\nrepo (DKT)\n  orphaned schema findings registered @13\n  orphaned workflow sweep-stdin registered @1\n\n1 of 1 project(s) carry findings: 0 name(s) behind, 2 orphaned.\nA behind name is adopted by the next `docket run activate` in that project; an orphaned one is retired with `docket workflow deprecate` or `docket schema deprecate`.\n",
       "stderr": ""
     },
     {
@@ -10751,6 +10978,103 @@
       "stderr": ""
     },
     {
+      "id": "pin-group",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "pin"
+      ],
+      "exit": 0,
+      "stdout": "Read what a run pinned\n\nUsage:\n  docket pin [command]\n\nAvailable Commands:\n  show Print the bytes a run pinned at a config-relative path\n\nFlags:\n  -h, --help help for pin\n\nGlobal Flags:\n      --format string Output format: json (alias for --json=v2)\n      --json string[=\"v1\"] Output in JSON format (--json, or --json=v2)\n  -q, --quiet Suppress non-essential output\n\nUse \"docket pin [command] --help\" for more information about a command.\n",
+      "stderr": ""
+    },
+    {
+      "id": "pin-show",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "pin",
+        "show",
+        "RUN-1",
+        "workflows/sweep-dev.toml"
+      ],
+      "exit": 3,
+      "stdout": "",
+      "stderr": "Error: packet file \"workflows/sweep-dev.toml\" is not in RUN-1's pin set, which froze at activation; the file is on disk at <SCRATCH>/repo/.docket/config/workflows/sweep-dev.toml, but a run reads only what it snapshotted, so its presence cannot admit it here — start a new run to pin it, or see `docket run repin --help`\n"
+    },
+    {
+      "id": "pin-show",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "pin",
+        "show",
+        "RUN-1",
+        "workflows/sweep-dev.toml",
+        "--json"
+      ],
+      "exit": 3,
+      "json": {
+        "ok": false,
+        "error": "packet file \"workflows/sweep-dev.toml\" is not in RUN-1's pin set, which froze at activation; the file is on disk at <SCRATCH>/repo/.docket/config/workflows/sweep-dev.toml, but a run reads only what it snapshotted, so its presence cannot admit it here — start a new run to pin it, or see `docket run repin --help`",
+        "code": "VALIDATION_ERROR"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "pin-show",
+      "mode": "format",
+      "argv": [
+        "docket",
+        "pin",
+        "show",
+        "RUN-1",
+        "workflows/sweep-dev.toml",
+        "--format",
+        "json"
+      ],
+      "exit": 3,
+      "json": {
+        "ok": false,
+        "error": "packet file \"workflows/sweep-dev.toml\" is not in RUN-1's pin set, which froze at activation; the file is on disk at <SCRATCH>/repo/.docket/config/workflows/sweep-dev.toml, but a run reads only what it snapshotted, so its presence cannot admit it here — start a new run to pin it, or see `docket run repin --help`",
+        "code": "VALIDATION_ERROR"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "pin-show-unpinned",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "pin",
+        "show",
+        "RUN-1",
+        "no-such-file.toml"
+      ],
+      "exit": 3,
+      "stdout": "",
+      "stderr": "Error: packet file \"no-such-file.toml\" is not in RUN-1's pin set, which froze at activation, and resolves under no instance-config root; add it under one and start a new run to pin it\n"
+    },
+    {
+      "id": "pin-show-unpinned",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "pin",
+        "show",
+        "RUN-1",
+        "no-such-file.toml",
+        "--json"
+      ],
+      "exit": 3,
+      "json": {
+        "ok": false,
+        "error": "packet file \"no-such-file.toml\" is not in RUN-1's pin set, which froze at activation, and resolves under no instance-config root; add it under one and start a new run to pin it",
+        "code": "VALIDATION_ERROR"
+      },
+      "stderr": ""
+    },
+    {
       "id": "run-budget",
       "mode": "text",
       "argv": [
@@ -11078,6 +11402,10 @@
               "attempt": 0,
               "expected_cost": 0,
               "lease_ttl_s": 900,
+              "bump": "none",
+              "scope": [
+                "src/**"
+              ],
               "status": "ready"
             },
             {
@@ -11094,6 +11422,7 @@
               "attempt": 0,
               "expected_cost": 0,
               "lease_ttl_s": 900,
+              "bump": "none",
               "status": "ready"
             }
           ],
@@ -11132,6 +11461,10 @@
               "attempt": 0,
               "expected_cost": 0,
               "lease_ttl_s": 900,
+              "bump": "none",
+              "scope": [
+                "src/**"
+              ],
               "status": "ready"
             },
             {
@@ -11148,6 +11481,7 @@
               "attempt": 0,
               "expected_cost": 0,
               "lease_ttl_s": 900,
+              "bump": "none",
               "status": "ready"
             }
           ],
@@ -11840,6 +12174,10 @@
               "attempt": 0,
               "expected_cost": 0,
               "lease_ttl_s": 900,
+              "bump": "none",
+              "scope": [
+                "src/**"
+              ],
               "status": "ready"
             },
             {
@@ -11856,6 +12194,7 @@
               "attempt": 0,
               "expected_cost": 0,
               "lease_ttl_s": 900,
+              "bump": "none",
               "status": "ready"
             }
           ],
@@ -12887,7 +13226,7 @@
         "STEP-1"
       ],
       "exit": 0,
-      "stdout": "ARTIFACT KIND BYTES PAYLOAD SHA256\n----------------------------------------------------------------------------\nARTIFACT-1 check-report 35 - <HEX12>\nARTIFACT-2 issue.diff 28255 - <HEX12>\n\nRead one in full: docket step artifact ARTIFACT-1\n\n",
+      "stdout": "ARTIFACT KIND BYTES PAYLOAD SHA256\n----------------------------------------------------------------------------\nARTIFACT-1 check-report 35 - <HEX12>\nARTIFACT-2 issue.diff 28302 - <HEX12>\n\nRead one in full: docket step artifact ARTIFACT-1\n\n",
       "stderr": ""
     },
     {
@@ -12919,7 +13258,7 @@
               "kind": "issue.diff",
               "producer": "check@0",
               "sha256": "<HEX64>",
-              "bytes": 28255,
+              "bytes": 28302,
               "created_at_ms": "<N>"
             }
           ]
@@ -12957,7 +13296,7 @@
               "kind": "issue.diff",
               "producer": "check@0",
               "sha256": "<HEX64>",
-              "bytes": 28255,
+              "bytes": 28302,
               "created_at_ms": "<N>"
             }
           ]
@@ -13905,7 +14244,7 @@
               "executor": "prober",
               "issue": "DKT-2",
               "sha256": "<HEX64>",
-              "bytes": 28255
+              "bytes": 28302
             }
           ],
           "metadata": [
@@ -14030,6 +14369,8 @@
         "run",
         "activate",
         "RUN-2",
+        "--pin",
+        "workflows/sweep-park.toml",
         "--json"
       ],
       "exit": 0,
@@ -14049,7 +14390,7 @@
           "steps_created": 2,
           "expected_cost_added": 0,
           "expected_cost_total": 0,
-          "pins_recorded": 1,
+          "pins_recorded": 2,
           "fences_harvested": 0,
           "hold_policy": {
             "panel": false
@@ -14083,7 +14424,106 @@
           ],
           "conductor_token": "<HEX64>"
         },
-        "message": "Activated RUN-2: 1 issue(s) bound (DKT-3->sweep-park@1), 1 issue(s) expanded, 2 step(s), 0.00 expected cost added, 0.00 expected cost total, 1 pin(s), promoted DKT-3"
+        "message": "Activated RUN-2: 1 issue(s) bound (DKT-3->sweep-park@1), 1 issue(s) expanded, 2 step(s), 0.00 expected cost added, 0.00 expected cost total, 2 pin(s), promoted DKT-3"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "pin-show-file",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "pin",
+        "show",
+        "RUN-2",
+        "workflows/sweep-park.toml"
+      ],
+      "exit": 0,
+      "stdout": "[pipeline]\nname = \"sweep-park\"\nversion = 1\ndescription = \"Sweep: a check that parks on failure, then a person decides.\"\n\n[match]\nlabels_all = [\"sweep-park\"]\n\n[[step]]\nname = \"check\"\nafter = []\nexecutor = \"prober\"\nemits = \"check-report\"\nmax_attempts = 1\non_fail = \"waiting-human\"\n\n[[step]]\nname = \"approve\"\nafter = [\"check\"]\ntype = \"human\"\non_fail = \"abandon-issue\"\n",
+      "stderr": ""
+    },
+    {
+      "id": "pin-show-file",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "pin",
+        "show",
+        "RUN-2",
+        "workflows/sweep-park.toml",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "run": "RUN-2",
+          "path": "workflows/sweep-park.toml",
+          "body": "[pipeline]\nname = \"sweep-park\"\nversion = 1\ndescription = \"Sweep: a check that parks on failure, then a person decides.\"\n\n[match]\nlabels_all = [\"sweep-park\"]\n\n[[step]]\nname = \"check\"\nafter = []\nexecutor = \"prober\"\nemits = \"check-report\"\nmax_attempts = 1\non_fail = \"waiting-human\"\n\n[[step]]\nname = \"approve\"\nafter = [\"check\"]\ntype = \"human\"\non_fail = \"abandon-issue\"\n"
+        }
+      },
+      "stderr": ""
+    },
+    {
+      "id": "pin-show-file",
+      "mode": "format",
+      "argv": [
+        "docket",
+        "pin",
+        "show",
+        "RUN-2",
+        "workflows/sweep-park.toml",
+        "--format",
+        "json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "run": "RUN-2",
+          "path": "workflows/sweep-park.toml",
+          "body": "[pipeline]\nname = \"sweep-park\"\nversion = 1\ndescription = \"Sweep: a check that parks on failure, then a person decides.\"\n\n[match]\nlabels_all = [\"sweep-park\"]\n\n[[step]]\nname = \"check\"\nafter = []\nexecutor = \"prober\"\nemits = \"check-report\"\nmax_attempts = 1\non_fail = \"waiting-human\"\n\n[[step]]\nname = \"approve\"\nafter = [\"check\"]\ntype = \"human\"\non_fail = \"abandon-issue\"\n"
+        }
+      },
+      "stderr": ""
+    },
+    {
+      "id": "run-verify-pins-park",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "run",
+        "verify-pins",
+        "RUN-2",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "run": "RUN-2",
+          "pins": [
+            {
+              "kind": "file",
+              "ref": "workflows/sweep-park.toml",
+              "status": "ok",
+              "pinned": "<HEX64>",
+              "found": "<HEX64>",
+              "path": "<SCRATCH>/repo/.docket/config/workflows/sweep-park.toml"
+            },
+            {
+              "kind": "workflow",
+              "ref": "sweep-park@1",
+              "status": "ok",
+              "pinned": "<HEX64>",
+              "found": "<HEX64>"
+            }
+          ],
+          "references": [],
+          "changed": 0,
+          "missing": 0,
+          "unpinned": 0
+        }
       },
       "stderr": ""
     },
@@ -14267,6 +14707,10 @@
             "inputs": [],
             "pins": [
               {
+                "path": "workflows/sweep-park.toml",
+                "sha256": "<HEX64>"
+              },
+              {
                 "path": "workflow:sweep-park@1",
                 "sha256": "<HEX64>"
               }
@@ -14365,7 +14809,7 @@
           "metadata": {
             "why": "sweep"
           },
-          "park_reason": "the sweep fails it on purpose",
+          "park_reason": "attempts-exhausted: 1 of 1",
           "park_class": "attempts-exhausted"
         }
       },
@@ -14405,7 +14849,7 @@
           "metadata": {
             "why": "sweep"
           },
-          "park_reason": "the sweep fails it on purpose",
+          "park_reason": "attempts-exhausted: 1 of 1",
           "park_class": "attempts-exhausted"
         }
       },
@@ -14551,6 +14995,10 @@
             "inputs": [],
             "pins": [
               {
+                "path": "workflows/sweep-park.toml",
+                "sha256": "<HEX64>"
+              },
+              {
                 "path": "workflow:sweep-park@1",
                 "sha256": "<HEX64>"
               }
@@ -14666,6 +15114,10 @@
             },
             "inputs": [],
             "pins": [
+              {
+                "path": "workflows/sweep-park.toml",
+                "sha256": "<HEX64>"
+              },
               {
                 "path": "workflow:sweep-park@1",
                 "sha256": "<HEX64>"
@@ -14830,6 +15282,11 @@
             }
           ],
           "pins": [
+            {
+              "kind": "file",
+              "ref": "workflows/sweep-park.toml",
+              "sha256": "<HEX64>"
+            },
             {
               "kind": "workflow",
               "ref": "sweep-park@1",
@@ -15030,6 +15487,7 @@
               "attempt": 0,
               "expected_cost": 0,
               "lease_ttl_s": 900,
+              "bump": "none",
               "status": "ready"
             },
             {
@@ -15046,6 +15504,7 @@
               "attempt": 0,
               "expected_cost": 0,
               "lease_ttl_s": 900,
+              "bump": "none",
               "status": "ready"
             }
           ],
@@ -16355,6 +16814,255 @@
       "stderr": ""
     },
     {
+      "id": "schema-deprecate",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "schema",
+        "deprecate",
+        "findings@13"
+      ],
+      "exit": 0,
+      "stdout": "findings@13 retired from service. It stays registered and readable, runs that pinned it still validate against it, and new payload references to it are refused.\n",
+      "stderr": ""
+    },
+    {
+      "id": "schema-deprecate",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "schema",
+        "deprecate",
+        "findings@13",
+        "--json"
+      ],
+      "exit": 4,
+      "json": {
+        "ok": false,
+        "error": "findings@13 is already deprecated: schema version is already deprecated",
+        "code": "CONFLICT"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "schema-deprecate",
+      "mode": "format",
+      "argv": [
+        "docket",
+        "schema",
+        "deprecate",
+        "findings@13",
+        "--format",
+        "json"
+      ],
+      "exit": 4,
+      "json": {
+        "ok": false,
+        "error": "findings@13 is already deprecated: schema version is already deprecated",
+        "code": "CONFLICT"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "schema-list-deprecated",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "schema",
+        "list",
+        "--deprecated",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "schemas": [
+            {
+              "name": "aggregate",
+              "version": 1,
+              "source_sha256": "<HEX64>",
+              "ordered_fields": [],
+              "builtin": true,
+              "created_at_ms": "<N>"
+            },
+            {
+              "name": "findings",
+              "version": 13,
+              "source_path": "schemas/findings@13.json",
+              "source_sha256": "<HEX64>",
+              "ordered_fields": [
+                "open_severity",
+                "severity"
+              ],
+              "builtin": false,
+              "created_at_ms": "<N>"
+            }
+          ],
+          "total": 2
+        }
+      },
+      "stderr": ""
+    },
+    {
+      "id": "schema-list-deprecated",
+      "mode": "format",
+      "argv": [
+        "docket",
+        "schema",
+        "list",
+        "--deprecated",
+        "--format",
+        "json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "items": [
+            {
+              "name": "aggregate",
+              "version": 1,
+              "source_sha256": "<HEX64>",
+              "ordered_fields": [],
+              "builtin": true,
+              "created_at_ms": "<N>",
+              "row_version": 1
+            },
+            {
+              "name": "findings",
+              "version": 13,
+              "source_path": "schemas/findings@13.json",
+              "source_sha256": "<HEX64>",
+              "ordered_fields": [
+                "open_severity",
+                "severity"
+              ],
+              "builtin": false,
+              "created_at_ms": "<N>",
+              "row_version": 2,
+              "deprecated_at_ms": "<N>"
+            }
+          ],
+          "total": 2,
+          "truncated": false
+        }
+      },
+      "stderr": ""
+    },
+    {
+      "id": "schema-deprecate-restore",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "schema",
+        "deprecate",
+        "findings@13",
+        "--restore",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "name": "findings",
+          "version": 13,
+          "source_path": "schemas/findings@13.json",
+          "source_sha256": "<HEX64>",
+          "ordered_fields": [
+            "open_severity",
+            "severity"
+          ],
+          "builtin": false,
+          "created_at_ms": "<N>"
+        },
+        "message": "findings@13 restored to service."
+      },
+      "stderr": ""
+    },
+    {
+      "id": "schema-deprecate-project",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "schema",
+        "deprecate",
+        "findings@13",
+        "--project",
+        "DKT"
+      ],
+      "exit": 0,
+      "stdout": "schema deprecate findings@13 — 1 project (1 target(s))\n\n  repo (DKT) deprecated findings@13\n\n1 project(s) succeeded.\n",
+      "stderr": ""
+    },
+    {
+      "id": "schema-deprecate-project",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "schema",
+        "deprecate",
+        "findings@13",
+        "--project",
+        "DKT",
+        "--json"
+      ],
+      "exit": 4,
+      "json": {
+        "ok": true,
+        "data": {
+          "operation": "schema deprecate",
+          "subject": "findings@13",
+          "scope": "project",
+          "results": [
+            {
+              "project_id": 1,
+              "project": "repo",
+              "identity": "<SCRATCH>/repo",
+              "prefix": "DKT",
+              "outcome": "already-deprecated",
+              "detail": "findings@13 is already deprecated: schema version is already deprecated",
+              "code": "CONFLICT"
+            }
+          ],
+          "succeeded": 0,
+          "failed": 1
+        }
+      },
+      "stderr": ""
+    },
+    {
+      "id": "schema-deprecate-missing",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "schema",
+        "deprecate",
+        "no-such-schema@1"
+      ],
+      "exit": 2,
+      "stdout": "",
+      "stderr": "Error: schema not found: no-such-schema@1 is not registered\n"
+    },
+    {
+      "id": "schema-deprecate-missing",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "schema",
+        "deprecate",
+        "no-such-schema@1",
+        "--json"
+      ],
+      "exit": 2,
+      "json": {
+        "ok": false,
+        "error": "schema not found: no-such-schema@1 is not registered",
+        "code": "NOT_FOUND"
+      },
+      "stderr": ""
+    },
+    {
       "id": "schema-register-all-projects",
       "mode": "json",
       "argv": [
@@ -16385,6 +17093,55 @@
           ],
           "succeeded": 1,
           "failed": 0
+        }
+      },
+      "stderr": ""
+    },
+    {
+      "id": "schema-deprecate-all-projects",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "schema",
+        "deprecate",
+        "findings@12",
+        "--all-projects"
+      ],
+      "exit": 0,
+      "stdout": "schema deprecate findings@12 — every project in the store (1 target(s))\n\n  repo (DKT) deprecated findings@12\n\n1 project(s) succeeded.\n",
+      "stderr": ""
+    },
+    {
+      "id": "schema-deprecate-all-projects",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "schema",
+        "deprecate",
+        "findings@12",
+        "--all-projects",
+        "--json"
+      ],
+      "exit": 4,
+      "json": {
+        "ok": true,
+        "data": {
+          "operation": "schema deprecate",
+          "subject": "findings@12",
+          "scope": "all-projects",
+          "results": [
+            {
+              "project_id": 1,
+              "project": "repo",
+              "identity": "<SCRATCH>/repo",
+              "prefix": "DKT",
+              "outcome": "already-deprecated",
+              "detail": "findings@12 is already deprecated: schema version is already deprecated",
+              "code": "CONFLICT"
+            }
+          ],
+          "succeeded": 0,
+          "failed": 1
         }
       },
       "stderr": ""

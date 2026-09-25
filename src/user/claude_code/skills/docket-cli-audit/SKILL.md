@@ -38,7 +38,10 @@ produce it, both read-only against the operator's own state:
   store it opened lives anywhere else, keeps the trust roster empty for every
   run- and step-level verb so no gate can execute, and refuses `trust probe`,
   `--watch`, `--follow` and `--interval` in code. The scratch directory is
-  removed afterwards, including on failure.
+  removed afterwards, including on failure. It also sets `NO_COLOR=1` and
+  `TERM=dumb`, which strip the status glyphs (`✔`, `✘`) from human output.
+  A hook runs without them and sees `✔ allowed`, so a fixture's missing glyph
+  is not evidence against prose that quotes one.
 
 Prose in scope is every file under `src/user` that names a docket command,
 found by grep at run time (step 4), not a fixed list. Comments and strings in

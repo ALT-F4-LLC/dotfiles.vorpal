@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "verified_on": "2026-09-17",
-  "binary_version": "docket version nightly-136-g835f706 (commit: 835f706, built: 2026-09-17T01:02:08Z)",
+  "verified_on": "2026-09-25",
+  "binary_version": "docket version nightly-209-ga348156 (commit: a348156, built: 2026-09-25T01:58:12Z)",
   "probe_contract": "Only --version and command-path --help; no store operations.",
   "commands": [
     {
@@ -2848,6 +2848,60 @@
       ]
     },
     {
+      "command": "docket pin",
+      "usage": [
+        "docket pin [command]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket pin show",
+      "usage": [
+        "docket pin show RUN-N PATH [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
       "command": "docket plan",
       "usage": [
         "docket plan [flags]"
@@ -3861,6 +3915,43 @@
       ]
     },
     {
+      "command": "docket schema deprecate",
+      "usage": [
+        "docket schema deprecate <name>@<version> [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--all-projects"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--project",
+          "value": "string"
+        },
+        {
+          "name": "--restore"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
       "command": "docket schema list",
       "usage": [
         "docket schema list [flags]"
@@ -3870,6 +3961,9 @@
         "ls"
       ],
       "flags": [
+        {
+          "name": "--deprecated"
+        },
         {
           "name": "--help",
           "short": "-h"
@@ -5439,8 +5533,15 @@
       "aliases": [],
       "flags": [
         {
+          "name": "--all-projects"
+        },
+        {
           "name": "--help",
           "short": "-h"
+        },
+        {
+          "name": "--project",
+          "value": "string"
         }
       ],
       "inherited_flags": [
@@ -5486,6 +5587,10 @@
         },
         {
           "name": "--orphans"
+        },
+        {
+          "name": "--project",
+          "value": "string"
         }
       ],
       "inherited_flags": [

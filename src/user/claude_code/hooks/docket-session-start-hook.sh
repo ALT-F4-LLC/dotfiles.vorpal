@@ -36,15 +36,19 @@ command -v docket >/dev/null 2>&1 || exit 0
 # retired flag for weeks, and a session booted believing there was no run.
 # Exit 1 is non-blocking (SessionStart cannot block anyway) and shows the one
 # stderr line to the operator; a repo with no store still exits 0 silently
-# below, since NOT_FOUND on the deny channel is not a failure of the hook.
+# below, since NOT_FOUND is not a failure of the hook. Under --json the engine
+# writes its error envelope to STDOUT and leaves stderr empty ([MEASURED]: no
+# store gives exit 2 and `{"ok":false,...,"code":"NOT_FOUND"}` on stdout), so
+# the match and the message read both streams.
 ERR_FILE=$(mktemp "${TMPDIR:-/tmp}/docket-session-start.XXXXXX") || exit 0
 STATUS=$(docket run status --json 2>"$ERR_FILE"); RC=$?
 ERR=$(cat "$ERR_FILE" 2>/dev/null); rm -f "$ERR_FILE"
 if [ "$RC" -ne 0 ]; then
-    case "$ERR" in
+    case "$ERR$STATUS" in
         *'no docket database found'*|*NOT_FOUND*) exit 0 ;;
     esac
-    printf 'docket-session-start: `docket run status --json` failed (exit %s): %s — run state is UNKNOWN for this session\n' "$RC" "${ERR:-no stderr}" >&2
+    MSG="${ERR:-$STATUS}"
+    printf 'docket-session-start: `docket run status --json` failed (exit %s): %s — run state is UNKNOWN for this session\n' "$RC" "${MSG:-no output}" >&2
     exit 1
 fi
 [ -n "$STATUS" ] || exit 0

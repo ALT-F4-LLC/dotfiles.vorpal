@@ -34,10 +34,12 @@ command -v docket >/dev/null 2>&1 || exit 0
 
 # stdout dropped, stderr kept — see docket-spawn-guard-hook.sh for why: on exit 0
 # the harness parses stdout as JSON, and `✔ allowed` is not JSON. The guard's
-# reason travels on stderr either way. The no-database case stays silent: exit 2
-# with "no docket database found" is the engine's NOT_FOUND riding the deny
-# channel (measured directly), not a discrepancy — advisory noise about a
-# repo that is not docket's business helps nobody.
+# reason travels on stderr either way. The no-database case stays silent: the
+# engine now ALLOWS a guard with no store (exit 0, "no docket database at
+# ...; nothing here to allow or deny" on stderr), so it never reaches the case
+# below. The `no docket database found` arm remains for an older binary that
+# still denied it with exit 2 — advisory noise about a repo that is not
+# docket's business helps nobody.
 #
 # `guard record` denies on exactly TWO states, and this hook must not treat them
 # alike. The engine computes both in one function shared with `next`

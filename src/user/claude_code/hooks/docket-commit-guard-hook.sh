@@ -107,7 +107,7 @@ GATE_REASON=$(docket guard gate --step commit-gate 2>&1 >/dev/null) || true
 # guard's business:
 #
 #   approved -> allow                                            (handled above)
-#   found    -> `gate "commit-gate" is <state>, not approved`    (DENY: the case
+#   found    -> `gate "commit-gate" in <RUN> is <state>, not approved`  (DENY: the case
 #               this guard exists for — a run whose pipeline HAS a commit-gate
 #               step that the operator has not yet approved)
 #   default  -> `no type="human" step named "commit-gate" in any active run`
@@ -128,10 +128,10 @@ GATE_REASON=$(docket guard gate --step commit-gate 2>&1 >/dev/null) || true
 # no hook checks, by design, not a permission ask.
 # "no docket database found" joins the not-applicable set for the same reason
 # as the absent-gate arm: no DB means no run means this guard has no opinion.
-# [MEASURED] every guard verb exits 2 with that error in a repo
-# with no .docket up-tree — without this arm, this hook denies every git
-# commit/push/add in every non-docket repo. Engine-side fix (NOT_FOUND off
-# the deny channel) filed; this is the hook-side mitigation.
+# The engine fix has landed: every guard verb now ALLOWS with no store (exit 0,
+# "no docket database at ...; nothing here to allow or deny" on stderr), so
+# this arm is reached only by an older binary that still denied with exit 2.
+# It stays as the mitigation for that binary.
 case $GATE_REASON in
     *'in any active run'*) allow_default ;;
     *'no docket database found'*) allow_default ;;

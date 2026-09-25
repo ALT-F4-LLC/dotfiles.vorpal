@@ -394,6 +394,25 @@ already-pinned ref resolves to, for every repo at once. `docket doctor`
 runs this check too; at activation with no `--run`, `skipped: true` is
 expected since the run holds no pins yet.
 
+**Prune the last session's worktree leftovers first, every time.** A
+session cannot delete the metadata directory of a worktree it created
+(the harness denies that one path for the session's lifetime, see step 3's
+cleanup), so each conductor session leaves its integrated wave worktrees
+as `prunable` entries for the next one. This session's deny list carries
+none of them, so clear them here, before the probe, and name each pruned
+entry in the attach report. Only entries git itself reports `prunable`
+are touched; a live worktree is never pruned by this:
+
+```bash
+git worktree list --porcelain | awk '/^worktree /{w=$2} /^HEAD /{h=$2} /^branch /{b=$2} /^prunable/{print w, h, b} /^$/{w="";h="";b=""}'
+git worktree prune -v
+# for each printed path/sha/branch whose branch is refs/heads/worktree-wf_* or refs/heads/worktree-agent-*:
+git update-ref -d <that branch ref>
+```
+
+Name each pruned path with its sha in the attach report, as the close
+report names a never-integrated straggler's.
+
 Attaching to an already-active run skips activation but not the probe.
 The probe is two commands, both read-only:
 
@@ -821,11 +840,13 @@ report it, never hunt for another copy.
 
 **Report the machine's own concurrency cap so wave.js does not have to guess
 it.** The Workflow tool's real per-invocation cap is `min(16, CPUs-2)`, but a
-wave script cannot read the CPU count itself; you can, so run `nproc` before
-launching:
+wave script cannot read the CPU count itself; you can, so read it before
+launching. `getconf _NPROCESSORS_ONLN` is portable across macOS and Linux;
+`nproc` is the fallback for a libc without that key (macOS ships no `nproc`,
+and `sysctl` is refused under the sandbox):
 
 ```bash
-nproc
+getconf _NPROCESSORS_ONLN 2>/dev/null || nproc
 ```
 
 Compute `harnessCap = min(16, that number - 2)`, floored at 1 (a single-core
@@ -1316,10 +1337,25 @@ branch>`. Read the path/branch pair off `git worktree list`, never
 constructed from a step or workflow id (the branch is
 `worktree-<basename>`). A `could not lock config file` warning from
 `git worktree remove` on this bare-repo layout is benign; confirm with
-`git worktree list` and move on. A hard `Operation not permitted` is
-sandbox-caused (the common-dir write sits outside the write allowlist):
-retry that one call with the sandbox lifted, never extending the lift to
-`git branch -D`. At run close, sweep every straggler whose branch matches
+`git worktree list` and move on. A hard `Operation not permitted` is the
+harness, not a lift case: no sandbox lift, no retry, no operator hand-off,
+since the session that created a worktree keeps that one metadata
+directory (`<bare repo>/worktrees/<name>`) on its sandbox deny list for its
+own lifetime, its files still writable but the directory itself neither
+unlinkable nor renamable. The working directory is already gone, so the
+entry now reads `prunable` in `git worktree list` and only the branch is
+left; `git branch -D` refuses it ("used by worktree") on that stale entry,
+so delete the ref directly with `git update-ref -d`, and only once the
+entry reads `prunable`:
+
+```bash
+git worktree list --porcelain | grep -A3 "^worktree <path>$" | grep -q '^prunable' &&
+  git update-ref -d refs/heads/worktree-<basename>
+```
+
+The stale metadata directory is inert; the next session's attach prune
+(see "Before the loop") clears it, since a later session's deny list never
+carries a worktree it did not create. At run close, sweep every straggler whose branch matches
 `worktree-wf_<id>-*` for a wave this session launched (the ids you
 already hold from `--source "wave-journal:<wfId>"`); never glob a path
 for discovery, since these root above your checkout on a bare-repo

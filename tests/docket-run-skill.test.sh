@@ -32,7 +32,7 @@
 #     paragraph extract rather than two separate ones.
 #
 # (e) is an absence claim and is whole-file by nature: every SENTENCE that
-# names a sandbox lift must be one of the three pinned ruling sentences, so a
+# names a sandbox lift must be one of the two pinned ruling sentences, so a
 # newly added grant is red until it is deliberately admitted here — including
 # a grant inserted INSIDE one of the three anchored paragraphs, where a
 # paragraph-level census would have exempted every sentence in it.
@@ -73,19 +73,22 @@
 #          words "lift the sandbox" elsewhere in the paragraph; this reds
 #          the census, since the mutated sentence still names a lift but no
 #          longer equals the pinned sentence
-#   (c) worktree-remove lift
+#   (c) worktree-remove refusal: the metadata delete is harness-denied for
+#       the creating session's lifetime and is answered with `git update-ref
+#       -d` on the prunable entry's branch, never with a lift (the lift is
+#       unavailable to a conductor seat, and the operator does no cleanup)
 #       p-c reword the paragraph's anchor sentence
-#       s-c repeat the "A hard `Operation not permitted` is sandbox-caused"
+#       s-c repeat the "A hard `Operation not permitted` is the harness"
 #          opener in a second sentence of the same paragraph, so no ONE
 #          sentence rules
-#       c1 delete the "A hard ... is sandbox-caused" sentence opener, which
+#       c1 delete the "A hard ... is the harness" sentence opener, which
 #          leaves no sentence to rule; s-c and c1 are the two directions of
 #          the same guard
-#       c2 delete "never extending the lift to `git branch -D`"
-#       c3 invert the ruling to "WITHOUT lifting the sandbox", keeping "with
-#          the sandbox lifted" elsewhere in the paragraph; also reds the
-#          census, since the mutated sentence names a lift but no longer
-#          equals the pinned sentence
+#       c2 delete "delete the ref directly with `git update-ref -d`"
+#       c3 invert the ruling to "retry that one call with the sandbox
+#          lifted"; reds the states() check on the ruling sentence and the
+#          census both, since the mutated sentence names a lift that no
+#          pinned sentence grants
 #   (d) module-cache unsandboxed retry
 #       p-d reword the paragraph's anchor sentence
 #       d1 delete "the unsandboxed retry is sanctioned here because it fills
@@ -269,19 +272,19 @@ if [ -z "${DOCKET_RUN_SKILL_INNER:-}" ]; then
             { print }
         ' "$SELF" > "${WORK}/degraded-sentences.sh"
 
-        # Fixture: invert the worktree-remove ruling sentence to "do NOT
-        # retry", then reintroduce the untouched literal "retry that one call
-        # with the sandbox lifted, never extending the lift to `git branch
-        # -D`" as a LATER sentence in the SAME paragraph. sentence() finds
-        # exactly one sentence carrying the anchor ("A hard `Operation not
-        # permitted` is sandbox-caused"), which after inversion no longer
-        # states the ruling; sentences() degraded to identity treats the
-        # whole paragraph as one "sentence", so the reintroduced literal
-        # still counts as "in" the anchor sentence and both pinned states()
-        # checks pass regardless of the inversion. The prose wraps mid-clause
-        # in the source, so the pattern tolerates `\s+` wherever the file may
-        # break a line.
-        perl -0pe 's/(A hard `Operation not permitted` is\s+sandbox-caused \(the common-dir write sits outside the write allowlist\):\s+)retry that one call with the sandbox lifted, never extending the lift to\s+`git branch -D`\.(\s+At run close)/$1do NOT retry that one call, and never lift the sandbox for it, contradicting the real ruling below. At run close, before sweeping, note: retry that one call with the sandbox lifted, never extending the lift to `git branch -D`.$2/s' \
+        # Fixture: invert the worktree-remove ruling sentence to "retry that
+        # one call unsandboxed" (no census key in it, so only sentence-level
+        # matching can catch it), then reintroduce the untouched literal "no
+        # sandbox lift, no retry, no operator hand-off" as a LATER sentence
+        # in the SAME paragraph. sentence() finds exactly one sentence
+        # carrying the anchor ("A hard `Operation not permitted` is the
+        # harness"), which after inversion no longer states the ruling;
+        # sentences() degraded to identity treats the whole paragraph as one
+        # "sentence", so the reintroduced literal still counts as "in" the
+        # anchor sentence and the pinned states() check passes regardless of
+        # the inversion. The prose wraps mid-clause in the source, so the
+        # pattern tolerates `\s+` wherever the file may break a line.
+        perl -0pe 's/(A hard `Operation not permitted` is the\s+harness, not a lift case: )no sandbox lift, no retry, no operator hand-off,(\s+since)/$1retry that one call unsandboxed, contradicting the real ruling,$2/s; s/(neither\s+unlinkable nor renamable\.)(\s+The working directory)/$1 The old wording was: no sandbox lift, no retry, no operator hand-off.$2/s' \
             "${WORK}/self-clean.md" > "${WORK}/sentences-mutant.md"
 
         if cmp -s "${WORK}/self-clean.md" "${WORK}/sentences-mutant.md"; then
@@ -352,24 +355,29 @@ else
     bad "signing: no single paragraph carries 'A cherry-pick touching \`.claude/skills/**\` can fail under the sandbox'"
 fi
 
-# (c) The worktree-remove lift is scoped to that one call, and stops short of
-# `git branch -D`. The paragraph is the whole worktree-cleanup block and rules
-# on several separate things, so the lift literals are asserted against the one
-# sentence that rules on the hard refusal.
+# (c) The worktree-remove refusal is never answered with a lift: the harness
+# denies the creating session that one metadata directory for its lifetime,
+# the lift is unavailable to a conductor seat, and the branch is deleted by
+# ref on the prunable entry instead. The paragraph is the whole
+# worktree-cleanup block and rules on several separate things, so the ruling
+# is asserted against the one sentence that rules on the hard refusal, and
+# the mechanism against the paragraph.
 if paragraph 'Worktrees clean themselves up only when unchanged' "${WORK}/worktree"; then
-    ok "worktree-remove lift: exactly one paragraph rules on the remove"
-    if sentence 'A hard `Operation not permitted` is sandbox-caused' \
+    ok "worktree-remove refusal: exactly one paragraph rules on the remove"
+    if sentence 'A hard `Operation not permitted` is the harness' \
         "${WORK}/worktree" "${WORK}/worktree-ruling"; then
-        ok "worktree-remove lift: exactly one sentence states the refusal it answers"
-        states "worktree-remove lift: precondition — single-call scope" \
-            "${WORK}/worktree-ruling" 'retry that one call with the sandbox lifted'
-        states "worktree-remove lift: the lift stops short of git branch -D" \
-            "${WORK}/worktree-ruling" 'never extending the lift to `git branch -D`'
+        ok "worktree-remove refusal: exactly one sentence states the refusal it answers"
+        states "worktree-remove refusal: no lift, no retry, no operator hand-off" \
+            "${WORK}/worktree-ruling" 'no sandbox lift, no retry, no operator hand-off'
+        states "worktree-remove refusal: the branch is deleted by ref instead" \
+            "${WORK}/worktree" 'delete the ref directly with `git update-ref -d`'
+        states "worktree-remove refusal: precondition — the entry reads prunable" \
+            "${WORK}/worktree" 'only once the entry reads `prunable`'
     else
-        bad "worktree-remove lift: no single sentence carries 'A hard \`Operation not permitted\` is sandbox-caused'"
+        bad "worktree-remove refusal: no single sentence carries 'A hard \`Operation not permitted\` is the harness'"
     fi
 else
-    bad "worktree-remove lift: no single paragraph carries 'Worktrees clean themselves up only when unchanged'"
+    bad "worktree-remove refusal: no single paragraph carries 'Worktrees clean themselves up only when unchanged'"
 fi
 
 # (d) The module-cache retry is the fourth relaxation ruling in the file, and
@@ -385,7 +393,7 @@ fi
 
 # (e) Absence claim, run over SENTENCES rather than paragraphs: every
 # sentence anywhere in the file that names a sandbox lift must be one of the
-# three pinned ruling sentences below. A paragraph-level census would exempt
+# two pinned ruling sentences below. A paragraph-level census would exempt
 # every sentence in an anchored paragraph, so a new unconditioned grant
 # inserted inside one of the three rulings' own paragraphs would stay
 # invisible to it; pinning to the sentence catches it wherever it lands.
@@ -401,7 +409,6 @@ while IFS= read -r sent; do
     case "$sent" in
         *'then retry with the sandbox lifted.'*) ;;
         *'Never lift the sandbox around this or inspect'*) ;;
-        *'retry that one call with the sandbox lifted, never extending the lift'*) ;;
         *)
             bad "lift census: an unpinned sentence rules on a sandbox lift: ${sent:0:140}"
             census=1

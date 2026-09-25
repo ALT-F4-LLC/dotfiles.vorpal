@@ -110,6 +110,16 @@ Body text with no title line.
 MD
 }
 
+# ---- the suite runs with no inherited gate environment -----------------
+# Fixtures are fresh repos, so a leaked base never resolves in them and a
+# leaked non-doc-validate gate name never trips fail-closed: no gate case
+# can observe a leak. This case pins the unset above directly.
+if [ -z "${DOCKET_GATE+x}" ] && [ -z "${DOCKET_GATE_BASE+x}" ]; then
+    pass "suite environment: DOCKET_GATE and DOCKET_GATE_BASE unset"
+else
+    fail "suite environment: DOCKET_GATE or DOCKET_GATE_BASE inherited from the caller"
+fi
+
 # ---- clean tree, nothing changed: exits 0, "no docs changed" -----------
 FIX="${WORK}/clean"
 build_repo "$FIX"

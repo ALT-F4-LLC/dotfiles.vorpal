@@ -526,6 +526,22 @@ case_artifact_heredoc_bodies() {
     assert_verdict "${art}"$'\nkill 1234 appears in the README; the script runs `sh -c` unsafely.\nEOF' executor-research "$WAVE_42" ALLOW "body naming kill and sh -c"
     assert_verdict "${art}"$'\nThe Makefile target runs pkill -f devserver; that is fine for a python project.\nEOF' executor-read "$WAVE_42" ALLOW "body naming pkill and python"
     assert_verdict "${art}"$'\ngit worktree prune would fix it; git branch -D too.\nEOF' executor-write "$WAVE_42" ALLOW "body naming worktree prune and branch -D"
+    # The interpreter test matches whole words of the first line, never a
+    # suffix: a target file named `cases.sh` widened the scan on its `.sh`
+    # and a quoted body carrying the glob-form step token was denied
+    # (recorded in a threat model with the cause then unknown). A quoted
+    # interpreter word still widens: `"sh"` is `sh`, `"x.sh"` is not.
+    local sh_target="cat > ${OWN_DIR}/probe/tests/cases.sh <<'EOF'"
+    assert_verdict "cat > \"${OWN_DIR}/probe/tests/cases.sh\" <<'EOF'"$'\ngrep -rn \'STEP-[0-9]*\' .\nEOF' executor-read "$WAVE_42" ALLOW "own quoted .sh target: quoted body carrying the glob-form step token"
+    assert_verdict $'"sh" <<\'EOF\'\nrm -rf '"${SIB_DIR}"$'\nEOF' executor-write "$WAVE_42" DENY "heredoc fed to a double-quoted sh is code"
+    assert_verdict $'\'/bin/sh\' <<\'EOF\'\nrm -rf '"${SIB_DIR}"$'\nEOF' executor-write "$WAVE_42" DENY "heredoc fed to a single-quoted /bin/sh is code"
+    assert_verdict $'sh<<\'EOF\'\nrm -rf '"${SIB_DIR}"$'\nEOF' executor-write "$WAVE_42" DENY "heredoc fed to sh with no blank before the operator is code"
+    assert_verdict "${sh_target}"$'\ngrep -rn \'STEP-[0-9]*\' .\nEOF' executor-read "$WAVE_42" ALLOW "own .sh target: quoted body carrying the glob-form step token"
+    assert_verdict "${sh_target}"$'\nFound a leftover STEP-7.d beside my own dir.\nEOF' executor-read "$WAVE_42" ALLOW "own .sh target: quoted body naming a sibling dir"
+    assert_verdict "cat > ${OWN_DIR}/probe/.env <<'EOF'"$'\nrm -rf '"${SIB_DIR}"$'\nEOF' executor-write "$WAVE_42" ALLOW "own .env target: quoted body is still inert"
+    assert_verdict "cat > ${OWN_DIR}/probe/tests/cases.sh <<EOF"$'\nrm -rf '"${SIB_DIR}"$'\nEOF' executor-write "$WAVE_42" DENY "own .sh target: unquoted body is still scanned"
+    assert_verdict $'/bin/sh <<\'EOF\'\nrm -rf '"${SIB_DIR}"$'\nEOF' executor-write "$WAVE_42" DENY "heredoc fed to /bin/sh (path-prefixed word) is code"
+    assert_verdict $'env sh <<\'EOF\'\nrm -rf '"${SIB_DIR}"$'\nEOF' executor-write "$WAVE_42" DENY "heredoc fed through env to sh is code"
     # The same bodies consumed by an interpreter are code.
     assert_verdict $'sh <<\'EOF\'\nrm -rf '"${SIB_DIR}"$'\nEOF' executor-write "$WAVE_42" DENY "heredoc fed to sh is code"
     assert_verdict $'python3 - <<\'EOF\'\nimport shutil; shutil.rmtree("'"${SIB_DIR}"$'")\nEOF' executor-write "$WAVE_42" DENY "heredoc fed to python is code"

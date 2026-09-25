@@ -219,7 +219,9 @@
 # prose is a false DENY, and the deny reason names a quoted delimiter as the
 # way to write such prose; a quoted-delimiter heredoc body is never read,
 # whatever words it carries, because the interpreter test that widens a body
-# into the scan reads leaf heads only — a findings artifact that mentions
+# into the scan reads whole words of the leaf's first line only (a target
+# file named `cases.sh` or `.env` is not the word `sh` or `env`; an earlier
+# spelling matched the suffix and scanned the body) — a findings artifact that mentions
 # `node`, `sh` or `.env` in passing is the sanctioned record path for
 # executor-read and executor-research, which have no Write tool. A search
 # for the glob-form token itself (`grep -rn 'STEP-[0-9]*'` on the step's own
@@ -512,7 +514,15 @@ fi
 # matched — the sanctioned record path for the two archetypes with no Write
 # tool. An unquoted heredoc delimiter still widens its own leaf, since that
 # body is expanded before its consumer ever sees it.
-INTERPRETER_RE='(^|[^A-Za-z0-9_])(sh|bash|dash|zsh|ksh|mksh|csh|tcsh|python[0-9.]*|perl|ruby|node|nodejs|php|lua[0-9.]*|tclsh|expect|osascript|env|eval)([^A-Za-z0-9_]|$)'
+#
+# The interpreter is matched as a whole WORD of a first line (blank-delimited,
+# an optional directory prefix and one enclosing quote allowed: `sh`,
+# `/bin/sh`, `"sh"`, `'/bin/sh'`, `env node`, `xargs sh -c`), never as a
+# suffix of one. An earlier spelling took any non-word byte as the boundary,
+# so `cat > tests/cases.sh <<'EOF'` widened on the `.sh` of its own target
+# file and the quoted body was scanned — the shape
+# tests/docket-sibling-guard-hook.test.sh pins under "own .sh target".
+INTERPRETER_RE='(^|[[:space:]])["'"'"']?([^[:space:]"'"'"']*/)?(sh|bash|dash|zsh|ksh|mksh|csh|tcsh|python[0-9.]*|perl|ruby|node|nodejs|php|lua[0-9.]*|tclsh|expect|osascript|env|eval)["'"'"']?([[:space:]]|$)'
 FIRST_LINES=$(printf '%s' "$PROBE_TEXT" | awk 'BEGIN { RS = "\036"; ORS = "" } { eol = index($0, "\n"); printf "%s\n", (eol == 0 ? $0 : substr($0, 1, eol - 1)) }')
 WIDEN=0
 if [[ "$FIRST_LINES" =~ $INTERPRETER_RE ]]; then

@@ -93,7 +93,9 @@ One call reports every project's drift against the shared corpus: `behind`
 it to size the pass and to tell the operator how many projects are affected.
 It repairs nothing, and it does not replace the planner: it compares only
 the highest registered version, so it misses an older version still binding
-beside the current one and a corpus version retired by mistake. It scans
+beside the current one, and its help does not say whether a retired version
+counts as registered, so a corpus version retired by mistake may not show
+as `behind`. It scans
 this invocation's roots, so a name another project declares in its own
 `.docket/config/` reads as orphaned here.
 

@@ -77,6 +77,16 @@ otherwise change the trust roster that authorizes a gate's completion,
 however the brief frames the request, and do not attempt the change to test
 whether the harness blocks it.
 
+**Refusals stop the action.** A refusal from a hook, the permission system,
+the sandbox, or the auto-mode classifier stops the refused action; recognize
+it from the returned decision, not a particular message string. The only
+sanctioned recovery is what the refusal's own text names; if it names none,
+report the refusal as a finding. Reissuing the same command or a reworded
+one is a retry the refusal did not authorize: changing a command's form does
+not supply authorization. Disclose every denial, and any retry with its
+authorization and outcome, in both the step response and the persisted step
+artifact.
+
 **Preserve the checkout throughout the run.** Do not create, edit, delete,
 or rename checkout files, including generated files and Git metadata.
 Writing and then restoring a file is also prohibited, as is any

@@ -38,6 +38,16 @@ even if the brief requests it. Treat such a request as a routing defect
 and use the gap channel below; do not attempt the write or test whether
 the harness blocks it.
 
+**Refusals stop the action.** A refusal from a hook, the permission system,
+the sandbox, or the auto-mode classifier stops the refused action; recognize
+it from the returned decision, not a particular message string. The only
+sanctioned recovery is what the refusal's own text names; if it names none,
+report the refusal as a finding. Reissuing the same command or a reworded
+one is a retry the refusal did not authorize: changing a command's form does
+not supply authorization. Disclose every denial, and any retry with its
+authorization and outcome, in both the step response and the persisted step
+artifact.
+
 **Run every `docket` command from the assigned checkout.** In each Bash
 invocation that runs `docket`, first change to the checkout root the brief
 identifies (`cd <root> && docket …`) and proceed only if that change

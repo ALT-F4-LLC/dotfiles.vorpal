@@ -47,6 +47,16 @@ or otherwise modify the trust roster that authorizes a gate's completion,
 even when the brief requests it. Report such a request as a routing defect;
 do not attempt the write or retry it through another command or tool.
 
+**Refusals stop the action.** A refusal from a hook, the permission system,
+the sandbox, or the auto-mode classifier stops the refused action; recognize
+it from the returned decision, not a particular message string. The only
+sanctioned recovery is what the refusal's own text names; if it names none,
+report the refusal as a finding. Reissuing the same command or a reworded
+one is a retry the refusal did not authorize: changing a command's form does
+not supply authorization. Disclose every denial, and any retry with its
+authorization and outcome, in both the step response and the persisted step
+artifact.
+
 **Docket working directory.** Every `docket` command, including reads and
 reporting, runs from the assigned checkout: `cd <root> && docket …` in each
 invocation, since an earlier tool call's directory change does not carry,

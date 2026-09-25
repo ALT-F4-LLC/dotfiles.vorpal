@@ -273,7 +273,7 @@ function bootstrap(row, r, isolated, isWrite) {
         return [
             `rm -rf ${dir}`,
             `mkdir -m 700 ${dir}`,
-            `docket step claim ${row.step} --owner wave:${row.step}:${ownerDiscriminator} --render --metadata ${claimMetadataArg} --json > ${claimJson}`,
+            `docket step claim ${row.step} --owner wave:${row.step}:${ownerDiscriminator} --render --metadata ${claimMetadataArg} --json > ${claimJson} < /dev/null`,
             isolated
                 ? `jq -r '.data.token' ${claimJson} > ${token}`
                 : `jq -r '.data.token'  < ${claimJson} > ${token}`,
@@ -427,11 +427,12 @@ ${claimCommands(true).map((c) => `   \`${c}\``).join('\n')}
    these filenames yours; do not shorten them to \`claim.json\` or \`token\`,
    or a sibling's claim overwrites yours.
 
-   THE TOKEN IS RETURNED EXACTLY ONCE, in that response body — re-claiming is
-   refused while you hold the lease, so there is NO second chance to capture
-   it. SHELL VARIABLES DO NOT SURVIVE BETWEEN BASH CALLS and step 2 takes
-   many calls, so a variable is useless here — the file is the only channel
-   that reaches step 3.
+   THE TOKEN IS RETURNED EXACTLY ONCE, in that response body. If the claim
+   committed but the token was not captured, re-run the same claim command
+   with the same --owner: it re-mints the token in the same attempt and
+   returns \`re_minted: true\`. SHELL VARIABLES DO NOT SURVIVE BETWEEN BASH
+   CALLS and step 2 takes many calls, so a variable is useless here — the
+   file is the only channel that reaches step 3.
 
    WRITING THE TOKEN TO THIS FILE IS REQUIRED AND AUTHORIZED — it is the
    designed mechanism, not a leak. It is mode 0600 inside your own 0700 step

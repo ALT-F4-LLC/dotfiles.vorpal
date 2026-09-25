@@ -66,6 +66,8 @@ jobs:
 
       - run: bash tests/sdet-abuse.test.sh
 
+      - run: bash tests/secret-scan.test.sh
+
       - run: bash tests/sensitive-path-guard-hook.test.sh
 
       - run: bash tests/session-census-agent-cap.test.sh

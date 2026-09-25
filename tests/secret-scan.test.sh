@@ -113,6 +113,22 @@ commit_file "$r" notes.txt "ordinary text" benign
 expect "env base: benign commit in range passes" 0 "secret-scan: clean" "$r" \
     DOCKET_GATE=secret-scan "DOCKET_GATE_BASE=$base" --
 
+# ---- the untracked-file source fails closed ------------------------------------
+# A git shim ahead of the real one on PATH fails `ls-files` only; every other
+# git call passes through. The enumeration's exit status used to vanish into a
+# process substitution, so this read as "no untracked files" and passed.
+SHIM="$WORK/shim"; mkdir -p "$SHIM"
+REAL_GIT=$(command -v git)
+printf '#!/bin/bash\nfor a in "$@"; do [ "$a" = ls-files ] && { echo "git: ls-files refused (shim)" >&2; exit 128; }; done\nexec %s "$@"\n' "$REAL_GIT" > "$SHIM/git"
+chmod +x "$SHIM/git"
+r=$(fresh_repo ls-files-fails); base=$(head_of "$r")
+printf 'key=%s\n' "$CREDENTIAL" > "$r/untracked.txt"
+expect "env base: a failing git ls-files fails closed" 1 "could not collect" "$r" \
+    "PATH=$SHIM:$PATH" DOCKET_GATE=secret-scan "DOCKET_GATE_BASE=$base" --
+r=$(fresh_repo ls-files-fails-clean)
+expect "no gate: a failing git ls-files fails closed on a clean tree" 1 "could not collect" "$r" \
+    "PATH=$SHIM:$PATH" --
+
 # ---- own-gate refusal ----------------------------------------------------------
 r=$(fresh_repo own-gate)
 expect "own gate, base unset: exits 2 naming the base" 2 "DOCKET_GATE_BASE" "$r" \

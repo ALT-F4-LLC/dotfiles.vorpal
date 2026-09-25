@@ -73,10 +73,12 @@
 #          words "lift the sandbox" elsewhere in the paragraph; this reds
 #          the census, since the mutated sentence still names a lift but no
 #          longer equals the pinned sentence
-#   (c) worktree-remove refusal: the metadata delete is harness-denied for
-#       the creating session's lifetime and is answered with `git update-ref
-#       -d` on the prunable entry's branch, never with a lift (the lift is
-#       unavailable to a conductor seat, and the operator does no cleanup)
+#   (c) worktree-remove refusal: the metadata delete is harness-denied in
+#       every session, creating or later, and is answered with `git
+#       update-ref -d` on the prunable entry's branch, never with a lift
+#       (the lift is unavailable to a conductor seat; the stale entries are
+#       named in the reports for the operator's own prune outside the
+#       sandbox)
 #       p-c reword the paragraph's anchor sentence
 #       s-c repeat the "A hard `Operation not permitted` is the harness"
 #          opener in a second sentence of the same paragraph, so no ONE
@@ -275,7 +277,7 @@ if [ -z "${DOCKET_RUN_SKILL_INNER:-}" ]; then
         # Fixture: invert the worktree-remove ruling sentence to "retry that
         # one call unsandboxed" (no census key in it, so only sentence-level
         # matching can catch it), then reintroduce the untouched literal "no
-        # sandbox lift, no retry, no operator hand-off" as a LATER sentence
+        # sandbox lift, no retry, no escalation" as a LATER sentence
         # in the SAME paragraph. sentence() finds exactly one sentence
         # carrying the anchor ("A hard `Operation not permitted` is the
         # harness"), which after inversion no longer states the ruling;
@@ -284,7 +286,7 @@ if [ -z "${DOCKET_RUN_SKILL_INNER:-}" ]; then
         # anchor sentence and the pinned states() check passes regardless of
         # the inversion. The prose wraps mid-clause in the source, so the
         # pattern tolerates `\s+` wherever the file may break a line.
-        perl -0pe 's/(A hard `Operation not permitted` is the\s+harness, not a lift case: )no sandbox lift, no retry, no operator hand-off,(\s+since)/$1retry that one call unsandboxed, contradicting the real ruling,$2/s; s/(neither\s+unlinkable nor renamable\.)(\s+The working directory)/$1 The old wording was: no sandbox lift, no retry, no operator hand-off.$2/s' \
+        perl -0pe 's/(A hard `Operation not permitted` is the\s+harness, not a lift case: )no sandbox lift, no retry, no escalation,(\s+since)/$1retry that one call unsandboxed, contradicting the real ruling,$2/s; s/(neither\s+unlinkable nor renamable\.)(\s+The\s+working directory)/$1 The old wording was: no sandbox lift, no retry, no escalation.$2/s' \
             "${WORK}/self-clean.md" > "${WORK}/sentences-mutant.md"
 
         if cmp -s "${WORK}/self-clean.md" "${WORK}/sentences-mutant.md"; then
@@ -356,9 +358,10 @@ else
 fi
 
 # (c) The worktree-remove refusal is never answered with a lift: the harness
-# denies the creating session that one metadata directory for its lifetime,
-# the lift is unavailable to a conductor seat, and the branch is deleted by
-# ref on the prunable entry instead. The paragraph is the whole
+# denies that metadata directory in every session, the lift is unavailable
+# to a conductor seat, the branch is deleted by ref on the prunable entry
+# instead, and the stale entry is named for the operator's prune outside the
+# sandbox. The paragraph is the whole
 # worktree-cleanup block and rules on several separate things, so the ruling
 # is asserted against the one sentence that rules on the hard refusal, and
 # the mechanism against the paragraph.
@@ -367,8 +370,10 @@ if paragraph 'Worktrees clean themselves up only when unchanged' "${WORK}/worktr
     if sentence 'A hard `Operation not permitted` is the harness' \
         "${WORK}/worktree" "${WORK}/worktree-ruling"; then
         ok "worktree-remove refusal: exactly one sentence states the refusal it answers"
-        states "worktree-remove refusal: no lift, no retry, no operator hand-off" \
-            "${WORK}/worktree-ruling" 'no sandbox lift, no retry, no operator hand-off'
+        states "worktree-remove refusal: no lift, no retry, no escalation" \
+            "${WORK}/worktree-ruling" 'no sandbox lift, no retry, no escalation'
+        states "worktree-remove refusal: the deny holds for later sessions too" \
+            "${WORK}/worktree-ruling" 'in later ones that never created it'
         states "worktree-remove refusal: the branch is deleted by ref instead" \
             "${WORK}/worktree" 'delete the ref directly with `git update-ref -d`'
         states "worktree-remove refusal: precondition — the entry reads prunable" \
@@ -378,6 +383,19 @@ if paragraph 'Worktrees clean themselves up only when unchanged' "${WORK}/worktr
     fi
 else
     bad "worktree-remove refusal: no single paragraph carries 'Worktrees clean themselves up only when unchanged'"
+fi
+# The stale entry left behind is the operator's to prune outside the
+# sandbox; no session, this one or a later one, is told it clears it.
+if paragraph 'The stale metadata directory is inert' "${WORK}/stale-entry"; then
+    ok "stale entry: exactly one paragraph rules on the leftover metadata directory"
+    states "stale entry: the operator prunes it outside the sandbox" \
+        "${WORK}/stale-entry" 'stays until the operator prunes it outside the sandbox'
+    states "stale entry: no later session clears it" \
+        "${WORK}/stale-entry" 'no later session clears it'
+    states "stale entry: named in the close report" \
+        "${WORK}/stale-entry" 'in the close report'
+else
+    bad "stale entry: no single paragraph carries 'The stale metadata directory is inert'"
 fi
 
 # (d) The module-cache retry is the fourth relaxation ruling in the file, and

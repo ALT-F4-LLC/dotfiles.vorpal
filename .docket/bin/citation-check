@@ -18,11 +18,14 @@
 # empty and the doc is under active revision.
 #
 # So the gate does real work now. It is scoped to the diff, like the sibling
-# gates: a docs/design/*.md file that is staged, modified in the worktree, or
-# newly added gets read and must point at evidence outside itself (see
-# CITATION below) or the step fails. A design doc that is committed and
-# untouched is not re-checked — "no design docs changed" means nothing in that
-# tree moved this run, not that the tree is empty.
+# gates: a docs/design/*.md file that is staged, modified in the worktree,
+# newly added, or changed in DOCKET_GATE_BASE..HEAD gets read and must point
+# at evidence outside itself (see CITATION below) or the step fails. The
+# engine reruns gates after the step commits, so the committed range is what
+# it sees; run as its own gate (DOCKET_GATE=citation-check) without a
+# resolvable base, the check exits 2 rather than pass on an empty tree diff.
+# Without a base, any other caller gets the working-tree scan alone. "no
+# design docs changed" means nothing in that tree moved, not that it is empty.
 #
 # tdd-preflight is the sibling that polices TDD placement and naming, and its
 # glob is docs/tdd/*.md only — so it does not see this TDD at its docs/design/
@@ -38,7 +41,16 @@ if ! repo_root="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null)"; 
 fi
 cd "$repo_root"
 
-changed=$( { git diff --cached --name-only -- 'docs/design/*.md'
+base=""
+if [ -n "${DOCKET_GATE_BASE:-}" ] && git rev-parse --verify --quiet "${DOCKET_GATE_BASE}^{commit}" >/dev/null; then
+  base="$DOCKET_GATE_BASE"
+elif [ "${DOCKET_GATE:-}" = "citation-check" ]; then
+  echo "citation-check FAILED: DOCKET_GATE_BASE is unset or does not resolve to a commit (got '${DOCKET_GATE_BASE:-}')." >&2
+  exit 2
+fi
+
+changed=$( { if [ -n "$base" ]; then git diff --name-only "$base" HEAD -- 'docs/design/*.md'; fi
+             git diff --cached --name-only -- 'docs/design/*.md'
              git diff --name-only -- 'docs/design/*.md'
              git ls-files --others --exclude-standard -- 'docs/design/*.md' 2>/dev/null
            } | sort -u )

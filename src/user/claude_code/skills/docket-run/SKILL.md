@@ -1723,9 +1723,9 @@ every row whose verdict is `fail`. Run each row's own `argv` against a
 clean detached checkout of the step's recorded sha, in your own
 environment exactly as it stands (the sandbox rulings this file already
 carries govern that run; this ruling adds nothing to them). Record every
-command, its exit, the sha, and each failing row's `output_tail` in the
-resolution note; the repeating-signature ruling below compares against
-that tail.
+command, its exit, the sha, and each failing row's `output_tail` and
+`fingerprint` in the resolution note; the repeating-signature ruling
+below compares against that recorded fingerprint.
 
 **Auto-pass exactly this, and nothing wider.** When every failing gate
 passed on reproduction, no gate row is `unmatched` or `skipped`, and no
@@ -1745,12 +1745,17 @@ presented however clean the reproduction looks.
 The engine keys a `--batch` grant on the failure signature (gate, exit,
 reason, and the content fingerprint of the failure output) and applies
 it at routing to every later step of the same run that fails the same
-way, fix-round steps included. The engine compares the fingerprint
-itself, so a genuine regression with different output does not match
-an earlier environment flake's grant. The first park follows the
-paragraph above exactly: reproduce, pass, no grant. A later step whose
-`fail` rows all match a signature that reproduced clean once already
-takes the grant: resolve with `docket step resolve STEP-N --as
+way, fix-round steps included. The engine compares fingerprints only
+when it applies a grant that already exists; the first park mints no
+grant, and `--batch` copies the parked row's fingerprint without
+checking earlier steps. The first park follows the paragraph above
+exactly: reproduce, pass, no grant. On the second park, before
+`--batch`, compare every failing row's `fingerprint` in `docket step
+gates STEP-N --json` with the fingerprint recorded at the first
+reproduction. On any mismatch, take the ordinary path (reproduce, then
+auto-pass or present) and mint no grant. A later step whose `fail` rows
+all match, fingerprint included, a signature that reproduced clean once
+already takes the grant: resolve with `docket step resolve STEP-N --as
 override-pass --batch --authority standing-grant --authority-ref batch-grant
 < <scratchpad>/conductor.d/$RUN.token`, no fresh
 reproduction, citing this ruling and the first reproduction it rests

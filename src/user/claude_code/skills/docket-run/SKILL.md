@@ -1008,7 +1008,13 @@ notification.
 `bootstrap-denied` is re-offered too, but never re-dispatch on it: the
 row's text quotes a guard or permission denial of the executor's own
 scratch dir, worktree or checkout, nothing was claimed, and the same
-dispatch dies the same way until that gap is fixed. `blocked` means the
+dispatch dies the same way until that gap is fixed.
+`isolation-unavailable` is re-offered too, but never re-dispatch on it:
+worktree isolation failed for an isolated writer spawn, so nothing was
+claimed and no writer was launched unguarded in the shared checkout.
+Hold the row until worktree isolation is restored; restoring means
+fixing the harness or worktree gap, never relaunching the writer
+without isolation. `blocked` means the
 executor stopped on one of its brief's stop signals (CLAIM FAILED, CLAIM
 INCOMPLETE, NETWORK GATE BLOCKED, RECORD BLOCKED, WRITE BLOCKED; the row's
 `signal` names which) and recorded nothing: resolve what the reply

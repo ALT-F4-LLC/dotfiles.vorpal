@@ -1,6 +1,6 @@
 ---
 fragment: vorpal-toolchain
-version: 12
+version: 13
 ---
 # Vorpal toolchain
 
@@ -76,8 +76,15 @@ cd "<repo-root>" && GOCACHE="<TMP>/<STEP-N>.d/gocache" vorpal run go:1.26.0 buil
 ```
 
 Substitute the literal paths before execution. Use the same directory and
-cache setup for tests. An allowed native fallback changes the launcher to
-`go1.26.5`, preserving the working directory, cache, and arguments.
+cache setup for tests and for the repository's own gate targets (`make fmt`,
+`make vet`, `make lint`, or the targets the brief names), each as its own
+top-level command (`make fmt && make vet && make lint`), never through
+`sh -c` or another interpreter: a command handed to an interpreter is
+refused outright. The permission rules clear a bare `make` and
+`vorpal run go:1.26.0`; a `GOCACHE=` prefix matches no allow rule and goes
+to the auto-mode classifier. An allowed native fallback changes the
+launcher to `go1.26.5`, preserving the working directory, cache, and
+arguments.
 
 Go can select or download another toolchain according to its existing
 configuration and `go.mod`/`go.work`. Do not change that configuration to

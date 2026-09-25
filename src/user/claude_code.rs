@@ -243,6 +243,8 @@ const PERMISSION_ALLOW_RULES: &[&str] = &[
     "Bash(go tool golangci-lint:*)",
     "Bash(go vet:*)",
     "Bash(gofmt:*)",
+    "Bash(make:*)",
+    "Bash(vorpal run go:1.26.0 *)",
     "Bash(~/.claude/workflows/*)",
     "WebFetch(domain:api.github.com)",
     "WebFetch(domain:claude.ai)",
@@ -711,9 +713,9 @@ mod tests {
         claude_home, component_name, home_install, permission_ask_patterns,
         sandbox_filesystem_deny_read_paths, settings, sorted_permission_patterns,
         AUTO_MODE_ALLOW_RULES, AUTO_MODE_HARD_DENY_RULES, GIT_ALLOWED_SIGNERS_CONFIG_PATH,
-        PUBLISHING_ASK_VERBS, SANDBOX_ALLOW_READ_PATHS, SANDBOX_SCRATCH_ROOTS, SENSITIVE_PATHS,
-        SENSITIVE_PATHS_DENY_EDIT_ONLY, SENSITIVE_PATHS_DENY_READ_ONLY,
-        SHELL_INDIRECTION_DENY_PATTERNS,
+        PERMISSION_ALLOW_RULES, PUBLISHING_ASK_VERBS, SANDBOX_ALLOW_READ_PATHS,
+        SANDBOX_SCRATCH_ROOTS, SENSITIVE_PATHS, SENSITIVE_PATHS_DENY_EDIT_ONLY,
+        SENSITIVE_PATHS_DENY_READ_ONLY, SHELL_INDIRECTION_DENY_PATTERNS,
     };
     use crate::file::FileCreate;
 
@@ -889,6 +891,54 @@ mod tests {
                 "{stripped} is edit-denied only and must stay readable"
             );
         }
+    }
+
+    #[test]
+    fn permission_allow_rules_cover_the_corpus_hygiene_shapes() {
+        // The vorpal-toolchain fragment prescribes `vorpal run go:<alias>
+        // ...` and the repository's own `make <target>` gates, each as its
+        // own top-level command. A bare invocation of either must match a
+        // deterministic allow rule: one that matches none lands in front of
+        // the classifier, which refused an executor's hygiene gates 76 times
+        // in one session and cost an operator gate. The `GOCACHE=` prefix
+        // matches no allow rule and stays with the classifier on purpose: an
+        // allow rule over an assignment would clear whatever the value
+        // expands.
+        let fragment = include_str!("docket/config/fragments/vorpal-toolchain.md");
+        let alias = fragment
+            .lines()
+            .find(|line| line.starts_with("| go "))
+            .and_then(|line| line.split('`').nth(1))
+            .and_then(|invocation| invocation.strip_prefix("vorpal run "))
+            .and_then(|invocation| invocation.split(' ').next())
+            .expect("the fragment's table pins the go alias");
+        for rule in [
+            "Bash(make:*)".to_string(),
+            format!("Bash(vorpal run {alias} *)"),
+        ] {
+            assert!(
+                PERMISSION_ALLOW_RULES.contains(&rule.as_str()),
+                "missing allow rule: {rule}"
+            );
+        }
+        assert!(
+            fragment.contains(&format!("vorpal run {alias} build ./...")),
+            "the fragment's build example uses the pinned alias"
+        );
+        assert!(
+            !PERMISSION_ALLOW_RULES
+                .iter()
+                .any(|rule| rule.starts_with("Bash(export ") || rule.contains("GOCACHE=")),
+            "no deterministic allow rule clears an assignment's value"
+        );
+
+        let mut rules: Vec<&str> = PERMISSION_ALLOW_RULES.to_vec();
+        rules.sort_unstable();
+        rules.dedup();
+        assert_eq!(
+            rules, PERMISSION_ALLOW_RULES,
+            "allow rules are sorted and unique"
+        );
     }
 
     #[test]

@@ -551,7 +551,12 @@ ${!isWrite ? `
    Run this command SANDBOXED, same as everything else — do NOT pass
    dangerouslyDisableSandbox. Only the operator can grant that, and never
    through a brief. Most gates are pure local work (build/test/lint/scan)
-   and need no elevation at all.
+   and need no elevation at all. Run each gate command as its own
+   top-level command (\`make fmt && make vet && make lint\`), never through
+   \`sh -c\` or another interpreter: a command handed to an interpreter is
+   refused outright, while a bare \`make\` or \`vorpal run\` matches the allow
+   rules. Set a cache path as a \`GOCACHE=... <cmd>\` prefix, as the
+   toolchain fragment shows.
 
    IF a gate genuinely needs network access and the sandbox denies it —
    record exits non-zero and the error names a DNS failure, a TLS handshake

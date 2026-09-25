@@ -166,7 +166,8 @@ ok(!chainDead(returned(CONFLICT_FINDING)),
 // judge fanout, and the issue's later per-round rows die with it.
 for (const status of ['gate-parked', 'gate-blocked', 'gate-rejected',
                       'skipped-not-claimable', 'skipped-not-ready',
-                      'spawn-failed', 'parked-base-ancestry', 'bootstrap-denied']) {
+                      'spawn-failed', 'parked-base-ancestry', 'bootstrap-denied',
+                      'isolation-unavailable']) {
     ok(chainDead({ status, text: null }), `status ${status} kills the chain`)
 }
 

@@ -1385,13 +1385,11 @@ function spawn(row, phaseLabel) {
             }
             if (transientClassifierBlock(err)) return retryTransient(err, isolated)
             if (isolated && /base branch|worktree/i.test(String(err))) {
-                log(`${row.step}: worktree isolation unavailable (${err}) — retrying ` +
-                    `WITHOUT isolation; cross-contamination guard is OFF for this spawn`)
-                return launch(false)
-                    .catch((err2) => {
-                        log(`${row.step}: spawn error on non-isolated retry: ${err2}`)
-                        return failed()
-                    })
+                const text = `worktree isolation unavailable for ${row.step} (${err}); ` +
+                    `no writer launched without isolation. Reconcile claim state before ` +
+                    `redispatch`
+                log(`${row.step}: ${text}`)
+                return { step: row.step, status: 'isolation-unavailable', text }
             }
             log(`${row.step}: spawn error: ${err}`)
             return failed()
@@ -2509,7 +2507,7 @@ const CHAIN_DEAD_STATUSES = [
     'gate-parked', 'gate-blocked', 'gate-rejected',
     'skipped-not-claimable', 'skipped-not-ready',
     'spawn-failed', 'claim-conflict', 'parked-base-ancestry',
-    'bootstrap-denied',
+    'bootstrap-denied', 'isolation-unavailable',
     // The reply-tail contract: a stop signal, or no record tail at all.
     'blocked', 'unrecorded',
     // The harness lifetime cap, reached knowingly (countedAgent).

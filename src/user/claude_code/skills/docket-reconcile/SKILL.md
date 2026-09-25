@@ -37,7 +37,10 @@ stop and say so — fixing it is `docket-refit`'s contract.
 
 Every docket registry verb resolves its project from the working directory.
 Never `cd` out of the checkout you are reconciling; pass corpus files as
-absolute paths instead.
+absolute paths instead. `register` and `deprecate` also take `--project
+<ref>` to write to another project from here; `workflow list` and `workflow
+lint` do not, so reading another project means running them with that
+project's checkout as the child process's cwd (see Scope below).
 
 `~/.docket/config/` belongs to no project, so linting from inside it
 resolves to whatever project the shell happens to sit in and can report a
@@ -78,15 +81,34 @@ A file that fails lint for any other reason has no name the planner can
 trust, so it is reported as INVALID and left out of the target binding set
 entirely.
 
+## Step 0 — survey the store (read-only)
+
+```bash
+docket registry audit --json=v2
+```
+
+One call reports every project's drift against the shared corpus: `behind`
+(the highest registered version of a name is below the corpus version) and
+`orphaned` (no scanned file declares the name, with `retired` per name). Use
+it to size the pass and to tell the operator how many projects are affected.
+It repairs nothing, and it does not replace the planner: it compares only
+the highest registered version, so it misses an older version still binding
+beside the current one and a corpus version retired by mistake. It scans
+this invocation's roots, so a name another project declares in its own
+`.docket/config/` reads as orphaned here.
+
 ## Step 1 — plan (read-only)
 
-Run from the checkout. This mutates nothing; it prints the actions and stops.
+Run from the checkout, or pass another project's checkout as the first
+argument; every docket call then runs with that directory as its cwd, and
+the shell stays where it is. This mutates nothing; it prints the actions and
+stops.
 
 ```python
-# docket-reconcile-plan.py — run with cwd set to the checkout being reconciled
+# docket-reconcile-plan.py [checkout] — defaults to cwd
 import glob, json, os, re, subprocess, sys
 
-repo = os.getcwd()
+repo = sys.argv[1] if len(sys.argv) > 1 else os.getcwd()
 roots = [os.path.expanduser("~/.docket/config/workflows"),
          os.path.join(repo, ".docket/config/workflows")]
 
@@ -96,6 +118,9 @@ def docket(*args):                     # always cwd=repo -- see "Cwd discipline"
         return json.loads(p.stdout)
     except ValueError:
         return {"ok": False, "error": (p.stderr or p.stdout).strip() or f"exit {p.returncode}"}
+
+cur = [p for p in docket("project", "list", "--json=v2").get("data", {}).get("items", []) if p["current"]]
+print("project:", cur[0]["prefix"] if cur else "UNRESOLVED", repo)
 
 disk, bad = {}, []
 for root in roots:                     # later root wins -- see "Two roots" below
@@ -231,12 +256,22 @@ success.
 A registry is per project and so is retirement. Everything above operates on
 the project the cwd resolves to — the default, and the safe one.
 
-`register`, `deprecate`, and `schema register` all take `--all-projects`,
-which writes to every project in the store and reports each project's own
-outcome. The corpus drift this skill fixes is usually store-wide, since
-`just activate` moves one shared corpus and every project falls behind
-together, but sweeping every project is still an operator decision: say how
-many are affected, then ask. Do not infer it from the drift being shared.
+`register`, `deprecate`, and `schema register` all take `--project <ref>`
+(a prefix, name, identity path, or row id) to write to one other project,
+and `--all-projects`, which writes to every project in the store. Both
+report each project's own outcome. The corpus drift this skill fixes is
+usually store-wide, since `just activate` moves one shared corpus and every
+project falls behind together, but sweeping every project is still an
+operator decision: say how many are affected, then ask. Do not infer it from the drift being shared.
+
+For a multi-project pass, take each project's checkout from the `identity`
+field of `docket project list --json=v2` and run the planner once per
+checkout with that path as its argument; confirm its `project:` line names
+the intended prefix. When every plan carries the same actions, apply them
+once with `--all-projects` instead of per project. Verify per project: run
+the Step 3 `jq` assertion in a subshell per checkout (`(cd <identity> &&
+docket workflow list …)`), re-run the planner for each, and expect
+`behind_total` 0 from `docket registry audit`.
 
 Validation is per target: a definition's `payload` and `vote_rule`
 references resolve against the registry of the project being written to, so

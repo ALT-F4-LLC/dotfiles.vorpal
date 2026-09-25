@@ -173,6 +173,27 @@ expect "committed: twelve committed changed lines exceed the trivial bound" triv
 r=$(fresh_repo com-claude); mkdir -p "$r/.claude"; printf 'x\n' > "$r/.claude/x.sh"; commit_all "$r"
 expect "committed: a committed .claude/ file is not skipped on docs-only" docs-only 1 "$r" "not a document: .claude/x.sh"
 
+r=$(fresh_repo com-both); for i in $(seq 1 6); do printf '// c%s\n' "$i" >> "$r/src/a/lib.rs"; done; commit_all "$r"
+for i in $(seq 1 6); do printf '// w%s\n' "$i" >> "$r/src/a/lib.rs"; done
+expect "committed: a path edited in both the range and the working tree counts both line sets" trivial 1 "$r" "12 changed lines; trivial allows 10"
+
+# ---- renames count the original path as removed ----------------------------
+r=$(fresh_repo com-mv-to-doc); (cd "$r" && git mv hooks/guard.sh docs/guard.md); commit_all "$r"
+expect "rename: a committed non-doc to doc rename is refused on docs-only, naming the original" docs-only 1 "$r" "not a document: hooks/guard.sh"
+
+r=$(fresh_repo com-mv-from-doc); (cd "$r" && git mv docs/guide.md src/a/guide.rs); commit_all "$r"
+expect "rename: a committed doc to non-doc rename is refused on docs-only, naming the destination" docs-only 1 "$r" "not a document: src/a/guide.rs"
+
+r=$(fresh_repo com-mv-trivial); (cd "$r" && git mv src/a/other.rs src/a/renamed.rs); commit_all "$r"
+expect "rename: a committed rename deletes the original on trivial" trivial 1 "$r" "deleted file(s): src/a/other.rs"
+
+r=$(fresh_repo wt-mv-to-doc); (cd "$r" && git mv hooks/guard.sh docs/guard.md)
+expect "rename: a staged non-doc to doc rename is refused on docs-only, naming the original" docs-only 1 "$r" "not a document: hooks/guard.sh"
+
+# ---- an unreadable footprint fails closed ----------------------------------
+r=$(fresh_repo bad-diff-config); printf '// x\n' >> "$r/src/a/lib.rs"; commit_all "$r"; (cd "$r" && git config diff.algorithm bogus)
+expect "unreadable: a failing git diff exits 2 instead of passing an empty footprint" docs-only 2 "$r" "cannot read the"
+
 # ---- the base must resolve to a commit (fail closed) ------------------------
 r=$(fresh_repo base-check)
 for track in docs-only trivial small; do

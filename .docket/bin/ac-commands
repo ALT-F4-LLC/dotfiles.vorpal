@@ -43,13 +43,15 @@ trap 'rm -rf "$work"' EXIT
 # only the last suite's output in the bundle: no `==>` markers, no cargo test
 # result, no indication of how far the run got. Keep every `==>` suite marker
 # and cargo's own `test result:` line for that recipe, on top of the normal
-# tail, so the verifier can tell which suites ran and which one failed.
+# tail, so the verifier can tell which suites ran and which one failed. Also
+# keep each failing case's own line (unittest `FAIL:`/`ERROR:`, node-assert
+# `AssertionError`), since a suite's failure usually falls outside the tail.
 run() {
   local label="$1" out="${work}/${1}.out" rc=0; shift
   echo "--- $label: $* ---"
   "$@" > "$out" 2>&1 || rc=$?
   if [ "$label" = tests ]; then
-    grep -E '^==>|^test result:' "$out" || true
+    grep -E '^==>|^test result:|^(FAIL|ERROR)\b|AssertionError' "$out" || true
     echo "..."
   fi
   tail -20 "$out"

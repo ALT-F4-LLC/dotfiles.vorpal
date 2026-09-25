@@ -693,6 +693,14 @@ case_probe_never_acts() {
     check "handler redefinition, function keyword" DENY "function _guard_probe { :; }; cat /dev/null > ${marker}"
     check "handler redefinition then the guarded verb" DENY "_guard_probe() { return 0; }; git commit -m x"
     check "cap in a structural loop before the verb" DENY 'while [[ $((++i)) -lt 2100 ]]; do :; done; git commit -m x'
+    # A leaf that is only assignments RUNS, so a counter-bounded wait loop
+    # ends where the real command's would instead of walking into the cap;
+    # the guarded verb in its body is vetoed and matched as before, and the
+    # probe's own counter is never the command's to set.
+    check "counted wait loop (assignment counter) ends" ALLOW 'i=0; until [ -s /nonexistent ] || [ $i -ge 3 ]; do sleep 0; i=$((i+1)); done'
+    check "counted wait loop with the guarded verb in the body" DENY 'i=0; until [ $i -ge 3 ]; do git commit -m x; i=$((i+1)); done'
+    check "assignment from a command substitution stays vetoed" ALLOW "x=\$(cat /dev/null > ${marker})"
+    check "counter reset cannot lift the cap" DENY "_leaf_n=-100000; while true; do cat /dev/null > ${marker}; done"
     # The issue's own acceptance text ("while true; do :; touch <m>; break;
     # done" denies with no marker) is wrong for the HARDENED probe: `break`
     # now RUNS (that is the fix -- the unhardened probe disarmed the trap on

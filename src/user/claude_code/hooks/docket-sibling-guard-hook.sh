@@ -193,6 +193,16 @@
 #     instead of disarming the trap, and is checked before the empty-walk
 #     allow: `<2001 structural commands>; rm -rf <dir>` had capped with an
 #     empty leaf list and fallen through to allow.
+#   - A leaf that is ONLY assignments (`n=0`, `i=$((i+1))`) RUNS, so a
+#     counter-bounded wait loop ends where the real command's would instead
+#     of walking into the cap (a vetoed counter never advanced, and every
+#     `until [ -s <packet> ] || [ $n -ge 180 ]` wait was refused as
+#     oversized). The value shapes that run are bare words, `$name`,
+#     `${name}` and `$(( ))` over names and operators: never a quote,
+#     `$( )`, a backtick or a subscript, so nothing the assignment evaluates
+#     can dispatch a command, and never a `_leaf_*` name, since the counter
+#     shares the shell. A command word after the assignment (`n=1 rm -rf
+#     <dir>`) is a command leaf as before.
 #   - The command reaches the probe on STDIN, not in the environment: a
 #     command over the argument-size limit made `bash -c` fail with no leaf
 #     and no syntax error, which allowed. Syntax is checked first with `bash
@@ -431,6 +441,13 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
     set -T
     COMMAND=$(cat)
     _leaf_n=0   # not `n`: the analyzed command shares this shell, and `for n in …` collided with the counter
+    # A leaf that is only variable assignments RUNS (see the header), but
+    # only in these value shapes: bare words, $name, ${name}, and $(( ))
+    # over names and operators. No quotes, no $( ), no backticks, no
+    # subscripts, so nothing an assignment can evaluate runs a command.
+    readonly _leaf_name="[A-Za-z_][A-Za-z0-9_]*"
+    readonly _leaf_word="[A-Za-z0-9_./:@%+,-]|\\\$${_leaf_name}|\\\$\\{${_leaf_name}\\}|\\\$\\(\\(([^][()\$\`]|\\\$${_leaf_name})*\\)\\)"
+    readonly _leaf_assign_re="^${_leaf_name}\\+?=(${_leaf_word})*([[:space:]]+${_leaf_name}\\+?=(${_leaf_word})*)*\$"
     _guard_probe() {
         _leaf_n=$((_leaf_n + 1))
         if [ "$_leaf_n" -gt 2000 ]; then
@@ -458,6 +475,14 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
                 esac
                 return 0 ;;
         esac
+        if [[ "$BASH_COMMAND" =~ $_leaf_assign_re ]]; then
+            case "$BASH_COMMAND" in
+                *_leaf_*) ;;   # the counter and these patterns: never the command'"'"'s to set
+                *)
+                    printf "\035%s\036" "$BASH_COMMAND"
+                    return 0 ;;
+            esac
+        fi
         printf "\035%s\036" "$BASH_COMMAND"
         if declare -F "$head" >&9 2>&9; then
             return 0

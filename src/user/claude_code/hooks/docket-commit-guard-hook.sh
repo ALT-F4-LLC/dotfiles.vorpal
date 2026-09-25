@@ -183,6 +183,13 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
     set -T
     COMMAND=$(cat)
     _leaf_n=0   # not `n`: the analyzed command shares this shell, and `for n in …` collided with the counter
+    # A leaf that is only variable assignments RUNS (see the header), but
+    # only in these value shapes: bare words, $name, ${name}, and $(( ))
+    # over names and operators. No quotes, no $( ), no backticks, no
+    # subscripts, so nothing an assignment can evaluate runs a command.
+    readonly _leaf_name="[A-Za-z_][A-Za-z0-9_]*"
+    readonly _leaf_word="[A-Za-z0-9_./:@%+,-]|\\\$${_leaf_name}|\\\$\\{${_leaf_name}\\}|\\\$\\(\\(([^][()\$\`]|\\\$${_leaf_name})*\\)\\)"
+    readonly _leaf_assign_re="^${_leaf_name}\\+?=(${_leaf_word})*([[:space:]]+${_leaf_name}\\+?=(${_leaf_word})*)*\$"
     _guard_probe() {
         _leaf_n=$((_leaf_n + 1))
         if [ "$_leaf_n" -gt 2000 ]; then
@@ -210,6 +217,14 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
                 esac
                 return 0 ;;
         esac
+        if [[ "$BASH_COMMAND" =~ $_leaf_assign_re ]]; then
+            case "$BASH_COMMAND" in
+                *_leaf_*) ;;   # the counter and these patterns: never the command'"'"'s to set
+                *)
+                    printf "\035%s\036" "$BASH_COMMAND"
+                    return 0 ;;
+            esac
+        fi
         printf "\035%s\036" "$BASH_COMMAND"
         if declare -F "$head" >&9 2>&9; then
             return 0

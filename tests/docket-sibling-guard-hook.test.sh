@@ -493,6 +493,26 @@ case_probe_never_acts() {
     check "cap in a structural loop before pkill" DENY 'while [[ $((++i)) -lt 2100 ]]; do :; done; pkill node'
     check "cap in a structural loop before reap" DENY 'while [[ $((++i)) -lt 2100 ]]; do :; done; docket step reap STEP-7 --reason x'
     check "unbounded loop touching the marker" DENY "while true; do cat /dev/null > ${marker}; done"
+    # A leaf that is only assignments RUNS, so a counter-bounded wait loop
+    # ends where the real command's would instead of walking into the cap.
+    # Everything an assignment could make run stays vetoed: a command word
+    # after the assignment, a substitution or backtick in the value, a
+    # subscript reached through arithmetic, and the probe's own counter.
+    check "counted wait loop (assignment counter) ends" ALLOW 'i=0; until [ -s /nonexistent ] || [ $i -ge 3 ]; do sleep 0; i=$((i+1)); done'
+    check "counted wait loop, spaced arithmetic and \$i" ALLOW 'n=0; until [ -s /nonexistent ] || [ $n -ge 180 ]; do sleep 5; n=$(( $n + 1 )); done; ls -la /nonexistent'
+    check "counted wait loop with a sibling rm in the body" DENY 'i=0; until [ -s /nonexistent ] || [ $i -ge 3 ]; do rm -rf '"${SIB_DIR}"'; i=$((i+1)); done'
+    check "counted wait loop touching the marker" ALLOW 'i=0; until [ $i -ge 3 ]; do cat /dev/null > '"${marker}"'; i=$((i+1)); done'
+    check "assignment prefix on a sibling rm" DENY "n=1 rm -rf ${SIB_DIR}"
+    check "assignment from a command substitution stays vetoed" ALLOW "x=\$(cat /dev/null > ${marker})"
+    check "assignment from a backtick stays vetoed" ALLOW "x=\`cat /dev/null > ${marker}\`"
+    check "arithmetic over a subscripted value stays vetoed" ALLOW "x='a[\$(cat /dev/null > ${marker})]'; n=\$((x[0]))"
+    # The for-word is a subscript expression whose substitution would delete
+    # the marker; `$((x))` on it evaluates the subscript, and the trap must
+    # reach into that substitution and veto the rm. (A redirect there is
+    # refused by the restricted shell instead, so the probe is a bare rm.)
+    check "arithmetic over a tainted for-word never runs its subscript" ALLOW "for x in 'a[\$(rm -f ${marker})]'; do n=\$((x)); done"
+    check "counter reset cannot lift the cap" DENY "_leaf_n=-100000; while true; do cat /dev/null > ${marker}; done"
+    check "counter reset in a multi-assignment cannot lift the cap" DENY "x=1 _leaf_n=-100000; while true; do cat /dev/null > ${marker}; done"
     rm -f "$marker"
     # No temp file: the scratch root holds nothing of this hook's afterward.
     local before after

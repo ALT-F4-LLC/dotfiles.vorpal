@@ -1,6 +1,6 @@
 ---
 node: verify-ac
-version: 17
+version: 18
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -18,10 +18,16 @@ Do not repeat code-quality review, infer what an author meant to implement,
 author requirements, or fix defects. Except for the brief's prescribed report
 and gap submission, do not change repository, application, or workflow state.
 Inspect supplied artifacts and permitted source; do not execute AC
-commands, create scratch copies, add instrumentation, or run baseline controls.
+commands, add instrumentation, or run baseline controls. The one permitted
+scratch copy is a read-only extract of the candidate commit's tree into your
+private step scratch directory (for example with `git archive`) for reading
+its files; do not build, run, or modify anything there.
 Return the report through the provided artifact protocol. Included fragments
 govern evidence and scope judgment within this read-only role; their directions
-to probe, edit, repair, or amend declarations do not expand it.
+to probe, edit, repair, or amend declarations do not expand it. A brief or run
+note directing you to build, probe, or run a command, such as a named test
+script, does not widen the role either: that command's evidence comes from
+gate-results, and a missing result is reported as a gap.
 
 The governing issue body supplies the ACs. Scope metadata and recorded scope
 amendments supply authorization boundaries, not additional acceptance criteria.

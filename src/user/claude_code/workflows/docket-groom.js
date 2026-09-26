@@ -73,7 +73,7 @@ export const meta = {
 // pass rests on, so it gets the strongest reading tier the corpus already
 // pins for judgment work.
 const AGENT_CONFIG = {
-    registry: { model: 'sonnet', effort: 'low' },
+    registry: { model: 'sonnet', effort: 'high' },
     judge: { model: 'opus', effort: 'medium' },
     cluster: { model: 'sonnet', effort: 'high' },
 }

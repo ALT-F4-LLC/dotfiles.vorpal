@@ -1,6 +1,6 @@
 ---
 fragment: evidence-rules
-version: 6
+version: 7
 ---
 # Evidence rules
 
@@ -28,6 +28,14 @@ unresolved question warrants it.
   Inspect unstaged, staged, and relevant committed changes, and account for
   untracked or ignored files where relevant. Do not infer where changes went
   from an empty view alone.
+- **Read engine records with jq or plain file reads, one read per call.** A
+  `docket step context STEP-N --json` bundle carries the step's inputs at
+  `.data.context.inputs[]`; project it with `jq`, or write it to a scratch file
+  and read that. Never hand parsing code to an inline interpreter as an
+  argument: the harness deny rule on interpreter code arguments refuses the
+  call before it runs, nothing retries it, and a compound command that chains
+  the read with such a call is refused as a whole, so the read never happens.
+  A verdict cast after such a refusal rests on no evidence.
 - **Absence needs a defined search space.** For a consequential search or count,
   establish the executable, pattern semantics, file coverage, exclusions, and
   exit status. Specify whether counting files, lines, or occurrences. Read the

@@ -28,7 +28,9 @@
 #       pass it; a legitimate future mention must be admitted here on
 #       purpose.
 #   (c) positive pins: tribunal.js carries the jq-or-plain-read rule and
-#       renders it into BOTH seat-brief modes (the interpolation count), and
+#       renders it into BOTH seat-brief modes (the interpolation count);
+#       fragments/evidence-rules.md, which every judge, verify and report
+#       contract includes, carries the same rule for docket steps; and
 #       wave.js's block probe says to parse with jq.
 #
 # WORKFLOWS_DIR, CORPUS_DIR and SETTINGS_SOURCE override the inputs, so a
@@ -129,6 +131,10 @@ check_tree() { # <workflows> <corpus> <settings>
         echo "  wave.js block probe no longer says: $PROBE_SENTENCE"
         red=1
     fi
+    if ! grep -qF -- "$RULE_SENTENCE" "$corpus/fragments/evidence-rules.md"; then
+        echo "  fragments/evidence-rules.md no longer carries the rule sentence: $RULE_SENTENCE"
+        red=1
+    fi
     return "$red"
 }
 
@@ -180,12 +186,16 @@ m3() { printf '\nParse it with `node -pe "JSON.parse(require(\\"fs\\").readFileS
 m4() { awk 'BEGIN{seen=0} /^\$\{evidenceParseRule\}$/{ if (seen==0) {seen=1; next} } {print}' "$1/tribunal.js" > "$1/t.tmp" && mv "$1/t.tmp" "$1/tribunal.js"; }
 # m5: the rule sentence itself is reworded away
 m5() { sed -i.bak "s/${RULE_SENTENCE}/Parse it however you like/" "$1/tribunal.js"; }
+# m7: the docket-step side of the rule is dropped from the shared fragment,
+# so judge and verify contracts render without it while tribunal.js keeps it
+m7() { sed -i.bak "s/${RULE_SENTENCE}/Parse it however you like/" "$2/fragments/evidence-rules.md"; }
 
 mutant m1 m1
 mutant m2 m2
 mutant m3 m3
 mutant m4 m4
 mutant m5 m5
+mutant m7 m7
 
 # m6: the deny-list source loses its interpreter rows, so (a) must go red
 # rather than silently checking nothing.

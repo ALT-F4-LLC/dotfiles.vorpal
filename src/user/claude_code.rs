@@ -15,15 +15,11 @@ const GIT_ALLOWED_SIGNERS_CONFIG_PATH: &str = "~/.config/git/allowed_signers";
 // must be readable through the ~/.ssh read-deny.
 const GIT_AGENT_SIGNING_KEY_PATH: &str = "~/.ssh/agent-signing";
 const GIT_AGENT_SIGNING_KEY_PUBLIC_PATH: &str = "~/.ssh/agent-signing.pub";
-const SANDBOX_CLAUDE_SCRATCH_ROOT: &str = "/tmp/claude-501";
-const SANDBOX_CLAUDE_SCRATCH_ROOT_PRIVATE: &str = "/private/tmp/claude-501";
 /// The per-session throwaway workspaces every session may write. The scratch
-/// Edit() allows and the unix-socket list derive from this pair; the
-/// auto-mode prose names both roots and a test keeps it in step.
-const SANDBOX_SCRATCH_ROOTS: &[&str] = &[
-    SANDBOX_CLAUDE_SCRATCH_ROOT,
-    SANDBOX_CLAUDE_SCRATCH_ROOT_PRIVATE,
-];
+/// Edit() allows, the sandbox write allowance and the unix-socket list derive
+/// from this pair; the auto-mode prose names both roots and a test keeps it
+/// in step.
+const SANDBOX_SCRATCH_ROOTS: &[&str] = &["/tmp/claude-501", "/private/tmp/claude-501"];
 const SENSITIVE_PATHS_DENY_READ_ONLY: &[&str] = &["~/.aws/**"];
 
 const SENSITIVE_PATHS: &[&str] = &[
@@ -92,9 +88,19 @@ const AUTO_MODE_ALLOW_RULES: &[&str] = &[
     "Editing Claude Code and Docket definition source in the dotfiles.vorpal checkout — src/user/claude_code/{skills,agents,workflows,references}/**, src/user/claude_code/CLAUDE.md, and src/user/docket/config/** — is routine project work, not self-modification: it is source only and stays inert until the operator runs `just activate`; settings.rs, claude_code.rs, src/user/claude_code/hooks/**, the permission, sandbox and autoMode rules, and the installed trees (~/.claude, ~/.docket/config) stay outside this rule",
 ];
 
+/// The docket verbs that write the trust store authorizing a step's own
+/// gates: they ask before running, and no auto-mode allow rule may clear
+/// them. The ask rules and the guard test read this table beside
+/// PUBLISHING_ASK_VERBS, so a verb added here is excluded by test.
+const TRUST_STORE_ASK_VERBS: &[&str] = &["docket trust add", "docket trust rm"];
+
 /// Verbs that publish or read secrets: they ask before running, and no
-/// auto-mode allow rule may clear them. One list keeps the ask rules and the
-/// guard test from drifting apart when a verb is added.
+/// auto-mode allow rule may clear them. Every `gh pr` verb the `pr` skill
+/// invokes that publishes text or changes who can act on a PR is listed, so
+/// the human sees the bytes before they are public; a skill that adds a
+/// publishing `gh` verb adds a row here. `gh run view` is deliberately
+/// absent: it only reads CI logs, and the `pr` skill already treats that
+/// output as untrusted data rather than instructions.
 const PUBLISHING_ASK_VERBS: &[&str] = &[
     "gh api",
     "gh pr close",
@@ -174,13 +180,11 @@ const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
     "~/go/pkg/mod",
 ];
 
-/// Sandbox write allowances beyond the toolchain caches: harness state, the
-/// checkouts, and the scratch roots.
+/// Sandbox write allowances beyond the toolchain caches and the scratch
+/// roots: harness state and the checkouts.
 const SANDBOX_ALLOW_WRITE_PATHS: &[&str] = &[
     "~/.claude/agent-memory",
     "~/Development/repository/github.com/ALT-F4-LLC",
-    SANDBOX_CLAUDE_SCRATCH_ROOT,
-    SANDBOX_CLAUDE_SCRATCH_ROOT_PRIVATE,
     "/var/folders",
     "~/.claude/cache/docs",
     "~/.docket",
@@ -198,6 +202,64 @@ const SANDBOX_ALLOW_WRITE_PATHS: &[&str] = &[
 const SANDBOX_ALLOW_READ_PATHS: &[&str] = &[
     GIT_AGENT_SIGNING_KEY_PATH,
     GIT_AGENT_SIGNING_KEY_PUBLIC_PATH,
+];
+
+/// Commands that need a network the sandbox cannot grant (the bulbasaur
+/// cluster, AWS, the Doppler API) run unsandboxed rather than through a
+/// per-call lift; the permission rules and the auto-mode classifier still
+/// gate what they do.
+///
+/// MEASURED (2026-09-03, no dangerouslyDisableSandbox, ~/Desktop
+/// deny-read): the match is over TOP-LEVEL simple commands of the whole Bash
+/// call, not the call's first token — `cd /tmp/claude && git --version && ls
+/// ~/Desktop`, `ls ~/Desktop; git --version`, and `set -e; git --version; ls
+/// ~/Desktop` all ran the ENTIRE call unsandboxed (`ls ~/Desktop` succeeded)
+/// once `git *` was in this list, whichever position the excluded command
+/// sat in and whatever preceded or followed it. Excluded only when the
+/// matching command sits inside a control-flow construct instead of
+/// appearing as a top-level simple command: `cd /tmp/claude && set -e; for x
+/// in 1; do git --version; done; ls ~/Desktop` ran sandboxed (the loop hid
+/// `git` from the matcher). A `cd`/env-var PREFIX on the matching command
+/// itself, as opposed to a separate command joined by `&&`/`;`, was not
+/// probed. So: any entry in this list makes the WHOLE call run unsandboxed
+/// the moment that command appears anywhere at top level in it, including
+/// alongside unrelated commands this list was never meant to exempt — an
+/// executor whose sandbox lift was denied can run anything unsandboxed by
+/// appending `; git --version` (or any other listed command) to its call.
+/// `git` is absent for exactly this reason: local git needs no network
+/// (`github.com`/`api.github.com` are already in the network allowlist for
+/// what does), so nothing here needed the exclusion. The other entries were
+/// not re-probed and keep the same fail-open exclusion shape — narrowing this
+/// list further, or replacing it with a command-position-aware mechanism, is
+/// unassessed.
+const SANDBOX_EXCLUDED_COMMANDS: &[&str] = &[
+    "aws *",
+    "docker *",
+    "doppler *",
+    "gh *",
+    "kubectl *",
+    "terraform *",
+    "vorpal *",
+];
+
+const SANDBOX_NETWORK_ALLOWED_DOMAINS: &[&str] = &[
+    "api.github.com",
+    "api.osv.dev",
+    "crates.io",
+    "github.com",
+    "proxy.golang.org",
+    "static.crates.io",
+    "sum.golang.org",
+    "vuln.go.dev",
+];
+
+/// Each entry becomes a seatbelt subpath rule for both bind and connect. The
+/// scratch roots join this list so test suites that listen on a unix socket
+/// under their step directory run sandboxed; with only these two service
+/// sockets, every such bind was refused.
+const SANDBOX_UNIX_SOCKETS: &[&str] = &[
+    "~/.orbstack/run/docker.sock",
+    "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock",
 ];
 
 /// Git configuration every session carries, exported as the
@@ -285,17 +347,20 @@ fn home_install(config_path: &str) -> String {
     format!("${{HOME}}/{relative}")
 }
 
-fn owned(rows: &[&str]) -> Vec<String> {
-    rows.iter().map(|s| s.to_string()).collect()
+fn owned<S: AsRef<str>>(rows: impl IntoIterator<Item = S>) -> Vec<String> {
+    rows.into_iter().map(|s| s.as_ref().to_string()).collect()
 }
 
-fn sorted_permission_patterns(
-    wrap: impl Fn(&str) -> String,
-    paths: impl IntoIterator<Item = &'static str>,
-) -> Vec<String> {
-    let mut paths: Vec<&str> = paths.into_iter().collect();
+/// Edit() denies for every sensitive path, sorted so the emitted list is
+/// stable.
+fn sensitive_path_edit_deny_patterns() -> Vec<String> {
+    let mut paths: Vec<&str> = SENSITIVE_PATHS
+        .iter()
+        .chain(SENSITIVE_PATHS_DENY_EDIT_ONLY)
+        .copied()
+        .collect();
     paths.sort_unstable();
-    paths.into_iter().map(wrap).collect()
+    paths.into_iter().map(|p| format!("Edit({p})")).collect()
 }
 
 fn sandbox_filesystem_deny_read_paths() -> Vec<String> {
@@ -308,28 +373,11 @@ fn sandbox_filesystem_deny_read_paths() -> Vec<String> {
     paths
 }
 
-// The complete set of `Bash(...)` permission-ask patterns this build emits:
-// the two docket trust-store writes plus every PUBLISHING_ASK_VERBS row,
-// each wrapped the same way `settings()` wraps it. A test asserts this
-// against an explicit literal set independent of PUBLISHING_ASK_VERBS, so a
-// verb quietly dropped from that list, or a hand-added `with_permission_ask`
-// row added beside the fold instead of through it, both change what this
-// function returns relative to that literal -- neither could pass silently
-// by construction the way a loop keyed on the same list they are supposed
-// to guard against drifting from would.
-fn permission_ask_patterns() -> Vec<String> {
-    let mut patterns = vec![
-        "Bash(docket trust add:*)".to_string(),
-        "Bash(docket trust rm:*)".to_string(),
-    ];
-    patterns.extend(PUBLISHING_ASK_VERBS.iter().map(|v| format!("Bash({v}:*)")));
-    patterns
-}
-
 /// The settings.json this build emits, before it is written to the store.
-/// Pure so a test can serialize it without a build context.
-fn settings(name: &str, systems: Vec<ArtifactSystem>) -> settings::ClaudeCodeSettings {
-    let builder = settings::ClaudeCodeSettings::new(name, systems)
+/// Pure so a test can serialize it without a build context; the tests pin
+/// the emitted permission lists.
+fn settings() -> settings::ClaudeCodeSettings {
+    let mut builder = settings::ClaudeCodeSettings::default()
         .with_advisor_model("fable")
         .with_agent_push_notif_enabled(true)
         .with_always_thinking_enabled(false)
@@ -383,14 +431,11 @@ fn settings(name: &str, systems: Vec<ArtifactSystem>) -> settings::ClaudeCodeSet
         .with_env("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", "0") // REASON: Must be 0 for 'with_permission_default_mode('auto')'
         .with_env("GIT_CONFIG_COUNT", &GIT_CONFIG.len().to_string());
 
-    let builder = GIT_CONFIG
-        .iter()
-        .enumerate()
-        .fold(builder, |builder, (i, (key, value))| {
-            builder
-                .with_env(&format!("GIT_CONFIG_KEY_{i}"), key)
-                .with_env(&format!("GIT_CONFIG_VALUE_{i}"), value)
-        });
+    for (i, (key, value)) in GIT_CONFIG.iter().enumerate() {
+        builder = builder
+            .with_env(&format!("GIT_CONFIG_KEY_{i}"), key)
+            .with_env(&format!("GIT_CONFIG_VALUE_{i}"), value);
+    }
 
     // Hooks stay as literal `.with_hook(...)` rows on a `settings_builder`
     // chain: the sdet-abuse gate reads this source text to prove every
@@ -487,55 +532,28 @@ fn settings(name: &str, systems: Vec<ArtifactSystem>) -> settings::ClaudeCodeSet
             ..Default::default()
         });
 
-    let builder = PERMISSION_ALLOW_RULES
-        .iter()
-        .fold(settings_builder, |builder, rule| {
-            builder.with_permission_allow(rule)
-        });
+    let mut builder = settings_builder
+        // Workflow scriptPath requires the directory to be readable as an
+        // added directory; the Bash(~/.claude/workflows/*) allow covers only
+        // Bash invocations.
+        .with_permission_additional_directories(owned(["~/.claude/workflows"]));
 
-    let builder = SANDBOX_SCRATCH_ROOTS
-        .iter()
-        .fold(builder, |builder, root| {
-            builder.with_permission_allow(&format!("Edit({root}/**)"))
-        })
-        // DOT-952: Workflow scriptPath requires the directory to be readable
-        // as an added directory; the Bash(~/.claude/workflows/*) allow above
-        // covers only Bash invocations.
-        .with_permission_additional_directories(owned(&["~/.claude/workflows"]));
-
-    // Every `gh pr` verb the `pr` skill invokes that publishes text or
-    // changes who can act on a PR asks first, so the human sees the
-    // bytes before they are public. This list is keyed to the verbs the
-    // skills invoke; a skill that adds a publishing `gh` verb adds a row
-    // here. `gh run view` is deliberately absent: it only reads CI logs,
-    // and the `pr` skill already treats that output as untrusted data
-    // rather than instructions.
-    let builder = permission_ask_patterns()
-        .iter()
-        .fold(builder, |builder, pattern| {
-            builder.with_permission_ask(pattern)
-        });
-
-    let builder = sorted_permission_patterns(
-        |p| format!("Edit({p})"),
-        SENSITIVE_PATHS
-            .iter()
-            .chain(SENSITIVE_PATHS_DENY_EDIT_ONLY)
-            .copied(),
-    )
-    .iter()
-    .fold(builder, |builder, pattern| {
-        builder.with_permission_deny(pattern)
-    });
-
-    // Shell indirection is denied before the classifier runs. The rows
-    // are already `Bash(...)` patterns, so they fold in unwrapped; a test
-    // pins the set to an explicit literal the way the ask rows are pinned.
-    let builder = SHELL_INDIRECTION_DENY_PATTERNS
-        .iter()
-        .fold(builder, |builder, pattern| {
-            builder.with_permission_deny(pattern)
-        });
+    for rule in PERMISSION_ALLOW_RULES {
+        builder = builder.with_permission_allow(rule);
+    }
+    for root in SANDBOX_SCRATCH_ROOTS {
+        builder = builder.with_permission_allow(&format!("Edit({root}/**)"));
+    }
+    for verb in TRUST_STORE_ASK_VERBS.iter().chain(PUBLISHING_ASK_VERBS) {
+        builder = builder.with_permission_ask(&format!("Bash({verb}:*)"));
+    }
+    for pattern in sensitive_path_edit_deny_patterns() {
+        builder = builder.with_permission_deny(&pattern);
+    }
+    // Shell indirection is denied before the classifier runs.
+    for pattern in SHELL_INDIRECTION_DENY_PATTERNS {
+        builder = builder.with_permission_deny(pattern);
+    }
 
     // No Read() deny rules on purpose. With any Read() deny configured the
     // harness turns every `cd <dir> && grep <relative path>` into a hard
@@ -548,81 +566,20 @@ fn settings(name: &str, systems: Vec<ArtifactSystem>) -> settings::ClaudeCodeSet
         .with_sandbox_allow_unsandboxed_commands(false)
         .with_sandbox_auto_allow_bash(true)
         .with_sandbox_fail_if_unavailable(true)
-        // Commands that need a network the sandbox cannot grant (the
-        // bulbasaur cluster, AWS, the Doppler API) run unsandboxed rather
-        // than through a per-call lift; the permission rules and the
-        // auto-mode classifier still gate what they do.
-        //
-        // MEASURED (DOT-1263, 2026-09-03, no dangerouslyDisableSandbox,
-        // ~/Desktop deny-read): the match is over TOP-LEVEL simple
-        // commands of the whole Bash call, not the call's first token —
-        // `cd /tmp/claude && git --version && ls ~/Desktop`,
-        // `ls ~/Desktop; git --version`, and `set -e; git --version; ls
-        // ~/Desktop` all ran the ENTIRE call unsandboxed (`ls ~/Desktop`
-        // succeeded) once `git *` was in this list, whichever position
-        // the excluded command sat in and whatever preceded or followed
-        // it. Excluded only when the matching command sits inside a
-        // control-flow construct instead of appearing as a top-level
-        // simple command: `cd /tmp/claude && set -e; for x in 1; do git
-        // --version; done; ls ~/Desktop` ran sandboxed (the loop hid
-        // `git` from the matcher). A `cd`/env-var PREFIX on the matching
-        // command itself, as opposed to a separate command joined by
-        // `&&`/`;`, was not probed. So: any entry in this list makes the
-        // WHOLE call run unsandboxed the moment that command appears
-        // anywhere at top level in it, including alongside unrelated
-        // commands this list was never meant to exempt — an executor
-        // whose sandbox lift was denied can run anything unsandboxed by
-        // appending `; git --version` (or any other listed command) to
-        // its call. `git` is removed below for exactly this reason:
-        // local git needs no network (`github.com`/`api.github.com` are
-        // already in the network allowlist for what does), so nothing
-        // here needed the exclusion. The other entries were not
-        // re-probed and keep the same fail-open exclusion shape —
-        // narrowing this list further, or replacing it with a
-        // command-position-aware mechanism, is unassessed.
-        .with_sandbox_excluded_commands(owned(&[
-            "aws *",
-            "docker *",
-            "doppler *",
-            "gh *",
-            "kubectl *",
-            "terraform *",
-            "vorpal *",
-        ]))
-        .with_sandbox_filesystem_allow_write(
+        .with_sandbox_excluded_commands(owned(SANDBOX_EXCLUDED_COMMANDS))
+        .with_sandbox_filesystem_allow_write(owned(
             SANDBOX_TOOLCHAIN_CACHE_PATHS
                 .iter()
                 .chain(SANDBOX_ALLOW_WRITE_PATHS)
-                .map(|p| p.to_string())
-                .collect(),
-        )
+                .chain(SANDBOX_SCRATCH_ROOTS),
+        ))
         .with_sandbox_filesystem_deny_read(sandbox_filesystem_deny_read_paths())
         .with_sandbox_filesystem_allow_read(owned(SANDBOX_ALLOW_READ_PATHS))
-        .with_sandbox_network_allowed_domains(owned(&[
-            "api.github.com",
-            "api.osv.dev",
-            "crates.io",
-            "github.com",
-            "proxy.golang.org",
-            "static.crates.io",
-            "sum.golang.org",
-            "vuln.go.dev",
-        ]))
-        // Each entry becomes a seatbelt subpath rule for both bind and
-        // connect. The scratch roots are listed so test suites that listen
-        // on a unix socket under their step directory run sandboxed; with
-        // only the two service sockets below, every such bind was refused.
-        .with_sandbox_network_allow_unix_sockets(
-            [
-                "~/.orbstack/run/docker.sock",
-                "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock",
-            ]
-            .iter()
-            .chain(SANDBOX_SCRATCH_ROOTS)
-            .map(|p| p.to_string())
-            .collect(),
-        )
-        .with_sandbox_network_allow_mach_lookup(owned(&["com.apple.trustd.agent"]))
+        .with_sandbox_network_allowed_domains(owned(SANDBOX_NETWORK_ALLOWED_DOMAINS))
+        .with_sandbox_network_allow_unix_sockets(owned(
+            SANDBOX_UNIX_SOCKETS.iter().chain(SANDBOX_SCRATCH_ROOTS),
+        ))
+        .with_sandbox_network_allow_mach_lookup(owned(["com.apple.trustd.agent"]))
         .with_sandbox_network_allow_local_binding(true)
 }
 
@@ -654,21 +611,16 @@ impl ClaudeCode {
             artifacts.push(artifact);
         }
 
-        let settings = settings(&self.name, self.systems.clone())
-            .build(context)
-            .await?;
-
-        symlinks.push((
-            FileCreate::output_file_path(
-                &get_env_key(&settings),
-                &component_name(&self.name, "settings"),
-            ),
-            claude_home("settings.json"),
-        ));
-        artifacts.push(settings);
+        let settings_json = serde_json::to_string_pretty(&settings())?;
 
         // Single-file components: (component, content, executable, install path).
         let files = [
+            (
+                "settings",
+                settings_json.as_str(),
+                false,
+                claude_home("settings.json"),
+            ),
             (
                 "memory",
                 include_str!("claude_code/CLAUDE.md"),
@@ -719,11 +671,18 @@ mod tests {
     };
     use crate::file::FileCreate;
 
-    /// The module body before the tests: the source text the call-site
-    /// counting tests below guard.
-    fn impl_source() -> &'static str {
-        let source = include_str!("claude_code.rs");
-        &source[..source.find("#[cfg(test)]").expect("tests follow the impl")]
+    /// The settings.json this build emits, as the harness reads it.
+    fn emitted_settings() -> serde_json::Value {
+        serde_json::to_value(settings()).expect("settings serialize")
+    }
+
+    /// The rows of one emitted string array.
+    fn strings(rows: &serde_json::Value) -> Vec<String> {
+        rows.as_array()
+            .expect("an array of rules")
+            .iter()
+            .map(|row| row.as_str().expect("a string rule").to_string())
+            .collect()
     }
 
     /// The two auto-mode allow rules keyed to the scratch roots: read-only
@@ -755,19 +714,13 @@ mod tests {
         let Some(sub) = verb.strip_prefix("gh pr ") else {
             return false;
         };
-        let mut rest = rule;
-        while let Some(pos) = rest.find("gh pr ") {
-            let after = &rest[pos + "gh pr ".len()..];
-            let run_end = after
-                .find(|c: char| c.is_whitespace() || c == ',' || c == ';')
-                .unwrap_or(after.len());
-            let run = &after[..run_end];
-            if run.split('/').any(|tok| tok == sub) {
-                return true;
-            }
-            rest = &after[run_end..];
-        }
-        false
+        rule.split("gh pr ").skip(1).any(|after| {
+            let run = after
+                .split(|c: char| c.is_whitespace() || c == ',' || c == ';')
+                .next()
+                .unwrap_or_default();
+            run.split('/').any(|tok| tok == sub)
+        })
     }
 
     #[test]
@@ -827,23 +780,6 @@ mod tests {
             "/var/lib/vorpal/store/artifact/output/user/abc123/user-claude-code-settings"
         );
         assert_ne!(source, output);
-    }
-
-    #[test]
-    fn permission_patterns_are_wrapped_and_sorted() {
-        let patterns = sorted_permission_patterns(
-            |p| format!("Edit({p})"),
-            ["~/.ssh/**", ".env", "/Applications/**"],
-        );
-
-        assert_eq!(
-            patterns,
-            vec![
-                "Edit(.env)".to_string(),
-                "Edit(/Applications/**)".to_string(),
-                "Edit(~/.ssh/**)".to_string(),
-            ]
-        );
     }
 
     #[test]
@@ -1003,7 +939,7 @@ mod tests {
         // it as excluded. The classifier reads these as prose, so the check is
         // textual: the verb may appear only alongside "outside" or "ask".
         for rule in AUTO_MODE_ALLOW_RULES {
-            for verb in PUBLISHING_ASK_VERBS {
+            for verb in TRUST_STORE_ASK_VERBS.iter().chain(PUBLISHING_ASK_VERBS) {
                 if rule_names_verb(rule, verb) {
                     assert!(
                         rule.contains("outside") || rule.contains("ask"),
@@ -1059,25 +995,11 @@ mod tests {
     }
 
     #[test]
-    fn no_read_permission_deny_rules_are_emitted() {
-        // A single Read() deny rule re-arms the harness's compound-cd ask
-        // (see the comment where the Edit() denies are built). Guard the
-        // source text: the only deny wrappers may be Edit().
-        let body = impl_source();
-        assert!(
-            !body.contains("format!(\"Read({p})\")"),
-            "a Read() permission deny wrapper is back"
-        );
-    }
-
-    #[test]
-    fn permission_ask_patterns_equal_an_explicit_literal_set() {
-        // Independent ground truth: this literal set is NOT derived from
-        // PUBLISHING_ASK_VERBS, so a verb quietly dropped from that constant
-        // changes what permission_ask_patterns() returns relative to a set
-        // that never moves with it. DOT-1473's mutant D (delete "git push"
-        // from PUBLISHING_ASK_VERBS) fails this assertion; a loop keyed on
-        // the same list PUBLISHING_ASK_VERBS provides could never catch it.
+    fn emitted_ask_rules_equal_an_explicit_literal_set() {
+        // Independent ground truth: this literal set is NOT derived from the
+        // ask-verb tables, so a verb quietly dropped from either, or an ask
+        // row added anywhere in `settings()`, changes the emitted array
+        // relative to a set that never moves with it.
         let mut expected = vec![
             "Bash(docket trust add:*)".to_string(),
             "Bash(docket trust rm:*)".to_string(),
@@ -1090,60 +1012,40 @@ mod tests {
             "Bash(gh pr ready:*)".to_string(),
             "Bash(git push:*)".to_string(),
         ];
-        let mut actual = permission_ask_patterns();
+        let mut actual = strings(&emitted_settings()["permissions"]["ask"]);
         expected.sort_unstable();
         actual.sort_unstable();
         assert_eq!(actual, expected);
     }
 
     #[test]
-    fn no_hand_added_permission_ask_rows_beside_the_fold() {
-        // A `with_permission_ask` row added directly in `build()`, beside
-        // the permission_ask_patterns() fold, would not appear in that
-        // function's return value and so would never reach the literal-set
-        // assertion above -- it bypasses ground truth by construction. Guard
-        // the source text instead: the fold in `build()` is the only call
-        // site `with_permission_ask` may have.
-        let body = impl_source();
-        let occurrences = body.matches("with_permission_ask(").count();
-        assert_eq!(
-            occurrences, 1,
-            "with_permission_ask must be called only inside the permission_ask_patterns() fold"
-        );
-    }
-
-    #[test]
     fn every_publishing_gh_verb_the_pr_skill_invokes_has_an_ask_row() {
         // Cross-check against the skill's own text rather than against
-        // PUBLISHING_ASK_VERBS itself: a mutant that deletes rows from
-        // PUBLISHING_ASK_VERBS (DOT-1473's mutant D, restated for four
-        // entries) still leaves this assertion with something independent
-        // to fail against, since the skill file the verbs are extracted
-        // from does not move when the constant does. `gh pr view`,
-        // `checks`, `list`, and `diff` are read verbs (the exact set the gh
-        // reads rule in AUTO_MODE_ALLOW_RULES lists); every OTHER `gh pr <verb>`
-        // the skill invokes, plus a bare `gh api`, must have an ask row.
+        // PUBLISHING_ASK_VERBS itself: a mutant that deletes rows from the
+        // constant still leaves this assertion something independent to
+        // fail against, since the skill file the verbs are extracted from
+        // does not move when the constant does. `gh pr view`, `checks`,
+        // `list`, and `diff` are read verbs (the exact set the gh reads rule
+        // in AUTO_MODE_ALLOW_RULES lists); every OTHER `gh pr <verb>` the
+        // skill invokes, plus a bare `gh api`, must have an ask row.
         const READ_GH_PR_VERBS: &[&str] = &["view", "checks", "list", "diff"];
 
         let skill = include_str!("claude_code/skills/pr/SKILL.md");
-        let ask_patterns = permission_ask_patterns();
+        let ask_patterns = strings(&emitted_settings()["permissions"]["ask"]);
 
-        let mut publishing_verbs: Vec<String> = Vec::new();
-        let mut rest = skill;
-        while let Some(pos) = rest.find("gh pr ") {
-            let after = &rest[pos + "gh pr ".len()..];
-            let end = after
-                .find(|c: char| !c.is_ascii_lowercase())
-                .unwrap_or(after.len());
-            let verb = &after[..end];
-            if !verb.is_empty() && !READ_GH_PR_VERBS.contains(&verb) {
-                publishing_verbs.push(format!("gh pr {verb}"));
-            }
-            rest = &after[end..];
-        }
-        if skill.contains("gh api") {
-            publishing_verbs.push("gh api".to_string());
-        }
+        let mut publishing_verbs: Vec<String> = skill
+            .split("gh pr ")
+            .skip(1)
+            .map(|after| {
+                after
+                    .split(|c: char| !c.is_ascii_lowercase())
+                    .next()
+                    .unwrap_or_default()
+            })
+            .filter(|verb| !verb.is_empty() && !READ_GH_PR_VERBS.contains(verb))
+            .map(|verb| format!("gh pr {verb}"))
+            .chain(skill.contains("gh api").then(|| "gh api".to_string()))
+            .collect();
         publishing_verbs.sort_unstable();
         publishing_verbs.dedup();
 
@@ -1207,15 +1109,30 @@ mod tests {
     }
 
     #[test]
-    fn no_hand_added_permission_deny_rows_beside_the_folds() {
-        // Two folds may call `with_permission_deny`: the sensitive-path Edit()
-        // fold and the shell-indirection fold. A row added beside either would
-        // bypass the literal-set assertions that pin what each fold emits.
-        let body = impl_source();
-        let occurrences = body.matches("with_permission_deny(").count();
-        assert_eq!(
-            occurrences, 2,
-            "with_permission_deny must be called only inside the two deny folds"
+    fn emitted_deny_rules_are_the_edit_and_indirection_rows_only() {
+        // The deny array is the sorted Edit() row for every sensitive path
+        // followed by the shell-indirection patterns, and nothing else: a
+        // row added anywhere in `settings()` lands here. No row may be a
+        // Read() deny, which would re-arm the harness's compound-cd ask (see
+        // the comment where the Edit() denies are built).
+        let deny = strings(&emitted_settings()["permissions"]["deny"]);
+
+        let mut sensitive: Vec<&str> = SENSITIVE_PATHS
+            .iter()
+            .chain(SENSITIVE_PATHS_DENY_EDIT_ONLY)
+            .copied()
+            .collect();
+        sensitive.sort_unstable();
+        let expected: Vec<String> = sensitive
+            .iter()
+            .map(|p| format!("Edit({p})"))
+            .chain(owned(SHELL_INDIRECTION_DENY_PATTERNS))
+            .collect();
+
+        assert_eq!(deny, expected);
+        assert!(
+            deny.iter().all(|rule| !rule.starts_with("Read(")),
+            "a Read() permission deny is back"
         );
     }
 
@@ -1286,10 +1203,7 @@ mod tests {
             environment: vec!["$defaults".to_string()],
             allow: vec!["$defaults".to_string()],
             soft_deny: vec!["$defaults".to_string()],
-            hard_deny: AUTO_MODE_HARD_DENY_RULES
-                .iter()
-                .map(|s| s.to_string())
-                .collect(),
+            hard_deny: owned(AUTO_MODE_HARD_DENY_RULES),
             classify_all_shell: Some(false),
         };
         let json = serde_json::to_value(&mode).expect("AutoMode serializes");

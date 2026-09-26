@@ -1,9 +1,6 @@
-use crate::file::FileCreate;
-use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::BTreeMap;
-use vorpal_sdk::{api::artifact::ArtifactSystem, context::ConfigContext};
 
 // =========================================================================
 // Supporting types for nested configuration structures
@@ -465,15 +462,9 @@ pub struct Remote {
 // Main ClaudeCode configuration struct
 // =========================================================================
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ClaudeCodeSettings {
-    // Metadata (not serialized to JSON)
-    #[serde(skip)]
-    name: String,
-    #[serde(skip)]
-    systems: Vec<ArtifactSystem>,
-
     // ---- Core settings ----
     #[serde(skip_serializing_if = "Option::is_none")]
     agent: Option<String>,
@@ -945,225 +936,6 @@ pub struct ClaudeCodeSettings {
 }
 
 impl ClaudeCodeSettings {
-    pub fn new(name: &str, systems: Vec<ArtifactSystem>) -> Self {
-        Self {
-            name: name.to_string(),
-            systems,
-
-            // Core
-            agent: None,
-            model: None,
-            model_overrides: BTreeMap::new(),
-            available_models: Vec::new(),
-            fallback_model: Vec::new(),
-            output_style: None,
-            api_key_helper: None,
-            cleanup_period_days: None,
-            env: BTreeMap::new(),
-            language: None,
-            effort_level: None,
-            minimum_version: None,
-            auto_updates_channel: None,
-            include_git_instructions: None,
-            plans_directory: None,
-            default_shell: None,
-            pr_url_template: None,
-            respect_gitignore: None,
-            skip_web_fetch_preflight: None,
-
-            // Memory
-            auto_memory_enabled: None,
-            auto_memory_directory: None,
-            claude_md: None,
-            claude_md_excludes: Vec::new(),
-
-            // Authentication
-            force_login_method: None,
-            force_login_org_uuid: None,
-            aws_auth_refresh: None,
-            aws_credential_export: None,
-            gcp_auth_refresh: None,
-            otel_headers_helper: None,
-
-            // Permissions / sandbox
-            permissions: None,
-            sandbox: None,
-
-            // Attribution
-            attribution: None,
-            include_co_authored_by: None,
-
-            // MCP servers
-            enable_all_project_mcp_servers: None,
-            enabled_mcpjson_servers: Vec::new(),
-            disabled_mcpjson_servers: Vec::new(),
-            allowed_mcp_servers: Vec::new(),
-            denied_mcp_servers: Vec::new(),
-            allow_managed_mcp_servers_only: None,
-            allow_managed_permission_rules_only: None,
-
-            // Hooks
-            hooks: BTreeMap::new(),
-            allowed_http_hook_urls: Vec::new(),
-            http_hook_allowed_env_vars: Vec::new(),
-            allow_managed_hooks_only: None,
-            disable_all_hooks: None,
-
-            // Plugins / marketplaces
-            enabled_plugins: BTreeMap::new(),
-            extra_known_marketplaces: BTreeMap::new(),
-            strict_known_marketplaces: Vec::new(),
-            blocked_marketplaces: Vec::new(),
-            plugin_trust_message: None,
-
-            // Channels
-            channels_enabled: None,
-            allowed_channel_plugins: Vec::new(),
-
-            // Skills
-            skill_listing_budget_fraction: None,
-            skill_overrides: BTreeMap::new(),
-            disable_skill_shell_execution: None,
-
-            // Auto mode
-            auto_mode: None,
-            disable_auto_mode: None,
-            use_auto_mode_during_plan: None,
-
-            // Status line / file suggestion
-            status_line: None,
-            file_suggestion: None,
-
-            // UI / display
-            editor_mode: None,
-            view_mode: None,
-            tui: None,
-            auto_scroll_enabled: None,
-            show_turn_duration: None,
-            teammate_mode: None,
-            terminal_progress_bar_enabled: None,
-            preferred_notif_channel: None,
-            away_summary_enabled: None,
-            prefers_reduced_motion: None,
-            syntax_highlighting_disabled: None,
-            show_thinking_summaries: None,
-            show_clear_context_on_plan_accept: None,
-            spinner_tips_enabled: None,
-            spinner_tips_override: None,
-            spinner_verbs: None,
-            feedback_survey_rate: None,
-
-            // Voice
-            voice: None,
-            voice_enabled: None,
-
-            // Worktree
-            worktree: None,
-
-            // SSH
-            ssh_configs: Vec::new(),
-
-            // Disable / kill switches
-            disable_agent_view: None,
-            disable_deep_link_registration: None,
-            disable_remote_control: None,
-
-            // Thinking / fast mode
-            always_thinking_enabled: None,
-            fast_mode_per_session_opt_in: None,
-
-            // Announcements
-            company_announcements: Vec::new(),
-
-            // Managed-only governance
-            parent_settings_behavior: None,
-            policy_helper: None,
-            force_remote_settings_refresh: None,
-            wsl_inherits_windows_settings: None,
-
-            // 2.1.236 schema completion — all unset, all skipped when empty.
-            advisor_model: None,
-            enforce_available_models: None,
-            switch_models_on_flag: None,
-            fast_mode: None,
-            auto_compact_enabled: None,
-            auto_compact_window: None,
-            file_checkpointing_enabled: None,
-            ask_user_question_timeout: None,
-            dialog_expiry: None,
-            respond_to_bash_commands: None,
-            prompt_suggestion_enabled: None,
-            emoji_completion_enabled: None,
-            vim_insert_mode_remaps: BTreeMap::new(),
-            spellcheck: None,
-            theme: None,
-            verbose: None,
-            ax_screen_reader: None,
-            wheel_scroll_acceleration_enabled: None,
-            subagent_status_line: None,
-            footer_links_regexes: Vec::new(),
-            disable_workflows: None,
-            workflow_keyword_trigger_enabled: None,
-            workflow_size_guideline: None,
-            disable_bundled_skills: None,
-            skill_listing_max_desc_chars: None,
-            enable_artifact: None,
-            disable_artifact: None,
-            remote_control_at_startup: None,
-            agent_push_notif_enabled: None,
-            input_needed_notif_enabled: None,
-            cross_session_inbound: None,
-            isolate_peer_machines: None,
-            disable_claude_ai_connectors: None,
-            allow_all_claude_ai_mcps: None,
-            browser_external_page_tools: None,
-            disable_browser_external_navigation: None,
-            disable_mobile_simulator_tools: None,
-            required_minimum_version: None,
-            required_maximum_version: None,
-            disable_sideload_flags: None,
-            disable_command_plugin_sources: None,
-            plugin_suggestion_marketplaces: Vec::new(),
-            strict_plugin_only_customization: None,
-            process_wrapper: None,
-            force_login_gateway_url: None,
-
-            // Latest published docs schema completion — all unset, all
-            // skipped when empty.
-            model_picker: None,
-            model_pricing: None,
-            model_settings: BTreeMap::new(),
-            prompt_cache_ttl: None,
-            subagent_prompt_cache_ttl: None,
-            skip_auto_permission_prompt: None,
-            enable_workflows: None,
-            plugin_configs: BTreeMap::new(),
-            sync_claude_ai_skills: None,
-            auto_continue_at_usage_limit: None,
-            keybinding_flavor: None,
-            remote: None,
-            ssh_host_allowlist: Vec::new(),
-            disable_desktop_local_sessions: None,
-            desktop_session_cleanup_period_days: None,
-            feedback_drafts: None,
-            managed_sources_behavior: None,
-
-            // Settings-reference audit additions — all unset, all skipped
-            // when empty.
-            max_effort_level: None,
-            ultracode: None,
-            skip_dangerous_mode_permission_prompt: None,
-            bash_output_max_chars: None,
-            bash_edit_diff_enabled: None,
-            terminal_title_from_rename: None,
-            time_format: None,
-            time_zone: None,
-            sync_claude_ai_plugins: None,
-            managed_mcp_servers: BTreeMap::new(),
-            gateway_internal_networks: Vec::new(),
-        }
-    }
-
     // =====================================================================
     // Core settings
     // =====================================================================
@@ -2811,22 +2583,5 @@ impl ClaudeCodeSettings {
     pub fn with_gateway_internal_networks(mut self, networks: Vec<String>) -> Self {
         self.gateway_internal_networks = networks;
         self
-    }
-
-    // =====================================================================
-    // Build
-    // =====================================================================
-
-    pub async fn build(self, context: &mut ConfigContext) -> Result<String> {
-        let json_content = serde_json::to_string_pretty(&self)
-            .map_err(|e| anyhow::anyhow!("Failed to serialize Claude Code settings: {}", e))?;
-
-        FileCreate::new(
-            &format!("{}-claude-code-settings", self.name),
-            self.systems,
-            &json_content,
-        )
-        .build(context)
-        .await
     }
 }

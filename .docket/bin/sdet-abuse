@@ -177,8 +177,7 @@ in_list() {
 # impl region would fail this gate loud (a real registration reads as
 # missing), not silent, which is the safe direction for a security gate.
 #
-# The test-module cut is mirrored in Rust at src/user/claude_code.rs:824
-# (`source.find("#[cfg(test)]")`); both sites assume the test module is last.
+# The test-module cut assumes the test module is last in the file.
 strip_comments() {
   awk '
     {

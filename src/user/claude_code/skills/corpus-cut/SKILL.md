@@ -142,7 +142,9 @@ When `rest` is true, nothing changed and every cut is filed: skip to §5.
 
 Otherwise assemble the ledger candidate from the shards, then file one
 issue per row of every `<scratchDir>/issues/index.<n>.tsv`, in this
-session, from the repository root. The row's key is the replay key: a
+session, from the repository root. In the snippets below `$SCRATCH`,
+`$PASS`, and `$NOW` hold the scratch path, the pass number, and the
+timestamp from §1. The row's key is the replay key: a
 repeated pass on unchanged bytes returns the original issue, open or
 closed, so an operator who closed a cut as won't-do is never re-asked.
 

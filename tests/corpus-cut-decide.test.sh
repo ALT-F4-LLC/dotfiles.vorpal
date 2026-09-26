@@ -106,6 +106,8 @@ const sub = subsume([
   { path: 'contracts/y.md', unit: 'section:Emit', verdict: 'remove', issue: null },
   { path: 'policy.toml', unit: 'file', verdict: 'stay', issue: null },
   { path: 'policy.toml', unit: 'row:fix', verdict: 'remove', issue: 'DOT-9' },
+  { path: 'fragments/z.md', unit: 'file:fragment', kind: 'file', verdict: 'remove', issue: null },
+  { path: 'fragments/z.md', unit: 'section:Scope', kind: 'section', verdict: 'stay', issue: null },
 ])
 out.subsumed = sub.filter((v) => v.subsumed).map((v) => `${v.path}#${v.unit}`)
 out.needsIssue = sub.filter(needsIssue).map((v) => `${v.path}#${v.unit}`)
@@ -159,8 +161,9 @@ get() { node -e "const o=require('${WORK}/out.json'); process.stdout.write(Strin
 [ "$(get 'o.budgetSmall')" = "153" ]; ok $? 'the judge budget leaves the cap margin, the record writers, and the evidence agents'
 [ "$(get 'o.budgetHuge')" = "0" ]; ok $? 'a launch whose evidence alone fills the cap judges nothing rather than overrunning'
 
-[ "$(get 'o.subsumed.join()')" = "contracts/x.md#section:Emit,contracts/x.md#section:Gates" ]; ok $? 'a removed file subsumes its sections; a refactored file does not'
-[ "$(get 'o.needsIssue.join()')" = "contracts/x.md#file,contracts/y.md#file,contracts/y.md#section:Emit" ]; ok $? 'one issue per removed file, none for its sections; filed and stay entries need none'
+[ "$(get 'o.subsumed.join()')" = "contracts/x.md#section:Emit,contracts/x.md#section:Gates,fragments/z.md#section:Scope" ]; ok $? 'a removed file subsumes its sections; a refactored file does not'
+[ "$(get 'o.needsIssue.join()')" = "contracts/x.md#file,contracts/y.md#file,contracts/y.md#section:Emit,fragments/z.md#file:fragment" ]; ok $? 'one issue per removed file, none for its sections; filed and stay entries need none'
+[ "$(get 'o.subsumed.length')" = "3" ]; ok $? 'a file unit spelled by kind rather than by the literal unit still subsumes'
 
 [ "$(get 'o.threeUphold.disposition')" = "upheld" ]; ok $? 'three upholds uphold'
 [ "$(get 'o.oneRefute.disposition')" = "upheld" ]; ok $? 'one refuter of three cannot overturn'

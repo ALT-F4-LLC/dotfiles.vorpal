@@ -442,9 +442,13 @@ function settleVerdict(ruling, votes) {
 // stay in the ledger for the record but are subsumed, never filed on their
 // own. Recomputed on every merge, so a file that later earns stay releases
 // its sections to be filed.
+function isFileUnit(v) {
+    return v.kind === 'file' || v.unit === 'file'
+}
+
 function subsume(entries) {
-    const removedFiles = new Set(entries.filter((v) => v.unit === 'file' && v.verdict === 'remove').map((v) => v.path))
-    return entries.map((v) => ({ ...v, subsumed: v.unit !== 'file' && removedFiles.has(v.path) }))
+    const removedFiles = new Set(entries.filter((v) => isFileUnit(v) && v.verdict === 'remove').map((v) => v.path))
+    return entries.map((v) => ({ ...v, subsumed: !isFileUnit(v) && removedFiles.has(v.path) }))
 }
 
 // A cut needs its own issue unless it is a stay, already filed, or subsumed.
@@ -688,7 +692,7 @@ Exclude every log containing the string "${SENTINEL}" (this skill's own agents) 
 Step 1, needles. Open one or two logs from a docket wave (grep -l 'docket step claim' finds them) and confirm how a rendered packet names a contract (its frontmatter \`node: <stem>\` line), a fragment (\`fragment: <stem>\`), a workflow (its name beside the run or step id), and a schema (\`<name>@<N>\`). Record one path:line per needle form under needles. If no wave log exists here, say so in notes and return zero counts rather than guessing needles.
 
 Step 2, rendered. For every definition, count logs whose FIRST record contains its needle: that is the packet the executor received. One fixed program, run once per needle, for example:
-  for f in $(find "${dir}" -name 'agent-*.jsonl'); do grep -L -F "${SENTINEL}" "$f" >/dev/null 2>&1 && head -n 1 "$f" | grep -q -F "<needle>" && echo "$f"; done | wc -l
+  for f in $(find "${dir}" -name 'agent-*.jsonl'); do grep -q -F "${SENTINEL}" "$f" && continue; head -n 1 "$f" | grep -q -F "<needle>" && echo "$f"; done | wc -l
 
 Step 3, applied. Write every H2 heading text of every contract and fragment (grep -h -E '^## ' on the corpus files, the "## " stripped, headings shorter than 8 characters dropped and named in notes) to ${scratch}/headings.txt, one per line. Then run ONE pass over the logs, never one grep per heading:
   for f in $(find "${dir}" -name 'agent-*.jsonl'); do grep -q -F "${SENTINEL}" "$f" && continue; tail -n +2 "$f" | grep -o -F -f ${scratch}/headings.txt | sort -u | sed "s|^|$f\t|"; done > ${scratch}/applied.tsv
@@ -739,7 +743,7 @@ function evidenceFor(path, evidence) {
 
 function unitRules(surface) {
     return `Units and the evidence classes that apply to each (a class that does not apply is never held against a unit):
-- file:${surface} -> ${(UNIT_CLASSES[`file:${surface}`] || UNIT_CLASSES['file:contract']).join(', ')}
+- file (the whole definition; unit is the literal "file", kind "file") -> ${(UNIT_CLASSES[`file:${surface}`] || UNIT_CLASSES['file:contract']).join(', ')}
 - section:<H2 heading> (contracts and fragments only; the H1 is the fixed "# Charter") -> ${UNIT_CLASSES.section.join(', ')}
 - row:<executor> (policy.toml [executors] rows only) -> ${UNIT_CLASSES.row.join(', ')}
 Classes: consumer (something in the corpus, harness, or skill tree resolves to it), registry (a frozen record a run pins), run (a run recorded a step that received it), behavior (an executor's output, order of operations, or gate would differ without this text; the digest's applied counts, a fix round or finding that cited it, or the rule's own operative content), friction (the friction ledger attributes entries to it), install (the installed copy exists and matches), engine (the engine source enforces what the text says, which makes the text redundant; ${engineRoot ? `engine checkout at ${engineRoot}` : 'the engine checkout is unavailable this pass, so this class cannot be established'}).`
@@ -923,7 +927,7 @@ const tried = await pipeline(
                 path: d.path,
                 surface: d.surface,
                 hash: d.hash,
-                unit: r.unit,
+                unit: r.kind === 'file' ? 'file' : r.unit,
                 kind: r.kind,
                 verdict: settled.verdict,
                 judged: r.verdict,

@@ -1008,6 +1008,60 @@ by a spawn whose task is gone is the crashed-relay case in step 3's
 **Crashed-relay reconciliation**. Never end the session on an open
 dispatch you have stopped waiting for without that check.
 
+**An agent idle for 15 minutes wakes you; the shard's notification does
+not.** A wave agent parked on a permission prompt leaves its shard's task
+output empty and sends nothing until it finishes, so at dispatch open,
+beside the shard launches, start one watcher per shard as a Bash call
+with `run_in_background: true`. It reads the wave's agent transcripts
+(`agent-<agentId>.jsonl` in the shard's transcript directory, the same
+`<transcript-dir>` wave-usage reads), takes each file's last-entry time
+from its modification time (transcripts are append-only), and exits when
+a running agent's transcript has had no new entry for 15 minutes. Its
+exit is a completion notification, so it re-invokes you mid-wave without
+busy-waiting, foreground sleep loops, or `ScheduleWakeup`; the loop's
+`sleep` runs inside the background task. Its output names the idle
+agent's step ID:
+
+```bash
+DIR="<transcript-dir>"
+SKIP=""   # step IDs already handled, space-separated
+while :; do
+  for f in $(find "$DIR" -name 'agent-*.jsonl' -mmin +15); do
+    id=$(basename "$f" .jsonl); id=${id#agent-}
+    grep "$id" "$DIR/journal.jsonl" | grep -q '"result"' && continue
+    step=$(grep -o 'step claim STEP-[0-9]*' "$f" | head -n 1 | cut -d' ' -f3)
+    [ -n "$step" ] || continue
+    case " $SKIP " in *" $step "*) continue ;; esac
+    docket step show "$step" | grep -q 'status: *claimed' || continue
+    echo "IDLE $step agent=$id transcript=$f"
+    exit 0
+  done
+  sleep 60
+done
+```
+
+It counts only agents still running: an agent with a `result` entry in
+`journal.jsonl` (its transcript ends in its final reply), an agent with
+no claim obligation, and a step no longer `claimed` (already recorded or
+failed) never trip it. When it fires, read the tail of the named
+transcript:
+
+- **Approval wait:** the last entry is an assistant `tool_use` with no
+  matching `tool_result` after it. The agent is blocked on a permission
+  prompt. Surface it to the operator now, naming the step, the pending
+  command, and the prompt it is waiting on; the operator answers the
+  prompt or tells you to stop that agent.
+- **Long-running work:** the pending `tool_use` is a command expected to
+  run long (a cold build, a test suite, a gate) under its own tool-call
+  timeout, or the transcript gained entries since the watcher fired. Keep
+  waiting and add the step to `SKIP` until its transcript moves again.
+
+After handling a firing, restart the watcher, with `SKIP` updated, for
+the agents still running; a watcher started once at dispatch open goes
+blind after its first firing. Stop every watcher (`TaskStop` on its
+task) when the dispatch closes, at the last shard's notification in
+step 3, so no watcher outlives its dispatch.
+
 ### 3. Close the dispatch
 
 On a wave's completion notification, in this order. A sharded dispatch

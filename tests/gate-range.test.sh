@@ -51,21 +51,25 @@ git -C "$REPO" config user.email test@test
 git -C "$REPO" config user.name test
 git -C "$REPO" commit -q --allow-empty -m base || fatal "fixture commit failed"
 BASE_SHA=$(git -C "$REPO" rev-parse HEAD)
+# A ref whose name is option-shaped: it resolves only when rev-parse is told
+# the argument is not an option.
+git -C "$REPO" update-ref refs/tags/--opt-base "$BASE_SHA" || fatal "fixture tag failed"
 git -C "$REPO" commit -q --allow-empty -m change || fatal "fixture commit failed"
 
 OUT=""
 ERR=""
 RC=0
+MODE=own-gate
 # resolve [VAR=value ...]: sources the helper with only the given DOCKET_*
-# variables set, calls it as gate `sample-gate` in own-gate mode, and
-# captures the range it set, stderr, and exit status.
+# variables set, calls it as gate `sample-gate` in $MODE, and captures the
+# range it set, stderr, and exit status.
 resolve() {
     OUT=$(cd "$REPO" && env "$@" bash -c '
         set -euo pipefail
         . "$1"
-        gate_range sample-gate own-gate
+        gate_range sample-gate "$2"
         printf "%s" "$GATE_RANGE"
-    ' _ "$HELPER" 2>"${WORK}/stderr")
+    ' _ "$HELPER" "$MODE" 2>"${WORK}/stderr")
     RC=$?
     ERR=$(cat "${WORK}/stderr")
 }
@@ -104,11 +108,19 @@ expect "base unresolvable, another gate: no range" 0 ""
 resolve DOCKET_GATE=other-gate "DOCKET_GATE_BASE=--help"
 expect "option-shaped base, another gate: no range" 0 ""
 
+resolve DOCKET_GATE=sample-gate "DOCKET_GATE_BASE=--opt-base"
+expect "option-shaped ref name resolves as a revision, not an option" 0 "${BASE_SHA}..HEAD"
+
 resolve DOCKET_GATE=sample-gate
 expect "own gate, base unset: exits 2 naming the gate" 2 "" "sample-gate FAILED: DOCKET_GATE_BASE"
 
 resolve DOCKET_GATE=sample-gate "DOCKET_GATE_BASE=${UNRESOLVABLE}"
 expect "own gate, base unresolvable: exits 2 naming the gate" 2 "" "sample-gate FAILED: DOCKET_GATE_BASE"
+
+MODE=bogus-mode
+resolve "DOCKET_GATE_BASE=${BASE_SHA}"
+expect "unknown mode exits 2 naming the gate" 2 "" "sample-gate FAILED: gate_range: unknown mode 'bogus-mode'"
+MODE=own-gate
 
 echo
 if [ "$FAIL" -gt 0 ]; then

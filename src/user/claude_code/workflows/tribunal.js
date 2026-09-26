@@ -272,16 +272,29 @@ ${step.issue}` : gateKind} — and the record below carries everything it decide
     // as one compound call; the harness deny rule on interpreter code
     // arguments refuses the whole call before any of it runs, no hook
     // records it, the seat's no-retry rule then applies, and it votes on
-    // the proposal summary alone. The rule names the working path instead.
+    // the proposal summary alone. A prohibition alone did not stop it:
+    // with the rule already rendered, eight seats on one run (security
+    // and verify-ac votes alike) still reached for an interpreter, every
+    // one to print the same dump — a header per input, then its body and
+    // payload cut to a few thousand characters. The rule now hands them
+    // that exact dump as one jq command, and says a refused compound
+    // command is not a refused read.
     const evidenceParseRule = `
-HOW TO READ IT: one read per Bash call, and parse JSON with jq or read the
-file plainly (\`docket step context STEP-N --json | jq '.data.context.inputs[]
-| {artifact, kind, producer_step}'\` lists the bundle; \`jq -r\` on a single
-path prints one body). Never hand parsing code to an inline interpreter as an
+HOW TO READ IT: one read per Bash call, parsed with jq. This one command
+prints the whole bundle the way seats want it — one header per input, then
+its body and payload, each cut at 3000 characters:
+
+  docket step context STEP-N --json | jq -r '.data.context.inputs[] | "==== \\(.artifact) \\(.kind) \\(.producer_step)\\n\\(.body // "" | .[0:3000])\\nPAYLOAD: \\(.payload | tojson | .[0:3000])"'
+
+Raise the cut, or drop \`| .[0:3000]\`, to read one input in full;
+\`jq -r '.data.context.inputs[] | select(.artifact == "ARTIFACT-N") | .body'\`
+prints one body. Never hand parsing code to an inline interpreter as an
 argument: the harness deny rule on interpreter code arguments refuses that
-call before it runs, nothing retries it, and a compound command that chains a
-read with such a call is refused as a whole, so the read never happens either.
-A seat that votes after such a refusal votes without evidence.`
+call before it runs, and a compound command that chains a read with such a
+call is refused as a whole, so the read never happens either. A refusal of
+that compound command is not a refusal of the read: run the plain read above
+by itself, once, and go on. A seat that votes after such a refusal without
+re-running the read votes without evidence.`
 
     // MID-WAVE: the evidence is in the engine's record, not rendered into
     // this brief — the gate readied mid-wave, so the seat reads what the

@@ -195,7 +195,19 @@ const SANDBOX_ALLOW_WRITE_PATHS: &[&str] = &[
     // line.
     "~/.config/docket",
     "~/.claude/friction",
+    SANDBOX_JUST_TEMPDIR,
 ];
+
+/// Where `just` writes each shebang recipe's script before running it:
+/// `$XDG_RUNTIME_DIR/just`, which on the Linux sandbox sits under a
+/// read-only `/run/user/<uid>`. Without this allowance `just tests` and
+/// every other shebang recipe dies on "Read-only file system" before its
+/// first line runs, and each sandboxed caller had to prefix
+/// `XDG_RUNTIME_DIR=$TMPDIR` by hand. The uid is fixed the same way the
+/// scratch roots fix theirs (`/tmp/claude-501`): this settings file is
+/// written for the operator's own machines, not templated per host. macOS
+/// has no `/run/user`, so the entry is inert there.
+const SANDBOX_JUST_TEMPDIR: &str = "/run/user/1000/just";
 
 // Re-opens only the signing key pair inside the ~/.ssh read-deny; every
 // other sensitive path stays unreadable.
@@ -673,7 +685,7 @@ mod tests {
         claude_home, component_name, home_install, owned, sandbox_filesystem_deny_read_paths,
         settings, AUTO_MODE_ALLOW_RULES, AUTO_MODE_HARD_DENY_RULES,
         GIT_ALLOWED_SIGNERS_CONFIG_PATH, PERMISSION_ALLOW_RULES, PUBLISHING_ASK_VERBS,
-        SANDBOX_ALLOW_READ_PATHS, SANDBOX_SCRATCH_ROOTS, SENSITIVE_PATHS,
+        SANDBOX_ALLOW_READ_PATHS, SANDBOX_JUST_TEMPDIR, SANDBOX_SCRATCH_ROOTS, SENSITIVE_PATHS,
         SENSITIVE_PATHS_DENY_EDIT_ONLY, SENSITIVE_PATHS_DENY_READ_ONLY,
         SHELL_INDIRECTION_DENY_PATTERNS, TRUST_STORE_ASK_VERBS,
     };
@@ -802,6 +814,24 @@ mod tests {
                 "sandbox read denials are missing {expected}"
             );
         }
+    }
+
+    #[test]
+    fn sandbox_write_allowances_open_the_just_tempdir() {
+        // `just` stages every shebang recipe's script under
+        // $XDG_RUNTIME_DIR/just and the Linux sandbox mounts that runtime
+        // directory read-only, so without this row `just tests` errors
+        // before its first line. The row must reach the emitted settings
+        // as an absolute path, not a `~` form the runtime dir never has.
+        let emitted = emitted_settings();
+        let allow_write = strings(&emitted["sandbox"]["filesystem"]["allowWrite"]);
+
+        assert!(SANDBOX_JUST_TEMPDIR.starts_with("/run/user/"));
+        assert!(SANDBOX_JUST_TEMPDIR.ends_with("/just"));
+        assert!(
+            allow_write.contains(&SANDBOX_JUST_TEMPDIR.to_string()),
+            "sandbox write allowances are missing {SANDBOX_JUST_TEMPDIR}: {allow_write:?}"
+        );
     }
 
     #[test]

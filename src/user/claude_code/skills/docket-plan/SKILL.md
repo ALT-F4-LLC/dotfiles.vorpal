@@ -77,6 +77,17 @@ Rules you must not fight:
   artifact so a writer does not rediscover it. A reframe inside the
   issue's scope that still satisfies every recorded criterion is the
   writer's implementation choice and needs no question.
+- **A criterion that forbids editing a test suite is recorded only after
+  you have read how that suite installs the code under test.** Fixture
+  copy, sourcing, or `PATH`: open the suite and find the lines that put the
+  file under test in front of the test before you record "do not modify
+  these tests". When another criterion of the same issue moves code into a
+  file the fixture does not install (a gate that must source a shared
+  helper with no inline fallback, while its suite copies only the gate
+  script into the fixture), the two cannot both be met and every writer
+  stops on the conflict. Either permit the one fixture-install line
+  explicitly in the prohibition, or drop the prohibition, and record which
+  in the issue.
 - **A derived AC that predicts command output is run before it is
   recorded.** Execute the command, non-mutating check commands only, which
   is all this class of AC ever quotes, against the committed tree the run
@@ -943,6 +954,14 @@ When a fix adds or changes a regression test for a production file,
 declare that test file under `-f` and match it by `--scope` beside the
 production file (`conversation.go` with `conversation_test.go`), so a
 test-first fix never crosses its own declared scope.
+When an issue adds, renames, or removes a test suite that a repository gate
+registers elsewhere, include that CI registration file in `--scope`, and
+under `-f` when it must change: in this repository
+`.github/workflows/vorpal.yaml` lists every suite under `tests/`, and
+`tests/ci-suite-wiring.test.sh` under `just tests` fails whenever the two
+disagree, so a scope that adds a new suite under `tests/` without the
+workflow file parks the writer on the tests gate with the work complete
+and the wiring out of reach.
 Do not narrow away real work to manufacture parallelism. A glob you correct
 later goes through `issue edit --scope`, which replaces the whole list
 rather than appending; pass every glob you mean to keep. `issue edit -f`

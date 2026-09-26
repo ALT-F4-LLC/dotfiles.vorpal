@@ -195,19 +195,28 @@ const SANDBOX_ALLOW_WRITE_PATHS: &[&str] = &[
     // line.
     "~/.config/docket",
     "~/.claude/friction",
-    SANDBOX_JUST_TEMPDIR,
 ];
 
-/// Where `just` writes each shebang recipe's script before running it:
-/// `$XDG_RUNTIME_DIR/just`, which on the Linux sandbox sits under a
-/// read-only `/run/user/<uid>`. Without this allowance `just tests` and
-/// every other shebang recipe dies on "Read-only file system" before its
-/// first line runs, and each sandboxed caller had to prefix
-/// `XDG_RUNTIME_DIR=$TMPDIR` by hand. The uid is fixed the same way the
-/// scratch roots fix theirs (`/tmp/claude-501`): this settings file is
-/// written for the operator's own machines, not templated per host. macOS
-/// has no `/run/user`, so the entry is inert there.
-const SANDBOX_JUST_TEMPDIR: &str = "/run/user/1000/just";
+/// Where `just` writes each shebang recipe's script before running it, as a
+/// sandbox write allowance: `$XDG_RUNTIME_DIR/just`, or nothing when the
+/// variable is unset or empty.
+///
+/// On Linux the login session sets `XDG_RUNTIME_DIR` to `/run/user/<uid>`,
+/// which the sandbox mounts read-only, so without this allowance `just
+/// tests` and every other shebang recipe dies on "Read-only file system"
+/// before its first line runs. macOS sets no `XDG_RUNTIME_DIR`; `just` then
+/// falls back to `$TMPDIR` under `/var/folders`, which is already allowed,
+/// so no row is needed there. Resolved from the invoking user's environment
+/// when this config is evaluated, as the Go env file resolves `HOME`, so the
+/// row carries the real uid on every host instead of a fixed one. Env-free
+/// so the tests can pin both branches.
+fn sandbox_just_tempdir(runtime_dir: Option<&str>) -> Option<String> {
+    let dir = runtime_dir?.trim_end_matches('/');
+    if dir.is_empty() {
+        return None;
+    }
+    Some(format!("{dir}/just"))
+}
 
 // Re-opens only the signing key pair inside the ~/.ssh read-deny; every
 // other sensitive path stays unreadable.
@@ -386,9 +395,17 @@ fn sandbox_filesystem_deny_read_paths() -> Vec<String> {
 }
 
 /// The settings.json this build emits, before it is written to the store.
-/// Pure so a test can serialize it without a build context; the tests pin
-/// the emitted permission lists.
+/// Reads the one host-specific input, `XDG_RUNTIME_DIR`, and hands it to
+/// `settings_with`.
 fn settings() -> settings::ClaudeCodeSettings {
+    settings_with(sandbox_just_tempdir(
+        std::env::var("XDG_RUNTIME_DIR").ok().as_deref(),
+    ))
+}
+
+/// Pure so a test can serialize it without a build context or a host
+/// environment; the tests pin the emitted permission lists.
+fn settings_with(just_tempdir: Option<String>) -> settings::ClaudeCodeSettings {
     let mut builder = settings::ClaudeCodeSettings::default()
         .with_advisor_model("fable")
         .with_agent_push_notif_enabled(true)
@@ -587,12 +604,17 @@ fn settings() -> settings::ClaudeCodeSettings {
         .with_sandbox_auto_allow_bash(true)
         .with_sandbox_fail_if_unavailable(true)
         .with_sandbox_excluded_commands(owned(SANDBOX_EXCLUDED_COMMANDS))
-        .with_sandbox_filesystem_allow_write(owned(
-            SANDBOX_TOOLCHAIN_CACHE_PATHS
-                .iter()
-                .chain(SANDBOX_ALLOW_WRITE_PATHS)
-                .chain(SANDBOX_SCRATCH_ROOTS),
-        ))
+        .with_sandbox_filesystem_allow_write(
+            owned(
+                SANDBOX_TOOLCHAIN_CACHE_PATHS
+                    .iter()
+                    .chain(SANDBOX_ALLOW_WRITE_PATHS)
+                    .chain(SANDBOX_SCRATCH_ROOTS),
+            )
+            .into_iter()
+            .chain(just_tempdir)
+            .collect(),
+        )
         .with_sandbox_filesystem_deny_read(sandbox_filesystem_deny_read_paths())
         .with_sandbox_filesystem_allow_read(owned(SANDBOX_ALLOW_READ_PATHS))
         .with_sandbox_network_allowed_domains(owned(SANDBOX_NETWORK_ALLOWED_DOMAINS))
@@ -683,17 +705,31 @@ impl ClaudeCode {
 mod tests {
     use super::{
         claude_home, component_name, home_install, owned, sandbox_filesystem_deny_read_paths,
-        settings, AUTO_MODE_ALLOW_RULES, AUTO_MODE_HARD_DENY_RULES,
-        GIT_ALLOWED_SIGNERS_CONFIG_PATH, PERMISSION_ALLOW_RULES, PUBLISHING_ASK_VERBS,
-        SANDBOX_ALLOW_READ_PATHS, SANDBOX_JUST_TEMPDIR, SANDBOX_SCRATCH_ROOTS, SENSITIVE_PATHS,
+        sandbox_just_tempdir, settings, settings_with, AUTO_MODE_ALLOW_RULES,
+        AUTO_MODE_HARD_DENY_RULES, GIT_ALLOWED_SIGNERS_CONFIG_PATH, PERMISSION_ALLOW_RULES,
+        PUBLISHING_ASK_VERBS, SANDBOX_ALLOW_READ_PATHS, SANDBOX_SCRATCH_ROOTS, SENSITIVE_PATHS,
         SENSITIVE_PATHS_DENY_EDIT_ONLY, SENSITIVE_PATHS_DENY_READ_ONLY,
         SHELL_INDIRECTION_DENY_PATTERNS, TRUST_STORE_ASK_VERBS,
     };
     use crate::file::FileCreate;
 
-    /// The settings.json this build emits, as the harness reads it.
+    /// A Linux runtime dir with a uid no real host is likely to share, so a
+    /// test that passes cannot be leaning on the machine it runs on.
+    const TEST_RUNTIME_DIR: &str = "/run/user/4242";
+
+    /// The settings.json this build emits on a Linux host whose session sets
+    /// XDG_RUNTIME_DIR, as the harness reads it. Fixed input, not the test
+    /// runner's environment, so the result is the same on every machine.
     fn emitted_settings() -> serde_json::Value {
-        serde_json::to_value(settings()).expect("settings serialize")
+        serde_json::to_value(settings_with(sandbox_just_tempdir(Some(TEST_RUNTIME_DIR))))
+            .expect("settings serialize")
+    }
+
+    /// The emitted write allowances for one XDG_RUNTIME_DIR value.
+    fn allow_write_for(runtime_dir: Option<&str>) -> Vec<String> {
+        let emitted = serde_json::to_value(settings_with(sandbox_just_tempdir(runtime_dir)))
+            .expect("settings serialize");
+        strings(&emitted["sandbox"]["filesystem"]["allowWrite"])
     }
 
     /// The rows of one emitted string array.
@@ -817,21 +853,44 @@ mod tests {
     }
 
     #[test]
-    fn sandbox_write_allowances_open_the_just_tempdir() {
-        // `just` stages every shebang recipe's script under
-        // $XDG_RUNTIME_DIR/just and the Linux sandbox mounts that runtime
+    fn sandbox_write_allowances_open_the_just_tempdir_under_the_session_runtime_dir() {
+        // Linux: `just` stages every shebang recipe's script under
+        // $XDG_RUNTIME_DIR/just and the sandbox mounts that runtime
         // directory read-only, so without this row `just tests` errors
-        // before its first line. The row must reach the emitted settings
-        // as an absolute path, not a `~` form the runtime dir never has.
-        let emitted = emitted_settings();
-        let allow_write = strings(&emitted["sandbox"]["filesystem"]["allowWrite"]);
-
-        assert!(SANDBOX_JUST_TEMPDIR.starts_with("/run/user/"));
-        assert!(SANDBOX_JUST_TEMPDIR.ends_with("/just"));
+        // before its first line. The row follows the session's own uid.
+        let allow_write = allow_write_for(Some(TEST_RUNTIME_DIR));
+        let expected = format!("{TEST_RUNTIME_DIR}/just");
         assert!(
-            allow_write.contains(&SANDBOX_JUST_TEMPDIR.to_string()),
-            "sandbox write allowances are missing {SANDBOX_JUST_TEMPDIR}: {allow_write:?}"
+            allow_write.contains(&expected),
+            "sandbox write allowances are missing {expected}: {allow_write:?}"
         );
+        assert!(
+            !allow_write
+                .iter()
+                .any(|p| p.starts_with("/run/user/") && *p != expected),
+            "a /run/user row other than the session's own: {allow_write:?}"
+        );
+
+        // A trailing slash on the variable does not double the separator.
+        assert_eq!(
+            sandbox_just_tempdir(Some("/run/user/4242/")).as_deref(),
+            Some("/run/user/4242/just")
+        );
+    }
+
+    #[test]
+    fn sandbox_write_allowances_add_no_just_row_without_a_runtime_dir() {
+        // macOS sets no XDG_RUNTIME_DIR and `just` falls back to $TMPDIR
+        // under /var/folders, which is already allowed; an empty value is
+        // treated as unset. Neither case may invent a /run/user path.
+        for runtime_dir in [None, Some(""), Some("/")] {
+            let allow_write = allow_write_for(runtime_dir);
+            assert!(
+                !allow_write.iter().any(|p| p.ends_with("/just")),
+                "{runtime_dir:?} emitted a just row: {allow_write:?}"
+            );
+            assert!(allow_write.contains(&"/var/folders".to_string()));
+        }
     }
 
     #[test]

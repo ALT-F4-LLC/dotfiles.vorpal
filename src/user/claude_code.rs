@@ -15,11 +15,12 @@ const GIT_ALLOWED_SIGNERS_CONFIG_PATH: &str = "~/.config/git/allowed_signers";
 // must be readable through the ~/.ssh read-deny.
 const GIT_AGENT_SIGNING_KEY_PATH: &str = "~/.ssh/agent-signing";
 const GIT_AGENT_SIGNING_KEY_PUBLIC_PATH: &str = "~/.ssh/agent-signing.pub";
-/// The per-session throwaway workspaces every session may write. The scratch
-/// Edit() allows, the sandbox write allowance and the unix-socket list derive
-/// from this pair; the auto-mode prose names both roots and a test keeps it
-/// in step.
-const SANDBOX_SCRATCH_ROOTS: &[&str] = &["/tmp/claude-501", "/private/tmp/claude-501"];
+/// Placeholder in the auto-mode prose for the comma-joined scratch roots.
+/// The roots carry the invoking user's uid, so the rows that name them are
+/// expanded through `expand_scratch_roots` when the config is evaluated
+/// rather than spelled out here; a test pins that no token reaches the
+/// emitted settings.
+const SCRATCH_ROOTS_TOKEN: &str = "{scratch_roots}";
 const SENSITIVE_PATHS_DENY_READ_ONLY: &[&str] = &["~/.aws/**"];
 
 const SENSITIVE_PATHS: &[&str] = &[
@@ -69,7 +70,7 @@ const AUTO_MODE_ENVIRONMENT_CONTEXT: &[&str] = &[
     "**Primary use of Claude Code**: software development across ALT-F4-LLC projects (Vorpal build tooling, Claude Code agent configuration, homelab GitOps)",
     "**Trusted repos**: any github.com/ALT-F4-LLC repository checked out as the working directory, with its origin remote; most are public, so only a repo's own work is committed/pushed there and secrets/sensitive data are never cleared into it by visibility alone",
     "**Checkout layout**: every ALT-F4-LLC repository lives as a bare repo at ~/Development/repository/github.com/ALT-F4-LLC/<name>.git with one worktree per branch beneath it (e.g. <name>.git/main, <name>.git/feature/<branch>) plus harness worktrees under <name>.git/<branch>/.claude/worktrees/*; all of these are the same trusted checkout",
-    "**Scratch roots**: /tmp/claude-501, /private/tmp/claude-501, and $TMPDIR are per-session throwaway workspaces — docket steps mirror or copy a trusted checkout into STEP-<n>.d/target, STEP-<n>-target, or STEP-<n>-probe* under them and run builds, tests, and mutations there; nothing under them is a repo of record",
+    "**Scratch roots**: {scratch_roots}, and $TMPDIR are per-session throwaway workspaces — docket steps mirror or copy a trusted checkout into STEP-<n>.d/target, STEP-<n>-target, or STEP-<n>-probe* under them and run builds, tests, and mutations there; nothing under them is a repo of record",
     "**Org-specific CLIs**: docket (high-frequency usage across projects; also present in shell history with a bundled secret-scan script) — routine under ALT-F4-LLC repos",
     "**routine under ~/.claude/ prefix**: fixes and edits under `~/.claude` are governed by the working agreement there (source-only edits, install via `just activate`, never edit installed tree directly)",
 ];
@@ -81,8 +82,8 @@ const AUTO_MODE_ALLOW_RULES: &[&str] = &[
     "Local git operations in trusted repositories — add, commit, worktree, cherry-pick, stash, archive, cat-file, rev-parse, and other repo-local verbs, whether run from the checkout or via `git -C <trusted checkout>`, with commit messages passed inline, via a heredoc, or via `-F <file under the scratch root>`; `git push` publishes and stays outside this rule",
     "Bash(vorpal:*) in ALT-F4-LLC repositories — the org's own build tool, same standing as docket",
     "Read-only cluster reads against bulbasaur — kubectl get/describe/logs, flux get; mutations against the cluster stay outside this rule (production)",
-    "Read-only search and inspection inside trusted checkouts and the Claude scratch roots (/tmp/claude-501, /private/tmp/claude-501, $TMPDIR) — grep, rg, find, ls, cat, head, tail, sed -n, wc, diff, strings, jq — including a relative path or glob after `cd` into one of those roots; the sensitive home paths (~/.ssh, ~/.aws, ~/.gnupg, credential stores) are refused by the sandbox at the syscall level and by the sensitive-path-guard hook, and a relative path under these roots cannot reach them; interpreter code arguments and exec wrappers are shell indirection and stay outside this rule",
-    "File operations confined to the Claude scratch roots (/tmp/claude-501, /private/tmp/claude-501, $TMPDIR) — mkdir, cp -R, rm -rf, mv, tar/git-archive mirrors of a trusted checkout, and in-place edits (sed -i) of files under them; these are per-session throwaway workspaces the sandbox already lets every session write, so deleting or mutating them affects no repo; interpreter code arguments and exec wrappers are shell indirection and stay outside this rule",
+    "Read-only search and inspection inside trusted checkouts and the Claude scratch roots ({scratch_roots}, $TMPDIR) — grep, rg, find, ls, cat, head, tail, sed -n, wc, diff, strings, jq — including a relative path or glob after `cd` into one of those roots; the sensitive home paths (~/.ssh, ~/.aws, ~/.gnupg, credential stores) are refused by the sandbox at the syscall level and by the sensitive-path-guard hook, and a relative path under these roots cannot reach them; interpreter code arguments and exec wrappers are shell indirection and stay outside this rule",
+    "File operations confined to the Claude scratch roots ({scratch_roots}, $TMPDIR) — mkdir, cp -R, rm -rf, mv, tar/git-archive mirrors of a trusted checkout, and in-place edits (sed -i) of files under them; these are per-session throwaway workspaces the sandbox already lets every session write, so deleting or mutating them affects no repo; interpreter code arguments and exec wrappers are shell indirection and stay outside this rule",
     "Read-only inspection under ~/.claude — session transcripts and tool-results under ~/.claude/projects, the friction ledger, installed skills, workflows, and hooks — the operator's own harness state; edits there stay outside this rule (source-only, installed via `just activate`)",
     "Read-only gh reads against ALT-F4-LLC repositories — gh pr view/checks/list/diff, gh run list/view, gh issue view/list; every other gh verb, including every one on an ask rule, stays outside this rule",
     "Editing Claude Code and Docket definition source in the dotfiles.vorpal checkout — src/user/claude_code/{skills,agents,workflows,references}/**, src/user/claude_code/CLAUDE.md, and src/user/docket/config/** — is routine project work, not self-modification: it is source only and stays inert until the operator runs `just activate`; settings.rs, claude_code.rs, src/user/claude_code/hooks/**, the permission, sandbox and autoMode rules, and the installed trees (~/.claude, ~/.docket/config) stay outside this rule",
@@ -216,6 +217,45 @@ fn sandbox_just_tempdir(runtime_dir: Option<&str>) -> Option<String> {
         return None;
     }
     Some(format!("{dir}/just"))
+}
+
+/// The per-session throwaway workspaces every session may write: Claude
+/// Code's per-user scratch root `/tmp/claude-<uid>` and its macOS spelling
+/// under `/private`. The scratch Edit() allows, the sandbox write allowance,
+/// the unix-socket list and the auto-mode prose all derive from this pair.
+/// Env-free so the tests can pin the emitted rows for a fixed uid.
+fn sandbox_scratch_roots(uid: u32) -> [String; 2] {
+    [
+        format!("/tmp/claude-{uid}"),
+        format!("/private/tmp/claude-{uid}"),
+    ]
+}
+
+/// The uid Claude Code derives its scratch root from on this host: the owner
+/// of the invoking user's `HOME`, read when this config is evaluated, as the
+/// Go env file resolves `HOME`. There is no fixed-uid fallback on purpose: a
+/// wrong uid emits sandbox and permission rows for a directory the host never
+/// uses, so a missing or unreadable `HOME` fails the build instead.
+fn invoking_uid() -> Result<u32> {
+    use std::os::unix::fs::MetadataExt;
+
+    let home = std::env::var("HOME")
+        .map_err(|err| anyhow::anyhow!("HOME must name the invoking user's home: {err}"))?;
+    let metadata = std::fs::metadata(&home)
+        .map_err(|err| anyhow::anyhow!("cannot stat HOME ({home}) to derive the uid: {err}"))?;
+    Ok(metadata.uid())
+}
+
+/// Expands `SCRATCH_ROOTS_TOKEN` in one prose row to the comma-joined roots.
+fn expand_scratch_roots(row: &str, scratch_roots: &[String]) -> String {
+    row.replace(SCRATCH_ROOTS_TOKEN, &scratch_roots.join(", "))
+}
+
+/// The host-specific inputs `settings_with` needs, resolved from the
+/// invoking user's environment when the config is evaluated.
+struct HostInputs {
+    just_tempdir: Option<String>,
+    scratch_roots: [String; 2],
 }
 
 // Re-opens only the signing key pair inside the ~/.ssh read-deny; every
@@ -395,17 +435,27 @@ fn sandbox_filesystem_deny_read_paths() -> Vec<String> {
 }
 
 /// The settings.json this build emits, before it is written to the store.
-/// Reads the one host-specific input, `XDG_RUNTIME_DIR`, and hands it to
-/// `settings_with`.
-fn settings() -> settings::ClaudeCodeSettings {
-    settings_with(sandbox_just_tempdir(
-        std::env::var("XDG_RUNTIME_DIR").ok().as_deref(),
-    ))
+/// Reads the host-specific inputs, `XDG_RUNTIME_DIR` and the uid behind
+/// `HOME`, and hands them to `settings_with`.
+fn settings() -> Result<settings::ClaudeCodeSettings> {
+    Ok(settings_with(HostInputs {
+        just_tempdir: sandbox_just_tempdir(std::env::var("XDG_RUNTIME_DIR").ok().as_deref()),
+        scratch_roots: sandbox_scratch_roots(invoking_uid()?),
+    }))
 }
 
 /// Pure so a test can serialize it without a build context or a host
 /// environment; the tests pin the emitted permission lists.
-fn settings_with(just_tempdir: Option<String>) -> settings::ClaudeCodeSettings {
+fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
+    let HostInputs {
+        just_tempdir,
+        scratch_roots,
+    } = host;
+    let expand = |rows: &[&str]| -> Vec<String> {
+        rows.iter()
+            .map(|row| expand_scratch_roots(row, &scratch_roots))
+            .collect()
+    };
     let mut builder = settings::ClaudeCodeSettings::default()
         .with_advisor_model("fable")
         .with_agent_push_notif_enabled(true)
@@ -563,8 +613,8 @@ fn settings_with(just_tempdir: Option<String>) -> settings::ClaudeCodeSettings {
             "command",
         )
         .with_auto_mode(settings::AutoMode {
-            allow: owned(AUTO_MODE_ALLOW_RULES),
-            environment: owned(AUTO_MODE_ENVIRONMENT_CONTEXT),
+            allow: expand(AUTO_MODE_ALLOW_RULES),
+            environment: expand(AUTO_MODE_ENVIRONMENT_CONTEXT),
             hard_deny: owned(AUTO_MODE_HARD_DENY_RULES),
             ..Default::default()
         });
@@ -578,7 +628,7 @@ fn settings_with(just_tempdir: Option<String>) -> settings::ClaudeCodeSettings {
     for rule in PERMISSION_ALLOW_RULES {
         builder = builder.with_permission_allow(rule);
     }
-    for root in SANDBOX_SCRATCH_ROOTS {
+    for root in &scratch_roots {
         builder = builder.with_permission_allow(&format!("Edit({root}/**)"));
     }
     for verb in TRUST_STORE_ASK_VERBS.iter().chain(PUBLISHING_ASK_VERBS) {
@@ -609,7 +659,8 @@ fn settings_with(just_tempdir: Option<String>) -> settings::ClaudeCodeSettings {
                 SANDBOX_TOOLCHAIN_CACHE_PATHS
                     .iter()
                     .chain(SANDBOX_ALLOW_WRITE_PATHS)
-                    .chain(SANDBOX_SCRATCH_ROOTS),
+                    .copied()
+                    .chain(scratch_roots.iter().map(String::as_str)),
             )
             .into_iter()
             .chain(just_tempdir)
@@ -619,7 +670,10 @@ fn settings_with(just_tempdir: Option<String>) -> settings::ClaudeCodeSettings {
         .with_sandbox_filesystem_allow_read(owned(SANDBOX_ALLOW_READ_PATHS))
         .with_sandbox_network_allowed_domains(owned(SANDBOX_NETWORK_ALLOWED_DOMAINS))
         .with_sandbox_network_allow_unix_sockets(owned(
-            SANDBOX_UNIX_SOCKETS.iter().chain(SANDBOX_SCRATCH_ROOTS),
+            SANDBOX_UNIX_SOCKETS
+                .iter()
+                .copied()
+                .chain(scratch_roots.iter().map(String::as_str)),
         ))
         .with_sandbox_network_allow_mach_lookup(owned(["com.apple.trustd.agent"]))
         .with_sandbox_network_allow_local_binding(true)
@@ -653,7 +707,7 @@ impl ClaudeCode {
             artifacts.push(artifact);
         }
 
-        let settings_json = serde_json::to_string_pretty(&settings())?;
+        let settings_json = serde_json::to_string_pretty(&settings()?)?;
 
         // Single-file components: (component, content, executable, install path).
         let files = [
@@ -705,31 +759,41 @@ impl ClaudeCode {
 mod tests {
     use super::{
         claude_home, component_name, home_install, owned, sandbox_filesystem_deny_read_paths,
-        sandbox_just_tempdir, settings, settings_with, AUTO_MODE_ALLOW_RULES,
-        AUTO_MODE_HARD_DENY_RULES, GIT_ALLOWED_SIGNERS_CONFIG_PATH, PERMISSION_ALLOW_RULES,
-        PUBLISHING_ASK_VERBS, SANDBOX_ALLOW_READ_PATHS, SANDBOX_SCRATCH_ROOTS, SENSITIVE_PATHS,
-        SENSITIVE_PATHS_DENY_EDIT_ONLY, SENSITIVE_PATHS_DENY_READ_ONLY,
-        SHELL_INDIRECTION_DENY_PATTERNS, TRUST_STORE_ASK_VERBS,
+        sandbox_just_tempdir, sandbox_scratch_roots, settings, settings_with, HostInputs,
+        AUTO_MODE_ALLOW_RULES, AUTO_MODE_HARD_DENY_RULES, GIT_ALLOWED_SIGNERS_CONFIG_PATH,
+        PERMISSION_ALLOW_RULES, PUBLISHING_ASK_VERBS, SANDBOX_ALLOW_READ_PATHS,
+        SCRATCH_ROOTS_TOKEN, SENSITIVE_PATHS, SENSITIVE_PATHS_DENY_EDIT_ONLY,
+        SENSITIVE_PATHS_DENY_READ_ONLY, SHELL_INDIRECTION_DENY_PATTERNS, TRUST_STORE_ASK_VERBS,
     };
     use crate::file::FileCreate;
 
-    /// A Linux runtime dir with a uid no real host is likely to share, so a
-    /// test that passes cannot be leaning on the machine it runs on.
+    /// A uid no real host is likely to share, so a test that passes cannot be
+    /// leaning on the machine it runs on: neither the macOS 501 nor the Linux
+    /// 1000 default.
+    const TEST_UID: u32 = 4242;
+    /// The Linux runtime dir for that uid.
     const TEST_RUNTIME_DIR: &str = "/run/user/4242";
+
+    /// The settings this build emits on a Linux host whose session sets
+    /// XDG_RUNTIME_DIR, for one runtime dir value and the test uid.
+    fn settings_for(runtime_dir: Option<&str>) -> serde_json::Value {
+        serde_json::to_value(settings_with(HostInputs {
+            just_tempdir: sandbox_just_tempdir(runtime_dir),
+            scratch_roots: sandbox_scratch_roots(TEST_UID),
+        }))
+        .expect("settings serialize")
+    }
 
     /// The settings.json this build emits on a Linux host whose session sets
     /// XDG_RUNTIME_DIR, as the harness reads it. Fixed input, not the test
     /// runner's environment, so the result is the same on every machine.
     fn emitted_settings() -> serde_json::Value {
-        serde_json::to_value(settings_with(sandbox_just_tempdir(Some(TEST_RUNTIME_DIR))))
-            .expect("settings serialize")
+        settings_for(Some(TEST_RUNTIME_DIR))
     }
 
     /// The emitted write allowances for one XDG_RUNTIME_DIR value.
     fn allow_write_for(runtime_dir: Option<&str>) -> Vec<String> {
-        let emitted = serde_json::to_value(settings_with(sandbox_just_tempdir(runtime_dir)))
-            .expect("settings serialize");
-        strings(&emitted["sandbox"]["filesystem"]["allowWrite"])
+        strings(&settings_for(runtime_dir)["sandbox"]["filesystem"]["allowWrite"])
     }
 
     /// The rows of one emitted string array.
@@ -741,12 +805,12 @@ mod tests {
             .collect()
     }
 
-    /// The two auto-mode allow rules keyed to the scratch roots: read-only
-    /// search and confined file operations.
-    fn scratch_root_rules() -> Vec<&'static str> {
-        let rules: Vec<&str> = AUTO_MODE_ALLOW_RULES
-            .iter()
-            .copied()
+    /// The two emitted auto-mode allow rules keyed to the scratch roots:
+    /// read-only search and confined file operations. Read from the emitted
+    /// settings, since the source rows carry a token the emit expands.
+    fn scratch_root_rules() -> Vec<String> {
+        let rules: Vec<String> = strings(&emitted_settings()["autoMode"]["allow"])
+            .into_iter()
             .filter(|r| r.contains("scratch roots"))
             .collect();
         assert_eq!(rules.len(), 2, "expected the search and file-op rules");
@@ -1019,15 +1083,93 @@ mod tests {
     }
 
     #[test]
-    fn auto_mode_allow_rules_name_the_sandbox_scratch_roots() {
-        // The read-only search and scratch-mutation rules are keyed to the
-        // same roots the sandbox lets every session write. If the scratch
-        // roots move, the classifier rules must move with them.
+    fn scratch_roots_follow_the_invoking_uid_on_both_platforms() {
+        // Claude Code's scratch root is /tmp/claude-<uid>; macOS also reaches
+        // it through /private. The macOS default uid and the Linux default
+        // uid both derive from the same rule, with no fixed fallback.
+        assert_eq!(
+            sandbox_scratch_roots(501),
+            ["/tmp/claude-501", "/private/tmp/claude-501"]
+        );
+        assert_eq!(
+            sandbox_scratch_roots(1000),
+            ["/tmp/claude-1000", "/private/tmp/claude-1000"]
+        );
+    }
+
+    #[test]
+    fn emitted_settings_carry_the_derived_scratch_roots_and_no_fixed_uid() {
+        // Every row derived from the scratch roots carries the uid the config
+        // was evaluated for: the sandbox write allowance, the unix-socket
+        // list, the scratch Edit() allows, and the auto-mode environment and
+        // allow prose the classifier reads. A fixed claude-501 path, or an
+        // unexpanded token, would name a directory a Linux host never uses.
+        let emitted = emitted_settings();
+        let roots = sandbox_scratch_roots(TEST_UID);
+
+        let allow_write = strings(&emitted["sandbox"]["filesystem"]["allowWrite"]);
+        let unix_sockets = strings(&emitted["sandbox"]["network"]["allowUnixSockets"]);
+        let permission_allow = strings(&emitted["permissions"]["allow"]);
+        for root in &roots {
+            assert!(allow_write.contains(root), "allowWrite lacks {root}");
+            assert!(unix_sockets.contains(root), "allowUnixSockets lacks {root}");
+            let edit = format!("Edit({root}/**)");
+            assert!(permission_allow.contains(&edit), "allow lacks {edit}");
+        }
+
         for rule in scratch_root_rules() {
-            for root in SANDBOX_SCRATCH_ROOTS {
+            for root in &roots {
                 assert!(rule.contains(root), "{root} is missing from: {rule}");
             }
         }
+        let environment = strings(&emitted["autoMode"]["environment"]);
+        let scratch_rows: Vec<&String> = environment
+            .iter()
+            .filter(|row| row.starts_with("**Scratch roots**"))
+            .collect();
+        assert_eq!(scratch_rows.len(), 1, "expected one scratch-roots row");
+        for root in &roots {
+            assert!(
+                scratch_rows[0].contains(root),
+                "{root} is missing from: {}",
+                scratch_rows[0]
+            );
+        }
+
+        let json = serde_json::to_string(&emitted).expect("settings serialize");
+        assert!(
+            !json.contains("claude-501"),
+            "a fixed claude-501 path was emitted"
+        );
+        assert!(
+            !json.contains(SCRATCH_ROOTS_TOKEN),
+            "an unexpanded scratch-roots token was emitted"
+        );
+    }
+
+    #[test]
+    fn scratch_roots_token_appears_only_where_the_emit_expands_it() {
+        // The prose rows spell the roots through the token; a literal root in
+        // the source would go stale on any host but the one it was written on.
+        let source_rows = AUTO_MODE_ALLOW_RULES
+            .iter()
+            .chain(super::AUTO_MODE_ENVIRONMENT_CONTEXT)
+            .chain(AUTO_MODE_HARD_DENY_RULES);
+        for row in source_rows {
+            assert!(
+                !row.contains("/tmp/claude-"),
+                "a literal scratch root in a source row: {row}"
+            );
+        }
+        let tokenized = AUTO_MODE_ALLOW_RULES
+            .iter()
+            .chain(super::AUTO_MODE_ENVIRONMENT_CONTEXT)
+            .filter(|row| row.contains(SCRATCH_ROOTS_TOKEN))
+            .count();
+        assert_eq!(
+            tokenized, 3,
+            "expected the environment row and two allow rules"
+        );
     }
 
     #[test]

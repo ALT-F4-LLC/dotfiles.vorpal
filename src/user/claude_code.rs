@@ -670,12 +670,12 @@ impl ClaudeCode {
 #[cfg(test)]
 mod tests {
     use super::{
-        claude_home, component_name, home_install, permission_ask_patterns,
-        sandbox_filesystem_deny_read_paths, settings, sorted_permission_patterns,
-        AUTO_MODE_ALLOW_RULES, AUTO_MODE_HARD_DENY_RULES, GIT_ALLOWED_SIGNERS_CONFIG_PATH,
-        PERMISSION_ALLOW_RULES, PUBLISHING_ASK_VERBS, SANDBOX_ALLOW_READ_PATHS,
-        SANDBOX_SCRATCH_ROOTS, SENSITIVE_PATHS, SENSITIVE_PATHS_DENY_EDIT_ONLY,
-        SENSITIVE_PATHS_DENY_READ_ONLY, SHELL_INDIRECTION_DENY_PATTERNS,
+        claude_home, component_name, home_install, owned, sandbox_filesystem_deny_read_paths,
+        settings, AUTO_MODE_ALLOW_RULES, AUTO_MODE_HARD_DENY_RULES,
+        GIT_ALLOWED_SIGNERS_CONFIG_PATH, PERMISSION_ALLOW_RULES, PUBLISHING_ASK_VERBS,
+        SANDBOX_ALLOW_READ_PATHS, SANDBOX_SCRATCH_ROOTS, SENSITIVE_PATHS,
+        SENSITIVE_PATHS_DENY_EDIT_ONLY, SENSITIVE_PATHS_DENY_READ_ONLY,
+        SHELL_INDIRECTION_DENY_PATTERNS, TRUST_STORE_ASK_VERBS,
     };
     use crate::file::FileCreate;
 

@@ -683,8 +683,9 @@ re-docket-planning can fix it.
 **A bound issue freezes at the activation that binds it, not at the
 re-activation that expands it.** Its body, labels and scope snapshot
 when the run first binds it, so a `docket issue edit` made before a
-later re-activation never reaches the run: the writers render the
-original text and stop on the conflict the amendment already resolved.
+later re-activation never reaches the packets the writers render: they
+see the original text and stop on the conflict the amendment already
+resolved.
 Route a pre-expansion amendment through the run instead: `docket run
 note add $RUN --text "..."` for criteria (run notes render into every
 later packet) and `docket run refresh-scope RUN-N --issue DKT-M --reason

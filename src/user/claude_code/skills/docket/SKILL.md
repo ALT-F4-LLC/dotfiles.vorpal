@@ -160,6 +160,9 @@ stale edit or looping on the read. The same one-retry bound applies to a
 
 - `issue edit -f` **replaces** the file list; `issue file add` is additive.
   `--scope` declares expected path globs, separate from concrete files.
+  When a fix adds or changes a regression test for a production file,
+  declare that test file under `-f` and match it by `--scope` beside the
+  production file (`conversation.go` with `conversation_test.go`).
 - `issue move --project` can move an issue and its subtree across
   projects. Check the destination and run ownership before using it.
 - A close may need the holder's capability when the issue is leased.

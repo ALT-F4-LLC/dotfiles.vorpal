@@ -939,6 +939,10 @@ everything. Prefer prefix-disjoint globs, never lead with a wildcard, and
 check them against the matcher's own rules before recording. Require one
 concurrent owner per conflicting prefix; truthful overlap across waves is
 allowed only with verified serialization under §1b.
+When a fix adds or changes a regression test for a production file,
+declare that test file under `-f` and match it by `--scope` beside the
+production file (`conversation.go` with `conversation_test.go`), so a
+test-first fix never crosses its own declared scope.
 Do not narrow away real work to manufacture parallelism. A glob you correct
 later goes through `issue edit --scope`, which replaces the whole list
 rather than appending; pass every glob you mean to keep. `issue edit -f`

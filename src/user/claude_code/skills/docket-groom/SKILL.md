@@ -333,7 +333,9 @@ Record these findings alongside the value decision:
   no files (its `files` list is empty). Files and scope must cover the
   intended changes and paths named by the acceptance criteria, since
   `docket plan` splits collisions on files and the scheduler excludes on
-  scope. A populated field alone does not establish readiness.
+  scope. A fix whose regression test file is missing from files or scope
+  beside its production file has a files-and-scope gap. A populated field
+  alone does not establish readiness.
 - **Needs operator decision:** an unanswered question, approval request,
   conflicting direction, or choice about value, requirements, tradeoffs,
   dependencies, or intended workflow. Inspect bodies and comments as well

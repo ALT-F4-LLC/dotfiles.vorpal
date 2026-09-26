@@ -100,6 +100,15 @@
 #       e2 insert the same unconditioned-lift sentence INSIDE one of the
 #          three anchored paragraphs, so a paragraph-level census would
 #          exempt it; the sentence-level census still reds it
+#   (f) isolation-unavailable: held, never re-dispatched (f-A is also run
+#       by the self-checks on every pass)
+#       f-A cut the ruling sentence to "`isolation-unavailable` is re-offered
+#          too."
+#       f-B delete only the "Hold the row until worktree isolation is
+#          restored; ... without isolation." sentence
+#       f-C delete "but never re-dispatch on it" from the isolation sentence
+#          only; the bootstrap-denied sentence keeps the phrase, which is
+#          why the region is two sentences, not the paragraph
 #
 # A missing input file fails; it never skips green.
 
@@ -324,6 +333,20 @@ if [ -z "${DOCKET_RUN_SKILL_INNER:-}" ]; then
         else
             bad "self-check: a census matched against no key still caught an unanchored grant — fixture is not load-bearing"
         fi
+
+        # The isolation-unavailable ruling cut to its bare status name
+        # (mutant A) must fail the suite.
+        perl -0pe 's/(`isolation-unavailable` is re-offered too), but never re-dispatch on it:.*?unguarded in the shared checkout\./$1./s' \
+            "${WORK}/self-clean.md" > "${WORK}/isolation-mutant.md"
+
+        if cmp -s "${WORK}/self-clean.md" "${WORK}/isolation-mutant.md"; then
+            bad "self-check: the isolation-unavailable mutation did not apply — proves nothing"
+        elif DOCKET_RUN_SKILL_INNER=1 DOCKET_RUN_SKILL_FILE="${WORK}/isolation-mutant.md" \
+            bash "$SELF" >/dev/null 2>&1; then
+            bad "self-check: an isolation-unavailable ruling cut to its status name still passed the suite"
+        else
+            ok "self-check: an isolation-unavailable ruling cut to its status name fails the suite"
+        fi
     fi
 fi
 # (a) The cherry-pick lift is conditioned on verifying the sha and paths, and
@@ -407,6 +430,26 @@ if paragraph 'Warm the Go module cache before dispatching into a Go repo' "${WOR
         "${WORK}/modcache" 'the unsandboxed retry is sanctioned here because it fills the shared cache every executor reads'
 else
     bad "module cache: no single paragraph carries 'Warm the Go module cache before dispatching into a Go repo'"
+fi
+
+# (f) An isolation-unavailable row is held, never re-dispatched into broken
+# isolation. The region is the anchor sentence plus the one after it, not the
+# paragraph: the bootstrap-denied sentence in the same paragraph also says
+# "never re-dispatch on it", so a paragraph region stays green when this
+# sentence loses it.
+isolation_anchor='`isolation-unavailable` is re-offered too'
+sentences "${WORK}/flat" > "${WORK}/isolation-sentences"
+if [ "$(grep -cF -- "$isolation_anchor" "${WORK}/isolation-sentences")" -eq 1 ]; then
+    grep -A1 -F -- "$isolation_anchor" "${WORK}/isolation-sentences" > "${WORK}/isolation"
+    ok "isolation-unavailable: exactly one sentence rules on the status"
+    states "isolation-unavailable: never re-dispatched" \
+        "${WORK}/isolation" 'never re-dispatch on it'
+    states "isolation-unavailable: held until isolation is restored" \
+        "${WORK}/isolation" 'Hold the row until worktree isolation is restored'
+    states "isolation-unavailable: the writer never relaunches unguarded" \
+        "${WORK}/isolation" 'never relaunching the writer without isolation'
+else
+    bad "isolation-unavailable: no single sentence carries '${isolation_anchor}'"
 fi
 
 # (e) Absence claim, run over SENTENCES rather than paragraphs: every

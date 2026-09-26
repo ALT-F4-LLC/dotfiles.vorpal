@@ -334,8 +334,12 @@ Record these findings alongside the value decision:
   intended changes and paths named by the acceptance criteria, since
   `docket plan` splits collisions on files and the scheduler excludes on
   scope. A fix whose regression test file is missing from files or scope
-  beside its production file has a files-and-scope gap. A populated field
-  alone does not establish readiness.
+  beside its production file has a files-and-scope gap. So does an issue
+  that adds, renames, or removes a test suite a repository gate registers
+  elsewhere without that registration file in scope: here a new suite
+  under `tests/` needs `.github/workflows/vorpal.yaml`, which
+  `tests/ci-suite-wiring.test.sh` checks under `just tests`. A populated
+  field alone does not establish readiness.
 - **Needs operator decision:** an unanswered question, approval request,
   conflicting direction, or choice about value, requirements, tradeoffs,
   dependencies, or intended workflow. Inspect bodies and comments as well
@@ -483,7 +487,12 @@ A well-defined set meets all of these conditions:
   decisions, files, scope, and intended workflow. Required checks must be
   feasible in that workflow's environment. Identify planned test or
   artifact creation as part of the deliverable rather than implying it
-  already exists. Contradictions and unresolved placeholders are gaps.
+  already exists. Contradictions and unresolved placeholders are gaps. A
+  criterion that forbids editing a test suite is checked against how that
+  suite installs the code under test (fixture copy, sourcing, `PATH`):
+  when another criterion moves code into a file the fixture does not
+  install, the pair contradicts, and the repair either permits the one
+  fixture-install line explicitly or drops the prohibition.
 - **In-scope satisfiability:** every criterion can be met by a change inside
   the issue's files and scope, in this repository, with capabilities the
   engine has. A criterion whose only remedy lies elsewhere is split out to

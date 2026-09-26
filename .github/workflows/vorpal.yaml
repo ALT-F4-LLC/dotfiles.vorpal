@@ -72,6 +72,8 @@ jobs:
 
       - run: bash tests/sdet-abuse.test.sh
 
+      - run: bash tests/seat-brief-inline-interpreter.test.sh
+
       - run: bash tests/secret-scan.test.sh
 
       - run: bash tests/sensitive-path-guard-hook.test.sh

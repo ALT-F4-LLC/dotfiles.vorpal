@@ -267,6 +267,22 @@ THE PROPOSAL BODY COULD NOT BE READ INTO THIS BRIEF (the read that projects
 it returned nothing). The question is the gate itself — ${step ? `${step.instance} on
 ${step.issue}` : gateKind} — and the record below carries everything it decides.`
 
+    // Both modes carry the same parsing rule. Seats have read the context
+    // bundle with `docket step context ... > file; <interpreter> -c "..."`
+    // as one compound call; the harness deny rule on interpreter code
+    // arguments refuses the whole call before any of it runs, no hook
+    // records it, the seat's no-retry rule then applies, and it votes on
+    // the proposal summary alone. The rule names the working path instead.
+    const evidenceParseRule = `
+HOW TO READ IT: one read per Bash call, and parse JSON with jq or read the
+file plainly (\`docket step context STEP-N --json | jq '.data.context.inputs[]
+| {artifact, kind, producer_step}'\` lists the bundle; \`jq -r\` on a single
+path prints one body). Never hand parsing code to an inline interpreter as an
+argument: the harness deny rule on interpreter code arguments refuses that
+call before it runs, nothing retries it, and a compound command that chains a
+read with such a call is refused as a whole, so the read never happens either.
+A seat that votes after such a refusal votes without evidence.`
+
     // MID-WAVE: the evidence is in the engine's record, not rendered into
     // this brief — the gate readied mid-wave, so the seat reads what the
     // claims rest on itself.
@@ -289,6 +305,7 @@ upstream artifact, each naming \`.artifact\` (the ARTIFACT-N id), \`.kind\`
 (threat-model, change-summary, issue.diff, findings), \`.producer_step\`, and
 its \`.body\` and \`.payload\` in full. Read there, and spend
 \`docket step artifact ARTIFACT-N --payload\` only on an id the bundle named.
+${evidenceParseRule}
 
 THEIR FLAGS, since guessing one costs you a turn and teaches you nothing:
 \`step context\` takes \`--meta\` and \`--live\`; \`step artifact\` takes
@@ -304,10 +321,10 @@ AND KNOW \`step artifact\`'S TWO JSON SHAPES BEFORE YOU PARSE ONE. With
 for a findings or cluster payload, so \`.data[0]\` is the first entry and
 \`.data.get(...)\` raises. Without \`--payload\`, \`--json\` returns the artifact
 RECORD and the payload hangs off \`.data.payload\` as a JSON STRING you must
-parse a second time. Two seats on one wave lost their whole turn to
-\`AttributeError: 'list' object has no attribute 'get'\` on \`d['data'].get('payload')\`
-against the first shape. Pick one and match it: \`--payload --json | jq '.data'\`
-for the payload, or plain \`--json | jq -r '.data.payload' | jq .\` for the record.
+parse a second time. Two seats on one wave lost their whole turn indexing the
+first shape as if it were the second. Pick one and match it: \`--payload
+--json | jq '.data'\` for the payload, or plain \`--json | jq -r '.data.payload'
+| jq .\` for the record.
 
 plus reading any file those name. The gate sits downstream of the work it
 judges — its issue's earlier steps recorded THIS wave, and their artifacts and
@@ -328,6 +345,7 @@ have read-only tools; use them. Useful and safe from ${cwd}:
 plus reading any file the payload names. Read what the claims rest on. Do not
 write, edit, commit, or run anything that mutates state — the ONE state change
 you are authorized to make is your own cast, below.
+${evidenceParseRule}
 
 SCOPE YOUR INVESTIGATION TO WHAT THIS GATE DECIDES. An activation gate decides
 whether the run may START: verify the binding against the routing rules, the

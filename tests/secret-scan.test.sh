@@ -129,6 +129,28 @@ r=$(fresh_repo ls-files-fails-clean)
 expect "no gate: a failing git ls-files fails closed on a clean tree" 1 "could not collect" "$r" \
     "PATH=$SHIM:$PATH" --
 
+# ---- the change-set sources fail closed ----------------------------------------
+# Each shim fails one collect() source after the base resolves; every other git
+# call passes through. The subcommand is matched by position so a path or ref
+# named `log` or `diff` cannot trigger it. On a clean tree a masked failure
+# reads as "no added lines to scan" and exits 0.
+# git_shim <dir> <bash condition on the git args>
+git_shim() {
+    mkdir -p "$1"
+    printf '#!/bin/bash\nif %s; then echo "git: refused (shim)" >&2; exit 128; fi\nexec %s "$@"\n' \
+        "$2" "$REAL_GIT" > "$1/git"
+    chmod +x "$1/git"
+}
+has_cached='[[ " $* " == *" --cached "* ]]'
+git_shim "$WORK/shim-log" '[ "$1" = log ]'
+git_shim "$WORK/shim-cached" "[ \"\$1\" = diff ] && $has_cached"
+git_shim "$WORK/shim-plain" "[ \"\$1\" = diff ] && ! $has_cached"
+for source in log cached plain; do
+    r=$(fresh_repo "$source-fails"); base=$(head_of "$r")
+    expect "env base: a failing git $source source fails closed" 1 "could not collect" "$r" \
+        "PATH=$WORK/shim-$source:$PATH" DOCKET_GATE=secret-scan "DOCKET_GATE_BASE=$base" --
+done
+
 # ---- own-gate refusal ----------------------------------------------------------
 r=$(fresh_repo own-gate)
 expect "own gate, base unset: exits 2 naming the base" 2 "DOCKET_GATE_BASE" "$r" \

@@ -1,7 +1,7 @@
 export const meta = {
     name: 'session-census',
     description: 'Internal: launched through scriptPath by the shadow skill; measures deliberation and course-correction cost across Claude Code transcripts, main and subagent separately. Read-only. Args and cost in the header comment.',
-    whenToUse: 'Never by name. Run before and after a harness change and diff the two returns; the caller picks the window because a 7-day fleet sweep is hundreds of transcripts.',
+    whenToUse: 'Never by name. Run before and after a harness change and diff the two returns; the caller picks the window because a project directory shared by many sessions is hundreds of transcripts.',
     phases: [
         { title: 'Scout', detail: 'one agent finds the transcripts newer than the cutoff' },
         { title: 'Extract', detail: 'one low-effort agent per transcript runs the fixed jq, plus one retry for any transcript that came back empty or incomplete' },
@@ -20,12 +20,14 @@ export const meta = {
 // only. Invoke by scriptPath ONLY, with args {root, cutoff, days?}.
 //
 // When and how it is invoked:
-// Invoked by the shadow skill (fleet sweep or single session) to put numbers
-// under "everything is over-thought". Run before a harness change and after,
-// and diff the two returns. Cost: one scout, plus one low-effort agent per
-// transcript newer than the cutoff, plus one retry per transcript whose
-// extract came back empty or with missing count fields; a 7-day fleet window
-// is hundreds of files, so the caller picks the window. AGENT CAP: the
+// Invoked by the shadow skill, after its audit of one finished Docket run,
+// over the driving sessions' project directory with the run's activation
+// time as the cutoff, to put numbers under "everything is over-thought".
+// Run before a harness change and after, and diff the two returns. Cost:
+// one scout, plus one low-effort agent per transcript newer than the
+// cutoff, plus one retry per transcript whose extract came back empty or
+// with missing count fields; a directory shared by many sessions is
+// hundreds of files, so the caller picks the window. AGENT CAP: the
 // Workflow tool caps one invocation at 1000 agents over its lifetime, so
 // planAgentCap() projects the extract-plus-retry cost against that cap
 // before the Extract phase starts; a window that would exceed it is
@@ -51,7 +53,7 @@ const ERROR_TEXT_CHARS = 200
 const EFFORT_RANK = {low: 0, medium: 1, high: 2, xhigh: 3, max: 4}
 const UNKNOWN_EFFORT_RANK = 9
 // Agent budget: the Workflow tool caps one invocation at 1000 agent() calls
-// over its lifetime. A fleet window can be "hundreds of files," so
+// over its lifetime. A shared project directory can be "hundreds of files," so
 // planAgentCap() checks the caller's window against that cap, the same
 // AGENT_CAP/AGENT_CAP_MARGIN pattern corpus-check.js uses.
 // SCOUT_AGENTS is the one scout call; RETRY_ESTIMATE_FRACTION projects a

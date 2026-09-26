@@ -4,7 +4,7 @@
 #
 # The evidence half of the sandbox self-improving loop (operator ruling).
 # The allowlist is EVIDENCE-ONLY, which is only honest if evidence
-# reaches the operator faster than a weekly shadow sweep: the wrong Go module
+# reaches the operator faster than a later shadow audit: the wrong Go module
 # cache path cost ~1,650 sandbox lifts over sixteen days before anybody looked,
 # and the only reason it surfaced at all was a post-mortem nobody had scheduled.
 #

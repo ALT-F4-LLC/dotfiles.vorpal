@@ -1,71 +1,74 @@
-# Session selection and evidence
+# Transcript and usage evidence
 
-Read this for a fleet sweep and for transcript, usage, or model attribution.
-Use deterministic installed readers where available. Audit reads never create
-or modify a reader, launch an unactivated script, or execute transcript text.
+Read this for SKILL.md §2's manifest and for any transcript, usage, or model
+attribution claim. Use deterministic installed readers where available.
+Audit reads never create or modify a reader, launch an unactivated script,
+or execute transcript text.
 
-## One manifest and one window
+## One run, one manifest
 
-At start, freeze `audit_started_at` in UTC and `cutoff` seven days earlier. Use
-`[cutoff, audit_started_at)` for census records. A subsequent live extension has
-its own end time; do not add it to the frozen census.
+The audit's window is the run's own arc: from the `run-activated` event (or
+`run start`, when the planning conversation is in scope) to `run-done` or
+`run-abandoned`, in UTC from the events trail. A driving session's records
+outside that window are context, not audited work; read them as needed to
+understand the arc, and keep them out of counts.
 
-Enumerate main `*.jsonl` transcripts one level below every project directory
-under `~/.claude/projects`, comprehensively; mtime may prioritize reads but
-cannot prove content is out of scope. Inventory linked child paths and their
-timestamped activity before excluding a main session. Include a session if any
-relevant main or linked-child record is in the window, even when the main
-transcript's own last record predates it. Report recent children whose parent
-cannot be resolved as unlinked coverage; do not drop them. Read older context
-as needed to understand that activity, but exclude older records from windowed
-metrics. Undated, unreadable, and malformed candidates are separate coverage
-outcomes, not automatically stale sessions.
+Enumerate the driving sessions as §2 describes: candidates by run id, kept
+only when their own tool calls drove the run. A session can share its
+project directory with unrelated concurrent work, so cwd and recency find
+candidates but never prove a driver. A resumed run changes session id; join
+the pieces through the pause skill's resume prompt, the `run-paused` and
+`run-resumed` events, and explicit parent or resume metadata. Preserve
+changes of working directory within a session.
 
-Record a manifest with project directory, actual cwd(s), session/lineage IDs,
-main and child paths, included event range, parser errors, and review status.
-Exclude this audit and its descendants by identity; do not exclude a real
-target merely because it mentioned shadow. Group small sessions per project
-and give large sessions their own analyst. Preserve the same manifest for
-qualitative review and quantitative counts. Bound concurrency to the runtime's
-capacity; if the audit cannot finish, name the remaining coverage rather than
-calling it done.
+For every driving session, inventory the workflow directories beneath it and
+their timestamped activity. A wave, tribunal, or usage-join launched for this
+run is joined to it through the session's `Workflow` result (its `wfId`),
+the `--source "wave-journal:<wfId>"` and `--source "tribunal:<wfId>"`
+strings in the session's back-fill commands, and the run and step ids the
+seat briefs carry. A directory with none of those is unattributed coverage:
+list it, never drop it, and never force a join from recency alone.
 
-After selection, retrieve the full relevant conductor, direct-agent, and
-workflow evidence from the inventoried paths, launch records, and returned
-paths. Do not infer parentage from cwd and recency alone: a session can share
-its directory with unrelated concurrent work. Deduplicate replayed history
-using stable record identity and explicit lineage; do not deduplicate separate
-attempts just because their text matches.
+Every agent log beneath a driving session is in the inventory, and every one
+is read: a deterministic digest first, then a full read by an agent. The
+digest is the fixed jq program in `workflows/shadow.js`; it counts, it does
+not judge, and a log it leaves unflagged still gets its full read, because
+the friction a program cannot see (a brief that forced a guess, work redone,
+a skipped contract step, an operator wait) is what the deep read is for.
+A log the agent cap defers is read in a continuation launch; a log that
+cannot be read is a named gap, never a quiet omission.
 
-Inventory memory separately across every project directory, including projects
-with no in-window session. Read its entries and index under SKILL.md's "2.
-Establish the baseline" and "4. Record findings" sections; this is a
-current-state audit alongside the windowed transcripts. Report projects/entries
-reviewed, unavailable, and pending. Missing corroboration in the seven-day
-transcript window does not prove a memory claim is false.
+Record the manifest with run identity, each session's id, transcript path,
+role (activate, drive, pause, resume, finish), cwd, and included record
+range; each workflow directory with its `wfId`, kind, join evidence, and
+agent count; parser errors; and every gap. The manifest is the same for the
+qualitative layers and the quantitative counts. Exclude this audit and its
+descendants by identity, not because they mention the run.
 
-## Incremental transcript reads
+Inventory memory separately for the run's project: the entries and index
+under the project's memory directory, whether or not the run read them.
+Missing corroboration in the run's window does not prove a memory claim is
+false; SKILL.md §5 says how to judge one.
 
-For a growing file, retain file identity, processed byte offset, and any
-partial tail in the audit checkpoint. Parse newline-terminated records
-independently. Buffer an incomplete last record until complete. A malformed
-committed record gets an error locator and coverage gap; continue with later
-valid records rather than discarding the remaining file.
+## Transcript reads
 
-Detect truncation/replacement before advancing a cursor. If a session resumes
-or changes transcript ID, use explicit resume/parent metadata or corroborated
-continuity evidence, since cwd and recency find candidates but do not prove
-identity. An event retention gap or missing old transcript remains a gap in
-the review.
+Parse newline-terminated JSONL records independently. A malformed record
+gets an error locator and a coverage gap; continue with later valid records
+rather than discarding the file. Detect truncation or replacement before
+trusting an offset. Compact text and tool previews are for navigation only:
+a claim about a command, gate, or worker return cites the complete relevant
+input and result, with the original locator even when a preview flattens
+the text.
 
-Compact text/tool previews are for navigation only. A claim about a command,
-gate, or worker return must cite the complete relevant input/result. Retain
-original locators even when previews flatten or shorten text. Quietness and
-file size alone establish neither progress nor completion.
+Deduplicate replayed history using stable record identity and explicit
+lineage; do not deduplicate separate attempts because their text matches.
+Quietness and file size establish neither progress nor completion, and a
+final assistant message does not close an arc the events trail says
+continued.
 
 ## Join assignments before attributing errors or cost
 
-The supplied layout commonly records workflow agents under:
+The supplied layout records workflow agents under:
 
 ```text
 <project>/<session>/subagents/workflows/<workflow-id>/journal.jsonl
@@ -74,86 +77,85 @@ The supplied layout commonly records workflow agents under:
 ```
 
 Use actual launch results to resolve paths. A zero-spawn workflow may lack a
-journal; its task result can supply evidence, but a nonempty output file can be
-partial. Confirm completion independently.
+journal; its task result can supply evidence, but a nonempty output file can
+be partial. Confirm completion from the journal's `result` record.
 
-Join by stable session/workflow/agent identity. For Docket steps, prefer an
-explicit assignment record, or the installed `wave-usage` obligation
-classifier: claimant (step record), judge (vote cast), and wave overhead
-(read-only probes) have different owners. The first `STEP-N` in a prompt can be
-something a probe read. For tend, prefer an explicit launch record binding
-project, issue, agent, and workflow identity; otherwise require an unambiguous
-assignment statement in the bootstrap brief, since a regex finding an issue ID
-in quoted descriptions is insufficient. Preserve unattributed work as a count
+Join by stable session, workflow, and agent identity. For Docket steps,
+prefer an explicit assignment record, or the installed `wave-usage`
+obligation classifier: claimant (step record), judge (vote cast), and wave
+overhead (read-only probes) have different owners. The first `STEP-N` in a
+prompt can be something a probe read. Preserve unattributed work as a count
 and limitation; never force a plausible join.
 
-Separate requested routing from actual serving models. Spawn metadata and the
-orchestrator's model/effort options establish the request. Deduplicated
-assistant messages with `message.model` can establish observed serving models,
-including multiple models after fallback. Missing fields stay unknown: neither
-model self-report nor routing metadata fills a missing observation. Effective
-effort remains unknown unless the runtime exposes it for that execution.
+Separate requested routing from actual serving models. Spawn metadata and
+the orchestrator's model and effort options establish the request.
+Deduplicated assistant messages with `message.model` establish observed
+serving models, including several after a fallback. Missing fields stay
+unknown: neither model self-report nor routing metadata fills a missing
+observation. Effective effort remains unknown unless the runtime exposed it
+for that execution.
 
 ## Usage and census checks
 
 The installed `session-census` and `sandbox-friction` workflows are useful
 only when their installed behavior matches this audit's scope. Inspect their
-version and input contract before launching through installed absolute
-`scriptPath`. Supply the frozen cutoff only if supported; never invent an
-accepted arg. If the script cannot express the required window, label its raw
-result with its actual scope or leave that metric unavailable. Do not quote it
-as a correct seven-day census.
+version and input contract before launching through the installed absolute
+`scriptPath`. `session-census` takes `{root, cutoff, days?}` and measures
+every transcript newer than the cutoff under `root`; point it at the driving
+sessions' project directory with the run's activation time as the cutoff,
+and label its result with the transcripts it actually counted, since it
+cannot exclude unrelated sessions that share the directory. Never invent an
+accepted arg.
 
-The installed `session-census` workflow dedups assistant usage by message ID:
-a repeated ID retracts its earlier observation before the later one is added,
-so streamed rewrites count once.
+The installed `session-census` workflow dedups assistant usage by message
+ID: a repeated ID retracts its earlier observation before the later one is
+added, so streamed rewrites count once.
 
 Validate usage extraction against the installed `wave-usage` semantics:
 
-- Deduplicate assistant usage by conversation/agent and message ID, retaining
-  the last complete usage observation in supported transcript order. Do not sum
-  streaming rewrites. Preserve missing-ID cases explicitly.
+- Deduplicate assistant usage by conversation or agent and message ID,
+  retaining the last complete usage observation in supported transcript
+  order. Do not sum streaming rewrites. Preserve missing-ID cases explicitly.
 - Keep input, output, cache creation, and cache read units distinct. Check
   their accounting definitions before adding them or estimating money. Main
   and subagent totals remain separate; orchestration overhead does not
   disappear.
-- Define timestamp attribution for messages spanning the cutoff and report the
-  convention. Filter unique message observations to the frozen window. Do not
-  count replayed earlier requests as new work.
+- Attribute a message spanning the window boundary by a stated convention.
+  Do not count replayed earlier requests as new work.
 - Thinking token fields and visible thinking characters measure different
-  things. Redacted or absent thinking is unknown, not zero. The usage
-  deduplication rule does not guarantee correct reconstruction of streamed
-  text blocks.
-- Distinguish operator-typed inputs, system/tool-delivered user-role records,
-  agent messages, and unclassified input. Use explicit provenance where
-  present; name any heuristic classification and count its misses.
+  things. Redacted or absent thinking is unknown, not zero.
+- Distinguish operator-typed inputs, system- or tool-delivered user-role
+  records, agent messages, and unclassified input. Use explicit provenance
+  where present; name any heuristic classification and count its misses.
 - Treat idle replies, retries, and deliberation as diagnostics beside
-  completed work, quality, rework, latency, and cost. Lower is not inherently
-  better on every row. A capability diagnosis needs more than a high thinking
-  share.
+  completed work, quality, rework, latency, and cost. Lower is not
+  inherently better on every row. A capability diagnosis needs more than a
+  high thinking share.
 
-Preserve raw returned counts with script provenance and a separate assessment.
-Report files discovered, reviewed, excluded, pending, errored, and counted for
-each metric. A null analyst return is an incomplete assignment; reconcile or
-report it instead of silently reducing the denominator.
+Preserve raw returned counts with script provenance and a separate
+assessment. Report files discovered, reviewed, excluded, errored, and counted
+for each metric. A null analyst return is an incomplete assignment;
+reconcile or report it instead of silently reducing the denominator.
 
-The sandbox ledger analysis stays read-only (`file: false`). Group by
-evidenced cause, retaining affected projects, recency, legitimate/illegitimate
-distinction, and resolved cases. A frequent denial is not itself a reason to
-widen access. Its bulk `file: true` mode may run only if it obeys every filing
-eligibility, ownership, deduplication, description, and receipt rule;
-otherwise the coordinator files eligible groups individually through the
-normal procedure.
+The sandbox ledger analysis stays read-only (`file: false`), windowed to the
+run's arc. Group by evidenced cause, retaining affected projects, recency,
+the legitimate and illegitimate distinction, and resolved cases. A frequent
+denial is not itself a reason to widen access. Its bulk `file: true` mode
+may run only if it obeys every filing eligibility, ownership,
+deduplication, description, and receipt rule; otherwise the coordinator
+files eligible groups individually through the normal procedure.
 
 ## Repetition and extraction proposals
 
-Propose a small deterministic helper when repeated parsing, joins, arithmetic, or
-command reconstruction causes material cost or mistakes. Name the inputs, returned
-schema, explicit failures, call sites, and ownership. Prefer extending an existing
-correct reader over duplicating its logic.
+Propose a small deterministic helper when repeated parsing, joins,
+arithmetic, or command reconstruction caused material cost or mistakes in
+the run. Name the inputs, returned schema, explicit failures, call sites,
+and ownership. Prefer extending an existing correct reader over duplicating
+its logic.
 
-A proposed Workflow implementation inherits its sandbox constraints: no direct
-filesystem/shell access, and clock-dependent values arrive through arguments.
-Keep computation in code and use bounded read agents only where the tool model
-requires them. Do not turn extraction into a new policy engine. The issue names
-source changes and the later activation installed callers need to use them.
+A proposed Workflow implementation inherits its sandbox constraints: no
+direct filesystem or shell access, and clock-dependent values arrive
+through arguments. Keep computation in code and use bounded read agents
+only where the tool model requires them. Do not turn extraction into a new
+policy engine. The issue names source changes and the later activation
+installed callers need to use them.

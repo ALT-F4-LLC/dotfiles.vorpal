@@ -55,9 +55,7 @@ never halts a run itself** — it issues no `run pause`, no `dispatch close`,
 and never `dispatch abandon`; that verb discards live work unconditionally
 and belongs to pause's hard halt alone. Do not re-derive pause's steps here.
 
-Then continue the sweep. Pause winds down a live `shadow-live` in both
-halt modes, so once it returns, the shadow row below is already handled:
-record it as such and do not message the observer a second time.
+Then continue the sweep.
 
 ## Sweep
 
@@ -85,11 +83,6 @@ cron says nothing about a wakeup. Answer both rows.
 
 **Artifact watches this session opened.** Stop each with `ArtifactComments`,
 `action: "watch"`, `on: false`.
-
-**A live `shadow-live` agent.** If pause already handled it, that row is
-done. Otherwise wind it down exactly the way `skills/pause/SKILL.md` does
-in its own shadow section: one message telling it to stop observing and
-run the shadow skill's close-out, with no polling for the review after.
 
 **Git worktrees this session created.** Check each against
 `git worktree list` and your own `wfId` record. **Never remove a worktree
@@ -153,7 +146,6 @@ or explicitly marked not applicable, never silently dropped:
 - crons created this session
 - artifact watches opened this session
 - worktrees created this session, each with its integration state
-- a live `shadow-live` observer
 - a driven Docket run, handed to `/pause`
 - operator questions this session never answered
 - `AskUserQuestion` rounds the operator never answered

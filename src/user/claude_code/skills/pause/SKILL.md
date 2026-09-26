@@ -113,23 +113,6 @@ were mid-execution, their worktree paths if known, and that their outcome
 is unknown until a later session reconciles (`docket step show STEP-N`,
 `git worktree list`).
 
-## Winding down a live shadow
-
-In both modes, once the run is parked and the dispatch is settled
-(graceful) or abandoned (hard): if this session spawned a live shadow over
-itself via the `shadow` skill — the background agent it names
-`shadow-live`, addressable by that name with `SendMessage` — tell it the
-run is pausing. One message: stop observing now and finish your work,
-running the shadow skill's own close-out (file every finding as an issue
-in its owning project, deliver the severity-ranked review). A shadow agent
-lives inside the session that spawned it and cannot carry over; the
-resuming session spawns a new one. Do not poll for the review after — its
-reply lands at a later turn boundary, and the resume snapshot does not
-wait on it.
-
-A pause with no live shadow skips this section; do not spawn one just to
-stop it.
-
 ## Building the resume snapshot
 
 Much of what a docket-run session knows lives only in this session's own
@@ -229,8 +212,7 @@ un-integrated writer sha with its worktree path; whether this run's
 budget raise has already been used; operator precedent rulings and any
 unexecuted answer; held peer authorization claims; every tribunal
 proposal id with its tally; foreign `wf_*` worktree entries observed;
-every step id the graceful halt refused; whether a live shadow was
-watching and was told to wind down; every advisory note carrying
+every step id the graceful halt refused; every advisory note carrying
 **`DISPOSITION REQUIRED:`**; and that the first action named is `docket
 run conduct RUN-N` with no token anywhere in the prompt. Check this list
 as a gate, not from memory.
@@ -269,10 +251,8 @@ summary (where the run stands, what is unfinished),
 session-private file per docket-run's **The conductor capability**, never
 printed; it retires the token this session held), then `docket run resume
 RUN-N --reason '<why>'` redirecting that file, then the session-only
-state above in full — including whether a live shadow was
-watching and was told to wind down, so the resuming session knows to
-seat a fresh one via `/shadow` — then a pointer to `docket-run`'s own
-SKILL.md for everything engine-recoverable.
+state above in full, then a pointer to `docket-run`'s own SKILL.md for
+everything engine-recoverable.
 
 **Permission and classifier denials are session-scoped, never
 standing.** A tool, verb, or command the classifier or permission system

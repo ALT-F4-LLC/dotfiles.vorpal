@@ -1,134 +1,108 @@
-# Runtime and Docket observation
+# Runtime and Docket reads
 
-Read this before live delegation or engine access. These are capability checks,
-not permission to change the environment. Preserve a distinction between public
-Claude Code behavior, installed local contracts, and dated incident evidence.
+Read this before the captures in SKILL.md §2 and before composing the
+workflow launch in §4. These are capability checks, not permission to change
+the environment. Keep three things apart: public Claude Code behavior, the
+installed local contracts, and dated incident evidence.
 
-## Agent and schedule behavior
+## Engine reads on a terminal run
 
-Use the installed tool schema and returned task/agent identity. A named launch
-can be a teammate when agent teams are enabled; an ordinary background subagent
-has native completion delivery. An addressable observer may also send interim
-findings through `SendMessage`. Retain the log-before-delivery recovery path
-without assuming every final answer disappears. Record monitor behavior and
-message latency for the actual mode and build. Neither a message
-acknowledgment nor a collected event proves the receiver processed it.
-[Tools reference](https://code.claude.com/docs/en/tools-reference#agent-tool-behavior).
+The audited run is `done` or `abandoned` before any engine read happens, so
+no read here can race a dispatch, wake a queue consumer, or change what a
+step will see. Under that precondition these verbs are the audit's read
+surface, and the operator has authorized them, `verify-pins` included:
 
-An existing custom observer definition can specify effort and a smaller tool
-surface while remaining addressable. Do not invent an `effort` field on a tool
-that does not expose it, and do not install or edit an agent definition during
-an audit. A prompt boundary alone is not enforced containment; unrestricted
-shell and write-capable MCP tools can exceed a nominally read-only tool
-selection.
-[Subagents](https://code.claude.com/docs/en/sub-agents).
+```text
+run status | run report | run verify-pins
+events list --run RUN-N --all-projects [--since N | --tail N]
+issue list | issue show
+step show | step context | step render | step gates | step artifacts | step artifact
+vote show | vote result
+project list | config get | trust list
+workflow list | workflow show | workflow lint
+doctor, only where its installed build documents a non-repairing check
+```
 
-As checked 2026-09-11, Fable 5.1 (`claude-fable-5-1`), Opus 5 (`claude-opus-5`),
-and Sonnet 5 (`claude-sonnet-5`) are the current documented models, and the
-`fable` alias resolves to Fable 5.1; provider mappings and overrides matter.
-Preserve the Fable observer preference, while recording fallbacks from
-message-level evidence. These model IDs are routing choices,
-not evidence that a behavior evaluation ran on those models.
-[Model configuration](https://code.claude.com/docs/en/model-config).
+Each of these documents itself as READ-ONLY for run state: no reap, no
+lease touch, no re-pin. Shared startup still opens the store and may migrate
+it forward, which is why the audit captures once (§2) and hands analysts the
+captured files, and why a store the sandbox denies is left alone: report the
+denial and use the captures and transcripts you already have. Never
+substitute an older binary, change the store path, initialize a project,
+or migrate a database to make a read work.
 
-Determine the loop's actual scheduling mechanism:
+Never run `next`, `dispatch`, `step claim|record|heartbeat|reap`, `run
+activate|resume|repin|abandon|note|budget`, `issue` mutations other than the
+filing writes in [filing](filing.md), `trust add`, or `config set` as part of
+an audit. A verb that refuses is recorded with its exact argv, exit, and JSON
+shape; if `--json` suppresses the diagnostic, take one human-format read and
+never infer its contents.
 
-- Self-paced `/loop /tend`: inspect its armed `ScheduleWakeup` state and current
-  pass. A missing wakeup alone does not establish that a worker finished.
-- Explicit-interval `/loop 20m /tend`: inspect its corresponding cron task and
-  current pass. A missing self-paced wakeup says nothing about that cron job.
-- Bare `tend`: one pass, no promised recurrence; wait for the pass and its worker
-  to settle before calling it a post-mortem.
+Before the first read, establish the binary PATH selects, its version, the
+selected store, and the owning project. Do not dump environment variables or
+configuration secrets. The supplied resolution order is explicit
+`DOCKET_PATH`, then a repository-local store found by walking upward, then
+the global store; a matching run id in a different store is a different run.
 
-Check for cancellation, expiration, and resume gaps. Fixed recurring jobs can
-expire, and monitors are not restored on resume. An operator stop can end the
-schedule while child work remains alive. Do not create, alter, or cancel the
-observed schedule to discover its state.
-[Scheduled tasks](https://code.claude.com/docs/en/scheduled-tasks).
+`events list` is cwd-scoped without `--all-projects` and can return `ok:true,
+total 0` for a run driven from another project's directory; always pass the
+flag, and paginate with `--since` until `total` is reached. `run report`,
+`step show`, and `step artifacts` answer for a run wherever it lives.
 
-`Workflow` is a documented Claude Code feature, while `wave.js`, the census,
-and Docket are local integrations. Read the installed `workflow-authoring`
-reference before launching a local workflow, and launch only the installed
-absolute `scriptPath` with literal arguments (never an unactivated source
-script or a refused script copied into an allowed directory; see
-[evidence](evidence.md#usage-and-census-checks)). A workflow's null result
-means no usable result; it does not prove no agent ran or no side effect
-occurred. [Workflows](https://code.claude.com/docs/en/workflows).
-
-## Docket access gate
-
-Before any live store access, establish the binary selected by PATH, its source
-or build provenance, selected store, and owning project. Do not dump environment
-variables or configuration secrets. The supplied local resolution contract is:
-explicit `DOCKET_PATH`, then a repository-local store found by walking upward,
-then the global store. Verify this for the installed build; a matching issue ID
-in a different store is not the same issue.
-
-No Docket verb is write-free against the live store: shared startup opens the
-database and migrates it before command handlers run, and the connection
-configures WAL, so a handler with no update statements can still write through
-startup or project resolution. `verify-pins` in particular is absent from the
-inspected read-verb registration exemption; never invoke it against the live
-store under this observation boundary.
-
-Use a supported, verified read-only observer connection if one becomes
-available. Otherwise use the observed session's already-recorded results and
-existing consistent exports. Report their time and freshness. Do not substitute
-an older binary, change the live store path, initialize a project, reap a lease,
-or migrate a database merely to make observation work.
-
-Use `immutable=1` only for a known consistent immutable snapshot, never for a
-changing live database. A main-file view can omit committed WAL records, so
-absence from it does not prove absence from the run. A casual separate copy of
-database and WAL files is not a consistent snapshot. Read-only WAL access has
-prerequisites; do not force a checkpoint or create sidecars to satisfy them
-during observation.
-[SQLite URI semantics](https://www.sqlite.org/uri.html),
-[SQLite WAL](https://www.sqlite.org/wal.html).
-
-## Observation operations
-
-These names describe intended read operations, not an unconditional allowlist:
-`run status`, `run report`, `run verify-pins` (per the access gate above),
-`events list`, `issue list|show`, `project list`, `config get`, `trust list`,
-`workflow list|show|lint`, `step show|context|render|artifacts|artifact`, and a
-verified non-repairing `doctor` check. Reassess after a binary change. `next`,
-`dispatch`, claim/record, reap, activation, and configuration writes stay
-outside the observer's role.
-
-Anchor project-scoped queries to a verified checkout. An empty listing from an
-unregistered or wrong directory is not evidence of an empty queue. A project
-identity is not necessarily its usable checkout; verify the actual worktree
-instead of constructing `<identity>/main` blindly.
-
-Preserve these local evidence distinctions when supported by the build:
+## What each read establishes
 
 | Question | Evidence and limit |
 |---|---|
-| What did a packet contain? | Captured packet or `step render`; today's render may differ from what was consumed. A successful render does not validate every run pin. |
-| Are pins intact? | `run verify-pins` through a verified read-only path, never the live store. Record each unresolved or mismatched reference. Do not re-pin. |
-| Manual pin fallback? | Validate the JSON envelope and pin array. Resolve each reference using its recorded origin/root precedence; do not assume every file belongs to the shared corpus. Compare hashes and count verified, mismatched, unresolved and unsupported pins separately. A valid empty array, a missing field and a parse failure are different outcomes. |
-| What produced an artifact? | `step artifacts` then `step artifact`, including payload where needed. Listing hashes may describe summary bodies rather than payloads. |
-| Did a gate pass? | Gate result/artifact or authoritative report. A gate-recorded event alone may omit the verdict. |
-| Is the event history complete? | Preserve store/project identity and last processed sequence. Use the installed cursor semantics; record gaps and retention errors. A newest-page view cannot replace full pagination for a post-mortem. |
-| Why did a command refuse? | Preserve exact argv, exit, JSON shape, and available diagnostics. If JSON suppresses useful diagnostics in this build, use one safe human-format read; never infer its contents. |
+| What state did the run end in, and when? | `run status RUN-N`: `status`, `updated_at_ms`, the `issues`, `steps`, and `pins` arrays. `run-done` or `run-abandoned` in the events trail carries the ending; `issue-abandoned` carries a per-issue ruling. |
+| What did a packet contain? | The journal's persisted brief for the agent that consumed it; `step render` today may differ from what was consumed and does not validate every pin. |
+| Are the pins intact now? | `run verify-pins RUN-N`: `ok`, `changed`, `missing` per pin, plus `references` for closure. Drift after the run ended is a source fact, not a run defect; drift the run hit mid-flight shows as a refusal in the transcript. |
+| What produced an artifact? | `step artifacts STEP-N` then `step artifact <id>`. Listing hashes may describe summary bodies rather than payloads. |
+| Did a gate pass, and why not? | `step gates STEP-N --json`: verdict, exit, duration, `output_tail` on non-pass rows, `--gate <name>` for one gate's full output. A `gate-recorded` event alone omits the verdict. |
+| How did a panel decide? | The proposal id on `run report`'s step `vote`, then `vote show` for casts with confidence, relevance, weight, and verdict, and `vote result` for the tally. |
+| Why did a step park? | `run report`'s `park_reason` and `routing` are separate fields; read both. The `step-held`, `step-routed`, and `lease-reaped` events carry the trail. |
+| Is the trail complete? | Store and project identity plus the last processed `seq`. Gaps and retention errors are coverage limits in the review. |
+| What did a wave spend? | The journal directory, per [evidence](evidence.md#join-assignments-before-attributing-errors-or-cost); `run report`'s `Coverage:` lines name the joins that never landed. |
+
+## Workflow runtime evidence
+
+`Workflow` is a documented Claude Code feature; `wave.js`, `tribunal.js`,
+`wave-usage.js`, `session-census.js`, and `shadow.js` are local
+integrations. A completed workflow's journal directory holds
+`journal.jsonl` (`started` and `result` per agent, no usage, no step id),
+one `agent-<id>.meta.json` per seat, and one `agent-<id>.jsonl` transcript
+per seat. A null result in the journal means no usable result; it does not
+prove no agent ran or no side effect occurred. Read the installed
+`workflow-authoring` reference before launching `shadow.js`, and launch only
+the installed absolute `scriptPath` with literal arguments, never a source
+copy.
+[Workflows](https://code.claude.com/docs/en/workflows).
+
+As checked 2026-09-11, Fable 5.1 (`claude-fable-5-1`), Opus 5
+(`claude-opus-5`), and Sonnet 5 (`claude-sonnet-5`) are the current
+documented models, and the `fable` alias resolves to Fable 5.1. Spawn
+metadata establishes the requested model and effort; deduplicated assistant
+messages with `message.model` establish what served. Neither is evidence
+that a behavior evaluation ran on that model.
+[Model configuration](https://code.claude.com/docs/en/model-config).
 
 For install drift, compare source, installed paths, symlink targets, and the
-observed launch. The local activation chain is `just activate`; shadow never
-runs it. Missing optional roots can mean intentional dormancy. Dangling roots,
-conflicting pinned versions, missing repository packets, and unactivated
-required fixes need their actual consequences evidenced before filing.
+bytes the run pinned. The local activation chain is `just activate`; shadow
+never runs it. Missing optional roots can mean intentional dormancy.
+Dangling roots, conflicting pinned versions, missing repository packets, and
+unactivated required fixes need their actual consequences in the run
+evidenced before filing.
 
 ## Versioned incident evidence
 
-Retain a local workaround only with its observed build/mode, date, reproducer or
-source locator, and a condition for retiring it. This applies to delayed monitor
-delivery, missing final reports, transcript rollover, question flushing,
-classifier behavior, journal schemas, and hook exit shapes. Public documentation
-does not independently verify the supplied Docket incident history.
+Retain a local workaround only with its observed build, date, reproducer or
+source locator, and a condition for retiring it. This applies to delayed
+result delivery, missing final reports, transcript rollover, question
+flushing, classifier behavior, journal schemas, and hook exit shapes. Public
+documentation does not independently verify the supplied Docket incident
+history.
 
-Previously fixed empty diffs and stale loop summaries are regression signatures,
-not presumed current defects. Stored artifacts can retain historical defects.
-Distinguish a new record after the fix from an old artifact read again. Likewise,
-a guard refusal is evidence to investigate, not proof the attempted action was
-wrong or that a different tool should perform it.
+Previously fixed empty diffs and stale summaries are regression signatures,
+not presumed current defects. Stored artifacts can retain historical
+defects; distinguish a record written after the fix from an old artifact
+read again. A guard refusal is evidence to investigate, not proof the
+attempted action was wrong or that a different tool should have performed it.

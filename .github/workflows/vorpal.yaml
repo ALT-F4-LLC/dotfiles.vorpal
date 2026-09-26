@@ -85,6 +85,8 @@ jobs:
 
       - run: bash tests/session-census-extract-retry-pipeline.test.sh
 
+      - run: bash tests/shadow-workflow.test.sh
+
       - run: bash tests/tdd-preflight.test.sh
 
       - run: bash tests/tighten-decide.test.sh

@@ -36,7 +36,7 @@
 #   1. Every actual bypass DECISION (allow-by-default or deny) is now logged
 #      to ~/.claude/friction with the payload's key set and the agent_type
 #      value seen, so the next occurrence confirms the shape directly
-#      instead of needing another shadow sweep to reconstruct it.
+#      instead of needing a later shadow audit to reconstruct it.
 #   2. When agent_type is absent or unrecognized, do not allow by default:
 #      fall back to the transcript's own first message, which for a
 #      Workflow-spawned seat is that seat's brief and carries markers no

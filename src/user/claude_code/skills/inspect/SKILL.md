@@ -8,8 +8,8 @@ description: >-
   location and an acceptance check, dedupes, and files worker-ready Docket
   issues with no routing label for docket-groom to triage. `inspect reinspect`
   re-checks filed items against the current checkout and reports pass, fail,
-  or unverifiable. Never fixes anything. Distinct from shadow, which observes
-  sessions, and finish, which files a session's own leftovers.
+  or unverifiable. Never fixes anything. Distinct from shadow, which audits a
+  finished Docket run, and finish, which files a session's own leftovers.
 argument-hint: "[area or path to walk | reinspect [ISSUE-ID ... | since <date> | <scope glob>]]"
 ---
 

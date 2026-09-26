@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # Behavior suite for session-census.js's agent-cap pre-flight: planAgentCap()
-# projects a fleet sweep's extract-plus-retry cost against the Workflow
+# projects a transcript window's extract-plus-retry cost against the Workflow
 # tool's 1000-agent lifetime cap.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
 # and this one is in that list. It needs only `node` and `awk` — no engine, no
 # database, no network, and it never runs a workflow.
 #
-# WHY THIS EXISTS. This script's own header says a fleet window can be
+# WHY THIS EXISTS. This script's own header says a shared project directory can be
 # "hundreds of files," and trusts the caller (the shadow skill) to pick a
 # window that fits — but nothing here ever checked that trust against the
 # real cap the way corpus-check.js's AGENT_CAP/AGENT_CAP_MARGIN/verifyBudget

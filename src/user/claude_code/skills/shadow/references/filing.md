@@ -1,38 +1,35 @@
 # Reconcile and file
 
-Read this before any issue write. One coordinator owns filing for the audit.
-Observation authorization permits findings intake once these conditions are
-met. It never permits fixing or draining the queue.
+Read this before any issue write. This conversation owns filing for the
+audit; the workflow's analysts and reconciler draft and never file. Audit
+authorization permits findings intake once these conditions are met. It
+never permits fixing or draining the queue.
 
 ## Eligibility
 
-For every finding, recheck the applicable historical contract, counterevidence,
-current source, affected work, and existing issue state. Use this disposition:
+For every finding, recheck the applicable pinned contract, the refutations,
+current source, and existing issue state. Use this disposition:
 
 | Disposition | Action |
 |---|---|
-| Confirmed, unresolved, affected observed work terminal | File or attach recurrence to an existing issue. |
-| Based only on incomplete work, or filing may trigger workers into affected observed work | Hold pending and give the complete writeup in the review. Completed evidence elsewhere does not remove this collision risk. |
-| Already tracked | Name the owning project and issue. Add new material evidence only; do not repeat the same comment each sweep. |
-| Fixed during the observed arc | Record the resolving artifact/commit and verification. No new fix issue; a remaining install problem needs its own evidence. |
+| Confirmed and unresolved | File, or attach recurrence to an existing issue. |
+| Already tracked | Name the owning project and issue. Add new material evidence only; do not repeat the same comment each audit. |
+| Fixed during the run's arc or since | Record the resolving artifact or commit and its verification. No new fix issue; a remaining install problem needs its own evidence. |
 | Instance policy choice | Refer to docket-retro with evidence; do not file it as a shipped-definition defect. |
-| Uncertain, contradicted, or only an expected guard firing | Retain as a limitation or control observation; no defect filing. |
-| Owning checkout/store unavailable or issue command blocked | Mark filing pending and deliver the worker-ready writeup. |
+| Uncertain, refuted, or only an expected guard firing | Retain as a limitation or control observation; no defect filing. |
+| Owning checkout or store unavailable, or the issue command blocked | Mark filing pending and deliver the worker-ready writeup. |
 
-A run is terminal only with reliable run/task evidence and settled relevant
-children. A loop also requires confirmed scheduling stop and settled current
-work. Paused/waiting-human is not terminal, and unknown state stays pending.
-Recheck before each batch that could wake a queue consumer; these checks do
-not lock the repository or guarantee no other session can begin afterward. If
-the required noninterference needs an atomic guarantee, hold the finding
-until an explicitly non-dispatchable intake mechanism is available. Never
-invent a safe issue state or stop queue consumers to create one.
+The audited run is terminal, so no filing can wake work on it. Other work
+in the owning project can still be live: a shadow issue carries no routing
+label and no assignee, so `tend` and `docket-plan` cannot pick it up until
+`docket-groom` routes it. Never invent a safe issue state or stop queue
+consumers to create one.
 
 ## Route by owner and store
 
 Definition, shared-corpus, workflow, and harness-source remedies normally
 belong to the dotfiles project. Engine defects belong to the Docket codebase.
-A bug in an observed repository belongs to that repository. An instance
+A bug in the audited repository belongs to that repository. An instance
 override belongs in the policy referral unless it exposes a shipped defect.
 
 Resolve the owner's actual checkout and Git identity from trustworthy project
@@ -51,49 +48,61 @@ migrate as part of shadow.
 Run a verified creation operation from the owning checkout, using a subshell
 or the tool's cwd parameter. Quote the checkout and every scope glob. Supply
 issue text through supported structured input or a literal body file in the
-permitted audit directory; do not interpolate transcript text into shell code.
+audit directory; do not interpolate transcript text into shell code.
 
 ## Deduplicate before creating
 
-Give the finding a stable identity derived from owning project/store, affected
-source surface, violated behavior/root cause, and remedy class. Do not include
-the audit date or session ID in that defect identity. A fingerprint helps lookup;
-semantic comparison decides whether findings share a cause.
+Give the finding a stable identity derived from owning project and store,
+affected source surface, violated behavior or root cause, and remedy class.
+Do not include the run id or audit date in that defect identity. A
+fingerprint helps lookup; semantic comparison decides whether findings share
+a cause.
 
 Check existing issues across relevant states, including prior shadow issues.
-An unresolved match receives only new evidence. A closed issue with a confirmed
-new regression follows the installed project's reopen/new-regression convention;
-link the prior issue. If existing issues cannot be read, hold creation rather
-than blindly reproducing the last sweep's queue.
+An unresolved match receives only new evidence. A closed issue with a
+confirmed new regression follows the installed project's reopen or
+new-regression convention; link the prior issue. If existing issues cannot
+be read, hold creation rather than blindly reproducing the last audit's
+queue.
 
-Maintain a ledger: local finding ID, fingerprint, owner/store, intended operation,
-attempt, returned issue ID, and verified result. On a timeout or ambiguous return,
-reconcile the store before retrying; pass a stable, finding-derived
-`--idempotency-key` so a retried create cannot duplicate the same issue. Record
-batch receipts as they arrive so partial success survives interruption. Do not
-interpret a missing response as proof that creation failed.
+Maintain a ledger: local finding id, fingerprint, owner and store, intended
+operation, attempt, returned issue id, and verified result. On a timeout or
+ambiguous return, reconcile the store before retrying; pass a stable,
+finding-derived `--idempotency-key` so a retried create cannot duplicate the
+same issue. Record batch receipts as they arrive so partial success survives
+interruption. Do not interpret a missing response as proof that creation
+failed.
 
 ## Worker-ready issue contract
 
-Create one issue per distinct load-bearing or friction defect; batch paper-cuts
-only when they share an owning surface and coherent remedy. Before each
-create, measure the issue against the docket skill's
+Create one issue per distinct load-bearing or friction defect; batch
+paper-cuts only when they share an owning surface and coherent remedy. Before
+each create, measure the issue against the docket skill's
 [sizing reference](../../docket/references/sizing.md): pass its tier as
 `--size` on every create, file a remedy whose acceptance describes two or
 more independent outcomes as one issue per outcome, and keep a paper-cut
 batch under the cap or split it into batches that are. Retain the original
 local metadata contract when supported by the installed CLI:
 
-- Title: concrete behavior and consequence, one line. Session/run IDs go in the
-  description, not the title.
-- Priority: load-bearing → `high`, friction → `medium`, paper-cut batch → `low`.
-  Use `critical` only for a demonstrated defect actively causing material harm.
-- Type: `bug` for a broken contract/implementation, `task` for an improvement or
-  extraction, `chore` for a coherent paper-cut batch.
-- Label: `shadow`. Required file metadata (`-f`) names each remedy source path;
-  required `--scope` globs bound that work. Verify both persisted after creation.
-- No assignee, claim, run membership, or transition to in-progress. Shadow
-  supplies the intake; it never reserves execution.
+- Title: concrete behavior and consequence, one line. Run, step, and session
+  ids go in the description, not the title.
+- Priority: load-bearing → `high`, friction → `medium`, paper-cut batch →
+  `low`. Use `critical` only for a demonstrated defect actively causing
+  material harm.
+- Type: `bug` for a broken contract or implementation, `task` for an
+  improvement or extraction, `chore` for a coherent paper-cut batch.
+- Label: `shadow`. Required file metadata (`-f`) names each remedy source
+  path; required `--scope` globs bound that work. Verify both persisted after
+  creation.
+- No assignee, claim, run membership, routing label, or transition to
+  in-progress. Shadow supplies the intake; it never reserves execution.
+- Remedy: on the highest rung of the
+  [automation ladder](../../docket/references/automation.md#the-automation-ladder)
+  that can carry it. A remedy that keeps or adds a human touch names its
+  [vital condition](../../docket/references/automation.md#when-a-human-is-vital);
+  one that removes a touch names the automated check that replaces it.
+  Rewrite a draft whose refuters marked the remedy under-automated before
+  filing it.
 
 Use this description structure:
 
@@ -103,59 +112,63 @@ relevant categories from authn/authz, secrets, crypto, sandbox/permissions,
 a trust boundary, supply chain, or untrusted input at a privilege boundary>.
 
 Observed: behavior, expected contract, consequence, confidence.
-Evidence: project/session/run/agent IDs, UTC time, exact source locator and
+Evidence: run/step/session/agent ids, UTC time, exact source locator and
 minimal verbatim excerpt; command + refusal text + exit where material.
-Countercheck: what could have invalidated this claim and what was found.
+Countercheck: what the refuters tried and what was found.
 Current status: what ran then, what exists now, and why the remedy is still needed.
 Remedy: owning source path(s), concrete change or small diff; activation lag.
+Automation: the ladder rung, and why no higher rung can carry it; for a human
+gate, the vital condition it rests on.
 Acceptance: a check of resulting behavior and the failing variant it rejects.
 Shadow fingerprint: <stable identity>.
 Memory ref: <exact entry path and slug, only for a memory finding>.
 ```
 
 Preserve evidence accurately while omitting unrelated secrets and private
-content. Mark redactions; retain a local locator for the full source. A finding
-about a security boundary is still filed as a request. It carries no permission
-for the worker to change that boundary or destroy uncommitted work. Preserve the
-installed tend security-gate requirement and any authorization already present
-in the actual worker session; shadow does not manufacture or waive approval.
+content. Mark redactions; retain a local locator for the full source. A
+finding about a security boundary is still filed as a request. It carries no
+permission for the worker to change that boundary or destroy uncommitted
+work. Preserve the installed tend security-gate requirement and any
+authorization already present in the actual worker session; shadow does not
+manufacture or waive approval.
 
-Acceptance criteria must be checkable by a worker without this conversation. A
-command-backed criterion states the concrete failing variant/mutant the local
-docket-plan contract requires. For a prose judgment without an executable
-check, mark it `read-verified` and state what to inspect; never use that label
-to hide an unperformed behavioral test, and never claim a proposed acceptance
-check already ran.
+Acceptance criteria must be checkable by a worker without this conversation.
+A command-backed criterion states the concrete failing variant or mutant the
+local docket-plan contract requires. For a prose judgment without an
+executable check, mark it `read-verified` and state what to inspect; never
+use that label to hide an unperformed behavioral test, and never claim a
+proposed acceptance check already ran.
 
 Source fixes belong in the source repository, not the installed store. Name
-`src/user/claude_code/...` or `src/user/docket/config/...` as appropriate, and
-state that installed consumers use the fix after activation. A memory remedy
-may instead update the specific mutable entry; do not invent a source file for
-runtime memory. If required file/scope metadata cannot represent that target,
-hold it with a precise routing limitation rather than supplying unrelated paths.
+`src/user/claude_code/...` or `src/user/docket/config/...` as appropriate,
+and state that installed consumers use the fix after activation. A memory
+remedy may instead update the specific mutable entry; do not invent a source
+file for runtime memory. If required file or scope metadata cannot represent
+that target, hold it with a precise routing limitation rather than supplying
+unrelated paths.
 
-Verify each receipt's ID, title, files, labels, and empty assignee through a
+Verify each receipt's id, title, files, labels, and empty assignee through a
 permitted read path (`docket issue show`); verify scope from the create or
 edit response itself, since `issue show` does not return it. Name the owning
 project from the create call's target, not from a subsequent read. Correct
-only the coordinator's own
-filing metadata when authorized and necessary; do not use this allowance to
-edit other issue content or re-home unrelated work. A wrong-project receipt is
-a filing error to surface, not a successful item to count.
+only this audit's own filing metadata when authorized and necessary; do not
+use this allowance to edit other issue content or re-home unrelated work. A
+wrong-project receipt is a filing error to surface, not a successful item to
+count.
 
 ## Review and closure
 
-Every confirmed finding must have a project-qualified issue ID or a reason it
-was not filed. Preserve instance-policy referrals and findings resolved during
-the run without counting them as open defects. Name affected trust boundaries
-separately when relevant. Include the evidence coverage, unresolved
-limitations, the absolute audit log path, and the next condition another
-shadow should watch first.
+Every confirmed finding must have a project-qualified issue id or a reason
+it was not filed. Preserve instance-policy referrals and findings resolved
+during the run without counting them as open defects. Name affected trust
+boundaries separately when relevant. Include the evidence coverage,
+unresolved limitations, the absolute audit log path, and the condition the
+next shadow of a run should look at first.
 
-Persist the review and final ledger to that log before delivery. If storage
-was denied, deliver the full review through the permitted result channel and
-explicitly say no durable audit log was created.
+Persist the review and final ledger to the audit directory before delivery.
+If storage was denied, deliver the full review through the conversation and
+say explicitly that no durable audit log was created.
 
-Say that no fixes were applied. Filed issues drain through `tend` in their
-owning repos or through a docket-plan → docket-run execution; do not start
+Say that no fixes were applied. Filed issues drain through `docket-groom`
+routing into `tend` or a docket-plan → docket-run execution; do not start
 that work.

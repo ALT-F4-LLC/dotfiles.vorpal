@@ -93,6 +93,7 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
 {
     extract wave-usage-extract  || fatal "bad or missing TEST markers for wave-usage-extract"
     extract wave-usage-classify || fatal "bad or missing TEST markers for wave-usage-classify"
+    extract wave-usage-paths    || fatal "bad or missing TEST markers for wave-usage-paths"
 } > "${WORK}/regions.js" || exit 2
 [ -s "${WORK}/regions.js" ] || fatal "extracted regions are empty"
 
@@ -426,6 +427,46 @@ const partialObservation = reduceRows([{ file:'partial', extract: {
 }}], 'steps', []).model_observations[0]
 ok(partialObservation.models[0] === 'claude-opus-5' && !partialObservation.complete,
     'a known model does not establish complete attribution when other messages lack it')
+
+// ---- Relay-mangled keys: unquoted before they reach a row, or refused ----
+// One measured join returned two step ids wrapped in literal quotes and the
+// engine refused the whole batch; the join now strips one layer of quotes
+// from every key and errors on a step key that still is not STEP-N.
+const execExtract = by(wave, 'agent-aexec.jsonl').extract
+const quotedStep = reduceRows([{ file: 'agent-q.jsonl', extract: { ...execExtract, record: '"STEP-3170"' } }], 'steps', [])
+ok(quotedStep.errors.length === 0 && [...new Set(quotedStep.rows.map((r) => r.step))].join(',') === 'STEP-3170',
+    `a record key wrapped in literal quotes is unquoted before it becomes a row (got ${JSON.stringify([...new Set(quotedStep.rows.map((r) => r.step))])})`)
+const spacedStep = reduceRows([{ file: 'agent-s.jsonl', extract: { ...execExtract, record: ' \'STEP-3171\' ' } }], 'steps', [])
+ok(spacedStep.errors.length === 0 && [...new Set(spacedStep.rows.map((r) => r.step))].join(',') === 'STEP-3171',
+    'surrounding whitespace and single quotes are stripped the same way')
+const mangledStep = reduceRows([{ file: 'agent-m.jsonl', extract: { ...execExtract, record: 'STEP 3172' } }], 'steps', [])
+ok(mangledStep.rows.length === 0 && mangledStep.errors.length === 1 && /agent-m\.jsonl.*not a STEP-N id/.test(mangledStep.errors[0]),
+    `a record key that is not STEP-N after unquoting is an error naming the file, never a row (got ${JSON.stringify(mangledStep.errors)})`)
+const judgeExtract = by(wave, 'agent-ajudge.jsonl').extract
+const quotedSeat = reduceRows([{ file: 'agent-j.jsonl', extract: { ...judgeExtract, cast: { proposal: '"PROP-78"', voter: '"reviewer"' } } }], 'seats', [])
+ok(quotedSeat.errors.length === 0 && quotedSeat.rows.every((r) => r.proposal === 'PROP-78' && r.voter === 'reviewer'),
+    'a quoted proposal and seat are unquoted in seats mode too')
+
+// ---- Paths the agents type: the project slug is a glob, the directory is args.dir ----
+// Two measured joins failed on the flattened project directory retyped
+// (`github-com` → `github.com`): once by extract agents, once by the scout's
+// whole listing. The shell command carries that component as `*`, and the
+// listing is rebuilt from the literal directory plus the scout's basename.
+const slugDir = '/Users/x/.claude/projects/-Users-x-Development-repository-github-com-ORG-repo-git-main/5575d475/subagents/workflows/wf_1'
+ok(shellPath(`${slugDir}/agent-A.jsonl`) ===
+    "'/Users/x/.claude/projects/'*'/5575d475/subagents/workflows/wf_1/agent-A.jsonl'",
+    `the flattened project directory is left as a bare * between quoted halves (got ${shellPath(`${slugDir}/agent-A.jsonl`)})`)
+ok(shellPath('/tmp/plain/agent-B.jsonl') === "'/tmp/plain/agent-B.jsonl'",
+    'a path outside ~/.claude/projects is quoted whole')
+ok(shellPath("/tmp/it's/agent-C.jsonl") === "'/tmp/it'\\''s/agent-C.jsonl'",
+    'a single quote in the path is still escaped')
+const retypedListing = rebuildListing(slugDir + '/', [
+    `${slugDir.replace('github-com', 'github.com')}/agent-B.jsonl`,
+    `${slugDir}/agent-A.jsonl`,
+    `${slugDir.replace('github-com', 'github_com')}/agent-A.jsonl`,
+])
+ok(retypedListing.files.join(',') === `${slugDir}/agent-A.jsonl,${slugDir}/agent-B.jsonl` && retypedListing.retyped === 2,
+    `a listing with the directory retyped is rebuilt on args.dir, deduplicated and sorted, and the retypes are counted (got ${JSON.stringify(retypedListing)})`)
 
 // ---- Seats mode sort order: grouped by proposal, then seat ----
 const twoPanels = [

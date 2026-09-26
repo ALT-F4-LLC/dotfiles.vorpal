@@ -121,6 +121,16 @@ const DEFAULT_MODE = 'steps'
 //    and left to seats mode) — this script never infers the exclusion
 //    itself.
 //
+//  * EVERY AGENT ANSWER IS A RELAY, AND RELAYS RETYPE. The scout's listing
+//    and the extract's fields are structured output a low-effort model
+//    copied, and two copies have failed the join: the flattened project
+//    directory under ~/.claude/projects came back with `github-com` read as
+//    `github.com` (in extracts, and once in the whole scout listing), and
+//    two step ids came back wrapped in literal quotes. So the directory is
+//    always args.dir with only the scout's basename appended, the paths the
+//    agents type carry that component as a `*` glob the shell resolves, and
+//    every ledger key is unquoted and validated before it reaches a row.
+//
 //  * `exclude` drops a key a PRIOR dispatch's back-fill already carries (a
 //    gate probed in one wave and seated in the next emits usage in both
 //    journals). In seats mode it names a bare seat and drops it under every
@@ -314,10 +324,32 @@ const zeroSums = () => Object.fromEntries(UNITS.map((u) => [u, 0]))
 // partial or synthetic extract may carry no count at all.
 const toolUses = (extract) => (Number.isInteger(extract.tool_uses) ? extract.tool_uses : 0)
 
+// The extract relay copies jq's output into structured fields, and one
+// measured copy wrapped two step ids in literal quotes (`"\"STEP-10391\""`),
+// which `dispatch backfill-usage` refused for the whole 160-row batch. Every
+// key the ledger is joined on is trimmed and stripped of one layer of
+// surrounding quotes here; a step key that still is not STEP-N is an error
+// naming the file, never a row the engine refuses later.
+const unquote = (v) => (typeof v === 'string'
+    ? v.trim().replace(/^"(.*)"$/, '$1').replace(/^'(.*)'$/, '$1').trim()
+    : v)
+const STEP_KEY_RE = /^STEP-\d+$/
+function normalizeKeys(x) {
+    if (!x || typeof x !== 'object') return x
+    const out = { ...x }
+    if (typeof x.record === 'string') out.record = unquote(x.record)
+    if (typeof x.step_mention === 'string') out.step_mention = unquote(x.step_mention)
+    if (x.cast && typeof x.cast === 'object') {
+        out.cast = { ...x.cast, proposal: unquote(x.cast.proposal), voter: unquote(x.cast.voter) }
+    }
+    return out
+}
+
 // The three questions, in the one order that cannot misfile a read: briefed
 // to cast? briefed only to read? briefed to record? First yes wins. `file`
 // appears only in labels and error text.
-function classify(x, mode, file) {
+function classify(raw, mode, file) {
+    const x = normalizeKeys(raw)
     if (mode === 'seats') {
         if (!x.cast) return { bucket: 'unattributed', key: null, label: file }
         const key = [x.cast.proposal, x.cast.voter]
@@ -358,6 +390,11 @@ function classify(x, mode, file) {
         const what = probe ? 'read-only probe' : 'not a wave agent'
         return { bucket: 'overhead', key: null,
                  label: `${what}${x.step_mention ? `, mentions ${x.step_mention}` : ''}` }
+    }
+    if (!STEP_KEY_RE.test(record)) {
+        return { bucket: 'error', key: null,
+                 label: `${file}: the record join returned ${JSON.stringify(record)}, ` +
+                        'not a STEP-N id — the relay mangled the key' }
     }
     return { bucket: 'row', key: record, label: record }
 }
@@ -526,7 +563,43 @@ function coordinationOf(results, rows, statuses) {
 }
 // TEST-END wave-usage-classify
 
+// TEST-BEGIN wave-usage-paths — extracted and exercised by
+// tests/wave-usage-probe-overhead.test.sh. Keep it free of workflow globals.
 const sq = (s) => `'${String(s).replace(/'/g, `'\\''`)}'`
+
+// A path as the agents' shell commands carry it. Every path under
+// ~/.claude/projects has one component the relay retypes: the flattened
+// project directory (`-Users-…-github-com-…`), which a low-effort agent reads
+// as a typo and "corrects" to `github.com` or `github_com` (measured on two
+// conductor sessions: nine extracts in one, a whole 39-file scout listing in
+// the other). That component is left as a `*` glob between the quoted halves,
+// so the shell resolves the file whichever way the agent copies it. The
+// session, workflow and agent ids around it are hex the relay copies
+// faithfully, and a session id occurs under exactly one project directory,
+// so the glob names one file. Everything outside ~/.claude/projects is quoted
+// whole.
+const PROJECTS_SLUG_RE = /^(.*\/\.claude\/projects\/)([^/]+)(\/.+)$/
+const shellPath = (p) => {
+    const m = PROJECTS_SLUG_RE.exec(p)
+    return m ? `${sq(m[1])}*${sq(m[3])}` : sq(p)
+}
+
+// The scout's listing, rebuilt on the literal directory the conductor
+// passed. The scout's answer is a relay too: measured, its find argv carried
+// the directory correctly and its structured return carried every path with
+// the project slug retyped (`github-com` → `github.com`), so every extract
+// downstream inherited a path no file has, and the path retry, which
+// re-hands the same string, could not recover it. Only the basename is the
+// scout's. Returns the sorted, deduplicated full paths and how many listed
+// paths sat outside the directory.
+function rebuildListing(dir, listed) {
+    const dirPath = String(dir).replace(/\/+$/, '') || '/'
+    const leafOf = (f) => f.slice(f.lastIndexOf('/') + 1)
+    const files = [...new Set(listed.map((f) => `${dirPath}/${leafOf(f)}`))].sort()
+    const retyped = listed.filter((f) => f.slice(0, f.lastIndexOf('/')) !== dirPath).length
+    return { files, retyped }
+}
+// TEST-END wave-usage-paths
 
 const FILES_SCHEMA = {
     type: 'object',
@@ -569,30 +642,34 @@ const EXTRACT_SCHEMA = {
 const scoutBrief = `You are a read-only scout. Do not cd anywhere. Run this command verbatim, sandboxed, and report what it prints — never a paraphrase:
 
 \`\`\`
-find ${sq(dir)} -maxdepth 1 -type f -name 'agent-*.jsonl' | LC_ALL=C sort; echo "exit=$?"
+find ${shellPath(dir)} -maxdepth 1 -type f -name 'agent-*.jsonl' | LC_ALL=C sort; echo "exit=$?"
 \`\`\`
 
-Return {files: [...]} with every path printed, one entry per line, verbatim and in that order. An empty listing is {files: []}. Do not open, read, or count the files.`
+The directory is written with one \`*\` where the flattened project name sits; leave that glob exactly as it is and let the shell resolve it. Return {files: [...]} with every path printed, one entry per line, verbatim and in that order — a hyphen where a dot might be expected (\`github-com\`) is correct, not a typo. An empty listing is {files: []}. Do not open, read, or count the files.`
 
 const extractBrief = (file, retry) => `You are a read-only measurement relay for one transcript file. Do not cd anywhere. Run these commands verbatim, sandboxed. The first writes a jq program with a quoted heredoc so nothing in it is expanded; the second runs it:
 
 \`\`\`
 cat > "\${TMPDIR:-/tmp}/wave-usage-$$.jq" <<'JQ'
 ${EXTRACT_JQ}JQ
-jq -c -n -R -f "\${TMPDIR:-/tmp}/wave-usage-$$.jq" ${sq(file)}; echo "exit=$?"
+jq -c -n -R -f "\${TMPDIR:-/tmp}/wave-usage-$$.jq" ${shellPath(file)}; echo "exit=$?"
 \`\`\`
 
-The transcript path is exact and must be copied character for character. A hyphen where a dot might be expected (\`github-com\`) is correct and is not a typo; do not "correct" any part of the path.
+The transcript path is exact and must be copied character for character, including the one \`*\` that stands in for the flattened project name (the shell resolves it; do not replace it). A hyphen where a dot might be expected (\`github-com\`) is correct and is not a typo; do not "correct" any part of the path.
 ${retry === 'path' ? '\nThis is a SECOND run: the first run reported that jq could not open the file, which means the path was retyped incorrectly. Copy the path from the command above byte for byte.\n' : retry ? '\nThis is a SECOND, independent run of the same command against the same file — a prior run reported bootstrap:false and is being re-checked. Run the command fresh; do not reuse or assume any earlier result.\n' : ''}
 jq prints exactly one JSON object. Return it as the structured output with ok:true and every field copied verbatim — bootstrap, cast, record, probe, exec, step_mention, reseat, tool_uses, models_observed, model_observation_complete, usage — including every number exactly as printed. Do not compute, estimate, round, or adjust anything, and do not read the transcript by any other means. Model names come only from the extracted message fields; missing observations remain empty. If jq exits non-zero or prints nothing, return ok:false with the error text in \`error\`.`
 
 phase('Scout')
 const listing = await agent(scoutBrief, { label: 'scout', phase: 'Scout', schema: FILES_SCHEMA, ...AGENT_CONFIG.scout })
 const rawFiles = [...new Set((listing && listing.files) || [])]
-const files = rawFiles.filter((f) => /\/agent-[^/]*\.jsonl$/.test(f)).sort()
-if (files.length !== rawFiles.length) {
+const listed = rawFiles.filter((f) => /\/agent-[^/]*\.jsonl$/.test(f))
+if (listed.length !== rawFiles.length) {
     const dropped = rawFiles.filter((f) => !/\/agent-[^/]*\.jsonl$/.test(f))
     log(`wave-usage: scout listed ${rawFiles.length} path(s), ${dropped.length} not matching agent-*.jsonl and dropped: ${dropped.join(', ')}`)
+}
+const { files, retyped: retypedByScout } = rebuildListing(dir, listed)
+if (retypedByScout) {
+    log(`wave-usage: scout returned ${retypedByScout} path(s) outside args.dir (the relay retyped the directory); rebuilt each from args.dir and the listed basename`)
 }
 log(`wave-usage: ${files.length} agent transcript(s) under ${dir} (${mode} mode)`)
 if (files.length === 0) {
@@ -645,9 +722,12 @@ function hasUsage(extract) {
 // back as `github.com` or `github_com` in nine extracts, and each sank a
 // whole shard's join). That shape alone is retried once with a
 // fresh agent; a second miss is then the error, so nothing is retried
-// more than once and no other failure is retried at all.
+// more than once and no other failure is retried at all. The path the
+// agents type now carries the project slug as a glob (shellPath above), so
+// the miss also arrives as zsh's `no matches found` when the glob's
+// neighbours were retyped; both spellings are the same relay miss.
 const errors = []
-const PATH_MISS_RE = /could not open file|no such file or directory/i
+const PATH_MISS_RE = /could not open file|no such file or directory|no matches found/i
 function classifyFirstAttempt(r, file, i) {
     if (!r) {
         log(`wave-usage: ${file}: extraction agent returned nothing`)

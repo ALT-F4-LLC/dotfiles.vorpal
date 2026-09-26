@@ -1426,10 +1426,15 @@ proceed from step 1.
 
 A formatting-only commit of your own on the shared branch (such as a
 gofmt fix that keeps later writers' repo-wide format gate green) is
-allowed only under an explicit operator ruling: verify the diff is
-whitespace-only (`git diff --ignore-all-space` shows nothing) before
-committing, record a run note naming the ruling and the sha, and without
-such a ruling retry the step instead.
+allowed only under an explicit operator ruling: stage the change, then
+verify the staged diff is whitespace-only with `git diff --cached
+--ignore-all-space --ignore-blank-lines --exit-code` (prints nothing and
+exits 0) before committing, record a run note naming the ruling and the
+sha, and without such a ruling retry the step instead. The check reads
+the index against HEAD because a bare `git diff` compares the working
+tree to the index and cannot see content that is already staged, so a
+staged semantic edit passes it as whitespace-only; a non-zero exit is a
+non-formatting change, and the commit does not happen.
 
 Worktrees clean themselves up only when unchanged; every write worktree
 and its `worktree-wf_*` branch otherwise persists. Cleanup is yours and

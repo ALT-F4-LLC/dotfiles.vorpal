@@ -1,12 +1,13 @@
 ---
 node: research
-version: 9
+version: 10
 archetype: executor-research
 packet_includes:
   - fragments/design-search.md
   - fragments/evidence-rules.md
   - fragments/writing-for-humans.md
 emits: research-notes
+payload: research-notes@1
 ---
 # Charter
 Answer a question that requires external evidence. Return the supported answer,
@@ -109,6 +110,10 @@ Include:
 - Open questions, material source disagreements, and gaps. Explain whether
   version, authority, or applicability resolves a disagreement; preserve it when
   the available evidence does not.
+
+The `research-notes@1` payload carries these as `answer`, `evidence`,
+`recommendation` (only when one was requested), `coverage`, and
+`open_questions`.
 
 Keep evidence references and limitations intact through handoff and recording.
 

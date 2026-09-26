@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "research-notes@1",
+  "description": "The research payload produced by contracts/research.md: the supported answer first, then the evidence behind it, any conditional recommendation, coverage, and open questions. `recommendation` is optional because the contract makes a recommendation conditional on the brief requesting one.",
+  "type": "object",
+  "properties": {
+    "answer": {
+      "description": "Each requested subquestion's supported answer or its explicit unresolved status.",
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence": {
+      "description": "Load-bearing claims and their support: for external sources, the short quotation, provenance, `quoted` or `summary-derived` label, and what it supports; inferences linked to their premises; repository observations cited under evidence-rules.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "claim": { "type": "string", "minLength": 1 },
+          "label": { "type": "string", "enum": ["quoted", "summary-derived", "repository", "inference"] },
+          "quotation": { "type": "string" },
+          "provenance": { "type": "string" },
+          "supports": { "type": "string" }
+        },
+        "required": ["claim", "label"],
+        "additionalProperties": true
+      }
+    },
+    "recommendation": {
+      "description": "Present only when requested: the recommended approach with rationale, costs, uncertainties, and the design-search record (candidates weighed, the pick, why it won).",
+      "type": "string"
+    },
+    "coverage": {
+      "description": "Named references inspected, searches performed, versions and dates covered, inaccessible or summary-derived material, and required work left unexamined.",
+      "type": "string"
+    },
+    "open_questions": {
+      "description": "Open questions, material source disagreements, and gaps, with whether version, authority, or applicability resolves each disagreement.",
+      "type": "string"
+    }
+  },
+  "required": ["answer", "evidence"],
+  "additionalProperties": true
+}

@@ -122,6 +122,43 @@ resolve "DOCKET_GATE_BASE=${BASE_SHA}"
 expect "unknown mode exits 2 naming the gate" 2 "" "sample-gate FAILED: gate_range: unknown mode 'bogus-mode'"
 MODE=own-gate
 
+MODE=always
+resolve "DOCKET_GATE_BASE=${BASE_SHA}"
+expect "always: resolvable base yields <sha>..HEAD" 0 "${BASE_SHA}..HEAD"
+
+resolve
+expect "always: base unset, DOCKET_GATE unset: exits 2" 2 "" "sample-gate FAILED: DOCKET_GATE_BASE"
+
+resolve DOCKET_GATE=other-gate "DOCKET_GATE_BASE="
+expect "always: base empty, another gate: exits 2" 2 "" "sample-gate FAILED: DOCKET_GATE_BASE"
+
+resolve DOCKET_GATE=other-gate "DOCKET_GATE_BASE=${UNRESOLVABLE}"
+expect "always: base unresolvable, another gate: exits 2" 2 "" "sample-gate FAILED: DOCKET_GATE_BASE"
+MODE=own-gate
+
+MODE=set-base
+resolve "DOCKET_GATE_BASE=${BASE_SHA}"
+expect "set-base: resolvable base yields <sha>..HEAD" 0 "${BASE_SHA}..HEAD"
+
+resolve DOCKET_GATE=sample-gate
+expect "set-base: own gate, base unset: exits 2" 2 "" "sample-gate FAILED: DOCKET_GATE_BASE"
+
+resolve DOCKET_GATE=sample-gate "DOCKET_GATE_BASE=${UNRESOLVABLE}"
+expect "set-base: own gate, base unresolvable: exits 2" 2 "" "sample-gate FAILED: DOCKET_GATE_BASE"
+
+resolve DOCKET_GATE=other-gate "DOCKET_GATE_BASE=${UNRESOLVABLE}"
+expect "set-base: another gate, base unresolvable: exits 1" 1 "" "does not resolve to a"
+
+resolve "DOCKET_GATE_BASE=${UNRESOLVABLE}"
+expect "set-base: no gate, base unresolvable: exits 1" 1 "" "does not resolve to a"
+
+resolve DOCKET_GATE=other-gate
+expect "set-base: another gate, base unset: no range" 0 ""
+
+resolve DOCKET_GATE=other-gate "DOCKET_GATE_BASE="
+expect "set-base: another gate, base empty: no range" 0 ""
+MODE=own-gate
+
 echo
 if [ "$FAIL" -gt 0 ]; then
     printf '%d passed, %d failed\n' "$PASS" "$FAIL"

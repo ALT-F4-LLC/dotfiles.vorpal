@@ -59,14 +59,11 @@ git rev-parse --show-toplevel >/dev/null 2>&1 || {
     exit 2
 }
 
-[ -n "${DOCKET_GATE_BASE:-}" ] || {
-    echo "diff-scope: DOCKET_GATE_BASE is unset or empty; refusing (cannot read the committed footprint)" >&2
-    exit 2
-}
-base=$(git rev-parse --verify --quiet --end-of-options "${DOCKET_GATE_BASE}^{commit}") || {
-    echo "diff-scope: DOCKET_GATE_BASE '${DOCKET_GATE_BASE}' does not resolve to a commit; refusing" >&2
-    exit 2
-}
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+# shellcheck source=SCRIPTDIR/gate-range
+. "$script_dir/gate-range"
+gate_range diff-scope always
+base="${GATE_RANGE%..HEAD}"
 head=$(git rev-parse --verify --quiet 'HEAD^{commit}') || {
     echo "diff-scope: HEAD does not resolve to a commit; refusing" >&2
     exit 2

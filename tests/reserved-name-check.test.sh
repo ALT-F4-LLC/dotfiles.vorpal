@@ -54,6 +54,7 @@ build_repo() {
     git -C "$dir" config user.email test@test
     git -C "$dir" config user.name test
     cp "$GATE" "${dir}/.docket/bin/reserved-name-check"
+    cp "$(dirname "$GATE")/gate-range" "${dir}/.docket/bin/gate-range"
     chmod +x "${dir}/.docket/bin/reserved-name-check"
     printf '# Widget\n' > "${dir}/docs/spec/widget.md"
     git -C "$dir" add -A

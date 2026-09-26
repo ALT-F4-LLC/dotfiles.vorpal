@@ -71,6 +71,7 @@ build_repo() { # <dir>
     git -C "$dir" config user.email test@test
     git -C "$dir" config user.name test
     cp "$GATE" "${dir}/.docket/bin/doc-validate"
+    cp "$(dirname "$GATE")/gate-range" "${dir}/.docket/bin/gate-range"
     chmod +x "${dir}/.docket/bin/doc-validate"
     cp "$DOCKET_SKILL" "${dir}/src/user/claude_code/skills/docket/SKILL.md"
     cat > "${dir}/docs/facts/sample.md" <<'MD'

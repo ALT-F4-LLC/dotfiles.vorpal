@@ -51,6 +51,7 @@ fresh_repo() {
         git init -q
         git config user.email t@example.invalid; git config user.name t
         cp "$SCANNER" .docket/bin/secret-scan
+        cp "${SCRIPT_DIR}/../.docket/bin/gate-range" .docket/bin/gate-range
         printf 'readme\n' > README.md
         git add -A && git commit -qm base
     )

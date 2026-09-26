@@ -3,10 +3,12 @@
 # Behavior suite for .docket/bin/gate-range, the sourced helper gates use to
 # turn DOCKET_GATE_BASE into the committed range they scan.
 #
-# THE PROPERTY UNDER TEST, own-gate mode: a resolvable base yields
-# `<sha>..HEAD`; an unset or unresolvable base yields no range when
-# DOCKET_GATE names another gate or none, and exits 2 naming the gate when
-# DOCKET_GATE names the calling gate.
+# THE PROPERTY UNDER TEST: in every mode a resolvable base yields
+# `<sha>..HEAD`. For an unset or unresolvable base, own-gate yields no range
+# when DOCKET_GATE names another gate or none, and exits 2 naming the gate
+# when DOCKET_GATE names the calling gate; always exits 2 whatever
+# DOCKET_GATE names; set-base acts as own-gate except that another caller
+# given a non-empty unresolvable base exits 1.
 #
 # SEAM. Each case sources the helper in a fresh bash inside a throwaway git
 # repo under $TMPDIR and prints the range it set.

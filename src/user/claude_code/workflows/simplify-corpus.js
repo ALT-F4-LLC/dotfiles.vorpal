@@ -30,14 +30,17 @@ export const meta = {
 // frozen-drift-check gate demands. Nothing in the repository changes inside
 // this workflow.
 //
-// How the simplify skill is used. The built-in simplify skill reviews the
-// current diff for reuse, simplification, efficiency, and altitude cleanups
-// and applies the fixes; it has no file-target argument. Each simplifier
-// therefore copies its file into the scratch mirror and, when the Skill tool
-// is available, invokes simplify there with the untracked candidate as the
-// change under review; when the tool is unavailable, it applies the same four
-// criteria itself. Either way the criteria are the built-in skill's, and the
-// candidate is the only file written.
+// How the simplify skill is used. The built-in simplify skill's listing says
+// it reviews the changed code for reuse, simplification, efficiency, and
+// altitude cleanups and applies the fixes; its loaded instructions were not
+// read when this script was written, so whether it takes a file target is
+// learned by the simplifier that loads it. Each simplifier copies its file
+// into the scratch mirror and, when the Skill tool is available, invokes
+// simplify there with the untracked candidate as the change under review;
+// when the tool is unavailable, or the skill's instructions would have it
+// diff or edit the checkout, it applies the same four criteria itself. Either
+// way the criteria are the built-in skill's, and the candidate is the only
+// file written.
 //
 // Verification. Every candidate must be strictly smaller (the convergence
 // rule: a pass over already-simple files lands nothing) and pass a
@@ -269,8 +272,12 @@ written in one go truncates. Never write to ${file} itself.
 Use the built-in simplify skill. If the Skill tool is available, invoke
 Skill({skill: "simplify"}) and follow its instructions with ${candidate}
 as the changed code under review: it reviews a diff, and the untracked
-candidate is the change. Return usedSkill=true. If the Skill tool is
-unavailable, apply its four criteria yourself and return usedSkill=false:
+candidate is the change. Return usedSkill=true. If its instructions
+direct you to run git diff, read the checkout's changes, or edit any
+tracked file, stop following them there: the checkout is not yours to
+change, and the candidate is the only file you write. If the Skill tool
+is unavailable, or you stopped following the skill, apply its four
+criteria yourself and return usedSkill=false:
 - reuse: replace a local reimplementation with a helper the file or its
   neighbors already provide, and merge duplicated logic into one place
 - simplification: remove needless indirection, dead branches, unused

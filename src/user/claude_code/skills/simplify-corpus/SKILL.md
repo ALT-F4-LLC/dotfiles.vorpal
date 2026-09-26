@@ -67,10 +67,12 @@ Never run `just activate`. Never push.
    is drafting is never rewritten and the revert in §3 always has a
    committed state to return to. No files means nothing to do: report it
    and stop (under self-paced `/loop`, arm the idle wakeup in §5 first).
-2. Require a clean starting point. Run `git status --porcelain -- <targets>`
-   and stop if any target is modified or staged: a pass lands as one
-   commit, and pre-existing edits would be swept into it or lost by the
-   revert in §3. Report the dirty paths instead.
+2. Require a clean tree. Run `git status --porcelain` and stop if any
+   tracked file is modified or staged, target or not: a pass lands as one
+   commit, pre-existing edits to a target would be swept into it or lost
+   by the revert in §3, and the built-in simplify skill reviews the
+   current diff, so a dirty tree is what a simplifier following it could
+   edit. Report the dirty paths instead.
 3. Record the gates' baseline. Run `just crossref-check`,
    `just prose-gates`, and `just frozen-drift-check` from the repository
    root and keep their failure lines, if any. `frozen-drift-check` exits 2
@@ -142,6 +144,11 @@ lines with the baseline from §1:
 - always: `just crossref-check`, `just prose-gates`, and
   `just frozen-drift-check` (when it was available at baseline);
 - when a `workflows/*.js` file landed: `bash tests/workflow-module-parse.test.sh`;
+- when a skill file landed: `just doc-validate`;
+- when a contract, fragment, or docket workflow TOML landed:
+  `bash tests/contract-corpus.test.sh`, `bash tests/contract-includes.test.sh`,
+  and `bash tests/contract-cluster-keys.test.sh`, the suites that pin
+  clauses, includes, and key names a structural cut can remove;
 - when `settings.rs` landed: `just self-hygiene` and `just tests`;
 - for every landed file: each suite under `tests/` whose text names the
   file's basename, found with `grep -l`.

@@ -1,0 +1,209 @@
+---
+name: simplify-corpus
+description: >-
+  Use on "simplify the corpus", "/simplify-corpus", "run simplify over the
+  skills", "simplify every workflow", or to keep both corpora simple under
+  /loop (for example `/loop /simplify-corpus`). Applies the built-in
+  simplify skill's review (reuse, simplification, efficiency, altitude) to
+  every tracked file under src/user/claude_code and src/user/docket through
+  a workflow that verifies each candidate mechanically and adversarially
+  before this session lands it, runs the gates, and commits each pass. Bare
+  invocation does one pass; under /loop it passes until nothing shrinks,
+  then rests. Distinct from the built-in simplify, which reviews the current
+  diff once; tighten, which rewords prose only; declutter, which cleans any
+  repository's code with a mutation-probe proof and no workflow; and
+  corpus-cut, which tries docket definitions and files cuts without editing.
+argument-hint: "[paths or globs, default: src/user/claude_code src/user/docket]"
+model: fable
+---
+
+# simplify-corpus
+
+Run this skill inline in the main session. You resolve the targets, launch
+the workflow, land what it accepted one file at a time, run the gates, and
+commit. The workflow never writes to the repository; every candidate lands
+here.
+
+**Run it under `/loop` for repeated passes.** `simplify-corpus` has no watch
+loop of its own: `/loop /simplify-corpus` (self-pacing) or
+`/loop 30m /simplify-corpus <paths>` supplies the recurring wake-up, and
+each firing re-enters this skill from §1. Invoked bare with no loop
+wrapping it, do one pass and say so; there will be no next tick.
+
+## Scope
+
+`$ARGUMENTS` optionally names repo-relative paths or globs. Bare
+invocation targets every tracked file under `src/user/claude_code` and
+`src/user/docket`, both trees always. That includes skill, agent, and
+reference Markdown, `CLAUDE.md` and `references/working-agreement.md`,
+`workflows/*.js`, `skills/*/scripts`, `statusline.sh`, `settings.rs`, and
+under docket `bin/doc-record`, `config/README.md`, `config/policy.toml`,
+contracts, fragments, and workflow TOML.
+
+Never target, and drop from any argument that matches:
+
+- `src/user/claude_code/hooks/`, every file: the guard hooks are a
+  permission and sandbox boundary that changes only by the operator's
+  hand.
+- `src/user/docket/config/schemas/`: every `<name>@<version>.json` is
+  frozen bytes once registered, and the legitimate change is a new
+  version file, which is design work for `docket-refit`.
+- Data files, which are neither code nor prose: `allowed_signers`, and
+  every `*.json` under the trees (fixtures, evals, inventories). The
+  workflow rejects any that reach it.
+
+Two target classes carry landing rules of their own, both in §3:
+`settings.rs` lands only after the operator confirms its candidate, and
+versioned docket files (contracts, fragments, workflow TOML) land only with
+the version bump `frozen-drift-check` demands.
+
+Never run `just activate`. Never push.
+
+## 1. Each pass
+
+1. Resolve targets. Run `git ls-files -- <paths>` from the repository root
+   over `$ARGUMENTS` (or both trees) and apply the Scope exclusions. Only
+   tracked files are ever candidates, so an untracked file another session
+   is drafting is never rewritten and the revert in §3 always has a
+   committed state to return to. No files means nothing to do: report it
+   and stop (under self-paced `/loop`, arm the idle wakeup in §5 first).
+2. Require a clean starting point. Run `git status --porcelain -- <targets>`
+   and stop if any target is modified or staged: a pass lands as one
+   commit, and pre-existing edits would be swept into it or lost by the
+   revert in §3. Report the dirty paths instead.
+3. Record the gates' baseline. Run `just crossref-check`,
+   `just prose-gates`, and `just frozen-drift-check` from the repository
+   root and keep their failure lines, if any. `frozen-drift-check` exits 2
+   without `docket`, `jq`, or `shasum`; record that as "gate unavailable"
+   and, in that case, treat every versioned docket file as excluded for
+   this pass, since nothing could prove its bump. Failures already present
+   before the pass belong to other work; §3 compares against this list so
+   the pass is charged only for what it introduced.
+4. Choose a scratch directory under `$TMPDIR`, empty and unique to this
+   pass, for candidate files (for example
+   `$TMPDIR/simplify-corpus/pass-<n>`, incrementing `<n>` from earlier
+   passes in this session). Candidates mirror repo-relative paths under it.
+
+## 2. Run the workflow
+
+Invoke by `scriptPath`, always, at the installed path
+`~/.claude/workflows/simplify-corpus.js`, expanding `~` to a literal
+absolute path yourself first. The Workflow tool does not expand `~` and
+resolves a relative path against the target repo's cwd, not the dotfiles
+source tree. The installed copy is the only one the tool may launch and
+the only one guaranteed to match this session's build. A missing installed
+file means the corpus was never activated after this skill was added:
+report that, don't launch the source copy instead.
+
+```
+Workflow({ scriptPath: "<absolute installed path to simplify-corpus.js>", args: { files: [<repo-relative paths>], scratchDir: "<absolute scratch path>", pass: <n> } })
+```
+
+The workflow classifies each file by kind and runs one simplifier per
+file, which copies the file into the scratch mirror, invokes the built-in
+simplify skill on the copy where the Skill tool is available and applies
+its four criteria directly otherwise, or returns `changed=false` for a
+file already simple. A mechanical check then runs the kind's syntax gate,
+diffs protected spans for Markdown (a candidate may delete protected
+content but never add or alter it), reads the version of a versioned
+docket file, and measures both files; a candidate that fails a gate, did
+not shrink, or lacks a strictly greater version is rejected in code.
+Survivors face three refuters, each leading from a different angle
+(behavior or meaning, the caller or reader, churn), and a candidate needs
+two upholds to be accepted. The return carries `accepted`, each with its
+`file`, `kind`, `candidate` path, `confirm` and `versioned` flags, byte and
+line counts, and vote tally; `rejected`, each with its reason;
+`unchanged`; and a one-line `summary`.
+
+If the workflow throws or returns nothing, say so and stop. Do not
+substitute a manual simplification as if it satisfied the step.
+
+## 3. Land accepted candidates
+
+Separate the accepted list first:
+
+- **`confirm: true` (settings.rs).** Never landed by a `/loop` tick:
+  report the candidate path and its summary and leave it for the operator.
+  Under bare invocation, show the operator `diff -u <file> <candidate>`
+  and ask, with `AskUserQuestion`, whether to land it; land it only on a
+  yes.
+- **Everything else** lands now.
+
+Copy each candidate to land over its file serially, in this session, in
+the order returned:
+
+```bash
+cp "<candidate>" "<file>"
+```
+
+Then run the gates from the repository root and compare their failure
+lines with the baseline from §1:
+
+- always: `just crossref-check`, `just prose-gates`, and
+  `just frozen-drift-check` (when it was available at baseline);
+- when a `workflows/*.js` file landed: `bash tests/workflow-module-parse.test.sh`;
+- when `settings.rs` landed: `just self-hygiene` and `just tests`;
+- for every landed file: each suite under `tests/` whose text names the
+  file's basename, found with `grep -l`.
+
+A line absent from the baseline that names a landed file, or the skill it
+belongs to, is this pass's breakage: a dead anchor, a broken caller the
+refuters missed, a version the drift check rejects, or a sentence a guard
+suite pins verbatim, which no rewording may touch. Revert that file to its
+committed state with `git checkout -- <file>`, drop it from the accepted
+list with the failure line as its reason, and rerun the gates. At most two
+rounds; if new failures remain, revert every file this pass landed, report
+the failure lines, and stop. Baseline failures, and new failures naming
+files this pass did not land, are reported and never acted on; the revert
+touches only files this pass landed. A pinned sentence changes only in a
+commit that re-anchors its test in the same change, which is never this
+skill's.
+
+Nothing accepted, or everything reverted, means the pass landed nothing.
+Skip §4 and go to §5.
+
+## 4. Commit
+
+Invoke the `commit` skill scoped to the landed paths
+(`Skill({skill: "commit", args: "<landed paths>"})`): one commit cycle per
+pass, never batched across passes. Then report the pass in a few lines:
+the pass number, files landed with their line deltas and, for versioned
+docket files, the version bump, the commit hash, files rejected with their
+reasons, files unchanged, and any settings.rs candidate awaiting the
+operator.
+
+A landed contract, fragment, or workflow TOML reaches the engine only
+after the operator runs `just activate` and `docket-reconcile`; say so
+when one landed.
+
+## 5. Next pass
+
+A pass that landed edits is evidence the corpus can shrink further: another
+pass may find more, and a pass that finds nothing is what stops the loop.
+
+- **Bare invocation:** one pass. Say the pass is done and stop.
+- **Self-paced `/loop /simplify-corpus`:**
+  - Landed edits: loop back to §1 immediately on the same targets, up to
+    three consecutive passes per tick, then arm
+    `ScheduleWakeup({delaySeconds: 300, noop: false, prompt: "<the loop
+    prompt verbatim>", reason: "simplify-corpus landed edits; resuming
+    passes"})` so the operator can read the commits between bursts.
+  - Landed nothing: the corpus is simple for now. Arm
+    `ScheduleWakeup({delaySeconds: 1800, noop: true, prompt: "<the loop
+    prompt verbatim>", reason: "simplify-corpus found nothing to
+    simplify"})` and stop. Send no "nothing changed" message; a quiet tick
+    is not an event.
+- **Explicit interval (`/loop 30m /simplify-corpus`):** one pass; the cron
+  firing supplies the next tick, so stop.
+
+The loop ends when the operator stops it (`ScheduleWakeup({stop: true})`
+under self-pacing, or telling you to stop) or ends the `/loop`. A pass that
+lands nothing is a rest, not a finish: later edits to the corpus give the
+next tick new files to simplify.
+
+## Report
+
+State what landed, what was rejected and why, what was unchanged, what
+awaits the operator's confirmation, and the commit hash. Do not claim
+`just activate` ran; it didn't, and the installed skills under `~/.claude`
+lag this checkout until the operator runs it.

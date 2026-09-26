@@ -1419,6 +1419,13 @@ the house commit style (`~/.claude/skills/commit/SKILL.md` §4:
 paragraphs, since the change-summary already maps sha to step), and
 proceed from step 1.
 
+A formatting-only commit of your own on the shared branch (such as a
+gofmt fix that keeps later writers' repo-wide format gate green) is
+allowed only under an explicit operator ruling: verify the diff is
+whitespace-only (`git diff --ignore-all-space` shows nothing) before
+committing, record a run note naming the ruling and the sha, and without
+such a ruling retry the step instead.
+
 Worktrees clean themselves up only when unchanged; every write worktree
 and its `worktree-wf_*` branch otherwise persists. Cleanup is yours and
 automatic: the moment a step's sha is integrated, `git worktree remove

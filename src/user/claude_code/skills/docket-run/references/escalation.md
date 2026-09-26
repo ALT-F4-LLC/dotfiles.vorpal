@@ -179,7 +179,7 @@ the parked routing step re-parks. Present reject as "stop this issue and
 ask me again."
 
 **A held cluster has a third answer: correct the value.** `docket step
-approve STEP-N --value <member>` overrides the aggregated field (severity
+approve STEP-N --value <member> --authority operator` overrides the aggregated field (severity
 on a spec-doc hold) with an operator-named value from the pinned schema's
 enum. Offer all three: approve computed, approve corrected, or reject.
 

@@ -1780,7 +1780,8 @@ below compares against that recorded fingerprint.
 passed on reproduction, no gate row is `unmatched` or `skipped`, and no
 failing gate is a security gate (`secret-scan`, `vuln-scan`,
 `sdet-abuse`, and any gate the security track adds), then `docket step
-resolve STEP-N --as override-pass < <scratchpad>/conductor.d/$RUN.token`
+resolve STEP-N --as override-pass --authority standing-grant
+--authority-ref machine-caused-gate-failure < <scratchpad>/conductor.d/$RUN.token`
 with a note naming this ruling, the
 reproduction, and the root-cause issue the broken-check rule below
 requires, filed or linked. Report every auto-pass in your next status

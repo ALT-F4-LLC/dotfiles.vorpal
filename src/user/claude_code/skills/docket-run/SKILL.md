@@ -1191,8 +1191,9 @@ close, with one difference at the end:
 2. `docket dispatch verify --run $RUN`, then `docket step show STEP-N` for
    every launched step. A recorded step needs nothing. A step still
    claimed by a spawn whose task is gone is a dead holder: establish that
-   with the evidence **`--ack-reap`** below requires, and convene that
-   panel before any reap.
+   with the evidence **`--ack-reap`** below requires, then reap it, open
+   the ack-reap proposal keyed `reap-ack:<run>:<seq>` on that reap's
+   `lease-reaped` seq, and only then convene the panel.
 3. Close when every launched step is recorded or reaped. Abandon
    (`docket dispatch abandon`, reserved to the conductor, never a panel's)
    only when a step can neither record nor be reaped; if the back-fill
@@ -1527,12 +1528,14 @@ crashed writer is gone; the engine cannot check that itself. Never pass
 it on your own initiative: it is the panel's word, a conversational gate
 per **Gates**.
 
-Establish the holder is actually gone before convening anything (the
+The order is fixed, because the proposal's key names a seq that exists
+only after the reap. First establish the holder is actually gone (the
 wave reported `spawn-failed`, `blocked` or `unrecorded`, the agent
 returned RECORD BLOCKED or died in front of you, `step show` still reads
-claimed), and carry that
-evidence verbatim in the proposal's rationale and context, alongside the
-`lease-reaped` event's seq. On an approved tally:
+claimed). Then reap. Then open the ack-reap proposal keyed
+`reap-ack:<run>:<seq>` on that reap's `lease-reaped` seq, carrying the
+holder evidence verbatim in its rationale and context. Only then convene
+the panel. On an approved tally:
 
 ```bash
 docket dispatch open --run $RUN --limit 240 --ack-reap <seq>

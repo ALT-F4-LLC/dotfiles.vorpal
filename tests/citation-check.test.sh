@@ -18,6 +18,12 @@
 set -uo pipefail
 
 unset DOCKET_GATE DOCKET_GATE_BASE
+if [ -z "${DOCKET_GATE+x}" ] && [ -z "${DOCKET_GATE_BASE+x}" ]; then
+    printf 'PASS: %s\n' "suite environment: DOCKET_GATE and DOCKET_GATE_BASE unset"
+else
+    printf 'FAIL: %s\n' "suite environment: DOCKET_GATE or DOCKET_GATE_BASE inherited from the caller" >&2
+    exit 1
+fi
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO_ROOT=$(cd "${SCRIPT_DIR}/.." && pwd)

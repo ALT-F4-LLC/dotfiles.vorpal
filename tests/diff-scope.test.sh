@@ -23,6 +23,12 @@ command -v git >/dev/null 2>&1 || fatal "git is required"
 # A `tests` gate run exports the real repo's gate context; every case below
 # sets its own base against its own fixture.
 unset DOCKET_GATE DOCKET_GATE_BASE
+if [ -z "${DOCKET_GATE+x}" ] && [ -z "${DOCKET_GATE_BASE+x}" ]; then
+    printf 'PASS: %s\n' "suite environment: DOCKET_GATE and DOCKET_GATE_BASE unset"
+else
+    printf 'FAIL: %s\n' "suite environment: DOCKET_GATE or DOCKET_GATE_BASE inherited from the caller"
+    exit 1
+fi
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/diff-scope.XXXXXX") || fatal "mktemp failed"
 trap 'rm -rf "$WORK"' EXIT

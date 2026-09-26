@@ -16,6 +16,12 @@ set -uo pipefail
 # The engine exports these to gate processes; a suite run under a gate must not
 # inherit them, or every case silently takes the env-base branch.
 unset DOCKET_GATE DOCKET_GATE_BASE
+if [ -z "${DOCKET_GATE+x}" ] && [ -z "${DOCKET_GATE_BASE+x}" ]; then
+    printf 'PASS: %s\n' "suite environment: DOCKET_GATE and DOCKET_GATE_BASE unset"
+else
+    printf 'FAIL: %s\n' "suite environment: DOCKET_GATE or DOCKET_GATE_BASE inherited from the caller"
+    exit 1
+fi
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 SCANNER="${SCRIPT_DIR}/../.docket/bin/secret-scan"

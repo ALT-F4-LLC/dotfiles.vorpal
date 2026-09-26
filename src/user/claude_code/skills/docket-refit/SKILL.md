@@ -26,6 +26,17 @@ never a silent downgrade; only then do you implement, lint, and commit.
 Source only: nothing under `~/.claude` or `~/.docket` is edited, and the
 operator's `just activate` is the only installer.
 
+**Automation first is the primary goal of every design.** A workflow,
+contract, fragment, schema, or policy row you design runs without a human in
+the loop, per the docket skill's
+[automation reference](../docket/references/automation.md): each behavior
+sits on the highest rung of its ladder that can carry it, and a human gate,
+park, or escalation stays only under a named
+[vital condition](../docket/references/automation.md#when-a-human-is-vital)
+recorded in the spec. A human touch you find in the target with no vital
+condition is a deviation to surface for removal. The operator decisions and
+the approval gate this skill holds authorize the design; they stay.
+
 
 You run in the main conversation, never in a forked subagent: the deviation
 decisions, the spec iteration, and the artifact approval gate below are real

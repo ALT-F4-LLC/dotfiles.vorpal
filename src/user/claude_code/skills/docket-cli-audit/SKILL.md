@@ -21,6 +21,14 @@ Run this skill inline in the main session. It uses `AskUserQuestion` to
 confirm semantic fixes before landing them. Do not delegate the confirmation
 gate or the fix application to a subagent.
 
+**Automation first is the primary goal of every fix.** Per the docket
+skill's [automation reference](../docket/references/automation.md), drift
+a program could have caught gets a remedy on the highest rung of its ladder
+that fits (a sweep scenario row, a fixture assertion, a `crossref-check`
+rule) beside the prose fix, so the next upgrade finds it without a person
+reading. The confirmation gate above still authorizes landing semantic
+fixes.
+
 ## Scope
 
 Evidence comes from the `docket` binary on PATH and nothing else. Two probes

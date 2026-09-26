@@ -29,6 +29,15 @@ retired. After a successful pass, `docket workflow list` and the corpus
 files agree name-for-name and version-for-version, with a binding count
 equal to the target binding set the planner printed.
 
+**Automation first is the primary goal.** The plan is derived from the
+corpus mechanically, never from judgment, and whatever it cannot resolve
+mechanically (an orphaned name, a frozen-row conflict, drift that recurs
+after every activation) is reported with the remedy on the highest rung of
+the docket skill's
+[automation ladder](../docket/references/automation.md#the-automation-ladder)
+that would stop it recurring, so reconciling needs a human less each time.
+The approval before any registry write stays; it authorizes this pass.
+
 **Not `docket-refit`.** You change registry rows only, never a workflow
 TOML, a version bump, or a definition; when the corpus is what is wrong,
 stop and say so — fixing it is `docket-refit`'s contract.

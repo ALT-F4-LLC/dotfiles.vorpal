@@ -19,6 +19,13 @@ Run this skill inline in the main session. It uses `AskUserQuestion` to
 confirm fixes before landing them. Do not delegate the confirmation gate
 or the fix application to a subagent.
 
+**Automation first is the primary goal of every fix.** Per the docket
+skill's [automation reference](../docket/references/automation.md), a class
+of drift a deterministic check could catch gets a proposed rule for
+`.docket/bin/crossref-check` or a test beside the prose fix, so the next
+audit needs fewer judgment calls. The confirmation gate above still
+authorizes landing fixes.
+
 ## Scope
 
 Two trees, always both, whole-corpus (not diff-scoped — drift can predate

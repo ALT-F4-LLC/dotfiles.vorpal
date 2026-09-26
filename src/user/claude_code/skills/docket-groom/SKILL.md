@@ -37,6 +37,17 @@ a short list of outcomes with their member issues, not a flat list. Seek a
 backlog of valuable work, with no target issue count or closure quota.
 Identifying a gap or listing a question does not resolve it.
 
+**Automation first is the primary goal of what a pass leaves behind.** Per
+the docket skill's [automation reference](../docket/references/automation.md),
+retained work drains without an operator unless a
+[vital condition](../docket/references/automation.md#when-a-human-is-vital)
+applies: prefer acceptance criteria a gate or script checks over
+`read-verified` judgment, route work to a queue that runs without a human
+when nothing vital blocks it, and settle a triaged operator decision from
+recorded evidence or precedent where one exists, asking only when the
+decision needs operator-only information. The approval gates in §4 still
+authorize closures, merges, splits, rescopes, and the other listed edits.
+
 Run this skill in the main session: the survey, the ledger, every edit,
 the proposal gate, and the final report live here, since §4 needs the main
 session's `AskUserQuestion` tool. One part is delegated, and only one: §2's

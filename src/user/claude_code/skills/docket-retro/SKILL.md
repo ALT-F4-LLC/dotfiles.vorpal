@@ -15,6 +15,15 @@ You turn what runs actually did into config changes. Evidence first,
 proposal second, write only after the panel says yes, or, where the panel
 splits and where trust is involved, after the operator does (§3).
 
+**Automation first is the primary goal of every proposal.** Each one sits
+on the highest rung of the docket skill's
+[automation ladder](../docket/references/automation.md#the-automation-ladder)
+that can carry it, and keeps or adds a human touch only under a named
+[vital condition](../docket/references/automation.md#when-a-human-is-vital).
+Operator touches the runs needed are evidence: an automatable one that
+recurs is a proposal in its own right. This governs what you propose; the
+panel and operator approvals below still authorize applying it.
+
 Run in the invoking conversation: §1 seats its analysts through `Workflow`,
 and §3's approval conversation runs through `AskUserQuestion`, and a forked
 subagent has neither. Gathering and aggregation are the analysts' work
@@ -240,7 +249,9 @@ correct docket-retro: say so rather than manufacturing work, and convene no
 panel to hear it.
 
 Never propose a change that adds manual upkeep for the operator. The answer
-is config or engine, not a step in someone's routine.
+is the highest rung of the
+[automation ladder](../docket/references/automation.md#the-automation-ladder)
+that fits, not a step in someone's routine.
 
 **A trust proposal is the operator's alone, and rides no batch.** Follow
 docket-bootstrap's rule — argue `re-runnable`, `tree`, `flaky` per command,

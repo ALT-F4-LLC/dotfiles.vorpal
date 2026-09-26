@@ -1,7 +1,12 @@
 [pipeline]
 description = "Documentation change: implement with doc-validate and citation gates, one correctness judge, tribunal-filtered review and AC verification, and a bounded fix loop re-entering at review. The conductor integrates commits; the operator publishes. Design-heavy doc work routes through spec-doc first."
 name = "docs-only"
-version = 28  # 28: `review` repoints `payload = "findings@10"` to `findings@12`:
+version = 29  # 29: the trusted `tests` gate joins the implement and fix gate
+              #   lists: test suites (tests/docket-run-skill.test.sh among them)
+              #   read skill prose that docs-only issues edit, so a prose change
+              #   can break a suite, and before this gate only review and
+              #   verify-ac guarded that. No topology or routing change.
+              # 28: `review` repoints `payload = "findings@10"` to `findings@12`:
               #   findings@10's own description incorrectly still claimed
               #   reconcile-step usage, which every workflow's reconcile step
               #   moved off in an earlier version; findings@12 corrects the
@@ -94,7 +99,7 @@ class = "write"
 emits = "change-summary"
 executor = "implement"
 expected_cost = 0.80
-gates = ["diff-scope-docs", "self-hygiene", "doc-validate", "citation-check"]
+gates = ["diff-scope-docs", "self-hygiene", "doc-validate", "citation-check", "tests"]
 inputs = ["issue.body"]
 max_attempts = 2
 name = "implement"
@@ -128,7 +133,7 @@ class = "write"
 emits = "change-summary"
 executor = "fix"
 expected_cost = 0.60
-gates = ["diff-scope-docs", "self-hygiene", "doc-validate", "citation-check"]
+gates = ["diff-scope-docs", "self-hygiene", "doc-validate", "citation-check", "tests"]
 inputs = ["review.findings", "implement.change-summary", "issue.latest.change-summary", "issue.latest.ac-report", "review-vote.vote-record", "verify-ac-vote.vote-record"]
 loop = true
 name = "fix"

@@ -165,6 +165,15 @@ else
     ok "option-shaped base wrote no file"
 fi
 
+# ---- unresolvable base, not the own gate: fails closed (exit 1) ----------------
+# The repo must stay clean: a working-tree fallback would then exit 0, so a
+# regression that drops the bare `exit 1` cannot pass these cases.
+r=$(fresh_repo bad-base-other)
+expect "no gate, base unresolvable: fails closed" 1 "does not resolve to a" "$r" \
+    DOCKET_GATE_BASE=deadbeef --
+expect "other gate, base unresolvable: fails closed with exit 1" 1 "does not resolve to a" "$r" \
+    DOCKET_GATE=tests DOCKET_GATE_BASE=deadbeef --
+
 # ---- base unset, not the own gate: working-tree scan as before ----------------
 r=$(fresh_repo wt-unset)
 commit_file "$r" leak.txt "key=$CREDENTIAL" leak

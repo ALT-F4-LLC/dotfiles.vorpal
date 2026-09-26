@@ -160,6 +160,7 @@ or explicitly marked not applicable, never silently dropped:
 - uncommitted changes, split into this session's and others'
 - unfinished work, one issue each
 - anything whose ownership could not be established
+- next steps for the operator or a successor session, or none
 
 This is the same sweep as above, checked as a gate rather than trusted as
 memory. A row you cannot answer is reported as unanswered: a valid outcome,
@@ -180,5 +181,12 @@ says what happened:
   worktrees kept for an un-integrated sha (with sha, path, and branch), any
   ownership that could not be established, and any question left
   unanswered.
+- **Next steps:** always the last row. Every action the operator or a
+  successor session takes after this one ends, whatever applies: groom the
+  filed issues, resume the paused run, push the new commits, clean up an
+  entry whose ownership was ambiguous, decide a carried-over question. One
+  line each, specific enough to act on cold; do not repeat issue bodies.
+  When nothing follows, write `none`. A report that ends without this row
+  is incomplete.
 
 The session is safe to end once this report is printed.

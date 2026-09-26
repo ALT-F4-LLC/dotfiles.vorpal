@@ -104,6 +104,8 @@ jobs:
 
       - run: bash tests/wave-harness-cap.test.sh
 
+      - run: bash tests/wave-isolation-unavailable.test.sh
+
       - run: bash tests/wave-issue-lanes.test.sh
 
       - run: bash tests/wave-model-attribution.test.sh

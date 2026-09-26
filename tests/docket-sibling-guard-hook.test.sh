@@ -57,7 +57,17 @@ command -v jq >/dev/null 2>&1 || fatal "jq is required to run this test"
 
 BASH_BIN=$(command -v bash) || fatal "bash not found on PATH"
 
-WORK=$(mktemp -d "${TMPDIR:-/tmp}/docket-sibling-guard-test.XXXXXX") || fatal "mktemp failed"
+# Every fixture path lands in command text the hook reads, so the work root
+# must not carry a `STEP-N.d` segment: a caller whose TMPDIR is its own step
+# scratch dir would otherwise put a step id foreign to the STEP-42 fixture
+# into every path. Cut the root back to the shared scratch root above it.
+work_root_for() { # <tmpdir>
+    local root="${1:-/tmp}"
+    root="${root%%/STEP-[0-9]*}"
+    printf '%s' "${root:-/tmp}"
+}
+
+WORK=$(mktemp -d "$(work_root_for "${TMPDIR:-}")/docket-sibling-guard-test.XXXXXX") || fatal "mktemp failed"
 trap 'rm -rf "$WORK"' EXIT
 
 TOOLS_DIR="${WORK}/tools"
@@ -485,6 +495,10 @@ case_probe_never_acts() {
     check "compound redirect (loop > file)" DENY "while :; do break; done > ${marker}"
     check "compound redirect (function call > file)" DENY "f() { :; }; f > ${marker}"
     check "vetoed leaf redirect stays inspectable and inert" ALLOW "cat /dev/null > ${marker}"
+    local step_tmp_marker
+    step_tmp_marker="$(work_root_for "${WORK}/STEP-10355.d/tmp")/probe-marker"
+    got=$(verdict_of "$(build_input "cat /dev/null > ${step_tmp_marker}" executor-write "$WAVE_42")")
+    [ "$got" = ALLOW ] && pass "marker under a TMPDIR inside a foreign STEP-N.d stays allowed (ALLOW)" || fail "marker under a TMPDIR inside a foreign STEP-N.d stays allowed (want ALLOW, got ${got})"
     check "vetoed leaf redirect onto own dir" ALLOW "echo x > ${OWN_DIR}/note.txt"
     check "handler redefinition" DENY "_guard_probe() { return 0; }; rm -rf ${OWN_DIR}/x; cat /dev/null > ${marker}"
     check "handler redefinition, function keyword" DENY "function _guard_probe { :; }; cat /dev/null > ${marker}"

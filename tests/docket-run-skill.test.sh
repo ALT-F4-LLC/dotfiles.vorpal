@@ -109,6 +109,15 @@
 #       f-C delete "but never re-dispatch on it" from the isolation sentence
 #          only; the bootstrap-denied sentence keeps the phrase, which is
 #          why the region is two sentences, not the paragraph
+#   (g) first-duplicate run note: a machine-caused gate or pre-gate failure
+#       found mid-run gets a run note on the first duplicate closed, not
+#       dedupe alone, or every later verify-ac step refiles the same gap
+#       (g-A is also run by the self-checks on every pass)
+#       p-g reword the dedupe paragraph's anchor sentence
+#       g-A delete the "On the first duplicate you close ..." sentence,
+#          leaving the paragraph with dedupe only
+#       g-B move the sentence into the clean-HEAD ruling paragraph above;
+#          the literal survives whole-file but leaves the dedupe paragraph
 #
 # A missing input file fails; it never skips green.
 
@@ -347,6 +356,20 @@ if [ -z "${DOCKET_RUN_SKILL_INNER:-}" ]; then
         else
             ok "self-check: an isolation-unavailable ruling cut to its status name fails the suite"
         fi
+
+        # The first-duplicate run-note sentence deleted from the dedupe
+        # paragraph (mutant g-A) must fail the suite.
+        perl -0pe 's/ On the first duplicate you close for a\s+machine-caused gate or pre-gate failure discovered mid-run,.*?refiles the same gap\.//s' \
+            "${WORK}/self-clean.md" > "${WORK}/first-dup-mutant.md"
+
+        if cmp -s "${WORK}/self-clean.md" "${WORK}/first-dup-mutant.md"; then
+            bad "self-check: the first-duplicate note mutation did not apply — proves nothing"
+        elif DOCKET_RUN_SKILL_INNER=1 DOCKET_RUN_SKILL_FILE="${WORK}/first-dup-mutant.md" \
+            bash "$SELF" >/dev/null 2>&1; then
+            bad "self-check: a dedupe paragraph without the first-duplicate note sentence still passed the suite"
+        else
+            ok "self-check: a dedupe paragraph without the first-duplicate note sentence fails the suite"
+        fi
     fi
 fi
 # (a) The cherry-pick lift is conditioned on verifying the sha and paths, and
@@ -450,6 +473,22 @@ if [ "$(grep -cF -- "$isolation_anchor" "${WORK}/isolation-sentences")" -eq 1 ];
         "${WORK}/isolation" 'never relaunching the writer without isolation'
 else
     bad "isolation-unavailable: no single sentence carries '${isolation_anchor}'"
+fi
+
+# (g) A machine-caused gate or pre-gate failure discovered mid-run gets a run
+# note on the first duplicate closed, so later packets carry the tracking
+# issue instead of refiling the gap. The sentence is asserted against the
+# dedupe paragraph, not the clean-HEAD ruling paragraph above it: the
+# clean-HEAD paragraph already prescribes a note, so a whole-file grep would
+# stay green with the mid-run rule gone.
+if paragraph 'A note reaches only packets rendered after it lands' "${WORK}/dedupe"; then
+    ok "first-duplicate note: exactly one paragraph rules on dedupe after a note"
+    states "first-duplicate note: the first duplicate closed lands a run note" \
+        "${WORK}/dedupe" 'On the first duplicate you close for a machine-caused gate or pre-gate failure discovered mid-run, land a run note naming the tracking issue and the disposition before the next `dispatch open`'
+    states "first-duplicate note: the note takes the clean-HEAD ruling form" \
+        "${WORK}/dedupe" 'in the same form as the clean-HEAD ruling above'
+else
+    bad "first-duplicate note: no single paragraph carries 'A note reaches only packets rendered after it lands'"
 fi
 
 # (e) Absence claim, run over SENTENCES rather than paragraphs: every

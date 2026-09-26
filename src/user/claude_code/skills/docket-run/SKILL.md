@@ -381,7 +381,12 @@ append-only (a changed ruling is a new note, never an edit).
 A note reaches only packets rendered after it lands, so a duplicate gap
 can still occur. Dedupe with `docket issue comment add <dup> -m
 "Duplicate of <tracking>"`, then `docket issue close <dup>` (it carries no
-`--note`, only `--if-version`).
+`--note`, only `--if-version`). On the first duplicate you close for a
+machine-caused gate or pre-gate failure discovered mid-run, land a run
+note naming the tracking issue and the disposition before the next
+`dispatch open`, in the same form as the clean-HEAD ruling above: workers
+are not briefed to search the backlog, so without the note every later
+verify-ac step refiles the same gap.
 
 **Warm the Go module cache before dispatching into a Go repo.** Sandboxed
 Go cannot verify TLS on this machine (`x509: OSStatus -26276`) even though

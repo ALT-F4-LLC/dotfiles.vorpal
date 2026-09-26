@@ -121,6 +121,9 @@ work.
 
 Contract, fragment, and schema prose content (severity ladders, provenance
 vocabularies, house-style rules) is a matter of contract authoring, not
-naming identity, and is out of scope here. Every contract's
+naming identity, and is out of scope here. `cut-ledger.json` at this root
+is the corpus-cut skill's verdict ledger, not a definition: the engine
+reads only the five subtrees and `policy.toml`, and the crossref and
+frozen-drift gates never scan it. Every contract's
 H1 is the fixed literal `# Charter`; the definition's actual name lives in
 its YAML frontmatter `node:` field, not the heading.

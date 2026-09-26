@@ -24,6 +24,8 @@ jobs:
 
       - run: bash tests/contract-includes.test.sh
 
+      - run: bash tests/corpus-cut-decide.test.sh
+
       - run: bash tests/crossref-check.test.sh
 
       - run: bash tests/diff-scope.test.sh

@@ -1,0 +1,33 @@
+# shellcheck shell=bash
+#
+# Sourced by completion gates, never run. The engine commits a step's work
+# before its record-time gate rerun, so the uncommitted tree alone is empty
+# by then; DOCKET_GATE_BASE (exported by the engine to completion gates)
+# names the base of the committed range the gate must also scan.
+#
+# gate_range <gate> <mode> sets GATE_RANGE in the caller's shell to
+# `<sha>..HEAD` when DOCKET_GATE_BASE resolves to a commit, or to "" when it
+# does not. Each mode fixes what an unusable base means:
+#
+#   own-gate  Running as <gate> (DOCKET_GATE=<gate>) fails closed: the
+#             caller exits 2. Any other caller without a usable base (the
+#             ac-commands pre-gate, a `tests` run, a hand run) gets "" and
+#             scans the tree only.
+
+gate_range() {
+  local gate="$1" mode="$2" base="${DOCKET_GATE_BASE:-}" sha=""
+  GATE_RANGE=""
+  case "$mode" in
+    own-gate) ;;
+    *)
+      echo "${gate} FAILED: gate_range: unknown mode '${mode}'." >&2
+      exit 2
+      ;;
+  esac
+  if [ -n "$base" ] && sha=$(git rev-parse --verify --quiet --end-of-options "${base}^{commit}"); then
+    GATE_RANGE="${sha}..HEAD"
+  elif [ "${DOCKET_GATE:-}" = "$gate" ]; then
+    echo "${gate} FAILED: DOCKET_GATE_BASE is unset or does not resolve to a commit ('${base}'); cannot select committed changes." >&2
+    exit 2
+  fi
+}

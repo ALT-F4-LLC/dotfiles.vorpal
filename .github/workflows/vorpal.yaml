@@ -52,6 +52,8 @@ jobs:
 
       - run: bash tests/frozen-drift-check.test.sh
 
+      - run: bash tests/gate-range.test.sh
+
       - run: bash tests/inspect-skill.test.sh
 
       - run: bash tests/mutant-rule-crossref.test.sh

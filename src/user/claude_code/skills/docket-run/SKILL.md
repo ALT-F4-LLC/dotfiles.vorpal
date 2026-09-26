@@ -990,37 +990,19 @@ you wrote after the kind filter), reproduce wave.js's partition: writer
 lanes (`class == "write"`, or `executor == "write"` when `class` is
 absent) that never share a manifest `stage` are welded into one unit;
 every other lane is a unit of its own; N is the unit count capped at
-four. Launch N shards, never step 1's bound:
+four. The installed script does that arithmetic; run it by its installed
+path, never as an inline interpreter program: a `python3 -c` argument is
+on the auto-mode deny list, and a `python3 - <<'PY'` heredoc is left to
+the classifier, which refused it mid-run (measured: accepted at one
+conductor's activation, refused at its fourth dispatch):
 
 ```bash
-python3 - "$ROWS_FILE" <<'PY'
-import json, sys
-rows = json.load(open(sys.argv[1]))
-stage = lambda r: r["stage"] if isinstance(r.get("stage"), int) else 0
-cls = lambda r: r["class"] if isinstance(r.get("class"), str) and r["class"] else (r.get("executor") or "")
-lane = lambda r: str(r["issue"]) if r.get("issue") else "row:" + r["step"]
-writer = lambda r: r.get("kind") not in ("action", "vote") and cls(r) == "write"
-by_stage = {}
-for r in rows:
-    if writer(r) and r.get("issue"):
-        by_stage.setdefault(stage(r), set()).add(lane(r))
-certified = {frozenset((a, b)) for lanes in by_stage.values() for a in lanes for b in lanes if a != b}
-parent = {}
-def find(x):
-    parent.setdefault(x, x)
-    while parent[x] != x:
-        parent[x] = parent[parent[x]]
-        x = parent[x]
-    return x
-writers = sorted({lane(r) for r in rows if writer(r) and r.get("issue")})
-for i, a in enumerate(writers):
-    for b in writers[i + 1:]:
-        if frozenset((a, b)) not in certified:
-            parent[find(b)] = find(a)
-units = {("unit:" + find(l)) if l in parent else ("lane:" + l) for l in {lane(r) for r in rows}}
-print(max(1, min(4, len(units))))
-PY
+python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$ROWS_FILE"
 ```
+
+It reads the kept rows as one JSON array or as JSON lines, prints N alone
+on stdout, and names the units it counted on stderr for the dispatch
+report. Launch N shards, never step 1's bound.
 
 Pass rows through unchanged beyond the kind filter, with no reordering,
 dropping, or adding, since the manifest is hashed, and never sequence or
@@ -1640,7 +1622,19 @@ with `docket issue move <id> --project <target>`. Where migrate refuses,
 re-file with `docket issue create` from that repo's checkout, link the
 pair, and close the local copy (`docket issue move <id> done < /dev/null`).
 The engine has no cross-project routing on `--gap-file`; until it does,
-this migration is the conductor's.
+this migration is the conductor's. `issue create` takes no `--project`:
+a filing that belongs elsewhere is created here and then moved.
+
+**A gap that duplicates a tracker you already hold gets the run note at
+the same close.** Closing it as a duplicate (comment, then close, per
+**Before the loop**) settles that one issue and nothing else: the packets
+still carry no note, and workers are not briefed to search the backlog,
+so every later verify-ac step re-files the same gap and you dedupe it
+again. Before the next `dispatch open`, read `docket run note list $RUN`;
+if no note names that tracker and its disposition, `docket run note add`
+lands one now, in the clean-HEAD ruling form. One run closed eleven
+duplicates of one pre-gate failure by hand, one per wave, with no note
+ever landed.
 Promote the header at the same close: `docket issue file add <id>
 <files>` from the gap's `Files:` line, `docket issue edit <id> --scope`
 from its `Scope:` line. The same routing governs everything you file:
@@ -1786,28 +1780,16 @@ conversational gate has no row, so each `voters` entry carries its own
 a choice:
 
 ```bash
-python3 - tribunal-architecture,tribunal-security,tribunal-correctness <<'PY'
-import json, os, re, sys
-# No tomllib before Python 3.11 (the operator's python3 has been 3.9): read the
-# two inline tables directly. [executors] rows are `seat = { variant = "..." }`,
-# [variants] rows are `name = { model = "...", effort = "...", ... }`.
-txt = open(os.path.expanduser("~/.docket/config/policy.toml")).read()
-def table(name):
-    m = re.search(r"^\[" + re.escape(name) + r"\][^\n]*\n(.*?)(?=^\[|\Z)", txt, re.S | re.M)
-    return m.group(1) if m else ""
-def inline(tbl, key):
-    m = re.search(r"^" + re.escape(key) + r"\s*=\s*\{([^}]*)\}", tbl, re.M)
-    return dict(re.findall(r"([A-Za-z_]+)\s*=\s*\"([^\"]*)\"", m.group(1))) if m else {}
-executors, variants = table("executors"), table("variants")
-out = []
-for seat in sys.argv[1].split(","):
-    variant = inline(executors, seat).get("variant")
-    v = inline(variants, variant) if variant else {}
-    out.append({"seat": seat, "model": v.get("model"), "effort": v.get("effort"), "variant": variant})
-assert all(all(o.values()) for o in out), out   # a null field means the seat or variant is not in the file
-print(json.dumps(out))
-PY
+python3 ~/.claude/skills/docket-run/scripts/seat_roster.py tribunal-architecture,tribunal-security,tribunal-correctness
 ```
+
+The installed script reads the two inline tables of
+`~/.docket/config/policy.toml` (`[executors]` rows are `seat = { variant =
+"..." }`, `[variants]` rows are `name = { model = "...", effort = "...",
+... }`) and prints the array; a seat or variant the file lacks is a
+non-zero exit naming the partial rows. Run it by its installed path, never
+as an inline interpreter program: the same heredoc form was refused by
+the auto-mode classifier mid-run, and a refusal here stalls a gate.
 
 Run `verify-pins` first on an active run to confirm disk matches pinned.
 tribunal.js refuses a voter missing any of the three fields. `gateKind`

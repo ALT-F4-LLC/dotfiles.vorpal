@@ -39,6 +39,7 @@ jobs:
       - run: bash tests/docket-commit-guard-hook.test.sh
 
       - run: bash tests/docket-run-guard-hook.test.sh
+      - run: bash tests/docket-run-lane-units.test.sh
 
       - run: bash tests/docket-run-skill.test.sh
 

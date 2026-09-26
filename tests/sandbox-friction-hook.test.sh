@@ -111,6 +111,16 @@ case_quoted_prose_is_not_a_denial() {
         NONE "clean output"
 }
 
+case_unquoted_prose_is_not_a_denial() {
+    local prose='The sandbox denied the git admin-directory deletes (Operation not permitted) during cleanup.'
+    assert_kind "$(post_input 'docket issue show HRN-2002' "$prose")" \
+        NONE "unquoted denial prose in a stored issue body"
+    assert_kind "$(post_input 'cat notes.md' "$prose")" \
+        NONE "unquoted denial prose in a scratch file"
+    assert_kind "$(post_input 'ps -p 1' '(eval):1: operation not permitted: ps')" \
+        sandbox-denial "errno line from the shell"
+}
+
 case_mixed_output_keeps_the_real_line() {
     local input evidence
     input=$(post_input 'bash run.sh' 'brief says `bind: operation not permitted` is expected
@@ -143,6 +153,7 @@ case_never_blocks() {
 
 case_real_denials_are_recorded
 case_quoted_prose_is_not_a_denial
+case_unquoted_prose_is_not_a_denial
 case_mixed_output_keeps_the_real_line
 case_classifier_denials_are_recorded
 case_never_blocks

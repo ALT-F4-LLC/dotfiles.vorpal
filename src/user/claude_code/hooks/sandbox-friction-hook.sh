@@ -53,8 +53,10 @@ EVENT=$(printf '%s' "$INPUT" | jq -r '.hook_event_name // ""' 2>/dev/null || tru
 
 # Signatures of a sandbox boundary being hit. Kept deliberately narrow: a
 # false positive here becomes a bogus issue somebody has to triage and close,
-# which is how a self-improving loop stops being trusted.
-DENIAL_RE='Operation not permitted|operation not permitted|unable to open database file|x509: OSStatus -26276|tls: failed to verify certificate'
+# which is how a self-improving loop stops being trusted. EPERM counts only in
+# errno shape, `<subject>: Operation not permitted`, as the shell, diff, go, and
+# git print it; prose such as "deletes (Operation not permitted)" does not.
+DENIAL_RE=': [Oo]peration not permitted|unable to open database file|x509: OSStatus -26276|tls: failed to verify certificate'
 
 KIND=""
 EVIDENCE=""

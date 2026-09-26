@@ -41,15 +41,11 @@ if ! repo_root="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null)"; 
 fi
 cd "$repo_root"
 
-base=""
-if [ -n "${DOCKET_GATE_BASE:-}" ] && git rev-parse --verify --quiet "${DOCKET_GATE_BASE}^{commit}" >/dev/null; then
-  base="$DOCKET_GATE_BASE"
-elif [ "${DOCKET_GATE:-}" = "citation-check" ]; then
-  echo "citation-check FAILED: DOCKET_GATE_BASE is unset or does not resolve to a commit (got '${DOCKET_GATE_BASE:-}')." >&2
-  exit 2
-fi
+# shellcheck source=SCRIPTDIR/gate-range
+. "$script_dir/gate-range"
+gate_range citation-check own-gate
 
-changed=$( { if [ -n "$base" ]; then git diff --name-only "$base" HEAD -- 'docs/design/*.md'; fi
+changed=$( { if [ -n "$GATE_RANGE" ]; then git diff --name-only "$GATE_RANGE" -- 'docs/design/*.md'; fi
              git diff --cached --name-only -- 'docs/design/*.md'
              git diff --name-only -- 'docs/design/*.md'
              git ls-files --others --exclude-standard -- 'docs/design/*.md' 2>/dev/null

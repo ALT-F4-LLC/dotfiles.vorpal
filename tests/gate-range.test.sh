@@ -119,6 +119,12 @@ expect "own gate, base unset: exits 2 naming the gate" 2 "" "sample-gate FAILED:
 resolve DOCKET_GATE=sample-gate "DOCKET_GATE_BASE=${UNRESOLVABLE}"
 expect "own gate, base unresolvable: exits 2 naming the gate" 2 "" "sample-gate FAILED: DOCKET_GATE_BASE"
 
+resolve DOCKET_GATE=sample-gate "DOCKET_GATE_BASE="
+expect "own gate, base empty: message names the unset form" 2 "" "sample-gate FAILED: DOCKET_GATE_BASE is unset;"
+
+resolve DOCKET_GATE=sample-gate "DOCKET_GATE_BASE=deadbeef"
+expect "own gate, base unresolvable: message quotes the value" 2 "" "DOCKET_GATE_BASE 'deadbeef' does not resolve to a commit"
+
 MODE=bogus-mode
 resolve "DOCKET_GATE_BASE=${BASE_SHA}"
 expect "unknown mode exits 2 naming the gate" 2 "" "sample-gate FAILED: gate_range: unknown mode 'bogus-mode'"

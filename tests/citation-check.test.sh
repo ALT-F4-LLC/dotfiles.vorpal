@@ -61,6 +61,7 @@ build_repo() {
     git -C "$dir" config user.email test@test
     git -C "$dir" config user.name test
     cp "$GATE" "${dir}/.docket/bin/citation-check"
+    cp "$(dirname "$GATE")/gate-range" "${dir}/.docket/bin/gate-range"
     chmod +x "${dir}/.docket/bin/citation-check"
     printf '# Cited\n\nSee DOT-1.\n' > "${dir}/docs/design/cited.md"
     git -C "$dir" add -A

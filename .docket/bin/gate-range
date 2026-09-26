@@ -34,7 +34,11 @@ gate_range() {
     GATE_RANGE="${sha}..HEAD"
     return 0
   fi
-  failure="${gate} FAILED: DOCKET_GATE_BASE is unset or does not resolve to a commit ('${base}'); cannot select committed changes."
+  if [ -z "$base" ]; then
+    failure="${gate} FAILED: DOCKET_GATE_BASE is unset; cannot select committed changes."
+  else
+    failure="${gate} FAILED: DOCKET_GATE_BASE '${base}' does not resolve to a commit; cannot select committed changes."
+  fi
   if [ "$mode" = always ] || [ "${DOCKET_GATE:-}" = "$gate" ]; then
     echo "$failure" >&2
     exit 2

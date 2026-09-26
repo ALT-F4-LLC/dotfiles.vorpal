@@ -37,20 +37,12 @@ cd "$repo_root"
 # base only for worktree-recorded steps; running as this gate without a
 # resolvable base cannot see committed work, so it refuses (exit 2). Any
 # other caller without a usable base keeps the working-tree scan.
-base="${DOCKET_GATE_BASE:-}"
-if [ -n "$base" ] && ! git rev-parse --verify --quiet "${base}^{commit}" >/dev/null; then
-  base_problem="DOCKET_GATE_BASE '$base' does not resolve to a commit"
-  base=""
-elif [ -z "$base" ]; then
-  base_problem="DOCKET_GATE_BASE is unset"
-fi
-if [ -z "$base" ] && [ "${DOCKET_GATE:-}" = "tdd-preflight" ]; then
-  echo "tdd-preflight: $base_problem; cannot see TDDs committed since the step's base." >&2
-  exit 2
-fi
+# shellcheck source=SCRIPTDIR/gate-range
+. "$script_dir/gate-range"
+gate_range tdd-preflight own-gate
 
-changed=$( { if [ -n "$base" ]; then
-               git diff --name-only "$base" HEAD -- 'docs/tdd/*.md'
+changed=$( { if [ -n "$GATE_RANGE" ]; then
+               git diff --name-only "$GATE_RANGE" -- 'docs/tdd/*.md'
              fi
              git diff --cached --name-only -- 'docs/tdd/*.md'
              git diff --name-only -- 'docs/tdd/*.md'

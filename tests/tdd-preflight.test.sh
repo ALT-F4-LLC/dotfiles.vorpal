@@ -61,6 +61,7 @@ fresh_repo() {
     git -C "$dir" config user.email test@test
     git -C "$dir" config user.name test
     cp "$GATE" "${dir}/.docket/bin/tdd-preflight"
+    cp "$(dirname "$GATE")/gate-range" "${dir}/.docket/bin/gate-range"
     chmod +x "${dir}/.docket/bin/tdd-preflight"
     printf '# Existing\n' > "${dir}/docs/tdd/existing-feature.md"
     git -C "$dir" add -A

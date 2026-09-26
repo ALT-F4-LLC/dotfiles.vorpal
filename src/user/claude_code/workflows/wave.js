@@ -1150,6 +1150,33 @@ function probeRecovered(p, label) {
 }
 // TEST-END null-probe
 
+// TEST-BEGIN spawn-catch — extracted and exercised by
+// tests/wave-isolation-unavailable.test.sh with a counting launch spy.
+// Settles a rejected top-level launch. The isolation branch is fail-closed:
+// an isolated writer whose worktree could not be made is never relaunched
+// without isolation. Everything the handler touches is injected, except
+// AgentCapError and transientClassifierBlock from the fenced regions above.
+function spawnCatch({ row, isolated, log, launch, failed, retryTransient }) {
+    return (err) => {
+        if (err instanceof AgentCapError) {
+            log(`${row.step}: ${err.message} — not a dead executor: nothing was ` +
+                `launched; the engine re-offers the row at the next dispatch`)
+            return { step: row.step, status: 'agent-cap', text: err.message }
+        }
+        if (transientClassifierBlock(err)) return retryTransient(err, isolated)
+        if (isolated && /base branch|worktree/i.test(String(err))) {
+            const text = `worktree isolation unavailable for ${row.step} (${err}); ` +
+                `no writer launched without isolation. Reconcile claim state before ` +
+                `redispatch`
+            log(`${row.step}: ${text}`)
+            return { step: row.step, status: 'isolation-unavailable', text }
+        }
+        log(`${row.step}: spawn error: ${err}`)
+        return failed()
+    }
+}
+// TEST-END spawn-catch
+
 // Once a null-recovery probe (either kind below) comes back with nothing
 // itself, a burst of nulls across many rows is a session/rate-limit event,
 // not N independent dead spawns — a mid-wave 429 has nulled most of a
@@ -1382,23 +1409,7 @@ function spawn(row, phaseLabel) {
         })
     }
     return launch(isolated)
-        .catch((err) => {
-            if (err instanceof AgentCapError) {
-                log(`${row.step}: ${err.message} — not a dead executor: nothing was ` +
-                    `launched; the engine re-offers the row at the next dispatch`)
-                return { step: row.step, status: 'agent-cap', text: err.message }
-            }
-            if (transientClassifierBlock(err)) return retryTransient(err, isolated)
-            if (isolated && /base branch|worktree/i.test(String(err))) {
-                const text = `worktree isolation unavailable for ${row.step} (${err}); ` +
-                    `no writer launched without isolation. Reconcile claim state before ` +
-                    `redispatch`
-                log(`${row.step}: ${text}`)
-                return { step: row.step, status: 'isolation-unavailable', text }
-            }
-            log(`${row.step}: spawn error: ${err}`)
-            return failed()
-        })
+        .catch(spawnCatch({ row, isolated, log, launch, failed, retryTransient }))
 }
 
 // ---------------------------------------------------------------------------

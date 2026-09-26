@@ -179,6 +179,33 @@ session's, now retired; that session learns so at its next ruling. A
 `done` or `abandoned` run refuses (`CONFLICT`, exit 4): there is nothing
 left to conduct.
 
+**Write the verbs checkpoint with the token.** Right after either
+capture, still under `umask 077`, write the exact invocations the loop
+needs into `<scratchpad>/conductor.d/$RUN.verbs`. After a compaction you
+read this file before any engine verb (**The loop**), so each line must
+stay identical to the form this file prescribes where the verb is taught:
+
+```bash
+umask 077; cat > <scratchpad>/conductor.d/$RUN.verbs <<'EOF'
+docket dispatch backfill-usage --run $RUN --source "wave-journal:<wfId>" --from-json - < "$TMPDIR/wave-<wfId>.json"   # file holds the bare rows array, never {rows: [...]}
+docket vote create -d "<the decision, stated plainly>" -r "<evidence summary>" --files-changed "<comma-separated paths the decision covers>" -n 3 -c <low|medium|high|critical> --threshold 0.67 --created-by conductor
+docket vote link <proposal-id> --issue <ID>
+docket events list --run $RUN --json=v2 | jq '.data.items'
+docket step reap STEP-N --reason "<what you observed>" < <scratchpad>/conductor.d/$RUN.token
+docket dispatch open --run $RUN --limit 240 --ack-reap <seq>
+docket guard spawn --run $RUN --ack-reap <seq>
+docket step approve STEP-N --authority operator --note "<their words>" < <scratchpad>/conductor.d/$RUN.token
+docket step resolve STEP-N --as override-pass --authority standing-grant --authority-ref machine-caused-gate-failure < <scratchpad>/conductor.d/$RUN.token
+docket step resolve STEP-N --as override-pass --batch --authority standing-grant --authority-ref batch-grant < <scratchpad>/conductor.d/$RUN.token
+docket step resolve STEP-N --as fix-round --authority standing-grant --authority-ref <proposal id> < <scratchpad>/conductor.d/$RUN.token
+docket step resolve STEP-N --as override-pass --drop-interposed --authority standing-grant --authority-ref loop-bound --note "loop-bound ruling: residue; filed <ids>; <AC or cluster> out of scope, remedy <home>" < <scratchpad>/conductor.d/$RUN.token
+EOF
+```
+
+Substitute the literal scratchpad path before running it; `$RUN` and the
+angle-bracket slots stay as written and are filled per use. A `finish`,
+done, or abandoned run removes it with the token.
+
 **Supply it per command, by redirecting the file into stdin.** Every one
 of the seven verbs, in every example below and on every path this file
 names (the three standing rulings, the operator escalation, a forced
@@ -669,8 +696,11 @@ unexpanded, that belongs in your stop report.
 
 ## The loop
 
-Run it from the top each time; cache nothing between iterations. After a
-context compaction, re-read this SKILL.md before your next engine verb.
+Run it from the top each time; cache nothing between iterations. After
+any context compaction, your first action, before any engine verb, is
+`cat <scratchpad>/conductor.d/$RUN.verbs`, and every verb it lists runs
+in that exact form. If the file is missing or the verb you need is not
+in it, re-read this SKILL.md before your next engine verb.
 
 **Keep going until the run is genuinely finished.** The engine hands you
 one phase at a time; a wave completing is not the run completing. After

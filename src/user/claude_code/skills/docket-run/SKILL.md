@@ -680,6 +680,17 @@ into the proposal context verbatim. Fixing it before the gate is one
 `docket issue label add` plus a fresh dry-run; after activation, only
 re-docket-planning can fix it.
 
+**A bound issue freezes at the activation that binds it, not at the
+re-activation that expands it.** Its body, labels and scope snapshot
+when the run first binds it, so a `docket issue edit` made before a
+later re-activation never reaches the run: the writers render the
+original text and stop on the conflict the amendment already resolved.
+Route a pre-expansion amendment through the run instead: `docket run
+note add $RUN --text "..."` for criteria (run notes render into every
+later packet) and `docket run refresh-scope RUN-N --issue DKT-M --reason
+R` for scope. Then confirm the amendment appears in `docket step render
+STEP-N` before dispatching that step.
+
 The roster of what was bound comes from the engine, never the run's
 request prose.
 

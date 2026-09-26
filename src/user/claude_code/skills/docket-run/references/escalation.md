@@ -167,10 +167,12 @@ id, confirmed against the aggregate's `held=[N]` field.
 the spec?** A retry re-renders only the issue body and its inputs, so a
 fresh executor treats mid-run operator rulings that live only in chat as
 unreviewed drift and removes them. `docket step render STEP-N` first: if
-rulings are missing, update the issue body and confirm the change
-reaches the rendering (bodies snapshot at activation), resolve
-`override-pass` with evidence if the work is already on the tree, or
-route the ruling per the operator-ruling paragraph below.
+rulings are missing, write them into the run as a run note and confirm
+the note reaches the rendering (an issue-body edit does not: bodies,
+labels and scope snapshot at the activation that binds the issue, never
+at a later re-activation, per the skill's frozen-binding paragraph),
+resolve `override-pass` with evidence if the work is already on the
+tree, or route the ruling per the operator-ruling paragraph below.
 
 **Reject is an escape hatch, not an annotation.** On a held-cluster gate,
 `approve` falls through to the threshold; `reject` skips it and routes by

@@ -131,5 +131,15 @@ expect_uncited "DOCKET_GATE unset scans the working tree" "docs/design/new.md"
 run_gate "$repo" DOCKET_GATE=ac-commands
 expect_uncited "another gate without a base scans the working tree" "docs/design/new.md"
 
+# AC3: with a resolvable base, any caller reads the committed range.
+repo="${WORK}/other-gate-base"
+build_repo "$repo"
+base=$(git -C "$repo" rev-parse HEAD)
+printf '%s' "$UNCITED" > "${repo}/docs/design/committed.md"
+git -C "$repo" add -A
+git -C "$repo" commit -q -m doc || fatal "commit failed"
+run_gate "$repo" DOCKET_GATE=ac-commands DOCKET_GATE_BASE="$base"
+expect_uncited "another gate with a base reads base..HEAD" "docs/design/committed.md"
+
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

@@ -1,6 +1,6 @@
 ---
 node: judge-simplicity
-version: 19
+version: 20
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -84,19 +84,6 @@ Preserve the ladder's exclusions: required validation, data-loss protection,
 security, accessibility, and explicitly requested behavior. Before recommending
 removal of redundant enforcement, identify the established guarantee that makes
 it redundant. Check relevant consumers and contracts before recommending deletion.
-
-**Investigate proportionally.** Follow evidence-rules and rerun-discipline for
-candidate probes and required reproduction of supplied FAILED gates or gate
-outcomes your findings dispute, using the rerun fragment's scratch-copy
-exports under executor-read. Preserve the intended inputs; neither setup nor
-execution may write into the checkout or shared repository metadata, and
-isolate outputs, caches, and other mutable resources. Report unavailable
-verification as a gap and continue independent inspection.
-
-On re-review, apply re-review-rounds to prior findings and affected content;
-reuse unchanged evidence rather than repeating the initial review. Preserve
-artifact identities, applicable requirements, finding IDs, dispositions, evidence
-references, examined coverage, and gaps across handoffs and compaction.
 
 # Emit
 `findings`: a concise markdown body and the `findings@12` payload using the supplied

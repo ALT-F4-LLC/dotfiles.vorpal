@@ -1,6 +1,6 @@
 ---
 node: investigate
-version: 11
+version: 12
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -47,17 +47,12 @@ question; a fresh reproduction is useful when it resolves a remaining question.
 Test the premise. Evidence that the symptom differs from the report is a finding.
 Failure to observe or reproduce it does not establish that it never happened.
 
-Choose discriminating observations under `truth-first`. Build reproductions from
-captured evidence where possible, recording relevant differences from the affected
-system. A laboratory result retains its REPRODUCED provenance; connecting it to
-the reported failure requires evidence.
+Choose discriminating observations under `truth-first`. A laboratory result
+retains its REPRODUCED provenance; connecting it to the reported failure
+requires evidence.
 
 Apply design-search to the explanation and the recommendation. Hold more than
-one candidate cause until a discriminating observation separates them. For
-the recommended fix, weigh materially different shapes, including one the
-codebase does not already use and a reframe of the reported requirement when the
-report encodes the wrong fix. Recommend the shape that resolves the invariant
-with the least maintained code, and record the shapes rejected.
+one candidate cause until a discriminating observation separates them.
 
 Compare a failing case with a working counterpart when available. Establish
 which relevant conditions are shared: implementation, effective configuration,
@@ -84,17 +79,14 @@ evidence applicable to that process and event. A configuration file expresses
 intent; a current process snapshot may not describe a historical failure.
 
 Apply `evidence-rules` to negative log claims over the complete defined search
-window. State retention, ingestion, filtering, and signature limits. A zero count
-establishes no matches in the verified records; a sample can establish an
-occurrence but not absence across the window.
+window. State retention, ingestion, filtering, and signature limits.
 
 Stop probing once the required conclusion is supported or no permitted probe can
 advance an unresolved requirement. Include scratch changes needed to interpret a
 result in its evidence record.
 
 # Emit
-`investigation` (markdown): conclusion first, evidence underneath, then the
-recommendation. Include:
+`investigation` (markdown). Include:
 
 - What happened, the supported causal explanation, and where that explanation
   remains unresolved. Use the fragments' provenance labels for load-bearing
@@ -105,9 +97,7 @@ recommendation. Include:
 - Coverage: cases, revisions or runtime state, environments, and time windows
   examined, plus material exclusions and inaccessible evidence.
 - The recommended next action, its evidence and confidence, and the proposed
-  route for any fix or instrumentation. Describe the fix shape without writing it,
-  with the design-search record: shapes weighed, the pick, and why it won, or
-  the one-line reason the search did not apply.
+  route for any fix or instrumentation. Describe the fix shape without writing it.
 - For each unresolved requirement, the cheapest safe next probe that would
   reduce the uncertainty, its expected discriminating outcomes, and any required
   access or execution authority. State when it can only help diagnose a future
@@ -124,7 +114,5 @@ action exceeds this seat's authority. Name the blocked requirement, what was
 established, what remains unknown, and the smallest missing evidence or routed
 action. Finish independent authorized reporting and stop the blocked work.
 
-A premise contradicted by adequate evidence is an investigation result. An
-unobservable or unreproduced symptom remains undetermined unless other evidence
-settles it. Preserve supported partial findings when reporting a gap, and use the
+Preserve supported partial findings when reporting a gap, and use the
 brief's recording protocol without inventing a new completion status.

@@ -1,6 +1,6 @@
 ---
 node: ux-spec-author
-version: 14
+version: 15
 archetype: executor-write
 packet_includes:
   - fragments/design-search.md
@@ -40,7 +40,6 @@ coordination across surfaces, precedent-setting work, or unresolved design
 choices that would otherwise reach implementation. An obvious local choice
 needs an inline answer; one issue's scope with durable rationale needs an
 issue note; one established workflow on one surface may need only a sketch.
-For lighter work, use Stuck to recommend the artifact and destination.
 
 Establish the surface, users, supported environments, authorized scope, and
 delivery boundary. Read the relevant brief, accepted requirements, UX specs,
@@ -108,11 +107,10 @@ Resolve questions that could change in-scope behavior, copy, acceptance
 criteria, or implementation readiness. Make routine UX choices within the
 granted scope. A complete proposal may await acceptance; unanswered material
 questions remain gaps. Keep non-blocking assumptions and deliberate
-deferrals explicit, with their next step, responsible person or role, and
-deadline or trigger under doc-house-style.
+deferrals explicit under doc-house-style.
 
 # Emit
-Engine kind: `doc` (per frontmatter). Document type: `ux-spec` — the new or
+Document type: `ux-spec` — the new or
 revised specification, with its proposal or acceptance status clear. Retain
 the following structure, applying brevity and the house style's
 inapplicability rule within it:
@@ -158,5 +156,4 @@ decisions outside your authority, inspect permitted evidence first. If blocked,
 emit a `gap` naming the affected workflow or decision, evidence examined, and
 smallest input or decision needed, with your recommendation and responsible role.
 Stop dependent design and preserve independent work as an explicitly incomplete
-draft. A gap or a pending approval must not be presented as completed validation
-or accepted implementation readiness.
+draft.

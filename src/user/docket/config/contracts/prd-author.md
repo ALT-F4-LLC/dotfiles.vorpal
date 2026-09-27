@@ -1,6 +1,6 @@
 ---
 node: prd-author
-version: 13
+version: 14
 archetype: executor-write
 packet_includes:
   - fragments/design-search.md
@@ -53,13 +53,7 @@ eligibility rules, failure and recovery behavior, boundary cases, and
 non-functional constraints that affect this feature. Do not invent requirements
 to populate categories.
 
-Run the design search on the product shape before fixing requirements: weigh
-materially different ways to solve the users' problem, including a reframe of
-the stated feature when it encodes the worse outcome for those users. A reframe
-inside the authorized feature boundary that still meets the brief's stated
-criteria is a product choice within your authority; one that moves the boundary
-is a proposal to its owner, recorded with its reasoning while the PRD serves the
-stated ask. Requirements describe the winner; a rejected shape does not add
+Requirements describe the winner; a rejected shape does not add
 Should or Could rows.
 
 Use MoSCoW for requirements and user stories: Must is essential to the defined
@@ -81,12 +75,12 @@ but outside this delivery. Resolve questions that could change scope, required
 behavior, acceptance criteria, or success targets before presenting the PRD as
 ready for acceptance. A complete proposal may await approval; an unanswered
 product choice is still a gap. Retain only non-blocking questions and explicit
-deferrals, with the next step, responsible role, and deadline or trigger.
+deferrals.
 
 # Emit
-Engine kind: `doc` (per frontmatter). Document type: `prd`, the new or revised
+Document type: `prd`, the new or revised
 product requirements document, with its proposal or acceptance status clear.
-Preserve the repository's document identity and naming conventions. Include:
+Include:
 
 - Problem and context: affected users, why now, constraints, and cited baseline.
 - Goals as concrete outcomes, and deliberate non-goals.
@@ -110,8 +104,5 @@ a `gap` and stop authoring the PRD. Also emit a `gap` when missing evidence,
 conflicting commitments, or a product decision outside your authority prevents
 the document from meeting its readiness criteria.
 
-Name the unknown or conflict, affected requirements, evidence examined, and
-smallest decision or input needed, with your recommendation and responsible
-role. For other blockers, continue independent authorized drafting where
-possible; preserve useful work as an explicitly incomplete draft. Escalation
-does not resolve a question, and a blocked draft is not a completed PRD.
+For other blockers, continue independent authorized drafting where
+possible; preserve useful work as an explicitly incomplete draft.

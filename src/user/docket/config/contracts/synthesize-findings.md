@@ -1,6 +1,6 @@
 ---
 node: synthesize-findings
-version: 24
+version: 25
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -183,8 +183,7 @@ and preserve or recover the prior synthesis's member account so downstream
 readers have it.
 
 Explain non-obvious merges, splits, historical matches, and unresolved pairs.
-For a prior ruling, say "previously ruled, round N" when its round is known;
-name the known decision and decider without filling missing facts. Distinguish
+Distinguish
 current restatements from the votes used for arithmetic. Account separately
 for prior clusters leaving the standing set and cite each transition's trace.
 Keep explanations brief without abbreviating required evidence.
@@ -261,12 +260,7 @@ leaves a repair obligation open on this change, use Stuck rather than silently
 suppressing routing.
 
 On a settled entry, omit `open_severity` entirely. On an open entry, include
-it; never use null or a floor value to encode absence. `findings-cluster@5`
-enforces one direction of this split: an entry with no settling ruling (the
-list above) must carry `open_severity` or the record is refused with a
-VALIDATION_ERROR. Omitting `open_severity` on a settled entry is this
-contract's own convention, not schema-enforced — the schema does not refuse
-its presence there. A refusal naming
+it; never use null or a floor value to encode absence. A refusal naming
 `open_severity` means an open cluster lost its value; supply it from the
 members and re-record, never by inventing a ruling to settle the entry.
 Check its value and presence explicitly before recording. The consuming

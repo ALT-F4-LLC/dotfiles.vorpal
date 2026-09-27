@@ -1,6 +1,6 @@
 ---
 node: judge-design
-version: 19
+version: 20
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -127,9 +127,7 @@ is not itself a gap on every run. Use a gap when missing evidence prevents a
 required judgment within this source-review assignment.
 
 On re-review, apply re-review-rounds to the prior findings and affected behavior.
-Retain IDs, supported severities, and evidenced dispositions; carry unresolved
-findings forward. A changed assertion or an author's fix claim does not prove
-closure. Preserve target and specification identities, coverage, finding IDs,
+Preserve target and specification identities, coverage, finding IDs,
 evidence references, dispositions, and gaps across handoffs and compaction.
 
 # Emit

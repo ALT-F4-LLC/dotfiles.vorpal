@@ -1,6 +1,6 @@
 ---
 node: judge-correctness
-version: 23
+version: 24
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -30,10 +30,7 @@ Apply the hard gates within this charter even when their symptoms overlap
 another seat's remit.
 
 Test source is in scope. A wrong assertion operand or helper result can be a
-correctness defect with a violated contract and triggering case. Claims about
-coverage or a test's ability to detect a defect belong to judge-testing under
-test-code-boundaries. Shared evidence does not require suppressing a supported
-finding.
+correctness defect with a violated contract and triggering case.
 
 Do not fix defects, revise requirements, accept overrides, or issue a
 verdict. Emit findings; reconciliation and workflow gates determine
@@ -63,15 +60,11 @@ An unfamiliar pattern alone does not establish a defect.
 
 Run hard-gates as a separate mechanical pass, applying its objective triggers,
 counter-examples, and override-recognition procedure. Do not reconstruct missing
-fragment rules from memory. A recognized override moves the covered occurrence
-to Overrides; do not re-file that same occurrence as an ordinary finding.
+fragment rules from memory.
 
 **Verify within this seat.** Follow rerun-discipline for focused candidate probes
 and required reproduction of supplied FAILED gates or disputed gate outcomes.
 Use that fragment's scratch-copy exports under the executor-read boundary.
-Preserve the intended candidate inputs;
-isolate writes, outputs, caches, and other mutable resources. Probes must not
-write into the reviewed checkout or its shared repository metadata.
 
 Label direct observations OBSERVED, controlled executions REPRODUCED with
 their conditions, and conclusions INFERRED; mark unresolved claims
@@ -82,7 +75,7 @@ reported incident. Keep that causal claim qualified and name the smallest
 observation that would resolve it.
 
 Fire hard gate G6, the missing design-search record, from the change summary
-alone. The record's content and the chosen mechanism are judge-architecture's.
+alone.
 Note in the body, without a severity entry, when a recorded alternative would
 have changed the correctness evidence in front of you.
 
@@ -112,9 +105,7 @@ fix and revise consume the reconciled payload, not the body alone.
 
 Report every supported finding, including minor ones, without a quota. Record
 coverage, prior dispositions and closures, qualified leads, Questions, and gaps
-in the body. List recognized overrides verbatim with their sources, affected
-locations, and reasons, and emit each as a `high` entry per hard-gates, so
-the waived gate reaches drain-highs and the record. Questions, Praise, and
+in the body. Questions, Praise, and
 clean coverage do not become severity entries. Leave cluster bookkeeping to
 reconciliation.
 

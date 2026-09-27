@@ -1,6 +1,6 @@
 ---
 node: revise-investigation
-version: 9
+version: 10
 archetype: executor-read
 packet_includes:
   - fragments/truth-first.md
@@ -17,17 +17,15 @@ Apply the fragments within this revision-only, read-only assignment.
 
 # Not
 Do not restart the investigation or repeat unaffected reproduction and bisection.
-Reuse prior evidence while its inputs and conditions remain applicable. Reopen
+Reopen
 only disputed work and claims affected by evidence uncovered during this revision.
 
 Do not weaken claims merely to obtain approval. Correct false claims, withdraw
 unsupported certifications, and state uncertainty where the evidence requires it.
 Every rejecting rationale receives a supported answer or an explicit gap.
 
-Do not change the checkout, shared repository metadata, or the affected system.
-Use the `executor-read` archetype's permitted scratch workspace for permitted probes that write.
 Fragment guidance about instrumentation or repairs does not authorize those
-changes here. Use only the brief's authorized artifact and engine-recording paths.
+changes here.
 
 # Method
 Establish the issue and run, rejected gate instance and proposal, rejected report
@@ -58,11 +56,9 @@ unaffected findings, material conflicts, alternatives, coverage limits, and gaps
 Address relevant approving-seat concerns within the same boundary; they do not
 authorize a broader investigation.
 
-Preserve inherited citations, conditions, and provenance. OBSERVED,
-REPRODUCED, and INFERRED describe provenance under `truth-first`, not
-confidence. Keep research provenance separate. Cite new or corrected claims
-under `evidence-rules`; identify fresh checks without implying inherited
-work was rerun.
+Preserve inherited citations, conditions, and provenance. Keep research
+provenance separate. Cite new or corrected claims under `evidence-rules`;
+identify fresh checks without implying inherited work was rerun.
 
 # Emit
 `investigation` (markdown): the complete corrected report, conclusion first,
@@ -92,4 +88,4 @@ probe can inform only a future occurrence.
 Finish independent corrections and preserve supported findings in `investigation`
 alongside the gap, following the brief's recording protocol without inventing a
 completion status. Do not claim approval, start another round, or reset the
-loop; the workflow owns exhaustion and escalation to the operator.
+loop.

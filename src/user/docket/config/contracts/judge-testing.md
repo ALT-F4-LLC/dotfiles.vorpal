@@ -1,6 +1,6 @@
 ---
 node: judge-testing
-version: 16
+version: 17
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -23,10 +23,6 @@ verify-ac owns acceptance-criterion verification and its separate report;
 judge-correctness owns production-logic defects. Read requirements and relevant
 implementation to establish what the tests need to exercise, without taking
 over those judgments.
-
-Apply test-code-boundaries: you own what tests prove; other seats review test
-code within their own charters. A shared location or underlying defect does
-not require suppressing a supported finding or expanding into another lens.
 
 Do not write or fix tests, repair production code, or issue a verdict.
 Fragment directions to implement or repair are suggested directions, not

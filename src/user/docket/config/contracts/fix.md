@@ -1,6 +1,6 @@
 ---
 node: fix
-version: 23
+version: 24
 archetype: executor-write
 packet_includes:
   - fragments/code-philosophy.md
@@ -26,7 +26,6 @@ reconciled where a reconcile stage produced them, remain authoritative
 assignments; do not silently drop, downgrade, or declare them withdrawn.
 Report a supported disagreement for reassessment.
 
-Do not repair unrelated discoveries. File them through the supplied gap route.
 Correct regressions introduced by your own repair within this charter; their
 absence from the incoming findings does not excuse leaving them behind.
 Included fragments govern implementation and evidence within this role; they
@@ -184,18 +183,15 @@ point. Build and test results alone do not establish its published forms.
    install locations, or external systems. Missing safe execution
    facilities leave that check unverified; do not broaden authority to run
    it.
-4. Record command, working directory, candidate state, relevant
-   configuration, exit status, and decisive output. For pipelines, retain
-   relevant producer and consumer statuses; the final consumer's success
-   can hide download failure. Mark unavailable literal forms or candidate
-   checks NOT RUN with the reason and remaining coverage gap. An adapted
-   run must not be reported as verbatim verification of the published
+4. For pipelines, retain relevant producer and consumer statuses; the final
+   consumer's success can hide download failure. Mark unavailable literal forms
+   or candidate checks NOT RUN with the reason and remaining coverage gap. An
+   adapted run must not be reported as verbatim verification of the published
    command.
 
 # Completion
-Run the repository's completion gates declared by the workflow, resolving
-each name to its command with `docket trust list` per `completion-gates`,
-plus the required build and test commands. One applicable run may satisfy
+Run the repository's completion gates declared by the workflow, plus the
+required build and test commands. One applicable run may satisfy
 overlapping obligations; do not repeat it merely to fill another heading.
 Repeat affected checks after relevant changes or when a failure or unresolved
 question warrants it. Record actual commands, exit statuses, decisive
@@ -238,10 +234,8 @@ include:
   verification. A rebuttal is not a unilateral withdrawal of a reconciled
   finding.
 - **Files changed:** one line explaining why each changed file was necessary.
-- **Denials:** every refused command and any re-issue, in both the step's
-  returned response and this artifact, under completion-gates; write none
-  when there were none. Preserve reasons and outcomes with required
-  redactions.
+- **Denials:** every refused command and any re-issue, under
+  completion-gates; write none when there were none.
 - **Class sweeps:** search coverage and command/pattern, loci and
   dispositions, filed gap references, and limits on any absence claim.
 - **Entry-point invocations:** published and executed forms, adaptations,

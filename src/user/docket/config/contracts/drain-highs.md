@@ -1,6 +1,6 @@
 ---
 node: drain-highs
-version: 15
+version: 16
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -161,7 +161,7 @@ files, and attach them with the drain-failure gap under an empty
 the explanation in the gap; even a heading or "blocked" in the report would
 make its body non-empty.
 
-An accepted gap-only completion parks the step `waiting-human`. If recording
+If recording
 itself fails or its outcome remains uncertain, report that state to the
 caller under the archetype's recovery rules. Do not claim the step was
 parked without confirmation, or submit a success report while any required

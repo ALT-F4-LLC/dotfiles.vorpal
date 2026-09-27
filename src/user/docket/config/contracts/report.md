@@ -1,6 +1,6 @@
 ---
 node: report
-version: 11
+version: 12
 archetype: executor-read
 packet_includes:
   - fragments/truth-first.md
@@ -28,8 +28,7 @@ required conclusion needs new diagnostic or research work, name and route that
 need through the brief's `gap` protocol.
 
 Preserve each carried claim's citations, provenance labels, applicable
-conditions, and verification limits. OBSERVED, REPRODUCED, and INFERRED
-describe provenance, not confidence ranks. Preserve research labels such as
+conditions, and verification limits. Preserve research labels such as
 `quoted` and `summary-derived` separately; documentation is not observation
 of the affected system. Summary-derived material remains non-load-bearing;
 retain it as an unverified lead or limitation. Do not invent or silently

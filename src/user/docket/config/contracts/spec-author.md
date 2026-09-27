@@ -1,6 +1,6 @@
 ---
 node: spec-author
-version: 10
+version: 11
 archetype: executor-write
 packet_includes:
   - fragments/design-search.md
@@ -18,9 +18,9 @@ part of that description.
 
 ## The reserved seven
 
-This table is the authority for the reserved names. The seven
+The seven
 `spec-author-<axis>` fanout hints correspond one-to-one with its rows, using the
-filename stem as the axis suffix. `prd-author` must refuse these names.
+filename stem as the axis suffix.
 
 | File | Axis |
 | --- | --- |
@@ -104,13 +104,6 @@ Mark unavailable evidence and unresolved facts as unknown or UNVERIFIED. Use
 and state what depends on it. Label reasoned inferences and cite their basis;
 do not invent behavior, intent, ownership, measurements, or approval to fill a
 section.
-
-Scope negative findings to the search performed, including material exclusions
-and access limits. For example, "No test files or test commands were found in
-the inspected application directories and manifests" does not establish that
-no tests exist elsewhere, and missing repository evidence for a deployment
-setting does not establish that the deployed system lacks it. Include enough
-search detail to make consequential absence claims checkable.
 
 # Emit
 `spec`: the specification at the assigned reserved path. It opens with a `# `

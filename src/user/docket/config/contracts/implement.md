@@ -1,6 +1,6 @@
 ---
 node: implement
-version: 16
+version: 17
 archetype: executor-write
 packet_includes:
   - fragments/code-philosophy.md
@@ -23,7 +23,10 @@ a committed candidate with the required build, tests, and completion gates green
 # Not
 The issue determines what to build; judges own independent acceptance. You own
 implementation, verification, and correction of your candidate. Make routine
-decisions within scope. Report adjacent, unrelated problems through scope-discipline's discovery-recording rule (evidence, impact, owning follow-up route, in the existing artifact) without fixing them or changing workflow state beyond your own step; reserve Stuck's gap channel for what blocks your own declared work.
+decisions within scope. Report adjacent, unrelated problems through
+scope-discipline's discovery-recording rule without fixing them or changing
+workflow state beyond your own step; reserve Stuck's gap channel for what
+blocks your own declared work.
 
 # Method
 Read the issue's acceptance criteria, required deliverables, and scope before
@@ -33,18 +36,12 @@ tests before editing. Apply the included fragments throughout.
 
 Determine each AC's baseline status and how to verify it:
 
-- **Unmet, testable behavior:** write or extend the relevant test before changing
-  production behavior, and observe it fail for the intended reason. Reuse an
-  existing regression test when it already exposes the deficiency. Setup,
-  discovery, and environment failures do not establish a behavioral red. Follow
-  the TDD fragment's treatment of a missing new API. One test may cover several
-  ACs when its assertions establish each one.
-- **Already passing:** investigate whether the behavior exists, the test misses
-  the defect, or the criterion conflicts with the evidence. Preserve verified
-  existing behavior while implementing unmet criteria. Characterization and
-  pure-refactor tests may start green. Do not manufacture a failure or declare
-  the issue mis-stated solely because a test passes. Gap an unresolved conflict
-  that prevents correct implementation.
+- **Unmet, testable behavior:** follow the TDD fragment's treatment of a
+  missing new API. One test may cover several ACs when its assertions
+  establish each one.
+- **Already passing:** preserve verified existing behavior while implementing
+  unmet criteria. Do not declare the issue mis-stated solely because a test
+  passes. Gap an unresolved conflict that prevents correct implementation.
 - **Not automatable:** use objective inspection or manual evidence that establishes
   the criterion, and explain its limits. If the criterion cannot be evaluated as
   written or the necessary evidence is unavailable, use Stuck. Disclosure alone
@@ -61,18 +58,14 @@ through the workflow's normal downstream review and verification steps.
 If warranted regression coverage changes the tree, commit and report those
 changes normally.
 
-Otherwise, run the design search before writing production code: weigh
-candidates under design-search, including one that is not the existing path
-and, where the ask encodes the worse design, a reframe that still satisfies
-every AC inside the declared scope. Then implement the winner as the smallest
-complete change under code-philosophy. Observe the relevant tests pass and keep
-them green through necessary refactoring. Satisfy the whole authorized outcome;
-passing a narrow test is not sufficient evidence for behavior it does not
-exercise.
+Otherwise, run the design search before writing production code. Then implement
+the winner as the smallest complete change under code-philosophy. Observe the
+relevant tests pass and keep them green through necessary refactoring. Satisfy
+the whole authorized outcome; passing a narrow test is not sufficient evidence
+for behavior it does not exercise.
 
-Before hand-back, identify the step's required gates from the authoritative
-workflow and resolve their commands with `docket trust list`. Run them according
-to completion-gates, together with the required project build and test commands.
+Before hand-back, run the step's required gates according to
+completion-gates, together with the required project build and test commands.
 Applicable evidence can serve overlapping obligations; do not repeat an identical
 check merely because it appears in both lists. A failed or blocked required check
 prevents a successful change-summary, including on the already-satisfied path.
@@ -104,9 +97,7 @@ Include:
 - **Decisions:** material choices the issue left open, the design-search
   record (candidates weighed, the pick, why it won, or the one-line reason the
   search did not apply), and deviations reportable under the included fragments.
-- **Denials:** every refused command and any re-issue, in both the step's
-  returned response and this artifact, under completion-gates, with reasons
-  and outcomes and required redactions; write none when there were none.
+- **Denials:** as completion-gates requires; write none when there were none.
 - **Known limits:** evidence boundaries and matters reviewers should probe.
 
 Do not restate the diff. Record the artifact with `step record` using the

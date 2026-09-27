@@ -1,0 +1,235 @@
+# ui-change changelog
+
+Version history of `workflows/ui-change.toml`, newest first. Each heading is
+the `[pipeline].version` the entry describes.
+
+## 38
+
+Version history moves from the trailing comment on `version =` to
+`changelogs/ui-change.md`; the TOML no longer carries it. No topology,
+routing, or limit change.
+
+## 37
+
+`domain_paths = ["internal/tui/**"]` added to `[match]` so the
+engine binding_warnings lint can fire when an issue's scope lies
+in internal/tui/** without the ui label; no binding, topology,
+or routing change.
+
+## 36
+
+prose-only rewrite for concision; no topology, routing, or
+limit change.
+
+## 35
+
+`reconcile` repoints `payload = "findings@11"` to `findings@13`.
+findings@11 added a conditional requiring `open_severity` on
+every open cluster; engine rule V30 validates a declared
+aggregate-step schema against a synthetic probe built only
+from that schema's own declared fields plus the four keys
+`aggregate` always writes (severity, members, held,
+operator_resolved), so the probe never carries
+open_severity or prior_disposition and always fails
+findings@11's conditional -- no if/else on an aggregate-step
+schema can ever pass it, and findings@11 could never
+register. The check was also redundant: findings-cluster@5
+(synthesize's own payload) already requires open_severity on
+every open cluster before reconcile runs, and aggregate
+carries every non-severity key of its input through to its
+output verbatim. findings@13 is byte-identical to findings@10
+in every constraint, dropping only the unenforceable
+conditional; open_severity keeps ordered_enum: true, since
+this step's own threshold predicates are ordered comparisons
+the engine defines only over a field whose registered schema
+declares that order. No topology or routing change.
+
+## 34
+
+`review` and `design-qa` repoint `payload = "findings@10"`
+to `findings@12`: the description incorrectly still claimed
+reconcile-step usage, moved off in an earlier version;
+findings@12 corrects it to say review/design-qa only. Same
+shape, byte-identical constraints. No topology or routing
+change.
+
+## 33
+
+synthesize-findings declares `findings-cluster@5` and reconcile
+declares `findings@11`; both require `open_severity` on every open
+cluster (omitted only behind a settling ruling), so a payload that
+drops it no longer routes every threshold false and passes a
+blocker. No topology or routing change.
+
+## 32
+
+synthesize-findings repoints `findings-cluster@3` to
+`findings-cluster@4`, which adds an optional `member_sources`
+array alongside `member_ids`, naming each linked member's
+producing step ref; a finding's own `id` is unique only
+within its judge's own payload, so `member_ids` alone cannot
+disambiguate which step a member came from. No topology,
+routing, or validation-semantics change: `member_sources` is
+optional and unread by any threshold or the aggregate builtin.
+
+## 31
+
+prose-only rewrite for concision; no topology, routing, or
+limit change.
+
+## 30
+
+`lease_ttl` added to every `[limits]` entry, matched to
+that entry's `max_step_duration`, so a lease lasts exactly
+as long as the step may run. A long wave no longer outlives
+the write-class lease and no longer draws an ack-reap panel;
+`step heartbeat` could not extend past `max_step_duration`
+anyway, so the ceiling is unchanged. No topology change.
+
+## 29
+
+review, synthesize-findings and reconcile repoint to
+`findings@10` and `findings-cluster@3` — prose-only schema
+corrections (stale field descriptions), no
+validation-semantics change. No topology change.
+
+## 28
+
+`verify-ac` emits `ac-report@2` (adds `unmet-out-of-scope`)
+and its vote predicate becomes `any(status != met)`, read after
+`fix-loop`'s `any(status == unmet)`: an in-scope unmet still
+loops, an out-of-scope or unverifiable AC goes to the one-seat
+`verify-ac-vote` (approve passes with the gap filed, reject
+routes fix-loop). No topology change; the measurement is on
+standard-change@37.
+Also `route-direct`, `route-loop` and `route-tend` join
+unless_labels: an issue docket-groom routed to the operator's
+own session, the tend queue, or a loop matches zero workflows,
+like `blocked`, until the label changes; `route-run` stays
+bindable.
+
+## 27
+
+corpus-wide naming-convention pass (src/user/docket/config/README.md).
+Step renames only, no topology change: `synthesize` ->
+`synthesize-findings`, `verify` -> `verify-ac`, `verify-tribunal` ->
+`verify-ac-vote`. Every `after`, threshold route key, and
+`<step>.<kind>` input reference updated to match; `verify`'s
+dependency on `design-qa` is preserved under its new name `verify-ac`.
+
+## 26
+
+three edits on the review stage, no topology change.
+(1) `verify-tribunal` seats tribunal-correctness alone: its own
+cast matched 9 of 9 decided outcomes on this track and all 25
+corpus-wide, rejections included, and one voter tallies 1.0 or 0.0
+against the 0.67 rule where a three-seat 2-1 tally landed either
+side of it by confidence decimals. (2) `verify-tribunal` routes a
+rejection to `fix-loop`, as standard-change, security-change and
+docs-only already do, instead of parking the whole run; `fix` gains
+`verify-tribunal.vote-record` so the fixer reads the panel's
+reasoning, as on those tracks. The tribunal rejected 3 of 9 here
+and each rejection stopped the run for an operator decision a fix
+round could have absorbed. (3) `reconcile` drops `hold_spread`: 28
+held-cluster panels were decided on this track and 27 approved the
+computed value, which then routed fix-loop anyway, at three
+store-configured seats and a median 13 minutes each; a disputed
+blocker now goes to the fixer and a wrong one costs one fix round.
+The four-seat fan-out stays (sole finders across 107 reconciled
+rounds: architecture 3 blocker / 46 high, design 2 / 64,
+correctness 2 / 20, testing 0 / 128; testing's sole highs were
+acted on 44 of 55 times they could be) and design-qa stays (5 of 63
+runs routed a blocker no source-reading seat can observe).
+
+## 25
+
+`doc-validate` joins the `implement` and `fix` gate lists
+the widened doc-validate pathspec was declared
+only on docs-only and spec-doc/spec-project, so this
+track's doc edits were never checked by it.
+
+## 24
+
+`blocked` joins unless_labels: a hold label so
+an issue not yet workable matches zero registered workflows
+until the label is removed.
+
+## 23
+
+three input edits, no topology change. (1) `fix` adds
+`synthesize.findings` beside `reconcile.findings`: the
+aggregate reaches the fixer as cluster titles and member ids
+with no evidence, while the synthesize artifact's body lists
+every member's judge, id, severity and evidence — one fixer
+here, handed eight title-only clusters, spent fourteen calls
+(run reports, step shows, a raw open of the store's
+database) hunting for member bodies. ordinalScoped binds it
+to the round that just judged the fixer's base. (2) `fix`
+adds `issue.latest.change-summary` beside
+`implement.change-summary`: the engine never rebinds a loop
+body's own inputs, so at fix@2 and later the packet carried
+implement@0's account and omitted fix@(N-1)'s, the tree the
+fixer actually stands on (three fix@2 packets in one run
+here all bound to implement@0). `issue.latest.<kind>` is the
+engine's named form for exactly this; at fix@1 both entries
+resolve to implement@0 and the bundle de-duplicates them.
+(3) `issue.diff` joins `verify-tribunal`: without it context
+assembly lifts no target_sha, wave.js seats the panel with
+"NO target ref — seats read their own HEAD", and each seat
+re-derives the judged tree (one reconstructed it under its
+temp directory via git archive, another diffed two shas it
+found in the ac-report's prose). With it the bundle and the
+packet header carry target_sha/target_worktree. The wave's
+own log line still needs `step show` to surface the field,
+an engine change tracked separately.
+NOT changed: `synthesize`'s `review.*` already binds to the
+current round only; previous-round raw judge payloads in a
+re-review synthesize packet come from the engine's
+previous-round pass matching every artifact of the emitted
+kind, which no input edit can scope — engine change, tracked
+separately.
+
+## 22
+
+reconcile gains a second routing, `drain-highs`
+on `any(open_severity >= high)`, interposing a new executor
+step that files each still-open high cluster (not held, not
+operator-resolved) as a `--gap-file` backlog issue at its
+completion — two durable homes in one transaction, the
+gap-file precedent. Before this, a run completed round 0
+with several open HIGH clusters recorded only in reconcile
+artifacts nothing downstream reads: the fix-loop threshold
+worked as configured, but an open high had no drain path at
+all, while severity-ladder-general promises a Concern
+"lands in the run record and backlog the operator reviews
+before publishing". Routing highs into the fix loop instead
+would repeat the route security-change@23 reverted (only a
+Blocker opens a fix round). Blocker routing is unchanged:
+`fix-loop` stays first and ThresholdOrder evaluates it
+first, so a round with any open blocker still loops and
+highs drain only once blockers clear; a round with nothing
+open at high or above routes `pass` and the drain step is
+terminalized `skipped` — never claimed, no cost accrued.
+Same change: standard-change@28, spec-doc@21,
+spec-project@15; new contracts/drain-highs.md; policy@19
+seats the executor.
+
+## 21
+
+`security` joins unless_labels beside
+`security-change` and `security-load-bearing`, which this
+list already excludes. security-change@26 now matches
+`security`, so without this an issue labelled `ui` +
+`security` would match two workflows and refuse activation;
+with it the security track wins, exactly as it already does
+for the two sibling labels.
+
+## 20
+
+two independent reasons — (1) this table's own description
+text had a citation dropped in a provenance-citation-scrub
+pass; (2) review/reconcile/design-qa repoint findings@8 ->
+findings@9 and synthesize repoints findings-cluster@1 ->
+findings-cluster@2, the same scrub applied to those two
+schemas' field descriptions. The engine refuses an in-place
+edit to a frozen registration either way.

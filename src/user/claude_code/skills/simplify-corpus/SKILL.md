@@ -138,6 +138,11 @@ the order returned:
 cp "<candidate>" "<file>"
 ```
 
+When the file is a docket workflow TOML, also add the entry for its new
+version at the top of `src/user/docket/config/changelogs/<name>.md`, under
+a `## <version>` heading, from the candidate's summary; the TOML carries no
+version comment.
+
 Then run the gates from the repository root and compare their failure
 lines with the baseline from §1:
 
@@ -171,7 +176,8 @@ Skip §4 and go to §5.
 
 ## 4. Commit
 
-Invoke the `commit` skill scoped to the landed paths
+Invoke the `commit` skill scoped to the landed paths, including any
+changelog entry written in §3
 (`Skill({skill: "commit", args: "<landed paths>"})`): one commit cycle per
 pass, never batched across passes. Then report the pass in a few lines:
 the pass number, files landed with their line deltas and, for versioned

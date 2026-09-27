@@ -130,16 +130,17 @@ Frozen-file edits need a version bump, decided by the file changed:
 
 - `contracts/*.md`, `fragments/*.md`: bump frontmatter `version:`. A changed
   body demands strictly greater; do not bump without a body change.
-- `workflows/*.toml`: bump `[pipeline].version` and add a changelog line
-  above the previous one, in this corpus's existing style.
+- `workflows/*.toml`: bump `[pipeline].version` and add the entry for it at
+  the top of `changelogs/<name>.md`, in that file's existing style; the TOML
+  carries no version comment.
 - `schemas/*.json`: cannot be edited in place. A fix here means a new
   `<name>@<N+1>.json` plus a `payload =` update in every workflow step that
   declared the old version. Treat this as expensive by default — surface
   it as an operator-decision item rather than staging it, unless the
   operator already asked for the schema cascade.
 - `policy.toml`: carries a `[policy].version`, but `frozen-drift-check` does
-  not gate it; free to edit directly. Bump `version` and extend its
-  version-history comment block when the body changes.
+  not gate it; free to edit directly. Bump `version` and add the entry at
+  the top of `changelogs/policy.md` when the body changes.
 - `skills/**/*.md`, `agents/*.md`, `CLAUDE.md`, `README.md`: no version
   field; free to edit directly.
 

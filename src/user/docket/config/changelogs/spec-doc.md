@@ -1,0 +1,275 @@
+# spec-doc changelog
+
+Version history of `workflows/spec-doc.toml`, newest first. Each heading is
+the `[pipeline].version` the entry describes.
+
+## 39
+
+Version history moves from the trailing comment on `version =` to
+`changelogs/spec-doc.md`; the TOML no longer carries it. No topology,
+routing, or limit change.
+
+## 38
+
+prose-only rewrite for concision; no topology, routing, or
+limit change.
+
+## 37
+
+`reconcile` repoints `payload = "findings@11"` to `findings@13`.
+findings@11 added a conditional requiring `open_severity` on
+every open cluster; engine rule V30 validates a declared
+aggregate-step schema against a synthetic probe built only
+from that schema's own declared fields plus the four keys
+`aggregate` always writes (severity, members, held,
+operator_resolved), so the probe never carries
+open_severity or prior_disposition and always fails
+findings@11's conditional -- no if/else on an aggregate-step
+schema can ever pass it, and findings@11 could never
+register. The check was also redundant: findings-cluster@5
+(synthesize's own payload) already requires open_severity on
+every open cluster before reconcile runs, and aggregate
+carries every non-severity key of its input through to its
+output verbatim. findings@13 is byte-identical to findings@10
+in every constraint, dropping only the unenforceable
+conditional; open_severity keeps ordered_enum: true, since
+this step's own threshold predicates are ordered comparisons
+the engine defines only over a field whose registered schema
+declares that order. No topology or routing change.
+
+## 36
+
+fixes a self-contradiction in the v33 comment, which called
+the workflow's vote gates both "three-seat" and, two lines
+later, "single-seat"; every vote step here seats three
+voters (confirmed against the step definitions below).
+`review` also repoints `payload = "findings@10"` to
+`findings@12`: the description incorrectly still claimed
+reconcile-step usage, moved off in an earlier version;
+findings@12 corrects it to say review/design-qa only. Same
+shape, byte-identical constraints. No topology, routing, or
+limit change.
+
+## 35
+
+synthesize-findings declares `findings-cluster@5` and reconcile
+declares `findings@11`; both require `open_severity` on every open
+cluster (omitted only behind a settling ruling), so a payload that
+drops it no longer routes every threshold false and passes a
+blocker. No topology or routing change.
+
+## 34
+
+synthesize-findings repoints `findings-cluster@3` to
+`findings-cluster@4`, which adds an optional `member_sources`
+array alongside `member_ids`, naming each linked member's
+producing step ref; a finding's own `id` is unique only
+within its judge's own payload, so `member_ids` alone cannot
+disambiguate which step a member came from. No topology,
+routing, or validation-semantics change: `member_sources` is
+optional and unread by any threshold or the aggregate builtin.
+
+## 33
+
+the four acceptance votes (`tdd-vote`, `adr-vote`,
+`ux-spec-vote`, `prd-vote`) gain a post-approval `threshold`
+that routes `fix-loop` when one or more casts is a reject,
+so a lone reject on a three-seat panel routes one revise
+round instead of being outvoted by the other two casts'
+confidence decimals. The tally is a weighted mean of each
+cast's confidence times domain relevance, so on a recorded
+three-seat panel (weights 0.62, 0.70, 0.48) a reject cast
+at 0.48 scored 0.73 and passed while the same reject at
+0.81 scored 0.62 and failed: the dissenter's self-declared
+weight, not its evidence, decided. `security-vote` on the
+security track already made a single dissent decisive by
+seating two, and `reconcile` protects a lone high finding
+with `method = "max"`; this is the doc-track equivalent. A
+threshold is a post-approval routing check: the tally math,
+`on_fail`, the loop bound (`max_fix_loops = 2` on
+`reconcile`, parking waiting-human when exceeded) and a
+committed proposal's bypass are unchanged. A revise round
+won over the alternative, `waiting-human`, because the loop
+bound already backstops it with the operator, as a wrong
+single-seat reject on the three-seat gates costs one round,
+never a park. No topology change.
+
+## 32
+
+prose-only rewrite for concision; no topology, routing, or limit change.
+
+## 31
+
+`lease_ttl` added to every `[limits]` entry, matched to
+that entry's `max_step_duration`, so a lease lasts exactly
+as long as the step may run. A long wave no longer outlives
+the write-class lease and no longer draws an ack-reap panel;
+`step heartbeat` could not extend past `max_step_duration`
+anyway, so the ceiling is unchanged. No topology change.
+
+## 30
+
+two fixes, no topology change. An earlier changelog entry
+cited a stale step count ("15 -> 16") for the vote-record
+input split; corrected to the current count ("19 -> 20").
+review and synthesize-findings repoint to `findings@10` and
+`findings-cluster@3` — prose-only schema corrections, no
+validation-semantics change.
+
+## 29
+
+fixes the doc-acceptance comment's stale tier claim (policy
+23 moved tribunal-architecture and tribunal-correctness to
+opus-high, matching judge-* except judge-architecture/
+simplicity/testing at opus-medium; only tribunal-design
+still sits at fable-high). No topology change.
+
+## 28
+
+`route-direct`, `route-loop` and `route-tend` join unless_labels:
+an issue docket-groom routed to the operator's own session, the
+tend queue, or a loop matches zero workflows, like `blocked`,
+until the label changes; `route-run` stays bindable. No
+topology change.
+
+## 27
+
+corpus-wide naming-convention pass (src/user/docket/config/README.md).
+Step renames, plus one topology change. Renames: `author-tdd-security`
+-> `tdd-author-security`, `author-tdd` -> `tdd-author`, `author-adr`
+-> `adr-author`, `author-ux-spec` -> `ux-spec-author`, `author-prd`
+-> `prd-author` (each step now equals its sole executor's name,
+retiring the corpus's systematic author-<X>/<X>-author word-order
+inversion); `synthesize` -> `synthesize-findings`; `accept-vote-tdd`
+-> `tdd-vote`, `accept-vote-adr` -> `adr-vote` (vote steps now
+uniformly named `<doctype>-vote`). Topology change: `accept-tribunal`
+— which gated BOTH ux-spec and prd acceptance under one step name
+selected by two mutually exclusive `when` clauses — splits into two
+steps, `ux-spec-vote` and `prd-vote`, each carrying one of the former
+combined step's `when` predicates and identical voters/vote_rule/
+after/on_fail. `record`'s `after` list and the two revise-* steps'
+vote-record inputs updated to the split names. Step count 19 -> 20.
+
+## 26
+
+no behavior change — a step rename and two comment
+corrections; the topology, seats, rules and routes are
+byte-for-byte those of version 25. (a) The tribunal
+acceptance vote `accept-human` is renamed
+`accept-tribunal`: it seats tribunal-architecture,
+tribunal-security and tribunal-design, and since version 25
+its rejection has routed `fix-loop`, so the old name
+described neither the seats nor the route. `revise-prd`
+and `revise-ux-spec` now read `accept-tribunal.vote-record`
+— the engine serves the same recorded proposal under the
+new step name — and `record.after` names the new name.
+Same `vote_rule = "tribunal"`, `on_fail = "fix-loop"`,
+`after = ["reconcile"]` and `when`. (b) The version-25 note
+below is corrected in place. It said the judge-panel gate's
+three decisions on one issue were two rejections that
+looped with no operator involvement and a third that hit
+the loop bound. The store shows one rejection at 3-0 that
+looped with no operator involvement, one rejection at 2-1
+(weighted 0.36) that hit the loop bound, parked
+waiting-human, and was resolved `fix-round` twelve minutes
+later, and one approval at 2-1 (weighted 0.63): two
+rejections, not three, and only one looped. The note's
+mechanism claim, the loop bound as the human backstop,
+stands. A registered version's bytes are frozen, so the
+edited bytes are a new version.
+
+## 25
+
+`accept-human` routes a rejection to `fix-loop` instead
+of `waiting-human`, matching `accept-vote-tdd` and
+`accept-vote-adr` in this file (same `after`, same re-entry
+at `review`); `revise-prd` and `revise-ux-spec` read
+`accept-human.vote-record` as `revise-tdd` reads
+`accept-vote-tdd.vote-record`. Measured across every
+project on this machine (2 issues ever bound): this gate
+decided once — rejected 3-0, parked the run, operator
+resolved `override-pass`. The judge-panel gate on the same
+track decided three times on one issue: one rejection
+(3-0) looped with no operator involvement; one rejection
+(2-1, weighted 0.36) hit the loop bound, parked
+waiting-human, and the operator resolved `fix-round`
+twelve minutes later; the third decision approved (2-1,
+weighted 0.63). That bound is the backstop this keeps: a
+rejected vote with `on_fail = "fix-loop"` enters the
+issue's loop, and when the next ordinal would exceed
+`max_fix_loops` (2, declared on `reconcile`; one counter
+per issue, shared with reconcile's blocker rounds) the
+engine parks the vote step waiting-human, naming
+`docket step resolve --as fix-round`. Thin evidence, stated
+as such; the change leans on the file's own two sibling
+gates. Description no longer says "escalating to the
+operator".
+
+## 24
+
+`blocked` joins unless_labels: a hold label so
+an issue not yet workable matches zero registered workflows
+until the label is removed.
+
+## 23
+
+the three TDD security lane pairs (`author-tdd-security`,
+`-alt`, `-slb` and their `revise-` twins) collapse back to
+one pair. They were three copies of one step — same
+executor, gates, inputs, cost — differing only in which of
+the three security labels each `when` tested, because the
+engine's step-level `when` admitted only conjunctions and
+the disjoint split was the only way to say "any of these".
+The engine now accepts a set-membership clause,
+`labels contains_any [a, b, c]`, evaluated as list
+intersection; a single `when` of
+`labels contains doc:tdd and labels contains_any
+[security-change, security-load-bearing, security]` is the
+exact union of the three old predicates, so no label
+combination routes differently than it did at @22 —
+`author-tdd`/`revise-tdd` keep their three `!=` clauses and
+remain the disjoint complement. `review.after` drops the
+two retired names. Routing equivalence is by construction;
+no spec-doc run had exercised the `-slb` lane, so this is
+not measured against the ledger.
+
+## 22
+
+a third TDD security lane pair, `author-tdd-security-slb`
+and `revise-tdd-security-slb`, for an issue labelled
+`doc:tdd` + `security-load-bearing` with neither
+`security-change` nor `security`. policy.toml's [security]
+table names all three labels as security labels and its
+comment says every one must ROUTE, not only pin the model;
+until this version the TDD lanes routed the first and third
+and let the second fall through to `author-tdd`. The wave
+still applied the `never = fable` pin by label, so the model
+was right and the contract was wrong: the general TDD
+charter, without the threat-model-method and
+security-review-dimensions fragments, would have written a
+security design. No run had hit it (3 spec-doc runs in the
+ledger: two ux-spec, one tdd-security-alt); this closes it on
+design judgment, not measurement. It costs a whole lane pair
+because a step-level `when` admits only conjunctions — the
+engine splits on ` and ` and knows no `or`, which is also
+why the `-alt` lane exists. `author-tdd` and `revise-tdd`
+add `labels != security-load-bearing` so the lanes stay
+disjoint. An engine issue asks for an any-of connective so
+the three security lanes can collapse to one later.
+
+## 21
+
+reconcile gains the `drain-highs` routing on
+`any(open_severity >= high)` plus the interposed executor
+step it names, which files each still-open high cluster
+(not held, not operator-resolved) as a `--gap-file` backlog
+issue at its completion; see ui-change@22 for the full
+trail. This track's acceptance votes do read
+reconcile.findings, but a vote-record is one decision about
+the doc, not a durable record of each open high — a doc
+accepted with open highs standing evaporated them exactly
+as the change tracks did. `fix-loop` stays first and
+ThresholdOrder evaluates it first, so a round with any open
+blocker still loops; a round with nothing open at high or
+above routes `pass` with the drain step terminalized
+`skipped`, never claimed and never billed.

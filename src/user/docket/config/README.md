@@ -122,8 +122,10 @@ work.
 Contract, fragment, and schema prose content (severity ladders, provenance
 vocabularies, house-style rules) is a matter of contract authoring, not
 naming identity, and is out of scope here. `cut-ledger.json` at this root
-is the corpus-cut skill's verdict ledger, not a definition: the engine
-reads only the five subtrees and `policy.toml`, and the crossref and
-frozen-drift gates never scan it. Every contract's
+is the corpus-cut skill's verdict ledger, and `changelogs/<name>.md` holds
+each workflow's and `policy.toml`'s version history, newest first; neither
+is a definition. The engine reads only the five subtrees and `policy.toml`,
+pins these two by content hash like every file under this root, and the
+crossref and frozen-drift gates never scan them. Every contract's
 H1 is the fixed literal `# Charter`; the definition's actual name lives in
 its YAML frontmatter `node:` field, not the heading.

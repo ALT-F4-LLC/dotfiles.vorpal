@@ -1,0 +1,83 @@
+# investigation changelog
+
+Version history of `workflows/investigation.toml`, newest first. Each heading is
+the `[pipeline].version` the entry describes.
+
+## 19
+
+Version history moves from the trailing comment on `version =` to
+`changelogs/investigation.md`; the TOML no longer carries it. No topology,
+routing, or limit change.
+
+## 18
+
+prose-only rewrite for concision; no topology, routing, or
+limit change.
+
+## 17
+
+`lease_ttl` added to every `[limits]` entry, matched to
+that entry's `max_step_duration`, so a lease lasts exactly
+as long as the step may run. A long wave no longer outlives
+the write-class lease and no longer draws an ack-reap panel;
+`step heartbeat` could not extend past `max_step_duration`
+anyway, so the ceiling is unchanged. No topology change.
+
+## 16
+
+`report-vote` reads `issue.latest.investigation` instead of
+`report.investigation`, so a re-run after `revise-investigation`
+sees the revised report, as every other loop-gated vote in the
+corpus already does; `revise-investigation` gains
+`report-vote.vote-record` in its inputs, the record its
+contract tells it to read. No topology change.
+
+## 15
+
+the pipeline description no longer says "escalates to the
+operator" — report-vote's on_fail is fix-loop, matching the
+fix spec-project@17 and spec-doc@25 made to the same
+stale clause. No topology change.
+
+## 14
+
+`route-direct`, `route-loop` and `route-tend` join unless_labels:
+an issue docket-groom routed to the operator's own session, the
+tend queue, or a loop matches zero workflows, like `blocked`,
+until the label changes; `route-run` stays bindable. No
+topology change.
+
+## 13
+
+corpus-wide naming-convention pass (src/user/docket/config/README.md).
+Step/executor renames only, no topology change. `read-gate`
+-> `report-vote` (vote steps now uniformly named
+`<gated-step>-vote`). `report` and `revise` no longer borrow
+executor `investigate`'s policy row and literal contract
+paths (`contracts/report.md`, `contracts/revise.md`) — each
+gets its own `[executors]` row (`report`,
+`revise-investigation`) and resolves its packet via the
+standard `contracts/{executor}.md` form. This loop-back
+step's old name, `revise`, also collided with
+disposition.toml's unrelated `revise` step (a different
+executor, a different contract) — renaming the step to
+`revise-investigation` alongside its new executor identity
+removes that collision too. `contracts/revise.md` is
+renamed to `contracts/revise-investigation.md` to match.
+
+## 12
+
+`read-gate` seats tribunal-correctness alone.
+Four gates decided on this machine, all approved, twelve casts; the
+correctness seat matched all four and the security seat would have
+rejected one. Thin evidence, so design judgment: the gate reads a
+root-cause report for evidence and reproducibility, which is the
+correctness lens, and a rejection routes to `revise`, so a wrong
+single-seat reject costs one round, never a park. One voter tallies
+1.0 or 0.0 against the 0.67 rule.
+
+## 11
+
+`blocked` joins unless_labels: a hold label so
+an issue not yet workable matches zero registered workflows
+until the label is removed.

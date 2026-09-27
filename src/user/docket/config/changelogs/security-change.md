@@ -1,0 +1,405 @@
+# security-change changelog
+
+Version history of `workflows/security-change.toml`, newest first. Each heading is
+the `[pipeline].version` the entry describes.
+
+## 47
+
+Version history moves from the trailing comment on `version =` to
+`changelogs/security-change.md`; the TOML no longer carries it. No topology,
+routing, or limit change.
+
+## 46
+
+prose-only rewrite for concision; no topology, routing, or
+limit change.
+
+## 45
+
+`reconcile` repoints `payload = "findings@11"` to `findings@13`.
+findings@11 added a conditional requiring `open_severity` on
+every open cluster; engine rule V30 validates a declared
+aggregate-step schema against a synthetic probe built only
+from that schema's own declared fields plus the four keys
+`aggregate` always writes (severity, members, held,
+operator_resolved), so the probe never carries
+open_severity or prior_disposition and always fails
+findings@11's conditional -- no if/else on an aggregate-step
+schema can ever pass it, and findings@11 could never
+register. The check was also redundant: findings-cluster@5
+(synthesize's own payload) already requires open_severity on
+every open cluster before reconcile runs, and aggregate
+carries every non-severity key of its input through to its
+output verbatim. findings@13 is byte-identical to findings@10
+in every constraint, dropping only the unenforceable
+conditional; open_severity keeps ordered_enum: true, since
+this step's own threshold predicates are ordered comparisons
+the engine defines only over a field whose registered schema
+declares that order. No topology or routing change.
+
+## 44
+
+four comment-only corrections plus one behavior change, no
+topology change. `max_fix_loops` drops from 3 to 2, matching
+every other multi-round workflow in the corpus; the row
+carried no recorded reason for the outlier. The v37 comment
+now marks its tribunal-design/tribunal-architecture tiers as
+historical, since policy 29 moved them since. The v23
+comment no longer calls `security-vote` "human": the
+current step definition (v34 on) seats only judge-security
+and judge-correctness, tallied by the engine, matching
+severity-ladder-security.md's "no person sits on it".
+fragments/severity-ladder-security.md (v8) is updated to
+match: it previously said no severity starts an automatic
+fix loop, contradicting this file's own v42 comment
+restoring the blocker fix-loop route. `review` also
+repoints `payload = "findings@10"` to `findings@12`: the
+description incorrectly still claimed reconcile-step usage,
+moved off in an earlier version; findings@12 corrects it to
+say review/design-qa only. Same shape, byte-identical
+constraints. The v30 comment's "first-match in sorted
+order" claim is corrected to "declared order", confirmed
+against `ThresholdOrder` in the engine source
+(feature/engine-improvements at the time of checking):
+TOML tables decode into Go maps, which lose declaration
+order, so the engine reconstructs it from source text
+specifically to keep first-match-wins deterministic.
+
+## 43
+
+synthesize-findings declares `findings-cluster@5` and reconcile
+declares `findings@11`; both require `open_severity` on every open
+cluster (omitted only behind a settling ruling), so a payload that
+drops it no longer routes every threshold false and passes a
+blocker. No topology or routing change.
+
+## 42
+
+reconcile regains the `fix-loop` route, declared first so an
+open blocker loops before `security-vote` can see it. v23 had
+made the two-seat panel a blocker's only exit, briefed by the
+generic lens rather than the security ladder, so two approvals
+passed a blocker to drain-highs. No other topology change.
+
+## 41
+
+synthesize-findings repoints `findings-cluster@3` to
+`findings-cluster@4`, which adds an optional `member_sources`
+array alongside `member_ids`, naming each linked member's
+producing step ref; a finding's own `id` is unique only
+within its judge's own payload, so `member_ids` alone cannot
+disambiguate which step a member came from. No topology,
+routing, or validation-semantics change: `member_sources` is
+optional and unread by any threshold or the aggregate builtin.
+
+## 40
+
+prose-only rewrite for concision; no topology, routing, or limit change.
+
+## 39
+
+`lease_ttl` added to every `[limits]` entry, matched to
+that entry's `max_step_duration`, so a lease lasts exactly
+as long as the step may run. A long wave no longer outlives
+the write-class lease and no longer draws an ack-reap panel;
+`step heartbeat` could not extend past `max_step_duration`
+anyway, so the ceiling is unchanged. No topology change.
+
+## 38
+
+two fixes, no topology change. The v31 entry's route name
+was stale against the current corpus: it now names the
+`security-vote` panel (severity-ladder-security.md's actual
+route). review, synthesize-findings and reconcile repoint to
+`findings@10` and `findings-cluster@3` — prose-only schema
+corrections, no validation-semantics change.
+
+## 37
+
+fixes the security-acceptance comment's stale tier claim
+(policy 23 moved tribunal-architecture and
+tribunal-correctness to opus-high, matching judge-* except
+judge-architecture/simplicity/testing at opus-medium; only
+tribunal-design sat at fable-high at the time (policy 29
+later moved tribunal-architecture to opus-low and
+tribunal-design to fable-low)). No topology
+change.
+
+## 36
+
+`verify-ac` emits `ac-report@2` (adds `unmet-out-of-scope`)
+and its vote predicate becomes `any(status != met)`, read after
+`fix-loop`'s `any(status == unmet)`: an in-scope unmet still
+loops, an out-of-scope or unverifiable AC goes to the one-seat
+`verify-ac-vote` (approve passes with the gap filed, reject
+routes fix-loop). No topology change; the measurement is on
+standard-change@37.
+Also `route-direct`, `route-loop` and `route-tend` join
+unless_labels: an issue docket-groom routed to the operator's
+own session, the tend queue, or a loop matches zero workflows,
+like `blocked`, until the label changes; `route-run` stays
+bindable.
+
+## 35
+
+corpus-wide naming-convention pass (src/user/docket/config/README.md).
+Step renames only, no topology change: `synthesize` ->
+`synthesize-findings` (step now equals its sole executor's name),
+`verify` -> `verify-ac` (same), `verify-tribunal` -> `verify-ac-vote`
+(vote steps now uniformly named `<gated-step>-vote`). Every `after`,
+threshold route key, and `<step>.<kind>` input reference updated to
+match.
+
+## 34
+
+two seat edits, no topology change. (1)
+`security-vote` seats judge-security and judge-correctness;
+judge-architecture leaves the roster. Measured over the 86 decided
+votes on this track and its retired security-load-bearing sibling
+(46 approved, 40 rejected; 69 of 93 unanimous): replaying the two
+remaining seats' actual casts through the engine's weighted tally
+reproduced 84 outcomes, missed one rejection (architecture alone
+rejected) and flipped one approval (correctness alone rejected).
+judge-security was never the lone rejecter in 118 casts;
+correctness was six times. Two voters under the 0.67 rule score a
+lone reject about 0.5 and reject, so a three-seat panel's 2-1 coin
+flip (twenty such tallies, ten each way, decided by confidence
+decimals) disappears. The removed seat ran at opus-medium; the vote
+convenes on 95% of reconciled rounds (93 of 98). (2)
+`verify-tribunal` seats tribunal-correctness alone: all 10
+tribunals decided here approved and every seat matched 10 of 10;
+corpus-wide the correctness seat matched all 25 decided outcomes,
+and one voter tallies deterministically. KEPT on evidence: the
+four-seat fan-out (the security seat is the sole finder of 18 high
+and 1 blocker clusters, testing 103 / 7, architecture 56 / 0,
+correctness 26 / 5 across 98 reconciled rounds) and
+`hold_spread = 3` (6 of 22 held panels here rejected the computed
+value, unlike the change tracks where 36 of 38 approved it).
+
+## 33
+
+`doc-validate` joins the `implement` and `fix` gate lists
+the widened doc-validate pathspec was declared
+only on docs-only and spec-doc/spec-project, so this
+track's doc edits were never checked by it.
+
+## 32
+
+`blocked` joins unless_labels: a hold label so
+an issue not yet workable matches zero registered workflows
+until the label is removed.
+
+## 31
+
+one edge, no topology change — `drain-highs` declares
+`after_fired = ["security-vote"]` beside its unchanged
+`after`. This closes the deviation accepted at 30: the
+engine treated a skipped interposed gate as terminal, so on
+a round where reconcile found no open high and never routed
+to the vote (3 of 81 vote instances measured across every
+project on this machine) the drain still ran — one sonnet
+spawn to report that nothing qualified. The engine now
+carries `after_fired`: a step naming a predecessor there is
+terminalized skipped in the same transaction that skips the
+predecessor, cascading through any step that names it in
+turn. "Skipped" is read literally — a vote that ended
+failed-routed on rejection counts as fired — so the rejected
+round is untouched: the fix loop's supersede sweep still
+clears the pending drain and the next ordinal re-instantiates
+it after the new vote, resolved against that ordinal's own
+vote instance. Every `after_fired` entry must also be in
+`after` (lint rule V39a); it already is. Approved rounds are
+byte-identical in behavior. Co-change: contracts/drain-highs
+(3) drops its sentence promising a no-high round still
+reaches the executor. Sweep of the other seven corpus
+workflows for the same shape — a successor ordered after a
+step that can end skipped, where running on the skip is
+wrong — found none: standard-change, ui-change, spec-doc,
+spec-project and docs-only end their chains at the gate;
+investigation, spec-doc and spec-project have joins that
+MUST release when a `when` lane is skipped, the opposite
+need.
+
+## 30
+
+one topology change — a `drain-highs` step lands after
+`security-vote`, `after = ["security-vote"]`, reading
+`reconcile.findings` and `issue.body`, same executor, cost,
+`on_fail` and limits row as standard-change's drain step.
+Measured across every security-change run on this machine
+(28 runs, 56 issues, 114 reconciled rounds in five projects):
+the security vote approved 33 final rounds, 19 of them with
+open, unheld, unresolved high-or-above clusters still in the
+reconcile payload — 59 clusters in all — and nothing filed
+them; one run's conductor noticed 12 of them after the run
+was already done and hand-filed four follow-ups. Placement
+is deliberate: the engine's threshold is first-match in
+declared order (confirmed against `ThresholdOrder` in the
+engine source: TOML tables decode into Go maps, which lose
+declaration order, so the engine reconstructs it from the
+source text specifically so first-match-wins is
+deterministic, never sorted), so `drain-highs` beside
+`security-vote` on reconcile would fire first and
+terminalize the vote as skipped; and draining before the
+vote would file issues a rejected vote's fix round then
+fixes. After approval is the first moment the open highs
+are known to stay open. Accepted deviation: a skipped
+interposed gate is terminal to the readiness join, so on a
+round where reconcile found no high (3 of 81 vote
+instances) the drain still runs and reports nothing to
+drain; the engine has no "only if the gate fired" edge,
+filed as an engine gap. On a rejected vote the fix loop's
+supersede sweep clears the pending drain and the next
+ordinal re-instantiates it after the new vote.
+
+## 29
+
+no step edits — bumped to carry the panel-depth docket-refit's
+findings, with the one behavior change landing in
+policy.toml (20): `threat-model` routes at opus-high instead
+of opus-xhigh. Measured across every security-track run on
+this machine (15 runs in four projects, 52 issues, 57 review
+rounds, 74 security-vote panels, 41 held-cluster panels):
+- threat-model: median 8.0 min, p90 10.3, 26k output tokens
+  median, opus-xhigh in all 24 timed steps — the longest
+  serial stage on the happy path. Lowered; see policy.toml.
+- review fanout width: KEPT at four. Each seat is the sole
+  finder of high-or-above clusters no other seat raised
+  (testing 60, architecture 23, correctness 16, security 9;
+  the security seat's are the security-specific catches: a
+  missing auth interceptor, a missing authorization call, no
+  pre-push secret scan). Seats run in parallel at medians of
+  7.5-9.7 min, so dropping one saves at most two minutes of
+  wall-clock. A size-keyed narrower lane is not expressible:
+  the engine's `when` reads issue kind and labels only, and
+  one single-file run is not a basis for a label lane.
+- judge-security / tribunal-security tier: KEPT. Every judge
+  round ran at opus-high or xhigh, so no tier comparison
+  exists. judge-security is never the lone rejecter on
+  security-vote (correctness 6, architecture 2, security 0);
+  tribunal-security is the most-rejecting held-panel seat.
+- verify-tribunal: KEPT as is, already gated on
+  `any(status == unverifiable)`; fired 4 times in 52 issues
+  (3 approved, 1 rejected, all unanimous).
+- reconcile `hold_spread = 3`: KEPT. 41 held panels: 36
+  approved, 5 rejected, 39 unanimous, 7.8 min median. Every
+  held cluster observed had a spread of exactly 3, so a
+  spread of 4 would disable holds in practice, and the 5
+  rejections were real catches by seats security-vote does
+  not seat.
+- security-vote itself: 27 approved / 47 rejected, 56 of 74
+  unanimous; a working gate, not a rubber stamp.
+
+## 28
+
+three input edits, no topology change. (1) `fix` adds
+`synthesize.findings` beside `reconcile.findings`: the
+aggregate reaches the fixer as cluster titles and member ids
+with no evidence, while the synthesize artifact's body lists
+every member's judge, id, severity and evidence — one fixer
+handed eight title-only clusters spent fourteen calls (run
+reports, step shows, a raw open of the store's database)
+hunting for member bodies. ordinalScoped binds it to the
+round that just judged the fixer's base. (2) `fix` adds
+`issue.latest.change-summary` beside
+`implement.change-summary`: the engine never rebinds a loop
+body's own inputs, so at fix@2 and later the packet carried
+implement@0's account and omitted fix@(N-1)'s, the tree the
+fixer actually stands on (three fix@2 packets in one run all
+bound to implement@0). `issue.latest.<kind>` is the engine's
+named form for exactly this; at fix@1 both entries resolve
+to implement@0 and the bundle de-duplicates them. (3)
+`issue.diff` joins `security-vote` and `verify-tribunal`:
+without it context assembly lifts no target_sha, wave.js
+seats every panel with "NO target ref — seats read their own
+HEAD", and seats re-derive the judged tree from prose (one
+security-vote panel was briefed a fabricated sha a probe
+invented into that void). With it the bundle and the packet
+header carry target_sha/target_worktree. The wave's own log
+line still needs `step show` to surface the field, an engine
+change tracked separately.
+NOT changed here: `synthesize`'s `review.*` already binds to
+the current round only; the previous-round raw judge payloads
+in a re-review synthesize packet (263KB at one round 2) come
+from the engine's previous-round pass matching every artifact
+of the emitted kind, which no input edit can scope — engine
+change, tracked separately.
+
+## 27
+
+no behavior change — bumped only because the version-26
+comment block below was edited twice (issue-citation and
+evidence-date scrubbing) without a version bump, splitting
+registries that already held the old comment bytes at
+version 26 from ones that hadn't seen the edits yet. This
+bump makes the file's current bytes the unique source of
+truth for version 27.
+
+## 26
+
+`security` joins labels_any, so all three of
+policy.toml's [security].labels route to this track. The two
+vocabularies had diverged: policy named three labels, this
+[match] named two, so an issue labelled only `security` took
+the security MODEL routing (opus-max ceiling, no Fable) but
+the ORDINARY standard-change pipeline — no threat model, no
+security-vote, no abuse-case gate — undetected, because
+`run activate --dry-run` refuses zero matches and several
+but an exactly-one-WRONG match is structurally invisible to
+it. Reconciled toward routing rather than by deleting the
+label from policy: deletion would have left the same silent
+baseline binding and dropped the Opus floor too. Co-change,
+so nothing can match this workflow AND another:
+standard-change@27, ui-change@21 and disposition@3 add
+`security` to their unless_labels beside the two siblings
+they already exclude. docs-only, investigation, spec-doc and
+spec-project need no change — already on this [match]'s
+unless_labels.
+
+## 25
+
+comment on `security-vote`'s judge-* voters:
+deliberately judge-*, not tribunal-* (different policy.toml
+tier, different remit); documentation only, no behavior
+change.
+
+## 24
+
+`reconcile`'s threshold keyed on `severity`,
+which is always present (max over every member, settled
+ground included), while every other multi-judge workflow
+(standard-change, ui-change, spec-doc, spec-project) keys
+its equivalent threshold on `open_severity`, which
+findings@9 omits once a cluster carries a settling
+prior_disposition ruling. With re-review rounds (`review`
+loops) and a fix-loop cap on this workflow, a `severity`
+threshold kept re-firing `security-vote` on ground an
+operator had already settled. Swapped to `open_severity`
+to match the corpus convention; see findings@9.json's
+`open_severity` field description for the open-vs-settled
+distinction this relies on.
+
+## 23
+
+`reconcile` sends High and above to the `security-vote`
+panel again, and the `fix-loop` route added at
+22 is removed. The trail: an earlier commit raised this
+threshold from `>= high` to `>= blocker`, which left a high-
+severity finding with no route at all and no vote; that gap
+was read as a missing fix round, and the fix at 22
+closed it by adding `fix-loop = any(severity ==
+high)` beside the blocker-only vote. A later review then found
+that route contradicts both ladders the corpus ships:
+`fragments/severity-ladder-security.md` says High and
+above route to the `security-vote` panel and that the
+automatic fix loop is retired for this track, and
+`fragments/severity-ladder-general.md` says only a
+Blocker opens a fix round. So this bump keeps that earlier
+diagnosis and reverts its routing: the fix-loop key goes,
+and the vote fires on `>= high` — where it sat before
+the threshold was raised — so every high and every blocker convenes the
+vote and nothing falls through unrouted. With `fix-loop`
+no longer a key on this step, the `ThresholdOrder`
+precedence that forced `== high` at 22 no longer bears on
+it; the `fix` step stays reachable, via the votes'
+`on_fail` and `verify`'s unmet-AC threshold.

@@ -287,15 +287,17 @@ bump the shared version, or rename the addition, and say which you chose
 and why.
 
 A workflow edit stays in the same file with `[pipeline].version = N+1` and
-its mined-facts comment kept current. A schema edit is a new
+a new entry at the top of `changelogs/<name>.md` under
+`src/user/docket/config`, where the mined facts live. A schema edit is a new
 `schemas/<name>@N+1.json`, plus a bump to every workflow naming it.
 `policy.toml`, contracts, and fragments are pinned rather than registered.
 A contract or fragment body edit bumps its front-matter `version` in the
 same commit (frozen-drift-check enforces the lockstep); `policy.toml`
 carries an informational `[policy].version` the engine never freezes or
-enforces, so bump it as a changelog courtesy, not because anything checks
-it. Note every change so the next docket-retro can attribute what
-followed. Trust the operator approved goes in with `docket trust add
+enforces, so bump it and add the entry to `changelogs/policy.md` as a
+courtesy, not because anything checks it. Note every change in those files
+so the next docket-retro can attribute what followed. Trust the operator
+approved goes in with `docket trust add
 <name> --yes -- <argv>`; no other approval opens that door.
 
 Verify twice, and the order is load-bearing. First, `docket workflow lint

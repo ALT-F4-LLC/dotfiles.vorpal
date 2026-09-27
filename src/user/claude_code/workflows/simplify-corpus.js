@@ -224,9 +224,11 @@ Never change a node's name, its executor, its gate, its edges, or any
 value the engine reads; simplification here is what the file says about
 itself, not what the workflow does.
 
-When you change anything, increment \`[pipeline].version\` by exactly one
-and extend its trailing comment in the file's existing style with one
-clause naming this change. The candidate must still parse as TOML.`
+When you change anything, increment \`[pipeline].version\` by exactly one.
+The version line carries no comment: the caller records this change under
+the new version in \`changelogs/<name>.md\` beside the workflows directory,
+from your summary, so make the summary one clause naming the change. The
+candidate must still parse as TOML.`
     case 'javascript':
       return `This is a Workflow tool script evaluated as an ES module with a
 top-level \`return\`. Keep \`export const meta\` a pure literal. Keep every

@@ -14,7 +14,7 @@
 # of the real one, so each mutant changes exactly one reference — and runs
 # the real gate against it through CORPUS_ROOT. The baseline passes; every
 # mutant below is proven red by its own case, and two positive cases pin the
-# deliberate exemptions (a renamed path inside a version changelog comment,
+# deliberate exemptions (a renamed path inside changelogs/,
 # an unquoted route-<word> that is ordinary English, and a PROJECT_GATES row).
 
 set -uo pipefail
@@ -47,7 +47,7 @@ WORK=$(mktemp -d "${TMPDIR:-/tmp}/crossref-check-test.XXXXXX") || fatal "mktemp 
 trap 'rm -rf "$WORK"' EXIT
 
 # build_corpus <dir>; a corpus in which every reference resolves. The
-# workflow's changelog cites contracts/old.md, which does not exist, and the
+# changelogs/ entries cite contracts/old.md, which does not exist, and the
 # skill body says "route-specific" unquoted: both must pass.
 build_corpus() { # <dir>
     local d="$1"
@@ -58,7 +58,8 @@ build_corpus() { # <dir>
              "$d/src/user/docket/config/contracts" \
              "$d/src/user/docket/config/fragments" \
              "$d/src/user/docket/config/schemas" \
-             "$d/src/user/docket/config/workflows"
+             "$d/src/user/docket/config/workflows" \
+             "$d/src/user/docket/config/changelogs"
 
     printf 'build:\n    true\n\ntests:\n    true\n' > "$d/justfile"
 
@@ -82,12 +83,13 @@ EOF
     printf '# Naming\n' > "$d/src/user/docket/config/README.md"
     cat > "$d/src/user/docket/config/policy.toml" <<'EOF'
 [policy]
-version = 1  # 1: initial
-             # cites contracts/old.md, which is history
+version = 1
 
 [executors]
 implement = { variant = "sonnet-high" }
 EOF
+    printf '# policy changelog\n\n## 1\n\ninitial; cites contracts/old.md, which is history\n' \
+        > "$d/src/user/docket/config/changelogs/policy.md"
     printf -- '---\nnode: implement\nversion: 1\n---\n# Charter\n' \
         > "$d/src/user/docket/config/contracts/implement.md"
     printf -- '---\nfragment: truth\nversion: 1\n---\n# Truth\n' \
@@ -96,8 +98,7 @@ EOF
     cat > "$d/src/user/docket/config/workflows/ui-change.toml" <<'EOF'
 [pipeline]
 name = "ui-change"
-version = 2  # 2: implement no longer reads contracts/old.md
-             # (renamed to contracts/implement.md)
+version = 2
 
 [match]
 labels_any = ["ui"]
@@ -109,6 +110,8 @@ executor = "implement"
 packet = ["contracts/{executor}.md"]
 gates = ["build", { name = "render-verify", pre = true }]
 EOF
+    printf '# ui-change changelog\n\n## 2\n\nimplement no longer reads contracts/old.md\n(renamed to contracts/implement.md)\n' \
+        > "$d/src/user/docket/config/changelogs/ui-change.md"
 }
 
 run_gate() { # <dir>
@@ -146,7 +149,7 @@ WF="src/user/docket/config/workflows/ui-change.toml"
 
 # --- baseline ---------------------------------------------------------------
 build_corpus "$FIX"
-expect_pass "baseline corpus resolves, changelog and English route-word exempt" "$FIX"
+expect_pass "baseline corpus resolves, changelogs/ and English route-word exempt" "$FIX"
 
 # --- path ---------------------------------------------------------------------
 build_corpus "$FIX"
@@ -163,7 +166,15 @@ expect_pass "path: bare corpus path outside the docket tree is not checked" "$FI
 
 build_corpus "$FIX"
 printf '\n# implement once read contracts/old.md\n' >> "$FIX/src/user/docket/config/policy.toml"
-expect_fail "path: renamed path outside the changelog block" "$FIX" path "contracts/old.md"
+expect_fail "path: renamed path in a TOML comment" "$FIX" path "contracts/old.md"
+
+build_corpus "$FIX"
+sed -i.bak 's|^version = 2$|version = 2  # 2: implement no longer reads contracts/old.md|' "$FIX/$WF"
+expect_fail "path: renamed path in a version-line comment is not exempt" "$FIX" path "contracts/old.md"
+
+build_corpus "$FIX"
+echo '# history: changelogs/gone.md' >> "$FIX/$WF"
+expect_fail "path: bare changelogs path inside the docket tree" "$FIX" path "changelogs/gone.md"
 
 # --- link -------------------------------------------------------------------
 build_corpus "$FIX"

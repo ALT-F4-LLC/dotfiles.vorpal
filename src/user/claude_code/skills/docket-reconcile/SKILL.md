@@ -65,12 +65,12 @@ every project should get it.
 
 ## Let the engine parse the TOML
 
-Never `grep` a version out of these files: the version line carries a
-trailing changelog comment full of digits, so piping `grep -m1 version`
-through a digit filter concatenates the version with that comment and
-reports `security-change@2525792` for `@25`. Never hand-parse them either.
-`docket workflow lint <file> --json=v2` is the parser, and it is the same parse
-`docket workflow register` runs:
+Never `grep` a version out of these files, and never hand-parse them. The
+version line is bare today, but when it carried its changelog as a trailing
+comment full of digits, piping `grep -m1 version` through a digit filter
+reported `security-change@2525792` for `@25`. `docket workflow lint <file>
+--json=v2` is the parser, and it is the same parse `docket workflow register`
+runs:
 
 ```json
 {"ok":true,"data":{"name":"docs-only","version":19,

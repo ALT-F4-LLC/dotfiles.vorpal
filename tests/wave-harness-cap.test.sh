@@ -30,7 +30,7 @@
 # script's own hard ceiling; (4) a non-integer, zero, or negative harnessCap
 # is ignored (falls back to 16), never crashes or admits zero rows.
 #
-# HOW. Like tests/wave-shard-partition.test.sh, it wraps the extracted
+# HOW. Like tests/wave-launch-unit.test.sh, it wraps the extracted
 # stage-ladder region in an async function with stub spawn/runGate/probe/
 # parallel/log globals and sets `input.harnessCap` per scenario. Rows are
 # issue-less singletons (their own lane each) so nothing but the harness cap

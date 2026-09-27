@@ -154,8 +154,8 @@ const DEFAULT_MODE = 'steps'
 //    rate, re-seats, claim conflicts, ancestry parks, deferrals. Re-seats
 //    come from the transcripts (a re-seated judge's brief says so); every
 //    other count comes from the statuses joined to the rows by step. A
-//    sibling shard's rows (`not-launched-other-shard`) are another launch's
-//    and count nowhere. Instance ordinals are the engine's: `@0` is a step's
+//    `not-launched-other-shard` row, which only a wave launched before the
+//    per-unit split returns, is another launch's and counts nowhere. Instance ordinals are the engine's: `@0` is a step's
 //    first minting (`review@0#k`, `verify-tribunal@0`) and a fix round's rows
 //    carry the round (`fix@2`, `review@2#k`), so first-pass means ordinal 0.
 //

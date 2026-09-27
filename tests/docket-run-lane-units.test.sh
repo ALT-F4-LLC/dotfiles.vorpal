@@ -1,24 +1,26 @@
 #!/bin/bash
 
-# Behavior suite for the docket-run skill's lane-unit counter,
-# skills/docket-run/scripts/lane_units.py: the shard count a conductor
-# launches for one dispatch, reproduced from wave.js's partition.
+# Behavior suite for the docket-run skill's launch splitter,
+# skills/docket-run/scripts/lane_units.py: how a conductor splits one
+# dispatch into wave launches, one per lane unit, each holding only its
+# own rows and its share of the manifest's class headroom.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by
 # name and this one is in that list. It needs only `python3` — no engine, no
 # database, no network.
 #
-# WHY THIS EXISTS. The same program used to live in SKILL.md as a
-# `python3 - <<'PY'` heredoc, which the auto-mode deny rule on interpreter
-# code arguments refuses before it runs (measured on one conductor session:
-# the block was denied, the conductor rewrote it to a scratch file and ran
-# that). The counter is now an installed file. It must keep wave.js's
-# arithmetic: writer lanes the engine never co-staged weld into one unit,
-# every other lane is its own unit, N is capped at four and floored at one.
-# A count that drifts launches the wrong number of shards, silently.
+# WHY THIS EXISTS. A launch receives only its own rows, so the partition
+# and the class headroom a launch cannot see from its own rows are computed
+# here, before launch. Writer lanes the engine never co-staged weld into one
+# unit (wave.js serializes them through an in-flight set no sibling launch
+# sees); every other lane is its own unit; units above LAUNCH_CAP (20) pack
+# onto 20 launches. Every row lands in exactly one launch file. A split that
+# drifts runs a lane twice, not at all, or over-admits a class.
 #
 # The suite also pins the SKILL.md side: the skill runs the installed file
-# and carries no inline interpreter program any more.
+# and carries no inline interpreter program. The same program once lived in
+# SKILL.md as a `python3 - <<'PY'` heredoc, which the auto-mode deny rule on
+# interpreter code arguments refuses before it runs.
 
 set -uo pipefail
 
@@ -49,10 +51,20 @@ ok() { # <condition-already-evaluated: 0/1> <label>
     fi
 }
 
-# count <rows-json> -> prints N; stderr captured to $WORK/err
+# count <rows-json> -> prints N; launch files land in $WORK/launch (fresh per
+# call), stderr captured to $WORK/err
 count() {
     printf '%s' "$1" > "$WORK/rows.json"
-    python3 "$SCRIPT" "$WORK/rows.json" 2> "$WORK/err"
+    rm -rf "$WORK/launch"
+    python3 "$SCRIPT" "$WORK/rows.json" "$WORK/launch" 2> "$WORK/err"
+}
+# steps_of <launch-index> -> the launch file's step ids, space-joined
+steps_of() {
+    python3 -c 'import json,sys; print(" ".join(json.loads(l)["step"] for l in open(sys.argv[1]) if l.strip()))' "$WORK/launch/launch-$1.jsonl"
+}
+# summary <python-expr over s, the launches.json list> -> printed value
+summary() {
+    python3 -c 'import json,sys; s=json.load(open(sys.argv[1])); print(eval(sys.argv[2]))' "$WORK/launch/launches.json" "$1"
 }
 
 # Row builders: writers are class "write"; votes, actions and read lanes are
@@ -64,7 +76,8 @@ v() { printf '{"step":"STEP-%s","issue":"%s","kind":"vote","stage":%s}' "$1" "$2
 # ---- Welding: writers the engine never co-staged are one unit ---------------
 n=$(count "[$(w 1 A 0),$(w 2 B 1),$(r 3 C 0)]")
 [ "$n" = "2" ]; ok $? "two writer lanes on different stages weld into one unit beside a read lane (got $n)"
-grep -q 'unit:A' "$WORK/err" && grep -q 'lane:C' "$WORK/err"; ok $? 'the units are named on stderr, welded writers as unit:<root>, others as lane:<issue>'
+grep -q 'unit:A -> launch' "$WORK/err" && grep -q 'lane:C -> launch' "$WORK/err"; ok $? 'the units and their launches are named on stderr, welded writers as unit:<root>, others as lane:<issue>'
+[ "$(summary '[x["lanes"] for x in s if "A" in x["lanes"]][0]')" = "['A', 'B']" ]; ok $? 'welded writer lanes share one launch file'
 
 # ---- Co-staged writers stay separate ----------------------------------------
 n=$(count "[$(w 1 A 0),$(w 2 B 0),$(r 3 C 0)]")
@@ -88,11 +101,45 @@ n=$(count '[{"step":"STEP-1","issue":"A","kind":"vote","class":"write","stage":0
 n=$(count '[{"step":"STEP-1","issue":"A","kind":"executor","executor":"write","stage":0},{"step":"STEP-2","issue":"B","kind":"executor","executor":"write","stage":1}]')
 [ "$n" = "1" ]; ok $? "executor == write counts as a writer when class is absent (got $n)"
 
-# ---- Cap and floor -------------------------------------------------------------
+# ---- One launch per unit, capped at 20 -------------------------------------------
 n=$(count "[$(r 1 A 0),$(r 2 B 0),$(r 3 C 0),$(r 4 D 0),$(r 5 E 0),$(r 6 F 0)]")
-[ "$n" = "4" ]; ok $? "six lanes cap at four shards (got $n)"
+[ "$n" = "6" ]; ok $? "six lanes are six launches (got $n)"
+many=""
+for i in $(seq 1 25); do many="${many:+$many,}$(r "$i" "I$i" 0)"; done
+n=$(count "[$many]")
+[ "$n" = "20" ]; ok $? "25 lanes pack onto the 20-launch cap (got $n)"
+grep -q 'packed: 25 units onto 20 launches' "$WORK/err"; ok $? 'packing past the cap is named on stderr'
+[ "$(summary 'sum(x["rows"] for x in s)')" = "25" ] && [ "$(summary 'sorted(len(x["lanes"]) for x in s)[-1]')" = "2" ]
+ok $? 'packed launches still hold every row once, at most two lanes each'
 n=$(count '[]')
-[ "$n" = "1" ]; ok $? "an empty manifest floors at one shard (got $n)"
+[ "$n" = "0" ]; ok $? "an empty manifest is zero launches (got $n)"
+
+# ---- Every row lands in exactly one launch, in manifest order ---------------------
+n=$(count "[$(r 1 A 0),$(w 2 B 0),$(r 3 A 1),$(v 4 C 1),$(w 5 B 1)]")
+all="$(for i in $(seq 0 $((n - 1))); do steps_of "$i"; done | tr '\n' ' ')"
+[ "$(printf '%s' "$all" | tr ' ' '\n' | grep -c STEP)" = "5" ] && [ "$(printf '%s' "$all" | tr ' ' '\n' | grep STEP | sort | uniq -d)" = "" ]
+ok $? "the launch files partition the manifest: every row once, none twice (got '$all')"
+a=$(summary '[x["index"] for x in s if "A" in x["lanes"]][0]')
+[ "$(steps_of "$a")" = "STEP-1 STEP-3" ]; ok $? 'a lane keeps its rows in manifest order in its own launch'
+[ "$(summary 'sorted({x["of"] for x in s})')" = "[3]" ]; ok $? 'every launch carries the same of'
+
+# ---- Class headroom from the whole manifest, shared among holders ----------------
+# read is co-staged 3 wide at stage 0 across three lanes, so each of the three
+# launches holding read gets 1; write is 2 wide at stage 1 across B and D.
+n=$(count "[$(r 1 A 0),$(r 2 B 0),$(r 3 C 0),$(w 4 B 1),$(w 5 D 1)]")
+[ "$(summary '[x["classCap"].get("read") for x in s if "A" in x["lanes"]][0]')" = "1" ]
+ok $? 'a class spread over three launches gives each its third of the certified 3'
+[ "$(summary '[x["classCap"].get("write") for x in s if "D" in x["lanes"]][0]')" = "1" ] && [ "$(summary '[x["classCap"].get("write") for x in s if "A" in x["lanes"]][0]')" = "None" ]
+ok $? 'classCap names only the classes a launch holds'
+# one lane with five same-stage reads: its launch alone holds read, keeps all 5
+n=$(count "[$(r 1 A 0),$(r 2 A 0),$(r 3 A 0),$(r 4 A 0),$(r 5 A 0),$(w 6 B 0)]")
+[ "$(summary '[x["classCap"]["read"] for x in s if "A" in x["lanes"]][0]')" = "5" ]
+ok $? 'a class held by one launch keeps the full certified count'
+# certified 5 over 3 holders: 2, 2, 1 by rank
+rows5="$(r 1 A 0),$(r 2 A 0),$(r 3 B 0),$(r 4 B 0),$(r 5 C 0),$(w 6 A 1),$(w 7 A 2),$(w 8 A 3)"
+n=$(count "[$rows5]")
+[ "$(summary 'sorted((x["index"], x["classCap"]["read"]) for x in s)')" = "[(0, 2), (1, 2), (2, 1)]" ]
+ok $? 'a remainder goes to the lowest-ranked holders, so the shares sum to the certified count'
 
 # ---- A row without an issue is its own lane -----------------------------------
 n=$(count '[{"step":"STEP-9","kind":"action","stage":0},{"step":"STEP-8","kind":"action","stage":0}]')
@@ -100,7 +147,7 @@ n=$(count '[{"step":"STEP-9","kind":"action","stage":0},{"step":"STEP-8","kind":
 
 # ---- Input shapes: a JSON array, JSON lines, and a {rows: [...]} envelope --------
 printf '%s\n%s\n' "$(w 1 A 0)" "$(r 2 B 0)" > "$WORK/rows.jsonl"
-n=$(python3 "$SCRIPT" "$WORK/rows.jsonl" 2>/dev/null)
+n=$(python3 "$SCRIPT" "$WORK/rows.jsonl" "$WORK/out-jsonl" 2>/dev/null)
 [ "$n" = "2" ]; ok $? "JSON lines input (the paged rows file) is read the same as an array (got $n)"
 n=$(count "{\"rows\":[$(w 1 A 0),$(w 2 B 1)]}")
 [ "$n" = "1" ]; ok $? "a {rows: [...]} envelope is unwrapped (got $n)"
@@ -111,8 +158,9 @@ out=$(count "[$(w 1 A 0),$(r 2 B 0)]")
 
 # ---- Bad usage fails loudly -------------------------------------------------------
 python3 "$SCRIPT" > /dev/null 2>&1; [ $? -ne 0 ]; ok $? 'no argument is a non-zero exit'
+python3 "$SCRIPT" "$WORK/rows.json" > /dev/null 2>&1; [ $? -ne 0 ]; ok $? 'a missing out-dir is a non-zero exit'
 printf 'not json' > "$WORK/bad.json"
-python3 "$SCRIPT" "$WORK/bad.json" > /dev/null 2>&1; [ $? -ne 0 ]; ok $? 'unparseable input is a non-zero exit, never a count'
+python3 "$SCRIPT" "$WORK/bad.json" "$WORK/out-bad" > /dev/null 2>&1; [ $? -ne 0 ]; ok $? 'unparseable input is a non-zero exit, never a count'
 
 # ---- seat_roster.py: the conversational gate's voters from the policy ------------
 ROSTER="${SEAT_ROSTER_PY:-${ROOT}/src/user/claude_code/skills/docket-run/scripts/seat_roster.py}"

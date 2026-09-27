@@ -52,9 +52,9 @@ not infer hard from tone alone, and say which mode you use before you act.
    run to `waiting-human` and blocks new claims, but honors in-flight
    completes: nothing about it interrupts a step already claimed.
 2. If a wave is in flight, keep awaiting it exactly as docket-run normally
-   does; do not busy-wait and do not abandon the dispatch. A dispatch
-   docket-run split into shards is several launches over one manifest:
-   await each one, and back-fill each shard's usage under its own `wfId`
+   does; do not busy-wait and do not abandon the dispatch. A dispatch is
+   one launch per lane unit, each holding its own share of the manifest:
+   await each one, and back-fill each launch's usage under its own `wfId`
    as it returns, before the close.
 
    Readiness requires the run to be active, and the engine re-checks it at
@@ -130,20 +130,22 @@ the shared checkout, never a wave worktree.
 
 **Session-only state — write all of it down, or it is gone:**
 
-- **Every wave this session launched** — every shard launch of a split
-  dispatch counts as its own wave here: its `wfId`, its
-  `shard: {index, of}`, and the journal/transcript directory path
+- **Every wave this session launched** — every launch of a dispatch
+  counts as its own wave here: its `wfId`, its
+  `unit: {index, of, classCap}`, and the journal/transcript directory path
   docket-run used for `wave-usage`. Without the `wfId` and that directory,
   usage for that wave can never be back-filled
   (`docket dispatch backfill-usage --source "wave-journal:<wfId>"`), and
   the worktree sweep set for that wave (`worktree-wf_<id>-*` branches)
   cannot be told apart from a foreign entry.
-- **The full original `Workflow` args** — the literal `rows` JSON exactly
-  as `next` returned it, routing fields included, any `integrated` map,
-  and the shard spec — for any wave or tribunal a later session may need
-  to resume with `resumeFromRunId`. The harness does not restore these; an
-  arg-less resume dies at startup, and a shard resumed under a different
-  `index` or `of` runs a different lane set.
+- **The full original `Workflow` args** — each launch's literal `rows`
+  JSON exactly as its launch file held it, routing fields included, any
+  `integrated` map, and its `unit` — for any wave or tribunal a later
+  session may need to resume with `resumeFromRunId`. The harness does not
+  restore these; an arg-less resume dies at startup, and a launch resumed
+  with another launch's rows runs a different lane set. A wave launched
+  before the split carries the retired `shard` arg, which wave.js now
+  refuses: reconcile that dispatch instead of resuming it.
 - **Un-integrated writer shas**: any executor sha recorded but never
   cherry-picked into the shared checkout, with its worktree path and
   branch. Integration is never automatic. A worktree removed without

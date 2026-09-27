@@ -5,7 +5,7 @@ description: >-
   it means a Docket run rather than the app, or bare after /docket-plan to
   drive the next run. Drives an activated Docket run to completion in the
   invoking conversation: asks the engine what is ready, dispatches it,
-  launches the wave workflow once per shard, closes the dispatch, and repeats;
+  launches the wave workflow once per lane unit, closes the dispatch, and repeats;
   vote gates ride the wave, conversational gates go to tribunal.js, three
   standing rulings answer parks machine-side, and every other park or reserved
   matter escalates to the operator. Holds no run state (the engine schedules,
@@ -759,17 +759,12 @@ docket next --run $RUN --json=v2 | jq '{
   staged: ([(.data.items // [])[] | select(.status == "staged")] | length),
   writers: ([(.data.items // [])[] | select(.class == "write")] | length),
   issues: ((.data.items // []) | map(.issue) | unique),
-  shards: ((.data.items // []) | map(.issue // empty) | unique | length | if . > 4 then 4 else (if . < 1 then 1 else . end) end),
   refusal: .error }'
 ```
 
-`shards` is an UPPER bound on the wave launches step 2 makes: one per
-issue lane up to wave.js's `SHARD_CAP` of four. The number you launch is
-the lane-unit count from step 2's **Count the lane units**, because
-wave.js welds every writer lane the engine never co-staged into one unit
-and an idle shard still costs a full manifest relay (one 192-row manifest
-cost 29,758 output tokens per launch, and this bound would have paid it
-three more times for shards wave.js reported idle).
+`issues` approximates the wave launches step 2 makes: one per issue lane,
+up to 20. The number you launch is what step 2's **Split the launches**
+prints, since writer lanes the engine never co-staged share one launch.
 
 Pass no `--limit` on the `--run` form, and read v2: only v2 carries the
 pre-cut `total` and an explicit `truncated`. `writers` is the wave-length
@@ -853,11 +848,12 @@ answer safely, pipe `jq -c '.data.rows[]' > rows.jsonl` and page it with
 `Read`'s `offset`/`limit`, never reconstructing rows by hand for the
 `Workflow` call. The same paging is how the rows reach the launch at all:
 `Read` truncates a single-line file near 25K tokens (a 192-row manifest is
-70 KB), so write the kept rows one per line with `jq -c '.[]'`, `Read`
-that file in pages of at most 96 lines until every row is in context,
-then emit the whole array as the literal `rows` value, once per shard.
-Never emit from a truncated view or spend turns probing byte offsets or
-splitting the file.
+70 KB), so **Split the launches** below writes each launch's rows one per
+line; `Read` each launch file in pages of at most 96 lines until its rows
+are in context, then emit them as that launch's literal `rows` value.
+Every row is emitted exactly once across the dispatch. Never emit from a
+truncated view or spend turns probing byte offsets or splitting a file by
+hand.
 
 **No policy crosses a launch.** Every row carries `model`, `effort`,
 `variant` resolved by the engine from pinned policy.toml. Never `cat`,
@@ -903,27 +899,30 @@ getconf _NPROCESSORS_ONLN 2>/dev/null || nproc
 
 Compute `harnessCap = min(16, that number - 2)`, floored at 1 (a single-core
 or two-core box would otherwise compute zero or negative), and pass it in
-every shard's `args`. wave.js uses `min(HARNESS_CAP, harnessCap)` as its own
+every launch's `args`. wave.js uses `min(HARNESS_CAP, harnessCap)` as its own
 admission bound and logs which it used; omitting the field is never a
-refusal — an older resume or a direct scriptPath launch that predates this
-field still runs, on the loose 16-agent ceiling the field exists to narrow.
+refusal.
 
 ```
-Workflow({ scriptPath: "<absolute installed path to wave.js>", args: {rows, tribunal, cwd, harnessCap, shard: {index: 0, of: N}} })
-Workflow({ scriptPath: "<absolute installed path to wave.js>", args: {rows, tribunal, cwd, harnessCap, shard: {index: 1, of: N}} })
+Workflow({ scriptPath: "<absolute installed path to wave.js>", args: {rows: <launch-0 rows>, unit: <launches.json[0] as {index, of, classCap}>, tribunal, cwd, harnessCap} })
+Workflow({ scriptPath: "<absolute installed path to wave.js>", args: {rows: <launch-1 rows>, unit: <launches.json[1] as {index, of, classCap}>, tribunal, cwd, harnessCap} })
 …one launch per index, 0 through N-1, all in this same turn
 ```
 
-**A dispatch is N wave launches, N being the lane-unit count above**, since the
-Workflow tool bounds one invocation at 16 concurrent agents and 1000
-lifetime and a nested workflow shares both with its parent. Every launch
-gets the same `rows` verbatim and a `shard: {index, of}` differing only in
-`index`; wave.js computes one deterministic partition (whole issue lanes
-as units, writer lanes the engine never co-staged welded together,
-balanced across shards), runs its own lanes, and settles every sibling's
-row `not-launched-other-shard`. Emit all N launches in one turn, as
-separate `Workflow` calls, never held back for a sibling's return. `of`
-above `SHARD_CAP` (four) is refused.
+**A dispatch is N wave launches, one per lane unit, N from Split the
+launches below.** One Workflow invocation runs at most 16 agents at once
+and 1000 over its life, and a nested workflow shares both with its
+parent; separate top-level launches share neither, and 20 of them ran
+concurrently with none refused or queued (measured). So each issue lane
+gets its own launch, its own 16 slots and its own 1000-agent budget, and
+no lane's agents queue behind another's. Each launch gets only its own
+rows and its `unit`; a writer lane the engine never co-staged with
+another shares that one's launch so the wave still serializes them. Emit
+all N launches in ONE assistant message, as separate `Workflow` calls,
+never held back for a sibling's return: launches spread over several
+messages started up to 17 minutes after the first on past runs, while
+one message put them about a minute apart. wave.js refuses `of` above 20
+and refuses the retired `shard` arg.
 
 `tribunal` is the absolute installed path to `tribunal.js`, resolved the
 same way as wave.js's; wave.js seats in-wave vote rows through it. `cwd`
@@ -935,11 +934,11 @@ needs the full original `args` again, verbatim.
 snapshot. `scriptPath` is the only invocation that provably runs the
 current file.
 
-Pass `args` as `{rows, tribunal, cwd, shard, harnessCap}`, plus `integrated`
-when the dispatch carries a fix round's review fanout, the same map in
-every shard's launch. Emit it as a literal JSON value, never
+Pass `args` as `{rows, unit, tribunal, cwd, harnessCap}`, plus
+`integrated` when the dispatch carries a fix round's review fanout, the
+same map in every launch. Emit it as a literal JSON value, never
 hand-stringified. There is no `policyPath`/`policyText`; routing is on the
-rows. Pass rows verbatim as `next` returned them, with
+rows. Pass rows verbatim as the launch file holds them, with
 `model`/`effort`/`variant` intact.
 
 **wave-audit's advisory is never noise.** It arrives as additional
@@ -985,32 +984,41 @@ manifest carries the staged closure: `staged` rows become claimable when
 their stage arrives, per the wave's own scheduling. A `kind: "human"` row
 passed through is the one mistake the wave still refuses.
 
-**Count the lane units before you launch.** From the kept rows (the file
-you wrote after the kind filter), reproduce wave.js's partition: writer
-lanes (`class == "write"`, or `executor == "write"` when `class` is
-absent) that never share a manifest `stage` are welded into one unit;
-every other lane is a unit of its own; N is the unit count capped at
-four. The installed script does that arithmetic; run it by its installed
-path, never as an inline interpreter program: a `python3 -c` argument is
-on the auto-mode deny list, and a `python3 - <<'PY'` heredoc is left to
-the classifier, which refused it mid-run (measured: accepted at one
-conductor's activation, refused at its fourth dispatch):
+**Split the launches before you launch.** From the kept rows (the file
+you wrote after the kind filter), the installed script partitions the
+dispatch: writer lanes (`class == "write"`, or `executor == "write"` when
+`class` is absent) that never share a manifest `stage` are welded into
+one unit; every other lane is a unit of its own; units above 20 are
+packed onto 20 launches by projected agent cost. It also computes each
+class's headroom over the whole manifest and each launch's share of it,
+which a launch holding only its own rows cannot see. Run it by its
+installed path, never as an inline interpreter program: a `python3 -c`
+argument is on the auto-mode deny list, and a `python3 - <<'PY'` heredoc
+is left to the classifier, which refused it mid-run (measured: accepted
+at one conductor's activation, refused at its fourth dispatch):
 
 ```bash
-python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$ROWS_FILE"
+python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$ROWS_FILE" "$LAUNCH_DIR"
 ```
 
 It reads the kept rows as one JSON array or as JSON lines, prints N alone
-on stdout, and names the units it counted on stderr for the dispatch
-report. Launch N shards, never step 1's bound.
+on stdout, writes `launch-<i>.jsonl` (launch i's rows, one per line) and
+`launches.json` (each launch's `index`, `of`, `classCap`, row count and
+lanes) under `$LAUNCH_DIR`, and names each unit's launch on stderr for
+the dispatch report. Use a fresh `$LAUNCH_DIR` per dispatch under the
+session's scratchpad (for example `<scratchpad>/launch-DISPATCH-M`). Read
+`launches.json`, then each launch file, and emit launch i with those rows
+and `unit: {index, of, classCap}` copied from entry i. wave.js no longer
+re-derives the partition, so a row copied into the wrong launch is caught
+only by the engine's own claim check: copy each launch file whole.
 
-Pass rows through unchanged beyond the kind filter, with no reordering,
-dropping, or adding, since the manifest is hashed, and never sequence or
-hold rows back yourself; wave.js's own `stage` labels are one global
-schedule, and offering a `staged` row ahead of readiness is the
-mechanism, not a mistake.
+Pass rows through unchanged beyond the kind filter and the split, with no
+reordering, dropping, or adding, and never sequence or hold rows back
+yourself; wave.js's own `stage` labels are one global schedule, and
+offering a `staged` row ahead of readiness is the mechanism, not a
+mistake.
 
-Then end your turn and await one completion notification per shard, in
+Then end your turn and await one completion notification per launch, in
 any order. Notifications deliver only at turn boundaries: never
 busy-wait, poll in sleep loops, or use `ScheduleWakeup` (it belongs to
 `/loop` sessions and rejects these calls). Ending the turn mid-wave may
@@ -1022,48 +1030,51 @@ the retry passes, and the deny is not an instruction to keep working. A
 teammate idle notification is not an event; speak only when the message
 carries content.
 
-**A shard that never notifies is a stall, not a wait.** The completion
+**A launch that never notifies is a stall, not a wait.** The completion
 notification is the only status surface, and nothing in the harness
-bounds it: a shard whose Workflow died (a harness restart, a stray
+bounds it: a launch whose Workflow died (a harness restart, a stray
 `TaskStop`) sends nothing, the run-guard allows the stop because the
 dispatch is open, and the dispatch stays open until a later session's
-`next` refuses it. So the bound is yours. Once a launched shard has been
+`next` refuses it. So the bound is yours. Once a launch has been
 silent for three times the run's `dispatch.grace` (read it from
 `docket run status $RUN --json`) with no phase advancing in its task
 output, stop waiting: run `docket dispatch verify --run $RUN` and
-`docket step show STEP-N` for every step that shard launched. A step that
+`docket step show STEP-N` for every step that launch ran. A step that
 recorded is fine and only the notification was lost; a step still claimed
 by a spawn whose task is gone is the crashed-relay case in step 3's
 **Crashed-relay reconciliation**. Never end the session on an open
 dispatch you have stopped waiting for without that check.
 
-**An agent idle for 15 minutes wakes you; the shard's notification does
-not.** A wave agent parked on a permission prompt leaves its shard's task
+**An agent idle for 15 minutes wakes you; the launch's notification does
+not.** A wave agent parked on a permission prompt leaves its launch's task
 output empty and sends nothing until it finishes, so at dispatch open,
-beside the shard launches, start one watcher per shard as a Bash call
-with `run_in_background: true`. It reads the wave's agent transcripts
-(`agent-<agentId>.jsonl` in the shard's transcript directory, the same
-`<transcript-dir>` wave-usage reads), takes each file's last-entry time
-from its modification time (transcripts are append-only), and exits when
-a running agent's transcript has had no new entry for 15 minutes. Its
-exit is a completion notification, so it re-invokes you mid-wave without
+beside the launches, start ONE watcher for the whole dispatch as a Bash
+call with `run_in_background: true`, listing every launch's transcript
+directory. It reads the waves' agent transcripts (`agent-<agentId>.jsonl`
+in each launch's transcript directory, the same `<transcript-dir>`
+wave-usage reads), takes each file's last-entry time from its
+modification time (transcripts are append-only), and exits when a
+running agent's transcript has had no new entry for 15 minutes. Its exit
+is a completion notification, so it re-invokes you mid-wave without
 busy-waiting, foreground sleep loops, or `ScheduleWakeup`; the loop's
 `sleep` runs inside the background task. Its output names the idle
 agent's step ID:
 
 ```bash
-DIR="<transcript-dir>"
+DIRS="<transcript-dir-0> <transcript-dir-1>"   # every launch of this dispatch
 SKIP=""   # step IDs already handled, space-separated
 while :; do
-  for f in $(find "$DIR" -name 'agent-*.jsonl' -mmin +15); do
-    id=$(basename "$f" .jsonl); id=${id#agent-}
-    grep "$id" "$DIR/journal.jsonl" | grep -q '"result"' && continue
-    step=$(grep -o 'step claim STEP-[0-9]*' "$f" | head -n 1 | cut -d' ' -f3)
-    [ -n "$step" ] || continue
-    case " $SKIP " in *" $step "*) continue ;; esac
-    docket step show "$step" | grep -q 'status: *claimed' || continue
-    echo "IDLE $step agent=$id transcript=$f"
-    exit 0
+  for DIR in $DIRS; do
+    for f in $(find "$DIR" -name 'agent-*.jsonl' -mmin +15); do
+      id=$(basename "$f" .jsonl); id=${id#agent-}
+      grep "$id" "$DIR/journal.jsonl" | grep -q '"result"' && continue
+      step=$(grep -o 'step claim STEP-[0-9]*' "$f" | head -n 1 | cut -d' ' -f3)
+      [ -n "$step" ] || continue
+      case " $SKIP " in *" $step "*) continue ;; esac
+      docket step show "$step" | grep -q 'status: *claimed' || continue
+      echo "IDLE $step agent=$id transcript=$f"
+      exit 0
+    done
   done
   sleep 60
 done
@@ -1087,21 +1098,23 @@ transcript:
 
 After handling a firing, restart the watcher, with `SKIP` updated, for
 the agents still running; a watcher started once at dispatch open goes
-blind after its first firing. Stop every watcher (`TaskStop` on its
-task) when the dispatch closes, at the last shard's notification in
-step 3, so no watcher outlives its dispatch.
+blind after its first firing. Drop a launch's directory from `DIRS` once
+that launch has notified. Stop the watcher (`TaskStop` on its task) when
+the dispatch closes, at the last launch's notification in step 3, so no
+watcher outlives its dispatch.
 
 ### 3. Close the dispatch
 
-On a wave's completion notification, in this order. A sharded dispatch
-returns one notification per shard, each getting its own join and
-back-fill under its own `wfId`; `dispatch verify` onward waits for the
-last shard's notification, since the dispatch closes once.
+On a wave's completion notification, in this order. A dispatch returns
+one notification per launch, each getting its own join and back-fill
+under its own `wfId`, handled the moment it arrives rather than batched
+behind siblings still running; `dispatch verify` onward waits for the
+last launch's notification, since the dispatch closes once.
 
 **1. Launch the usage join first, before reading or diagnosing the wave's
 result.** In the same turn, while it runs: every cherry-pick, `step
-annotate`, and worktree sweep for rows this notification settled (every
-shard), and, on the last shard only, `dispatch verify` and the pre-open
+annotate`, and worktree sweep for rows this notification settled, and,
+on the last launch only, `dispatch verify` and the pre-open
 reap check (`docket guard spawn --run $RUN` with no `--rows`; exit 2
 names an unacknowledged reap, so convene the ack-reap panel now, beside
 the join). A reap the open itself performed rides on that open's own
@@ -1111,9 +1124,7 @@ wave's return as rows, not a verdict: `not-launched-run-parked`,
 `not-launched-token-budget` (the session's output-token target is
 exhausted), `agent-cap`
 (the harness's lifetime spawn cap reached mid-wave; nothing launched),
-and `skipped-chain-dead` are all re-offered next dispatch;
-`not-launched-other-shard` belongs to a sibling launch's own
-notification.
+and `skipped-chain-dead` are all re-offered next dispatch.
 `bootstrap-denied` is re-offered too, but never re-dispatch on it: the
 row's text quotes a guard or permission denial of the executor's own
 scratch dir, worktree or checkout, nothing was claimed, and the same
@@ -1133,8 +1144,8 @@ on its behalf (step 3), so a reply that ends on it with no tail is
 `unrecorded`, not `blocked`. `unrecorded` means the
 reply ended in neither a record tail nor a stop signal: `docket step show
 STEP-N` is the only account of what happened, and a step still claimed
-by that spawn is a reap candidate. Read a
-sharded dispatch's outcome as the union of its shards' returns.
+by that spawn is a reap candidate. Read a dispatch's outcome as the
+union of its launches' returns.
 
 **A wave's early steps do not refuse the close just for running past the
 grace.** `dispatch.grace` (15 minutes) is measured from the run's newest
@@ -1179,8 +1190,8 @@ close. A mismatch is a finding only when the named step did not record.
 
 #### Crashed-relay reconciliation
 
-The relay crashed when a launched shard is gone without a completion
-notification (step 2's dead-shard check) or a session resumes onto a
+The relay crashed when a launch is gone without a completion
+notification (step 2's dead-launch check) or a session resumes onto a
 dispatch whose wave no longer exists. The order is the same as a normal
 close, with one difference at the end:
 
@@ -2028,7 +2039,7 @@ un-integrated shas, Workflow args for a resume, budget-raise usage).
 
 **An operator stop while a wave is in flight** ("stop the run", "stop and
 check what went wrong") is that deliberate halt, in this order: `TaskStop`
-every shard; read each killed shard's `journal.jsonl` and the last reply
+every launch; read each killed launch's `journal.jsonl` and the last reply
 of every launched agent under its transcript dir before answering any
 "why" (an executor that hit a guard quotes the denial verbatim there, and
 a `PreToolUse:Bash hook error` is a hook's exit 2, decided before the

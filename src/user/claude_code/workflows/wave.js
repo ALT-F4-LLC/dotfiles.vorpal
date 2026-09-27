@@ -1,7 +1,7 @@
 export const meta = {
     name: 'wave',
-    description: 'Internal: launched through scriptPath by docket-run, once per shard, to run one dispatched manifest end to end (executors, vote panels, staged issue lanes). Per vote row it spends 3 read-only haiku probes of `docket gate status` on the normal path, 1 on a gate that was already decided, and 4 when a re-seat is needed. Budget, shard, lane and reply-tail contract in the header comment.',
-    whenToUse: 'Never by name. Args are {rows, tribunal, cwd, shard?, harnessCap?, integrated?} with the `next` rows verbatim; the full argument contract is in the header comment.',
+    description: 'Internal: launched through scriptPath by docket-run, once per lane unit, to run one launch\'s share of a dispatched manifest end to end (executors, vote panels, staged issue lanes). Per vote row it spends 3 read-only haiku probes of `docket gate status` on the normal path, 1 on a gate that was already decided, and 4 when a re-seat is needed. Budget, launch, lane and reply-tail contract in the header comment.',
+    whenToUse: 'Never by name. Args are {rows, tribunal, cwd, unit?, harnessCap?, integrated?} with the launch\'s own rows verbatim from lane_units.py; the full argument contract is in the header comment.',
 }
 
 // ---------------------------------------------------------------------------
@@ -24,14 +24,13 @@ export const meta = {
 // 900-agent budget and defers, on the spot and without holding its lane, every
 // row the remainder cannot cover; the engine re-offers deferred rows at the
 // next dispatch, and a manifest of any size is safe to hand over whole.
-// SHARDS: both caps are per invocation, so one dispatch may launch up to
-// SHARD_CAP (4) waves at once, each handed the FULL manifest plus `shard:
-// {index, of}`; every launch computes the same deterministic partition — whole
-// issue lanes as units, writer lanes the engine never co-staged welded into
-// one unit so they still serialize, units balanced largest-first onto the
-// least-loaded shard — runs only its own lanes, admits only its share of each
-// class's certified headroom, and settles every sibling row not-launched-
-// other-shard. PROBE COST PER VOTE ROW: 3 read-only haiku probes on the normal
+// LAUNCHES: both caps are per invocation, so one dispatch launches one wave
+// per lane unit, up to LAUNCH_CAP (20), each handed ONLY its own rows plus
+// `unit: {index, of, classCap}` from lane_units.py — whole issue lanes as
+// units, writer lanes the engine never co-staged welded into one unit so they
+// still serialize, and classCap carrying this launch's share of each class's
+// headroom over the full manifest. The retired `shard` arg is refused.
+// PROBE COST PER VOTE ROW: 3 read-only haiku probes on the normal
 // path — `docket gate status` before the panel seats (decided yet, which
 // proposal, which target), one projection of the proposal body (the case every
 // seat brief renders verbatim, with no cast in it: seats never read the vote
@@ -47,17 +46,18 @@ export const meta = {
 // (executor 1, vote row = its seat count — the peak the panel's own
 // `parallel()` fan-out draws, a DIFFERENT quantity from the agent-budget
 // projection above), narrowed to the conductor-reported `harnessCap` when
-// present. Invoke by scriptPath ONLY, with args {rows, tribunal, cwd, shard?,
+// present. Invoke by scriptPath ONLY, with args {rows, tribunal, cwd, unit?,
 // harnessCap?} as a real object — every row carries model/effort/variant
 // resolved by the engine, and the script reads no policy and cannot read
 // files.
 //
 // When and how it is invoked:
 // Invoked by the docket-run skill on an open dispatch, always as
-// Workflow({scriptPath}) — never by name, and once per shard when the dispatch
-// is split (the same rows in every launch, `shard: {index, of}` differing).
-// args is {rows, tribunal, cwd, shard?, harnessCap?}: `next` rows VERBATIM
-// (executor, vote, and action rows; human rows stay with the conductor), each
+// Workflow({scriptPath}) — never by name, and once per lane unit, every
+// launch in the same conductor turn. args is {rows, tribunal, cwd, unit?,
+// harnessCap?}: the launch's own rows from `dispatch open` VERBATIM, as
+// lane_units.py split them (executor, vote, and action rows; human rows stay
+// with the conductor), each
 // executor row carrying the model/effort/variant the engine resolved from the
 // run's pinned policy.toml and each vote row carrying the same per voter in
 // `voter_assignments` — a row re-typed without those fields is refused.
@@ -98,13 +98,13 @@ const EXECUTOR_AGENT_COST = 2
 const VOTE_PROBE_COST = 4
 const DEFAULT_PANEL_SEATS = 3
 const HARNESS_CAP = 16
-// Most concurrent wave launches one dispatch may split into. Every launch is
-// its own Workflow invocation with its own HARNESS_CAP and AGENT_BUDGET, and
-// every launch receives the FULL manifest as args (the rows are hashed and
-// pass verbatim), so the conductor emits one manifest copy per shard: four
-// copies of a 240-row manifest is ~340 KB of launch args per dispatch, which
-// is the ceiling this constant holds.
-const SHARD_CAP = 4
+// Most concurrent wave launches one dispatch may split into, one per lane
+// unit. Every launch is its own Workflow invocation with its own HARNESS_CAP
+// and AGENT_BUDGET and receives only its own rows. 20 is the measured bound:
+// 20 concurrent top-level launches all started, none refused or queued.
+// Nothing above 20 was tested, so lane_units.py packs extra units onto 20
+// launches rather than extrapolating. Keep it equal to LAUNCH_CAP there.
+const LAUNCH_CAP = 20
 // REAL SPAWNS, COUNTED. The reservation ladder projects agents per row before
 // launch; nothing counted the agent() calls actually made, so the harness's
 // lifetime cap arrived as a rejected spawn that read as a dead executor
@@ -2610,9 +2610,13 @@ const classOf = (row) => (typeof row.class === 'string' && row.class !== '')
     : (typeof row.executor === 'string' ? row.executor : '')
 const isWriter = (row) => isExecutorRow(row) && classOf(row) === 'write'
 const pairKey = (a, b) => (a < b ? `${a} ${b}` : `${b} ${a}`)
-// Certification reads the FULL manifest, never a shard: what the engine
-// co-staged is a fact about the dispatch, and a shard that read only its
-// own rows would forget a coupling whose other half runs in a sibling.
+// Certification reads this launch's rows plus the class headroom the
+// conductor computed over the FULL manifest. A scope pair is a fact about two
+// lanes' own rows (their writers share a stage), and every lane arrives
+// whole, so co-staging read here is the full manifest's answer for every pair
+// this launch can see. Class headroom is not: it is the largest same-stage
+// count across the whole dispatch, divided among the launches holding the
+// class, so it rides in on args.unit.classCap and overrides the local count.
 const certifiedClass = new Map()   // class -> largest same-stage count
 for (const group of stages.values()) {
     for (const [name, members] of groupRows(group.filter(isExecutorRow), classOf)) {
@@ -2624,170 +2628,77 @@ const scopePairs = new Set([...stages.values()].flatMap((group) =>
     pairsOf(writerLanesOf(group)).map(([a, b]) => pairKey(a, b))))
 const scopeCertified = (a, b) => a === b || scopePairs.has(pairKey(a, b))
 
-// ---- shards: one dispatch, several concurrent wave launches ----
+// ---- launches: one dispatch, one wave per lane unit ----
 // The Workflow tool caps ONE invocation at HARNESS_CAP concurrent agents and
 // AGENT_LIFETIME_CAP over its life, and a nested workflow() shares both with
-// its parent — so the only way a dispatch gets more headroom is several
-// top-level launches, each handed the whole manifest plus `shard: {index,
-// of}` and each running only the lanes the partition assigns it. The
-// partition is a pure function of the rows and the spec, so every shard
-// computes the same answer and no lane runs twice or nowhere.
+// its parent. Separate top-level launches share neither, so the conductor
+// splits each dispatch into one launch per lane unit, up to LAUNCH_CAP, and
+// hands each launch ONLY its own rows. lane_units.py owns the partition:
+// whole issue lanes as units (a lane's stage k+1 must see stage k settle),
+// writer lanes the engine never co-staged welded into one unit (the coupling
+// rule in blocker() reads an in-flight set no sibling launch can see), and
+// units packed largest-first by projected agent cost only when they
+// outnumber LAUNCH_CAP. A launch runs every row it holds; no row belongs to a
+// sibling. With one issue per launch, WRITER_LADDER_BUDGET and AGENT_BUDGET
+// bind per issue; a welded unit still carries several writer lanes and needs
+// both.
 //
-// Units are whole lanes, never rows: a lane's stage ladder is what the wave
-// schedules, and splitting one across launches would put its stage k+1 in a
-// launch that cannot see stage k settle. Writer lanes the engine never
-// co-staged (scopes unproven disjoint) are welded into one unit so the
-// coupling rule in blocker() below still serializes them — two launches
-// cannot see each other's in-flight set. Certified-disjoint writer lanes
-// and every reader-only lane are free units. Units go to the least-loaded
-// shard, largest first, ties by name then lowest shard: deterministic,
-// roughly balanced, and never dependent on anything a resume would change.
-//
-// Class headroom is the engine's and it is global across the launches, so
-// each shard admits only its share of the certified count: certified / the
-// number of shards that hold rows of that class (floor, at least one). In
-// sum the shards stay within the certification whenever it is at least the
-// shard count; the one exception is a class certified BELOW the number of
-// shards holding it, where the floor of one per shard can exceed it and
-// the engine's own claim check is the backstop — the shard logs that
-// shape at start so a claim CONFLICT in it is traceable. The price of the
-// split is that a class spread across shards runs narrower per shard than
-// one wave would run it.
-function shardPartition(rows, spec) {
-    const noShard = { index: 0, of: 1, effective: 1, rows, laneShard: new Map(), classShards: new Map() }
-    if (spec === undefined || spec === null) return noShard
+// The retired `shard` arg handed every launch the FULL manifest and had each
+// one partition it. Emitting that copy once per launch cost ~30k conductor
+// output tokens per 192-row manifest, which is what held the split to four.
+// A launch still carrying `shard` (a resume of a pre-split wave) is refused
+// rather than run against rows it would misread as its own.
+function launchUnit(spec) {
+    if (spec === undefined || spec === null) return { index: 0, of: 1, classCap: null }
     const bad = (why) => new Error(
-        `wave.js: args.shard must be {index, of} with integers 0 <= index < of; got ` +
-        `${JSON.stringify(spec)} (${why}). Refusing to route.`)
+        `wave.js: args.unit must be {index, of, classCap?} with integers ` +
+        `0 <= index < of <= ${LAUNCH_CAP}; got ${JSON.stringify(spec)} (${why}). Refusing to route.`)
     if (typeof spec !== 'object') throw bad('not an object')
-    const { index, of } = spec
+    const { index, of, classCap } = spec
     if (!Number.isInteger(index) || !Number.isInteger(of)) throw bad('non-integer')
     if (of < 1 || index < 0 || index >= of) throw bad('out of range')
-    if (of > SHARD_CAP) throw bad(`of exceeds SHARD_CAP ${SHARD_CAP}`)
-
-    // Union-find over writer lanes: uncertified pairs share a unit.
-    const parent = new Map()
-    const find = (x) => {
-        if (!parent.has(x)) parent.set(x, x)
-        while (parent.get(x) !== x) { parent.set(x, parent.get(parent.get(x))); x = parent.get(x) }
-        return x
+    if (of > LAUNCH_CAP) throw bad(`of exceeds LAUNCH_CAP ${LAUNCH_CAP}`)
+    if (classCap === undefined || classCap === null) return { index, of, classCap: null }
+    if (typeof classCap !== 'object' || Array.isArray(classCap)) throw bad('classCap is not an object')
+    for (const n of Object.values(classCap)) {
+        if (!Number.isInteger(n) || n < 1) throw bad('classCap values must be positive integers')
     }
-    const union = (a, b) => { const ra = find(a), rb = find(b); if (ra !== rb) parent.set(ra < rb ? rb : ra, ra < rb ? ra : rb) }
-    const writerLanes = writerLanesOf(rows)
-    for (const [a, b] of pairsOf(writerLanes)) if (!scopeCertified(a, b)) union(a, b)
-
-    // Units are sized by PROJECTED AGENT COST (agentCost, hoisted — see its
-    // own comment), not row count: a vote row alone can project as many
-    // agents as several executor rows (seats + VOTE_PROBE_COST), and a
-    // 5-stage writer chain is a serial ladder that occupies its shard far
-    // longer than a same-sized stage-0 reader lane that finishes in one
-    // round. Balancing by row count treated those as identical load, which
-    // could put two cost-heavy units on one shard and two cost-light units
-    // on another while both read as "2 units apiece."
-    const laneRows = groupRows(rows, laneOf)
-    const units = new Map()   // unit key -> { lanes, size }
-    for (const [lane, members] of laneRows) {
-        const key = parent.has(lane) ? `unit:${find(lane)}` : `lane:${lane}`
-        if (!units.has(key)) units.set(key, { lanes: [], size: 0 })
-        units.get(key).lanes.push(lane)
-        units.get(key).size += members.reduce((n, row) => n + agentCost(row), 0)
-    }
-    const effective = Math.max(1, Math.min(of, units.size))
-    const load = new Array(effective).fill(0)
-    const laneShard = new Map()
-    const ordered = [...units.entries()].sort(([ka, a], [kb, b]) => b.size - a.size || (ka < kb ? -1 : ka > kb ? 1 : 0))
-    for (const [, unit] of ordered) {
-        let target = 0
-        for (let s = 1; s < effective; s++) if (load[s] < load[target]) target = s
-        load[target] += unit.size
-        for (const lane of unit.lanes) laneShard.set(lane, target)
-    }
-    const classShards = new Map()   // class -> Set of shards holding rows of it
-    for (const row of rows) {
-        if (!isExecutorRow(row)) continue
-        const c = classOf(row)
-        if (!classShards.has(c)) classShards.set(c, new Set())
-        classShards.get(c).add(laneShard.get(laneOf(row)))
-    }
-    return {
-        index, of, effective,
-        rows: rows.filter((row) => laneShard.get(laneOf(row)) === index),
-        laneShard,
-        // Sorted shard-index lists, not just the count: distributing a
-        // certification remainder needs each shard's RANK among the shards
-        // that actually hold the class, since the holding shards are not
-        // necessarily 0..n-1 (a class can sit in, say, shards {1, 3}).
-        // Every launch computes this identically from the same rows and
-        // spec, so no two shards can claim the same remainder slot.
-        classShards: new Map([...classShards].map(([c, set]) => [c, [...set].sort((a, b) => a - b)])),
-    }
+    return { index, of, classCap }
 }
-const shard = shardPartition(rows, input.shard)
-const shardRows = shard.rows
-const mine = new Set(shardRows.map((row) => row.step))
-if (shard.of > 1) {
-    const units = new Map()
-    for (const s of shard.laneShard.values()) units.set(s, (units.get(s) || 0) + 1)
-    log(`wave: shard ${shard.index + 1} of ${shard.effective} (${shard.of} offered` +
-        (shard.effective < shard.of ? `, ${shard.of - shard.effective} idle: fewer lane units than shards` : '') +
-        `) — this launch runs ${shardRows.length} of ${rows.length} row(s) across ` +
-        `${units.get(shard.index) || 0} lane(s); every other row settles not-launched-other-shard`)
-    if (shard.index >= shard.effective) {
-        log('wave: idle shard — nothing to launch; the sibling shards carry every lane')
-    }
-    for (const [c, holders] of shard.classShards) {
-        const n = holders.length
-        if (n > 1) {
-            const certified = certifiedClass.get(c) || 1
-            // Floor division alone strands a remainder: certified 5 over 4
-            // shards would floor every shard to 1, admitting 4 in sum instead
-            // of the certified 5. Give the remainder to this shard's lowest-
-            // ranked siblings AMONG THE SHARDS THAT HOLD THE CLASS (not raw
-            // shard.index, which can outrun `holders` when the class skips a
-            // shard) — deterministic, since every launch computes the same
-            // sorted `holders` list from the same rows and spec, so no two
-            // shards can claim the same remainder slot.
-            const rank = holders.indexOf(shard.index)
-            const base = Math.floor(certified / n)
-            const remainder = certified % n
-            const share = rank >= 0 && rank < remainder ? base + 1 : base
-            certifiedClass.set(c, Math.max(1, share))
-            if (certified < n) {
-                log(`wave: class ${c || '(no class)'} is certified at ${certified} but ` +
-                    `sits in ${n} shards — one per shard can exceed the certification ` +
-                    `in sum; a claim CONFLICT on this class is that shape, not a defect`)
-            }
-        }
-    }
-    if ([...shard.classShards.values()].some((holders) => holders.length > 1)) {
-        // Each launch only knows its OWN post-split share, not the sibling
-        // shards' shares, so the log names this shard's share and the holder
-        // count rather than reconstructing a cross-shard sum no single
-        // launch can observe.
-        log(`wave: class headroom divided across shards — this launch admits ` +
-            [...shard.classShards].filter(([, holders]) => holders.length > 1)
-                .map(([c, holders]) => `${c || '(no class)'}≤${certifiedClass.get(c)} (this shard's share of ${holders.length})`)
-                .join(', '))
-    }
+if (input.shard !== undefined) throw new Error(
+    'wave.js: args.shard is retired — a launch now receives only its own rows ' +
+    'and args.unit {index, of, classCap}, both from lane_units.py. Re-split the ' +
+    'dispatch and relaunch; never resume a pre-split wave. Refusing to route.')
+const unit = launchUnit(input.unit)
+if (unit.classCap) {
+    for (const [c, n] of Object.entries(unit.classCap)) certifiedClass.set(c, n)
+}
+if (unit.of > 1) {
+    log(`wave: launch ${unit.index + 1} of ${unit.of} — this launch holds ${rows.length} ` +
+        `row(s); its sibling launches hold the rest of the dispatch` +
+        (unit.classCap
+            ? `; class headroom from the full manifest: ` +
+              Object.entries(unit.classCap).map(([c, n]) => `${c || '(no class)'}≤${n}`).join(', ')
+            : ''))
 }
 
-const lanes = groupRows(shardRows, laneOf)
+const lanes = groupRows(rows, laneOf)
 log(`wave: ${lanes.size} issue lane(s): ` + [...lanes.entries()].map(([name, laneRows]) => {
     const ks = [...new Set(laneRows.map(stageOf))].sort((a, b) => a - b)
     return `${name}×${laneRows.length}${ks.length > 1 ? ` (stages ${ks.join('→')})` : ''}`
 }).join(', '))
 log('wave: no wall-clock deadline exists in this harness — a hung seat holds its ' +
     'stage, lane and harness slot until the Workflow returns; a phase that stops ' +
-    'advancing in the task output is the only tell, and the conductor\'s dead-shard ' +
+    'advancing in the task output is the only tell, and the conductor\'s dead-launch ' +
     'check (docket-run §2) is the bound')
 
 // Bound long writer queues so finished lanes can reach the next dispatch.
 // Depth counts earlier stages with uncertified writers in OTHER lanes; a
 // lane's own chain and certified neighbours do not count. Defer depth >= 3
 // and the lane's later rows; the engine re-offers them next dispatch.
-// Read off THIS shard's rows: an uncertified writer in a sibling shard was
-// welded into this shard by the partition, so none exists elsewhere.
-const writersByLane = groupRows(shardRows.filter((row) => isWriter(row) && row.issue), laneOf)
+// Read off THIS launch's rows: an uncertified writer in a sibling launch was
+// welded into this launch by lane_units.py, so none exists elsewhere.
+const writersByLane = groupRows(rows.filter((row) => isWriter(row) && row.issue), laneOf)
 const writerStagesByLane = new Map([...writersByLane].map(([lane, writers]) =>
     [lane, new Set(writers.map(stageOf))]))
 
@@ -2839,7 +2750,7 @@ function concurrencyWeight(row) {
     return 1
 }
 let agentsReserved = 0
-const agentsProjected = shardRows.reduce((n, r) => n + agentCost(r), 0)
+const agentsProjected = rows.reduce((n, r) => n + agentCost(r), 0)
 if (agentsProjected > AGENT_BUDGET) {
     log(`wave: the manifest projects ~${agentsProjected} agents against a budget of ` +
         `${AGENT_BUDGET} (the Workflow tool's ${AGENT_LIFETIME_CAP}-agent lifetime cap less a ` +
@@ -2853,7 +2764,7 @@ const AGENT_BUDGET_DEFERRAL = 'agent budget: the wave reserves at most ' +
 if (lanes.size > 1) {
     log(`wave: lanes run concurrently; the manifest certifies class headroom ` +
         [...certifiedClass.entries()].map(([c, n]) => `${c || '(no class)'}≤${n}`).join(', '))
-    const unproven = pairsOf(writerLanesOf(shardRows))
+    const unproven = pairsOf(writerLanesOf(rows))
         .filter(([a, b]) => !scopeCertified(a, b))
         .map(([a, b]) => `${a}/${b}`)
     if (unproven.length > 0) {
@@ -3266,12 +3177,8 @@ if (budget.total) {
             : ''))
 }
 
-// One entry per MANIFEST row, in manifest order, whichever shard this is: a
-// sibling shard's row settles not-launched-other-shard here — nothing
-// failed, another launch of this same dispatch owns it.
+// One entry per row this launch holds, in manifest order.
 log(`wave: ${agentsLaunched} agent() call(s) launched this invocation (harness cap ${AGENT_LIFETIME_CAP})`)
 return rows.map((row) => byStep.get(row.step) ||
-    (mine.has(row.step)
-        ? { step: row.step, status: parked ? 'not-launched-run-parked' : 'spawn-failed' }
-        : { step: row.step, status: 'not-launched-other-shard', text: null }))
+    { step: row.step, status: parked ? 'not-launched-run-parked' : 'spawn-failed' })
 // TEST-END stage-ladder

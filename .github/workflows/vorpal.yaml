@@ -117,13 +117,13 @@ jobs:
 
       - run: bash tests/wave-issue-lanes.test.sh
 
+      - run: bash tests/wave-launch-unit.test.sh
+
       - run: bash tests/wave-model-attribution.test.sh
 
       - run: bash tests/wave-orphaned-claim.test.sh
 
       - run: bash tests/wave-park-signals.test.sh
-
-      - run: bash tests/wave-shard-partition.test.sh
 
       - run: bash tests/wave-target-envelope.test.sh
 

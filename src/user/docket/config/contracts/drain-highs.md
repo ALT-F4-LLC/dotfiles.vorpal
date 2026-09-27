@@ -1,6 +1,6 @@
 ---
 node: drain-highs
-version: 14
+version: 15
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -94,7 +94,7 @@ step does not repeat their review or independently verify the defects.
    Home: THIS repository
    Files: <distinct evidence file paths, comma-separated>
    Severity: <the cluster's open_severity>
-   Labels: review-gap[, security-load-bearing]
+   Labels: review-gap
    ```
 
    The first line becomes the issue title. Use the cluster's title where
@@ -112,14 +112,6 @@ step does not repeat their review or independently verify the defects.
    `docket-retro` reading to filter on; also state this step's
    `source-run:RUN-N` in the body below the header so the filing's provenance
    survives even where `Labels:` is not read.
-
-   Apply `security-load-bearing` at this filing, not later at activation:
-   check the cluster against `policy.toml`'s `[security]` labeling test (the
-   six control classes it enumerates, and the rule that changing, relocating,
-   deleting, or test-gating a control's implementation all qualify). Add it
-   to the same `Labels:` line when it applies, and state which control class
-   in the body. This is the test's sole application site; do not re-derive it
-   elsewhere.
 
    After a blank line, include the cluster's `open_severity`, its supplied
    identity, and every member's judge, severity, `file:line`, and evidence.

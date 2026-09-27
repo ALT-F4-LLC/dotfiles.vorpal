@@ -9,9 +9,9 @@ fable-medium = { model = "fable", effort = "medium" }
 fable-xhigh = { model = "fable", effort = "xhigh" }
 opus-high = { model = "opus", effort = "high", escalate_to = "fable-high" }
 opus-low = { model = "opus", effort = "low", escalate_to = "opus-high" }
+opus-max = { model = "opus", effort = "max", escalate_to = "fable-max" }
 opus-medium = { model = "opus", effort = "medium", escalate_to = "fable-medium" }
 opus-xhigh  = { model = "opus", effort = "xhigh", escalate_to = "fable-xhigh" }
-opus-max = { model = "opus", effort = "max", escalate_to = "fable-max" }
 sonnet-high = { model = "sonnet", effort = "high", escalate_to = "opus-high" }
 sonnet-low = { model = "sonnet", effort = "low", escalate_to = "sonnet-medium" }
 sonnet-max = { model = "sonnet", effort = "max", escalate_to = "opus-max" }
@@ -19,10 +19,10 @@ sonnet-medium = { model = "sonnet", effort = "medium", escalate_to = "opus-mediu
 sonnet-xhigh = { model = "sonnet", effort = "xhigh", escalate_to = "opus-xhigh" }
 
 [executors]
-drain-highs = { variant = "sonnet-low" }
 adr-author = { variant = "fable-low" }
 design-qa = { variant = "opus-low" }
 dispose = { variant = "opus-low" }
+drain-highs = { variant = "sonnet-low" }
 fix = { variant = "opus-low" }
 implement = { variant = "opus-low" }
 investigate = { variant = "fable-low" }

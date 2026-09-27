@@ -33,8 +33,10 @@ evidence so `docket-refit` (or `tighten`, for a prose-only cut) can land it
 without a further judgment call. The refit gates stay: this skill never
 deletes, edits, or refactors a definition itself.
 
-**The burden of proof is on the definition.** A unit (a file, an H2
-section of a contract or fragment, an `[executors]` row of policy.toml)
+**The burden of proof is on the definition.** A unit (a file; a
+section of a contract, meaning a top-level block after the Charter or any
+second-level heading; a second-level section of a fragment; an
+`[executors]` row of policy.toml)
 with no evidence in any class that applies to its kind is removed, not
 kept: no consumer resolves to it, no run exercised it, no executor would
 act differently without it, no frozen record a run pins names it. The
@@ -114,8 +116,17 @@ guaranteed to match this session's build. A missing installed file means
 the corpus was never activated after this skill was added: report that,
 don't launch the source copy instead.
 
+The committed ledger is too large to pass in one tool call, so pass it
+slim. A stay or an already-filed cut keeps only the fields the workflow
+reads; an unfiled cut keeps every field, because its writer renders the
+issue body from it:
+
+```bash
+jq -c '.verdicts |= map(if (.verdict != "stay" and .issue == null) then . else {path, hash, unit, verdict, issue, disposition} end)' src/user/docket/config/cut-ledger.json > "$SCRATCH/ledger-slim.json"
 ```
-Workflow({ scriptPath: "<absolute installed path to corpus-cut.js>", args: { checkoutRoot: "<repo root>", definitions: <contents of definitions.json>, ledger: <parsed ledger or null>, all: <true when $ARGUMENTS is all>, projects: [{name, prefix, root}], engineRoot: <path or null>, transcriptDirs: [<absolute paths>], frictionDir: <path or null>, installedConfigDir: <path or null>, installedClaudeDir: <path or null>, scratchDir: "<absolute scratch path>", pass: <n>, nowIso: "<timestamp>" } })
+
+```
+Workflow({ scriptPath: "<absolute installed path to corpus-cut.js>", args: { checkoutRoot: "<repo root>", definitions: <contents of definitions.json>, ledger: <contents of ledger-slim.json, or null on the first pass>, all: <true when $ARGUMENTS is all>, projects: [{name, prefix, root}], engineRoot: <path or null>, transcriptDirs: [<absolute paths>], frictionDir: <path or null>, installedConfigDir: <path or null>, installedClaudeDir: <path or null>, scratchDir: "<absolute scratch path>", pass: <n>, nowIso: "<timestamp>" } })
 ```
 
 The workflow plans the pass in code, gathers the evidence in one barrier,
@@ -148,9 +159,28 @@ timestamp from §1. The row's key is the replay key: a
 repeated pass on unchanged bytes returns the original issue, open or
 closed, so an operator who closed a cut as won't-do is never re-asked.
 
+The shards hold carried entries in the slim form you passed. Restore each
+from the committed ledger, and stop if any restored entry disagrees with
+its shard entry on path, hash, unit, verdict, or issue:
+
 ```bash
-for f in $(ls "$SCRATCH/ledger" | sort -n); do cat "$SCRATCH/ledger/$f"; done | jq -s --arg pass "$PASS" --arg now "$NOW" '{version: 1, pass: ($pass | tonumber), judgedAt: $now, verdicts: add}' > "$SCRATCH/cut-ledger.json"
-jq '.verdicts | length' "$SCRATCH/cut-ledger.json"   # must equal the return's ledger.entries
+for f in $(ls "$SCRATCH/ledger" | sort -n); do cat "$SCRATCH/ledger/$f"; done | jq -s --arg pass "$PASS" --arg now "$NOW" '{version: 1, pass: ($pass | tonumber), judgedAt: $now, verdicts: add}' > "$SCRATCH/cut-ledger.raw.json"
+jq '.verdicts | length' "$SCRATCH/cut-ledger.raw.json"   # must equal the return's ledger.entries
+jq --slurpfile full src/user/docket/config/cut-ledger.json '
+  ($full[0].verdicts | map({key: (.path + "\u0000" + .unit), value: .}) | from_entries) as $f
+  | [.verdicts[] | select(has("reason") | not) | . as $v | $f[$v.path + "\u0000" + $v.unit]
+     | select(. == null or [.path, .hash, .unit, .verdict, .issue] != [$v.path, $v.hash, $v.unit, $v.verdict, $v.issue]) | $v.path + "#" + $v.unit]' "$SCRATCH/cut-ledger.raw.json"   # must print []
+jq --slurpfile full src/user/docket/config/cut-ledger.json '
+  ($full[0].verdicts | map({key: (.path + "\u0000" + .unit), value: .}) | from_entries) as $f
+  | .verdicts |= map(if has("reason") then . else $f[.path + "\u0000" + .unit] end)' "$SCRATCH/cut-ledger.raw.json" > "$SCRATCH/cut-ledger.json"
+```
+
+Only slim entries are restored: a unit judged this pass carries its full
+fresh entry and is never replaced by the stale committed one.
+
+Then file:
+
+```bash
 : > "$SCRATCH/ids.tsv"
 cat "$SCRATCH"/issues/index.*.tsv 2>/dev/null | while IFS=$'\t' read -r key title scope body; do
   out=$(docket issue create --idempotency-key "$key" -t "$title" -d - -l corpus-cut --scope "$scope" --json=v2 < "$body") || { printf '%s\t%s\n' "$key" "FAILED" >> "$SCRATCH/ids.tsv"; continue; }

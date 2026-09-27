@@ -40,8 +40,15 @@ export const meta = {
 //                        fragment | schema | readme, hash its sha256 as the
 //                        skill computed it. The ledger file itself is never
 //                        a definition.
-//   ledger             — the parsed ledger object ({version, verdicts}) or
-//                        null on the first pass.
+//   ledger             — the ledger object ({version, verdicts}) or null on
+//                        the first pass. The committed ledger outgrows one
+//                        tool call, so the skill passes it slim: a verdict
+//                        with an issue, or a stay, carries only {path, hash,
+//                        unit, verdict, issue, disposition}; an unfiled cut
+//                        carries every field, since its writer renders the
+//                        issue body from it. Carried entries land in the
+//                        shards as given, and the skill restores the full
+//                        entries from the committed ledger before landing.
 //   all                — true re-judges every definition; false judges only
 //                        definitions whose hash changed or that carry no
 //                        verdict, and carries the rest forward.
@@ -142,6 +149,11 @@ const SENTINEL = 'corpus-cut-pass'
 // Which evidence classes apply to which unit kind. A unit with nothing in
 // any applicable class gets remove; a class that cannot apply is never held
 // against it (a section inside a contract has no consumer of its own).
+// What a section unit is. Contracts are a fixed "# " skeleton (Charter, Not,
+// Method, Emit, Stuck, and any extra top-level block), so their sections are
+// top-level blocks; fragments carry one "# " title and "## " sections.
+const SECTION_DEF = 'in a contract, every "# " block after "# Charter" and every "## " heading; in a fragment, every "## " heading (its single "# " line is the title, not a section)'
+
 const UNIT_CLASSES = {
     'file:contract': ['consumer', 'run', 'behavior', 'install'],
     'file:fragment': ['consumer', 'run', 'behavior', 'install'],
@@ -292,7 +304,7 @@ const INSTALL_SCHEMA = {
 const CHARGE_ITEMS = {
     type: 'object',
     properties: {
-        unit: { type: 'string', description: 'file, section:<H2 heading>, or row:<executor>' },
+        unit: { type: 'string', description: `file, section:<heading> (${SECTION_DEF}), or row:<executor>` },
         kind: { type: 'string', description: 'file | section | row' },
         asks: { type: 'string', description: 'remove | refactor' },
         lacking: { type: 'array', items: { type: 'string' }, description: 'the applicable evidence classes the prosecutor found empty' },
@@ -646,7 +658,7 @@ ${READ_ONLY}
 Definitions (corpus-relative):
 ${definitionList}
 
-For every definition, count its consumers with greps and cite the grep and its hit as the locator: a contract's workflow steps (executor = "<stem>") and packet templates; a fragment's including contracts (packet_includes) and step packets; a schema's emitting contracts and threshold predicates at that exact version; a workflow's references by registered name in skills, scripts, and other workflows; README.md's references from the skill tree and .docket/bin. For policy.toml, return one row entry per [executors] row with the workflow step or vote seat that resolves to it (a row nothing resolves to has an empty list). For every contract and fragment, list under duplicates each H2 section whose rule is restated by another fragment, by a CLAUDE.md rule every agent already receives, or by an agent definition under ${claudeTree}/agents, naming the counterpart path:line. Every count must come from a command you ran; an empty consumer list is a finding, not a gap.`
+For every definition, count its consumers with greps and cite the grep and its hit as the locator: a contract's workflow steps (executor = "<stem>") and packet templates; a fragment's including contracts (packet_includes) and step packets; a schema's emitting contracts and threshold predicates at that exact version; a workflow's references by registered name in skills, scripts, and other workflows; README.md's references from the skill tree and .docket/bin. For policy.toml, return one row entry per [executors] row with the workflow step or vote seat that resolves to it (a row nothing resolves to has an empty list). For every contract and fragment, list under duplicates each section (${SECTION_DEF}) whose rule is restated by another fragment, by a CLAUDE.md rule every agent already receives, or by an agent definition under ${claudeTree}/agents, naming the counterpart path:line. Every count must come from a command you ran; an empty consumer list is a finding, not a gap.`
 }
 
 function registryPrompt() {
@@ -694,7 +706,7 @@ Step 1, needles. Open one or two logs from a docket wave (grep -l 'docket step c
 Step 2, rendered. For every definition, count logs whose FIRST record contains its needle: that is the packet the executor received. One fixed program, run once per needle, for example:
   for f in $(find "${dir}" -name 'agent-*.jsonl'); do grep -q -F "${SENTINEL}" "$f" && continue; head -n 1 "$f" | grep -q -F "<needle>" && echo "$f"; done | wc -l
 
-Step 3, applied. Write every H2 heading text of every contract and fragment (grep -h -E '^## ' on the corpus files, the "## " stripped, headings shorter than 8 characters dropped and named in notes) to ${scratch}/headings.txt, one per line. Then run ONE pass over the logs, never one grep per heading:
+Step 3, applied. Write every section heading text of every contract and fragment (${SECTION_DEF}; grep -h -E '^#{1,2} ' on the corpus files, the leading hashes and space stripped, "Charter" and each fragment's title line dropped, headings shorter than 8 characters dropped and named in notes) to ${scratch}/headings.txt, one per line. Then run ONE pass over the logs, never one grep per heading:
   for f in $(find "${dir}" -name 'agent-*.jsonl'); do grep -q -F "${SENTINEL}" "$f" && continue; tail -n +2 "$f" | grep -o -F -f ${scratch}/headings.txt | sort -u | sed "s|^|$f\t|"; done > ${scratch}/applied.tsv
 Aggregate applied.tsv with awk into a count per heading and up to three log paths each (path:line locators come from a second grep -n -F on only those logs). Map each heading back to its file by the corpus grep.
 
@@ -744,7 +756,7 @@ function evidenceFor(path, evidence) {
 function unitRules(surface) {
     return `Units and the evidence classes that apply to each (a class that does not apply is never held against a unit):
 - file (the whole definition; unit is the literal "file", kind "file") -> ${(UNIT_CLASSES[`file:${surface}`] || UNIT_CLASSES['file:contract']).join(', ')}
-- section:<H2 heading> (contracts and fragments only; the H1 is the fixed "# Charter") -> ${UNIT_CLASSES.section.join(', ')}
+- section:<heading> (contracts and fragments only; ${SECTION_DEF}) -> ${UNIT_CLASSES.section.join(', ')}
 - row:<executor> (policy.toml [executors] rows only) -> ${UNIT_CLASSES.row.join(', ')}
 Classes: consumer (something in the corpus, harness, or skill tree resolves to it), registry (a frozen record a run pins), run (a run recorded a step that received it), behavior (an executor's output, order of operations, or gate would differ without this text; the digest's applied counts, a fix round or finding that cited it, or the rule's own operative content), friction (the friction ledger attributes entries to it), install (the installed copy exists and matches), engine (the engine source enforces what the text says, which makes the text redundant; ${engineRoot ? `engine checkout at ${engineRoot}` : 'the engine checkout is unavailable this pass, so this class cannot be established'}).`
 }
@@ -761,7 +773,7 @@ ${unitRules(d.surface)}
 Evidence gathered this pass for this definition (counts and locators; verify any you rely on by opening the locator):
 ${evidenceFor(d.path, evidence)}
 
-Read the definition whole. Enumerate its units: the file, every H2 section for a contract or fragment, every [executors] row for policy.toml. For each unit, look for evidence in each applicable class, in the bundle and with your own greps, and charge the unit when a class is empty or when what exists is weaker than the text's cost: a rule the engine already enforces, a rule a fragment or CLAUDE.md already states, a section no executor ever referred back to across every digest, a schema version no run pins, a row nothing routes to, a workflow never run. Ask remove when nothing applicable supports the unit; ask refactor, naming the exact sentences to cut, when part of it earns its place. A unit you cannot charge is listed under units and absent from charges. Git history is evidence too (git -C ${checkoutRoot} log --follow -- src/user/docket/config/${d.path}): a definition added within the last few commits has had no chance to be exercised, and you say so in the charge rather than dropping it. Cite a locator for every ground.`
+Read the definition whole. Enumerate its units: the file, every section of a contract or fragment (${SECTION_DEF}), every [executors] row for policy.toml. For each unit, look for evidence in each applicable class, in the bundle and with your own greps, and charge the unit when a class is empty or when what exists is weaker than the text's cost: a rule the engine already enforces, a rule a fragment or CLAUDE.md already states, a section no executor ever referred back to across every digest, a schema version no run pins, a row nothing routes to, a workflow never run. Ask remove when nothing applicable supports the unit; ask refactor, naming the exact sentences to cut, when part of it earns its place. A unit you cannot charge is listed under units and absent from charges. Git history is evidence too (git -C ${checkoutRoot} log --follow -- src/user/docket/config/${d.path}): a definition added within the last few commits has had no chance to be exercised, and you say so in the charge rather than dropping it. Cite a locator for every ground.`
 }
 
 function defendPrompt(d, charges, evidence) {
@@ -800,7 +812,7 @@ ${JSON.stringify(answers, null, 1)}
 Evidence gathered this pass for this definition:
 ${evidenceFor(d.path, evidence)}
 
-Read the definition whole and open every locator either side relies on before you rest a ruling on it. Return exactly one ruling per unit the prosecution enumerated (the file, every H2 section, every policy row), uncharged units included. Rules:
+Read the definition whole and open every locator either side relies on before you rest a ruling on it. Return exactly one ruling per unit the prosecution enumerated (the file, every section, every policy row), uncharged units included. Rules:
 - stay only on a verified citation in a class that applies to the unit kind; the definition's own wording is never evidence for itself.
 - refactor when part of the unit earns its place and part does not; cut names the exact sentences or sub-sections to remove, and reason says why what stays earns it.
 - remove when nothing applicable supports the unit, when the defender conceded, or when the engine, a fragment, or CLAUDE.md already carries the rule.

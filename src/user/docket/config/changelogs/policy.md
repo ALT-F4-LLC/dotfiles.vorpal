@@ -3,6 +3,17 @@
 Version history of `policy.toml`, newest first. Each heading is the
 `[policy].version` the entry describes.
 
+## 38
+
+every executor row now starts at its model's API default effort,
+as documented for Claude Managed Agents
+(https://platform.claude.com/docs/en/managed-agents/overview):
+opus rows at `opus-medium`, sonnet rows at `sonnet-high`, and
+fable rows at `fable-high`. Rows already at `opus-medium`
+(judge-correctness, judge-simplicity, tribunal-correctness,
+verify-ac) are unchanged. Every `never` exclusion, `[variants]`
+escalation target, and `[escalation]` value is unchanged.
+
 ## 37
 
 every comment leaves the file; no routing value changed. The

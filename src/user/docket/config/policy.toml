@@ -1,5 +1,5 @@
 [policy]
-version = 38
+version = 39
 
 [variants]
 fable-high = { model = "fable", effort = "high" }
@@ -14,9 +14,7 @@ opus-medium = { model = "opus", effort = "medium", escalate_to = "fable-medium" 
 opus-xhigh  = { model = "opus", effort = "xhigh", escalate_to = "fable-xhigh" }
 sonnet-high = { model = "sonnet", effort = "high", escalate_to = "opus-high" }
 sonnet-low = { model = "sonnet", effort = "low", escalate_to = "sonnet-medium" }
-sonnet-max = { model = "sonnet", effort = "max", escalate_to = "opus-max" }
 sonnet-medium = { model = "sonnet", effort = "medium", escalate_to = "opus-medium" }
-sonnet-xhigh = { model = "sonnet", effort = "xhigh", escalate_to = "opus-xhigh" }
 
 [executors]
 adr-author = { variant = "fable-high" }

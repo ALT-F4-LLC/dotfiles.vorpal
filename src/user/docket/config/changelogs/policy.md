@@ -3,6 +3,18 @@
 Version history of `policy.toml`, newest first. Each heading is the
 `[policy].version` the entry describes.
 
+## 39
+
+`sonnet-max` and `sonnet-xhigh` leave `[variants]`. Under version
+38 no executor row, `escalate_to` edge, `[escalation.fallback]`
+value, size, or ceiling reached either one, and the engine looks
+a variant up only when one of those names it. The `sonnet-xhigh`
+hops seen on fix rounds across 108 runs in 11 projects ran under
+older pinned policies. `fable-low` and its fallback stay. Every
+executor row stays: the spec-doc authors, research, and
+tribunal-design run only for their labels, and the spec-author
+seats belong to spec-project, which has not yet run.
+
 ## 38
 
 every executor row now starts at its model's API default effort,

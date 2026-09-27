@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "pass": 1,
-  "judgedAt": "2026-09-27T01:51:14Z",
+  "pass": 2,
+  "judgedAt": "2026-09-27T04:42:05Z",
   "verdicts": [
     {
       "path": "changelogs/disposition.md",
@@ -921,6 +921,82 @@
       "subsumed": false
     },
     {
+      "path": "contracts/design-qa.md",
+      "surface": "contract",
+      "hash": "91fd98cf9e2e8655760d28dad31269ce4188df3848cefbfece2466f265bc88c5",
+      "unit": "file",
+      "kind": "file",
+      "verdict": "stay",
+      "judged": "stay",
+      "reason": "A live consumer resolves to this contract. workflows/ui-change.toml:107 declares a step with executor = \"design-qa\" and packet contracts/{executor}.md, which renders this file into the ui-change design-qa step. The census also reports 19 harness.git runs whose design-qa@0 step received it, most recently RUN-109. I confirmed only that the harness.git export mentions design-qa. I could not count its executor records because a probe was denied, so the run class is corroborating and the consumer citation carries the ruling. The other ten projects show never-run, which is expected because only ui-change calls this step. No install evidence was found at ~/.config/docket or ~/.docket; install is not needed for this ruling. The contract has no H2 sections because its headings are Charter, Not, Method, Emit and Stuck, all at H1. That leaves no section units. The fragments/test-code-boundaries.md:55 '## design-qa' section restates only the seat's evidence boundary, which is a subset of '# Not'. It does not carry the contract's Method, Emit or Stuck rules, so the contract is not duplicated.",
+      "cut": [],
+      "evidence": [
+        {
+          "class": "consumer",
+          "locator": "src/user/docket/config/workflows/ui-change.toml:107",
+          "note": "executor = \"design-qa\" step with packet contracts/{executor}.md, payload findings@12 and fix-loop threshold; verified by grep and read."
+        },
+        {
+          "class": "run",
+          "locator": "census runs[harness.git]: RUN-102,109,14,32,41,43,44,46,50,53,56,61,64,66,72,79,91,95,98",
+          "note": "Census reports 19 runs with a design-qa@0 step. grep -l confirmed that ~/.docket/harness.git-export-2026-09-10.json references design-qa. A probe to count executor records was denied, so this is not independently verified."
+        },
+        {
+          "class": "consumer",
+          "locator": "src/user/docket/config/policy.toml:23",
+          "note": "design-qa = { variant = \"opus-medium\" } executor row; verified. The census labels it registry. It shows the executor is routable, but it is a policy row and not a unit of this contract."
+        }
+      ],
+      "upheldBy": 3,
+      "seated": 3,
+      "contested": false,
+      "disposition": "upheld",
+      "refutations": [],
+      "issue": null,
+      "pass": 2,
+      "judgedAt": "2026-09-27T04:42:05Z",
+      "key": null,
+      "subsumed": false
+    },
+    {
+      "path": "contracts/dispose.md",
+      "surface": "contract",
+      "hash": "f33b5f60e7c4fab36484c524b325ac859a0e950f5b639d048320889c1867511c",
+      "unit": "file",
+      "kind": "file",
+      "verdict": "stay",
+      "judged": "stay",
+      "reason": "Two verified citations in classes that apply to a file support it. First, a consumer resolves to it: both executor=\"dispose\" steps in the disposition workflow load packet contracts/{executor}.md. Second, the installed copy exists and is byte-identical to the checkout copy. Run evidence is thin. Ten of the eleven project run stores show no dispose step. The census attributes one run (agentic-services RUN-106, disposition@12) to it, but I could not open that project's run store from here, so this ruling does not depend on it. Stay rests on the consumer and install citations alone. The policy.toml:24 row belongs to the policy definition. It is not a unit of this file, and I did not count it as evidence for the file.",
+      "cut": [],
+      "evidence": [
+        {
+          "class": "consumer",
+          "locator": "src/user/docket/config/workflows/disposition.toml:14-24",
+          "note": "I opened this file. The [[step]] named dispose sets executor = \"dispose\" and packet = [\"contracts/{executor}.md\"], which resolves to this file."
+        },
+        {
+          "class": "consumer",
+          "locator": "src/user/docket/config/workflows/disposition.toml:48-58",
+          "note": "I opened this file. The revise-disposition after_loop step also sets executor = \"dispose\" with the same packet, which resolves to this file."
+        },
+        {
+          "class": "install",
+          "locator": "/Users/erikreinert/.docket/config/contracts/dispose.md",
+          "note": "I ran diff against the checkout copy. It exited 0, so the two files are byte-identical."
+        }
+      ],
+      "upheldBy": 3,
+      "seated": 3,
+      "contested": false,
+      "disposition": "upheld",
+      "refutations": [],
+      "issue": null,
+      "pass": 2,
+      "judgedAt": "2026-09-27T04:42:05Z",
+      "key": null,
+      "subsumed": false
+    },
+    {
       "path": "contracts/drain-highs.md",
       "surface": "contract",
       "hash": "3e43a58d861df0aff2ecd18e8f6c99c62f5966503f4d61abf868196345ec4e9b",
@@ -1667,7 +1743,7 @@
         "Internally inconsistent application of the task's own class definitions. `engine` is defined as a cut-supporting class ('the engine source enforces what the text says, which makes the text redundant'), yet the ruling cites docket.git/main internal/cli/step.go:1177-1178 (confirming step fail takes no artifact flag) as support for `stay` -- the engine hit should count toward cutting the redundant 'with no artifact' half of the clause, not preserving it. Worse, the ruling itself concedes the other half is wrong: step.go:448-452 states '--note and --metadata are complementary, not alternatives' and :1178 shows a --metadata flag on stepFailCmd, directly contradicting the text's 'it carries --note only.' A verdict cannot be `stay` (no text change) while the same reason calls for 'a wording fix.' The clause 'it carries `--note` only, with no artifact' should be cut/rewritten to match step.go's actual flags; the rest of Stuck (gap triggers, two-attempt limit, step-complete gap channel, redeemable-only step fail) has no engine or fragment hit and stays, so `refactor` is the correct verdict.",
         "fragments/scope-discipline.md:55-60 ('Gap the dependent work, then continue what is independent'... 'state exactly what is unknown or forbidden, what work it blocks, and the smallest decision or evidence needed from the named owner. Stop that dependent work and complete independent authorized work.') is in implement.md's packet_includes and states, in substance, the same content as Stuck's opening paragraph ('produces a gap naming the affected work, evidence, missing input or authority, and smallest recommended next action... Stop dependent work and complete independent authorized work where possible'). This falsifies the ruling's premise that Stuck is 'operative content that no included fragment states' for at least that clause -- the same pattern the ruling itself credits for section:Not's cut (scope-discipline:48-50). Separately, the ruling's own engine check found the text's '--note only' claim inaccurate (step.go:1177-1178 shows --note and --metadata) and says this 'is worth a wording fix, not a cut,' which is itself an admission that the section needs editing -- inconsistent with recording a bare 'stay' with an empty cut list. The two-attempt limit, the step-complete/step-fail distinction, and the do-not-claim-recorded/workaround-is-a-defect language remain uncharged (no fragment file matched 'at most two', 'two attempts', 'step fail', or 'step complete' by grep) and should stay; only the duplicated stop-dependent-work/gap-contents clause should be cut to a pointer at scope-discipline, making this a refactor rather than a stay."
       ],
-      "issue": null,
+      "issue": "DOT-3066",
       "pass": 1,
       "judgedAt": "2026-09-27T01:51:14Z",
       "key": "corpus-cut:3bf68f9f8924dd5f:section:Stuck:refactor",
@@ -3730,6 +3806,102 @@
       "pass": 1,
       "judgedAt": "2026-09-27T01:51:14Z",
       "key": null,
+      "subsumed": false
+    },
+    {
+      "path": "contracts/research.md",
+      "surface": "contract",
+      "hash": "cac91f3a34604c692fc0d598e4ddb6654f73642c0c3318145458c56c5e18d24e",
+      "unit": "file",
+      "kind": "file",
+      "verdict": "refactor",
+      "judged": "refactor",
+      "reason": "The file earns its place. Three workflows resolve executor=\"research\" to it, policy.toml:37 has a row for it, and the installed copy is byte-identical. Several parts carry operative content found nowhere else in the always-loaded archetype or the packet fragments: the Charter, the Not section's rule against selecting a design or fix, the model-recall rule, the source-text verification procedure (lines 42-58), the quoted/summary-derived/UNVERIFIED labeling rules (62-71), the adoption-comparison criteria (78-83), the Emit shape, and the Stuck gap trigger list. The sentence that defines summary-derived (27-28) stays because the labeling rule and Emit depend on it; the prosecution's cut of that pair is rejected. The sandbox sentence (36-37) also stays. The 5fdf458d diff turned an explicit 'retry sandbox-disabled' instruction into this prohibition. The agent file covers only post-refusal handling and never tells the researcher not to attempt a bypass. The link between the rewrite and the 2026-09-03 hook and denials rests on timing only: the commit body says 'reverse stale rules' and does not cite the denials. The listed cuts restate rules already in the executor-research agent file (always loaded through archetype: executor-research) or in the evidence-rules, writing-for-humans, or design-search fragments (always loaded through packet_includes). Those cuts are: the acquisition-ceiling sentences around the sandbox clause, faithful quotation, text-stripping absence, inference versus quotation, absence scope, the design-search recommendation record, evidence-reference preservation, and the Stuck closing. The defense conceded quotation, inference, absence (76), recommendation, and line 118. It contested line 60 and lines 127-129, but its checks were phrase greps. On the fragments' actual wording, evidence-rules 'Absence needs a defined search space' (a custom probe's zero-hit result supports only no matches within its verified scope) covers text-stripping false negatives. The adjacent line 58-59 already requires checking the rendered source when extraction is ambiguous. The Stuck closing is covered by evidence-rules Anti-fabrication ('Continue work that does not depend on the unknown') and executor-research.md:39-41 ('report the evidence collected and the remaining gaps'). Its recording pointer repeats the archetype that is always loaded.",
+      "cut": [
+        "Use only the archetype's permitted acquisition attempts.",
+        "A retrieval error establishes an access limitation for this attempt, not that a source or capability does not exist.",
+        "Record it and continue independent permitted work.",
+        "Quote short passages faithfully. Preserve wording and punctuation; mark omissions or redactions. Formatting and whitespace normalization must not change meaning.",
+        "Failure to find a sentence through text stripping does not establish its absence.",
+        "Keep paraphrase and inference distinct from quotations. An inference names its verified premises and remaining uncertainty.",
+        "An absence claim describes the inspected search space and its limitations.",
+        "A recommendation names the candidates weighed and why the recommended one won on the stated criteria, or the one-line reason no comparison applied.",
+        "Keep evidence references and limitations intact through handoff and recording.",
+        "Stop the blocked work, complete independent authorized findings, and preserve supported partial answers. Follow the archetype's recording and confirmation procedure."
+      ],
+      "evidence": [
+        {
+          "class": "consumer",
+          "locator": "src/user/docket/config/workflows/investigation.toml:31",
+          "note": "executor = \"research\", gated by when = labels contains needs-research (line 37)"
+        },
+        {
+          "class": "consumer",
+          "locator": "src/user/docket/config/workflows/spec-doc.toml:22",
+          "note": "executor = \"research\""
+        },
+        {
+          "class": "consumer",
+          "locator": "src/user/docket/config/workflows/spec-project.toml:22",
+          "note": "executor = \"research\""
+        },
+        {
+          "class": "consumer",
+          "locator": "src/user/docket/config/policy.toml:37",
+          "note": "[executors] row research = fable-high"
+        },
+        {
+          "class": "install",
+          "locator": "diff -q /Users/erikreinert/.docket/config/contracts/research.md src/user/docket/config/contracts/research.md",
+          "note": "no difference; installed copy matches"
+        },
+        {
+          "class": "behavior",
+          "locator": "src/user/docket/config/contracts/research.md:62-71,97-116",
+          "note": "the quoted/summary-derived/UNVERIFIED labeling and the research-notes Emit structure have no counterpart in executor-research.md or the three packet fragments"
+        },
+        {
+          "class": "behavior",
+          "locator": "git show 5fdf458d -- src/user/docket/config/contracts/research.md (diff lines 81-82 vs 104-106)",
+          "note": "old text told the researcher to retry sandbox-disabled; the current sentence reverses it. Supports keeping the sandbox sentence"
+        },
+        {
+          "class": "behavior",
+          "locator": "/Users/erikreinert/.claude/friction/sandbox-bypass-guard.jsonl:3,14; git log -L67,69 hooks/sandbox-bypass-guard-hook.sh -> 3fa5cf11 2026-09-03",
+          "note": "executor-research bypass denials on 2026-09-03 under the old text, the day before the rewrite; the causal link is inference from timing (the 5fdf458d body says only 'reverse stale rules')"
+        },
+        {
+          "class": "consumer",
+          "locator": "src/user/claude_code/agents/executor-research.md:20-41,53-54,57-58",
+          "note": "agent file already states the single-attempt ceiling, no derived URLs or alternate locations, record-and-continue, search-snippet limits, and scoped negative findings; it has no bypass prohibition"
+        },
+        {
+          "class": "consumer",
+          "locator": "src/user/docket/config/fragments/evidence-rules.md:11-13,39-44,94-99",
+          "note": "covers faithful quotation, observation vs inference, the absence search-space rule, evidence references through handoff, and continuing work independent of the unknown"
+        },
+        {
+          "class": "consumer",
+          "locator": "src/user/docket/config/fragments/writing-for-humans.md:10-13",
+          "note": "direct evidence vs inference; scope every negative finding to the search performed"
+        },
+        {
+          "class": "consumer",
+          "locator": "src/user/docket/config/fragments/design-search.md:46-48",
+          "note": "Record the search: candidates weighed, the one chosen, and why it won; always in research's packet_includes"
+        }
+      ],
+      "upheldBy": 2,
+      "seated": 3,
+      "contested": true,
+      "disposition": "upheld",
+      "refutations": [
+        "The reason paragraph claims 'the source-text verification procedure (lines 42-58)' stays for its unique operative content, but the cut list's item 'Quote short passages faithfully. Preserve wording and punctuation; mark omissions or redactions. Formatting and whitespace normalization must not change meaning.' is research.md:54-55, verbatim inside that same 42-58 range the ruling says stays -- a citation that contradicts itself, checkable by opening research.md:42-58 against the cut list. On the substance: evidence-rules.md:12 ('Quote faithfully, mark redactions, and use confidence language the evidence supports') and writing-for-humans.md:15 ('preserve quotations, identifiers, commands, and required syntax exactly') are both always-loaded via packet_includes, but neither says 'mark omissions' (only 'redactions') and neither addresses the extraction-time failure mode line 54-55 targets: a tool or copy step collapsing whitespace or reformatting markup/table/PDF content before the quote is even taken, which could silently change meaning prior to the 'quote faithfully' step. Grep across executor-research.md and the three packet fragments (evidence-rules.md, writing-for-humans.md, design-search.md) for whitespace/normaliz/omission returns nothing, confirming the absence is scoped, not recall. The other nine cut items (research.md:36, 38-40, 60, 73-76, 88-90, 118, 127-129) check out as the ruling states, several already conceded by the defense in the prior pass (quotation was one of those concessions, but on a different ground -- this pass reopens it on the internal-inconsistency ground the prior pass did not raise). Proposed correction: keep the refactor verdict but narrow the cut list to drop the 'Preserve wording and punctuation' clause (adequately covered by er:12/wfh:15) while retaining 'mark omissions' and the whitespace/formatting-normalization sentence in the file, since those two specific clauses have no counterpart anywhere in the always-loaded archetype or fragments."
+      ],
+      "issue": "DOT-3075",
+      "pass": 2,
+      "judgedAt": "2026-09-27T04:42:05Z",
+      "key": "corpus-cut:cac91f3a34604c69:file:refactor",
       "subsumed": false
     },
     {
@@ -8917,7 +9089,7 @@
       "refutations": [
         "Ruling's premise 'No behavior evidence exists anywhere' and its characterization of the changelog hits as merely citing README 'as the historical source of a past rename pass ... and do not depend on these sentences' is contradicted by the changelogs' own text, which restates the Steps- and Vote-steps-section rules verbatim as the cause of an applied rename pass across all 11 workflow changelogs: disposition.md:53-59 ('a loop-back step's name must differ from its first-pass step name'), docs-only.md:76-80 (two distinct vote steps 'get two distinct new names, not the same one' -- the one-vote-gates-one-role/split rule), spec-project.md:120-126 (loop-back distinct-naming rule plus '<role>-vote'), spec-doc.md:137-142 ('each step now equals its sole executor's name'), and standard-change.md/investigation.md/security-change.md/small-change.md/trivial-change.md/ui-change.md/disposition.md (uniform '<gated-step>-vote' naming). Each entry names README.md as the cause and records that after/threshold-route-key/<step>.<kind> inputs were rewired to match -- that is order-of-operations behavior evidence under corpus-cut.js's own definition (an executor's naming/wiring would differ without this text; a fix round that cited it), which applies to file:readme units (corpus-cut.js:151: file:readme -> consumer, behavior). This covers cut sentences 1-3 (the two Steps-section sentences and the Vote-steps-section sentence). The two Artifact-kinds sentences (kebab-case singular/plural + '-report' reservation, and the generic-doc-emits-kind rule) remain uncited: grep for kebab|singular|plural|'reserved for'|'top-level verdict' across all changelogs returns nothing, and spec-doc.md (the document-producing workflow whose changelog is where a citation for the generic-doc rule would live) mentions 'doc' only in unrelated contexts (labels, doc-track tier, doc-acceptance comment) -- no Emit-section or emits-kind citation. spec-project.md:93-95 mentions issue.latest.doc but only as an analogy for a different fix, not a citation of the Artifact-kinds rule. So the evidence splits 3-for-2-against within the cut list: sentences 1-3 have behavior evidence the ruling missed and should stay; sentences 4-5 remain uncited and a narrower refactor cutting only those two would be defensible. Because the ruling's cut list as drafted removes operative rules with cited behavior evidence, the verdict as given should be reversed to stay, with the caveat that a corrected refactor limited to the Artifact-kinds sentences is the residual defensible position. Consumer sweep (my own angle) found nothing that resolves to the Steps/Vote-steps/Artifact-kinds text in .docket/bin, corpus-check.js, or crossref-check -- the judge accounted for this correctly; the refutation rests on behavior evidence, not consumer evidence."
       ],
-      "issue": null,
+      "issue": "DOT-3067",
       "pass": 1,
       "judgedAt": "2026-09-27T01:51:14Z",
       "key": "corpus-cut:bc733466872d3656:file:refactor",
@@ -9222,7 +9394,7 @@
       "refutations": [
         "The ruling's evidence array includes a class:\"engine\" entry (schemas.go V30) and credits it in the prose (\"This supports the retirement recorded in findings@13's description\") for unit kind \"file\". The task's unit/class table restricts \"file\" units to consumer, registry, run, install only; \"engine\" is reserved for section:<H2 heading> units, and the table states a class that does not apply is never held against a unit. That said, my own consumer-angle grep (beyond the ruling's narrower `payload = \"findings@11\"` search) found no functional consumer either: findings-cluster@5.json:4,20 still names findings@11 in its severity-field description as \"the order thresholds compare on,\" but every live workflows/*.toml reconcile step (security-change.toml:75-84, spec-doc.toml:120-129, spec-project.toml:71-80, standard-change.toml:69-78, ui-change.toml:69-78) now declares payload = \"findings@13\", not @11, and JSON-Schema description text is not resolved at validation time, so this is stale cross-reference prose, not a resolving consumer. With the engine citation removed, the ruling's remaining consumer/registry/run/install evidence still supports \"remove,\" so the verdict stands even though its stated justification improperly relied on an inapplicable class."
       ],
-      "issue": null,
+      "issue": "DOT-3068",
       "pass": 1,
       "judgedAt": "2026-09-27T01:51:14Z",
       "key": "corpus-cut:d5fef5b743be528e:file:remove",
@@ -9415,7 +9587,7 @@
       "contested": false,
       "disposition": "upheld",
       "refutations": [],
-      "issue": null,
+      "issue": "DOT-3069",
       "pass": 1,
       "judgedAt": "2026-09-27T01:51:14Z",
       "key": "corpus-cut:d0e033deac303dd0:file:refactor",

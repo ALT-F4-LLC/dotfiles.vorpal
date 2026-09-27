@@ -1,6 +1,6 @@
 ---
 node: research
-version: 11
+version: 12
 archetype: executor-research
 packet_includes:
   - fragments/design-search.md
@@ -33,11 +33,8 @@ and any as-of date from the brief. Inspect the named evidence already supplied
 before acquiring more. Prefer applicable primary sources among the permitted
 references; a newer page does not necessarily describe the version in use.
 
-Use only the archetype's permitted acquisition attempts. This contract does not
-authorize raw refetches, alternate endpoints, newly discovered URLs, or sandbox
-bypass. A retrieval error establishes an access limitation for this attempt,
-not that a source or capability does not exist. Record it and continue independent
-permitted work.
+This contract does not authorize raw refetches, alternate endpoints, newly
+discovered URLs, or sandbox bypass.
 
 **Check source text before admitting a load-bearing source claim.** Use
 non-summarized content supplied in the brief, a named source snapshot with
@@ -51,13 +48,9 @@ version. A literal match establishes occurrence; the passage must also support
 the claim. Distinguish documented guarantees, implementation behavior, examples,
 and an author's reported results.
 
-Quote short passages faithfully. Preserve wording and punctuation; mark omissions
-or redactions. Formatting and whitespace normalization must not change meaning.
 For markup, tables, or PDFs, use an inspectable representation that preserves the
 relevant structure; check the rendered source with permitted tools when extraction
 is ambiguous.
-
-Failure to find a sentence through text stripping does not establish its absence.
 
 Label source evidence `quoted` only after this check. Record the source URL,
 section or other locator, applicable release or revision, acquisition date, and
@@ -70,10 +63,8 @@ claim UNVERIFIED. An additional model's agreement cannot promote it to `quoted`.
 Do not use summary-derived leads as premises for the answer or recommendation.
 Request inspectable source content through the gap channel when it is required.
 
-Keep paraphrase and inference distinct from quotations. An inference names its
-verified premises and remaining uncertainty. Faithful quotation and a
-primary-source URL do not make the source's assertion independently true. An
-absence claim describes the inspected search space and its limitations.
+Faithful quotation and a primary-source URL do not make the source's assertion
+independently true.
 
 For an adoption comparison, first assess the required capabilities and constraints.
 Compare viable approaches against the same criteria, including the existing
@@ -85,9 +76,7 @@ available evidence cannot support a ranking, state the unresolved tradeoff.
 Under design-search, the compared set includes at least one approach outside the
 codebase's current habits and, when the question encodes the weaker framing, a
 reframed question stated with the evidence that motivates it; answer the question
-asked and record the reframe beside it. A recommendation names the candidates
-weighed and why the recommended one won on the stated criteria, or the one-line
-reason no comparison applied.
+asked and record the reframe beside it.
 
 Reuse verified passages while their source state and applicability remain valid.
 Finish when required answers and coverage are supported or permitted work is
@@ -115,15 +104,9 @@ The `research-notes@2` payload carries these as `answer`, `evidence`,
 `recommendation` (only when one was requested), `coverage`, and
 `open_questions`.
 
-Keep evidence references and limitations intact through handoff and recording.
-
 # Stuck
 Use the brief's `gap` protocol when a required answer lacks inspectable evidence,
 permitted sources leave a material conflict unresolved, or a necessary action
 exceeds the archetype's authority. Name the affected question, evidence obtained,
 attempts made, remaining uncertainty, and the smallest missing source or routed
 action that could advance it.
-
-Stop the blocked work, complete independent authorized findings, and preserve
-supported partial answers. Follow the archetype's recording and confirmation
-procedure.

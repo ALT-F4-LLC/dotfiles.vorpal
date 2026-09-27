@@ -83,38 +83,6 @@ or the planner labelled `small`. Same implement step and gate list
 as standard-change; one correctness judge instead of three; no
 synthesize, reconcile or drain step, because those exist to cluster
 several judges' findings and one judge's payload routes on its own
-severity field, exactly as docs-only's review does. Measured on one
-147-issue run on this machine, where 35 issues bound standard-change
-and 27 finished: a change of 20 lines or fewer spent a median 38
-seat-minutes over 7 executor seats plus 3 tribunal seats and took a
-median 22.7 hours from first claim to done, no faster than a
-21-100-line change (23.5 h) or one over 400 lines (17.2 h), because
-every chain crossed three dispatches (implement; the three judges and
-synthesize; reconcile, drain, verify and the tribunal), and the waits
-at those boundaries were about two thirds of the elapsed time.
-docs-only, which has this track's shape, finished its 21-100-line
-changes on the same run in a median 8.4 hours over two dispatches,
-with 3 executor seats and 24 seat-minutes. The correctness seat stays
-because across 187 reconciled rounds corpus-wide it was the sole
-finder of 11 blocker clusters against architecture's 3 and testing's
-3, and across the 225 distinct standard-change issues in every
-project's ledger the three-judge panel routed a blocker fix round on
-7 of 64 changes of 20 lines or fewer and 12 of 92 of 21-100 lines, so
-review at this size is not dead weight. What this track gives up: the
-testing and architecture seats' high findings (on that run, 11 of the
-18 high findings on changes up to 100 lines were the testing seat's,
-and every high at that size was drained to the backlog rather than
-fixed in the run) and the drain path itself; a high this judge reports
-stays in the review artifact for the operator at publish, as on
-docs-only. A blocker routes to the fixer directly rather than through a
-tribunal: a wrong single-seat blocker costs one fix round (median 16
-minutes on that run) where a tribunal seat costs about as much plus a
-further dispatch boundary. The loop cannot re-fire on settled ground:
-a judge's payload carries only unresolved prior findings and records
-closures in the body, the 15 re-review payloads on that run carried a
-blocker only where the defect was still open, and corpus-wide the
-single-executor threshold steps at ordinal 1 and later routed pass 23
-times and fix-loop once (ui-change's design-qa, which routes a
-blocker to the fixer directly, is the precedent for this edge). The
-label is applied before activation because a workflow's `[match]`
-reads issue kind and labels only, never the diff.
+severity field, exactly as docs-only's review does. The label is
+applied before activation because a workflow's `[match]` reads issue
+kind and labels only, never the diff.

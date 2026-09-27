@@ -1,6 +1,6 @@
 ---
 fragment: completion-gates
-version: 11
+version: 12
 ---
 # Completion gates
 
@@ -26,10 +26,8 @@ unavailable prerequisites, or failures requiring broader changes with their evid
 Do not record while a required gate remains unsatisfied unless the workflow explicitly
 provides an exception. A failure reproduced on the base does not itself waive a gate.
 
-The engine reruns the gates at record time and parks the step on failure; the
-conductor resolves the park under the run's standing rulings or escalates it
-to the operator. A step that never runs `self-hygiene` parks on its findings
-regardless of how many times its tests passed.
+A step that never runs `self-hygiene` parks on its findings regardless of
+how many times its tests passed.
 
 A refusal from the permission system, sandbox, or auto-mode classifier is a boundary
 event, whether it concerns a gate or another action. Recognize the refusal from the

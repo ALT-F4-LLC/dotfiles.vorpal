@@ -1,6 +1,6 @@
 ---
 fragment: re-review-rounds
-version: 10
+version: 11
 ---
 # Re-review rounds
 
@@ -56,13 +56,7 @@ When their established impact is below the Blocker rung, report them at Concern
 or below. Keep unresolved evidence gaps explicit rather than mechanically
 downgrading an unverified claim.
 
-Distance from an ideal fix is not itself a defect or a reason to escalate.
-
 Keep supported lower-severity findings visible at reconcile, in the run
-record, and at the operator gates before publishing. Under max aggregation on
-a track whose ladder starts an automatic fix loop, one top-severity finding
-can trigger another round: grade each finding on its supported severity alone,
-neither promoting an optional improvement to trigger another round nor
-suppressing or downgrading a supported top-severity finding to finish the
-loop. Accept a clean delta when warranted; finding counts are diagnostic,
-never a target that must decrease.
+record, and at the operator gates before publishing. Accept a clean delta
+when warranted; finding counts are diagnostic, never a target that must
+decrease.

@@ -1,6 +1,6 @@
 ---
 fragment: evidence-rules
-version: 7
+version: 8
 ---
 # Evidence rules
 
@@ -23,11 +23,6 @@ unresolved question warrants it.
   locate evidence; they do not replace reading it. After an edit that could
   affect the claim or its location, re-read the affected region and resolve the
   citation again. Render the artifact when the claim concerns its rendered form.
-- **An empty diff describes one view.** If emptiness conflicts with observed
-  changes, verify the repository, worktree, paths, and comparison baseline.
-  Inspect unstaged, staged, and relevant committed changes, and account for
-  untracked or ignored files where relevant. Do not infer where changes went
-  from an empty view alone.
 - **Read engine records with jq or plain file reads, one read per call.** A
   `docket step context STEP-N --json` bundle carries the step's inputs at
   `.data.context.inputs[]`; project it with `jq`, or write it to a scratch file
@@ -45,11 +40,6 @@ unresolved question warrants it.
 
 ## Interpret runs
 
-- **Attribute failures by cause.** Permission, sandbox, bind, socket, and network
-  errors are clues to investigate. Their presence does not exonerate the code;
-  their absence does not establish a code defect. Separate observed failure from
-  attribution to the change, and report blocked or inconclusive checks as such,
-  preserving independently supported results from the same run.
 - **A green result proves only what ran.** Match the evidence to the criterion:
   compilation, test execution, coverage, or runtime behavior. Before claiming
   tests passed, verify the relevant tests were discovered and executed, and
@@ -74,12 +64,6 @@ unresolved question warrants it.
   plausible alternative explanation, especially when the result confirms your
   expectations. Use a known-negative control when a probe's specificity is in
   question. Neither a hit nor silence validates the probe by itself.
-- **Separate severity from confidence.** Base severity on supported impact and
-  preconditions. A missing or failed relevant control leaves the dependent
-  conclusion unverified unless independent evidence establishes it. Report the
-  lead and verification gap explicitly, rather than mechanically lowering
-  severity or presenting an unsupported conclusion as a confirmed finding.
-  Reassess dependent conclusions when controls or other evidence change.
 - **Compare effective coverage before assigning origin.** When a check inherits
   another tool's exclusions, establish the files each stage actually considers
   from active configuration, applicable documentation, and relevant source where
@@ -93,6 +77,4 @@ unresolved question warrants it.
 Never invent content, commands, output, or citations from memory of similar work.
 Keep evidence references and verification gaps with delegated findings and
 compaction summaries, and retrieve the underlying evidence if those references
-no longer suffice. When verification is unavailable, state what was observed,
-what remains unknown, and what would resolve it. Continue work that does not
-depend on the unknown.
+no longer suffice. Continue work that does not depend on the unknown.

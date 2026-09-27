@@ -1,6 +1,6 @@
 ---
 fragment: diff-reconstruction
-version: 4
+version: 5
 ---
 # Reconstructing an empty diff
 
@@ -12,9 +12,7 @@ target repository and inspect its patch from your own worktree
 correspond to the described change, then use them as the review target.
 
 In your findings, state that the target was reconstructed from commits and
-list the full SHAs reviewed. If only some named commits can be reviewed,
-continue with the available portion and explicitly report the missing commits
-and incomplete coverage.
+list the full SHAs reviewed.
 
 Report a missing-input gap only when no usable diff is available and none
 of the named fix commits can be reviewed.

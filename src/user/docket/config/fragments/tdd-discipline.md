@@ -1,6 +1,6 @@
 ---
 fragment: tdd-discipline
-version: 6
+version: 7
 ---
 # Test discipline
 
@@ -18,8 +18,7 @@ violations and survive changes to incidental implementation details.
   refactor may start green; do not manufacture a failure in correct code.
 - **Complete the loop.** Implement the behavior, observe the test pass, then
   refactor with relevant tests green. Run required checks before claiming
-  completion. Follow the evidence rules for commands, evaluated state, discovery,
-  skips, cached results, and blocked checks; report verification gaps explicitly.
+  completion.
 - **Pin behavior at the seam.** Test through the unit's public interface. Test
   an internal concept separately when it has a coherent responsibility and
   meaningful contract, using its smallest stable interface. Do not expose

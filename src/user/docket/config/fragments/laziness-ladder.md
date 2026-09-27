@@ -1,6 +1,6 @@
 ---
 fragment: laziness-ladder
-version: 7
+version: 8
 ---
 # Laziness ladder
 
@@ -20,12 +20,10 @@ requirements for the chosen design. Keep the search proportional to the task:
    stylesheet, or database constraint when it provides the required behavior.
 5. **Does a dependency, installed or added, solve it?** Use its supported interface
    directly where practical. Add a dependency only when it removes meaningful
-   implementation or maintenance burden; do not hand-roll security primitives
-   to save lines.
+   implementation or maintenance burden.
 6. **Only then:** write the smallest clear local implementation. Add structure
    only when the requested behavior requires it or would otherwise be difficult
-   to understand; keep it within the affected code. Do not compress readable
-   code to meet a line count.
+   to understand; keep it within the affected code.
 
 No scaffolding for later, speculative configuration, or wrappers that merely
 rename an existing operation. Fix the responsible code instead of accumulating
@@ -41,9 +39,7 @@ review signal, never a quota.
 
 **Preserve the contract.** Keep required boundary validation, data-loss
 protection, security, accessibility, and explicitly requested behavior. Rely on
-established guarantees instead of duplicating enforcement. Where hardware
-behavior depends on drift or measurement error, preserve necessary tolerances
-and calibration; add controls only for an actual requirement.
+established guarantees instead of duplicating enforcement.
 
 **Lazy code without its check is unfinished.** Run the smallest relevant
 existing checks. Extend coverage when meaningful changed behavior or risk is

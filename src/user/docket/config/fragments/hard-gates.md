@@ -1,6 +1,6 @@
 ---
 fragment: hard-gates
-version: 6
+version: 7
 ---
 # Hard gates G1–G6
 
@@ -11,10 +11,8 @@ execution evidence, and check the counter-examples before firing. Design
 preferences belong under the dimension rubric. Missing evidence leaves the
 dependent claim UNVERIFIED, not a defect or a pass.
 
-Apply gates within the declared review scope. Attribute a finding to the change
-only when the change introduces, exposes, or worsens it, and identify
-pre-existing issues separately. State the reviewed revision or working state
-and relevant verification gaps.
+Apply gates within the declared review scope. State the reviewed revision or
+working state and relevant verification gaps.
 
 **G1: Discarded failure or unchecked panic.** An error on a path involving
 untrusted input, network, or persistence is discarded and execution proceeds as

@@ -1,6 +1,6 @@
 ---
 fragment: test-code-boundaries
-version: 8
+version: 9
 ---
 # When the change under review is test code
 
@@ -8,8 +8,9 @@ A test-heavy or test-only diff receives the same review from every seated
 reviewer. Each seat completes its review under its own charter and returns
 its normal result, including no findings when appropriate. No seat drops its
 dimension or defers it wholesale to judge-testing because production code is
-absent. Code-review seats examine test source; design-qa follows the built-surface
-rule below. The same boundaries apply to test code in a mixed diff.
+absent. Code-review seats examine test source; design-qa follows the
+built-surface rule in its own contract. The same boundaries apply to test code
+in a mixed diff.
 
 Test-only status is never itself a reason to emit a `gap`. A required input may
 still be missing even when the diff is readable. Identify the specific missing
@@ -51,14 +52,3 @@ defect.
 If your only supported claim is "this branch is untested", "coverage here is
 thin", "this needs a negative control", or "the suite stays green without the
 fix", it belongs to judge-testing. Do not file it under another charter.
-
-## design-qa
-
-Your implementation evidence is the built surface, never the diff or test
-source. Walk the specification's workflows against the real output for the
-reviewed state, within your assigned scope. A test-only change does not change
-that evidence boundary or exempt the surface from review.
-
-If a required specification, workflow, or built surface is unavailable, identify
-the affected judgment through your normal `gap` route and complete the checks
-that remain possible. Test source cannot substitute for the missing surface.

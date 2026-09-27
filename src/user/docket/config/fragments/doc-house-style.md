@@ -1,6 +1,6 @@
 ---
 fragment: doc-house-style
-version: 7
+version: 8
 ---
 # Doc house style
 
@@ -61,19 +61,9 @@ not inapplicability.
 
 ## Fidelity and length
 
-Match the document's weight to the risk of the decision. Keep decision records
-brief, often about a page. Retain required headings even for short answers.
-Diagrams explain relevant boundaries, dependencies, or flows; their labels and
-behavior agree with the prose.
-
 Resolve questions that could change the decision, acceptance criteria, or safe
 execution before treating that decision as settled. If an answer is
 unavailable, keep the affected decision provisional and continue unaffected
 work. Deliberate deferrals identify the next step, responsible person or role,
 and deadline or trigger. Mark missing assignments as unassigned. Do not invent
 an answer, assignment, or agreement to make the document appear finished.
-
-Use accepted documents as the baseline. State explicitly when a proposal would
-amend or supersede an earlier decision, and preserve its history.
-
-Put any required executive summary where the contract's Emit section calls for it.

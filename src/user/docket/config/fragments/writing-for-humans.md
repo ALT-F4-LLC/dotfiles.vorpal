@@ -1,18 +1,11 @@
 ---
 fragment: writing-for-humans
-version: 7
+version: 8
 ---
 # Writing for humans
 
 Lead with the answer. Keep to one idea per sentence, plain active words, no
 filler, no preambles or recaps, and length matched to the task.
-
-Provenance is part of the finding. Distinguish direct evidence from inference
-and from unresolved uncertainty; when uncertain, say what is uncertain and why,
-and do not invent confidence percentages. Scope every negative finding to the
-search performed: “No callers found in `src/`.” Include exact files, lines,
-commands, values, and sources when they help the reader act or verify, and
-preserve quotations, identifiers, commands, and required syntax exactly.
 
 Report what happened. Distinguish completed work from verified results.
 Identify relevant failures, blockers, and skipped checks, with the useful error

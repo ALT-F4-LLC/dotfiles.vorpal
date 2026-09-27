@@ -1,6 +1,6 @@
 ---
 fragment: hig-principles
-version: 4
+version: 5
 ---
 # Design quality, principles, and accessibility floors
 
@@ -47,36 +47,6 @@ for safety, privacy, and informed choice constrain every option. Among options
 that meet them, prioritize the person's task and control, and weigh
 consistency, clarity, craft, and emotional fit against that context. Record
 material tradeoffs and their user consequences briefly.
-
-## Make design decisions before expanding implementation
-
-**Establish the direction.** For a new surface or substantial redesign, briefly
-state the audience, primary task, first useful outcome, and intended
-character. Inspect the existing product, design system, content, and
-available references. Translate relevant references into specific choices
-about hierarchy, layout, typography, density, color, imagery, and motion, and
-describe how those choices fit this product; adjectives such as "modern" or
-"premium" are insufficient.
-
-**Explore uncertainty proportionally.** When a consequential design choice is
-unsettled, compare plausible alternatives with small sketches or prototypes
-before spreading the pattern. Choose based on the task, content, and audience,
-and follow a settled direction for local changes. Make routine choices
-yourself; keep assumptions visible when they materially affect the result.
-
-**Compose the whole experience.** Establish the information hierarchy and path
-from entry to useful completion before assembling components. Use scale,
-grouping, spacing, and alignment to express importance and relationships, and
-make the next useful action recognizable. Reuse the established design
-system, and extend it coherently when the task requires it.
-
-**Resolve a representative flow.** Use real wording and representative
-content, including long labels, realistic data density, and sparse results.
-Mark synthetic examples as such; do not invent product capabilities or
-endorsements. Work through the primary action, its result, and consequential
-loading, empty, error, degraded, and overloaded states before expanding the
-pattern. Preserve input and provide supported recovery when an operation
-fails.
 
 ## House floors: the checkable minimums
 
@@ -130,31 +100,3 @@ terminal experiences with their intended terminal and assistive technology.
 APIs: coherent resources, predictable errors, and pagination where needed.
 Config: useful defaults and validation errors identifying the offending file
 and key, plus line and column when available.
-
-## Verify the delivered experience
-
-**Measure contrast and inspect the render.** Use WCAG's specified contrast
-method with the effective foreground and background colors, accounting for
-opacity and backgrounds; do not substitute antialiased screenshot pixels for
-text-contrast measurement. Also inspect the result at actual delivery size
-and expected viewport, theme, and compression. Preserve essential meaning
-through accessible text alternatives and non-color cues when a render
-degrades.
-
-**Evaluate what was built.** For visual changes, inspect actual rendered
-views and operate the affected flow. Check the whole composition, reading
-order, primary action, content extremes, and consequential states against
-the chosen direction. Select automated and manual accessibility checks
-according to the affected behavior and risk, including keyboard,
-assistive-technology, resize, and reflow checks where relevant. Fix observed
-defects and inspect the affected result again. A build, screenshot, or
-automated scan alone does not establish usability or accessibility.
-
-**Make findings and completion claims checkable.** State the surface and
-state, the observed problem, and its effect on the person. Name the
-applicable principle when one fits; a missing principle never suppresses a
-finding, and a principle name alone never substantiates one. Distinguish
-observed defects, design judgments, and hypotheses requiring user evidence.
-Report what was actually inspected and any remaining gaps. If rendering or
-interaction was unavailable, identify what remains unverified. Do not claim
-user validation or improved adoption without supporting evidence.

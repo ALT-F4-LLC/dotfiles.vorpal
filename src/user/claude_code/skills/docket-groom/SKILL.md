@@ -63,7 +63,10 @@ stale window and the optional word `engine`, in either order, and honor the
 operator's explicit constraints in this session,
 but treat earlier issue reads or backlog discussion as stale, not current
 evidence. Maintain one ledger through approval and execution so the report
-covers the whole pass.
+covers the whole pass. Take the pass id once, at the survey, as the UTC
+start time from `date -u +%Y%m%dT%H%M%SZ`, and record it in the ledger.
+Every idempotency key this pass mints carries it, so no key matches one an
+earlier pass minted.
 
 One pass includes the decision rounds and affected-issue rechecks needed to
 finish grooming the surveyed backlog; it does not end at the first operator
@@ -749,14 +752,16 @@ Two or more retained members are required; one issue is not an epic. The
 
 ```bash
 docket issue create -T epic -l blocked -t "<title>" -d "<description>" \
-  --idempotency-key groom-<project>-<proposal number> --json=v2
+  --idempotency-key groom-<project>-<pass id>-<proposal number> --json=v2
 ```
 
 Then one `docket issue edit <member> --parent <EPIC> --if-version <n>` per member, then the
 defense comment on each member. `<EPIC>` is a named placeholder resolved
 from the create's JSON output. The idempotency key is derived from the
-project and the proposal's stable number, so a retry after an uncertain
-outcome returns the same epic instead of a second one. Use `-d -` with
+project, the pass id, and the proposal's stable number, so a retry after an
+uncertain outcome in this pass returns the same epic instead of a second
+one. Proposal numbers restart every pass, so a key without the pass id
+replays whatever an earlier pass created under the same number. Use `-d -` with
 stdin when the description spans lines. Members that are run-included or
 claimed need their protection named in the proposal. The epic's membership
 is the approval; do not add members the proposal did not list.
@@ -778,7 +783,7 @@ protected, so its proposal is the finding and the comment only. The
 ```bash
 docket issue create -T <kind> -p <priority> --parent <epic-or-none> \
   --size <tier> -l <carried-label> -f <file> --scope '<glob>' -t "<title>" -d - \
-  --idempotency-key groom-<project>-<proposal number>-<piece number> --json=v2 <<'DESC'
+  --idempotency-key groom-<project>-<pass id>-<proposal number>-<piece number> --json=v2 <<'DESC'
 <goal and the carried criteria, verbatim>
 DESC
 ```
@@ -789,7 +794,7 @@ Then the `depends_on` links, then the rescope of the original in one
 `--scope` replace the stored lists, so every kept path is named), then
 the comment on the original. Piece ids are named placeholders resolved
 from each create's JSON output. The idempotency key adds the piece number
-to the epic's project-plus-proposal-number scheme, for the same reason.
+to the epic's project, pass id, and proposal number, for the same reason.
 Routing and size labels are re-judged per piece after the split lands,
 under §2b, never copied from the original.
 
@@ -859,7 +864,11 @@ For each still-valid approved proposal, run exactly its `Commands:` in
 order. Preservation and comments must succeed before a closure. If an
 operation fails or its outcome is uncertain, check current state before
 retrying and stop the dependent sequence until the outcome is known.
-Report partial application accurately; do not blindly repeat successful
+Before a later command consumes an id a create returned, confirm the create
+made a new issue: its `created_at` is not earlier than the pass id and its
+title is the one proposed. Anything else is a replay of an existing issue.
+Stop that proposal's sequence, apply nothing to the returned id, and report
+the key and the issue it returned. Report partial application accurately; do not blindly repeat successful
 steps. Execute nothing for declined or pending proposals. Do not add a
 closure that was not proposed.
 

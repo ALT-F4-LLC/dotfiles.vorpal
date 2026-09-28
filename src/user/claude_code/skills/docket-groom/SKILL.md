@@ -16,7 +16,7 @@ description: >-
   labels need operator approval. One survey per invocation; no
   implementation, no watch. Distinct from tend, which works route-tend
   issues.
-argument-hint: "[stale window, e.g. 14d] [engine]"
+argument-hint: "[stale window, e.g. 14d] [engine] [kinds, e.g. bugs] [statuses, e.g. backlog]"
 model: fable
 ---
 
@@ -58,9 +58,24 @@ the operator anything. Do not delegate the survey, the approval gate, or
 any edit to a subagent, and never rely on one to ask the operator, send a
 live message, or arrange a later handoff.
 
-Take a fresh survey for this invocation. Use `$ARGUMENTS` for the optional
-stale window and the optional word `engine`, in either order, and honor the
-operator's explicit constraints in this session,
+Take a fresh survey for this invocation. Read `$ARGUMENTS` as words in any
+order, each one of:
+
+- **Stale window:** a duration such as `14d`.
+- **`engine`:** puts the engine project in the judged scope (§1).
+- **Kind filter:** an issue kind, singular or plural: `bug`, `feature`,
+  `task`, or `chore`.
+- **Status filter:** an open status: `backlog`, `todo`, `in-progress`, or
+  `review`.
+
+Connectives such as `in`, `and`, `only`, and `the` carry no meaning. A kind
+or status filter narrows the judged issues to the rows matching every named
+kind and status (several kinds or several statuses union within their
+group). So `bugs in backlog` judges open bugs in backlog status, and
+`bugs tasks` judges open bugs and tasks in any open status. Without a
+filter every open issue is judged. Before surveying, ask the operator
+through `AskUserQuestion` what any other word means; do not guess a filter
+from it. Honor the operator's explicit constraints in this session,
 but treat earlier issue reads or backlog discussion as stale, not current
 evidence. Maintain one ledger through approval and execution so the report
 covers the whole pass. Take the pass id once, at the survey, as the UTC
@@ -70,12 +85,12 @@ earlier pass minted.
 
 One pass includes the decision rounds and affected-issue rechecks needed to
 finish grooming the surveyed backlog; it does not end at the first operator
-question. It takes no parameter beyond the optional stale window and
-`engine`, does not repeat the survey or watch for new work, schedules no
-wakeups, and never
-touches the code the issues describe. If a gap cannot be resolved within
-the pass's authority or available evidence, report it as incomplete rather
-than inventing a resolution.
+question. It takes no parameter beyond the stale window, `engine`, and
+the kind and status filters, does not repeat the survey or watch for new
+work, schedules no wakeups, and never touches the code the issues
+describe. If a gap cannot be resolved within the pass's authority or
+available evidence, report it as incomplete rather than inventing a
+resolution.
 
 Rules:
 
@@ -168,6 +183,13 @@ the pass: read files, resolve workflows, inspect active runs and their
 rosters, and execute issue commands in that owning context. Review an
 issue only once even if it appears through several queries or references.
 
+The survey itself is never filtered. A kind or status filter applies after
+it and narrows the judged scope to the admitted rows of the judged
+projects. The other surveyed rows are context. They can serve as a
+duplicate's canonical, an epic's member, or a dependency. They are never
+judged, edited, or proposed for any change in this pass. A proposal that
+would need one of them is left out and reported.
+
 Epics arrive through the same survey: a row whose `kind` is `epic` is an
 epic, and every row's `parent_id` names its epic when it has one. Do not
 run a separate epic query. Record each judged project's open epics and
@@ -189,9 +211,12 @@ Launch it once, by `scriptPath` at its installed path under
 `~/.claude/workflows`, with the survey as its input: `checkoutRoot` (this
 dotfiles checkout), `projects` (the judged projects only: name, prefix,
 root, and whether it is the engine project, from `docket project list
---json` and §1's resolution), `issues` (every surveyed row of those
-projects with its project, id, kind, parent, title, labels, assignee,
-status, stored size, and `runIncluded` as §1 established them),
+--json` and §1's resolution), `issues` (every surveyed non-epic row of
+those projects that the kind and status filters admit, plus every open
+epic row whatever the filter, so the clustering analyst can match members
+to existing epics; each row with its project, id, kind, parent, title,
+labels, assignee, status, stored size, and `runIncluded` as §1 established
+them),
 `staleWindowDays`, `todayIso` (today's date, since a script cannot read
 the clock), and `engineRoot` (the engine checkout §1 resolved, or null,
 in which case every engine-need check returns unverified; pass it whether
@@ -907,7 +932,9 @@ applied; distinguish attempted operations from confirmed changes.
 
 One summary in the main session, plain language: how many issues surveyed,
 how many received a value review, the stale window used, and counts by
-value decision, with survey and review counts for each project. Explicitly
+value decision, with survey and review counts for each project. When a
+kind or status filter applied, name it and give the number of surveyed
+issues it left unjudged, by kind and status. Explicitly
 report engine coverage: when the engine project was judged, which engine
 needs remain, are resolved or superseded, or could not be verified; when
 its survey was count-only, its open, unrouted, and unsized non-epic counts

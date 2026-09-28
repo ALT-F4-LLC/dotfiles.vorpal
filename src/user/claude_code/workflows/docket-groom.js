@@ -38,8 +38,10 @@ export const meta = {
 //                    the Docket engine project. An unreadable root is reported
 //                    by that project's agents, not guessed around.
 //   issues         — [{project, id, kind, parent_id, title, labels, assignee,
-//                    status, size, runIncluded}] — every surveyed row of the
-//                    judged projects, as §1 established them. runIncluded is
+//                    status, size, runIncluded}] — every surveyed non-epic
+//                    row of the judged projects that the skill's kind and
+//                    status filters admit, plus every open epic row, as §1
+//                    established them. runIncluded is
 //                    true when the id is on any planning, active, or paused
 //                    run's roster; the script never re-derives it.
 //   staleWindowDays — the stale window §2b applies (30 unless the operator

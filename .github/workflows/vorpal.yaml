@@ -40,6 +40,8 @@ jobs:
 
       - run: bash tests/docket-commit-guard-hook.test.sh
 
+      - run: bash tests/docket-reconcile-plan.test.sh
+
       - run: bash tests/docket-run-guard-hook.test.sh
       - run: bash tests/docket-run-lane-units.test.sh
 

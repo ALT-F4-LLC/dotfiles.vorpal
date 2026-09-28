@@ -6,7 +6,7 @@ description: >-
   configuration and trust proposals, and activates one operator-approved smoke
   issue without dispatching it. For lasting project specs, plan a spec-project
   run through docket-plan; for an established binding, use docket-retro to
-  evolve it and docket-reconcile to sync its workflow registry.
+  evolve it and docket-reconcile to sync its workflow and schema registries.
 model: fable
 ---
 

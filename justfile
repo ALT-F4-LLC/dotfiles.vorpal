@@ -22,6 +22,13 @@ activate force="":
         fi
     fi
     "$(vorpal build --path 'user')/bin/vorpal-activate"
+    # Installing the corpus moves no registry. Report every project's drift
+    # now, so it is seen at the moment it appears; /docket-reconcile fixes it.
+    if command -v docket >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
+        echo "==> docket registry drift (report only; /docket-reconcile applies it)"
+        python3 src/user/claude_code/skills/docket-reconcile/scripts/reconcile_plan.py --all-projects --summary \
+            || echo "warning: registry drift report failed; run /docket-reconcile" >&2
+    fi
 
 build:
     cargo build --locked --offline --all-targets

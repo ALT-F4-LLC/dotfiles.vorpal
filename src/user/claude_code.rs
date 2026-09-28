@@ -482,7 +482,7 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
             serde_json::json!({ "effortLevel": "medium" }), // default
         )
         .with_model_setting(
-            "claude-sonnet-5",
+            "claude-sonnet-5-5",
             serde_json::json!({ "effortLevel": "high" }), // default
         )
         .with_output_style("Concise")
@@ -513,7 +513,7 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         .with_env("ANTHROPIC_DEFAULT_FABLE_MODEL", "claude-fable-5-1")
         .with_env("ANTHROPIC_DEFAULT_HAIKU_MODEL", "claude-haiku-4-5")
         .with_env("ANTHROPIC_DEFAULT_OPUS_MODEL", "claude-opus-5-5")
-        .with_env("ANTHROPIC_DEFAULT_SONNET_MODEL", "claude-sonnet-5")
+        .with_env("ANTHROPIC_DEFAULT_SONNET_MODEL", "claude-sonnet-5-5")
         .with_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1")
         .with_env("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", "0") // REASON: Must be 0 for 'with_permission_default_mode('auto')'
         .with_env("GIT_CONFIG_COUNT", &GIT_CONFIG.len().to_string());

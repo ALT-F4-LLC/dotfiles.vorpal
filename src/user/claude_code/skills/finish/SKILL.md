@@ -175,7 +175,7 @@ says what happened:
   unanswered.
 - **Next steps:** always the last row. Every action the operator or a
   successor session takes after this one ends, whatever applies: groom the
-  filed issues, resume the paused run, push the new commits, clean up an
+  filed issues, resume the paused run, publish the new commits, clean up an
   entry whose ownership was ambiguous, decide a carried-over question. One
   line each, specific enough to act on cold; do not repeat issue bodies.
   When nothing follows, write `none`. A report that ends without this row

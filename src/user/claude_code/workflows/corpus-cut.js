@@ -627,7 +627,9 @@ async function recordPass(merged) {
     return { ledger, issues, unfiled: unfiled.map((v) => ({ path: v.path, unit: v.unit, verdict: v.verdict, key: v.key })) }
 }
 
-if (toJudge.length === 0) {
+// With nothing to judge, the pass records what carried forward and skips the
+// Evidence and trial phases.
+async function emptyPass() {
     const rest = shouldRest(plan)
     const recorded = rest ? { ledger: null, issues: null, unfiled: [] } : await recordPass(mergeVerdicts(plan.carried, []))
     return {
@@ -847,141 +849,145 @@ function slug(text) {
     return String(text).replace(/[^A-Za-z0-9._-]+/g, '-')
 }
 
-phase('Evidence')
-log(`corpus-cut: gathering evidence with ${evidenceAgents} agent(s): census, registry, ${projects.length} run store(s), ${transcriptDirs.length} transcript digest(s), friction, install drift`)
-const readOpts = { phase: 'Evidence', agentType: 'executor-read' }
-// Every judge reads the merged bundle, so the barrier is genuine here.
-const [census, registry, friction, install, ...rest] = await parallel([
-    () => agent(censusPrompt(), { ...readOpts, label: 'census', schema: CENSUS_SCHEMA, ...AGENT_CONFIG.census }),
-    () => agent(registryPrompt(), { ...readOpts, label: 'registry', schema: REGISTRY_SCHEMA, ...AGENT_CONFIG.registry }),
-    () => (input.frictionDir
-        ? agent(frictionPrompt(), { ...readOpts, label: 'friction', schema: FRICTION_SCHEMA, ...AGENT_CONFIG.friction })
-        : Promise.resolve(null)),
-    () => (input.installedConfigDir || input.installedClaudeDir
-        ? agent(installPrompt(), { ...readOpts, label: 'install-drift', schema: INSTALL_SCHEMA, ...AGENT_CONFIG.install })
-        : Promise.resolve(null)),
-    ...projects.map((project) => () =>
-        agent(runsPrompt(project, `${scratchDir}/runs/${slug(project.name)}`), { ...readOpts, label: `runs:${project.name}`, schema: RUNS_SCHEMA, ...AGENT_CONFIG.runs })),
-    ...transcriptDirs.map((dir) => () =>
-        agent(digestPrompt(dir, `${scratchDir}/digest/${slug(dir.split('/').pop())}`), { ...readOpts, label: `digest:${dir.split('/').pop()}`, schema: DIGEST_SCHEMA, ...AGENT_CONFIG.digest })),
-])
-const runsRaw = rest.slice(0, projects.length)
-const digestsRaw = rest.slice(projects.length)
+async function trialPass() {
+    phase('Evidence')
+    log(`corpus-cut: gathering evidence with ${evidenceAgents} agent(s): census, registry, ${projects.length} run store(s), ${transcriptDirs.length} transcript digest(s), friction, install drift`)
+    const readOpts = { phase: 'Evidence', agentType: 'executor-read' }
+    // Every judge reads the merged bundle, so the barrier is genuine here.
+    const [census, registry, friction, install, ...rest] = await parallel([
+        () => agent(censusPrompt(), { ...readOpts, label: 'census', schema: CENSUS_SCHEMA, ...AGENT_CONFIG.census }),
+        () => agent(registryPrompt(), { ...readOpts, label: 'registry', schema: REGISTRY_SCHEMA, ...AGENT_CONFIG.registry }),
+        () => (input.frictionDir
+            ? agent(frictionPrompt(), { ...readOpts, label: 'friction', schema: FRICTION_SCHEMA, ...AGENT_CONFIG.friction })
+            : Promise.resolve(null)),
+        () => (input.installedConfigDir || input.installedClaudeDir
+            ? agent(installPrompt(), { ...readOpts, label: 'install-drift', schema: INSTALL_SCHEMA, ...AGENT_CONFIG.install })
+            : Promise.resolve(null)),
+        ...projects.map((project) => () =>
+            agent(runsPrompt(project, `${scratchDir}/runs/${slug(project.name)}`), { ...readOpts, label: `runs:${project.name}`, schema: RUNS_SCHEMA, ...AGENT_CONFIG.runs })),
+        ...transcriptDirs.map((dir) => () =>
+            agent(digestPrompt(dir, `${scratchDir}/digest/${slug(dir.split('/').pop())}`), { ...readOpts, label: `digest:${dir.split('/').pop()}`, schema: DIGEST_SCHEMA, ...AGENT_CONFIG.digest })),
+    ])
+    const runsRaw = rest.slice(0, projects.length)
+    const digestsRaw = rest.slice(projects.length)
 
-if (!census) uncovered.push({ what: 'static consumer census', why: 'agent returned nothing' })
-if (!registry) uncovered.push({ what: 'registry read', why: 'agent returned nothing' })
-if (input.frictionDir && !friction) uncovered.push({ what: 'friction ledger', why: 'agent returned nothing' })
-if (!input.frictionDir) uncovered.push({ what: 'friction ledger', why: 'no friction directory was given' })
-if ((input.installedConfigDir || input.installedClaudeDir) && !install) uncovered.push({ what: 'install drift', why: 'agent returned nothing' })
-if (!input.installedConfigDir && !input.installedClaudeDir) uncovered.push({ what: 'install drift', why: 'no installed tree was given' })
-if (!engineRoot) uncovered.push({ what: 'engine-source evidence', why: 'no engine checkout was given; the engine class cannot be established this pass' })
-// Analysts sit at the same index as their project or directory; the name an
-// analyst echoes back is not trusted to match the listing's spelling.
-const runs = runsRaw.map((r, i) => {
-    if (!r) { uncovered.push({ what: `run store of ${projects[i].name}`, why: 'agent returned nothing' }); return null }
-    if (r.checkoutOk === false) uncovered.push({ what: `run store of ${projects[i].name}`, why: r.notes || 'checkout unavailable' })
-    return { ...r, project: projects[i].name }
-}).filter(Boolean)
-const digests = digestsRaw.map((g, i) => {
-    if (!g) { uncovered.push({ what: `transcript digest of ${transcriptDirs[i]}`, why: 'agent returned nothing' }); return null }
-    return { ...g, dir: transcriptDirs[i] }
-}).filter(Boolean)
+    if (!census) uncovered.push({ what: 'static consumer census', why: 'agent returned nothing' })
+    if (!registry) uncovered.push({ what: 'registry read', why: 'agent returned nothing' })
+    if (input.frictionDir && !friction) uncovered.push({ what: 'friction ledger', why: 'agent returned nothing' })
+    if (!input.frictionDir) uncovered.push({ what: 'friction ledger', why: 'no friction directory was given' })
+    if ((input.installedConfigDir || input.installedClaudeDir) && !install) uncovered.push({ what: 'install drift', why: 'agent returned nothing' })
+    if (!input.installedConfigDir && !input.installedClaudeDir) uncovered.push({ what: 'install drift', why: 'no installed tree was given' })
+    if (!engineRoot) uncovered.push({ what: 'engine-source evidence', why: 'no engine checkout was given; the engine class cannot be established this pass' })
+    // Analysts sit at the same index as their project or directory; the name an
+    // analyst echoes back is not trusted to match the listing's spelling.
+    const runs = runsRaw.map((r, i) => {
+        if (!r) { uncovered.push({ what: `run store of ${projects[i].name}`, why: 'agent returned nothing' }); return null }
+        if (r.checkoutOk === false) uncovered.push({ what: `run store of ${projects[i].name}`, why: r.notes || 'checkout unavailable' })
+        return { ...r, project: projects[i].name }
+    }).filter(Boolean)
+    const digests = digestsRaw.map((g, i) => {
+        if (!g) { uncovered.push({ what: `transcript digest of ${transcriptDirs[i]}`, why: 'agent returned nothing' }); return null }
+        return { ...g, dir: transcriptDirs[i] }
+    }).filter(Boolean)
 
-const evidence = {
-    census,
-    registry,
-    runs,
-    digests,
-    friction,
-    install,
-    coverage: {
-        census: Boolean(census),
-        registry: Boolean(registry),
-        runStores: `${runs.length}/${projects.length}`,
-        digests: `${digests.length}/${transcriptDirs.length}`,
-        logsScanned: digests.reduce((n, g) => n + (g.logsScanned || 0), 0),
-        friction: Boolean(friction),
-        install: Boolean(install),
-        engine: Boolean(engineRoot),
-    },
-}
-log(`corpus-cut: evidence in; ${evidence.coverage.logsScanned} agent log(s) digested across ${digests.length} director(ies), ${runs.length} run store(s) read`)
-
-// ---- Trial -----------------------------------------------------------------
-
-phase('Prosecute')
-log(`corpus-cut: trying ${toJudge.length} definition(s), ${AGENTS_PER_DEFINITION} agents each`)
-const tried = await pipeline(
-    toJudge,
-    (d) => agent(prosecutePrompt(d, evidence), { phase: 'Prosecute', agentType: 'executor-read', label: `prosecute:${d.path}`, schema: PROSECUTE_SCHEMA, ...AGENT_CONFIG.prosecute }),
-    async (prosecution, d) => {
-        if (!prosecution) return { d, status: 'dropped', why: 'the prosecutor returned nothing' }
-        const defense = await agent(defendPrompt(d, prosecution.charges, evidence), { phase: 'Defend', agentType: 'executor-read', label: `defend:${d.path}`, schema: DEFEND_SCHEMA, ...AGENT_CONFIG.defend })
-        if (!defense) return { d, status: 'dropped', why: 'the defender returned nothing' }
-        return { d, status: 'argued', prosecution, defense }
-    },
-    async (argued, d) => {
-        if (!argued || argued.status !== 'argued') return argued
-        const judged = await agent(judgePrompt(d, argued.prosecution.charges, argued.defense.answers, evidence), { phase: 'Judge', agentType: 'executor-read', label: `judge:${d.path}`, schema: JUDGE_SCHEMA, ...AGENT_CONFIG.judge })
-        if (!judged) return { d, status: 'dropped', why: 'the judge returned nothing' }
-        const rulings = (judged.rulings || []).filter((r) => VERDICTS.includes(r.verdict))
-        if (!rulings.length) return { d, status: 'dropped', why: 'the judge returned no ruling with a known verdict' }
-        return { ...argued, status: 'ruled', rulings }
-    },
-    async (ruled, d) => {
-        if (!ruled || ruled.status !== 'ruled') return ruled
-        const returns = await parallel(REFUTER_FRAMINGS.map((framing) => () =>
-            agent(refutePrompt(d, ruled.rulings, evidence, framing), { phase: 'Refute', agentType: 'executor-read', label: `refute:${d.path}:${framing.key}`, schema: REFUTE_SCHEMA, ...AGENT_CONFIG.refute })))
-        const verdicts = ruled.rulings.map((r) => {
-            const votes = returns.map((ret) => (ret && Array.isArray(ret.votes) ? ret.votes.find((v) => v.unit === r.unit) || null : null))
-            const settled = settleVerdict(r.verdict, votes)
-            return {
-                path: d.path,
-                surface: d.surface,
-                hash: d.hash,
-                unit: r.kind === 'file' ? 'file' : r.unit,
-                kind: r.kind,
-                verdict: settled.verdict,
-                judged: r.verdict,
-                reason: r.reason,
-                cut: settled.verdict === 'refactor' ? r.cut || [] : [],
-                evidence: r.evidence || [],
-                upheldBy: settled.upheldBy,
-                seated: settled.seated,
-                contested: settled.contested,
-                disposition: settled.disposition,
-                refutations: settled.reasons,
-                issue: null,
-                pass,
-                judgedAt: input.nowIso,
-            }
-        })
-        return { d, status: 'settled', verdicts }
+    const evidence = {
+        census,
+        registry,
+        runs,
+        digests,
+        friction,
+        install,
+        coverage: {
+            census: Boolean(census),
+            registry: Boolean(registry),
+            runStores: `${runs.length}/${projects.length}`,
+            digests: `${digests.length}/${transcriptDirs.length}`,
+            logsScanned: digests.reduce((n, g) => n + (g.logsScanned || 0), 0),
+            friction: Boolean(friction),
+            install: Boolean(install),
+            engine: Boolean(engineRoot),
+        },
     }
-)
+    log(`corpus-cut: evidence in; ${evidence.coverage.logsScanned} agent log(s) digested across ${digests.length} director(ies), ${runs.length} run store(s) read`)
 
-const outcomes = tried.filter(Boolean)
-const settled = outcomes.filter((o) => o.status === 'settled')
-for (const o of outcomes.filter((x) => x.status === 'dropped')) uncovered.push({ what: `judging ${o.d.path}`, why: o.why })
-for (const d of toJudge.filter((x) => !outcomes.some((o) => o.d.path === x.path))) uncovered.push({ what: `judging ${d.path}`, why: 'a stage threw; see the run journal' })
+    // ---- Trial -----------------------------------------------------------------
 
-const verdicts = settled.flatMap((o) => o.verdicts).map((v) => ({ ...v, key: v.verdict === 'stay' ? null : idempotencyKey(v) }))
-const count = (v) => verdicts.filter((x) => x.verdict === v).length
-const overridden = verdicts.filter((v) => v.disposition === 'overridden').length
+    phase('Prosecute')
+    log(`corpus-cut: trying ${toJudge.length} definition(s), ${AGENTS_PER_DEFINITION} agents each`)
+    const tried = await pipeline(
+        toJudge,
+        (d) => agent(prosecutePrompt(d, evidence), { phase: 'Prosecute', agentType: 'executor-read', label: `prosecute:${d.path}`, schema: PROSECUTE_SCHEMA, ...AGENT_CONFIG.prosecute }),
+        async (prosecution, d) => {
+            if (!prosecution) return { d, status: 'dropped', why: 'the prosecutor returned nothing' }
+            const defense = await agent(defendPrompt(d, prosecution.charges, evidence), { phase: 'Defend', agentType: 'executor-read', label: `defend:${d.path}`, schema: DEFEND_SCHEMA, ...AGENT_CONFIG.defend })
+            if (!defense) return { d, status: 'dropped', why: 'the defender returned nothing' }
+            return { d, status: 'argued', prosecution, defense }
+        },
+        async (argued, d) => {
+            if (!argued || argued.status !== 'argued') return argued
+            const judged = await agent(judgePrompt(d, argued.prosecution.charges, argued.defense.answers, evidence), { phase: 'Judge', agentType: 'executor-read', label: `judge:${d.path}`, schema: JUDGE_SCHEMA, ...AGENT_CONFIG.judge })
+            if (!judged) return { d, status: 'dropped', why: 'the judge returned nothing' }
+            const rulings = (judged.rulings || []).filter((r) => VERDICTS.includes(r.verdict))
+            if (!rulings.length) return { d, status: 'dropped', why: 'the judge returned no ruling with a known verdict' }
+            return { ...argued, status: 'ruled', rulings }
+        },
+        async (ruled, d) => {
+            if (!ruled || ruled.status !== 'ruled') return ruled
+            const returns = await parallel(REFUTER_FRAMINGS.map((framing) => () =>
+                agent(refutePrompt(d, ruled.rulings, evidence, framing), { phase: 'Refute', agentType: 'executor-read', label: `refute:${d.path}:${framing.key}`, schema: REFUTE_SCHEMA, ...AGENT_CONFIG.refute })))
+            const verdicts = ruled.rulings.map((r) => {
+                const votes = returns.map((ret) => (ret && Array.isArray(ret.votes) ? ret.votes.find((v) => v.unit === r.unit) || null : null))
+                const settled = settleVerdict(r.verdict, votes)
+                return {
+                    path: d.path,
+                    surface: d.surface,
+                    hash: d.hash,
+                    unit: r.kind === 'file' ? 'file' : r.unit,
+                    kind: r.kind,
+                    verdict: settled.verdict,
+                    judged: r.verdict,
+                    reason: r.reason,
+                    cut: settled.verdict === 'refactor' ? r.cut || [] : [],
+                    evidence: r.evidence || [],
+                    upheldBy: settled.upheldBy,
+                    seated: settled.seated,
+                    contested: settled.contested,
+                    disposition: settled.disposition,
+                    refutations: settled.reasons,
+                    issue: null,
+                    pass,
+                    judgedAt: input.nowIso,
+                }
+            })
+            return { d, status: 'settled', verdicts }
+        }
+    )
 
-const recorded = await recordPass(mergeVerdicts(plan.carried, verdicts))
+    const outcomes = tried.filter(Boolean)
+    const settled = outcomes.filter((o) => o.status === 'settled')
+    for (const o of outcomes.filter((x) => x.status === 'dropped')) uncovered.push({ what: `judging ${o.d.path}`, why: o.why })
+    for (const d of toJudge.filter((x) => !outcomes.some((o) => o.d.path === x.path))) uncovered.push({ what: `judging ${d.path}`, why: 'a stage threw; see the run journal' })
 
-const unverified = verdicts.filter((v) => v.disposition === 'unverified').length
-const summary = `Pass ${pass}: ${toJudge.length} definition(s) tried, ${settled.length} settled (${verdicts.length} unit verdict(s): ${count('stay')} stay, ${count('refactor')} refactor, ${count('remove')} remove; ${overridden} overridden by refuters, ${unverified} unverified by fewer than two seats), ${plan.carried.length} verdict(s) carried, ${deferred.length} deferred, ${recorded.unfiled.length} cut(s) to file, ${uncovered.length} gap(s).`
-log(summary)
+    const verdicts = settled.flatMap((o) => o.verdicts).map((v) => ({ ...v, key: v.verdict === 'stay' ? null : idempotencyKey(v) }))
+    const count = (v) => verdicts.filter((x) => x.verdict === v).length
+    const overridden = verdicts.filter((v) => v.disposition === 'overridden').length
 
-return {
-    pass,
-    plan: { judged: settled.map((o) => o.d.path), carried: plan.carried.map((v) => v.path), dropped: plan.dropped, deferred },
-    rest: false,
-    verdicts,
-    ...recorded,
-    evidence: { coverage: evidence.coverage, notes: { census: census && census.notes, registry: registry && registry.notes, friction: friction && friction.notes, install: install && install.notes, runs: runs.map((r) => ({ project: r.project, notes: r.notes })), digests: digests.map((g) => ({ dir: g.dir, notes: g.notes })) } },
-    uncovered,
-    summary,
+    const recorded = await recordPass(mergeVerdicts(plan.carried, verdicts))
+
+    const unverified = verdicts.filter((v) => v.disposition === 'unverified').length
+    const summary = `Pass ${pass}: ${toJudge.length} definition(s) tried, ${settled.length} settled (${verdicts.length} unit verdict(s): ${count('stay')} stay, ${count('refactor')} refactor, ${count('remove')} remove; ${overridden} overridden by refuters, ${unverified} unverified by fewer than two seats), ${plan.carried.length} verdict(s) carried, ${deferred.length} deferred, ${recorded.unfiled.length} cut(s) to file, ${uncovered.length} gap(s).`
+    log(summary)
+
+    return {
+        pass,
+        plan: { judged: settled.map((o) => o.d.path), carried: plan.carried.map((v) => v.path), dropped: plan.dropped, deferred },
+        rest: false,
+        verdicts,
+        ...recorded,
+        evidence: { coverage: evidence.coverage, notes: { census: census && census.notes, registry: registry && registry.notes, friction: friction && friction.notes, install: install && install.notes, runs: runs.map((r) => ({ project: r.project, notes: r.notes })), digests: digests.map((g) => ({ dir: g.dir, notes: g.notes })) } },
+        uncovered,
+        summary,
+    }
 }
+
+return toJudge.length === 0 ? await emptyPass() : await trialPass()

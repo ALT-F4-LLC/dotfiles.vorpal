@@ -118,21 +118,20 @@ const probe = `Run exactly this one command:
 
   docket step show STEP-3146 --json
 
-Return its output VERBATIM as your entire final reply — every line, unedited.
+Return its output VERBATIM as your entire final reply: no summary, no
+commentary, no code fence.
 
-Do not cast a vote, do not investigate, do not run anything else. You are a
+Run nothing else: no vote, no investigation. You are a
 read-only probe reporting what the record currently says.
 
-${PROBE_MARKER}. Your usage is wave overhead. This
-read serves STEP-3146, which is the step it READS, not a step you run — the
-usage join must not attribute your tokens to it.`
+${PROBE_MARKER}; it READS STEP-3146.`
 
 // THE REGRESSION FIXTURE: the same probe, whose prose also QUOTES the
 // obligation it is reading about. Record-shaped text in a read-only brief is
 // exactly what the old ordering (join first, label second) could not survive.
 const quotingProbe = probe.replace(
-    'read serves STEP-3146',
-    'read serves STEP-3146 (whose executor will run `docket step record STEP-3146` once it claims)')
+    'it READS STEP-3146',
+    'it READS STEP-3146 (whose executor will run `docket step record STEP-3146` once it claims)')
 
 // A probe from before the marker existed: no declaration at all, just the one
 // read command. "Only tells an agent to read/show a step" is the whole shape.

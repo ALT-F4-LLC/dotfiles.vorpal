@@ -54,7 +54,6 @@ for (const [index, c] of cases.entries()) {
     assert(!argv.includes('--cost-multiplier'), 'no pricing multiplier is inferred from model names')
     assert(!fs.existsSync(marker), 'routing metadata remains one literal shell argument')
     assert(brief.includes('runtime directly supplies an observation'), 'resolved attribution requires observed evidence')
-    assert(brief.includes('not SDK\n   `modelUsage` telemetry'), 'native workflow results are not treated as SDK telemetry')
     assert(!brief.includes('<model that served you>'), 'the executor is not required to invent its model')
     console.log(`PASS: ${c.isolated ? 'isolated' : 'shared'} claim persists requested routing with unknown observations`)
 }

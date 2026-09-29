@@ -1557,6 +1557,17 @@ const STEP_SHOW_SCHEMA = {
     },
 }
 
+// The closing paragraphs every schema probe brief shares: read-only, and
+// wave overhead that the usage join must not attribute to the step it reads.
+function probeTrailer(step) {
+    return `Do not cast a vote, do not investigate, do not run anything else. You are a
+read-only probe reporting what the record currently says.
+
+WAVE PROBE: not a step execution. Your usage is wave overhead. This read serves
+${step}, which is the step it READS, not a step you run — the usage join must
+not attribute your tokens to it.`
+}
+
 function stepShowBrief(step) {
     return `Run exactly this one command:
 
@@ -1570,12 +1581,7 @@ exactly as printed; add no field the output did not carry and fill none in —
 omit a field entirely when the envelope does not carry it. If the command errors or prints no \`data\` object, return {error:
 <the error text verbatim>} and nothing else.
 
-Do not cast a vote, do not investigate, do not run anything else. You are a
-read-only probe reporting what the record currently says.
-
-WAVE PROBE: not a step execution. Your usage is wave overhead. This read serves
-${step}, which is the step it READS, not a step you run — the usage join must
-not attribute your tokens to it.`
+${probeTrailer(step)}`
 }
 
 // Normalizes the schema envelope to parseStepShow's own string-typed shape
@@ -1669,12 +1675,7 @@ and report \`target_worktree_exists\`: true for yes, false for no. That single
 field is the one thing you add; omit it entirely when there was no worktree to
 test, and copy everything else.
 
-Do not cast a vote, do not investigate, do not run anything else. You are a
-read-only probe reporting what the record currently says.
-
-WAVE PROBE: not a step execution. Your usage is wave overhead. This read serves
-${step}, which is the step it READS, not a step you run — the usage join must
-not attribute your tokens to it.`
+${probeTrailer(step)}`
 }
 
 // The envelope, or null when the probe died, the command errored, or the
@@ -1759,12 +1760,7 @@ copy, never summarize; add no field the output did not carry and fill none
 in. If the command errors, return {error: <the error text verbatim>} and
 nothing else.
 
-Do not cast a vote, do not investigate, do not run anything else. You are a
-read-only probe reporting what the record currently says.
-
-WAVE PROBE: not a step execution. Your usage is wave overhead. This read serves
-${step}, which is the step it READS, not a step you run — the usage join must
-not attribute your tokens to it.`
+${probeTrailer(step)}`
 }
 
 function parseHeldCluster(hc) {
@@ -1826,12 +1822,7 @@ value for value — copy, never summarize; add no field the output did not carry
 and fill none in. If the command errors, return {error: <the error text
 verbatim>} and nothing else.
 
-Do not cast a vote, do not investigate, do not run anything else. You are a
-read-only probe reporting what the record currently says.
-
-WAVE PROBE: not a step execution. Your usage is wave overhead. This read serves
-${step}, which is the step it READS, not a step you run — the usage join must
-not attribute your tokens to it.`
+${probeTrailer(step)}`
 }
 
 // The body as brief text: its own words, nothing tallied. '' when the read
@@ -1897,6 +1888,8 @@ async function runGate(row, phaseLabel) {
     const acct = { seats: 0, probes: 0, retries: 0, absorbed: [] }
     const status = (label) => gateStatus(row.step, `${row.step} · ${label}`, phaseLabel, acct)
     const asText = (g) => JSON.stringify(g)
+    const accountingLine = (res) => res.spawn_accounting + (res.notes ?
+        ` — ${res.notes.length} agent-level error(s) absorbed (NOT failures for this step)` : '')
 
     // The ballot: record-driving opened the proposal when the gate's last
     // predecessor recorded — an earlier stage this wave already awaited — so
@@ -1933,8 +1926,7 @@ async function runGate(row, phaseLabel) {
         // No panel was seated on this row, so the accounting carries no seats
         // clause at all — reading "0 seats" here made an already-decided gate
         // look like a judge on an empty panel.
-        log(`${row.step}: no panel seated — ${early.spawn_accounting}` + (early.notes ?
-            ` — ${early.notes.length} agent-level error(s) absorbed (NOT failures for this step)` : ''))
+        log(`${row.step}: no panel seated — ${accountingLine(early)}`)
         return early
     }
     // A gate with NO proposal means the predecessors have not all recorded:
@@ -2001,8 +1993,9 @@ async function runGate(row, phaseLabel) {
     // A throw (unreadable scriptPath, tribunal's own arg refusal, a child
     // syntax error) must not crash the whole wave — it settles this row
     // gate-blocked with the error text, same as any other unreadable gate.
-    const seatPanel = (panelSeats, isRespawn) =>
-        workflow({ scriptPath: args.tribunal }, {
+    const seatPanel = (panelSeats, isRespawn) => {
+        const seatLabel = (seat) => `${row.step} · seat:${seat}` + (isRespawn ? ' (retry)' : '')
+        return workflow({ scriptPath: args.tribunal }, {
             voteId, gateKind: row.instance, cwd: args.cwd, context,
             voters: panelSeats.map((s) => ({ seat: s.seat, model: s.model, effort: s.effort, variant: s.variant })),
             step: { step: row.step, instance: row.instance, issue: row.issue, run: row.run },
@@ -2021,9 +2014,8 @@ async function runGate(row, phaseLabel) {
             // harness actually spent.
             agentsLaunched += (res && Number.isInteger(res.seatsSpawned)) ? res.seatsSpawned : panelSeats.length
             for (const a of (res && res.absorbed) || []) {
-                const label = `${row.step} · seat:${a.seat}` + (isRespawn ? ' (retry)' : '')
                 log(`${row.step} seat ${a.seat}: ${isRespawn ? 'respawn' : 'spawn'} error: ${a.error}`)
-                acct.absorbed.push(`[${label}] ${a.error}`)
+                acct.absorbed.push(`[${seatLabel(a.seat)}] ${a.error}`)
             }
             return res
         }).catch((err) => {
@@ -2031,12 +2023,11 @@ async function runGate(row, phaseLabel) {
             // refusal, a child syntax error) means tribunal.js never ran, so
             // no agents were actually spawned — agentsLaunched is left alone.
             log(`${row.step}: tribunal panel spawn error: ${err}`)
-            for (const s of panelSeats) {
-                const label = `${row.step} · seat:${s.seat}` + (isRespawn ? ' (retry)' : '')
-                acct.absorbed.push(`[${label}] ${reasonText(err) || String(err)}`)
-            }
+            const reason = reasonText(err) || String(err)
+            for (const s of panelSeats) acct.absorbed.push(`[${seatLabel(s.seat)}] ${reason}`)
             return null
         })
+    }
     await seatPanel(seats, false)
 
     // One re-spawn for seats whose cast never landed — tribunal.js's rule.
@@ -2081,8 +2072,7 @@ async function runGate(row, phaseLabel) {
     if (gateDecided(after)) {
         log(`${row.step}: gate passed — continuing`)
         const res = gateSuccess(row.step, asText(after), acct)
-        log(`${row.step}: ${res.spawn_accounting}` + (res.notes ?
-            ` — ${res.notes.length} agent-level error(s) absorbed (NOT failures for this step)` : ''))
+        log(`${row.step}: ${accountingLine(res)}`)
         return res
     }
     log(`${row.step}: gate did NOT clear (${after.step_status}, tally ${after.outcome}) ` +
@@ -2717,13 +2707,11 @@ const overWriterBudget = (row) => isWriter(row) && !!row.issue &&
 // Project the ordinary path: executor + one probe; panel + two status reads
 // + one proposal body read + one blocked/held read. Keep 100 agents for
 // retries, re-seats and block probes.
+const seatCount = (row) => Array.isArray(row.voter_assignments) && row.voter_assignments.length > 0
+    ? row.voter_assignments.length : DEFAULT_PANEL_SEATS
 function agentCost(row) {
     if (row.kind === 'action') return 0
-    if (row.kind === 'vote') {
-        const seats = Array.isArray(row.voter_assignments) && row.voter_assignments.length > 0
-            ? row.voter_assignments.length : DEFAULT_PANEL_SEATS
-        return seats + VOTE_PROBE_COST
-    }
+    if (row.kind === 'vote') return seatCount(row) + VOTE_PROBE_COST
     return EXECUTOR_AGENT_COST
 }
 // A DIFFERENT quantity from agentCost() above: agentCost projects a row's
@@ -2743,10 +2731,7 @@ function agentCost(row) {
 // approximation, not an exact per-phase count).
 function concurrencyWeight(row) {
     if (row.kind === 'action') return 0
-    if (row.kind === 'vote') {
-        return Array.isArray(row.voter_assignments) && row.voter_assignments.length > 0
-            ? row.voter_assignments.length : DEFAULT_PANEL_SEATS
-    }
+    if (row.kind === 'vote') return seatCount(row)
     return 1
 }
 let agentsReserved = 0
@@ -2846,8 +2831,9 @@ if (input.harnessCap === undefined) {
 // refusing to ever admit it would be a deadlock strictly worse than the
 // pre-fix behavior of never gating vote rows at all.
 let harnessWeight = 0
+const harnessSlots = (row) => Math.min(concurrencyWeight(row), effectiveHarnessCap)
 function blocker(row) {
-    const weight = Math.min(concurrencyWeight(row), effectiveHarnessCap)
+    const weight = harnessSlots(row)
     if (harnessWeight + weight > effectiveHarnessCap) {
         return `${harnessWeight} of ${effectiveHarnessCap} harness slot(s) in flight ` +
             `(this row needs ${weight}) — the harness runs at most ` +
@@ -2939,7 +2925,7 @@ function pump() {
         }
         waiting.splice(i, 1)
         agentsReserved += agentCost(w.row)
-        harnessWeight += Math.min(concurrencyWeight(w.row), effectiveHarnessCap)
+        harnessWeight += harnessSlots(w.row)
         if (isExecutorRow(w.row)) inFlight.set(w.row.step, w.row)
         if (w.held) log(`${w.row.step}: released — launching`)
         w.resolve('launch')
@@ -2957,11 +2943,11 @@ function admission(row) {
 // Called exactly once per row that reached 'launch' (every call site is
 // inside the go === 'launch' branch in runRow below), so decrementing
 // harnessWeight unconditionally here is safe — there is no double-release
-// or release-without-admission path into this function. The clamp mirrors
-// pump()'s admission-time clamp exactly, so a row's release always
+// or release-without-admission path into this function. harnessSlots() is
+// the same clamp pump() added at admission, so a row's release always
 // subtracts precisely what its admission added.
 function release(row) {
-    harnessWeight -= Math.min(concurrencyWeight(row), effectiveHarnessCap)
+    harnessWeight -= harnessSlots(row)
     inFlight.delete(row.step)
     pump()
 }
@@ -3153,11 +3139,12 @@ await parallel([...lanes.entries()].map(([name, laneRows]) => () => runLane(name
 // The budget's accounting, always: a wave that launched everything says so
 // too, and a reader comparing a wave's projected reservation to its
 // spawn_accounting can recalibrate the per-kind costs above from evidence.
+const countSettled = (status) => rows.filter((row) => {
+    const out = byStep.get(row.step)
+    return out && out.status === status
+}).length
 {
-    const deferred = rows.filter((row) => {
-        const out = byStep.get(row.step)
-        return out && out.status === 'not-launched-agent-budget'
-    }).length
+    const deferred = countSettled('not-launched-agent-budget')
     log(`wave: agent budget — ${agentsReserved} of ${AGENT_BUDGET} projected agents ` +
         `reserved this launch` + (deferred > 0
             ? `; ${deferred} row(s) deferred to the next dispatch for want of budget`
@@ -3167,10 +3154,7 @@ await parallel([...lanes.entries()].map(([name, laneRows]) => () => runLane(name
 // reported only when a target was set at all, since remaining() is
 // Infinity otherwise and there is nothing to say.
 if (budget.total) {
-    const tokenDeferred = rows.filter((row) => {
-        const out = byStep.get(row.step)
-        return out && out.status === 'not-launched-token-budget'
-    }).length
+    const tokenDeferred = countSettled('not-launched-token-budget')
     log(`wave: token budget — ${budget.spent()} of ${budget.total} spent this turn` +
         (tokenDeferred > 0
             ? `; ${tokenDeferred} row(s) deferred to the next dispatch for want of budget`

@@ -2530,10 +2530,27 @@ const CHAIN_DEAD_STATUSES = [
 // state, and an undiagnosed relay (no step_status), still kills the chain.
 const SETTLED_CONFLICT_STEP_STATUSES = ['done', 'skipped']
 
+// A pre-claim probe that read one of these found the stage already settled by
+// the engine (a conditional step it legitimately skipped, or one already done):
+// the spawn is skipped, but the lane's later rows stay launchable this wave.
+const SETTLED_PROBE_STATUSES = ['done', 'skipped']
+
+// Reads the `step show` envelope startRow() carries in `text`. An absent or
+// unparseable envelope is not settled, so the row keeps killing its chain.
+function probeSettled(res) {
+    if (res.status !== 'skipped-not-claimable' || typeof res.text !== 'string') return false
+    try {
+        return SETTLED_PROBE_STATUSES.includes(JSON.parse(res.text)?.data?.status)
+    } catch {
+        return false
+    }
+}
+
 function chainDead(res) {
     if (res == null) return false
     if (res.status === 'claim-conflict' &&
         SETTLED_CONFLICT_STEP_STATUSES.includes(res.step_status)) return false
+    if (probeSettled(res)) return false
     return CHAIN_DEAD_STATUSES.includes(res.status) || laneParked(res) ||
         (res.status === 'returned' &&
             (isConflictReport(res.text) || isBootstrapDenied(res.text)))

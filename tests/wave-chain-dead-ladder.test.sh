@@ -400,6 +400,23 @@ for (const s of ['done', 'superseded', 'skipped', 'failed']) {
         `DOT-560 fence: "${s}" still settles skipped-not-claimable without a spawn`)
 }
 
+// A probe reading "done" or "skipped" finds the stage already settled (a
+// conditional step the engine legitimately skipped), so the lane's later row
+// launches in the same wave instead of waiting a dispatch.
+for (const s of ['done', 'skipped']) {
+    out = await run(PROBE43(), {}, { 'STEP-1563': st(s) })
+    ok(!SPAWNED.includes('STEP-1563') && SPAWNED.includes('STEP-1572') &&
+       statusOf(out, 'STEP-1572') === 'returned',
+        `settled probe: "${s}" settles the stage — the later row spawns and returns this wave`)
+}
+
+// Every other unclaimable reading still kills the rest of the chain.
+for (const s of ['pending', 'failed', 'superseded']) {
+    out = await run(PROBE43(), {}, { 'STEP-1563': st(s) })
+    ok(!SPAWNED.includes('STEP-1572') && statusOf(out, 'STEP-1572') === 'skipped-chain-dead',
+        `DOT-560 fence: "${s}" still kills the rest of the issue's chain`)
+}
+
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)
 JS

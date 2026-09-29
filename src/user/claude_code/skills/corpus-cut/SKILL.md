@@ -140,7 +140,10 @@ entry in code, and one issue body per unfiled cut under
 `<scratchDir>/issues/`, indexed by `index.<n>.tsv`. A file ruled remove
 subsumes its sections: they stay in the ledger but get no issue of their
 own. The return carries `plan`, `rest`, `verdicts`, `ledger`, `issues`,
-`unfiled`, `evidence.coverage`, `uncovered`, and a one-line `summary`.
+`unfiled`, `superseded`, `evidence.coverage`, `uncovered`, and a one-line
+`summary`. Each `superseded` entry, `{path, unit, issue, replacementKey}`,
+names a ledgered issue of a re-judged definition and the replay key of the
+cut that replaces it, or null when none does.
 
 If the workflow throws or returns nothing, say so and stop. If `ledger` is
 null while `rest` is false, a writer failed or its shard did not match:
@@ -216,6 +219,48 @@ jq --slurpfile ids "$SCRATCH/ids.json" '.verdicts |= map(if .key and $ids[0][.ke
 cp "$SCRATCH/cut-ledger.filed.json" src/user/docket/config/cut-ledger.json
 ```
 
+Then close what the pass superseded, so a refit leaves no earlier cut
+issue open. Write the return's `superseded` array to
+`$SCRATCH/superseded.json` and handle each entry by its `replacementKey`,
+looked up in `ids.json`, the ids.tsv map with FAILED rows dropped:
+
+- It resolves to an id other than the entry's `issue`: close the issue
+  with the note `superseded by <that id>`. A fresh verdict equal to the
+  prior one on changed bytes lands here too: its key changed, so it filed
+  a new issue, and the prior one closes as superseded by it.
+- It resolves to the entry's own `issue` (a declined cut's row, or a key
+  replayed under `all`): do nothing.
+- It is null: close the issue with the note
+  `cut no longer applies as of pass $PASS`.
+- It maps to FAILED or is absent from ids.tsv: leave the issue open and
+  report it, since its replacement never filed.
+- Before either close, read the issue's status and skip one already in
+  `done`, reporting it: a landed or declined cut is closed already.
+
+```bash
+: > "$SCRATCH/superseded.tsv"
+jq -c '.[]' "$SCRATCH/superseded.json" | while read -r s; do
+  issue=$(jq -r '.issue' <<< "$s"); rkey=$(jq -r '.replacementKey // empty' <<< "$s")
+  if [ -n "$rkey" ]; then
+    rid=$(jq -r --arg k "$rkey" '.[$k] // empty' "$SCRATCH/ids.json")
+    [ -z "$rid" ] && { printf '%s\topen: replacement unfiled\n' "$issue" >> "$SCRATCH/superseded.tsv"; continue; }
+    [ "$rid" = "$issue" ] && continue
+    note="superseded by $rid"
+  else
+    note="cut no longer applies as of pass $PASS"
+  fi
+  status=$(docket issue show "$issue" --json=v2 | jq -r '.data.status // empty')
+  [ -z "$status" ] && { printf '%s\topen: status unread\n' "$issue" >> "$SCRATCH/superseded.tsv"; continue; }
+  [ "$status" = "done" ] && { printf '%s\tskipped: already done\n' "$issue" >> "$SCRATCH/superseded.tsv"; continue; }
+  docket issue move "$issue" done --note "$note" --json=v2 < /dev/null > /dev/null \
+    && printf '%s\tclosed: %s\n' "$issue" "$note" >> "$SCRATCH/superseded.tsv" \
+    || printf '%s\topen: move failed\n' "$issue" >> "$SCRATCH/superseded.tsv"
+done
+```
+
+`superseded.tsv` holds one row per entry the step closed, skipped, or
+left open; the report lists them all.
+
 Then run `just crossref-check` from the repository root and compare with
 the state before the pass. The ledger is JSON, which the gate does not
 scan, so a new failure names other work; report it and never act on it.
@@ -227,7 +272,9 @@ Invoke the `commit` skill scoped to the ledger
 one commit cycle per pass, never batched across passes. Then report the
 pass in a few lines: the pass number, definitions tried and carried, the
 verdict counts, overrides by refuters, issues filed with their ids, rows
-skipped as declined, rows that failed, the commit hash, every `uncovered`
+skipped as declined, rows that failed, every `superseded.tsv` row (issues
+closed as superseded, skipped as already done, or left open), the commit
+hash, every `uncovered`
 entry, and the evidence coverage (run stores read, logs digested, engine
 available or not).
 

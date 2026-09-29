@@ -506,6 +506,27 @@ function mergeVerdicts(carried, fresh) {
     for (const v of fresh) out.set(key(v), v)
     return [...out.values()].sort((a, b) => (a.path === b.path ? a.unit.localeCompare(b.unit) : a.path.localeCompare(b.path)))
 }
+
+// The prior issues a pass supersedes. Fresh verdicts replace every ledgered
+// entry of a re-judged definition, so each filed entry is returned with the
+// key of the issue that replaces it: its unit's fresh cut, the file's when a
+// removed file subsumes the section, or null when the unit now stays or was
+// not re-ruled. A fresh key equal to the prior one replays the same issue.
+function supersededIssues(ledger, plan, fresh) {
+    const verdicts = (ledger && Array.isArray(ledger.verdicts)) ? ledger.verdicts : []
+    const judged = new Set(plan.judge.map((d) => d.path))
+    const byUnit = new Map(fresh.map((v) => [`${v.path}\u0000${v.unit}`, v]))
+    const removedFiles = new Map(fresh.filter((v) => isFileUnit(v) && v.verdict === 'remove').map((v) => [v.path, v]))
+    const out = []
+    for (const v of verdicts) {
+        if (v.issue == null || !judged.has(v.path)) continue
+        const f = (!isFileUnit(v) && removedFiles.get(v.path)) || byUnit.get(`${v.path}\u0000${v.unit}`)
+        const replacementKey = f && f.verdict !== 'stay' ? idempotencyKey(f) : null
+        if (replacementKey != null && replacementKey === v.key) continue
+        out.push({ path: v.path, unit: v.unit, issue: v.issue, replacementKey })
+    }
+    return out
+}
 // TEST-END corpus-cut-decide
 
 // ---- Input -----------------------------------------------------------------
@@ -638,6 +659,7 @@ async function emptyPass() {
         rest,
         verdicts: [],
         ...recorded,
+        superseded: [],
         evidence: null,
         uncovered,
         summary: `Pass ${pass}: nothing to judge; ${plan.carried.length} verdict(s) carried forward, ${plan.dropped.length} dropped, ${recorded.unfiled.length} cut(s) to file; ${rest ? 'the pass rests' : 'the caller files the cuts'}.`,
@@ -972,6 +994,7 @@ async function trialPass() {
     const count = (v) => verdicts.filter((x) => x.verdict === v).length
     const overridden = verdicts.filter((v) => v.disposition === 'overridden').length
 
+    const superseded = supersededIssues(input.ledger || null, plan, verdicts)
     const recorded = await recordPass(mergeVerdicts(plan.carried, verdicts))
 
     const unverified = verdicts.filter((v) => v.disposition === 'unverified').length
@@ -984,6 +1007,7 @@ async function trialPass() {
         rest: false,
         verdicts,
         ...recorded,
+        superseded,
         evidence: { coverage: evidence.coverage, notes: { census: census && census.notes, registry: registry && registry.notes, friction: friction && friction.notes, install: install && install.notes, runs: runs.map((r) => ({ project: r.project, notes: r.notes })), digests: digests.map((g) => ({ dir: g.dir, notes: g.notes })) } },
         uncovered,
         summary,

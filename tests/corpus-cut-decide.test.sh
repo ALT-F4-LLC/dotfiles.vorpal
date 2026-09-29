@@ -2,7 +2,8 @@
 
 # Behavior suite for corpus-cut.js's pass decisions: which definitions a pass
 # judges, how refuter votes settle a ruling, when a pass rests, and how an
-# issue's replay key and the merged ledger are derived.
+# issue's replay key and the merged ledger are derived, and which prior
+# issues a pass supersedes.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
 # and this one is in that list. It needs only `node` and `awk` — no engine, no
@@ -144,6 +145,39 @@ const merged = mergeVerdicts(
   [{ path: 'a.md', unit: 'file', verdict: 'remove' }, { path: 'b.md', unit: 'file', verdict: 'refactor' }],
 )
 out.merged = merged.map((x) => `${x.path}#${x.unit}=${x.verdict}`)
+
+// superseded
+const was = (path, unit, verdict, issue, hash = 'old') => ({ path, unit, hash, verdict, issue, key: verdict === 'stay' ? null : idempotencyKey({ hash, unit, verdict }) })
+const now = (path, unit, verdict, hash = 'new') => ({ path, unit, hash, verdict })
+const supFresh = [
+  now('a.md', 'file', 'refactor'),
+  now('a.md', 'section:S', 'stay'),
+  now('a.md', 'section:Null', 'refactor'),
+  now('b.md', 'file', 'remove'),
+  now('b.md', 'section:Emit', 'refactor'),
+  now('c.md', 'file', 'remove', 'same'),
+]
+const supLedger = { verdicts: [
+  was('a.md', 'file', 'remove', 'DOT-10'),
+  was('a.md', 'section:S', 'remove', 'DOT-11'),
+  was('a.md', 'section:Gone', 'refactor', 'DOT-12'),
+  was('a.md', 'section:Null', 'refactor', null),
+  was('b.md', 'section:Emit', 'remove', 'DOT-14'),
+  was('c.md', 'file', 'remove', 'DOT-15', 'same'),
+  was('k.md', 'file', 'remove', 'DOT-13'),
+] }
+const supPlan = { judge: [{ path: 'a.md' }, { path: 'b.md' }, { path: 'c.md' }], carried: supLedger.verdicts.filter((x) => x.path === 'k.md'), dropped: [] }
+const sup = supersededIssues(supLedger, supPlan, supFresh)
+const supBy = Object.fromEntries(sup.map((x) => [`${x.path}#${x.unit}`, x]))
+out.supUnits = sup.map((x) => `${x.path}#${x.unit}=${x.issue}`)
+out.supCut = supBy['a.md#file']?.replacementKey === idempotencyKey(supFresh[0])
+out.supStay = supBy['a.md#section:S']?.replacementKey
+out.supAbsent = supBy['a.md#section:Gone']?.replacementKey
+out.supCarried = 'k.md#file' in supBy
+out.supNoIssue = 'a.md#section:Null' in supBy
+out.supSubsumed = supBy['b.md#section:Emit']?.replacementKey === idempotencyKey(supFresh[3])
+out.supUnchanged = 'c.md#file' in supBy
+out.supNoLedger = supersededIssues(null, supPlan, supFresh).length
 process.stdout.write(JSON.stringify(out))
 JS
 { cat "${WORK}/config.js"; cat "${WORK}/decide.js"; cat "${WORK}/cases.js"; } > "${WORK}/run.js"
@@ -197,6 +231,16 @@ get() { node -e "const o=require('${WORK}/out.json'); process.stdout.write(Strin
 [ "$(get 'o.keyVerdict')" = "false" ]; ok $? 'a changed verdict changes the key'
 
 [ "$(get 'o.merged.join()')" = "a.md#file=remove,a.md#section:Z=stay,b.md#file=refactor" ]; ok $? 'fresh verdicts replace carried ones per unit and the ledger sorts by path then unit'
+
+[ "$(get 'o.supUnits.join()')" = "a.md#file=DOT-10,a.md#section:S=DOT-11,a.md#section:Gone=DOT-12,b.md#section:Emit=DOT-14" ]; ok $? 'every filed entry of a re-judged definition is superseded, in ledger order'
+[ "$(get 'o.supCut')" = "true" ]; ok $? 'a superseded issue names the fresh cut of its unit as the replacement'
+[ "$(get 'o.supStay')" = "null" ]; ok $? 'a unit that now stays has no replacement'
+[ "$(get 'o.supAbsent')" = "null" ]; ok $? 'a unit the fresh verdicts no longer rule has no replacement'
+[ "$(get 'o.supCarried')" = "false" ]; ok $? 'a carried entry is never superseded'
+[ "$(get 'o.supNoIssue')" = "false" ]; ok $? 'an entry with no issue supersedes nothing'
+[ "$(get 'o.supSubsumed')" = "true" ]; ok $? 'a section under a freshly removed file names the file issue as the replacement'
+[ "$(get 'o.supUnchanged')" = "false" ]; ok $? 'a fresh key equal to the prior one replays the issue and is not superseded'
+[ "$(get 'o.supNoLedger')" = "0" ]; ok $? 'no ledger supersedes nothing'
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

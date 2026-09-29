@@ -2711,14 +2711,15 @@ function writerLadderDepth(row) {
 const overWriterBudget = (row) => isWriter(row) && !!row.issue &&
     writerLadderDepth(row) >= WRITER_LADDER_BUDGET
 
+const seatCount = (row) => Array.isArray(row.voter_assignments) && row.voter_assignments.length > 0
+    ? row.voter_assignments.length : DEFAULT_PANEL_SEATS
+
 // Reserve projected agents at admission against the invocation's lifetime
 // cap. Reservations never release: a row that cannot fit is deferred at once,
 // allowing other lanes to continue. Deepest-first admission finishes chains.
 // Project the ordinary path: executor + one probe; panel + two status reads
 // + one proposal body read + one blocked/held read. Keep 100 agents for
 // retries, re-seats and block probes.
-const seatCount = (row) => Array.isArray(row.voter_assignments) && row.voter_assignments.length > 0
-    ? row.voter_assignments.length : DEFAULT_PANEL_SEATS
 function agentCost(row) {
     if (row.kind === 'action') return 0
     if (row.kind === 'vote') return seatCount(row) + VOTE_PROBE_COST
@@ -3146,13 +3147,14 @@ async function runLane(name, laneRows) {
 
 await parallel([...lanes.entries()].map(([name, laneRows]) => () => runLane(name, laneRows)))
 
-// The budget's accounting, always: a wave that launched everything says so
-// too, and a reader comparing a wave's projected reservation to its
-// spawn_accounting can recalibrate the per-kind costs above from evidence.
 const countSettled = (status) => rows.filter((row) => {
     const out = byStep.get(row.step)
     return out && out.status === status
 }).length
+
+// The budget's accounting, always: a wave that launched everything says so
+// too, and a reader comparing a wave's projected reservation to its
+// spawn_accounting can recalibrate the per-kind costs above from evidence.
 {
     const deferred = countSettled('not-launched-agent-budget')
     log(`wave: agent budget — ${agentsReserved} of ${AGENT_BUDGET} projected agents ` +

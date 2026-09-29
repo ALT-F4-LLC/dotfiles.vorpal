@@ -1,7 +1,7 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by research, then validate, review, and vote to accept: the doc-acceptance panel for TDD/ADR, the tribunal for PRD/ux-spec. A rejection re-enters the doctype's revise step, then review, up to the loop bound."
 name = "spec-doc"
-version = 39
+version = 40
 
 [match]
 labels_any = ["spec-doc"]
@@ -25,6 +25,7 @@ holds_tree = false
 inputs = ["issue.body"]
 name = "research"
 packet = ["contracts/{executor}.md"]
+payload = "research-notes@2"
 when = "labels contains needs-research"
 
 [[step]]

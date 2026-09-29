@@ -886,9 +886,8 @@ never a fallback, and a source file edited since the last `just activate`
 is bytes no session runs. A missing installed file is drift: stop and
 report it, never hunt for another copy.
 
-**Report the machine's own concurrency cap so wave.js does not have to guess
-it.** The Workflow tool's real per-invocation cap is `min(16, CPUs-2)`, but a
-wave script cannot read the CPU count itself. lane_units.py (Split the
+**Pass the machine's own concurrency cap so wave.js does not have to guess
+it.** A wave script cannot read the CPU count itself. lane_units.py (Split the
 launches below) takes the count and writes the cap, floored at 1, into every
 launches.json entry: pass entry i's `harnessCap` from launches.json in launch
 i's `args`, copied as written, never a figure of your own. wave.js uses

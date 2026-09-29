@@ -156,6 +156,16 @@ n=$(count "{\"rows\":[$(w 1 A 0),$(w 2 B 1)]}")
 out=$(count "[$(w 1 A 0),$(r 2 B 0)]")
 [ "$(printf '%s' "$out" | wc -l | tr -d ' ')" = "0" ] && [ "$out" = "2" ]; ok $? "stdout carries the number alone, so \$(…) capture is clean (got '$out')"
 
+# ---- harnessCap: min(16, max(1, cpus - 2)) on every launches.json entry -------
+# LANE_UNITS_CPUS stands in for os.cpu_count() so the host does not decide.
+for pair in 1:1 2:1 10:8 18:16 64:16; do
+    cpus=${pair%%:*} want=${pair##*:}
+    out=$(LANE_UNITS_CPUS=$cpus count "[$(w 1 A 0),$(r 2 B 0),$(r 3 C 0)]")
+    got=$(summary 'sorted({x["harnessCap"] for x in s})')
+    [ "$out" = "3" ] && [ "$got" = "[$want]" ] && [ "$(summary 'len(s)')" = "3" ]
+    ok $? "LANE_UNITS_CPUS=$cpus gives every launch harnessCap $want, stdout still N alone (got '$out', caps $got)"
+done
+
 # ---- Bad usage fails loudly -------------------------------------------------------
 python3 "$SCRIPT" > /dev/null 2>&1; [ $? -ne 0 ]; ok $? 'no argument is a non-zero exit'
 python3 "$SCRIPT" "$WORK/rows.json" > /dev/null 2>&1; [ $? -ne 0 ]; ok $? 'a missing out-dir is a non-zero exit'

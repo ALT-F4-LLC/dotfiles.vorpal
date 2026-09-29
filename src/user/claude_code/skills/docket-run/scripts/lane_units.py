@@ -7,7 +7,7 @@ as one JSON array or as one JSON object per line. The script writes, under
 <out-dir>:
 
   launch-<i>.jsonl  launch i's rows, one per line, in manifest order
-  launches.json     [{index, of, classCap, rows, lanes}] per launch
+  launches.json     [{index, of, classCap, rows, lanes, harnessCap}] per launch
 
 and prints the launch count N alone on stdout, so `N=$(python3 lane_units.py
 rows.jsonl out)` works. Units and their launches go to stderr for the
@@ -27,10 +27,14 @@ rows, so this script computes that count and gives each launch holding the
 class its share: the count divided among the holders, the remainder to the
 lowest-ranked holders, never below one.
 
+Harness cap. Every launches.json entry carries harnessCap =
+min(HARNESS_CAP, max(1, cpus - 2)), the value the conductor passes as the
+launch's harnessCap arg. cpus is os.cpu_count(), or LANE_UNITS_CPUS when set.
+
 This file exists because an inline heredoc (`python3 - <<'PY'`) is an
 interpreter code argument the auto-mode deny rule refuses before it runs.
 The weights and caps mirror wave.js (EXECUTOR_AGENT_COST, VOTE_PROBE_COST,
-DEFAULT_PANEL_SEATS, LAUNCH_CAP) and must not drift from it.
+DEFAULT_PANEL_SEATS, LAUNCH_CAP, HARNESS_CAP) and must not drift from it.
 """
 
 import json
@@ -41,6 +45,7 @@ LAUNCH_CAP = 20
 EXECUTOR_AGENT_COST = 2
 VOTE_PROBE_COST = 4
 DEFAULT_PANEL_SEATS = 3
+HARNESS_CAP = 16
 
 
 def load_rows(path):
@@ -184,9 +189,22 @@ def split(rows):
     return launches, lane_unit, unit_launch
 
 
+def harness_cap():
+    override = os.environ.get("LANE_UNITS_CPUS")
+    if override is None:
+        cpus = os.cpu_count() or 1
+    else:
+        try:
+            cpus = int(override)
+        except ValueError:
+            raise SystemExit(f"lane_units: LANE_UNITS_CPUS={override!r} is not an integer")
+    return min(HARNESS_CAP, max(1, cpus - 2))
+
+
 def main(argv):
     if len(argv) != 3:
         raise SystemExit("usage: lane_units.py <rows-file> <out-dir>")
+    cap = harness_cap()
     rows = load_rows(argv[1])
     out = argv[2]
     os.makedirs(out, exist_ok=True)
@@ -197,7 +215,9 @@ def main(argv):
         with open(path, "w", encoding="utf-8") as handle:
             for row in launch["rows"]:
                 handle.write(json.dumps(row, separators=(",", ":")) + "\n")
-        summary.append({k: (len(v) if k == "rows" else v) for k, v in launch.items()})
+        entry = {k: (len(v) if k == "rows" else v) for k, v in launch.items()}
+        entry["harnessCap"] = cap
+        summary.append(entry)
     with open(os.path.join(out, "launches.json"), "w", encoding="utf-8") as handle:
         json.dump(summary, handle, indent=2)
         handle.write("\n")

@@ -512,20 +512,33 @@ function mergeVerdicts(carried, fresh) {
 // key of the issue that replaces it: its unit's fresh cut, the file's when a
 // removed file subsumes the section, or null when the unit now stays or was
 // not re-ruled. A fresh key equal to the prior one replays the same issue.
+// A definition with no fresh verdict (deferred or dropped) supersedes nothing.
 function supersededIssues(ledger, plan, fresh) {
     const verdicts = (ledger && Array.isArray(ledger.verdicts)) ? ledger.verdicts : []
     const judged = new Set(plan.judge.map((d) => d.path))
+    const settled = new Set(fresh.map((v) => v.path))
     const byUnit = new Map(fresh.map((v) => [`${v.path}\u0000${v.unit}`, v]))
     const removedFiles = new Map(fresh.filter((v) => isFileUnit(v) && v.verdict === 'remove').map((v) => [v.path, v]))
     const out = []
     for (const v of verdicts) {
-        if (v.issue == null || !judged.has(v.path)) continue
+        if (v.issue == null || !judged.has(v.path) || !settled.has(v.path)) continue
         const f = (!isFileUnit(v) && removedFiles.get(v.path)) || byUnit.get(`${v.path}\u0000${v.unit}`)
         const replacementKey = f && f.verdict !== 'stay' ? idempotencyKey(f) : null
         if (replacementKey != null && replacementKey === v.key) continue
         out.push({ path: v.path, unit: v.unit, issue: v.issue, replacementKey })
     }
     return out
+}
+
+// The ledgered entries of every definition planned for judgment that got no
+// fresh verdict this pass, deferred past the bound or dropped mid-trial.
+// They carry forward unchanged, issue ids and stale hash intact, so the next
+// pass re-judges the definition and supersedes its prior issues then.
+function unsettledEntries(ledger, plan, fresh) {
+    const verdicts = (ledger && Array.isArray(ledger.verdicts)) ? ledger.verdicts : []
+    const judged = new Set(plan.judge.map((d) => d.path))
+    const settled = new Set(fresh.map((v) => v.path))
+    return verdicts.filter((v) => judged.has(v.path) && !settled.has(v.path))
 }
 // TEST-END corpus-cut-decide
 
@@ -652,7 +665,7 @@ async function recordPass(merged) {
 // Evidence and trial phases.
 async function emptyPass() {
     const rest = shouldRest(plan)
-    const recorded = rest ? { ledger: null, issues: null, unfiled: [] } : await recordPass(mergeVerdicts(plan.carried, []))
+    const recorded = rest ? { ledger: null, issues: null, unfiled: [] } : await recordPass(mergeVerdicts([...plan.carried, ...unsettledEntries(input.ledger || null, plan, [])], []))
     return {
         pass,
         plan: { judged: [], carried: plan.carried.map((v) => v.path), dropped: plan.dropped, deferred },
@@ -995,7 +1008,7 @@ async function trialPass() {
     const overridden = verdicts.filter((v) => v.disposition === 'overridden').length
 
     const superseded = supersededIssues(input.ledger || null, plan, verdicts)
-    const recorded = await recordPass(mergeVerdicts(plan.carried, verdicts))
+    const recorded = await recordPass(mergeVerdicts([...plan.carried, ...unsettledEntries(input.ledger || null, plan, verdicts)], verdicts))
 
     const unverified = verdicts.filter((v) => v.disposition === 'unverified').length
     const summary = `Pass ${pass}: ${toJudge.length} definition(s) tried, ${settled.length} settled (${verdicts.length} unit verdict(s): ${count('stay')} stay, ${count('refactor')} refactor, ${count('remove')} remove; ${overridden} overridden by refuters, ${unverified} unverified by fewer than two seats), ${plan.carried.length} verdict(s) carried, ${deferred.length} deferred, ${recorded.unfiled.length} cut(s) to file, ${uncovered.length} gap(s).`

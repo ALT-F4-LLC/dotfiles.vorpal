@@ -2,8 +2,8 @@
 
 # Behavior suite for corpus-cut.js's pass decisions: which definitions a pass
 # judges, how refuter votes settle a ruling, when a pass rests, and how an
-# issue's replay key and the merged ledger are derived, and which prior
-# issues a pass supersedes.
+# issue's replay key and the merged ledger are derived, which prior issues a
+# pass supersedes, and which ledgered entries a definition left unjudged keeps.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
 # and this one is in that list. It needs only `node` and `awk` — no engine, no
@@ -165,8 +165,10 @@ const supLedger = { verdicts: [
   was('b.md', 'section:Emit', 'remove', 'DOT-14'),
   was('c.md', 'file', 'remove', 'DOT-15', 'same'),
   was('k.md', 'file', 'remove', 'DOT-13'),
+  was('d.md', 'file', 'refactor', 'DOT-16'),
+  was('d.md', 'section:Emit', 'remove', null),
 ] }
-const supPlan = { judge: [{ path: 'a.md' }, { path: 'b.md' }, { path: 'c.md' }], carried: supLedger.verdicts.filter((x) => x.path === 'k.md'), dropped: [] }
+const supPlan = { judge: [{ path: 'a.md' }, { path: 'b.md' }, { path: 'c.md' }, { path: 'd.md' }], carried: supLedger.verdicts.filter((x) => x.path === 'k.md'), dropped: [] }
 const sup = supersededIssues(supLedger, supPlan, supFresh)
 const supBy = Object.fromEntries(sup.map((x) => [`${x.path}#${x.unit}`, x]))
 out.supUnits = sup.map((x) => `${x.path}#${x.unit}=${x.issue}`)
@@ -178,6 +180,15 @@ out.supNoIssue = 'a.md#section:Null' in supBy
 out.supSubsumed = supBy['b.md#section:Emit']?.replacementKey === idempotencyKey(supFresh[3])
 out.supUnchanged = 'c.md#file' in supBy
 out.supNoLedger = supersededIssues(null, supPlan, supFresh).length
+out.supUnsettled = 'd.md#file' in supBy
+
+// unsettled
+const uns = unsettledEntries(supLedger, supPlan, supFresh)
+out.unsUnits = uns.map((x) => `${x.path}#${x.unit}=${x.issue}`)
+out.unsIntact = uns.every((x) => supLedger.verdicts.includes(x))
+out.unsSettled = uns.some((x) => ['a.md', 'b.md', 'c.md'].includes(x.path))
+out.unsNoLedger = unsettledEntries(null, supPlan, supFresh).length
+out.unsNoneFresh = unsettledEntries(supLedger, supPlan, []).length
 process.stdout.write(JSON.stringify(out))
 JS
 { cat "${WORK}/config.js"; cat "${WORK}/decide.js"; cat "${WORK}/cases.js"; } > "${WORK}/run.js"
@@ -241,6 +252,13 @@ get() { node -e "const o=require('${WORK}/out.json'); process.stdout.write(Strin
 [ "$(get 'o.supSubsumed')" = "true" ]; ok $? 'a section under a freshly removed file names the file issue as the replacement'
 [ "$(get 'o.supUnchanged')" = "false" ]; ok $? 'a fresh key equal to the prior one replays the issue and is not superseded'
 [ "$(get 'o.supNoLedger')" = "0" ]; ok $? 'no ledger supersedes nothing'
+[ "$(get 'o.supUnsettled')" = "false" ]; ok $? 'a definition planned for judgment with no fresh verdict supersedes nothing'
+
+[ "$(get 'o.unsUnits.join()')" = "d.md#file=DOT-16,d.md#section:Emit=null" ]; ok $? 'a definition planned for judgment with no fresh verdict carries its prior entries, issue ids intact'
+[ "$(get 'o.unsSettled')" = "false" ]; ok $? 'a settled definition keeps none of its prior entries: its fresh verdicts replace them'
+[ "$(get 'o.unsIntact')" = "true" ]; ok $? 'unsettled entries are carried unchanged, as the skill restores them'
+[ "$(get 'o.unsNoLedger')" = "0" ]; ok $? 'no ledger carries nothing unsettled'
+[ "$(get 'o.unsNoneFresh')" = "8" ]; ok $? 'with no fresh verdict every planned definition carries its prior entries and a carried one is not repeated'
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

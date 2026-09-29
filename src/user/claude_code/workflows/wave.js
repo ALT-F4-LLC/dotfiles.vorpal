@@ -300,89 +300,62 @@ function bootstrap(row, r, isolated, isWrite) {
     // BOTH or the two executor classes drift apart on the same hazard.
     const isolationNote = isolated ? `
 
-0. YOU ARE IN A PRIVATE WORKTREE, and your Bash calls may be guard-screened —
-   every rule below binds you either way. The worktree protects your
-   SIBLINGS from you — it does not change your own discipline: any probe
-   that must modify files still runs on a COPY under <TMP>, never on this
-   checkout (never reach for git restore/checkout --/reset/clean — probing
-   on copies means never needing them). Never cd out to the shared
-   repository tree. Command discipline, non-negotiable — every call you make
-   must be obvious at a glance, exactly what it says and nothing more:
+0. YOU ARE IN A PRIVATE WORKTREE, and your Bash calls may be guard-screened;
+   every rule below binds you either way. A probe that must modify files runs
+   on a COPY under <TMP>, never on this checkout (never git restore, checkout
+   --, reset, or clean). Never cd out to the shared repository tree.
 
    - ONE action per Bash call: no \`&&\` chains, no \`$(...)\` substitution
      around git. Run every command PLAIN and SEPARATE.
-   - Spell every redirect target as a LITERAL absolute path (shell variables
-     do not survive between your calls — see the token protocol below).
-   - Run git against YOUR OWN tree only — never \`git -C\`/\`--git-dir\` at
+   - Spell every redirect target as a LITERAL absolute path.
+   - Run git against YOUR OWN tree only: never \`git -C\`/\`--git-dir\` at
      another checkout, never cd-then-git elsewhere. Pipes are fine.
 
-   RUN \`docket\` BARE — no DOCKET_PATH prefix; the store resolves from
-   anywhere inside the repository, this worktree included.
+   RUN \`docket\` BARE, with no DOCKET_PATH prefix.
 
    Bootstrap, one plain command at a time:
 
    a. \`printenv TMPDIR\` — your literal scratch root. Call it <TMP>;
       substitute its literal value wherever <TMP> or \`$TMPDIR\` appears in
-      this brief. (Use \`printenv\`, not \`echo\` — no variable expansion
-      anywhere in your calls.) PIN IT ONCE AND REUSE THE LITERAL: \`$TMPDIR\`
-      is not guaranteed to resolve to the same root on a later call, so a
-      path written as the variable can name one directory when you create it
-      and a different one when you read it back.
+      this brief (\`printenv\`, not \`echo\`; no variable expansion anywhere
+      in your calls). PIN IT ONCE AND REUSE THE LITERAL: \`$TMPDIR\` is not
+      guaranteed to resolve to the same root on a later call.
    b. \`git worktree list --porcelain\` — every checkout's path and HEAD sha.
    c. Compare \`git rev-parse HEAD\` in your tree to the HEAD of the shared
-      checkout from (b) — the one NOT under \`.claude/worktrees\`. If they
-      differ, run \`git checkout --detach --quiet <that sha>\`. Config bases
-      your worktree on the run's HEAD, so this is normally a no-op — verify,
-      never assume.
+      checkout from (b), the one NOT under \`.claude/worktrees\`. If they
+      differ, run \`git checkout --detach --quiet <that sha>\`.
 
    If any of these is DENIED by the guard or the permission system, put
-   \`BOOTSTRAP DENIED\` on a line of its own as the FIRST line of your
-   reply, quote the denial verbatim under it, and STOP — that is an
-   operator permission gap, not a repository-state problem. No advisor,
-   reviewer, or second reading of the guard lifts this: a refused
-   bootstrap is never re-spelled, moved to another path, or claimed
-   around; the wave reads the denial and the conductor owns the fix. If a command
-   fails on its own output instead, report that verbatim and STOP either way;
-   do not hunt, do not guess, and NEVER claim after a failed bootstrap — an
-   unclaimed step re-dispatches for free, a claimed one strands a token. Once
-   (c) passes, your NEXT command is the claim in 1' — no exploratory docket
-   verbs first (no --help, no step list/show, no run status/report, no next,
-   nothing under dispatch). The brief and the packet carry everything a
-   claim needs. The one standing exception, once you hold the packet: when a
-   routed finding's evidence body is not there, \`docket step artifact
-   ARTIFACT-N --payload\` on an artifact id the packet itself names is the
-   one sanctioned read — never run reports, step lists, \`--help\`, or the
-   store's database.
+   \`BOOTSTRAP DENIED\` on a line of its own as the FIRST line of your reply,
+   quote the denial verbatim under it, and STOP; a refused bootstrap is never
+   re-spelled, moved to another path, or claimed around. If a command fails
+   on its own output, report it verbatim and STOP. NEVER claim after a failed
+   bootstrap. Once (c) passes, your NEXT command is the claim in 1', with no
+   exploratory docket verbs first (no --help, step list/show, run
+   status/report, next, or dispatch). Once you hold the packet, the one
+   sanctioned extra read is \`docket step artifact ARTIFACT-N --payload\` on
+   an artifact id the packet itself names.
 
-   If the claim itself errors naming a packet file ("pinned by this run but is
-   no longer on disk"), report the error verbatim and STOP — the ref came from
-   a REPO-ADDITION config layer, repo-root-relative and absent from your
-   worktree (shared-corpus refs resolve from any cwd); the claim already
-   recorded and the token is gone, so a re-claim just burns another attempt —
-   the conductor's reap is the only way out.
+   If the claim errors naming a packet file ("pinned by this run but is no
+   longer on disk"), report the error verbatim and STOP; do not re-claim, the
+   conductor's reap is the only way out.
 
-   Uncommitted work in the shared tree is deliberately not visible, and
-   your inputs arrive in the rendered packet, not from the tree.` : ''
+   Uncommitted work in the shared tree is not visible here; your inputs
+   arrive in the rendered packet.` : ''
     const pinNote = isolated ? '' : `
 
 0. FIRST, before the claim: \`printenv TMPDIR\` — your literal scratch root.
-   Call it <TMP>; substitute its literal value wherever <TMP> appears below.
-   (Use \`printenv\`, not \`echo\`.) PIN IT ONCE AND REUSE THE LITERAL:
-   \`$TMPDIR\` is not guaranteed to resolve to the same root on a later call,
-   so a path written as the variable can name one directory when you create
-   it and a different one when you read it back — and the claim token you
-   park in obligation 1 depends on exactly that.`
+   Call it <TMP>; substitute its literal value wherever <TMP> appears below
+   (\`printenv\`, not \`echo\`). PIN IT ONCE AND REUSE THE LITERAL: \`$TMPDIR\`
+   is not guaranteed to resolve to the same root on a later call, and the
+   token you park in obligation 1 depends on it.`
     return `You are executing one step of a Docket run. Follow these obligations exactly.
 
-YOUR ASSIGNMENT: step ${row.step} (issue ${row.issue}, run ${row.run}). This
-brief was rendered for that step alone — every occurrence of ${row.step} below
-is your real, already-substituted step id, NOT a template placeholder. ${row.step}
-is the id you claim in obligation 1; a brief with an unfilled placeholder would
-read STEP-N or \${row.step}, and this one does not.${isolationNote}${pinNote}
+YOUR ASSIGNMENT: step ${row.step} (issue ${row.issue}, run ${row.run}). Every
+${row.step} below is your real, already-substituted step id.${isolationNote}${pinNote}
 
-1. Claim it AND PARK THE TOKEN ON DISK${isolated ? ` — run these as separate
-   plain Bash calls, literal paths throughout (this is form 1', the claim
-   obligation 0 names):
+1. Claim it AND PARK THE TOKEN ON DISK${isolated ? ` — separate plain Bash
+   calls, literal paths throughout (form 1', which obligation 0 names):
 
 ${claimCommands(true).map((c) => `   \`${c}\``).join('\n')}
 ` : `, in ONE Bash call, exactly this:
@@ -392,151 +365,93 @@ ${claimCommands(true).map((c) => `   \`${c}\``).join('\n')}
    \`\`\`
 `}
 
-   IF THE CHAIN STOPS BEFORE THE PACKET LINE ABOVE — the claim command itself
-   errored, the token file came back empty, or the \`claim_error\` check
-   exited non-zero (it prints nothing either way) — do NOT retry the claim and
-   do NOT read a packet: an
-   incomplete claim carries no \`packet\` key, so reading it anyway prints the
-   four characters \`null\` and nothing past this point is your real contract.
-   Diagnose with ONE more read-only command against the claim file that is
-   still on disk (the truncation below has not run yet):
+   IF THE CHAIN STOPS BEFORE THE PACKET LINE ABOVE (claim error, empty token
+   file, or a non-zero \`claim_error\` check): do NOT retry the claim and do
+   NOT read a packet. Run ONE read-only diagnostic:
 
    \`jq -c '{error: .error, code: .code, claim_error: .data.claim_error, re_minted: .data.re_minted}' <TMP>/${row.step}.d/${row.step}.claim.json\`
 
-   An EMPTY token file means no lease committed — report CLAIM FAILED with
-   that diagnostic verbatim and STOP; there is nothing to end. A token file
-   that DID capture something, with \`claim_error\` non-empty, means the lease
-   committed but a later stage failed — you hold a live token and MUST end it:
+   EMPTY token file: report CLAIM FAILED with that diagnostic verbatim and
+   STOP. Token captured but \`claim_error\` non-empty: you hold a live token
+   and MUST end it with
    \`docket step fail ${row.step} --note '<claim_error verbatim>' < <TMP>/${row.step}.d/${row.step}.token\`,
-   then report CLAIM INCOMPLETE with the diagnostic and STOP. \`re_minted: true\`
-   on that diagnostic means the engine recovered YOUR OWN earlier lease under
-   this same owner — name it in your report so a reap panel is not convened
-   for a claim that was already yours.
+   then report CLAIM INCOMPLETE with the diagnostic and STOP. Name
+   \`re_minted: true\` in your report when the diagnostic shows it.
 
-   The last command TRUNCATES the claim file rather than deleting it — its
-   contents are spent the moment the packet file above is written. Same rule
-   at step 3.
+   If the claim committed but no token was captured, re-run the same claim
+   command with the same --owner; it re-mints the token (\`re_minted: true\`).
 
-   Every path is spelled out because YOUR SCRATCH ROOT <TMP> IS SHARED BY
-   EVERY EXECUTOR IN THE WAVE (concurrent subagents all get the same
-   directory) and OUTLIVES the wave. That is why EVERYTHING you write goes
-   inside <TMP>/${row.step}.d — your PRIVATE STEP SCRATCH DIR, mode 0700,
-   built fresh by the rm/mkdir pair above (the \`rm -rf\` clears any stale
-   leftover from a prior attempt; never skip it, and never aim it anywhere
-   but that literal step-id path). Your step id is what makes the dir and
-   these filenames yours; do not shorten them to \`claim.json\` or \`token\`,
-   or a sibling's claim overwrites yours.
-
-   THE TOKEN IS RETURNED EXACTLY ONCE, in that response body. If the claim
-   committed but the token was not captured, re-run the same claim command
-   with the same --owner: it re-mints the token in the same attempt and
-   returns \`re_minted: true\`. SHELL VARIABLES DO NOT SURVIVE BETWEEN BASH
-   CALLS and step 2 takes many calls, so a variable is useless here — the
-   file is the only channel that reaches step 3.
-
-   WRITING THE TOKEN TO THIS FILE IS REQUIRED AND AUTHORIZED — it is the
-   designed mechanism, not a leak. It is mode 0600 inside your own 0700 step
-   scratch dir, you remove that dir the moment your record lands (obligation
-   3), and the engine retires the token in the same instant. Do not skip the
-   write to be cautious: skipping it strands the step, the worse outcome.
+   <TMP> IS SHARED BY EVERY EXECUTOR IN THE WAVE and outlives it, so
+   EVERYTHING you write goes inside <TMP>/${row.step}.d, your PRIVATE STEP
+   SCRATCH DIR (0700, built fresh by the rm/mkdir pair above), under
+   filenames that start with your step id. Never skip the \`rm -rf\`, never
+   aim it anywhere but that literal path, never shorten the filenames. Write
+   the token to its 0600 file:
+   shell variables do not survive between Bash calls and the file is the only
+   channel to obligation 3; skipping the write strands the step.
 
    Then open <TMP>/${row.step}.d/${row.step}.packet.md with the Read tool — it
-   is your contract. The packet goes to a FILE, not stdout, so a large brief
-   is never truncated by the harness's inline-output cap; a 30KB brief is the
-   normal case for a step carrying several pinned files, not an anomaly.
+   is your contract.
 
    On CONFLICT: stop immediately and report AT MOST three lines: your step id,
    the word CONFLICT, and the engine's error line verbatim. Do not investigate
-   the holder, the scopes, or the remedy — the conductor and the engine already
-   know.
+   the holder, the scopes, or the remedy.
 
-2. Execute the brief you were handed. It is your entire contract.${isWrite ? `
+2. Execute the brief you were handed (the packet). It is your entire contract.${isWrite ? `
    Ship the issue's declared change list and NOTHING beyond it: unrequested
    hardening, extra controls, and adjacent cleanups go into gap files
-   (obligation 3), never into the diff — verify-ac reports every undeclared
-   change as an out-of-scope entry that sends the issue to a vote instead of
-   integrating it. The one exception: a defect you find that is actively
-   exploitable is REPORTED in your return immediately, not merely gap-filed.` : ''}
+   (obligation 3), never into the diff. The one exception: a defect you find
+   that is actively exploitable is REPORTED in your return immediately, not
+   merely gap-filed.` : ''}
 ${!isWrite ? `
-2r. THE CHECKOUT YOU STAND IN MAY PREDATE THE CHANGE YOUR BRIEF DESCRIBES.
-   Write-class siblings work in PRIVATE worktrees and hand work back as a
-   COMMIT that nothing merges into this shared checkout, so HEAD here can be
-   a round or more behind the change-summary and issue.diff your packet
-   renders. Before reading ANY file by path to evaluate the change:
+2r. THE CHECKOUT YOU STAND IN MAY PREDATE THE CHANGE YOUR PACKET DESCRIBES.
+   Before reading ANY file by path to evaluate the change:
 
    - FIRST: if the packet's issue.diff is EMPTY and the change-summary
-     records a gap-only outcome (no commit, no files changed), there is
-     nothing to evaluate. Confirm that pair in ONE read-only pass and record
-     immediately, naming which half was engine-computed (the empty
-     issue.diff) vs self-reported (the summary); do NOT investigate
-     repositories to re-prove a non-change, and do NOT file a duplicate gap —
-     the upstream record already carries it.
-   - Find the target sha — the change-summary's FIRST LINE carries it.
-   - IF THAT FIRST LINE CARRIES NO SHA, or reports COMMIT BLOCKED, the
-     packet's target_sha is NOT the change. A blocked commit leaves the
-     field EMPTY — the engine's signal for this case — so there is no sha
-     to archive at all. Say exactly that in your record, evaluate the
-     packet's rendered issue.diff as the change, and file NO finding
-     against a file you read from that sha — each would be a false
-     blocker against work that is present but uncommitted.
-   - OTHERWISE reconstruct the target read-only, ALWAYS — do not first probe
-     whether your checkout contains the change: integration cherry-picks, so
-     the writer's sha is never an ancestor of the shared branch even after its
-     content lands. TWO plain calls, and \`<TMP>\` is the LITERAL from
-     bootstrap (a), never the words \`$TMPDIR\`:
+     records a gap-only outcome (no commit, no files changed), confirm that
+     pair in ONE read-only pass and record at once, naming the
+     engine-computed half (the empty issue.diff) and the self-reported half
+     (the summary); re-prove nothing and file no duplicate gap.
+   - The change-summary's FIRST LINE carries the target sha.
+   - IF THAT LINE CARRIES NO SHA, or reports COMMIT BLOCKED, the packet's
+     target_sha is NOT the change: say so in your record, evaluate the
+     packet's rendered issue.diff as the change, and file NO finding against
+     a file read from that sha.
+   - OTHERWISE reconstruct the target read-only, ALWAYS, without probing
+     whether your checkout contains the change. TWO plain calls in this
+     order, with <TMP> as the LITERAL from obligation 0:
 
        mkdir -p <TMP>/${row.step}.d/target
        git archive <sha> | tar -x -C <TMP>/${row.step}.d/target
 
-     The \`mkdir\` is not optional: \`tar -x -C\` on a directory that does not
-     exist fails \`could not chdir\` and extracts NOTHING. The literal is not
-     optional either — the same \`$TMPDIR\` hazard the printenv note above
-     records: extracting under one root and reading under another gets "no
-     such file or directory" against a tree you just built, or worse falls
-     back to reading the shared checkout: a judge reviewing a tree a round
-     behind the change, exactly what this obligation prevents.
-
-     The sha resolves even when no branch of yours carries it, because every
-     worktree shares one object store. Read, build, and probe THERE, and
-     attribute every result to that tree, never to this checkout.
-   - If the sha does not resolve at all, that is a hard gap: record it as a
-     gap file per obligation 3 instead of reviewing whatever the checkout
-     happens to hold.
+     Read, build, and probe THERE, and attribute every result to that tree,
+     never to this checkout.
+   - If the sha does not resolve, record that as a gap file per obligation 3
+     instead of reviewing whatever the checkout holds.
 ` : ''}${isolated && isWrite ? `
-2b. COMMIT YOUR DELIVERABLE IN YOUR WORKTREE before step 3. Your edits live in
-   this private worktree and NOTHING merges them back automatically — the
-   commit is the hand-back channel: worktrees share the repository's object
-   database, so once committed your sha is reachable from every checkout, and
-   the conductor integrates it. Two SEPARATE plain calls, exactly this shape
-   (no compounds, no global options before \`add\`/\`commit\`):
+2b. COMMIT YOUR DELIVERABLE IN YOUR WORKTREE before obligation 3; the commit
+   is the only hand-back channel. Two SEPARATE plain calls, exactly this
+   shape (no compounds, no global options before \`add\`/\`commit\`):
 
    git add -A
    git commit -m "type(scope): summary"
 
-   The subject is a CONVENTIONAL COMMIT, whatever the repo's history does:
-   type one of feat|fix|docs|refactor|test|perf|build|ci|chore, scope named
-   for the area you touched, summary imperative plain language, 72 chars max,
-   no trailing period. No body paragraphs — most commits are a subject alone;
-   when the subject cannot carry the why, short "- " bullets. Never step,
-   issue, or run ids (no STEP-N, DKT-N, RUN-N in subject or body): ids
-   already live in your change-summary artifact and the engine record, and
-   an id-bearing subject forces a hand-amend at integration.
+   CONVENTIONAL COMMIT subject: type one of
+   feat|fix|docs|refactor|test|perf|build|ci|chore, scope named for the area
+   touched, imperative summary, 72 chars max, no trailing period; a body only
+   as short "- " bullets when the subject cannot carry the why; never a step,
+   issue, or run id (STEP-N, DKT-N, RUN-N) anywhere in it.
 
    Then \`git rev-parse HEAD\` and put that sha ON THE FIRST LINE of your
-   change-summary artifact AND in your final report. The commit signs
-   non-interactively with the dedicated agent signing key the harness
-   injects (ssh-format, \`~/.ssh/agent-signing.pub\`) — never pass
-   \`--no-gpg-sign\` and never touch signing config. This is integration
-   plumbing on a throwaway worktree branch; publishing stays the operator's
-   alone. Do NOT push, and do not touch any other checkout.
+   change-summary artifact AND in your final report. The commit signs with
+   the agent signing key the harness injects: never pass \`--no-gpg-sign\`,
+   never touch signing config. Do NOT push, and do not touch any other
+   checkout.
 
-   IF THE COMMIT IS REFUSED (guard or permission), do not fight it: leave the
-   worktree exactly as it is, and report COMMIT BLOCKED with the refusal's
-   first line verbatim plus your worktree path (from \`git rev-parse
-   --show-toplevel\`) — the conductor commits on your behalf with
-   \`git -C <your worktree> ...\` from its own seat. Then continue to step 3
-   (your record may still succeed or park per its own rules; the two
-   blockages are independent).
+   IF THE COMMIT IS REFUSED (guard or permission), leave the worktree exactly
+   as it is and report COMMIT BLOCKED with the refusal's first line verbatim
+   plus your worktree path (from \`git rev-parse --show-toplevel\`); the
+   conductor commits on your behalf. Then continue to obligation 3.
 ` : ''}
 
 3. Record it yourself with \`docket step record\`, feeding the token file to
@@ -544,204 +459,134 @@ ${!isWrite ? `
 
    \`docket step record ${row.step}${isWrite ? ' --worktree <YOUR CHECKOUT>' : ''} --artifact-file <TMP>/${row.step}.d/${row.step}-<kind>.md --metadata '{"model_resolved":"unknown","effort_resolved":"unknown"}' < <TMP>/${row.step}.d/${row.step}.token\`
 
-   \`record\` is an exact alias of \`step complete\` — use it, since some
-   shells parse the bare word \`complete\` as their own builtin and refuse
-   the line before docket sees it.
+   Use \`record\`, an exact alias of \`step complete\`, since some shells
+   treat the bare word \`complete\` as their own builtin.
 
-   Run this command SANDBOXED, same as everything else — do NOT pass
-   dangerouslyDisableSandbox. Only the operator can grant that, and never
-   through a brief. Most gates are pure local work (build/test/lint/scan)
-   and need no elevation at all. Run each gate command as its own
-   top-level command (\`make fmt && make vet && make lint\`), never through
-   \`sh -c\` or another interpreter: a command handed to an interpreter is
-   refused outright, while a bare \`make\` or \`vorpal run\` matches the allow
-   rules. Set a cache path as a \`GOCACHE=... <cmd>\` prefix, as the
-   toolchain fragment shows.
+   Run this command SANDBOXED, same as everything else: never pass
+   dangerouslyDisableSandbox. Run each gate command as its own top-level
+   command (\`make fmt && make vet && make lint\`), never through \`sh -c\`
+   or another interpreter. Set a cache path as a \`GOCACHE=... <cmd>\`
+   prefix, as the toolchain fragment shows.
 
-   IF a gate genuinely needs network access and the sandbox denies it —
-   record exits non-zero and the error names a DNS failure, a TLS handshake
-   failure, or a blocked host — do not retry with the sandbox disabled and
-   do not treat it as a normal step failure. Attempt once, then STOP and
-   report \`NETWORK GATE BLOCKED\`: the gate name, the exact host/domain the
-   error names, and the error verbatim. Leave your token intact, as an
-   unresolved record refusal below. The fix is a named domain added to
-   \`sandbox_network_allowed_domains\` in \`src/user/claude_code.rs\` through
-   the operator's own \`just activate\` — never a live bypass, never on your
-   say-so.
+   IF a gate needs network access and the sandbox denies it (record exits
+   non-zero and the error names a DNS failure, a TLS handshake failure, or a
+   blocked host): attempt once, then STOP and report \`NETWORK GATE BLOCKED\`
+   with the gate name, the exact host/domain the error names, and the error
+   verbatim. Leave your token intact. Never retry with the sandbox disabled;
+   the fix is an operator change to \`sandbox_network_allowed_domains\` in
+   \`src/user/claude_code.rs\`.
 ${isWrite ? `
-   \`--worktree\` names the checkout the work happened in. The engine
-   computes the recorded diff THERE, and spawns your step's completion gates
-   and the downstream verify pre-gate with that checkout as cwd too. Get its
-   literal path once with \`git rev-parse --show-toplevel\` and paste that
-   in; without it the engine diffs the wrong tree.
+   \`--worktree\` is the literal path of the checkout the work happened in
+   (\`git rev-parse --show-toplevel\`); the engine computes the recorded diff
+   THERE and runs your completion gates and the downstream verify pre-gate
+   with it as cwd.
 ` : ''}
    Leave \`model_resolved\` and \`effort_resolved\` as \`unknown\` unless the
-   runtime directly supplies an observation for this execution. Requested
-   routing, aliases, settings, and your own identity claim are not observations:
-   the harness may substitute a model or cap effort. Do not infer either value.
-   When an observation is available, use its exact model ID and effort, and
-   identify the source in the artifact. If multiple serving models are observed,
-   report them there and keep the single \`model_resolved\` value unknown.
+   runtime directly supplies an observation for this execution; requested
+   routing, aliases, settings, and your own identity claim are not
+   observations. With one, use its exact model ID and effort and name the
+   source in the artifact; several observed models go in the artifact with
+   \`model_resolved\` still unknown. Workflow \`agent()\` returns an answer or
+   null, not SDK
+   \`modelUsage\` telemetry; wave-usage.js reads serving models from the
+   transcripts.
 
-   Native workflow \`agent()\` returns an answer or null, not SDK
-   \`modelUsage\` telemetry. After the wave, \`wave-usage.js\` reads serving
-   models from assistant-message \`model\` fields in the actual transcripts.
-   It reports all observed models separately from requested routing; it cannot
-   recover an effective effort that the transcript does not expose.
-
-   or on failure:
+   On failure instead:
 
    \`docket step fail ${row.step} --note '<why>' < <TMP>/${row.step}.d/${row.step}.token\`
 
-   \`fail\` takes ONLY --note and --metadata — there is no --artifact-file on
-   it; \`--artifact-file\` exists on \`record\` alone, where it is MANDATORY.
-   Reach for \`fail\` only when a retry might redeem the attempt.
+   \`fail\` takes ONLY --note and --metadata; \`--artifact-file\` exists on
+   \`record\` alone, where it is MANDATORY. Reach for \`fail\` only when a
+   retry might redeem the attempt.
 
    AN OUT-OF-SCOPE PROBLEM YOUR WORK SURFACED IS NEITHER A FAILURE NOR YOUR
-   DECLARED ARTIFACT. Write each one to its own file and pass \`--gap-file
-   <path>\` (repeatable) on the record: every gap file lands as a \`gap\`
-   artifact beside your declared emit AND files a related backlog issue in
-   the SAME transaction — no workflow declaration needed, that channel is
-   always open. Your contract's Stuck clause is a SUCCESS recorded this way,
-   never a \`fail\`.
-
-   A gap file's FIRST LINE becomes the filed issue's TITLE: one line naming
-   the defect itself. Its SECOND LINE is the home declaration, ALWAYS:
-   \`Home: <repo/checkout>\` — the other repository when the problem lives
-   elsewhere, or \`Home: THIS repository\` when it is local (gaps belong to
-   their respective projects; the engine files yours HERE and the conductor
-   re-homes it from your Home: line). Its THIRD LINE is \`Files: <path>,
-   <path>\` — every concrete file the fix will touch, comma-separated —
-   with a \`Scope: <glob>, <glob>\` line after it only when a glob bounds
-   the fix wider than those files. The engine files the issue with neither
-   \`-f\` nor \`--scope\`, and the conductor promotes these lines into
-   both at close so planning can keep the gap apart from colliding work.
+   DECLARED ARTIFACT: write each to its own file and pass \`--gap-file <path>\`
+   (repeatable) on the record; each lands as a \`gap\` artifact and files a
+   backlog issue in the same transaction. Your contract's Stuck clause is a
+   SUCCESS recorded this way, never a \`fail\`. Gap file: line 1 is the issue
+   TITLE naming the defect; line 2 is \`Home: <repo/checkout>\` or \`Home:
+   THIS repository\`; line 3 is \`Files: <path>, <path>\`, every file the fix
+   touches; then \`Scope: <glob>, <glob>\` only when a glob bounds the fix
+   wider than those files.
 ${isolated ? `
    IF THE RECORD IS REFUSED (guard or permission), attempt it ONCE and STOP
-   TRYING FORMS. Leave your deliverables parked where the brief already has
-   them —
+   TRYING FORMS. Leave the whole step scratch dir intact:
 
-     <TMP>/${row.step}.d/${row.step}.token       (intact, 0600 — do NOT truncate it)
+     <TMP>/${row.step}.d/${row.step}.token       (0600; do NOT truncate it)
      <TMP>/${row.step}.d/${row.step}-<kind>.md   (your artifact body)
      <TMP>/${row.step}.d/${row.step}-payload.json (your payload, when the contract has one)
 
-   (the WHOLE step scratch dir stays intact; the conductor records from it
-   on your behalf and sweeps it after)
-
-   — and report RECORD BLOCKED: your step id, the refusal's first line
-   verbatim, and every parked path including the token's. ONE refusal is an
-   instruction, not a wall: "the lease has expired; claim it again to
-   continue" means run the claim from 1' again for a FRESH token and record
-   immediately — your finished work is still valid. Park and report only
-   when the re-claim or the record refuses for any OTHER reason; the
-   conductor is not isolated and records the step from your parked state.
-   NEVER record \`fail\` for work that succeeded — a false failure burns an
-   attempt and re-runs the whole step to relearn what your parked artifacts
-   already hold.
+   Report RECORD BLOCKED: your step id, the refusal's first line verbatim,
+   and every parked path including the token's; the conductor records from
+   the parked state. The one exception: "the lease has expired; claim it
+   again to continue" means run the claim from 1' again for a FRESH token
+   and record immediately. NEVER record \`fail\` for work that succeeded.
 ` : ''}
 
    The CLI reads the token from DOCKET_TOKEN or, when that is unset, from
-   stdin. NOTHING SETS DOCKET_TOKEN FOR YOU — a claim cannot export into
-   your shell. Redirecting the file into stdin is the channel.
+   stdin; NOTHING SETS DOCKET_TOKEN FOR YOU, so the stdin redirect is the
+   channel. Never \`cat\` the token file, echo it, paste it into a command
+   line, or reproduce it in your reply; no verb has a \`--token\` flag.
 
-   Never \`cat\` the file, echo its contents, paste it into a command line, or
-   reproduce it in your reply. There is deliberately no \`--token\` flag on any
-   verb, because argv is world-readable through \`ps\`. Redirect it; never read it.
+   After \`record\` or \`fail\` exits 0, REMOVE YOUR STEP SCRATCH DIR in one
+   plain call: \`rm -rf <TMP>/${row.step}.d\`; the sweep is part of the
+   record. If \`record\` or \`fail\` errored, KEEP the dir and its token file
+   INTACT and stop. If the token file is missing or empty, or a record is
+   refused for a missing or invalid token, say so plainly and stop; never
+   reconstruct or guess it.
 
-   After the record command exits 0, REMOVE YOUR STEP SCRATCH DIR in one
-   plain call — \`rm -rf <TMP>/${row.step}.d\` — token, packet, and all. The
-   engine retires the token the moment the record lands and copies your
-   artifact, payload, and gap files into its store during the record itself,
-   so nothing in the dir will ever be read again. The sweep is part of the
-   record, not optional tidying — a leftover dir parks a spent credential
-   and your full rendered brief in a scratch root later agents, runs, and
-   sessions all share. The same sweep follows a \`fail\` that exits 0. If
-   \`record\` or \`fail\` errored, KEEP the dir and its token file INTACT and
-   stop — the token is the only thing that can still drive this step, and
-   losing it after a failed record turns a routine step failure into a
-   zombie claim the lease must reap.
-
-   If the token file is missing or empty, or a record is refused for a missing
-   or invalid token, say so plainly and stop. Do not reconstruct or guess it.
-
-   EVERY record carries an artifact file. The engine refuses a record without
-   \`--artifact-file\` before it validates anything else, so the file is
-   never optional. Create it WITH BASH
+   EVERY record carries an artifact file; the engine refuses a record without
+   \`--artifact-file\` before it validates anything else. Create it WITH BASH
    (a heredoc: \`cat > <TMP>/${row.step}.d/${row.step}-<kind>.md <<'EOF' ... EOF\`)
-   as a FRESH file whose name starts with your step id, then pass that path as
-   \`--artifact-file\`. NEVER create this file with the Write tool: under the
-   sandbox it materializes files at a DIFFERENT physical path than the <TMP>
-   root your Bash commands use, and the record then fails "no such file or
-   directory" against a file you just wrote.
+   as a FRESH file whose name starts with your step id, never with the Write
+   tool (under the sandbox that lands at a different physical path and the
+   record fails "no such file or directory"), and never under a shared
+   filename like \`change-summary.md\`.
 
-   ARTIFACT FILES: THREE AUTHORING RULES. A large or brace-heavy heredoc
-   body fails in an isolated shell; author files these ways from the start
-   and that failure never arises. Every form below writes ONLY to targets
-   under your <TMP> or your own worktree — that containment is the rule
-   itself.
+   ARTIFACT FILES: THREE AUTHORING RULES, every target under your <TMP> or
+   your own worktree:
 
-   - SIZE: never write a large body in one heredoc. Write the file as an
-     initial \`cat > <path> <<'EOF'\` of a few KB at most, followed by
-     \`cat >> <path> <<'EOF'\` appends of the same size until done.
-   - JSON: always \`jq -n\` (below) — never a JSON literal in any heredoc.
-   - CODE EXCERPTS (Go signatures, config samples, anything brace- or
-     bracket-heavy): let the excerpt travel as file bytes rather than as
-     command text. Write it to its own scratch file in small chunks with the
-     SIZE form above, then \`cat\` that file into place — or build the
-     artifact with \`jq -n --rawfile body <TMP>/<step>.d/<step>-excerpt.txt\`.
-     Do not hand-encode, escape, or otherwise transform the content itself.
+   - SIZE: never one large heredoc. An initial \`cat > <path> <<'EOF'\` of a
+     few KB at most, then \`cat >> <path> <<'EOF'\` appends of the same size.
+   - JSON: always \`jq -n\`; never a JSON literal in any heredoc or command
+     (the guard refuses a heredoc body carrying \`{\` followed by \`"\`).
+     \`jq -n --arg id AC1 --arg status met '{id: $id, status: $status}' > "$path"\`
+     is the shape; keys needing quotes go as \`{("kebab-key"): $v}\`; arrays
+     as \`jq -n '[ ... ]'\` or \`jq -s\` over per-element files.
+   - CODE EXCERPTS (brace- or bracket-heavy text): write the excerpt to its
+     own scratch file in small chunks with the SIZE form, then \`cat\` it into
+     place or build the artifact with
+     \`jq -n --rawfile body <TMP>/<step>.d/<step>-excerpt.txt\`. Do not
+     hand-encode, escape, or otherwise transform the content.
 
-   (There is no \`--artifact-kind\`: the workflow's
-   \`emits\` declares the artifact's KIND — which your brief's OUTPUT section
-   already names — it does not make the file optional. A structured payload,
-   when your brief requires one, goes in \`--payload-file <path>\` — and you
-   BUILD that JSON with \`jq -n\`, never as a JSON literal in a heredoc or
-   command: an isolated shell's guard refuses any heredoc body carrying \`{\`
-   immediately followed by \`"\` — which is every JSON object literal, so no
-   formatting gets a literal past it. \`jq -n --arg id AC1 --arg status met
-   '{id: $id, status: $status}' > "$path"\` is the honest shape: the command
-   text carries only \`{id:\` (which the guard allows) and jq writes the real
-   JSON to the file. Keys needing quotes go as \`{("kebab-key"): $v}\`;
-   arrays as \`jq -n '[ ... ]'\` or by \`jq -s\` over per-element files.)
-   Never write to or reuse a shared filename like \`change-summary.md\`:
-   executors in one wave share the <TMP> root — write inside your private
-   step dir so your bytes cannot collide, and under a shared name a racing
-   sibling's bytes, or a predecessor's leftover, get recorded as YOUR
-   artifact.
+   There is no \`--artifact-kind\`; the workflow's \`emits\` declares the
+   artifact's KIND, which your packet's OUTPUT section names. A structured
+   payload, when your packet requires one, goes in \`--payload-file <path>\`,
+   built with \`jq -n\`.
 
-   If a write is refused, triage the refusal before anything else. One that
-   names the body's SIZE OR CONTENT, on a target under <TMP> or your own
-   worktree, means the three forms above are how to write it — use them.
-   One that says the command is TOO COMPLEX TO VERIFY that it stays inside
-   the worktree names the command's SHAPE, not its body: reissue the same
-   work as single plain commands — ONE redirection or ONE heredoc each, no
-   \`&&\`, no pipes, no \`;\`, no command substitution — and run them
-   separately. Its closing line about git operations is boilerplate that
-   fires on non-git commands too, so do NOT read it as a claim that you
-   touched git. This is the same guard as the brace-then-quote rule above,
-   refusing on a different axis. One that names ANYTHING ELSE — the target
-   path, a permission, a policy concern — is a real BLOCKED condition on the
-   spot, exactly like a refused record, and so is one that survives the
-   three forms: report \`WRITE BLOCKED\`, the refusal's first line, and every
-   path involved, then stop that path and record what you can. Never devise
-   an encoding, a substitution, or a staged rewrite to get refused content
-   through: content that will not go through in the plain forms is a
-   BLOCKED report, always.
+   If a write is refused, triage the refusal first. One naming the body's
+   SIZE OR CONTENT, on a target under <TMP> or your own worktree: the three
+   forms above are how to write it. One saying the command is TOO COMPLEX TO
+   VERIFY that it stays inside the worktree: reissue the work as single plain
+   commands (ONE redirection or ONE heredoc each; no \`&&\`, pipes, \`;\`, or
+   command substitution) and run them separately; its closing line about git
+   operations also fires on non-git commands and is not a claim that you
+   touched git. One naming ANYTHING ELSE (the target path, a permission, a
+   policy concern), or one that survives the three forms: report
+   \`WRITE BLOCKED\`, the refusal's first line, and every path involved, then
+   stop that path and record what you can. Never devise an encoding, a
+   substitution, or a staged rewrite to get refused content through.
 
-   Keep the claim's requested model, effort, and variant unchanged. They record
-   the engine's routing decision even when execution fails or is interrupted.
-   Do not calculate a cost multiplier from model names or token prices; the
-   engine's declared cost and supplied routing remain authoritative.
+   Keep the claim's requested model, effort, and variant unchanged, and
+   derive no cost multiplier from model names or token prices.
 
 4. End your reply with exactly this line, filled in from the record
    response: <step-id> recorded (<status>) — for example "STEP-12 recorded
    (done)" or "STEP-12 recorded (waiting-human)". If instead you STOPPED on
    one of the signals above (CLAIM FAILED, CLAIM INCOMPLETE, NETWORK GATE
-   BLOCKED, RECORD BLOCKED, WRITE BLOCKED), that signal opens its own line and
-   nothing recorded. The wave parses the tail: a record tail lets this
-   issue's later stages launch, a stop signal defers them, and a reply
-   ending in neither is treated as unrecorded and deferred too. Do not
-   paraphrase either shape.`
+   BLOCKED, RECORD BLOCKED, WRITE BLOCKED), that signal opens its own line
+   and nothing recorded. The wave parses the tail, and a reply ending in
+   neither shape is treated as unrecorded. Do not paraphrase either shape.`
 }
 // TEST-END bootstrap
 

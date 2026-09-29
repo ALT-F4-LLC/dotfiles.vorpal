@@ -3,6 +3,12 @@
 Version history of `workflows/investigation.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 20
+
+The `research` step declares `payload = "research-notes@2"`, the schema
+`contracts/research.md` emits, so its recorded notes validate against that
+schema. No topology, routing, or limit change.
+
 ## 19
 
 Version history moves from the trailing comment on `version =` to

@@ -157,7 +157,11 @@ session, from the repository root. In the snippets below `$SCRATCH`,
 `$PASS`, and `$NOW` hold the scratch path, the pass number, and the
 timestamp from §1. The row's key is the replay key: a
 repeated pass on unchanged bytes returns the original issue, open or
-closed, so an operator who closed a cut as won't-do is never re-asked.
+closed. Once the bytes change the key changes, so a cut the operator
+declined is skipped by title instead: a row whose title matches a closed
+corpus-cut issue labelled `wont-do` files nothing and records that
+issue's id. To decline a cut, run `docket issue label add <id> wont-do`,
+then close it. A landed cut is closed without the label and never skipped.
 
 The shards hold carried entries in the slim form you passed. Restore each
 from the committed ledger, and stop if any restored entry disagrees with
@@ -178,20 +182,28 @@ jq --slurpfile full src/user/docket/config/cut-ledger.json '
 Only slim entries are restored: a unit judged this pass carries its full
 fresh entry and is never replaced by the stale committed one.
 
-Then file:
+Then map the declined cuts, title to id, and file:
 
 ```bash
+docket issue list --all --limit 1000 -l corpus-cut -l wont-do --json=v2 > "$SCRATCH/declined.raw.json"
+jq '.data.truncated' "$SCRATCH/declined.raw.json"   # must print false
+jq '[.data.items[] | select(.status == "done") | {key: .title, value: .id}] | from_entries' "$SCRATCH/declined.raw.json" > "$SCRATCH/declined.json"
 : > "$SCRATCH/ids.tsv"
 cat "$SCRATCH"/issues/index.*.tsv 2>/dev/null | while IFS=$'\t' read -r key title scope body; do
+  declined=$(jq -r --arg t "$title" '.[$t] // empty' "$SCRATCH/declined.json")
+  [ -n "$declined" ] && { printf '%s\t%s\n' "$key" "$declined" >> "$SCRATCH/ids.tsv"; continue; }
   out=$(docket issue create --idempotency-key "$key" -t "$title" -d - -l corpus-cut --scope "$scope" --json=v2 < "$body") || { printf '%s\t%s\n' "$key" "FAILED" >> "$SCRATCH/ids.tsv"; continue; }
   printf '%s\t%s\n' "$key" "$(jq -r '.data.id // .data.issue.id // empty' <<< "$out")" >> "$SCRATCH/ids.tsv"
 done
 ```
 
 Stop if the assembled entry count differs from the return's
-`ledger.entries`. Confirm the id field with the envelope on the first
-row; the docket skill's reference names the v2 shapes. No routing label
-and no size is set: the issue is unrouted for `docket-groom` to triage
+`ledger.entries`, or if the declined listing prints anything but `false`
+for `truncated`: a partial map would re-file a declined cut. Repeated
+`-l` flags AND, so the map holds only `wont-do` cuts. Confirm the id
+field with the envelope on the first filed row; the docket skill's
+reference names the v2 shapes. No routing label and no size is set: the
+issue is unrouted for `docket-groom` to triage
 and size, and `corpus-cut` is a plain label for listing. A row that
 failed is reported with the CLI's error and left unfiled; its verdict
 keeps `issue: null` and is filed again next pass.
@@ -215,8 +227,9 @@ Invoke the `commit` skill scoped to the ledger
 one commit cycle per pass, never batched across passes. Then report the
 pass in a few lines: the pass number, definitions tried and carried, the
 verdict counts, overrides by refuters, issues filed with their ids, rows
-that failed, the commit hash, every `uncovered` entry, and the evidence
-coverage (run stores read, logs digested, engine available or not).
+skipped as declined, rows that failed, the commit hash, every `uncovered`
+entry, and the evidence coverage (run stores read, logs digested, engine
+available or not).
 
 ## 5. Next pass
 

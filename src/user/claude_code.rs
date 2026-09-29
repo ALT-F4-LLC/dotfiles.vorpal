@@ -15,6 +15,11 @@ const GIT_ALLOWED_SIGNERS_CONFIG_PATH: &str = "~/.config/git/allowed_signers";
 // must be readable through the ~/.ssh read-deny.
 const GIT_AGENT_SIGNING_KEY_PATH: &str = "~/.ssh/agent-signing";
 const GIT_AGENT_SIGNING_KEY_PUBLIC_PATH: &str = "~/.ssh/agent-signing.pub";
+const OTEL_LOGS_ENDPOINT_LOKI: &str =
+    "https://alloy-forwarder.bulbasaur.eks.altf4.internal/v1/logs";
+const OTEL_METRICS_ENDPOINT_MIMIR: &str =
+    "https://alloy-forwarder.bulbasaur.eks.altf4.internal/v1/metrics";
+const OTEL_OTLP_PROTOCOL: &str = "http/protobuf";
 /// Placeholder in the auto-mode prose for the comma-joined scratch roots.
 /// The roots carry the invoking user's uid, so the rows that name them are
 /// expanded through `expand_scratch_roots` when the config is evaluated
@@ -25,9 +30,6 @@ const SENSITIVE_PATHS_DENY_READ_ONLY: &[&str] = &["~/.aws/**"];
 
 const SENSITIVE_PATHS: &[&str] = &[
     "~/.claude.json",
-    // config.env carries the Grafana Cloud access-policy token that
-    // `agento11y login` writes; the plugin hooks read it outside the sandbox.
-    "~/.config/agento11y/**",
     "~/.config/gh/**",
     "~/.doppler/**",
     "~/.gemini/**",
@@ -499,14 +501,6 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         .with_teammate_mode("in-process")
         .with_tui("fullscreen")
         .with_worktree_base_ref("head")
-        // The plugin id names this marketplace, so a fresh machine needs its
-        // source declared here rather than in the live plugin state an
-        // `agento11y claude` launch leaves behind.
-        .with_extra_known_marketplace(
-            "agento11y",
-            serde_json::json!({ "source": { "source": "github", "repo": "grafana/agento11y" } }),
-        )
-        .with_enabled_plugin("agento11y-claude-code@agento11y", true)
         .with_enabled_plugin("gopls-lsp@claude-plugins-official", true)
         .with_enabled_plugin("rust-analyzer-lsp@claude-plugins-official", true)
         .with_enabled_plugin("typescript-lsp@claude-plugins-official", true)
@@ -514,9 +508,25 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         .with_env("ANTHROPIC_DEFAULT_HAIKU_MODEL", "claude-haiku-4-5")
         .with_env("ANTHROPIC_DEFAULT_OPUS_MODEL", "claude-opus-5-5")
         .with_env("ANTHROPIC_DEFAULT_SONNET_MODEL", "claude-sonnet-5-5")
+        .with_env("CLAUDE_CODE_ENABLE_TELEMETRY", "1")
         .with_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1")
         .with_env("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", "0") // REASON: Must be 0 for 'with_permission_default_mode('auto')'
-        .with_env("GIT_CONFIG_COUNT", &GIT_CONFIG.len().to_string());
+        .with_env("GIT_CONFIG_COUNT", &GIT_CONFIG.len().to_string())
+        .with_env("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", OTEL_LOGS_ENDPOINT_LOKI)
+        .with_env("OTEL_EXPORTER_OTLP_LOGS_PROTOCOL", OTEL_OTLP_PROTOCOL)
+        .with_env(
+            "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT",
+            OTEL_METRICS_ENDPOINT_MIMIR,
+        )
+        .with_env("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL", OTEL_OTLP_PROTOCOL)
+        .with_env(
+            "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE",
+            "cumulative",
+        )
+        .with_env("OTEL_LOGS_EXPORTER", "otlp")
+        .with_env("OTEL_LOGS_EXPORT_INTERVAL", "15000")
+        .with_env("OTEL_METRICS_EXPORTER", "otlp")
+        .with_env("OTEL_METRIC_EXPORT_INTERVAL", "15000");
 
     for (i, (key, value)) in GIT_CONFIG.iter().enumerate() {
         builder = builder

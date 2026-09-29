@@ -118,6 +118,11 @@
 #          leaving the paragraph with dedupe only
 #       g-B move the sentence into the clean-HEAD ruling paragraph above;
 #          the literal survives whole-file but leaves the dedupe paragraph
+#   (h) harnessCap comes from launches.json, never computed by hand
+#       h1 restore "Compute `harnessCap = min(16, that number - 2)`" in the
+#          cap paragraph
+#       h2 revert either Workflow example to a bare `harnessCap`
+#       h3 restore the `getconf _NPROCESSORS_ONLN` probe anywhere in step 2
 #
 # A missing input file fails; it never skips green.
 
@@ -489,6 +494,30 @@ if paragraph 'A note reaches only packets rendered after it lands' "${WORK}/dedu
         "${WORK}/dedupe" 'in the same form as the clean-HEAD ruling above'
 else
     bad "first-duplicate note: no single paragraph carries 'A note reaches only packets rendered after it lands'"
+fi
+
+# (h) harnessCap has one source: lane_units.py writes it into launches.json
+# and the conductor passes it through. A hand-computed figure drifted in past
+# runs (1000 was passed as the cap), so step 2 must name launches.json as the
+# source and carry no formula, CPU probe, or literal of its own.
+if paragraph 'wave.js uses `min(HARNESS_CAP, harnessCap)` as its own' "${WORK}/harness-cap"; then
+    ok "harnessCap: exactly one paragraph rules on the cap"
+    states "harnessCap: each launch passes the launches.json figure" \
+        "${WORK}/harness-cap" "pass entry i's \`harnessCap\` from launches.json"
+    states "harnessCap: launch 0 example reads launches.json" \
+        "${WORK}/flat" 'harnessCap: <launches.json[0].harnessCap>'
+    states "harnessCap: launch 1 example reads launches.json" \
+        "${WORK}/flat" 'harnessCap: <launches.json[1].harnessCap>'
+    awk '/^### 2\. /{on=1; next} /^### 3\. /{on=0} on' "$SKILL" > "${WORK}/step-2"
+    if [ ! -s "${WORK}/step-2" ]; then
+        bad "harnessCap: the step-2 section heading has drifted; nothing extracted"
+    elif grep -qE -- 'Compute `harnessCap`|that number - 2|getconf|harnessCap: 1000' "${WORK}/step-2"; then
+        bad "harnessCap: step 2 still computes the cap or passes a literal: $(grep -E -- 'Compute `harnessCap`|that number - 2|getconf|harnessCap: 1000' "${WORK}/step-2" | head -1)"
+    else
+        ok "harnessCap: step 2 carries no formula, CPU probe, or literal cap"
+    fi
+else
+    bad "harnessCap: no single paragraph carries 'wave.js uses \`min(HARNESS_CAP, harnessCap)\` as its own'"
 fi
 
 # (e) Absence claim, run over SENTENCES rather than paragraphs: every

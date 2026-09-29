@@ -888,24 +888,16 @@ report it, never hunt for another copy.
 
 **Report the machine's own concurrency cap so wave.js does not have to guess
 it.** The Workflow tool's real per-invocation cap is `min(16, CPUs-2)`, but a
-wave script cannot read the CPU count itself; you can, so read it before
-launching. `getconf _NPROCESSORS_ONLN` is portable across macOS and Linux;
-`nproc` is the fallback for a libc without that key (macOS ships no `nproc`,
-and `sysctl` is refused under the sandbox):
-
-```bash
-getconf _NPROCESSORS_ONLN 2>/dev/null || nproc
-```
-
-Compute `harnessCap = min(16, that number - 2)`, floored at 1 (a single-core
-or two-core box would otherwise compute zero or negative), and pass it in
-every launch's `args`. wave.js uses `min(HARNESS_CAP, harnessCap)` as its own
-admission bound and logs which it used; omitting the field is never a
-refusal.
+wave script cannot read the CPU count itself. lane_units.py (Split the
+launches below) takes the count and writes the cap, floored at 1, into every
+launches.json entry: pass entry i's `harnessCap` from launches.json in launch
+i's `args`, copied as written, never a figure of your own. wave.js uses
+`min(HARNESS_CAP, harnessCap)` as its own admission bound and logs which it
+used; omitting the field is never a refusal.
 
 ```
-Workflow({ scriptPath: "<absolute installed path to wave.js>", args: {rows: <launch-0 rows>, unit: <launches.json[0] as {index, of, classCap}>, tribunal, cwd, harnessCap} })
-Workflow({ scriptPath: "<absolute installed path to wave.js>", args: {rows: <launch-1 rows>, unit: <launches.json[1] as {index, of, classCap}>, tribunal, cwd, harnessCap} })
+Workflow({ scriptPath: "<absolute installed path to wave.js>", args: {rows: <launch-0 rows>, unit: <launches.json[0] as {index, of, classCap}>, tribunal, cwd, harnessCap: <launches.json[0].harnessCap>} })
+Workflow({ scriptPath: "<absolute installed path to wave.js>", args: {rows: <launch-1 rows>, unit: <launches.json[1] as {index, of, classCap}>, tribunal, cwd, harnessCap: <launches.json[1].harnessCap>} })
 …one launch per index, 0 through N-1, all in this same turn
 ```
 
@@ -1003,12 +995,12 @@ python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$ROWS_FILE" "$LAUNCH_
 
 It reads the kept rows as one JSON array or as JSON lines, prints N alone
 on stdout, writes `launch-<i>.jsonl` (launch i's rows, one per line) and
-`launches.json` (each launch's `index`, `of`, `classCap`, row count and
-lanes) under `$LAUNCH_DIR`, and names each unit's launch on stderr for
+`launches.json` (each launch's `index`, `of`, `classCap`, `harnessCap`,
+row count and lanes) under `$LAUNCH_DIR`, and names each unit's launch on stderr for
 the dispatch report. Use a fresh `$LAUNCH_DIR` per dispatch under the
 session's scratchpad (for example `<scratchpad>/launch-DISPATCH-M`). Read
 `launches.json`, then each launch file, and emit launch i with those rows
-and `unit: {index, of, classCap}` copied from entry i. wave.js no longer
+and `unit: {index, of, classCap}` and `harnessCap` copied from entry i. wave.js no longer
 re-derives the partition, so a row copied into the wrong launch is caught
 only by the engine's own claim check: copy each launch file whole.
 

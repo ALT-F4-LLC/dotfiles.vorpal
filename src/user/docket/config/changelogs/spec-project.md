@@ -3,6 +3,12 @@
 Version history of `workflows/spec-project.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 32
+
+The `research` step declares `payload = "research-notes@2"`, the schema
+`contracts/research.md` pins, so the engine validates its payload on record.
+No topology, routing, or limit change.
+
 ## 31
 
 Version history moves from the trailing comment on `version =` to

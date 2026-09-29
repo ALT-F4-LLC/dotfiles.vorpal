@@ -19,8 +19,9 @@
 # WHAT IS PINNED HERE: the refusal is recognized only in its mandated
 # three-line CONFLICT-report form, the report that replaces it carries the
 # step's real status, its attempt, and holder-gone evidence, the RAW refusal
-# survives verbatim inside it, and the chain-kill is unchanged — the diagnosed
-# result is still chainDead, and it is still not a park.
+# survives verbatim inside it, and the chain-kill holds for every unsettled
+# row — the diagnosed result is still chainDead and still not a park — while
+# a row that already reads done or skipped settles the stage instead.
 #
 # WHAT THIS SUITE CANNOT SEE: the probe itself (a real `docket step show`
 # against a live engine) is out of scope — the report builder is fed probe TEXT
@@ -116,6 +117,9 @@ const SHOW_EXPIRED = '{"ok":true,"data":{"step":"STEP-2760","attempt":1,' +
     '"status":"ready","lease_expired":true}}'
 const SHOW_DONE = '{"ok":true,"data":{"step":"STEP-2760","status":"done","attempt":1}}'
 const SHOW_PENDING = '{"ok":true,"data":{"step":"STEP-2760","status":"pending","attempt":0}}'
+const SHOW_SKIPPED = '{"ok":true,"data":{"step":"STEP-2760","status":"skipped","attempt":0}}'
+const SHOW_FAILED = '{"ok":true,"data":{"step":"STEP-2760","status":"failed","attempt":1}}'
+const SHOW_SUPERSEDED = '{"ok":true,"data":{"step":"STEP-2760","status":"superseded","attempt":1}}'
 
 // ---- AC1: the refusal is recognized, and only in its own shape ----
 ok(isOrphanedClaimConflict(NOT_PENDING),
@@ -205,6 +209,24 @@ ok(pending.text.includes('disagree') && pending.text.includes('pending'),
 const expired = orphanedClaimReport('STEP-2760', NOT_PENDING, SHOW_EXPIRED)
 ok(expired.text.includes('lease_expired=true') && expired.text.includes('disagree'),
     'an expired-but-unreaped lease is named in the facts line')
+
+// ---- A conflict on a step that already settled is a settled stage ----
+// The RUN-114 shape: a harness stall retry relaunched a seat whose first
+// agent had already recorded, the relaunch was refused "not pending", and
+// the probe read `done`. The lane is alive; only an unsettled row kills it.
+ok(!chainDead(done),
+    'a diagnosed conflict whose step reads done does NOT kill the chain')
+const skipped = orphanedClaimReport('STEP-2760', NOT_PENDING, SHOW_SKIPPED)
+ok(skipped.status === 'claim-conflict' && !chainDead(skipped),
+    'a diagnosed conflict whose step reads skipped does NOT kill the chain')
+ok(chainDead(pending),
+    'a diagnosed conflict whose step reads pending still kills the chain')
+ok(chainDead(orphanedClaimReport('STEP-2760', NOT_PENDING, SHOW_FAILED)),
+    'a diagnosed conflict whose step reads failed still kills the chain')
+ok(chainDead(orphanedClaimReport('STEP-2760', NOT_PENDING, SHOW_SUPERSEDED)),
+    'a diagnosed conflict whose step reads superseded still kills the chain')
+ok(chainDead(expired),
+    'a diagnosed conflict whose row and refusal disagree still kills the chain')
 
 // ---- Degradation: an empty or unusable probe relays the refusal ----
 ok(orphanedClaimReport('STEP-2760', NOT_PENDING, '') === null,

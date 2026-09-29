@@ -894,10 +894,12 @@ function stopSignal(text) {
 // which claims. A READ-class brief that never claims re-runs INVISIBLY, so
 // this branch diagnoses the write-class case alone.
 //
-// The remedy is REPORT-ONLY: the chain-kill is correct either way (nothing
-// downstream of an unrecorded step becomes claimable this wave), preserved
-// via the explicit `claim-conflict` status in chainDead(), independent of
-// isConflictReport()'s line budget.
+// The remedy is REPORT-ONLY. An unsettled row still kills the chain (nothing
+// downstream of an unrecorded step becomes claimable this wave), via the
+// explicit `claim-conflict` status in chainDead(), independent of
+// isConflictReport()'s line budget. A row that already reads `done` or
+// `skipped` is a settled stage, and chainDead() reads `step_status` to let
+// the lane continue.
 // TEST-BEGIN orphaned-claim — extracted and exercised by
 // tests/wave-orphaned-claim.test.sh, which concatenates the park-signals
 // region ahead of it (isConflictReport) and the chain-dead region after it.
@@ -2522,8 +2524,16 @@ const CHAIN_DEAD_STATUSES = [
     'agent-cap',
 ]
 
+// A claim conflict on a step whose own row already reads one of these is a
+// settled stage: the work (or the engine's skip) landed before this spawn
+// arrived, so the lane's later rows are claimable. Every other diagnosed row
+// state, and an undiagnosed relay (no step_status), still kills the chain.
+const SETTLED_CONFLICT_STEP_STATUSES = ['done', 'skipped']
+
 function chainDead(res) {
     if (res == null) return false
+    if (res.status === 'claim-conflict' &&
+        SETTLED_CONFLICT_STEP_STATUSES.includes(res.step_status)) return false
     return CHAIN_DEAD_STATUSES.includes(res.status) || laneParked(res) ||
         (res.status === 'returned' &&
             (isConflictReport(res.text) || isBootstrapDenied(res.text)))

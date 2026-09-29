@@ -35,9 +35,34 @@ impl Go {
 
         let symlinks = vec![(
             format!("{}/{}-go-env", get_env_key(&env), self.name),
-            "$HOME/Library/Application\\ Support/go/env".to_string(),
+            go_env_path(std::env::consts::OS).to_string(),
         )];
 
         Ok((vec![env], symlinks))
+    }
+}
+
+/// Where Go looks for its env file (`go env GOENV`) on the host OS, which
+/// is `os.UserConfigDir()/go/env`. Read from the invoking host when this
+/// config is evaluated, as HOME is above; a link at the macOS path does
+/// nothing on Linux, where gates would fall back to ~/go.
+fn go_env_path(os: &str) -> &'static str {
+    match os {
+        "macos" => "$HOME/Library/Application\\ Support/go/env",
+        _ => "$HOME/.config/go/env",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::go_env_path;
+
+    #[test]
+    fn go_env_path_follows_the_host_os() {
+        assert_eq!(
+            go_env_path("macos"),
+            "$HOME/Library/Application\\ Support/go/env"
+        );
+        assert_eq!(go_env_path("linux"), "$HOME/.config/go/env");
     }
 }

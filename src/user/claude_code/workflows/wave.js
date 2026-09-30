@@ -64,12 +64,12 @@ export const meta = {
 // `tribunal` is the absolute installed path to tribunal.js, the one workflow-
 // nesting level this script uses to seat every in-wave panel (it cannot
 // resolve that path itself); `cwd` is the repo the run belongs to.
-// `harnessCap` is the conductor's own `nproc`-derived reading of the real
-// per-invocation agent() concurrency cap (this script cannot read the
-// machine's CPU count itself); when present and a positive integer, the
-// wave admits against min(16, harnessCap) instead of the loose 16-agent
-// ceiling it would otherwise assume, and logs which bound it used either
-// way — a caller that omits the field is not refused. On a dispatch
+// `harnessCap` is the per-invocation agent() concurrency cap, computed by
+// lane_units.py and copied by the conductor from launches.json (this script
+// cannot read the machine's CPU count itself); when present and a positive
+// integer, the wave admits against min(16, harnessCap) instead of the loose
+// 16-agent ceiling it would otherwise assume, and logs which bound it used
+// either way — a caller that omits the field is not refused. On a dispatch
 // carrying a fix round's review fanout, args also carries `integrated` — a
 // map from each such issue to the sha of its prior round's INTEGRATION
 // commit — so the wave can assert base ancestry before seating the fanout.

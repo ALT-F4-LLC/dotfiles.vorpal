@@ -246,8 +246,10 @@ fi
 FIX="${WORK}/committed-no-title"
 build_repo "$FIX"
 write_untitled_doc "$FIX"
-git -C "$FIX" commit -q -am "untitled doc"
-if out=$(run_gate "$FIX"); then
+if ! git -C "$FIX" commit -q -am "untitled doc" \
+    || [ -n "$(git -C "$FIX" status --porcelain)" ]; then
+    fail "committed doc without title: setup commit failed or left the fixture tree dirty"
+elif out=$(run_gate "$FIX"); then
     fail "committed doc without title: expected non-zero exit, gate passed"
     printf '%s\n' "$out" | sed 's/^/    /'
 else

@@ -3,6 +3,15 @@
 Version history of `workflows/ui-change.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 39
+
+`verify-ac` adds `implement.gate-results` to its `inputs`, keeping
+`verify-ac.gate-results`. The `ac-commands` pre-gate no longer runs build
+and tests inline, so verify-ac reads the implement step's own recorded
+`tests` verdict instead. Fix-round gate results are not yet reachable:
+`fix` is a loop step, not a predecessor of `verify-ac`, so lint refuses
+`fix.gate-results` pending DKT-3131. No topology, routing, or limit change.
+
 ## 38
 
 Version history moves from the trailing comment on `version =` to

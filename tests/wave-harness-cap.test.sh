@@ -14,11 +14,11 @@
 # it could assert. On any machine under 18 cores the real cap is tighter,
 # and admission()'s own header comment names the failure this causes: judge
 # agents queuing behind a harness slot the wave believed was still open. The
-# fix lets the conductor (which CAN run `nproc`) pass the real figure as
-# `args.harnessCap`; wave.js takes min(HARNESS_CAP, that value) as the
-# effective admission bound, and falls back to the loose 16-agent ceiling
-# when the field is absent — a caller that omits it (an older SKILL.md, a
-# direct scriptPath launch, a resumed run whose original args predate this
+# fix lets the conductor pass the harnessCap that lane_units.py wrote into
+# launches.json as `args.harnessCap`; wave.js takes min(HARNESS_CAP, that
+# value) as the effective admission bound, and falls back to the loose 16-agent
+# ceiling when the field is absent — a caller that omits it (an older SKILL.md,
+# a direct scriptPath launch, a resumed run whose original args predate this
 # field) is not refused, since a tighter bound this script cannot verify is
 # advisory, not a contract.
 #

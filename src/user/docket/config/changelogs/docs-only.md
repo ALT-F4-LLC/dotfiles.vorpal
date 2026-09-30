@@ -3,6 +3,16 @@
 Version history of `workflows/docs-only.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 31
+
+verify-ac adds the input `implement.gate-results`, so it reads the
+implement step's recorded gate results, including its `tests` verdict.
+The reason: the ac-commands pre-gate no longer runs build and tests
+inline, because its claim budget killed them. Fix-round gate results
+are not yet reachable: `fix.gate-results` fails `docket workflow lint`
+because `fix` is not a predecessor of verify-ac, pending DKT-3131. No
+topology or routing change.
+
 ## 30
 
 Version history moves from the trailing comment on `version =` to

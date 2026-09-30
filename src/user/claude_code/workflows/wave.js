@@ -1900,23 +1900,21 @@ const CHAIN_DEAD_STATUSES = [
     'agent-cap',
 ]
 
-// A claim conflict on a step whose own row already reads one of these is a
-// settled stage: the work (or the engine's skip) landed before this spawn
-// arrived, so the lane's later rows are claimable. Every other diagnosed row
-// state, and an undiagnosed relay (no step_status), still kills the chain.
-const SETTLED_CONFLICT_STEP_STATUSES = ['done', 'skipped']
-
-// A pre-claim probe that read one of these found the stage already settled by
-// the engine (a conditional step it legitimately skipped, or one already done):
-// the spawn is skipped, but the lane's later rows stay launchable this wave.
-const SETTLED_PROBE_STATUSES = ['done', 'skipped']
+// A step row reading one of these is a settled stage: the work (or the
+// engine's skip of a conditional step) landed before this spawn, so the
+// lane's later rows stay launchable this wave. Both entry points read this
+// one list. A claim conflict whose own row reads it does not kill the chain;
+// every other diagnosed row state, and an undiagnosed relay (no
+// step_status), still does. A pre-claim probe that reads it skips the spawn
+// but keeps the lane alive.
+const SETTLED_STEP_STATUSES = ['done', 'skipped']
 
 // Reads the `step show` envelope startRow() carries in `text`. An absent or
 // unparseable envelope is not settled, so the row keeps killing its chain.
 function probeSettled(res) {
     if (res.status !== 'skipped-not-claimable' || typeof res.text !== 'string') return false
     try {
-        return SETTLED_PROBE_STATUSES.includes(JSON.parse(res.text)?.data?.status)
+        return SETTLED_STEP_STATUSES.includes(JSON.parse(res.text)?.data?.status)
     } catch {
         return false
     }
@@ -1925,7 +1923,7 @@ function probeSettled(res) {
 function chainDead(res) {
     if (res == null) return false
     if (res.status === 'claim-conflict' &&
-        SETTLED_CONFLICT_STEP_STATUSES.includes(res.step_status)) return false
+        SETTLED_STEP_STATUSES.includes(res.step_status)) return false
     if (probeSettled(res)) return false
     return CHAIN_DEAD_STATUSES.includes(res.status) || laneParked(res) ||
         (res.status === 'returned' &&

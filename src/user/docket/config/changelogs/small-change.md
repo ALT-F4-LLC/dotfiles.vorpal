@@ -3,6 +3,16 @@
 Version history of `workflows/small-change.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 11
+
+`verify-ac` gains the input `implement.gate-results`, so it reads the
+implement step's recorded `build` and `tests` verdicts. The `ac-commands`
+pre-gate no longer runs build and tests inline, since its claim budget
+killed them. `verify-ac.gate-results` stays for the pre-gate's own rows.
+Fix-round gate results are not yet reachable: `fix` is a loop step, not a
+predecessor of `verify-ac`, pending DKT-3131. No topology, routing, or
+limit change.
+
 ## 10
 
 Version history moves from the trailing comment on `version =` to

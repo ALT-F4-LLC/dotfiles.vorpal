@@ -1,23 +1,29 @@
 #!/usr/bin/env bash
 #
-# ac-commands — run the repo's checks and print their results for the verifier.
+# ac-commands — run the repo's corpus-wide checks and print their results for
+# the verifier.
 #
 # Wired as a PRE-GATE on `verify`
 # (src/user/docket/config/workflows/standard-change.toml): it runs at claim, and
 # its output lands in the step's context bundle. That is the whole point.
-# `verify-ac` judges acceptance criteria against the diff, and an AC of the form
-# "the tests pass" is one it cannot settle by reading code — without recorded
-# command results it must return `unverifiable`, which parks the step on the
-# operator.
+# `verify-ac` judges acceptance criteria against the diff, and an AC that
+# depends on a command's result is one it cannot settle by reading code —
+# without recorded command results it must return `unverifiable`, which parks
+# the step on the operator.
 #
 # It reports rather than judges: it prints what ran and what each exited, and
-# ALWAYS EXITS 0. A failing test is evidence the verifier should see and weigh,
-# not a reason to refuse the claim — `build` and `tests` are the gates that fail
-# a step, and they run on `implement` where the failure belongs.
+# ALWAYS EXITS 0. A failing check is evidence the verifier should see and weigh,
+# not a reason to refuse the claim.
 #
-# Covers four commands: `build`, `tests`, `crossref-check`, and `doc-validate`.
-# The last two are corpus-wide gates with no other source of execution evidence,
-# so an AC that depends on them would otherwise come back `unverifiable`.
+# Covers two commands: `crossref-check` and `doc-validate`. Both are
+# corpus-wide gates with no other source of execution evidence, so an AC that
+# depends on them would otherwise come back `unverifiable`.
+#
+# It does NOT run `build` or `tests`. Those are the gates that fail a write step
+# (`implement` and `fix`), and their evidence reaches verify-ac through the
+# write steps' recorded gate results (`implement.gate-results`,
+# `fix.gate-results`). Running them here again cannot finish inside the claim's
+# pre-gate budget, which kills the gate before it reports anything.
 #
 # It deliberately does NOT read or execute any commands from an issue body's
 # fenced code blocks — doing so would require an operator trust decision that
@@ -26,8 +32,8 @@
 set -euo pipefail
 
 # Anchored to this script's own repository rather than the caller's cwd: the
-# commands below build and test whatever tree they are run in, so a hand-run
-# from elsewhere must not report on a different checkout as if it were this one.
+# commands below check whatever tree they are run in, so a hand-run from
+# elsewhere must not report on a different checkout as if it were this one.
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 if ! repo_root="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null)"; then
   echo "ac-commands: $script_dir is not inside a git repository; nothing to report" >&2
@@ -38,22 +44,10 @@ cd "$repo_root"
 work="$(mktemp -d "${TMPDIR:-/tmp}/ac-commands.XXXXXX")"
 trap 'rm -rf "$work"' EXIT
 
-# tail -20 was adequate while `tests` printed only a cargo summary; since it
-# now also runs every tests/*.test.sh suite (~1000+ lines), a bare tail lands
-# only the last suite's output in the bundle: no `==>` markers, no cargo test
-# result, no indication of how far the run got. Keep every `==>` suite marker
-# and cargo's own `test result:` line for that recipe, on top of the normal
-# tail, so the verifier can tell which suites ran and which one failed. Also
-# keep each failing case's own line (unittest `FAIL:`/`ERROR:`, node-assert
-# `AssertionError`), since a suite's failure usually falls outside the tail.
 run() {
   local label="$1" out="${work}/${1}.out" rc=0; shift
   echo "--- $label: $* ---"
   "$@" > "$out" 2>&1 || rc=$?
-  if [ "$label" = tests ]; then
-    grep -E '^==>|^test result:|^(FAIL|ERROR)\b|AssertionError' "$out" || true
-    echo "..."
-  fi
   tail -20 "$out"
   echo "[$label] exit $rc"
   echo
@@ -64,13 +58,10 @@ echo "commit: $(git rev-parse --short HEAD)"
 echo "tree:   $(git status --porcelain | wc -l | tr -d ' ') uncommitted path(s)"
 echo
 
-# `just` rather than raw cargo: the justfile is where each command's flags
-# (--locked --offline --all-targets) are defined, and the `build` and `tests`
-# gates on `implement` run those same recipes. Naming the recipe keeps the
-# verifier's evidence and the gate's verdict describing one command, not two
-# that drift.
-run build just build
-run tests just tests
+# `just` rather than the underlying scripts: the justfile is where each
+# command's invocation is defined, and the `doc-validate` gate runs that same
+# recipe. Naming the recipe keeps the verifier's evidence and the gate's
+# verdict describing one command, not two that drift.
 run crossref-check just crossref-check
 run doc-validate just doc-validate
 

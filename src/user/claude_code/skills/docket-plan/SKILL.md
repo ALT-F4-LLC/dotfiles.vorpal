@@ -9,7 +9,6 @@ description: >-
   scopes, dependencies, and verbatim acceptance criteria, then stops. Never
   executes the planned work and never activates the run; activation is docket-
   run's.
-model: fable
 ---
 
 # docket-plan

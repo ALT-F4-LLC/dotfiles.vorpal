@@ -16,7 +16,6 @@ description: >-
   shortens prose; declutter, which cleans code; and docket-refit corpus
   mode, which keeps by default and redesigns.
 argument-hint: "[all]"
-model: fable
 ---
 
 # corpus-cut

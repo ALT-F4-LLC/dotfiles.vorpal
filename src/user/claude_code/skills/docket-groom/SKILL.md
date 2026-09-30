@@ -17,7 +17,6 @@ description: >-
   implementation, no watch. Distinct from tend, which works route-tend
   issues.
 argument-hint: "[stale window, e.g. 14d] [engine] [kinds, e.g. bugs] [statuses, e.g. backlog]"
-model: fable
 ---
 
 # docket-groom

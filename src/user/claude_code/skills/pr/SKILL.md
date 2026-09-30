@@ -10,7 +10,6 @@ description: >-
 argument-hint: "[open|ready|update|sync|review|checks|merge|close] [args]"
 context: fork
 agent: general-purpose
-model: fable
 ---
 
 # pr

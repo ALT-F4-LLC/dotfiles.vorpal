@@ -12,7 +12,6 @@ description: >-
   after operator confirmation. Distinct from corpus-check, which checks the
   corpus against itself and never consults the binary.
 argument-hint: "[--no-sweep to reuse the recorded fixtures]"
-model: fable
 ---
 
 # docket-cli-audit

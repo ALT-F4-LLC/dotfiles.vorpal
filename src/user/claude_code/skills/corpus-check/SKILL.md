@@ -10,7 +10,6 @@ description: >-
   fixes mechanical breakage directly and applies semantic fixes only after
   operator confirmation.
 argument-hint: "[since ref, e.g. main or a commit sha]"
-model: fable
 ---
 
 # corpus-check

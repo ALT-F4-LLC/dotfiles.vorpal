@@ -14,7 +14,6 @@ description: >-
   repository's code with a mutation-probe proof and no workflow; and
   corpus-cut, which tries docket definitions and files cuts without editing.
 argument-hint: "[paths or globs, default: src/user/claude_code src/user/docket]"
-model: fable
 ---
 
 # simplify-corpus

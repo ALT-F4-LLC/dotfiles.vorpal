@@ -13,7 +13,6 @@ description: >-
   rests. Prose only, never code; distinct from simplify, which cleans code,
   and corpus-check, which audits coherence without rewriting.
 argument-hint: "[paths or globs, default: skills/**/*.md agents/*.md]"
-model: fable
 ---
 
 # tighten

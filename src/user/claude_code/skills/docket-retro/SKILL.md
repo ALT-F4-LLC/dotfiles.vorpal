@@ -6,7 +6,6 @@ description: >-
   run reports and the event log, finds what recent runs cost and caught, and
   proposes versioned edits to the shared docket corpus and a repo's optional
   .docket/config additions for approval.
-model: fable
 ---
 
 # docket-retro

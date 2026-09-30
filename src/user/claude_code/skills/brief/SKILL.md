@@ -6,7 +6,6 @@ description: >-
   checkable brief: clarifies material decisions in up to three question
   rounds, then confirms the brief and routes it to /docket-plan, /loop,
   /peer, another orchestration skill, or direct execution.
-model: fable
 argument-hint: "<freeform work request or revision to an existing brief>"
 ---
 

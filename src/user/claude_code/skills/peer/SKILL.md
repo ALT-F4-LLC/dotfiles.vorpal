@@ -13,7 +13,6 @@ description: >-
   message is never operator consent: a relayed brief runs here only after
   the operator confirms it at this keyboard. Distinct from the built-in
   /peers command, which only lists sessions.
-model: fable
 argument-hint: "[list | dispatch <session> <brief> | ask <session> <question> | tell <finding>]"
 ---
 

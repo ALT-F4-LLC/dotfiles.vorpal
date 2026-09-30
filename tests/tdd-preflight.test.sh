@@ -86,12 +86,14 @@ run_gate() {
     ERR=$(cat "${WORK}/stderr")
 }
 
-expect() { # <name> <want-rc> [stderr-substring]
-    local name="$1" want="$2" needle="${3:-}"
+expect() { # <name> <want-rc> [stderr-substring] [stdout-substring]
+    local name="$1" want="$2" needle="${3:-}" out_needle="${4:-}"
     if [ "$RC" -ne "$want" ]; then
         fail "${name}: exit ${RC}, want ${want}; stdout: ${OUT}; stderr: ${ERR}"
     elif [ -n "$needle" ] && [[ "$ERR" != *"$needle"* ]]; then
         fail "${name}: stderr does not name '${needle}': ${ERR}"
+    elif [ -n "$out_needle" ] && [[ "$OUT" != *"$out_needle"* ]]; then
+        fail "${name}: stdout does not contain '${out_needle}': ${OUT}"
     else
         pass "$name"
     fi
@@ -113,6 +115,19 @@ printf '# Nested\n' > "${r}/docs/tdd/nested/feature.md"
 commit_all "$r" nested
 run_gate "$r" DOCKET_GATE=tdd-preflight DOCKET_GATE_BASE="$base"
 expect "committed nested TDD since the base is refused" 1 "docs/tdd/nested/feature.md"
+
+r=$(fresh_repo committed-kebab-good)
+base=$(head_of "$r")
+printf '# Good\n' > "${r}/docs/tdd/good-feature.md"
+commit_all "$r" good
+run_gate "$r" DOCKET_GATE=tdd-preflight DOCKET_GATE_BASE="$base"
+expect "committed kebab-case TDD since the base passes" 0 "" "tdd-preflight: ok"
+
+r=$(fresh_repo misnamed-in-base)
+printf '# Bad\n' > "${r}/docs/tdd/Not_Kebab.md"
+commit_all "$r" bad
+run_gate "$r" DOCKET_GATE=tdd-preflight DOCKET_GATE_BASE="$(head_of "$r")"
+expect "non-kebab TDD already in the base commit is not selected" 0 "" "no docs/tdd/ changes"
 
 # --- uncommitted on top of the base ---------------------------------------
 

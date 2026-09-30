@@ -3,6 +3,16 @@
 Version history of `workflows/disposition.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 14
+
+`verify-ac` adds `dispose.gate-results` to its inputs, so it reads the
+`build` and `tests` verdicts the write step recorded. The `ac-commands`
+pre-gate no longer runs build and tests inline, so this is where
+`verify-ac` gets them. Fix-round gate results are not yet reachable:
+`revise-disposition.gate-results` fails lint because a loop step is not a
+predecessor of `verify-ac`, pending DKT-3131. No topology, routing, or
+limit change.
+
 ## 13
 
 Version history moves from the trailing comment on `version =` to

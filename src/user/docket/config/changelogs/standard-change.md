@@ -3,6 +3,15 @@
 Version history of `workflows/standard-change.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 47
+
+`verify-ac` adds the input `implement.gate-results`, so it reads the
+implement step's recorded gate results, including its `tests` verdict. The
+`ac-commands` pre-gate no longer runs `just build` and `just tests` inline,
+because its 60s claim budget killed them. Fix-round gate results are not yet
+reachable: lint rejects `fix.gate-results` because `fix` is not a
+predecessor of `verify-ac`, pending DKT-3131.
+
 ## 46
 
 Version history moves from the trailing comment on `version =` to

@@ -11,8 +11,8 @@ as one JSON array or as one JSON object per line. The script writes, under
 
 and prints the launch count N alone on stdout, so `N=$(python3 lane_units.py
 rows.jsonl out)` works. Units and their launches go to stderr for the
-dispatch report. Each launch's Workflow args are its own rows plus
-`unit: {index, of, classCap}` copied from launches.json.
+dispatch report. Each launch's Workflow args are its own rows, `unit: {index,
+of, classCap}`, and `harnessCap`, the last two copied from launches.json.
 
 The partition. Writer lanes (rows whose class, or executor when class is
 absent, is "write") that never share a manifest stage are welded into one

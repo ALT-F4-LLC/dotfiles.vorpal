@@ -17,12 +17,18 @@
 # SDET_ABUSE_REGISTRY overrides the gate script reads for exactly this
 # purpose; the real tree is never touched. Fixtures live under $TMPDIR, never
 # under the worktree.
+#
+# The gate refuses to run outside a git work tree (it resolves its root
+# with `git rev-parse --show-toplevel` from its own directory), so the
+# suite runs a copy of it from a `git init`ed directory under $WORK rather
+# than the worktree's own copy. That keeps every case running from a `git
+# archive` export with no .git. SDET_ABUSE_GATE, if set, still names the
+# gate to run directly.
 
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO_ROOT=$(cd "${SCRIPT_DIR}/.." && pwd)
-GATE="${SDET_ABUSE_GATE:-${REPO_ROOT}/.docket/bin/sdet-abuse}"
 
 PASS=0
 FAIL=0
@@ -42,10 +48,17 @@ fatal() {
     exit 2
 }
 
-[ -f "$GATE" ] || fatal "gate not found at ${GATE}"
-
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/sdet-abuse-test.XXXXXX") || fatal "mktemp failed"
 trap 'rm -rf "$WORK"' EXIT
+
+GATE_SRC="${REPO_ROOT}/.docket/bin/sdet-abuse"
+[ -f "$GATE_SRC" ] || fatal "gate not found at ${GATE_SRC}"
+GATE_REPO="${WORK}/gate-repo"
+mkdir -p "${GATE_REPO}/.docket/bin" || fatal "mkdir failed"
+git -C "$GATE_REPO" init -q || fatal "git init failed"
+cp "$GATE_SRC" "${GATE_REPO}/.docket/bin/sdet-abuse" || fatal "gate copy failed"
+GATE="${SDET_ABUSE_GATE:-${GATE_REPO}/.docket/bin/sdet-abuse}"
+[ -f "$GATE" ] || fatal "gate not found at ${GATE}"
 
 # build_fixture <dir>; lays down a hooks dir, a tests dir, and a minimal
 # claude_code.rs stand-in with one real registration (enforcing.sh, deny-

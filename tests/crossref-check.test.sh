@@ -247,6 +247,23 @@ printf '\n[[step]]\nname = "review"\nfanout = [\n  "implement",\n]\npayload = "a
 expect_fail "payload: a fanout member's pin differs from the step payload" "$FIX" payload \
     "step review declares ac-report@3"
 
+# A spec-author-<x> fanout member executes contracts/spec-author.md.
+build_corpus "$FIX"
+pin_payload "$FIX" "ac-report@2" "ac-report@2"
+printf -- '---\nnode: spec-author\nversion: 1\npayload: ac-report@2\n---\n# Charter\n' \
+    > "$FIX/src/user/docket/config/contracts/spec-author.md"
+printf '\n[[step]]\nname = "spec"\nfanout = ["spec-author-foo"]\npayload = "ac-report@3"\n' >> "$FIX/$WF"
+expect_fail "payload: a spec-author-* member's pin is read from spec-author.md" "$FIX" payload \
+    "step spec declares ac-report@3; src/user/docket/config/contracts/spec-author.md pins ac-report@2"
+
+build_corpus "$FIX"
+pin_payload "$FIX" "ac-report@1" "ac-report@1"
+printf '{}\n' > "$FIX/src/user/docket/config/schemas/ac-report@1.json"
+printf -- '---\nnode: spec-author\nversion: 1\npayload: ac-report@2\n---\n# Charter\n' \
+    > "$FIX/src/user/docket/config/contracts/spec-author.md"
+printf '\n[[step]]\nname = "spec"\nfanout = ["spec-author-foo"]\npayload = "ac-report@2"\n' >> "$FIX/$WF"
+expect_pass "payload: a spec-author-* member matching spec-author.md passes" "$FIX"
+
 build_corpus "$FIX"
 pin_payload "$FIX" "ac-report@2" "ac-report@2"
 printf '\n[[step]]\nname = "reconcile"\npayload = "ac-report@3"\n' >> "$FIX/$WF"

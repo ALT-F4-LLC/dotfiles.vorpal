@@ -9,9 +9,9 @@ the `[pipeline].version` the entry describes.
 implement step's recorded `build` and `tests` verdicts. The `ac-commands`
 pre-gate no longer runs build and tests inline, since its claim budget
 killed them. `verify-ac.gate-results` stays for the pre-gate's own rows.
-Fix-round gate results are not yet reachable: `fix` is a loop step, not a
-predecessor of `verify-ac`, pending DKT-3131. No topology, routing, or
-limit change.
+Fix-round gate results reach `verify-ac` through `implement.gate-results`,
+which engine 116f13a rebinds to the fix round's recorded gates. No
+topology, routing, or limit change.
 
 ## 47
 

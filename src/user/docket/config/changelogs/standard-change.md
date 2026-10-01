@@ -8,9 +8,9 @@ the `[pipeline].version` the entry describes.
 `verify-ac` adds the input `implement.gate-results`, so it reads the
 implement step's recorded gate results, including its `tests` verdict. The
 `ac-commands` pre-gate no longer runs `just build` and `just tests` inline,
-because its 60s claim budget killed them. Fix-round gate results are not yet
-reachable: lint rejects `fix.gate-results` because `fix` is not a
-predecessor of `verify-ac`, pending DKT-3131.
+because its 60s claim budget killed them. Fix-round gate results reach
+`verify-ac` through `implement.gate-results`, which engine 116f13a rebinds
+to the fix round's recorded gates.
 
 ## 46
 

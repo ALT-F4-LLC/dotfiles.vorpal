@@ -3,6 +3,14 @@
 Version history of `workflows/disposition.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 15
+
+`dispose`, `verify-ac`, and `revise-disposition` no longer declare
+`issue.body` in their inputs. The engine renders `== REQUEST` from the issue's
+body snapshot on every packet step, so the input repeated the body in each
+packet. `verify-ac-vote` keeps `issue.body` because it renders no packet. No
+topology, routing, or limit change.
+
 ## 14
 
 `verify-ac` adds `dispose.gate-results` to its inputs, so it reads the

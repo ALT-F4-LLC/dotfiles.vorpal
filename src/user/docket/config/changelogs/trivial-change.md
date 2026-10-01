@@ -3,6 +3,14 @@
 Version history of `workflows/trivial-change.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 10
+
+The packet steps implement and verify-ac no longer declare `issue.body` as an
+input. Every packet already renders the body snapshot under `== REQUEST`, so
+the input duplicated it and inflated each packet by the body's size.
+verify-ac-vote keeps `issue.body` because it renders no packet. No topology,
+routing, or limit change.
+
 ## 9
 
 verify-ac gains `implement.gate-results` as an input, beside its own

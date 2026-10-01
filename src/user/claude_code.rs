@@ -42,12 +42,7 @@ const SENSITIVE_PATHS: &[&str] = &[
     "~/Downloads/**",
 ];
 
-const SENSITIVE_PATHS_DENY_EDIT_ONLY: &[&str] = &[
-    "/Applications/**",
-    "/Library/**",
-    "/System/**",
-    "~/.config/docket/trust.toml",
-];
+const SENSITIVE_PATHS_DENY_EDIT_ONLY: &[&str] = &["/Applications/**", "/Library/**", "/System/**"];
 
 const AUTO_MODE_ENVIRONMENT_CONTEXT: &[&str] = &[
     "### Org-wide",
@@ -167,6 +162,7 @@ const AUTO_MODE_HARD_DENY_RULES: &[&str] = &[
 ];
 
 const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
+    "~/.cache/go-build",
     "~/.cache/golangci-lint-harness",
     "~/.cache/uv",
     "~/.cargo/git",
@@ -186,18 +182,12 @@ const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
 /// Sandbox write allowances beyond the toolchain caches and the scratch
 /// roots: harness state and the checkouts.
 const SANDBOX_ALLOW_WRITE_PATHS: &[&str] = &[
-    "~/.claude/agent-memory",
-    "~/Development/repository/github.com/ALT-F4-LLC",
     "/var/folders",
+    "~/.claude/agent-memory",
     "~/.claude/cache/docs",
-    "~/.docket",
-    // The whole config directory, not just trust.toml.lock: `docket trust
-    // add` writes a temp file beside trust.toml and renames it, so a
-    // lock-only allowance failed every sandboxed trust write. The Edit()
-    // deny on trust.toml and the trust-guard hook still hold the executor
-    // line.
-    "~/.config/docket",
     "~/.claude/friction",
+    "~/.config/docket",
+    "~/.docket",
 ];
 
 /// Where `just` writes each shebang recipe's script before running it, as a
@@ -369,7 +359,7 @@ const PERMISSION_ALLOW_RULES: &[&str] = &[
     "Bash(go vet:*)",
     "Bash(gofmt:*)",
     "Bash(make:*)",
-    "Bash(vorpal run go:1.26.0 *)",
+    "Bash(vorpal run:*)",
     "Bash(~/.claude/workflows/*)",
     "WebFetch(domain:api.github.com)",
     "WebFetch(domain:claude.ai)",
@@ -377,7 +367,6 @@ const PERMISSION_ALLOW_RULES: &[&str] = &[
     "WebFetch(domain:crates.io)",
     "WebFetch(domain:docs.claude.ai)",
     "WebFetch(domain:github.com)",
-    "WebFetch(domain:mimir.bulbasaur.altf4.domains)",
     "WebFetch(domain:raw.githubusercontent.com)",
     "WebSearch",
     "Workflow",

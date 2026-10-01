@@ -1364,7 +1364,6 @@ impl ClaudeCodeSettings {
         self
     }
 
-    #[allow(dead_code)]
     pub fn with_sandbox_network_allow_all_unix_sockets(mut self, allow: bool) -> Self {
         let mut sandbox = self.sandbox.unwrap_or_default();
         let mut network = sandbox.network.unwrap_or_default();

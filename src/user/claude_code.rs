@@ -248,6 +248,10 @@ fn expand_scratch_roots(row: &str, scratch_roots: &[String]) -> String {
 struct HostInputs {
     just_tempdir: Option<String>,
     scratch_roots: [String; 2],
+    /// True on Linux, where the sandbox's seccomp filter blocks every unix
+    /// socket and the `allowUnixSockets` paths are not honored (that list
+    /// is macOS-only), so `allowAllUnixSockets` is the only way to open one.
+    linux: bool,
 }
 
 // Re-opens only the signing key pair inside the ~/.ssh read-deny; every
@@ -426,12 +430,13 @@ fn sandbox_filesystem_deny_read_paths() -> Vec<String> {
 }
 
 /// The settings.json this build emits, before it is written to the store.
-/// Reads the host-specific inputs, `XDG_RUNTIME_DIR` and the uid behind
-/// `HOME`, and hands them to `settings_with`.
+/// Reads the host-specific inputs, `XDG_RUNTIME_DIR`, the uid behind
+/// `HOME`, and the host OS, and hands them to `settings_with`.
 fn settings() -> Result<settings::ClaudeCodeSettings> {
     Ok(settings_with(HostInputs {
         just_tempdir: sandbox_just_tempdir(std::env::var("XDG_RUNTIME_DIR").ok().as_deref()),
         scratch_roots: sandbox_scratch_roots(invoking_uid()?),
+        linux: std::env::consts::OS == "linux",
     }))
 }
 
@@ -441,6 +446,7 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
     let HostInputs {
         just_tempdir,
         scratch_roots,
+        linux,
     } = host;
     let expand = |rows: &[&str]| -> Vec<String> {
         rows.iter()
@@ -648,7 +654,7 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
     // refused instead by the sandbox denyRead list for Bash and by the
     // sensitive-path-guard hook for Read/Grep/Glob.
 
-    builder
+    let builder = builder
         .with_sandbox_allow_unsandboxed_commands(false)
         .with_sandbox_auto_allow_bash(true)
         .with_sandbox_fail_if_unavailable(true)
@@ -675,7 +681,17 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
                 .chain(scratch_roots.iter().map(String::as_str)),
         ))
         .with_sandbox_network_allow_mach_lookup(owned(["com.apple.trustd.agent"]))
-        .with_sandbox_network_allow_local_binding(true)
+        .with_sandbox_network_allow_local_binding(true);
+
+    // Linux only: seccomp otherwise refuses socket(AF_UNIX) everywhere,
+    // including the allowUnixSockets paths above. macOS enforces that
+    // per-path list, and this key would widen it to every socket
+    // (docker.sock, the 1Password agent), so it is never emitted there.
+    if linux {
+        builder.with_sandbox_network_allow_all_unix_sockets(true)
+    } else {
+        builder
+    }
 }
 
 impl ClaudeCode {
@@ -776,9 +792,16 @@ mod tests {
     /// The settings this build emits on a Linux host whose session sets
     /// XDG_RUNTIME_DIR, for one runtime dir value and the test uid.
     fn settings_for(runtime_dir: Option<&str>) -> serde_json::Value {
+        settings_on(runtime_dir, true)
+    }
+
+    /// The settings this build emits for one runtime dir value, the test
+    /// uid, and either host OS: Linux when `linux` is true, macOS otherwise.
+    fn settings_on(runtime_dir: Option<&str>, linux: bool) -> serde_json::Value {
         serde_json::to_value(settings_with(HostInputs {
             just_tempdir: sandbox_just_tempdir(runtime_dir),
             scratch_roots: sandbox_scratch_roots(TEST_UID),
+            linux,
         }))
         .expect("settings serialize")
     }
@@ -913,6 +936,36 @@ mod tests {
                 "sandbox read denials are missing {expected}"
             );
         }
+    }
+
+    #[test]
+    fn sandbox_allows_all_unix_sockets_on_linux() {
+        // The Linux seccomp filter refuses socket(AF_UNIX) even under the
+        // allowUnixSockets paths, so Linux needs the blanket switch.
+        assert_eq!(
+            emitted_settings()["sandbox"]["network"]["allowAllUnixSockets"],
+            serde_json::Value::Bool(true)
+        );
+    }
+
+    #[test]
+    fn sandbox_keeps_per_path_unix_sockets_on_macos() {
+        // macOS enforces the per-path list; the blanket switch would open
+        // docker.sock and the 1Password agent. Apart from that key, the
+        // two hosts emit identical settings.
+        let macos = settings_on(Some(TEST_RUNTIME_DIR), false);
+        assert!(
+            macos["sandbox"]["network"]
+                .get("allowAllUnixSockets")
+                .is_none(),
+            "macOS settings carry allowAllUnixSockets"
+        );
+        let mut linux = emitted_settings();
+        linux["sandbox"]["network"]
+            .as_object_mut()
+            .expect("a network object")
+            .remove("allowAllUnixSockets");
+        assert_eq!(macos, linux);
     }
 
     #[test]

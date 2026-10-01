@@ -56,8 +56,8 @@ export const meta = {
 // Pin models so the run never inherits the caller's quota-limited model.
 const AGENT_CONFIG = {
   simplify: { model: 'opus', effort: 'medium' },
-  check: { model: 'haiku', effort: 'low' },
-  verify: { model: 'sonnet', effort: 'medium' },
+  check: { model: 'sonnet', effort: 'high' },
+  verify: { model: 'sonnet', effort: 'high' },
 }
 
 // TEST-BEGIN simplify-corpus-decide — pure decision helpers, exercised by

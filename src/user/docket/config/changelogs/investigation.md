@@ -3,6 +3,13 @@
 Version history of `workflows/investigation.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 21
+
+The packet steps (`investigate`, `research`, `report`,
+`revise-investigation`) no longer declare `issue.body` as an input, because
+every packet's `== REQUEST` section already carries the issue body snapshot.
+`investigate` keeps `inputs = []`. No topology, routing, or limit change.
+
 ## 20
 
 The `research` step declares `payload = "research-notes@2"`, the schema

@@ -1,7 +1,7 @@
 [pipeline]
 description = "Read-only root-cause investigation with an optional research step, ending at a tribunal read. A rejection sends the report back to a bounded revision loop."
 name = "investigation"
-version = 20
+version = 21
 
 [match]
 labels_any  = ["investigation"]
@@ -19,7 +19,7 @@ emits = "investigation"
 executor = "investigate"
 expected_cost = 0.70
 holds_tree = false
-inputs = ["issue.body"]
+inputs = []
 max_attempts = 2
 name = "investigate"
 on_fail = "waiting-human"
@@ -31,7 +31,7 @@ emits = "research-notes"
 executor = "research"
 expected_cost = 0.50
 holds_tree = false
-inputs = ["investigate.investigation", "issue.body"]
+inputs = ["investigate.investigation"]
 name = "research"
 packet = ["contracts/{executor}.md"]
 payload = "research-notes@2"
@@ -43,7 +43,7 @@ emits = "investigation"
 executor = "report"
 expected_cost = 0.40
 holds_tree = false
-inputs = ["investigate.investigation", "research.*", "issue.body"]
+inputs = ["investigate.investigation", "research.*"]
 name = "report"
 packet = ["contracts/{executor}.md"]
 
@@ -63,7 +63,7 @@ emits = "investigation"
 executor = "revise-investigation"
 expected_cost = 0.40
 holds_tree = false
-inputs = ["issue.latest.investigation", "report-vote.vote-record", "research.*", "issue.body"]
+inputs = ["issue.latest.investigation", "report-vote.vote-record", "research.*"]
 loop = true
 name = "revise-investigation"
 packet = ["contracts/{executor}.md"]

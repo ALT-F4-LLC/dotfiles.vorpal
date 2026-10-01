@@ -1061,12 +1061,9 @@ mod tests {
             .and_then(|invocation| invocation.strip_prefix("vorpal run "))
             .and_then(|invocation| invocation.split(' ').next())
             .expect("the fragment's table pins the go alias");
-        for rule in [
-            "Bash(make:*)".to_string(),
-            format!("Bash(vorpal run {alias} *)"),
-        ] {
+        for rule in ["Bash(make:*)", "Bash(vorpal run:*)"] {
             assert!(
-                PERMISSION_ALLOW_RULES.contains(&rule.as_str()),
+                PERMISSION_ALLOW_RULES.contains(&rule),
                 "missing allow rule: {rule}"
             );
         }

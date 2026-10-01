@@ -47,6 +47,12 @@
 #                contracts/<x>.md (the spec-author-<axis> family shares
 #                contracts/spec-author.md, the one exception README.md
 #                documents) and a `[executors]` row in policy.toml.
+#   payload      A workflow step's `payload = "<schema>@<N>"` equals the
+#                frontmatter `payload:` of every contract the step executes
+#                (its executor and each fanout member, resolved as above).
+#                A step that executes no contract, or whose contract pins no
+#                payload, is not compared: a reconcile step's payload is the
+#                engine's aggregate, not a contract's emission.
 #   gate         Every gate a workflow names is a justfile recipe. A gate
 #                the target project supplies instead of this repo is listed
 #                in PROJECT_GATES below, with the workflow that needs it.
@@ -333,6 +339,48 @@ done
 for f in "$claude_tree"/agents/*.md; do check_name "$f" name "$(basename "$f" .md)"; done
 for f in "$docket_tree"/contracts/*.md; do check_name "$f" node "$(basename "$f" .md)"; done
 for f in "$docket_tree"/fragments/*.md; do check_name "$f" fragment "$(basename "$f" .md)"; done
+
+# --- payload: a step's payload equals each executed contract's pin ----------
+
+step_payload_rows() {
+  # $1 workflow: "line<TAB>step<TAB>payload<TAB>member" for every [[step]]
+  # that declares a payload, one row per contract it executes (its executor
+  # and each fanout member). A fanout array may span several lines.
+  awk -v OFS='\t' '
+    function value(s) { sub(/^[^"]*"/, "", s); sub(/".*$/, "", s); return s }
+    function flush(   n, i, m) {
+      if (in_step && payload != "") {
+        if (executor != "") print payload_line, name, payload, executor
+        gsub(/[]["=,]/, " ", fanout)
+        n = split(fanout, m, " ")
+        for (i = 1; i <= n; i++) print payload_line, name, payload, m[i]
+      }
+      name = executor = payload = fanout = ""; in_fanout = 0
+    }
+    /^\[/ { flush(); in_step = ($0 == "[[step]]"); next }
+    !in_step { next }
+    in_fanout { fanout = fanout " " $0; if (index($0, "]")) in_fanout = 0; next }
+    /^name[[:space:]]*=/ { name = value($0) }
+    /^executor[[:space:]]*=/ { executor = value($0) }
+    /^payload[[:space:]]*=/ { payload = value($0); payload_line = NR }
+    /^fanout[[:space:]]*=/ {
+      fanout = $0; sub(/^fanout[[:space:]]*=/, "", fanout)
+      in_fanout = !index(fanout, "]")
+    }
+    END { flush() }
+  ' "$1"
+}
+for wf in "$docket_tree"/workflows/*.toml; do
+  while IFS=$'\t' read -r line step payload member; do
+    case "$member" in
+      spec-author-*) contract="$docket_tree/contracts/spec-author.md" ;;
+      *) contract="$docket_tree/contracts/$member.md" ;;
+    esac
+    [ -f "$contract" ] || continue
+    pin="$(frontmatter_field "$contract" payload)"
+    [ -z "$pin" ] || [ "$pin" = "$payload" ] || fail payload "$wf" "$line" "step $step declares $payload; $contract pins $pin"
+  done < <(step_payload_rows "$wf")
+done
 
 if [ "$failed" -ne 0 ]; then
   echo "" >&2

@@ -220,6 +220,43 @@ build_corpus "$FIX"
 sed -i.bak 's|^implement = |implemnt = |' "$FIX/src/user/docket/config/policy.toml"
 expect_fail "executor: no policy row" "$FIX" executor "no \[executors\] row"
 
+# --- payload ------------------------------------------------------------------
+# pin_payload <dir> <contract-pin> <step-payload>: the implement contract's
+# frontmatter pins <contract-pin>, the implement step declares <step-payload>,
+# and both versions have a schema file so only the comparison can fail.
+pin_payload() {
+    printf '{}\n' > "$1/src/user/docket/config/schemas/ac-report@3.json"
+    sed -i.bak "s|^version: 1\$|version: 1\\
+payload: $2|" "$1/src/user/docket/config/contracts/implement.md"
+    sed -i.bak "s|^executor = \"implement\"\$|executor = \"implement\"\\
+payload = \"$3\"|" "$1/$WF"
+}
+
+build_corpus "$FIX"
+pin_payload "$FIX" "ac-report@2" "ac-report@2"
+expect_pass "payload: step payload matches its executor contract's pin" "$FIX"
+
+build_corpus "$FIX"
+pin_payload "$FIX" "ac-report@2" "ac-report@3"
+expect_fail "payload: step payload differs from its executor contract's pin" "$FIX" payload \
+    "step implement declares ac-report@3; src/user/docket/config/contracts/implement.md pins ac-report@2"
+
+build_corpus "$FIX"
+pin_payload "$FIX" "ac-report@2" "ac-report@2"
+printf '\n[[step]]\nname = "review"\nfanout = [\n  "implement",\n]\npayload = "ac-report@3"\n' >> "$FIX/$WF"
+expect_fail "payload: a fanout member's pin differs from the step payload" "$FIX" payload \
+    "step review declares ac-report@3"
+
+build_corpus "$FIX"
+pin_payload "$FIX" "ac-report@2" "ac-report@2"
+printf '\n[[step]]\nname = "reconcile"\npayload = "ac-report@3"\n' >> "$FIX/$WF"
+expect_pass "payload: a step with no executor and no fanout is not compared" "$FIX"
+
+build_corpus "$FIX"
+sed -i.bak 's|^executor = "implement"$|executor = "implement"\
+payload = "ac-report@2"|' "$FIX/$WF"
+expect_pass "payload: a contract with no payload pin is not compared" "$FIX"
+
 # --- gate ---------------------------------------------------------------------
 build_corpus "$FIX"
 sed -i.bak 's|"build"|"nope"|' "$FIX/$WF"

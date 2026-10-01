@@ -3,6 +3,14 @@
 Version history of `workflows/spec-doc.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 41
+
+The packet steps (`research`, `tdd-author-security`, `tdd-author`,
+`adr-author`, `ux-spec-author`, `prd-author`, `review`, `drain-highs`) no
+longer declare `issue.body` in `inputs`, because every packet's `== REQUEST`
+section already carries the issue body snapshot; the input rendered it twice.
+`research` keeps `inputs = []`. No topology, routing, or limit change.
+
 ## 40
 
 `research` declares `payload = "research-notes@2"`, the schema its

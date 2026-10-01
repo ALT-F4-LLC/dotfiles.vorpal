@@ -3,6 +3,15 @@
 Version history of `workflows/security-change.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 49
+
+The packet steps `threat-model`, `implement`, `drain-highs`, and
+`verify-ac` no longer declare the input `issue.body`. Every packet already
+renders the issue body snapshot under `== REQUEST`, so the input printed
+the body a second time. `threat-model` keeps `inputs = []`. The vote step
+`verify-ac-vote` keeps `issue.body` because it renders no packet. No
+topology, routing, or limit change.
+
 ## 48
 
 `verify-ac` gains the input `implement.gate-results`, so it reads the

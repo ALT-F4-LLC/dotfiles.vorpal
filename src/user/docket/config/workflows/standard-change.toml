@@ -1,7 +1,7 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 47
+version = 48
 
 [match]
 unless_labels = [
@@ -40,7 +40,7 @@ emits = "change-summary"
 executor = "implement"
 expected_cost = 1.50
 gates = ["build", "tests", "self-hygiene", "secret-scan", "vuln-scan", "doc-validate"]
-inputs = ["issue.body"]
+inputs = []
 max_attempts = 2
 name = "implement"
 on_fail = "waiting-human"
@@ -84,7 +84,7 @@ emits = "drain-report"
 executor = "drain-highs"
 expected_cost = 0.30
 holds_tree = false
-inputs = ["reconcile.findings", "issue.body"]
+inputs = ["reconcile.findings"]
 name = "drain-highs"
 on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
@@ -108,7 +108,7 @@ executor = "verify-ac"
 expected_cost = 0.50
 gates = [{ name = "ac-commands", pre = true }]
 holds_tree = false
-inputs = ["issue.body", "issue.diff", "implement.change-summary", "implement.gate-results", "verify-ac.gate-results"]
+inputs = ["issue.diff", "implement.change-summary", "implement.gate-results", "verify-ac.gate-results"]
 name = "verify-ac"
 packet = ["contracts/{executor}.md"]
 payload = "ac-report@2"

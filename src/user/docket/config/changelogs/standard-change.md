@@ -3,6 +3,14 @@
 Version history of `workflows/standard-change.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 48
+
+`implement`, `drain-highs`, and `verify-ac` no longer declare the input
+`issue.body`, because every packet's `== REQUEST` section already carries the
+issue body snapshot; the duplicate pushed packets past `context.warn_bytes`.
+`implement` keeps `inputs = []`. `verify-ac-vote` renders no packet and keeps
+`issue.body`. No topology, routing, or limit change.
+
 ## 47
 
 `verify-ac` adds the input `implement.gate-results`, so it reads the

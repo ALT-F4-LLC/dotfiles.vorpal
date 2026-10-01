@@ -256,7 +256,7 @@ fi
 # hand-off to pause, so the halt literals are asserted against the one
 # sentence that rules on halting: a verb dropped there and restated a
 # sentence later would otherwise still read as pinned.
-if paragraph 'Invoke `/pause` for the run' "${WORK}/handoff"; then
+if paragraph 'Invoke `/docket-run` in pause mode for the run' "${WORK}/handoff"; then
     ok "halt: exactly one paragraph carries the hand-off to pause"
     if sentence '**Finish never halts a run itself**' \
         "${WORK}/handoff" "${WORK}/halt-sentence"; then
@@ -269,7 +269,7 @@ if paragraph 'Invoke `/pause` for the run' "${WORK}/handoff"; then
         bad "halt: no single sentence carries '**Finish never halts a run itself**'"
     fi
 else
-    bad "halt: no single paragraph carries 'Invoke \`/pause\` for the run'"
+    bad "halt: no single paragraph carries 'Invoke \`/docket-run\` in pause mode for the run'"
 fi
 
 # (w) A worktree carrying an un-integrated sha is never removed. The literal

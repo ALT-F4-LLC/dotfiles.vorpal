@@ -17,9 +17,9 @@ Enumerate the driving sessions as §2 describes: candidates by run id, kept
 only when their own tool calls drove the run. A session can share its
 project directory with unrelated concurrent work, so cwd and recency find
 candidates but never prove a driver. A resumed run changes session id; join
-the pieces through the pause skill's resume prompt, the `run-paused` and
-`run-resumed` events, and explicit parent or resume metadata. Preserve
-changes of working directory within a session.
+the pieces through the resume prompt docket-run's pause mode records, the
+`run-paused` and `run-resumed` events, and explicit parent or resume
+metadata. Preserve changes of working directory within a session.
 
 For every driving session, inventory the workflow directories beneath it and
 their timestamped activity. A wave, tribunal, or usage-join launched for this

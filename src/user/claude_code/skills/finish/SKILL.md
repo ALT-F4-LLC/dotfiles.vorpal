@@ -5,9 +5,9 @@ description: >-
   "I'm done for good", or "close this out". Ends the session cleanly: stops
   every agent it spawned, cancels its schedules and watches, answers open
   questions in both directions, commits its own changes, and files every
-  unfinished item as an issue. Hands a live Docket run to pause rather than
-  halting it. Distinct from the harness EndConversation tool, which sweeps
-  nothing.
+  unfinished item as an issue. Hands a live Docket run to docket-run's pause
+  mode rather than halting it. Distinct from the harness EndConversation
+  tool, which sweeps nothing.
 ---
 
 # finish
@@ -22,8 +22,9 @@ scheduled, watched, and created is known only here; no list surface
 reconstructs it, and a forked subagent cannot see it. Run the sweep here.
 
 **Walking away, not parking.** If the operator means to come back to a
-driven run, that is `pause`, not this. Finish still handles a live run: it
-hands the run to `pause` and continues sweeping everything else.
+driven run, that is docket-run's pause mode, not this. Finish still handles
+a live run: it hands the run to that mode and continues sweeping everything
+else.
 
 ## Ownership: stop only what this session owns
 
@@ -50,10 +51,11 @@ worktrees, or watches.
 If this session is driving a Docket run, do this before anything else, so
 the rest of the sweep happens against a settled run.
 
-Invoke `/pause` for the run and let it complete its own procedure. **Finish
-never halts a run itself** — it issues no `run pause`, no `dispatch close`,
-and never `dispatch abandon`; that verb discards live work unconditionally
-and belongs to pause's hard halt alone. Do not re-derive pause's steps here.
+Invoke `/docket-run` in pause mode for the run and let it complete its own
+procedure. **Finish never halts a run itself** — it issues no `run pause`,
+no `dispatch close`, and never `dispatch abandon`; that verb discards live
+work unconditionally and belongs to pause's hard halt alone. Do not
+re-derive pause's steps here.
 
 Then continue the sweep.
 
@@ -86,10 +88,10 @@ cron says nothing about a wakeup. Answer both rows.
 
 **Git worktrees this session created.** Check each against
 `git worktree list` and your own `wfId` record. **Never remove a worktree
-carrying an un-integrated sha**; pause's un-integrated-writer-sha rule in
-`skills/pause/SKILL.md` governs here unchanged. Name every such sha with
-its worktree path and branch in the closing report so the work stays
-recoverable. A worktree whose work is integrated, and that this session
+carrying an un-integrated sha**; the pause mode's un-integrated-writer-sha
+rule in `skills/docket-run/references/pause.md` governs here unchanged.
+Name every such sha with its worktree path and branch in the closing report
+so the work stays recoverable. A worktree whose work is integrated, and that this session
 created, may be removed. A `wf_*` entry not in your record is reported, not
 removed.
 
@@ -146,7 +148,7 @@ or explicitly marked not applicable, never silently dropped:
 - crons created this session
 - artifact watches opened this session
 - worktrees created this session, each with its integration state
-- a driven Docket run, handed to `/pause`
+- a driven Docket run, handed to docket-run's pause mode
 - operator questions this session never answered
 - `AskUserQuestion` rounds the operator never answered
 - uncommitted changes, split into this session's and others'

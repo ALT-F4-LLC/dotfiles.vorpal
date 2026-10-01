@@ -3,16 +3,19 @@ name: docket-run
 description: >-
   Use on "/docket-run RUN-N", "drive the run", "resume the run", "run it" when
   it means a Docket run rather than the app, or bare after /docket-plan to
-  drive the next run. Drives an activated Docket run to completion in the
-  invoking conversation: asks the engine what is ready, dispatches it,
+  drive the next run. `/docket-run pause` halts a driven run with a resume
+  prompt, on "pause the run", "halt the run", "pause now, kill the wave", or
+  "stop for now, I'll resume later". Drives an activated Docket run to
+  completion in the invoking conversation: asks the engine what is ready,
+  dispatches it,
   launches the wave workflow once per lane unit, closes the dispatch, and repeats;
   vote gates ride the wave, conversational gates go to tribunal.js, three
   standing rulings answer parks machine-side, and every other park or reserved
   matter escalates to the operator. Holds no run state (the engine schedules,
   wave.js routes) and keeps the conductor capability in one session-private
-  file, never in a brief, tool output, or resume prompt. Distinct from pause,
-  which parks a driven run, and from tend, which works issues without a run.
-argument-hint: "[RUN-N]"
+  file, never in a brief, tool output, or resume prompt. Distinct from tend,
+  which works issues without a run.
+argument-hint: "[RUN-N | pause [RUN-N]]"
 ---
 
 # docket-run
@@ -248,6 +251,9 @@ the path or the token; every ruling stays yours.
 An explicit argument always wins; bare, resolve it yourself rather than
 asking, the same split `shadow` and `docket-plan` use.
 
+- **`/docket-run pause [RUN-N]`**, or an ask to walk away from a driven run
+  without abandoning it: go to **Pause mode**. `$RUN` is `RUN-N` when
+  given, else the run this conversation drives.
 - **`/docket-run RUN-N`**: `$RUN` is `RUN-N`, verbatim; go to **Before the
   loop**.
 - **Bare `/docket-run`**: resolve "the next run" from the engine:
@@ -491,7 +497,7 @@ list -q "term"` silently drops the term rather than erroring. Filter with
 the flags above, or take `--json` and match client-side.
 
 **Resuming or attaching to a run this session did not activate: check for
-a resume prompt before you touch it.** `/pause` records the halted
+a resume prompt before you touch it.** **Pause mode** records the halted
 session's state (mid-execution steps, un-integrated writer shas, held
 authorization claims, the pause reason) as a docket doc:
 
@@ -512,9 +518,9 @@ per **The conductor capability** comes before your first ruling; a
 `waiting-human` run's `run resume` is already one.
 
 **A resume prompt's DISPOSITION REQUIRED notes are debts you inherit.**
-`pause` prefixes advisory notes the halted session could not finish with
-`DISPOSITION REQUIRED:`. No engine verb re-raises these. Before your first
-dispatch, give each one of exactly three dispositions, stated aloud:
+**Pause mode** prefixes advisory notes the halted session could not finish
+with `DISPOSITION REQUIRED:`. No engine verb re-raises these. Before your
+first dispatch, give each one of exactly three dispositions, stated aloud:
 
 - **Investigate now**, when cheap or when it bears on work you are about
   to dispatch. Report what you found.
@@ -572,7 +578,7 @@ run unprompted:**
   all (restore the file instead). Completed steps' provenance is never
   rewritten; a `run-repinned` event carries old sha, new sha, and reason
   per changed ref. Repinning is all-or-nothing and a no-op with no drift.
-- **Pause the run** (`/pause`) and hand the decision back with a resume prompt.
+- **Pause the run** (**Pause mode**) and hand the decision back with a resume prompt.
 - **Abandon and re-docket-plan**, re-pinning from scratch on current disk.
 
 Repin moves the recorded agreement every future packet verifies against;
@@ -1201,7 +1207,7 @@ close, with one difference at the end:
    refused against the abandon, include the refusal verbatim in the
    abandon `--reason`.
 
-`pause` and a resume prompt point here rather than restating it.
+**Pause mode** and a resume prompt point here rather than restating it.
 
 ```
 // 1. the join is a workflow (below); its return carries the rows and you check the shape.
@@ -2024,7 +2030,7 @@ the run-guard blocks the turn-end instead, when installed (check the
 obligation is yours alone to keep. Where the guard fires, its deny is not
 the operator instructing: surface the choice (drive on, park, abandon)
 and let them decide. For a deliberate mid-progress halt, use
-`~/.claude/skills/pause/SKILL.md` rather than a bare `docket run pause`,
+**Pause mode** below rather than a bare `docket run pause`,
 which captures none of this session's own state (in-flight wave ids,
 un-integrated shas, Workflow args for a resume, budget-raise usage).
 
@@ -2037,7 +2043,7 @@ a `PreToolUse:Bash hook error` is a hook's exit 2, decided before the
 permission layer, which no permission mode or allow rule changes);
 reconcile with `dispatch verify` and `docket step show STEP-N` for every
 launched step, reaping the holders you have established are dead (**A
-dead spawn is reaped**); then `/pause`. Report the executors' actual
+dead spawn is reaped**); then **Pause mode**. Report the executors' actual
 blocker and every live lease, never a diagnosis read off settings alone.
 
 **A session that walks away from a conversational gate closes its own
@@ -2085,3 +2091,13 @@ abandoned rolls up to `done` legitimately.
 everything an `issue-abandoned` note cites before putting any related
 question to the operator. If a ruling turns out genuinely superseded, say
 what it was and why, and let them rule on that.
+
+### Pause mode
+
+`/docket-run pause [RUN-N]`, or any ask to walk away from a driven run
+without abandoning it ("pause the run", "halt the run", "pause now, kill
+the wave", "stop for now, I'll resume later"), follows
+[references/pause.md](references/pause.md) in full: it halts the run and
+leaves a resume prompt a new session can act on without this transcript.
+It is the sanctioned way to invoke `docket run pause`, which alone
+captures none of the session's state.

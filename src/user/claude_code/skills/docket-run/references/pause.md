@@ -1,19 +1,12 @@
----
-name: pause
-description: >-
-  Use on "pause", "pause the run", "halt the run", "pause now, kill the wave",
-  "stop for now, I'll resume later", or any request to walk away from a driven
-  Docket run without abandoning it. Halts the run mid-progress and leaves a
-  resume prompt sufficient for a new session to pick it up without this
-  transcript. The sanctioned way to invoke `docket run pause`, which alone
-  captures none of the session's state.
----
+# Pause mode
 
-# pause
+The procedure behind `/docket-run pause` and its **Pause mode** section in
+[SKILL.md](../SKILL.md): halts a driven run mid-progress and leaves a resume
+prompt sufficient for a new session to pick it up without this transcript.
 
 You halt a run `docket-run` is driving and leave a trail a stranger session
 can follow. `docket run pause RUN-N` alone parks the run; it does nothing
-about what lives only in this session's head. This skill makes a pause
+about what lives only in this session's head. This mode makes a pause
 resumable rather than just stopped.
 
 **Parking a run, not ending a session.** To walk away for good — stopping
@@ -21,12 +14,12 @@ this session's agents, schedules and watches and filing what is
 unfinished — use `finish` (`skills/finish/SKILL.md`), which hands any live
 run back here.
 
-**Not a replacement for `docket-run`.** You run inside or alongside a
+**Not a replacement for the loop.** You run inside or alongside the
 docket-run session already driving RUN-N. Nothing here schedules steps,
 dispatches waves, or makes routing decisions — docket-run's contract,
 untouched.
 
-**The conversation driving the run runs this skill.** docket-run drives a
+**The conversation driving the run runs this mode.** docket-run drives a
 run in the invoking conversation itself (its **Seat** section), so the
 workflow task ids, transcript directories, and launch args the resume
 snapshot below needs are already in this session's hands; nothing is

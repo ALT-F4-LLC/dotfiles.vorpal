@@ -83,10 +83,11 @@ docket run status RUN-N --json | jq -r '.data.run.status'
 
 A run in `planning`, `active`, or `waiting-human` (the status a paused run
 reports) is refused with its state named: shadow audits finished runs only.
-Point at `pause` or `finish` when the operator wants it settled first, and
-stop. A run in another project is audited from that project's checkout;
-resolve it through `docket project list --json` and the identity the run's
-events carry, never by constructing `<identity>/main` blindly.
+Point at docket-run's pause mode or `finish` when the operator wants it
+settled first, and stop. A run in another project is audited from that
+project's checkout; resolve it through `docket project list --json` and the
+identity the run's events carry, never by constructing `<identity>/main`
+blindly.
 
 Record run id, status, project, prefix, verified checkout, activation and
 final timestamps, and the issue roster. This is the audit's identity block;

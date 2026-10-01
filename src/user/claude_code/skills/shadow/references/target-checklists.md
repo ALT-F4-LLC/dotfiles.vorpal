@@ -26,7 +26,7 @@ applied, and never judge a past execution against a newer checklist alone.
 | Verification result | The documented result shape and recorded step status were read. A mismatch after an accepted record can be expected reconciliation rather than a failed executor. |
 | Operator gates | The actual artifact, diff, or numbers were presented. Notes preserve the operator's decision. A required issue for an accepted condition is present. |
 | Exceptional acknowledgments | `--ack-reap` and `--accept-missing-usage` carried the explicit, applicable operator authorization the target requires. Unrelated permission or silence does not supply it. |
-| Pause and resume | A paused run's resume prompt carried the session-only state the pause skill lists; the resuming session re-minted the capability and reconciled un-integrated shas before dispatching. |
+| Pause and resume | A paused run's resume prompt carried the session-only state docket-run's pause mode lists; the resuming session re-minted the capability and reconciled un-integrated shas before dispatching. |
 
 ## Wave and executors
 

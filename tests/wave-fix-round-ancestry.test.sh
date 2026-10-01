@@ -22,7 +22,7 @@
 # AND THE THIRD HALF (DOT-1022). The guard is only as good as the sha the
 # conductor puts in `args.integrated`, and the hand-off text let it name the
 # WRONG ROUND whenever fix@N and its review@N#k fanout were split across
-# dispatches (a /pause, a wave that ended between them, a budget stop): "the
+# dispatches (a pause, a wave that ended between them, a budget stop): "the
 # most recent fix round" then IS fix@N, whose integration commit is the
 # cherry-pick OF the judged tree, which can never be an ancestor of its own
 # source. RUN-66 DISPATCH-360 parked 8 healthy fanout rows and killed 10

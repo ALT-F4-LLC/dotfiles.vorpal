@@ -3,6 +3,14 @@
 Version history of `workflows/docs-only.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 32
+
+The packet steps implement and verify-ac no longer declare the input
+`issue.body`. The engine already renders the issue body snapshot as
+`== REQUEST` on every packet step, so the input duplicated it. implement
+keeps `inputs = []`. verify-ac-vote keeps `issue.body` because a vote
+step renders no packet. No topology, routing, or limit change.
+
 ## 31
 
 verify-ac adds the input `implement.gate-results`, so it reads the

@@ -12,8 +12,8 @@ description: >-
   A workflow verifies every candidate mechanically and adversarially before
   this session lands and commits it; under /loop it passes until nothing
   shrinks, then rests. Distinct from the built-in simplify, which reviews
-  the current diff once; declutter, which cleans any repository's code with
-  a mutation-probe proof; corpus-check, which audits coherence; and
+  the current diff once; declutter-code, which cleans any repository's code
+  with a mutation-probe proof; corpus-check, which audits coherence; and
   docket-prune, which tries definitions without editing.
 argument-hint: "[tighten] [paths or globs, default: src/user/claude_code src/user/docket; tighten: skills/**/*.md agents/*.md]"
 ---

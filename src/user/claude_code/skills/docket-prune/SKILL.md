@@ -14,8 +14,8 @@ description: >-
   the ledger; `all` re-tries everything; under /loop it passes until the
   corpus is unchanged and every cut is filed, then rests. Never executes a
   cut. Distinct from corpus-check, which audits coherence; simplify-corpus,
-  which shortens files; declutter, which cleans code; and docket-refit
-  corpus mode, which keeps by default and redesigns.
+  which shortens files; declutter-code, which cleans code; and
+  docket-refit corpus mode, which keeps by default and redesigns.
 argument-hint: "[all]"
 ---
 

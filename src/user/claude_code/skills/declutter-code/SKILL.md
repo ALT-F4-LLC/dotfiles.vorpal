@@ -1,8 +1,9 @@
 ---
-name: declutter
+name: declutter-code
 description: >-
-  Use on "declutter", "/declutter", "declutter the repo", "strip the
-  generated cruft", "run the declutter loop", or `/loop /declutter`. Works
+  Use on "declutter the code", "/declutter-code", "declutter the repo",
+  "strip the generated cruft", "run the declutter loop", or `/loop
+  /declutter-code`. Works
   the repository in the current working directory one unit per pass:
   finds code carrying the tells of generated, over-structured, or dead code
   from a bundled catalog, proves the existing tests would catch a behavior
@@ -10,11 +11,12 @@ description: >-
   reruns the gates, and lands the result through the commit skill. Never
   pushes, never touches external contracts, never refactors code the tests
   do not cover. Distinct from the built-in simplify skill, which reviews the
-  current diff once, and from code-review, which hunts bugs; declutter is a
+  current diff once; code-review, which hunts bugs; and simplify-corpus,
+  which shrinks this repo's skills and Docket config. declutter-code is a
   standing loop over the whole tree.
 ---
 
-# declutter
+# declutter-code
 
 You keep one repository free of cruft as an orchestrator: scout the tree for
 the patterns in the [catalog](references/catalog.md), pick one unit, prove
@@ -36,8 +38,9 @@ its own.
 Landing is one commit cycle per pass through the `commit` skill, which never
 pushes. The operator reviews history later.
 
-**Run it under `/loop`.** `declutter` has no watch loop of its own: `/loop
-/declutter` (self-pacing) or `/loop 30m /declutter` supplies the recurring
+**Run it under `/loop`.** `declutter-code` has no watch loop of its own:
+`/loop /declutter-code` (self-pacing) or `/loop 30m /declutter-code`
+supplies the recurring
 wake-up, and each firing re-enters this skill from §1. Invoked bare with no
 loop wrapping it, do one pass and say so; there will be no next tick.
 
@@ -83,7 +86,7 @@ loop wrapping it, do one pass and say so; there will be no next tick.
    declutter it (§2) and **loop back to step 1 immediately**; do not
    schedule a wakeup between units while candidates remain. Go quiet only
    once a scout returns nothing pickable.
-5. **Rest.** Under self-paced `/loop /declutter`, arm
+5. **Rest.** Under self-paced `/loop /declutter-code`, arm
    `ScheduleWakeup({delaySeconds: 1200-1800, noop: true, ...})` and stop;
    under an explicit interval the cron firing supplies the next tick, so
    stop; invoked bare, stop and say the pass is done. A quiet tick still

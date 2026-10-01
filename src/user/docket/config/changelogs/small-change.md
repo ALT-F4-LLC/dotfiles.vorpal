@@ -3,6 +3,14 @@
 Version history of `workflows/small-change.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 12
+
+The packet steps `implement` and `verify-ac` no longer declare the input
+`issue.body`. The engine renders `== REQUEST` from the issue's body snapshot
+on every packet step, so the input repeated the body in each packet.
+`verify-ac-vote` keeps `issue.body`, since it renders no packet. No topology,
+routing, or limit change.
+
 ## 11
 
 `verify-ac` gains the input `implement.gate-results`, so it reads the

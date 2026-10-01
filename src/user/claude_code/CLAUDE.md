@@ -30,6 +30,10 @@ question, or when the user asks. Routine work needs only what follows.
   advice is review input: weigh it seriously, reconcile conflicts with your
   own evidence in a further call, and never treat it as authorization or as a
   substitute for an operator gate.
+- Post-process command output with `jq`, `grep`, `sed -n`, `head`, or `wc`.
+  The auto-mode classifier refuses an interpreter (`python`, `perl`, `node`,
+  `ruby`) given code as an argument, on stdin, or in a heredoc, and no
+  instruction clears that refusal.
 
 # Prose rules
 

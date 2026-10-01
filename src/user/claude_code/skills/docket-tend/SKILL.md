@@ -33,9 +33,12 @@ do one pass and say so; there will be no next tick.
 ## 1. Each tick
 
 ```bash
-docket issue list --json=v2 --limit 1000 -s backlog -s todo
+docket issue list --json=v2 --limit 1000 -s backlog -s todo -l route-tend
 docket run status --json=v2
 ```
+
+Run them as separate Bash calls so each result is one JSON document; narrow
+either further with `jq`, never an interpreter.
 
 Project resolves from cwd's git identity, same as every other docket verb
 (see the `docket` skill). A `VALIDATION_ERROR` naming no project, or no

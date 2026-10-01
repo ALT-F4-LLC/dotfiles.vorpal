@@ -482,6 +482,10 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
             "claude-sonnet-5-5",
             serde_json::json!({ "effortLevel": "high" }), // default
         )
+        // Docket queue and run reads routinely exceed the 30000 default; at
+        // the 128000 ceiling they return inline instead of to a file that
+        // invites interpreter post-processing the hard_deny refuses.
+        .with_bash_output_max_chars(128000)
         .with_output_style("Concise")
         .with_permission_default_mode("auto")
         .with_permission_disable_bypass_permissions_mode("disable")

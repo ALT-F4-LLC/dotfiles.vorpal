@@ -1,9 +1,10 @@
 ---
-name: corpus-cut
+name: docket-prune
 description: >-
-  Use on "cut the corpus", "/corpus-cut", "what in the docket corpus earns
-  its place", "put the corpus on trial", "which definitions can go", or to
-  keep the corpus lean under /loop (for example `/loop /corpus-cut`). Puts
+  Use on "prune the docket corpus", "/docket-prune", "what in the docket
+  corpus earns its place", "put the corpus on trial", "which definitions can
+  go", or to keep the corpus lean under /loop (for example `/loop
+  /docket-prune`). Puts
   every definition under src/user/docket/config on trial: a prosecutor,
   a defender, a judge, and three refuters per definition rule stay,
   refactor (with the cut named), or remove for each file and each section,
@@ -12,13 +13,13 @@ description: >-
   docket-refit to land. Bare invocation is one pass over what changed since
   the ledger; `all` re-tries everything; under /loop it passes until the
   corpus is unchanged and every cut is filed, then rests. Never executes a
-  cut. Distinct from corpus-check, which audits coherence; simplify-corpus's
-  tighten mode, which shortens prose; declutter, which cleans code; and
-  docket-refit corpus mode, which keeps by default and redesigns.
+  cut. Distinct from corpus-check, which audits coherence; simplify-corpus,
+  which shortens files; declutter, which cleans code; and docket-refit
+  corpus mode, which keeps by default and redesigns.
 argument-hint: "[all]"
 ---
 
-# corpus-cut
+# docket-prune
 
 Run this skill inline in the main session. You enumerate the corpus, launch
 the trial, file the issues, land the ledger, and commit. The workflow never
@@ -44,8 +45,8 @@ table. Nothing is protected: policy.toml's `[security]` block, every
 workflow, and README.md are tried on the same evidence, and a remove
 verdict on any of them lands only through refit's own gates.
 
-**Run it under `/loop` for maintenance.** `corpus-cut` has no watch loop
-of its own: `/loop /corpus-cut` (self-pacing) or `/loop 2h /corpus-cut`
+**Run it under `/loop` for maintenance.** `docket-prune` has no watch loop
+of its own: `/loop /docket-prune` (self-pacing) or `/loop 2h /docket-prune`
 supplies the recurring wake-up, and each firing re-enters this skill from
 §1. Invoked bare with no loop wrapping it, do one pass and say so.
 
@@ -101,14 +102,14 @@ other verdict forward. `all` re-tries every definition.
    when they exist, else null. Expand `~` to a literal absolute path
    yourself.
 4. Choose a scratch directory under `$TMPDIR`, empty and unique to this
-   pass (for example `$TMPDIR/corpus-cut/pass-<n>`, incrementing `<n>`
+   pass (for example `$TMPDIR/docket-prune/pass-<n>`, incrementing `<n>`
    from earlier passes in this session), and take the UTC timestamp with
    `date -u +%Y-%m-%dT%H:%M:%SZ`.
 
 ## 2. Run the workflow
 
 Invoke by `scriptPath`, always, at the installed path
-`~/.claude/workflows/corpus-cut.js`, expanding `~` to a literal absolute
+`~/.claude/workflows/docket-prune.js`, expanding `~` to a literal absolute
 path yourself first. The Workflow tool does not expand `~` and resolves a
 relative path against the target repo's cwd, not the dotfiles source tree.
 The installed copy is the only one the tool may launch and the only one
@@ -126,7 +127,7 @@ jq -c '.verdicts |= map(if (.verdict != "stay" and .issue == null) then . else {
 ```
 
 ```
-Workflow({ scriptPath: "<absolute installed path to corpus-cut.js>", args: { checkoutRoot: "<repo root>", definitions: <contents of definitions.json>, ledger: <contents of ledger-slim.json, or null on the first pass>, all: <true when $ARGUMENTS is all>, projects: [{name, prefix, root}], engineRoot: <path or null>, transcriptDirs: [<absolute paths>], frictionDir: <path or null>, installedConfigDir: <path or null>, installedClaudeDir: <path or null>, scratchDir: "<absolute scratch path>", pass: <n>, nowIso: "<timestamp>" } })
+Workflow({ scriptPath: "<absolute installed path to docket-prune.js>", args: { checkoutRoot: "<repo root>", definitions: <contents of definitions.json>, ledger: <contents of ledger-slim.json, or null on the first pass>, all: <true when $ARGUMENTS is all>, projects: [{name, prefix, root}], engineRoot: <path or null>, transcriptDirs: [<absolute paths>], frictionDir: <path or null>, installedConfigDir: <path or null>, installedClaudeDir: <path or null>, scratchDir: "<absolute scratch path>", pass: <n>, nowIso: "<timestamp>" } })
 ```
 
 The workflow plans the pass in code, gathers the evidence in one barrier,
@@ -162,7 +163,7 @@ timestamp from §1. The row's key is the replay key: a
 repeated pass on unchanged bytes returns the original issue, open or
 closed. Once the bytes change the key changes, so a cut the operator
 declined is skipped by title instead: a row whose title matches a closed
-corpus-cut issue labelled `wont-do` files nothing and records that
+`corpus-cut` issue labelled `wont-do` files nothing and records that
 issue's id. To decline a cut, run `docket issue label add <id> wont-do`,
 then close it. A landed cut is closed without the label and never skipped.
 
@@ -207,7 +208,10 @@ for `truncated`: a partial map would re-file a declined cut. Repeated
 field with the envelope on the first filed row; the docket skill's
 reference names the v2 shapes. No routing label and no size is set: the
 issue is unrouted for `docket-groom` to triage
-and size, and `corpus-cut` is a plain label for listing. A row that
+and size, and `corpus-cut` is a plain label for listing. The label, the
+`corpus-cut:` title prefix, and the ledger's replay keys keep this skill's
+former name, so cuts filed or declined before the rename still match. A row
+that
 failed is reported with the CLI's error and left unfiled; its verdict
 keeps `issue: null` and is filed again next pass.
 
@@ -285,18 +289,18 @@ has an issue; refit landing a cut changes the corpus, which gives the next
 pass new bytes to try.
 
 - **Bare invocation:** one pass. Say the pass is done and stop.
-- **Self-paced `/loop /corpus-cut`:**
+- **Self-paced `/loop /docket-prune`:**
   - Tried or filed anything: arm
     `ScheduleWakeup({delaySeconds: 300, noop: false, prompt: "<the loop
-    prompt verbatim>", reason: "corpus-cut tried definitions; checking for
+    prompt verbatim>", reason: "docket-prune tried definitions; checking for
     deferred or unfiled work"})` so a deferred definition or a failed row
     is picked up soon, and stop.
   - `rest` true: arm
     `ScheduleWakeup({delaySeconds: 1800, noop: true, prompt: "<the loop
-    prompt verbatim>", reason: "corpus-cut found nothing new to try"})`
+    prompt verbatim>", reason: "docket-prune found nothing new to try"})`
     and stop. Send no "nothing changed" message; a quiet tick is not an
     event.
-- **Explicit interval (`/loop 2h /corpus-cut`):** one pass; the cron
+- **Explicit interval (`/loop 2h /docket-prune`):** one pass; the cron
   firing supplies the next tick, so stop.
 
 The loop ends when the operator stops it (`ScheduleWakeup({stop: true})`

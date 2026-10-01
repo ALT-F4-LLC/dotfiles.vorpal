@@ -4,7 +4,7 @@ The skills that improve Docket processes share one primary goal: every remedy,
 proposal, and definition they produce runs without a human in the loop,
 unless a human is vital to the outcome. This file is the single copy of that
 rule. Consumers: docket-postmortem, docket-retro, docket-refit, docket-reconcile,
-docket-groom, docket-cli-audit, corpus-check, and corpus-cut.
+docket-groom, docket-cli-audit, corpus-check, and docket-prune.
 
 ## What the rule covers
 

@@ -1,6 +1,6 @@
 export const meta = {
-    name: 'corpus-cut',
-    description: 'Internal: launched through scriptPath by the corpus-cut skill; puts every docket corpus definition on trial read-only (static census, registry, run store, transcript digests, friction ledger, install drift as evidence; prosecutor, defender, judge, three refuters per definition) and returns a stay, refactor, or remove verdict per file and per section with its evidence. Args and cost in the header comment.',
+    name: 'docket-prune',
+    description: 'Internal: launched through scriptPath by the docket-prune skill; puts every docket corpus definition on trial read-only (static census, registry, run store, transcript digests, friction ledger, install drift as evidence; prosecutor, defender, judge, three refuters per definition) and returns a stay, refactor, or remove verdict per file and per section with its evidence. Args and cost in the header comment.',
     whenToUse: 'Never by name. Read-only: every agent reads the checkout, the engine source, docket ledgers, transcripts, or installed copies and writes only under args.scratchDir. The caller plans the pass, writes the ledger, files issues, and commits in the main session.',
     phases: [
         { title: 'Evidence', detail: 'one static census, one registry read, one run-store aggregate per project, one transcript digest per project directory, one friction read, one install-drift diff' },
@@ -17,7 +17,7 @@ export const meta = {
 // this block is the single copy of what it used to carry).
 //
 // What it does:
-// Runs one pass of the corpus-cut skill as read-only agent fan-outs over the
+// Runs one pass of the docket-prune skill as read-only agent fan-outs over the
 // docket corpus at <checkoutRoot>/src/user/docket/config. Every definition
 // the plan selects is tried: a prosecutor charges each unit with the evidence
 // class it lacks, a defender answers with citations, a judge rules per unit,
@@ -120,7 +120,7 @@ const AGENT_CONFIG = {
     record: { model: 'sonnet', effort: 'low' },
 }
 
-// TEST-BEGIN corpus-cut-config — include before any pure test region.
+// TEST-BEGIN docket-prune-config — include before any pure test region.
 const VERDICTS = ['stay', 'refactor', 'remove']
 // Three refuters per definition; a ruling changes only when at least two
 // seated refuters refute it AND agree on the replacement. A seat that returns
@@ -140,10 +140,11 @@ const AGENTS_PER_DEFINITION = 3 + REFUTERS_PER_DEFINITION
 // RECORD_SHARDS, after which shards grow.
 const RECORD_SHARDS = 40
 const RECORD_SHARD_ENTRIES = 12
-// TEST-END corpus-cut-config
+// TEST-END docket-prune-config
 
-// Every sentence a corpus-cut agent receives carries this sentinel, so the
-// transcript digest can exclude this skill's own logs from the evidence.
+// Every sentence a docket-prune agent receives carries this sentinel, so the
+// transcript digest can exclude this skill's own logs from the evidence. Its
+// value keeps the skill's former name so logs from earlier passes still match.
 const SENTINEL = 'corpus-cut-pass'
 
 // Which evidence classes apply to which unit kind. A unit with nothing in
@@ -390,8 +391,8 @@ const REFUTE_SCHEMA = {
     required: ['votes'],
 }
 
-// TEST-BEGIN corpus-cut-decide — include corpus-cut-config. Pure decision
-// helpers, exercised by tests/corpus-cut-decide.test.sh without a run.
+// TEST-BEGIN docket-prune-decide — include docket-prune-config. Pure decision
+// helpers, exercised by tests/docket-prune-decide.test.sh without a run.
 
 // Which definitions this pass judges. A definition is judged when the
 // operator asked for everything, when it carries no ledgered verdict, or
@@ -493,7 +494,9 @@ function unitTag(v) {
 
 // The replay key for a verdict's issue. It changes with the definition's
 // bytes, the unit, and the verdict, so a re-judged definition files afresh
-// and an unchanged one replays the original issue, closed or open.
+// and an unchanged one replays the original issue, closed or open. The
+// `corpus-cut:` prefix keeps the skill's former name; changing it would
+// re-file every cut.
 function idempotencyKey(v) {
     return `corpus-cut:${String(v.hash).slice(0, 16)}:${v.unit}:${v.verdict}`
 }
@@ -540,27 +543,27 @@ function unsettledEntries(ledger, plan, fresh) {
     const settled = new Set(fresh.map((v) => v.path))
     return verdicts.filter((v) => judged.has(v.path) && !settled.has(v.path))
 }
-// TEST-END corpus-cut-decide
+// TEST-END docket-prune-decide
 
 // ---- Input -----------------------------------------------------------------
 
 const input = typeof args === 'string' ? JSON.parse(args) : (args || {})
-if (typeof args === 'string') log('corpus-cut: decoded args from the harness JSON-encoded transport (normal)')
+if (typeof args === 'string') log('docket-prune: decoded args from the harness JSON-encoded transport (normal)')
 
 if (typeof input.checkoutRoot !== 'string' || !input.checkoutRoot.startsWith('/')) {
-    throw new Error('corpus-cut: args.checkoutRoot must be the absolute path of the dotfiles checkout')
+    throw new Error('docket-prune: args.checkoutRoot must be the absolute path of the dotfiles checkout')
 }
 if (!Array.isArray(input.definitions) || input.definitions.length === 0) {
-    throw new Error('corpus-cut: args.definitions is empty; the skill enumerates the corpus before launching')
+    throw new Error('docket-prune: args.definitions is empty; the skill enumerates the corpus before launching')
 }
 for (const [i, d] of input.definitions.entries()) {
     if (typeof d.path !== 'string' || !d.path || typeof d.hash !== 'string' || !d.hash || typeof d.surface !== 'string') {
-        throw new Error(`corpus-cut: args.definitions[${i}] needs path, surface, and hash`)
+        throw new Error(`docket-prune: args.definitions[${i}] needs path, surface, and hash`)
     }
 }
-if (!Array.isArray(input.projects)) throw new Error('corpus-cut: args.projects must be an array from `docket project list --json`')
-if (typeof input.scratchDir !== 'string' || !input.scratchDir.startsWith('/')) throw new Error('corpus-cut: args.scratchDir must be an absolute path')
-if (typeof input.nowIso !== 'string' || !input.nowIso) throw new Error('corpus-cut: args.nowIso is required; scripts cannot read the clock')
+if (!Array.isArray(input.projects)) throw new Error('docket-prune: args.projects must be an array from `docket project list --json`')
+if (typeof input.scratchDir !== 'string' || !input.scratchDir.startsWith('/')) throw new Error('docket-prune: args.scratchDir must be an absolute path')
+if (typeof input.nowIso !== 'string' || !input.nowIso) throw new Error('docket-prune: args.nowIso is required; scripts cannot read the clock')
 
 const checkoutRoot = input.checkoutRoot
 const corpusRoot = `${checkoutRoot}/src/user/docket/config`
@@ -584,7 +587,7 @@ const budget = judgeBudget(evidenceAgents)
 const toJudge = plan.judge.slice(0, budget)
 const deferred = plan.judge.slice(budget).map((d) => d.path)
 for (const path of deferred) uncovered.push({ what: `judging ${path}`, why: `beyond the judge bound of ${budget} definitions for this launch` })
-if (deferred.length) log(`corpus-cut: judge bound is ${budget} definition(s); ${deferred.length} deferred to the next pass`)
+if (deferred.length) log(`docket-prune: judge bound is ${budget} definition(s); ${deferred.length} deferred to the next pass`)
 log(`Pass ${pass}: ${input.definitions.length} definition(s); ${toJudge.length} to judge, ${plan.carried.length} verdict(s) carried, ${plan.dropped.length} ledgered path(s) gone from disk`)
 
 
@@ -606,7 +609,7 @@ const RECORD_SCHEMA = {
 }
 
 function recordPrompt(n, shardPath, shard, issuesDir, unfiled) {
-    return `Record shard ${n} of one corpus-cut pass under the scratch directory. Copy, never compose: every byte of the JSON and every field of the issue bodies comes from this prompt.
+    return `Record shard ${n} of one docket-prune pass under the scratch directory. Copy, never compose: every byte of the JSON and every field of the issue bodies comes from this prompt.
 
 Scratch: ${scratchDir} (the only place you may write). ${READ_ONLY}
 
@@ -626,7 +629,7 @@ async function recordPass(merged) {
     const issuesDir = `${scratchDir}/issues`
     const shards = shardEntries(entries, RECORD_SHARDS, RECORD_SHARD_ENTRIES)
     phase('Record')
-    log(`corpus-cut: recording ${entries.length} entr(ies) across ${shards.length} writer(s); ${unfiled.length} cut(s) to file`)
+    log(`docket-prune: recording ${entries.length} entr(ies) across ${shards.length} writer(s); ${unfiled.length} cut(s) to file`)
     // Every shard is checked against its own entries in code, so the barrier
     // only collects the checks.
     const returns = await parallel(shards.map((shard, i) => () => {
@@ -886,7 +889,7 @@ function slug(text) {
 
 async function trialPass() {
     phase('Evidence')
-    log(`corpus-cut: gathering evidence with ${evidenceAgents} agent(s): census, registry, ${projects.length} run store(s), ${transcriptDirs.length} transcript digest(s), friction, install drift`)
+    log(`docket-prune: gathering evidence with ${evidenceAgents} agent(s): census, registry, ${projects.length} run store(s), ${transcriptDirs.length} transcript digest(s), friction, install drift`)
     const readOpts = { phase: 'Evidence', agentType: 'executor-read' }
     // Every judge reads the merged bundle, so the barrier is genuine here.
     const [census, registry, friction, install, ...rest] = await parallel([
@@ -943,12 +946,12 @@ async function trialPass() {
             engine: Boolean(engineRoot),
         },
     }
-    log(`corpus-cut: evidence in; ${evidence.coverage.logsScanned} agent log(s) digested across ${digests.length} director(ies), ${runs.length} run store(s) read`)
+    log(`docket-prune: evidence in; ${evidence.coverage.logsScanned} agent log(s) digested across ${digests.length} director(ies), ${runs.length} run store(s) read`)
 
     // ---- Trial -----------------------------------------------------------------
 
     phase('Prosecute')
-    log(`corpus-cut: trying ${toJudge.length} definition(s), ${AGENTS_PER_DEFINITION} agents each`)
+    log(`docket-prune: trying ${toJudge.length} definition(s), ${AGENTS_PER_DEFINITION} agents each`)
     const tried = await pipeline(
         toJudge,
         (d) => agent(prosecutePrompt(d, evidence), { phase: 'Prosecute', agentType: 'executor-read', label: `prosecute:${d.path}`, schema: PROSECUTE_SCHEMA, ...AGENT_CONFIG.prosecute }),

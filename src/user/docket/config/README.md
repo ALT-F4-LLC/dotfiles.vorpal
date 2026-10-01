@@ -76,7 +76,7 @@ work.
 Contract, fragment, and schema prose content (severity ladders, provenance
 vocabularies, house-style rules) is a matter of contract authoring, not
 naming identity, and is out of scope here. `cut-ledger.json` at this root
-is the corpus-cut skill's verdict ledger, and `changelogs/<name>.md` holds
+is the docket-prune skill's verdict ledger, and `changelogs/<name>.md` holds
 each workflow's and `policy.toml`'s version history, newest first; neither
 is a definition. The engine reads only the five subtrees and `policy.toml`,
 pins these two by content hash like every file under this root, and the

@@ -26,7 +26,7 @@ and a request to record an issue does not authorize executing the work.
 | Drive or resume a run | [docket-run](../docket-run/SKILL.md) |
 | Bind a repository to the shared corpus | [docket-bootstrap](../docket-bootstrap/SKILL.md) |
 | Author a standalone workflow or schema | [Workflow definitions](references/workflows.md) and [schemas](references/schemas.md) |
-| Cut or maintain the shared corpus by verdict | [corpus-cut](../corpus-cut/SKILL.md) |
+| Cut or maintain the shared corpus by verdict | [docket-prune](../docket-prune/SKILL.md) |
 
 Load a companion only for its operating mode; its run, routing, and approval
 policies govern that operation, not this CLI reference. On the Docket engine

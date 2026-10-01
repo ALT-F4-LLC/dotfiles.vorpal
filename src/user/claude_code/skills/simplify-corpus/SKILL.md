@@ -14,7 +14,7 @@ description: >-
   shrinks, then rests. Distinct from the built-in simplify, which reviews
   the current diff once; declutter, which cleans any repository's code with
   a mutation-probe proof; corpus-check, which audits coherence; and
-  corpus-cut, which tries definitions without editing.
+  docket-prune, which tries definitions without editing.
 argument-hint: "[tighten] [paths or globs, default: src/user/claude_code src/user/docket; tighten: skills/**/*.md agents/*.md]"
 ---
 

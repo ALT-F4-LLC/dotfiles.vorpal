@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for corpus-cut.js's pass decisions: which definitions a pass
+# Behavior suite for docket-prune.js's pass decisions: which definitions a pass
 # judges, how refuter votes settle a ruling, when a pass rests, and how an
 # issue's replay key and the merged ledger are derived, which prior issues a
 # pass supersedes, and which ledgered entries a definition left unjudged keeps.
@@ -18,19 +18,19 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-CUT="${CORPUS_CUT_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/corpus-cut.js}"
+CUT="${DOCKET_PRUNE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-prune.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$CUT" ] || fatal "corpus-cut.js not found at ${CUT}"
+[ -f "$CUT" ] || fatal "docket-prune.js not found at ${CUT}"
 for tool in node awk; do
     command -v "$tool" >/dev/null 2>&1 || fatal "${tool} is required to run this test"
 done
 
-WORK=$(mktemp -d "${TMPDIR:-/tmp}/corpus-cut-decide.XXXXXX") || fatal "mktemp failed"
+WORK=$(mktemp -d "${TMPDIR:-/tmp}/docket-prune-decide.XXXXXX") || fatal "mktemp failed"
 trap 'rm -rf "$WORK"' EXIT
 
 pass=0
@@ -57,8 +57,8 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
     ' "$CUT"
 }
 
-extract corpus-cut-config > "${WORK}/config.js" || fatal "bad or missing TEST markers for corpus-cut-config"
-extract corpus-cut-decide > "${WORK}/decide.js" || fatal "bad or missing TEST markers for corpus-cut-decide"
+extract docket-prune-config > "${WORK}/config.js" || fatal "bad or missing TEST markers for docket-prune-config"
+extract docket-prune-decide > "${WORK}/decide.js" || fatal "bad or missing TEST markers for docket-prune-decide"
 
 cat > "${WORK}/cases.js" <<'JS'
 const out = {}

@@ -3,6 +3,13 @@
 Version history of `workflows/spec-project.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 33
+
+The packet steps `research`, `spec-author`, `review`, and `drain-highs` no
+longer declare `issue.body` in `inputs`. The engine already renders the issue
+body snapshot as `== REQUEST` on every packet step, so the input duplicated it.
+`research` keeps `inputs = []`. No topology, routing, or limit change.
+
 ## 32
 
 The `research` step declares `payload = "research-notes@2"`, the schema

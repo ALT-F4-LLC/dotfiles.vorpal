@@ -1,7 +1,7 @@
 [pipeline]
 description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step. Review and reconcile the findings, drain any open highs, and accept by tribunal vote. A rejection re-enters the bounded revise loop at spec authoring and runs review again."
 name = "spec-project"
-version = 32
+version = 33
 
 [match]
 labels_any = ["spec-project"]
@@ -22,7 +22,7 @@ emits = "research-notes"
 executor = "research"
 expected_cost = 0.50
 holds_tree = false
-inputs = ["issue.body"]
+inputs = []
 name = "research"
 packet = ["contracts/{executor}.md"]
 payload = "research-notes@2"
@@ -43,7 +43,7 @@ fanout = [
   "spec-author-testing",
 ]
 gates = ["doc-validate", "reserved-name-check"]
-inputs = ["research.*", "issue.body"]
+inputs = ["research.*"]
 max_attempts = 2
 name = "spec-author"
 on_fail = "waiting-human"
@@ -55,7 +55,7 @@ emits = "findings"
 expected_cost = 0.60
 fanout = ["judge-architecture", "judge-correctness", "judge-simplicity"]
 holds_tree = false
-inputs = ["issue.latest.spec", "issue.body"]
+inputs = ["issue.latest.spec"]
 name = "review"
 packet = ["contracts/{executor}.md"]
 payload = "findings@12"
@@ -87,7 +87,7 @@ emits = "drain-report"
 executor = "drain-highs"
 expected_cost = 0.30
 holds_tree = false
-inputs = ["reconcile.findings", "issue.body"]
+inputs = ["reconcile.findings"]
 name = "drain-highs"
 on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]

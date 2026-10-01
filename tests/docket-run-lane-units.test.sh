@@ -165,6 +165,17 @@ for pair in 1:1 2:1 10:8 18:16 64:16; do
     [ "$out" = "3" ] && [ "$got" = "[$want]" ] && [ "$(summary 'len(s)')" = "3" ]
     ok $? "LANE_UNITS_CPUS=$cpus gives every launch harnessCap $want, stdout still N alone (got '$out', caps $got)"
 done
+# Without the override the cap follows the host's online CPUs, checked against
+# getconf rather than lane_units.py. PYTHON_CPU_COUNT (Python 3.13+) would
+# steer os.cpu_count() away from getconf, so it is unset too.
+online=$(getconf _NPROCESSORS_ONLN)
+want=$((online - 2)); [ "$want" -lt 1 ] && want=1; [ "$want" -gt 16 ] && want=16
+printf '%s' "[$(w 1 A 0),$(r 2 B 0),$(r 3 C 0)]" > "$WORK/rows.json"
+rm -rf "$WORK/launch"
+out=$(env -u LANE_UNITS_CPUS -u PYTHON_CPU_COUNT python3 "$SCRIPT" "$WORK/rows.json" "$WORK/launch" 2> "$WORK/err")
+got=$(summary 'sorted({x["harnessCap"] for x in s})')
+[ "$out" = "3" ] && [ "$got" = "[$want]" ] && [ "$(summary 'len(s)')" = "3" ]
+ok $? "with LANE_UNITS_CPUS unset every launch has harnessCap min(16, max(1, $online - 2)) = $want (got '$out', caps $got)"
 
 # ---- Bad usage fails loudly -------------------------------------------------------
 python3 "$SCRIPT" > /dev/null 2>&1; [ $? -ne 0 ]; ok $? 'no argument is a non-zero exit'

@@ -3,6 +3,14 @@
 Version history of `workflows/ui-change.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 40
+
+`implement`, `drain-highs`, `design-qa`, and `verify-ac` no longer declare
+`issue.body` in `inputs`; `implement` keeps `inputs = []`. Every packet step
+already renders `== REQUEST` from the issue's body snapshot, so the input
+duplicated the body. `verify-ac-vote` keeps `issue.body` because it renders
+no packet. No topology, routing, or limit change.
+
 ## 39
 
 `verify-ac` adds `implement.gate-results` to its `inputs`, keeping

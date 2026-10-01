@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Guard suite for the inspect skill's no-unverified-close prohibition.
+# Guard suite for the punch-list skill's no-unverified-close prohibition.
 #
-# Defect class: inspect closes items in its final walkthrough, and a close
+# Defect class: punch-list closes items in its final walkthrough, and a close
 # on an item this session never verified cannot be seen from outside the
 # session once the run ends; the closed issue reads the same as a verified
 # one. An edit that drops the ruling, carves out an exception ("unless the
@@ -17,7 +17,7 @@
 # the whole file. The literal runs to the item's closing period, so an
 # exception spliced in before it breaks the pin.
 #
-# INSPECT_SKILL_FILE overrides the file under test, so a mutation probe can
+# PUNCH_LIST_SKILL_FILE overrides the file under test, so a mutation probe can
 # point the suite at a deliberately broken COPY under $TMPDIR without
 # touching the checkout. The self-checks always read the repository's own
 # copy. Each mutant, proven red by the self-checks on every run:
@@ -34,16 +34,16 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-REPO_SKILL="${SCRIPT_DIR}/../src/user/claude_code/skills/inspect/SKILL.md"
-SKILL="${INSPECT_SKILL_FILE:-$REPO_SKILL}"
+REPO_SKILL="${SCRIPT_DIR}/../src/user/claude_code/skills/punch-list/SKILL.md"
+SKILL="${PUNCH_LIST_SKILL_FILE:-$REPO_SKILL}"
 
 if [ ! -f "$SKILL" ]; then
     echo "FAIL input: no such file: ${SKILL}" >&2
-    echo "inspect-skill: FAIL" >&2
+    echo "punch-list-skill: FAIL" >&2
     exit 1
 fi
 
-WORK=$(mktemp -d "${TMPDIR:-/tmp}/inspect-skill.XXXXXX") || exit 2
+WORK=$(mktemp -d "${TMPDIR:-/tmp}/punch-list-skill.XXXXXX") || exit 2
 trap 'rm -rf "$WORK"' EXIT
 
 fail=0
@@ -77,7 +77,7 @@ flatten() { # <in> <out>
 flatten "$SKILL" "${WORK}/flat"
 
 inner() { # <skill-copy>
-    INSPECT_SKILL_INNER=1 INSPECT_SKILL_FILE="$1" bash "$0" >/dev/null 2>&1
+    PUNCH_LIST_SKILL_INNER=1 PUNCH_LIST_SKILL_FILE="$1" bash "$0" >/dev/null 2>&1
 }
 
 # expect_red <label> <perl-substitution>: a mutated copy of the repository's
@@ -93,7 +93,7 @@ expect_red() {
     fi
 }
 
-if [ -z "${INSPECT_SKILL_INNER:-}" ]; then
+if [ -z "${PUNCH_LIST_SKILL_INNER:-}" ]; then
     if [ ! -f "$REPO_SKILL" ]; then
         bad "self-check: the repository's own skill file is missing: ${REPO_SKILL}"
     else
@@ -122,7 +122,7 @@ else
 fi
 
 if [ "$fail" -ne 0 ]; then
-    echo "inspect-skill: FAIL — the no-unverified-close ruling without its full pin is the failure this catches; fix the skill, not the test." >&2
+    echo "punch-list-skill: FAIL — the no-unverified-close ruling without its full pin is the failure this catches; fix the skill, not the test." >&2
     exit 1
 fi
-echo "inspect-skill: PASS"
+echo "punch-list-skill: PASS"

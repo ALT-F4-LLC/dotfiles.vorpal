@@ -1,19 +1,20 @@
 ---
-name: inspect
+name: punch-list
 description: >-
-  Use on "inspect", "/inspect", "punch list", "walk through the build", "let
-  me list what I want changed", "final walkthrough", or "re-inspect". Walks a
-  checkout the way a home inspector walks a house: the operator observes,
-  Claude carries the clipboard, prompts per system, resolves each item to a
-  location and an acceptance check, dedupes, and files worker-ready Docket
-  issues with no routing label for docket-groom to triage. `inspect reinspect`
-  re-checks filed items against the current checkout and reports pass, fail,
-  or unverifiable. Never fixes anything. Distinct from docket-postmortem, which audits a
-  finished Docket run, and finish, which files a session's own leftovers.
+  Use on "punch list", "/punch-list", "walk through the build", "let me list
+  what I want changed", "final walkthrough", or "re-check the punch list".
+  Walks a checkout the way a home inspector walks a house: the operator
+  observes, Claude carries the clipboard, prompts per system, resolves each
+  item to a location and an acceptance check, dedupes, and files
+  worker-ready Docket issues with no routing label for docket-groom to
+  triage. `punch-list reinspect` re-checks filed items against the current
+  checkout and reports pass, fail, or unverifiable. Never fixes anything.
+  Distinct from docket-postmortem, which audits a finished Docket run, and
+  finish, which files a session's own leftovers.
 argument-hint: "[area or path to walk | reinspect [ISSUE-ID ... | since <date> | <scope glob>]]"
 ---
 
-# inspect
+# punch-list
 
 You hold the clipboard. The operator inspects, saying what they see: the
 trim is wrong here, that outlet is dead, this room needs a second window.
@@ -27,7 +28,7 @@ knows how to consume: `/docket-groom` routes it, then `/docket-plan` and
 Two modes:
 
 - **Walk** (default): tour the checkout, collect observations, file them.
-- **Final walkthrough** (`reinspect`): revisit filed inspection items and
+- **Final walkthrough** (`reinspect`): revisit filed punch-list items and
   confirm whether each one landed.
 
 ## Boundaries
@@ -59,7 +60,9 @@ Before the first observation:
 2. Record the checkout sha (`git rev-parse HEAD`) and branch. Every filed
    item names this sha as the revision inspected.
 3. Load the existing punch list: every open issue carrying the `inspect`
-   label, plus any the operator names. This is the dedupe set.
+   label, plus any the operator names. This is the dedupe set. The label,
+   like the `Inspect fingerprint:` line, keeps this skill's former name so
+   items filed before the rename stay in the set.
 
 ```bash
 docket issue list --json=v2 --limit 1000 -l inspect -s backlog -s todo -s in-progress -s review
@@ -165,9 +168,9 @@ docket issue create --json=v2 -t "<behavior and consequence, one line>" \
   -T <bug|task|feature|chore> -p <critical|high|medium|low> -l inspect \
   --size <trivial|small|bounded|needs-design> \
   -f <remedy path> [-f <remedy path>] --scope '<glob bounding the work>' \
-  --idempotency-key '<the fingerprint>' -d - <<'INSPECT_ITEM'
+  --idempotency-key '<the fingerprint>' -d - <<'PUNCH_LIST_ITEM'
 <description as above>
-INSPECT_ITEM
+PUNCH_LIST_ITEM
 ```
 
 - `-f`, `--scope`, and `--size` are never omitted; an item you cannot
@@ -182,7 +185,7 @@ The deduplication ledger and receipt verification follow docket-postmortem's
 [deduplicate before creating](../docket-postmortem/references/filing.md#deduplicate-before-creating)
 section as written. Do not invent a second procedure.
 
-## Final walkthrough: `inspect reinspect`
+## Final walkthrough: `punch-list reinspect`
 
 Walk the filed list again to confirm the work landed.
 

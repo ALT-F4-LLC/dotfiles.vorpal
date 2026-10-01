@@ -8,18 +8,16 @@ export const meta = {
 }
 
 // ---------------------------------------------------------------------------
-// CONTRACT FOR CALLERS (the listing's description is deliberately one line;
-// this block is the single copy of what it used to carry).
+// CONTRACT FOR CALLERS
 //
 // What it does:
 // Seats one or more `retro-analyst` agents in parallel, each briefed by the
 // caller with the retro-analyst contract, the docket-retro skill's §2
 // evidence table, and its own assigned run window. Each analyst runs
 // read-only docket verbs and returns its findings, or a gap, in the shape
-// the retro-analyst contract defines; this
-// script neither reads policy nor interprets the findings — it only spawns
-// the seats and hands each result back verbatim, in the same order as the
-// `analysts` array. Invoke by scriptPath ONLY, with args
+// the retro-analyst contract defines; this script neither reads policy nor
+// interprets the findings — it only spawns the seats and hands each result
+// back verbatim, in the same order as the `analysts` array. Args:
 // {analysts: [{brief, model, effort}, ...]}.
 //
 // When and how it is invoked:
@@ -43,11 +41,10 @@ for (const [i, a] of input.analysts.entries()) {
     if (typeof a.brief !== 'string' || a.brief === '') {
         throw new Error(`retro-seat: args.analysts[${i}].brief is required and must be a non-empty string`)
     }
-    if (typeof a.model !== 'string' || a.model === '') {
-        throw new Error(`retro-seat: args.analysts[${i}].model is required (retro-analyst carries no policy.toml row for this script to resolve it)`)
-    }
-    if (typeof a.effort !== 'string' || a.effort === '') {
-        throw new Error(`retro-seat: args.analysts[${i}].effort is required (retro-analyst carries no policy.toml row for this script to resolve it)`)
+    for (const key of ['model', 'effort']) {
+        if (typeof a[key] !== 'string' || a[key] === '') {
+            throw new Error(`retro-seat: args.analysts[${i}].${key} is required (retro-analyst carries no policy.toml row for this script to resolve it)`)
+        }
     }
 }
 

@@ -3,12 +3,12 @@
 The skills that improve Docket processes share one primary goal: every remedy,
 proposal, and definition they produce runs without a human in the loop,
 unless a human is vital to the outcome. This file is the single copy of that
-rule. Consumers: shadow, docket-retro, docket-refit, docket-reconcile,
+rule. Consumers: docket-postmortem, docket-retro, docket-refit, docket-reconcile,
 docket-groom, docket-cli-audit, corpus-check, and corpus-cut.
 
 ## What the rule covers
 
-The rule governs what these skills produce: a remedy shadow files, a
+The rule governs what these skills produce: a remedy docket-postmortem files, a
 proposal docket-retro makes, a workflow or contract docket-refit designs,
 a registry plan docket-reconcile applies, the routing and acceptance
 criteria docket-groom writes, and a fix docket-cli-audit or corpus-check

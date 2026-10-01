@@ -38,7 +38,7 @@
 #          mutant elsewhere.", which keeps the word "mutant" in the paragraph
 #       p3 delete the read-verified alternative ("mark it **read-verified**")
 #
-# `shadow/SKILL.md` no longer carries this rule and is out of scope.
+# `docket-postmortem/SKILL.md` no longer carries this rule and is out of scope.
 #
 # A missing input file fails; it never skips green.
 

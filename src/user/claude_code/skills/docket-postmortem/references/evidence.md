@@ -31,7 +31,7 @@ list it, never drop it, and never force a join from recency alone.
 
 Every agent log beneath a driving session is in the inventory, and every one
 is read: a deterministic digest first, then a full read by an agent. The
-digest is the fixed jq program in `workflows/shadow.js`; it counts, it does
+digest is the fixed jq program in `workflows/docket-postmortem.js`; it counts, it does
 not judge, and a log it leaves unflagged still gets its full read, because
 the friction a program cannot see (a brief that forced a guess, work redone,
 a skipped contract step, an operator wait) is what the deep read is for.

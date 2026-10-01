@@ -64,7 +64,7 @@ and run store of every project in `docket project list`; agent transcripts
 under `~/.claude/projects`; the friction ledger under `~/.claude/friction`;
 and the installed copies under `~/.docket/config` and `~/.claude` compared
 to source. Issue bodies cite transcript evidence by `path:line` locator,
-the way shadow does, never by pasting transcript text.
+the way docket-postmortem does, never by pasting transcript text.
 
 Out of scope: executing any cut (that is `docket-refit` or
 `simplify-corpus tighten`), definitions under `src/user/claude_code`,

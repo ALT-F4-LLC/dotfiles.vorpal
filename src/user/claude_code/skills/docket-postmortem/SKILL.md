@@ -1,8 +1,9 @@
 ---
-name: shadow
+name: docket-postmortem
 description: >-
-  Use after a docket-run has completed: "shadow the run", "shadow RUN-N",
-  "audit the last run", "what went wrong in that run", or bare "/shadow".
+  Use after a docket-run has completed: "postmortem the run", "postmortem
+  RUN-N", "audit the last run", "what went wrong in that run", or bare
+  "/docket-postmortem".
   Audits one terminal Docket run retroactively and in depth: every driving
   transcript, every workflow journal, and every agent log read in full, plus
   the engine's record, for evidence-backed friction and recurring patterns
@@ -16,7 +17,7 @@ description: >-
 argument-hint: "[RUN-N]"
 ---
 
-# Shadow
+# docket-postmortem
 
 Audit how one finished run actually went, across every surface it left
 behind. Produce a severity-ranked review and an actionable issue queue:
@@ -32,9 +33,9 @@ that can carry it, and keeps a human in the loop only under a named
 Every operator touch the run needed is evidence, and an automatable one is a
 finding.
 
-Run in the invoking conversation: §4 launches the `shadow` Workflow script,
-§6 files through docket verbs, and the advisor call in §6 needs this session.
-A forked subagent has none of those.
+Run in the invoking conversation: §4 launches the `docket-postmortem`
+Workflow script, §6 files through docket verbs, and the advisor call in §6
+needs this session. A forked subagent has none of those.
 
 ## Boundaries and completion
 
@@ -82,9 +83,9 @@ docket run status RUN-N --json | jq -r '.data.run.status'
 ```
 
 A run in `planning`, `active`, or `waiting-human` (the status a paused run
-reports) is refused with its state named: shadow audits finished runs only.
-Point at docket-run's pause mode or `finish` when the operator wants it
-settled first, and stop. A run in another project is audited from that
+reports) is refused with its state named: docket-postmortem audits
+finished runs only. Point at docket-run's pause mode or `finish` when the
+operator wants it settled first, and stop. A run in another project is audited from that
 project's checkout; resolve it through `docket project list --json` and the
 identity the run's events carry, never by constructing `<identity>/main`
 blindly.
@@ -180,13 +181,13 @@ newer checklist alone.
 
 ## 4. Launch the workflow
 
-Read the header comment of `workflows/shadow.js` in the dotfiles checkout
+Read the header comment of `workflows/docket-postmortem.js` in the dotfiles checkout
 before composing the launch; it is the argument and return contract. Launch
 by `scriptPath` at its installed path, with `<home>` expanded to a literal
 absolute path:
 
 ```
-Workflow({scriptPath: "<home>/.claude/workflows/shadow.js", args: {
+Workflow({scriptPath: "<home>/.claude/workflows/docket-postmortem.js", args: {
   checkoutRoot: "<dotfiles checkout>",
   run: {id, project, prefix, root, status, activatedAtMs, updatedAtMs},
   captures: {dir, status, report, events, pins, issuesDir},
@@ -312,5 +313,5 @@ logs inventoried, digested, and read in full, launches, and every gap); the
 operator touches the run needed, each vital or automatable; the ranked
 findings with their automation rung and issue ids or the reason none was
 filed; referrals to docket-retro; the absolute audit log path; and the one
-condition the next shadow of a run should look at first. Say that no fixes
+condition the next postmortem of a run should look at first. Say that no fixes
 were applied.

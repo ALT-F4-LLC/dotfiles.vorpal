@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# Behavior suite for shadow.js's pure planning functions and its fixed
+# Behavior suite for docket-postmortem.js's pure planning functions and its fixed
 # per-log digest program.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
 # and this one is in that list. It needs only `node`, `awk`, and `jq` — no
 # engine, no database, no network, and it never runs a workflow.
 #
-# WHY THIS EXISTS. The shadow skill files Docket issues from what this
+# WHY THIS EXISTS. The docket-postmortem skill files Docket issues from what this
 # script upholds, and promises that every agent log of a run is read. Four
 # pieces carry those promises in code, and each has a failure that reads as
 # success:
@@ -40,18 +40,18 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-SHADOW="${SHADOW_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/shadow.js}"
+POSTMORTEM="${POSTMORTEM_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-postmortem.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$SHADOW" ] || fatal "shadow.js not found at ${SHADOW}"
+[ -f "$POSTMORTEM" ] || fatal "docket-postmortem.js not found at ${POSTMORTEM}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 command -v jq >/dev/null 2>&1 || fatal "jq is required to run this test"
 
-WORK=$(mktemp -d "${TMPDIR:-/tmp}/shadow-workflow.XXXXXX") || fatal "mktemp failed"
+WORK=$(mktemp -d "${TMPDIR:-/tmp}/docket-postmortem-workflow.XXXXXX") || fatal "mktemp failed"
 trap 'rm -rf "$WORK"' EXIT
 
 extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
@@ -65,13 +65,13 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
                 exit 1
             }
         }
-    ' "$SHADOW"
+    ' "$POSTMORTEM"
 }
 
-extract shadow-config       > "${WORK}/config.js" || fatal "bad or missing TEST markers for shadow-config"
-extract shadow-refute-tally > "${WORK}/tally.js"  || fatal "bad or missing TEST markers for shadow-refute-tally"
-extract shadow-plan         > "${WORK}/plan.js"   || fatal "bad or missing TEST markers for shadow-plan"
-extract shadow-digest-jq    > "${WORK}/jq.js"     || fatal "bad or missing TEST markers for shadow-digest-jq"
+extract docket-postmortem-config       > "${WORK}/config.js" || fatal "bad or missing TEST markers for docket-postmortem-config"
+extract docket-postmortem-refute-tally > "${WORK}/tally.js"  || fatal "bad or missing TEST markers for docket-postmortem-refute-tally"
+extract docket-postmortem-plan         > "${WORK}/plan.js"   || fatal "bad or missing TEST markers for docket-postmortem-plan"
+extract docket-postmortem-digest-jq    > "${WORK}/jq.js"     || fatal "bad or missing TEST markers for docket-postmortem-digest-jq"
 
 # ---- Fixtures for the digest program --------------------------------------
 # A flagged log: one bwrap denial, one engine refusal, one command run twice.

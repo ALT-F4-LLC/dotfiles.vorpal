@@ -1,6 +1,6 @@
 export const meta = {
     name: 'session-census',
-    description: 'Internal: launched through scriptPath by the shadow skill; measures deliberation and course-correction cost across Claude Code transcripts, main and subagent separately. Read-only. Args and cost in the header comment.',
+    description: 'Internal: launched through scriptPath by the docket-postmortem skill; measures deliberation and course-correction cost across Claude Code transcripts, main and subagent separately. Read-only. Args and cost in the header comment.',
     whenToUse: 'Never by name. Run before and after a harness change and diff the two returns; the caller picks the window because a project directory shared by many sessions is hundreds of transcripts.',
     phases: [
         { title: 'Scout', detail: 'one agent finds the transcripts newer than the cutoff' },
@@ -20,7 +20,7 @@ export const meta = {
 // only. Invoke by scriptPath ONLY, with args {root, cutoff, days?}.
 //
 // When and how it is invoked:
-// Invoked by the shadow skill, after its audit of one finished Docket run,
+// Invoked by the docket-postmortem skill, after its audit of one finished Docket run,
 // over the driving sessions' project directory with the run's activation
 // time as the cutoff, to put numbers under "everything is over-thought".
 // Run before a harness change and after, and diff the two returns. Cost:
@@ -117,7 +117,7 @@ function planAgentCap(fileCount) {
 //   Silence is the intended response, so lower is better on that row like
 //   every other row here.
 //
-// Invoked by skills/shadow/references/evidence.md — no separate
+// Invoked by skills/docket-postmortem/references/evidence.md — no separate
 // skills/session-census/SKILL.md exists; this file's own
 // meta.description/meta.whenToUse are the short public listing, and the
 // header comment above is the detailed contract.

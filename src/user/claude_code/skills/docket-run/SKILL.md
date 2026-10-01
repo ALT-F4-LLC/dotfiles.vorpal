@@ -249,7 +249,8 @@ the path or the token; every ruling stays yours.
 ## Which run
 
 An explicit argument always wins; bare, resolve it yourself rather than
-asking, the same split `shadow` and `docket-plan` use.
+asking, the same split `docket-postmortem` and `docket-plan`
+use.
 
 - **`/docket-run pause [RUN-N]`**, or an ask to walk away from a driven run
   without abandoning it: go to **Pause mode**. `$RUN` is `RUN-N` when

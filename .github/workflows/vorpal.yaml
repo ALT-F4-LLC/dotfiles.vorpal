@@ -89,7 +89,7 @@ jobs:
 
       - run: bash tests/session-census-extract-retry-pipeline.test.sh
 
-      - run: bash tests/shadow-workflow.test.sh
+      - run: bash tests/docket-postmortem-workflow.test.sh
 
       - run: bash tests/simplify-corpus-decide.test.sh
 

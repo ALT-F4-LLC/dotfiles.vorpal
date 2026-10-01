@@ -9,7 +9,7 @@
 # database, no network, and it never runs a workflow.
 #
 # WHY THIS EXISTS. This script's own header says a shared project directory can be
-# "hundreds of files," and trusts the caller (the shadow skill) to pick a
+# "hundreds of files," and trusts the caller (the docket-postmortem skill) to pick a
 # window that fits — but nothing here ever checked that trust against the
 # real cap the way corpus-check.js's AGENT_CAP/AGENT_CAP_MARGIN/verifyBudget
 # pattern does for its own fan-out. An unbounded window would run straight

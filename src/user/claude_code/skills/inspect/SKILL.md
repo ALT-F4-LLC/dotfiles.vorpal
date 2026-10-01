@@ -8,7 +8,7 @@ description: >-
   location and an acceptance check, dedupes, and files worker-ready Docket
   issues with no routing label for docket-groom to triage. `inspect reinspect`
   re-checks filed items against the current checkout and reports pass, fail,
-  or unverifiable. Never fixes anything. Distinct from shadow, which audits a
+  or unverifiable. Never fixes anything. Distinct from docket-postmortem, which audits a
   finished Docket run, and finish, which files a session's own leftovers.
 argument-hint: "[area or path to walk | reinspect [ISSUE-ID ... | since <date> | <scope glob>]]"
 ---
@@ -126,7 +126,7 @@ For every observation, before moving on:
    criteria at planning time; supply the concrete failing variant so the
    planner has something to confirm.
 5. **Dedupe.** Compare against the loaded punch list per
-   [deduplicate before creating](../shadow/references/filing.md#deduplicate-before-creating).
+   [deduplicate before creating](../docket-postmortem/references/filing.md#deduplicate-before-creating).
 
 Keep the running punch list in scratch: local item id, area, grade, type,
 title, locator, acceptance, dedupe verdict, and once filed the issue id.
@@ -138,10 +138,10 @@ File at the end of each system, or when the operator says "file it". Show
 the drafted items as a short table (grade, title, locator), confirm once
 per batch, then create each one from the owning checkout.
 
-The filing contract is shadow's
-[worker-ready issue contract](../shadow/references/filing.md#worker-ready-issue-contract)
+The filing contract is docket-postmortem's
+[worker-ready issue contract](../docket-postmortem/references/filing.md#worker-ready-issue-contract)
 with these substitutions: the label is `inspect`, the type set above
-applies, priority follows the grade table above (not shadow's own
+applies, priority follows the grade table above (not docket-postmortem's own
 load-bearing/friction/paper-cut mapping), and the description follows this
 structure:
 
@@ -178,8 +178,8 @@ INSPECT_ITEM
   beyond the default. Groom groups items under epics and routes them.
 - Read each receipt back and record the issue id on the punch list.
 
-The deduplication ledger and receipt verification follow shadow's
-[deduplicate before creating](../shadow/references/filing.md#deduplicate-before-creating)
+The deduplication ledger and receipt verification follow docket-postmortem's
+[deduplicate before creating](../docket-postmortem/references/filing.md#deduplicate-before-creating)
 section as written. Do not invent a second procedure.
 
 ## Final walkthrough: `inspect reinspect`

@@ -1,6 +1,6 @@
 export const meta = {
-    name: 'shadow',
-    description: 'Internal: launched through scriptPath by the shadow skill after a docket-run has completed; audits one terminal run read-only across every surface: conductor transcripts in shards, a deterministic digest of every agent log, a deep read of every agent log, one analyst per layer, grouped patterns, three refuters per candidate, and one reconciler. Args and cost in the header comment.',
+    name: 'docket-postmortem',
+    description: 'Internal: launched through scriptPath by the docket-postmortem skill after a docket-run has completed; audits one terminal run read-only across every surface: conductor transcripts in shards, a deterministic digest of every agent log, a deep read of every agent log, one analyst per layer, grouped patterns, three refuters per candidate, and one reconciler. Args and cost in the header comment.',
     whenToUse: 'Never by name. Read-only: every agent reads captures, transcripts, journals, agent logs, and docket read verbs on a terminal run, and writes only to the audit directory. The caller keeps run selection, the captures, the inventory, every filing write, and the review in the main session, and relaunches with the returned deferred lines until none remain.',
     phases: [
         { title: 'Digest', detail: 'low-effort agents run one fixed jq program over every inventoried log, in line-range batches, and write one digest per log' },
@@ -18,7 +18,7 @@ export const meta = {
 // this block is the single copy of what it used to carry).
 //
 // What it does:
-// Runs §4 of the shadow skill as read-only agent fan-outs over one terminal
+// Runs §4 of the docket-postmortem skill as read-only agent fan-outs over one terminal
 // Docket run. Every inventoried log gets a deterministic digest; every
 // agent log gets a full read by an agent, within the Workflow tool's
 // 1000-agent lifetime cap, and whatever the cap cannot reach comes back as
@@ -96,7 +96,7 @@ const AGENT_CONFIG = {
     reconcile: { model: 'opus', effort: 'high' },
 }
 
-// TEST-BEGIN shadow-config — include before any pure test region.
+// TEST-BEGIN docket-postmortem-config — include before any pure test region.
 // Three refuters per candidate, and a candidate survives only when at least
 // two seated refuters could not refute it. A seat that returns null (dead or
 // skipped) is an abstention, never an uphold: with fewer than two verdicts
@@ -119,9 +119,9 @@ const SHARD_BYTES = 500000
 // The pattern analyst receives at most this many groups in full; the rest
 // arrive as one-line counts.
 const PATTERN_GROUP_CAP = 150
-// TEST-END shadow-config
+// TEST-END docket-postmortem-config
 
-// TEST-BEGIN shadow-refute-tally — include shadow-config. Pure function: no
+// TEST-BEGIN docket-postmortem-refute-tally — include docket-postmortem-config. Pure function: no
 // workflow globals, no I/O. Turns one candidate's refuter verdicts into the
 // disposition the script acts on.
 function tallyRefutations(votes) {
@@ -141,9 +141,9 @@ function tallyRefutations(votes) {
         remedyNeedsRework,
     }
 }
-// TEST-END shadow-refute-tally
+// TEST-END docket-postmortem-refute-tally
 
-// TEST-BEGIN shadow-plan — include shadow-config. Pure functions: no
+// TEST-BEGIN docket-postmortem-plan — include docket-postmortem-config. Pure functions: no
 // workflow globals, no I/O.
 
 // Split one transcript of `lines` lines and `bytes` bytes into contiguous
@@ -229,9 +229,9 @@ function groupObservations(observations) {
     }
     return [...groups.values()].sort((a, b) => b.count - a.count || a.key.localeCompare(b.key))
 }
-// TEST-END shadow-plan
+// TEST-END docket-postmortem-plan
 
-// TEST-BEGIN shadow-digest-jq — the fixed per-log digest program, run by
+// TEST-BEGIN docket-postmortem-digest-jq — the fixed per-log digest program, run by
 // every digest agent as `jq -c -n -R --arg path P --arg kind K
 // --argjson line N -f <file> P`. Tests run it against fixture logs.
 const DIGEST_JQ = String.raw`
@@ -283,7 +283,7 @@ def txt: if type == "string" then . elif type == "array" then map(if type == "ob
     (if (.models | length) > 1 then "model-mix" else empty end)
   ])
 `
-// TEST-END shadow-digest-jq
+// TEST-END docket-postmortem-digest-jq
 
 const SEVERITIES = ['load-bearing', 'friction', 'paper-cut']
 const RUNGS = ['engine', 'deterministic-code', 'contract-or-config', 'standing-ruling', 'human-gate']
@@ -296,13 +296,13 @@ const KINDS = ['main', 'workflow', 'subagent']
 // ---- Args ----------------------------------------------------------------
 
 const input = typeof args === 'string' ? JSON.parse(args) : (args || {})
-if (typeof args === 'string') log('shadow: decoded args from the harness JSON-encoded transport (normal)')
+if (typeof args === 'string') log('docket-postmortem: decoded args from the harness JSON-encoded transport (normal)')
 
-function need(cond, msg) { if (!cond) throw new Error(`shadow: ${msg}`) }
+function need(cond, msg) { if (!cond) throw new Error(`docket-postmortem: ${msg}`) }
 
 need(typeof input.checkoutRoot === 'string' && input.checkoutRoot !== '', 'args.checkoutRoot (absolute path of the dotfiles checkout) is required')
 need(input.run && typeof input.run.id === 'string' && input.run.id !== '', 'args.run.id (RUN-N) is required')
-need(RUN_STATUSES.includes(input.run.status), `args.run.status must be one of ${RUN_STATUSES.join(', ')}; got "${input.run.status}". Shadow audits finished runs only`)
+need(RUN_STATUSES.includes(input.run.status), `args.run.status must be one of ${RUN_STATUSES.join(', ')}; got "${input.run.status}". docket-postmortem audits finished runs only`)
 need(typeof input.run.project === 'string' && input.run.project !== '' && typeof input.run.root === 'string' && input.run.root !== '', 'args.run needs a non-empty project and root (the verified checkout)')
 need(input.captures && typeof input.captures.dir === 'string' && input.captures.dir !== '', 'args.captures.dir (absolute path of the §2 captures) is required')
 need(Array.isArray(input.sessions), 'args.sessions must be an array of {sessionId, transcript, role, cwd, lines, bytes}')
@@ -324,7 +324,7 @@ if (continuation) {
 }
 
 const checkoutRoot = input.checkoutRoot
-const skillRoot = `${checkoutRoot}/src/user/claude_code/skills/shadow`
+const skillRoot = `${checkoutRoot}/src/user/claude_code/skills/docket-postmortem`
 const automationRef = `${checkoutRoot}/src/user/claude_code/skills/docket/references/automation.md`
 const run = input.run
 const captures = input.captures
@@ -526,9 +526,9 @@ function digestBrief(batch, index) {
     return `Digest inventory lines ${batch.from}-${batch.to} with a fixed jq program. Run exactly these commands, verbatim, and do nothing else.
 
 mkdir -p '${digestDir}'
-cat > '${jqFile}' <<'SHADOW_DIGEST_JQ_EOF'
+cat > '${jqFile}' <<'POSTMORTEM_DIGEST_JQ_EOF'
 ${DIGEST_JQ.trim()}
-SHADOW_DIGEST_JQ_EOF
+POSTMORTEM_DIGEST_JQ_EOF
 sed -n '${batch.from},${batch.to}p' '${inventory.file}' | while IFS=$'\\t' read -r inv_line inv_log inv_kind inv_wf inv_sess inv_bytes; do
   jq -c -n -R --arg path "$inv_log" --arg kind "$inv_kind" --argjson line "$inv_line" -f '${jqFile}' "$inv_log" 2>/dev/null \\
     || printf '{"line":%s,"path":"%s","digestError":true,"flags":["digest-error"]}\\n' "$inv_line" "$inv_log"
@@ -684,7 +684,7 @@ let shardCount = 0
 
 if (!continuation) {
     const digestBatches = planDigestBatches(total, DIGEST_BATCH)
-    log(`shadow: auditing ${run.id} (${run.status}); ${total} inventoried logs in ${digestBatches.length} digest batch(es); ${sessions.length} driving session(s)`)
+    log(`docket-postmortem: auditing ${run.id} (${run.status}); ${total} inventoried logs in ${digestBatches.length} digest batch(es); ${sessions.length} driving session(s)`)
 
     const shardPlan = sessions.flatMap((s) => planShards(s.lines, s.bytes, SHARD_BYTES).map((shard) => ({ session: s, shard })))
     shardCount = shardPlan.length
@@ -696,7 +696,7 @@ if (!continuation) {
             let r = await seat(digestBrief(batch, i + 1), opts)
             const expected = batch.to - batch.from + 1
             if (r == null || r.error || r.written !== expected) {
-                log(`shadow: digest ${batch.from}-${batch.to} returned ${r == null ? 'nothing' : `written=${r.written} error=${r.error || ''}`}; retrying once`)
+                log(`docket-postmortem: digest ${batch.from}-${batch.to} returned ${r == null ? 'nothing' : `written=${r.written} error=${r.error || ''}`}; retrying once`)
                 r = await seat(digestBrief(batch, i + 1), { ...opts, label: `digest:${batch.from}-${batch.to}:retry` })
             }
             if (r == null || r.error || r.written !== expected) {
@@ -743,10 +743,10 @@ if (!continuation) {
         flaggedLines.push(...d.flagged)
     }
     flaggedLines = [...new Set(flaggedLines)].sort((a, b) => a - b)
-    log(`shadow: digested ${digested}/${total} (${digestErrors} digest error(s)); ${flaggedLines.length} flagged; ${candidates.length} candidate(s) from conductor and layers`)
+    log(`docket-postmortem: digested ${digested}/${total} (${digestErrors} digest error(s)); ${flaggedLines.length} flagged; ${candidates.length} candidate(s) from conductor and layers`)
 } else {
     flaggedLines = Array.isArray(continuation.flagged) ? continuation.flagged : []
-    log(`shadow: continuation over ${continuation.lines.length} deferred line(s) of ${run.id}`)
+    log(`docket-postmortem: continuation over ${continuation.lines.length} deferred line(s) of ${run.id}`)
 }
 
 // ---- Stage 2: deep-read every agent log the budget reaches ----------------
@@ -756,7 +756,7 @@ const deepBudget = AGENT_CAP - AGENT_CAP_MARGIN - spent - reserved
 const deepCandidates = continuation ? continuation.lines : Array.from({ length: total }, (_, i) => i + 1)
 const plan = planDeepReads(deepCandidates, inventory.kinds, inventory.bytes, new Set(flaggedLines), deepBudget, DEEP_BATCH_BYTES)
 if (plan.deferred.length > 0) {
-    log(`shadow: agent cap binds; ${plan.batches.length} deep reader(s) seated, ${plan.deferred.length} log(s) deferred to a continuation launch`)
+    log(`docket-postmortem: agent cap binds; ${plan.batches.length} deep reader(s) seated, ${plan.deferred.length} log(s) deferred to a continuation launch`)
 }
 
 const observations = []
@@ -777,7 +777,7 @@ await parallel(plan.batches.map((batch, i) => async () => {
     if (missed.length > 0) uncovered.push({ what: `deep read of lines ${missed.join(',')}`, why: r.notes || 'reader did not read these to the end' })
     observations.push(...r.observations)
 }))
-log(`shadow: ${deepRead.size} log(s) read in full; ${observations.length} observation(s)`)
+log(`docket-postmortem: ${deepRead.size} log(s) read in full; ${observations.length} observation(s)`)
 
 // ---- Stage 3: patterns (barrier: needs every observation together) --------
 
@@ -806,7 +806,7 @@ const judged = candidates.slice(0, REFUTE_CAP)
 for (const c of candidates.slice(REFUTE_CAP)) {
     uncovered.push({ what: `candidate ${c.localId}`, why: `beyond REFUTE_CAP=${REFUTE_CAP}; judge inline` })
 }
-if (candidates.length > REFUTE_CAP) log(`shadow: ${candidates.length - REFUTE_CAP} candidate(s) beyond the refute bound; returned as uncovered`)
+if (candidates.length > REFUTE_CAP) log(`docket-postmortem: ${candidates.length - REFUTE_CAP} candidate(s) beyond the refute bound; returned as uncovered`)
 
 const upheld = []
 const refuted = []
@@ -825,7 +825,7 @@ await parallel(judged.map((candidate) => async () => {
     else if (tally.disposition === 'refuted') refuted.push(entry)
     else unverified.push(entry)
 }))
-log(`shadow: ${upheld.length} upheld, ${refuted.length} refuted, ${unverified.length} unverified of ${judged.length} judged`)
+log(`docket-postmortem: ${upheld.length} upheld, ${refuted.length} refuted, ${unverified.length} unverified of ${judged.length} judged`)
 
 // ---- Stage 5: reconcile (barrier: needs every survivor together) ---------
 
@@ -858,7 +858,7 @@ const coverage = {
     agents: spent,
 }
 const summary = `${run.id} (${run.status}): ${continuation ? 'continuation, ' : ''}${digested}/${total} digested, ${deepRead.size} read in full, ${plan.deferred.length} deferred, ${judged.length} judged, ${upheld.length} upheld, ${refuted.length} refuted, ${unverified.length} unverified, ${reconciled.length} draft(s), ${uncovered.length} uncovered, ${spent} agents`
-log(`shadow: ${summary}`)
+log(`docket-postmortem: ${summary}`)
 
 return {
     coverage,

@@ -66,13 +66,13 @@ flag, and paginate with `--since` until `total` is reached. `run report`,
 ## Workflow runtime evidence
 
 `Workflow` is a documented Claude Code feature; `wave.js`, `tribunal.js`,
-`wave-usage.js`, `session-census.js`, and `shadow.js` are local
-integrations. A completed workflow's journal directory holds
+`wave-usage.js`, `session-census.js`, and `docket-postmortem.js` are
+local integrations. A completed workflow's journal directory holds
 `journal.jsonl` (`started` and `result` per agent, no usage, no step id),
 one `agent-<id>.meta.json` per seat, and one `agent-<id>.jsonl` transcript
 per seat. A null result in the journal means no usable result; it does not
 prove no agent ran or no side effect occurred. Read the installed
-`workflow-authoring` reference before launching `shadow.js`, and launch only
+`workflow-authoring` reference before launching `docket-postmortem.js`, and launch only
 the installed absolute `scriptPath` with literal arguments, never a source
 copy.
 [Workflows](https://code.claude.com/docs/en/workflows).
@@ -86,8 +86,8 @@ that a behavior evaluation ran on that model.
 [Model configuration](https://code.claude.com/docs/en/model-config).
 
 For install drift, compare source, installed paths, symlink targets, and the
-bytes the run pinned. The local activation chain is `just activate`; shadow
-never runs it. Missing optional roots can mean intentional dormancy.
+bytes the run pinned. The local activation chain is `just activate`; this
+skill never runs it. Missing optional roots can mean intentional dormancy.
 Dangling roots, conflicting pinned versions, missing repository packets, and
 unactivated required fixes need their actual consequences in the run
 evidenced before filing.

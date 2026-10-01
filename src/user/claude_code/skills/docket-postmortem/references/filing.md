@@ -20,9 +20,9 @@ current source, and existing issue state. Use this disposition:
 | Owning checkout or store unavailable, or the issue command blocked | Mark filing pending and deliver the worker-ready writeup. |
 
 The audited run is terminal, so no filing can wake work on it. Other work
-in the owning project can still be live: a shadow issue carries no routing
-label and no assignee, so `tend` and `docket-plan` cannot pick it up until
-`docket-groom` routes it. Never invent a safe issue state or stop queue
+in the owning project can still be live: an issue this skill files carries
+no routing label and no assignee, so `tend` and `docket-plan` cannot pick it
+up until `docket-groom` routes it. Never invent a safe issue state or stop queue
 consumers to create one.
 
 ## Route by owner and store
@@ -43,7 +43,7 @@ Filing requires an installed compatible Docket binary whose startup effects
 are understood. An issue write does not authorize unrelated schema migrations
 or project registration. If the binary cannot satisfy that boundary, leave
 filing pending with its concrete prerequisite; do not upgrade, register, or
-migrate as part of shadow.
+migrate as part of a postmortem.
 
 Run a verified creation operation from the owning checkout, using a subshell
 or the tool's cwd parameter. Quote the checkout and every scope glob. Supply
@@ -58,7 +58,7 @@ Do not include the run id or audit date in that defect identity. A
 fingerprint helps lookup; semantic comparison decides whether findings share
 a cause.
 
-Check existing issues across relevant states, including prior shadow issues.
+Check existing issues across relevant states, including prior issues under the `shadow` label.
 An unresolved match receives only new evidence. A closed issue with a
 confirmed new regression follows the installed project's reopen or
 new-regression convention; link the prior issue. If existing issues cannot
@@ -91,11 +91,12 @@ local metadata contract when supported by the installed CLI:
   material harm.
 - Type: `bug` for a broken contract or implementation, `task` for an
   improvement or extraction, `chore` for a coherent paper-cut batch.
-- Label: `shadow`. Required file metadata (`-f`) names each remedy source
+- Label: `shadow`. The label and the `Shadow fingerprint:` line keep this
+  skill's former name so new findings match prior ones. Required file metadata (`-f`) names each remedy source
   path; required `--scope` globs bound that work. Verify both persisted after
   creation.
 - No assignee, claim, run membership, routing label, or transition to
-  in-progress. Shadow supplies the intake; it never reserves execution.
+  in-progress. This skill supplies the intake; it never reserves execution.
 - Remedy: on the highest rung of the
   [automation ladder](../../docket/references/automation.md#the-automation-ladder)
   that can carry it. A remedy that keeps or adds a human touch names its
@@ -129,8 +130,8 @@ content. Mark redactions; retain a local locator for the full source. A
 finding about a security boundary is still filed as a request. It carries no
 permission for the worker to change that boundary or destroy uncommitted
 work. Preserve the installed tend security-gate requirement and any
-authorization already present in the actual worker session; shadow does not
-manufacture or waive approval.
+authorization already present in the actual worker session; this skill does
+not manufacture or waive approval.
 
 Acceptance criteria must be checkable by a worker without this conversation.
 A command-backed criterion states the concrete failing variant or mutant the
@@ -163,7 +164,7 @@ it was not filed. Preserve instance-policy referrals and findings resolved
 during the run without counting them as open defects. Name affected trust
 boundaries separately when relevant. Include the evidence coverage,
 unresolved limitations, the absolute audit log path, and the condition the
-next shadow of a run should look at first.
+next postmortem of a run should look at first.
 
 Persist the review and final ledger to the audit directory before delivery.
 If storage was denied, deliver the full review through the conversation and

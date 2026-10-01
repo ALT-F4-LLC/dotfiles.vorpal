@@ -21,7 +21,7 @@ current source, and existing issue state. Use this disposition:
 
 The audited run is terminal, so no filing can wake work on it. Other work
 in the owning project can still be live: an issue this skill files carries
-no routing label and no assignee, so `tend` and `docket-plan` cannot pick it
+no routing label and no assignee, so `docket-tend` and `docket-plan` cannot pick it
 up until `docket-groom` routes it. Never invent a safe issue state or stop queue
 consumers to create one.
 
@@ -129,7 +129,7 @@ Preserve evidence accurately while omitting unrelated secrets and private
 content. Mark redactions; retain a local locator for the full source. A
 finding about a security boundary is still filed as a request. It carries no
 permission for the worker to change that boundary or destroy uncommitted
-work. Preserve the installed tend security-gate requirement and any
+work. Preserve the installed docket-tend security-gate requirement and any
 authorization already present in the actual worker session; this skill does
 not manufacture or waive approval.
 
@@ -171,5 +171,5 @@ If storage was denied, deliver the full review through the conversation and
 say explicitly that no durable audit log was created.
 
 Say that no fixes were applied. Filed issues drain through `docket-groom`
-routing into `tend` or a docket-plan → docket-run execution; do not start
+routing into `docket-tend` or a docket-plan → docket-run execution; do not start
 that work.

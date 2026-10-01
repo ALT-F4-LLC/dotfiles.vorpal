@@ -262,7 +262,7 @@ Apply these rules in order:
    reaches `/docket-plan` only when the operator names it explicitly (it
    then gets `route-run` on recording) — otherwise point at
    `/docket-groom` to set a routing label first; `route-direct` means
-   direct execution; `route-tend` means leave it to `/tend`, or direct
+   direct execution; `route-tend` means leave it to `/docket-tend`, or direct
    when the operator wants it now; `route-loop` continues at rule 4. A
    label that contradicts the operator's ask is surfaced, never resolved
    silently.
@@ -273,9 +273,9 @@ Apply these rules in order:
    requested lifetime. Recommend `/docket-plan` when a pass is larger or
    uncertain, or coordination across passes needs a plan.
 5. **Shape `one-shot`, Security-sensitive `no`, Size hint `trivial`:**
-   recommend `/tend` when the work leaves no decision or judgment open,
-   and direct execution when it does. Recommending `/tend` entails filing
-   the work as a `route-tend` issue, since tend takes work only from that
+   recommend `/docket-tend` when the work leaves no decision or judgment open,
+   and direct execution when it does. Recommending `/docket-tend` entails filing
+   the work as a `route-tend` issue, since docket-tend takes work only from that
    queue.
 6. **Other one-shot work:** recommend `/docket-plan`.
 
@@ -317,7 +317,7 @@ information, report the incompatibility.
 ## 4. Confirm
 
 Present the complete brief verbatim, followed by every route this skill
-can select: `/docket-plan`, `/loop`, `/tend`, `/peer`, direct execution,
+can select: `/docket-plan`, `/loop`, `/docket-tend`, `/peer`, direct execution,
 and any orchestration alternative weighed under §3. Always show the full list,
 including routes §3 excludes: give each route one line stating why it
 fits or which §3 rule excludes it, and mark the recommended route. If
@@ -375,10 +375,10 @@ where a route bullet below says so.
   exclusions, constraints, per-pass action, the stop/cancel policy, and
   the Role, since each pass receives the task text verbatim, and
   report the schedule actually established and any relevant lifetime limit.
-- **`/tend`:** tend takes work from the `route-tend` queue, not from an
+- **`/docket-tend`:** docket-tend takes work from the `route-tend` queue, not from an
   `args` payload. Ensure a `route-tend`-labeled issue carrying the brief's
   scope and acceptance criteria exists, filing one if it does not, and
-  report that the work waits for the next tend tick. The Role does not
+  report that the work waits for the next docket-tend tick. The Role does not
   reach the worker, whose brief is the issue verbatim.
 - **`/peer`:** Invoke `peer` with `dispatch <session>` and the confirmed
   brief block verbatim as `args`. The peer skill in the receiving session

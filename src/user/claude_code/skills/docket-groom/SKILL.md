@@ -14,7 +14,7 @@ description: >-
   edits apply directly; closures, merges, splits, rescopes, epic creation,
   re-parenting, protected-issue edits, and the route-tend and route-loop
   labels need operator approval. One survey per invocation; no
-  implementation, no watch. Distinct from tend, which works route-tend
+  implementation, no watch. Distinct from docket-tend, which works route-tend
   issues.
 argument-hint: "[stale window, e.g. 14d] [engine] [kinds, e.g. bugs] [statuses, e.g. backlog]"
 ---
@@ -93,7 +93,7 @@ resolution.
 
 Rules:
 
-- **Never invoke `docket-plan`, `docket-run`, or `tend`, and never create,
+- **Never invoke `docket-plan`, `docket-run`, or `docket-tend`, and never create,
   activate, or advance a docket run.** Grooming is issue hygiene only.
   Docket mutations are limited to the `docket issue` write operations
   described below, including `docket issue edit --parent` and, only for a
@@ -435,7 +435,7 @@ Record these findings alongside the value decision:
 - **Missing or stale routing label:** every retained non-epic issue carries
   exactly one of `route-run`, `route-direct`, `route-tend`, `route-loop`,
   the family [brief](../brief/SKILL.md)'s route rules define and
-  docket-plan, tend, and brief read; every workflow's `unless_labels` lists
+  docket-plan, docket-tend, and brief read; every workflow's `unless_labels` lists
   the three non-run values.
   Judge it from the issue's body, files, scope, and labels: `route-run`
   when the work is security-sensitive or its boundary is unknown, when its

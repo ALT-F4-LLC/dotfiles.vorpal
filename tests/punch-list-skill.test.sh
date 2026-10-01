@@ -9,7 +9,7 @@
 # operator asks"), or loosens where closure may happen ships green without
 # this pin. The skill's other standing prohibition (no routing or size label
 # on filed issues) stays unguarded on purpose: a mislabeled issue is visible
-# to tend and bare docket-plan, and groom's checks already catch it.
+# to docket-tend and bare docket-plan, and groom's checks already catch it.
 #
 # The ruling is a bullet in a list, so paragraphs here are split at blank
 # lines AND at each bullet start, then flattened to one line: rewrapping the

@@ -2,7 +2,7 @@
 
 The one statement of which open issues a backlog-reading skill may treat as
 free, how to read the whole backlog, and what to do when the question tool is
-missing. `docket-plan`, `docket-groom`, and `tend` point here instead of
+missing. `docket-plan`, `docket-groom`, and `docket-tend` point here instead of
 restating it; a change to a rule lands here once.
 
 ## Not free to take or edit
@@ -15,13 +15,13 @@ restating it; a change to a rule lands here once.
   comments and labels that leave workflow eligibility unchanged, and routes
   every other edit through its approval step.
 - **Claimed.** Any issue with a non-empty `assignee` already belongs to
-  someone or something else. Skip it. tend never sets `assignee` on the
+  someone or something else. Skip it. docket-tend never sets `assignee` on the
   issues it works, so a populated field is always someone else.
 - **Routed elsewhere.** The routing label decides the consumer:
-  `route-run` is docket-plan's, `route-tend` is tend's, `route-direct` is the
+  `route-run` is docket-plan's, `route-tend` is docket-tend's, `route-direct` is the
   operator's own session through brief, `route-loop` is a scheduled loop's.
   An issue carrying another skill's label, or none, is not yours: docket-plan
-  counts unrouted issues and points at groom; tend skips them silently.
+  counts unrouted issues and points at groom; docket-tend skips them silently.
 
 ## Read the whole backlog
 

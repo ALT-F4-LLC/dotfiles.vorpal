@@ -1,10 +1,10 @@
 ---
-name: tend
+name: docket-tend
 description: >-
-  Use on "tend the queue", "/tend", "watch for new issues and work them",
+  Use on "tend the queue", "/docket-tend", "watch for new issues and work them",
   "sweep the backlog", or any request to keep grinding through a project's
   route-tend issues without docket's planning and run machinery; meant to run
-  under /loop (for example `/loop /tend`). Watches the current Docket
+  under /loop (for example `/loop /docket-tend`). Watches the current Docket
   project's route-tend queue and works issues one at a time, each delegated to
   a right-sized worker while this conversation orchestrates; lands the result
   via the commit skill, closes the issue with a summary comment, and goes
@@ -12,7 +12,7 @@ description: >-
   docket-groom, which routes issues and never implements.
 ---
 
-# tend
+# docket-tend
 
 You keep one Docket project's issue queue empty as an orchestrator: read an
 issue, hand implementation to a subagent seated for the job, then commit,
@@ -25,8 +25,8 @@ or when you must ask.
 activate a docket run.** That machinery is exactly what this skill exists to
 skip.
 
-**Run it under `/loop`.** `tend` has no watch loop of its own — `/loop /tend`
-(self-pacing) or `/loop 20m /tend` supplies the recurring wake-up; each
+**Run it under `/loop`.** `docket-tend` has no watch loop of its own —
+`/loop /docket-tend` (self-pacing) or `/loop 20m /docket-tend` supplies the recurring wake-up; each
 firing re-enters this skill from §1. Invoked bare with no loop wrapping it,
 do one pass and say so; there will be no next tick.
 
@@ -50,7 +50,7 @@ the operator's own brief, or a loop: skip it silently. The query is
 `-s backlog -s todo`, so an issue moved to `in-progress` or `review` in a
 prior tick never reappears (see §2's blocked case).
 
-Exclude what is not free before picking; this queue isn't tend's alone.
+Exclude what is not free before picking; this queue isn't docket-tend's alone.
 The run-included and claimed rules, and the `--limit 1000` rule for reading
 the whole queue, live once in the docket skill's
 [queue ownership reference](../docket/references/queue-ownership.md): read
@@ -58,7 +58,7 @@ and apply it here rather than a remembered version.
 
 After the exclusions, the queue is either:
 
-- **Empty:** nothing to do. Under self-paced `/loop /tend`, arm
+- **Empty:** nothing to do. Under self-paced `/loop /docket-tend`, arm
   `ScheduleWakeup({delaySeconds: 150-180, noop: true, ...})` and stop; under
   an explicit interval the cron firing supplies the next tick, so stop;
   invoked bare, stop and say the pass is done. Send no "no new issues"
@@ -85,8 +85,8 @@ After the exclusions, the queue is either:
    proceed anyway, skip it, or take it themselves — before touching
    anything. "Skip it" and "take it themselves" are state changes, not
    things to remember: `docket issue move <id> review` with a comment
-   naming the answer (`docket issue comment add <id> --json=v2 -m "tend:
-   operator skipped, security-sensitive"` or `... -m "tend: operator takes
+   naming the answer (`docket issue comment add <id> --json=v2 -m "docket-tend:
+   operator skipped, security-sensitive"` or `... -m "docket-tend: operator takes
    it"`), the same exit the blocked case in step 4 uses, so the `-s backlog
    -s todo` query never re-offers the issue and no later tick asks the same
    question again. Selection is lowest-id-first, so a skip that changed no

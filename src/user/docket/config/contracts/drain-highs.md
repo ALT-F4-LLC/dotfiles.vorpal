@@ -1,6 +1,6 @@
 ---
 node: drain-highs
-version: 16
+version: 17
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -108,7 +108,7 @@ step does not repeat their review or independently verify the defects.
    this step does not supply `-f` or `--scope`. Keep `Severity:` in the
    leading header so the engine can assign the backlog priority from the open
    severity. Every filing carries `review-gap` in `Labels:`, marking it apart
-   from an issue filed any other route for a later `/tend` pass or
+   from an issue filed any other route for a later `/docket-tend` pass or
    `docket-retro` reading to filter on; also state this step's
    `source-run:RUN-N` in the body below the header so the filing's provenance
    survives even where `Labels:` is not read.

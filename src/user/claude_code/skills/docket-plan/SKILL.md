@@ -188,7 +188,7 @@ project, or no store reachable, means this repo isn't bound: say so and
 stop. `--limit 1000` is not optional, for the
 reasons the docket skill's
 [queue ownership reference](../docket/references/queue-ownership.md) states
-once for this skill, `/docket-groom`, and `/tend`: the default caps flag no
+once for this skill, `/docket-groom`, and `/docket-tend`: the default caps flag no
 truncation, and a result that reaches the limit is finished through the
 CLI's help-verified pagination before claiming coverage. Do not infer
 blocking from absence in a truncated result. `docket next` identifies issues
@@ -238,7 +238,7 @@ asked for.
 **Exclude what is not free.** This queue isn't docket-plan's alone; the
 run-included and claimed definitions are the ones in the docket skill's
 [queue ownership reference](../docket/references/queue-ownership.md), shared
-with `docket-groom` and `tend`, and are applied here as written there:
+with `docket-groom` and `docket-tend`, and are applied here as written there:
 
 - **Off-scope.** Any issue whose kind or labels fall outside the alignment
   round's kind filter (a `feature` issue when "bugs only" was chosen, say),
@@ -250,7 +250,7 @@ with `docket-groom` and `tend`, and are applied here as written there:
   candidate. An issue with no routing label is unrouted: count it, name the
   count in the proposal with a pointer to `/docket-groom`, and never rank
   it. An issue carrying `route-direct`, `route-tend`, or `route-loop`
-  belongs to another route (the operator's own brief, the tend queue, a
+  belongs to another route (the operator's own brief, the docket-tend queue, a
   loop): list it as routed elsewhere (step 4 covers why activation would
   refuse it anyway if named for this run).
 - **Unsized or oversized.** An issue whose `size` is null or `unknown`,

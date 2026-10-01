@@ -23,7 +23,7 @@ contractor can work it cold.
 
 Every observation becomes one Docket issue that the existing intake already
 knows how to consume: `/docket-groom` routes it, then `/docket-plan` and
-`/docket-run`, `/tend`, or direct work drain it.
+`/docket-run`, `/docket-tend`, or direct work drain it.
 
 Two modes:
 
@@ -44,7 +44,7 @@ Two modes:
   [sizing reference](../docket/references/sizing.md)'s table, and an
   item whose acceptance describes two or more independent outcomes is
   filed as one issue per outcome. Without a routing label, an issue this
-  skill files is invisible to `/tend` and to bare `/docket-plan` until
+  skill files is invisible to `/docket-tend` and to bare `/docket-plan` until
   groom labels it, making filing mid-build safe.
 - Never close an item this skill has not verified. Closure in the final
   walkthrough follows the rule in that section and nowhere else.

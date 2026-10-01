@@ -13,7 +13,8 @@ description: >-
   standing rulings answer parks machine-side, and every other park or reserved
   matter escalates to the operator. Holds no run state (the engine schedules,
   wave.js routes) and keeps the conductor capability in one session-private
-  file, never in a brief, tool output, or resume prompt. Distinct from tend,
+  file, never in a brief, tool output, or resume prompt. Distinct from
+  docket-tend,
   which works issues without a run.
 argument-hint: "[RUN-N | pause [RUN-N]]"
 ---

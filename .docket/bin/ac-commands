@@ -20,10 +20,11 @@
 # depends on them would otherwise come back `unverifiable`.
 #
 # It does NOT run `build` or `tests`. Those are the gates that fail a write step
-# (`implement` and `fix`), and their evidence reaches verify-ac through the
-# write steps' recorded gate results (`implement.gate-results`,
-# `fix.gate-results`). Running them here again cannot finish inside the claim's
-# pre-gate budget, which kills the gate before it reports anything.
+# (`implement` and `fix`). Their evidence reaches verify-ac through
+# `implement.gate-results`, which the engine (116f13a, installed in nightly
+# 0661f86) rebinds to the latest fix round. Running them here again cannot
+# finish inside the claim's pre-gate budget, which kills the gate before it
+# reports anything.
 #
 # It deliberately does NOT read or execute any commands from an issue body's
 # fenced code blocks — doing so would require an operator trust decision that

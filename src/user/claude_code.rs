@@ -595,7 +595,7 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         )
         .with_hook(
             "PermissionDenied",
-            Some("Bash"),
+            None,
             "bash ~/.claude/hooks/sandbox-friction-hook.sh",
             "command",
         )
@@ -1519,5 +1519,29 @@ mod tests {
         expected.dedup();
 
         assert_eq!(denied, expected);
+    }
+
+    #[test]
+    fn permission_denied_friction_hook_has_no_matcher() {
+        // PermissionDenied matches on tool name, so a matcher drops every
+        // refusal from a tool it does not name (Edit classifier refusals
+        // reached no friction row while this was `Bash`).
+        let settings = emitted_settings();
+        let entries = settings["hooks"]["PermissionDenied"]
+            .as_array()
+            .expect("a PermissionDenied hook list");
+        let friction: Vec<_> = entries
+            .iter()
+            .filter(|entry| {
+                entry["hooks"].as_array().is_some_and(|hooks| {
+                    hooks.iter().any(|hook| {
+                        hook["command"] == "bash ~/.claude/hooks/sandbox-friction-hook.sh"
+                    })
+                })
+            })
+            .collect();
+
+        assert_eq!(friction.len(), 1);
+        assert!(friction[0].get("matcher").is_none());
     }
 }

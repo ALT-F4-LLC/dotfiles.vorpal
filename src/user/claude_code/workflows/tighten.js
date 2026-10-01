@@ -8,8 +8,9 @@ export const meta = {
   ],
 }
 
-// Called by skills/tighten/SKILL.md, which resolves targets, lands accepted
-// candidates serially in the main session, and owns the /loop contract.
+// Called by skills/simplify-corpus/SKILL.md in tighten mode, which resolves
+// targets, lands accepted candidates serially in the main session, and owns
+// the /loop contract.
 //
 // args: {
 //   files: string[]      repo-relative Markdown paths to tighten, one rewriter each

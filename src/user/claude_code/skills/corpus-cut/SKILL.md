@@ -12,9 +12,9 @@ description: >-
   docket-refit to land. Bare invocation is one pass over what changed since
   the ledger; `all` re-tries everything; under /loop it passes until the
   corpus is unchanged and every cut is filed, then rests. Never executes a
-  cut. Distinct from corpus-check, which audits coherence; tighten, which
-  shortens prose; declutter, which cleans code; and docket-refit corpus
-  mode, which keeps by default and redesigns.
+  cut. Distinct from corpus-check, which audits coherence; simplify-corpus's
+  tighten mode, which shortens prose; declutter, which cleans code; and
+  docket-refit corpus mode, which keeps by default and redesigns.
 argument-hint: "[all]"
 ---
 
@@ -28,9 +28,9 @@ under scratch, and this session files and commits.
 **Automation first is the primary goal of every verdict.** Per the docket
 skill's [automation reference](../docket/references/automation.md), an
 issue this skill files names the definition, the unit, the cut, and the
-evidence so `docket-refit` (or `tighten`, for a prose-only cut) can land it
-without a further judgment call. The refit gates stay: this skill never
-deletes, edits, or refactors a definition itself.
+evidence so `docket-refit` (or `simplify-corpus tighten`, for a prose-only
+cut) can land it without a further judgment call. The refit gates stay:
+this skill never deletes, edits, or refactors a definition itself.
 
 **The burden of proof is on the definition.** A unit (a file; a
 section of a contract, meaning a top-level block after the Charter or any
@@ -66,9 +66,10 @@ and the installed copies under `~/.docket/config` and `~/.claude` compared
 to source. Issue bodies cite transcript evidence by `path:line` locator,
 the way shadow does, never by pasting transcript text.
 
-Out of scope: executing any cut (that is `docket-refit` or `tighten`),
-definitions under `src/user/claude_code`, anything under `~/.claude` or
-`~/.docket` (read, never edited), `just activate`, pushing.
+Out of scope: executing any cut (that is `docket-refit` or
+`simplify-corpus tighten`), definitions under `src/user/claude_code`,
+anything under `~/.claude` or `~/.docket` (read, never edited),
+`just activate`, pushing.
 
 `$ARGUMENTS` is empty or `all`. Empty judges only definitions whose hash
 differs from the ledger's or that carry no verdict, and carries every

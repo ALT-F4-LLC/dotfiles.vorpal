@@ -63,7 +63,7 @@ extract simplify-corpus-decide > "${WORK}/region.js" || fatal "bad or missing TE
 cat > "${WORK}/cases.js" <<'JS'
 const out = {}
 out.settings = classify('src/user/claude_code/settings.rs')
-out.skill = classify('src/user/claude_code/skills/tighten/SKILL.md')
+out.skill = classify('src/user/claude_code/skills/simplify-corpus/SKILL.md')
 out.workflowJs = classify('src/user/claude_code/workflows/tighten.js')
 out.script = classify('src/user/claude_code/skills/docket/scripts/evaluate.py')
 out.statusline = classify('src/user/claude_code/statusline.sh')

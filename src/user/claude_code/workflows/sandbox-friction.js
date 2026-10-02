@@ -58,7 +58,7 @@ const ERROR_DETAIL_LENGTH = 300
 //   file     — true files one issue per actionable group not already filed.
 //   checkout — absolute path of the dotfiles checkout to file from.
 //
-// return: {groups:[{subject, kind, count, bypasses, repos, example}], filed:[subject], skipped:[{subject, why}]}
+// return: {groups:[{subject, kind, count, bypasses, repos, example, tool_name, agent_id, file_path}], filed:[subject], skipped:[{subject, why}]}
 
 // TEST-BEGIN sandbox-friction-group — evaluate with the settings above; run as
 // `jq -c -n -R --arg cutoff '' -f <file> <ledger>`. Prints one JSON array.
@@ -89,7 +89,8 @@ def subject:
   | (try fromjson catch null)
   | select(type == "object")
   | select($cutoff == "" or .at >= $cutoff)
-  | {subject: subject, kind: (.kind // "sandbox-denial"), bypassed: .bypassed, cwd: .cwd, command: .command}
+  | {subject: subject, kind: (.kind // "sandbox-denial"), bypassed: .bypassed, cwd: .cwd,
+     command: (.command // ""), tool_name: (.tool_name // ""), agent_id: (.agent_id // ""), file_path: (.file_path // "")}
 ]
 | group_by(.subject)
 | map({
@@ -98,7 +99,11 @@ def subject:
     count: length,
     bypasses: (map(select(.bypassed)) | length),
     repos: (map(.cwd) | unique | length),
-    example: .[0].command
+    # An Edit or Write denial has no command; its file path is the example.
+    example: (if .[0].command == "" then .[0].file_path else .[0].command end),
+    tool_name: .[0].tool_name,
+    agent_id: .[0].agent_id,
+    file_path: .[0].file_path
   })
 | sort_by(-.count)
 `
@@ -150,8 +155,11 @@ Return the JSON array jq printed as groups, element for element, unchanged: no r
                     bypasses: {type: 'integer'},
                     repos: {type: 'integer'},
                     example: {type: 'string'},
+                    tool_name: {type: 'string'},
+                    agent_id: {type: 'string'},
+                    file_path: {type: 'string'},
                 },
-                required: ['subject', 'kind', 'count', 'bypasses', 'repos', 'example'],
+                required: ['subject', 'kind', 'count', 'bypasses', 'repos', 'example', 'tool_name', 'agent_id', 'file_path'],
             }},
             error: {type: 'string'},
         },
@@ -194,6 +202,8 @@ function description(g) {
     return `Recorded by sandbox-friction-hook.sh.
 
 Kind: ${g.kind}
+Tool: ${g.tool_name}
+Agent: ${g.agent_id || 'main session'}
 Subject: ${g.subject}
 Events: ${g.count}${g.kind === 'classifier-denial' ? '' : ` (of which ${g.bypasses} were unsandboxed retries)`}
 Distinct working directories affected: ${g.repos}

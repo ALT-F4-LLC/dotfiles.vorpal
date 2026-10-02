@@ -5,8 +5,9 @@
 # separate pipeline() calls with a plain-JS null-filter between them.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
-# and this one is in that list. It needs only `node` and `awk` — no engine, no
-# database, no network, and it never spawns a real agent or files an issue.
+# and this one is in that list. It needs only `node`, `awk`, and `jq` — no
+# engine, no database, no network, and it never spawns a real agent or files
+# an issue.
 #
 # WHY THIS EXISTS. Two pipeline() calls is a barrier in disguise: a fast
 # group's retry could not start until every group in the whole batch —
@@ -38,6 +39,11 @@
 # agent() REJECTION on the first attempt is caught into the same null path
 # a resolved-to-null call takes, and is retried exactly like one.
 #
+# ALSO PINNED. The sandbox-friction-group jq program carries each group's
+# tool_name, agent_id, and file_path, and uses file_path as the example when
+# the row has no command (an Edit or Write classifier denial); description()
+# prints Tool and Agent lines, with an empty agent_id shown as "main session".
+#
 # HOW. Wraps sandbox-friction.js's sandbox-friction-file region (the
 # CLASSIFIER_REMEDY/SANDBOX_REMEDY strings through fileGroups) in an async
 # IIFE, calling fileGroups(groups) directly with a no-barrier `pipeline`
@@ -59,6 +65,7 @@ fatal() {
 
 [ -f "$SANDBOX_FRICTION" ] || fatal "sandbox-friction.js not found at ${SANDBOX_FRICTION}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
+command -v jq >/dev/null 2>&1 || fatal "jq is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/sandbox-friction-retry-pipeline.XXXXXX") || fatal "mktemp failed"
 trap 'rm -rf "$WORK"' EXIT
@@ -76,6 +83,36 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
         }
     ' "$SANDBOX_FRICTION"
 }
+
+# ---- GROUP_JQ: the group carries tool_name/agent_id/file_path, and the
+# example falls back to file_path when the row has no command -------------
+GROUP_FAIL=0
+extract sandbox-friction-group > "${WORK}/group-region.js" || fatal "bad or missing TEST markers for sandbox-friction-group"
+{
+    printf 'const PATH_SEGMENTS = 7\nconst CLASSIFIER_REASON_LENGTH = 80\n'
+    cat "${WORK}/group-region.js"
+    printf 'process.stdout.write(GROUP_JQ)\n'
+} > "${WORK}/group.mjs"
+node "${WORK}/group.mjs" > "${WORK}/group.jq" || fatal "could not render GROUP_JQ from the sandbox-friction-group region"
+
+assert_group() { # <ledger-row> <jq-predicate on the one group> <label>
+    printf '%s\n' "$1" > "${WORK}/ledger.jsonl"
+    local out
+    out=$(jq -c -n -R --arg cutoff '' -f "${WORK}/group.jq" "${WORK}/ledger.jsonl") || { echo "FAIL: $3 (jq error)" >&2; GROUP_FAIL=$((GROUP_FAIL + 1)); return; }
+    if printf '%s' "$out" | jq -e "length == 1 and (.[0] | $2)" >/dev/null; then
+        echo "PASS: $3"
+    else
+        echo "FAIL: $3 (got ${out})" >&2
+        GROUP_FAIL=$((GROUP_FAIL + 1))
+    fi
+}
+
+assert_group '{"at":"2026-01-01T00:00:00Z","kind":"classifier-denial","tool_name":"Edit","agent_id":"a1","cwd":"/repo","command":"","file_path":"/x/y.nix","bypassed":false,"evidence":"edit denied"}' \
+    '.example == "/x/y.nix" and .tool_name == "Edit" and .agent_id == "a1" and .file_path == "/x/y.nix"' \
+    "group: an Edit classifier denial uses file_path as its example and carries tool_name and agent_id"
+assert_group '{"at":"2026-01-01T00:00:00Z","kind":"classifier-denial","tool_name":"Bash","agent_id":"","cwd":"/repo","command":"kubectl apply -f x","file_path":"","bypassed":false,"evidence":"bash denied"}' \
+    '.example == "kubectl apply -f x" and .tool_name == "Bash"' \
+    "group: a Bash row keeps its command as the example"
 
 extract sandbox-friction-file > "${WORK}/region.js" || fatal "bad or missing TEST markers for sandbox-friction-file"
 grep -q 'async function fileGroups' "${WORK}/region.js" || fatal "region does not contain fileGroups"
@@ -138,7 +175,16 @@ const resolveHeld = (label, value) => {
     HOLD_RESOLVERS.delete(label)
     h(value)
 }
-const g = (subject, count) => ({ subject, kind: 'sandbox-denial', count: count || 1, bypasses: 0, repos: 1, example: 'echo hi' })
+const g = (subject, count) => ({ subject, kind: 'sandbox-denial', count: count || 1, bypasses: 0, repos: 1, example: 'echo hi', tool_name: 'Bash', agent_id: '', file_path: '' })
+
+// ---- (0) the filed description names the tool and the agent ------------
+{
+    const text = description({ ...g('classifier: edit denied'), kind: 'classifier-denial', example: '/x/y.nix', tool_name: 'Edit', agent_id: '', file_path: '/x/y.nix' })
+    ok(/^Tool: Edit$/m.test(text), 'case 0: description prints a Tool line from the group')
+    ok(/^Agent: main session$/m.test(text), 'case 0: description shows an empty agent_id as "main session"')
+    const sub = description({ ...g('classifier: edit denied'), kind: 'classifier-denial', tool_name: 'Edit', agent_id: 'a1' })
+    ok(/^Agent: a1$/m.test(sub), 'case 0: description prints a subagent id on the Agent line')
+}
 
 // ---- (1) a fast group's retry fires while a slow sibling is still held --
 {
@@ -215,4 +261,6 @@ process.exit(fail === 0 ? 0 : 1)
 JS
 
 node "${WORK}/suite.mjs"
-exit $?
+status=$?
+[ "$GROUP_FAIL" -eq 0 ] || { echo "${GROUP_FAIL} group case(s) failed" >&2; exit 1; }
+exit "$status"

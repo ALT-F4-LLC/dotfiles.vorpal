@@ -75,6 +75,8 @@ class EvaluationTests(unittest.TestCase):
     def test_unknown_and_conflicting_flags(self):
         self.check_mutation("wrong-project", lambda r: r["commands"][0]["argv"].append("--not-a-real-flag"))
         self.check_mutation("wrong-project", lambda r: r["commands"][0]["argv"].append("--json=v1"))
+        # --json's value binds only through `=`: `--json v2` is v1 plus a stray v2.
+        self.check_mutation("wrong-project", lambda r: r["commands"][0]["argv"].__setitem__(-1, "--json") or r["commands"][0]["argv"].append("v2"))
         self.check_mutation("literal-description", lambda r: r["commands"][0]["argv"].extend(["--description", "changed text"]))
 
     def test_help_and_unbounded_inspection_are_not_work(self):

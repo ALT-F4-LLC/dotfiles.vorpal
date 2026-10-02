@@ -51,6 +51,11 @@ def numeric_value_is(value, expected):
     return math.isfinite(number) and number == expected
 
 
+# Flags whose value is optional bind it only through `=`; the bare flag takes
+# its default, so `--json v2` is v1 followed by a stray argument.
+OPTIONAL_VALUE_DEFAULTS = {"--json": "v1"}
+
+
 def flag(argv, *names):
     # Cobra/pflag applies the last value for scalar flags.
     found = None
@@ -58,7 +63,9 @@ def flag(argv, *names):
         for name in names:
             if value.startswith(name + "="):
                 found = value[len(name) + 1:]
-            if value == name and index + 1 < len(argv):
+            elif value == name and name in OPTIONAL_VALUE_DEFAULTS:
+                found = OPTIONAL_VALUE_DEFAULTS[name]
+            elif value == name and index + 1 < len(argv):
                 found = argv[index + 1]
     return found
 
@@ -107,7 +114,8 @@ def option_names(argv):
             if spec is None or spec["name"] in seen:
                 return None
             seen.add(spec["name"])
-            if "=" not in value and spec.get("value"):
+            # A value like string[="v1"] is optional and binds only via `=`.
+            if "=" not in value and spec.get("value") and "[=" not in spec["value"]:
                 if index + 1 >= len(argv):
                     return None
                 index += 1

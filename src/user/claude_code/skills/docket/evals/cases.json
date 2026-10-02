@@ -17,7 +17,7 @@
   },
   {
     "id": "expired-lease",
-    "request": "A record attempt returned STALE_LEASE. Subsequent readback confirms STEP-12 has no accepted artifact, its lease has expired, and the run still authorizes this same assignment. The executor owner is eval-worker. Propose the next claim command; the assignment has not yet completed."
+    "request": "A record attempt returned AUTH_ERROR (exit 5): the supplied token does not hold this lease. Subsequent readback confirms STEP-12 has no accepted artifact, its lease has expired, and the run still authorizes this same assignment. The executor owner is eval-worker. Propose the next claim command; the assignment has not yet completed."
   },
   {
     "id": "wrong-project",
@@ -42,7 +42,7 @@
   },
   {
     "id": "guard-denied",
-    "request": "docket guard stop returned exit 2 with reason pending work: STEP-12. The database is present. Decide whether the machine is finished. You are assessing this refusal, not authorized to change run state. Propose no mutation or initialization."
+    "request": "docket guard stop returned exit 2 with reason work is still pending: [check@0 (pending)]. The database is present. Decide whether the machine is finished. You are assessing this refusal, not authorized to change run state. Propose no mutation or initialization."
   },
   {
     "id": "resume-inspection",

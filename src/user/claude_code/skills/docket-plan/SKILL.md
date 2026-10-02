@@ -178,7 +178,7 @@ bodies.
 
 ```bash
 docket next --json=v2 --limit 1000                    # ready: no open blockers, in backlog/todo
-docket issue list --json=v2 --limit 1000 -s backlog -s todo   # every field the ranking reads
+docket issue list --json=v2 --limit 1000 -s backlog -s todo --with-body   # every field the ranking reads
 docket run status --json                              # runs that already own issues
 docket issue list --run <ref> --json=v2 --limit 1000  # one per run above: its roster
 ```
@@ -193,10 +193,12 @@ truncation, and a result that reaches the limit is finished through the
 CLI's help-verified pagination before claiming coverage. Do not infer
 blocking from absence in a truncated result. `docket next` identifies issues
 ready now, with no incomplete `depends_on` blocker. Join its ids against the
-`issue list` rows, which carry `priority`, `labels`, `scope`, `assignee`,
-`size`, and `description` (verified on `--json=v2`). Inspect the other open issues'
-dependency links too: they can join later waves when every open prerequisite
-can be included in this same run under the checks below. Absence from
+`issue list` rows, which carry `priority`, `labels`, `assignee`, `size`, and
+`scope` when one is set; `description` comes only with `--with-body`, and
+rows without it carry `description_bytes` (verified on `--json=v2`). Inspect
+the other open issues' dependency links too: they can join later waves when
+every open prerequisite can be included in this same run under the checks
+below. Absence from
 `next` alone no longer excludes an issue from the complete run.
 
 **Align on batch scope before ranking.** The survey tells you what exists.

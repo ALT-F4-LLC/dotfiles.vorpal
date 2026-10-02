@@ -3,9 +3,10 @@
 #
 # CONTRACT (verified against the engine, not assumed):
 #
-#   stdin   ONE JSON document: the §11.4 context bundle, exactly as
-#           `docket step context --json` emits it. The engine assembles it in a
-#           transaction and hands it over as bytes on fd 0, then closes.
+#   stdin   ONE JSON document: the §11.4 context bundle, the object
+#           `docket step context --json` carries under `.data.context`. The
+#           engine assembles it in a transaction and hands it over as bytes
+#           on fd 0, then closes.
 #           internal/engine/action_exec.go:270 (`Stdin: a.Context`),
 #           internal/engine/action.go:59-63, internal/engine/context.go:43-63.
 #           Shape used here:

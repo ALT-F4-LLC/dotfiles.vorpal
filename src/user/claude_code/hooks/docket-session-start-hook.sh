@@ -16,7 +16,7 @@
 #
 # SILENT WHEN THERE IS NO RUN. The bare list is active-only (done and abandoned
 # runs need `--all`), and over an empty engine it returns
-# `{"ok":true,"data":{"runs":null,"total":0}}` [OBSERVED]. Injecting that into
+# `{"ok":true,"data":{"runs":[],"total":0}}` [OBSERVED nightly-229]. Injecting that into
 # every non-graph session would spend context to say nothing, so the no-run case
 # prints nothing at all and the session boots exactly as it does today. This is
 # the SessionStart analogue of the heartbeat's no-op requirement (AC-4.5).

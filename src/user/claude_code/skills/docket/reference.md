@@ -130,7 +130,7 @@ core shapes, not exhaustive field lists; additive fields can appear.
 | `events list` (incl. `--run`, `--tail N`) | `{events: [...], total: <int>}` | `{items: [...], total, truncated}` |
 | `issue list` | `{issues: [...], total: <int>}` | `{items: [...], total, truncated}` |
 | `step list --run RUN-N` | `{steps: [...], total: <int>}` | `{items: [...], total, truncated}` |
-| `run status` (no id) | `{runs: [...] \| null, total: <int>}` | `{items: [...], total, truncated}` |
+| `run status` (no id) | `{runs: [...], total: <int>}` | `{items: [...], total, truncated}` |
 | `run status RUN-N` | `{run: {...}, issues: <int>, steps: [...], pins: [...]}` | identical |
 | `run budget RUN-N` | `{run, budget, source, floor, reported, spend, row_version}` | identical |
 | `step artifact ARTIFACT-N --payload` | the payload itself — array or object; `NOT_FOUND` (not `data: null`) when the artifact has no structured payload | identical |
@@ -143,7 +143,9 @@ Two more shape distinctions: single vs. multiple IDs on [`issue
 show`](#issue-show) and `step show`, and `description`/`description_bytes`
 on summary rows (see [`issue list`](#issue-list)).
 
-Five parsing traps from the earlier runtime checks:
+Four parsing traps from the earlier runtime checks (`run status` with no id
+returned `runs: null` for an empty list through nightly-209; nightly-229
+returns `[]`):
 
 - **`items` is the v2 key, never the v1 key.** `--json` (v1, the bare flag)
   names the collection after the verb — `events`, `issues`, `steps`, `runs`,
@@ -161,10 +163,6 @@ Five parsing traps from the earlier runtime checks:
 - **`total` is the match count, not the returned length.** `events list` with
   no `--tail` returned `len(events) == 100` against `total == 278`. Paging off
   `total` without checking the array length reads the same first page forever.
-- **`run status` with no id returns `runs: null`, not `[]`, when nothing
-  matches.** Confirmed on the empty case; `--format json`'s `items` stays
-  `[]` either way. Contrast with `next`'s issue mode, whose `.data.issues` is
-  documented as always an array.
 - **`--payload` refuses instead of handing you `null`.** An artifact with no
   structured payload (confirmed for a `check-report` artifact) is `NOT_FOUND`
   ("...has no structured payload; omit --payload to read its body"), not a

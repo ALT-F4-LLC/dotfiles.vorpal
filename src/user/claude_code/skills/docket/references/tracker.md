@@ -220,11 +220,11 @@ docket import backup.json --json=v2                  # default: requires an EMPT
 `VALIDATION_ERROR`, and importing into a non-empty project without either
 flag is a `CONFLICT`.
 
-`--merge` is not reliable yet. Re-importing a project's own export with
-labeled issues can fail with `GENERAL_ERROR` (exit 1) on a foreign-key
-constraint while inserting an issue-label mapping, instead of skipping the
-duplicates. The import runs in one transaction, so the failure writes
-nothing. Verify a merge's exit code; do not assume duplicates were skipped.
+`--merge` skips entities that already exist. Re-importing a project's own
+export exits 0 and reports the skips (`Imported 0 entities, skipped 40
+duplicates`; JSON `data` keys `imported`, `skipped`, `remapped`). Read the
+`skipped` count rather than assuming every row was new. Through nightly-209
+the same re-import failed with `GENERAL_ERROR` on a foreign-key constraint.
 
 ---
 

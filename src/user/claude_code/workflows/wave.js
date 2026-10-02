@@ -1140,7 +1140,7 @@ function stepShow(step, label, phaseLabel) {
 
 // `docket gate status STEP-N --json` answers a gate's whole decision state in
 // one envelope: {step_status, proposal?, outcome, tally?, seats?,
-// missing_seats, target?}. THE PROBE ANSWERS THROUGH A SCHEMA, NEVER AS
+// missing_seats?, target?}. THE PROBE ANSWERS THROUGH A SCHEMA, NEVER AS
 // TEXT: a reply is the envelope or it is nothing.
 const GATE_STATUS_SCHEMA = {
     type: 'object',

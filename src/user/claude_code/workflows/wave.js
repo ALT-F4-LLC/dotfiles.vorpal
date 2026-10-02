@@ -485,8 +485,13 @@ ${isWrite ? `
    verbatim, and every path under ${dir}, the token's included. Leave that
    dir intact.
 
-   WRITE BLOCKED: a write is refused. Add the refusal's first line and
-   every path involved, stop that path, and record what you can.
+   If a write is refused and the refusal's own text names a recovery,
+   take that recovery once and disclose the refusal and the retry in
+   your reply and artifact.
+
+   WRITE BLOCKED: the refusal names no recovery, or the recovery is
+   refused too. Add the refusal's first line and every path involved,
+   stop that path, and record what you can.
 
 ----- BEGIN WORK PACKET ${row.step} -----
 ${claim.packet}

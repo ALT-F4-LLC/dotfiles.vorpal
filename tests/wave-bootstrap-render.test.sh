@@ -21,7 +21,9 @@
 #
 # HOW. wave.js fences the helpers in TEST-BEGIN/TEST-END `packet` and
 # `executor-brief` markers. This suite extracts both and renders the brief
-# for every isolation and class combination.
+# for every isolation and class combination. It also asserts the
+# refused-write rule: take the recovery the refusal's own text names, once,
+# and disclose it; a refusal naming no recovery ends in WRITE BLOCKED.
 
 set -uo pipefail
 
@@ -146,6 +148,14 @@ for (const isolated of [true, false]) {
         ok(isWrite === head.includes('--worktree <YOUR CHECKOUT>'), `${label}: --worktree only on write-class records`)
         ok(!isWrite === head.includes(`mkdir -p ${DIR}/target`), `${label}: target reconstruction only for read-class`)
         ok((isolated && isWrite) === head.includes('2b. COMMIT YOUR DELIVERABLE'), `${label}: the commit obligation only for isolated writers`)
+
+        // ---- refused-write rule: the refusal's own recovery, once, disclosed ----
+        const flat = head.replace(/\s+/g, ' ')
+        ok(flat.includes(`If a write is refused and the refusal's own text names a recovery, take that recovery once and disclose the refusal and the retry in your reply and artifact.`),
+            `${label}: a refused write takes the recovery its refusal names, once, disclosed`)
+        ok(/^\s*WRITE BLOCKED: the refusal names no recovery,/m.test(head) &&
+            flat.includes(`WRITE BLOCKED: the refusal names no recovery, or the recovery is refused too.`),
+            `${label}: a refusal naming no recovery ends in WRITE BLOCKED`)
     }
 }
 

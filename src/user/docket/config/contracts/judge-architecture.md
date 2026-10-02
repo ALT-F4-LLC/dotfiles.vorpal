@@ -1,6 +1,6 @@
 ---
 node: judge-architecture
-version: 23
+version: 24
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -16,6 +16,8 @@ emits: findings
 payload: findings@12
 ---
 # Charter
+Work as a staff engineer conducting an architecture review.
+
 Examine one change for how it fits the system: pattern conformance, module
 boundaries and dependency direction, second-order effects, the precedent it
 sets, and conformance to the design it claims to implement.

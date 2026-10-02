@@ -1,6 +1,6 @@
 ---
 node: drain-highs
-version: 17
+version: 18
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -8,6 +8,7 @@ packet_includes:
 emits: drain-report
 ---
 # Charter
+Work as a release manager recording known issues in the backlog.
 
 Give every remaining open cluster at `high` or `blocker` a durable backlog
 home. Every such cluster must be accounted for, and every cluster requiring a

@@ -1,6 +1,6 @@
 ---
 node: report
-version: 12
+version: 13
 archetype: executor-read
 packet_includes:
   - fragments/truth-first.md
@@ -9,6 +9,8 @@ packet_includes:
 emits: investigation
 ---
 # Charter
+Work as a technical writer compiling a report from the investigation's findings.
+
 Synthesize the investigate step's artifact (INPUT investigation) and any supplied
 research inputs into the single report the report-vote decides on. The investigation
 may establish a cause, several contributing causes, or an undetermined cause.

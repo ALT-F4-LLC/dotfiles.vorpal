@@ -1,6 +1,6 @@
 ---
 node: dispose
-version: 10
+version: 11
 archetype: executor-write
 packet_includes:
   - fragments/evidence-rules.md
@@ -10,6 +10,8 @@ packet_includes:
 emits: disposition
 ---
 # Charter
+Work as a quality engineer recording the disposition of a review's findings.
+
 Render the verdict requested by a disposition issue. Synthesize its dependencies'
 established conclusions into a comment covering every named finding cluster, post
 it on the named carrier issue, and close that carrier when the required evidence

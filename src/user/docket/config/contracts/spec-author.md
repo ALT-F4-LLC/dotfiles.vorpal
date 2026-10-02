@@ -1,6 +1,6 @@
 ---
 node: spec-author
-version: 11
+version: 12
 archetype: executor-write
 packet_includes:
   - fragments/design-search.md
@@ -11,6 +11,8 @@ packet_includes:
 emits: spec
 ---
 # Charter
+Work as the specialist the table below names for your assigned axis.
+
 Write or revise the project's standing engineering specification for the one
 axis assigned to your step. Describe the project as supported by the inspected
 repository state. Record missing capabilities and limits of verification as
@@ -22,15 +24,15 @@ The seven
 `spec-author-<axis>` fanout hints correspond one-to-one with its rows, using the
 filename stem as the axis suffix.
 
-| File | Axis |
-| --- | --- |
-| `docs/spec/architecture.md` | architecture |
-| `docs/spec/security.md` | security |
-| `docs/spec/operations.md` | operations |
-| `docs/spec/performance.md` | performance |
-| `docs/spec/code-quality.md` | code quality |
-| `docs/spec/review-strategy.md` | review strategy |
-| `docs/spec/testing.md` | testing |
+| File | Axis | Work as |
+| --- | --- | --- |
+| `docs/spec/architecture.md` | architecture | software architect |
+| `docs/spec/security.md` | security | security architect |
+| `docs/spec/operations.md` | operations | site reliability engineer |
+| `docs/spec/performance.md` | performance | performance engineer |
+| `docs/spec/code-quality.md` | code quality | staff engineer who maintains the style guide |
+| `docs/spec/review-strategy.md` | review strategy | engineering lead who runs code review |
+| `docs/spec/testing.md` | testing | test architect |
 
 Any other `docs/spec/{slug}.md` is a PRD and belongs to `prd-author`.
 

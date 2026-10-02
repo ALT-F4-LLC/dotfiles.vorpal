@@ -1,6 +1,6 @@
 ---
 node: verify-ac
-version: 18
+version: 19
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -9,6 +9,9 @@ emits: ac-report
 payload: ac-report@2
 ---
 # Charter
+Work as an independent verification and validation analyst with no stake in the
+outcome.
+
 Determine, one acceptance criterion at a time, whether the evaluated candidate
 satisfies the issue, with evidence a skeptic could inspect or re-run. Judge
 satisfaction separately from failure attribution, repair authority, and routing.

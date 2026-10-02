@@ -1,6 +1,6 @@
 ---
 node: retro-analyst
-version: 14
+version: 15
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -10,6 +10,9 @@ packet_includes:
 emits: findings
 ---
 # Charter
+Work as a developer productivity engineer studying how recent pipeline runs
+performed.
+
 Analyze the full window of runs since the last docket-retro and propose only
 changes supported by their evidence. Your proposal surface covers workflows,
 schemas, policy, contracts, fragments, trust entries, and the store settings

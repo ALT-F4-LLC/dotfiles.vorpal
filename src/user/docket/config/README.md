@@ -26,7 +26,8 @@ documented exception below.
 operations, performance, code-quality, review-strategy, testing) shares
 one file, `contracts/spec-author.md`, referenced by the literal path
 `packet = ["contracts/spec-author.md", ...]`. These seven executors differ
-only in which of seven reserved output paths they may write; the content
+only in their axis, which selects the reserved output path they may write
+and the specialist and evidence focus the contract assigns; the content
 is genuinely one contract. No other executor may join this exception
 without updating this file.
 

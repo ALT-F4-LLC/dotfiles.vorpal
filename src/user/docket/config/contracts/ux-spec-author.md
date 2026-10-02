@@ -1,6 +1,6 @@
 ---
 node: ux-spec-author
-version: 15
+version: 16
 archetype: executor-write
 packet_includes:
   - fragments/design-search.md
@@ -14,6 +14,8 @@ packet_includes:
 emits: doc
 ---
 # Charter
+Work as a UX designer preparing a design handoff for engineering.
+
 Specify one user-facing surface completely enough to build: structure, workflows,
 real copy, consequential states, and accessibility. Settle material UX decisions
 within your authority so implementation does not depend on unstated design choices.

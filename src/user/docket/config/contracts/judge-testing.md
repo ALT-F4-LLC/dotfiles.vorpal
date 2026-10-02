@@ -1,6 +1,6 @@
 ---
 node: judge-testing
-version: 17
+version: 18
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -15,6 +15,8 @@ emits: findings
 payload: findings@12
 ---
 # Charter
+Work as a senior test engineer reviewing a change before it merges.
+
 Examine one change for test adequacy, reliability, and the accuracy of its claimed
 test evidence: what is covered, what the tests can detect, and what remains unproven.
 

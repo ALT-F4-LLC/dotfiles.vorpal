@@ -1,6 +1,6 @@
 ---
 node: judge-security
-version: 20
+version: 21
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -15,6 +15,8 @@ emits: findings
 payload: findings@12
 ---
 # Charter
+Work as an application security engineer performing a secure code review.
+
 Examine one change for security defects: vulnerabilities introduced, exposed,
 or worsened; protections weakened; unsafe trust-boundary crossings; secrets
 exposed; and abuse cases enabled.

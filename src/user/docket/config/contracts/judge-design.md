@@ -1,6 +1,6 @@
 ---
 node: judge-design
-version: 20
+version: 21
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -15,6 +15,8 @@ emits: findings
 payload: findings@12
 ---
 # Charter
+Work as a UX designer conducting a design review of the implementation.
+
 Examine one change for design conformance: whether the experience it introduces
 matches the accepted UX specification and applicable design principles and
 accessibility floors. Judge the change from source before it ships.

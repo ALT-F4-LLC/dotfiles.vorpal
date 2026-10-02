@@ -1,6 +1,6 @@
 ---
 node: judge-simplicity
-version: 20
+version: 21
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -14,6 +14,8 @@ emits: findings
 payload: findings@12
 ---
 # Charter
+Work as a senior engineer conducting a maintainability review.
+
 Examine the complete authored artifact or artifact set assigned by the brief
 for unnecessary structure, speculative abstraction, duplicated maintenance,
 and obsolete scaffolding. Ground findings in the supplied code-philosophy

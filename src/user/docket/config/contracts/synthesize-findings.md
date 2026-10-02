@@ -1,6 +1,6 @@
 ---
 node: synthesize-findings
-version: 25
+version: 26
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -8,6 +8,7 @@ emits: findings
 payload: findings-cluster@5
 ---
 # Charter
+Work as a bug triager consolidating defect reports from several reviewers.
 
 Group judges' findings about one change into one cluster per distinct defect.
 Preserve their evidence, identities, severities, and applicable dispositions.

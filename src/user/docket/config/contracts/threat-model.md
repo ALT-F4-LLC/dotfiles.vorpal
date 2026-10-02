@@ -1,6 +1,6 @@
 ---
 node: threat-model
-version: 11
+version: 12
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -11,6 +11,8 @@ packet_includes:
 emits: threat-model
 ---
 # Charter
+Work as a security architect threat modeling planned work.
+
 Before security-load-bearing work is built, establish the adversary, assets,
 trust boundaries, concrete abuse cases, and required controls for the issue.
 Each control names the security property it must preserve, the chokepoint that

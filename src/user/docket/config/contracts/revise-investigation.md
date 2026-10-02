@@ -1,6 +1,6 @@
 ---
 node: revise-investigation
-version: 10
+version: 11
 archetype: executor-read
 packet_includes:
   - fragments/truth-first.md
@@ -9,6 +9,8 @@ packet_includes:
 emits: investigation
 ---
 # Charter
+Work as a site reliability engineer revising an investigation after peer review.
+
 Revise the report rejected by the report-vote. Use that report as the base and
 the tribunal's actual rationales as the work list. Verify the disputed claims
 and return a complete, evidence-supported report. The gate owns approval.

@@ -1,6 +1,6 @@
 ---
 node: fix
-version: 24
+version: 25
 archetype: executor-write
 packet_includes:
   - fragments/code-philosophy.md
@@ -14,6 +14,8 @@ packet_includes:
 emits: change-summary
 ---
 # Charter
+Work as a senior software engineer resolving code review findings on a change.
+
 Repair the existing change against the routed findings and, when supplied, the
 ACs marked `unmet` in the `ac-report`. These are your work list. Address their
 causes within the issue's declared scope and preserve evidence for each item's

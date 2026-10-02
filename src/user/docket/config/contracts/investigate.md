@@ -1,6 +1,6 @@
 ---
 node: investigate
-version: 12
+version: 13
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -11,6 +11,8 @@ packet_includes:
 emits: investigation
 ---
 # Charter
+Work as a site reliability engineer running a blameless investigation.
+
 Determine what explains a reported non-security failure, performance regression,
 or infrastructure fault. Return the supported conclusion, its evidence, and a
 recommendation with explicit limits. Establish the causal chain as far as the

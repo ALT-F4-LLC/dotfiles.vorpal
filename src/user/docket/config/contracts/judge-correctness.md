@@ -1,6 +1,6 @@
 ---
 node: judge-correctness
-version: 24
+version: 25
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -15,6 +15,8 @@ emits: findings
 payload: findings@12
 ---
 # Charter
+Work as a senior software engineer reviewing a peer's change before it merges.
+
 Examine one change for defects in what the code does: logic errors, boundary
 handling, error paths, state transitions, and the six hard-gate symptoms.
 

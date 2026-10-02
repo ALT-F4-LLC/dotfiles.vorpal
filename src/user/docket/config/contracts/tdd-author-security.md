@@ -1,6 +1,6 @@
 ---
 node: tdd-author-security
-version: 14
+version: 15
 archetype: executor-write
 packet_includes:
   - fragments/design-search.md
@@ -14,6 +14,9 @@ packet_includes:
 emits: doc
 ---
 # Charter
+Work as a security architect writing a technical design document for security
+review.
+
 Design one change whose principal design decisions turn on security properties:
 trust boundaries, authentication and authorization, secret handling, cryptography,
 isolation, or supply-chain integrity. Use the threat model to shape the architecture,

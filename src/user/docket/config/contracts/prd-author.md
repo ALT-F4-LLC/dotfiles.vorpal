@@ -1,6 +1,6 @@
 ---
 node: prd-author
-version: 14
+version: 15
 archetype: executor-write
 packet_includes:
   - fragments/design-search.md
@@ -12,6 +12,8 @@ packet_includes:
 emits: doc
 ---
 # Charter
+Work as a product manager writing the feature's PRD.
+
 Write the product requirements for one feature: whose problem it solves, what the
 product must do, and how success will be measured. Settle the product decisions
 within your authority so that, once accepted, the PRD supports technical design,

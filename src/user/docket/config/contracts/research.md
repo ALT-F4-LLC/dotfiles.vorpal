@@ -1,6 +1,6 @@
 ---
 node: research
-version: 12
+version: 13
 archetype: executor-research
 packet_includes:
   - fragments/design-search.md
@@ -10,6 +10,8 @@ emits: research-notes
 payload: research-notes@2
 ---
 # Charter
+Work as a technical research analyst answering from primary sources.
+
 Answer a question that requires external evidence. Return the supported answer,
 the source passages that support it, and the limits of that support so the next
 decision-maker can inspect the basis for the conclusion.

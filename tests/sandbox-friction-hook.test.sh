@@ -137,10 +137,52 @@ diff: /dev/fd/12: Operation not permitted')
     esac
 }
 
+# new_row <input json>; prints the one row the hook appended, or a marker
+# naming how many rows it appended instead.
+new_row() {
+    local input="$1" before after
+    before=$({ wc -l <"$LEDGER"; } 2>/dev/null || echo 0)
+    HOME="$SANDBOX" "$BASH_BIN" "$HOOK" >/dev/null 2>&1 <<<"$input"
+    after=$({ wc -l <"$LEDGER"; } 2>/dev/null || echo 0)
+    if [ $((after - before)) -eq 1 ]; then
+        tail -n 1 "$LEDGER"
+    else
+        printf 'ROWS%s' "$((after - before))"
+    fi
+}
+
+# assert_row <row json> <jq filter> <label>; the filter must yield true.
+assert_row() {
+    local row="$1" filter="$2" label="$3"
+    if printf '%s' "$row" | jq -e "$filter" >/dev/null 2>&1; then
+        pass "$label"
+    else
+        fail "${label} (row: ${row})"
+    fi
+}
+
 case_classifier_denials_are_recorded() {
-    local input
-    input=$(jq -nc '{hook_event_name:"PermissionDenied",tool_name:"Bash",session_id:"s",cwd:"/repo",tool_input:{command:"kubectl apply -f x"},reason:"Blocked by classifier"}')
-    assert_kind "$input" classifier-denial "classifier refusal"
+    local row
+    row=$(new_row "$(jq -nc '{hook_event_name:"PermissionDenied",tool_name:"Bash",session_id:"s",cwd:"/repo",tool_input:{command:"kubectl apply -f x"},reason:"Blocked by classifier"}')")
+    assert_row "$row" '.kind == "classifier-denial" and .command == "kubectl apply -f x" and .tool_name == "Bash"' \
+        "Bash classifier refusal logs one row with its command and tool_name"
+}
+
+case_classifier_denial_on_edit_records_file_path() {
+    local row
+    row=$(new_row "$(jq -nc '{hook_event_name:"PermissionDenied",tool_name:"Edit",session_id:"s",cwd:"/repo",tool_input:{file_path:"/repo/x.go",old_string:"a",new_string:"b"},reason:"Blocked by classifier"}')")
+    assert_row "$row" '.kind == "classifier-denial" and .tool_name == "Edit" and .file_path == "/repo/x.go"' \
+        "Edit classifier refusal logs one row with tool_name and file_path"
+}
+
+case_classifier_denial_records_agent_id() {
+    local row
+    row=$(new_row "$(jq -nc '{hook_event_name:"PermissionDenied",tool_name:"Bash",session_id:"s",agent_id:"a1",cwd:"/repo",tool_input:{command:"ls"},reason:"Blocked by classifier"}')")
+    assert_row "$row" '.kind == "classifier-denial" and .agent_id == "a1"' \
+        "subagent classifier refusal logs one row with its agent_id"
+    row=$(new_row "$(jq -nc '{hook_event_name:"PermissionDenied",tool_name:"Bash",session_id:"s",cwd:"/repo",tool_input:{command:"ls"},reason:"Blocked by classifier"}')")
+    assert_row "$row" '.kind == "classifier-denial"' \
+        "main-thread classifier refusal without agent_id still logs one row"
 }
 
 case_never_blocks() {
@@ -156,6 +198,8 @@ case_quoted_prose_is_not_a_denial
 case_unquoted_prose_is_not_a_denial
 case_mixed_output_keeps_the_real_line
 case_classifier_denials_are_recorded
+case_classifier_denial_on_edit_records_file_path
+case_classifier_denial_records_agent_id
 case_never_blocks
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"

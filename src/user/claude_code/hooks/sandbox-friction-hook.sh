@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# sandbox-friction — PostToolUse: Bash.
+# sandbox-friction — PostToolUse: Bash; PermissionDenied: any tool.
 #
 # The evidence half of the sandbox self-improving loop (operator ruling).
 # The allowlist is EVIDENCE-ONLY, which is only honest if evidence
@@ -29,10 +29,13 @@
 #   PostToolUse:Bash      — the command ran and hit the sandbox boundary, or ran
 #                           with dangerouslyDisableSandbox. Evidence for the
 #                           filesystem and network allowlists.
-#   PermissionDenied:Bash — auto mode's classifier refused the call, so the
-#                           command never ran and PostToolUse never fires. This
-#                           is the ONLY record of the events that accumulate
-#                           toward auto mode's pause threshold (3 consecutive or
+#   PermissionDenied      — auto mode's classifier refused the call, so the
+#                           tool never ran and PostToolUse never fires. Any
+#                           tool can be refused (Bash, Edit, Write, ...); the
+#                           row carries tool_name, the Bash command or the
+#                           Edit/Write file_path, and agent_id when a subagent
+#                           was refused. This is the ONLY record of the events
+#                           that accumulate toward auto mode's pause threshold (3 consecutive or
 #                           20 total, not configurable), at which point auto mode
 #                           starts prompting and an unattended executor stalls.
 #                           Evidence for `autoMode.allow` / `autoMode.environment`
@@ -94,6 +97,10 @@ fi
 mkdir -p "$LEDGER_DIR" 2>/dev/null || exit 0
 
 COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // "" | .[0:400]' 2>/dev/null || true)
+FILE_PATH=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // "" | .[0:400]' 2>/dev/null || true)
+TOOL_NAME=$(printf '%s' "$INPUT" | jq -r '.tool_name // ""' 2>/dev/null || true)
+# Present only inside a subagent; empty on the main thread.
+AGENT_ID=$(printf '%s' "$INPUT" | jq -r '.agent_id // ""' 2>/dev/null || true)
 CWD=$(printf '%s' "$INPUT" | jq -r '.cwd // ""' 2>/dev/null || true)
 SESSION=$(printf '%s' "$INPUT" | jq -r '.session_id // ""' 2>/dev/null || true)
 
@@ -101,11 +108,14 @@ jq -n -c \
     --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
     --arg kind "$KIND" \
     --arg session "$SESSION" \
+    --arg agent_id "$AGENT_ID" \
     --arg cwd "$CWD" \
+    --arg tool_name "$TOOL_NAME" \
     --arg command "$COMMAND" \
+    --arg file_path "$FILE_PATH" \
     --arg evidence "$EVIDENCE" \
     --argjson bypassed "$BYPASSED" \
-    '{at: $at, kind: $kind, session: $session, cwd: $cwd, command: $command, bypassed: $bypassed, evidence: $evidence}' \
+    '{at: $at, kind: $kind, session: $session, agent_id: $agent_id, cwd: $cwd, tool_name: $tool_name, command: $command, file_path: $file_path, bypassed: $bypassed, evidence: $evidence}' \
     >>"$LEDGER" 2>/dev/null || true
 
 exit 0

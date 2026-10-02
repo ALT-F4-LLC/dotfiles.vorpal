@@ -165,8 +165,8 @@ loop wrapping it, do one pass and say so; there will be no next tick.
 
 One seat at a time, ever: the scout, then the worker, never both, and
 never two units in flight. Seats spawn into this working tree with no
-worktree isolation, so strict sequence is required. Built-in agent types
-only, always `general-purpose`, never a custom agent definition. The scout
+worktree isolation, so strict sequence is required. Always the built-in
+`general-purpose` agent type, never a custom agent definition. The scout
 carries a read-only brief; `Explore` is not used, because ranking a tree
 against a catalog is the cross-file analysis that agent type excludes.
 
@@ -174,7 +174,7 @@ One seating mechanism, always: the built-in `Workflow` tool's `agent()`
 call, whose opts take `agentType`, `model`, and `effort`. Every seat sets
 **both `model` and `effort` explicitly**. Never use the plain `Agent` tool:
 it carries no effort parameter, so a seat through it runs at this session's
-own default instead of a chosen one.
+default.
 
 1. **Rule the tier, in one line.**
    - Scout: `opus` at `medium`. It reads widely and judges matches; it
@@ -185,8 +185,8 @@ own default instead of a chosen one.
      dedupe that merges near-duplicates with subtle differences): `fable`
      at `max`.
 
-   Write the ruling as one line naming the seat and why the unit fits the
-   tier, and carry it into the spawn.
+   Name the seat and why the unit fits the tier, and carry the ruling into
+   the spawn.
 
 2. **Spawn through `Workflow`**, the brief embedded in the script, with a
    `log()` line carrying step 1's ruling immediately before the `agent()`

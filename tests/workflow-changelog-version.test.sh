@@ -130,6 +130,17 @@ make_pair "${FIX}/mismatched" beta 4 3
 make_pair "${FIX}/other-table" alpha 3 3 99
 make_pair "${FIX}/orphan-changelog" alpha 3 3
 printf '# policy changelog\n\n## 7\n' > "${FIX}/orphan-changelog/changelogs/policy.md"
+make_pair "${FIX}/no-version" alpha 3 3
+printf '[pipeline]\nname = "alpha"\n' > "${FIX}/no-version/workflows/alpha.toml"
+make_pair "${FIX}/no-heading" alpha 3 3
+printf '# alpha changelog\n\nEntry.\n' > "${FIX}/no-heading/changelogs/alpha.md"
+make_pair "${FIX}/neither" alpha 3 3
+printf '[pipeline]\nname = "alpha"\n' > "${FIX}/neither/workflows/alpha.toml"
+printf '# alpha changelog\n\nEntry.\n' > "${FIX}/neither/changelogs/alpha.md"
+make_pair "${FIX}/no-changelogs" alpha 3 3
+rm -r "${FIX}/no-changelogs/changelogs"
+make_pair "${FIX}/unpaired" alpha 3 3
+mv "${FIX}/unpaired/changelogs/alpha.md" "${FIX}/unpaired/changelogs/policy.md"
 
 # Assert both the status and the exact output: a comparison that always
 # matches fails the mismatch case, and one that always fails fails the rest.
@@ -161,6 +172,16 @@ expect_versions "version key in a later table" 0 "${FIX}/other-table" || fail=1
 expect_versions "changelog with no workflow" 0 "${FIX}/orphan-changelog" || fail=1
 expect_versions "missing workflows directory" 2 "${FIX}/absent" \
     "FAIL: no workflows directory at ${FIX}/absent/workflows" || fail=1
+expect_versions "workflow with no version" 1 "${FIX}/no-version" \
+    "FAIL alpha: no [pipeline] version in alpha.toml" || fail=1
+expect_versions "changelog with no heading" 1 "${FIX}/no-heading" \
+    "FAIL alpha: no ## heading in alpha.md" || fail=1
+expect_versions "no version and no heading" 1 "${FIX}/neither" \
+    "FAIL alpha: no [pipeline] version in alpha.toml" || fail=1
+expect_versions "missing changelogs directory" 2 "${FIX}/no-changelogs" \
+    "FAIL: no changelogs directory at ${FIX}/no-changelogs/changelogs" || fail=1
+expect_versions "no workflow/changelog pair" 2 "${FIX}/unpaired" \
+    "FAIL: no workflow under ${FIX}/unpaired/workflows has a changelog under ${FIX}/unpaired/changelogs" || fail=1
 
 if [ "$fail" -ne 0 ]; then
     echo "workflow-changelog-version: FAIL — see the FAIL lines above." >&2

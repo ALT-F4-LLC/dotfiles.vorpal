@@ -124,8 +124,8 @@ class SweepTests(unittest.TestCase):
         self.scenario.write_text(json.dumps(SCENARIO))
         self.fixtures = self.root / "fixtures.json"
         # Mirror the real src/user/docket/config depth: the sweep derives the
-        # checkout from the corpus's ancestors, and a shallow corpus under
-        # /tmp would make that "/" and rewrite every slash as <CHECKOUT>.
+        # checkout as the corpus's fourth ancestor, which a shallow corpus
+        # under /tmp does not have.
         self.corpus = self.root / "checkout/src/user/docket/config"
         self.corpus.mkdir(parents=True)
         self.tmpdir = self.root / "tmp"

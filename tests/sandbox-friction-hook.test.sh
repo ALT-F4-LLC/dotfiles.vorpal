@@ -53,19 +53,30 @@ SANDBOX=$(mktemp -d "${TMPDIR:-/tmp}/sandbox-friction-test.XXXXXX") || fatal "mk
 trap 'rm -rf "$SANDBOX"' EXIT
 LEDGER="${SANDBOX}/.claude/friction/sandbox.jsonl"
 
-# run_hook <input json>; prints the kind of the row written, or NONE.
-run_hook() {
+# new_row <input json>; prints the one row the hook appended, or a marker:
+# EXIT<rc> when the hook exits nonzero, NONE for no row, ROWS<n> for n rows.
+new_row() {
     local input="$1" before after rc
     before=$({ wc -l <"$LEDGER"; } 2>/dev/null || echo 0)
     HOME="$SANDBOX" "$BASH_BIN" "$HOOK" >/dev/null 2>&1 <<<"$input"
     rc=$?
     [ "$rc" -eq 0 ] || { printf 'EXIT%s' "$rc"; return; }
     after=$({ wc -l <"$LEDGER"; } 2>/dev/null || echo 0)
-    if [ "$after" -gt "$before" ]; then
-        tail -n 1 "$LEDGER" | jq -r '.kind'
-    else
-        printf 'NONE'
-    fi
+    case $((after - before)) in
+        0) printf 'NONE' ;;
+        1) tail -n 1 "$LEDGER" ;;
+        *) printf 'ROWS%s' "$((after - before))" ;;
+    esac
+}
+
+# run_hook <input json>; prints the kind of the row written, or new_row's marker.
+run_hook() {
+    local row
+    row=$(new_row "$1")
+    case "$row" in
+        '{'*) printf '%s' "$row" | jq -r '.kind' ;;
+        *) printf '%s' "$row" ;;
+    esac
 }
 
 # post_input <command> <stdout> [bypass true|false]
@@ -135,20 +146,6 @@ diff: /dev/fd/12: Operation not permitted')
         *'bind: operation'*) fail "evidence still carries the quoted prose" ;;
         *) pass "evidence drops the quoted prose" ;;
     esac
-}
-
-# new_row <input json>; prints the one row the hook appended, or a marker
-# naming how many rows it appended instead.
-new_row() {
-    local input="$1" before after
-    before=$({ wc -l <"$LEDGER"; } 2>/dev/null || echo 0)
-    HOME="$SANDBOX" "$BASH_BIN" "$HOOK" >/dev/null 2>&1 <<<"$input"
-    after=$({ wc -l <"$LEDGER"; } 2>/dev/null || echo 0)
-    if [ $((after - before)) -eq 1 ]; then
-        tail -n 1 "$LEDGER"
-    else
-        printf 'ROWS%s' "$((after - before))"
-    fi
 }
 
 # assert_row <row json> <jq filter> <label>; the filter must yield true.

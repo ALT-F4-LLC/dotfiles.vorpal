@@ -5,13 +5,14 @@
 # Without this, a workflow edit that can never register passes the write
 # steps' `tests` gate and fails only at registration.
 #
-# Availability: lint needs `docket` on PATH and a project registry that
-# `docket project list --json` reports ok. When either is missing the suite
-# FAILS, naming what is missing, so a green run is evidence that lint ran.
-# The one exception is WORKFLOW_LINT_SKIP=1, which only the CI step sets
-# (CI has no docket install): with it, a missing tool or registry prints one
-# SKIP line naming the reason and exits 0. The variable is consulted only
-# when docket or the registry is unavailable; it never skips a lint that
+# Availability: lint needs `docket` on PATH, `jq` once docket is present,
+# and a project registry that `docket project list --json` reports ok. When
+# any is missing the suite FAILS, naming what is missing, so a green run is
+# evidence that lint ran. The one exception is WORKFLOW_LINT_SKIP=1, which
+# only the CI step sets (CI has no docket install): with it, a missing docket
+# or registry prints one SKIP line naming the reason and exits 0. A missing
+# jq fails whether or not WORKFLOW_LINT_SKIP is set. The variable is consulted
+# only when docket or the registry is unavailable; it never skips a lint that
 # could run. Neither this suite nor the justfile `tests` recipe sets it.
 #
 # WORKFLOWS_DIR overrides the directory linted, so a mutation probe can point
@@ -30,6 +31,9 @@ cd "$REPO_ROOT" || exit 2
 unavailable=""
 if ! command -v docket > /dev/null 2>&1; then
     unavailable="docket is not on PATH"
+elif ! command -v jq > /dev/null 2>&1; then
+    echo "FAIL workflow-lint: jq is not on PATH; the registry probe needs it, and WORKFLOW_LINT_SKIP does not skip a missing jq" >&2
+    exit 1
 elif ! docket project list --json < /dev/null 2> /dev/null | jq -e '.ok == true' > /dev/null 2>&1; then
     unavailable="the docket project registry is unavailable (docket project list --json did not return ok)"
 fi

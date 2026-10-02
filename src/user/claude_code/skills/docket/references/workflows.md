@@ -383,7 +383,13 @@ omitted.
 The input forms below resolve to engine records or activation-pinned linked
 artifacts rather than an ordinary local step artifact.
 
-`issue.body` is the activation snapshot. `issue.diff` is the run's computed
+`issue.body` is the activation snapshot. The default packet template already
+renders that snapshot under `== REQUEST` on every step that renders a packet.
+A packet step therefore should not also declare `issue.body` in `inputs`. A
+step that renders no packet, such as a vote step, still receives the body
+through `issue.body`.
+
+`issue.diff` is the run's computed
 VCS diff, recorded only at the completion of a step that holds the tree
 (`holds_tree`, default true, the same field scope exclusion reads). A
 non-holding step records nothing; its consumers resolve to the artifact the
@@ -458,7 +464,7 @@ ordinary `docket issue link add` edge, not a new relation kind:
 | `duplicates` | `duplicate_of` |
 
 ```toml
-inputs = ["issue.body", "issue.linked.depends_on.ux-spec"]
+inputs = ["issue.linked.depends_on.ux-spec"]
 ```
 
 There is no separate "linkable" marking and no project scoping — any

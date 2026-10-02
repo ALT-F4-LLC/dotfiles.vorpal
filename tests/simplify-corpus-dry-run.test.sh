@@ -7,8 +7,8 @@
 # is called.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by
-# name and this one is in that list. It needs `node`, `python3`, and bash —
-# no engine, no network, and it never spawns a real agent.
+# name and this one is in that list. It needs `node`, `python3`, `yq`, and
+# bash — no engine, no network, and it never spawns a real agent.
 #
 # WHY THIS EXISTS. The decide suite pins the parser and the scripts suite
 # pins the script; neither shows that the workflow passes a candidate's kind
@@ -32,7 +32,7 @@ fatal() {
 
 [ -f "$SIMPLIFY" ] || fatal "simplify-corpus.js not found at ${SIMPLIFY}"
 [ -d "$SCRIPTS" ] || fatal "scripts not found at ${SCRIPTS}"
-for tool in node python3; do
+for tool in node python3 yq; do
     command -v "$tool" >/dev/null 2>&1 || fatal "${tool} is required to run this test"
 done
 
@@ -147,7 +147,7 @@ ok $? 'the prose and the bumped contract simplification are accepted'
 [ "$(get "o.result.accepted.find((a) => a.kind === 'contract').versioned")" = "true" ]; ok $? 'the accepted contract keeps its versioned flag'
 reason src/user/claude_code/workflows/x.js | grep -q '^mechanical check failed: gate node-module: SyntaxError'; ok $? 'a duplicate function in a workflow module is rejected by the gate'
 reason src/user/docket/config/fragments/f.md | grep -q '^version not bumped'; ok $? 'an unbumped fragment is rejected by the version rule'
-reason src/user/docket/config/workflows/w.toml | grep -q '^mechanical check failed: gate toml: TOMLDecodeError'; ok $? 'a broken docket workflow is rejected by the toml gate'
+reason src/user/docket/config/workflows/w.toml | grep -q '^mechanical check failed: gate toml: .*expected character \]'; ok $? 'a broken docket workflow is rejected by the toml gate'
 reason src/user/claude_code/skills/y/SKILL.md | grep -q '^mechanical check failed: quotes: added "keep that"'; ok $? 'an altered quotation is rejected by the subset check'
 reason src/user/claude_code/skills/x/evals/cases.json | grep -q '^data files are never simplified$'; ok $? 'a JSON fixture is rejected unread'
 [ "$(get 'o.result.unchanged.map((u) => u.file).join()')" = "src/user/claude_code/settings.rs" ]; ok $? 'settings.rs comes back unchanged'

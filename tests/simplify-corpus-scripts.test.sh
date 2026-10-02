@@ -9,7 +9,8 @@
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by
 # name and this one is in that list. It needs bash, awk, git, coreutils,
-# node, and python3 — no engine, no network, and it never runs a workflow.
+# node, python3, and mikefarah yq v4 — no engine, no network, and it never
+# runs a workflow.
 #
 # WHY THIS EXISTS. The check once paired quote marks across the whole file,
 # so quote marks inside code shifted every later pair. That locked 78% of
@@ -41,7 +42,7 @@ fatal() {
 for script in "$SPANS" "$CHUNKS" "$CHECK" "${SCRIPTS}/syntax_check.py"; do
     [ -f "$script" ] || fatal "script not found: ${script}"
 done
-for tool in awk git cmp comm node python3; do
+for tool in awk git cmp comm node python3 yq; do
     command -v "$tool" >/dev/null 2>&1 || fatal "${tool} is required to run this test"
 done
 
@@ -247,12 +248,21 @@ printf '%s\n' '[pipeline' 'name = "x"' > "${WORK}/wf-bad.toml"
 check toml-bump workflow-toml "${WORK}/wf.toml" "${WORK}/wf-bumped.toml"
 passed toml-bump && grep -qx 'version 7 8' "${WORK}/toml-bump.check"; ok $? 'workflow-toml: the version is read from the [pipeline] table only'
 check toml-bad workflow-toml "${WORK}/wf.toml" "${WORK}/wf-bad.toml"
-gate_failed toml-bad toml && grep -q 'TOMLDecodeError' "${WORK}/toml-bad.check"; ok $? 'workflow-toml: a parse error fails the gate'
+gate_failed toml-bad toml && grep -q 'expected character \]' "${WORK}/toml-bad.check"; ok $? 'workflow-toml: a parse error fails the gate'
 check toml-plain toml "${WORK}/wf.toml" "${WORK}/wf-bumped.toml"
 grep -qx 'version -1 -1' "${WORK}/toml-plain.check"; ok $? 'plain toml reports no version'
 printf '%s\n' '[pipeline]' 'name = "x"' '' '[nodes.a]' 'version = 3' > "${WORK}/wf-unversioned.toml"
 check toml-unversioned workflow-toml "${WORK}/wf-unversioned.toml" "${WORK}/wf-unversioned.toml"
 grep -qx 'version -1 -1' "${WORK}/toml-unversioned.check"; ok $? 'workflow-toml: a version outside [pipeline] is not the pipeline'"'"'s'
+# A PATH holding every tool the toml path needs except yq.
+mkdir -p "${WORK}/no-yq"
+for tool in dirname grep sed head cut wc tr awk; do
+    ln -s "$(command -v "$tool")" "${WORK}/no-yq/${tool}"
+done
+PATH="${WORK}/no-yq" "$BASH" "$CHECK" toml "${WORK}/wf.toml" "${WORK}/wf.toml" > "${WORK}/toml-no-yq.check" 2>&1
+echo $? > "${WORK}/toml-no-yq.rc"
+gate_failed toml-no-yq toml && grep -q '^gate toml failed: .*yq' "${WORK}/toml-no-yq.check" && ! grep -q '^gate toml ok' "${WORK}/toml-no-yq.check"
+ok $? 'toml: without yq the gate fails closed and names yq'
 
 printf '%s\n' '---' 'node: x' 'version: 4' '---' '' 'Body, said twice.' 'Body.' > "${WORK}/contract.md"
 printf '%s\n' '---' 'node: x' 'version: 5' '---' '' 'Body.' > "${WORK}/contract-bumped.md"

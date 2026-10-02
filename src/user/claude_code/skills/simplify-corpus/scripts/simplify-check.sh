@@ -27,7 +27,7 @@
 # report carries both numbers.
 #
 # Bash 3.2 and POSIX awk. The JavaScript gate writes one temporary module
-# copy under $TMPDIR and removes it.
+# copy under $TMPDIR and removes it. The TOML gate needs mikefarah yq v4.
 
 set -uo pipefail
 export LC_ALL=C
@@ -83,12 +83,22 @@ module_check() { # <file>
     return "$rc"
 }
 
+# yq reads the file on stdin, so its error names '-' rather than a long
+# scratch path that could push the reason past the 200-character cut. A
+# missing yq fails the gate closed with its own reason.
+toml_check() { # <file>
+    command -v yq > /dev/null 2>&1 || { echo "error: yq not found; the toml gate needs mikefarah yq v4"; return 127; }
+    yq -p toml '.' < "$1" > /dev/null
+}
+
 case "$kind" in
     javascript) gate node-module module_check "$candidate" ;;
     python) gate python python3 "$HERE/syntax_check.py" python "$candidate" ;;
     shell) gate bash-n bash -n "$candidate" ;;
     rust) gate rustfmt rustfmt --check --edition 2021 "$candidate" ;;
-    toml | workflow-toml) gate toml python3 "$HERE/syntax_check.py" toml "$candidate" ;;
+    # yq is laxer than a strict TOML parser: a duplicate key and a duplicate
+    # [table] both pass this gate.
+    toml | workflow-toml) gate toml toml_check "$candidate" ;;
     *) echo "gate none" ;;
 esac
 

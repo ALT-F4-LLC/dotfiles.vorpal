@@ -39,7 +39,10 @@ build:
 tests:
     #!/usr/bin/env bash
     set -euo pipefail
-    cargo test --locked --offline
+    # Every suite runs even after one fails, so a single run names every
+    # failure rather than only the first; the list is printed at the end.
+    failed=()
+    cargo test --locked --offline || failed+=("cargo test")
     # The suites commit into throwaway repos; keep those commits off the
     # operator's signing agent. Scoped to this recipe's process only. Appended
     # after the caller's env git config entries, which stay visible; the last
@@ -48,8 +51,12 @@ tests:
     export GIT_CONFIG_KEY_$n=commit.gpgsign GIT_CONFIG_VALUE_$n=false GIT_CONFIG_COUNT=$((n+1))
     for suite in tests/*.test.sh; do
         echo "==> $suite"
-        bash "$suite"
+        bash "$suite" || failed+=("$suite")
     done
+    if [ "${#failed[@]}" -gt 0 ]; then
+        printf 'FAILED: %s\n' "${failed[@]}" >&2
+        exit 1
+    fi
 
 # The project-supplied gate security-change binds on its write steps. Here the
 # QA suite is the whole test suite: the gate scripts' own suites run under it.

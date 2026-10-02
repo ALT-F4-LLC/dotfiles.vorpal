@@ -172,6 +172,17 @@ case_classifier_outage_is_not_a_denial() {
         "classifier outage logs one classifier-unavailable row carrying its reason"
 }
 
+# A refusal whose reason is absent or not a usable string is still a refusal:
+# dropping it would hide events that count toward auto mode's pause threshold.
+case_classifier_denial_without_usable_reason_is_recorded() {
+    local reason row
+    for reason in absent '""' 42; do
+        row=$(new_row "$(jq -nc --arg r "$reason" '{hook_event_name:"PermissionDenied",tool_name:"Bash",session_id:"s",cwd:"/repo",tool_input:{command:"ls"}} + (if $r == "absent" then {} else {reason: ($r | fromjson)} end)')")
+        assert_row "$row" '.kind == "classifier-denial"' \
+            "classifier refusal with reason ${reason} logs one classifier-denial row"
+    done
+}
+
 case_classifier_denial_on_edit_records_file_path() {
     local row
     row=$(new_row "$(jq -nc '{hook_event_name:"PermissionDenied",tool_name:"Edit",session_id:"s",cwd:"/repo",tool_input:{file_path:"/repo/x.go",old_string:"a",new_string:"b"},reason:"Blocked by classifier"}')")
@@ -203,6 +214,7 @@ case_unquoted_prose_is_not_a_denial
 case_mixed_output_keeps_the_real_line
 case_classifier_denials_are_recorded
 case_classifier_outage_is_not_a_denial
+case_classifier_denial_without_usable_reason_is_recorded
 case_classifier_denial_on_edit_records_file_path
 case_classifier_denial_records_agent_id
 case_never_blocks

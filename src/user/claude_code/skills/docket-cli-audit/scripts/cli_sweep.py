@@ -221,7 +221,7 @@ class Runner:
         self.repo = self.scratch / "repo"
         self.captures = {
             "scratch": str(self.scratch), "repo": str(self.repo), "corpus": str(corpus),
-            "checkout": str(Path(corpus).resolve().parents[2]),
+            "checkout": str(Path(corpus).resolve().parents[3]),
         }
         self.norm_text, self.norm_tree = normalizer(self.scratch, self.captures["checkout"])
         self.env = self.isolated_env()

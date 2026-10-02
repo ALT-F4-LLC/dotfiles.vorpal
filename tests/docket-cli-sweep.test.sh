@@ -81,7 +81,7 @@ INVENTORY = {
     "probe_contract": "test", "commands": [{"command": c, "usage": [], "aliases": [], "flags": [], "inherited_flags": []} for c in [
         "docket", "docket init", "docket config", "docket trust", "docket trust list", "docket trust add", "docket trust probe",
         "docket issue", "docket issue create", "docket issue show", "docket run", "docket run activate", "docket step", "docket step complete",
-        "docket events",
+        "docket events", "docket doctor",
     ]],
 }
 
@@ -92,6 +92,7 @@ SCENARIO = {
         {"id": "root", "argv": [], "modes": ["text"]},
         {"id": "init", "argv": ["init"], "modes": ["json"], "expect_exit": 0},
         {"id": "config", "argv": ["config"]},
+        {"id": "doctor", "argv": ["doctor", "--source", "{checkout}"], "modes": ["text"]},
         {"id": "trust-group", "argv": ["trust"], "modes": ["text"]},
         {"id": "issue-group", "argv": ["issue"], "modes": ["text"]},
         {"id": "run-group", "argv": ["run"], "modes": ["text"]},
@@ -163,7 +164,7 @@ class SweepTests(unittest.TestCase):
         fixtures = self.write()
         records = {(r["id"], r["mode"]): r for r in fixtures["results"]}
         self.assertEqual(set(records), {
-            ("root", "text"), ("init", "json"), ("config", "text"), ("config", "json"), ("config", "format"),
+            ("root", "text"), ("init", "json"), ("config", "text"), ("config", "json"), ("config", "format"), ("doctor", "text"),
             ("trust-group", "text"), ("issue-group", "text"), ("run-group", "text"), ("step-group", "text"),
             ("create", "json"), ("show", "text"), ("show", "json"), ("show", "format"),
             ("show-missing", "text"), ("show-missing", "json"), ("show-missing", "format"),
@@ -187,6 +188,11 @@ class SweepTests(unittest.TestCase):
         self.assertEqual(records[("events", "json")]["json"]["data"]["items"], [{"seq": 1}, {"seq": 2}, {"seq": 3}])
         self.assertEqual(records[("trust-add", "json")]["argv"][:4], ["docket", "trust", "add", "--json"])
         self.assertEqual(records[("trust-list", "json")]["json"]["data"]["total"], 0)
+
+    def test_checkout_is_the_corpus_checkout_root(self):
+        self.write()
+        doctor = [c["argv"] for c in self.calls() if c["argv"][:1] == ["doctor"]]
+        self.assertEqual(doctor, [["doctor", "--source", str((self.root / "checkout").resolve())]])
 
     def test_check_write_and_drift(self):
         self.write()

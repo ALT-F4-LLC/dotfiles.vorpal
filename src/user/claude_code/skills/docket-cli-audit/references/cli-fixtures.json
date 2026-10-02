@@ -853,7 +853,7 @@
         "<CHECKOUT>"
       ],
       "exit": 0,
-      "stdout": "seat OK cwd is the git toplevel\nstore OK <SCRATCH>/home/.docket/issues.db opens read-write\nproject OK bound to project DKT (repo, id 1) for <SCRATCH>/repo\ninstall-drift FAIL missing entirely, nothing to compare: [<CHECKOUT>/src/user/docket/config (source) <CHECKOUT>/src/user/docket/bin (source)]\npins SKIP no --run given\nlink-farm OK <SCRATCH>/repo/.docket/config does not exist; nothing to check\nstragglers OK no detached worktrees under a scratch path\nclean: false, skipped: true\n",
+      "stdout": "seat OK cwd is the git toplevel\nstore OK <SCRATCH>/home/.docket/issues.db opens read-write\nproject OK bound to project DKT (repo, id 1) for <SCRATCH>/repo\ninstall-drift FAIL missing entirely, nothing to compare: [<SCRATCH>/home/.docket/config (install) <SCRATCH>/home/.docket/bin (install)]\npins SKIP no --run given\nlink-farm OK <SCRATCH>/repo/.docket/config does not exist; nothing to check\nstragglers OK no detached worktrees under a scratch path\nclean: false, skipped: true\n",
       "stderr": ""
     },
     {
@@ -891,7 +891,7 @@
             {
               "check": "install-drift",
               "verdict": "FAIL",
-              "detail": "missing entirely, nothing to compare: [<CHECKOUT>/src/user/docket/config (source) <CHECKOUT>/src/user/docket/bin (source)]"
+              "detail": "missing entirely, nothing to compare: [<SCRATCH>/home/.docket/config (install) <SCRATCH>/home/.docket/bin (install)]"
             },
             {
               "check": "pins",
@@ -949,7 +949,7 @@
             {
               "check": "install-drift",
               "verdict": "FAIL",
-              "detail": "missing entirely, nothing to compare: [<CHECKOUT>/src/user/docket/config (source) <CHECKOUT>/src/user/docket/bin (source)]"
+              "detail": "missing entirely, nothing to compare: [<SCRATCH>/home/.docket/config (install) <SCRATCH>/home/.docket/bin (install)]"
             },
             {
               "check": "pins",

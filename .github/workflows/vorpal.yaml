@@ -149,6 +149,11 @@ jobs:
 
       - run: bash tests/workflow-module-parse.test.sh
 
+      # CI has no docket install; the skip is reserved for this row.
+      - run: bash tests/workflow-lint.test.sh
+        env:
+          WORKFLOW_LINT_SKIP: "1"
+
       # The per-suite rows above exit 0 whenever no case fails, including if a
       # suite stopped running its cases at all. sdet-abuse re-runs the hook
       # suites behind a minimum-case floor, so a hollowed-out suite is caught.

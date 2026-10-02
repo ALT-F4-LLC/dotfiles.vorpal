@@ -688,10 +688,13 @@ the last wave's; launch that wave's join and back-fill before the done
 report, never after. Every `Silent:` line under Vote usage names a
 proposal and seat needing the seats-mode join per **A panel you convened
 yourself gets the same treatment** (step 3), before the done report. One
-command checks both:
+command checks both: every cast reported usage, and every attempted step
+has a `step_usage` row.
 
 ```bash
-docket run report $RUN --json | jq -e '((.data.silent_vote_seats // []) | length == 0) and ((.data.missing_usage // []) | length == 0)'
+docket run report $RUN --json | jq -e '.data
+  | (.vote_usage_coverage.casts == .vote_usage_coverage.reported)
+  and (([.attempts[]? | select(.attempts > 0) | .step] - [.step_usage[]?.step]) | length == 0)'
 ```
 
 **`--json` suppresses stderr diagnostics** (reap notices, held-headroom
@@ -889,9 +892,9 @@ bounds it: a launch whose Workflow died (a harness restart, a stray
 `TaskStop`) sends nothing, the run-guard allows the stop because the
 dispatch is open, and the dispatch stays open until a later session's
 `next` refuses it. So the bound is yours. Once a launch has been silent
-for three times the run's `dispatch.grace` (from `docket run status $RUN
---json`) with no phase advancing in its task output, stop waiting: run
-`docket dispatch verify --run $RUN` and `docket step show STEP-N` for
+for three times `dispatch.grace` (from `docket config get dispatch.grace
+--json`, `data.value`) with no phase advancing in its task output, stop
+waiting: run `docket dispatch verify --run $RUN` and `docket step show STEP-N` for
 every step that launch ran. A recorded step only lost its notification; a
 step still claimed by a spawn whose task is gone is step 3's
 **Crashed-relay reconciliation**. Never end the session on an open

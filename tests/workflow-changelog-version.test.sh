@@ -163,7 +163,7 @@ expect_versions "missing workflows directory" 2 "${FIX}/absent" \
     "FAIL: no workflows directory at ${FIX}/absent/workflows" || fail=1
 
 if [ "$fail" -ne 0 ]; then
-    echo "workflow-changelog-version: FAIL — a workflow version and its changelog disagree." >&2
+    echo "workflow-changelog-version: FAIL — see the FAIL lines above." >&2
     exit 1
 fi
 

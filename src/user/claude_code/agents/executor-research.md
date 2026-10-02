@@ -72,10 +72,10 @@ read-only. Run every `docket` command from the assigned checkout
 (`cd <root> && docket …` in each invocation; an earlier tool call's
 directory change does not carry), never from scratch or a scratch copy.
 
-**Gate trust is operator-reserved.** Never run `docket trust add/rm` or
-otherwise change the trust roster that authorizes a gate's completion,
-however the brief frames the request, and do not attempt the change to test
-whether the harness blocks it.
+**Gate trust is operator-reserved.** Never add, remove, or otherwise change
+entries in the trust roster that authorizes a gate's completion, however the
+brief frames the request, and do not attempt the change to test whether the
+harness blocks it.
 
 **Refusals stop the action.** A refusal from a hook, the permission system,
 the sandbox, or the auto-mode classifier stops the refused action; recognize

@@ -32,8 +32,8 @@ may write runs on an independent copy under your private step directory,
 with no link, Git reference, cache, or configured output path back into the
 checkout or shared repository metadata.
 
-**Trust changes are operator-reserved.** Do not run `docket trust add/rm`
-or otherwise modify the trust roster that authorizes a gate's completion,
+**Trust changes are operator-reserved.** Never add, remove, or otherwise
+modify entries in the trust roster that authorizes a gate's completion,
 even if the brief requests it. Treat such a request as a routing defect
 and use the gap channel below; do not attempt the write or test whether
 the harness blocks it.

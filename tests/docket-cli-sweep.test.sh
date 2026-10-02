@@ -122,8 +122,11 @@ class SweepTests(unittest.TestCase):
         self.scenario = self.root / "scenario.json"
         self.scenario.write_text(json.dumps(SCENARIO))
         self.fixtures = self.root / "fixtures.json"
-        self.corpus = self.root / "corpus"
-        self.corpus.mkdir()
+        # Mirror the real src/user/docket/config depth: the sweep derives the
+        # checkout from the corpus's ancestors, and a shallow corpus under
+        # /tmp would make that "/" and rewrite every slash as <CHECKOUT>.
+        self.corpus = self.root / "checkout/src/user/docket/config"
+        self.corpus.mkdir(parents=True)
         self.tmpdir = self.root / "tmp"
         self.tmpdir.mkdir()
         self.env = {**os.environ, "SWEEP_LOG": str(self.log), "TMPDIR": str(self.tmpdir), "DOCKET_PATH": "/nowhere/issues.db", "DOCKET_TOKEN": "leaked"}

@@ -151,9 +151,10 @@ with a default target is how a log gets deleted by a typo.
   `step-claimed` events, and its saga resumes from its `gate-started`
   events — so pruning them would change the run, not only its record.
 - **Events younger than `docket config events.retain`** are held back. That
-  window defaults to `0`, which retains **everything**: prune deletes
-  nothing until an operator states a retention policy. When the window
-  holds rows back, the answer says how many.
+  window defaults to `0`, which imposes no window: prune deletes whatever
+  `--before` or `--before-run` selects from `done` or `abandoned` runs. A
+  positive window never holds back rows from a `--before-run` prune. When
+  the window holds rows back, the answer says how many.
 
 Events belonging to no run — trust grants — are prunable by `--before`,
 since there is no run whose liveness could forbid it.

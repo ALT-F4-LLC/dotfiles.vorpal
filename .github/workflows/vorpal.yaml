@@ -95,6 +95,8 @@ jobs:
 
       - run: bash tests/simplify-corpus-decide.test.sh
 
+      - run: yq --version | grep -Eq 'mikefarah/yq.* version v4\.'
+
       - run: bash tests/simplify-corpus-dry-run.test.sh
 
       - run: bash tests/simplify-corpus-scripts.test.sh

@@ -38,7 +38,7 @@ Engine defaults live in the database, read by the claim machinery:
 | `budget.unit` | unit name or `""` | `""` | which recorded usage unit the run cap counts. Empty (the default) means the cap rests on the declared-cost floor alone |
 | `dispatch.ttl` | duration | `30m` | how long a dispatch manifest stays open before `next` auto-abandons it |
 | `dispatch.grace` | duration | `15m` | how long a claimed step may go unrecorded before it counts as a dispatch discrepancy |
-| `events.retain` | duration or `0` | `0` | how long events are protected from `events prune`. `0` (the default) retains **everything**, so prune deletes nothing until a policy is set |
+| `events.retain` | duration or `0` | `0` | a protective floor under `events prune --before`: events newer than the window are held back. `0` (the default) sets no window, so prune deletes whatever `--before`/`--before-run` selects from runs that are `done` or `abandoned`. A live run still refuses the prune, and a positive window never clamps `--before-run` |
 | `context.warn_bytes` | int ≥ 0 | `65536` | context size that triggers a warning |
 | `context.error_bytes` | int ≥ 0 | `131072` | context size that triggers an error |
 | `vote.rule.<name>.threshold` | float in (0,1] | (unset) | approval threshold a `vote_rule` tallies at |

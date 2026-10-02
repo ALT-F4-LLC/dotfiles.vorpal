@@ -461,8 +461,9 @@ run report $RUN --json` carries the same mapping with routing. `step
 show` takes a STEP-N id or a bare N only.
 
 **There is no full-text search anywhere in `docket`.** `issue list` takes
-`--all`, `-a`, `-l`, `--limit`, `--parent`, `-p`, `--project`, `--roots`,
-`--run`, `--sort`, `-s`, `--tree`, `-T` and `--with-body`; `--search` and
+`--all`, `--assignee`/`-a`, `--label`/`-l`, `--limit`, `--parent`,
+`--priority`/`-p`, `--project`, `--roots`, `--run`, `--size`, `--sort`,
+`--status`/`-s`, `--tree`, `--type`/`-T` and `--with-body`; `--search` and
 `--query` do not exist. `-q` is the global `--quiet`, so `docket issue
 list -q "term"` silently drops the term rather than erroring. Filter with
 the flags above, or take `--json` and match client-side.

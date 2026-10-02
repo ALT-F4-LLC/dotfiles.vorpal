@@ -38,7 +38,7 @@
 #           unparseable stdout is ALSO a failure (actionAttemptIsPass,
 #           action_exec.go:383-389).
 #
-# RE-RUNNABILITY (the basis for `--re-runnable yes` in the trust proposal):
+# RE-RUNNABILITY (the basis for `--re-runnable` in the trust proposal):
 # the DOC is created through `docket doc create --idempotency-key`, whose
 # replay returns the ORIGINAL entity rather than a second row
 # (internal/db/docs.go:81-88, CreateDocIdempotent → beginIdempotentCreate). The

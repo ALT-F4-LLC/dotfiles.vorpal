@@ -709,7 +709,7 @@ Corpus root: ${corpusRoot}
 
 ${READ_ONLY}
 
-Confirm verbs with --help before relying on them. \`docket schema list --json\` and \`docket workflow list --json\` carry every frozen record (name, version, source_path, retired). For each record, map it to its corpus file (schemas/<name>@<version>.json, workflows/<name>.toml) and find the runs that pin it: \`docket run status --json\` lists runs across projects with --all-projects where supported, and \`docket run verify-pins RUN-N\` or the run's pins in \`docket run report RUN-N --json\` name the versions it froze. A registered version no run pins is a finding; say in notes which verbs you used and any you could not.`
+Confirm verbs with --help before relying on them. \`docket schema list --json\` and \`docket workflow list --json\` carry every frozen record (name, version, source_path, retired). For each record, map it to its corpus file (schemas/<name>@<version>.json, workflows/<name>.toml) and find the runs that pin it: \`docket run status --json\` lists this project's runs (add --all to include finished ones) and takes no cross-project flag, so run it from each project's root, and \`docket run verify-pins RUN-N\` or the run's pins in \`docket run report RUN-N --json\` name the versions it froze. A registered version no run pins is a finding; say in notes which verbs you used and any you could not.`
 }
 
 function runsPrompt(project, scratch) {

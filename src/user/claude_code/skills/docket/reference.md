@@ -15,8 +15,8 @@ before parsing it. A nearby source checkout is not proof of an installed
 binary's behavior unless their commits match.
 
 [references/cli-inventory.json](references/cli-inventory.json) records command
-paths, aliases, usage, and local/inherited flags. Refreshed **2026-09-25 UTC**
-against `nightly-209-ga348156` (commit `a348156`, built `2026-09-25T01:58:12Z`);
+paths, aliases, usage, and local/inherited flags. Refreshed **2026-10-02 UTC**
+against `nightly-229-g7f304cc` (commit `7f304cc`, built `2026-10-02T22:01:56Z`);
 covers 155 public commands. The JSON envelope table and behavioral notes below
 were checked against that same build's runtime fixtures
 ([../docket-cli-audit/references/cli-fixtures.json](../docket-cli-audit/references/cli-fixtures.json)),
@@ -747,6 +747,7 @@ None of the `schema` verbs are watch-eligible; `--watch` on any of them is a
 | `--files-changed` | — | string | `""` | comma-separated |
 | `--escalation-reason` | — | string | `""` | |
 | `--idempotency-key` | — | string | `""` | replay protection; repeat returns the original proposal |
+| `--sealed` | — | bool | `false` | withhold each cast's verdict, weights, findings and summary from `vote show`/`result` until the tally closes the proposal |
 
 <a id="vote-cast"></a>
 
@@ -912,6 +913,7 @@ Watch-eligible.
 | `--author` | `-a` | string | `""` | |
 | `--sort` | — | string | `""` | `field:direction`, e.g. `updated_at:desc` |
 | `--limit` | — | int | `50` | |
+| `--with-body` | — | bool | `false` | include each document's full body in JSON output; listings are body-free by default |
 
 Watch-eligible.
 

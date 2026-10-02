@@ -46,7 +46,11 @@ require() { # <file> <label> <fixed-string pattern>
         fail=1
         return
     fi
-    if ! normalize "$file" | grep -qF -- "$pattern"; then
+    # Normalize into a variable first: under pipefail, `normalize | grep -q`
+    # fails when grep exits on an early match and SIGPIPEs the writer.
+    local text
+    text=$(normalize "$file")
+    if ! grep -qF -- "$pattern" <<<"$text"; then
         echo "FAIL ${label}: expected clause not found in $(basename "$file")"
         echo "     expected (substring): ${pattern}"
         fail=1

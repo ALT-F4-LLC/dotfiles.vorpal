@@ -45,11 +45,13 @@ export const meta = {
 // Verification. Every candidate must be strictly smaller (the convergence
 // rule: a pass over already-simple files lands nothing) and pass a
 // kind-specific mechanical check: a syntax parse for code, a protected-span
-// subset diff for Markdown through protected-spans.sh (a simplifier may
-// delete protected content but never invent or alter it), and a
-// strictly-greater version for versioned docket files. Survivors face three
-// refuters leading from different angles (behavior or meaning, the reader or
-// caller, churn); two upholds accept.
+// subset diff for Markdown (a simplifier may delete protected content but
+// never invent or alter it), and a strictly-greater version for versioned
+// docket files. simplify-check.sh runs all of it, a runner agent returns its
+// report verbatim, and this file parses the report; a missing or unparsable
+// report rejects. Survivors face three refuters leading from different
+// angles (behavior or meaning, the reader or caller, churn); two upholds
+// accept.
 // Whether a simplification preserves behavior is judged, not proven: the
 // skill's landing gates (test suites naming the file, self-hygiene for Rust,
 // the module parse gate for workflow scripts) are the mechanical backstop.
@@ -108,6 +110,64 @@ function tallyVotes(returns) {
   const upheld = votes.filter((v) => !v.refuted).length
   return { votes: votes.length, upheld, accepted: upheld >= UPHOLD_MIN, reasons: votes.filter((v) => v.refuted).map((v) => v.reason) }
 }
+
+function shellQuote(value) {
+  return `'${String(value).replace(/'/g, `'\\''`)}'`
+}
+
+// The runner appends `echo "exit=$?"`, so the last exit= line is the
+// command's status; output without one never ran to the end.
+function exitStatus(stdout) {
+  const lines = String(stdout || '').split('\n')
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const m = /^exit=(\d+)$/.exec(lines[i].trim())
+    if (m) return Number(m[1])
+  }
+  return null
+}
+
+// Parse simplify-check.sh. Intact needs all of it: exit 0, a gate line that
+// is not a failure, no changed kind, the version and size lines, and
+// `result intact`.
+function parseCheck(stdout) {
+  const text = String(stdout || '')
+  const failures = []
+  let gate = false
+  let version = null
+  let bytes = null
+  let lines = null
+  let result = null
+  for (const raw of text.split('\n')) {
+    const line = raw.trim()
+    let m
+    if (line === 'gate none' || /^gate \S+ ok$/.test(line)) gate = true
+    else if ((m = /^gate (\S+) failed(?::\s*(.*))?$/.exec(line))) {
+      gate = true
+      failures.push(m[2] ? `gate ${m[1]}: ${m[2]}` : `gate ${m[1]}`)
+    } else if ((m = /^kind (\S+) changed(?::\s*(.*))?$/.exec(line))) failures.push(m[2] ? `${m[1]}: ${m[2]}` : m[1])
+    else if ((m = /^version (-?\d+) (-?\d+)$/.exec(line))) version = [Number(m[1]), Number(m[2])]
+    else if ((m = /^bytes (\d+) (\d+)$/.exec(line))) bytes = [Number(m[1]), Number(m[2])]
+    else if ((m = /^lines (\d+) (\d+)$/.exec(line))) lines = [Number(m[1]), Number(m[2])]
+    else if ((m = /^result (intact|changed)$/.exec(line))) result = m[1]
+  }
+  const exit = exitStatus(text)
+  const complete = gate && version !== null && bytes !== null && lines !== null && result !== null
+  const intact = complete && exit === 0 && result === 'intact' && failures.length === 0
+  let problem = ''
+  if (!complete) problem = `unparsable check output (exit ${exit === null ? 'missing' : exit})`
+  else if (failures.length) problem = failures.join('; ')
+  else if (!intact) problem = `check failed (exit ${exit === null ? 'missing' : exit}, result ${result})`
+  return {
+    intact,
+    problem,
+    versionBefore: version ? version[0] : null,
+    versionAfter: version ? version[1] : null,
+    bytesBefore: bytes ? bytes[0] : null,
+    bytesAfter: bytes ? bytes[1] : null,
+    linesBefore: lines ? lines[0] : null,
+    linesAfter: lines ? lines[1] : null,
+  }
+}
 // TEST-END simplify-corpus-decide
 
 const CODE_KINDS = new Set(['javascript', 'python', 'shell', 'rust', 'toml', 'workflow-toml'])
@@ -158,19 +218,12 @@ const SIMPLIFY_SCHEMA = {
   required: ['file', 'changed', 'candidate', 'usedSkill', 'summary'],
 }
 
-const CHECK_SCHEMA = {
+const RUN_SCHEMA = {
   type: 'object',
   properties: {
-    intact: { type: 'boolean', description: 'True only when the syntax gate passed and every protected-span rule held' },
-    differences: { type: 'array', items: { type: 'string' }, description: 'One line per failed gate or protected-span rule, naming it and the first differing line' },
-    bytesBefore: { type: 'integer' },
-    bytesAfter: { type: 'integer' },
-    linesBefore: { type: 'integer' },
-    linesAfter: { type: 'integer' },
-    versionBefore: { type: 'integer', description: 'The declared version in the original, or -1 when the file is not versioned' },
-    versionAfter: { type: 'integer', description: 'The declared version in the candidate, or -1 when the file is not versioned' },
+    stdout: { type: 'string', description: 'Everything the command printed, complete and verbatim' },
   },
-  required: ['intact', 'differences', 'bytesBefore', 'bytesAfter', 'linesBefore', 'linesAfter', 'versionBefore', 'versionAfter'],
+  required: ['stdout'],
 }
 
 const VERDICT_SCHEMA = {
@@ -203,7 +256,8 @@ did not. Deleting a protected span along with the redundant prose around
 it is allowed:
 - the YAML frontmatter block, byte for byte (the description is a trigger
   surface, not prose)
-- every fenced code block at any indentation
+- every fenced code block at any indentation, and every indented code
+  block
 - every double-quoted span (trigger phrases, command output, quoted rules)
 - relative links and their targets
 - every HTML comment, from <!-- to -->
@@ -215,7 +269,8 @@ breaks a link.`
 YAML frontmatter block whose \`version\` field is an integer. Apply the
 prose guidance: remove restatement, collapse duplicated steps, drop dead
 sections, preserve every rule and contract detail; never invent or alter
-a fenced block, double-quoted span, relative link, or HTML comment.
+a fenced or indented code block, double-quoted span, relative link, or
+HTML comment.
 
 The frontmatter is protected except for one line: when you change the
 body at all, increment \`version\` by exactly one. A body change without
@@ -304,76 +359,24 @@ improves, remove the candidate copy and return changed=false with a
 one-line summary; do not produce a restyling to have something to show.`
 }
 
-function syntaxGate(kind, candidate) {
-  switch (kind) {
-    case 'javascript':
-      return `sed -E 's/^return /void /' "${candidate}" > "${candidate}.module-check.mjs" && node --check "${candidate}.module-check.mjs"; echo "exit $?"; rm -f "${candidate}.module-check.mjs"`
-    case 'python':
-      return `python3 -m py_compile "${candidate}"; echo "exit $?"`
-    case 'shell':
-      return `bash -n "${candidate}"; echo "exit $?"`
-    case 'toml':
-    case 'workflow-toml':
-      return `python3 -c 'import sys, tomllib; tomllib.load(open(sys.argv[1], "rb"))' "${candidate}"; echo "exit $?"`
-    case 'rust':
-      return `rustfmt --check --edition 2021 "${candidate}" >/dev/null; echo "exit $?"`
-    default:
-      return null
-  }
+function checkCommand(kind, file, candidate) {
+  return `bash ${SCRIPTS}/simplify-check.sh ${kind} ${shellQuote(file)} ${shellQuote(candidate)}`
 }
 
-function checkPrompt(file, candidate, meta) {
-  const gate = syntaxGate(meta.kind, candidate)
-  const gateStep = gate
-    ? `1. Syntax gate. Run exactly this and read the printed exit code; nonzero
-   fails the check with one difference line quoting the first error line:
+function runPrompt(command) {
+  return `Run this one command with the Bash tool, exactly as written, once:
 
-  ${gate}
-`
-    : `1. Syntax gate: none for this kind.
-`
-  const proseStep = meta.kind === 'prose' || meta.kind === 'contract'
-    ? `2. Protected-span subset. Run exactly this:
+${command}; echo "exit=$?"
 
-  bash ${SCRIPTS}/protected-spans.sh subset "${file}" "${candidate}"; echo "exit=$?"
+Return everything it printed, complete and verbatim, as stdout. Run nothing
+else and fix nothing: the caller parses the output, and a retry or a
+workaround would hide the failure it needs to see. If the tool refuses the
+command, return the refusal as stdout.`
+}
 
-   It compares fenced blocks, double-quoted spans in prose, relative links,
-   and HTML comments, one \`kind <name>\` line each. exit=0 means the
-   candidate added or altered none of them (deleting one along with its
-   prose is allowed). Otherwise add one difference line per changed kind,
-   quoting its line as printed.
-3. Frontmatter. Run exactly this:
-
-  diff <(bash ${SCRIPTS}/protected-spans.sh extract frontmatter "${file}") <(bash ${SCRIPTS}/protected-spans.sh extract frontmatter "${candidate}"); echo "exit=$?"
-
-${meta.versioned
-     ? `   The only permitted difference is the \`version:\` line. Report
-   versionBefore and versionAfter as the integers on that line in each
-   file; any other differing line is a difference.`
-     : `   Any differing line is a difference. Report versionBefore and
-   versionAfter as -1.`}
-`
-    : meta.kind === 'workflow-toml'
-      ? `2. Version. In each file, print the first line matching
-   grep -nE '^version *=' after the [pipeline] header and report the
-   integer on it as versionBefore and versionAfter.
-3. No other protected spans for this kind.
-`
-      : `2. No protected spans for this kind. Report versionBefore and
-   versionAfter as -1.
-`
-  return `Check a candidate simplification mechanically.
-Original: ${file}
-Candidate: ${candidate}
-Kind: ${meta.kind}
-
-${gateStep}${proseStep}
-Then measure both files with wc -c and wc -l.
-
-Report intact=true only when the syntax gate exited 0 and every
-protected-span and frontmatter rule held. You compare exit codes and
-command output, not the files by eye; do not judge the change itself,
-that is another agent's job.`
+async function run(command, opts) {
+  const out = await agent(runPrompt(command), { schema: RUN_SCHEMA, ...AGENT_CONFIG.check, ...opts })
+  return out ? out.stdout : ''
 }
 
 function verifyPrompt(file, candidate, kind, framing) {
@@ -418,9 +421,8 @@ const results = await pipeline(
     if (!simplified) return { file: t.file, kind: t.kind, status: 'rejected', reason: 'the simplifier returned nothing' }
     if (!simplified.changed) return { file: t.file, kind: t.kind, status: 'unchanged', summary: simplified.summary }
     const candidate = simplified.candidate || candidatePath(scratchDir, t.file)
-    const check = await agent(checkPrompt(t.file, candidate, t), { phase: 'Check', label: `check:${t.file}`, schema: CHECK_SCHEMA, ...AGENT_CONFIG.check })
-    if (!check) return { file: t.file, kind: t.kind, status: 'rejected', reason: 'the mechanical check returned nothing' }
-    if (!check.intact) return { file: t.file, kind: t.kind, status: 'rejected', reason: `mechanical check failed: ${check.differences.join('; ')}` }
+    const check = parseCheck(await run(checkCommand(t.kind, t.file, candidate), { phase: 'Check', label: `check:${t.file}` }))
+    if (!check.intact) return { file: t.file, kind: t.kind, status: 'rejected', reason: `mechanical check failed: ${check.problem}` }
     if (!shrank(check)) return { file: t.file, kind: t.kind, status: 'rejected', reason: `candidate is not smaller (${check.bytesBefore} -> ${check.bytesAfter} bytes)` }
     if (t.versioned && !versionBumped(check)) return { file: t.file, kind: t.kind, status: 'rejected', reason: `version not bumped by exactly a greater integer (${check.versionBefore} -> ${check.versionAfter})` }
     return { file: t.file, kind: t.kind, status: 'checked', candidate, check, summary: simplified.summary, usedSkill: simplified.usedSkill }

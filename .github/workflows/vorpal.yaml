@@ -93,13 +93,15 @@ jobs:
 
       - run: bash tests/simplify-corpus-decide.test.sh
 
+      - run: bash tests/simplify-corpus-dry-run.test.sh
+
+      - run: bash tests/simplify-corpus-scripts.test.sh
+
       - run: bash tests/tdd-preflight.test.sh
 
       - run: bash tests/tighten-decide.test.sh
 
       - run: bash tests/tighten-dry-run.test.sh
-
-      - run: bash tests/tighten-scripts.test.sh
 
       - run: bash tests/tribunal-cast-error-surfaced.test.sh
 

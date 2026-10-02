@@ -176,7 +176,6 @@ get 'o.empty.problem' | grep -q '^unparsable'; ok $? 'empty runner output is rep
 
 ! grep -nE '(^|[^A-Za-z0-9_])path=' "$TIGHTEN" "$SIMPLIFY"; ok $? 'no prompt assigns path= (zsh ties path to PATH)'
 ! grep -nE "(awk|tr -s|grep -o[A-Za-z]*) '" "$TIGHTEN"; ok $? 'tighten.js carries no inline extractor; protected-spans.sh owns them'
-grep -q 'protected-spans.sh subset' "$SIMPLIFY"; ok $? 'simplify-corpus.js checks Markdown spans through the script in subset mode'
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

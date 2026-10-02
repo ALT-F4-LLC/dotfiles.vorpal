@@ -88,11 +88,12 @@ argument that matches:
   belong to `docket-refit`.
 
 Inside a file, `scripts/protected-spans.sh` compares frontmatter, fenced
-blocks at any indentation, headings, and HTML comments, and in prose the
-inline code, double-quoted spans, section and line references, and relative
-links, between original and candidate; the workflow rejects a chunk where
-any differs. Backticks and quote marks pair only within a paragraph, so a
-quote mark inside a code snippet never locks the prose after it.
+blocks at any indentation, indented code blocks, headings, and HTML
+comments, and in prose the inline code, double-quoted spans, section and
+line references, and relative links, between original and candidate; the
+workflow rejects a chunk where any differs. Backticks and quote marks pair
+only within a paragraph, so a quote mark inside a code snippet never locks
+the prose after it.
 
 Never run `just activate`. Never push.
 
@@ -147,13 +148,15 @@ Workflow({ scriptPath: "<absolute installed path to the mode's script>", args: {
 simplifier per file, which copies the file into the scratch mirror, invokes
 the built-in simplify skill on the copy where the Skill tool is available
 and applies its four criteria directly otherwise, or returns
-`changed=false` for a file already simple. A mechanical check then runs the
-kind's syntax gate, diffs protected spans for Markdown with
+`changed=false` for a file already simple. A runner agent then executes
+`scripts/simplify-check.sh` and returns its report verbatim. The script
+runs the kind's syntax gate, checks Markdown's protected spans with
 `scripts/protected-spans.sh subset` (a candidate may delete protected
-content but never add or alter it), reads the version of a
-versioned docket file, and measures both files; a candidate that fails a
-gate, did not shrink, or lacks a strictly greater version is rejected in
-code. Survivors face three refuters, each leading from a different angle
+content but never add or alter it) and its frontmatter, reads the version
+of a versioned docket file, and measures both files. The workflow parses
+the report and rejects in code a candidate that fails a gate, did not
+shrink, lacks a strictly greater version, or left no parsable report.
+Survivors face three refuters, each leading from a different angle
 (behavior or meaning, the caller or reader, churn), and a candidate needs
 two upholds to be accepted. The return carries `accepted`, each with its
 `file`, `kind`, `candidate` path, `confirm` and `versioned` flags, byte and
@@ -191,17 +194,24 @@ Separate the accepted list first; only simplify mode returns `confirm`:
   yes.
 - **Everything else** lands now.
 
-Check each Markdown candidate yourself before copying it, since the
-workflow read the check's output only through a runner agent. Use `equal`
-in tighten mode, and `subset` for a prose or contract file in simplify
-mode:
+Check each candidate yourself before copying it, since the workflow read
+the check's report only through a runner agent. Run the check the workflow
+ran, with the accepted entry's `kind` in simplify mode:
 
 ```bash
+# tighten mode
 bash ~/.claude/skills/simplify-corpus/scripts/protected-spans.sh equal "<file>" "<candidate>"
+# simplify mode
+bash ~/.claude/skills/simplify-corpus/scripts/simplify-check.sh <kind> "<file>" "<candidate>"
 ```
 
 Exit 0 lands it. Any other exit drops it from the accepted list, with the
-report's `changed` lines as its reason.
+report's `changed` or `failed` lines as its reason.
+
+Before the first copy, run once, on the committed files, every gate and
+suite in the list below that this landing will run and §1 did not
+baseline, and add their failure lines to the baseline. A suite already
+red before the pass is never this pass's breakage.
 
 Copy each candidate to land over its file serially, in this session, in
 the order returned:
@@ -219,17 +229,19 @@ Then run the gates from the repository root and compare their failure
 lines with the baseline from §1:
 
 - always: `just crossref-check` and `just prose-gates`;
+- when a skill file landed: `just doc-validate`;
+- for every landed file, each suite under `tests/` that names it, found
+  with `grep -lF`: by its path below `src/user/claude_code/` in tighten
+  mode (for example `skills/docket-run/SKILL.md`, since nearly every suite
+  names some `SKILL.md`), and by its basename in simplify mode;
 - in simplify mode, also:
   - `just frozen-drift-check` (when it was available at baseline);
   - when a `workflows/*.js` file landed: `bash tests/workflow-module-parse.test.sh`;
-  - when a skill file landed: `just doc-validate`;
   - when a contract, fragment, or docket workflow TOML landed:
     `bash tests/contract-corpus.test.sh`, `bash tests/contract-includes.test.sh`,
     and `bash tests/contract-cluster-keys.test.sh`, the suites that pin
     clauses, includes, and key names a structural cut can remove;
-  - when `settings.rs` landed: `just self-hygiene` and `just tests`;
-  - for every landed file: each suite under `tests/` whose text names the
-    file's basename, found with `grep -l`.
+  - when `settings.rs` landed: `just self-hygiene` and `just tests`.
 
 A line absent from the baseline that names a landed file, or the skill it
 belongs to, is this pass's breakage: a dead anchor, a renamed reference the

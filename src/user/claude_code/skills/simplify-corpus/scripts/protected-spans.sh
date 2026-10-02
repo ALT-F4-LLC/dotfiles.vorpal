@@ -11,14 +11,16 @@
 #
 # equal (tighten mode): every kind extracts identically from both files, so a
 # rewrite may reword prose but never a protected span.
-# subset (simplify mode): the candidate carries no fence, quote, link, or
-# comment the original lacks; deleting one along with its prose is allowed.
+# subset (simplify mode): the candidate carries no code block, quote, link,
+# or comment the original lacks; deleting one along with its prose is
+# allowed.
 # extract prints one kind's items from one file, for tests and debugging.
 #
 # Kinds:
 #   frontmatter  the leading --- block, line for line
 #   fences       every fenced code block, line for line
-#   headings     every heading line outside fences, in order
+#   indented     every indented code block, line for line
+#   headings     every heading line outside code blocks, in order
 #   comments     every line of an HTML comment outside fences, in order
 #   code         every inline code span in prose
 #   quotes       every double-quoted span in prose
@@ -26,8 +28,13 @@
 #   links        every link target, ](...), in prose
 #   edges        trailing blank lines and the final newline
 #
-# Prose is everything outside the frontmatter, fences, and comments, split
-# into paragraphs at blank lines, headings, and those blocks. Whitespace
+# An indented code block is a run of lines indented four or more spaces, or
+# a tab, that follows a blank line after a paragraph or heading starting in
+# column 0. After a list line the same indentation continues the list item,
+# which stays prose.
+#
+# Prose is everything outside the frontmatter, code blocks, and comments,
+# split into paragraphs at blank lines, headings, and those blocks. Whitespace
 # collapses to one space, so rewrapping a paragraph never changes a span.
 # Backticks and quote marks pair within a paragraph, and a quote mark inside
 # inline code never pairs. Pairing across the whole file once let the quote
@@ -48,8 +55,8 @@
 set -uo pipefail
 export LC_ALL=C
 
-EQUAL_KINDS="frontmatter fences headings comments code quotes references links edges"
-SUBSET_KINDS="fences quotes links comments"
+EQUAL_KINDS="frontmatter fences indented headings comments code quotes references links edges"
+SUBSET_KINDS="fences indented quotes links comments"
 
 usage() {
     echo "usage: protected-spans.sh equal|subset <original> <candidate>" >&2
@@ -66,6 +73,11 @@ extract() { # <kind> <file>
         BEGIN { MASK = sprintf("%c", 1) }
         function heading(s) { return s ~ /^(#|##|###|####|#####|######) / }
         function fence(s) { return s ~ /^[[:space:]]*```/ }
+        function indented(s) { return s ~ /^(    |\t)/ }
+        function blank(s) { return s ~ /^[[:space:]]*$/ }
+        # A column-0 line that is not a list item: an indented block after
+        # it, past a blank line, is code rather than a list continuation.
+        function opens_code(s) { return s ~ /^[^[:space:]]/ && s !~ /^([-*+]|[0-9]+[.)])[[:space:]]/ }
         function emit(k, s) { if (k == kind) print s }
         # A quote mark inside inline code is code, not quotation. Masking it
         # keeps the code text inside any quotation around it.
@@ -105,7 +117,7 @@ extract() { # <kind> <file>
         function matches(s, which) {
             while (s != "") {
                 if (which == "references") {
-                    if (!match(s, /§[0-9]+|[A-Za-z0-9_.\/-]+\.(md|js|sh|toml|json):[0-9]+/)) return
+                    if (!match(s, /§[0-9]+|[A-Za-z0-9_.\/-]+\.(md|js|ts|sh|py|rs|go|toml|json|yaml|yml):[0-9]+/)) return
                 } else if (!match(s, /\]\([^)]+\)/)) return
                 print substr(s, RSTART, RLENGTH)
                 s = substr(s, RSTART + RLENGTH)
@@ -122,12 +134,18 @@ extract() { # <kind> <file>
         NR == 1 && $0 == "---" { infm = 1; emit("frontmatter", $0); next }
         infm { emit("frontmatter", $0); if ($0 == "---") infm = 0; next }
         infence { emit("fences", $0); if (fence($0)) infence = 0; next }
-        fence($0) { flush(); infence = 1; emit("fences", $0); next }
+        fence($0) { flush(); infence = 1; emit("fences", $0); last = ""; afterblank = 0; next }
+        incode {
+            if (indented($0)) { emit("indented", $0); next }
+            if (blank($0)) { afterblank = 1; next }
+            incode = 0
+        }
         !incomment && index($0, "<!--") { incomment = 1 }
-        incomment { flush(); emit("comments", $0); if (index($0, "-->")) incomment = 0; next }
-        heading($0) { flush(); emit("headings", $0); para = $0; flush(); next }
-        /^[[:space:]]*$/ { flush(); next }
-        { para = (para == "" ? $0 : para " " $0) }
+        incomment { flush(); emit("comments", $0); if (index($0, "-->")) incomment = 0; last = ""; afterblank = 0; next }
+        afterblank && indented($0) && opens_code(last) { flush(); incode = 1; emit("indented", $0); next }
+        heading($0) { flush(); emit("headings", $0); para = $0; flush(); last = $0; afterblank = 0; next }
+        blank($0) { flush(); afterblank = 1; next }
+        { para = (para == "" ? $0 : para " " $0); last = $0; afterblank = 0 }
         END { flush() }
     ' "$2"
 }

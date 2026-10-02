@@ -275,7 +275,7 @@ it differs. Inline code, quotations, references, and links compare after
 whitespace collapses, so rewrapping a paragraph around them is fine:
 - the YAML frontmatter block, including the description (a trigger
   surface, not prose)
-- every fenced code block, heading line, and HTML comment
+- every fenced or indented code block, heading line, and HTML comment
 - every inline code span
 - every double-quoted span in prose (trigger phrases, command output,
   quoted rules)

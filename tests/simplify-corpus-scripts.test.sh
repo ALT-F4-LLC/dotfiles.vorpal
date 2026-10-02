@@ -248,7 +248,7 @@ printf '%s\n' '[pipeline' 'name = "x"' > "${WORK}/wf-bad.toml"
 check toml-bump workflow-toml "${WORK}/wf.toml" "${WORK}/wf-bumped.toml"
 passed toml-bump && grep -qx 'version 7 8' "${WORK}/toml-bump.check"; ok $? 'workflow-toml: the version is read from the [pipeline] table only'
 check toml-bad workflow-toml "${WORK}/wf.toml" "${WORK}/wf-bad.toml"
-gate_failed toml-bad toml && grep -q 'expected character \]' "${WORK}/toml-bad.check"; ok $? 'workflow-toml: a parse error fails the gate'
+gate_failed toml-bad toml && grep -q "gate toml failed: Error: bad file '-': " "${WORK}/toml-bad.check"; ok $? 'workflow-toml: a parse error fails the gate'
 check toml-plain toml "${WORK}/wf.toml" "${WORK}/wf-bumped.toml"
 grep -qx 'version -1 -1' "${WORK}/toml-plain.check"; ok $? 'plain toml reports no version'
 printf '%s\n' '[pipeline]' 'name = "x"' '' '[nodes.a]' 'version = 3' > "${WORK}/wf-unversioned.toml"

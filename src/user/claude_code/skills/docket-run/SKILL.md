@@ -7,15 +7,13 @@ description: >-
   prompt, on "pause the run", "halt the run", "pause now, kill the wave", or
   "stop for now, I'll resume later". Drives an activated Docket run to
   completion in the invoking conversation: asks the engine what is ready,
-  dispatches it,
-  launches the wave workflow once per lane unit, closes the dispatch, and repeats;
-  vote gates ride the wave, conversational gates go to tribunal.js, three
-  standing rulings answer parks machine-side, and every other park or reserved
-  matter escalates to the operator. Holds no run state (the engine schedules,
-  wave.js routes) and keeps the conductor capability in one session-private
-  file, never in a brief, tool output, or resume prompt. Distinct from
-  docket-tend,
-  which works issues without a run.
+  dispatches it, launches one wave per lane unit, closes the dispatch, and
+  repeats. Vote gates ride the wave, conversational gates go to tribunal.js,
+  three standing rulings answer parks machine-side, and every other park or
+  reserved matter goes to the operator. Holds no run state and keeps the
+  conductor capability in one session-private file, never in a brief, tool
+  output, or resume prompt. Distinct from docket-tend, which works issues
+  without a run.
 argument-hint: "[RUN-N | pause [RUN-N]]"
 ---
 
@@ -26,18 +24,17 @@ operator. The engine decides what runs, `wave.js` decides what each step
 routes to, a tribunal panel decides at gates, and the operator decides
 what the panel could not or must not.
 
-**One seat drives a run: this conversation.** `/docket-run` runs the
-engine verbs, launches the workflows, and puts gates to the operator in
-this same conversation. A background conductor agent lacks the `Workflow`
-tool and must relay every launch through a message instead. One
-conversation drives one run; a second run is a second conversation.
+**One seat drives a run: this conversation.** It runs the engine verbs,
+launches the workflows, and puts gates to the operator. A background
+conductor agent lacks the `Workflow` tool and would relay every launch
+through a message. One conversation drives one run; a second run needs a
+second conversation.
 
-**Load the `workflow-authoring` skill first, every time, before anything
-else.** `Skill({skill: "workflow-authoring"})` is your first tool call, on
-a fresh invocation and on a resume alike: it is the contract for how a
-launch is shaped, what `args` is, how a stopped run resumes, and where a
-completed run's journal lives, and it is what makes the launches below
-sanctioned.
+**Load the `workflow-authoring` skill first, every time.**
+`Skill({skill: "workflow-authoring"})` is your first tool call, on a fresh
+invocation and a resume alike. It is the contract for a launch's shape,
+what `args` is, how a stopped run resumes, and where a completed run's
+journal lives, and it sanctions the launches below.
 
 **You hold no run state**: not step ids, statuses, usage numbers, or
 artifact bodies. Every loop iteration asks the engine again.
@@ -249,40 +246,31 @@ the path or the token; every ruling stays yours.
 
 ## Which run
 
-An explicit argument always wins; bare, resolve it yourself rather than
-asking, the same split `docket-postmortem` and `docket-plan`
-use.
+An explicit argument always wins. Bare, resolve the run yourself rather
+than asking, as `docket-postmortem` and `docket-plan` do.
 
 - **`/docket-run pause [RUN-N]`**, or an ask to walk away from a driven run
   without abandoning it: go to **Pause mode**. `$RUN` is `RUN-N` when
   given, else the run this conversation drives.
 - **`/docket-run RUN-N`**: `$RUN` is `RUN-N`, verbatim; go to **Before the
   loop**.
-- **Bare `/docket-run`**: resolve "the next run" from the engine:
+- **Bare `/docket-run`**: `docket run status --json` lists every
+  non-terminal run (`planning`, `active`, `waiting-human`) in the current
+  project. Resolve `$RUN` once, by this precedence:
 
-  ```bash
-  docket run status --json
-  ```
-
-  This lists every non-terminal run (`planning`, `active`,
-  `waiting-human`) in the current project. Resolve `$RUN` by this
-  precedence, applied once:
-
-  1. **Any `active` or `waiting-human` run**: highest `RUN-N` if several;
-     a run already under way outranks one not started.
-  2. **Else any `planning` run**: highest `RUN-N` if several. This is
-     what `/docket-plan`'s bare mode leaves behind.
+  1. **Any `active` or `waiting-human` run**, the highest `RUN-N` if
+     several: a run already under way outranks one not started, so it is
+     never abandoned for a fresher one `/docket-plan` just recorded.
+  2. **Else any `planning` run**, the highest `RUN-N` if several: what
+     `/docket-plan`'s bare mode leaves behind. This rule lets `/loop
+     /docket-groom /docket-plan /docket-run` run bare with no operator turn
+     in between.
   3. **Else nothing to drive.** Say so plainly and stop; do not invent a
      run or ask the operator. `/docket-plan` puts one in front of you next.
 
-  Rule 2 makes `/loop /docket-groom /docket-plan /docket-run` work as a
-  bare-invoked loop with no operator turn in between. Rule 1 keeps a run
-  already being driven from being abandoned for a fresher one
-  `/docket-plan` just recorded.
-
-  Once `$RUN` has a value, treat it as the targeted mode would: same
-  activation path if `planning`, same "Resuming or attaching" path if
-  `active`/`waiting-human`.
+  Then treat `$RUN` as the targeted mode would: the activation path if
+  `planning`, the "Resuming or attaching" path if `active` or
+  `waiting-human`.
 
 ## Before the loop
 
@@ -413,27 +401,6 @@ Reconcile and close as usual, then escalate once, quoting the refusal and
 the `wave.js` line it names. Never retry, never reword the brief; the fix
 is a definition edit the operator installs outside this run.
 
-**A run still in `planning` is not yours to activate alone.** Activation
-is a panel gate per **Gates**, except a run `docket-bootstrap` created and
-has not activated, which is the operator's alone (docket-bootstrap §5).
-Activation pins config bytes for the whole run, from `~/.docket/config`
-first, then this repo's `.docket/config/`. Run three checks first: two on
-the tree, one on standing ballots.
-
-**Stale install:** diff the dotfiles checkout's corpus source against the
-installed corpus:
-
-```bash
-DOCKET_SRC=~/Development/repository/github.com/ALT-F4-LLC/dotfiles.vorpal.git/main/src/user/docket
-diff -r "$DOCKET_SRC/config" "$HOME/.docket/config"; diff -r "$DOCKET_SRC/bin" "$HOME/.docket/bin"
-```
-
-Surface any divergence; a stale pin cannot be fixed mid-run. Keep corpus
-installs between runs, since a mid-run `just activate` moves what every
-already-pinned ref resolves to, for every repo at once. `docket doctor`
-runs this check too; at activation with no `--run`, `skipped: true` is
-expected since the run holds no pins yet.
-
 **Prune the last session's worktree leftovers first, every time.** A
 session cannot delete a wave worktree's metadata directory
 (`<bare repo>/worktrees/<name>`): the harness keeps those paths on the
@@ -466,11 +433,13 @@ docket doctor --run $RUN --source ~/Development/repository/github.com/ALT-F4-LLC
 diff -rq "$CC_SRC/workflows" ~/.claude/workflows; diff -rq "$CC_SRC/hooks" ~/.claude/hooks   # $CC_SRC = <that checkout>/src/user/claude_code
 ```
 
-`doctor` writes nothing and runs seven checks without short-circuiting: seat
-location, store access, project binding (the cwd resolves to a registered
-project, reported and never registered by this verb), both staleness trees,
-`run verify-pins`, the
-`.docket/config` symlink debris check below, and a straggler report.
+`doctor` writes nothing and runs seven checks without short-circuiting:
+seat location, store access, project binding (the cwd resolves to a
+registered project, reported and never registered by this verb), both
+staleness trees, `run verify-pins`, the `.docket/config` symlink debris
+check (its disposition is in
+[references/activation.md](references/activation.md)), and a straggler
+report.
 Read its return, not its last line: `clean` requires every check OK;
 `skipped` on the pin check means you gave no `--run`, not a pass on an
 active run; `checks[]` carries each verdict (`OK`, `FAIL`, `DRIFT`,
@@ -539,112 +508,32 @@ for a hook denial in the same window before touching `settings.json` —
 re-deriving the same allowlist read the prior session already made is
 not an investigation, it is repeating the guess.
 
-**Pins vs disk.** A run's pins are a third set of bytes that can disagree
-with both source and install: the engine froze them at activation, and
-every `just activate` since has moved the install out from under them. On
-an already-active run, before the first dispatch, ask the engine about
-the pins:
+**Pins vs disk.** On an already-active run, before the first dispatch,
+run `docket run verify-pins $RUN --json`. It is read-only, safe on any run
+in any status, and answers for every pin the run holds. Exit 0 means
+proceed. Any non-zero exit is a stop-and-report with no route past drift,
+and `docket step render` is no substitute: it can exit 0 over a mismatch.
+The same holds when a `pin_drift` field on `dispatch open` or `run status`
+reports drift mid-run. Before presenting either stop, read
+[references/pins.md](references/pins.md) in full for what each exit means
+and the operator's dispositions; it also holds the hand check for a seat
+whose binary predates `run verify-pins`. Never run `docket run repin` on
+your own judgment, whatever remedy the engine names, and never offer
+"proceed anyway". Keep corpus installs between runs, since a mid-run
+`just activate` moves what every already-pinned ref resolves to, for
+every repo at once.
 
-```bash
-docket run verify-pins $RUN --json
-```
+**A run still in `planning` is not yours to activate alone.** Activation
+is a panel gate per **Gates**, except a run `docket-bootstrap` created and
+has not activated, which is the operator's alone (docket-bootstrap §5).
+Activation pins config bytes for the whole run, from `~/.docket/config`
+first, then this repo's `.docket/config/`. Run three checks first: two on
+the tree, one on standing ballots.
 
-That verb is read-only, safe on any run in any status, and answers for
-every pin the run holds, unlike `step render` or payload validation,
-which check only the refs they read. Read the exit code:
-
-- **0**: every pin is sound. Proceed.
-- **4**: drift. JSON carries `"code":"CONFLICT"` and an `error` naming
-  each changed file with both hashes.
-- **2**: a pinned ref no longer resolves at all.
-
-Any non-zero exit is a stop-and-report: the engine resolves every row's
-routing from the pinned bytes, so a drifted ref is refused wherever it is
-read, and there is no route past drift. Do not substitute `docket step
-render` for this check: it can return exit 0 while a pin mismatch is
-already present.
-
-**Dispositions at a pin-drift stop-and-report, all four executable, none
-run unprompted:**
-
-- **Show the diffs.** Give the operator the drifted refs (`docket run
-  verify-pins $RUN` names each with both hashes) and, where useful, the
-  byte diff (the pinned bytes usually survive in the previous vorpal
-  store generation).
-- **Repin**: `docket run repin RUN-N --reason R`, when the operator
-  judges the drift adoptable, typically their own additive corpus edit.
-  It adopts current bytes as the run's pins for steps not yet claimed.
-  `--reason` is required and the verb refuses without it, also refusing
-  while any step is claimed, while a dispatch is open, on a done,
-  abandoned, or fully-terminal run, and when a ref no longer resolves at
-  all (restore the file instead). Completed steps' provenance is never
-  rewritten; a `run-repinned` event carries old sha, new sha, and reason
-  per changed ref. Repinning is all-or-nothing and a no-op with no drift.
-- **Pause the run** (**Pause mode**) and hand the decision back with a resume prompt.
-- **Abandon and re-docket-plan**, re-pinning from scratch on current disk.
-
-Repin moves the recorded agreement every future packet verifies against;
-offer it as a disposition with the operator's reason, never on your own
-judgment to unstick a dispatch.
-
-**"Proceed anyway / accept the risk" is not one of them; never offer it.**
-The hook refuses the relaunch outright. Re-activating is not a back door
-either: it expands newly-unblocked phases only and inherits the original
-pin set, by design, so in-flight work can rely on it.
-
-**Fallback only, for a seat whose binary predates `run verify-pins`.**
-Walk the pins by hand (`.data.pins`; `.data.steps` is a status/count
-bucket, not step rows):
-
-```bash
-docket run status $RUN --json | jq -r '.data.pins // [] | map(select(.kind == "file"))
-  | "file pins: \(length)",
-    (.[] | "\(.ref) \(.sha256)")' \
-  | { read -r count_line; echo "$count_line"; while read -r ref sha256; do
-        path=~/.docket/config/"$ref"                  # name@version refs live in the DB, not on disk
-        got_line=$(shasum -a 256 "$path" 2>/dev/null); got=${got_line%% *}
-        [ -n "$got" ] && [ "$got" = "$sha256" ] || echo "PIN MISMATCH $ref disk ${got:-MISSING} pinned $sha256"
-      done; }
-```
-
-Count the rows before believing the verdict: `.pins[]` alone selects
-nothing from `{data, ok}`, so zero file pins means your path is wrong, not
-a clean run.
-
-**Transition debris:** a `.docket/config/` full of symlinks is the
-retired link-farm model. Any symlink `find .docket/config -type l`
-reports is a stop-and-report for the operator to delete; real files there
-are legitimate. A repo with no `.docket` is normal and this check is
-vacuous. Both tree checks run before the panel; neither is a panel
-matter.
-
-**A third check, last before the panel: no activation proposal is
-already standing for this run.** An activation ballot is a conversational
-gate that nothing sweeps automatically: `run abandon` auto-closes only
-ballots the run's own vote steps opened. Before `docket vote create`,
-list what is standing:
-
-```bash
-docket vote list --json          # open proposals only, by default
-```
-
-There is no `--run` filter; match on description and `linked_issues`
-against the fresh dry-run's binding, then `docket vote show <id>` to
-confirm. Reconcile every match:
-
-- **Adopt it** when it names this run and the same binding. Pass its id
-  to tribunal.js as `voteId`; top up missing seats per **A panel that
-  cannot finish escalates** if short of quorum.
-- **Close it** when superseded: `docket vote close <id> --reason
-  "superseded by <new-proposal-id>"`. `--reason` is required.
-
-Skip this and ballots accumulate silently, showing the operator
-outstanding work that does not exist and admitting a panel past a reap
-hold.
-
-Then `docket run activate $RUN --dry-run`, and put the binding to the
-panel: issues bound, steps, pins, any lint (`scope_warnings`, verbatim),
-plus what the three checks said, as the proposal's context.
+[references/activation.md](references/activation.md) holds the three
+checks, the dry-run you put to the panel, and the hand-check of its
+binding. Read it in full before any activation or re-activation, whether
+the panel or the operator decides it.
 
 **When the panel returns, three separate calls, in order, none sharing a
 tool call with another:**
@@ -675,18 +564,6 @@ tool call with another:**
 
 Post a successful activation as the first milestone of any standing
 external-tracker obligation, before the first dispatch.
-
-**Hand-check every binding for wrong-one routing.** The dry-run flags zero
-matches or several but cannot flag exactly-one-wrong match, since every
-`[match]` block discriminates on labels alone and a missing label binds
-`standard-change` silently. For each `bound_issues[]` row, read the
-issue's labels, title, and scope and map them against the corpus's
-`labels_any`/`unless_labels` (`~/.docket/config/workflows/*.toml`): an
-issue bound to the baseline whose title or scope lives in a variant's
-domain (TUI/UI paths without `ui`, canonically) is a routing flag, put
-into the proposal context verbatim. Fixing it before the gate is one
-`docket issue label add` plus a fresh dry-run; after activation, only
-re-docket-planning can fix it.
 
 **A bound issue freezes at the activation that binds it, not at the
 re-activation that expands it.** Its body, labels and scope snapshot
@@ -749,8 +626,7 @@ gates live inside it, each stated where it arises, including symlink
 debris, a `next` set disagreeing with the presented roster, unexpanded
 added issues, unprovenanced parked payload, a cherry-pick conflict,
 staged but uncommitted content, and any unpredicted engine state. These
-go straight to
-the operator, never a panel, and none of them ends the run.
+go straight to the operator, never a panel, and none of them ends the run.
 
 **An unexpected state change freezes every mutating verb.** Diagnose with
 read verbs only (`step show`, `step gates`, `run status`, `events list`);
@@ -837,31 +713,32 @@ runs these during `dispatch open`. Open, then close and ask again.
 docket dispatch open --run $RUN --limit 240 --json
 ```
 
-**Always pass `--limit 240`** (default `0` is unlimited, and a large
-ready set can exceed both the `Read` tool's payload cap and the
-`Workflow` tool's practical inline-arg size). It is a payload-size cap,
-not a defense against the harness's separate 1000-agent lifetime cap:
-wave.js reserves each row's projected agents against a 900-agent budget
-and defers what the remainder cannot cover (`not-launched-agent-budget`,
-re-offered next dispatch), so a manifest of any size is safe to hand the
-wave whole; you never hand-compute a safe `--limit` for that cap. 240
-rows runs comfortably under both ceilings. The engine orders the offer
-stage-major and applies `--limit` as a prefix, so a cap drops the deepest
-stages of every issue first, never a whole issue; a large run spans more
-waves as a result. If `dispatch open --json` still exceeds size limits,
-never hand-chunk the JSON (the manifest is hashed and a retyped copy
-won't match): run `dispatch verify`, `dispatch abandon` naming the size
-constraint in `--reason`, then reopen smaller. To inspect an oversized
-answer safely, pipe `jq -c '.data.rows[]' > rows.jsonl` and page it with
-`Read`'s `offset`/`limit`, never reconstructing rows by hand for the
-`Workflow` call. The same paging is how the rows reach the launch at all:
-`Read` truncates a single-line file near 25K tokens (a 192-row manifest is
-70 KB), so **Split the launches** below writes each launch's rows one per
-line; `Read` each launch file in pages of at most 96 lines until its rows
-are in context, then emit them as that launch's literal `rows` value.
-Every row is emitted exactly once across the dispatch. Never emit from a
-truncated view or spend turns probing byte offsets or splitting a file by
-hand.
+**Always pass `--limit 240`.** The default `0` is unlimited, and a large
+ready set can exceed the `Read` tool's payload cap and the `Workflow`
+tool's practical inline-arg size; 240 rows stays under both. The cap
+governs payload size only. wave.js handles the harness's separate
+1000-agent lifetime cap, reserving each row's projected agents against a
+900-agent budget and deferring the rest (`not-launched-agent-budget`,
+re-offered next dispatch), so hand it the whole manifest and never
+hand-compute a `--limit` for that cap. The engine orders the offer
+stage-major and applies `--limit` as a prefix, so a cap drops every
+issue's deepest stages first, never a whole issue, and a large run spans
+more waves.
+
+If `dispatch open --json` still exceeds size limits, never hand-chunk the
+JSON (the manifest is hashed and a retyped copy won't match): run
+`dispatch verify`, then `dispatch abandon` naming the size constraint in
+`--reason`, then reopen smaller. To inspect an oversized answer, pipe
+`jq -c '.data.rows[]' > rows.jsonl` and page it with `Read`'s
+`offset`/`limit`, never reconstructing rows by hand.
+
+Paging is also how rows reach a launch. `Read` truncates a single-line
+file near 25K tokens (a 192-row manifest is 70 KB), so **Split the
+launches** below writes each launch's rows one per line. `Read` each
+launch file in pages of at most 96 lines until its rows are in context,
+then emit them as that launch's literal `rows` value, each row exactly
+once across the dispatch. Never emit from a truncated view, probe byte
+offsets, or split a file by hand.
 
 **No policy crosses a launch.** Every row carries `model`, `effort`,
 `variant` resolved by the engine from pinned policy.toml. Never `cat`,
@@ -912,17 +789,17 @@ Workflow({ scriptPath: "<absolute installed path to wave.js>", args: {rows: <lau
 **A dispatch is N wave launches, one per lane unit, N from Split the
 launches below.** One Workflow invocation runs at most 16 agents at once
 and 1000 over its life, and a nested workflow shares both with its
-parent; separate top-level launches share neither, and 20 of them ran
-concurrently with none refused or queued (measured). So each issue lane
-gets its own launch, its own 16 slots and its own 1000-agent budget, and
-no lane's agents queue behind another's. Each launch gets only its own
-rows and its `unit`; a writer lane the engine never co-staged with
-another shares that one's launch so the wave still serializes them. Emit
-all N launches in ONE assistant message, as separate `Workflow` calls,
-never held back for a sibling's return: launches spread over several
-messages started up to 17 minutes after the first on past runs, while
-one message put them about a minute apart. wave.js refuses `of` above 20
-and refuses the retired `shard` arg.
+parent; separate top-level launches share neither (20 ran concurrently,
+none refused or queued, measured). So each issue lane gets its own
+launch, 16 slots, and 1000-agent budget, and no lane's agents queue
+behind another's. Each launch gets only its own rows and its `unit`; a
+writer lane the engine never co-staged with another shares that one's
+launch so the wave still serializes them. Emit all N launches in ONE
+assistant message, as separate `Workflow` calls, never held back for a
+sibling's return: on past runs, launches spread over several messages
+started up to 17 minutes after the first, while one message put them
+about a minute apart. wave.js refuses `of` above 20 and the retired
+`shard` arg.
 
 `tribunal` is the absolute installed path to `tribunal.js`, resolved the
 same way as wave.js's; wave.js seats in-wave vote rows through it. `cwd`
@@ -935,9 +812,12 @@ snapshot. `scriptPath` is the only invocation that provably runs the
 current file.
 
 Pass `args` as `{rows, unit, tribunal, cwd, harnessCap}`, plus
-`integrated` when the dispatch carries a fix round's review fanout, the
-same map in every launch. Emit it as a literal JSON value, never
-hand-stringified. There is no `policyPath`/`policyText`; routing is on the
+`integrated` when the dispatch carries a fix round's review fanout
+(instances `name@N#k` with N ≥ 2), the same map in every launch. Read
+[references/fix-rounds.md](references/fix-rounds.md) in full before
+building it: which sha each issue gets, the round off-by-one trap, and
+when an entry is omitted.
+Emit it as a literal JSON value, never hand-stringified. There is no `policyPath`/`policyText`; routing is on the
 rows. Pass rows verbatim as the launch file holds them, with
 `model`/`effort`/`variant` intact.
 
@@ -946,35 +826,6 @@ context right after the Workflow tool returns (the hook emits it on the
 PostToolUse channel the model sees; its stderr goes only to the debug
 log). A clean launch produces none; any advisory it delivers is a
 standing discrepancy to read, not scroll past.
-
-**A dispatch carrying a fix round's review fanout also carries
-`integrated`.** For instances `name@N#k` with N ≥ 2, map each such issue
-to the sha of the integration commit of the write step the judged tree
-was built on: round N-1's integration (fix@(N-1)'s, or the implement
-round's when N-1 is the implement round), never fix@N's own, since fix@N
-produced the tree the judges are about to read. wave.js asserts the
-judged tree descends from that commit (`git merge-base --is-ancestor
-<integrated sha> <target sha>`) and parks the round `parked-base-ancestry`
-when it does not. The sha must be the integrated one; the writer's sha is
-never an ancestor of the shared branch even after landing.
-
-**Round off-by-one trap:** if fix@N has already been integrated before its
-own fanout dispatches, fix@N's integration commit is the wrong sha (it
-post-dates the judged tree and will park every healthy round). Ask "which
-write step built the tree these judges will read?" and pass the
-integration of the one before it. Derive it fresh each time: the writer
-sha for round N-1 is that round's change-summary first line, and its
-integration commit is `git log --format='%H %s' --grep="cherry picked
-from commit <writer sha>"` on the shared branch. Confirm direction: `git
-log -1 --format=%B <the sha you are about to pass>` must not end in
-`(cherry picked from commit <the round's own writer sha>)`.
-
-Omit the field only with no fix-round fanout at all. Omit one issue's
-entry only when its previous round was never integrated (no matching
-`cherry picked from commit` trailer on the shared branch); a fanout for
-round N dispatched alongside fix@N still needs round N-1's entry.
-wave.js fails open on a missing entry and logs it, but an entry you
-cannot re-derive is omitted, never guessed.
 
 **Keep human rows; hand the wave everything else.** Filter out only
 `kind: "human"` rows. Pass through executor rows (ready and `staged`
@@ -1004,13 +855,14 @@ python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$ROWS_FILE" "$LAUNCH_
 It reads the kept rows as one JSON array or as JSON lines, prints N alone
 on stdout, writes `launch-<i>.jsonl` (launch i's rows, one per line) and
 `launches.json` (each launch's `index`, `of`, `classCap`, `harnessCap`,
-row count and lanes) under `$LAUNCH_DIR`, and names each unit's launch on stderr for
-the dispatch report. Use a fresh `$LAUNCH_DIR` per dispatch under the
-session's scratchpad (for example `<scratchpad>/launch-DISPATCH-M`). Read
-`launches.json`, then each launch file, and emit launch i with those rows
-and `unit: {index, of, classCap}` and `harnessCap` copied from entry i. wave.js no longer
-re-derives the partition, so a row copied into the wrong launch is caught
-only by the engine's own claim check: copy each launch file whole.
+row count and lanes) under `$LAUNCH_DIR`, and names each unit's launch on
+stderr for the dispatch report. Use a fresh `$LAUNCH_DIR` per dispatch
+under the session's scratchpad (for example
+`<scratchpad>/launch-DISPATCH-M`). Read `launches.json`, then each launch
+file, and emit launch i with those rows, `unit: {index, of, classCap}`,
+and `harnessCap` copied from entry i. wave.js no longer re-derives the
+partition, so only the engine's claim check catches a row copied into the
+wrong launch: copy each launch file whole.
 
 Pass rows through unchanged beyond the kind filter and the split, with no
 reordering, dropping, or adding, and never sequence or hold rows back
@@ -1035,30 +887,28 @@ notification is the only status surface, and nothing in the harness
 bounds it: a launch whose Workflow died (a harness restart, a stray
 `TaskStop`) sends nothing, the run-guard allows the stop because the
 dispatch is open, and the dispatch stays open until a later session's
-`next` refuses it. So the bound is yours. Once a launch has been
-silent for three times the run's `dispatch.grace` (read it from
-`docket run status $RUN --json`) with no phase advancing in its task
-output, stop waiting: run `docket dispatch verify --run $RUN` and
-`docket step show STEP-N` for every step that launch ran. A step that
-recorded is fine and only the notification was lost; a step still claimed
-by a spawn whose task is gone is the crashed-relay case in step 3's
+`next` refuses it. So the bound is yours. Once a launch has been silent
+for three times the run's `dispatch.grace` (from `docket run status $RUN
+--json`) with no phase advancing in its task output, stop waiting: run
+`docket dispatch verify --run $RUN` and `docket step show STEP-N` for
+every step that launch ran. A recorded step only lost its notification; a
+step still claimed by a spawn whose task is gone is step 3's
 **Crashed-relay reconciliation**. Never end the session on an open
-dispatch you have stopped waiting for without that check.
+dispatch you stopped waiting for without that check.
 
 **An agent idle for 15 minutes wakes you; the launch's notification does
 not.** A wave agent parked on a permission prompt leaves its launch's task
 output empty and sends nothing until it finishes, so at dispatch open,
-beside the launches, start ONE watcher for the whole dispatch as a Bash
-call with `run_in_background: true`, listing every launch's transcript
-directory. It reads the waves' agent transcripts (`agent-<agentId>.jsonl`
-in each launch's transcript directory, the same `<transcript-dir>`
-wave-usage reads), takes each file's last-entry time from its
-modification time (transcripts are append-only), and exits when a
+beside the launches, start ONE watcher for the whole dispatch: a Bash
+call with `run_in_background: true` listing every launch's transcript
+directory (the same `<transcript-dir>` wave-usage reads). It takes each
+agent transcript's (`agent-<agentId>.jsonl`) last-entry time from its
+modification time, since transcripts are append-only, and exits when a
 running agent's transcript has had no new entry for 15 minutes. Its exit
 is a completion notification, so it re-invokes you mid-wave without
-busy-waiting, foreground sleep loops, or `ScheduleWakeup`; the loop's
-`sleep` runs inside the background task. Its output names the idle
-agent's step ID:
+busy-waiting, foreground sleep loops, or `ScheduleWakeup`; the `sleep`
+runs inside the background task. Its output names the idle agent's step
+ID:
 
 ```bash
 DIRS="<transcript-dir-0> <transcript-dir-1>"   # every launch of this dispatch
@@ -1164,23 +1014,18 @@ unquoted `echo ====`.) Sync any standing external-tracker milestone on
 this same notification.
 
 **This order binds one dispatch's own sequence, not the relationship
-between different dispatches.** When more than one dispatch or panel is
-genuinely in flight, launch their `wave-usage.js` joins concurrently;
-each join still precedes its own dispatch's write, verify, and close.
-
-"Precedes" above is the order of calls (join, then verify, then close), not
-a claim about when the join's own usage record lands: the engine's grace
-window can still bill a step after the close call returns, which
-`wave-usage.js`'s own header comment explains.
+between dispatches.** When more than one dispatch or panel is genuinely
+in flight, launch their `wave-usage.js` joins concurrently; each join
+still precedes its own dispatch's write, verify, and close. "Precedes" is
+the order of calls, not when the join's usage record lands: the engine's
+grace window can still bill a step after the close returns, as
+`wave-usage.js`'s header comment explains.
 
 Two ways the back-fill gets skipped, both losing the run's only record of
-its spend:
-
-- **"Nothing was claimed" is not a reason to skip it.** A wave whose
-  spawns all failed still burned tokens. Skip only when the join itself
-  returns no rows.
-- **Launch the join before diagnosing the wave's result**, since an
-  interrupt mid-diagnosis takes the window with it.
+its spend: treating **"nothing was claimed"** as a reason (a wave whose
+spawns all failed still burned tokens; skip only when the join itself
+returns no rows), and **diagnosing the wave's result before launching the
+join** (an interrupt mid-diagnosis takes the window with it).
 
 **A `verify` refusal on a step that recorded and then parked is
 expected, not a finding.** A step that moved `ready` → `waiting-human` is
@@ -1263,8 +1108,7 @@ ledger only through the transcripts, in the panel back-fill below.
 Read `verify`'s answer by shape, not exit alone, per the refusal rule
 above (dead lease, reaped claim). `close`'s own reconciliation
 (`close_reason: "reconciled"`) remains authoritative and refuses outright
-on a genuine
-discrepancy.
+on a genuine discrepancy.
 
 **This is the transcript-token path, not a workaround for one.** An
 executor cannot observe its own token consumption; tokens reach the
@@ -1273,12 +1117,13 @@ record --usage '{"unit": n, ...}'` is the other channel, opaque to the
 engine, at most 32 units per call; `budget.unit` names the one unit the
 run's cap counts.
 
-**Launch wave-usage over the transcript directory**, the installed
-`~/.claude/workflows/wave-usage.js`, with `args: {dir, mode: "steps", rows, statuses, exclude: []}`
-(pass `rows`/`statuses` verbatim, per the crashed-relay join's own comment
-above, so the coordination section is measured rather than reported
-`null`). It fans one low-effort agent per `agent-*.jsonl` file to run a
-fixed jq program, and returns `rows`: four typed units per step,
+**Launch wave-usage over the transcript directory**: the installed
+`~/.claude/workflows/wave-usage.js`, with
+`args: {dir, mode: "steps", rows, statuses, exclude: []}`, passing
+`rows`/`statuses` verbatim (per the join's comment above) so the
+coordination section is measured rather than `null`. It fans one
+low-effort agent per `agent-*.jsonl` file to run a fixed jq program and
+returns `rows`: four typed units per step,
 deduplicated by message id, keyed by the step each agent's `docket step
 claim/record STEP-N` obligation names. A read-only probe with no
 claim/record obligation sums into `overhead`, attributed to no step,
@@ -1287,9 +1132,10 @@ spend. Report that total separately; never `exclude` your way around it.
 The workflow throws when a brief names no step or an agent carries no
 usage; report that rather than papering over it. Only if the installed
 workflow is absent (drift, stop-and-report) delegate to one
-`executor-read` agent, briefed verbatim with **Where the numbers
-actually are** below. Either way, check the shape (every dispatched step
-present, quantities integers) before piping.
+`executor-read` agent, briefed verbatim with
+[references/usage-join.md](references/usage-join.md). Either way, check
+the shape (every dispatched step present, quantities integers) before
+piping.
 
 A background helper is invisible to `ListAgents` while it runs; its
 completion notification is the only status surface (**Seat**'s
@@ -1323,26 +1169,6 @@ reported spend`.
 Surface any `waiting-human` steps, the three standing rulings under
 **Gates** first, the operator for whatever remains, then go back to step
 1.
-
-**Where the numbers actually are.** The journal directory holds three
-file kinds, and only one carries usage:
-
-- `journal.jsonl`: `started`/`result` per agent, no usage, no step id.
-- `agent-<agentId>.meta.json`: `{agentType, spawnDepth, model}`; again
-  no usage, no step id.
-- `agent-<agentId>.jsonl`: the agent's own transcript. Usage lives here,
-  on the assistant message: `input_tokens`, `output_tokens`,
-  `cache_creation_input_tokens`, `cache_read_input_tokens`.
-
-Attribution is a join on `agentId`: read each transcript for usage, and
-map `agentId` to a step through the agent's first `user` message.
-
-**Join on the obligation the brief carries, never on the first `STEP-N`
-mentioned.** An agent owns a step only if its brief tells it to `docket
-step claim`/`record STEP-N`. A brief that merely mentions a step (a
-read-only probe) is wave overhead: sum and report separately, attribute
-to nothing. A judge carries `docket vote cast`, not a record, and is
-keyed by seat in the panel back-fill instead.
 
 **If `close` refuses, that is the system working.** It refuses on
 discrepancies (a step claimed but never recorded, a finished step with
@@ -1418,8 +1244,8 @@ A wave result of `parked-base-ancestry` is the fix-round ancestry guard
 firing: the round's judged tree does not descend from the prior round's
 integrated commit. Treat it as your finding: verify the integration
 commit is on the shared branch, repair the tree so it descends from it (a
-stop-and-ask if conflicted), then redispatch. Never redispatch
-through it unrepaired.
+stop-and-ask if conflicted), then redispatch. Never redispatch through
+it unrepaired.
 
 A COMMIT BLOCKED report (the executor's commit was refused in its
 worktree) means you make the commit on its behalf first: `git -C <its
@@ -1510,8 +1336,8 @@ with proposal ids, since panel cost lives entirely outside the run
 ledger and can equal the run's whole tracked spend on re-docket-plan-heavy
 runs. Each named convocation owes a `--seats` back-fill, checked against
 `run report`'s `Coverage:` line. It names the issues filed for seat
-conditions ([Escalating to the operator](references/escalation.md)) and any stash your own
-integration or diagnosis created.
+conditions ([Escalating to the operator](references/escalation.md)) and
+any stash your own integration or diagnosis created.
 
 **Two more pieces of the close report are pasted literal output, never a
 recount or a paraphrase:** the landed-commit list, `git log
@@ -1626,15 +1452,15 @@ but surface it at the next operator interaction rather than discarding
 it silently. A panel cannot launder one either.
 
 **A gap filed by a wave lands in this run's project even when the work
-belongs elsewhere; re-home it at the same close.** Gaps belong to their
-respective projects (whichever repo owns the fix owns the issue). Scan
-the gap file's second line, `Home: <repo>`, never the title, and re-home
-with `docket issue move <id> --project <target>`. Where migrate refuses,
-re-file with `docket issue create` from that repo's checkout, link the
-pair, and close the local copy (`docket issue move <id> done < /dev/null`).
-The engine has no cross-project routing on `--gap-file`; until it does,
-this migration is the conductor's. `issue create` takes no `--project`:
-a filing that belongs elsewhere is created here and then moved.
+belongs elsewhere; re-home it at the same close.** Whichever repo owns
+the fix owns the issue. Read the gap file's second line, `Home: <repo>`,
+never the title, and re-home with `docket issue move <id> --project
+<target>`. Where migrate refuses, re-file with `docket issue create` from
+that repo's checkout, link the pair, and close the local copy (`docket
+issue move <id> done < /dev/null`). The engine has no cross-project
+routing on `--gap-file` and `issue create` takes no `--project`, so this
+migration is the conductor's: a filing that belongs elsewhere is created
+here and then moved.
 
 **A gap that duplicates a tracker you already hold gets the run note at
 the same close.** Closing it as a duplicate (comment, then close, per
@@ -1670,15 +1496,14 @@ DESC
 ```
 
 **Every conduct filing is one outcome and carries `--size`.** Measure it
-against the docket skill's
-[sizing reference](../docket/references/sizing.md) before the create and
-pass the tier (`--size bounded` for most gaps): a gap, gate failure,
-condition, or residue item that describes two or more independent
-outcomes is two or more issues. A conductor has no time mid-wave to
-decompose a bundle it cannot see the edges of, so when the split is
-unclear, file the one issue under the reference's conduct exception
-(`--size unknown`, `-l blocked`, the `Oversized:` first line) and groom
-splits it.
+against the docket skill's [sizing reference](../docket/references/sizing.md)
+before the create and pass the tier (`--size bounded` for most gaps): a
+gap, gate failure, condition, or residue item that describes two or more
+independent outcomes is two or more issues. A conductor has no time
+mid-wave to decompose a bundle it cannot see the edges of, so when the
+split is unclear, file the one issue under the reference's conduct
+exception (`--size unknown`, `-l blocked`, the `Oversized:` first line)
+and groom splits it.
 
 **A scope correction on an issue already in this run is two acts.**
 `docket issue edit --scope` moves the live column the scheduler reads;
@@ -1729,8 +1554,9 @@ a manifest is dispatched like any other row.
 and skill fix batches) have no step row and no wave to ride: open the
 proposal yourself, then invoke tribunal.js. **On an activation gate, the
 standing-proposal reconcile comes first** (`docket vote list`, then adopt
-or `docket vote close --reason` each open ballot, per **Before the
-loop**); only then does the create below run.
+or `docket vote close --reason` each open ballot, per
+[references/activation.md](references/activation.md)); only then does the
+create below run.
 
 ```bash
 docket vote create -d "<the decision, stated plainly>" -r "<evidence summary>" \
@@ -2066,34 +1892,9 @@ any standing external-tracker obligation (**Before the loop**); post the
 update before the session ends, since a park takes the session with it.
 
 **A terminal run, `done` or `abandoned`, is picked up from its rulings,
-not its statuses.** Step statuses, park messages, and issue statuses do
-not say how a run ended. Before characterizing it or re-presenting a
-parked decision, read that run's terminal events by kind:
-
-```bash
-docket events list --run $RUN --json --tail 400 | jq -r '
-  (if type == "object" and has("data") then .data else . end)
-  | (if type == "array" then . else .events end)     # missing .events beats a silent empty read
-  | .[] | select(.kind as $k | ["issue-abandoned","step-resolved","step-approved","step-rejected","run-done","run-abandoned"] | index($k))
-  | "\(.seq) \(.kind) \(.issue // "") \(.step // "") \(.data | tojson)"'
-```
-
-**Filter on the `kind` field; never keyword-grep the detail text.** Words
-like `waiting-human` appear on the moments a run parked and never on the
-moments it resolved: a grep for them selects questions and drops every
-answer.
-
-**The step-lifecycle fact that read rests on:** a step parked
-`waiting-human` finalizes to `failed-routed` when its issue is abandoned.
-That carries a decided park, not an undecided one; the resolution lives
-in the event feed. An issue left at `review`/`todo` after a run-scoped
-abandonment is frozen the same way, and a run whose issues were all
-abandoned rolls up to `done` legitimately.
-
-**Recorded rulings cite ids; those ids are required reading.** Read
-everything an `issue-abandoned` note cites before putting any related
-question to the operator. If a ruling turns out genuinely superseded, say
-what it was and why, and let them rule on that.
+not its statuses.** Before characterizing one or re-presenting one of its
+parked decisions, read
+[references/terminal-run.md](references/terminal-run.md) in full.
 
 ### Pause mode
 

@@ -896,8 +896,9 @@ report it, never hunt for another copy.
 
 **Pass the machine's own concurrency cap so wave.js does not have to guess
 it.** A wave script cannot read the CPU count itself. lane_units.py (Split the
-launches below) takes the count and writes the cap, floored at 1, into every
-launches.json entry: pass entry i's `harnessCap` from launches.json in launch
+launches below) reads the CPU count itself (`os.cpu_count()`, overridable via
+`LANE_UNITS_CPUS`) and writes the cap, floored at 1, into every launches.json
+entry: pass entry i's `harnessCap` from launches.json in launch
 i's `args`, copied as written, never a figure of your own. wave.js uses
 `min(HARNESS_CAP, harnessCap)` as its own admission bound and logs which it
 used; omitting the field is never a refusal.

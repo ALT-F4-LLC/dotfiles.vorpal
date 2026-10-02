@@ -173,7 +173,7 @@ These verbs need no `.docket/` database: the store is user-level.
 | `--stub` | bool | `false` | this is a **placeholder**, not the check its name implies; every result it produces is flagged `stub` in `step gates` and counted in the run report |
 | `--stub-reason` | string | `""` | free-text reason recorded and shown alongside `stub` in `trust list` and its rendering; requires `--stub` |
 | `--network` | stringSlice | `nil` | hosts this command must reach (repeatable). **Declares a requirement; grants nothing.** A gate that names any receives the proxy variables and `DOCKET_GATE_NETWORK`; one that names none is unchanged |
-| `--timeout` | duration | `5m` | per-command timeout |
+| `--timeout` | string | `""` | per-command timeout (e.g. `90s`, `10m`); the engine applies 5m at run time when the trust entry names no timeout |
 | `--yes` | bool | `false` | skip the interactive confirmation (the argv is **still** disclosed) |
 
 **`--stub` marks hollow assurance.** A repo with no scanner installed still

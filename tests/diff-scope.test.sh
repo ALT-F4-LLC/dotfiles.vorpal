@@ -130,6 +130,31 @@ expect "small: three files are refused" small 1 "$r"
 r=$(fresh_repo small-add); printf 'fn n() {}\n' > "$r/src/a/new.rs"
 expect "small: an added file is refused" small 1 "$r"
 
+# workflow_repo <name>: fresh_repo plus committed workflows a and b with their
+# changelogs, the baseline re-tagged so only later edits count.
+workflow_repo() {
+    local d
+    d=$(fresh_repo "$1")
+    (
+        cd "$d" || exit 1
+        mkdir -p src/user/docket/config/workflows src/user/docket/config/changelogs
+        for n in a b; do
+            printf 'version = 1\n' > "src/user/docket/config/workflows/$n.toml"
+            printf '# %s\n' "$n" > "src/user/docket/config/changelogs/$n.md"
+        done
+        git add -A && git commit -qm workflows && git tag -f gate-base >/dev/null
+    )
+    printf '%s' "$d"
+}
+
+r=$(workflow_repo small-wf-pair)
+printf 'version = 2\n' > "$r/src/user/docket/config/workflows/a.toml"; printf -- '- 2\n' >> "$r/src/user/docket/config/changelogs/a.md"; commit_all "$r"
+expect "small: a workflow and its same-name changelog pass as one unit" small 0 "$r"
+
+r=$(workflow_repo small-wf-mismatch)
+printf 'version = 2\n' > "$r/src/user/docket/config/workflows/a.toml"; printf -- '- 2\n' >> "$r/src/user/docket/config/changelogs/b.md"; commit_all "$r"
+expect "small: a workflow and another workflow's changelog span two directories" small 1 "$r" "paths span two directories"
+
 # ---- control-class paths (every track) ------------------------------------
 r=$(fresh_repo ctrl); mkdir -p "$r/.docket"; printf '# control classes\nhooks/*\n' > "$r/.docket/scope-control-paths"
 printf 'x\n' >> "$r/hooks/guard.sh"

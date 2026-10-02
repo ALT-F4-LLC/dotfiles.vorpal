@@ -356,10 +356,11 @@ fi
 # (d3) The update mode's PATCH publish path names the same file-valued
 # fields as the POST path, in one sentence.
 patch_hits=$(grep -cF -- '--method PATCH repos/<owner>/<repo>/pulls/<pr-number>' "$SKILL")
+# Join the context first: under pipefail, `... | tr | grep -q` fails when
+# grep exits early and SIGPIPEs tr.
+patch_context=$(grep -A2 -F -- '--method PATCH repos/<owner>/<repo>/pulls/<pr-number>' "$SKILL" | tr '\n' ' ')
 if [ "$patch_hits" -eq 1 ] \
-    && grep -qF -- '--method PATCH repos/<owner>/<repo>/pulls/<pr-number>' "$SKILL" \
-    && grep -A2 -F -- '--method PATCH repos/<owner>/<repo>/pulls/<pr-number>' "$SKILL" \
-        | tr '\n' ' ' | grep -qE -- '`title`.*`body`|title.*and.*body'; then
+    && grep -qE -- '`title`.*`body`|title.*and.*body' <<<"$patch_context"; then
     ok "update publish path: PATCH shape states file-valued title and body fields"
 else
     bad "update publish path: expected exactly one PATCH repos/<owner>/<repo>/pulls/<pr-number> statement naming title and body fields, found ${patch_hits}"

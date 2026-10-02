@@ -243,7 +243,9 @@ expect_argv() {
 
 expect_never_asked() {
     local label="$1" pattern="$2"
-    if asked_all | grep -q -- "$pattern"; then
+    # grep the file directly: under pipefail, `asked_all | grep -q` reads as
+    # no match when grep exits early and SIGPIPEs cat.
+    if [ -f "$MARKER" ] && grep -q -- "$pattern" "$MARKER"; then
         fail "${label} (asked: $(asked_all | tr '\n' ';'))"
     else
         pass "${label}"

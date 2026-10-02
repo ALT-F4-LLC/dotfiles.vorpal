@@ -156,6 +156,9 @@ jobs:
         env:
           WORKFLOW_LINT_SKIP: "1"
 
+      # Pins the branches the row above skips in CI; it stubs docket, so no skip.
+      - run: bash tests/workflow-lint-contract.test.sh
+
       # The per-suite rows above exit 0 whenever no case fails, including if a
       # suite stopped running its cases at all. sdet-abuse re-runs the hook
       # suites behind a minimum-case floor, so a hollowed-out suite is caught.

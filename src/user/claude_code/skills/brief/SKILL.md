@@ -317,10 +317,10 @@ information, report the incompatibility.
 ## 4. Confirm
 
 Present the complete brief verbatim, followed by every route this skill
-can select: `/docket-plan`, `/loop`, `/docket-tend`, `/peer`, direct execution,
-and any orchestration alternative weighed under §3. Always show the full list,
-including routes §3 excludes: give each route one line stating why it
-fits or which §3 rule excludes it, and mark the recommended route. If
+can select, including routes §3 excludes: `/docket-plan`, `/loop`,
+`/docket-tend`, `/peer`, direct execution, and any orchestration alternative
+weighed under §3. Give each route one line stating why it fits or which §3
+rule excludes it, and mark the recommended route. If
 the downstream input requires a different structure, show the prepared
 handoff as well.
 
@@ -408,4 +408,4 @@ claiming work started or substituting another route.
 
 Report outcomes supported by actual results: what changed or started,
 what was verified, and what remains unresolved. Starting a workflow or
-loop is not the same as completing its work.
+loop does not complete its work.

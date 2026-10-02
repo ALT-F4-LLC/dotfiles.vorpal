@@ -1,0 +1,259 @@
+#!/bin/bash
+
+# Behavior suite for the simplify-corpus skill's mechanical scripts:
+# skills/simplify-corpus/scripts/protected-spans.sh, the protected-span check
+# behind tighten.js, simplify-corpus.js, and the main session's landing step,
+# and skills/simplify-corpus/scripts/tighten-chunks.sh, which splits a file
+# into chunks for tighten.js and joins them back.
+#
+# Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by
+# name and this one is in that list. It needs only bash, awk, git, and
+# coreutils — no engine, no network, and it never runs a workflow.
+#
+# WHY THIS EXISTS. The check once paired quote marks across the whole file,
+# so quote marks inside code shifted every later pair. That locked 78% of
+# docket-run's prose behind spans no edit could pass, and left 15 of its 23
+# real quotations unchecked. Each probe below alters one
+# protected span in a copy and expects exactly that kind to report it, and
+# the regression probe edits prose between two such code spans and expects
+# no report at all. The chunk properties run over every tracked Markdown
+# file: a split that joins back to anything but the original bytes, or whose
+# chunks' spans do not add up to the file's, would let a chunk-level check
+# pass a broken file.
+
+set -uo pipefail
+
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+ROOT=$(cd "${SCRIPT_DIR}/.." && pwd)
+SCRIPTS="${SIMPLIFY_CORPUS_SCRIPTS:-${ROOT}/src/user/claude_code/skills/simplify-corpus/scripts}"
+SPANS="${SCRIPTS}/protected-spans.sh"
+CHUNKS="${SCRIPTS}/tighten-chunks.sh"
+
+fatal() {
+    printf 'FATAL: %s\n' "$1" >&2
+    exit 2
+}
+
+[ -f "$SPANS" ] || fatal "protected-spans.sh not found at ${SPANS}"
+[ -f "$CHUNKS" ] || fatal "tighten-chunks.sh not found at ${CHUNKS}"
+for tool in awk git cmp comm; do
+    command -v "$tool" >/dev/null 2>&1 || fatal "${tool} is required to run this test"
+done
+
+WORK=$(mktemp -d "${TMPDIR:-/tmp}/tighten-scripts.XXXXXX") || fatal "mktemp failed"
+trap 'rm -rf "$WORK"' EXIT
+
+pass=0
+fail=0
+ok() { # <condition-already-evaluated: 0/1> <label>
+    if [ "$1" -eq 0 ]; then
+        pass=$((pass + 1)); printf 'PASS: %s\n' "$2"
+    else
+        fail=$((fail + 1)); printf 'FAIL: %s\n' "$2" >&2
+    fi
+}
+
+# ---- protected-spans.sh -------------------------------------------------
+
+BASE="${WORK}/base.md"
+cat > "$BASE" <<'MD'
+---
+name: fixture
+description: >-
+  Use on "check the spans" or "run the probe".
+---
+
+# Fixture
+
+Pass the reason with `docket step reap STEP-N --reason "`. This sentence
+sits between the two quote marks and must stay free to change. Close it
+with `"` on the same line. Say "keep this phrase" exactly.
+
+## Commands
+
+```bash
+docket step list --json | jq '.data[] | select(.status=="pending")'
+echo "one"
+
+echo "two"
+```
+
+See §4 and docket-run/SKILL.md:120, and [the guide](references/guide.md).
+A quotation can hold code: "run `make test` first" is one span.
+
+<!-- keep this comment -->
+
+## Ending
+
+Last paragraph.
+
+MD
+
+variant() { # <name> <sed expression> — a copy of BASE with one edit
+    sed "$2" "$BASE" > "${WORK}/$1.md"
+    cmp -s "$BASE" "${WORK}/$1.md" && fatal "variant $1: the sed expression matched nothing"
+}
+
+report() { # <mode> <name> — the report and exit code for BASE against a variant
+    bash "$SPANS" "$1" "$BASE" "${WORK}/$2.md" > "${WORK}/$2.$1.out" 2>&1
+    echo $? > "${WORK}/$2.$1.rc"
+}
+
+changed_kinds() { # <name> <mode> — the kinds reported changed, space-separated
+    sed -n 's/^kind \([a-z]*\) changed.*/\1/p' "${WORK}/$1.$2.out" | tr '\n' ' ' | sed 's/ $//'
+}
+
+expect_only() { # <name> <kind> <label> — equal mode reports exactly that kind
+    report equal "$1"
+    [ "$(cat "${WORK}/$1.equal.rc")" = 1 ] && [ "$(changed_kinds "$1" equal)" = "$2" ]
+    ok $? "$3 -> only $2 changed"
+}
+
+cp "$BASE" "${WORK}/same.md"
+report equal same
+[ "$(cat "${WORK}/same.equal.rc")" = 0 ]; ok $? 'a file compared with itself is intact (exit 0)'
+grep -qx 'result intact' "${WORK}/same.equal.out"; ok $? 'the report ends in result intact'
+[ "$(grep -c '^kind [a-z]* ok$' "${WORK}/same.equal.out")" = 9 ]; ok $? 'equal mode reports all nine kinds'
+grep -qE '^bytes [0-9]+ [0-9]+$' "${WORK}/same.equal.out"; ok $? 'the report carries byte counts'
+[ "$(sed -n 's/^lines \([0-9]*\) .*/\1/p' "${WORK}/same.equal.out")" = "$(wc -l < "$BASE" | tr -d ' ')" ]; ok $? 'the line count is wc -l, blank lines included'
+
+variant between 's/sits between the two quote marks and must/sits between them and must/'
+whole_file_pairing() { tr -s '[:space:]' ' ' < "$1" | grep -oE '"[^"]+"' | sort; }
+[ "$(whole_file_pairing "$BASE")" != "$(whole_file_pairing "${WORK}/between.md")" ]
+ok $? 'self-check: the whole-file pairing this script replaced rejects the next edit'
+report equal between
+[ "$(cat "${WORK}/between.equal.rc")" = 0 ]; ok $? 'regression: prose between two code spans that each hold a quote mark is free to change'
+
+printf '%s\n' 'The panel is 5" wide.' '' 'This paragraph must stay free to change.' '' 'Say "keep this phrase" exactly.' > "${WORK}/stray.md"
+sed 's/must stay free to change/stays free to change/' "${WORK}/stray.md" > "${WORK}/stray-edit.md"
+bash "$SPANS" equal "${WORK}/stray.md" "${WORK}/stray-edit.md" > /dev/null 2>&1
+ok $? 'an unmatched quote mark pairs nothing outside its own paragraph'
+
+{ sed -n '1,8p' "$BASE"; printf '%s\n' 'Pass the reason with `docket step reap STEP-N --reason "`.' 'This sentence sits between the two quote marks and must stay free to change.' 'Close it with `"` on the same line. Say "keep this phrase" exactly.'; sed -n '12,$p' "$BASE"; } > "${WORK}/rewrap.md"
+report equal rewrap
+[ "$(cat "${WORK}/rewrap.equal.rc")" = 0 ]; ok $? 'rewrapping a paragraph around code and quotations is intact'
+
+variant quote 's/"keep this phrase"/"keep that phrase"/'
+expect_only quote quotes 'a reworded quotation'
+variant fencequote 's/select(.status=="pending")/select(.status=="ready")/'
+expect_only fencequote fences 'a quote mark inside a fenced block'
+variant fenceblank '18d'
+expect_only fenceblank fences 'a blank line removed inside a fenced block'
+variant code 's/`make test`/`make check`/'
+report equal code
+[ "$(changed_kinds code equal)" = "code quotes" ]; ok $? 'code inside a quotation is part of the quotation: both kinds report it'
+variant heading 's/^## Commands$/## Command list/'
+expect_only heading headings 'a reworded heading'
+awk '/^## Commands$/ { print "## Ending"; next } /^## Ending$/ { print "## Commands"; next } { print }' "$BASE" > "${WORK}/order.md"
+report equal order
+grep -q '^kind headings changed: order$' "${WORK}/order.equal.out"; ok $? 'swapped headings report an order change'
+variant section 's/§4/§5/'
+expect_only section references 'a changed section reference'
+variant fileline 's/SKILL.md:120/SKILL.md:121/'
+expect_only fileline references 'a changed file:line reference'
+variant link 's/(references\/guide.md)/(references\/guides.md)/'
+expect_only link links 'a changed link target'
+variant frontmatter 's/"run the probe"/"run a probe"/'
+expect_only frontmatter frontmatter 'an edited frontmatter trigger phrase'
+variant comment 's/keep this comment/keep that comment/'
+expect_only comment comments 'an edited HTML comment'
+
+head -c "$(($(wc -c < "$BASE") - 1))" "$BASE" > "${WORK}/nofinal.md"
+expect_only nofinal edges 'a removed final newline'
+sed '$d' "$BASE" > "${WORK}/notrailing.md"
+expect_only notrailing edges 'a removed trailing blank line'
+
+variant deleted 's/ Say "keep this phrase" exactly\.//'
+report subset deleted
+[ "$(cat "${WORK}/deleted.subset.rc")" = 0 ]; ok $? 'subset mode: deleting a quotation along with its prose is allowed'
+report subset quote
+[ "$(cat "${WORK}/quote.subset.rc")" = 1 ] && grep -q '^kind quotes changed: added "keep that phrase"$' "${WORK}/quote.subset.out"; ok $? 'subset mode: an altered quotation reports the added span'
+report subset fencequote
+[ "$(changed_kinds fencequote subset)" = "fences" ]; ok $? 'subset mode: an altered fence line is an addition'
+[ "$(grep -c '^kind ' "${WORK}/quote.subset.out")" = 4 ]; ok $? 'subset mode checks fences, quotes, links, and comments only'
+
+bash "$SPANS" equal "$BASE" "${WORK}/missing.md" > /dev/null 2>&1
+[ $? = 2 ]; ok $? 'a missing file exits 2'
+bash "$SPANS" sideways "$BASE" "$BASE" > /dev/null 2>&1
+[ $? = 2 ]; ok $? 'an unknown mode exits 2'
+bash "$SPANS" extract nonsense "$BASE" > /dev/null 2>&1
+[ $? = 2 ]; ok $? 'an unknown kind exits 2'
+[ "$(bash "$SPANS" extract quotes "$BASE" | sort | tr '\n' '|')" = '"keep this phrase"|"run `make test` first"|' ]
+ok $? 'quotations come from prose only, and a quote mark inside inline code never opens one'
+
+# ---- tighten-chunks.sh --------------------------------------------------
+
+split_ok() { # <file> <workdir> <target>
+    bash "$CHUNKS" split "$1" "$2" "$3" > "$2.manifest" 2>&1
+}
+
+FENCED="${WORK}/fenced.md"
+{
+    printf -- '---\nname: x\n---\n\n'
+    for i in 1 2 3 4 5 6; do printf 'Paragraph %d.\n\n' "$i"; done
+    printf '```bash\n## not a heading\n\necho one\n\n```\n\n'
+    for i in 7 8 9; do printf 'Paragraph %d.\n\n' "$i"; done
+    printf -- '---\n\nAfter a rule.\n'
+} > "$FENCED"
+split_ok "$FENCED" "${WORK}/fenced" 1; ok $? 'split succeeds at a one-line target'
+starts=$(for c in "${WORK}"/fenced/orig/*.md; do head -n 1 "$c"; done)
+! printf '%s\n' "$starts" | grep -qxE 'echo one|## not a heading'; ok $? 'no chunk starts inside a fenced block'
+[ "$(printf '%s\n' "$starts" | grep -cx -- '---')" = 1 ]; ok $? 'only the frontmatter chunk starts with ---'
+fences_even=0
+for c in "${WORK}"/fenced/orig/*.md; do
+    [ $(($(grep -c '^[[:space:]]*```' "$c") % 2)) = 0 ] || fences_even=1
+done
+ok "$fences_even" 'every chunk holds whole fenced blocks'
+bash "$CHUNKS" join "${WORK}/fenced" "${WORK}/fenced.joined" > /dev/null && cmp -s "$FENCED" "${WORK}/fenced.joined"
+ok $? 'joining with no chunk rewritten reproduces the file'
+
+second=$(sed -n 's/^chunk \([0-9]*\) .*/\1/p' "${WORK}/fenced.manifest" | sed -n 2p)
+printf 'Rewritten.\n\n' > "${WORK}/fenced/cand/${second}.md"
+out=$(bash "$CHUNKS" join "${WORK}/fenced" "${WORK}/fenced.rewritten" "$second")
+grep -qx 'Rewritten.' "${WORK}/fenced.rewritten" && printf '%s\n' "$out" | grep -qE '^joined [0-9]+ chunks, 1 rewritten, [0-9]+ bytes$'
+ok $? 'join takes the named chunk from cand and reports it'
+bash "$CHUNKS" join "${WORK}/fenced" "${WORK}/fenced.bad" 999 > /dev/null 2>&1
+[ $? = 2 ]; ok $? 'join refuses an unknown chunk id'
+bash "$CHUNKS" split "$FENCED" "${WORK}/fenced" 1 > /dev/null 2>&1
+[ $? = 2 ]; ok $? 'split refuses a workdir that already holds chunks'
+
+printf 'one\n\ntwo\n\nno final newline' > "${WORK}/nonl.md"
+split_ok "${WORK}/nonl.md" "${WORK}/nonl" 1 && bash "$CHUNKS" join "${WORK}/nonl" "${WORK}/nonl.joined" > /dev/null && cmp -s "${WORK}/nonl.md" "${WORK}/nonl.joined"
+ok $? 'a file without a final newline round-trips'
+printf 'one\r\n\r\ntwo\r\n' > "${WORK}/crlf.md"
+split_ok "${WORK}/crlf.md" "${WORK}/crlf" 1 && bash "$CHUNKS" join "${WORK}/crlf" "${WORK}/crlf.joined" > /dev/null && cmp -s "${WORK}/crlf.md" "${WORK}/crlf.joined"
+ok $? 'a CRLF file round-trips'
+: > "${WORK}/empty.md"
+split_ok "${WORK}/empty.md" "${WORK}/empty" 200 && grep -qx 'chunks 0' "${WORK}/empty.manifest"
+ok $? 'an empty file splits into zero chunks'
+
+# Every tracked Markdown file: split, join back byte for byte, and check
+# that the chunks' protected spans add up to the file's, kind by kind.
+roundtrip=0
+compose=0
+files=0
+while IFS= read -r f; do
+    files=$((files + 1))
+    wd="${WORK}/corpus/${files}"
+    if ! bash "$CHUNKS" split "${ROOT}/${f}" "$wd" 200 > /dev/null 2>&1 \
+        || ! bash "$CHUNKS" join "$wd" "$wd.joined" > /dev/null 2>&1 \
+        || ! cmp -s "${ROOT}/${f}" "$wd.joined"; then
+        printf '  round trip broke: %s\n' "$f" >&2
+        roundtrip=1
+        continue
+    fi
+    for kind in frontmatter fences headings comments code quotes references links; do
+        whole=$(bash "$SPANS" extract "$kind" "${ROOT}/${f}" | sort)
+        parts=$(for c in "$wd"/orig/*.md; do bash "$SPANS" extract "$kind" "$c"; done | sort)
+        if [ "$whole" != "$parts" ]; then
+            printf '  %s spans do not add up: %s\n' "$kind" "$f" >&2
+            compose=1
+        fi
+    done
+done < <(git -C "$ROOT" ls-files -- '*.md')
+[ "$files" -gt 0 ]; ok $? "the corpus sweep found tracked Markdown files (${files})"
+ok "$roundtrip" 'every tracked Markdown file splits and joins back byte for byte'
+ok "$compose" "every tracked Markdown file's chunk spans add up to its own"
+
+printf '\n%d passed, %d failed\n' "$pass" "$fail"
+[ "$fail" -eq 0 ]

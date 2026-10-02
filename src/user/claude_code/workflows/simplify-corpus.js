@@ -45,13 +45,18 @@ export const meta = {
 // Verification. Every candidate must be strictly smaller (the convergence
 // rule: a pass over already-simple files lands nothing) and pass a
 // kind-specific mechanical check: a syntax parse for code, a protected-span
-// subset diff for Markdown (a simplifier may delete protected content but
-// never invent or alter it), and a strictly-greater version for versioned
-// docket files. Survivors face three refuters leading from different angles
-// (behavior or meaning, the reader or caller, churn); two upholds accept.
+// subset diff for Markdown through protected-spans.sh (a simplifier may
+// delete protected content but never invent or alter it), and a
+// strictly-greater version for versioned docket files. Survivors face three
+// refuters leading from different angles (behavior or meaning, the reader or
+// caller, churn); two upholds accept.
 // Whether a simplification preserves behavior is judged, not proven: the
 // skill's landing gates (test suites naming the file, self-hygiene for Rust,
 // the module parse gate for workflow scripts) are the mechanical backstop.
+
+// Installed by `just activate` from skills/simplify-corpus/scripts. Unquoted
+// in commands so the shell expands `~`.
+const SCRIPTS = '~/.claude/skills/simplify-corpus/scripts'
 
 // Pin models so the run never inherits the caller's quota-limited model.
 const AGENT_CONFIG = {
@@ -328,28 +333,24 @@ function checkPrompt(file, candidate, meta) {
     : `1. Syntax gate: none for this kind.
 `
   const proseStep = meta.kind === 'prose' || meta.kind === 'contract'
-    ? `2. Protected-span subset. For each span kind below, run its extractor on
-   both files and use comm to list lines present in the candidate but
-   absent from the original (a deletion is allowed, an addition or
-   alteration is not):
+    ? `2. Protected-span subset. Run exactly this:
 
-  comm -13 <(path="${file}"; <extractor> | sort) <(path="${candidate}"; <extractor> | sort)
+  bash ${SCRIPTS}/protected-spans.sh subset "${file}" "${candidate}"; echo "exit=$?"
 
-   Extractors ($path is the file under test). Kinds a and d are line-based;
-   the others may wrap across lines, so collapse whitespace first:
-   a. fenced blocks, any indentation: awk '/^[[:space:]]*\`\`\`/{f=!f; print; next} f{print}' "$path"
-   b. double-quoted spans: tr -s '[:space:]' ' ' < "$path" | grep -oE '"[^"]+"'
-   c. relative links: tr -s '[:space:]' ' ' < "$path" | grep -oE '\\]\\([^)]+\\)'
-   d. HTML comments: awk '/<!--/{f=1} f{print} /-->/{f=0}' "$path"
-   Any output from comm is one difference line naming the kind and the
-   first line printed.
-3. Frontmatter. Extract it from both files with
-   awk 'NR==1 && $0=="---"{f=1; print; next} f{print} f && $0=="---"{exit}' "$path"
-   and diff the two.${meta.versioned
-     ? ` The only permitted difference is the \`version:\` line. Report
+   It compares fenced blocks, double-quoted spans in prose, relative links,
+   and HTML comments, one \`kind <name>\` line each. exit=0 means the
+   candidate added or altered none of them (deleting one along with its
+   prose is allowed). Otherwise add one difference line per changed kind,
+   quoting its line as printed.
+3. Frontmatter. Run exactly this:
+
+  diff <(bash ${SCRIPTS}/protected-spans.sh extract frontmatter "${file}") <(bash ${SCRIPTS}/protected-spans.sh extract frontmatter "${candidate}"); echo "exit=$?"
+
+${meta.versioned
+     ? `   The only permitted difference is the \`version:\` line. Report
    versionBefore and versionAfter as the integers on that line in each
    file; any other differing line is a difference.`
-     : ` Any differing line is a difference. Report versionBefore and
+     : `   Any differing line is a difference. Report versionBefore and
    versionAfter as -1.`}
 `
     : meta.kind === 'workflow-toml'

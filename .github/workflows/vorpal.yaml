@@ -97,6 +97,10 @@ jobs:
 
       - run: bash tests/tighten-decide.test.sh
 
+      - run: bash tests/tighten-dry-run.test.sh
+
+      - run: bash tests/tighten-scripts.test.sh
+
       - run: bash tests/tribunal-cast-error-surfaced.test.sh
 
       - run: bash tests/tribunal-seat-brief.test.sh

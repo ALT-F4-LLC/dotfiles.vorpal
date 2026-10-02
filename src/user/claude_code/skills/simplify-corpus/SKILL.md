@@ -87,10 +87,12 @@ argument that matches:
   `src/user/docket`. Frozen contracts and fragments carry versions and
   belong to `docket-refit`.
 
-Inside a file the workflow diffs frontmatter, fenced blocks at any
-indentation, inline code, headings, section and line references,
-double-quoted spans, relative links, and HTML comments between original
-and candidate, and rejects a candidate where any differs.
+Inside a file, `scripts/protected-spans.sh` compares frontmatter, fenced
+blocks at any indentation, headings, and HTML comments, and in prose the
+inline code, double-quoted spans, section and line references, and relative
+links, between original and candidate; the workflow rejects a chunk where
+any differs. Backticks and quote marks pair only within a paragraph, so a
+quote mark inside a code snippet never locks the prose after it.
 
 Never run `just activate`. Never push.
 
@@ -146,8 +148,9 @@ simplifier per file, which copies the file into the scratch mirror, invokes
 the built-in simplify skill on the copy where the Skill tool is available
 and applies its four criteria directly otherwise, or returns
 `changed=false` for a file already simple. A mechanical check then runs the
-kind's syntax gate, diffs protected spans for Markdown (a candidate may
-delete protected content but never add or alter it), reads the version of a
+kind's syntax gate, diffs protected spans for Markdown with
+`scripts/protected-spans.sh subset` (a candidate may delete protected
+content but never add or alter it), reads the version of a
 versioned docket file, and measures both files; a candidate that fails a
 gate, did not shrink, or lacks a strictly greater version is rejected in
 code. Survivors face three refuters, each leading from a different angle
@@ -157,16 +160,22 @@ two upholds to be accepted. The return carries `accepted`, each with its
 line counts, and vote tally; `rejected`, each with its reason;
 `unchanged`; and a one-line `summary`.
 
-**Tighten mode.** The workflow runs one rewriter per file, which copies the
-file into the scratch mirror and edits the copy in place, or returns
-`changed=false` for a file already tight. A mechanical check then diffs
-every protected span between original and candidate and measures both; a
-candidate that changed a protected span or did not shrink is rejected in
-code. Survivors face three refuters, each leading from a different angle
-(meaning, reader, churn), and a candidate needs two upholds to be accepted.
-The return carries `accepted`, each with its `file`, `candidate` path, byte
-and line counts, and vote tally; `rejected`, each with its reason;
-`unchanged`; and a one-line `summary`.
+**Tighten mode.** The workflow splits each file with
+`scripts/tighten-chunks.sh` into chunks of about 200 lines, cut only at a
+heading or paragraph edge outside fences and frontmatter, and runs one
+rewriter per chunk, which reads it sentence by sentence and edits a copy in
+place, or returns `changed=false` for a chunk already tight. A runner agent
+executes `scripts/protected-spans.sh equal` on the chunk and returns its
+output verbatim; the workflow parses that output and rejects in code a
+chunk that changed a protected span, did not shrink, or left no parsable
+report. Survivors face three refuters, each leading from a different angle
+(meaning, reader, churn), and a chunk needs two upholds to be accepted.
+Accepted chunks join with the untouched rest into one candidate per file,
+which must pass the whole-file check again, so a refuted edit costs its
+chunk, not the file. The return carries `accepted`, each with its `file`,
+`candidate` path, byte and line counts, per-chunk vote tallies, and the
+`rejectedChunks` that did not land with their reasons; `rejected`, each
+with its reason; `unchanged`; and a one-line `summary`.
 
 If the workflow throws or returns nothing, say so and stop. Do not
 substitute a manual rewrite as if it satisfied the step.
@@ -181,6 +190,18 @@ Separate the accepted list first; only simplify mode returns `confirm`:
   and ask, with `AskUserQuestion`, whether to land it; land it only on a
   yes.
 - **Everything else** lands now.
+
+Check each Markdown candidate yourself before copying it, since the
+workflow read the check's output only through a runner agent. Use `equal`
+in tighten mode, and `subset` for a prose or contract file in simplify
+mode:
+
+```bash
+bash ~/.claude/skills/simplify-corpus/scripts/protected-spans.sh equal "<file>" "<candidate>"
+```
+
+Exit 0 lands it. Any other exit drops it from the accepted list, with the
+report's `changed` lines as its reason.
 
 Copy each candidate to land over its file serially, in this session, in
 the order returned:
@@ -234,8 +255,8 @@ changelog entry written in §3
 pass, never batched across passes. Then report the pass in a few lines:
 the mode and pass number, files landed with their line deltas and, for
 versioned docket files, the version bump, the commit hash, files rejected
-with their reasons, files unchanged, and any settings.rs candidate awaiting
-the operator.
+with their reasons, chunks of a landed file that did not land, files
+unchanged, and any settings.rs candidate awaiting the operator.
 
 A landed contract, fragment, or workflow TOML reaches the engine only
 after the operator runs `just activate` and `docket-reconcile`; say so

@@ -70,7 +70,11 @@ def trim_path:
 
 def subject:
     . as $e
-    | if $e.kind == "classifier-denial" then
+    | if $e.kind == "classifier-unavailable" then
+        # An outage gave no verdict, so it is neither a denial nor sandbox
+        # friction. The leading "(" keeps it out of filing, like (unclassified).
+        "(classifier outage)"
+      elif $e.kind == "classifier-denial" then
         # A classifier denial names no path or host. Its actionable subject is
         # the REASON, because that is what an autoMode.allow rule would have to
         # answer: a different fix from an allowlist entry, so never pooled with one.

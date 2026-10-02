@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "verified_on": "2026-09-25",
-  "binary_version": "docket version nightly-209-ga348156 (commit: a348156, built: 2026-09-25T01:58:12Z)",
-  "inventory_version": "docket version nightly-209-ga348156 (commit: a348156, built: 2026-09-25T01:58:12Z)",
+  "verified_on": "2026-10-02",
+  "binary_version": "docket version nightly-229-g7f304cc (commit: 7f304cc, built: 2026-10-02T22:01:56Z)",
+  "inventory_version": "docket version nightly-229-g7f304cc (commit: 7f304cc, built: 2026-10-02T22:01:56Z)",
   "scenario_sha256": "0d6d2e28b2b2961ff1c220ec2030d9308f440954159388cb482035393ec7a1ad",
   "probe_contract": "Every probe runs against a scratch HOME, XDG config and git repository; the trust roster is empty for every run- and step-level verb; --watch, --follow, --interval and 'trust probe' are refused.",
   "coverage": {
@@ -188,7 +188,7 @@
         "version"
       ],
       "exit": 0,
-      "stdout": "docket version nightly-209-ga348156 (commit: a348156, built: <TIMESTAMP>)\n",
+      "stdout": "docket version nightly-229-g7f304cc (commit: 7f304cc, built: <TIMESTAMP>)\n",
       "stderr": ""
     },
     {
@@ -203,11 +203,11 @@
       "json": {
         "ok": true,
         "data": {
-          "version": "nightly-209-ga348156",
-          "commit": "a348156",
+          "version": "nightly-229-g7f304cc",
+          "commit": "7f304cc",
           "build_date": "<TIMESTAMP>"
         },
-        "message": "docket version nightly-209-ga348156 (commit: a348156, built: <TIMESTAMP>)"
+        "message": "docket version nightly-229-g7f304cc (commit: 7f304cc, built: <TIMESTAMP>)"
       },
       "stderr": ""
     },
@@ -224,11 +224,11 @@
       "json": {
         "ok": true,
         "data": {
-          "version": "nightly-209-ga348156",
-          "commit": "a348156",
+          "version": "nightly-229-g7f304cc",
+          "commit": "7f304cc",
           "build_date": "<TIMESTAMP>"
         },
-        "message": "docket version nightly-209-ga348156 (commit: a348156, built: <TIMESTAMP>)"
+        "message": "docket version nightly-229-g7f304cc (commit: 7f304cc, built: <TIMESTAMP>)"
       },
       "stderr": ""
     },
@@ -9525,7 +9525,7 @@
       "json": {
         "ok": true,
         "data": {
-          "runs": null,
+          "runs": [],
           "total": 0
         }
       },
@@ -17261,9 +17261,9 @@
         "export.json",
         "--merge"
       ],
-      "exit": 1,
-      "stdout": "",
-      "stderr": "Error: importing data: inserting issue-label mapping (issue=7, label=6): inserting issue-label mapping (issue=7, label=6): constraint failed: FOREIGN KEY constraint failed (787)\n"
+      "exit": 0,
+      "stdout": "Imported 0 entities, skipped 40 duplicates\n",
+      "stderr": ""
     },
     {
       "id": "import-collision",
@@ -17275,11 +17275,14 @@
         "--merge",
         "--json"
       ],
-      "exit": 1,
+      "exit": 0,
       "json": {
-        "ok": false,
-        "error": "importing data: inserting issue-label mapping (issue=7, label=6): inserting issue-label mapping (issue=7, label=6): constraint failed: FOREIGN KEY constraint failed (787)",
-        "code": "GENERAL_ERROR"
+        "ok": true,
+        "data": {
+          "imported": 0,
+          "skipped": 40,
+          "remapped": 0
+        }
       },
       "stderr": ""
     },

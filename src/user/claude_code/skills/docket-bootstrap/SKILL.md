@@ -187,14 +187,14 @@ docket-specific detail against the installed CLI/source, not against release
 detection.
 
 The entire shared corpus is read; do not select or fork a subset. Add a workflow
-or schema locally only when the shape is genuinely repo-specific. A generally
+or schema locally only when the shape is repo-specific. A generally
 useful missing shape belongs upstream. Delegate local authoring with a precise
 path allowlist and the miners' evidence, then review the diff.
 
 Choose the operator's named smoke issue, or propose one from a verified gap and
 offer a replacement. Identify its intended workflow and acceptance criteria.
 The smoke issue carries the `route-run` label and no other `route-*` label,
-following the routing-label convention established in the corpus, and it
+following the corpus routing-label convention, and it
 sits within the docket skill's
 [sizing reference](../docket/references/sizing.md)'s cap with its tier
 stored in `size`: one outcome, so the first run exercises the pipeline,
@@ -238,7 +238,7 @@ unmatched gate with the workflows it would park and the consequence stated
 plainly, so the operator decides whether to close the gap before or after
 activation. Include the installed `doc-record` action even if today's issue
 will not use it, marking its future-use status explicitly. Propose
-`commit-exec` only if a local workflow actually consumes it.
+`commit-exec` only if a local workflow consumes it.
 
 Prepare exact proposed changes: project/store initialization if needed,
 prefix, config keys with current and proposed values and scopes, local

@@ -68,7 +68,7 @@ After a successful pass, the planner prints no actionable line and its
 target counts equal the live counts in both registries.
 
 **Automation first is the primary goal.** The plan is derived from the
-corpus mechanically, never from judgment, and whatever it cannot resolve
+corpus mechanically, never from judgment. Whatever it cannot resolve
 mechanically (an orphaned workflow name, a frozen-row conflict, drift that
 recurs after every activation) is reported with the remedy on the highest
 rung of the docket skill's
@@ -78,7 +78,7 @@ The approval before any registry write stays; it authorizes this pass.
 
 **Not `docket-refit`.** You change registry rows only, never a workflow
 TOML, a schema file, a contract, a version bump, or a definition; when the
-corpus is what is wrong, stop and say so. Fixing it is `docket-refit`'s
+corpus is wrong, stop and say so. Fixing it is `docket-refit`'s
 contract.
 
 ## Cwd discipline — read this before running anything
@@ -93,11 +93,11 @@ every call with the target checkout as the child process's cwd (see Scope
 below).
 
 `~/.docket/config/` belongs to no project, so linting from inside it
-resolves to whatever project the shell happens to sit in and can report a
+resolves to whatever project the shell sits in and can report a
 missing schema or an unregistered `vote_rule` that isn't real. If a lint
 reports either, suspect your cwd before you believe the finding: re-run
 from the checkout with an absolute path. Only if it still fails is the
-prerequisite genuinely absent. A missing corpus schema is a schema REGISTER
+prerequisite absent. A missing corpus schema is a schema REGISTER
 line in this skill's plan. A missing vote rule is `docket config set
 vote.rule.<name>.threshold <n>`, scoped to this project, not `--global`,
 unless the operator says every project should get it.

@@ -54,8 +54,7 @@ Engine defaults live in the database, read by the claim machinery:
 
 A step without an explicit `class` uses its executor hint as the class.
 Declare `class = "read"` or `class = "write"` to configure those keys;
-setting `lease.ttl.read` cannot affect an unrelated class. Class names are
-opaque. A finite `[limits] max`, not the word "write," activates reap
+setting `lease.ttl.read` cannot affect an unrelated class. A finite `[limits] max`, not the word "write," activates reap
 acknowledgments and class headroom holds. Reaping fences database authority
 but does not stop an operating-system process.
 
@@ -352,7 +351,7 @@ leaving that step's siblings legitimately `claimed` at `waiting-human`.
 | `on_fail` | `"fix-loop"` \| `"waiting-human"` \| `"skip"` \| `"abandon-issue"`; default `"waiting-human"` | where a failure routes. **Required explicitly on `type="human"` and `type="vote"` steps** |
 | `on_exhausted` | `"waiting-human"` \| `"abandon-issue"` \| the name of a `type="vote"` step of this workflow \| the name of an executor step of this workflow; default `"waiting-human"`; only on a step that routes `fix-loop` and declares a positive `max_fix_loops` on the same step (V41) | where fix-loop exhaustion routes: a `fix-loop` entry whose next ordinal would exceed `max_fix_loops` plus `fix-round` grants ([Loops](#loops), item 1). `waiting-human` parks for an operator, as every exhaustion did before the key existed; `abandon-issue` stops the run's work on the issue; a vote step name opens that panel's proposal, which is how a loop-extension vote under a hard ceiling is declared; an executor step name runs that step, so a file-and-stop default runs machine-side. A named step is an interposed target, read as `on_fail` reads one, and its `after` must include this step (V41). It is the exhaustion's routing, not a second bound: the `max_fix_loops` arithmetic is unchanged *(engine commit 9d70870, branch `feature/engine-improvements`)* |
 | `loop` | bool, default false | marks a loop-body step |
-| `serves` | [step names], default = every `fix-loop`-capable step | scopes this `loop = true` step (and its `after_loop` chain) to the named steps' **loop cluster** — entry fires only the bodies serving the step whose routing actually triggered it (the **trigger**). Omitted or empty means "serves every trigger," one cluster for the whole workflow |
+| `serves` | [step names], default = every `fix-loop`-capable step | scopes this `loop = true` step (and its `after_loop` chain) to the named steps' **loop cluster** — entry fires only the bodies serving the step whose routing triggered it (the **trigger**). Omitted or empty means "serves every trigger," one cluster for the whole workflow |
 | `after_loop` | step name | where execution re-enters after a loop body |
 | `max_attempts` | int ≥ 1 | per-instance retry budget |
 | `max_fix_loops` | int ≥ 0 | round budget, checked against the issue's one loop-ordinal counter. Declared on a step with no `serves`, it is the **issue-level ceiling**. Declared on a `serves`-scoped body, it is that **cluster's own** budget, counted over ordinals holding that cluster's instances — the issue-level ceiling still governs on top of it |
@@ -391,7 +390,7 @@ through `issue.body`.
 
 `issue.diff` is the run's computed
 VCS diff, recorded only at the completion of a step that holds the tree
-(`holds_tree`, default true, the same field scope exclusion reads). A
+(`holds_tree`, default true). A
 non-holding step records nothing; its consumers resolve to the artifact the
 last **holding** step recorded, the reviewed object pinned at the moment the
 change existed, rather than a diff recomputed from a live tree that may have
@@ -755,14 +754,12 @@ order, the reduction is `m[0]` for `min`, `m[len-1]` for `max`, and
 `m[(len-1)/2]` for `median` — **the LOWER of the two central values when the
 count is even**. So a cluster of `{low, blocker}` medians to `low`.
 
-An even-count median takes the **lower** value unless the schema declares
-`"conservative_end": "upper"` beside `ordered_enum`, in which case it takes
-the upper one instead — see [the `conservative_end`
+When the schema declares `"conservative_end": "upper"` beside
+`ordered_enum`, an even-count median takes the upper value instead — see [the `conservative_end`
 annotation](schemas.md#the-conservative_end-annotation). The direction
 moves the **median tie and nothing else**: `min` and `max` already name an
 end explicitly, and an odd-count median has no tie to break; to get the
-top of the order in *every* case, not only on ties, use `method = "max"`
-instead.
+top of the order in *every* case, use `method = "max"`.
 
 **Spread and holds.** `spread` is the distance between the extreme members'
 **positions** — so with `["info","low","medium","high","blocker"]`, both
@@ -820,16 +817,16 @@ hold where only the second cluster trips materializes `#1` and no `#0`.)
 **`--value V` is the corrected value for the cluster's aggregated field.** It
 lands on the **field itself**, so every threshold and downstream input
 routes on the number the operator endorsed; the computed value it replaced
-is recorded beside it as `operator_set_from`, keeping the two distinguishable
-rather than one overwriting the other. `--note`, when given, travels with
+is recorded beside it as `operator_set_from`, so neither overwrites the
+other. `--note`, when given, travels with
 the decision as `operator_note` on the same element.
 
 | Rule about `--value` | |
 |---|---|
-| It is validated against the **pinned schema's declared enum** before anything is written | a correction must be a member of the membership set the run agreed to; a value outside it is a `VALIDATION_ERROR` |
+| It is validated against the **pinned schema's declared enum** before anything is written | a correction must be a member of the set the run agreed to; a value outside it is a `VALIDATION_ERROR` |
 | It is **never parsed from `--note`** | docket does not read a disposition out of prose; `--value` is the structured field that carries one |
 | It accompanies **approve** only | reject records no artifact for the cluster, so there is no value to set — `--value` with `reject` is a `VALIDATION_ERROR` |
-| It applies to **materialized** `<step>-held` steps only | a declared human gate has no payload of its own to correct, so the flag would reach nothing there; that too is a `VALIDATION_ERROR` naming the step |
+| It applies to **materialized** `<step>-held` steps only | a declared human gate has no payload of its own to correct, so the flag there is a `VALIDATION_ERROR` naming the step |
 | The routing step must declare an aggregated field and a `payload` schema | otherwise there is no field to set and no enum to check against |
 
 The value rides in the `step-approved` event beside the note.
@@ -863,7 +860,7 @@ the **join**:
 
 | Rule | Behavior |
 |---|---|
-| The join releases when **every** sibling is terminal | terminal means `done`, `skipped`, `superseded`, or `failed-routed`. A sibling that ended any of those ways has ended; waiting for all of them to be `done` would deadlock on the first one that failed or was skipped. |
+| The join releases when **every** sibling is terminal | terminal means `done`, `skipped`, `superseded`, or `failed-routed`. Waiting for every sibling to be `done` would deadlock on the first one that failed or was skipped. |
 | A sibling in `waiting-human` **parks the issue** | `waiting-human` is not terminal, so the join stays open until an operator resolves it with `docket step resolve`. |
 | Downstream `inputs` resolve over **`done` siblings only** | a sibling that failed produced no result, so its artifact is not an input. |
 | `on_fail` applies **per sibling** | one sibling failing routes that sibling. The other three still finish on their own terms. |
@@ -872,8 +869,8 @@ the **join**:
 **`min_siblings` does not cancel early.** Reaching the quorum does not
 release the join: docket waits for every sibling to finish and *then*
 compares. A 4-way fanout with `min_siblings = 2` and two siblings already
-`done` still waits for the other two, rather than docket cancelling work
-already running to save time on a quorum already met.
+`done` still waits for the other two; docket does not cancel running work
+once the quorum is met.
 
 ### Loops
 
@@ -887,8 +884,8 @@ routings, its **loop cluster**. On entry the engine derives the **trigger**:
 the step whose routing actually resolved to `fix-loop` (an `-held` approval
 step maps back to the routing step that names it first). Only the bodies
 **serving that trigger** instantiate, and only their `after_loop` downstream
-is superseded — a second gate elsewhere in the workflow stays untouched,
-still `pending`, not stale. Omitting `serves` (or leaving it empty) means
+is superseded — a second gate elsewhere in the workflow stays `pending`,
+not stale. Omitting `serves` (or leaving it empty) means
 "serves every trigger": one cluster spans the whole workflow. Input
 redirection for stale artifacts is still computed workflow-wide, not per
 cluster; only the supersede/instantiate set on entry is cluster-scoped. The

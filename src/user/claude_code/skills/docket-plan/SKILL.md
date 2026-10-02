@@ -532,7 +532,7 @@ fresh `docket run status`/`issue list` read in this session, never from
 memory of a prior session.
 
 The layout tells you scopes: which directories a change of this shape
-actually touches, narrow globs per area. `ls ~/.docket/config/workflows/`
+touches, narrow globs per area. `ls ~/.docket/config/workflows/`
 tells you which workflows exist to bind to; activation auto-registers them
 from the config roots, so `docket workflow list` reads empty on a store that
 has not activated yet and is not the corpus. Labels are what bind: every
@@ -554,7 +554,7 @@ place in this read.
 
 **When the read contradicts the request's premise, verify before
 recording.** A scope map that says "this bug looks already fixed" changes
-the run's shape; verify it yourself before you trust it, with a forced
+the run's shape; verify it yourself with a forced
 verdict taxonomy, the hole hypotheses named, and reproduction in an
 isolated scratch dir. The run record must not encode a premise your own
 read has already cast doubt on.
@@ -579,7 +579,7 @@ verdict must say what landed in those files since, or it is not a verdict.
 
 ## 3. Record the run
 
-You run the mutating commands yourself, directly, in this same
+You run the mutating commands yourself, in this same
 conversation; the operator types none of them. Under the global store
 every docket verb opens `~/.docket` read-write and migrates before it does
 anything, so this conversation needs write access to that path even for the
@@ -624,11 +624,11 @@ brief. Help-check each verb's flags on first use in a session; the CLI is
 the authority, not this file.
 
 Issues first: `run start --issue` names them, so they must already exist.
-The set is not frozen there: `docket run issue add RUN-N DKT-N...` attaches
-and `run issue remove` detaches while the run is in `planning`, and `add`
-still works on an `active` run, where the next activate binds the newcomers
-as it would a later phase. Activation is the freeze, not `run start`, so a
-list that turns out short costs an add, not an abandon-and-restart. The
+The set freezes at activation, not at `run start`: `docket run issue add
+RUN-N DKT-N...` attaches and `run issue remove` detaches while the run is in
+`planning`, and `add` still works on an `active` run, where the next
+activate binds the newcomers as it would a later phase. A list that turns
+out short costs an add, not an abandon-and-restart. The
 idempotency key you put on each issue entry makes the creates re-runnable:
 the same key returns the original entity, never a duplicate.
 
@@ -639,8 +639,7 @@ specified a limit for that dimension; omission can inherit `budget.default`
 or `budget.usage.default`. Map an explicit limit to the correct dimension
 and unit using `run budget --help`; do not copy one number into both
 dimensions. Declared workflow costs and measured usage are not
-interchangeable. Re-check these flags on first use under the help rule
-above. After recording, read the run's effective limits and verify that
+interchangeable. After recording, read the run's effective limits and verify that
 they match the operator's policy, recorded separately from the cost
 forecast below. Do not change global settings or other runs. For a later
 planning pass, preserve still-applicable operator-specified limits; a
@@ -971,16 +970,16 @@ that much.
 
 **The edges**, recorded as `depends_on` links, are real dependencies only: a
 false edge serializes work that could have run in parallel, and a missing
-one lets a step run before its input exists. The default is no edge: an
-edge is a thing you justify, never a thing you assume. Before writing one,
+one lets a step run before its input exists. The default is no edge: justify
+every edge, never assume one. Before writing one,
 name the input in a phrase you could put in the plan artifact: the file,
-artifact, schema, or decision that B's step reads and A's step is what
-produces. "B builds on A" and "same subsystem" are orderings, not
+artifact, schema, or decision that A's step produces and B's step reads.
+"B builds on A" and "same subsystem" are orderings, not
 dependencies: drop the false edges and place the issues in their earliest
-safe waves. Two issues whose scopes are prefix-disjoint rarely carry a true
-edge between them, so when you find yourself writing one anyway, suspect
+safe waves. Two issues with prefix-disjoint scopes rarely carry a true
+edge, so if you write one anyway, suspect
 the decomposition before the ordering: the shared thing usually belongs
-inside one issue, or in a third that both of them depend on, which costs
+inside one issue, or in a third that both depend on, which costs
 one edge each instead of a chain. Prefer a shallow fan (many issues
 depending on one root) to a chain (each depending on the last): the fan
 lets the children become dependency-ready together, while the chain
@@ -995,8 +994,8 @@ other case: its members have already passed the run-readiness check and
 are the units of work, so §1b binds them with `--issue` directly and none of
 the four obligations below apply to them:
 
-- DKT-N itself stays out of the run: the fresh issues you create are the
-  ones you `run start --issue`; never name DKT-N itself there.
+- DKT-N stays out of the run: pass only the fresh issues to
+  `run start --issue`, never DKT-N.
 - The issue that settles it carries, in its body, "resolve DKT-N" as a required
   deliverable: a written verdict with file:line evidence.
 - Add `<new> relates_to DKT-N` as a link.
@@ -1008,14 +1007,14 @@ the four obligations below apply to them:
 ## 4. Leave later phases uncomposed when you honestly cannot compose them
 
 Some requests cannot be planned to the end: "audit and then build what we
-find" does not have a knowable second half. Do not invent one. Record phase one
+find" has no knowable second half. Do not invent one. Record phase one
 fully, and record phase two as a single human-gate issue that says what will be
 decided and by whom.
 
 The run activates on phase one. When phase one finishes, the operator answers
 the gate, and a *fresh* invocation of this skill reads the run record (steps,
-findings, gate notes) and appends phase two. Reading those artifacts is a
-pair of verbs: `docket step artifacts STEP-N` lists ids, then `docket step
+findings, gate notes) and appends phase two. Reading those artifacts takes
+two verbs: `docket step artifacts STEP-N` lists ids, then `docket step
 artifact ARTIFACT-N [--payload]` prints one; there is no `docket artifact`
 command. Activation lints the extension like any other graph.
 
@@ -1026,8 +1025,8 @@ only", or no feasible startable run remains after the full checks), present
 your reasoning as given and stop; run no further commands.
 
 When the advisor tool is available, call it on the composed run (or the
-proposal to record nothing) before presenting it, and fold its input in with
-the rest of the presentation.
+proposal to record nothing) before presenting it, and fold its input into
+the presentation.
 
 Otherwise, once the recording commands above have run, present the recorded
 run: total issue count, the issues, their edges, scopes, Unlimited or explicit
@@ -1036,7 +1035,7 @@ width` accounting for both dependencies and collisions. State why any
 otherwise eligible work remains outside this run, and say plainly that
 activation is `docket-run`'s tribunal vote. Then stop; do not offer to
 activate it yourself as a convenience. Do not keep the plan in your head
-for later; it is in Docket now, which is the point.
+for later; it is in Docket now.
 
 If the operator asks for activation in this session, that is a direct
 instruction that outranks the panel that would otherwise vote on it, but it

@@ -242,10 +242,9 @@ none — its steps are `done` and the step sections say so.
 unique within an issue and repeat across them, so a run with multiple issues
 can show the same instance label (e.g. `"implement@0"`) once per issue with
 nothing to tell the rows apart. Where the report's attempt rows cover two or
-more distinct issues, every step line is labelled with its issue prefixed
-onto the instance instead: `"<issue> implement@0":`. A single-issue run keeps
-the plain instance label. `--json` is unaffected either way — every attempt
-row has always carried `issue`.
+more distinct issues, every step line prefixes its issue onto the instance:
+`"<issue> implement@0":`. A single-issue run keeps the plain instance label.
+`--json` is unaffected: every attempt row carries `issue`.
 
 A vote step's `attempts` is permanently `0` — it is never claimed. `vote`
 carries the proposal and its status beside the routing, so a tribunal that
@@ -373,7 +372,7 @@ change nothing.
 
 **A re-activation does not re-scan.** It inherits its pin set, so a config
 file edited while a run is under way is invisible to that run and cannot
-trigger the refusal above on a run that was working fine.
+trigger the refusal above.
 
 **A repo with no `.docket/config/` is untouched by any of this**: the
 directory is checked once, and an absent one skips the scan entirely.
@@ -388,12 +387,12 @@ activation that registered nothing prints no block and carries no
 **The trust report.** After the transaction commits, activation prints every
 harvested fenced command verbatim, annotated `matched` (naming the trust
 entry) or `unmatched` (with the reason), so you see which commands a run
-will actually invoke *before* it runs. Under `--json` the same data rides in
+will invoke *before* it runs. Under `--json` the same data rides in
 a `fences` array of `{issue, gate, tag, ordinal, command, matched, entry,
 reason}`.
 
 It is a **report, not a gate**: activation succeeds with unmatched commands.
-They simply will not run, and their gates route per `on_fail` when reached —
+They do not run, and their gates route per `on_fail` when reached —
 refusing would let anyone who can file an issue block a run by adding an
 untrusted line.
 
@@ -714,12 +713,11 @@ does. A file edited since activation is refused too, naming both hashes;
 
 Without `--set` this **reads**: the cap, where it came from (`run` \| `config` \|
 `unlimited`), the `floor`, the `reported` usage in the unit `budget.unit` names,
-and the `spend` = `max(reported, floor)` that is actually enforced. Those are the
-numbers an operator needs to choose a new cap, so choosing one does not require
-reading a report first.
+and the `spend` = `max(reported, floor)` that is enforced. An operator can choose a
+new cap from these numbers without reading a report first.
 
 **There is a SECOND, INDEPENDENT cap over MEASURED usage** — what the
-ledger actually recorded, as opposed to the declared step costs the cap above
+ledger recorded, as opposed to the declared step costs the cap above
 counts. Arm it with `run start --usage-budget N` (or `budget.usage.default`)
 **and** `budget.usage.unit`; both are required, since a cap with no unit counts
 nothing, and the read form says `DORMANT` when only one is set. `run budget`
@@ -749,12 +747,12 @@ docket run resume RUN-3                    # a separate, deliberate act
 **It does not change the run's status.** A breached run is `waiting-human`
 and stays so until `run resume` — a separate, deliberate act. Nothing
 re-scans and nothing sweeps: the claim path reads the cap fresh from the
-row, so the next claim after a resume simply proceeds.
+row, so the next claim after a resume proceeds.
 
 Lowering below what a run has already spent takes effect the same way — the
 next claim refuses. **Raising a cap cannot un-spend what was spent:** the
 floor is computed from the run's claim events and does not move when the
-cap does. A new cap below the existing floor refuses the very next claim.
+cap does. A new cap below the existing floor refuses the next claim.
 
 **A cap change that resolves the breach clears the breach record.** When
 the run carries a `breach_reason` and the new cap is unlimited (`0`) or at
@@ -785,8 +783,8 @@ With an ID: the run, its issue count, its steps grouped by status, and its
 pins. Without: a `Collection` of runs — under `--json=v2` the payload is
 `{items, total, truncated}` with each item carrying `row_version`.
 
-**Read-only.** Computes effective status and writes nothing — the pin-drift
-check below reads disk, not the database, but still writes nothing.
+**Read-only.** Computes effective status and writes nothing; the pin-drift
+check below reads disk, not the database.
 The bare list is active-only and keeps `planning` runs: a run that exists
 but has not been activated is still live work. `--all` widens it to `done`
 and `abandoned` runs. The retired `--active` flag is refused.

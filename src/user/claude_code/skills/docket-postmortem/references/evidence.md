@@ -41,8 +41,8 @@ cannot be read is a named gap, never a quiet omission.
 Record the manifest with run identity, each session's id, transcript path,
 role (activate, drive, pause, resume, finish), cwd, and included record
 range; each workflow directory with its `wfId`, kind, join evidence, and
-agent count; parser errors; and every gap. The manifest is the same for the
-qualitative layers and the quantitative counts. Exclude this audit and its
+agent count; parser errors; and every gap. Qualitative layers and
+quantitative counts share one manifest. Exclude this audit and its
 descendants by identity, not because they mention the run.
 
 Inventory memory separately for the run's project: the entries and index
@@ -97,8 +97,8 @@ for that execution.
 
 ## Usage and census checks
 
-The installed `session-census` and `sandbox-friction` workflows are useful
-only when their installed behavior matches this audit's scope. Inspect their
+Use the installed `session-census` and `sandbox-friction` workflows
+only when their behavior matches this audit's scope. Inspect their
 version and input contract before launching through the installed absolute
 `scriptPath`. `session-census` takes `{root, cutoff, days?}` and measures
 every transcript newer than the cutoff under `root`; point it at the driving

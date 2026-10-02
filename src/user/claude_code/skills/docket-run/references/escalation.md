@@ -215,8 +215,7 @@ precondition is the rendered-brief check above); override-pass will
 re-find the gate failure and open a fix round on a defect already fixed.
 
 **If the operator rules the conductor patch anyway**, land it as its own
-commit, integrate it, then re-point the step's record right here, not
-deferred:
+commit, integrate it, then re-point the step's record immediately:
 
 ```bash
 docket step annotate STEP-N --integrated-sha <patch's full sha on the shared branch> \
@@ -260,7 +259,7 @@ through a review fanout before the issue is called done. Name every such
 commit in the close report. Where it patches a write step whose gate
 failed, the rule above governs the same commit.
 
-**A re-review round rebinds to the fix.** Glance at each judge report's
+**A re-review round rebinds to the fix.** Check each judge report's
 reviewed sha against the step under review; a mismatch means a packet
 regressed, an operator surface and an engine defect to file.
 
@@ -269,13 +268,12 @@ first; conductor-orchestrated out-of-band writes happen only under
 explicit operator direction, and still return through a review fanout
 before the issue is called done.
 
-**Present only what the decision actually reaches.** Never offer a gate
-option as "the fixer can/will X" unless the engine genuinely routes X.
+**Present only what the decision reaches.** Never offer a gate
+option as "the fixer can/will X" unless the engine routes X.
 Gathering evidence for a presentation may be delegated; presenting is
 yours.
 
 **An option that promises engine routing is checked against the verb
 before it is written.** Verify with the verb's documented semantics plus
-`docket step show` on the step the routing would reach, before the
-option text exists. Where the verb does not perform that routing, reword
-it or offer the answer that does.
+`docket step show` on the step the routing would reach. Where the verb
+does not perform that routing, reword it or offer the answer that does.

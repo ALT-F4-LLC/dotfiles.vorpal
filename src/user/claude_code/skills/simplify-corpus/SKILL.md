@@ -138,7 +138,7 @@ and resolves a relative path against the target repo's cwd, not the
 dotfiles source tree. The installed copy is the only one the tool may
 launch and the only one guaranteed to match this session's build. A missing
 installed file means the corpus was never activated after this skill was
-added: report that, don't launch the source copy instead.
+added: report that, don't launch the source copy.
 
 ```
 Workflow({ scriptPath: "<absolute installed path to the mode's script>", args: { files: [<repo-relative paths>], scratchDir: "<absolute scratch path>", pass: <n> } })
@@ -195,8 +195,8 @@ Separate the accepted list first; only simplify mode returns `confirm`:
 - **Everything else** lands now.
 
 Check each candidate yourself before copying it, since the workflow read
-the check's report only through a runner agent. Run the check the workflow
-ran, with the accepted entry's `kind` in simplify mode:
+the check's report only through a runner agent. Run the workflow's check,
+with the accepted entry's `kind` in simplify mode:
 
 ```bash
 # tighten mode
@@ -246,15 +246,15 @@ lines with the baseline from §1:
 A line absent from the baseline that names a landed file, or the skill it
 belongs to, is this pass's breakage: a dead anchor, a renamed reference the
 mechanical check could not see, a broken caller the refuters missed, a
-version the drift check rejects, or a sentence a guard suite pins verbatim,
-which no rewording may touch. Revert that file to its committed state with
-`git checkout -- <file>`, drop it from the accepted list with the failure
-line as its reason, and rerun the gates. At most two rounds; if new
-failures remain, revert every file this pass landed, report the failure
-lines, and stop. Baseline failures, and new failures naming files this pass
-did not land, are reported and never acted on; the revert touches only
-files this pass landed. A pinned sentence changes only in a commit that
-re-anchors its test in the same change, which is never this skill's.
+version the drift check rejects, or a sentence a guard suite pins verbatim.
+Revert that file to its committed state with `git checkout -- <file>`,
+drop it from the accepted list with the failure line as its reason, and
+rerun the gates. At most two rounds; if new failures remain, revert every
+file this pass landed, report the failure lines, and stop. Baseline
+failures, and new failures naming files this pass did not land, are
+reported and never acted on; the revert touches only files this pass
+landed. A pinned sentence changes only in a commit that re-anchors its
+test in the same change, which is never this skill's.
 
 Nothing accepted, or everything reverted, means the pass landed nothing.
 Skip §4 and go to §5.
@@ -276,8 +276,8 @@ when one landed.
 
 ## 5. Next pass
 
-A pass that landed edits is evidence the corpus can shrink further: another
-pass may find more, and a pass that finds nothing is what stops the loop.
+A pass that landed edits is evidence another pass may find more; a pass
+that finds nothing is what stops the loop.
 
 - **Bare invocation:** one pass. Say the pass is done and stop.
 - **Self-paced `/loop /simplify-corpus [tighten]`:**

@@ -256,10 +256,10 @@ DOCKET_TOKEN="$DOCKET_CAPABILITY" docket issue release DKT-1 --json=v2
 ```
 
 The token is returned exactly once. Only its hash is stored, so it cannot be
-read back from the database. Capture it from the claim response; losing it
-does not permit replacing a live claim. Inspect the current lease and worker
-before reclaiming after expiry. It never appears in `issue show`, `issue
-list`, or `issue log`.
+read back from the database, and it never appears in `issue show`, `issue
+list`, or `issue log`. Capture it from the claim response; losing it does not
+permit replacing a live claim. Inspect the current lease and worker before
+reclaiming after expiry.
 
 Tokens pass via `DOCKET_TOKEN` or stdin, never argv: there is no `--token`
 flag on any verb. Pipe it (`printf '%s' "$DOCKET_CAPABILITY" | docket issue
@@ -277,12 +277,11 @@ Refusals:
 | Token is correct but the lease expired | `STALE_LEASE` | 6 |
 | Claiming an issue whose lease is live | `CONFLICT` | 4 |
 
-`STALE_LEASE` means re-claim: the token was right, time ran out.
+`STALE_LEASE` means re-claim.
 
 Expiry is the liveness mechanism. A lease that lapses without release returns
-the issue to the unclaimed pool: the next claim simply wins, and `attempt`
-records that a claim was made. No reaper runs; expiry is resolved by the next
-issue claim. Issue inspection reports effective status without reaping, so an
+the issue to the unclaimed pool: the next claim wins, and `attempt` records
+that a claim was made. No reaper runs. Issue inspection reports effective status without reaping, so an
 expired lease shows `"live": false` the instant it lapses. This differs from
 step scheduling: `next --run`, `dispatch open`, and `step claim` can reap
 step leases or otherwise mutate scheduling state.
@@ -294,7 +293,7 @@ docket issue show DKT-1 --json=v2 | jq '.data.lease'
 
 `attempt` counts claims for all time, never decremented or reset.
 
-The `lease` object is `--json=v2` only, and absent entirely when the issue is
+The `lease` object is `--json=v2` only, and absent when the issue is
 unclaimed. An unclaimed issue behaves exactly as it did before leases existed,
 on every verb.
 
@@ -358,16 +357,15 @@ Several write commands (`issue create`, `issue delete` with sub-issues,
 `vote create`, `vote cast`, `doc create`, `doc delete`, `label delete`) fall
 back to an interactive `huh` form when required flags are omitted and stdin
 is a TTY. `import --replace` is the exception: it requires `--yes`
-unconditionally, in every output mode and regardless of terminal attachment,
+in every output mode and regardless of terminal attachment,
 never a prompt and never `--json` as consent. (`issue comment` and `doc
 comment` use a different fallback: they open `$EDITOR` when no message is
 piped and stdin is a TTY; see [Comments](tracker.md#workflow-comments).)
 
-In non-interactive/agent contexts (no TTY), these commands return a
-`VALIDATION_ERROR` listing the missing flags instead of hanging; always pass
-all required flags explicitly when scripting or running as an agent.
-`--json` mode never launches an interactive form: missing required fields
-are always a hard `VALIDATION_ERROR` in JSON mode.
+Without a TTY, these commands return a `VALIDATION_ERROR` listing the missing
+flags instead of hanging. Pass every required flag explicitly when scripting
+or running as an agent. `--json` mode never launches an interactive form:
+missing required fields are always a `VALIDATION_ERROR`.
 
 ---
 ## Workflow: Watch Mode

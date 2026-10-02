@@ -111,7 +111,7 @@ substitute a smaller manual read as if it satisfied the step.
 
 ## 3. Classify each returned finding
 
-- **Mechanical** (should have been caught by step 1 but wasn't, a
+- **Mechanical** (missed by step 1, a
   materially new check the audit surfaced): fix directly, and note it as a
   candidate rule for `.docket/bin/crossref-check` in your final report.
 - **Unambiguous prose fix** (a stale claim, a dropped word, a terminology
@@ -121,7 +121,7 @@ substitute a smaller manual read as if it satisfied the step.
   incompatible design choice, a deliberate-looking deviation with no
   recorded reason, a schema correction whose cascade is expensive, or
   anything the workflow flagged as unresolved): do not stage it; carry it
-  to the final report instead.
+  to the final report.
 
 ## 4. Confirm the staged batch before landing it
 
@@ -145,7 +145,7 @@ Frozen-file edits need a version bump, decided by the file changed:
 
 Never spend a version bump on a comment that only flags an unresolved
 question (a TODO, a "needs operator decision" note) with no other content
-change; that forces a second bump later for no reason. Land such notes as
+change; that forces a second bump later. Land such notes as
 an unversioned comment addition when the file is a policy/README file, or
 fold the flag into your final report instead of touching a frozen file.
 
@@ -160,7 +160,7 @@ explicit yes.
 
 ## 5. Apply and verify
 
-Apply confirmed fixes one file at a time, serially, in this session, not
+Apply confirmed fixes one file at a time in this session, not
 inside the workflow and not through parallel subagents: audits routinely
 overlap on the same file, and a parallel writer would race or need
 worktree isolation this task does not warrant. After every batch of edits:
@@ -186,7 +186,7 @@ the confirmed fix.
 
 ## 6. Report
 
-State plainly what the mechanical gate caught and fixed, what the semantic
+State what the mechanical gate caught and fixed, what the semantic
 audit found and verified, what landed with its version bumps, and every
 item left for an operator decision, with enough context to act on it
 without re-reading this session. Name any file or line range the workflow

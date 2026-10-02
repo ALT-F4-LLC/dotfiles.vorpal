@@ -329,7 +329,7 @@ worker never touches, and what looks like cruft and is not.
   https://sourcemaking.com/refactoring/smells, and of YAGNI,
   https://martinfowler.com/bliki/Yagni.html (Fowler's own bliki entry) and
   https://google.github.io/eng-practices/review/reviewer/looking-for.html
-  (Google's reviewer guide names over-engineering by name and instructs
+  (Google's reviewer guide names over-engineering and instructs
   building for the problem known now, not a speculative later one); no
   source names a constant-valued config field specifically.
 
@@ -354,8 +354,7 @@ worker never touches, and what looks like cruft and is not.
 - Why: Carmack's argument: a boundary is where callers drift from what the
   function assumes; a function that does not exist cannot be misused.
 - Simplification: Inline Function into its caller.
-- Risk: this cuts against blanket extraction advice. Apply only when the
-  function has one caller, no test, and no name value; a function with a
+- Risk: this cuts against blanket extraction advice. A function with a
   meaningful name that shortens the caller stays.
 - Proof: `probe`.
 - Source: https://cbarrete.com/carmack.html (secondary summary of
@@ -366,7 +365,7 @@ worker never touches, and what looks like cruft and is not.
 - Signal: a Repository, Strategy, Observer, or Command structure introduced
   for one call site in a tree that otherwise calls directly.
 - Why: the generator applied a pattern from training data regardless of
-  fit; the rest of the tree does not use it.
+  fit.
 - Simplification: replace it with the direct call style the tree already
   uses.
 - Risk: the layer may carry a cross-cutting behavior (caching, a
@@ -552,17 +551,17 @@ worker never touches, and what looks like cruft and is not.
 - Why: residue of a generation that wrote a new version beside the old one
   instead of editing in place; the tree carries two symbols with no clear
   signal of which is live.
-- Simplification: confirm which version every caller actually uses, delete
+- Simplification: confirm which version every caller uses, delete
   the superseded one and its now-unused imports, then rename the survivor
   to drop the suffix and update its callers.
-- Risk: both symbols may still be called from different places as a real,
-  unfinished migration rather than leftover residue. Check every call site
+- Risk: both symbols may still be called from different places as an
+  unfinished migration rather than residue. Check every call site
   of both names; when both are live, this entry does not apply.
 - Proof: `reachability` for the deleted symbol, `probe` at the survivor's
   renamed call sites.
 - Source: unsourced; https://arxiv.org/pdf/2506.12014 found generated code
-  trends toward longer and digit-suffixed names, adjacent evidence for the
-  naming-length pattern but not a direct claim about this specific tell.
+  trends toward longer and digit-suffixed names, adjacent evidence but not
+  a direct claim about this tell.
 
 ### Mixed convention for one concept
 - Signal: `userId` and `user_id` in one module for the same value.
@@ -637,7 +636,7 @@ changes behavior or needs a decision this loop cannot make.
 - **Structural smells that need design**: Large Class, Divergent Change,
   Shotgun Surgery, Feature Envy, Inappropriate Intimacy, Parallel
   Hierarchies, Temporal Decomposition, Information Leakage. Each is a real
-  finding from Fowler or Ousterhout and each fix moves responsibility
+  finding from Fowler or Ousterhout. Each fix moves responsibility
   between modules, which is design work for the operator, not a pass.
   https://sourcemaking.com/refactoring/smells; https://sive.rs/book/PoSD
 

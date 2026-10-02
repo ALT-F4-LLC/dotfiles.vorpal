@@ -49,9 +49,9 @@ can address.
 - Inspect `docket --version` and `docket <verb> --help` when compatibility
   or syntax is uncertain. Installed help is authoritative for accepted
   flags.
-- Inspect project/store context before a mutation if not already known,
-  using `project list` or `doctor` as appropriate; do not initialize a
-  store merely to make an inspection request succeed.
+- Before a mutation, inspect unknown project/store context with
+  `project list` or `doctor`; do not initialize a store only to make an
+  inspection request succeed.
 - For a requested new store, choose **one**: `docket init --json=v2` for the
   resolved store, or `docket init --local --json=v2` for an intentional
   local store. Do not run both as a setup sequence.
@@ -86,7 +86,7 @@ worker environments.
 | `issue show/list/log`, `step show/list/context/artifact/artifacts`, `run status/report`, `report executors`, `events list`, `dispatch verify` | Inspect state without advancing the scheduler |
 | `next` without `--run` | Inspect work-ready issues |
 | `next --run`, `dispatch open`, `step claim` | Can reap leases or otherwise change scheduling state; `next --run` can expire a dispatch |
-| `trust probe` | Executes trusted checks; treat it as execution, even though its purpose is diagnosis |
+| `trust probe` | Executes trusted checks; treat it as execution, though its purpose is diagnosis |
 | `guard spawn --ack-reap` / `--deciding-vote` | Can record an acknowledgment or audit event; a guard is not a lock |
 | `step record` | Records an artifact, runs gates, and applies routing |
 | `step approve/reject/resolve/reap`, `run pause/resume/abandon` | Require the run's conductor capability on a bound run, via `DOCKET_TOKEN` on that one invocation or an owner-only file on stdin, never with nothing redirected. `step approve`, `step reject`, `step resolve`, `run pause` and `run abandon` also require `--authority` with one of `operator`, `standing-grant` or `conductor`, plus `--authority-ref` when it is `standing-grant`; `step reap` and `run resume` take no `--authority`. See [transport](references/transport.md) |
@@ -242,9 +242,9 @@ appear in process listings, so it must contain no secrets. Casts have no
 amendment path: inspect the prepared content and correct seat before
 submitting.
 
-After casting, inspect `vote result` or `gate status` to learn the
-outcome. `vote commit` is an out-of-band decision, not the ordinary final
-step of agent voting.
+After casting, read the outcome from `vote result` or `gate status`.
+`vote commit` is an out-of-band decision, not the ordinary final step of
+agent voting.
 Read [voting](references/voting.md) for tally rules, post-approval
 thresholds, held-step escalation, and authorized closure.
 
@@ -268,7 +268,7 @@ contents list: search for the command or heading before loading a section.
 For live diagnosis, prefer `doctor` for attachment checks, `gate status` for
 a gate's outcome and missing seats, and `run report` for status, artifacts,
 checks, and spend. `run status` is the inspection verb; there is no `run
-show`. Use `run note add` for a correction that subsequent work packets
+show`. Use `run note add` for a correction that later work packets
 must carry, and `run refresh-scope` after an authorized scope edit when an
 active run needs the new declaration. Check current preconditions in help
 and the CLI reference before changing state. `policy resolve` and `registry

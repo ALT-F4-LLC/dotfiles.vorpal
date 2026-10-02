@@ -46,9 +46,9 @@ into the envelope's `error` under `--json`. That envelope's `code` is
 `NOT_FOUND` on every denial, because the engine reuses the code to exit 2; do
 not branch on it.
 
-**When the resolved store has no database, a guard ALLOWS (exit 0)
-rather than denying.** A repo with no engine has no engine state to
-forbid anything, so "not applicable" is an allow. The reason still
+**When the resolved store has no database, a guard ALLOWS (exit 0).**
+A repo with no engine has no engine state to forbid anything, so
+"not applicable" is an allow. The reason still
 travels — `not_applicable: true` plus a `reason` in the JSON payload, and
 a `guard: …` note on stderr in human mode.
 
@@ -56,8 +56,8 @@ Only database absence receives this exemption; a guard's computed denial
 still exits 2.
 
 `guard stop` deliberately does **not** block on `waiting-human`: it asks
-whether the machine is done working, and a run waiting on a person is not
-something a stop interferes with.
+whether the machine is done working, and a stop does not interfere with a
+run waiting on a person.
 
 A vote step with an open proposal, and work waiting behind that vote, do
 not block stopping either: the panel can decide outside the conductor's
@@ -114,10 +114,9 @@ open dispatch it is a **denial**: the relay believes it is spawning a
 batch the engine never issued. A row that does not byte-match shows
 **both sides' bytes**.
 
-`--ack-reap` is processed **before** the predicate, so one command both
-acknowledges and answers, letting a relay's spawn hook be a single
-invocation. It is also the second of the two entry points for the
-acknowledgment; `dispatch open --ack-reap` is the other, for a **new**
+`--ack-reap` is processed **before** the predicate, so a relay's spawn hook
+acknowledges and answers in one invocation. It is one of two entry points
+for the acknowledgment; `dispatch open --ack-reap` is the other, for a **new**
 relay taking over from a crashed one. Acknowledging asserts *you* have
 established the old writer is gone: the engine cannot check a process it
 did not start.
@@ -137,7 +136,7 @@ panel.
 auto-abandons an expired dispatch.
 
 **The guard is an early check, not a lock.** Between its allow and the
-actual spawn, a dispatch can be abandoned or a lease reaped; the real
+spawn, a dispatch can be abandoned or a lease reaped; the real
 enforcement stays in `step claim`'s compare-and-swap.
 
 <a id="trust-commands"></a>
@@ -179,8 +178,8 @@ These verbs need no `.docket/` database: the store is user-level.
 
 **`--stub` marks hollow assurance.** A repo with no scanner installed still
 wants to exercise a workflow's shape, so `docket trust add secret-scan --
-/usr/bin/true` is legitimate. What is not legitimate is the row it
-produces: without the flag, `secret-scan: pass` is indistinguishable from
+/usr/bin/true` is legitimate. The row it produces is not legitimate
+without the flag: `secret-scan: pass` is indistinguishable from
 a scanner that ran and found nothing. With it, `step gates` shows `stub`
 in the FLAGS column and `run report` says `secret-scan: pass 1 — all
 stubs, nothing was measured`.
@@ -322,8 +321,7 @@ footing as step metadata, not a verified identity. Record it anyway: a
 grant is the one act in the system that widens what code may
 execute.
 
-**Recording is mandatory inside a repository with a database, not
-best-effort.** The
+**Recording is mandatory inside a repository with a database.** The
 event is written *before* the store, as a hook inside the store's own
 lock: if it cannot be recorded, the verb fails with `GENERAL_ERROR`
 (exit 1) and **nothing is granted**.

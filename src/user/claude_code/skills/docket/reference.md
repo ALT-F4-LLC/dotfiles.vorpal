@@ -479,7 +479,7 @@ Watch-eligible.
 | `--size` | — | stringSlice | `nil` | repeatable |
 
 Watch-eligible. Cycle in the dependency graph → `CONFLICT`. `--json` output
-additionally includes per-issue `blocked_by` (array of formatted blocker IDs,
+also includes per-issue `blocked_by` (array of formatted blocker IDs,
 `[]` if none), per-phase `level` (1-based topological-level index —
 sub-phases produced by splitting one topo-level across file collisions share
 the same `level`), and top-level `total_levels` (count of distinct levels).
@@ -502,7 +502,7 @@ selected IDs.
 | `--label` | `-l` | stringSlice | `nil` | repeatable |
 | `--type` | `-T` | stringSlice | `nil` | repeatable |
 | `--size` | — | stringSlice | `nil` | repeatable; issue mode only |
-| `--limit` | — | int | `10` | issue mode: always applies, default 10. **Step mode (`--run`): unlimited unless `--limit` is explicitly passed** — even an explicit `--limit 0` still means unlimited (`0` is the engine's no-limit sentinel); only an explicit `--limit N` with `N > 0` truncates |
+| `--limit` | — | int | `10` | issue mode: always applies, default 10. **Step mode (`--run`): unlimited unless `--limit` is explicitly passed** — even an explicit `--limit 0` means unlimited (`0` is the engine's no-limit sentinel); only an explicit `--limit N` with `N > 0` truncates |
 | `--run` | — | string | `""` | switches to STEP mode: lists a run's offer (ready steps + staged closure) |
 | `--with-body` | — | bool | `false` | include full descriptions in issue-mode JSON rows; otherwise they carry `description_bytes` |
 
@@ -603,10 +603,9 @@ where `total` is the true pre-limit count. Items carry `row_version` (the CAS
 column) under v2 only; `version` is always the definition's version.
 
 v2 items also carry **`deprecated_at_ms`**, the moment a version was retired
-from binding. It is **omitted while the version still binds**, so binding
-eligibility is readable from list output instead of every registered version
-rendering alike. v1 does not carry it; human mode marks the row `[deprecated]`
-instead.
+from binding. It is **omitted while the version still binds**, so list
+output shows binding eligibility. v1 does not carry it; human mode marks the
+row `[deprecated]` instead.
 
 <a id="workflow-show"></a>
 
@@ -659,9 +658,9 @@ None of the `workflow` verbs are watch-eligible; `--watch` on any of them is a
 
 Both positional arguments are required. `name@version` uses the same grammar a
 step's `payload` field does, so what a workflow may reference and what the
-registry accepts cannot drift. The document is compiled as JSON Schema **here**,
-at registration — a schema that does not compile is refused while an author is
-looking at it, not hours into a run. The `ordered_enum` index is derived once
+registry accepts cannot drift. Registration compiles the document as JSON Schema
+and refuses one that does not compile, while an author is looking at it, not
+hours into a run. The `ordered_enum` index is derived once
 and stored beside the bytes it came from. Identical bytes at an existing
 `name@version` are an idempotent success returning the existing row; differing
 bytes are `CONFLICT` (exit 4) naming both hashes. `--project` or
@@ -713,8 +712,8 @@ risk-report.json` round-trips.
 
 Added in `nightly-209` with store schema version 36. Retires one registered
 schema version from service without deleting it: the row stays readable and
-runs that pinned it keep validating against it, but new `payload` references
-to it are refused by `workflow register`, `workflow lint`, and activation.
+runs that pinned it keep validating against it, but `workflow register`,
+`workflow lint`, and activation refuse new `payload` references to it.
 The version is **required**; a bare name is a `VALIDATION_ERROR` (exit 3). A
 version a workflow **still in service** names as `payload` is `CONFLICT`
 (exit 4) listing the referencing workflows, with no override. An
@@ -791,8 +790,8 @@ proposal's `final_outcome`. Refusals: a decided proposal
 (`approved`/`rejected`/`committed`/`closed`) is `CONFLICT` (exit 4); a
 proposal opened by an engine **vote step** is `CONFLICT` too, naming
 `docket step resolve` as the way to move a run past an uncast vote. A
-closed proposal refuses further casts (`CONFLICT`), exactly as any
-finalized one does.
+closed proposal refuses further casts (`CONFLICT`), like any
+finalized one.
 
 **Three closures happen automatically:**
 
@@ -808,7 +807,7 @@ into `final_outcome` names the **transition**, never a verdict, so a
 stale-open row stays distinguishable from a decided one.
 
 **`reap-ack:<run>:<seq>` is the key convention a conductor should use** when
-it opens a ballot to decide a reap. A conductor that does not use it simply
+it opens a ballot to decide a reap. A conductor that does not use it
 gets no auto-close.
 
 <a id="vote-backfill-usage"></a>

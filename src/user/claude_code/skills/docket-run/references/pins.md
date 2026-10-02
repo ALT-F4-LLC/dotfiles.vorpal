@@ -26,8 +26,7 @@ which check only the refs they read. Read the exit code:
 Any non-zero exit is a stop-and-report: the engine resolves every row's
 routing from the pinned bytes, so a drifted ref is refused wherever it is
 read, and there is no route past drift. Do not substitute `docket step
-render` for this check: it can return exit 0 while a pin mismatch is
-already present.
+render` for this check: it can exit 0 while a pin mismatch is present.
 
 **Dispositions at a pin-drift stop-and-report, all four executable, none
 run unprompted:**
@@ -39,8 +38,7 @@ run unprompted:**
 - **Repin**: `docket run repin RUN-N --reason R`, when the operator
   judges the drift adoptable, typically their own additive corpus edit.
   It adopts current bytes as the run's pins for steps not yet claimed.
-  `--reason` is required and the verb refuses without it, also refusing
-  while any step is claimed, while a dispatch is open, on a done,
+  The verb refuses without `--reason`, while any step is claimed, while a dispatch is open, on a done,
   abandoned, or fully-terminal run, and when a ref no longer resolves at
   all (restore the file instead). Completed steps' provenance is never
   rewritten; a `run-repinned` event carries old sha, new sha, and reason

@@ -16,8 +16,8 @@ and format. Never invent a command the repository does not name.
    `package.json` scripts, `composer.json` scripts. Prefer a recipe named
    `test`, `check`, `build`, `lint`, `typecheck`, `fmt`, or `format`.
 3. Continuous integration: `.github/workflows/*.yml`, `.gitlab-ci.yml`,
-   `.circleci/config.yml`. The commands the pipeline runs are the commands
-   the repository trusts.
+   `.circleci/config.yml`. The repository trusts the commands its pipeline
+   runs.
 4. The toolchain default when nothing above names one:
 
    | Signal | Build | Typecheck | Test | Format |
@@ -69,7 +69,7 @@ will transform, on a clean tree.
 4. A failing run is a proven guard for that site. A passing run means
    nothing guards it: ledger the site as `no coverage` and leave it alone.
    A run that errors for a reason unrelated to the change (a flaky test, a
-   timeout) is retried once; a second error is treated as `no coverage`.
+   timeout) is retried once; a second error counts as `no coverage`.
 
 What the probe proves: a change at this site breaks at least one test.
 What it does not prove: that every branch of the site is exercised. The
@@ -86,7 +86,7 @@ compiler, linter, or type checker reports the symbol unused; or the
 guarding condition is a literal that cannot vary. Reflection, string-built
 symbol names, plugin registries, and exported entry points that an external
 consumer may call defeat search; when the language or framework uses any
-of these near the unit, the symbol is treated as reachable and left alone.
+of these near the unit, treat the symbol as reachable and leave it alone.
 After the removal, build, typecheck, and the full suite must pass.
 
 ## Inert edits
@@ -157,5 +157,5 @@ Expiry, checked at the start of every tick before the ledger is read:
   those by hand.
 
 The ledger is session state, not repository state. It is never committed,
-and a new session starts with none, which is intended: the operator's own
-commits between sessions are what change the answers.
+and a new session starts with none by design: the operator's own commits
+between sessions change the answers.

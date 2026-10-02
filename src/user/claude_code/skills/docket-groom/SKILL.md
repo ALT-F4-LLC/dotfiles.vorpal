@@ -146,8 +146,8 @@ consumer pass that re-judged an unchanged engine backlog would pay for it
 again in every project.
 
 The engine checkout normally lives at `.../github.com/ALT-F4-LLC/docket.git/main`,
-beside this dotfiles repository, but that worktree may not be present in
-every environment. Confirm its location and project/store identity using
+beside this dotfiles repository, but that worktree may be absent in some
+environments. Confirm its location and project/store identity using
 the checkout and supported read-only CLI inspection; do not infer
 ownership from an issue prefix. If the checkout does not resolve while the
 engine project is in the judged scope, report the engine-project survey as
@@ -155,8 +155,8 @@ unavailable rather than proceeding from memory, and stop the pass. If it
 does not resolve and the engine survey is count-only, take the counts from
 the invoking checkout with `docket issue list --project <name>` when
 `docket project list --json`, run there, lists a row whose identity path
-names the docket checkout; that row's identity, never its prefix,
-establishes which project it is, and `docket doctor` is not a survey
+names the docket checkout. That row's identity, never its prefix,
+establishes which project it is. `docket doctor` is not a survey
 command, since older engines register a project row through it. When no such
 row exists, report the count-only survey as unavailable in §5 and
 continue. Judging always needs the checkout, since judges read engine
@@ -904,7 +904,7 @@ ambiguous answer leaves the affected proposals pending.
 If the operator raises something new, such as a different stale window or
 "leave that cluster alone," fold it in and re-derive only the affected
 entries; never restart the survey. A correction is not approval of changed
-commands. Show materially revised entries and obtain explicit approval for
+commands. Show materially revised entries and get explicit approval for
 them in a follow-up `AskUserQuestion` call. Preserve the decisions on
 unchanged entries and never reuse an old proposal number for a different
 action. Clarification and approval remain part of this one pass.
@@ -923,8 +923,8 @@ Before a later command consumes an id a create returned, confirm the create
 made a new issue: its `created_at` is not earlier than the pass id and its
 title is the one proposed. Anything else is a replay of an existing issue.
 Stop that proposal's sequence, apply nothing to the returned id, and report
-the key and the issue it returned. Report partial application accurately; do not blindly repeat successful
-steps. Execute nothing for declined or pending proposals. Do not add a
+the key and the issue it returned. Report partial application accurately;
+do not blindly repeat successful steps. Execute nothing for declined or pending proposals. Do not add a
 closure that was not proposed.
 
 ## 5. Verify consumption readiness, report, and stop
@@ -933,11 +933,11 @@ Recheck every retained issue against the ledger and its final stored
 content. A worker should be able to identify the current goal, intended
 deliverable, scope and files, checkable acceptance criteria, required
 context, settled operator decisions, true prerequisites, intended
-workflow, and routing label from the issue and its explicit references,
-and the issue must sit within the sizing reference's cap as finally
-stored, including each piece of an applied split. Check that decisions
-are reflected consistently in the body, criteria, labels, and relations,
-with superseded directions in comment history clearly identified. Route
+workflow, and routing label from the issue and its explicit references.
+The issue as finally stored, including each piece of an applied split,
+must sit within the sizing reference's cap. Check that the body,
+criteria, labels, and relations reflect decisions consistently, and that
+comment history clearly identifies superseded directions. Route
 any remaining resolvable gap through §3 or §4 within this pass. Re-apply
 §2c to each retained issue's entire final acceptance-criteria set,
 including unchanged criteria; grooming stays incomplete for an issue until

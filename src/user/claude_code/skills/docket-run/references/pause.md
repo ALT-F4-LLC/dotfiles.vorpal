@@ -43,7 +43,7 @@ not infer hard from tone alone, and say which mode you use before you act.
    token or `--authority` (`operator` names that a person asked for this
    pause, through whatever channel reached this session). This moves the
    run to `waiting-human` and blocks new claims, but honors in-flight
-   completes: nothing about it interrupts a step already claimed.
+   completes: it interrupts no step already claimed.
 2. If a wave is in flight, keep awaiting it exactly as docket-run normally
    does; do not busy-wait and do not abandon the dispatch. A dispatch is
    one launch per lane unit, each holding its own share of the manifest:
@@ -57,12 +57,10 @@ not infer hard from tone alone, and say which mode you use before you act.
    started — is refused with `run is not active` and comes back
    unclaimed. No new work starts; that is the intended trade.
 3. Reconcile and close the dispatch through docket-run's normal path
-   (`docket dispatch close --run RUN-N`), the same step docket-run takes
-   whether or not a pause is in progress. `dispatch close` refuses while a
+   (`docket dispatch close --run RUN-N`). `dispatch close` refuses while a
    discrepancy stands, so resolve the refused steps in the manifest
-   first — they are unclaimed, not failed. Do not reach for
-   `dispatch abandon` here; that is the hard-halt verb and it discards
-   live work unconditionally.
+   first — they are unclaimed, not failed. Do not use `dispatch abandon`
+   here; that hard-halt verb discards live work unconditionally.
 4. Once the dispatch is closed, build and record the resume snapshot
    (below), listing by step id every step the pause refused, so the
    resuming session dispatches them again instead of rediscovering them.
@@ -79,19 +77,17 @@ two you do.
 
 Only on an explicit operator ask for immediate stop.
 
-1. Stop awaiting the current wave. There is no engine verb that reaches
-   into a running executor and cancels it — the wave task, if one is in
-   flight, keeps running in the background even though this session stops
-   watching it. Say this plainly in the resume prompt: any step
+1. Stop awaiting the current wave. No engine verb cancels a running
+   executor: an in-flight wave task keeps running in the background after
+   this session stops watching it. Say so in the resume prompt: any step
    mid-execution when you stopped watching is orphaned from this
    session's perspective, and its worktree (if it exists) is not cleaned
    up.
 2. `docket run pause RUN-N --authority operator --reason '<why, naming that
-   this was a hard halt>' < <scratchpad>/conductor.d/RUN-N.token` first,
-   before touching the dispatch, under the same conductor capability as the
+   this was a hard halt>' < <scratchpad>/conductor.d/RUN-N.token` before
+   touching the dispatch, under the same conductor capability as the
    graceful halt.
-   The wave is still running, so pausing first is what stops it claiming
-   anything more. Abandoning a manifest while the run is still active
+   The wave is still running, so pausing first stops it claiming more. Abandoning a manifest while the run is still active
    leaves a window in which the live wave claims against a manifest that
    no longer exists.
 3. `docket dispatch abandon --run RUN-N --reason '<why>'` retires the open

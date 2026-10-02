@@ -24,7 +24,7 @@ argument-hint: "[all]"
 Run this skill inline in the main session. You enumerate the corpus, launch
 the trial, file the issues, land the ledger, and commit. The workflow never
 writes to the repository; the ledger candidate and every issue body land
-under scratch, and this session files and commits.
+under scratch.
 
 **Automation first is the primary goal of every verdict.** Per the docket
 skill's [automation reference](../docket/references/automation.md), an
@@ -37,11 +37,11 @@ this skill never deletes, edits, or refactors a definition itself.
 section of a contract, meaning a top-level block after the Charter or any
 second-level heading; a second-level section of a fragment; an
 `[executors]` row of policy.toml)
-with no evidence in any class that applies to its kind is removed, not
-kept: no consumer resolves to it, no run exercised it, no executor would
+with no evidence in any class that applies to its kind is removed:
+no consumer resolves to it, no run exercised it, no executor would
 act differently without it, no frozen record a run pins names it. The
-classes and which apply per unit kind are in the workflow's `UNIT_CLASSES`
-table. Nothing is protected: policy.toml's `[security]` block, every
+workflow's `UNIT_CLASSES` table lists the classes and which apply per
+unit kind. Nothing is protected: policy.toml's `[security]` block, every
 workflow, and README.md are tried on the same evidence, and a remove
 verdict on any of them lands only through refit's own gates.
 
@@ -115,7 +115,7 @@ relative path against the target repo's cwd, not the dotfiles source tree.
 The installed copy is the only one the tool may launch and the only one
 guaranteed to match this session's build. A missing installed file means
 the corpus was never activated after this skill was added: report that,
-don't launch the source copy instead.
+don't launch the source copy.
 
 The committed ledger is too large to pass in one tool call, so pass it
 slim. A stay or an already-filed cut keeps only the fields the workflow
@@ -159,9 +159,8 @@ Otherwise assemble the ledger candidate from the shards, then file one
 issue per row of every `<scratchDir>/issues/index.<n>.tsv`, in this
 session, from the repository root. In the snippets below `$SCRATCH`,
 `$PASS`, and `$NOW` hold the scratch path, the pass number, and the
-timestamp from §1. The row's key is the replay key: a
-repeated pass on unchanged bytes returns the original issue, open or
-closed. Once the bytes change the key changes, so a cut the operator
+timestamp from §1. The row's key is the replay key: a repeated pass on
+unchanged bytes returns the original issue, open or closed. Once the bytes change the key changes, so a cut the operator
 declined is skipped by title instead: a row whose title matches a closed
 `corpus-cut` issue labelled `wont-do` files nothing and records that
 issue's id. To decline a cut, run `docket issue label add <id> wont-do`,
@@ -207,13 +206,12 @@ for `truncated`: a partial map would re-file a declined cut. Repeated
 `-l` flags AND, so the map holds only `wont-do` cuts. Confirm the id
 field with the envelope on the first filed row; the docket skill's
 reference names the v2 shapes. No routing label and no size is set: the
-issue is unrouted for `docket-groom` to triage
-and size, and `corpus-cut` is a plain label for listing. The label, the
-`corpus-cut:` title prefix, and the ledger's replay keys keep this skill's
-former name, so cuts filed or declined before the rename still match. A row
-that
-failed is reported with the CLI's error and left unfiled; its verdict
-keeps `issue: null` and is filed again next pass.
+issue is unrouted for `docket-groom` to triage and size, and `corpus-cut`
+is a plain label for listing. The label, the `corpus-cut:` title prefix,
+and the ledger's replay keys keep this skill's former name, so cuts filed
+or declined before the rename still match. A failed row is reported with
+the CLI's error and left unfiled; its verdict keeps `issue: null` and is
+filed again next pass.
 
 Write the ids into the candidate, then land it:
 
@@ -278,9 +276,8 @@ pass in a few lines: the pass number, definitions tried and carried, the
 verdict counts, overrides by refuters, issues filed with their ids, rows
 skipped as declined, rows that failed, every `superseded.tsv` row (issues
 closed as superseded, skipped as already done, or left open), the commit
-hash, every `uncovered`
-entry, and the evidence coverage (run stores read, logs digested, engine
-available or not).
+hash, every `uncovered` entry, and the evidence coverage (run stores read,
+logs digested, engine available or not).
 
 ## 5. Next pass
 

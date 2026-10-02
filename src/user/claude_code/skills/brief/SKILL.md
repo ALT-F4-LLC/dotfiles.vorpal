@@ -189,10 +189,10 @@ names none, derive the candidates from the request's domain. When one
 role clearly fits, fill the field with it as a labeled `proposal` for the
 operator to accept, swap, or strike at confirmation. When two or more
 genuinely fit, ask for it in §1 and record the operator's pick as
-operator-stated; candidates genuinely differ only when they would produce
+operator-stated. Candidates genuinely differ only when they would produce
 materially different judgment or vocabulary, so near-synonyms collapse
-into one proposal rather than a question. The `proposal` label is what
-keeps a supplied Role inside the preserve-intent boundary: the operator
+into one proposal rather than a question. The `proposal` label keeps a
+supplied Role inside the preserve-intent boundary: the operator
 sees it as the skill's suggestion, not their own requirement. A struck
 proposal leaves Role `none`, which does not block progress. A role shapes
 judgment and vocabulary only: it grants no authority the confirmed brief
@@ -231,8 +231,8 @@ performed against an existing issue; a background citation to an issue
 does not itself require tracking. A referenced issue's routing label
 (`route-run`, `route-direct`, `route-tend`, `route-loop`, set by
 docket-groom, by this skill when it files a `route-tend` issue, or by
-docket-plan when it records a run) is the operator's standing route decision: record it here
-and follow it in §3. Tracking for `route-direct` and `route-tend` work is
+docket-plan when it records a run) is the operator's standing route
+decision: record it here and follow it in §3. Tracking for `route-direct` and `route-tend` work is
 satisfied by closing the issue with a summary comment when the work
 lands, not by a run.
 
@@ -292,13 +292,13 @@ security requirements. Exclude `/brief` itself, and do not offer
 the confirmed brief to one of the operator's other live sessions on this
 machine, and the peer skill there selects the executing route by the rules
 of this section, under its own project, and asks the operator at that
-keyboard to confirm once; it opens no clarification rounds, since the
+keyboard to confirm once. It opens no clarification rounds, since the
 requirements are settled. Confirmation here authorizes the send only, so
 rules 1 through 6 are applied again there and none of them is satisfied
-by the relay. Offer it
-when the operator names a live session as where the work should run, or
-when the scope's surfaces belong to another checkout that has a live
-session; one `ListAgents` read to check is a narrow read-only check. The
+by the relay. Offer it when the operator names a live session as where the
+work should run, or when the scope's surfaces belong to another checkout
+that has a live session; checking takes one narrow, read-only `ListAgents`
+read. The
 [peer](../peer/SKILL.md) skill's input contract is the brief block
 verbatim.
 
@@ -325,7 +325,7 @@ the downstream input requires a different structure, show the prepared
 handoff as well.
 
 When the advisor tool is available, call it on the drafted brief and route
-before presenting them, and fold its input in with the rest of the draft.
+before presenting them, and fold its input into the draft.
 
 Then use `AskUserQuestion` to confirm the displayed brief, route, and any
 prepared handoff. For multiple briefs, confirm the set and its routes
@@ -393,7 +393,7 @@ where a route bullet below says so.
 - **Direct:** Perform the work under the confirmed brief, and under its
   Role unless it is `none`, without creating
   docket issues, plan artifacts, schedules, or teams. Verify the acceptance
-  criteria using checks appropriate to the work. For an issue routed
+  criteria with checks suited to the work. For an issue routed
   `route-direct` or `route-tend`, close it once the criteria are verified:
   `docket issue comment add <id> -m "<what landed and where>"`, then
   `docket issue close <id>`.

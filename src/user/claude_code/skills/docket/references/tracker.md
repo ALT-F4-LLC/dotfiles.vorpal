@@ -38,7 +38,7 @@ DESC
 ```
 
 `issue edit` uses `cmd.Flags().Changed(...)`, so it edits only the fields you
-pass; omitted flags are left untouched, not reset to zero values:
+pass and never resets omitted ones to zero values:
 
 ```bash
 docket issue edit DKT-1 --json=v2 -s in-progress -a bob
@@ -104,10 +104,9 @@ docket issue comment add DKT-1 --json=v2 -m 'Investigated — root cause is a st
 docket issue comment list DKT-1 --json=v2
 ```
 
-`-m`/`--message` is optional: if omitted and stdin is a pipe, the body is
-read from stdin; if omitted and stdin is a TTY (human mode only), `$EDITOR`
-(default `vi`) opens. In `--json` mode, `-m` (or piped stdin) is required;
-there is no editor fallback.
+`-m`/`--message` is optional. Without it, the body is read from stdin when
+stdin is a pipe, or `$EDITOR` (default `vi`) opens when stdin is a TTY (human
+mode only). In `--json` mode, `-m` (or piped stdin) is required.
 
 Record the observation and its provenance: what was found, the relevant
 measured result, and a command, path, revision, or artifact ID another
@@ -204,7 +203,7 @@ file contents, 1 MiB cap), or `-` (stdin, 1 MiB cap).
 A shared store can contain several projects. Confirm the intended store,
 export scope, and destination before transferring data. `--replace` wipes
 this project's existing data, not the whole store; use it only for an
-explicitly authorized replacement, and choose one import mode below.
+explicitly authorized replacement.
 
 ```bash
 docket export --json=v2 -o json -f backup.json

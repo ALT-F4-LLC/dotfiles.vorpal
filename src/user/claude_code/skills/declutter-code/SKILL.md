@@ -40,9 +40,8 @@ pushes. The operator reviews history later.
 
 **Run it under `/loop`.** `declutter-code` has no watch loop of its own:
 `/loop /declutter-code` (self-pacing) or `/loop 30m /declutter-code`
-supplies the recurring
-wake-up, and each firing re-enters this skill from §1. Invoked bare with no
-loop wrapping it, do one pass and say so; there will be no next tick.
+supplies the recurring wake-up, and each firing re-enters this skill from
+§1. Invoked bare, do one pass and say so; there will be no next tick.
 
 ## 1. Each tick
 
@@ -122,9 +121,9 @@ loop wrapping it, do one pass and say so; there will be no next tick.
 
    Say in the report which class each applied entry used. The operator
    chose to skip uncovered code; applying inert edits and dead-code
-   removals in units without tests is this skill's reading of that choice,
-   so the report names every `inert` and `reachability` change in such a
-   unit so the operator can veto the reading.
+   removals in units without tests is this skill's reading of that choice.
+   The report names every `inert` and `reachability` change in such a unit
+   so the operator can veto the reading.
 2. **Seat a worker** (§3) with the unit, the catalog entries the scout
    matched with their lines, the probe results per site, and the frozen
    contracts from the [gates reference](references/gates.md#frozen-contracts).
@@ -152,8 +151,8 @@ loop wrapping it, do one pass and say so; there will be no next tick.
    updating a caller of a renamed symbol; the change reads as a rewrite
    rather than a removal or a flattening. A refused pass is ledgered as
    `refused` with the reason.
-6. **Land.** Invoke the `commit` skill (`Skill({skill: "commit", args: "<unit's paths>"})`) with
-   the unit's paths as its argument: one commit cycle per unit, never
+6. **Land.** Invoke the `commit` skill (`Skill({skill: "commit", args: "<unit's paths>"})`):
+   one commit cycle per unit, never
    batched across units, never sweeping in files the pass did not touch.
 7. **Report** in one line: the unit, the catalog entries applied with their
    proof class, lines removed and added, the gate commands and their
@@ -164,8 +163,8 @@ loop wrapping it, do one pass and say so; there will be no next tick.
 ## 3. Seat and spawn
 
 One seat at a time, ever: the scout, then the worker, never both, and
-never two units in flight. Seats spawn into this working tree with no
-worktree isolation, so strict sequence is required. Always the built-in
+never two units in flight, because seats spawn into this working tree
+with no worktree isolation. Always the built-in
 `general-purpose` agent type, never a custom agent definition. The scout
 carries a read-only brief; `Explore` is not used, because ranking a tree
 against a catalog is the cross-file analysis that agent type excludes.
@@ -185,8 +184,7 @@ default.
      dedupe that merges near-duplicates with subtle differences): `fable`
      at `max`.
 
-   Name the seat and why the unit fits the tier, and carry the ruling into
-   the spawn.
+   Name the seat and why the unit fits the tier.
 
 2. **Spawn through `Workflow`**, the brief embedded in the script, with a
    `log()` line carrying step 1's ruling immediately before the `agent()`

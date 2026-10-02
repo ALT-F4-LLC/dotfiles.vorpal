@@ -136,8 +136,7 @@ docket step artifact ARTIFACT-3 --payload --json=v2 | jq -r '.data[0].severity'
 ```
 
 Both take the `ARTIFACT-N` form the listing and the run report's index print; a
-bare `N` is accepted too. Both are **read-only and write nothing** — no reap,
-no lease touch.
+bare `N` is accepted too. Both are **read-only** — no reap, no lease touch.
 
 <a id="step-claim"></a>
 
@@ -196,8 +195,7 @@ event (carrying `data.forced` and the reason, which is how a reader tells
 the two apart), the same write-class headroom hold awaiting `--ack-reap`,
 the same return of the step to the ready pool.
 
-`--reason` is required, and omitting it is a `VALIDATION_ERROR` (exit 3) — a
-forced reap asserts the holder is gone, and somebody will ask on whose word.
+Omitting `--reason` is a `VALIDATION_ERROR` (exit 3) — a forced reap asserts the holder is gone, and somebody will ask on whose word.
 Only a `claimed` or `running` step holds a lease to reap; anything else is
 `CONFLICT` (exit 4) naming the step's actual status, and a missing step is
 `NOT_FOUND` (exit 2).
@@ -486,8 +484,7 @@ contract above. They apply to `type="human"` steps, and to a **materialized**
 `VALIDATION_ERROR` naming the step's actual class.
 
 The held step is where an `aggregate` step's held clusters are decided.
-The difference from a declared gate is where the consequence lands:
-approving a declared gate finishes that gate, while approving a held
+Approving a declared gate finishes that gate; approving a held
 cluster un-defers the aggregate step's routing (see [held
 clusters](../../docket/references/workflows.md#held-clusters-and-what-you-do-about-one)).
 Deciding one twice is `CONFLICT` (exit 4) naming both steps.
@@ -520,13 +517,13 @@ snapshots, recorded artifacts, pins, and recorded run notes. It never
 reads the live issue or working tree and never opens a pinned file. For a
 claimed step, inputs and their `target_sha` / `target_worktree` replay the
 bindings recorded at claim time. An unclaimed step or one pending retry
-resolves current run artifacts. `--live` explicitly asks what a new claim
+resolves current run artifacts. `--live` asks what a new claim
 would receive now for any step; use the default when investigating what a
 worker actually saw. `--meta` adds per-section byte counts alongside the
 bundle.
 
-`render` formats that bundle through a template. Without `--template` the
-shipped default is used, which ships in the binary and cannot drift. With
+`render` formats that bundle through a template. Without `--template` it
+uses the default built into the binary, which cannot drift. With
 `--template F`, **if the run pinned that path the file's bytes are
 verified against the pin** and a mismatch is `CONFLICT` naming both
 hashes — never a warning, never a silent re-pin. An unpinned template

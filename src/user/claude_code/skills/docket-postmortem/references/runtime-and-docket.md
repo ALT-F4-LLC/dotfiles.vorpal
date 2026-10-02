@@ -25,9 +25,9 @@ doctor, only where its installed build documents a non-repairing check
 
 Each of these documents itself as READ-ONLY for run state: no reap, no
 lease touch, no re-pin. Shared startup still opens the store and may migrate
-it forward, which is why the audit captures once (§2) and hands analysts the
-captured files, and why a store the sandbox denies is left alone: report the
-denial and use the captures and transcripts you already have. Never
+it forward. So the audit captures once (§2) and hands analysts the captured
+files, and leaves a store the sandbox denies alone: report the denial and use
+the captures and transcripts you already have. Never
 substitute an older binary, change the store path, initialize a project,
 or migrate a database to make a read work.
 
@@ -88,9 +88,9 @@ that a behavior evaluation ran on that model.
 For install drift, compare source, installed paths, symlink targets, and the
 bytes the run pinned. The local activation chain is `just activate`; this
 skill never runs it. Missing optional roots can mean intentional dormancy.
-Dangling roots, conflicting pinned versions, missing repository packets, and
-unactivated required fixes need their actual consequences in the run
-evidenced before filing.
+Before filing dangling roots, conflicting pinned versions, missing repository
+packets, or unactivated required fixes, evidence their actual consequences in
+the run.
 
 ## Versioned incident evidence
 

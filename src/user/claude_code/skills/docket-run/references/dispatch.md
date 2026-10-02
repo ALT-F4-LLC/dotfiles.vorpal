@@ -236,8 +236,8 @@ pending and is not a discrepancy at close.
 #### `docket dispatch verify`
 
 **This verb writes nothing, including no lease reap.** It is the one
-scheduling-shaped verb that must not reap: reaping would change the very
-ready set it was asked to compare against, and a verify that mutated its
+scheduling-shaped verb that must not reap: reaping would change the
+ready set it compares against, and a verify that mutated its
 own subject could never fail.
 
 Equal is exit 0 with `{verified: true}`. Unequal is `CONFLICT` naming the
@@ -250,8 +250,8 @@ summarized above the refusal for a human): `matched`, `recorded` (the step
 moved off the scheduler — the dispatch working, not a failure),
 `rendering-shifted` (still offerable, renders differently than at open), or
 `genuinely-missing` (still non-terminal and yet no longer offerable — the
-narrow, alarming case). The comparison covers every stored row rather than
-stopping at the first shifted one, so a dispatch where several steps moved
+narrow, alarming case). The comparison does not stop at the first shifted
+row, so a dispatch where several steps moved
 mid-flight reports all of them. The exit code is unchanged: any row that is
 not `matched` or `recorded` still fails the verb.
 
@@ -264,8 +264,8 @@ A step that has legitimately left the scheduler is **skipped**, not
 reported. That set is terminal (`done`, `skipped`, `superseded`,
 `failed-routed`) **plus `waiting-human`**: a step that recorded correctly
 and then parked is absent from the recomputation by design. The stored
-pair's own hash is checked **before** any of that, so tamper detection runs
-ahead of any drift check and a tampered row cannot escape it by also
+pair's own hash is checked **before** any of that, so a tampered row cannot
+escape tamper detection by also
 drifting.
 
 <a id="dispatch-close"></a>
@@ -365,7 +365,7 @@ reconstruction stays distinguishable from a claimant's own `reported` rows.
 | `--run` | string | — | **required** |
 | `--reason` | string | `""` | why; recorded in the `dispatch-abandoned` event |
 
-**Unconditional, and that is the point.** This is the crashed-relay path:
+**Unconditional by design.** This is the crashed-relay path:
 the relay is gone and cannot resolve anything, so a recovery verb that
 refused to recover while a discrepancy existed would let a crashed relay
 wedge a run.
@@ -391,7 +391,7 @@ passes `--ack-reap <seq>`.
 
 - The reaped step itself is re-offered; other steps in its class are not.
 - Classes with **no** `[limits] max` get neither ack rows nor a hold. A repo
-  with no `[limits]` never sees this mechanism at all.
+  with no `[limits]` never sees this mechanism.
 - Acking a seq that is not a reap, or not this run's, is `VALIDATION_ERROR`.
   Acking the same seq twice is a success that changes nothing.
 - `acked_by` records the **verb** (`dispatch-open`), never a user identity —

@@ -10,12 +10,12 @@ Find the relevant heading before reading a large section:
 
 ## Workflow: Voting (`docket vote`, consensus proposals)
 
-A workflow step can open one of these: a `type="vote"` step creates a
+A `type="vote"` workflow step creates a
 proposal when it becomes ready, fans out to the voters it names, and routes
 on the outcome. `approved` passes the step; `rejected` routes per its
 `on_fail`, which such a step must declare explicitly (V13a). `waiting-human`
-is legal there and means escalate to an operator, unlike on a human gate
-where it is refused. The proposal's id rides on the step row as `proposal`,
+is legal there and escalates to an operator; a human gate refuses it. The
+proposal's id rides on the step row as `proposal`,
 and the roster as `voters`, so a caller holding a `next` row can cast without
 reading the pinned definition; there is no new verb beyond `docket vote
 cast`. The step names a `vote_rule`, a pair of `vote.rule.<name>.*` config
@@ -85,8 +85,8 @@ refuses `vote close` (`CONFLICT`); move that run with `docket step resolve`
 instead. Neither verb grants authority to override a human-only matter.
 
 A vote step may add a `threshold`, evaluated over the cast set once an
-approved tally comes back, before the step is allowed to route `pass`. It
-reads the same predicate grammar `threshold` uses on gate steps, but over the
+approved tally comes back, before the step routes `pass`. It uses the same
+predicate grammar as `threshold` on gate steps, but over the
 cast's own fields: `vote`/`verdict` (aliases for the same field) and `voter`.
 Only `==`/`!=` are legal: casts carry no registered schema, so an ordered
 comparison (`>=`, `>`, …) is refused at register time (V36). Routing is
@@ -107,8 +107,8 @@ A rejected tally is untouched: it still routes per `on_fail`, threshold or
 not. A committed proposal (an operator's manual `vote commit`) skips the
 threshold too, since that decision was made out of band. A step declaring no
 `threshold` routes on the tally alone. `approve-with-concerns` tallies as a
-full approval weight; the threshold is a post-approval routing check and
-does not change the tally math. The step's own recorded tally is readable
+full approval weight; the threshold does not change the tally math. The
+step's own recorded tally is readable
 downstream as an input; see
 [engine-produced inputs](workflows.md#engine-produced-inputs).
 

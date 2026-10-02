@@ -22,8 +22,7 @@ Claude Code machinery. Report when you tend an issue, when one blocks you,
 or when you must ask.
 
 **Never invoke the `docket-plan` or `docket-run` skills, and never create or
-activate a docket run.** That machinery is exactly what this skill exists to
-skip.
+activate a docket run.** This skill exists to skip that machinery.
 
 **Run it under `/loop`.** `docket-tend` has no watch loop of its own —
 `/loop /docket-tend` (self-pacing) or `/loop 20m /docket-tend` supplies the recurring wake-up; each
@@ -46,10 +45,10 @@ store reachable, means this repo isn't bound: say so and stop. The queue is
 every `backlog` or `todo` issue carrying the `route-tend` label — the mark
 the [brief](../brief/SKILL.md) skill's route rules define and docket-groom
 or brief applies, for mechanical, fully specified work a worker finishes
-without a question. The pre-existing backlog is fair game, not only issues
-filed after you started watching. An issue with no routing label, or with
-`route-run`, `route-direct`, or `route-loop`, belongs to grooming, a run,
-the operator's own brief, or a loop: skip it silently. The query is
+without a question. The queue includes issues filed before you started
+watching. An issue with no routing label, or with `route-run`,
+`route-direct`, or `route-loop`, belongs to grooming, a run, the
+operator's own brief, or a loop: skip it silently. The query is
 `-s backlog -s todo`, so an issue moved to `in-progress` or `review` in a
 prior tick never reappears (see §2's blocked case).
 
@@ -68,13 +67,12 @@ After the exclusions, the queue is either:
   message; a quiet tick is not an event.
 - **Non-empty:** sort by id ascending (lowest = oldest = created first), take
   the first one, tend it (§2), then **loop back to re-poll immediately** —
-  don't schedule a wakeup between queued issues. Only go quiet once a poll
-  comes back empty. Keep strictly one issue in flight at a time (see §3: one
-  worker at a time, ever).
+  don't schedule a wakeup between queued issues. Keep strictly one issue
+  in flight at a time (see §3: one worker at a time, ever).
 
   An issue carrying the `review-gap` label was filed by `drain-highs` from a
   prior run's review findings, not by hand; its body names the filing run's
-  `source-run:`. Tending it is unchanged — the label only lets the queue and
+  `source-run:`. Tend it as usual; the label only lets the queue and
   a later `docket-retro` pass tell drain-highs filings apart from other
   issues.
 
@@ -91,10 +89,10 @@ After the exclusions, the queue is either:
    naming the answer (`docket issue comment add <id> --json=v2 -m "docket-tend:
    operator skipped, security-sensitive"` or `... -m "docket-tend: operator takes
    it"`), the same exit the blocked case in step 4 uses, so the `-s backlog
-   -s todo` query never re-offers the issue and no later tick asks the same
-   question again. Selection is lowest-id-first, so a skip that changed no
-   state would block every issue behind it. Everything else, any kind, any
-   size, gets tended: seat a worker (§3) and go.
+   -s todo` query never re-offers the issue. Selection is lowest-id-first,
+   so a skip that changed no state would block every issue behind it.
+   Everything else, any kind, any size, gets tended: seat a worker (§3)
+   and go.
 3. Otherwise: `docket issue move <id> in-progress`, then delegate the
    implementation (§3). You orchestrate; you do not implement. Read or grep
    in this conversation only as far as seating the worker requires — the
@@ -110,11 +108,10 @@ After the exclusions, the queue is either:
    falsifying check once more in this conversation, on the tree as the
    worker left it, and read the result yourself. The report is a claim,
    not evidence: the worker chose its own check and reports its own pass.
-   A fresh pass here is what step 6 rests on. A fresh failure goes back to
-   the worker as the one follow-up round §3 describes, briefed with the
-   command and its output. A check that cannot run in this environment (a
-   tool, service, or permission the orchestrator lacks) is neither a pass
-   nor a failure: it takes the same follow-up round, asking for a check
+   A fresh failure goes back to the worker as the one follow-up round §3
+   describes, briefed with the command and its output. A check that
+   cannot run in this environment (a tool, service, or permission the
+   orchestrator lacks) is neither a pass nor a failure: it takes the same follow-up round, asking for a check
    that can run here, and if none can, treat the issue as blocked (step 4).
    Rerunning a stated check is verification, not the fix-chasing step 3
    forbids. When the advisor tool is available, call it on the rerun result
@@ -127,7 +124,7 @@ After the exclusions, the queue is either:
    a non-trivial issue the candidates the worker weighed>"`, then
    `docket issue close <id> --json=v2`.
 7. Report the tend in one line: issue id, title, commit hash(es). A tended
-   issue is a state change; always say so, never absorb it silently.
+   issue is a state change; never absorb it silently.
 
 ## 3. Seat and spawn a worker
 

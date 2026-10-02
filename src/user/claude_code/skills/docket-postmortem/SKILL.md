@@ -19,7 +19,7 @@ argument-hint: "[RUN-N]"
 
 # docket-postmortem
 
-Audit how one finished run actually went, across every surface it left
+Audit how one finished run went, across every surface it left
 behind. Produce a severity-ranked review and an actionable issue queue:
 evidence, ownership, and a concrete remedy for each confirmed defect. The
 run is over before you start, so nothing here observes live work, pings a
@@ -282,7 +282,7 @@ been automated. A guard that fired as designed is a control observation, not
 a defect, unless its cost or behavior independently warrants one. For a
 defect repeated across agents or waves, prefer a deterministic extraction
 per [evidence](references/evidence.md#repetition-and-extraction-proposals):
-a repeated manual step is the clearest automation remedy there is.
+a repeated manual step is the clearest automation remedy.
 
 A remedy that only tells an agent to be more careful is a reminder, not a
 remedy, unless a gate verifies the behavior. When a remedy stays a human
@@ -313,5 +313,5 @@ logs inventoried, digested, and read in full, launches, and every gap); the
 operator touches the run needed, each vital or automatable; the ranked
 findings with their automation rung and issue ids or the reason none was
 filed; referrals to docket-retro; the absolute audit log path; and the one
-condition the next postmortem of a run should look at first. Say that no fixes
+condition the next postmortem should look at first. Say that no fixes
 were applied.

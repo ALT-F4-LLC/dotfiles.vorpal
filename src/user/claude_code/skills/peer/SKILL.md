@@ -154,11 +154,10 @@ never resend a message the notice says was refused.
 
 A dispatch also passes `notify_when_idle: true`, so one
 `[Cross-session idle notice]` arrives when the peer next finishes a turn.
-That notice is the fallback, not the signal: the peer's own `Peer notice:`
-reply is the signal, the idle notice is one-shot, it expires after 12
-hours, and it reaches only the operator when this session holds peer
-messages for approval. Report a dispatch as sent and pending, never as
-done.
+That notice is the fallback; the peer's own `Peer notice:` reply is the
+signal. The idle notice is one-shot, expires after 12 hours, and reaches
+only the operator when this session holds peer messages for approval.
+Report a dispatch as sent and pending, never as done.
 
 The harness throttles bursts to one session and drops identical repeats
 arriving close together. Batch into one message rather than sending

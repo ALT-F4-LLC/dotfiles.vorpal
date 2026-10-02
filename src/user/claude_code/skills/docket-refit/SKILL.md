@@ -149,12 +149,11 @@ on any surface, not only the five above:
 Invoked with nothing named, redesign the whole corpus instead of one
 definition: triage and verdict every surface, then carry every verdict that
 calls for a change through the full §1–§8 process to a landed commit,
-target by target, in the same session. Every definition gets triaged and
-verdicted, and every non-`keep` verdict proceeds straight into its own
-§1–§8 run; there is no upfront action list to approve before work starts.
-The operator checkpoints are the same ones single mode has — §4's deviation
-gate and §5's artifact approval — hit per target, as each is reached, not
-batched.
+target by target, in the same session. Every non-`keep` verdict proceeds
+straight into its own §1–§8 run; there is no upfront action list to approve
+before work starts. The operator checkpoints match single mode's — §4's
+deviation gate and §5's artifact approval — hit per target as each is
+reached, not batched.
 
 **Triage, then deep-dive, in one launch.** Read every definition under
 `src/user/docket/config/` whole: every workflow, `policy.toml`, every
@@ -197,8 +196,8 @@ as the finding.
   implement and land it as its own commit.
 
 Report each target's verdict and evidence in plain language as it's reached,
-not held back for an end-of-run summary; the §4/§5 gates are where the
-operator weighs in on any one target.
+not held back for an end-of-run summary; the operator weighs in on any one
+target at the §4/§5 gates.
 
 ## 1. Intake
 
@@ -231,15 +230,14 @@ A consumer the sweep names without a citation is not in the blast radius
 until you can cite it yourself; a sweep that returned nothing leaves the
 blast radius unknown, which stops the refit rather than narrowing it.
 
-Then get the target spec from the operator. A vague ask ("simplify it",
-"make it stricter") is iterated until it names concrete behavior: which
-steps or rows, which gates, what happens on rejection, who escalates to
-whom, which consumers must keep working unchanged. Batch what is genuinely
-underdetermined into one `AskUserQuestion` round, recommended option first,
-and let every detail with a conventional answer default; the proposal's
-shape is weighed below, never defaulted. When the operator hands you a
-numbered spec, treat it as the contract and ask only about what it leaves
-open.
+Then get the target spec from the operator. Iterate a vague ask ("simplify
+it", "make it stricter") until it names concrete behavior: which steps or
+rows, which gates, what happens on rejection, who escalates to whom, which
+consumers must keep working unchanged. Batch what is underdetermined into
+one `AskUserQuestion` round, recommended option first, and let every detail
+with a conventional answer default; the proposal's shape is weighed below,
+never defaulted. When the operator hands you a numbered spec, treat it as
+the contract and ask only about what it leaves open.
 
 **Weigh the shapes before proposing one.** The incumbent definition and the
 engine's conventional expression are two candidates, not the field. Derive
@@ -307,9 +305,8 @@ promised on a stale assumption fails at activation or worse. Two
 authorities cover the corpus:
 
 The docket engine checkout normally lives beside this repo
-(`.../github.com/ALT-F4-LLC/docket.git/main`), but that worktree may not be
-present in every environment (a bare clone with no checked-out `main`, for
-instance). Confirm it resolves before launching; if it does not, pass
+(`.../github.com/ALT-F4-LLC/docket.git/main`), but may be absent (a bare
+clone with no checked-out `main`, for instance). Confirm it resolves before launching; if it does not, pass
 `engineRoot: null`, and the script returns `engineUnavailable` without
 spawning an agent: report engine verification as unavailable rather than
 proceeding from memory of these files, and carry every unverified

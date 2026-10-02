@@ -168,6 +168,13 @@ case_classifier_denials_are_recorded() {
         "Bash classifier refusal logs one row with its command and tool_name"
 }
 
+case_classifier_outage_is_not_a_denial() {
+    local row
+    row=$(new_row "$(jq -nc '{hook_event_name:"PermissionDenied",tool_name:"Bash",session_id:"s",cwd:"/repo",tool_input:{command:"kubectl apply -f x"},reason:"Classifier unavailable"}')")
+    assert_row "$row" '.kind == "classifier-unavailable" and .evidence == "Classifier unavailable" and .command == "kubectl apply -f x"' \
+        "classifier outage logs one classifier-unavailable row carrying its reason"
+}
+
 case_classifier_denial_on_edit_records_file_path() {
     local row
     row=$(new_row "$(jq -nc '{hook_event_name:"PermissionDenied",tool_name:"Edit",session_id:"s",cwd:"/repo",tool_input:{file_path:"/repo/x.go",old_string:"a",new_string:"b"},reason:"Blocked by classifier"}')")
@@ -198,6 +205,7 @@ case_quoted_prose_is_not_a_denial
 case_unquoted_prose_is_not_a_denial
 case_mixed_output_keeps_the_real_line
 case_classifier_denials_are_recorded
+case_classifier_outage_is_not_a_denial
 case_classifier_denial_on_edit_records_file_path
 case_classifier_denial_records_agent_id
 case_never_blocks

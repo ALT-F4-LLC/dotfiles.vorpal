@@ -68,8 +68,13 @@ BYPASSED=false
 if [ "$EVENT" = "PermissionDenied" ]; then
     # Always recorded. A classifier denial is rare and always actionable, and
     # unlike a sandbox denial it has no output to match against.
-    KIND="classifier-denial"
     EVIDENCE=$(printf '%s' "$INPUT" | jq -r '.reason // "" | .[0:300]' 2>/dev/null || true)
+    # A classifier outage gave no verdict on the command, so it must not be
+    # grouped with denials that could justify an autoMode.allow rule.
+    case "$EVIDENCE" in
+        "Classifier unavailable"*) KIND="classifier-unavailable" ;;
+        *) KIND="classifier-denial" ;;
+    esac
 else
     # tool_response shape varies by tool; for Bash it carries stdout/stderr.
     # Take the whole blob as text rather than guessing field names by version.

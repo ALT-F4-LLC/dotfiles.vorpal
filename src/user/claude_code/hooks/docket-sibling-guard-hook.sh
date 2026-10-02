@@ -37,7 +37,11 @@
 #              has no reading business there either (a sibling's dir is mode
 #              0700 and the brief says never to reach for it). A verb list
 #              would have to be complete; the name is one token and is only
-#              ever a scratch dir.
+#              ever a scratch dir. One admission: a `docket` argument that is
+#              a whole expansion-form step id (`STEP-$s`, `STEP-${s}`, no
+#              `.d`, glob or `/` after it, and not a redirect target) names
+#              a step to the engine, not a directory, so a read loop over
+#              sibling ids passes; every `.d` and path form stays a token.
 #   WORKTREE   `git worktree prune` always (it drops the bookkeeping of every
 #              checkout momentarily absent, siblings still working included);
 #              `git worktree remove`/`move` unless every path operand lies
@@ -668,8 +672,10 @@ STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk -f "$PREPASS_AWK" 2>/dev/null) || allo
 # to the next `/`. Digits then `.d` (or a glob standing for the `d`, or a
 # bare `*`) name a step; a run carrying `$`, a backtick or `(` is an
 # expansion, and a run carrying `* ? [ {` is a glob or brace, both foreign
-# by construction since a literal own id is never spelled that way. The id
-# is compared whole: `STEP-93` and `STEP-9393` are different steps.
+# by construction since a literal own id is never spelled that way, except
+# that `docket_arg` (set per word for a `docket` leaf's non-redirect
+# arguments) admits a word that is exactly `STEP-$name` or `STEP-${name}`.
+# The id is compared whole: `STEP-93` and `STEP-9393` are different steps.
 MATCH=$(printf '%s' "$STRIPPED" | awk -v own="$OWN_STEP" -v own_mode="$OWN_MODE" -v interp="$WIDEN" -v cwd="$CALLER_CWD" '
 BEGIN {
     MARK = "\001"
@@ -736,6 +742,7 @@ function scratch_token(w,   pos, rest, run, id, suffix, dot, sub_ok) {
     run = rest
     sub(/\/.*$/, "", run)
     if (run ~ /[$`(]/) {
+        if (docket_arg && w ~ /^[Ss][Tt][Ee][Pp]-\$(\{[A-Za-z_][A-Za-z0-9_]*\}|[A-Za-z_][A-Za-z0-9_]*)$/) return 0
         T_TOKEN = "STEP-" run
         T_NUM = ""
         T_END = pos + length(run)
@@ -838,6 +845,7 @@ END {
         if (vi > 0) { decode(words[vi]); verb = head_of(D_WORD) }
         negated = 0
         prev_redirect = 0
+        prev_input = 0
         for (i = 1; i <= n; i++) {
             if (words[i] == "") continue
             quoted = decode(words[i])
@@ -847,7 +855,9 @@ END {
             # SCRATCH: any word naming a strangers scratch dir; a `find`
             # negating the own name reaches every stranger at once.
             if (own_mode != "unknown") {
+                docket_arg = (verb == "docket" && !prev_redirect && !prev_input)
                 if (foreign_scratch(w)) report("SCRATCH", T_TOKEN)
+                docket_arg = 0
                 if (verb == "find" && (w == "!" || w == "-not")) negated = 1
                 if (verb == "find" && negated && own_mode == "known" && scratch_token(w) && T_NUM == own) report("SCRATCH", "everything but " T_TOKEN)
             }
@@ -856,6 +866,7 @@ END {
             if ((verb == "rm" || verb == "rmdir" || verb == "mv") && foreign_checkout(w)) report("WORKTREE", verb " " w)
             if (foreign_checkout(w) && (w ~ /^[0-9]*>/ || w ~ /^&>/ || prev_redirect)) report("WORKTREE", "write into " w)
             prev_redirect = (w ~ /^[0-9]*>{1,2}\|?$/ || w ~ /^&>>?$/)
+            prev_input = (w ~ /^[0-9]*<{1,3}$/)
         }
         if (vi == 0) continue
         # ENGINE: `docket step reap` and `docket run conduct`, past docket own
@@ -1001,7 +1012,7 @@ fi
 log_decision "deny" "$CLAUSE"
 case "$CLAUSE" in
     SCRATCH)
-        deny "$REASON_PREFIX this command names another step's scratch directory (${DETAIL}); ${OWN_TEXT}. A sibling's leftover dir is the conductor's to sweep at reap, never an executor's. If it blocks your step, record that as a finding in your step report and do not retry. If this command performs no operation on that directory and only mentions it in prose, write the prose through a heredoc with a quoted delimiter (<<'EOF'), which this guard does not read, or with the Write tool where you have it. If a search pattern must match a step id and the command operates on no sibling directory, spell the pattern \`STEP.[0-9]+\` (with grep -E or rg), which this guard does not read as a scratch directory. Otherwise, rewording a command that operates on another step's directory is not authorized." ;;
+        deny "$REASON_PREFIX this command names another step's scratch directory (${DETAIL}); ${OWN_TEXT}. A sibling's leftover dir is the conductor's to sweep at reap, never an executor's. If it blocks your step, record that as a finding in your step report and do not retry. If this command performs no operation on that directory and only mentions it in prose, write the prose through a heredoc with a quoted delimiter (<<'EOF'), which this guard does not read, or with the Write tool where you have it. If a search pattern must match a step id and the command operates on no sibling directory, spell the pattern \`STEP.[0-9]+\` (with grep -E or rg), which this guard does not read as a scratch directory. If the command only hands sibling step ids to a docket read verb and touches no directory, spell each id literally (for example \`docket step artifacts STEP-7; docket step artifacts STEP-8\`). Otherwise, rewording a command that operates on another step's directory is not authorized." ;;
     WORKTREE)
         case "$DETAIL" in
             prune) deny "$REASON_PREFIX \`git worktree prune\` deletes the bookkeeping of every checkout that is momentarily absent, siblings still working included, and is never an executor's to run. Leave the worktree list as it is; the conductor sweeps checkouts after integration." ;;

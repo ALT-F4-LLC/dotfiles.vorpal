@@ -644,6 +644,19 @@ case_scratch_spellings() {
     assert_verdict "find ${OWN_DIR} -name '*.log' -delete" executor-write "$WAVE_42" ALLOW "find inside own dir with a name filter"
     assert_verdict "find ${OWN_DIR} ! -name keep.txt -delete" executor-write "$WAVE_42" ALLOW "find negating a plain name inside own dir"
     assert_verdict "rm -rf /tmp/claude-501/STEP-N.d" executor-write "$WAVE_42" ALLOW "the brief's STEP-N placeholder is not a token"
+    # A docket argument that is a whole expansion-form step id names a step
+    # to the engine, not a directory; any `.d`, glob or path form, any other
+    # verb, and a redirect target stay tokens.
+    assert_verdict "for s in 7 8; do docket step artifacts STEP-\$s; done" executor-write "$WAVE_42" ALLOW "docket read loop over sibling ids (\$s)"
+    assert_verdict "for s in 7 8; do docket step artifacts STEP-\${s}; done" executor-write "$WAVE_42" ALLOW "docket read loop over sibling ids (\${s})"
+    assert_verdict "docket step artifacts STEP-7" executor-write "$WAVE_42" ALLOW "docket read of a literal sibling id"
+    assert_verdict "for s in 7 8; do rm -rf /tmp/claude-501/STEP-\$s.d; done" executor-write "$WAVE_42" DENY "rm loop over expansion-form sibling dirs"
+    assert_verdict "for s in 7 8; do ls /tmp/claude-501/STEP-\$s.d; done" executor-write "$WAVE_42" DENY "ls loop over expansion-form sibling dirs"
+    assert_verdict "for s in 7.d; do rm -rf /tmp/claude-501/STEP-\$s; done" executor-write "$WAVE_42" DENY "expansion carrying the .d, under a path"
+    assert_verdict "for s in 7.d; do rm -rf STEP-\$s; done" executor-write "$WAVE_42" DENY "bare expansion-form id outside docket"
+    assert_verdict "docket step record STEP-42 --artifact-file /tmp/claude-501/STEP-\$s.d/x" executor-write "$WAVE_42" DENY "docket argument naming an expansion-form .d path"
+    assert_verdict "for s in 7 8; do docket step show STEP-42 > STEP-\$s; done" executor-write "$WAVE_42" DENY "expansion-form id as a docket leaf's redirect target"
+    assert_verdict "docket step fail STEP-42 --note x < STEP-\$s" executor-write "$WAVE_42" DENY "expansion-form id as a docket leaf's input redirect"
     # Residuals, pinned ALLOW.
     assert_verdict "rm -rf /tmp/claude-501/STEP-\"7\".d" executor-write "$WAVE_42" ALLOW "residual: id split by quotes"
     assert_verdict "rm -rf /tmp/claude-501/S*-7.d" executor-write "$WAVE_42" ALLOW "residual: glob outside the id"
@@ -755,6 +768,7 @@ case_deny_reasons() {
     assert_deny_reason "rm -rf ${SIB_DIR}" executor-write "$WAVE_42" "Write tool" "scratch deny names the prose path"
     assert_deny_reason "grep -rn 'STEP-[0-9]*' ${OWN_DIR}" executor-read "$WAVE_42" "STEP.[0-9]+" "scratch deny names the search-pattern spelling"
     assert_deny_reason "grep -rn 'STEP-[0-9]*' ${OWN_DIR}" executor-read "$WAVE_42" "rewording a command that operates on another step's directory is not authorized" "scratch deny forbids rewording a sibling operation"
+    assert_deny_reason "for s in 7 8; do rm -rf /tmp/claude-501/STEP-\$s.d; done" executor-write "$WAVE_42" "docket step artifacts STEP-7; docket step artifacts STEP-8" "scratch deny names the literal-id recovery"
     assert_deny_reason "rm -rf ${SIB_DIR}" executor-read "$SEAT" "holds no step claim" "scratch deny with no own step says so"
     assert_deny_reason "git worktree prune" executor-write "$WAVE_42" "git worktree prune" "prune deny names the verb"
     assert_deny_reason "git worktree remove /repo/.claude/worktrees/wf_x" executor-write "$WAVE_42" "did not create" "worktree deny explains ownership"

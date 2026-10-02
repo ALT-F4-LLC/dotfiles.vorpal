@@ -866,7 +866,7 @@ END {
                 if (words[j] == "") { j++; continue }
                 decode(words[j])
                 if (D_WORD !~ /^-/) break
-                if (D_WORD == "--format" || D_WORD == "--project") { j += 2 } else { j++ }
+                if (D_WORD == "--format" || D_WORD == "--interval") { j += 2 } else { j++ }
             }
             k = j + 1
             while (k <= n && words[k] == "") k++

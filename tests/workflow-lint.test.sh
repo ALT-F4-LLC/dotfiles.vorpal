@@ -8,12 +8,14 @@
 # Availability: lint needs `docket` on PATH, `jq` once docket is present,
 # and a project registry that `docket project list --json` reports ok. When
 # any is missing the suite FAILS, naming what is missing, so a green run is
-# evidence that lint ran. The one exception is WORKFLOW_LINT_SKIP=1, which
-# only the CI step sets (CI has no docket install): with it, a missing docket
-# or registry prints one SKIP line naming the reason and exits 0. A missing
-# jq fails whether or not WORKFLOW_LINT_SKIP is set. The variable is consulted
-# only when docket or the registry is unavailable; it never skips a lint that
-# could run. Neither this suite nor the justfile `tests` recipe sets it.
+# evidence that lint ran. The one exception is CI (which has no docket
+# install): WORKFLOW_LINT_SKIP=1 together with GITHUB_ACTIONS=true, which
+# GitHub-hosted runners set, makes a missing docket or registry print one SKIP
+# line naming the reason and exit 0. WORKFLOW_LINT_SKIP=1 alone, such as an
+# inherited export in a local shell, does not skip. A missing jq fails whether
+# or not the skip applies. The variables are consulted only when docket or
+# the registry is unavailable; they never skip a lint that could run. Neither
+# this suite nor the justfile `tests` recipe sets them.
 #
 # WORKFLOWS_DIR overrides the directory linted, so a mutation probe can point
 # the suite at a deliberately-broken COPY under $TMPDIR without touching the
@@ -39,11 +41,11 @@ elif ! docket project list --json < /dev/null 2> /dev/null | jq -e '.ok == true'
 fi
 
 if [ -n "$unavailable" ]; then
-    if [ "${WORKFLOW_LINT_SKIP:-}" = "1" ]; then
+    if [ "${WORKFLOW_LINT_SKIP:-}" = "1" ] && [ "${GITHUB_ACTIONS:-}" = "true" ]; then
         echo "SKIP workflow-lint: ${unavailable}"
         exit 0
     fi
-    echo "FAIL workflow-lint: ${unavailable}; set WORKFLOW_LINT_SKIP=1 only where docket cannot be installed" >&2
+    echo "FAIL workflow-lint: ${unavailable}; the skip applies only in CI (WORKFLOW_LINT_SKIP=1 with GITHUB_ACTIONS=true)" >&2
     exit 1
 fi
 

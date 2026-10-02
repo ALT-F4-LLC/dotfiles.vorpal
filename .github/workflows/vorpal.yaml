@@ -147,6 +147,8 @@ jobs:
 
       - run: bash tests/wave-vote-retry-report.test.sh
 
+      - run: bash tests/workflow-changelog-version.test.sh
+
       - run: bash tests/workflow-module-parse.test.sh
 
       # CI has no docket install; the skip is reserved for this row.

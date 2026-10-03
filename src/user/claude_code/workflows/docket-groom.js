@@ -80,10 +80,9 @@ const AGENT_CONFIG = {
     cluster: { model: 'sonnet', effort: 'high' },
 }
 
-// One judge per open issue over one or two backlogs is normally tens of agents; the
-// bound keeps a runaway backlog inside the Workflow tool's lifetime cap.
-// Issues beyond it are returned as uncovered, never silently dropped, and
-// the skill judges them inline.
+// One judge per open issue over one or two backlogs is normally tens of
+// agents; the bound keeps a runaway backlog inside the Workflow tool's
+// lifetime cap. The skill judges issues beyond it inline.
 const JUDGE_CAP = 200
 
 const SIZES = ['trivial', 'small', 'bounded', 'needs-design', 'unknown']
@@ -459,6 +458,7 @@ Name in notes every issue you could not read and every verb that refused.`
 // ---- Run --------------------------------------------------------------------
 
 const uncovered = []
+const missing = (what) => uncovered.push({ what, why: 'agent returned nothing' })
 
 const perProject = projects.map((project) => {
     const rows = issues.filter((r) => r.project === project.name)
@@ -480,8 +480,9 @@ for (const group of perProject) {
         uncovered.push({ what: `judge ${row.id} (${group.project.name})`, why: `beyond the judge bound of ${JUDGE_CAP}` })
     }
 }
+const workCount = issues.filter((r) => r.kind !== 'epic').length
 const plannedJudges = perProject.reduce((n, g) => n + g.judged.length, 0)
-const droppedJudges = issues.filter((r) => r.kind !== 'epic').length - plannedJudges
+const droppedJudges = workCount - plannedJudges
 if (droppedJudges) log(`docket-groom: judge bound is ${JUDGE_CAP}; ${droppedJudges} issue(s) stay UNCOVERED for inline judgment`)
 log(`docket-groom: ${projects.length} project(s), ${issues.length} surveyed row(s), ${plannedJudges} judge(s) to seat`)
 
@@ -498,7 +499,7 @@ const results = await pipeline(
             schema: REGISTRY_SCHEMA,
             ...AGENT_CONFIG.registry,
         })
-        if (!registry) uncovered.push({ what: `registry of ${group.project.name}`, why: 'agent returned nothing' })
+        if (!registry) missing(`registry of ${group.project.name}`)
         else if (registry.checkoutOk === false) uncovered.push({ what: `registry of ${group.project.name}`, why: registry.notes || 'checkout unavailable' })
         return { ...group, registry: registry || null }
     },
@@ -517,7 +518,7 @@ const results = await pipeline(
         const judged = entries.map((e, i) => {
             const row = group.judged[i]
             if (!e) {
-                uncovered.push({ what: `judge ${row.id} (${group.project.name})`, why: 'agent returned nothing' })
+                missing(`judge ${row.id} (${group.project.name})`)
                 return null
             }
             if (e.readOk === false) uncovered.push({ what: `judge ${row.id} (${group.project.name})`, why: e.notes || 'issue could not be read' })
@@ -536,7 +537,7 @@ const results = await pipeline(
                 schema: CLUSTER_SCHEMA,
                 ...AGENT_CONFIG.cluster,
             })
-            if (!cluster) uncovered.push({ what: `cluster of ${group.project.name}`, why: 'agent returned nothing' })
+            if (!cluster) missing(`cluster of ${group.project.name}`)
         } else {
             log(`docket-groom: ${group.project.name} has no readable judged issue; no cluster analyst seated`)
         }
@@ -558,13 +559,10 @@ const ledger = groups.flatMap((g) => [
 ])
 const clusters = groups.map((g) => ({ project: g.project.name, ...(g.cluster || { duplicates: [], epicMatches: [], epicProposals: [], notes: 'no cluster report returned' }) }))
 
-const decisions = ledger.filter((e) => e.judged).reduce((acc, e) => {
-    acc[e.value.decision] = (acc[e.value.decision] || 0) + 1
-    return acc
-}, {})
-const oversized = ledger.filter((e) => e.judged && e.size.tier === 'oversized').length
-const unsized = ledger.filter((e) => e.judged && e.size.sizeVerdict === 'set').length
-const decisionText = VALUE_DECISIONS.map((d) => `${decisions[d] || 0} ${d}`).join(', ')
+const judgedEntries = ledger.filter((e) => e.judged)
+const oversized = judgedEntries.filter((e) => e.size.tier === 'oversized').length
+const unsized = judgedEntries.filter((e) => e.size.sizeVerdict === 'set').length
+const decisionText = VALUE_DECISIONS.map((d) => `${judgedEntries.filter((e) => e.value.decision === d).length} ${d}`).join(', ')
 const tail = uncovered.length ? `; ${uncovered.length} UNCOVERED` : ''
 
 const result = {
@@ -572,6 +570,6 @@ const result = {
     ledger,
     clusters,
     uncovered,
-    summary: `${ledger.filter((e) => e.judged).length}/${issues.filter((r) => r.kind !== 'epic').length} issue(s) judged across ${groups.length}/${projects.length} project(s): ${decisionText}; ${oversized} oversized, ${unsized} unsized${tail}.`,
+    summary: `${judgedEntries.length}/${workCount} issue(s) judged across ${groups.length}/${projects.length} project(s): ${decisionText}; ${oversized} oversized, ${unsized} unsized${tail}.`,
 }
 return result

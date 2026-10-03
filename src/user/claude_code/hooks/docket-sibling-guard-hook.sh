@@ -39,9 +39,11 @@
 #              would have to be complete; the name is one token and is only
 #              ever a scratch dir. One admission: a `docket` argument that is
 #              a whole expansion-form step id (`STEP-$s`, `STEP-${s}`, no
-#              `.d`, glob or `/` after it, and not a redirect target) names
-#              a step to the engine, not a directory, so a read loop over
-#              sibling ids passes; every `.d` and path form stays a token.
+#              `.d`, glob or `/` after it, not a redirect target, and in a
+#              leaf carrying no `$( )`, backtick, `<( )` or `${ }`
+#              substitution) names a step to the engine, not a directory, so
+#              a read loop over sibling ids passes; every `.d` and path form
+#              stays a token.
 #   WORKTREE   `git worktree prune` always (it drops the bookkeeping of every
 #              checkout momentarily absent, siblings still working included);
 #              `git worktree remove`/`move` unless every path operand lies
@@ -673,8 +675,9 @@ STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk -f "$PREPASS_AWK" 2>/dev/null) || allo
 # bare `*`) name a step; a run carrying `$`, a backtick or `(` is an
 # expansion, and a run carrying `* ? [ {` is a glob or brace, both foreign
 # by construction since a literal own id is never spelled that way, except
-# that `docket_arg` (set per word for a `docket` leaf's non-redirect
-# arguments) admits a word that is exactly `STEP-$name` or `STEP-${name}`.
+# that a word that is exactly `STEP-$name` or `STEP-${name}` is admitted
+# when it is an argument of a `docket` leaf with no substitution in it and
+# does not follow a redirect operator.
 # The id is compared whole: `STEP-93` and `STEP-9393` are different steps.
 MATCH=$(printf '%s' "$STRIPPED" | awk -v own="$OWN_STEP" -v own_mode="$OWN_MODE" -v interp="$WIDEN" -v cwd="$CALLER_CWD" '
 BEGIN {
@@ -734,7 +737,9 @@ function verb_index(n,   i, h) {
 # or "" when an expansion, glob or brace stands where the id should be).
 # T_END is the position just past the token, for scanning the rest of the
 # word.
-function scratch_token(w,   pos, rest, run, id, suffix, dot, sub_ok) {
+# docket_arg is true only for a word the engine reads as a step id (see THE
+# MATCH); callers that pass nothing get 0.
+function scratch_token(w, docket_arg,   pos, rest, run, id, suffix, dot, sub_ok) {
     T_END = 0
     if (!match(w, /[Ss][Tt][Ee][Pp]-/)) return 0
     pos = RSTART + RLENGTH
@@ -773,10 +778,10 @@ function scratch_token(w,   pos, rest, run, id, suffix, dot, sub_ok) {
 # "none" every token is foreign; with "known", a token whose id differs, an
 # expansion, glob or brace id, and the own dir followed by a `..` component
 # all are.
-function foreign_scratch(w,   rest, any_own) {
+function foreign_scratch(w, docket_arg,   rest, any_own) {
     rest = w
     any_own = 0
-    while (scratch_token(rest)) {
+    while (scratch_token(rest, docket_arg)) {
         if (own_mode == "none" || T_NUM == "" || T_NUM != own) return 1
         any_own = 1
         rest = substr(rest, T_END)
@@ -843,9 +848,13 @@ END {
         vi = verb_index(n)
         verb = ""
         if (vi > 0) { decode(words[vi]); verb = head_of(D_WORD) }
+        # A substitution in the leaf is a command the probe vetoed along
+        # with the leaf, so its words never reach the matcher as their own
+        # leaf: no word of such a leaf is a docket argument.
+        docket_leaf = (verb == "docket" && lines[ln] !~ /\$\(|\140|[<>]\(|\$\{[ \t|]/)
         negated = 0
         prev_redirect = 0
-        prev_input = 0
+        prev_redirect_op = 0
         for (i = 1; i <= n; i++) {
             if (words[i] == "") continue
             quoted = decode(words[i])
@@ -855,9 +864,7 @@ END {
             # SCRATCH: any word naming a strangers scratch dir; a `find`
             # negating the own name reaches every stranger at once.
             if (own_mode != "unknown") {
-                docket_arg = (verb == "docket" && !prev_redirect && !prev_input)
-                if (foreign_scratch(w)) report("SCRATCH", T_TOKEN)
-                docket_arg = 0
+                if (foreign_scratch(w, docket_leaf && !prev_redirect_op)) report("SCRATCH", T_TOKEN)
                 if (verb == "find" && (w == "!" || w == "-not")) negated = 1
                 if (verb == "find" && negated && own_mode == "known" && scratch_token(w) && T_NUM == own) report("SCRATCH", "everything but " T_TOKEN)
             }
@@ -866,7 +873,10 @@ END {
             if ((verb == "rm" || verb == "rmdir" || verb == "mv") && foreign_checkout(w)) report("WORKTREE", verb " " w)
             if (foreign_checkout(w) && (w ~ /^[0-9]*>/ || w ~ /^&>/ || prev_redirect)) report("WORKTREE", "write into " w)
             prev_redirect = (w ~ /^[0-9]*>{1,2}\|?$/ || w ~ /^&>>?$/)
-            prev_input = (w ~ /^[0-9]*<{1,3}$/)
+            # Any standalone redirect operator (`<`, `<>`, `>&`, `3<>`,
+            # `{fd}>`): the word after it is a file the shell opens, not a
+            # docket argument.
+            prev_redirect_op = (w ~ /^([0-9]*|\{[A-Za-z_][A-Za-z0-9_]*\})[<>&|]*[<>][<>&|-]*$/)
         }
         if (vi == 0) continue
         # ENGINE: `docket step reap` and `docket run conduct`, past docket own

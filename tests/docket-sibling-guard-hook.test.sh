@@ -657,6 +657,27 @@ case_scratch_spellings() {
     assert_verdict "docket step record STEP-42 --artifact-file /tmp/claude-501/STEP-\$s.d/x" executor-write "$WAVE_42" DENY "docket argument naming an expansion-form .d path"
     assert_verdict "for s in 7 8; do docket step show STEP-42 > STEP-\$s; done" executor-write "$WAVE_42" DENY "expansion-form id as a docket leaf's redirect target"
     assert_verdict "docket step fail STEP-42 --note x < STEP-\$s" executor-write "$WAVE_42" DENY "expansion-form id as a docket leaf's input redirect"
+    assert_verdict "docket step show STEP-42 <> STEP-\$s" executor-write "$WAVE_42" DENY "expansion-form id as a docket leaf's read-write redirect"
+    assert_verdict "docket step artifacts STEP-\$s 3<> STEP-\$s" executor-write "$WAVE_42" DENY "expansion-form id after a numbered read-write redirect"
+    assert_verdict "docket step show STEP-42 >& STEP-\$s" executor-write "$WAVE_42" DENY "expansion-form id after a >& redirect"
+    # A substitution inside the docket leaf is a command the probe never
+    # dispatches on its own, so its words are not docket arguments.
+    assert_verdict "cd /tmp/claude-501 && for s in 7.d; do docket step show STEP-42 \$(rm -rf STEP-\$s ); done" executor-write "$WAVE_42" DENY "command substitution inside a docket leaf"
+    assert_verdict "docket step artifacts \$(rm -rf STEP-\$s )" executor-write "$WAVE_42" DENY "command substitution as a docket argument"
+    assert_verdict "docket step artifacts \`rm -rf STEP-\$s \`" executor-write "$WAVE_42" DENY "backtick substitution as a docket argument"
+    assert_verdict "docket step artifacts <(rm -rf STEP-\$s )" executor-write "$WAVE_42" DENY "process substitution as a docket argument"
+    # The admission is the whole word: any suffix, path or glob stays a token.
+    assert_verdict "for s in 7 8; do docket step artifacts STEP-\$s.d; done" executor-write "$WAVE_42" DENY "docket argument STEP-\$s.d"
+    assert_verdict "for s in 7 8; do docket step artifacts STEP-\${s}.d; done" executor-write "$WAVE_42" DENY "docket argument STEP-\${s}.d"
+    assert_verdict "for s in 7 8; do docket step artifacts STEP-\$s/x; done" executor-write "$WAVE_42" DENY "docket argument STEP-\$s/x"
+    assert_verdict "for s in 7 8; do docket step artifacts STEP-\$s*; done" executor-write "$WAVE_42" DENY "docket argument STEP-\$s*"
+    assert_verdict "docket step artifacts STEP-\$(echo 7)" executor-write "$WAVE_42" DENY "docket argument STEP-\$(echo 7)"
+    # Wrapper and path spellings resolve to the docket verb; an interpreter
+    # carrier and a compound with a .d operand do not get the admission.
+    assert_verdict "for s in 7 8; do xargs docket step artifacts STEP-\$s; done" executor-write "$WAVE_42" ALLOW "xargs-prefixed docket read over sibling ids"
+    assert_verdict "for s in 7 8; do /usr/bin/docket step artifacts STEP-\$s; done" executor-write "$WAVE_42" ALLOW "path-qualified docket read over sibling ids"
+    assert_verdict "bash -c 'for s in 7 8; do docket step artifacts STEP-\$s; done'" executor-write "$WAVE_42" DENY "bash -c carrying a docket read loop (interpreter leaf, no admission)"
+    assert_verdict "for s in 7 8; do docket step artifacts STEP-\$s; rm -rf /tmp/claude-501/STEP-\$s.d; done" executor-write "$WAVE_42" DENY "docket read beside an rm of the expansion-form .d"
     # Residuals, pinned ALLOW.
     assert_verdict "rm -rf /tmp/claude-501/STEP-\"7\".d" executor-write "$WAVE_42" ALLOW "residual: id split by quotes"
     assert_verdict "rm -rf /tmp/claude-501/S*-7.d" executor-write "$WAVE_42" ALLOW "residual: glob outside the id"

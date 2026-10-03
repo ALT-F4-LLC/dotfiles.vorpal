@@ -30,17 +30,16 @@ export const meta = {
 // frozen-drift-check gate demands. Nothing in the repository changes inside
 // this workflow.
 //
-// How the simplify skill is used. The built-in simplify skill's listing says
-// it reviews the changed code for reuse, simplification, efficiency, and
-// altitude cleanups and applies the fixes; its loaded instructions were not
-// read when this script was written, so whether it takes a file target is
-// learned by the simplifier that loads it. Each simplifier copies its file
-// into the scratch mirror and, when the Skill tool is available, invokes
-// simplify there with the untracked candidate as the change under review;
-// when the tool is unavailable, or the skill's instructions would have it
-// diff or edit the checkout, it applies the same four criteria itself. Either
-// way the criteria are the built-in skill's, and the candidate is the only
-// file written.
+// How the simplify skill is used. The built-in simplify skill reviews changed
+// code for reuse, simplification, efficiency, and altitude and applies the
+// fixes; its instructions were not read when this script was written, so
+// whether it takes a file target is learned by the simplifier that loads it.
+// Each simplifier copies its file into the scratch mirror and, when the Skill
+// tool is available, invokes simplify there with the untracked candidate as
+// the change under review. When the tool is unavailable, or the skill's
+// instructions would have it diff or edit the checkout, the simplifier applies
+// the same four criteria itself. Either way the candidate is the only file
+// written.
 //
 // Verification. Every candidate must be strictly smaller (the convergence
 // rule: a pass over already-simple files lands nothing) and pass a
@@ -51,10 +50,9 @@ export const meta = {
 // report verbatim, and this file parses the report; a missing or unparsable
 // report rejects. Survivors face three refuters leading from different
 // angles (behavior or meaning, the reader or caller, churn); two upholds
-// accept.
-// Whether a simplification preserves behavior is judged, not proven: the
-// skill's landing gates (test suites naming the file, self-hygiene for Rust,
-// the module parse gate for workflow scripts) are the mechanical backstop.
+// accept. Behavior preservation is judged, not proven: the skill's landing
+// gates (test suites naming the file, self-hygiene for Rust, the module parse
+// gate for workflow scripts) are the mechanical backstop.
 
 // Installed by `just activate` from skills/simplify-corpus/scripts. Unquoted
 // in commands so the shell expands `~`.
@@ -418,26 +416,27 @@ const results = await pipeline(
   work,
   (t) => agent(simplifyPrompt(t.file, candidatePath(scratchDir, t.file), t.kind, pass), { phase: 'Simplify', label: `simplify:${t.file}`, schema: SIMPLIFY_SCHEMA, ...AGENT_CONFIG.simplify }),
   async (simplified, t) => {
-    if (!simplified) return { file: t.file, kind: t.kind, status: 'rejected', reason: 'the simplifier returned nothing' }
-    if (!simplified.changed) return { file: t.file, kind: t.kind, status: 'unchanged', summary: simplified.summary }
+    const base = { file: t.file, kind: t.kind }
+    if (!simplified) return { ...base, status: 'rejected', reason: 'the simplifier returned nothing' }
+    if (!simplified.changed) return { ...base, status: 'unchanged', summary: simplified.summary }
     const candidate = simplified.candidate || candidatePath(scratchDir, t.file)
     const check = parseCheck(await run(checkCommand(t.kind, t.file, candidate), { phase: 'Check', label: `check:${t.file}` }))
-    if (!check.intact) return { file: t.file, kind: t.kind, status: 'rejected', reason: `mechanical check failed: ${check.problem}` }
-    if (!shrank(check)) return { file: t.file, kind: t.kind, status: 'rejected', reason: `candidate is not smaller (${check.bytesBefore} -> ${check.bytesAfter} bytes)` }
-    if (t.versioned && !versionBumped(check)) return { file: t.file, kind: t.kind, status: 'rejected', reason: `version not bumped by exactly a greater integer (${check.versionBefore} -> ${check.versionAfter})` }
-    return { file: t.file, kind: t.kind, status: 'checked', candidate, check, summary: simplified.summary, usedSkill: simplified.usedSkill }
+    if (!check.intact) return { ...base, status: 'rejected', reason: `mechanical check failed: ${check.problem}` }
+    if (!shrank(check)) return { ...base, status: 'rejected', reason: `candidate is not smaller (${check.bytesBefore} -> ${check.bytesAfter} bytes)` }
+    if (t.versioned && !versionBumped(check)) return { ...base, status: 'rejected', reason: `version not bumped by exactly a greater integer (${check.versionBefore} -> ${check.versionAfter})` }
+    return { ...base, status: 'checked', candidate, check, summary: simplified.summary, usedSkill: simplified.usedSkill }
   },
   async (checked, t) => {
     if (!checked || checked.status !== 'checked') return checked
+    const base = { file: t.file, kind: t.kind }
     const framings = CODE_KINDS.has(t.kind) ? CODE_FRAMINGS : PROSE_FRAMINGS
     const returns = await parallel(framings.map((framing) => () =>
       agent(verifyPrompt(t.file, checked.candidate, t.kind, framing), { phase: 'Verify', label: `verify:${t.file}:${framing.key}`, schema: VERDICT_SCHEMA, ...AGENT_CONFIG.verify })
     ))
     const tally = tallyVotes(returns)
-    if (!tally.accepted) return { file: t.file, kind: t.kind, status: 'rejected', reason: `${tally.upheld}/${tally.votes} refuters upheld; ${tally.reasons.join(' | ') || 'no votes returned'}` }
+    if (!tally.accepted) return { ...base, status: 'rejected', reason: `${tally.upheld}/${tally.votes} refuters upheld; ${tally.reasons.join(' | ') || 'no votes returned'}` }
     return {
-      file: t.file,
-      kind: t.kind,
+      ...base,
       status: 'accepted',
       candidate: checked.candidate,
       summary: checked.summary,

@@ -357,6 +357,36 @@ case_unexpandable_brace_prose_allows() {
     done
 }
 
+# ---- ACCEPTED RESIDUAL: a quoted brace group fed to an interpreter's stdin --
+#
+# The hook reads the outer line only. A quoted group piped or here-stringed
+# into an interpreter reaches the child unexpanded, and the child runs it.
+# The brace-free form is already ALLOW (AB-7), so the same-group exemption
+# adds no reach; these rows pin that verdict in both directions. The DENY
+# controls put the brace word in a different quote group from the head word
+# (unquoted, then quoted), so a same-group test that stops comparing groups
+# turns them red.
+
+case_quoted_brace_interpreter_stdin_residual() {
+    local agent
+    for agent in executor-read executor-write; do
+        assert_verdict "echo 'docket trus{t,} add erik key' | sh" "$agent" ALLOW \
+            "${agent}: quoted brace trust word piped to sh (accepted residual, AB-7)"
+        assert_verdict "echo 'docket trust ad{d,} erik key' | bash" "$agent" ALLOW \
+            "${agent}: quoted brace verb piped to bash (accepted residual, AB-7)"
+        assert_verdict "sh <<< 'docket trus{t,} add erik key'" "$agent" ALLOW \
+            "${agent}: quoted brace trust word as a here-string to sh (accepted residual, AB-7)"
+        assert_verdict "bash <<< 'docket trust ad{d,} erik key'" "$agent" ALLOW \
+            "${agent}: quoted brace verb as a here-string to bash (accepted residual, AB-7)"
+        assert_verdict "echo docket 'trus{t,}' add erik key | sh" "$agent" DENY \
+            "${agent}: brace trust word in its own quote group, unquoted head"
+        assert_verdict "echo 'docket' 'trus{t,}' add erik key | sh" "$agent" DENY \
+            "${agent}: brace trust word in its own quote group, quoted head"
+        assert_verdict "echo 'docket trust' 'ad{d,}' erik key | sh" "$agent" DENY \
+            "${agent}: brace verb in its own quote group, quoted head"
+    done
+}
+
 # ---- MUST DENY: the verb carried as an interpreter's code argument --------
 #
 # A quoted string is prose everywhere except one position: the code argument
@@ -967,6 +997,7 @@ case_brace_split_verb_denies
 case_command_position_brace_denies
 case_command_position_brace_allows
 case_unexpandable_brace_prose_allows
+case_quoted_brace_interpreter_stdin_residual
 case_interpreter_code_argument_deny
 case_full_interpreter_list_denies
 case_full_code_flag_list_denies

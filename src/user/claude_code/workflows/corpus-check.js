@@ -23,12 +23,10 @@ const AGENT_CONFIG = {
 
 const SHARD_LINES = 1500
 // Three refuters on one identical prompt are three correlated votes: seats
-// sharing a model, scaffold and framing converge on the same answer, so their
-// "majority" is one opinion counted three times. Each refuter instead leads
-// from a different angle on the same findings, so a majority is agreement
-// across different approaches, not one approach repeated. Every refuter still
-// judges the whole finding on every ground; the angle changes where it starts
-// and what it weighs, not what can refute.
+// sharing a model, scaffold and framing converge, so their "majority" is one
+// opinion counted three times. Each refuter instead leads from a different
+// angle, so a majority is agreement across approaches. Every refuter still
+// judges the whole finding on every ground.
 const REFUTER_FRAMINGS = [
   {
     key: 'quote',
@@ -288,12 +286,12 @@ or uncovered span in a large file as a gap, naming the file and missing range.`,
   const refillLimit = COMPLETENESS_RESERVE - 1
   const refills = gaps.slice(0, refillLimit)
   const unfilled = gaps.slice(refillLimit)
+  const describe = (list) => list.map((gap) => `${gap.file} (${gap.range})`).join(', ')
   log(`Completeness pass found ${gaps.length} gap(s); re-dispatching ${refills.length}`)
-  if (unfilled.length) log(`Refill reserve is ${refillLimit}; ${unfilled.length} gap(s) stay UNCOVERED: ${unfilled.map((gap) => `${gap.file} (${gap.range})`).join(', ')}`)
+  if (unfilled.length) log(`Refill reserve is ${refillLimit}; ${unfilled.length} gap(s) stay UNCOVERED: ${describe(unfilled)}`)
   const gapReads = await pipeline(refills, (gap) =>
     agent(readPrompt(gap.file, ` (lines ${gap.range})`, sinceRefNote), { phase: 'Completeness', label: `refill:${gap.file}`, schema: FINDING_SCHEMA, ...AGENT_CONFIG.refill })
   )
-  const describe = (list) => list.map((gap) => `${gap.file} (${gap.range})`).join(', ')
   return {
     reports: gapReads.filter(Boolean),
     coverageNote: `Re-dispatched ${refills.length} gap(s) found by the completeness pass: ${describe(refills)}.`
@@ -360,11 +358,9 @@ If none qualify, return an empty string.`,
   { phase: 'Discover', label: 'size-check', ...AGENT_CONFIG.sizing }
 )
 const largeFiles = parseLines(sizeReport)
-  .map((line) => {
-    const match = line.match(/^(.+?)\s+(\d+)\s*$/)
-    return match ? { file: match[1], lines: parseInt(match[2], 10) } : null
-  })
+  .map((line) => line.match(/^(.+?)\s+(\d+)\s*$/))
   .filter(Boolean)
+  .map(([, file, lines]) => ({ file, lines: parseInt(lines, 10) }))
 const lineCounts = new Map(largeFiles.map(({ file, lines }) => [file, lines]))
 if (largeFiles.length) log(`Sharding ${largeFiles.length} large file(s): ${largeFiles.map(({ file, lines }) => `${file} (${lines}L)`).join(', ')}`)
 

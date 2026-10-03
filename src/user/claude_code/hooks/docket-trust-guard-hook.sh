@@ -101,11 +101,12 @@
 # defect (a hand-rolled model of bash's grammar is not bash's grammar), is
 # the signature of the wrong tool for the job, not a bug count to keep
 # whittling down. This redesign does not re-implement heredocs, comments,
-# arithmetic, quoting, pipes, or command substitution AT ALL: it asks bash
-# itself what it would run, using bash's own DEBUG trap with `extdebug` and
-# `functrace` (`set -T`, which makes DEBUG traps propagate into subshells,
-# command substitutions, and function bodies — without it, `(docket trust
-# add …)` in a bare subshell ran unobserved, verified live here). The trap
+# arithmetic, quoting, pipes, or command substitution to find where each
+# command starts: it asks bash itself what it would run, using bash's own
+# DEBUG trap with `extdebug` and `functrace` (`set -T`, which makes DEBUG
+# traps propagate into subshells, command substitutions, and function
+# bodies — without it, `(docket trust add …)` in a bare subshell ran
+# unobserved, verified live here). The trap
 # fires once per SIMPLE COMMAND bash's real parser is about to execute; it
 # ALWAYS vetoes that command (returns non-zero, which `extdebug` treats as
 # "skip it") rather than letting anything actually run, except for a small
@@ -156,7 +157,9 @@
 # which carriers stay allowed as residuals.
 # What is gone is the heredoc/comment/arithmetic re-scanning this file used
 # to do to feed that step a stream of words; bash's own grammar does that
-# now, on every leaf it hands back.
+# now, on every leaf it hands back. The one exception is a widened heredoc
+# body, which bash never parses: the pre-pass applies a bash-shaped comment
+# rule to its text, stated in docket-guard-prepass.awk.
 #
 # ONE ACCEPTED INACCURACY, stated with its failure direction: bash's own
 # $BASH_COMMAND reconstruction MOVES a here-string redirect (`<<<word`) to

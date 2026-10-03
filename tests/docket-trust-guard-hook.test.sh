@@ -747,9 +747,13 @@ case_heredoc_body_destination() {
 # body's do, so the body rows pin the pre-pass's own comment rule: a `#` that
 # starts a word (after a blank, an unquoted ;&|()<>, or an opening backtick)
 # opens a comment in which quotes open no group. A `#` inside a word is not a
-# comment start, including one right after a substitution's closing `)` or
-# backtick, or after an escaped byte. A misread either way moves quote parity,
-# so each row pins one side of that boundary.
+# comment start, including one right after a substitution's, an array's or an
+# arithmetic group's closing `)`, a closing backtick, or an escaped byte, and
+# no `#` inside ${...} or (( )) is one. A function definition's `()` is two
+# operators, so a `#` after it is. Where the text cannot settle bash's reading
+# (an extglob group, a case pattern inside $( )), the pre-pass stops marking
+# prose for the rest of the leaf. A misread either way moves quote parity, so
+# each row pins one side of that boundary.
 
 case_comment_regions_are_inert() {
     local inv='docket trust add erik key'
@@ -762,6 +766,15 @@ case_comment_regions_are_inert() {
         executor-write DENY "an apostrophe in a widened body's trailing comment does not swallow the next body line"
     assert_verdict "${widened}"$'\n''# say "x'$'\n'"${inv}"$'\nEOF' \
         executor-write DENY "a double quote in a widened body's comment does not swallow the next body line"
+    # The same three bodies with a closing quote after the write: a quote the
+    # comment rule failed to suppress then closes inside the leaf and marks
+    # the write as prose, rather than running to the leaf end unmarked.
+    assert_verdict "${widened}"$'\n'"# it's"$'\n'"${inv}"$'\n'"'"$'\nEOF' \
+        executor-write DENY "an apostrophe in a widened body's comment does not pair with a later quote"
+    assert_verdict "${widened}"$'\n'"echo hi # it's"$'\n'"${inv}"$'\n'"'"$'\nEOF' \
+        executor-write DENY "an apostrophe in a widened body's trailing comment does not pair with a later quote"
+    assert_verdict "${widened}"$'\n''# say "x'$'\n'"${inv}"$'\n''"'$'\nEOF' \
+        executor-write DENY "a double quote in a widened body's comment does not pair with a later quote"
     assert_verdict "${widened}"$'\n'"echo hi;# it's"$'\n'"${inv}"$'\nEOF' \
         executor-write DENY "a widened body's comment opened right after ; does not swallow the next body line"
     assert_verdict "${widened}"$'\n'"(echo hi)# it's"$'\n'"${inv}"$'\nEOF' \
@@ -795,6 +808,45 @@ case_comment_regions_are_inert() {
         executor-write ALLOW "a # right after a substitution's ) is mid-word, so the quoted prose stays prose"
     assert_verdict "echo \`date\`#${sq}${prose}${sq}" \
         executor-write ALLOW "a # right after a closing backtick is mid-word, so the quoted prose stays prose"
+    # These bodies end with a quote after the write, so a quote group the
+    # pre-pass opens in the wrong place closes inside the leaf and marks the
+    # write as prose instead of running to the leaf end, where it is emitted
+    # unmarked.
+    local sq_end=$'\n'"${sq}"$'\nEOF' dq_end=$'\n'"${dq}"$'\nEOF'
+    assert_verdict "${widened}"$'\n'"echo hi;${sq}x${sq}#${sq}"$'\nx\n'"${sq}"$'\n'"${inv}${sq_end}" \
+        executor-write DENY "a # right after a quoted word that follows ; is mid-word, so its quote still opens a group"
+    assert_verdict "${widened}"$'\n'"echo hi;${dq}x${dq}#${dq}"$'\nx\n'"${dq}"$'\n'"${inv}${dq_end}" \
+        executor-write DENY "a # right after a double-quoted word that follows ; is mid-word, so its quote still opens a group"
+    assert_verdict "${widened}"$'\n'"a=(x)#${sq}"$'\ny\n'"${sq}"$'\n'"${inv}${sq_end}" \
+        executor-write DENY "a # right after an array assignment's ) is mid-word, so its quote still opens a group"
+    assert_verdict "a=(x)#${sq}${prose}${sq}" \
+        executor-write ALLOW "a # right after an array assignment's ) is mid-word, so the quoted prose stays prose"
+    assert_verdict "${widened}"$'\n'"f()#${sq}"$'\n'"{ ${inv}; }"$'\nf'"${sq_end}" \
+        executor-write DENY "a # right after a function definition's () opens a comment, so the body after it is code"
+    assert_verdict "${widened}"$'\nshopt -s extglob\n'"echo @(a|b)#${sq}"$'\nx\n'"${sq}"$'\n'"${inv}${sq_end}" \
+        executor-write DENY "a # right after an extglob group's ) leaves no quote able to mark later lines as prose"
+    assert_verdict "${widened}"$'\nshopt -s extglob\n'"echo +(a)#${sq}"$'\nx\n'"${sq}"$'\n'"${inv}${sq_end}" \
+        executor-write DENY "a # right after a +( ) extglob group's ) leaves no quote able to mark later lines as prose"
+    assert_verdict "${widened}"$'\nshopt -s extglob\n'"echo @(a|b)#${dq}"$'\nx\n'"${dq}"$'\n'"${inv}${dq_end}" \
+        executor-write DENY "a # right after an extglob group's ) leaves no double quote able to mark later lines as prose"
+    assert_verdict "${widened}"$'\n'"!(true)#${sq}"$'\n'"${inv}${sq_end}" \
+        executor-write DENY "a # right after !( ), a comment unless extglob is on, leaves the next line as code"
+    for op in ';' '|' '('; do
+        assert_verdict "${widened}"$'\n'"echo \${x:-${op}#${sq}"$'\nx\n'"${sq}}"$'\n'"${inv}${sq_end}" \
+            executor-write DENY "a # after ${op} inside \${...} is mid-word, so its quote still opens a group"
+    done
+    assert_verdict "${widened}"$'\n'"echo \${x:- #${sq}"$'\nx\n'"${sq}}"$'\n'"${inv}${sq_end}" \
+        executor-write DENY "a # after a blank inside \${...} is mid-word, so its quote still opens a group"
+    assert_verdict "${widened}"$'\n'"echo \${x:-;#}; FOO='a b' {docket,} trust add erik key"$'\nEOF' \
+        executor-write DENY "a # after ; inside \${...} leaves the next quote's words in command position"
+    assert_verdict "${widened}"$'\n'"(( 1 #${sq}"$'\n'"${sq} ))"$'\n'"${inv}${sq_end}" \
+        executor-write DENY "a # inside an arithmetic (( )) is no comment, so its quote still opens a group"
+    assert_verdict "${widened}"$'\n'"echo \$(case x in x) true;; esac)#${sq}"$'\nx\n'"${sq}"$'\n'"${inv}${sq_end}" \
+        executor-write DENY "a case pattern's ) inside \$( ) leaves no quote able to mark later lines as prose"
+    assert_verdict "${widened}"$'\n'"echo \$(echo \$(case x in x) true;; esac))#${sq}"$'\nx\n'"${sq}"$'\n'"${inv}${sq_end}" \
+        executor-write DENY "a case pattern's ) inside a nested \$( ) leaves no quote able to mark later lines as prose"
+    assert_verdict "cat <<'EOF' | zsh"$'\n'"echo \$(case x in x) true;; esac)#${sq}"$'\nx\n'"${sq}"$'\n'"${inv}${sq_end}" \
+        executor-write DENY "a case pattern's ) inside \$( ) in a zsh body leaves no quote able to mark later lines as prose"
     assert_verdict "# it's operator-reserved"$'\n'"${inv}" \
         executor-write DENY "an apostrophe inside a comment does not swallow the next line"
     assert_verdict '# the rule says "operator-reserved"'$'\n'"${inv}" \
@@ -833,6 +885,8 @@ case_quote_state_ends_with_its_leaf() {
         "a multi-line quoted argument cut to its first line does not reach the next leaf"
     assert_verdict "bash 3<<'A' <<'B'"$'\n'"it's"$'\nA\n'"${inv}"$'\nB' executor-write DENY \
         "an apostrophe in one heredoc body does not hide the interpreter's script body after it"
+    assert_verdict "cat <<'A' | bash"$'\necho ${x:-\nA\n'"cat <<'B' | bash"$'\n'"# it's"$'\n'"${inv}"$'\n'"'"$'\nB' \
+        executor-write DENY "a \${ left open in one heredoc body does not hide a comment in the next leaf"
     assert_verdict "docket issue comment add D-1 -m 'never run ${inv}"$'\n'"on this step'" \
         executor-write ALLOW "multi-line quoted prose cut to its first line stays prose"
 }

@@ -68,29 +68,53 @@
 # same way (`grep 'sh' -c 'prose'`), because a word bash builds carries no
 # record of whether it was meant as a program name.
 # A `#` opens a comment that runs to the newline where bash would start one:
-# at the start of a word. A word starts after a blank, at line start, or
-# right after an unquoted, unescaped operator byte ;&|()<> or an opening
-# backtick. A `)` that closes $( <( >( or $(( and a closing backtick end a
-# substitution INSIDE a word, so a `#` after them is mid-word, as is one after
-# an escaped byte (a\;#), a quote, or any other word byte (a#b, $#, ${#x}).
-# Inside a comment a quote opens no group, so an apostrophe in a widened
+# at the start of a word, where bash reads commands. A word starts at line
+# start, after a blank, or right after an unquoted, unescaped operator byte
+# ;&|()<> or an opening backtick. A `#` inside a word is no comment start:
+# after a quote, an escaped byte (a\;#), any other word byte (a#b, $#), a
+# closing backtick, or the `)` or `}` that ends a group bash keeps inside the
+# word. Inside a comment a quote opens no group, so an apostrophe in a widened
 # heredoc body's comment cannot mark the body lines after it as prose; the
 # comment's bytes stay ordinary words rather than being dropped or marked.
 # A misread costs either way: a comment missed or a comment invented both
 # move quote parity by one, and the next real quote then marks executed text
 # as prose. So the rule must track bash's, not err toward either side.
-# KNOWN RESIDUALS of that rule: a case pattern's `)` inside $( ) pops the
-# substitution's entry, and a $( inside a nested quoted heredoc body (text
-# bash never parses) is still counted; both leave a later `)` misjudged.
-# Bytes inside a comment move no substitution state, as in bash, except a
-# backtick while one is open: bash finds the closing backtick before it
-# parses the comment.
+# To track it, nest holds one char per open group, named for how bash reads
+# the bytes inside the group and the `#` right after its close:
+#   s  $( <( >(         commands inside; the close is mid-word
+#   a  name=( name+=(   an array's words inside; the close is mid-word
+#   p  any other (      commands inside; the close is an operator
+#   m  (( $((           arithmetic: no comment inside; the close is mid-word
+#   b  ${               word text: no comment or operator inside, and a
+#                       paren there is text; the close is mid-word
+# A `(` glued to a name that is not an assignment is p: bash reads `f()` as a
+# function definition's two operators, so `f()#` opens a comment.
+# Where the text alone does not settle bash's reading, the pass stops marking
+# prose rather than guess: every later quote group in the leaf reaches the
+# matcher unmarked, which can only add a DENY. Two shapes do that. An extglob
+# group (@( ?( *( +( !( ) is one word only with extglob on, and with it off
+# `!(cmd)#` is a negated subshell then a comment. The word case inside a $( )
+# or backticks makes its pattern `)` close the wrong group.
+# The group state, the open backtick and that fallback end with the leaf (the
+# \036 byte): one leaf's unbalanced text, such as a heredoc body bash never
+# parsed, must not move a comment in the next.
+# KNOWN RESIDUALS of that rule: a caller that ends leaves with a plain
+# newline (the commit and sibling guards) carries that state across its
+# leaves; a $( inside a nested quoted heredoc body (text bash never parses)
+# is still counted; $[ ] arithmetic is not tracked; and $((cmd) ), which bash
+# may read as a substitution holding a subshell, is read as arithmetic. Each
+# can leave a later `#` misjudged.
+# Bytes inside a comment move no group state, as in bash, except a backtick
+# while one is open: bash finds the closing backtick before it parses the
+# comment.
 # Two writes, one chokepoint: consume() is the only way a byte that belongs
 # to a word enters the buffer, and it feeds the word model in the same call.
 # emit() writes boundary bytes alone -- whitespace, newline, an escaped
 # newline -- which by definition carry no word text. A branch that wrote the
 # buffer without the word model would leave the tests reading a stale word,
-# which is the bypass this shape exists to prevent.
+# which is the bypass this shape exists to prevent. Both calls also clear the
+# word-start state, so only track_plain(), run after consume() for a plain
+# byte, can leave an operator behind for the next `#` to see.
 function is_interpreter(word,   head) {
     head = word
     sub(/^.*\//, "", head)
@@ -99,6 +123,9 @@ function is_interpreter(word,   head) {
 }
 function emit(chunk) {
     out = out chunk
+    end_token()
+    word_start = 0
+    prev_plain = ""
 }
 function consume(chunk, text) {
     out = out chunk
@@ -108,6 +135,8 @@ function consume(chunk, text) {
         cur_word = ""
     }
     cur_word = cur_word text
+    word_start = 0
+    prev_plain = ""
 }
 function end_word() {
     if (in_word) {
@@ -125,17 +154,55 @@ function marked_group(content,   chunk, m, k) {
     }
     return chunk " "
 }
-# Updates the word-start and substitution state for one unquoted, unescaped
-# byte outside a comment. subst holds one char per open paren: "s" for a
-# substitution opener, "p" for any other.
-function track_plain(c,   top) {
+function nest_top() {
+    return substr(nest, length(nest), 1)
+}
+function pop_nest() {
+    nest = substr(nest, 1, length(nest) - 1)
+}
+# True inside a group whose bytes bash reads as word text, where no comment
+# opens.
+function in_word_group() {
+    return nest_top() ~ /[bmx]/
+}
+# Names the group an unquoted `(` opens, from the plain byte before it.
+function paren_kind(before, top) {
+    if (before == "$") return "s"
+    if (top ~ /[mx]/) return top
+    if (before ~ /[<>]/) return "s"
+    if (before == "(") return "m"
+    if (before ~ /[@?*+!]/) {
+        unsure = 1
+        return "x"
+    }
+    if (before == "=" && cur_word ~ /^[A-Za-z_][A-Za-z0-9_]*(\[.*\])?\+?=\($/) return "a"
+    return "p"
+}
+# A word bash may read as the case keyword ends here. Inside $( ) or
+# backticks its pattern `)` would close the wrong group.
+function end_token() {
+    if (tok == "case" && (index(nest, "s") || in_backtick)) unsure = 1
+    tok = ""
+}
+# Updates the word-start and group state for one unquoted, unescaped byte
+# outside a comment, already passed to consume(). before is the plain byte
+# right before it, or empty.
+function track_plain(c, before,   top) {
+    top = nest_top()
+    if (c ~ /[;&|()<>`]/) end_token()
+    else tok = tok c
     if (c == "(") {
-        subst = subst (prev_plain ~ /[$<>]/ ? "s" : "p")
+        if (top != "b" || before == "$") nest = nest paren_kind(before, top)
         word_start = 1
     } else if (c == ")") {
-        top = substr(subst, length(subst), 1)
-        if (subst != "") subst = substr(subst, 1, length(subst) - 1)
-        word_start = (top != "s")
+        if (top != "b") {
+            pop_nest()
+            word_start = (top == "p" || top == "")
+        }
+    } else if (c == "{") {
+        if (before == "$") nest = nest "b"
+    } else if (c == "}") {
+        if (top == "b") pop_nest()
     } else if (c == "`") {
         in_backtick = !in_backtick
         word_start = in_backtick
@@ -143,6 +210,12 @@ function track_plain(c,   top) {
         word_start = (c ~ /[;&|<>]/)
     }
     prev_plain = c
+}
+function end_leaf() {
+    end_line()
+    nest = ""
+    in_backtick = 0
+    unsure = 0
 }
 function end_line() {
     end_word()
@@ -175,13 +248,15 @@ END {
     MARK = "\001"
     LEAF_END = "\036"
     GROUP = 0
-    subst = ""
+    nest = ""
     in_backtick = 0
+    unsure = 0
+    tok = ""
     while (i <= n) {
         c = substr(line, i, 1)
         if (c == LEAF_END) {
             emit("\n")
-            end_line()
+            end_leaf()
             i += 1
             continue
         }
@@ -189,16 +264,10 @@ END {
             esc = substr(line, i + 1, 1)
             if (esc == "\n") { emit(c esc); end_line() }
             else consume(c esc, esc)
-            word_start = 0
-            prev_plain = ""
             i += 2
             continue
         }
-        if (c == "#" && !in_comment && (!in_word || word_start)) in_comment = 1
-        if ((c == SQ || c == DQ) && !in_comment) {
-            word_start = 0
-            prev_plain = ""
-        }
+        if (c == "#" && !in_comment && !in_word_group() && (!in_word || word_start)) in_comment = 1
         if (c == SQ && !in_comment) {
             j = i + 1
             content = ""
@@ -207,7 +276,7 @@ END {
                 j++
             }
             stop = substr(line, j, 1)
-            if (code_argument() || open_across_lines(stop, content)) {
+            if (code_argument() || unsure || open_across_lines(stop, content)) {
                 # Inner quotes are the code arguments own syntax, not prose
                 # glue: spacing them keeps a verb reachable as its own word.
                 gsub(/[\047\042]/, " ", content)
@@ -234,7 +303,7 @@ END {
                 j++
             }
             stop = substr(line, j, 1)
-            if (code_argument() || open_across_lines(stop, content)) {
+            if (code_argument() || unsure || open_across_lines(stop, content)) {
                 gsub(/[\047\042]/, " ", content)
                 chunk = " " content " "
             } else if (content ~ /\$\(|`|\$\{/) {
@@ -246,15 +315,15 @@ END {
             i = (stop == DQ) ? j + 1 : j
             continue
         }
-        if (c == "\n") { emit(c); end_line(); word_start = 0; prev_plain = "" }
-        else if (c == " " || c == "\t") { emit(c); end_word(); word_start = 0; prev_plain = "" }
+        if (c == "\n") { emit(c); end_line() }
+        else if (c == " " || c == "\t") { emit(c); end_word() }
         else {
+            before = prev_plain
             consume(c, c)
-            if (!in_comment) track_plain(c)
+            if (!in_comment) track_plain(c, before)
             else if (c == "`" && in_backtick) {
                 in_backtick = 0
                 in_comment = 0
-                word_start = 0
                 prev_plain = c
             }
         }

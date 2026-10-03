@@ -120,8 +120,12 @@
 # What this closes, by construction rather than by patching a symptom:
 #   - CL16's class cannot recur: there is no separator re-scan of any kind
 #     — bash's own parser is what decided where each simple command starts.
-#   - CL17's class cannot recur: there is no comment-boundary rule of any
-#     kind — bash's own parser is what decided what is a comment.
+#   - CL17's class is narrowed, not gone: bash's own parser decides what is
+#     a comment in each leaf's own text, but a widened heredoc body reaches
+#     the shared pre-pass unparsed, so the pre-pass carries one comment rule
+#     for it (stated in docket-guard-prepass.awk). That rule reads a `)`
+#     closing $(...) or $((...)) as mid-word, the exact CL17 trigger, and the
+#     suite pins that shape in both directions.
 #   - CL9's class is closed differently, because it is a genuinely
 #     different problem (not a parsing bug — a semantic one, about where
 #     data ends up): every leaf this probe records is inspected, and if ANY
@@ -536,7 +540,12 @@ SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v RS='\036' -v widen="$WIDEN" '
 # one or more complete simple commands with no unresolved separators, each
 # ended by \036. The pre-pass reads that byte as a leaf boundary no quote
 # crosses, because a heredoc body or a first-line cut can leave a quote this
-# pass cannot close inside its own leaf.
+# pass cannot close inside its own leaf. Each leaf's first line is a complete
+# simple command bash has already parsed, with its comments already gone. A
+# widened leaf's body lines are not parsed, and an interpreter may run them as
+# a script, so the pass applies a bash-shaped comment rule to every line (a
+# quote inside a comment opens no group); the pre-pass header states the
+# rule, why a misread fails in either direction, and its residuals.
 #
 # The awk PROGRAM itself lives in docket-guard-prepass.awk, shared
 # byte-for-byte with docket-commit-guard-hook.sh: both hooks

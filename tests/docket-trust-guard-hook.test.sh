@@ -65,16 +65,18 @@ done
 
 # Classifies one hook run as DENY (exit 2) or ALLOW (exit 0). No
 # permissionDecision envelope is emitted -- exit 2 is a pre-permission hard
-# stop and exit 0 is silence -- so the exit code is the entire verdict.
+# stop and exit 0 is silence -- so the exit code is the entire verdict. Any
+# other exit is a broken hook, reported as ERROR so an ALLOW row cannot pass
+# on a crash.
 verdict_of() {
     local input="$1" rc
     PATH="$TOOLS_DIR" "$BASH_BIN" "$HOOK" >/dev/null 2>&1 <<<"$input"
     rc=$?
-    if [ "$rc" -eq 2 ]; then
-        printf 'DENY'
-    else
-        printf 'ALLOW'
-    fi
+    case "$rc" in
+        2) printf 'DENY' ;;
+        0) printf 'ALLOW' ;;
+        *) printf 'ERROR(exit %s)' "$rc" ;;
+    esac
 }
 
 build_input() {
@@ -743,12 +745,17 @@ case_heredoc_body_destination() {
 # is text, and the command on the next line reaches the matcher on its own.
 # The outer command's comments never reach the pre-pass; a widened heredoc
 # body's do, so the body rows pin the pre-pass's own comment rule: a `#` that
-# starts a word, or follows one of ;&|()<>, opens a comment in which quotes
-# open no group. A `#` inside a word is not a comment start.
+# starts a word (after a blank, an unquoted ;&|()<>, or an opening backtick)
+# opens a comment in which quotes open no group. A `#` inside a word is not a
+# comment start, including one right after a substitution's closing `)` or
+# backtick, or after an escaped byte. A misread either way moves quote parity,
+# so each row pins one side of that boundary.
 
 case_comment_regions_are_inert() {
     local inv='docket trust add erik key'
     local widened="cat <<'EOF' | bash"
+    local sq="'" dq='"'
+    local prose="the rule says ${inv} is operator-reserved"
     assert_verdict "${widened}"$'\n'"# it's"$'\n'"${inv}"$'\nEOF' \
         executor-write DENY "an apostrophe in a widened body's comment does not swallow the next body line"
     assert_verdict "${widened}"$'\n'"echo hi # it's"$'\n'"${inv}"$'\nEOF' \
@@ -761,6 +768,33 @@ case_comment_regions_are_inert() {
         executor-write DENY "a widened body's comment opened right after ) does not swallow the next body line"
     assert_verdict "${widened}"$'\n'"echo a#b 'the rule says ${inv} is operator-reserved'"$'\nEOF' \
         executor-write ALLOW "a # inside a widened body's word opens no comment, so the quoted prose stays prose"
+    local op
+    for op in '|' '&' '<' '>'; do
+        assert_verdict "${widened}"$'\n'"echo hi ${op}# it's"$'\n'"${inv}"$'\nEOF' \
+            executor-write DENY "a widened body's comment opened right after ${op} does not swallow the next body line"
+    done
+    assert_verdict "${widened}"$'\n'"(# it's"$'\n'"${inv}"$'\n)\nEOF' \
+        executor-write DENY "a widened body's comment opened right after ( does not swallow the next body line"
+    assert_verdict "${widened}"$'\n'"echo \`# it's"$'\n'"${inv}"$'\n`\nEOF' \
+        executor-write DENY "a widened body's comment opened right after a backtick does not swallow the next body line"
+    assert_verdict "${widened}"$'\n'"echo hi # it's"$'\n'"echo ${sq}${prose}${sq}"$'\nEOF' \
+        executor-write ALLOW "a widened body's comment apostrophe leaves the next line's quoted prose as prose"
+    assert_verdict "${widened}"$'\n'"echo \$(true)#${sq}"$'\nx\n'"${sq}"$'\n'"${inv}"$'\nEOF' \
+        executor-write DENY "a # right after a substitution's ) is mid-word, so its quote still opens a group"
+    assert_verdict "${widened}"$'\n'"echo a\\;#${sq}"$'\nx\n'"${sq}"$'\n'"${inv}"$'\nEOF' \
+        executor-write DENY "a # right after an escaped ; is mid-word, so its quote still opens a group"
+    assert_verdict "${widened}"$'\n'"echo hi;\\;#${sq}"$'\nx\n'"${sq}"$'\n'"${inv}"$'\nEOF' \
+        executor-write DENY "an escaped byte after an operator starts the word, so a # after it is mid-word"
+    assert_verdict "${widened}"$'\n'"echo \$(true)#${dq}"$'\nx\n'"${dq}"$'\n'"${inv}"$'\nEOF' \
+        executor-write DENY "a # right after a substitution's ) is mid-word, so its double quote still opens a group"
+    assert_verdict "${widened}"$'\n'"echo \$(true)#; FOO='a b' {docket,} trust add erik key"$'\nEOF' \
+        executor-write DENY "a # right after a substitution's ) leaves the next quote's words in command position"
+    assert_verdict "echo \$((1+2))#${sq}${prose}${sq}" \
+        executor-write ALLOW "a # right after an arithmetic close is mid-word, so the quoted prose stays prose"
+    assert_verdict "echo \$(date)#${sq}${prose}${sq}" \
+        executor-write ALLOW "a # right after a substitution's ) is mid-word, so the quoted prose stays prose"
+    assert_verdict "echo \`date\`#${sq}${prose}${sq}" \
+        executor-write ALLOW "a # right after a closing backtick is mid-word, so the quoted prose stays prose"
     assert_verdict "# it's operator-reserved"$'\n'"${inv}" \
         executor-write DENY "an apostrophe inside a comment does not swallow the next line"
     assert_verdict '# the rule says "operator-reserved"'$'\n'"${inv}" \

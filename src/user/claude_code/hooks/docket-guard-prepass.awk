@@ -67,14 +67,24 @@
 # and a data word that merely decodes to an interpreter name qualifies the
 # same way (`grep 'sh' -c 'prose'`), because a word bash builds carries no
 # record of whether it was meant as a program name.
-# A `#` that starts a word, or follows one of ;&|()<>, opens a comment that
-# runs to the newline, as bash reads it. Inside one a quote opens no group, so
-# an apostrophe in a widened heredoc body's comment cannot mark the body lines
-# after it as prose. The comment's bytes stay ordinary words rather than being
-# dropped or marked: a `#` misread as a comment start (another interpreter's
-# grammar, a position bash would not treat so) then only exposes text to the
-# matcher, so every misreading fails toward DENY. A `#` inside a word (a#b,
-# $#, ${#x}) and an escaped \# open no comment.
+# A `#` opens a comment that runs to the newline where bash would start one:
+# at the start of a word. A word starts after a blank, at line start, or
+# right after an unquoted, unescaped operator byte ;&|()<> or an opening
+# backtick. A `)` that closes $( <( >( or $(( and a closing backtick end a
+# substitution INSIDE a word, so a `#` after them is mid-word, as is one after
+# an escaped byte (a\;#), a quote, or any other word byte (a#b, $#, ${#x}).
+# Inside a comment a quote opens no group, so an apostrophe in a widened
+# heredoc body's comment cannot mark the body lines after it as prose; the
+# comment's bytes stay ordinary words rather than being dropped or marked.
+# A misread costs either way: a comment missed or a comment invented both
+# move quote parity by one, and the next real quote then marks executed text
+# as prose. So the rule must track bash's, not err toward either side.
+# KNOWN RESIDUALS of that rule: a case pattern's `)` inside $( ) pops the
+# substitution's entry, and a $( inside a nested quoted heredoc body (text
+# bash never parses) is still counted; both leave a later `)` misjudged.
+# Bytes inside a comment move no substitution state, as in bash, except a
+# backtick while one is open: bash finds the closing backtick before it
+# parses the comment.
 # Two writes, one chokepoint: consume() is the only way a byte that belongs
 # to a word enters the buffer, and it feeds the word model in the same call.
 # emit() writes boundary bytes alone -- whitespace, newline, an escaped
@@ -115,6 +125,25 @@ function marked_group(content,   chunk, m, k) {
     }
     return chunk " "
 }
+# Updates the word-start and substitution state for one unquoted, unescaped
+# byte outside a comment. subst holds one char per open paren: "s" for a
+# substitution opener, "p" for any other.
+function track_plain(c,   top) {
+    if (c == "(") {
+        subst = subst (prev_plain ~ /[$<>]/ ? "s" : "p")
+        word_start = 1
+    } else if (c == ")") {
+        top = substr(subst, length(subst), 1)
+        if (subst != "") subst = substr(subst, 1, length(subst) - 1)
+        word_start = (top != "s")
+    } else if (c == "`") {
+        in_backtick = !in_backtick
+        word_start = in_backtick
+    } else {
+        word_start = (c ~ /[;&|<>]/)
+    }
+    prev_plain = c
+}
 function end_line() {
     end_word()
     in_comment = 0
@@ -146,6 +175,8 @@ END {
     MARK = "\001"
     LEAF_END = "\036"
     GROUP = 0
+    subst = ""
+    in_backtick = 0
     while (i <= n) {
         c = substr(line, i, 1)
         if (c == LEAF_END) {
@@ -158,10 +189,16 @@ END {
             esc = substr(line, i + 1, 1)
             if (esc == "\n") { emit(c esc); end_line() }
             else consume(c esc, esc)
+            word_start = 0
+            prev_plain = ""
             i += 2
             continue
         }
-        if (c == "#" && (!in_word || substr(line, i - 1, 1) ~ /[;&|()<>]/)) in_comment = 1
+        if (c == "#" && !in_comment && (!in_word || word_start)) in_comment = 1
+        if ((c == SQ || c == DQ) && !in_comment) {
+            word_start = 0
+            prev_plain = ""
+        }
         if (c == SQ && !in_comment) {
             j = i + 1
             content = ""
@@ -209,9 +246,18 @@ END {
             i = (stop == DQ) ? j + 1 : j
             continue
         }
-        if (c == "\n") { emit(c); end_line() }
-        else if (c == " " || c == "\t") { emit(c); end_word() }
-        else consume(c, c)
+        if (c == "\n") { emit(c); end_line(); word_start = 0; prev_plain = "" }
+        else if (c == " " || c == "\t") { emit(c); end_word(); word_start = 0; prev_plain = "" }
+        else {
+            consume(c, c)
+            if (!in_comment) track_plain(c)
+            else if (c == "`" && in_backtick) {
+                in_backtick = 0
+                in_comment = 0
+                word_start = 0
+                prev_plain = c
+            }
+        }
         i += 1
     }
     print out

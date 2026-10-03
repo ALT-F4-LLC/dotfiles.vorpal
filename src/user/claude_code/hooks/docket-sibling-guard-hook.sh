@@ -43,7 +43,12 @@
 #              leaf carrying no `$( )`, backtick, `<( )` or `${ }`
 #              substitution) names a step to the engine, not a directory, so
 #              a read loop over sibling ids passes; every `.d` and path form
-#              stays a token.
+#              stays a token. A second admission: inside the caller's own
+#              dir, a file named for the own id, a `-`, then plain text that
+#              may carry `$name` or `${name}` (`<TMP>/STEP-N.d/STEP-N-$i.json`)
+#              is the caller's own file; any other character right after the
+#              own digits, a substitution, or the same name outside the own
+#              dir stays a token.
 #   WORKTREE   `git worktree prune` always (it drops the bookkeeping of every
 #              checkout momentarily absent, siblings still working included);
 #              `git worktree remove`/`move` unless every path operand lies
@@ -677,7 +682,9 @@ STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk -f "$PREPASS_AWK" 2>/dev/null) || allo
 # by construction since a literal own id is never spelled that way, except
 # that a word that is exactly `STEP-$name` or `STEP-${name}` is admitted
 # when it is an argument of a `docket` leaf with no substitution in it and
-# does not follow a redirect operator.
+# does not follow a redirect operator, and that a run of the own digits, a
+# `-`, then plain characters, `$name` or `${name}` is an own file when an own
+# `.d` token precedes it in the same word.
 # The id is compared whole: `STEP-93` and `STEP-9393` are different steps.
 MATCH=$(printf '%s' "$STRIPPED" | awk -v own="$OWN_STEP" -v own_mode="$OWN_MODE" -v interp="$WIDEN" -v cwd="$CALLER_CWD" '
 BEGIN {
@@ -736,11 +743,14 @@ function verb_index(n,   i, h) {
 # First scratch token in w, into T_TOKEN (its text) and T_NUM (its digits,
 # or "" when an expansion, glob or brace stands where the id should be).
 # T_END is the position just past the token, for scanning the rest of the
-# word.
+# word. T_LEAF is 1 for an expansion token shaped as an own-file name: the
+# own digits, a `-`, then plain characters and `$name` or `${name}` up to the
+# next `/`. Only foreign_scratch honours it, and only after the own `.d`.
 # docket_arg is true only for a word the engine reads as a step id (see THE
 # MATCH); callers that pass nothing get 0.
 function scratch_token(w, docket_arg,   pos, rest, run, id, suffix, dot, sub_ok) {
     T_END = 0
+    T_LEAF = 0
     if (!match(w, /[Ss][Tt][Ee][Pp]-/)) return 0
     pos = RSTART + RLENGTH
     rest = substr(w, pos)
@@ -751,6 +761,7 @@ function scratch_token(w, docket_arg,   pos, rest, run, id, suffix, dot, sub_ok)
         T_TOKEN = "STEP-" run
         T_NUM = ""
         T_END = pos + length(run)
+        T_LEAF = (own_mode == "known" && run ~ ("^" own "-([A-Za-z0-9_.,@%+:-]|[$][A-Za-z_][A-Za-z0-9_]*|[$][{][A-Za-z_][A-Za-z0-9_]*[}])*$"))
         return 1
     }
     id = run
@@ -777,11 +788,12 @@ function scratch_token(w, docket_arg,   pos, rest, run, id, suffix, dot, sub_ok)
 # Does w name a scratch dir that is not the callers own? With own_mode
 # "none" every token is foreign; with "known", a token whose id differs, an
 # expansion, glob or brace id, and the own dir followed by a `..` component
-# all are.
+# all are. An own-file leaf (T_LEAF) after the own dir is not.
 function foreign_scratch(w, docket_arg,   rest, any_own) {
     rest = w
     any_own = 0
     while (scratch_token(rest, docket_arg)) {
+        if (any_own && T_LEAF) { rest = substr(rest, T_END); continue }
         if (own_mode == "none" || T_NUM == "" || T_NUM != own) return 1
         any_own = 1
         rest = substr(rest, T_END)

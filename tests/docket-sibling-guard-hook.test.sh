@@ -685,6 +685,30 @@ case_scratch_spellings() {
     assert_verdict "rm -rf ${OWN_DIR}/.\".\"/" executor-write "$WAVE_42" ALLOW "residual: .. split by quotes"
 }
 
+# A file inside the own dir whose name is the own id, a dash, then text that
+# may carry a plain variable. Only that exact shape, after the own `.d`, is
+# admitted; every other expansion near a step id stays a token.
+case_own_leaf_expansions() {
+    assert_verdict "for i in DOT-1 DOT-2; do docket issue show \$i --json > ${OWN_DIR}/STEP-42-\$i.json; done" executor-read "$WAVE_42" ALLOW "own leaf STEP-42-\$i.json as a loop's redirect target"
+    assert_verdict "cat ${OWN_DIR}/STEP-42-\${i}.json" executor-read "$WAVE_42" ALLOW "own leaf STEP-42-\${i}.json read"
+    assert_verdict "cat ${OWN_DIR}/STEP-42-\$i.json" executor-read "$WAVE_42" ALLOW "own leaf STEP-42-\$i.json read"
+    assert_verdict "for i in a b; do jq . ${OWN_DIR}/STEP-42-\${i}.json > ${OWN_DIR}/STEP-42-out-\$i.json; done" executor-read "$WAVE_42" ALLOW "own leaf STEP-42-\${i} and STEP-42-out-\$i in one loop"
+    assert_verdict "cat ${OWN_DIR}/STEP-42\$x" executor-read "$WAVE_42" DENY "expansion directly after the own digits inside own dir"
+    assert_verdict "cat ${OWN_DIR}/../STEP-42\$x" executor-read "$WAVE_42" DENY "own dir, .., then expansion directly after the own digits"
+    assert_verdict "cat STEP-42\$x" executor-read "$WAVE_42" DENY "bare expansion directly after the own digits"
+    assert_verdict "cat ${SIB_DIR}/STEP-7-\$i.json" executor-read "$WAVE_42" DENY "foreign dir carrying a leaf of its own id"
+    assert_verdict "cat ${OWN_DIR}/STEP-7-\$i.json" executor-read "$WAVE_42" DENY "own dir carrying a foreign leaf id"
+    assert_verdict "cat ${OWN_DIR}/STEP-4-\$i.json" executor-read "$WAVE_42" DENY "own dir carrying a prefix of the own id"
+    assert_verdict "cat ${OWN_DIR}/STEP-420-\$i.json" executor-read "$WAVE_42" DENY "own dir carrying the own id extended"
+    assert_verdict "cat STEP-42-\$i.json" executor-read "$WAVE_42" DENY "own leaf shape without the own dir before it"
+    assert_verdict "cat ${OWN_DIR}/STEP-42-\$i/../../STEP-7.d/t" executor-read "$WAVE_42" DENY "own leaf followed by a traversal into a sibling"
+    assert_verdict "cat ${OWN_DIR}/STEP-42-\$(date).json" executor-read "$WAVE_42" DENY "command substitution in the own leaf"
+    assert_verdict "cat ${OWN_DIR}/STEP-42-\${x:-y}.json" executor-read "$WAVE_42" DENY "parameter operator in the own leaf"
+    assert_verdict "cat ${OWN_DIR}/STEP-42-\$1.json" executor-read "$WAVE_42" DENY "positional parameter in the own leaf"
+    assert_verdict "find /tmp/claude-501 ! -name STEP-42-\$x -delete" executor-write "$WAVE_42" DENY "find negating an own-leaf-shaped name"
+    assert_verdict "git worktree remove ${OWN_DIR}/STEP-42-\$p" executor-write "$WAVE_42" DENY "worktree remove of an own-leaf-shaped path stays a token"
+}
+
 # Prose under an interpreter, and the string forms of CL9.
 case_interpreter_strings() {
     assert_verdict "echo \"rm -rf ${SIB_DIR}\" | sh" executor-write "$WAVE_42" DENY "quoted command piped into sh"
@@ -933,6 +957,7 @@ case_size_and_bytes
 case_artifact_heredoc_bodies
 case_verb_spellings
 case_scratch_spellings
+case_own_leaf_expansions
 case_interpreter_strings
 case_process_operands
 case_git_spellings

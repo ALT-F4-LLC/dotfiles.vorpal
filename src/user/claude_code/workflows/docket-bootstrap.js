@@ -61,9 +61,6 @@ export const meta = {
 //                    Gate-union only.
 //   trustEntries   — the parsed `docket trust list --all` output, run inline
 //                    in main. Gate-union only.
-//                    each trust entry's `repo` field (the absolute checkout
-//                    path `trust list` records, never a project name) to
-//                    decide whether the entry binds here. Gate-union only.
 //
 // return (fields absent for the stage that did not run):
 //   mining      — {buildCi, gatesScripts, docsHistory} each
@@ -96,9 +93,8 @@ const AGENT_CONFIG = {
     gateUnion: { model: 'sonnet', effort: 'medium' },
 }
 
-// This bound sits far above the installed corpus's workflow count and keeps
-// one launch well inside the Workflow tool's lifetime agent cap. Files beyond the bound are returned as uncovered,
-// never silently dropped.
+// Far above the installed corpus's workflow count, and keeps one launch well
+// inside the Workflow tool's lifetime agent cap.
 const GATE_UNION_CAP = 200
 
 const input = typeof args === 'string' ? JSON.parse(args) : (args || {})
@@ -241,17 +237,14 @@ Read the file whole. Return every gate it declares (name, the step that consumes
 
 // ---- Stage: mine -------------------------------------------------------
 
+const mineSeam = (label, prompt, config) =>
+    agent(prompt, { label: `mine:${label}`, phase: 'Mine', agentType: 'executor-read', schema: SEAM_SCHEMA, ...config })
+
 async function runMine() {
     const { checkoutRoot, gateCandidates, smallRepo } = input
     if (smallRepo) {
         log('docket-bootstrap: small repo — combining the three mining seams into one analyst')
-        const combined = await agent(combinedPrompt(checkoutRoot, gateCandidates), {
-            label: 'mine:combined',
-            phase: 'Mine',
-            agentType: 'executor-read',
-            schema: SEAM_SCHEMA,
-            ...AGENT_CONFIG.combined,
-        })
+        const combined = await mineSeam('combined', combinedPrompt(checkoutRoot, gateCandidates), AGENT_CONFIG.combined)
         if (!combined) uncovered.push({ what: 'combined mining pass', why: 'agent returned nothing' })
         return {
             mining: { buildCi: combined, gatesScripts: null, docsHistory: null },
@@ -262,27 +255,9 @@ async function runMine() {
 
     log(`docket-bootstrap: mining ${checkoutRoot} across three independent seams`)
     const [buildCi, gatesScripts, docsHistory] = await parallel([
-        () => agent(buildCiPrompt(checkoutRoot), {
-            label: 'mine:build-ci',
-            phase: 'Mine',
-            agentType: 'executor-read',
-            schema: SEAM_SCHEMA,
-            ...AGENT_CONFIG.buildCi,
-        }),
-        () => agent(gatesScriptsPrompt(checkoutRoot, gateCandidates), {
-            label: 'mine:gates-scripts',
-            phase: 'Mine',
-            agentType: 'executor-read',
-            schema: SEAM_SCHEMA,
-            ...AGENT_CONFIG.gatesScripts,
-        }),
-        () => agent(docsHistoryPrompt(checkoutRoot), {
-            label: 'mine:docs-history',
-            phase: 'Mine',
-            agentType: 'executor-read',
-            schema: SEAM_SCHEMA,
-            ...AGENT_CONFIG.docsHistory,
-        }),
+        () => mineSeam('build-ci', buildCiPrompt(checkoutRoot), AGENT_CONFIG.buildCi),
+        () => mineSeam('gates-scripts', gatesScriptsPrompt(checkoutRoot, gateCandidates), AGENT_CONFIG.gatesScripts),
+        () => mineSeam('docs-history', docsHistoryPrompt(checkoutRoot), AGENT_CONFIG.docsHistory),
     ])
     if (!buildCi) uncovered.push({ what: 'build/CI mining seam', why: 'agent returned nothing' })
     if (!gatesScripts) uncovered.push({ what: 'gates/scripts mining seam', why: 'agent returned nothing' })
@@ -323,9 +298,10 @@ async function runGateUnion() {
     // entry applies only when its `repo` (the absolute checkout path
     // `trust list` records, not a project name) matches this checkout. Any
     // other entry counts as missing here, never as applicable (SKILL.md §4).
-    const boundEntries = (trustEntries || []).filter((e) => e.global || e.repo === checkoutRoot)
+    const boundEntries = trustEntries.filter((e) => e.global || e.repo === checkoutRoot)
+    const answered = results.filter(Boolean)
     const gates = []
-    for (const r of results.filter(Boolean)) {
+    for (const r of answered) {
         if (r.readOk === false) continue
         for (const g of r.gates) {
             const trust = boundEntries.find((e) => e.gate === g.name || e.name === g.name)
@@ -335,7 +311,7 @@ async function runGateUnion() {
                 step: g.step,
                 onFail: g.onFail,
                 matched: Boolean(trust),
-                trustPath: trust ? (Array.isArray(trust.argv) ? trust.argv.join(' ') : null) : null,
+                trustPath: Array.isArray(trust?.argv) ? trust.argv.join(' ') : null,
                 evidence: g.evidence,
             })
         }
@@ -345,7 +321,7 @@ async function runGateUnion() {
     return {
         gateUnion: { gates, uncovered },
         uncovered,
-        summary: `${gates.length} gate(s) across ${results.filter(Boolean).length}/${files.length} workflow(s); ${matched} matched to trust, ${gates.length - matched} unmatched${tail()}.`,
+        summary: `${gates.length} gate(s) across ${answered.length}/${files.length} workflow(s); ${matched} matched to trust, ${gates.length - matched} unmatched${tail()}.`,
     }
 }
 

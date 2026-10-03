@@ -596,6 +596,7 @@ case_multiline_substitutions() {
     assert_verdict $'docket step artifacts <(\nrm -rf STEP-$s\n)' executor-write "$WAVE_42" DENY "multi-line process substitution as a docket argument"
     assert_verdict $'echo $(\nls\n)' executor-write "$WAVE_42" ALLOW "multi-line \$( ) body with a harmless command"
     assert_verdict $'echo $(\npkill node\n)' executor-write "$WAVE_42" DENY "multi-line \$( ) body holding pkill"
+    assert_verdict $'echo $(\ndocket step reap STEP-7 --reason x\n)' executor-write "$WAVE_42" DENY "multi-line \$( ) body holding docket step reap"
     assert_verdict $'echo $(\necho \'rm -rf /tmp/claude-501/STEP-7.d\' | sh\n)' executor-write "$WAVE_42" DENY "interpreter on a body line widens the scan"
     assert_verdict $'git commit -m "$(cat <<\'EOF\'\nfix: clean STEP-7.d leftovers\nEOF\n)"' executor-write "$WAVE_42" ALLOW "quoted heredoc body inside a substitution stays inert"
     assert_verdict $'echo $(cat <<-\'EOF\'\n\tsaw STEP-7.d beside mine\n\tEOF\n)' executor-write "$WAVE_42" ALLOW "<<- body ends at its tab-indented terminator"

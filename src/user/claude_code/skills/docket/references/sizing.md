@@ -43,7 +43,7 @@ are set.
 | Tier | Rule | `--size` | Label | Track |
 | --- | --- | --- | --- | --- |
 | trivial | a typo, a config value, a doc line, or a one-line fix | `trivial` | `trivial` | trivial-change |
-| small | at most two files in one directory, adds no file, every criterion verifiable from the diff or a trusted fenced command | `small` | `small` | small-change |
+| small | at most two files in one directory, adds no file, every criterion verifiable from the diff or a trusted fenced command; a workflow version bump touching exactly `src/user/docket/config/workflows/<name>.toml` and `src/user/docket/config/changelogs/<name>.md` with the same `<name>` counts as one directory, as `diff-scope small` treats it | `small` | `small` | small-change |
 | bounded | one independent outcome, within the bounded ceiling below, with a known approach | `bounded` | none | the workflow its other labels bind |
 | needs-design | one outcome whose approach is an open design decision the run must settle first | `needs-design` | none | a spec or investigation workflow, or docket-plan's design round |
 | unknown | the filer could not measure it, or it is a bundle filed under the conduct exception below | `unknown` | none | none until groom sizes or splits it |

@@ -117,10 +117,9 @@ function planAgentCap(fileCount) {
 //   Silence is the intended response, so lower is better on that row like
 //   every other row here.
 //
-// Invoked by skills/docket-postmortem/references/evidence.md — no separate
-// skills/session-census/SKILL.md exists; this file's own
-// meta.description/meta.whenToUse are the short public listing, and the
-// header comment above is the detailed contract.
+// Invoked by skills/docket-postmortem/references/evidence.md. No separate
+// skills/session-census/SKILL.md exists: meta.description and meta.whenToUse
+// are the short listing, the header comment above is the detailed contract.
 //
 // args: {root, cutoff, days?}
 //   root   — absolute path of the projects directory (literal, no `~`).
@@ -377,7 +376,7 @@ function percentile(vals, q) {
     return s[Math.min(Math.floor(s.length * q), s.length - 1)]
 }
 
-const effortRank = (effort) => EFFORT_RANK[effort] == null ? UNKNOWN_EFFORT_RANK : EFFORT_RANK[effort]
+const effortRank = (effort) => EFFORT_RANK[effort] ?? UNKNOWN_EFFORT_RANK
 
 function modelEffortRows(cells) {
     const grouped = {}
@@ -709,66 +708,43 @@ function classifyExtract(result, file) {
     return { usable: true }
 }
 
-// One continuous pipeline, extract then a conditional retry stage, instead
-// of two separate pipeline() calls with a plain-JS filter between them. Two
-// calls is a barrier in disguise: nothing in the retry stage could start for
-// a fast item until every item in the FIRST pipeline — including the
-// slowest transcript in the whole batch — had resolved, even though a
-// fast item's own retry need is known the moment its own extract returns.
-// Folding the retry into the same pipeline as a per-item conditional stage
-// lets each item's retry begin as soon as ITS OWN first attempt is
-// classified, independent of its siblings.
+// One pipeline, extract then a conditional retry stage, not two pipeline()
+// calls with a plain-JS filter between them: two calls form a barrier, so a
+// fast item's retry would wait for the slowest transcript in the batch
+// although its own retry need is known once its first extract returns.
 // agent() rejects on some failures (schema validation exhausted after
-// retries, a spawn error) rather than resolving to null. The original
-// two-pipeline shape let the harness's own rejection propagate out of the
-// FIRST pipeline() call, where it collapses that item to null per the
-// authoring reference's own rule ("a stage that throws drops that item to
-// null and skips its remaining stages") — classifyExtract(null) then still
-// marked it retryable, so a rejected first attempt still got its retry in
-// the SECOND pipeline() call. Folded into one pipeline, an uncaught
-// rejection in stage 1 would instead skip stages 2 AND 3 entirely — no
-// classification, no retry, no DROPPED line, the item just silently
-// disappears from `extracted`. Catching explicitly inside each stage keeps
-// every rejection inside the SAME classify/retry path a resolved value
-// would take.
+// retries, a spawn error) rather than resolving to null. Two pipelines
+// collapsed such an item to null and classifyExtract(null) still marked it
+// retryable; in one pipeline an uncaught rejection in stage 1 would skip
+// stages 2 AND 3 (no classification, no retry, no DROPPED line, the item
+// silently gone from `extracted`). Catching inside each agent call keeps
+// every rejection on the classify/retry path a resolved value would take.
 phase('Extract')
+const extractOnce = (f, label, what) => agent(extractPrompt(f), {
+    label,
+    phase: 'Extract',
+    ...AGENT_CONFIG.extract,
+    schema: EXTRACT_SCHEMA,
+}).catch((err) => {
+    log(`session-census: ${f.path}: ${what} agent error: ${err}`)
+    return null
+})
+const tagged = (r, f) => (r ? { ...r, path: f.path, kind: f.kind } : null)
 let retriedCount = 0
 const extracted = await pipeline(files,
-    (f, _item, i) => agent(extractPrompt(f), {
-        label: `extract:${f.kind}:${i + 1}/${files.length}`,
-        phase: 'Extract',
-        ...AGENT_CONFIG.extract,
-        schema: EXTRACT_SCHEMA,
-    }).catch((err) => {
-        log(`session-census: ${f.path}: extract agent error: ${err}`)
-        return null
-    }),
+    (f, _item, i) => extractOnce(f, `extract:${f.kind}:${i + 1}/${files.length}`, 'extract'),
     (r, f) => {
-        const result = r ? { ...r, path: f.path, kind: f.kind } : null
+        const result = tagged(r, f)
         return { result, ...classifyExtract(result, f) }
     },
-    (first, f, i) => {
+    async (first, f, i) => {
         if (!first.retryable) return first
         retriedCount++
         log(`session-census: ${f.path}: extract came back empty or incomplete — retrying once before dropping`)
-        return agent(extractPrompt(f), {
-            label: `extract:${f.kind}:retry:${i + 1}/${files.length}`,
-            phase: 'Extract',
-            ...AGENT_CONFIG.extract,
-            schema: EXTRACT_SCHEMA,
-        }).catch((err) => {
-            log(`session-census: ${f.path}: extract retry agent error: ${err}`)
-            return null
-        }).then((r) => {
-            const result = r ? { ...r, path: f.path, kind: f.kind } : null
-            const second = classifyExtract(result, f)
-            if (second.usable) {
-                log(`session-census: ${f.path}: retry succeeded`)
-            } else {
-                log(`session-census: DROPPED ${f.path} (retry did not recover it)`)
-            }
-            return { result, ...second }
-        })
+        const result = tagged(await extractOnce(f, `extract:${f.kind}:retry:${i + 1}/${files.length}`, 'extract retry'), f)
+        const second = classifyExtract(result, f)
+        log(second.usable ? `session-census: ${f.path}: retry succeeded` : `session-census: DROPPED ${f.path} (retry did not recover it)`)
+        return { result, ...second }
     },
 )
 if (retriedCount) log(`session-census: ${retriedCount} transcript(s) retried`)

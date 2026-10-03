@@ -88,8 +88,7 @@ const AGENT_CONFIG = {
 
 // Corpus mode can flag dozens of definitions across a dozen projects; the
 // deep-mine fan-out is bounded so one launch stays well inside the Workflow
-// tool's lifetime agent cap. Pairs beyond the bound are returned as
-// uncovered, never silently dropped.
+// tool's lifetime agent cap.
 const DEEP_MINE_CAP = 120
 
 const SURFACES = ['workflow', 'policy', 'contract', 'fragment', 'schema']
@@ -319,7 +318,7 @@ const MINE_FOCUS = {
 function minePrompt(target, project, scratch) {
     return `Mine one project's docket ledger for what runs actually did with one corpus definition.
 
-Target: ${target.path} (surface: ${target.surface}${target.name ? `, name: ${target.name}` : ''}); read it at ${corpusRoot}/${target.path.replace(/^src\/user\/docket\/config\//, '')} first so you know which steps, rows, fields, or rules to look for.
+Target: ${target.path} (surface: ${target.surface}${target.name ? `, name: ${target.name}` : ''}); read it at ${corpusRoot}/${corpusRelative(target.path)} first so you know which steps, rows, fields, or rules to look for.
 Project: ${project.name} (prefix ${project.prefix || '?'}), checkout root ${project.root}
 Scratch: ${scratch} (create it; the only place you may write)
 
@@ -403,6 +402,7 @@ function surfaceOf(path) {
 }
 
 const uncovered = []
+const missing = (what) => uncovered.push({ what, why: 'agent returned nothing' })
 
 function noteMissing(results, describe) {
     results.forEach((r, i) => {
@@ -410,6 +410,10 @@ function noteMissing(results, describe) {
         else if (r.checkoutOk === false) uncovered.push({ what: describe(i), why: r.notes || 'checkout unavailable' })
     })
 }
+
+// Analysts sit at the same index as their project; the project name an
+// analyst echoes back is not trusted to match the listing's spelling.
+const withProject = (results, list) => results.flatMap((r, i) => (r ? [{ ...r, project: list[i].name }] : []))
 
 // Sweep and mining are independent reads of different sources; they run
 // together and the barrier only collects both for the return.
@@ -432,12 +436,9 @@ async function evidenceFor(target, phases, miningProjects) {
             })
         )),
     ])
-    if (!sweep) uncovered.push({ what: `sweep of ${corpusRelative(target.path)}`, why: 'agent returned nothing' })
+    if (!sweep) missing(`sweep of ${corpusRelative(target.path)}`)
     noteMissing(mining || [], (i) => `mining ${corpusRelative(target.path)} in ${miningProjects[i].name}`)
-    const reports = (mining || [])
-        .map((r, i) => (r ? { ...r, project: miningProjects[i].name } : null))
-        .filter(Boolean)
-    return { sweep: sweep || null, mining: reports }
+    return { sweep: sweep || null, mining: withProject(mining || [], miningProjects) }
 }
 
 const tail = () => (uncovered.length ? `; ${uncovered.length} UNCOVERED` : '')
@@ -482,7 +483,7 @@ async function runVerify() {
         })
     ))
     verification.forEach((v, i) => {
-        if (!v) uncovered.push({ what: `verify: ${input.capabilities[i]}`, why: 'agent returned nothing' })
+        if (!v) missing(`verify: ${input.capabilities[i]}`)
     })
     const answered = verification.filter(Boolean)
     const settled = answered.filter((v) => v.settled).length
@@ -514,13 +515,9 @@ async function runTriage() {
             })
         ),
     ])
-    if (!census) uncovered.push({ what: 'static consumer census', why: 'agent returned nothing' })
+    if (!census) missing('static consumer census')
     noteMissing(perProjectRaw, (i) => `triage of ${projects[i].name}`)
-    // Analysts sit at the same index as their project; the project name an
-    // analyst echoes back is not trusted to match the listing's spelling.
-    const perProject = perProjectRaw
-        .map((r, i) => (r ? { ...r, project: projects[i].name } : null))
-        .filter(Boolean)
+    const perProject = withProject(perProjectRaw, projects)
 
     // Merge: one entry per definition, reasons gathered from every analyst
     // that flagged it. A definition no analyst flagged is cleared on the

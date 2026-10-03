@@ -33,6 +33,16 @@
 # The look-behind stops at a newline. Leaves are newline-separated in this
 # buffer, so the last words of one leaf must not qualify a quoted group that
 # opens the next one.
+# A caller may also end each leaf with a \036 byte, which both hooks refuse in
+# a command, so only the caller can place one. It reads as a newline, and it
+# also stops a quote this pass could not close inside the leaf: an apostrophe
+# in a heredoc body, or a multi-line argument cut to its first line, would
+# otherwise run on and put the next leaf's words in the wrong quote group. Such
+# an unclosed quote stays a prose group when its text is one line, since bash
+# closes it on a line the caller did not pass. When its text spans lines, the
+# leaf was passed whole, bash already found every quote in it balanced, and
+# the stray quote can only be heredoc body bytes, so the text is emitted
+# unmarked.
 # The current line is carried forward as the input is consumed rather than
 # recovered by scanning back over the emitted buffer: one backwards rescan per
 # quoted group is quadratic in the leaf length, and a single-line command with
@@ -117,6 +127,12 @@ function code_argument(   last) {
     last = in_word ? cur_word : prev_word
     return last ~ /^(-[A-Za-z]*c|-[eEpr]|--eval|--print)$/
 }
+function open_across_lines(stop, content,   text) {
+    if (stop != LEAF_END) return 0
+    text = content
+    sub(/\n$/, "", text)
+    return index(text, "\n") > 0
+}
 {
     buf = (NR == 1) ? $0 : buf "\n" $0
 }
@@ -128,10 +144,17 @@ END {
     SQ = "\047"
     DQ = "\042"
     MARK = "\001"
+    LEAF_END = "\036"
     GROUP = 0
     while (i <= n) {
         c = substr(line, i, 1)
-        if (c == "\\" && i < n) {
+        if (c == LEAF_END) {
+            emit("\n")
+            end_line()
+            i += 1
+            continue
+        }
+        if (c == "\\" && i < n && substr(line, i + 1, 1) != LEAF_END) {
             esc = substr(line, i + 1, 1)
             if (esc == "\n") { emit(c esc); end_line() }
             else consume(c esc, esc)
@@ -142,11 +165,12 @@ END {
         if (c == SQ && !in_comment) {
             j = i + 1
             content = ""
-            while (j <= n && substr(line, j, 1) != SQ) {
-                content = content substr(line, j, 1)
+            while (j <= n && (cc = substr(line, j, 1)) != SQ && cc != LEAF_END) {
+                content = content cc
                 j++
             }
-            if (code_argument()) {
+            stop = substr(line, j, 1)
+            if (code_argument() || open_across_lines(stop, content)) {
                 # Inner quotes are the code arguments own syntax, not prose
                 # glue: spacing them keeps a verb reachable as its own word.
                 gsub(/[\047\042]/, " ", content)
@@ -155,7 +179,7 @@ END {
                 chunk = marked_group(content)
             }
             consume(chunk, content)
-            i = j + 1
+            i = (stop == SQ) ? j + 1 : j
             continue
         }
         if (c == DQ && !in_comment) {
@@ -163,16 +187,17 @@ END {
             content = ""
             while (j <= n) {
                 cc = substr(line, j, 1)
-                if (cc == "\\" && j < n) {
+                if (cc == "\\" && j < n && substr(line, j + 1, 1) != LEAF_END) {
                     content = content cc substr(line, j + 1, 1)
                     j += 2
                     continue
                 }
-                if (cc == DQ) break
+                if (cc == DQ || cc == LEAF_END) break
                 content = content cc
                 j++
             }
-            if (code_argument()) {
+            stop = substr(line, j, 1)
+            if (code_argument() || open_across_lines(stop, content)) {
                 gsub(/[\047\042]/, " ", content)
                 chunk = " " content " "
             } else if (content ~ /\$\(|`|\$\{/) {
@@ -181,7 +206,7 @@ END {
                 chunk = marked_group(content)
             }
             consume(chunk, content)
-            i = j + 1
+            i = (stop == DQ) ? j + 1 : j
             continue
         }
         if (c == "\n") { emit(c); end_line() }

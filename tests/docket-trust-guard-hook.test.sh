@@ -341,8 +341,29 @@ case_command_position_brace_allows() {
 # interpreter, so the widened rows carry one (`ran bash ...`) as the
 # denied findings command did.
 
+# The denied findings command itself: a findings heredoc whose body names an
+# interpreter (so the whole command widens) and holds one apostrophe, then a
+# multi-line jq program whose note uses '"'"' escapes and quotes stub output.
+incident_findings_command() {
+    cat <<'CMD'
+cat > STEP-11188-findings.md <<'EOF'
+# Findings
+ran bash tests/docket-trust-guard-hook.test.sh: exit 0
+the checkout's tests pass
+EOF
+jq -n '[
+  {
+    "id": "F-1",
+    "note": "the implementer'"'"'s probe stub docket {\"ok\":false}: same, x",
+    "n": 1
+  }
+]' > STEP-11188-findings.json
+CMD
+}
+
 case_unexpandable_brace_prose_allows() {
-    local agent widen='ran bash tests/x.test.sh: exit 0'
+    local agent widen='ran bash tests/x.test.sh: exit 0' incident
+    incident=$(incident_findings_command)
     for agent in executor-read executor-write; do
         assert_verdict 'echo "stub docket {\"ok\":false}"' "$agent" ALLOW \
             "${agent}: double-quoted prose naming docket {...}"
@@ -350,8 +371,8 @@ case_unexpandable_brace_prose_allows() {
             "$agent" ALLOW "${agent}: quoted heredoc body naming docket {...}"
         assert_verdict "cat > f.md <<'EOF'"$'\n'"${widen}"$'\n''stub docket {"ok":false}'$'\nEOF' \
             "$agent" ALLOW "${agent}: widened quoted heredoc body naming docket {...}"
-        assert_verdict "cat > f.md <<'EOF'"$'\n'"${widen}"$'\nEOF\n'"jq -n '[{\"note\":\"stub docket {\\\"ok\\\":false}: same\",\"x\":1}]'" \
-            "$agent" ALLOW "${agent}: jq program naming docket {...} beside commas (the denied findings shape)"
+        assert_verdict "$incident" "$agent" ALLOW \
+            "${agent}: the denied findings command (body apostrophe, then a jq program naming docket {...} beside commas)"
         assert_verdict "for c in 'docket trust ad{d,} erik key'; do :; done" "$agent" ALLOW \
             "${agent}: one quoted group naming a brace-split verb"
     done
@@ -754,6 +775,34 @@ case_comment_regions_are_inert() {
         executor-write ALLOW "a comment naming the guarded verb is prose"
 }
 
+# ---- QUOTE STATE ENDS WITH ITS LEAF -----------------------------------------
+#
+# The pre-pass reads every leaf in one buffer. A quote it cannot close inside
+# one leaf -- an apostrophe in a heredoc body, or a multi-line argument cut to
+# its first line -- used to run on into the next leaf, putting that leaf's
+# words in the wrong quote group: a trust-store write after it read as prose,
+# and prose after it read as code. Each leaf now starts unquoted. An
+# unterminated quote in a one-line leaf stays prose, since bash closes it on a
+# line this hook does not scan; one in a multi-line leaf can only hold heredoc
+# body bytes, so its text reaches the matcher unmarked.
+
+case_quote_state_ends_with_its_leaf() {
+    local inv='docket trust add erik key' incident
+    incident=$(incident_findings_command)
+    assert_verdict "${incident}"$'\n'"${inv}" executor-write DENY \
+        "a trust-store write on its own line after the denied findings command"
+    assert_deny_reason "${incident}"$'\n'"${inv}" executor-write \
+        "a trust-store write after the denied findings command"
+    assert_verdict "cat <<'EOF'"$'\n'"bash it's"$'\nEOF\n'"${inv}" executor-write DENY \
+        "an apostrophe in a widened heredoc body does not reach the next leaf"
+    assert_verdict "jq -n '["$'\n'"1]'"$'\n'"${inv}" executor-write DENY \
+        "a multi-line quoted argument cut to its first line does not reach the next leaf"
+    assert_verdict "bash 3<<'A' <<'B'"$'\n'"it's"$'\nA\n'"${inv}"$'\nB' executor-write DENY \
+        "an apostrophe in one heredoc body does not hide the interpreter's script body after it"
+    assert_verdict "docket issue comment add D-1 -m 'never run ${inv}"$'\n'"on this step'" \
+        executor-write ALLOW "multi-line quoted prose cut to its first line stays prose"
+}
+
 # ---- HEREDOC POSITION: `<<` is only a heredoc operator in redirection ------
 #
 # The two characters `<<` also appear in a here-string, in a comment, and in
@@ -1010,6 +1059,7 @@ case_help_lookalikes_and_compounds_deny
 case_heredoc_body_prose
 case_heredoc_body_destination
 case_comment_regions_are_inert
+case_quote_state_ends_with_its_leaf
 case_heredoc_position_edges
 case_leaf_cap_is_out_of_band
 case_probe_never_acts

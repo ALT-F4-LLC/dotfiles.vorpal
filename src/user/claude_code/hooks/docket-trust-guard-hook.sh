@@ -512,10 +512,12 @@ SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v RS='\036' -v widen="$WIDEN" '
         if (!leaf_widen && index(line1, "<<") > 0 && unquoted_heredoc(strip_arith(line1))) {
             leaf_widen = 1
         }
+        # Each leaf ends in \036, so the pre-pass closes any quote it could
+        # not close inside this leaf before the next leaf starts.
         if (leaf_widen) {
-            out = out leaf "\n"
+            out = out leaf "\036"
         } else {
-            out = out line1 "\n"
+            out = out line1 "\036"
         }
     }
     END { printf "%s", out }
@@ -529,10 +531,12 @@ SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v RS='\036' -v widen="$WIDEN" '
 # bash-unquoted invocation built from separately-quoted words (`"docket"
 # "trust" "add"`, three groups). Double-quoted content that could still
 # trigger command/parameter substitution ($(...), backticks, ${...}) is
-# left unmarked so the matcher inspects it directly. No heredoc, comment,
-# or arithmetic handling here: SCAN_TEXT above is already, by construction,
-# one or more complete simple-command lines with no unresolved separators
-# — there is nothing of that shape left for this pass to get wrong.
+# left unmarked so the matcher inspects it directly. No heredoc or
+# arithmetic handling here: SCAN_TEXT above is already, by construction,
+# one or more complete simple commands with no unresolved separators, each
+# ended by \036. The pre-pass reads that byte as a leaf boundary no quote
+# crosses, because a heredoc body or a first-line cut can leave a quote this
+# pass cannot close inside its own leaf.
 #
 # The awk PROGRAM itself lives in docket-guard-prepass.awk, shared
 # byte-for-byte with docket-commit-guard-hook.sh: both hooks

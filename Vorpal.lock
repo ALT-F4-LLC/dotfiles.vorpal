@@ -2553,6 +2553,14 @@ digest = "a0412e454289b3a32833c5a3a0869c19601ebb008429580a04fdcbf94679501d"
 platform = "x86_64-linux"
 
 [[sources]]
+name = "yq"
+path = "https://github.com/mikefarah/yq/releases/download/v4.50.1/yq_linux_amd64.tar.gz"
+includes = []
+excludes = []
+digest = "72cb8d9181ec9c8e5819df6ac70751fd2cd06cb54d7625bc5f670bd32e0dd42f"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "zlib"
 path = "https://sdk.vorpal.build/source/zlib-1.3.1.tar.gz"
 includes = []

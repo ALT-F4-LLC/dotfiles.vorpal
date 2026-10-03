@@ -608,6 +608,43 @@ case_multiline_substitutions() {
     assert_verdict $'echo $(cat <<\'EOF\'\nrm -rf /tmp/claude-501/STEP-7.d\n)' executor-write "$WAVE_42" DENY "an unterminated quoted heredoc keeps its lines"
     assert_verdict $'echo $(\necho "<<\'EOF\'"\nrm -rf /tmp/claude-501/STEP-7.d\nEOF\n)' executor-write "$WAVE_42" DENY "a heredoc operator inside double quotes is not one"
     assert_verdict $'echo $(\n# <<\'EOF\'\nrm -rf /tmp/claude-501/STEP-7.d\nEOF\n)' executor-write "$WAVE_42" DENY "a heredoc operator inside a comment is not one"
+    # Bash 3.2 finds the end of a substitution by a paren and quote scan that
+    # ignores heredocs, so a `)` in a body inside a substitution closes it and
+    # the rest of that line runs. A balanced body stays inert.
+    assert_verdict $'echo $(cat <<\'EOF\'\nfoo\n) $(rm -rf '"${SIB_DIR}"$') "\nEOF\n"' executor-write "$WAVE_42" DENY "a close paren in a heredoc body ends the substitution (quote after)"
+    assert_verdict $'echo $(cat <<\'EOF\'\n) $(rm -rf '"${SIB_DIR}"$') $(:\nEOF\n)' executor-write "$WAVE_42" DENY "a close paren in a heredoc body ends the substitution (reopened)"
+    assert_verdict $'git commit -m "$(cat <<\'EOF\'\nfix(hooks): clean STEP-7.d leftovers\nEOF\n)"' executor-write "$WAVE_42" ALLOW "balanced parens in a heredoc body inside a substitution stay inert"
+    # A heredoc body starts after the first newline at the operator's own
+    # nesting level: a substitution opened after the operator holds its
+    # newlines, and one that closed around the operator leaves no body.
+    assert_verdict $'echo "$(cat <<\'E\' $(\nrm -rf '"${SIB_DIR}"$'\n)\nE\n)"' executor-write "$WAVE_42" DENY "a \$( ) opened after a heredoc operator holds its newline"
+    assert_verdict $'echo "$(cat <<\'E\' <(\nrm -rf '"${SIB_DIR}"$'\n)\nE\n)"' executor-write "$WAVE_42" DENY "a <( ) opened after a heredoc operator holds its newline"
+    assert_verdict $'docket step artifacts "$(cat <<\'E\' $(\nrm -rf '"${SIB_DIR}"$'\n)\nE\n)"' executor-write "$WAVE_42" DENY "a \$( ) after a heredoc operator, as a docket argument"
+    assert_verdict $'echo "$(cat <<\'E\' $(\npkill node\n)\nE\n)"' executor-write "$WAVE_42" DENY "a \$( ) opened after a heredoc operator hides no pkill"
+    assert_verdict $'echo "$(cat <<\'E\' $(\nrm -rf '"${SIB_DIR}"$'\nE\n)\n)"' executor-write "$WAVE_42" DENY "a \$( ) opened after a heredoc operator holds its terminator line too"
+    assert_verdict $'echo "$(echo $(cat <<\'E\')\nrm -rf '"${SIB_DIR}"$'\nE\n)"' executor-write "$WAVE_42" DENY "a heredoc whose substitution closed on its line has no body"
+    # Accepted false denies: every code line of a leaf is matched, and the
+    # interpreter test reads them all.
+    assert_verdict $'echo "multi\nuse node STEP-7.d prose"' executor-write "$WAVE_42" DENY "accepted false deny: interpreter word on a later line of quoted prose"
+    assert_verdict $'echo "multi\nline STEP-7.d prose"' executor-write "$WAVE_42" ALLOW "multi-line quoted prose naming a sibling dir"
+    assert_verdict $'echo $(\n# see STEP-7.d\nls\n)' executor-write "$WAVE_42" DENY "accepted false deny: comment line in a substitution body"
+    # Further substitution shapes.
+    assert_verdict $'echo "$(\nrm -rf '"${SIB_DIR}"$'\n)"' executor-write "$WAVE_42" DENY "multi-line \$( ) inside double quotes"
+    assert_verdict $'echo $(echo $(\nrm -rf '"${SIB_DIR}"$'\n))' executor-write "$WAVE_42" DENY "nested multi-line \$( )"
+    assert_verdict $'echo $(ls\nrm -rf '"${SIB_DIR}"$')' executor-write "$WAVE_42" DENY "multi-line \$( ) whose body starts on the opener line"
+    assert_verdict $'for d in $(\nrm -rf '"${SIB_DIR}"$'\n); do echo; done' executor-write "$WAVE_42" DENY "multi-line \$( ) in a for-loop word list"
+    assert_verdict $'tee >(\nrm -rf '"${SIB_DIR}"$'\n) </dev/null' executor-write "$WAVE_42" DENY "multi-line >( ) process substitution"
+    assert_verdict $'x=$(\nrm -rf '"${SIB_DIR}"$'\n)' executor-write "$WAVE_42" DENY "multi-line \$( ) in an assignment"
+    assert_verdict $'echo $(cat <<\'A\' <<\'B\'\nsaw STEP-7.d\nA\nsaw STEP-7.d\nB\nrm -rf '"${SIB_DIR}"$'\n)' executor-write "$WAVE_42" DENY "a line after the second of two heredocs is code"
+    assert_verdict $'echo $(cat <<\'A\' <<\'B\'\nsaw STEP-7.d\nA\nsaw STEP-7.d\nB\n)' executor-write "$WAVE_42" ALLOW "two quoted heredoc bodies on one line stay inert"
+    assert_verdict $'echo $(cat <<\'EOF\' \\\n'"${SIB_DIR}"$'\nEOF\n)' executor-write "$WAVE_42" DENY "a backslash-newline continues the heredoc operator line"
+    # Wherever the lexer could misread bash it stops skipping and keeps every
+    # remaining line, so these bodies are read.
+    assert_verdict $'echo $(echo `date` <<\'EOF\'\nrm -rf '"${SIB_DIR}"$'\nEOF\n)' executor-write "$WAVE_42" DENY "fails toward reading: a backtick before the operator"
+    assert_verdict $'echo $(echo $[1] <<\'EOF\'\nrm -rf '"${SIB_DIR}"$'\nEOF\n)' executor-write "$WAVE_42" DENY "fails toward reading: \$[ ] before the operator"
+    assert_verdict $'echo $(echo $(( "1" )) <<\'EOF\'\nrm -rf '"${SIB_DIR}"$'\nEOF\n)' executor-write "$WAVE_42" DENY "fails toward reading: a quote inside \$(( ))"
+    assert_verdict $'echo $(cat <<\'E$X\'\nrm -rf '"${SIB_DIR}"$'\nE$X\n)' executor-write "$WAVE_42" DENY "fails toward reading: an expansion inside a quoted delimiter"
+    assert_verdict $'echo $(cat <<E$X\nnode \'rm -rf '"${SIB_DIR}"$'\'\nE$X\n)' executor-write "$WAVE_42" DENY "an expansion in an unquoted delimiter keeps the body read"
 }
 
 # Verb spellings: case, wrappers, docket global flags, function wrappers.

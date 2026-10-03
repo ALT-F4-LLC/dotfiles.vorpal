@@ -158,13 +158,17 @@
 #
 # HOW THE COMMAND IS READ: the same two stages as docket-trust-guard-hook.sh
 # and docket-commit-guard-hook.sh, whose headers carry the full reasoning.
-# Stage one asks bash itself which simple commands it would dispatch (a DEBUG
-# trap under `extdebug` and `set -T` that vetoes every leaf), so chains,
-# subshells, substitutions, heredocs and comments are bash's parse and not a
-# re-derivation of it; stage two is the shared quote-group pre-pass
-# (docket-guard-prepass.awk) that tells a quoted prose span from
-# separately-quoted words and unmarks an interpreter's code argument (`bash -c
-# '...'`) so the words inside it are read as the invocation they are. A word
+# Between them, line selection differs: those guards keep the first line of
+# each leaf, while this one keeps every line except heredoc bodies (see
+# LEAF_LINES_AWK), since a substitution body that spans lines reaches the
+# probe only inside its outer leaf. Stage one asks bash itself which simple
+# commands it would dispatch (a DEBUG trap under `extdebug` and `set -T`
+# that vetoes every leaf), so chains, subshells, substitutions, heredocs
+# and comments are bash's parse and not a re-derivation of it; stage two
+# is the shared quote-group pre-pass (docket-guard-prepass.awk) that tells
+# a quoted prose span from separately-quoted words and unmarks an
+# interpreter's code argument (`bash -c '...'`) so the words inside it are
+# read as the invocation they are. A word
 # inside a quoted group of two or more words is prose here; a lone quoted
 # path (`rm -rf "<TMP>/STEP-7.d"`) is not; and when any leaf is headed by an
 # interpreter, no quoted group is prose at all — `echo "rm -rf ..." | sh` and
@@ -241,11 +245,14 @@
 # way to write such prose; a quoted-delimiter heredoc body is never read,
 # whatever words it carries, because the interpreter test that widens a body
 # into the scan reads the leaf's code lines only, never a heredoc body, and
-# never counts a file extension as an interpreter (a target named `cases.sh` or `.env` does not
-# widen; an earlier spelling matched the extension and scanned the body) —
-# a findings artifact that mentions
-# `node`, `sh` or `.env` in passing is the sanctioned record path for
-# executor-read and executor-research, which have no Write tool. A search
+# never counts a file extension as an interpreter (a target named `cases.sh`
+# or `.env` does not widen; an earlier spelling matched the extension and
+# scanned the body) — a findings artifact that mentions `node`, `sh` or
+# `.env` in passing is the sanctioned record path for executor-read and
+# executor-research, which have no Write tool. The exception is a body
+# inside a substitution that holds a quote, `$`, `#`, a backslash, a
+# backtick or an unbalanced paren: it is read, since bash 3.2 may end the
+# substitution inside it (see LEAF_LINES_AWK). A search
 # for the glob-form token itself (`grep -rn 'STEP-[0-9]*'` on the step's own
 # dir) is a false DENY too; the deny reason offers `STEP.[0-9]+` instead,
 # which is safe only as a regex operand (grep -E, rg): as a pathname glob it
@@ -557,10 +564,18 @@ fi
 # expansion or a newline in a delimiter, and a heredoc with no terminator
 # line. Lines before that point keep their classification.
 #
+# A heredoc body starts after the first newline at the nesting level of its
+# operator. A newline inside a substitution opened after the operator, or
+# after the substitution around the operator has closed, stops skipping too.
+# Inside a substitution, bash 3.2 finds the closing `)` by a paren and quote
+# scan that ignores heredocs, so a body there is skipped only when that scan
+# reads it as plain balanced text (body_inert).
+#
 # In "code" mode it prints the code lines of every leaf. In "scan" mode it
 # prints the code lines, or the whole leaf when `widen` is set or the leaf
 # carries an unquoted-delimiter heredoc (whose body bash expands before any
-# consumer sees it) or a delimiter it cannot read.
+# consumer sees it). A delimiter it cannot read ends classification like the
+# cases above: every remaining line is kept.
 LEAF_LINES_AWK='
 function count_nl(s,   t) {
     t = s
@@ -627,11 +642,30 @@ function d_below(sp,   k) {
     for (k = 1; k < sp; k++) if (FT[k] == "D") return 1
     return 0
 }
+# 1 when body lines a..b read the same to the paren and quote scan bash 3.2
+# uses to find the end of an enclosing substitution, which ignores heredocs:
+# no quote, backtick, backslash, `#` or `$`, and parens that balance without
+# closing below the level they start at. A `)` that closes there ends the
+# substitution inside what would otherwise be body text.
+function body_inert(a, b,   s, k, d, c) {
+    d = 0
+    for (s = a; s <= b; s++) {
+        if (L[s] ~ /[\\#$\047\042\140]/) return 0
+        for (k = 1; k <= length(L[s]); k++) {
+            c = substr(L[s], k, 1)
+            if (c == "(") d++
+            else if (c == ")" && --d < 0) return 0
+        }
+    }
+    return d == 0
+}
 # Fills NL, L[1..NL] and CLS[1..NL] ("c" code, "b" heredoc body or
 # terminator) and sets UNQ when an operator has an unquoted or empty
 # delimiter. Frames: N (command text, FD counts open parens), D (inside
-# double quotes), B (inside ${ }, FD counts open braces).
-function classify(leaf,   n, i, c, c2, j, k, t, s, sp, np, ln, found, x) {
+# double quotes), B (inside ${ }, FD counts open braces). lvl counts every
+# open frame and paren; a body is taken only at a newline at the level its
+# operator was queued at, with no close below that level since (pmin).
+function classify(leaf,   n, i, c, c2, j, k, t, s, sp, np, ln, found, x, lvl, pmin) {
     NL = split(leaf, L, "\n")
     START[1] = 1
     for (k = 1; k <= NL; k++) {
@@ -646,6 +680,7 @@ function classify(leaf,   n, i, c, c2, j, k, t, s, sp, np, ln, found, x) {
     FT[1] = "N"
     FD[1] = 0
     np = 0
+    lvl = 0
     while (i <= n) {
         c = substr(leaf, i, 1)
         c2 = substr(leaf, i, 2)
@@ -658,7 +693,9 @@ function classify(leaf,   n, i, c, c2, j, k, t, s, sp, np, ln, found, x) {
             ln++
             i++
             if (FT[sp] != "N" || np == 0) continue
+            if (pmin < lvl) return
             for (k = 1; k <= np; k++) {
+                if (PLVL[k] != lvl) return
                 found = 0
                 for (t = ln; t <= NL; t++) {
                     x = L[t]
@@ -666,6 +703,7 @@ function classify(leaf,   n, i, c, c2, j, k, t, s, sp, np, ln, found, x) {
                     if (x == PDELIM[k]) { found = 1; break }
                 }
                 if (!found) return
+                if (lvl > 0 && !body_inert(ln, t - 1)) return
                 for (s = ln; s <= t; s++) CLS[s] = "b"
                 ln = t + 1
             }
@@ -682,9 +720,9 @@ function classify(leaf,   n, i, c, c2, j, k, t, s, sp, np, ln, found, x) {
             continue
         }
         if (FT[sp] == "D") {
-            if (c == DQ) sp--
-            else if (c2 == "$(") { FT[++sp] = "N"; FD[sp] = 0; i++ }
-            else if (c2 == "${") { FT[++sp] = "B"; FD[sp] = 0; i++ }
+            if (c == DQ) { sp--; if (--lvl < pmin) pmin = lvl }
+            else if (c2 == "$(") { FT[++sp] = "N"; FD[sp] = 0; lvl++; i++ }
+            else if (c2 == "${") { FT[++sp] = "B"; FD[sp] = 0; lvl++; i++ }
             i++
             continue
         }
@@ -702,24 +740,31 @@ function classify(leaf,   n, i, c, c2, j, k, t, s, sp, np, ln, found, x) {
             i = j
             continue
         }
-        if (c == DQ) { FT[++sp] = "D"; i++; continue }
-        if (c2 == "${") { FT[++sp] = "B"; FD[sp] = 0; i += 2; continue }
+        if (c == DQ) { FT[++sp] = "D"; lvl++; i++; continue }
+        if (c2 == "${") { FT[++sp] = "B"; FD[sp] = 0; lvl++; i += 2; continue }
         if (FT[sp] == "B") {
-            if (c2 == "$(") { FT[++sp] = "N"; FD[sp] = 0; i++ }
-            else if (c == "{") FD[sp]++
-            else if (c == "}") { if (FD[sp] > 0) FD[sp]--; else sp-- }
+            if (c2 == "$(") { FT[++sp] = "N"; FD[sp] = 0; lvl++; i++ }
+            else if (c == "{") { FD[sp]++; lvl++ }
+            else if (c == "}") {
+                if (FD[sp] > 0) FD[sp]--; else sp--
+                if (--lvl < pmin) pmin = lvl
+            }
             i++
             continue
         }
         if (c == "#" && (i == 1 || index(" \t\n;&|()<>", substr(leaf, i - 1, 1)))) return
         if (c == "(" || c2 == "$(") {
             FD[sp]++
+            lvl++
             i += (c == "(") ? 1 : 2
             continue
         }
         if (c == ")") {
             if (FD[sp] > 0) FD[sp]--
             else if (sp > 1) sp--
+            else if (np) return
+            else { i++; continue }
+            if (--lvl < pmin) pmin = lvl
             i++
             continue
         }
@@ -729,9 +774,10 @@ function classify(leaf,   n, i, c, c2, j, k, t, s, sp, np, ln, found, x) {
             if (HD_BAIL) return
             if (HD_DELIM == "" || !HD_QUOTED) UNQ = 1
             if (HD_DELIM != "") {
-                np++
+                if (++np == 1) pmin = lvl
                 PDELIM[np] = HD_DELIM
                 PDASH[np] = HD_DASH
+                PLVL[np] = lvl
             }
             i = j
             continue
@@ -759,7 +805,8 @@ BEGIN {
 
 # --- Widening: where a heredoc's body stops being inert data. ------------
 #
-# The trust guard's two triggers, with one correction: the interpreter test
+# The trust guard's two triggers, applied to this guard's line selection
+# rather than its first lines, with one correction: the interpreter test
 # reads each leaf's code lines only, never a heredoc body. An interpreter that
 # consumes a heredoc is always a command word, never body text; reading bodies
 # too made an artifact that mentioned `node` or `.env` widen itself, and its

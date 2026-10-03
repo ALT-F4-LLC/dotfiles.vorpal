@@ -333,6 +333,9 @@ const GIT_CONFIG: &[(&str, &str)] = &[
 ];
 
 const PERMISSION_ALLOW_RULES: &[&str] = &[
+    "Bash(docket * --help 2>&1)",
+    "Bash(docket * --help)",
+    "Bash(docket --version *)",
     "Bash(docket --version)",
     "Bash(docket config get:*)",
     "Bash(docket dispatch verify *)",
@@ -342,6 +345,7 @@ const PERMISSION_ALLOW_RULES: &[&str] = &[
     "Bash(docket guard stop *)",
     "Bash(docket issue list:*)",
     "Bash(docket issue show:*)",
+    "Bash(docket next *)",
     "Bash(docket plan *)",
     "Bash(docket project list:*)",
     "Bash(docket registry audit *)",
@@ -370,6 +374,7 @@ const PERMISSION_ALLOW_RULES: &[&str] = &[
     "Bash(git status:*)",
     "Bash(git worktree list:*)",
     "Bash(go build:*)",
+    "Bash(go env GO*)",
     "Bash(go test:*)",
     "Bash(go tool golangci-lint:*)",
     "Bash(go vet:*)",

@@ -316,14 +316,51 @@ case_must_allow_computed_subcommand_residual() {
 # commit/push/add test and ALLOWs a write bash really runs as `commit`.
 # Unlike the computed-subcommand residual above, this is not an expansion
 # this hook declines to resolve -- an unresolved `{` at the subcommand
-# position is denied outright.
+# position is denied whenever bash could expand it: unquoted relative to
+# `git`, with a `,` or `..` after it. A quoted newline inside the brace
+# can push that `,` off the line the hook scans, either onto a line it
+# drops (an unwidened leaf keeps only its first line) or onto a later line
+# (a double-quoted string holding `$(` keeps its newline through the
+# pre-pass); both still deny. `bash -c :` is there to widen the leaf.
 
 case_brace_split_subcommand_denies() {
+    local widen='; bash -c :'
     assert_verdict 'git commi{t,} -m x' DENY 'brace-split subcommand: git commi{t,}'
     assert_verdict 'git pus{h,} origin main' DENY 'brace-split subcommand: git pus{h,}'
     assert_verdict 'git ad{d,} src/foo.rs' DENY 'brace-split subcommand: git ad{d,}'
     assert_verdict 'git commit{,} -m x' DENY \
         'brace-split subcommand, alternative at the end: git commit{,}'
+    assert_verdict 'git {commit,push} -m x' DENY 'brace alternation of two subcommands'
+    assert_verdict 'git {"commit",} -m x' DENY 'quoted alternative inside an unquoted brace'
+    assert_verdict 'bash -c "git {commit,} -m x"' DENY 'brace alternation in an interpreter code argument'
+    assert_verdict '"git" "{commit,}" -m x' DENY \
+        'separately quoted git and brace word (different quote groups)'
+    assert_verdict 'git {"--exec-path=a'$'\n''b",commit} --allow-empty -m x' DENY \
+        'quoted newline moves the brace comma off the scanned first line'
+    assert_verdict 'git {"--exec-path=$(true)}'$'\n''",commit} -m x' DENY \
+        'quoted newline after a quoted } moves the brace comma off the first line'
+    assert_verdict 'git {"--exec-path=a'$'\n''$(true)",commit} -m x' DENY \
+        'quoted newline in a substitution-bearing string moves the brace comma off the first line'
+    assert_verdict 'git {"--exec-path=a'$'\n''b",commit} --allow-empty -m x'"$widen" DENY \
+        'widened: quoted newline inside the brace word'
+    assert_verdict 'git {"--exec-path=$(true)}'$'\n''",commit} -m x'"$widen" DENY \
+        'widened: substitution-bearing string carries the brace comma to a later line'
+    assert_verdict 'git {"--exec-path=a'$'\n''$(true)",commit} -m x'"$widen" DENY \
+        'widened: substitution-bearing string carries the brace comma to a later line (2)'
+}
+
+# ---- MUST ALLOW: a brace word bash will not expand -----------------------
+#
+# Prose that names `git` followed by a `{`-word performs no git write. Bash
+# expands no quoted text, and expands no brace without a `,` or `..`.
+
+case_brace_word_prose_allows() {
+    assert_verdict 'echo "stub git {\"ok\":false}"' ALLOW \
+        'git and a brace word in one quoted string'
+    assert_verdict "cat > \"\$TMPDIR/f.md\" <<'EOF'"$'\n''stub git {"ok":false}'$'\nEOF' \
+        ALLOW 'quoted heredoc body naming git and a brace word'
+    assert_verdict "cat > \"\$TMPDIR/f.md\" <<'EOF'"$'\n''run bash later'$'\n''stub git {"ok":false}'$'\nEOF' \
+        ALLOW 'widened quoted heredoc body naming git and a brace word with no comma'
 }
 
 # ---- MUST ALLOW: option-before-subcommand help exemption -----------------
@@ -837,6 +874,7 @@ case_must_deny_terminal_position
 case_must_allow_terminal_fix_negative_controls
 case_must_allow_computed_subcommand_residual
 case_brace_split_subcommand_denies
+case_brace_word_prose_allows
 case_must_allow_help_exemption
 case_accepted_false_positive_control
 case_must_not_catch_prose_and_reads

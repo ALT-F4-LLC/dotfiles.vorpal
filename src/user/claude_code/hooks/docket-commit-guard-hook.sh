@@ -37,12 +37,13 @@
 # an unapproved or absent gate must.
 #
 # THE MATCHER — leaf enumeration, widening, and quote-group marking below —
-# is shared byte-for-byte with docket-trust-guard-hook.sh; see that file's
-# header for the redesign rationale this replaces.
-# Only what comes after quote-group marking differs: this file's MATCH step
-# looks for `git commit`/`push`/`add`, with git's own `-C`/`-c`/`--git-dir`
-# global-option skipping and its option-before-subcommand help exemption,
-# where the trust-guard's looks for `docket trust add`/`rm`. This hook also
+# is shared with docket-trust-guard-hook.sh; see that file's header for the
+# redesign rationale this replaces. Two parts differ: this file's widening
+# step marks a line it truncated (see the widening comment), and this
+# file's MATCH step looks for `git commit`/`push`/`add`, with git's own
+# `-C`/`-c`/`--git-dir` global-option skipping and its
+# option-before-subcommand help exemption, where the trust-guard's looks
+# for `docket trust add`/`rm`. This hook also
 # carries no `agent_type` scoping — unlike the executor-only trust-guard, a
 # git write needs an approved gate from ANY caller, main conversation
 # included, matching the old fleet's own scope.
@@ -295,7 +296,13 @@ fi
 # genuine invocation's verb is always on that first line by construction
 # (bash resolves `\`-continuations before setting $BASH_COMMAND, verified
 # live; only a heredoc body or a literal newline inside a quoted argument
-# adds further lines, and neither can move the verb off line one).
+# adds further lines, and neither can move the verb off line one). A
+# quoted newline CAN move brace content off line one, though: in
+# `git {"--exec-path=a<newline>b",commit}` the `,` that makes bash expand
+# the brace sits on the dropped line. So a truncated line is emitted with
+# a leading 0x1d word, which the MATCH step reads as "this line is not the
+# whole leaf". The byte cannot come from the command: any command carrying
+# it is denied above.
 #
 # The boundary on either side of an interpreter name is any byte that is not
 # a word character and not a dot. The dot is what separates a file name from
@@ -386,10 +393,10 @@ SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v RS='\036' -v widen="$WIDEN" '
         if (!leaf_widen && index(line1, "<<") > 0 && unquoted_heredoc(strip_arith(line1))) {
             leaf_widen = 1
         }
-        if (leaf_widen) {
+        if (leaf_widen || eol == 0) {
             out = out leaf "\n"
         } else {
-            out = out line1 "\n"
+            out = out "\035 " line1 "\n"
         }
     }
     END { printf "%s", out }
@@ -457,20 +464,40 @@ STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk -f "$PREPASS_AWK" 2>/dev/null) || allo
 # word, before the truncation below runs) is read as the same residual
 # class as a `$`-expansion look-behind: this pass cannot evaluate it, so it
 # deviates from that pattern's usual ALLOW and stays on the DENY side,
-# because a `{` at exactly this position has no legitimate reading as
-# prose (prose reaching this position already passed the quote-group test)
-# and every real use of `git commit/push/add` needs no brace at all. A
+# because every real use of `git commit/push/add` needs no brace at all.
+# The brace test runs BEFORE the quote-group test, so prose can reach it.
+# Two shapes bash never expands skip the DENY and fall through to the
+# ordinary word tests: a brace word in the same quote group as `git`,
+# since bash expands no quoted text, and a brace with no `,` or `..`
+# anywhere after it, which is literal text to bash (`stub git {"ok":false}`
+# in a findings note). "After it" runs to the end of the scanned text, not
+# the end of the line: the pre-pass emits a double-quoted string holding
+# `$(` raw, newline included, so the `,` can land on a later line. The
+# second exemption never applies to a line the widening step truncated
+# (leading 0x1d word), whose `,` may have been dropped. A
 # `${...}` parameter expansion is stripped before this test, not treated
 # as a brace: `git ${V}` is the SAME accepted residual as `git $V` (a
 # computed-subcommand shape this pass already declines to resolve), and
 # `${` is never brace ALTERNATION syntax, so it carries none of the risk
 # this check exists for.
 MATCH=$(printf '%s' "$STRIPPED" | awk '
-BEGIN { MARK = "\001" }
+BEGIN { MARK = "\001"; TRUNCATED = "\035" }
 function has_brace(word,   stripped) {
     stripped = word
     gsub(/\$\{/, "", stripped)
     return index(stripped, "{") > 0
+}
+# Bash brace-expands only with a "," or ".." inside the braces. The pre-pass
+# splits a source word at its embedded quotes, so {"commit",} reaches here as
+# several words; the test reads from the brace word to the end of the text.
+function may_brace_expand(from,   k) {
+    for (k = from; k <= n; k++) {
+        if (index(words[k], ",") > 0 || index(words[k], "..") > 0) return 1
+    }
+    for (k = r + 1; k <= NR; k++) {
+        if (index(lines[k], ",") > 0 || index(lines[k], "..") > 0) return 1
+    }
+    return 0
 }
 function decode(raw,    inner, cpos) {
     if (length(raw) >= 2 && substr(raw, 1, 1) == MARK && substr(raw, length(raw), 1) == MARK) {
@@ -486,39 +513,43 @@ function decode(raw,    inner, cpos) {
     gsub(/^[\047\042]+|[\047\042]+$/, "", D_WORD)
     return 0
 }
-{
-    n = split($0, words, /[ \t]+/)
-    for (i = 1; i <= n; i++) {
-        hquoted = decode(words[i])
-        hgroup = D_GROUP
-        w = D_WORD
-        hw = w
-        sub(/^.*(\$\(|\140|\(|;|\||&)/, "", hw)
-        if (hw == "git" || hw ~ /\/git$/) {
-            j = i + 1
-            helped = 0
-            while (j <= n) {
-                decode(words[j])
-                opt = D_WORD
-                if (opt !~ /^-/) break
-                if (opt == "--help" || opt == "-h") helped = 1
-                if (opt == "-C" || opt == "-c" || opt == "--git-dir" || opt == "--work-tree" || opt == "--exec-path" || opt == "--namespace" || opt == "--super-prefix" || opt == "--config-env" || opt == "--attr-source") {
-                    j += 2
-                } else {
-                    j += 1
+{ lines[NR] = $0 }
+END {
+    for (r = 1; r <= NR; r++) {
+        n = split(lines[r], words, /[ \t]+/)
+        truncated = (words[1] == TRUNCATED)
+        for (i = 1; i <= n; i++) {
+            hquoted = decode(words[i])
+            hgroup = D_GROUP
+            w = D_WORD
+            hw = w
+            sub(/^.*(\$\(|\140|\(|;|\||&)/, "", hw)
+            if (hw == "git" || hw ~ /\/git$/) {
+                j = i + 1
+                helped = 0
+                while (j <= n) {
+                    decode(words[j])
+                    opt = D_WORD
+                    if (opt !~ /^-/) break
+                    if (opt == "--help" || opt == "-h") helped = 1
+                    if (opt == "-C" || opt == "-c" || opt == "--git-dir" || opt == "--work-tree" || opt == "--exec-path" || opt == "--namespace" || opt == "--super-prefix" || opt == "--config-env" || opt == "--attr-source") {
+                        j += 2
+                    } else {
+                        j += 1
+                    }
                 }
-            }
-            if (j <= n && !helped) {
-                squoted = decode(words[j])
-                sgroup = D_GROUP
-                s = D_WORD
-                sw = s
-                if (has_brace(sw)) { print "MATCH"; exit }
-                sub(/[^A-Za-z0-9_-].*$/, "", sw)
-                if (sw == "commit" || sw == "push" || sw == "add") {
-                    if (hquoted && squoted && hgroup == sgroup) continue
-                    print "MATCH"
-                    exit
+                if (j <= n && !helped) {
+                    squoted = decode(words[j])
+                    sgroup = D_GROUP
+                    s = D_WORD
+                    sw = s
+                    if (has_brace(sw) && !(hquoted && squoted && hgroup == sgroup) && (truncated || may_brace_expand(j))) { print "MATCH"; exit }
+                    sub(/[^A-Za-z0-9_-].*$/, "", sw)
+                    if (sw == "commit" || sw == "push" || sw == "add") {
+                        if (hquoted && squoted && hgroup == sgroup) continue
+                        print "MATCH"
+                        exit
+                    }
                 }
             }
         }

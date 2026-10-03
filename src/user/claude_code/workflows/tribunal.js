@@ -65,28 +65,25 @@ const AGENT_CONFIG = {
 // policy.toml, or the roster was re-typed without its fields — and a panel
 // seated on a guessed tier is the drift a harness-side policy parser used
 // to cause.
-function assertRouted(who, entry, refusal) {
-    for (const k of ['model', 'effort', 'variant']) {
-        if (!entry || typeof entry[k] !== 'string' || entry[k] === '') {
-            throw new Error(
-                `tribunal.js: ${who} carries no ${k} (got ${JSON.stringify(entry && entry[k])}) — ` +
-                `the engine renders model/effort/variant from the run's pinned ` +
-                `policy.toml, so this was never routed or was re-typed without ` +
-                `its fields. ${refusal}`
-            )
-        }
-    }
-}
-
-function resolveSeat(seat, routing) {
+function resolveSeat(voter) {
+    const seat = voter && voter.seat
     if (typeof seat !== 'string' || seat === '') {
         throw new Error(
             `tribunal.js: a voter carries no seat name (got ${JSON.stringify(seat)}). ` +
             `Refusing to seat the panel.`
         )
     }
-    assertRouted(`seat ${JSON.stringify(seat)}`, routing, 'Refusing to seat the panel.')
-    return { seat, variant: routing.variant, model: routing.model, effort: routing.effort }
+    for (const k of ['model', 'effort', 'variant']) {
+        if (typeof voter[k] !== 'string' || voter[k] === '') {
+            throw new Error(
+                `tribunal.js: seat ${JSON.stringify(seat)} carries no ${k} (got ${JSON.stringify(voter[k])}) — ` +
+                `the engine renders model/effort/variant from the run's pinned ` +
+                `policy.toml, so this was never routed or was re-typed without ` +
+                `its fields. Refusing to seat the panel.`
+            )
+        }
+    }
+    return { seat, variant: voter.variant, model: voter.model, effort: voter.effort }
 }
 
 // A seat's lens is its trailing name segment (`tribunal-security` -> security);
@@ -636,10 +633,9 @@ if (!Array.isArray(input.voters) || input.voters.length === 0) {
 
 const { voteId, voters, context, gateKind, cwd, step, target, heldCluster, isRespawn } = input
 
-// The proposal must already exist and be open: the CALLER creates it (or, mid-
-// wave, the engine's record-driving does). This script fills a proposal, and
-// never creates, approves, tallies, or commits one.
-const seats = voters.map((v) => resolveSeat(v && v.seat, v))
+// The proposal already exists and is open: the caller creates it (mid-wave,
+// the engine's record-driving does).
+const seats = voters.map(resolveSeat)
 
 log(`tribunal: ${voteId} — ${gateKind} gate, ${seats.length} seat(s), cwd ${cwd}` +
     (isMidWave ? ` (mid-wave, step ${step.step})` : ''))

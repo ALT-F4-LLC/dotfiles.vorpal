@@ -880,11 +880,11 @@ END {
                 if (verb == "find" && (w == "!" || w == "-not")) negated = 1
                 if (verb == "find" && negated && own_mode == "known" && scratch_token(w) && T_NUM == own) report("SCRATCH", "everything but " T_TOKEN)
             }
-            # WORKTREE by path: a destructive head, or an output redirection,
-            # aimed at another checkout.
+            # WORKTREE by path: a destructive head, or an output or read-write
+            # (`<>`) redirection, aimed at another checkout.
             if ((verb == "rm" || verb == "rmdir" || verb == "mv") && foreign_checkout(w)) report("WORKTREE", verb " " w)
-            if (foreign_checkout(w) && (w ~ /^[0-9]*>/ || w ~ /^&>/ || prev_redirect)) report("WORKTREE", "write into " w)
-            prev_redirect = (w ~ /^[0-9]*>{1,2}\|?$/ || w ~ /^&>>?$/)
+            if (foreign_checkout(w) && (w ~ /^[0-9]*<?>/ || w ~ /^&>/ || prev_redirect)) report("WORKTREE", "write into " w)
+            prev_redirect = (w ~ /^[0-9]*(>{1,2}\|?|<>)$/ || w ~ /^&>>?$/)
             # Any standalone redirect operator (`<`, `<>`, `>&`, `3<>`,
             # `{fd}>`): the word after it is a file the shell opens, not a
             # docket argument.

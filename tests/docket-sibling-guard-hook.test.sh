@@ -796,6 +796,14 @@ case_checkout_paths() {
     [ "$got" = "ALLOW" ] && pass "reading a sibling's gitdir pointer (ALLOW)" || fail "reading a sibling's gitdir pointer (want ALLOW, got ${got})"
     got=$(verdict_of "$(with_cwd "diff ${own_wt}/a ${sib_wt}/a > ${own_wt}/d.patch" "$own_wt")")
     [ "$got" = "ALLOW" ] && pass "sibling path as a read operand beside an own-dir redirect (ALLOW)" || fail "sibling read operand with own redirect (want ALLOW, got ${got})"
+    # `[n]<>` opens its target read-write and creates it, so it writes into
+    # a sibling as surely as `>` does; a plain `<` only reads.
+    local rw
+    for rw in "1<> " "3<> " "<> " "1<>"; do
+        assert_verdict "cat x ${rw}/repo/.claude/worktrees/wf_x/.git" executor-write "$WAVE_42" DENY "read-write redirect '${rw}' onto a sibling's gitdir pointer"
+        assert_deny_reason "cat x ${rw}/repo/.claude/worktrees/wf_x/.git" executor-write "$WAVE_42" "write into" "read-write redirect '${rw}' deny is the write-into rule"
+    done
+    assert_verdict "cat < /repo/.claude/worktrees/wf_x/srv.pid" executor-write "$WAVE_42" ALLOW "input redirect from a sibling's checkout"
 }
 
 # Two claims in one opening: the marker must name the same step twice.

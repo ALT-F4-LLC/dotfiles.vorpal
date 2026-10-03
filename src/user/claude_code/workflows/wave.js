@@ -646,6 +646,11 @@ const CLAIM_HELD = ['claimed', 'running']
 // after the fact, which is the opposite diagnosis and needs no reap.
 const ALREADY_RECORDED = ['done', 'superseded', 'skipped', 'failed']
 
+// The conductor's return of a claim whose holder is gone, as the results and
+// logs below name it.
+const reapInstruction = (step) =>
+    `\`docket step reap ${step} --reason '<what you observed>'\` under the run's conductor capability`
+
 // Builds the step's real state as the outcome. Returns null when the probe
 // carries no status; the caller then relays the CONFLICT verbatim.
 function orphanedClaimReport(step, conflict, show) {
@@ -671,9 +676,8 @@ function orphanedClaimReport(step, conflict, show) {
             `mid-step whose claim outlived it (the harness relaunches the ` +
             `identical brief on resume; the claim is what stops the duplicate ` +
             `from doing the work twice). ESTABLISH the holder is gone, then ` +
-            `return the step to the pool: \`docket step reap ${step} ` +
-            `--reason '<what you observed>'\` under the run's conductor ` +
-            `capability (the token file redirected into stdin; docket-run ` +
+            `return the step to the pool: ${reapInstruction(step)} ` +
+            `(the token file redirected into stdin; docket-run ` +
             `SKILL.md, "The conductor capability"). Do NOT read this ` +
             `outcome as "the step never started".`
     } else if (ALREADY_RECORDED.includes(st.status)) {
@@ -924,9 +928,8 @@ async function claimPacket(row, r, phaseLabel) {
         }
         const text = `${row.step}: packet module ${modulePath} REFUSED — ${claim.why}; ` +
             `no executor launched. Reconcile with \`docket step show ${row.step}\`; ` +
-            `if it reads claimed, return it to the pool with \`docket step reap ` +
-            `${row.step} --reason '<what you observed>'\` under the run's conductor ` +
-            `capability and remove its scratch dir`
+            `if it reads claimed, return it to the pool with ${reapInstruction(row.step)} ` +
+            `and remove its scratch dir`
         log(text)
         return { ok: false, result: { step: row.step, status: 'spawn-failed', text } }
     }
@@ -963,8 +966,7 @@ function claimFailure(row, owner, reply, loadError, phaseLabel) {
     const msg = `${row.step}: no packet module loaded (${loadError}); no executor ` +
         `launched. ` + (claimedLine
         ? `The claim agent reports the claim landed, so ${owner} holds a live ` +
-          `lease: return it to the pool with \`docket step reap ${row.step} ` +
-          `--reason '<what you observed>'\` under the run's conductor capability ` +
+          `lease: return it to the pool with ${reapInstruction(row.step)} ` +
           `and remove its scratch dir`
         : `Whether ${owner} holds a claim is UNKNOWN: reconcile with \`docket ` +
           `step show ${row.step}\`, and if it reads claimed, reap it under the ` +
@@ -994,8 +996,7 @@ function launchExecutor(row, r, type, isWrite, isolated, phaseLabel, { owner, cl
     // Every outcome below that recorded nothing leaves this claim live.
     const held = `${row.step} is CLAIMED by ${owner} at attempt ${claim.attempt} ` +
         `with its token parked at ${claim.token}: return it to the pool with ` +
-        `\`docket step reap ${row.step} --reason '<what you observed>'\` under the ` +
-        `run's conductor capability and remove ${claim.dir}`
+        `${reapInstruction(row.step)} and remove ${claim.dir}`
     const stepLabel = `${row.step} · ${r.hint}`
     const opts = (iso) => ({
         label: stepLabel,

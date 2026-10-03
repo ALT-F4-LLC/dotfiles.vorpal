@@ -368,6 +368,9 @@ case_command_shapes() {
 case_prose() {
     assert_verdict "docket issue comment add DOT-1 -d 'a leftover STEP-7.d was seen beside mine'" executor-write "$WAVE_42" ALLOW "quoted prose span mentioning a sibling's dir"
     assert_verdict "docket issue comment add DOT-1 -d \"a leftover STEP-7.d was seen\"" executor-write "$WAVE_42" ALLOW "double-quoted prose span"
+    assert_verdict "echo \"see ${SIB_DIR} later\"" executor-write "$WAVE_42" ALLOW "double-quoted prose span naming a sibling's full path"
+    assert_verdict "echo \"\$(rm -rf ${SIB_DIR} now)\"" executor-write "$WAVE_42" DENY "double-quoted \$( ) substitution is not prose"
+    assert_verdict "echo \"\`rm -rf ${SIB_DIR} now\`\"" executor-write "$WAVE_42" DENY "double-quoted backtick substitution is not prose"
     assert_verdict $'cat > '"${OWN_DIR}"$'/STEP-42-findings.md <<\'EOF\'\nFound a leftover STEP-7.d beside my own dir.\nEOF' executor-write "$WAVE_42" ALLOW "quoted-delimiter heredoc body is inert"
     assert_verdict $'cat > '"${OWN_DIR}"$'/STEP-42-findings.md <<EOF\nFound a leftover STEP-7.d beside my own dir.\nEOF' executor-write "$WAVE_42" DENY "unquoted-delimiter heredoc body is scanned (accepted false deny)"
     assert_verdict $'cat <<\'EOF\' | sh\nrm -rf '"${SIB_DIR}"$'\nEOF' executor-write "$WAVE_42" DENY "quoted heredoc piped into an interpreter is code"

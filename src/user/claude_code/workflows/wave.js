@@ -1221,6 +1221,15 @@ function voterToSeat(voter, routing) {
 // tests/wave-target-envelope.test.sh extracts it to assert the gate path
 // spends no target probe, and tests/tribunal-seat-brief.test.sh pins the
 // brief tribunal.js renders for the mid-wave call this region makes.
+// The closing paragraphs every probe brief shares. wave-usage.js classifies a
+// probe by the WAVE PROBE line.
+function probeTrailer(step) {
+    return `Run nothing else: no vote, no investigation. You are a
+read-only probe reporting what the record currently says.
+
+WAVE PROBE: not a step execution${step ? `; it READS ${step}` : ''}.`
+}
+
 function probeBrief(command, servingStep) {
     return `Run exactly this one command:
 
@@ -1230,10 +1239,7 @@ Return its output VERBATIM as your entire final reply: no summary, no
 commentary, no code fence. If the command errors, return the error text
 verbatim instead.
 
-Run nothing else: no vote, no investigation. You are a
-read-only probe reporting what the record currently says.
-
-WAVE PROBE: not a step execution${servingStep ? `; it READS ${servingStep}` : ''}.`
+${probeTrailer(servingStep)}`
 }
 
 // A probe is one read-only, idempotent command, so a dead one is resubmitted
@@ -1281,6 +1287,22 @@ function probe(command, label, phaseLabel, servingStep, acct) {
     return retrying(label, acct, once, '')
 }
 
+// A schema-answering probe counted in a gate's accounting: one spawn per
+// attempt, retried once by retrying(), `empty` when it never answers.
+function accountedProbe(acct, brief, label, phaseLabel, config, schema, parse, empty) {
+    const once = () => {
+        acct.probes++
+        return countedAgent(brief, {
+            label,
+            phase: phaseLabel,
+            agentType: 'executor-read',
+            ...config,
+            schema,
+        }).then(parse)
+    }
+    return retrying(label, acct, once, empty)
+}
+
 // `docket step show` answers through a schema, never regexed out of relayed
 // text.
 const STEP_SHOW_SCHEMA = {
@@ -1294,15 +1316,6 @@ const STEP_SHOW_SCHEMA = {
         blocked_reason: { type: 'string' },
         error: { type: 'string' },
     },
-}
-
-// The closing paragraphs every schema probe brief shares. wave-usage.js
-// classifies a probe by the WAVE PROBE line.
-function probeTrailer(step) {
-    return `Run nothing else: no vote, no investigation. You are a
-read-only probe reporting what the record currently says.
-
-WAVE PROBE: not a step execution; it READS ${step}.`
 }
 
 function stepShowBrief(step) {
@@ -1403,21 +1416,11 @@ ${probeTrailer(step)}`
 // reply is not one. Null means UNKNOWN to every caller, never "every seat
 // missing".
 function gateStatus(step, label, phaseLabel, acct) {
-    const once = () => {
-        acct.probes++
-        return countedAgent(gateStatusBrief(step), {
-            label,
-            phase: phaseLabel,
-            agentType: 'executor-read',
-            ...AGENT_CONFIG.gateStatus,
-            schema: GATE_STATUS_SCHEMA,
-        }).then((g) => {
-            if (g && typeof g.step_status === 'string' && typeof g.outcome === 'string') return g
-            if (g && typeof g.error === 'string') log(`${label}: engine error — ${g.error}`)
-            return null
-        })
-    }
-    return retrying(label, acct, once, null)
+    return accountedProbe(acct, gateStatusBrief(step), label, phaseLabel, AGENT_CONFIG.gateStatus, GATE_STATUS_SCHEMA, (g) => {
+        if (g && typeof g.step_status === 'string' && typeof g.outcome === 'string') return g
+        if (g && typeof g.error === 'string') log(`${label}: engine error — ${g.error}`)
+        return null
+    }, null)
 }
 
 // A gate the engine has settled one way or the other. `outcome` is the
@@ -1484,17 +1487,7 @@ function parseHeldCluster(hc) {
 }
 
 function heldCluster(step, label, phaseLabel, acct) {
-    const once = () => {
-        acct.probes++
-        return countedAgent(heldClusterBrief(step), {
-            label,
-            phase: phaseLabel,
-            agentType: 'executor-read',
-            ...AGENT_CONFIG.heldCluster,
-            schema: HELD_CLUSTER_SCHEMA,
-        }).then(parseHeldCluster)
-    }
-    return retrying(label, acct, once, null)
+    return accountedProbe(acct, heldClusterBrief(step), label, phaseLabel, AGENT_CONFIG.heldCluster, HELD_CLUSTER_SCHEMA, parseHeldCluster, null)
 }
 
 // The CASE a seat decides is read ONCE per gate and rendered verbatim into
@@ -1545,20 +1538,10 @@ function proposalContext(p) {
 }
 
 function proposalBody(voteId, step, label, phaseLabel, acct) {
-    const once = () => {
-        acct.probes++
-        return countedAgent(proposalBrief(voteId, step), {
-            label,
-            phase: phaseLabel,
-            agentType: 'executor-read',
-            ...AGENT_CONFIG.proposal,
-            schema: PROPOSAL_SCHEMA,
-        }).then((p) => {
-            if (p && typeof p.error === 'string') log(`${label}: engine error — ${p.error}`)
-            return proposalContext(p)
-        })
-    }
-    return retrying(label, acct, once, '')
+    return accountedProbe(acct, proposalBrief(voteId, step), label, phaseLabel, AGENT_CONFIG.proposal, PROPOSAL_SCHEMA, (p) => {
+        if (p && typeof p.error === 'string') log(`${label}: engine error — ${p.error}`)
+        return proposalContext(p)
+    }, '')
 }
 
 // Successful tallies report recovered agent errors as notes. Failed gates

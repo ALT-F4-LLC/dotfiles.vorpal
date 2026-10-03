@@ -689,11 +689,27 @@ case_heredoc_body_destination() {
 # A comment runs to the end of its line and bash executes none of it. Anything
 # the pre-pass reads inside one -- a quote that would otherwise open a region
 # spanning the newline, a heredoc operator that would otherwise arm a body --
-# is text, so the whole comment is consumed as one prose group and the command
-# on the next line reaches the matcher on its own.
+# is text, and the command on the next line reaches the matcher on its own.
+# The outer command's comments never reach the pre-pass; a widened heredoc
+# body's do, so the body rows pin the pre-pass's own comment rule: a `#` that
+# starts a word, or follows one of ;&|()<>, opens a comment in which quotes
+# open no group. A `#` inside a word is not a comment start.
 
 case_comment_regions_are_inert() {
     local inv='docket trust add erik key'
+    local widened="cat <<'EOF' | bash"
+    assert_verdict "${widened}"$'\n'"# it's"$'\n'"${inv}"$'\nEOF' \
+        executor-write DENY "an apostrophe in a widened body's comment does not swallow the next body line"
+    assert_verdict "${widened}"$'\n'"echo hi # it's"$'\n'"${inv}"$'\nEOF' \
+        executor-write DENY "an apostrophe in a widened body's trailing comment does not swallow the next body line"
+    assert_verdict "${widened}"$'\n''# say "x'$'\n'"${inv}"$'\nEOF' \
+        executor-write DENY "a double quote in a widened body's comment does not swallow the next body line"
+    assert_verdict "${widened}"$'\n'"echo hi;# it's"$'\n'"${inv}"$'\nEOF' \
+        executor-write DENY "a widened body's comment opened right after ; does not swallow the next body line"
+    assert_verdict "${widened}"$'\n'"(echo hi)# it's"$'\n'"${inv}"$'\nEOF' \
+        executor-write DENY "a widened body's comment opened right after ) does not swallow the next body line"
+    assert_verdict "${widened}"$'\n'"echo a#b 'the rule says ${inv} is operator-reserved'"$'\nEOF' \
+        executor-write ALLOW "a # inside a widened body's word opens no comment, so the quoted prose stays prose"
     assert_verdict "# it's operator-reserved"$'\n'"${inv}" \
         executor-write DENY "an apostrophe inside a comment does not swallow the next line"
     assert_verdict '# the rule says "operator-reserved"'$'\n'"${inv}" \

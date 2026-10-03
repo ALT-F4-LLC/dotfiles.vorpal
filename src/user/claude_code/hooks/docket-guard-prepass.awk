@@ -57,6 +57,14 @@
 # and a data word that merely decodes to an interpreter name qualifies the
 # same way (`grep 'sh' -c 'prose'`), because a word bash builds carries no
 # record of whether it was meant as a program name.
+# A `#` that starts a word, or follows one of ;&|()<>, opens a comment that
+# runs to the newline, as bash reads it. Inside one a quote opens no group, so
+# an apostrophe in a widened heredoc body's comment cannot mark the body lines
+# after it as prose. The comment's bytes stay ordinary words rather than being
+# dropped or marked: a `#` misread as a comment start (another interpreter's
+# grammar, a position bash would not treat so) then only exposes text to the
+# matcher, so every misreading fails toward DENY. A `#` inside a word (a#b,
+# $#, ${#x}) and an escaped \# open no comment.
 # Two writes, one chokepoint: consume() is the only way a byte that belongs
 # to a word enters the buffer, and it feeds the word model in the same call.
 # emit() writes boundary bytes alone -- whitespace, newline, an escaped
@@ -99,6 +107,7 @@ function marked_group(content,   chunk, m, k) {
 }
 function end_line() {
     end_word()
+    in_comment = 0
     words = 0
     saw_interpreter = 0
     prev_word = ""
@@ -129,7 +138,8 @@ END {
             i += 2
             continue
         }
-        if (c == SQ) {
+        if (c == "#" && (!in_word || substr(line, i - 1, 1) ~ /[;&|()<>]/)) in_comment = 1
+        if (c == SQ && !in_comment) {
             j = i + 1
             content = ""
             while (j <= n && substr(line, j, 1) != SQ) {
@@ -148,7 +158,7 @@ END {
             i = j + 1
             continue
         }
-        if (c == DQ) {
+        if (c == DQ && !in_comment) {
             j = i + 1
             content = ""
             while (j <= n) {

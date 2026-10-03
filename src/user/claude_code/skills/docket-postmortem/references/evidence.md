@@ -83,7 +83,7 @@ be partial. Confirm completion from the journal's `result` record.
 Join by stable session, workflow, and agent identity. For Docket steps,
 prefer an explicit assignment record, or the installed `wave-usage`
 obligation classifier: claimant (step record), judge (vote cast), and wave
-overhead (read-only probes) have different owners. The first `STEP-N` in a
+overhead (read-only probes and claim agents) have different owners. The first `STEP-N` in a
 prompt can be something a probe read. Preserve unattributed work as a count
 and limitation; never force a plausible join.
 

@@ -20,6 +20,7 @@ map `agentId` to a step through the agent's first `user` message.
 **Join on the obligation the brief carries, never on the first `STEP-N`
 mentioned.** An agent owns a step only if its brief tells it to `docket
 step claim`/`record STEP-N`. A brief that merely mentions a step (a
-read-only probe) is wave overhead: sum and report separately, attribute
-to nothing. A judge carries `docket vote cast`, not a record, and is
+read-only probe, or the claim agent that runs `wave-claim` for an
+executor) is wave overhead: sum and report separately, attribute to
+nothing. A judge carries `docket vote cast`, not a record, and is
 keyed by seat in the panel back-fill instead.

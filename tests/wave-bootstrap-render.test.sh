@@ -1,30 +1,27 @@
 #!/bin/bash
 
-# Behavior suite for wave.js's bootstrap() render: what the claim step's
-# packet redirect looks like for a read-class executor versus a write-class
-# one.
+# Behavior suite for wave.js's executorBrief(): the brief an executor is
+# spawned with, carrying its work packet verbatim.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
 # and this one is in that list. It needs only `node` and `awk` — no engine, no
 # database, no network, and it spawns no agent.
 #
-# WHY THIS EXISTS. bootstrap() renders the claim bootstrap that hands every
-# executor its packet — a read-class step's packet goes to a FILE
-# (<TMP>/<step>.d/<step>.packet.md), opened afterward with the Read tool, and
-# the brief prints no packet to stdout, which also keeps a large packet from
-# tripping the harness's inline-output cap. Before this suite, no test in the
-# repo exercised bootstrap()'s render output at all: a mutant that deletes
-# both `jq -r '.data.packet'` lines (dropping the redirect from the claim
-# chain entirely) passed every existing suite unchanged.
+# WHY THIS EXISTS. The packet is the executor's contract: the step's
+# contract file and every fragment it includes, the request, and the inputs.
+# It used to reach the executor only if the executor claimed the step itself,
+# redirected the packet to a file and chose to Read it, and a Read past its
+# token limit returns a partial first page. The wave now claims the step
+# first and hands the packet over inside the spawn prompt, so the delivery no
+# longer depends on what the executor decides to do. This suite pins that:
+# the packet closes the brief byte for byte, nothing in the brief asks the
+# executor to fetch it, and the identity marker the guards and the usage
+# join read sits ahead of the packet, where no packet content can displace
+# it.
 #
-# HOW. wave.js fences bootstrap() in TEST-BEGIN/TEST-END `bootstrap` markers.
-# This suite extracts that region and asserts the packet.md redirect, the
-# Read-tool instruction naming it, and the absence of a stdout packet print,
-# for both the isolated and shared claim forms — read-class (isWrite false)
-# is the positive case, write-class (isWrite true) the negative one (the
-# claim-and-redirect machinery is identical either way; isWrite only changes
-# obligation 2's prose, so a mutant that broke the redirect would fail both
-# equally, which is itself informative).
+# HOW. wave.js fences the helpers in TEST-BEGIN/TEST-END `packet` and
+# `executor-brief` markers. This suite extracts both and renders the brief
+# for every isolation and class combination.
 
 set -uo pipefail
 
@@ -56,12 +53,13 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
     ' "$WAVE"
 }
 
-extract bootstrap > "${WORK}/bootstrap.js" || fatal "bad or missing TEST markers for bootstrap"
-[ -s "${WORK}/bootstrap.js" ] || fatal "extracted bootstrap region is empty"
-grep -q 'function bootstrap' "${WORK}/bootstrap.js" || fatal "bootstrap region does not contain bootstrap()"
+for region in packet executor-brief; do
+    extract "$region" > "${WORK}/${region}.js" || fatal "bad or missing TEST markers for ${region}"
+    [ -s "${WORK}/${region}.js" ] || fatal "extracted ${region} region is empty"
+done
+grep -q 'function executorBrief' "${WORK}/executor-brief.js" || fatal "executor-brief region does not contain executorBrief()"
 
-cp "${WORK}/bootstrap.js" "${WORK}/suite.mjs"
-
+cat "${WORK}/packet.js" "${WORK}/executor-brief.js" > "${WORK}/suite.mjs"
 cat >> "${WORK}/suite.mjs" <<'JS'
 
 let pass = 0
@@ -71,33 +69,84 @@ const ok = (cond, label) => {
     else { fail++; console.error(`FAIL: ${label}`) }
 }
 
-const row = { step: 'STEP-4381', issue: 'DOT-99', run: 'RUN-52' }
-const r = { variant: 'std', model_requested: 'opus', effort_requested: 'high' }
-const PACKET = '<TMP>/STEP-4381.d/STEP-4381.packet.md'
+const row = { step: 'STEP-4381', issue: 'DOT-99', run: 'RUN-52', attempt: 1 }
+const owner = 'wave:STEP-4381:1'
+const DIR = '/tmp/claude-1000/STEP-4381.d'
+const TOKEN = `${DIR}/STEP-4381.token`
+// A packet that quotes another step's obligations and carries every
+// character class a template literal could mangle.
+const PACKET = [
+    '== STEP STEP-4381 implement@0',
+    'run:    RUN-52',
+    '',
+    '== REQUEST',
+    'Body that quotes `docket step record STEP-999 --artifact-file x < y` and',
+    '`docket step claim STEP-998 --owner wave:STEP-998:1` from an old run.',
+    'dollar-brace ${x} backslash \\ backtick ` close </script>   \u{1F9EA}',
+    '',
+    '== FILE contracts/implement.md  abc',
+    '# Charter',
+    'x'.repeat(300000),
+    '',
+    '== OUTPUT',
+    'Record an artifact of kind: change-summary',
+].join('\n')
+const claim = { dir: DIR, token: TOKEN, attempt: 2, packet: PACKET, sha256: 'f'.repeat(64), reMinted: false }
+const BEGIN = '----- BEGIN WORK PACKET STEP-4381 -----\n'
+const END = '\n----- END WORK PACKET STEP-4381 -----'
+const GUARD_RE = /docket step claim STEP-([0-9]+) --owner wave:STEP-([0-9]+):/
+const JOIN_RE = /docket step (?:claim|record|complete)\s+(STEP-\d+)/
 
 for (const isolated of [true, false]) {
-    const label = isolated ? 'isolated' : 'shared'
+    for (const isWrite of [true, false]) {
+        const label = `${isolated ? 'isolated' : 'shared'} ${isWrite ? 'write' : 'read'}-class`
+        const brief = executorBrief(row, owner, claim, isolated, isWrite)
 
-    // ---- read-class: the positive case ----
-    const readBrief = bootstrap(row, r, isolated, false)
-    ok(readBrief.includes(`jq -r '.data.packet'`) && readBrief.includes(`> ${PACKET}`),
-        `${label} read-class: the claim chain redirects the packet to ${PACKET}`)
-    ok(readBrief.includes(`open ${PACKET} with the Read tool`),
-        `${label} read-class: the brief carries the Read-tool instruction naming the packet file`)
-    ok(!/^\s*docket step claim[\s\S]*\| cat\b/m.test(readBrief),
-        `${label} read-class: nothing pipes the claim to a plain cat`)
-    // The packet is never printed to stdout: the only place its bytes are
-    // asked to land is the redirect target above.
-    const packetMentions = (readBrief.match(/\.data\.packet/g) || []).length
-    ok(packetMentions === 1,
-        `${label} read-class: exactly one packet extraction, always redirected to a file (got ${packetMentions})`)
+        // ---- the packet is delivered, verbatim, and closes the brief ----
+        ok(brief.endsWith(BEGIN + PACKET + END), `${label}: the packet closes the brief byte for byte`)
+        ok(brief.split(BEGIN).length === 2 && brief.split(END).length === 2,
+            `${label}: exactly one packet block`)
 
-    // ---- write-class: the negative case — same redirect machinery ----
-    const writeBrief = bootstrap(row, r, isolated, true)
-    ok(writeBrief.includes(`jq -r '.data.packet'`) && writeBrief.includes(`> ${PACKET}`),
-        `${label} write-class: the claim chain ALSO redirects the packet to a file (not a stdout-vs-file split by isWrite)`)
-    ok(writeBrief.includes(`open ${PACKET} with the Read tool`),
-        `${label} write-class: the brief also carries the Read-tool instruction`)
+        // ---- nothing asks the executor to fetch it ----
+        const head = brief.slice(0, brief.indexOf(BEGIN))
+        ok(!head.includes('.data.packet') && !head.includes('.packet.md') && !/with the Read tool/.test(head),
+            `${label}: no instruction to extract or Read a packet file`)
+        ok(!head.includes(`--render --metadata`) && !head.includes(`.data.token`) && !head.includes('.claim.json'),
+            `${label}: no claim command for the executor to run`)
+        ok(!head.includes('printenv TMPDIR') && !head.includes('<TMP>'),
+            `${label}: scratch paths are literal; no TMPDIR to resolve`)
+        ok(!/CLAIM FAILED|CLAIM INCOMPLETE/.test(head), `${label}: no claim stop signals; the claim agent owns them`)
+
+        // ---- the identity marker sits ahead of every packet byte ----
+        const g = GUARD_RE.exec(brief)
+        ok(g && g[1] === '4381' && g[2] === '4381' && g.index < brief.indexOf(BEGIN) && g.index < 65536,
+            `${label}: the sibling guard's marker names the step twice, ahead of the packet and inside 64 KiB`)
+        const j = JOIN_RE.exec(brief)
+        ok(j && j[1] === 'STEP-4381', `${label}: wave-usage's first-match join keys the executor to its own step, not one the packet quotes`)
+        ok(/executing one step/i.test(brief.slice(0, 300)), `${label}: session-census finds the opener in the first 300 characters`)
+        ok(head.includes('Claiming again re-keys') && head.includes('(attempt 2)'),
+            `${label}: the brief states the claim is made and must not be repeated`)
+
+        // ---- the token and scratch dir are the claim's literal paths ----
+        ok(head.includes(`< ${TOKEN}\``) && head.includes(`--artifact-file ${DIR}/STEP-4381-<kind>.md`),
+            `${label}: record reads the parked token and writes under the claim's step dir`)
+        ok(head.includes(`docket step fail STEP-4381 --note '<why>' < ${TOKEN}`),
+            `${label}: fail reads the parked token`)
+        ok(head.includes(`rm -rf ${DIR}\``), `${label}: cleanup removes the literal step dir`)
+        ok(!head.includes(`cat ${TOKEN}`) && head.includes('Never `cat` the token'),
+            `${label}: the token's only channel stays the stdin redirect`)
+
+        // ---- class and isolation shape ----
+        ok(isolated === head.includes('YOU ARE IN A PRIVATE WORKTREE'), `${label}: worktree rules only when isolated`)
+        if (isolated) {
+            ok(head.includes('git worktree list --porcelain') && head.includes('git checkout --detach --quiet'),
+                `${label}: the worktree bootstrap aligns HEAD before any work`)
+            ok(head.includes('STOP with the token file intact'), `${label}: a denied bootstrap leaves the live claim for the conductor`)
+        }
+        ok(isWrite === head.includes('--worktree <YOUR CHECKOUT>'), `${label}: --worktree only on write-class records`)
+        ok(!isWrite === head.includes(`mkdir -p ${DIR}/target`), `${label}: target reconstruction only for read-class`)
+        ok((isolated && isWrite) === head.includes('2b. COMMIT YOUR DELIVERABLE'), `${label}: the commit obligation only for isolated writers`)
+    }
 }
 
 console.log(`\n${pass} passed, ${fail} failed`)

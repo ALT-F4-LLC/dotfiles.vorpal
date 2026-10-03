@@ -741,7 +741,7 @@ ${definitionList}
 
 Exclude every log containing the string "${SENTINEL}" (this skill's own agents) and count them as logsExcluded.
 
-Step 1, needles. Open one or two logs from a docket wave (grep -l 'docket step claim' finds them) and confirm how a rendered packet names a contract (its frontmatter \`node: <stem>\` line), a fragment (\`fragment: <stem>\`), a workflow (its name beside the run or step id), and a schema (\`<name>@<N>\`). Record one path:line per needle form under needles. If no wave log exists here, say so in notes and return zero counts rather than guessing needles.
+Step 1, needles. Open one or two logs from a docket wave (grep -l 'docket step claim' finds them) and confirm how a rendered packet names a contract (its \`== FILE contracts/<stem>.md\` header; the engine strips frontmatter when it inlines a file), a fragment (\`== FILE fragments/<stem>.md\`), a workflow (\`workflow:<name>@<N>\` under \`== PINNED\`), and a schema (\`<name>@<N>\`). Since wave.js delivers the packet inside the executor's brief, it sits in the log's FIRST record, between \`----- BEGIN WORK PACKET\` and \`----- END WORK PACKET\` lines. Record one path:line per needle form under needles. If no wave log exists here, say so in notes and return zero counts rather than guessing needles.
 
 Step 2, rendered. For every definition, count logs whose FIRST record contains its needle: that is the packet the executor received. One fixed program, run once per needle, for example:
   for f in $(find "${dir}" -name 'agent-*.jsonl'); do grep -q -F "${SENTINEL}" "$f" && continue; head -n 1 "$f" | grep -q -F "<needle>" && echo "$f"; done | wc -l

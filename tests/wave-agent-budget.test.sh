@@ -136,15 +136,15 @@ ok(LOG.some((l) => l === `wave: agent budget — ${3 * EXEC + 3 + VOTE_PROBES} o
     'small manifest: the closing line reports the reservation exactly (3 executors, one 3-seat vote)')
 
 // ---- RUN-95's shape, scaled: far more rows than the budget covers ----
-// 300 issues × (implement, review) = 600 executor rows = 1200 projected
-// agents against 900. Exactly 450 executors may launch.
+// 300 issues × (implement, review) = 600 executor rows = 600 × EXEC
+// projected agents against 900. Exactly BUDGET / EXEC executors may launch.
 const big = []
 for (let i = 0; i < 300; i++) {
     big.push(ex(`STEP-${1000 + i}`, `ISS-${i}`, 0))
     big.push(ex(`STEP-${2000 + i}`, `ISS-${i}`, 1))
 }
 out = await run(big)
-ok(LOG.some((l) => l.startsWith(`wave: the manifest projects ~1200 agents against a budget of ${BUDGET}`)),
+ok(LOG.some((l) => l.startsWith(`wave: the manifest projects ~${600 * EXEC} agents against a budget of ${BUDGET}`)),
     'over budget: the wave says up front what the manifest projects and what it will do')
 ok(SPAWNED.length === BUDGET / EXEC,
     `over budget: exactly ${BUDGET / EXEC} executors launch (got ${SPAWNED.length})`)
@@ -159,11 +159,12 @@ ok(out.length === big.length && out.every((r) => r && typeof r.step === 'string'
 // Non-blocking: lanes finish. With deepest-stage-first admission, a lane
 // whose stage 0 launched gets its stage 1 ahead of another lane's stage 0,
 // so the budget buys COMPLETE chains — many lanes have both rows launched,
-// and no lane launched stage 1 without stage 0.
+// and no lane launched stage 1 without stage 0. The floor is 4/9 of the
+// executors the budget buys: at most half of them can close a two-stage lane.
 const launched = new Set(SPAWNED)
 const complete = Array.from({ length: 300 }, (_, i) => i)
     .filter((i) => launched.has(`STEP-${1000 + i}`) && launched.has(`STEP-${2000 + i}`)).length
-ok(complete >= 200,
+ok(complete >= Math.floor((BUDGET / EXEC) * 4 / 9),
     `over budget: the budget is spent finishing chains — ${complete} of 300 lanes ran both stages`)
 ok(!Array.from({ length: 300 }, (_, i) => i).some((i) => launched.has(`STEP-${2000 + i}`) && !launched.has(`STEP-${1000 + i}`)),
     'over budget: no lane ran its stage 1 without its stage 0')
@@ -186,9 +187,9 @@ ok(LOG.some((l) => l.startsWith(`wave: agent budget — ${BUDGET} of ${BUDGET} p
     'over budget: the closing line reports the full reservation and the deferral count')
 
 // ---- Vote rows cost their seats plus the gate reads ----
-// 100 three-seat vote rows (6 each = 600) after 200 executors (400) is 1000
-// projected against 900: the executors all fit, and the votes stop once the
-// remainder cannot seat one more panel.
+// 100 three-seat vote rows (3 + VOTE_PROBES each) after 200 executors
+// (200 × EXEC) project past 900: the executors all fit, and the votes stop
+// once the remainder cannot seat one more panel.
 const mixed = []
 for (let i = 0; i < 200; i++) mixed.push(ex(`STEP-${5000 + i}`, `MX-${i}`, 0))
 for (let i = 0; i < 100; i++) mixed.push(vote(`STEP-${6000 + i}`, `VX-${i}`, 0, 3))

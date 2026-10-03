@@ -1,6 +1,6 @@
 export const meta = {
     name: 'wave',
-    description: 'Internal: launched through scriptPath by docket-run, once per lane unit, to run one launch\'s share of a dispatched manifest end to end (executors, vote panels, staged issue lanes). Per vote row it spends 3 read-only haiku probes of `docket gate status` on the normal path, 1 on a gate that was already decided, and 4 when a re-seat is needed. Budget, launch, lane and reply-tail contract in the header comment.',
+    description: 'Internal: launched through scriptPath by docket-run, once per lane unit, to run one launch\'s share of a dispatched manifest end to end (executors, vote panels, staged issue lanes). Per executor row it spends 1 haiku claim agent, which claims the step and writes the packet the executor then receives verbatim in its brief. Per vote row it spends 3 read-only haiku probes of `docket gate status` on the normal path, 1 on a gate that was already decided, and 4 when a re-seat is needed. Budget, launch, lane and reply-tail contract in the header comment.',
     whenToUse: 'Never by name. Args are {rows, tribunal, cwd, unit?, harnessCap?, integrated?} with the launch\'s own rows verbatim from lane_units.py; the full argument contract is in the header comment.',
 }
 
@@ -12,7 +12,11 @@ export const meta = {
 // Run one dispatched manifest end to end: spawn one executor per executor row
 // at the model/effort the engine rendered on it, seat a judge panel on each
 // vote row from its routed roster, and skip action rows (engine-run at record
-// time). Stages run as awaited groups per issue lane, with the cross-issue
+// time). Each executor row is claimed first by a claim agent running
+// ~/.docket/bin/wave-claim, which writes the rendered packet into a module the
+// wave loads; the executor receives that packet verbatim in its brief and
+// never claims or fetches anything itself. Stages run as awaited groups per
+// issue lane, with the cross-issue
 // cohorts the manifest certifies honored — the staged closure means one wave
 // can carry judges -> gate -> reconcile -> report, and inside a wave no issue
 // idles behind the slower stages of another; writers the engine never co-
@@ -20,8 +24,9 @@ export const meta = {
 // and defers the rest to the next dispatch rather than holding every finished
 // lane behind a long writer ladder. AGENT BUDGET: the Workflow tool caps one
 // invocation at 1000 agents over its lifetime, so the wave reserves each row's
-// projected agents at admission (executor 2, vote row seats+4) against a
-// 900-agent budget and defers, on the spot and without holding its lane, every
+// projected agents at admission (executor row 3: claim agent, executor, one
+// probe; vote row seats+4) against a 900-agent budget and defers, on the
+// spot and without holding its lane, every
 // row the remainder cannot cover; the engine re-offers deferred rows at the
 // next dispatch, and a manifest of any size is safe to hand over whole.
 // LAUNCHES: both caps are per invocation, so one dispatch launches one wave
@@ -49,7 +54,8 @@ export const meta = {
 // present. Invoke by scriptPath ONLY, with args {rows, tribunal, cwd, unit?,
 // harnessCap?} as a real object — every row carries model/effort/variant
 // resolved by the engine, and the script reads no policy and cannot read
-// files.
+// files; the one file it loads is a claim's packet module, through a nested
+// workflow({scriptPath}).
 //
 // When and how it is invoked:
 // Invoked by the docket-run skill on an open dispatch, always as
@@ -63,7 +69,10 @@ export const meta = {
 // `voter_assignments` — a row re-typed without those fields is refused.
 // `tribunal` is the absolute installed path to tribunal.js, the one workflow-
 // nesting level this script uses to seat every in-wave panel (it cannot
-// resolve that path itself); `cwd` is the repo the run belongs to.
+// resolve that path itself); `cwd` is the repo the run belongs to, and must
+// be the session's working directory: every claim writes its packet module
+// under <cwd>/.claude/docket-packets, and the Workflow tool loads a
+// scriptPath only from the working directory or a directory added to it.
 // `harnessCap` is the per-invocation agent() concurrency cap, computed by
 // lane_units.py and copied by the conductor from launches.json (this script
 // cannot read the machine's CPU count itself); when present and a positive
@@ -77,9 +86,11 @@ export const meta = {
 // ---------------------------------------------------------------------------
 
 // TEST-BEGIN configuration — shared by the extracted behavior suites.
-// Only helper probes use these defaults. Executors and panel seats retain
-// the model/effort the engine resolved from the run's pinned policy.
+// Only helper probes and the claim agent use these defaults. Executors and
+// panel seats retain the model/effort the engine resolved from the run's
+// pinned policy.
 const AGENT_CONFIG = {
+    claim: { model: 'haiku', effort: 'low' },
     probe: { model: 'haiku', effort: 'low' },
     gateStatus: { model: 'haiku', effort: 'low' },
     heldCluster: { model: 'haiku', effort: 'low' },
@@ -94,7 +105,7 @@ const AGENT_LIFETIME_CAP = 1000
 const AGENT_BUDGET_RESERVE = 100
 const AGENT_BUDGET = AGENT_LIFETIME_CAP - AGENT_BUDGET_RESERVE
 let agentsLaunched = 0   // real agent() calls made this invocation (countedAgent below)
-const EXECUTOR_AGENT_COST = 2
+const EXECUTOR_AGENT_COST = 3
 const VOTE_PROBE_COST = 4
 const DEFAULT_PANEL_SEATS = 3
 const HARNESS_CAP = 16
@@ -167,70 +178,154 @@ function archetype(row, hint) {
 }
 
 // SCRATCH HYGIENE: every file an executor writes lives in its private
-// per-step directory <TMP>/<step>.d, mode 0700, built fresh at claim and
-// removed by the executor once a record or fail exits 0. An interrupted
+// per-step directory $TMPDIR/<step>.d, mode 0700, built fresh by the claim
+// and removed by the executor once a record or fail exits 0. An interrupted
 // executor's dir is swept by the conductor at reap (docket-run/SKILL.md, "A
 // dead spawn is reaped, not waited out."). The engine refuses a stale token
 // either way; the sweep limits exposure and accumulation.
 //
-// HOW THIS BRIEF IS WORDED, and it is load-bearing: state the required form,
-// omit the defense. A brief never addresses the safety classifier, names a
-// technique by what it gets past, or pre-argues its own authorization.
-// TEST-BEGIN bootstrap — extracted and exercised by
-// tests/wave-bootstrap-render.test.sh. Keep this function free of workflow
-// globals (agent, log, args) so it stays evaluable on its own;
+// THE PACKET RIDES THE SPAWN PROMPT. A claim agent runs
+// ~/.docket/bin/wave-claim (src/user/docket/bin/wave-claim), which claims the
+// step, parks the token in the step dir, and writes the rendered packet into
+// a module under <cwd>/.claude/docket-packets. The wave loads that module
+// with a nested workflow({scriptPath}): the harness reads the file, so no
+// model copies the bytes. The executor is spawned with the packet verbatim at
+// the end of its brief. Every channel an agent could read a packet through
+// is capped below a packet's size (a Bash result past 128,000 characters, a
+// hook's additionalContext past 10,000, a Read past its token limit); the
+// spawn prompt is not. No executor spawns without a packet: a claim that
+// yields no valid module launches nothing.
+//
+// HOW THESE BRIEFS ARE WORDED, and it is load-bearing: state the required
+// form, omit the defense. A brief never addresses the safety classifier,
+// names a technique by what it gets past, or pre-argues its own
+// authorization.
+//
+// TEST-BEGIN packet — extracted and exercised by tests/wave-packet.test.sh,
+// and prepended by tests/wave-bootstrap-render.test.sh,
 // tests/wave-model-attribution.test.sh and
-// tests/wave-bootstrap-owner-discriminator.test.sh extract from the
-// declaration line below.
-function bootstrap(row, r, isolated, isWrite) {
-    // One array of command strings renders both claim forms (isolated: one
-    // per Bash call; shared: one `&&`-chained call). claimCommands is nested
-    // so every suite that extracts bootstrap carries it along.
-    // The owner carries a per-step launch counter, so a retry of the same
-    // step never presents the owner of a claim process that is still alive.
-    // Per step, not global: a global counter follows agent completion order
-    // and would change the rendered bytes on resume. Math.random() and
-    // Date.now() throw in a workflow script.
-    bootstrap.launchesByStep = bootstrap.launchesByStep || new Map()
-    const priorLaunches = bootstrap.launchesByStep.get(row.step) || 0
-    bootstrap.launchesByStep.set(row.step, priorLaunches + 1)
-    const ownerDiscriminator = priorLaunches + 1
-    // `docket step claim` exits 0 with a non-empty `.data.claim_error` when
-    // the lease committed but a later stage failed. The `jq -e` guard stops
-    // the chain there: after the token is captured, before the packet is read.
-    function claimCommands(isolated) {
-        const dir = `<TMP>/${row.step}.d`
-        const claimJson = `${dir}/${row.step}.claim.json`
-        const token = `${dir}/${row.step}.token`
-        const packet = `${dir}/${row.step}.packet.md`
-        return [
-            `rm -rf ${dir}`,
-            `mkdir -m 700 ${dir}`,
-            `docket step claim ${row.step} --owner wave:${row.step}:${ownerDiscriminator} --render --metadata ${claimMetadataArg} --json > ${claimJson} < /dev/null`,
-            isolated
-                ? `jq -r '.data.token' ${claimJson} > ${token}`
-                : `jq -r '.data.token'  < ${claimJson} > ${token}`,
-            `chmod 600 ${token}`,
-            `jq -e '(.data.claim_error // "") == ""' ${claimJson} > /dev/null`,
-            `jq -r '.data.packet' ${claimJson} > ${packet}`,
-            `cat /dev/null > ${claimJson}`,
-        ]
-    }
-    // Routing is known before execution; recording it at claim preserves it
-    // when the executor fails. Clear prior-attempt observations at the same
-    // boundary. A requested alias is not evidence of the serving model.
-    const claimMetadata = JSON.stringify({
+// tests/wave-bootstrap-owner-discriminator.test.sh. Keep it free of workflow
+// globals (agent, log, args, workflow) so it stays evaluable on its own.
+const PACKET_DIR = '.claude/docket-packets'
+const WAVE_CLAIM = '~/.docket/bin/wave-claim'
+
+const shellQuote = (s) => "'" + String(s).replace(/'/g, "'\\''") + "'"
+
+// The attempt a fresh claim takes: the dispatch row's attempt plus one, since
+// every claim increments it in the statement that takes the lease. Null when
+// the row carries none, and such a row is never claimed: without it the
+// module cannot be fenced against one an earlier wave left behind.
+function expectedAttempt(row) {
+    return Number.isInteger(row.attempt) && row.attempt >= 0 ? row.attempt + 1 : null
+}
+
+// '' when the wave cannot place a module: a relative or missing cwd, or no
+// attempt to name it for. The Workflow tool loads a scriptPath only from the
+// session's working directory or a directory added to it, so cwd has to be
+// the conductor's own working directory.
+function packetModulePath(cwd, row) {
+    const attempt = expectedAttempt(row)
+    if (typeof cwd !== 'string' || !cwd.startsWith('/') || attempt === null) return ''
+    return `${cwd.replace(/\/+$/, '')}/${PACKET_DIR}/${row.step}.a${attempt}.js`
+}
+
+// The owner carries a per-step launch counter, so a second claim of the same
+// step in one wave never presents the owner of an earlier one. Per step, not
+// global: a global counter follows agent completion order and would change
+// the rendered bytes on resume. Math.random() and Date.now() throw in a
+// workflow script.
+const claimLaunchesByStep = new Map()
+function nextOwner(step) {
+    const n = (claimLaunchesByStep.get(step) || 0) + 1
+    claimLaunchesByStep.set(step, n)
+    return `wave:${step}:${n}`
+}
+
+// Routing is known before execution; recording it at claim preserves it when
+// the executor fails. Clear prior-attempt observations at the same boundary.
+// A requested alias is not evidence of the serving model.
+function claimMetadata(r) {
+    return JSON.stringify({
         variant: r.variant,
         model_requested: r.model_requested,
         effort_requested: r.effort_requested,
         model_resolved: 'unknown',
         effort_resolved: 'unknown',
     })
-    const claimMetadataArg = "'" + claimMetadata.replace(/'/g, "'\\''") + "'"
-    // The TMPDIR pin paragraph appears once per brief — in bootstrap (a) for
-    // isolated executors, in pinNote for everyone else. The two renderings
-    // are deliberate near-mirrors of one rule; a wording change lands in
-    // BOTH or the two executor classes drift apart on the same hazard.
+}
+
+function claimCommand(row, r, owner, modulePath) {
+    return `${WAVE_CLAIM} --step ${row.step} --owner ${owner} ` +
+        `--attempt ${expectedAttempt(row)} --module ${shellQuote(modulePath)} ` +
+        `--metadata ${shellQuote(claimMetadata(r))}`
+}
+
+// The claim agent's whole job is one command, and its reply only explains a
+// missing module: the module decides whether an executor spawns. The brief
+// never spells `docket step claim STEP-N`: wave-usage.js joins an agent's
+// tokens to the step its brief claims or records, and this agent is wave
+// overhead (the WAVE CLAIM line), not the step's executor. Its command names
+// no STEP-N.d, so the sibling guard has nothing of a sibling's to weigh.
+function claimBrief(row, command) {
+    return `Run exactly this one command:
+
+  ${command}
+
+It claims ${row.step} under that owner, parks the lease token in the step's
+private scratch dir, and writes the rendered packet for the executor the wave
+launches next.
+
+Return its output VERBATIM as your entire final reply: no summary, no
+commentary, no code fence. If the command errors, return the error text
+verbatim instead.
+
+Run nothing else.
+
+WAVE CLAIM: not a step execution; it claims ${row.step} for its executor.`
+}
+
+// The loaded module, checked field by field against the claim this wave
+// asked for. Any mismatch spawns nothing.
+function packetFromModule(mod, row, owner) {
+    const refuse = (why) => ({ ok: false, why })
+    if (!mod || typeof mod !== 'object' || Array.isArray(mod)) return refuse('the module returned no object')
+    if (mod.v !== 1) return refuse(`the module's format is ${JSON.stringify(mod.v)}, not 1`)
+    if (mod.step !== row.step) return refuse(`the module names ${JSON.stringify(mod.step)}, not ${row.step}`)
+    if (mod.owner !== owner) return refuse(`the module's claim is ${JSON.stringify(mod.owner)}'s, not ${owner}'s`)
+    const want = expectedAttempt(row)
+    if (want === null || !Number.isInteger(mod.attempt) || mod.attempt < want) {
+        return refuse(`the module's claim attempt ${JSON.stringify(mod.attempt)} predates this dispatch's attempt ${want}`)
+    }
+    const dir = typeof mod.dir === 'string' ? mod.dir : ''
+    if (!dir.startsWith('/') || !dir.endsWith(`/${row.step}.d`)) {
+        return refuse(`the module's step dir ${JSON.stringify(mod.dir)} is not an absolute ${row.step}.d`)
+    }
+    if (mod.token !== `${dir}/${row.step}.token`) {
+        return refuse(`the module's token path ${JSON.stringify(mod.token)} is not ${dir}/${row.step}.token`)
+    }
+    if (typeof mod.packet !== 'string' || mod.packet === '') return refuse('the module carries no packet')
+    return {
+        ok: true,
+        packet: mod.packet,
+        dir,
+        token: mod.token,
+        attempt: mod.attempt,
+        sha256: typeof mod.packet_sha256 === 'string' ? mod.packet_sha256 : '',
+        reMinted: mod.re_minted === true,
+    }
+}
+// TEST-END packet
+
+// TEST-BEGIN executor-brief — extracted and exercised by
+// tests/wave-bootstrap-render.test.sh, which prepends the packet region.
+// Keep it free of workflow globals so it stays evaluable on its own.
+//
+// `claim` is packetFromModule()'s accepted result and `owner` the claim's
+// owner. The assignment paragraph names the step twice in the spelling the
+// sibling guard reads, ahead of the packet, so it falls inside the guard's
+// 64 KiB scan of the transcript's opening.
+function executorBrief(row, owner, claim, isolated, isWrite) {
+    const { dir, token } = claim
     const isolationNote = isolated ? `
 
 0. YOU ARE IN A PRIVATE WORKTREE. These rules bind every call:
@@ -240,80 +335,45 @@ function bootstrap(row, r, isolated, isWrite) {
    - Spell every redirect target as a LITERAL absolute path.
    - Run git against YOUR OWN tree only: never \`git -C\`/\`--git-dir\` at
      another checkout, never cd out to the shared repository tree.
-   - A probe that must modify files runs on a COPY under <TMP>, never on
+   - A probe that must modify files runs on a COPY under ${dir}, never on
      this checkout (never git restore, checkout --, reset, or clean).
    - RUN \`docket\` BARE, with no DOCKET_PATH prefix.
 
    Bootstrap, one plain command at a time:
 
-   a. \`printenv TMPDIR\` (not \`echo\`). Its literal output is <TMP>:
-      substitute it wherever <TMP> or \`$TMPDIR\` appears in this brief and
-      REUSE THAT LITERAL on every call; \`$TMPDIR\` can resolve to another
-      root later.
-   b. \`git worktree list --porcelain\`: every checkout's path and HEAD sha.
-   c. Compare \`git rev-parse HEAD\` in your tree to the HEAD of the shared
-      checkout from (b), the one NOT under \`.claude/worktrees\`. If they
+   a. \`git worktree list --porcelain\`: every checkout's path and HEAD sha.
+   b. Compare \`git rev-parse HEAD\` in your tree to the HEAD of the shared
+      checkout from (a), the one NOT under \`.claude/worktrees\`. If they
       differ, run \`git checkout --detach --quiet <that sha>\`.
 
    If the guard or the permission system DENIES one, put \`BOOTSTRAP DENIED\`
    on a line of its own as the FIRST line of your reply, quote the denial
-   verbatim under it, and STOP. If a command fails on its own output, report
-   it verbatim and STOP. NEVER claim after a failed bootstrap.
+   verbatim under it, and STOP with the token file intact: the step stays
+   claimed until the conductor returns it to the pool. If a command fails on
+   its own output, report it verbatim and STOP. NEVER start the work after a
+   failed bootstrap.
 
-   After (c), your NEXT command is the claim in 1', with no exploratory
-   docket verbs first. With the packet in hand, the one sanctioned extra
-   read is \`docket step artifact ARTIFACT-N --payload\` on an artifact id
-   the packet names.
+   After (b), go on to obligation 1. The one sanctioned docket read beyond
+   the packet is \`docket step artifact ARTIFACT-N --payload\` on an artifact
+   id the packet names.
 
    Your inputs arrive in the packet; uncommitted work in the shared tree is
    not visible here.` : ''
-    const pinNote = isolated ? '' : `
-
-0. FIRST, before the claim: \`printenv TMPDIR\` (not \`echo\`). Its literal
-   output is <TMP>: substitute it wherever <TMP> appears below and REUSE
-   THAT LITERAL on every call; \`$TMPDIR\` can resolve to another root
-   later.`
     return `You are executing one step of a Docket run. Follow these obligations exactly.
 
 YOUR ASSIGNMENT: step ${row.step} (issue ${row.issue}, run ${row.run}). Every
-${row.step} below is your real, already-substituted step id.${isolationNote}${pinNote}
+${row.step} below is your real, already-substituted step id. The wave claimed
+it for you with \`docket step claim ${row.step} --owner ${owner} --render\`
+(attempt ${claim.attempt}): the lease is live, and the work packet the engine
+rendered at that claim closes this brief, verbatim. Claiming again re-keys
+the lease and voids the parked token.${isolationNote}
 
-1. Claim it AND PARK THE TOKEN ON DISK${isolated ? ` — separate plain Bash
-   calls, literal paths throughout (form 1', which obligation 0 names):
+1. YOUR PRIVATE STEP SCRATCH DIR is ${dir} (mode 0700). EVERYTHING you write
+   goes inside it, under filenames that start with your step id. The lease
+   token is parked at ${token}; a stdin redirect into \`docket step record\`
+   or \`docket step fail\` is its only channel.
 
-${claimCommands(true).map((c) => `   \`${c}\``).join('\n')}
-` : `, in ONE Bash call, exactly this:
-
-   \`\`\`
-   ${claimCommands(false).join(' &&\n     ')}
-   \`\`\`
-`}
-   EVERYTHING you write goes inside <TMP>/${row.step}.d, your PRIVATE STEP
-   SCRATCH DIR, under filenames that start with your step id.
-
-   Then open <TMP>/${row.step}.d/${row.step}.packet.md with the Read tool — it
-   is your contract.
-
-   IF THE CHAIN STOPS BEFORE THE PACKET LINE: do NOT retry the claim and do
-   NOT read a packet. Run ONE read-only diagnostic:
-
-   \`jq -c '{error: .error, code: .code, claim_error: .data.claim_error, re_minted: .data.re_minted}' <TMP>/${row.step}.d/${row.step}.claim.json\`
-
-   EMPTY token file: report CLAIM FAILED with that diagnostic verbatim and
-   STOP. Token captured but \`claim_error\` non-empty: you hold a live token
-   and MUST end it with
-   \`docket step fail ${row.step} --note '<claim_error verbatim>' < <TMP>/${row.step}.d/${row.step}.token\`,
-   then report CLAIM INCOMPLETE with the diagnostic and STOP. Name
-   \`re_minted: true\` in your report when the diagnostic shows it.
-
-   If the claim committed but no token was captured, re-run the same claim
-   command with the same --owner; it re-mints the token (\`re_minted: true\`).
-
-   On CONFLICT: stop immediately and report AT MOST three lines: your step id,
-   the word CONFLICT, and the engine's error line verbatim. Do not investigate
-   the holder, the scopes, or the remedy.
-
-2. Execute the brief you were handed (the packet). It is your entire contract.${isWrite ? `
+2. Execute the work packet at the end of this brief. It is your entire contract.${isWrite ? `
    Ship the issue's declared change list and NOTHING beyond it: unrequested
    hardening, extra controls, and adjacent cleanups go into gap files
    (obligation 3), never into the diff. The one exception: a defect you find
@@ -336,8 +396,8 @@ ${!isWrite ? `
    - OTHERWISE reconstruct the target, without probing whether your checkout
      contains the change. TWO plain calls in this order:
 
-       mkdir -p <TMP>/${row.step}.d/target
-       git archive <sha> | tar -x -C <TMP>/${row.step}.d/target
+       mkdir -p ${dir}/target
+       git archive <sha> | tar -x -C ${dir}/target
 
      Read, build, and probe THERE, and attribute every result to that tree.
    - A sha that does not resolve is a gap file per obligation 3, never a
@@ -369,13 +429,13 @@ ${!isWrite ? `
 3. Record it yourself with \`docket step record\`, feeding the token file to
    STDIN:
 
-   \`docket step record ${row.step}${isWrite ? ' --worktree <YOUR CHECKOUT>' : ''} --artifact-file <TMP>/${row.step}.d/${row.step}-<kind>.md --metadata '{"model_resolved":"unknown","effort_resolved":"unknown"}' < <TMP>/${row.step}.d/${row.step}.token\`
+   \`docket step record ${row.step}${isWrite ? ' --worktree <YOUR CHECKOUT>' : ''} --artifact-file ${dir}/${row.step}-<kind>.md --metadata '{"model_resolved":"unknown","effort_resolved":"unknown"}' < ${token}\`
 ${isWrite ? `
    - WORKTREE: \`--worktree\` is the literal path of the checkout the work
      happened in (\`git rev-parse --show-toplevel\`).` : ''}
    - ARTIFACT, MANDATORY on every record: a FRESH file whose name starts
      with your step id, created WITH BASH
-     (\`cat > <TMP>/${row.step}.d/${row.step}-<kind>.md <<'EOF' ... EOF\`).
+     (\`cat > ${dir}/${row.step}-<kind>.md <<'EOF' ... EOF\`).
      <kind> is the artifact KIND your packet's OUTPUT section names; there
      is no \`--artifact-kind\`.
    - PAYLOAD, when your packet requires one: \`--payload-file <path>\`,
@@ -398,24 +458,22 @@ ${isWrite ? `
      bounds the fix wider than those files.
    - FAILURE, only when a retry might redeem the attempt:
 
-     \`docket step fail ${row.step} --note '<why>' < <TMP>/${row.step}.d/${row.step}.token\`
+     \`docket step fail ${row.step} --note '<why>' < ${token}\`
 
      \`fail\` takes ONLY --note and --metadata.
    - TOKEN: the stdin redirect is its only channel. Never \`cat\` the token
      file, echo it, paste it into a command line, or reproduce it in your
      reply.
    - AFTER \`record\` or \`fail\` exits 0, remove your step scratch dir in
-     one plain call: \`rm -rf <TMP>/${row.step}.d\`. If it errored, or the
-     token file is missing or empty, KEEP the dir and its token file INTACT,
-     say so, and stop; never reconstruct or guess a token.
+     one plain call: \`rm -rf ${dir}\`. If it errored, or the token file is
+     missing or empty, KEEP the dir and its token file INTACT, say so, and
+     stop; never reconstruct or guess a token.
 
 4. End your reply with exactly this line, filled in from the record
    response: <step-id> recorded (<status>) — for example "STEP-12 recorded
    (done)" or "STEP-12 recorded (waiting-human)". If instead you STOPPED
    without recording, the signal opens its own line, as the first words on
    it:
-
-   CLAIM FAILED or CLAIM INCOMPLETE: as obligation 1 says.
 
    NETWORK GATE BLOCKED: a gate needs network access the sandbox denies (a
    DNS failure, a TLS handshake failure, or a blocked host). Attempt once;
@@ -424,13 +482,17 @@ ${isWrite ? `
 
    RECORD BLOCKED: the record is refused by the guard or the permission
    system. Attempt once; add your step id, the refusal's first line
-   verbatim, and every path under <TMP>/${row.step}.d, the token's
-   included. Leave that dir intact.
+   verbatim, and every path under ${dir}, the token's included. Leave that
+   dir intact.
 
    WRITE BLOCKED: a write is refused. Add the refusal's first line and
-   every path involved, stop that path, and record what you can.`
+   every path involved, stop that path, and record what you can.
+
+----- BEGIN WORK PACKET ${row.step} -----
+${claim.packet}
+----- END WORK PACKET ${row.step} -----`
 }
-// TEST-END bootstrap
+// TEST-END executor-brief
 
 let input = args
 if (typeof input === 'string') {
@@ -528,11 +590,14 @@ function stopSignal(text) {
 // TEST-END park-signals
 
 // ORPHANED CLAIM. The refusal `not ready to claim: the step is not pending`
-// means ALREADY CLAIMED, not never started. On a harness resume an
-// interrupted executor's brief re-executes with identical bytes; the claim is
-// what refuses the duplicate, and only for work that claims. The remedy is
-// report-only: the row settles `claim-conflict`, which kills the chain unless
-// the step already reads done or skipped (chainDead reads `step_status`).
+// means ALREADY CLAIMED, not never started. The claim agent relays it from
+// wave-claim when another owner holds the lease: a claim from an earlier
+// wave whose holder died, most often. On a harness resume the claim agent's
+// cached reply and the module reload hand an interrupted executor its own
+// live token again, and the engine refuses a second record of a step that
+// already recorded. The remedy is report-only: the row settles
+// `claim-conflict`, which kills the chain unless the step already reads done
+// or skipped (chainDead reads `step_status`).
 // TEST-BEGIN orphaned-claim — extracted and exercised by
 // tests/wave-orphaned-claim.test.sh, which concatenates the park-signals
 // region ahead of it (isConflictReport) and the chain-dead region after it.
@@ -748,18 +813,21 @@ function probeRecovered(p, label) {
 // an isolated writer whose worktree could not be made is never relaunched
 // without isolation. Everything the handler touches is injected, except
 // AgentCapError and transientClassifierBlock from the fenced regions above.
-function spawnCatch({ row, isolated, log, launch, failed, retryTransient }) {
+// `held` names the claim the executor was launched against, when one is
+// live: the claim agent took the lease before this launch, so a launch that
+// never ran leaves a claim for the conductor to return to the pool.
+function spawnCatch({ row, isolated, log, launch, failed, retryTransient, held = '' }) {
     return (err) => {
         if (err instanceof AgentCapError) {
             log(`${row.step}: ${err.message} — not a dead executor: nothing was ` +
-                `launched; the engine re-offers the row at the next dispatch`)
-            return { step: row.step, status: 'agent-cap', text: err.message }
+                `launched; ` + (held || `the engine re-offers the row at the next dispatch`))
+            return { step: row.step, status: 'agent-cap', text: held ? `${err.message}; ${held}` : err.message }
         }
         if (transientClassifierBlock(err)) return retryTransient(err, isolated)
         if (isolated && /base branch|worktree/i.test(String(err))) {
             const text = `worktree isolation unavailable for ${row.step} (${err}); ` +
                 `no writer launched without isolation. Reconcile claim state before ` +
-                `redispatch`
+                `redispatch` + (held ? `: ${held}` : '')
             log(`${row.step}: ${text}`)
             return { step: row.step, status: 'isolation-unavailable', text }
         }
@@ -776,6 +844,132 @@ function spawnCatch({ row, isolated, log, launch, failed, retryTransient }) {
 // window.
 let nullBurstTripped = false
 
+// TEST-BEGIN claim-path — extracted and exercised by
+// tests/wave-claim-path.test.sh, which prepends the configuration,
+// park-signals, classifier-retry, orphaned-claim and packet regions and
+// stubs `agent`, `workflow`, `stepShow`, `log` and `input`.
+//
+// Set once a packet module fails to load for any reason but its absence. A
+// missing module is one row's failure: its wave-claim never ran or never
+// finished. Any other load error (the harness refusing a path outside the
+// session's working directory, a guard, a permission change) would refuse
+// every later module too, and each claim behind it would strand a live
+// lease. No further claims this wave. Module state, shared across rows.
+let packetPathRefused = ''
+const MODULE_NOT_WRITTEN = /Workflow script file not found/i
+
+// One claim agent runs wave-claim; then the module decides. Resolves
+// {ok: true, owner, claim} with the packet in hand, or {ok: false, result}
+// settling the row with no executor launched.
+async function claimPacket(row, r, phaseLabel) {
+    const notClaimed = (why) => {
+        log(`${row.step}: not claimed — ${why}`)
+        return { ok: false, result: { step: row.step, status: 'spawn-failed', text: `${row.step}: not claimed — ${why}` } }
+    }
+    if (packetPathRefused) {
+        return notClaimed(`an earlier packet module failed to load ` +
+            `(${packetPathRefused}), so no further claims run this wave`)
+    }
+    const modulePath = packetModulePath(input.cwd, row)
+    if (!modulePath) {
+        return notClaimed(expectedAttempt(row) === null
+            ? `the row carries no attempt, so its packet module cannot be fenced`
+            : `args.cwd ${JSON.stringify(input.cwd)} is not an absolute path`)
+    }
+    const owner = nextOwner(row.step)
+    const brief = claimBrief(row, claimCommand(row, r, owner, modulePath))
+    const once = () => countedAgent(brief, {
+        label: `${row.step} · claim`,
+        phase: phaseLabel,
+        agentType: 'executor-read',
+        ...AGENT_CONFIG.claim,
+    })
+    let reply = null
+    try {
+        reply = await once()
+    } catch (err) {
+        if (err instanceof AgentCapError) {
+            log(`${row.step}: ${err.message} — the claim agent never launched; nothing ` +
+                `was claimed; the engine re-offers the row at the next dispatch`)
+            return { ok: false, result: { step: row.step, status: 'agent-cap', text: err.message } }
+        }
+        if (transientClassifierBlock(err)) {
+            log(`${row.step}: the claim agent's launch hit a transient classifier ` +
+                `block (${reasonText(err)}) — resubmitting the IDENTICAL claim brief once`)
+            reply = await once().catch((err2) => {
+                log(`${row.step}: claim agent spawn error on retry: ${err2}`)
+                return null
+            })
+        } else {
+            log(`${row.step}: claim agent spawn error: ${err}`)
+        }
+    }
+    // The module, not the reply: a claim agent that died after the script
+    // finished still left a valid module behind.
+    const loaded = await workflow({ scriptPath: modulePath }).then(
+        (value) => ({ ok: true, value }),
+        (err) => ({ ok: false, error: reasonText(err) || String(err) }))
+    if (loaded.ok) {
+        const claim = packetFromModule(loaded.value, row, owner)
+        if (claim.ok) {
+            log(`${row.step}: claimed by ${owner} at attempt ${claim.attempt}` +
+                (claim.reMinted ? ' (re-minted)' : '') +
+                `; packet of ${claim.packet.length} characters loaded from ${modulePath}`)
+            return { ok: true, owner, claim }
+        }
+        const text = `${row.step}: packet module ${modulePath} REFUSED — ${claim.why}; ` +
+            `no executor launched. Reconcile with \`docket step show ${row.step}\`; ` +
+            `if it reads claimed, return it to the pool with \`docket step reap ` +
+            `${row.step} --reason '<what you observed>'\` under the run's conductor ` +
+            `capability and remove its scratch dir`
+        log(text)
+        return { ok: false, result: { step: row.step, status: 'spawn-failed', text } }
+    }
+    if (!MODULE_NOT_WRITTEN.test(loaded.error)) {
+        packetPathRefused = loaded.error
+        log(`wave: a packet module under ${JSON.stringify(input.cwd)} failed to load ` +
+            `(${loaded.error}) — args.cwd must be the session's working directory; ` +
+            `no further claims run this wave`)
+    }
+    return { ok: false, result: await claimFailure(row, owner, reply, loaded.error, phaseLabel) }
+}
+
+// No module loaded. The claim agent's reply says why: a CONFLICT keeps the
+// executor path's handling (a run park, or an orphaned claim diagnosed from
+// the step's own row); a wave-claim stop line is `blocked`; anything else
+// leaves the claim state unknown.
+function claimFailure(row, owner, reply, loadError, phaseLabel) {
+    const text = typeof reply === 'string' ? reply.trim() : ''
+    if (isConflictReport(text)) {
+        const returned = { step: row.step, status: 'returned', text }
+        if (!isOrphanedClaimConflict(text)) return returned
+        log(`${row.step}: claim refused "the step is not pending" — probing the ` +
+            `step's real state rather than relaying the refusal as the outcome`)
+        return stepShow(row.step, `${row.step} · claim-conflict`, phaseLabel)
+            .then((show) => orphanedClaimReport(row.step, text, show) || returned, () => returned)
+    }
+    const signal = stopSignal(text)
+    if (signal) {
+        log(`${row.step}: the claim stopped on ${signal} — no executor launched; ` +
+            `this issue's later stages are deferred this wave`)
+        return { step: row.step, status: 'blocked', signal, text }
+    }
+    const claimedLine = /^CLAIMED /m.test(text)
+    const msg = `${row.step}: no packet module loaded (${loadError}); no executor ` +
+        `launched. ` + (claimedLine
+        ? `The claim agent reports the claim landed, so ${owner} holds a live ` +
+          `lease: return it to the pool with \`docket step reap ${row.step} ` +
+          `--reason '<what you observed>'\` under the run's conductor capability ` +
+          `and remove its scratch dir`
+        : `Whether ${owner} holds a claim is UNKNOWN: reconcile with \`docket ` +
+          `step show ${row.step}\`, and if it reads claimed, reap it under the ` +
+          `run's conductor capability and remove its scratch dir`) +
+        `. Claim agent reply: ${text || '(none)'}`
+    log(msg)
+    return { step: row.step, status: 'spawn-failed', text: msg }
+}
+// TEST-END claim-path
+
 function spawn(row, phaseLabel) {
     const r = resolve(row)
     const type = archetype(row, r.hint)
@@ -786,6 +980,17 @@ function spawn(row, phaseLabel) {
     log(`${row.step}: ${r.hint} -> ${type} @ ${r.model}/${r.effort} (variant ${r.variant})` +
         ` [${labelsOf(row).join(' ') || 'no labels'}]` +
         (isolated ? ' [worktree]' : ''))
+    return claimPacket(row, r, phaseLabel).then((claimed) => claimed.ok
+        ? launchExecutor(row, r, type, isWrite, isolated, phaseLabel, claimed)
+        : claimed.result)
+}
+
+function launchExecutor(row, r, type, isWrite, isolated, phaseLabel, { owner, claim }) {
+    // Every outcome below that recorded nothing leaves this claim live.
+    const held = `${row.step} is CLAIMED by ${owner} at attempt ${claim.attempt} ` +
+        `with its token parked at ${claim.token}: return it to the pool with ` +
+        `\`docket step reap ${row.step} --reason '<what you observed>'\` under the ` +
+        `run's conductor capability and remove ${claim.dir}`
     const stepLabel = `${row.step} · ${r.hint}`
     const opts = (iso) => ({
         label: stepLabel,
@@ -800,28 +1005,25 @@ function spawn(row, phaseLabel) {
         log(`${row.step}: SPAWN PRODUCED NOTHING (launch blocked before the ` +
             `agent existed — this wave's task .output workflowProgress[].error ` +
             `carries the stated reason when there is one — or model ${r.model} ` +
-            `unavailable, the agent was skipped, or it died mid-flight) — whether a claim ` +
-            `was recorded is UNKNOWN; reconcile via \`docket dispatch verify\` ` +
-            `and \`docket step show ${row.step}\`, then, if it is still claimed ` +
-            `by this dead spawn, return it to the pool with \`docket step reap ` +
-            `${row.step} --reason '<what you observed>'\` under the run's ` +
-            `conductor capability before ` +
-            `any retry. If that error carries the TRANSIENT classifier ` +
-            `signature (\`Stage 2 classifier error\` / \`usually transient\`), ` +
-            `redispatch the step UNCHANGED — same brief, never reworded`)
+            `unavailable, the agent was skipped, or it died mid-flight) — no ` +
+            `record landed; reconcile via \`docket dispatch verify\` and ` +
+            `\`docket step show ${row.step}\`; ${held} before any retry. If that ` +
+            `error carries the TRANSIENT classifier signature (\`Stage 2 ` +
+            `classifier error\` / \`usually transient\`), redispatch the step ` +
+            `UNCHANGED — same brief, never reworded`)
         return failed()
     }
     const handle = (text, retried) => {
         if (text != null) {
             const returned = { step: row.step, status: 'returned', text }
-            // A denied bootstrap never claimed: nothing to reap, nothing
-            // recorded. Its own status stops the lane.
+            // A denied bootstrap started no work and recorded nothing, but the
+            // claim agent's lease is live. Its own status stops the lane.
             if (isBootstrapDenied(text)) {
                 log(`${row.step}: BOOTSTRAP DENIED, the guard or permission layer ` +
-                    `refused the executor's own bootstrap before any claim; nothing ` +
-                    `to reap; this issue's later stages are skipped this wave and ` +
-                    `the engine re-offers the row once the gap is fixed`)
-                return { step: row.step, status: 'bootstrap-denied', text }
+                    `refused the executor's own bootstrap; no work started; ${held}; ` +
+                    `this issue's later stages are skipped this wave and the engine ` +
+                    `re-offers the row once the gap is fixed`)
+                return { step: row.step, status: 'bootstrap-denied', text: `${text}\n\n${held}` }
             }
             // The reply-tail contract (recordTail / stopSignal). A CONFLICT
             // report keeps its own path below; everything else settles here.
@@ -951,7 +1153,7 @@ function spawn(row, phaseLabel) {
         }
     }
     const launch = (iso, retried) =>
-        countedAgent(bootstrap(row, r, iso, isWrite), opts(iso)).then((text) => handle(text, retried))
+        countedAgent(executorBrief(row, owner, claim, iso, isWrite), opts(iso)).then((text) => handle(text, retried))
     // EXACTLY ONCE, and only from the top-level catch: same brief bytes, same
     // opts, same isolation. `retried` rides through so a retry that resolves
     // null does not probe-and-retry again. A second failure returns
@@ -966,7 +1168,7 @@ function spawn(row, phaseLabel) {
         })
     }
     return launch(isolated)
-        .catch(spawnCatch({ row, isolated, log, launch, failed, retryTransient }))
+        .catch(spawnCatch({ row, isolated, log, launch, failed, retryTransient, held }))
 }
 
 // Vote rows: the in-wave panel. The wave seats the panel by calling
@@ -2071,17 +2273,18 @@ const seatCount = (row) => Array.isArray(row.voter_assignments) && row.voter_ass
 // Reserve projected agents at admission against the invocation's lifetime
 // cap. Reservations never release: a row that cannot fit is deferred at once,
 // allowing other lanes to continue. Deepest-first admission finishes chains.
-// Project the ordinary path: executor + one probe; panel + two status reads
-// + one proposal body read + one blocked/held read. Keep 100 agents for
-// retries, re-seats and block probes.
+// Project the ordinary path: claim agent + executor + one probe; panel + two
+// status reads + one proposal body read + one blocked/held read. Keep 100
+// agents for retries, re-seats and block probes. lane_units.py mirrors
+// EXECUTOR_AGENT_COST.
 function agentCost(row) {
     if (row.kind === 'action') return 0
     if (row.kind === 'vote') return seatCount(row) + VOTE_PROBE_COST
     return EXECUTOR_AGENT_COST
 }
 // A DIFFERENT quantity from agentCost(): how many of a row's agent() calls
-// are ever SIMULTANEOUSLY in flight. An executor row's spawn and probes are
-// awaited one after another, so its weight is 1. A vote row's panel fans out
+// are ever SIMULTANEOUSLY in flight. An executor row's claim agent, spawn
+// and probes are awaited one after another, so its weight is 1. A vote row's panel fans out
 // in parallel, so its weight is the seat count, a safe over-approximation of
 // the row's peak draw.
 function concurrencyWeight(row) {

@@ -33,7 +33,8 @@ applied, and never judge a past execution against a newer checklist alone.
 | Obligation | Evidence to inspect |
 |---|---|
 | Staging | Rows sharing an engine stage may run concurrently; stages are awaited in ascending order and a missing stage follows the installed default. A conflicting engine-certified set is investigated at the certification boundary, not automatically blamed on concurrency. |
-| Self-sufficient brief | Repo, assigned step, scope, required source context, artifacts, and record obligations are present in the persisted brief. Attribute missing inputs to the brief that should have supplied them. |
+| Self-sufficient brief | Repo, assigned step, scope, required source context, artifacts, and record obligations are present in the persisted brief, which closes with the step's work packet verbatim. Attribute missing inputs to the brief that should have supplied them. |
+| Claim before spawn | A claim agent ran `wave-claim` ahead of each executor, and the executor spawned only after the wave loaded that claim's packet module. A claim with no executor behind it is a reap candidate, not lost work. |
 | Recording root | The worker recorded from its own checkout with worktree information when required, without invented store overrides or sibling-checkout probing. Out-of-scope problems used the installed gap path. |
 | Null or failed spawn | No usable return leaves execution and recording uncertain. Reconcile actual task, claim, and step state before assuming no work happened. |
 | Result acceptance | Separate workflow return status, worker report content, recorded engine result, and integration. Each establishes a different fact. |

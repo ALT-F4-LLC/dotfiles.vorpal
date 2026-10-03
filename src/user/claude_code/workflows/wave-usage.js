@@ -262,6 +262,10 @@ if (manifestRows != null && (!Array.isArray(manifestRows) || !Array.isArray(wave
 // is required to run. step_mention is NOT a join: it is the loose "which step
 // is this agent looking at" read that labels an overhead agent in the report.
 //
+// claim_agent is the declaration wave.js's claimBrief() closes with. The
+// claim agent runs wave-claim for an executor and is wave overhead: its
+// brief never spells a claim or record of the step, so it never joins one.
+//
 // reseat is the sentence tribunal.js opens a re-seated judge's brief with.
 // tool_uses counts distinct tool_use block ids over every assistant line, not
 // the deduplicated messages: see TOOL USE IS COUNTED BY BLOCK ID above.
@@ -289,6 +293,7 @@ const EXTRACT_JQ = `[inputs | fromjson? | select(type == "object")] as $lines
         or (contains("Run exactly this one command:") and contains("read-only probe reporting what the"))
         or test("Run exactly this one command:(?:\\\\\\\\n|\\\\s)+\`?docket\\\\s+(?:[a-z-]+\\\\s+)?(?:show|context|list|tally|next|log)\\\\b"))),
     exec: ($b | contains("You are executing one step of a Docket run")),
+    claim_agent: ($b | contains("WAVE CLAIM: not a step execution")),
     step_mention: (($b | [match("STEP-\\\\d+")][0].string) // null),
     reseat: ($b | contains("THIS IS A SECOND ATTEMPT AT YOUR SEAT")),
     tool_uses: ([$lines[] | select(.type == "assistant") | .message.content
@@ -387,7 +392,7 @@ function classify(raw, mode, file) {
                             '`docket step claim/record STEP-N` — the bootstrap brief and ' +
                             'the record join have drifted' }
         }
-        const what = probe ? 'read-only probe' : 'not a wave agent'
+        const what = x.claim_agent ? 'claim agent' : probe ? 'read-only probe' : 'not a wave agent'
         return { bucket: 'overhead', key: null,
                  label: `${what}${x.step_mention ? `, mentions ${x.step_mention}` : ''}` }
     }
@@ -630,6 +635,7 @@ const EXTRACT_SCHEMA = {
         record: { type: ['string', 'null'] },
         probe: { type: 'boolean' },
         exec: { type: 'boolean' },
+        claim_agent: { type: 'boolean' },
         step_mention: { type: ['string', 'null'] },
         reseat: { type: 'boolean' },
         tool_uses: { type: 'integer' },
@@ -657,7 +663,7 @@ jq -c -n -R -f "\${TMPDIR:-/tmp}/wave-usage-$$.jq" ${shellPath(file)}; echo "exi
 
 The transcript path is exact and must be copied character for character, including the one \`*\` that stands in for the flattened project name (the shell resolves it; do not replace it). A hyphen where a dot might be expected (\`github-com\`) is correct and is not a typo; do not "correct" any part of the path.
 ${retry === 'path' ? '\nThis is a SECOND run: the first run reported that jq could not open the file, which means the path was retyped incorrectly. Copy the path from the command above byte for byte.\n' : retry ? '\nThis is a SECOND, independent run of the same command against the same file — a prior run reported bootstrap:false and is being re-checked. Run the command fresh; do not reuse or assume any earlier result.\n' : ''}
-jq prints exactly one JSON object. Return it as the structured output with ok:true and every field copied verbatim — bootstrap, cast, record, probe, exec, step_mention, reseat, tool_uses, models_observed, model_observation_complete, usage — including every number exactly as printed. Do not compute, estimate, round, or adjust anything, and do not read the transcript by any other means. Model names come only from the extracted message fields; missing observations remain empty. If jq exits non-zero or prints nothing, return ok:false with the error text in \`error\`.`
+jq prints exactly one JSON object. Return it as the structured output with ok:true and every field copied verbatim — bootstrap, cast, record, probe, exec, claim_agent, step_mention, reseat, tool_uses, models_observed, model_observation_complete, usage — including every number exactly as printed. Do not compute, estimate, round, or adjust anything, and do not read the transcript by any other means. Model names come only from the extracted message fields; missing observations remain empty. If jq exits non-zero or prints nothing, return ok:false with the error text in \`error\`.`
 
 phase('Scout')
 const listing = await agent(scoutBrief, { label: 'scout', phase: 'Scout', schema: FILES_SCHEMA, ...AGENT_CONFIG.scout })

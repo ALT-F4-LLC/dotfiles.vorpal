@@ -305,14 +305,15 @@ first dispatch; `unable to open database file (14)` means the seat's
 write access, not the engine.
 
 **A clean write step proves nothing about a read step.** Isolated
-executors run wave.js's worktree bootstrap before any docket verb, and
-deny beats allow: a denied component (`git checkout --detach`, say) fails
-a fanout even after a clean write step and cannot be fixed with an allow
+executors run wave.js's worktree bootstrap before any work, and deny
+beats allow: a denied component (`git checkout --detach`, say) fails a
+fanout even after a clean write step and cannot be fixed with an allow
 rule. Read the deny list, not just the allow list, before the first
 dispatch carrying read-class rows. If a bootstrap component is denied,
 surface the choice (narrow the deny, or switch modes) rather than
 dispatching and hoping. Symptom: every fanout agent returns `BOOTSTRAP
-DENIED` at near-zero tokens.
+DENIED` at near-zero tokens, each leaving the claim its claim agent took
+for you to reap.
 
 **Probe the completion gates against clean HEAD before the first
 dispatch, with the engine's own verb.** It runs long, so background it:
@@ -807,9 +808,17 @@ about a minute apart. wave.js refuses `of` above 20 and the retired
 
 `tribunal` is the absolute installed path to `tribunal.js`, resolved the
 same way as wave.js's; wave.js seats in-wave vote rows through it. `cwd`
-is the repo the run belongs to. `scriptPath` and `args` are the only
-parameters; there is no `run_in_background`. Resuming a stopped workflow
-needs the full original `args` again, verbatim.
+is the repo the run belongs to, and must be this session's working
+directory: before each executor spawns, a claim agent runs `wave-claim`
+(`src/user/docket/bin/wave-claim`, installed under `~/.docket/bin`), which
+claims the step and writes its rendered packet into a module under
+`<cwd>/.claude/docket-packets/`. The wave loads
+that module and hands the executor the packet verbatim in its brief, and
+the Workflow tool loads a module only from the working directory. A wave
+whose `cwd` is elsewhere stops claiming after its first unloadable module.
+`scriptPath` and `args` are the only parameters; there is no
+`run_in_background`. Resuming a stopped workflow needs the full original
+`args` again, verbatim.
 
 **Never `Workflow({name: "wave"})`**: the name registry can serve a stale
 snapshot. `scriptPath` is the only invocation that provably runs the
@@ -977,21 +986,27 @@ wave's return as rows, not a verdict: `not-launched-run-parked`,
 `not-launched-writer-budget`, `not-launched-agent-budget`,
 `not-launched-token-budget` (the session's output-token target is
 exhausted), `agent-cap`
-(the harness's lifetime spawn cap reached mid-wave; nothing launched),
-and `skipped-chain-dead` are all re-offered next dispatch.
+(the harness's lifetime spawn cap reached mid-wave; nothing launched,
+and a row whose text names a live claim needs that claim reaped first),
+and `skipped-chain-dead` are all re-offered next dispatch. Every
+executor row is claimed by its claim agent before the executor spawns,
+so a row that settled without a record usually leaves a live claim: the
+row's text names its owner and parked token when the wave knows it.
 `bootstrap-denied` is re-offered too, but never re-dispatch on it: the
 row's text quotes a guard or permission denial of the executor's own
-scratch dir, worktree or checkout, nothing was claimed, and the same
-dispatch dies the same way until that gap is fixed.
+scratch dir, worktree or checkout and names the claim it leaves live
+for you to reap, and the same dispatch dies the same way until that gap
+is fixed.
 `isolation-unavailable` is re-offered too, but never re-dispatch on it:
-worktree isolation failed for an isolated writer spawn, so nothing was
-claimed and no writer was launched unguarded in the shared checkout.
-Hold the row until worktree isolation is restored; restoring means
-fixing the harness or worktree gap, never relaunching the writer
-without isolation. `blocked` means the
-executor stopped on one of its brief's stop signals (CLAIM FAILED, CLAIM
-INCOMPLETE, NETWORK GATE BLOCKED, RECORD BLOCKED, WRITE BLOCKED; the row's
-`signal` names which) and recorded nothing: resolve what the reply
+worktree isolation failed for an isolated writer spawn, so no writer was
+launched unguarded in the shared checkout.
+Hold the row until worktree isolation is restored and the claim its
+text names is reaped; restoring means fixing the harness or worktree
+gap, never relaunching the writer without isolation. `blocked` means a stop signal and no record: the
+claim agent's `wave-claim` stopped on CLAIM FAILED or CLAIM INCOMPLETE
+(the lease was never taken, or was already ended with `docket step
+fail`), or the executor stopped on NETWORK GATE BLOCKED, RECORD BLOCKED
+or WRITE BLOCKED; the row's `signal` names which. Resolve what the reply
 reports before the engine re-offers the row. COMMIT BLOCKED is not a
 stop signal: the writer reports it and goes on to record, and you commit
 on its behalf (step 3), so a reply that ends on it with no tail is
@@ -1129,10 +1144,10 @@ coordination section is measured rather than `null`. It fans one
 low-effort agent per `agent-*.jsonl` file to run a fixed jq program and
 returns `rows`: four typed units per step,
 deduplicated by message id, keyed by the step each agent's `docket step
-claim/record STEP-N` obligation names. A read-only probe with no
-claim/record obligation sums into `overhead`, attributed to no step,
-since back-filling a read onto the step it merely read would invent
-spend. Report that total separately; never `exclude` your way around it.
+claim/record STEP-N` obligation names. A read-only probe or a claim
+agent (its brief closes `WAVE CLAIM`) carries no claim/record obligation
+and sums into `overhead`, attributed to no step, since back-filling a
+read or a claim onto the step it served would invent spend. Report that total separately; never `exclude` your way around it.
 The workflow throws when a brief names no step or an agent carries no
 usage; report that rather than papering over it. Only if the installed
 workflow is absent (drift, stop-and-report) delegate to one
@@ -1373,7 +1388,9 @@ denies the verb to executors.
 -rf <literal $TMPDIR>/STEP-N.d` (plus any legacy flat-root leftovers).
 The reap already nulled the lease's token hash, so this is about not
 leaving a dead holder's credential and brief in shared scratch, not
-revocation.
+revocation. The step's packet module under
+`<cwd>/.claude/docket-packets/` holds no token, and `wave-claim` sweeps
+modules a day old, so leave it.
 
 **`--ack-reap`.** This flag tells the engine you have established the
 crashed writer is gone; the engine cannot check that itself. Never pass

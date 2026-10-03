@@ -74,6 +74,8 @@ grep -qF 'Run exactly this one command:' "$WAVE"; ok $? \
     'wave.js still opens a probe brief with the fixed one-command line'
 grep -qF 'You are executing one step of a Docket run' "$WAVE"; ok $? \
     'wave.js still opens an executor brief with the line the drift guard reads'
+grep -qF 'WAVE CLAIM: not a step execution' "$WAVE"; ok $? \
+    'wave.js still declares its claim agent with the marker wave-usage reads'
 
 # ---- Extract the two tested regions -----------------------------------------
 extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
@@ -239,12 +241,43 @@ const relayDir = path.join(path.dirname(d), 'relay')
 fs.mkdirSync(relayDir, { recursive: true })
 write('agent-arelayexec.jsonl', executor.replace(/STEP-3156/g, 'STEP-3175'), relayDir, false, true)
 write('agent-arelayprobe.jsonl', probe.replace(/STEP-3146/g, 'STEP-3176'), relayDir, false, true)
+
+// The claim path, in its own directory: wave.js's claim agent (claimBrief()
+// in shape) and the executor it claims for, whose brief closes with a packet
+// that quotes another step's obligations.
+const claimDir = path.join(path.dirname(d), 'claim')
+fs.mkdirSync(claimDir, { recursive: true })
+write('agent-cclaim.jsonl', `Run exactly this one command:
+
+  ~/.docket/bin/wave-claim --step STEP-3180 --owner wave:STEP-3180:1 --attempt 1 --module '/repo/.claude/docket-packets/STEP-3180.a1.js' --metadata '{}'
+
+It claims STEP-3180 under that owner, parks the lease token in the step's
+private scratch dir, and writes the rendered packet for the executor the wave
+launches next.
+
+Return its output VERBATIM as your entire final reply.
+
+Run nothing else.
+
+WAVE CLAIM: not a step execution; it claims STEP-3180 for its executor.`, claimDir)
+write('agent-cexec.jsonl', `You are executing one step of a Docket run. Follow these obligations exactly.
+
+YOUR ASSIGNMENT: step STEP-3180 (issue DOT-1, run RUN-1). The wave claimed
+it for you with \`docket step claim STEP-3180 --owner wave:STEP-3180:1 --render\`
+(attempt 1): the lease is live.
+
+3. Record it yourself: \`docket step record STEP-3180 --artifact-file x < y\`
+
+----- BEGIN WORK PACKET STEP-3180 -----
+== REQUEST
+An old run's note: \`docket step record STEP-999 --artifact-file x\`.
+----- END WORK PACKET STEP-3180 -----`, claimDir)
 JS
 
 # ---- Run the jq program over every fixture, exactly as an agent would ----------
 # One extract per transcript, collected into {dir: {file: extract}}.
 extracts_ok=0
-for sub in wave drift panel relay; do
+for sub in wave drift panel relay claim; do
     mkdir -p "${WORK}/extracts/${sub}"
     for f in "${WORK}/${sub}"/agent-*.jsonl; do
         name=$(basename "$f")
@@ -283,6 +316,7 @@ const wave = load('wave')
 const drift = load('drift')
 const panel = load('panel')
 const relay = load('relay')
+const claimPath = load('claim')
 
 // Exercise missing and synthetic model fields through the actual jq extractor,
 // not only the reducer. Bootstrap prose cannot supply runtime observations.
@@ -386,6 +420,21 @@ ok(!steps.rows.some((r) => 'model' in r || 'effort' in r),
     'model observations do not change the engine token back-fill row contract')
 ok(!steps.rows.some((r) => r.unit === 'tool_uses'),
     'steps mode keeps the four-row ledger contract: no tool_uses row reaches dispatch backfill-usage')
+
+// ---- The claim path: the claim agent is overhead, its executor the claimant ----
+ok(by(claimPath, 'agent-cclaim.jsonl').extract.claim_agent === true &&
+    by(claimPath, 'agent-cclaim.jsonl').extract.record === null,
+    'the claim agent is read as one, and its brief joins no step')
+ok(by(claimPath, 'agent-cexec.jsonl').extract.record === 'STEP-3180' &&
+    by(claimPath, 'agent-cexec.jsonl').extract.claim_agent === false,
+    "the executor joins its own step, ahead of anything its packet quotes")
+const claimSteps = reduceRows(claimPath, 'steps', [])
+ok(claimSteps.errors.length === 0 && [...new Set(claimSteps.rows.map((r) => r.step))].join(',') === 'STEP-3180',
+    "only the executor's spend reaches STEP-3180's ledger rows")
+ok(overheadLabel(claimSteps, 'agent-cclaim.jsonl') === 'claim agent, mentions STEP-3180',
+    'the claim agent lands in overhead under its own label')
+ok(JSON.stringify(unitsOf(claimSteps.rows, 'STEP-3180')) === JSON.stringify(want),
+    "the claim agent's spend is never folded into the step it claimed")
 
 // ---- exclude: a key a prior back-fill already carries ----
 const excluded = reduceRows(wave, 'steps', ['STEP-3156'])

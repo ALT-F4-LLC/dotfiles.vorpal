@@ -1,0 +1,201 @@
+#!/bin/sh
+# wave-claim — claims one Docket step for wave.js and hands its work packet
+# back as a module the wave loads byte for byte.
+#
+# WHY IT EXISTS. A Workflow script can neither read a file nor run a command,
+# so wave.js cannot fetch a packet itself, and every channel an agent reads
+# through is capped below a packet's size (a Bash result past 128,000
+# characters, a hook's additionalContext past 10,000, a Read past its token
+# limit). The one uncapped channel is the spawn prompt. A claim agent runs
+# this script; it claims the step and writes the packet into a JS module under
+# the session's working directory; wave.js loads that module through a nested
+# workflow({scriptPath}) and spawns the executor with the packet inline. The
+# harness reads the module from disk, so the executor's prompt carries the
+# engine's bytes and no model ever copies them.
+#
+# CONTRACT
+#
+#   argv    --step STEP-N --owner wave:STEP-N:K --attempt A
+#           --module <abs>/.claude/docket-packets/STEP-N.aA.js
+#           --metadata '<JSON object>'
+#           A is the attempt this claim is expected to take: the dispatch
+#           row's `attempt` plus one. Every successful claim increments the
+#           step's attempt in the same statement that takes the lease
+#           (docket internal/db/leases.go claimTx), so a module named for
+#           attempt A can only have been written after the dispatch that
+#           named A. That is what keeps a module left over from an earlier
+#           wave from passing for this one.
+#
+#   files   $TMPDIR/STEP-N.d/                  private step dir, mode 0700
+#           $TMPDIR/STEP-N.d/STEP-N.token      the lease token, mode 0600
+#           $TMPDIR/STEP-N.d/STEP-N.packet.md  the packet, for the record
+#           The claim lands in a private work dir first, and the step dir
+#           and module are rebuilt only once the lease is this run's: a
+#           CONFLICT leaves the holder's token and module untouched.
+#           The module, written atomically: a pure-literal meta, then
+#           `return {v, step, owner, attempt, expected_attempt, re_minted,
+#           lease_expires_ms, dir, token, packet_file, packet_sha256,
+#           packet}`. `token` is the token FILE's path; the token itself never
+#           enters the module, stdout, or argv.
+#           The module directory carries a `.gitignore` of `*`, so neither it
+#           nor the modules in it ever show in `git status`. Modules older
+#           than a day are swept on each run: a lease lives hours at most, so
+#           those packets belong to steps long since recorded or reaped.
+#
+#   stdout  ONE outcome, nothing else:
+#             CLAIMED STEP-N attempt=A packet_bytes=B sha256=H module=PATH
+#             STEP-N / CONFLICT / <the engine's error line>   (three lines)
+#             CLAIM FAILED: STEP-N: <why>
+#             CLAIM INCOMPLETE: STEP-N: <claim_error>; <how the lease ended>
+#
+#   exit    0 claimed, 1 claim failed, 2 usage, 4 conflict, 5 incomplete.
+#
+# A claim whose later stage failed (`claim_error`, docket internal/cli/step.go
+# claimStepResponse) holds a live lease; this script ends it with `docket step
+# fail` and keeps the step dir only when that fail itself errors, so the token
+# stays recoverable.
+
+set -eu
+umask 077
+
+me="wave-claim"
+
+usage() {
+	printf '%s USAGE: %s\n' "$me" "$*"
+	printf 'usage: %s --step STEP-N --owner wave:STEP-N:K --attempt A --module PATH --metadata JSON\n' "$me"
+	exit 2
+}
+
+step="" owner="" attempt="" module="" metadata=""
+while [ "$#" -gt 0 ]; do
+	case "$1" in
+	--step | --owner | --attempt | --module | --metadata)
+		[ "$#" -ge 2 ] || usage "$1 needs a value"
+		case "$1" in
+		--step) step="$2" ;;
+		--owner) owner="$2" ;;
+		--attempt) attempt="$2" ;;
+		--module) module="$2" ;;
+		--metadata) metadata="$2" ;;
+		esac
+		shift 2
+		;;
+	--help | -h) usage "help requested" ;;
+	*) usage "unknown argument $1" ;;
+	esac
+done
+
+digits_only() {
+	[ -n "$1" ] && [ -z "$(printf '%s' "$1" | tr -d 0-9)" ]
+}
+
+digits_only "${step#STEP-}" && [ "${step#STEP-}" != "$step" ] ||
+	usage "--step must be STEP-N, got '$step'"
+case "$owner" in
+"wave:$step:"*) digits_only "${owner#"wave:$step:"}" || usage "--owner must be wave:$step:K, got '$owner'" ;;
+*) usage "--owner must be wave:$step:K, got '$owner'" ;;
+esac
+digits_only "$attempt" && [ "$attempt" -gt 0 ] ||
+	usage "--attempt must be a positive integer, got '$attempt'"
+case "$module" in
+/*/.claude/docket-packets/"$step.a$attempt.js") ;;
+*) usage "--module must be <abs>/.claude/docket-packets/$step.a$attempt.js, got '$module'" ;;
+esac
+
+command -v jq >/dev/null 2>&1 || { echo "CLAIM FAILED: $step: jq is not on PATH"; exit 1; }
+command -v docket >/dev/null 2>&1 || { echo "CLAIM FAILED: $step: docket is not on PATH"; exit 1; }
+printf '%s' "$metadata" | jq -e 'type == "object"' >/dev/null 2>&1 ||
+	usage "--metadata must be a JSON object"
+
+tmp="${TMPDIR:-}"
+[ -n "$tmp" ] || { echo "CLAIM FAILED: $step: TMPDIR is unset"; exit 1; }
+tmp="${tmp%/}"
+dir="$tmp/$step.d"
+token="$dir/$step.token"
+packet="$dir/$step.packet.md"
+pkdir="${module%/*}"
+partial="$module.partial"
+
+sha256() {
+	if command -v sha256sum >/dev/null 2>&1; then
+		sha256sum "$1" | cut -d' ' -f1
+	else
+		shasum -a 256 "$1" | cut -d' ' -f1
+	fi
+}
+
+mkdir -p "$pkdir"
+[ -f "$pkdir/.gitignore" ] || printf '*\n' >"$pkdir/.gitignore"
+find "$pkdir" -maxdepth 1 -type f -name 'STEP-*.js' -mmin +1440 -exec rm -f {} + 2>/dev/null || :
+
+# The claim lands in a private work dir first. The step dir and the module
+# are replaced only once this run holds the lease: a refused claim means
+# another owner holds it, and its token file is not this run's to remove.
+work="$(mktemp -d "$tmp/$step.claim.XXXXXX")" ||
+	{ echo "CLAIM FAILED: $step: cannot create a work dir under $tmp"; exit 1; }
+claim="$work/claim.json"
+claim_err="$work/claim.err"
+# The claim response carries the token: the work dir goes whatever path this
+# script exits by.
+trap 'rm -rf "$work" "$partial"' EXIT
+
+rc=0
+docket step claim "$step" --owner "$owner" --render --metadata "$metadata" --json=v2 \
+	>"$claim" 2>"$claim_err" </dev/null || rc=$?
+
+jq -r '.data.token // empty' "$claim" >"$work/token" 2>/dev/null || :
+if [ ! -s "$work/token" ]; then
+	err="$(jq -r '.error // empty' "$claim" 2>/dev/null || :)"
+	code="$(jq -r '.code // empty' "$claim" 2>/dev/null || :)"
+	[ -n "$err" ] || err="$(head -n 1 "$claim_err" 2>/dev/null || :)"
+	if [ "$code" = "CONFLICT" ]; then
+		printf '%s\nCONFLICT\n%s\n' "$step" "$err"
+		exit 4
+	fi
+	printf 'CLAIM FAILED: %s: %s\n' "$step" "${err:-docket step claim exited $rc and printed no token}"
+	exit 1
+fi
+
+# This run holds the lease (fresh, or re-minted under the same owner).
+rm -f "$module"
+rm -rf "$dir"
+mkdir -m 700 "$dir"
+mv "$work/token" "$token"
+chmod 600 "$token"
+
+claim_error="$(jq -r '.data.claim_error // empty' "$claim")"
+if [ -n "$claim_error" ]; then
+	if fail_out="$(docket step fail "$step" --note "$claim_error" <"$token" 2>&1)"; then
+		rm -rf "$dir"
+		printf 'CLAIM INCOMPLETE: %s: %s; the lease was ended with docket step fail\n' "$step" "$claim_error"
+	else
+		printf 'CLAIM INCOMPLETE: %s: %s; docket step fail errored (%s), so the token is kept at %s\n' \
+			"$step" "$claim_error" "$(printf '%s' "$fail_out" | head -n 1)" "$token"
+	fi
+	exit 5
+fi
+
+got="$(jq -r '.data.attempt // empty' "$claim")"
+jq -j '.data.packet // ""' "$claim" >"$packet"
+if [ ! -s "$packet" ]; then
+	printf 'CLAIM FAILED: %s: the claim committed but carried no packet; the token is kept at %s for a reap\n' "$step" "$token"
+	exit 1
+fi
+digest="$(sha256 "$packet")"
+bytes="$(wc -c <"$packet" | tr -d ' ')"
+
+{
+	printf "export const meta = { name: 'docket-packet', description: 'Docket work packet written by wave-claim' }\n"
+	printf 'return '
+	jq -c \
+		--arg step "$step" --arg owner "$owner" --argjson expected "$attempt" \
+		--arg dir "$dir" --arg token "$token" --arg packet_file "$packet" --arg sha "$digest" \
+		'{v: 1, step: $step, owner: $owner, attempt: .data.attempt,
+		  expected_attempt: $expected, re_minted: (.data.re_minted // false),
+		  lease_expires_ms: .data.lease_expires_ms, dir: $dir, token: $token,
+		  packet_file: $packet_file, packet_sha256: $sha, packet: .data.packet}' \
+		"$claim"
+} >"$partial"
+mv -f "$partial" "$module"
+
+printf 'CLAIMED %s attempt=%s packet_bytes=%s sha256=%s module=%s\n' "$step" "$got" "$bytes" "$digest" "$module"

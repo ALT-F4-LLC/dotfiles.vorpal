@@ -119,6 +119,10 @@ jobs:
 
       - run: bash tests/wave-chain-dead-ladder.test.sh
 
+      - run: bash tests/wave-claim.test.sh
+
+      - run: bash tests/wave-claim-path.test.sh
+
       - run: bash tests/wave-classifier-retry.test.sh
 
       - run: bash tests/wave-fix-round-ancestry.test.sh
@@ -134,6 +138,8 @@ jobs:
       - run: bash tests/wave-model-attribution.test.sh
 
       - run: bash tests/wave-orphaned-claim.test.sh
+
+      - run: bash tests/wave-packet.test.sh
 
       - run: bash tests/wave-park-signals.test.sh
 

@@ -217,5 +217,15 @@ grep -qF 'python3 ~/.claude/skills/docket-run/scripts/seat_roster.py' "$SKILL"; 
 ! grep -qE "^(python[0-9]*|node) +-( |e |-eval|p )" "$SKILL"; ok $? \
     'SKILL.md carries no inline interpreter program (stdin heredoc or code argument) the deny rule refuses'
 
+# ---- the mirrored weights and caps match wave.js --------------------------------
+# lane_units.py packs launches by projected agent cost; a weight that drifts
+# from wave.js's own admission packs launches the wave then defers.
+WAVE_JS="${WAVE_JS:-${ROOT}/src/user/claude_code/workflows/wave.js}"
+for name in EXECUTOR_AGENT_COST VOTE_PROBE_COST DEFAULT_PANEL_SEATS LAUNCH_CAP HARNESS_CAP; do
+    js=$(sed -n "s/^const ${name} = \([0-9][0-9]*\).*/\1/p" "$WAVE_JS")
+    py=$(sed -n "s/^${name} = \([0-9][0-9]*\).*/\1/p" "$SCRIPT")
+    [ -n "$js" ] && [ "$js" = "$py" ]; ok $? "lane_units.py's ${name} (${py:-missing}) mirrors wave.js (${js:-missing})"
+done
+
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

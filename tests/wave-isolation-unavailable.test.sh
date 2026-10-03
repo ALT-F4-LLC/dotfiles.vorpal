@@ -59,7 +59,7 @@ const ok = (cond, label) => {
 }
 
 // Runs the real handler against one rejection and records every relaunch.
-function settle(err, isolated) {
+function settle(err, isolated, held) {
     const calls = { launch: [], failed: 0, retry: [] }
     const handler = spawnCatch({
         row: { step: 'STEP-7' },
@@ -68,8 +68,29 @@ function settle(err, isolated) {
         launch: (iso, retried) => { calls.launch.push(iso); return { step: 'STEP-7', status: 'relaunched' } },
         failed: () => { calls.failed++; return { step: 'STEP-7', status: 'spawn-failed' } },
         retryTransient: (e, iso) => { calls.retry.push(iso); return { step: 'STEP-7', status: 'retried' } },
+        ...(held ? { held } : {}),
     })
     return { result: handler(err), calls }
+}
+
+// The claim agent takes the lease before the executor launches, so a launch
+// that never ran leaves a live claim; spawn() passes it as `held`, and both
+// no-executor outcomes have to carry it to the conductor.
+const HELD = 'STEP-7 is CLAIMED by wave:STEP-7:1 at attempt 2 with its token parked at /tmp/x/STEP-7.d/STEP-7.token'
+{
+    const { result } = settle(new Error('failed to create worktree'), true, HELD)
+    ok(result && result.status === 'isolation-unavailable' && result.text.includes(HELD),
+        'isolation-unavailable names the live claim the executor never used')
+}
+{
+    const { result } = settle(new AgentCapError(), true, HELD)
+    ok(result && result.status === 'agent-cap' && result.text.includes(HELD),
+        'agent-cap after the claim names the live claim')
+}
+{
+    const { result } = settle(new AgentCapError(), true)
+    ok(result && result.status === 'agent-cap' && !result.text.includes('CLAIMED'),
+        'agent-cap with no claim held says nothing of a claim')
 }
 
 const WORKTREE_ERRORS = [
@@ -124,7 +145,7 @@ node "${WORK}/suite.js" || exit 1
 
 # spawn() must route its top-level rejection through the fenced handler, or
 # the behavior above stops describing the live path.
-if [ "$(grep -c '\.catch(spawnCatch({ row, isolated, log, launch, failed, retryTransient }))' "$WAVE")" = 1 ]; then
+if [ "$(grep -c '\.catch(spawnCatch({ row, isolated, log, launch, failed, retryTransient, held }))' "$WAVE")" = 1 ]; then
     printf 'PASS: spawn() settles its rejected launch through spawnCatch at exactly one call site\n'
 else
     printf 'FAIL: spawn() no longer settles its rejected launch through spawnCatch\n' >&2

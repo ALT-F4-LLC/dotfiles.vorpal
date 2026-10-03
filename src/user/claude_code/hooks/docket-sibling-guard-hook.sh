@@ -168,12 +168,12 @@
 # is the shared quote-group pre-pass (docket-guard-prepass.awk) that tells
 # a quoted prose span from separately-quoted words and unmarks an
 # interpreter's code argument (`bash -c '...'`) so the words inside it are
-# read as the invocation they are. A word
-# inside a quoted group of two or more words is prose here; a lone quoted
-# path (`rm -rf "<TMP>/STEP-7.d"`) is not; and when any leaf is headed by an
-# interpreter, no quoted group is prose at all — `echo "rm -rf ..." | sh` and
-# `sh <<< "rm -rf ..."` carry code in a string exactly as a heredoc does, and
-# the pre-pass's heredoc rule is applied to strings for the same reason.
+# read as the invocation they are. A word inside a quoted group of two or
+# more words is prose here; a lone quoted path (`rm -rf "<TMP>/STEP-7.d"`)
+# is not; and when any leaf is headed by an interpreter, no quoted group is
+# prose at all — `echo "rm -rf ..." | sh` and `sh <<< "rm -rf ..."` carry
+# code in a string exactly as a heredoc does, and the pre-pass's heredoc
+# rule is applied to strings for the same reason.
 #
 # THE PROBE HARDENING, measured on bash 3.2 and pinned in the suite. This
 # probe is shared byte-for-byte with docket-trust-guard-hook.sh and
@@ -241,22 +241,24 @@
 # the permission text clears it for every session), `fuser -k`, and a pid
 # read from a file under another checkout. An unquoted-delimiter heredoc body
 # or an unquoted argument that merely mentions a sibling's `STEP-M.d` in
-# prose is a false DENY, and the deny reason names a quoted delimiter as the
-# way to write such prose; a quoted-delimiter heredoc body is never read,
-# whatever words it carries, because the interpreter test that widens a body
-# into the scan reads the leaf's code lines only, never a heredoc body, and
-# never counts a file extension as an interpreter (a target named `cases.sh`
-# or `.env` does not widen; an earlier spelling matched the extension and
-# scanned the body) — a findings artifact that mentions `node`, `sh` or
-# `.env` in passing is the sanctioned record path for executor-read and
-# executor-research, which have no Write tool. The exception is a body
-# inside a substitution that holds a quote, `$`, `#`, a backslash, a
-# backtick or an unbalanced paren: it is read, since bash 3.2 may end the
-# substitution inside it (see LEAF_LINES_AWK). A search
-# for the glob-form token itself (`grep -rn 'STEP-[0-9]*'` on the step's own
-# dir) is a false DENY too; the deny reason offers `STEP.[0-9]+` instead,
-# which is safe only as a regex operand (grep -E, rg): as a pathname glob it
-# joins the glob-outside-the-id residual above.
+# prose is a false DENY, and the deny reason names the Write tool or a
+# quoted delimiter as the way to write such prose. A quoted-delimiter
+# heredoc body is not read, whatever words it carries, at top level or
+# inside a substitution when the body and its terminator line hold no
+# quote, backtick, backslash, `#` or `$` and their parens balance. Any other
+# body inside a substitution is read, since bash 3.2 may end the
+# substitution inside it (see LEAF_LINES_AWK), and a sibling named there is
+# a false DENY. A skipped body stays unread because the interpreter test
+# that widens a body into the scan reads the leaf's code lines only, never
+# a heredoc body, and never counts a file extension as an interpreter (a
+# target named `cases.sh` or `.env` does not widen; an earlier spelling
+# matched the extension and scanned the body) — a findings artifact that
+# mentions `node`, `sh` or `.env` in passing is the sanctioned record path
+# for executor-read and executor-research, which have no Write tool. A
+# search for the glob-form token itself (`grep -rn 'STEP-[0-9]*'` on the
+# step's own dir) is a false DENY too; the deny reason offers `STEP.[0-9]+`
+# instead, which is safe only as a regex operand (grep -E, rg): as a
+# pathname glob it joins the glob-outside-the-id residual above.
 #
 # Fail-open on unparseable stdin and a missing `jq`, exactly as the sibling
 # guards do and for the reason the trust guard's header measures (a hook's
@@ -569,7 +571,7 @@ fi
 # after the substitution around the operator has closed, stops skipping too.
 # Inside a substitution, bash 3.2 finds the closing `)` by a paren and quote
 # scan that ignores heredocs, so a body there is skipped only when that scan
-# reads it as plain balanced text (body_inert).
+# reads it and its terminator line as plain balanced text (body_inert).
 #
 # In "code" mode it prints the code lines of every leaf. In "scan" mode it
 # prints the code lines, or the whole leaf when `widen` is set or the leaf
@@ -642,11 +644,13 @@ function d_below(sp,   k) {
     for (k = 1; k < sp; k++) if (FT[k] == "D") return 1
     return 0
 }
-# 1 when body lines a..b read the same to the paren and quote scan bash 3.2
-# uses to find the end of an enclosing substitution, which ignores heredocs:
-# no quote, backtick, backslash, `#` or `$`, and parens that balance without
-# closing below the level they start at. A `)` that closes there ends the
-# substitution inside what would otherwise be body text.
+# 1 when lines a..b, a heredoc body and its terminator line, read the same to
+# the paren and quote scan bash 3.2 uses to find the end of an enclosing
+# substitution, which ignores heredocs: no quote, backtick, backslash, `#` or
+# `$`, and parens that balance without closing below the level they start
+# at. A `)` that closes there ends the substitution inside what would
+# otherwise be body text; the terminator line is outside every quote for
+# that scan even when the delimiter on the operator line was quoted.
 function body_inert(a, b,   s, k, d, c) {
     d = 0
     for (s = a; s <= b; s++) {
@@ -659,13 +663,20 @@ function body_inert(a, b,   s, k, d, c) {
     }
     return d == 0
 }
+# Nesting level of the lexer state in classify: every open frame above the
+# first, plus the parens or braces each frame holds open (FD, 0 on D frames).
+function level(sp,   k, v) {
+    v = sp - 1
+    for (k = 1; k <= sp; k++) v += FD[k]
+    return v
+}
 # Fills NL, L[1..NL] and CLS[1..NL] ("c" code, "b" heredoc body or
 # terminator) and sets UNQ when an operator has an unquoted or empty
 # delimiter. Frames: N (command text, FD counts open parens), D (inside
-# double quotes), B (inside ${ }, FD counts open braces). lvl counts every
-# open frame and paren; a body is taken only at a newline at the level its
-# operator was queued at, with no close below that level since (pmin).
-function classify(leaf,   n, i, c, c2, j, k, t, s, sp, np, ln, found, x, lvl, pmin) {
+# double quotes), B (inside ${ }, FD counts open braces). A body is taken
+# only at a newline at the level its operator was queued at, with no close
+# below that level since (pmin).
+function classify(leaf,   n, i, c, c2, j, k, t, s, sp, np, ln, found, x, lv, pmin) {
     NL = split(leaf, L, "\n")
     START[1] = 1
     for (k = 1; k <= NL; k++) {
@@ -680,7 +691,6 @@ function classify(leaf,   n, i, c, c2, j, k, t, s, sp, np, ln, found, x, lvl, pm
     FT[1] = "N"
     FD[1] = 0
     np = 0
-    lvl = 0
     while (i <= n) {
         c = substr(leaf, i, 1)
         c2 = substr(leaf, i, 2)
@@ -693,9 +703,10 @@ function classify(leaf,   n, i, c, c2, j, k, t, s, sp, np, ln, found, x, lvl, pm
             ln++
             i++
             if (FT[sp] != "N" || np == 0) continue
-            if (pmin < lvl) return
+            lv = level(sp)
+            if (pmin < lv) return
             for (k = 1; k <= np; k++) {
-                if (PLVL[k] != lvl) return
+                if (PLVL[k] != lv) return
                 found = 0
                 for (t = ln; t <= NL; t++) {
                     x = L[t]
@@ -703,7 +714,7 @@ function classify(leaf,   n, i, c, c2, j, k, t, s, sp, np, ln, found, x, lvl, pm
                     if (x == PDELIM[k]) { found = 1; break }
                 }
                 if (!found) return
-                if (lvl > 0 && !body_inert(ln, t - 1)) return
+                if (lv > 0 && !body_inert(ln, t)) return
                 for (s = ln; s <= t; s++) CLS[s] = "b"
                 ln = t + 1
             }
@@ -720,9 +731,9 @@ function classify(leaf,   n, i, c, c2, j, k, t, s, sp, np, ln, found, x, lvl, pm
             continue
         }
         if (FT[sp] == "D") {
-            if (c == DQ) { sp--; if (--lvl < pmin) pmin = lvl }
-            else if (c2 == "$(") { FT[++sp] = "N"; FD[sp] = 0; lvl++; i++ }
-            else if (c2 == "${") { FT[++sp] = "B"; FD[sp] = 0; lvl++; i++ }
+            if (c == DQ) { sp--; if ((lv = level(sp)) < pmin) pmin = lv }
+            else if (c2 == "$(") { FT[++sp] = "N"; FD[sp] = 0; i++ }
+            else if (c2 == "${") { FT[++sp] = "B"; FD[sp] = 0; i++ }
             i++
             continue
         }
@@ -740,14 +751,14 @@ function classify(leaf,   n, i, c, c2, j, k, t, s, sp, np, ln, found, x, lvl, pm
             i = j
             continue
         }
-        if (c == DQ) { FT[++sp] = "D"; lvl++; i++; continue }
-        if (c2 == "${") { FT[++sp] = "B"; FD[sp] = 0; lvl++; i += 2; continue }
+        if (c == DQ) { FT[++sp] = "D"; FD[sp] = 0; i++; continue }
+        if (c2 == "${") { FT[++sp] = "B"; FD[sp] = 0; i += 2; continue }
         if (FT[sp] == "B") {
-            if (c2 == "$(") { FT[++sp] = "N"; FD[sp] = 0; lvl++; i++ }
-            else if (c == "{") { FD[sp]++; lvl++ }
+            if (c2 == "$(") { FT[++sp] = "N"; FD[sp] = 0; i++ }
+            else if (c == "{") FD[sp]++
             else if (c == "}") {
                 if (FD[sp] > 0) FD[sp]--; else sp--
-                if (--lvl < pmin) pmin = lvl
+                if ((lv = level(sp)) < pmin) pmin = lv
             }
             i++
             continue
@@ -755,7 +766,6 @@ function classify(leaf,   n, i, c, c2, j, k, t, s, sp, np, ln, found, x, lvl, pm
         if (c == "#" && (i == 1 || index(" \t\n;&|()<>", substr(leaf, i - 1, 1)))) return
         if (c == "(" || c2 == "$(") {
             FD[sp]++
-            lvl++
             i += (c == "(") ? 1 : 2
             continue
         }
@@ -764,7 +774,7 @@ function classify(leaf,   n, i, c, c2, j, k, t, s, sp, np, ln, found, x, lvl, pm
             else if (sp > 1) sp--
             else if (np) return
             else { i++; continue }
-            if (--lvl < pmin) pmin = lvl
+            if ((lv = level(sp)) < pmin) pmin = lv
             i++
             continue
         }
@@ -774,10 +784,11 @@ function classify(leaf,   n, i, c, c2, j, k, t, s, sp, np, ln, found, x, lvl, pm
             if (HD_BAIL) return
             if (HD_DELIM == "" || !HD_QUOTED) UNQ = 1
             if (HD_DELIM != "") {
-                if (++np == 1) pmin = lvl
+                lv = level(sp)
+                if (++np == 1) pmin = lv
                 PDELIM[np] = HD_DELIM
                 PDASH[np] = HD_DASH
-                PLVL[np] = lvl
+                PLVL[np] = lv
             }
             i = j
             continue
@@ -1211,7 +1222,7 @@ fi
 log_decision "deny" "$CLAUSE"
 case "$CLAUSE" in
     SCRATCH)
-        deny "$REASON_PREFIX this command names another step's scratch directory (${DETAIL}); ${OWN_TEXT}. A sibling's leftover dir is the conductor's to sweep at reap, never an executor's. If it blocks your step, record that as a finding in your step report and do not retry. If this command performs no operation on that directory and only mentions it in prose, write the prose through a heredoc with a quoted delimiter (<<'EOF'), which this guard does not read, or with the Write tool where you have it. If a search pattern must match a step id and the command operates on no sibling directory, spell the pattern \`STEP.[0-9]+\` (with grep -E or rg), which this guard does not read as a scratch directory. If the command only hands sibling step ids to a docket read verb and touches no directory, spell each id literally (for example \`docket step artifacts STEP-7; docket step artifacts STEP-8\`). Otherwise, rewording a command that operates on another step's directory is not authorized." ;;
+        deny "$REASON_PREFIX this command names another step's scratch directory (${DETAIL}); ${OWN_TEXT}. A sibling's leftover dir is the conductor's to sweep at reap, never an executor's. If it blocks your step, record that as a finding in your step report and do not retry. If this command performs no operation on that directory and only mentions it in prose, write the prose with the Write tool where you have it, or through a heredoc with a quoted delimiter (<<'EOF'), which this guard does not read at top level; inside a substitution it skips that body only when the body holds no quote, backtick, backslash, # or \$ and its parens balance. If a search pattern must match a step id and the command operates on no sibling directory, spell the pattern \`STEP.[0-9]+\` (with grep -E or rg), which this guard does not read as a scratch directory. If the command only hands sibling step ids to a docket read verb and touches no directory, spell each id literally (for example \`docket step artifacts STEP-7; docket step artifacts STEP-8\`). Otherwise, rewording a command that operates on another step's directory is not authorized." ;;
     WORKTREE)
         case "$DETAIL" in
             prune) deny "$REASON_PREFIX \`git worktree prune\` deletes the bookkeeping of every checkout that is momentarily absent, siblings still working included, and is never an executor's to run. Leave the worktree list as it is; the conductor sweeps checkouts after integration." ;;

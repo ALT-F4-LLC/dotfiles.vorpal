@@ -614,6 +614,24 @@ case_multiline_substitutions() {
     assert_verdict $'echo $(cat <<\'EOF\'\nfoo\n) $(rm -rf '"${SIB_DIR}"$') "\nEOF\n"' executor-write "$WAVE_42" DENY "a close paren in a heredoc body ends the substitution (quote after)"
     assert_verdict $'echo $(cat <<\'EOF\'\n) $(rm -rf '"${SIB_DIR}"$') $(:\nEOF\n)' executor-write "$WAVE_42" DENY "a close paren in a heredoc body ends the substitution (reopened)"
     assert_verdict $'git commit -m "$(cat <<\'EOF\'\nfix(hooks): clean STEP-7.d leftovers\nEOF\n)"' executor-write "$WAVE_42" ALLOW "balanced parens in a heredoc body inside a substitution stay inert"
+    # The terminator line is outside every quote for that scan, so a `)` in
+    # a quoted delimiter closes the substitution on the terminator line.
+    assert_verdict $'echo $(cat <<\') <(rm -rf '"${SIB_DIR}"$') <(:\'\nfoo\n) <(rm -rf '"${SIB_DIR}"$') <(:\n)' executor-write "$WAVE_42" DENY "a close paren on the terminator line ends the substitution (<( ) form)"
+    assert_verdict $'echo $(cat <<\') >(rm -rf '"${SIB_DIR}"$') >(:\'\nfoo\n) >(rm -rf '"${SIB_DIR}"$') >(:\n)' executor-write "$WAVE_42" DENY "a close paren on the terminator line ends the substitution (>( ) form)"
+    assert_verdict $'docket step artifacts $(cat <<\') <(rm -rf '"${SIB_DIR}"$') <(:\'\nfoo\n) <(rm -rf '"${SIB_DIR}"$') <(:\n)' executor-write "$WAVE_42" DENY "a close paren on the terminator line, as a docket argument"
+    assert_verdict $'echo $(cat <<\') <(rm -rf '"${SIB_DIR}"$') <(:\'\n) <(rm -rf '"${SIB_DIR}"$') <(:\n)' executor-write "$WAVE_42" DENY "a close paren on the terminator line of an empty body"
+    # Each character the scan reads differently from plain text makes the
+    # body read: a quote, a backtick or a backslash hides a paren from it,
+    # and so does a `#` comment. `$` is kept in the class defensively.
+    assert_verdict $'echo $(cat <<\'EOF\'\nx \'(\' y\n) <(rm -rf '"${SIB_DIR}"$') \'\nEOF\n\'' executor-write "$WAVE_42" DENY "a single-quoted paren in a heredoc body is hidden from the scan"
+    assert_verdict $'echo $(cat <<\'EOF\'\nx "(" y\n) <(rm -rf '"${SIB_DIR}"$') "\nEOF\n"' executor-write "$WAVE_42" DENY "a double-quoted paren in a heredoc body is hidden from the scan"
+    assert_verdict $'echo $(cat <<\'EOF\'\nx `(` y\n) <(rm -rf '"${SIB_DIR}"$') `\nEOF\n`' executor-write "$WAVE_42" DENY "a backtick-quoted paren in a heredoc body is hidden from the scan"
+    assert_verdict $'echo $(cat <<\'EOF\'\n# (\n) <(rm -rf '"${SIB_DIR}"$') <(: # )\nEOF\n)' executor-write "$WAVE_42" DENY "a commented paren in a heredoc body is hidden from the scan"
+    assert_verdict $'echo $(cat <<\'EOF\'\nx \\(\n) <(rm -rf '"${SIB_DIR}"$') <(: \\)\nEOF\n)' executor-write "$WAVE_42" DENY "a backslash-escaped paren in a heredoc body is hidden from the scan"
+    assert_verdict $'git commit -m "$(cat <<\'EOF\'\nfix: pass $HOME through\nsee STEP-7.d for details\nEOF\n)"' executor-write "$WAVE_42" DENY "accepted false deny: a \$ in a commit body naming a sibling dir"
+    assert_verdict $'git commit -m "$(cat <<\'EOF\'\nfix: pass $HOME through\nsee the notes for details\nEOF\n)"' executor-write "$WAVE_42" ALLOW "a \$ in a commit body naming no sibling dir"
+    assert_verdict $'git commit -m "$(cat <<\'EOF\'\nfix: refs #12\nsee STEP-7.d for details\nEOF\n)"' executor-write "$WAVE_42" DENY "accepted false deny: a # in a commit body naming a sibling dir"
+    assert_verdict $'git commit -m "$(cat <<\'EOF\'\nfix: path C:\\tmp\nsee STEP-7.d for details\nEOF\n)"' executor-write "$WAVE_42" DENY "accepted false deny: a backslash in a commit body naming a sibling dir"
     # A heredoc body starts after the first newline at the operator's own
     # nesting level: a substitution opened after the operator holds its
     # newlines, and one that closed around the operator leaves no body.
@@ -645,6 +663,8 @@ case_multiline_substitutions() {
     assert_verdict $'echo $(echo $(( "1" )) <<\'EOF\'\nrm -rf '"${SIB_DIR}"$'\nEOF\n)' executor-write "$WAVE_42" DENY "fails toward reading: a quote inside \$(( ))"
     assert_verdict $'echo $(cat <<\'E$X\'\nrm -rf '"${SIB_DIR}"$'\nE$X\n)' executor-write "$WAVE_42" DENY "fails toward reading: an expansion inside a quoted delimiter"
     assert_verdict $'echo $(cat <<E$X\nnode \'rm -rf '"${SIB_DIR}"$'\'\nE$X\n)' executor-write "$WAVE_42" DENY "an expansion in an unquoted delimiter keeps the body read"
+    assert_verdict $'cat <<E$X\nnode\nE$X\ncat <<\'Q\'\nsaw STEP-7.d\nQ' executor-write "$WAVE_42" DENY "fails toward reading: an expansion in an unquoted delimiter feeds the interpreter test"
+    assert_verdict $'echo "${x:-\'a\'}" <<\'EOF\'\nsaw STEP-7.d\nEOF' executor-write "$WAVE_42" DENY "fails toward reading: a single quote inside \${ } within double quotes"
 }
 
 # Verb spellings: case, wrappers, docket global flags, function wrappers.
@@ -881,6 +901,7 @@ case_deny_reasons() {
     assert_deny_reason "rm -rf ${SIB_DIR}" executor-write "$WAVE_42" "your own scratch dir is <TMP>/STEP-42.d" "scratch deny names the caller's own dir"
     assert_deny_reason "rm -rf ${SIB_DIR}" executor-write "$WAVE_42" "STEP-7.d" "scratch deny names the offending dir"
     assert_deny_reason "rm -rf ${SIB_DIR}" executor-write "$WAVE_42" "Write tool" "scratch deny names the prose path"
+    assert_deny_reason "rm -rf ${SIB_DIR}" executor-write "$WAVE_42" "body holds no quote, backtick, backslash, # or \$" "scratch deny qualifies the heredoc path inside a substitution"
     assert_deny_reason "grep -rn 'STEP-[0-9]*' ${OWN_DIR}" executor-read "$WAVE_42" "STEP.[0-9]+" "scratch deny names the search-pattern spelling"
     assert_deny_reason "grep -rn 'STEP-[0-9]*' ${OWN_DIR}" executor-read "$WAVE_42" "rewording a command that operates on another step's directory is not authorized" "scratch deny forbids rewording a sibling operation"
     assert_deny_reason "for s in 7 8; do rm -rf /tmp/claude-501/STEP-\$s.d; done" executor-write "$WAVE_42" "docket step artifacts STEP-7; docket step artifacts STEP-8" "scratch deny names the literal-id recovery"

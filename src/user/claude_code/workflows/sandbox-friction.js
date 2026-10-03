@@ -123,7 +123,7 @@ if (file && (typeof input.checkout !== 'string' || !input.checkout.startsWith('/
     throw new Error(`sandbox-friction: args.checkout must be an absolute path when file is true (got ${JSON.stringify(input.checkout)})`)
 }
 const {ledger, checkout} = input
-const cutoff = input.cutoff == null ? '' : input.cutoff
+const cutoff = input.cutoff ?? ''
 
 const SANDBOX_RULE = `Run it SANDBOXED — do NOT pass dangerouslyDisableSandbox. If the sandbox denies it, report the denial text instead of retrying with the sandbox disabled.`
 
@@ -252,29 +252,22 @@ async function fileGroups(groups) {
         },
         required: ['action', 'detail'],
     }
-    const fileOnce = (g, i, retry) => agent(filePrompt(g), {
-        label: `file:${i + 1}/${actionable.length}${retry ? ' (retry)' : ''}`,
-        phase: 'File',
-        ...AGENT_CONFIG.file,
-        schema: FILE_SCHEMA,
-    }).catch((err) => {
-        log(`sandbox-friction: file:${i + 1}/${actionable.length}${retry ? ' (retry)' : ''} agent error: ${err}`)
-        return null
-    })
+    const fileOnce = (g, i, retry) => {
+        const label = `file:${i + 1}/${actionable.length}${retry ? ' (retry)' : ''}`
+        return agent(filePrompt(g), { label, phase: 'File', ...AGENT_CONFIG.file, schema: FILE_SCHEMA }).catch((err) => {
+            log(`sandbox-friction: ${label} agent error: ${err}`)
+            return null
+        })
+    }
 
-    // One continuous pipeline, file then a conditional retry stage, instead
-    // of two separate pipeline() calls with a plain-JS null-filter between
-    // them. Two calls is a barrier: a fast group's retry could not start
-    // until every group in the whole batch — including the slowest filing
-    // agent — had resolved, even though a null result is known the instant
-    // that group's own attempt returns. filePrompt's own idempotency check
-    // (docket issue list before create, run fresh inside the agent's own
-    // shell command on every attempt, first or retry) is what makes this
-    // retry safe: a retry whose first attempt actually filed but whose
-    // reply was merely lost re-runs the SAME check, finds the issue already
-    // filed, and reports "already-filed" rather than double-filing — the
-    // safety lives in the command, not in script-side bookkeeping, so
-    // folding the retry into the same pipeline changes nothing about it.
+    // One pipeline, file then a conditional retry stage, not two pipeline()
+    // calls with a null-filter between them: two calls form a barrier, so a
+    // fast group's retry would wait for the slowest filing agent in the
+    // batch although its own null result is known at once. The retry is safe
+    // because filePrompt's idempotency check (docket issue list before
+    // create) re-runs inside the agent's shell on every attempt: a retry
+    // whose first attempt filed but lost its reply finds the issue and
+    // reports "already-filed" instead of double-filing.
     let retriedCount = 0
     const outcomes = await pipeline(
         actionable,

@@ -127,6 +127,7 @@ if (input.stage === 'gate-union') {
 
 const uncovered = []
 const tail = () => (uncovered.length ? `; ${uncovered.length} UNCOVERED` : '')
+const missing = (what) => uncovered.push({ what, why: 'agent returned nothing' })
 
 // ---- Schemas ---------------------------------------------------------------
 
@@ -245,7 +246,7 @@ async function runMine() {
     if (smallRepo) {
         log('docket-bootstrap: small repo — combining the three mining seams into one analyst')
         const combined = await mineSeam('combined', combinedPrompt(checkoutRoot, gateCandidates), AGENT_CONFIG.combined)
-        if (!combined) uncovered.push({ what: 'combined mining pass', why: 'agent returned nothing' })
+        if (!combined) missing('combined mining pass')
         return {
             mining: { buildCi: combined, gatesScripts: null, docsHistory: null },
             uncovered,
@@ -259,9 +260,9 @@ async function runMine() {
         () => mineSeam('gates-scripts', gatesScriptsPrompt(checkoutRoot, gateCandidates), AGENT_CONFIG.gatesScripts),
         () => mineSeam('docs-history', docsHistoryPrompt(checkoutRoot), AGENT_CONFIG.docsHistory),
     ])
-    if (!buildCi) uncovered.push({ what: 'build/CI mining seam', why: 'agent returned nothing' })
-    if (!gatesScripts) uncovered.push({ what: 'gates/scripts mining seam', why: 'agent returned nothing' })
-    if (!docsHistory) uncovered.push({ what: 'docs/history mining seam', why: 'agent returned nothing' })
+    if (!buildCi) missing('build/CI mining seam')
+    if (!gatesScripts) missing('gates/scripts mining seam')
+    if (!docsHistory) missing('docs/history mining seam')
     const claims = [buildCi, gatesScripts, docsHistory].filter(Boolean).reduce((n, r) => n + r.claims.length, 0)
     return {
         mining: { buildCi, gatesScripts, docsHistory },
@@ -289,7 +290,7 @@ async function runGateUnion() {
         })
     ))
     results.forEach((r, i) => {
-        if (!r) uncovered.push({ what: `gate parse of ${files[i]}`, why: 'agent returned nothing' })
+        if (!r) missing(`gate parse of ${files[i]}`)
         else if (r.readOk === false) uncovered.push({ what: `gate parse of ${files[i]}`, why: r.notes || 'file could not be read or parsed' })
     })
 
@@ -300,22 +301,18 @@ async function runGateUnion() {
     // other entry counts as missing here, never as applicable (SKILL.md §4).
     const boundEntries = trustEntries.filter((e) => e.global || e.repo === checkoutRoot)
     const answered = results.filter(Boolean)
-    const gates = []
-    for (const r of answered) {
-        if (r.readOk === false) continue
-        for (const g of r.gates) {
-            const trust = boundEntries.find((e) => e.gate === g.name || e.name === g.name)
-            gates.push({
-                name: g.name,
-                workflow: r.workflow,
-                step: g.step,
-                onFail: g.onFail,
-                matched: Boolean(trust),
-                trustPath: Array.isArray(trust?.argv) ? trust.argv.join(' ') : null,
-                evidence: g.evidence,
-            })
+    const gates = answered.filter((r) => r.readOk !== false).flatMap((r) => r.gates.map((g) => {
+        const trust = boundEntries.find((e) => e.gate === g.name || e.name === g.name)
+        return {
+            name: g.name,
+            workflow: r.workflow,
+            step: g.step,
+            onFail: g.onFail,
+            matched: Boolean(trust),
+            trustPath: Array.isArray(trust?.argv) ? trust.argv.join(' ') : null,
+            evidence: g.evidence,
         }
-    }
+    }))
     gates.sort((a, b) => a.name.localeCompare(b.name) || a.workflow.localeCompare(b.workflow))
     const matched = gates.filter((g) => g.matched).length
     return {

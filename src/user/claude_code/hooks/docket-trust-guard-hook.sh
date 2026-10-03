@@ -597,9 +597,12 @@ STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk -f "$PREPASS_AWK" 2>/dev/null) || allo
 # UNTRUNCATED word, before the truncation below runs) is read as the same
 # residual class as a `$`-expansion look-behind: this pass cannot evaluate
 # it, so it deviates from that pattern's usual ALLOW and stays on the DENY
-# side, because a `{` at exactly this position has no legitimate reading as
-# prose (prose reaching this position already passed the quote-group test)
-# and every real use of `docket trust add/rm` needs no brace at all. A
+# side, because every real use of `docket trust add/rm` needs no brace at
+# all. Two shapes bash never expands skip that DENY and fall through to the
+# ordinary word tests: a brace word in the same quote group as `docket` (and
+# `trust`, at the verb position), since bash expands no quoted text, and a
+# brace with no `,` or `..` anywhere after it on the line, which is literal
+# text to bash (`stub docket {"ok":false}` in a findings note). A
 # `${...}` parameter expansion is stripped before this test, not treated as
 # a brace: `docket trust ${V} erik key` is the SAME accepted residual as
 # `docket trust $V erik key` (an interpreter-reached-through-a-variable
@@ -611,6 +614,15 @@ function has_brace(word,   stripped) {
     stripped = word
     gsub(/\$\{/, "", stripped)
     return index(stripped, "{") > 0
+}
+# Bash brace-expands only with a "," or ".." inside the braces. The pre-pass
+# splits a source word at its embedded quotes, so the test reads the rest of
+# the line rather than the one word: {"trust",} reaches here as three words.
+function may_brace_expand(from,   k) {
+    for (k = from; k <= n; k++) {
+        if (index(words[k], ",") > 0 || index(words[k], "..") > 0) return 1
+    }
+    return 0
 }
 function decode(raw,    inner, cpos) {
     if (length(raw) >= 2 && substr(raw, 1, 1) == MARK && substr(raw, length(raw), 1) == MARK) {
@@ -640,14 +652,14 @@ function decode(raw,    inner, cpos) {
             tgroup = D_GROUP
             tw = D_WORD
             texact = tw
-            if (has_brace(tw)) { print "MATCH"; exit }
+            if (has_brace(tw) && !(hquoted && tquoted && hgroup == tgroup) && may_brace_expand(i + 1)) { print "MATCH"; exit }
             sub(/[^A-Za-z0-9_-].*$/, "", tw)
             if (tw != "trust") continue
             vquoted = decode(words[i + 2])
             vgroup = D_GROUP
             vw = D_WORD
             vexact = vw
-            if (has_brace(vw)) { print "MATCH"; exit }
+            if (has_brace(vw) && !(hquoted && tquoted && vquoted && hgroup == tgroup && tgroup == vgroup) && may_brace_expand(i + 2)) { print "MATCH"; exit }
             sub(/[^A-Za-z0-9_-].*$/, "", vw)
             if (vw != "add" && vw != "rm") continue
             if (hquoted && tquoted && vquoted && hgroup == tgroup && tgroup == vgroup) continue

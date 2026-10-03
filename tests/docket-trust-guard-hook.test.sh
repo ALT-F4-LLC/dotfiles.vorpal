@@ -244,6 +244,50 @@ case_brace_split_verb_denies() {
     # not be caught by the brace check above.
     assert_verdict 'docket trust ${V} erik key' executor-write ALLOW \
         'docket trust ${V} computed verb: a parameter expansion, not a brace alternation'
+    assert_verdict "docket {trust,} add erik key" executor-write DENY \
+        "brace alternation in the trust position: docket {trust,} add"
+    # The pre-pass splits a source word at its embedded quotes, so a quoted
+    # alternative must not hide the comma from the brace test.
+    assert_verdict "docket {\"trust\",add} erik key" executor-write DENY \
+        "brace word split at embedded double quotes: docket {\"trust\",add}"
+    assert_verdict "docket {'trust',} add erik key" executor-write DENY \
+        "brace word split at embedded single quotes: docket {'trust',} add"
+    assert_verdict "docket {trust,add} erik key" executor-write DENY \
+        "one brace word expanding to trust and the verb: docket {trust,add}"
+    assert_verdict "docket tru{s..s}t add erik key" executor-write DENY \
+        "sequence expression, no comma: docket tru{s..s}t add"
+    assert_verdict "bash -c 'docket {trust,} add erik key'" executor-write DENY \
+        "brace alternation inside an interpreter's code argument"
+    assert_verdict '"docket" "{trust,}" "add" erik key' executor-write DENY \
+        "separately quoted brace word: different quote groups keep the DENY"
+    assert_verdict "cat <<'EOF' | sh"$'\n''docket {trust,} add erik key'$'\nEOF' \
+        executor-write DENY "brace alternation in a quoted heredoc piped to sh"
+}
+
+# ---- MUST NOT CATCH: a brace bash never expands ---------------------------
+#
+# A findings note quoting stub output (`stub docket {"ok":false}`) holds a
+# `{` after `docket` but no `,` or `..`, or holds it inside one quoted
+# group, and bash brace-expands neither. Each row runs under both executor
+# archetypes; with no agent_type the hook allows before the matcher runs.
+# A quoted heredoc body reaches the matcher only when the command names an
+# interpreter, so the widened rows carry one (`ran bash ...`) as the
+# denied findings command did.
+
+case_unexpandable_brace_prose_allows() {
+    local agent widen='ran bash tests/x.test.sh: exit 0'
+    for agent in executor-read executor-write; do
+        assert_verdict 'echo "stub docket {\"ok\":false}"' "$agent" ALLOW \
+            "${agent}: double-quoted prose naming docket {...}"
+        assert_verdict "cat > f.md <<'EOF'"$'\n''stub docket {"ok":false}'$'\nEOF' \
+            "$agent" ALLOW "${agent}: quoted heredoc body naming docket {...}"
+        assert_verdict "cat > f.md <<'EOF'"$'\n'"${widen}"$'\n''stub docket {"ok":false}'$'\nEOF' \
+            "$agent" ALLOW "${agent}: widened quoted heredoc body naming docket {...}"
+        assert_verdict "cat > f.md <<'EOF'"$'\n'"${widen}"$'\nEOF\n'"jq -n '[{\"note\":\"stub docket {\\\"ok\\\":false}: same\",\"x\":1}]'" \
+            "$agent" ALLOW "${agent}: jq program naming docket {...} beside commas (the denied findings shape)"
+        assert_verdict "for c in 'docket trust ad{d,} erik key'; do :; done" "$agent" ALLOW \
+            "${agent}: one quoted group naming a brace-split verb"
+    done
 }
 
 # ---- MUST DENY: the verb carried as an interpreter's code argument --------
@@ -837,6 +881,7 @@ case_must_not_catch_prose_and_reads
 case_must_deny_glued_separator_class
 case_must_deny_separately_quoted_tokens
 case_brace_split_verb_denies
+case_unexpandable_brace_prose_allows
 case_interpreter_code_argument_deny
 case_full_interpreter_list_denies
 case_full_code_flag_list_denies

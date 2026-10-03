@@ -123,13 +123,6 @@ const BATCH_VERDICT_SCHEMA = {
   required: ['verdicts'],
 }
 
-function parseLines(text) {
-  return (text || '')
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line && !line.startsWith('#'))
-}
-
 // TEST-BEGIN verify-budget — pure planning helpers, exercised without a run.
 function verifyBudget(readPlanSize) {
   return Math.max(0, AGENT_CAP - AGENT_CAP_MARGIN - SIZING_AGENTS - readPlanSize - COMPLETENESS_RESERVE)
@@ -265,12 +258,12 @@ uncovered span as a gap, naming the file and missing range.`,
   const refillLimit = COMPLETENESS_RESERVE - 1
   const refills = gaps.slice(0, refillLimit)
   const unfilled = gaps.slice(refillLimit)
+  const describe = (list) => list.map((gap) => `${gap.file} (${gap.range})`).join(', ')
   log(`Completeness pass found ${gaps.length} gap(s); re-dispatching ${refills.length}`)
-  if (unfilled.length) log(`Refill reserve is ${refillLimit}; ${unfilled.length} gap(s) stay UNCOVERED: ${unfilled.map((gap) => `${gap.file} (${gap.range})`).join(', ')}`)
+  if (unfilled.length) log(`Refill reserve is ${refillLimit}; ${unfilled.length} gap(s) stay UNCOVERED: ${describe(unfilled)}`)
   const gapReads = await pipeline(refills, (gap) =>
     agent(readPrompt(gap.file, ` (lines ${gap.range})`, note), { phase: 'Completeness', label: `refill:${gap.file}`, schema: FINDING_SCHEMA, ...AGENT_CONFIG.refill })
   )
-  const describe = (list) => list.map((gap) => `${gap.file} (${gap.range})`).join(', ')
   return {
     reports: gapReads.filter(Boolean),
     coverageNote: `Re-dispatched ${refills.length} gap(s) found by the completeness pass: ${describe(refills)}.`
@@ -329,12 +322,13 @@ Return only files exceeding ${SHARD_LINES} lines as "path lineCount", one per li
 If none qualify, return an empty string.`,
   { phase: 'Read', label: 'size-check', ...AGENT_CONFIG.sizing }
 )
-const largeFiles = parseLines(sizeReport)
-  .map((line) => {
-    const match = line.match(/^(.+?)\s+(\d+)\s*$/)
-    return match ? { file: match[1], lines: parseInt(match[2], 10) } : null
-  })
+const largeFiles = (sizeReport || '')
+  .split('\n')
+  .map((line) => line.trim())
+  .filter((line) => !line.startsWith('#'))
+  .map((line) => line.match(/^(.+?)\s+(\d+)\s*$/))
   .filter(Boolean)
+  .map(([, file, lines]) => ({ file, lines: parseInt(lines, 10) }))
 const lineCounts = new Map(largeFiles.map(({ file, lines }) => [file, lines]))
 if (largeFiles.length) log(`Sharding ${largeFiles.length} large file(s): ${largeFiles.map(({ file, lines }) => `${file} (${lines}L)`).join(', ')}`)
 
@@ -349,7 +343,7 @@ const initialReports = (await pipeline(readPlan, ({ file, rangeNote, label }) =>
 phase('Completeness')
 const { reports: refillReports, coverageNote } = await completeCoverage(files, lineCounts, initialReports, note)
 
-const allReports = [...initialReports, ...refillReports].filter(Boolean)
+const allReports = [...initialReports, ...refillReports]
 const rawFindings = allReports.flatMap((report) =>
   (report.findings || []).map((finding) => ({ ...finding, file: report.file }))
 )

@@ -240,8 +240,8 @@
 # prose is a false DENY, and the deny reason names a quoted delimiter as the
 # way to write such prose; a quoted-delimiter heredoc body is never read,
 # whatever words it carries, because the interpreter test that widens a body
-# into the scan reads the leaf's first line only, and never counts a file
-# extension as an interpreter (a target named `cases.sh` or `.env` does not
+# into the scan reads the leaf's code lines only, never a heredoc body, and
+# never counts a file extension as an interpreter (a target named `cases.sh` or `.env` does not
 # widen; an earlier spelling matched the extension and scanned the body) —
 # a findings artifact that mentions
 # `node`, `sh` or `.env` in passing is the sanctioned record path for
@@ -542,15 +542,230 @@ if [ -z "$PROBE_TEXT" ]; then
     allow_default
 fi
 
+# --- Line selection: which lines of a leaf are code. ---------------------
+#
+# A leaf spans lines when it carries a heredoc, a multi-line quoted word, or
+# a substitution whose body spans lines. The probe vetoes such a leaf before
+# its substitutions run, so their inner commands never reach the probe as
+# leaves of their own; every line of the leaf is therefore matched as a leaf,
+# except the body of a heredoc (its terminator line included). LEAF_LINES_AWK
+# classifies the lines. It finds heredoc operators with a quote-aware lexer,
+# so a `<<'EOF'` inside quotes or a comment opens no body, and it stops
+# skipping anything, keeping every remaining line, wherever its reading could
+# disagree with bash's: a backtick, a comment, `$[`, a quote or backslash
+# inside arithmetic, a single quote inside `${ }` within double quotes, an
+# expansion or a newline in a delimiter, and a heredoc with no terminator
+# line. Lines before that point keep their classification.
+#
+# In "code" mode it prints the code lines of every leaf. In "scan" mode it
+# prints the code lines, or the whole leaf when `widen` is set or the leaf
+# carries an unquoted-delimiter heredoc (whose body bash expands before any
+# consumer sees it) or a delimiter it cannot read.
+LEAF_LINES_AWK='
+function count_nl(s,   t) {
+    t = s
+    return gsub(/\n/, "", t)
+}
+# Index just past the balanced arithmetic span opened at i ($(( or ((), or
+# 0 when it is unbalanced or holds a quote, backtick or backslash.
+function skip_arith(s, i, n,   j, depth, c) {
+    j = i + (substr(s, i, 1) == "$" ? 3 : 2)
+    depth = 2
+    while (j <= n && depth > 0) {
+        c = substr(s, j, 1)
+        if (c == "(") depth++
+        else if (c == ")") depth--
+        else if (c == SQ || c == DQ || c == BQ || c == "\\") return 0
+        j++
+    }
+    return depth > 0 ? 0 : j
+}
+# Index just past the single-quoted span opened at i, or 0 when unclosed.
+function skip_single(s, i, n,   j) {
+    j = i + 1
+    while (j <= n && substr(s, j, 1) != SQ) j++
+    return j > n ? 0 : j + 1
+}
+# Parses the heredoc operator at i into HD_DASH, HD_QUOTED and HD_DELIM (the
+# delimiter after quote removal) and returns the index past its word.
+# HD_BAIL is set when the delimiter value is uncertain.
+function parse_heredoc(s, i, n,   j, c, k, part) {
+    HD_DASH = 0
+    HD_QUOTED = 0
+    HD_DELIM = ""
+    HD_BAIL = 0
+    j = i + 2
+    if (substr(s, j, 1) == "-") { HD_DASH = 1; j++ }
+    while (j <= n && (substr(s, j, 1) == " " || substr(s, j, 1) == "\t")) j++
+    while (j <= n) {
+        c = substr(s, j, 1)
+        if (index(" \t\n;&|()<>", c)) break
+        if (c == SQ || c == DQ) {
+            k = j + 1
+            while (k <= n && substr(s, k, 1) != c) k++
+            part = substr(s, j + 1, k - j - 1)
+            if (k > n || part ~ /[\n\\$\140]/) { HD_BAIL = 1; return j }
+            HD_DELIM = HD_DELIM part
+            HD_QUOTED = 1
+            j = k + 1
+            continue
+        }
+        if (c == "\\") {
+            if (j == n || substr(s, j + 1, 1) == "\n") { HD_BAIL = 1; return j }
+            HD_DELIM = HD_DELIM substr(s, j + 1, 1)
+            HD_QUOTED = 1
+            j += 2
+            continue
+        }
+        if (c == "$" || c == BQ) { HD_BAIL = 1; return j }
+        HD_DELIM = HD_DELIM c
+        j++
+    }
+    return j
+}
+function d_below(sp,   k) {
+    for (k = 1; k < sp; k++) if (FT[k] == "D") return 1
+    return 0
+}
+# Fills NL, L[1..NL] and CLS[1..NL] ("c" code, "b" heredoc body or
+# terminator) and sets UNQ when an operator has an unquoted or empty
+# delimiter. Frames: N (command text, FD counts open parens), D (inside
+# double quotes), B (inside ${ }, FD counts open braces).
+function classify(leaf,   n, i, c, c2, j, k, t, s, sp, np, ln, found, x) {
+    NL = split(leaf, L, "\n")
+    START[1] = 1
+    for (k = 1; k <= NL; k++) {
+        CLS[k] = "c"
+        START[k + 1] = START[k] + length(L[k]) + 1
+    }
+    UNQ = 0
+    n = length(leaf)
+    i = 1
+    ln = 1
+    sp = 1
+    FT[1] = "N"
+    FD[1] = 0
+    np = 0
+    while (i <= n) {
+        c = substr(leaf, i, 1)
+        c2 = substr(leaf, i, 2)
+        if (c == "\\") {
+            if (substr(leaf, i + 1, 1) == "\n") ln++
+            i += 2
+            continue
+        }
+        if (c == "\n") {
+            ln++
+            i++
+            if (FT[sp] != "N" || np == 0) continue
+            for (k = 1; k <= np; k++) {
+                found = 0
+                for (t = ln; t <= NL; t++) {
+                    x = L[t]
+                    if (PDASH[k]) sub(/^\t+/, "", x)
+                    if (x == PDELIM[k]) { found = 1; break }
+                }
+                if (!found) return
+                for (s = ln; s <= t; s++) CLS[s] = "b"
+                ln = t + 1
+            }
+            np = 0
+            i = START[ln]
+            continue
+        }
+        if (c == BQ || c2 == "$[") return
+        if (c2 == "$(" && substr(leaf, i, 3) == "$((" || FT[sp] == "N" && c2 == "((") {
+            j = skip_arith(leaf, i, n)
+            if (!j) return
+            ln += count_nl(substr(leaf, i, j - i))
+            i = j
+            continue
+        }
+        if (FT[sp] == "D") {
+            if (c == DQ) sp--
+            else if (c2 == "$(") { FT[++sp] = "N"; FD[sp] = 0; i++ }
+            else if (c2 == "${") { FT[++sp] = "B"; FD[sp] = 0; i++ }
+            i++
+            continue
+        }
+        if (c == SQ || c2 == "$" SQ) {
+            if (FT[sp] == "B" && (c2 == "$" SQ || d_below(sp))) return
+            if (c2 == "$" SQ) {
+                j = i + 2
+                while (j <= n && substr(leaf, j, 1) != SQ) j += (substr(leaf, j, 1) == "\\") ? 2 : 1
+                j = (j > n) ? 0 : j + 1
+            } else {
+                j = skip_single(leaf, i, n)
+            }
+            if (!j) return
+            ln += count_nl(substr(leaf, i, j - i))
+            i = j
+            continue
+        }
+        if (c == DQ) { FT[++sp] = "D"; i++; continue }
+        if (c2 == "${") { FT[++sp] = "B"; FD[sp] = 0; i += 2; continue }
+        if (FT[sp] == "B") {
+            if (c2 == "$(") { FT[++sp] = "N"; FD[sp] = 0; i++ }
+            else if (c == "{") FD[sp]++
+            else if (c == "}") { if (FD[sp] > 0) FD[sp]--; else sp-- }
+            i++
+            continue
+        }
+        if (c == "#" && (i == 1 || index(" \t\n;&|()<>", substr(leaf, i - 1, 1)))) return
+        if (c == "(" || c2 == "$(") {
+            FD[sp]++
+            i += (c == "(") ? 1 : 2
+            continue
+        }
+        if (c == ")") {
+            if (FD[sp] > 0) FD[sp]--
+            else if (sp > 1) sp--
+            i++
+            continue
+        }
+        if (substr(leaf, i, 3) == "<<<") { i += 3; continue }
+        if (c2 == "<<") {
+            j = parse_heredoc(leaf, i, n)
+            if (HD_BAIL) return
+            if (HD_DELIM == "" || !HD_QUOTED) UNQ = 1
+            if (HD_DELIM != "") {
+                np++
+                PDELIM[np] = HD_DELIM
+                PDASH[np] = HD_DASH
+            }
+            i = j
+            continue
+        }
+        i++
+    }
+}
+BEGIN {
+    RS = "\036"
+    SQ = "\047"
+    DQ = "\042"
+    BQ = "\140"
+}
+{
+    leaf = $0
+    if (leaf == "") next
+    classify(leaf)
+    if (mode == "scan" && (widen == "1" || UNQ)) {
+        printf "%s\n", leaf
+        next
+    }
+    for (k = 1; k <= NL; k++) if (CLS[k] == "c") printf "%s\n", L[k]
+}
+'
+
 # --- Widening: where a heredoc's body stops being inert data. ------------
 #
 # The trust guard's two triggers, with one correction: the interpreter test
-# reads each leaf's FIRST LINE only. An interpreter that consumes a heredoc is
-# always a command word, never body text; reading bodies too made an artifact
-# that mentioned `node` or `.env` widen itself, and its prose was then
-# matched — the sanctioned record path for the two archetypes with no Write
-# tool. An unquoted heredoc delimiter still widens its own leaf, since that
-# body is expanded before its consumer ever sees it.
+# reads each leaf's code lines only, never a heredoc body. An interpreter that
+# consumes a heredoc is always a command word, never body text; reading bodies
+# too made an artifact that mentioned `node` or `.env` widen itself, and its
+# prose was then matched — the sanctioned record path for the two archetypes
+# with no Write tool. An unquoted heredoc delimiter still widens its own leaf,
+# since that body is expanded before its consumer ever sees it.
 #
 # The boundary on either side of an interpreter name is any byte that is not
 # a word character and not a dot. An earlier spelling took any non-word byte,
@@ -561,98 +776,13 @@ fi
 # while `sh`, `/bin/sh`, `"sh"`, `$(sh`, a backtick and `;sh` all do; the
 # shapes are pinned in tests/docket-sibling-guard-hook.test.sh.
 INTERPRETER_RE='(^|[^A-Za-z0-9_.])(sh|bash|dash|zsh|ksh|mksh|csh|tcsh|python[0-9.]*|perl|ruby|node|nodejs|php|lua[0-9.]*|tclsh|expect|osascript|env|eval)([^A-Za-z0-9_.]|$)'
-FIRST_LINES=$(printf '%s' "$PROBE_TEXT" | awk 'BEGIN { RS = "\036"; ORS = "" } { eol = index($0, "\n"); printf "%s\n", (eol == 0 ? $0 : substr($0, 1, eol - 1)) }')
+CODE_LINES=$(printf '%s' "$PROBE_TEXT" | awk -v mode=code "$LEAF_LINES_AWK")
 WIDEN=0
-if [[ "$FIRST_LINES" =~ $INTERPRETER_RE ]]; then
+if [[ "$CODE_LINES" =~ $INTERPRETER_RE ]]; then
     WIDEN=1
 fi
 
-SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v RS='\036' -v widen="$WIDEN" '
-    # Drops every balanced arithmetic span from a line: $((...)), ((...))
-    # and $[...]. A shift operator inside one is never a heredoc operator.
-    # An unbalanced opener is kept verbatim with everything after it, so
-    # the heredoc scan still reads any << there and errs toward widening.
-    function strip_arith(s,   out, i, n, c, depth, start) {
-        out = ""
-        i = 1
-        n = length(s)
-        while (i <= n) {
-            c = substr(s, i, 1)
-            if (substr(s, i, 3) == "$((" || substr(s, i, 2) == "((") {
-                start = i
-                i += (c == "$") ? 3 : 2
-                depth = 2
-                while (i <= n && depth > 0) {
-                    c = substr(s, i, 1)
-                    if (c == "(") depth++
-                    else if (c == ")") depth--
-                    i++
-                }
-                if (depth > 0) return out substr(s, start)
-                continue
-            }
-            if (substr(s, i, 2) == "$[") {
-                start = i
-                i += 2
-                depth = 1
-                while (i <= n && depth > 0) {
-                    c = substr(s, i, 1)
-                    if (c == "[") depth++
-                    else if (c == "]") depth--
-                    i++
-                }
-                if (depth > 0) return out substr(s, start)
-                continue
-            }
-            out = out c
-            i++
-        }
-        return out
-    }
-    # True when any heredoc operator on the line has an unquoted delimiter.
-    # Checked per operator rather than per line: a quoted delimiter must not
-    # mask an unquoted one beside it, whose body bash expands before any
-    # consumer sees it. A here-string (<<<) is skipped as one unit. After <<
-    # come an optional dash and blanks, then the delimiter: a quote or a
-    # backslash there means quoted; anything else, end of line included,
-    # means unquoted.
-    function unquoted_heredoc(s,   rest, p, after, c) {
-        rest = s
-        while ((p = index(rest, "<<")) > 0) {
-            after = substr(rest, p + 2)
-            if (substr(after, 1, 1) == "<") {
-                rest = substr(after, 2)
-                continue
-            }
-            sub(/^-?[ \t]*/, "", after)
-            c = substr(after, 1, 1)
-            if (c != "\047" && c != "\042" && c != "\\") return 1
-            rest = after
-        }
-        return 0
-    }
-    BEGIN { out = "" }
-    {
-        leaf = $0
-        if (leaf == "") next
-        eol = index(leaf, "\n")
-        line1 = (eol == 0 ? leaf : substr(leaf, 1, eol - 1))
-        leaf_widen = (widen == "1")
-        # An unquoted heredoc delimiter on this leafs own first line, judged
-        # per operator by unquoted_heredoc above so that a quoted delimiter
-        # never masks an unquoted one on the same line, and with arithmetic
-        # shifts stripped first.
-        if (!leaf_widen && index(line1, "<<") > 0 && unquoted_heredoc(strip_arith(line1))) {
-            leaf_widen = 1
-        }
-        if (leaf_widen) {
-            out = out leaf "\n"
-        } else {
-            out = out line1 "\n"
-        }
-    }
-    END { printf "%s", out }
-')
+SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v mode=scan -v widen="$WIDEN" "$LEAF_LINES_AWK")
 
 # --- Quote-group marking, the shared pre-pass. ---------------------------
 HOOK_DIR="${0%/*}"

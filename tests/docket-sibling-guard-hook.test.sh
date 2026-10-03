@@ -560,7 +560,7 @@ case_artifact_heredoc_bodies() {
     assert_verdict "${art}"$'\nkill 1234 appears in the README; the script runs `sh -c` unsafely.\nEOF' executor-research "$WAVE_42" ALLOW "body naming kill and sh -c"
     assert_verdict "${art}"$'\nThe Makefile target runs pkill -f devserver; that is fine for a python project.\nEOF' executor-read "$WAVE_42" ALLOW "body naming pkill and python"
     assert_verdict "${art}"$'\ngit worktree prune would fix it; git branch -D too.\nEOF' executor-write "$WAVE_42" ALLOW "body naming worktree prune and branch -D"
-    # The interpreter test matches whole words of the first line, never a
+    # The interpreter test matches whole words of the code lines, never a
     # suffix: a target file named `cases.sh` widened the scan on its `.sh`
     # and a quoted body carrying the glob-form step token was denied
     # (recorded in a threat model with the cause then unknown). A quoted
@@ -583,6 +583,27 @@ case_artifact_heredoc_bodies() {
     # The same bodies consumed by an interpreter are code.
     assert_verdict $'sh <<\'EOF\'\nrm -rf '"${SIB_DIR}"$'\nEOF' executor-write "$WAVE_42" DENY "heredoc fed to sh is code"
     assert_verdict $'python3 - <<\'EOF\'\nimport shutil; shutil.rmtree("'"${SIB_DIR}"$'")\nEOF' executor-write "$WAVE_42" DENY "heredoc fed to python is code"
+}
+
+# A substitution whose body spans lines is one leaf to the probe, which
+# vetoes it before the body runs; every body line is matched as its own leaf.
+# Only a quoted-delimiter heredoc body, up to its terminator line, is skipped.
+case_multiline_substitutions() {
+    assert_verdict $'echo $(\nrm -rf STEP-$s\n)' executor-write "$WAVE_42" DENY "multi-line \$( ) body holding a sibling rm"
+    assert_verdict $'docket step artifacts $(\nrm -rf /tmp/claude-501/STEP-7.d\n)' executor-write "$WAVE_42" DENY "multi-line \$( ) body as a docket argument"
+    assert_verdict $'echo `\nrm -rf STEP-$s\n`' executor-write "$WAVE_42" DENY "multi-line backtick body holding a sibling rm"
+    assert_verdict $'docket step artifacts `\nrm -rf STEP-$s\n`' executor-write "$WAVE_42" DENY "multi-line backtick body as a docket argument"
+    assert_verdict $'docket step artifacts <(\nrm -rf STEP-$s\n)' executor-write "$WAVE_42" DENY "multi-line process substitution as a docket argument"
+    assert_verdict $'echo $(\nls\n)' executor-write "$WAVE_42" ALLOW "multi-line \$( ) body with a harmless command"
+    assert_verdict $'echo $(\npkill node\n)' executor-write "$WAVE_42" DENY "multi-line \$( ) body holding pkill"
+    assert_verdict $'echo $(\necho \'rm -rf /tmp/claude-501/STEP-7.d\' | sh\n)' executor-write "$WAVE_42" DENY "interpreter on a body line widens the scan"
+    assert_verdict $'git commit -m "$(cat <<\'EOF\'\nfix: clean STEP-7.d leftovers\nEOF\n)"' executor-write "$WAVE_42" ALLOW "quoted heredoc body inside a substitution stays inert"
+    assert_verdict $'echo $(cat <<-\'EOF\'\n\tsaw STEP-7.d beside mine\n\tEOF\n)' executor-write "$WAVE_42" ALLOW "<<- body ends at its tab-indented terminator"
+    assert_verdict $'cat > "${D}/notes.md" <<\'EOF\'\nsaw STEP-7.d beside mine\nEOF' executor-write "$WAVE_42" ALLOW "a \${ } word before a quoted heredoc leaves the body inert"
+    assert_verdict $'echo $(cat <<\'EOF\'\nfoo\nEOF\nrm -rf /tmp/claude-501/STEP-7.d\n)' executor-write "$WAVE_42" DENY "a line after the quoted heredoc terminator is code"
+    assert_verdict $'echo $(cat <<\'EOF\'\nrm -rf /tmp/claude-501/STEP-7.d\n)' executor-write "$WAVE_42" DENY "an unterminated quoted heredoc keeps its lines"
+    assert_verdict $'echo $(\necho "<<\'EOF\'"\nrm -rf /tmp/claude-501/STEP-7.d\nEOF\n)' executor-write "$WAVE_42" DENY "a heredoc operator inside double quotes is not one"
+    assert_verdict $'echo $(\n# <<\'EOF\'\nrm -rf /tmp/claude-501/STEP-7.d\nEOF\n)' executor-write "$WAVE_42" DENY "a heredoc operator inside a comment is not one"
 }
 
 # Verb spellings: case, wrappers, docket global flags, function wrappers.
@@ -963,6 +984,7 @@ case_engine_verbs
 case_probe_never_acts
 case_size_and_bytes
 case_artifact_heredoc_bodies
+case_multiline_substitutions
 case_verb_spellings
 case_scratch_spellings
 case_own_leaf_expansions

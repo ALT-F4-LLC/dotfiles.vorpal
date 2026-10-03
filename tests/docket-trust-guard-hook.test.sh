@@ -264,6 +264,73 @@ case_brace_split_verb_denies() {
         executor-write DENY "brace alternation in a quoted heredoc piped to sh"
 }
 
+# ---- MUST DENY: a brace word in command position that spells docket -------
+#
+# The matcher enters only on a word that already reads `docket`, so a brace
+# word bash expands INTO `docket` and the words after it was never tested:
+# `{docket,trust} add erik key` dispatches the full write. Outside command
+# position a brace word is an ordinary argument (`mkdir -p src/{a,b}`), and
+# one whose text cannot hold the letters of docket in order cannot produce
+# it, so both stay allowed.
+
+case_command_position_brace_denies() {
+    assert_verdict "{docket,trust} add erik key" executor-write DENY \
+        "command-position brace word expanding to docket and trust"
+    assert_verdict "{docket,} trust add erik key" executor-write DENY \
+        "command-position brace word with an empty alternative"
+    assert_verdict "{docket,trust} add erik key" docket-conductor-RUN-1 DENY \
+        "conductor: command-position brace word"
+    assert_verdict "{docket,trust,add,erik,key}" executor-write DENY \
+        "one brace word carrying the whole invocation"
+    assert_verdict "{docke,trus}t add erik key" executor-write DENY \
+        "brace word with a shared suffix"
+    assert_verdict "FOO=1 {docket,trust} add erik key" executor-write DENY \
+        "brace word after an assignment prefix"
+    assert_verdict 'FOO="a b" {docket,trust} add erik key' executor-write DENY \
+        "brace word after a quoted assignment prefix"
+    assert_verdict "coproc {docket,trust} add erik key" executor-write DENY \
+        "brace word after the reserved word coproc"
+    assert_verdict "2>/dev/null {docket,trust} add erik key" executor-write DENY \
+        "brace word after a leading redirection"
+    assert_verdict "cd /x && {docket,trust} add erik key" executor-write DENY \
+        "brace word after a standalone &&"
+    assert_verdict "cd /x;{docket,trust} add erik key" executor-write DENY \
+        "brace word glued onto a ;"
+    assert_verdict "{docket,'trust'} add erik key" executor-write DENY \
+        "brace word split at embedded single quotes"
+    assert_verdict '{"docket",trust} add erik key' executor-write DENY \
+        "brace word whose first alternative is double-quoted"
+    assert_verdict '""{docket,trust} add erik key' executor-write DENY \
+        "brace word behind an empty quoted prefix"
+    assert_verdict "cat <<'EOF' | sh"$'\n''{docket,trust} add erik key'$'\nEOF' \
+        executor-write DENY "command-position brace word in a quoted heredoc piped to sh"
+    # Accepted false DENY: this expands to two command words and writes
+    # nothing, but it holds an expandable brace that spells docket.
+    assert_verdict "d{o,}cket trust add erik key" executor-write DENY \
+        "accepted false DENY: d{o,}cket expands to two command words"
+    assert_verdict "{docket,trust} add erik key" "" ALLOW \
+        "no agent_type (main conversation): command-position brace word"
+}
+
+case_command_position_brace_allows() {
+    assert_verdict "'{docket,trust}' add erik key" executor-write ALLOW \
+        "quoted command-position brace word: bash does not expand it"
+    assert_verdict "{docket} trust add erik key" executor-write ALLOW \
+        "command-position brace with no , or ..: bash leaves it literal"
+    assert_verdict "mkdir -p src/{a,b}" executor-write ALLOW \
+        "brace word in argument position"
+    assert_verdict "cp f{,.bak}" executor-write ALLOW \
+        "brace word with an empty alternative in argument position"
+    assert_verdict "ls tests/{docket-trust,docket-commit}-guard-hook.test.sh" executor-write ALLOW \
+        "argument brace word naming docket paths"
+    assert_verdict "{ echo a,b; }" executor-write ALLOW \
+        "group command: the reserved word { is not a brace"
+    assert_verdict "{ docket issue list; } | jq -r '.a, .b'" executor-write ALLOW \
+        "group command around a docket read, with a comma later on the line"
+    assert_verdict "cat > f.json <<EOF"$'\n''{"a":1,"b":2}'$'\nEOF' executor-write ALLOW \
+        "JSON body line of an unquoted heredoc"
+}
+
 # ---- MUST NOT CATCH: a brace bash never expands ---------------------------
 #
 # A findings note quoting stub output (`stub docket {"ok":false}`) holds a
@@ -881,6 +948,8 @@ case_must_not_catch_prose_and_reads
 case_must_deny_glued_separator_class
 case_must_deny_separately_quoted_tokens
 case_brace_split_verb_denies
+case_command_position_brace_denies
+case_command_position_brace_allows
 case_unexpandable_brace_prose_allows
 case_interpreter_code_argument_deny
 case_full_interpreter_list_denies

@@ -608,6 +608,11 @@ STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk -f "$PREPASS_AWK" 2>/dev/null) || allo
 # `docket trust $V erik key` (an interpreter-reached-through-a-variable
 # shape this pass already declines to resolve), and `${` is never brace
 # ALTERNATION syntax, so it carries none of the risk this check exists for.
+# The same DENY covers the `docket` word itself: an unquoted brace word in
+# command position (`{docket,trust} add erik key`) can expand into the whole
+# invocation, so it denies when it may expand and the letters of docket follow
+# it in order. A brace word in argument position stays allowed, which leaves
+# `env {docket,trust} ...` behind a wrapper as a known residual.
 MATCH=$(printf '%s' "$STRIPPED" | awk -v strict="$CONDUCTOR" '
 BEGIN { MARK = "\001" }
 function has_brace(word,   stripped) {
@@ -623,6 +628,22 @@ function may_brace_expand(from,   k) {
         if (index(words[k], ",") > 0 || index(words[k], "..") > 0) return 1
     }
     return 0
+}
+# Every word bash builds from a brace is a subsequence of the source text from
+# the brace onward, so a brace can produce docket only when these letters
+# appear in order there.
+function may_spell_docket(from,   k, rest) {
+    rest = ""
+    for (k = from; k <= n; k++) rest = rest words[k]
+    return rest ~ /d.*o.*c.*k.*e.*t/
+}
+# A word bash reads in command position without making it the command name:
+# an assignment or a reserved word. A lone { is the reserved word unless a
+# quoted fragment follows it, since the pre-pass splits {"a",b} at the quote.
+function is_command_prefix(word, next_word) {
+    if (word ~ /^[A-Za-z_][A-Za-z0-9_]*=/) return 1
+    if (word ~ /^(if|then|else|elif|do|while|until|time|coproc|!)$/) return 1
+    return word == "{" && substr(next_word, 1, 1) != MARK
 }
 function decode(raw,    inner, cpos) {
     if (length(raw) >= 2 && substr(raw, 1, 1) == MARK && substr(raw, length(raw), 1) == MARK) {
@@ -640,12 +661,26 @@ function decode(raw,    inner, cpos) {
 }
 {
     n = split($0, words, /[ \t]+/)
+    cmdpos = 1
     for (i = 1; i <= n; i++) {
         hquoted = decode(words[i])
         hgroup = D_GROUP
         w = D_WORD
         hw = w
         sub(/^.*(\$\(|\140|\(|;|\||&)/, "", hw)
+        # Command position: line start, after an assignment or reserved
+        # word, after a standalone operator, or behind a glued one. A quoted
+        # fragment leaves it unchanged: the pre-pass splits one source word
+        # at its quotes, so FOO="a b" reaches here as three words.
+        if (!hquoted) {
+            at_command = cmdpos || hw != w
+            if (at_command && is_command_prefix(hw, words[i + 1])) {
+                cmdpos = 1
+            } else {
+                if (at_command && has_brace(hw) && may_brace_expand(i) && may_spell_docket(i)) { print "MATCH"; exit }
+                cmdpos = (hw == "")
+            }
+        }
         if (hw == "docket" || hw ~ /\/docket$/) {
             if (i + 2 > n) continue
             tquoted = decode(words[i + 1])

@@ -22,9 +22,8 @@ export const meta = {
 // blocks in the seat's transcript), the investigation-depth signal docket-
 // retro's seat-calibration row reads beside the cast's self-reported
 // confidence. Steps mode returns a `coordination` section beside the rows
-// (rounds per issue, first-pass gate pass rate, re-seats, claim conflicts,
-// ancestry parks, budget and chain deferrals) when the caller also passes the
-// wave's returned statuses and the manifest rows. PROBE COST: one low-effort
+// (counts under return below) when the caller also passes the wave's returned
+// statuses and the manifest rows. PROBE COST: one low-effort
 // read-only agent per agent-*.jsonl in the directory, plus one scout, plus one
 // re-check for any transcript relayed as bootstrap:false. Invoke by scriptPath
 // ONLY, with args {dir, mode?, exclude?, rows?, statuses?}.
@@ -149,15 +148,15 @@ const DEFAULT_MODE = 'steps'
 //    mode keeps its four-row contract.
 //
 //  * COORDINATION IS A REPORT, NOT A LEDGER ROW. Steps mode returns a
-//    `coordination` section when the caller hands over the wave's returned
-//    statuses and the manifest rows: rounds per issue, first-pass gate pass
-//    rate, re-seats, claim conflicts, ancestry parks, deferrals. Re-seats
-//    come from the transcripts (a re-seated judge's brief says so); every
-//    other count comes from the statuses joined to the rows by step. A
-//    `not-launched-other-shard` row, which only a wave launched before the
-//    per-unit split returns, is another launch's and counts nowhere. Instance ordinals are the engine's: `@0` is a step's
-//    first minting (`review@0#k`, `verify-tribunal@0`) and a fix round's rows
-//    carry the round (`fix@2`, `review@2#k`), so first-pass means ordinal 0.
+//    `coordination` section (see return) when the caller hands over the
+//    wave's returned statuses and the manifest rows. Re-seats come from the
+//    transcripts (a re-seated judge's brief says so); every other count comes
+//    from the statuses joined to the rows by step. A `not-launched-other-shard`
+//    row, which only a wave launched before the per-unit split returns, is
+//    another launch's and counts nowhere. Instance ordinals are the engine's:
+//    `@0` is a step's first minting (`review@0#k`, `verify-tribunal@0`) and a
+//    fix round's rows carry the round (`fix@2`, `review@2#k`), so first-pass
+//    means ordinal 0.
 //
 // args:   {dir, mode?, exclude?, rows?, statuses?}
 //         dir       absolute path of the wave's transcript directory
@@ -212,13 +211,13 @@ const dir = input.dir
 if (typeof dir !== 'string' || !dir.startsWith('/')) {
     throw new Error(`wave-usage: args.dir must be an absolute transcript directory, got ${JSON.stringify(dir)}`)
 }
-const mode = input.mode == null ? DEFAULT_MODE : input.mode
+const mode = input.mode ?? DEFAULT_MODE
 if (mode !== 'steps' && mode !== 'seats') {
     throw new Error(`wave-usage: args.mode must be "steps" or "seats", got ${JSON.stringify(mode)}`)
 }
 const exclude = Array.isArray(input.exclude) ? input.exclude.map(String) : []
-const manifestRows = input.rows == null ? null : input.rows
-const waveStatuses = input.statuses == null ? null : input.statuses
+const manifestRows = input.rows ?? null
+const waveStatuses = input.statuses ?? null
 if ((manifestRows == null) !== (waveStatuses == null)) {
     throw new Error('wave-usage: args.rows and args.statuses are given together or not at all — ' +
         'the coordination counts join the wave\'s returned statuses to the manifest rows by step')
@@ -614,12 +613,6 @@ const FILES_SCHEMA = {
     },
 }
 
-const usageSchema = {
-    type: 'object',
-    required: UNITS,
-    properties: Object.fromEntries(UNITS.map((u) => [u, { type: 'integer' }])),
-}
-
 const EXTRACT_SCHEMA = {
     type: 'object',
     required: ['ok'],
@@ -641,7 +634,11 @@ const EXTRACT_SCHEMA = {
         tool_uses: { type: 'integer' },
         models_observed: { type: 'array', items: { type: 'string' } },
         model_observation_complete: { type: 'boolean' },
-        usage: usageSchema,
+        usage: {
+            type: 'object',
+            required: UNITS,
+            properties: Object.fromEntries(UNITS.map((u) => [u, { type: 'integer' }])),
+        },
     },
 }
 
@@ -667,10 +664,11 @@ jq prints exactly one JSON object. Return it as the structured output with ok:tr
 
 phase('Scout')
 const listing = await agent(scoutBrief, { label: 'scout', phase: 'Scout', schema: FILES_SCHEMA, ...AGENT_CONFIG.scout })
-const rawFiles = [...new Set((listing && listing.files) || [])]
-const listed = rawFiles.filter((f) => /\/agent-[^/]*\.jsonl$/.test(f))
+const AGENT_LOG_RE = /\/agent-[^/]*\.jsonl$/
+const rawFiles = [...new Set(listing?.files || [])]
+const listed = rawFiles.filter((f) => AGENT_LOG_RE.test(f))
 if (listed.length !== rawFiles.length) {
-    const dropped = rawFiles.filter((f) => !/\/agent-[^/]*\.jsonl$/.test(f))
+    const dropped = rawFiles.filter((f) => !AGENT_LOG_RE.test(f))
     log(`wave-usage: scout listed ${rawFiles.length} path(s), ${dropped.length} not matching agent-*.jsonl and dropped: ${dropped.join(', ')}`)
 }
 const { files, retyped: retypedByScout } = rebuildListing(dir, listed)
@@ -694,26 +692,19 @@ function hasUsage(extract) {
 
 // The test stubs `agent`, `pipeline`, `log`, `phase`, `extractBrief`,
 // `EXTRACT_SCHEMA`, `AGENT_CONFIG` and sets `files` (an array of full paths)
-// per case; `basename` is self-contained inside this region. One continuous
-// pipeline, extract then a
-// conditional bootstrap-recheck stage, instead of two separate pipeline()
-// calls with a plain-JS filter between them (the extract-to-initialResults
-// filter, then recheckBootstrap's own pipeline over the suspect subset). Two
-// calls is a barrier in disguise: nothing in the recheck stage could start
-// for a transcript reporting bootstrap:false until every OTHER transcript in
-// the whole batch had finished its own first extract, even though this
-// transcript's own recheck need is known the moment its own extract
-// classifies. Folding the recheck into a conditional stage of the SAME
-// pipeline lets it begin the instant this item's own classification decides
-// it is needed, independent of its siblings.
+// per case; `basename` is self-contained inside this region. One pipeline,
+// extract then a conditional bootstrap-recheck stage, not two pipeline()
+// calls with a plain-JS filter between them: two calls form a barrier, so a
+// transcript reporting bootstrap:false would wait for every other
+// transcript's first extract although its own recheck need is known once its
+// extract classifies.
 //
 // agent() can reject (schema validation exhausted, a spawn error) rather
-// than resolve to null; both agent() calls below catch explicitly into the
-// null the original two-pipeline shape's own `!r` branch already handled,
-// so a rejection takes the same accounted path a resolved-to-null call
-// would (see census-retry-pipeline's own comment in session-census.js for
-// why an UNCAUGHT rejection here would be a real regression, not just a
-// style question, once two pipeline() calls become stages of one).
+// than resolve to null; extractOnce catches into the null the `!r` branch
+// already handled, so a rejection takes the same accounted path a
+// resolved-to-null call would (see census-retry-pipeline's comment in
+// session-census.js for why an uncaught rejection would be a real regression
+// once two pipeline() calls become stages of one).
 //
 // STAGE 2's four-branch precedence is NOT simplifiable to "retry if
 // bootstrap:false, else keep": a failed first attempt (null, !ok, no usage)
@@ -734,6 +725,15 @@ function hasUsage(extract) {
 // neighbours were retyped; both spellings are the same relay miss.
 const errors = []
 const PATH_MISS_RE = /could not open file|no such file or directory|no matches found/i
+const extractOnce = (path, retry, label, config, what) => agent(extractBrief(path, retry), {
+    label,
+    phase: 'Extract',
+    schema: EXTRACT_SCHEMA,
+    ...config,
+}).catch((err) => {
+    log(`wave-usage: ${basename(path)}: ${what} agent error: ${err}`)
+    return null
+})
 function classifyFirstAttempt(r, file, i) {
     if (!r) {
         log(`wave-usage: ${file}: extraction agent returned nothing`)
@@ -765,15 +765,7 @@ let pathRetried = 0
 function retryPathMiss(prev) {
     if (!prev || !prev.pathMiss) return prev
     pathRetried++
-    return agent(extractBrief(prev.path, 'path'), {
-        label: `${prev.file} · extract (path retry)`,
-        phase: 'Extract',
-        schema: EXTRACT_SCHEMA,
-        ...AGENT_CONFIG.extract,
-    }).catch((err) => {
-        log(`wave-usage: ${prev.file}: path-retry agent error: ${err}`)
-        return null
-    }).then((second) => {
+    return extractOnce(prev.path, 'path', `${prev.file} · extract (path retry)`, AGENT_CONFIG.extract, 'path-retry').then((second) => {
         if (!second) {
             errors.push(`${prev.file}: jq failed — ${prev.pathMiss} (path retry returned nothing)`)
             return null
@@ -802,15 +794,7 @@ function recheckBootstrap(prev) {
     if (!prev || prev.extract.bootstrap !== false) return prev
     bootstrapRechecked++
     log(`wave-usage: ${prev.file}: reported bootstrap:false — re-checking before trusting it`)
-    return agent(extractBrief(prev.path, true), {
-        label: `${prev.file} · extract (retry)`,
-        phase: 'Extract',
-        schema: EXTRACT_SCHEMA,
-        ...AGENT_CONFIG.recheck,
-    }).catch((err) => {
-        log(`wave-usage: ${prev.file}: recheck agent error: ${err}`)
-        return null
-    }).then((second) => {
+    return extractOnce(prev.path, true, `${prev.file} · extract (retry)`, AGENT_CONFIG.recheck, 'recheck').then((second) => {
         if (second && second.ok && second.bootstrap === false) {
             log(`wave-usage: ${prev.file}: bootstrap:false confirmed on a second, independent read — treating as a misreport and recording as overhead, not an error`)
             return { ...prev, extract: { ...prev.extract, bootstrapFallback: true } }
@@ -832,15 +816,7 @@ phase('Extract')
 const basename = (f) => f.slice(f.lastIndexOf('/') + 1)
 const extracted = await pipeline(
     files,
-    (file) => agent(extractBrief(file), {
-        label: `${basename(file)} · extract`,
-        phase: 'Extract',
-        schema: EXTRACT_SCHEMA,
-        ...AGENT_CONFIG.extract,
-    }).catch((err) => {
-        log(`wave-usage: ${basename(file)}: extract agent error: ${err}`)
-        return null
-    }),
+    (file) => extractOnce(file, undefined, `${basename(file)} · extract`, AGENT_CONFIG.extract, 'extract'),
     (extract, file) => ({ file: basename(file), extract }),
     (r, file, i) => classifyFirstAttempt(r, basename(file), i),
     retryPathMiss,

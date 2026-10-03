@@ -3,7 +3,7 @@ use vorpal_artifacts::artifact::{
     awscli2::Awscli2, delta::Delta, direnv::Direnv, doppler::Doppler, fd::Fd, fzf::Fzf, gum::Gum,
     herdr::Herdr, hunk::Hunk, jj::Jj, jq::Jq, just::Just, kubectl::Kubectl, lazygit::Lazygit,
     nnn::Nnn, op::Op, pi::Pi, ripgrep::Ripgrep, sesh::Sesh, starship::Starship,
-    terraform::Terraform, tmux::Tmux, uv::Uv, zoxide::Zoxide,
+    terraform::Terraform, tmux::Tmux, uv::Uv, yq::Yq, zoxide::Zoxide,
 };
 use vorpal_sdk::{
     artifact::{gh::Gh, git::Git, nodejs::NodeJS},
@@ -45,6 +45,7 @@ pub async fn build(context: &mut ConfigContext) -> Result<Vec<String>> {
         Sesh::new().build(context).await?,
         Starship::new().build(context).await?,
         Tmux::new().build(context).await?,
+        Yq::new().build(context).await?,
         Zoxide::new().build(context).await?,
     ];
 

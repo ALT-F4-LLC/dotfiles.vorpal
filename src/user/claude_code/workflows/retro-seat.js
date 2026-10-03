@@ -22,13 +22,11 @@ export const meta = {
 //
 // When and how it is invoked:
 // Invoked by the docket-retro skill's §1 (Gather), always as
-// Workflow({scriptPath}) — never by name. docket-retro carries no
-// policy.toml row for retro-analyst and no workflow dispatches it through
-// the wave, so this script is the only seating path this node has, and the
-// caller resolves each seat's {model, effort} itself (docket-retro's own
-// operator-set default, or an explicit choice for a heavier window) rather
-// than this script reading pinned policy the way wave.js does for a real
-// step.
+// Workflow({scriptPath}), never by name. No policy.toml row or wave
+// dispatch covers retro-analyst, so this script is its only seating path
+// and the caller resolves each seat's {model, effort} itself (docket-retro's
+// operator-set default, or an explicit choice for a heavier window) instead
+// of this script reading pinned policy as wave.js does for a real step.
 // ---------------------------------------------------------------------------
 
 const input = typeof args === 'string' ? JSON.parse(args) : (args || {})

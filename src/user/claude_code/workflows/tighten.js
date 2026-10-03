@@ -220,10 +220,6 @@ function planAssembly(chunks, outcomes) {
 }
 // TEST-END tighten-decide
 
-function candidatePath(scratchDir, file) {
-  return `${scratchDir}/${file}`
-}
-
 function spansCommand(original, candidate) {
   return `bash ${SCRIPTS}/protected-spans.sh equal ${shellQuote(original)} ${shellQuote(candidate)}`
 }
@@ -370,7 +366,7 @@ const results = await pipeline(
     const rejectedChunks = plan.rejected.map(({ lines, reason }) => ({ lines, reason }))
     if (plan.action === 'unchanged') return { file, status: 'unchanged', summary: `all ${plan.counts.total} chunk(s) already tight`, chunks: plan.counts }
     if (plan.action === 'reject') return { file, status: 'rejected', reason: rejectedChunks.map((c) => `lines ${c.lines}: ${c.reason}`).join(' || '), chunks: plan.counts }
-    const candidate = candidatePath(scratchDir, file)
+    const candidate = `${scratchDir}/${file}`
     const out = await run(assembleCommand(file, workdir, candidate, plan.ids), { phase: 'Assemble', label: `assemble:${file}` })
     const joined = parseJoin(out)
     if (!joined || joined.rewritten !== plan.ids.length) return { file, status: 'rejected', reason: `assembly failed (exit ${exitStatus(out) ?? 'missing'})`, chunks: plan.counts }

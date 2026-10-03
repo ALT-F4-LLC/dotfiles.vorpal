@@ -676,7 +676,7 @@ Merge by defect and owner, not by similar wording. Rank by consequence. For each
 
 const uncovered = []
 const layerReports = []
-let candidates = []
+const candidates = []
 let flaggedLines = []
 let digested = 0
 let digestErrors = 0
@@ -692,7 +692,7 @@ if (!continuation) {
     // Digest, conductor shards, and layers are independent; run them together.
     const [digestResults] = await Promise.all([
         parallel(digestBatches.map((batch, i) => async () => {
-            const opts = { label: `digest:${batch.from}-${batch.to}`, phase: 'Digest', schema: DIGEST_RESULT_SCHEMA, model: AGENT_CONFIG.digest.model, effort: AGENT_CONFIG.digest.effort }
+            const opts = { label: `digest:${batch.from}-${batch.to}`, phase: 'Digest', schema: DIGEST_RESULT_SCHEMA, ...AGENT_CONFIG.digest }
             let r = await seat(digestBrief(batch, i + 1), opts)
             const expected = batch.to - batch.from + 1
             if (r == null || r.error || r.written !== expected) {
@@ -709,7 +709,7 @@ if (!continuation) {
             const r = await seat(conductorBrief(session, shard, i + 1, shardPlan.length), {
                 label: `conductor:${session.sessionId.slice(0, 8)}:${shard.from}-${shard.to}`,
                 phase: 'Conductor', agentType: 'executor-read', schema: CANDIDATES_SCHEMA,
-                model: AGENT_CONFIG.conductor.model, effort: AGENT_CONFIG.conductor.effort,
+                ...AGENT_CONFIG.conductor,
             })
             const name = `conductor ${session.sessionId}:${shard.from}-${shard.to}`
             if (r == null) {
@@ -724,7 +724,7 @@ if (!continuation) {
         parallel(LAYERS.map((layer) => async () => {
             const r = await seat(layerBrief(layer), {
                 label: `layer:${layer.name}`, phase: 'Layers', agentType: 'executor-read', schema: CANDIDATES_SCHEMA,
-                model: AGENT_CONFIG.layer.model, effort: AGENT_CONFIG.layer.effort,
+                ...AGENT_CONFIG.layer,
             })
             if (r == null) {
                 uncovered.push({ what: `layer ${layer.name}`, why: 'analyst returned no usable result' })
@@ -766,7 +766,7 @@ await parallel(plan.batches.map((batch, i) => async () => {
     const cfg = batch.flagged ? AGENT_CONFIG.deepFlagged : AGENT_CONFIG.deepClean
     const r = await seat(deepBrief(batch, i + 1), {
         label: `deep:${batch.lines.length === 1 ? batch.lines[0] : `${batch.lines[0]}+${batch.lines.length - 1}`}${batch.flagged ? ':flagged' : ''}`,
-        phase: 'Deep read', agentType: 'executor-read', schema: DEEP_SCHEMA, model: cfg.model, effort: cfg.effort,
+        phase: 'Deep read', agentType: 'executor-read', schema: DEEP_SCHEMA, ...cfg,
     })
     if (r == null) {
         uncovered.push({ what: `deep read of lines ${batch.lines.join(',')}`, why: 'reader returned no usable result' })
@@ -789,7 +789,7 @@ if (groups.length > 0) {
     const layerNotes = layerReports.length === 0 ? 'none this launch' : layerReports.map((l) => `${l.layer} (${l.candidateCount})`).join(', ')
     const r = await seat(patternsBrief(shown, overflow, layerNotes), {
         label: 'patterns', phase: 'Patterns', agentType: 'executor-read', schema: CANDIDATES_SCHEMA,
-        model: AGENT_CONFIG.patterns.model, effort: AGENT_CONFIG.patterns.effort,
+        ...AGENT_CONFIG.patterns,
     })
     if (r == null) {
         uncovered.push({ what: 'patterns', why: `pattern analyst returned no usable result; ${groups.length} group(s) unjudged, see groups in the return` })
@@ -816,7 +816,7 @@ await parallel(judged.map((candidate) => async () => {
     const votes = await parallel(Array.from({ length: REFUTERS_PER_FINDING }, (_, i) => () =>
         seat(refuteBrief(candidate, i + 1), {
             label: `refute:${candidate.localId}#${i + 1}`, phase: 'Refute', agentType: 'executor-read', schema: VERDICT_SCHEMA,
-            model: AGENT_CONFIG.refute.model, effort: AGENT_CONFIG.refute.effort,
+            ...AGENT_CONFIG.refute,
         })
     ))
     const tally = tallyRefutations(votes)
@@ -829,14 +829,14 @@ log(`docket-postmortem: ${upheld.length} upheld, ${refuted.length} refuted, ${un
 
 // ---- Stage 5: reconcile (barrier: needs every survivor together) ---------
 
-const toReconcile = [...(continuation && Array.isArray(continuation.priorUpheld) ? continuation.priorUpheld : []), ...upheld]
+const toReconcile = [...(Array.isArray(continuation?.priorUpheld) ? continuation.priorUpheld : []), ...upheld]
 let reconciled = []
 let reconcileNotes = ''
 if (toReconcile.length > 0) {
     phase('Reconcile')
     const r = await seat(reconcileBrief(toReconcile), {
         label: 'reconcile', phase: 'Reconcile', agentType: 'executor-read', schema: RECONCILE_SCHEMA,
-        model: AGENT_CONFIG.reconcile.model, effort: AGENT_CONFIG.reconcile.effort,
+        ...AGENT_CONFIG.reconcile,
     })
     if (r == null) {
         uncovered.push({ what: 'reconcile', why: 'reconciler returned no usable result; merge and draft inline from findings' })

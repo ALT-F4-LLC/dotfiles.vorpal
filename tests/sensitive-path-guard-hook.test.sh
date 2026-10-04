@@ -96,7 +96,6 @@ read_allow() { assert_verdict Read file_path "$1" "${2:-$REPO}" ALLOW "Read $1";
 case_every_root_denies() {
     read_deny '~/.aws/credentials'
     read_deny '~/.claude.json'
-    read_deny '~/.config/gh/hosts.yml'
     read_deny '~/.doppler/.doppler.yaml'
     read_deny '~/.gemini/settings.json'
     read_deny '~/.gnupg/private-keys-v1.d/x.key'
@@ -125,7 +124,7 @@ case_grep_and_glob_deny() {
     assert_verdict Grep path '~/.ssh' "$REPO" DENY "Grep path ~/.ssh"
     assert_verdict Glob path "${FAKE_HOME}/.gnupg" "$REPO" DENY "Glob path ~/.gnupg"
     assert_verdict Glob path '~/.ssh/**/*.pub' "$REPO" DENY "Glob path with trailing glob"
-    assert_verdict Grep path '~/.config/gh/*' "$REPO" DENY "Grep path with trailing star"
+    assert_verdict Grep path '~/.aws/*' "$REPO" DENY "Grep path with trailing star"
     assert_verdict Grep "" "" "${FAKE_HOME}/.aws" DENY "Grep without path, cwd inside ~/.aws"
     assert_verdict Glob "" "" "${FAKE_HOME}/.kube" DENY "Glob without path, cwd inside ~/.kube"
 }
@@ -137,6 +136,7 @@ case_ordinary_reads_allow() {
     read_allow 'src/main.rs'
     read_allow '~/.sshd_config'
     read_allow '~/.awsome/notes'
+    read_allow '~/.config/gh/hosts.yml'
     read_allow '~/.config/ghostty/config'
     read_allow '~/.claude.json.bak'
     read_allow '~/.claude/settings.json'

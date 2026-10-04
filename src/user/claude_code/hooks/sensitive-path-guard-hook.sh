@@ -30,7 +30,6 @@ set -uo pipefail
 SENSITIVE_ROOTS='
 ~/.aws/**
 ~/.claude.json
-~/.config/gh/**
 ~/.doppler/**
 ~/.gemini/**
 ~/.gnupg/**

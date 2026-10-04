@@ -181,11 +181,13 @@ rather than restate it, so a command shape added later inherits it.
 
 ## gh under the sandbox — one bare `gh` command per Bash call
 
-`gh` reads its credentials from `~/.config/gh`, which this harness's sandbox
-denies to every sandboxed command. The sandbox configuration excludes `gh *`
-so that `gh` runs unsandboxed, but the exclusion covers a Bash call only
-when the whole call is one bare `gh` command. `git` carries no exclusion
-and always runs sandboxed.
+`gh` reads its credentials from `~/.config/gh`. This harness's own sandbox
+no longer denies that directory, but a profile can, and under one `gh` run
+sandboxed reports "not logged into any GitHub hosts". The sandbox
+configuration excludes `gh *` so that `gh` runs unsandboxed under such a
+profile, but the exclusion covers a Bash call only when the whole call is
+one bare `gh` command. `git` carries no exclusion and always runs
+sandboxed.
 
 Measured on this host (Linux, 2026-09-23, one sample per shape; re-measure
 rather than trust it elsewhere): the exclusion held for a bare call, and

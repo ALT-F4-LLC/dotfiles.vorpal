@@ -123,6 +123,13 @@
 #          cap paragraph
 #       h2 revert either Workflow example to a bare `harnessCap`
 #       h3 restore the `getconf _NPROCESSORS_ONLN` probe anywhere in step 2
+#   (i) resume-prompt paths: the script in references/pause.md is extracted
+#       and run against fixture prompts (DOCKET_RUN_PAUSE_FILE overrides the
+#       pause.md under test, as DOCKET_RUN_SKILL_FILE does for SKILL.md)
+#       i1 delete the `test -e` refusal from `check` (or make it exit 0); the
+#          prompt naming the mistyped incident checkout then exits 0
+#       i2 replace the toplevel comparison in `attach` with `true` (or delete
+#          the attach branch); the mismatched Checkout then exits 0
 #
 # A missing input file fails; it never skips green.
 
@@ -132,12 +139,15 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 SELF="${SCRIPT_DIR}/$(basename "${BASH_SOURCE[0]}")"
 REPO_SKILL="${SCRIPT_DIR}/../src/user/claude_code/skills/docket-run/SKILL.md"
 SKILL="${DOCKET_RUN_SKILL_FILE:-$REPO_SKILL}"
+PAUSE="${DOCKET_RUN_PAUSE_FILE:-${SCRIPT_DIR}/../src/user/claude_code/skills/docket-run/references/pause.md}"
 
-if [ ! -f "$SKILL" ]; then
-    echo "FAIL input: no such file: ${SKILL}" >&2
-    echo "docket-run-skill: FAIL" >&2
-    exit 1
-fi
+for input in "$SKILL" "$PAUSE"; do
+    if [ ! -f "$input" ]; then
+        echo "FAIL input: no such file: ${input}" >&2
+        echo "docket-run-skill: FAIL" >&2
+        exit 1
+    fi
+done
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/docket-run-skill.XXXXXX") || exit 2
 trap 'rm -rf "$WORK"' EXIT
@@ -250,9 +260,10 @@ if [ -z "${DOCKET_RUN_SKILL_INNER:-}" ]; then
         # of this suite still (or no longer) catches a mutant needs the copy
         # and the skill file at those same relative paths.
         run_in_tree() { # <suite-script> <skill-copy> <tree-dir>
-            mkdir -p "$3/tests" "$3/src/user/claude_code/skills/docket-run"
+            mkdir -p "$3/tests" "$3/src/user/claude_code/skills/docket-run/references"
             cp "$1" "$3/tests/$(basename "$SELF")"
             cp "$2" "$3/src/user/claude_code/skills/docket-run/SKILL.md"
+            cp "$PAUSE" "$3/src/user/claude_code/skills/docket-run/references/pause.md"
             (cd "$3" && DOCKET_RUN_SKILL_INNER=1 bash "tests/$(basename "$SELF")") \
                 >/dev/null 2>&1
         }
@@ -545,6 +556,80 @@ while IFS= read -r sent; do
     esac
 done < "${WORK}/all-sentences"
 [ "$census" -eq 0 ] && ok "lift census: every sentence naming a sandbox lift is one of the pinned rulings"
+
+# (i) The resume prompt's paths come from git and are checked before the
+# prompt is recorded and again at attach. The script is taken from the one
+# fenced block in pause.md carrying its usage line and run as the conductor
+# runs it, against fixture prompts.
+paths_usage='# resume-prompt-paths: print | check <prompt-file> | attach <prompt-file>'
+paths="${WORK}/paths"
+mkdir -p "${paths}/checkout" "${paths}/worktree" "${paths}/other" "${paths}/repo"
+if awk -v usage="$paths_usage" '
+        /^```/ {
+            if (open) { if (found) { printf "%s", block; n++ }; open = 0; found = 0; block = "" }
+            else open = 1
+            next
+        }
+        open { block = block $0 "\n"; if ($0 == usage) found = 1 }
+        END { exit n == 1 ? 0 : 1 }
+    ' "$PAUSE" > "${paths}/resume-prompt-paths.sh"; then
+    ok "resume-prompt paths: exactly one fenced block in pause.md carries the script"
+
+    incident='/Users/erikreinert/Development/repository/github.com/ALT-F-LLC/dotfiles.vorpal.git/main'
+    printf '# Resume RUN-1\n\n**Checkout:** `%s`\n**Branch:** `main`\n' "$incident" \
+        > "${paths}/typo.md"
+    bash "${paths}/resume-prompt-paths.sh" check "${paths}/typo.md" \
+        >/dev/null 2>"${paths}/typo.err"
+    rc=$?
+    if [ "$rc" -eq 1 ] && grep -qF -- "**Checkout:** \`${incident}\`" "${paths}/typo.err"; then
+        ok "resume-prompt paths: check refuses a Checkout that does not exist, quoting the line"
+    else
+        bad "resume-prompt paths: check on the mistyped incident Checkout exited ${rc} without quoting the line: $(head -c 300 "${paths}/typo.err")"
+    fi
+
+    printf '**Checkout:** `%s`\n**Branch:** `main`\n**Worktree:** `%s`\n' \
+        "${paths}/checkout" "${paths}/worktree" > "${paths}/good.md"
+    if bash "${paths}/resume-prompt-paths.sh" check "${paths}/good.md" >/dev/null 2>&1; then
+        ok "resume-prompt paths: check passes a prompt whose paths exist"
+    else
+        bad "resume-prompt paths: check refused a prompt whose Checkout and worktree exist"
+    fi
+
+    # A throwaway repo with one commit, isolated from the host's git config so
+    # nothing outside the fixture shapes HEAD or the commit.
+    if (cd "${paths}/repo" &&
+        export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 &&
+        git init -q &&
+        git -c user.name=fixture -c user.email=fixture@example.invalid \
+            commit -q --allow-empty -m fixture) >/dev/null 2>&1; then
+        if (cd "${paths}/repo" && bash "${paths}/resume-prompt-paths.sh" print) \
+                > "${paths}/printed.md" 2>/dev/null &&
+            (cd "${paths}/repo" &&
+                bash "${paths}/resume-prompt-paths.sh" attach "${paths}/printed.md") \
+                >/dev/null 2>&1; then
+            ok "resume-prompt paths: attach accepts the Checkout print wrote from the same checkout"
+        else
+            bad "resume-prompt paths: print's own Checkout line failed attach in the checkout it came from"
+        fi
+
+        printf '**Checkout:** `%s`\n**Branch:** `main`\n' "${paths}/other" > "${paths}/elsewhere.md"
+        (cd "${paths}/repo" &&
+            bash "${paths}/resume-prompt-paths.sh" attach "${paths}/elsewhere.md") \
+            >/dev/null 2>"${paths}/elsewhere.err"
+        rc=$?
+        repo_top=$(cd "${paths}/repo" && git rev-parse --show-toplevel)
+        if [ "$rc" -eq 1 ] && grep -qF -- "${paths}/other" "${paths}/elsewhere.err" &&
+            grep -qF -- "$repo_top" "${paths}/elsewhere.err"; then
+            ok "resume-prompt paths: attach refuses a Checkout other than this toplevel, naming both"
+        else
+            bad "resume-prompt paths: attach on a mismatched Checkout exited ${rc}: $(head -c 300 "${paths}/elsewhere.err")"
+        fi
+    else
+        bad "resume-prompt paths: could not create the fixture git repository"
+    fi
+else
+    bad "resume-prompt paths: no single fenced block in ${PAUSE} carries '${paths_usage}'"
+fi
 
 if [ "$fail" -ne 0 ]; then
     echo "docket-run-skill: FAIL — a sandbox lift without its precondition is the failure this pins; fix the skill, not the test." >&2

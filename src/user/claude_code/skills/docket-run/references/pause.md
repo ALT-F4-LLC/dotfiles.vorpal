@@ -111,11 +111,15 @@ reconstruct; do not restate what it can. One exception: list the step ids
 a graceful halt refused, so the resuming session does not re-derive them
 from the full step list.
 
-**Write the working directory down first.** Every `docket` read is scoped
-to the project the cwd resolves to, so a prompt without it sends the new
-session looking for a run the store will not show it. Name the absolute
-path of the checkout the run is driven from, and the branch it is on —
-the shared checkout, never a wave worktree.
+**Write the working directory down first, from git, never by hand.**
+Every `docket` read is scoped to the project the cwd resolves to, so a
+prompt without it sends the new session looking for a run the store will
+not show it, and a mistyped one sends it to a path that does not exist.
+From the checkout the run is driven from — the shared checkout, never a
+wave worktree — run `bash <scratchpad>/resume-prompt-paths.sh print`
+(**Resume-prompt paths**, below) and paste its `**Checkout:**`,
+`**Branch:**` and `**Worktree:**` lines into the prompt verbatim. Copy
+every other path the prompt names from command output as well.
 
 **Session-only state — write all of it down, or it is gone:**
 
@@ -197,7 +201,7 @@ preflight (`docket doctor`), the stale-install diffs against the last
 
 **Before writing the prompt, check it against this list — each item
 filled in or explicitly marked not applicable, never silently dropped:**
-absolute cwd and branch; every wave's `wfId` and journal path; the full
+the Checkout, branch and worktree lines pasted from `print`; every wave's `wfId` and journal path; the full
 original `Workflow` args for anything a later session might resume; every
 un-integrated writer sha with its worktree path; whether this run's
 budget raise has already been used; operator precedent rulings and any
@@ -212,11 +216,72 @@ When the advisor tool is available, call it on the filled-in checklist before
 recording the prompt, and fold its input in as a further check, not a
 replacement for the list above.
 
+## Resume-prompt paths
+
+The prompt's paths come from git, and are checked when the prompt is
+recorded and again when a new session attaches. Write this block verbatim
+to `<scratchpad>/resume-prompt-paths.sh` with the Write tool and run it
+with `bash`. `print` emits the Checkout, branch and worktree lines from
+the cwd's checkout. `check` exits 1 when an absolute path in the prompt
+file does not exist, quoting each such line. `attach` exits 1 when the
+prompt's Checkout is not this cwd's `git rev-parse --show-toplevel`,
+naming both.
+
+```bash
+# resume-prompt-paths: print | check <prompt-file> | attach <prompt-file>
+set -u
+prompt=${2:-}
+case "${1:-}" in
+    print)
+        top=$(git rev-parse --show-toplevel) || exit 1
+        branch=$(git rev-parse --abbrev-ref HEAD) || exit 1
+        printf '**Checkout:** `%s`\n**Branch:** `%s`\n' "$top" "$branch"
+        git worktree list --porcelain | sed -n 's/^worktree \(.*\)$/**Worktree:** `\1`/p'
+        ;;
+    check)
+        [ -f "$prompt" ] || { echo "resume-prompt-paths: no prompt file: $prompt" >&2; exit 2; }
+        grep -noE '(^|[[:space:]`"(])/[^/[:space:]`"()]+/([^[:space:]`"()]*[^[:space:]`"().,;:])?' "$prompt" | {
+            status=0
+            while IFS=: read -r line_no match; do
+                path=/${match#*/}
+                test -e "$path" && continue
+                echo "resume-prompt-paths: line $line_no names a path that does not exist: $path" >&2
+                sed -n "${line_no}p" "$prompt" >&2
+                status=1
+            done
+            exit "$status"
+        }
+        ;;
+    attach)
+        [ -f "$prompt" ] || { echo "resume-prompt-paths: no prompt file: $prompt" >&2; exit 2; }
+        checkout=$(sed -n 's/^[[:space:]]*\*\*Checkout:\*\* `\([^`]*\)`.*$/\1/p' "$prompt")
+        top=$(git rev-parse --show-toplevel) || exit 1
+        if [ "$checkout" != "$top" ]; then
+            echo "resume-prompt-paths: the prompt's Checkout is '${checkout:-<none>}' but this session's checkout is '$top'" >&2
+            exit 1
+        fi
+        echo "resume-prompt-paths: Checkout matches $top"
+        ;;
+    *)
+        echo "usage: bash resume-prompt-paths.sh print | check <prompt-file> | attach <prompt-file>" >&2
+        exit 2
+        ;;
+esac
+```
+
+`check` reads a path as a run of two or more `/`-separated components
+starting at a line start, whitespace, backtick, quote or parenthesis, so
+`RUN-N`, `/docket-run` and URLs are not paths to it.
+
 ## Recording and printing the resume prompt
 
 The prompt is a single document, delivered both ways, not either:
 
-1. Record it as a docket doc:
+1. Write it to a file and run `bash <scratchpad>/resume-prompt-paths.sh
+   check <path-to-prompt-file>`. On exit 1, correct each quoted line from
+   `print` or other command output, never by retyping, and run it again.
+   Record nothing until it exits 0.
+2. Record it as a docket doc:
    ```
    docket doc create -T resume-prompt -t "Resume RUN-N" \
      --idempotency-key <key> -d @<path-to-prompt-file>
@@ -228,15 +293,17 @@ The prompt is a single document, delivered both ways, not either:
    ```
    docket doc link add DOC-<n> --issue <issue-id>
    ```
-2. Print the same content in chat, verbatim, so the operator can
+3. Print the same content in chat, verbatim, so the operator can
    copy-paste it into a fresh session without looking anything up.
 
 The prompt itself, in both places, should read as a short brief a
-stranger session can act on directly: an opening state-check line — "run
-`docket run status RUN-N` first; if the state has advanced past this
-prompt, discard it silently" (this makes a late-firing stale resume
-nudge a no-op) — then run id, the absolute checkout path and branch to
-work from, why it was paused, the halt mode used, a one-paragraph state
+stranger session can act on directly: an opening line naming the
+`attach` path check (**Resuming**, below) as the first step, then the
+state check — "run `docket run status RUN-N` next; if the state has
+advanced past this prompt, discard it silently" (this makes a
+late-firing stale resume nudge a no-op) — then run id, the
+`**Checkout:**`, `**Branch:**` and `**Worktree:**` lines from `print`,
+why it was paused, the halt mode used, a one-paragraph state
 summary (where the run stands, what is unfinished),
 `docket run conduct RUN-N --json=v2` as the first action (captured to a
 session-private file per docket-run's **The conductor capability**, never
@@ -284,8 +351,16 @@ run `docket run resume RUN-N --reason '<why>' <
 nothing else is needed, since the session still holds everything the
 snapshot exists to preserve, the conductor capability included.
 
-**In a new session**: read the resume prompt (doc or pasted text), take
-the seat with `docket run conduct RUN-N --json=v2` as the first action
+**In a new session**: read the resume prompt (doc or pasted text) and
+write it to a session-private file. Before any other docket command, the
+prompt's own state check included, write the **Resume-prompt paths**
+script to your scratchpad and run `bash
+<scratchpad>/resume-prompt-paths.sh attach <prompt-file>` from the cwd
+you will drive the run from. On exit 1, stop and report both paths it
+names to the operator: a docket read from another checkout scopes to
+another project, and a Checkout that does not match is either a typo in
+the prompt or a session started in the wrong place. On exit 0, take the
+seat with `docket run conduct RUN-N --json=v2` as the first action
 (docket-run's **The conductor capability** says how to capture the token
 without printing it), run `run resume` under that fresh token, then
 follow into `docket-run`'s own attach procedure — seat preflight and the

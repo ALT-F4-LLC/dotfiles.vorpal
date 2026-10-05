@@ -1,23 +1,24 @@
 #!/bin/bash
 
-# Behavior suite for tribunal.js's return path: a seat's final text reaches
+# Behavior suite for tribunal.js's return path: a seat's cast error reaches
 # the caller as `replies`, in both modes.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
 # and this one is in that list. It needs only `node` and `sed` — no engine, no
 # database, no network, and it spawns no agent.
 #
-# WHY THIS EXISTS. The seat brief tells every judge its final chat text is
-# discarded EXCEPT a verbatim cast error, which a seat whose `docket vote
-# cast` failed twice must end with. Neither mode relayed that text: the
-# conversational path returned only what its verify probe read off the vote
-# record, and the mid-wave path filtered the seats' replies down to the
-# `{seat, error}` objects of caught spawn exceptions. A judge that ended with
-# a valid cast error was dropped exactly like a judge that ended with
-# nothing, so the one case where its text mattered reached nobody. Now every
-# spawn attempt that ends with non-empty text is logged under its seat and
-# relayed on the result as `replies: [{seat, text}]`, beside — never folded
-# into — the mid-wave `absorbed` list.
+# WHY THIS EXISTS. The seat brief tells every judge its chat text is
+# discarded and its structured output carries one field, `castError`: the
+# verbatim error of a `docket vote cast` that failed twice, or empty. Neither
+# mode once relayed that error: the conversational path returned only what
+# its verify probe read off the vote record, and the mid-wave path filtered
+# the seats' replies down to the `{seat, error}` objects of caught spawn
+# exceptions. A judge that reported a valid cast error was dropped exactly
+# like a judge that returned nothing, so the one case where its reply
+# mattered reached nobody. Now every spawn attempt whose `castError` is
+# non-empty is logged under its seat and relayed on the result as
+# `replies: [{seat, castError}]`, beside — never folded into — the mid-wave
+# `absorbed` list.
 #
 # HOW. The return path sits outside tribunal.js's `seat-brief` TEST fence, so
 # this suite runs the WHOLE script: it wraps the file in an async function
@@ -59,17 +60,19 @@ const log = (m) => LOG.push(String(m))
 const phase = () => {}
 const parallel = (fns) => Promise.all(fns.map((f) => f()))
 // The scripted agent: SCRIPT maps a spawn label to one response or an array
-// of responses consumed in order — {text: ...} resolves with that value (a
-// string for a seat, an object for the schema probe), {reject: ...} rejects
-// with an Error carrying that message. An unlisted label resolves '' for a
-// seat and null for a schema probe — a silent spawn either way.
+// of responses consumed in order — {text: ...} resolves with that value (the
+// structured output: a seat's {castError}, the probe's record),
+// {reject: ...} rejects with an Error carrying that message. An unlisted
+// label resolves null — a silent spawn. Every spawn must pass a schema.
 let SCRIPT = {}
 let CALLS = []
+let SCHEMALESS = []
 const agent = (brief, opts) => {
     CALLS.push(opts.label)
+    if (!opts.schema) SCHEMALESS.push(opts.label)
     const entry = SCRIPT[opts.label]
     const item = Array.isArray(entry) ? entry.shift() : entry
-    if (item === undefined) return Promise.resolve(opts.schema ? null : '')
+    if (item === undefined) return Promise.resolve(null)
     if (item.reject !== undefined) return Promise.reject(new Error(item.reject))
     return Promise.resolve(item.text)
 }
@@ -104,27 +107,33 @@ const record = (cast) => ({
 const run = async (script, extraArgs) => {
     SCRIPT = script
     CALLS = []
+    SCHEMALESS = []
     LOG.length = 0
     return tribunal({ voteId: VOTE, voters: VOTERS, gateKind: 'activation', cwd: '/repo', ...extraArgs })
 }
 const seatLog = (seat, text) => LOG.some((l) => l.startsWith(`${seat}:`) && l.includes(text))
+// A seat's structured output.
+const cast = (castError) => ({ text: { castError } })
 
-// ---- conversational: one seat ends with a verbatim cast error, one ends
-// silent (''), one produces nothing (null). The record lists the erroring
-// seat as missing, its one re-seat casts clean, and the second read is whole.
+// ---- conversational: one seat reports a verbatim cast error, one casts
+// clean (castError ''), one produces nothing (null). The record lists the
+// erroring seat as missing, its one re-seat casts clean, and the second read
+// is whole.
 const C = await run({
-    'seat:tribunal-architecture': { text: '' },
-    'seat:tribunal-security':     [{ text: CAST_ERR }, { text: '' }],
+    'seat:tribunal-architecture': cast(''),
+    'seat:tribunal-security':     [cast(CAST_ERR), cast('')],
     'seat:tribunal-correctness':  { text: null },
     [`verify:${VOTE}`]: [
         { text: record(['tribunal-architecture', 'tribunal-correctness']) },
         { text: record(['tribunal-architecture', 'tribunal-security', 'tribunal-correctness']) },
     ],
 }, { context: 'the case text' })
+ok(same(SCHEMALESS, []),
+    `every seat and probe spawn passes a schema (schema-less: ${JSON.stringify(SCHEMALESS)})`)
 ok(seatLog('tribunal-security', CAST_ERR),
-    `AC1: the log names the seat and shows its text (got ${JSON.stringify(LOG)})`)
-ok(same(C.replies, [{ seat: 'tribunal-security', text: CAST_ERR }]),
-    `AC1: conversational result carries replies: [{seat, text}] for the one seat that ended with text (got ${JSON.stringify(C.replies)})`)
+    `AC1: the log names the seat and shows its cast error (got ${JSON.stringify(LOG)})`)
+ok(same(C.replies, [{ seat: 'tribunal-security', castError: CAST_ERR }]),
+    `AC1: conversational result carries replies: [{seat, castError}] for the one seat that reported one (got ${JSON.stringify(C.replies)})`)
 ok(seatLog('tribunal-correctness', 'SPAWN PRODUCED NOTHING'),
     `AC2: a null seat is still logged as unknown (got ${JSON.stringify(LOG)})`)
 ok(C.outcome && Array.isArray(C.outcome.votes) && C.outcome.votes.length === 3 && C.respawns === 1 && C.seatsSpawned === 3,
@@ -133,34 +142,34 @@ ok(CALLS.filter((c) => c === `verify:${VOTE}`).length === 2 && CALLS.filter((c) 
     `the re-seat and both probes still happen (got ${JSON.stringify(CALLS)})`)
 ok(C.absorbed === undefined, 'a conversational result grows no absorbed field')
 
-// ---- conversational, the re-seat ALSO ends with a cast error: the retry's
-// text is relayed too, since that attempt is the one the brief tells to end
-// with the verbatim error. Two entries, one per attempt, in completion order.
+// ---- conversational, the re-seat ALSO reports a cast error: the retry's
+// error is relayed too, since that attempt is the one the brief tells to
+// report it. Two entries, one per attempt, in completion order.
 const R = await run({
-    'seat:tribunal-architecture': { text: '' },
-    'seat:tribunal-security':     [{ text: CAST_ERR }, { text: CAST_ERR_2 }],
-    'seat:tribunal-correctness':  { text: '' },
+    'seat:tribunal-architecture': cast(''),
+    'seat:tribunal-security':     [cast(CAST_ERR), cast(CAST_ERR_2)],
+    'seat:tribunal-correctness':  cast(''),
     [`verify:${VOTE}`]: [
         { text: record(['tribunal-architecture', 'tribunal-correctness']) },
         { text: record(['tribunal-architecture', 'tribunal-correctness']) },
     ],
 }, { context: 'the case text' })
-ok(same(R.replies, [{ seat: 'tribunal-security', text: CAST_ERR }, { seat: 'tribunal-security', text: CAST_ERR_2 }]),
-    `a re-seat that ends with text is relayed as its own entry (got ${JSON.stringify(R.replies)})`)
+ok(same(R.replies, [{ seat: 'tribunal-security', castError: CAST_ERR }, { seat: 'tribunal-security', castError: CAST_ERR_2 }]),
+    `a re-seat that reports a cast error is relayed as its own entry (got ${JSON.stringify(R.replies)})`)
 ok(seatLog('tribunal-security', CAST_ERR_2) && LOG.some((l) => l.includes('STILL NO CAST from tribunal-security')),
-    `the retry's text is logged and the seat is still named as missing (got ${JSON.stringify(LOG)})`)
+    `the retry's error is logged and the seat is still named as missing (got ${JSON.stringify(LOG)})`)
 
 // ---- mid-wave: same seats, no probe. The spawn exception stays in
 // `absorbed` alone; the cast error rides `replies` alone.
 const M = await run({
     'seat:tribunal-architecture': { reject: API_ERR },
-    'seat:tribunal-security':     { text: CAST_ERR },
+    'seat:tribunal-security':     cast(CAST_ERR),
     'seat:tribunal-correctness':  { text: null },
 }, { step: STEP })
-ok(same(M.replies, [{ seat: 'tribunal-security', text: CAST_ERR }]),
+ok(same(M.replies, [{ seat: 'tribunal-security', castError: CAST_ERR }]),
     `AC1: mid-wave result carries the same replies entry (got ${JSON.stringify(M.replies)})`)
 ok(seatLog('tribunal-security', CAST_ERR),
-    `AC1: mid-wave logs the seat and its text (got ${JSON.stringify(LOG)})`)
+    `AC1: mid-wave logs the seat and its cast error (got ${JSON.stringify(LOG)})`)
 ok(same(M.absorbed, [{ seat: 'tribunal-architecture', error: `Error: ${API_ERR}` }]),
     `AC2: absorbed carries only the spawn error, never a seat's text (got ${JSON.stringify(M.absorbed)})`)
 ok(seatLog('tribunal-correctness', 'SPAWN PRODUCED NOTHING'),
@@ -170,14 +179,14 @@ ok(M.seatsSpawned === 3 && M.voteId === VOTE && M.outcome === undefined,
 ok(!CALLS.some((c) => c.startsWith('verify:')),
     `mid-wave never probes the record (got ${JSON.stringify(CALLS)})`)
 
-// ---- nothing to relay: every seat silent or dead -> replies is present and empty.
+// ---- nothing to relay: every seat clean, blank, or dead -> replies is present and empty.
 const N = await run({
-    'seat:tribunal-architecture': { text: '' },
-    'seat:tribunal-security':     { text: '   ' },
+    'seat:tribunal-architecture': cast(''),
+    'seat:tribunal-security':     cast('   '),
     'seat:tribunal-correctness':  { text: null },
 }, { step: STEP })
 ok(same(N.replies, []) && same(N.absorbed, []),
-    `blank and null replies never land in replies, and the field is still present (got ${JSON.stringify(N)})`)
+    `blank castErrors and null replies never land in replies, and the field is still present (got ${JSON.stringify(N)})`)
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)

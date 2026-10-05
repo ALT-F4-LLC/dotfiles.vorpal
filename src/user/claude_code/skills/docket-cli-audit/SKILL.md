@@ -189,13 +189,16 @@ The workflow fans out one reader per file (sharded by line range over
 roughly 1500 lines), runs a completeness critic that re-dispatches any file or
 range nothing covered, then verifies every raw finding in per-file batches
 through three refuters with distinct angles (quote, evidence, reading) under a
-majority-uphold rule. `findings` holds survivors, each with its file,
-location, quote, claim, cited evidence, kind (mechanical or semantic),
-severity and a proposed fix. `unverified` holds findings the budget could not
-cover or that got no vote; `verificationPartial` says whether that happened.
-`cleanNotes` lists files whose docket claims all checked out. When
-`verificationPartial` is true, report the unverified findings by file as
-unaudited, never as clean.
+majority-uphold rule. It returns one JSON object. `findings` holds
+survivors, each with its file, location, quote, claim, cited evidence, kind
+(mechanical or semantic), severity and a proposed fix. `unverified` holds
+findings the budget could not cover or that got no vote;
+`verificationPartial` says whether that happened. `cleanNotes` lists
+`{file, notes}` for each file whose docket claims all checked out.
+`coverage` is `{complete, gapsFound, refilled, uncovered}`, each gap a
+`{file, range, reason}`. When `verificationPartial` is true, report the
+unverified findings by file as unaudited, never as clean; when
+`coverage.complete` is false, name every `uncovered` span as unaudited.
 
 If the workflow throws or returns nothing, say so and stop. Do not substitute
 a smaller manual read as if it satisfied the step.

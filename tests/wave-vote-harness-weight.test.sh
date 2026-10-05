@@ -161,7 +161,8 @@ const start = (theRows, opts) => {
     RESULTS = new Map()
     HOLD = new Set(theRows.map((r) => r.step))   // every row holds until finish()
     OPEN = new Map()
-    return ladder()
+    // wave.js returns {statuses, coordination}; these cases read the statuses.
+    return ladder().then((out) => out.statuses)
 }
 const logged = (frag) => LOG.some((l) => l.includes(frag))
 const inFlight = (step) => SPAWNED.includes(step) || GATES.includes(step)

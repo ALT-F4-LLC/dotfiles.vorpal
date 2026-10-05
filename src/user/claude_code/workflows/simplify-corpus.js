@@ -21,7 +21,7 @@ export const meta = {
 //   pass: number         1-based pass counter, informational for labels and prompts
 // }
 //
-// Returns { accepted, rejected, unchanged, summary }. `accepted` carries one
+// Returns { pass, accepted, rejected, unchanged, summary }. `accepted` carries one
 // entry per candidate that shrank the file, passed its kind's mechanical
 // check, and survived a majority of three refuters; the caller copies its
 // `candidate` over `file`. An entry with `confirm: true` (settings.rs) is

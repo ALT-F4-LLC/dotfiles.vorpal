@@ -96,15 +96,18 @@ or range nothing covered, then a cross-boundary pass pairing claims one
 tree makes about the other, then verifies raw findings in per-file batches
 (independent skeptics voting refute/uphold) within an agent budget fixed
 before the read fan-out.
-`findings` holds only majority-survived findings, each carrying its file,
-location, quote, counterpart, severity, and a proposed fix. `unverified`
-holds every finding the budget could not cover or that received no vote;
+The workflow returns one JSON object. `findings` holds only
+majority-survived findings, each carrying its file, location, quote,
+counterpart, severity, and a proposed fix. `unverified` holds every
+finding the budget could not cover or that received no vote;
 `verificationPartial`, `verifiedCount`, and `unverifiedCount` say how far
-verification got, and `coverageNote` states it in words. Read the summary
-line for what was refuted and what could not be covered. When
-`verificationPartial` is true, report the unverified findings by file as
-unaudited, never clean, and never report exhaustive coverage the run
-itself flagged as partial.
+verification got. `coverage` is `{complete, gapsFound, refilled,
+uncovered}`: `refilled` lists the gaps the completeness pass re-read and
+`uncovered` the ones it could not, each `{file, range, reason}`. `summary`
+is a one-line digest of the same counts. When `verificationPartial` is
+true, report the unverified findings by file as unaudited, never clean;
+when `coverage.complete` is false, name every `uncovered` span. Never
+report exhaustive coverage the run itself flagged as partial.
 
 If the workflow throws or returns nothing, say so and stop. Do not
 substitute a smaller manual read as if it satisfied the step.

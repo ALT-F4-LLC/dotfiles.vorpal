@@ -130,8 +130,8 @@ const probe = `Run exactly this one command:
 
   docket step show STEP-3146 --json
 
-Return its output VERBATIM as your entire final reply: no summary, no
-commentary, no code fence.
+Return its output VERBATIM as \`output\` in the structured output: no summary,
+no commentary, no code fence.
 
 Run nothing else: no vote, no investigation. You are a
 read-only probe reporting what the record currently says.
@@ -232,6 +232,10 @@ function write(name, bootstrap, outDir = d, listed = false, relayed = false, quo
     lines.push({ type: 'assistant', message: { id: 'msg-a', model: finalModel, usage: usage(100), content: [call('toolu-a')] } })
     lines.push({ type: 'assistant', message: { id: 'msg-b', model, usage: usage(250), content: [call('toolu-b1'), call('toolu-b2')] } })
     lines.push({ type: 'assistant', message: { id: 'msg-b', model, usage: usage(250), content: [call('toolu-b2')] } })
+    // A schema'd agent ends with the StructuredOutput call its schema forces:
+    // its return, not investigation, so it never counts as a tool use.
+    lines.push({ type: 'assistant', message: { id: 'msg-b', model, usage: usage(250),
+        content: [{ type: 'tool_use', id: 'toolu-return', name: 'StructuredOutput', input: {} }] } })
     fs.writeFileSync(path.join(outDir, name), lines.map((o) => JSON.stringify(o)).join('\n') + '\n')
 }
 
@@ -281,7 +285,7 @@ It claims STEP-3180 under that owner, parks the lease token in the step's
 private scratch dir, and writes the rendered packet for the executor the wave
 launches next.
 
-Return its output VERBATIM as your entire final reply.
+Return its output VERBATIM as \`output\` in the structured output.
 
 Run nothing else.
 
@@ -401,7 +405,7 @@ const cast = by(wave, 'agent-ajudge.jsonl').extract.cast
 ok(cast && cast.proposal === 'PROP-77' && cast.voter === 'reviewer',
     'the cast join reads proposal and seat from one match on the cast command')
 ok(by(wave, 'agent-aexec.jsonl').extract.tool_uses === 3,
-    `tool_uses counts distinct tool_use block ids across lines (4 lines, 3 ids), not the last block per message (got ${by(wave, 'agent-aexec.jsonl').extract.tool_uses})`)
+    `tool_uses counts distinct tool_use block ids across lines (4 lines, 3 ids), not the last block per message, and not the StructuredOutput return (got ${by(wave, 'agent-aexec.jsonl').extract.tool_uses})`)
 ok(by(wave, 'agent-ajudge.jsonl').extract.reseat === false && by(panel, 'agent-preseat.jsonl').extract.reseat === true,
     'a re-seated judge is read from the respawn sentence in its bootstrap, a first seating is not')
 

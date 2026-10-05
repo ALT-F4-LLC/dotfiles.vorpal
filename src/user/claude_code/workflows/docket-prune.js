@@ -70,6 +70,7 @@ export const meta = {
 //                        clock.
 //
 // return:
+//   pass       — this pass's number, echoed from args.
 //   plan       — {judged:[path], carried:[path], dropped:[path], deferred:[path]}
 //   rest       — true when the pass judged nothing and every carried cut
 //                already has an issue: the caller's loop rests.
@@ -88,8 +89,11 @@ export const meta = {
 //   issues     — {dir, indexes, count}: one body file per unfiled cut under
 //                dir, listed across indexes (TSV: key, title, scope, body
 //                path), or null when a writer failed.
+//   superseded — [{path, unit, issue, replacementKey}] every ledgered cut
+//                issue a fresh verdict replaced; replacementKey is null when
+//                no fresh cut replaces it.
 //   evidence   — coverage and per-source notes, each naming what it could
-//                not read.
+//                not read; null when nothing was judged.
 //   uncovered  — [{what, why}] every null return and every bound applied.
 //   summary    — one line for the skill's report.
 //

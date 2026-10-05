@@ -114,10 +114,11 @@ const voterToSeat = (seat) => ({ seat, variant: 'std', model: 'stub-model', effo
 // `args.cwd` off its own top-level `args` global — the workflow's own input.
 const args = { tribunal: '/stub/tribunal.js', cwd: '/repo' }
 // The scripted agent: SCRIPT maps a spawn label to one response or an array
-// of responses consumed in order — {text: ...} resolves with that value (a
-// string for a text probe, an object for a schema probe), {reject: ...}
-// rejects with an Error carrying that message. An unlisted label resolves
-// '' for a text probe and null for a schema probe — a dead spawn either way.
+// of responses consumed in order — {text: ...} resolves with that value, the
+// structured output ({output} for a command probe, the envelope for a typed
+// probe), {reject: ...} rejects with an Error carrying that message. An
+// unlisted label resolves null for a schema call and '' otherwise — a dead
+// spawn either way.
 let SCRIPT = {}
 let CALLS = []
 let SCHEMAS = {}
@@ -465,7 +466,7 @@ ok(F3.status === 'gate-blocked' && CALLS.length === 1 &&
 // alone so the ladder can say "deferred" instead of "died".
 const G = await run({
     'STEP-2493 · gate:status':  { text: NO_PROPOSAL },
-    'STEP-2493 · gate:blocked': { text: SHOW_BLOCKED },
+    'STEP-2493 · gate:blocked': { text: { output: SHOW_BLOCKED } },
 })
 ok(G.status === 'gate-blocked' && probes() === 2 && !CALLS.some((c) => c.includes('seat:')),
     `G: a gate with no proposal spends status + step show and seats nobody (got ${JSON.stringify(CALLS)})`)

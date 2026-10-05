@@ -144,7 +144,8 @@ const ex = (step, issue, stage, cls, extra) => Object.assign(
     { step, issue, stage, kind: 'executor', executor: cls === 'write' ? 'implement' : cls, class: cls },
     extra || {})
 const vote = (step, issue, stage) => ({ step, issue, stage, kind: 'vote', voters: ['judge-correctness'] })
-const statusOf = (out, step) => (out.find((r) => r.step === step) || {}).status
+// wave.js returns {statuses, coordination}; `out` below is that object.
+const statusOf = (out, step) => (out.statuses.find((r) => r.step === step) || {}).status
 const logged = (frag) => LOG.some((l) => l.includes(frag))
 
 // Three certified-disjoint issues (every implement co-staged at stage 0),
@@ -161,7 +162,7 @@ const THREE = () => [...chain('A', 'AGT-602'), ...chain('B', 'AGT-840'), ...chai
 
 // ---- (1) no unit: one wave over the rows it is given -------------------
 let out = await start(THREE())
-ok(out.length === 18 && out.every((r, i) => r.step === THREE()[i].step),
+ok(out.statuses.length === 18 && out.statuses.every((r, i) => r.step === THREE()[i].step),
     'no unit: one entry per row, in manifest order')
 ok(!logged('wave: launch'), 'no unit: nothing about launches is logged')
 ok(['A-0', 'B-0', 'C-0', 'A-4', 'B-4', 'C-4'].every((s) => SPAWNED.includes(s)),
@@ -169,7 +170,7 @@ ok(['A-0', 'B-0', 'C-0', 'A-4', 'B-4', 'C-4'].every((s) => SPAWNED.includes(s)),
 
 // ---- (2) a unit launch runs every row it holds and nothing else ---------
 out = await start(chain('B', 'AGT-840'), { unit: { index: 1, of: 3, classCap: { write: 1 } } })
-ok(out.length === 6 && out.every((r) => r.status !== 'not-launched-other-shard'),
+ok(out.statuses.length === 6 && out.statuses.every((r) => r.status !== 'not-launched-other-shard'),
     'unit: the return carries exactly the launch\'s own rows, none as another launch\'s')
 ok(['B-0', 'B-1a', 'B-1b', 'B-3', 'B-4'].every((s) => SPAWNED.includes(s)) && GATES.includes('B-2'),
     'unit: the lane runs its whole ladder in its own launch')
@@ -264,7 +265,7 @@ ok(LAUNCH_CAP === 20, 'LAUNCH_CAP is the measured 20 (keep lane_units.py in step
 // One lane's writer settles claim-conflict (its judge is then chain-dead);
 // another lane's gate passes on its first round after re-seating one judge.
 // The section comes from the launch's own rows and settled statuses, with no
-// conductor input, and rides the per-row array without changing it.
+// conductor input, and rides beside the per-row statuses in one plain object.
 const COORDINATED = () => [
     ex('X-0', 'CRD-1', 0, 'write', { instance: 'implement@0' }),
     ex('X-1', 'CRD-1', 1, 'judge-correctness', { instance: 'review@0#1' }),
@@ -275,9 +276,10 @@ out = await start(COORDINATED(), { results: {
     'Y-2': { step: 'Y-2', status: 'gate-passed', text: '{"status":"done"}', reseats: 1 },
 } })
 const c = out.coordination
-ok(Array.isArray(out) && out.length === 3 &&
-    out.map((r) => `${r.step}:${r.status}`).join(',') === 'X-0:claim-conflict,X-1:skipped-chain-dead,Y-2:gate-passed',
-    'coordination: the per-row statuses array is unchanged')
+ok(JSON.stringify(Object.keys(out)) === JSON.stringify(['statuses', 'coordination']) &&
+    Array.isArray(out.statuses) && out.statuses.length === 3 &&
+    out.statuses.map((r) => `${r.step}:${r.status}`).join(',') === 'X-0:claim-conflict,X-1:skipped-chain-dead,Y-2:gate-passed',
+    'coordination: the return is {statuses, coordination}, the per-row statuses unchanged')
 ok(c != null && c.claim_conflicts === 1, `coordination: one claim conflict counted (got ${JSON.stringify(c)})`)
 ok(c != null && c.reseats === 1, `coordination: one re-seated judge counted (got ${c && c.reseats})`)
 ok(c != null && c.rows === 3 && c.deferred.chain_dead === 1 && c.deferred.total === 1 &&
@@ -289,16 +291,12 @@ ok(c != null && c.rows === 3 && c.deferred.chain_dead === 1 && c.deferred.total 
 ok(c != null && JSON.stringify(Object.keys(c)) === JSON.stringify(['rows', 'rounds_per_issue', 'gates',
     'reseats', 'claim_conflicts', 'ancestry_parks', 'spawn_failed', 'deferred', 'unmatched_steps']),
     'coordination: the field set matches the wave-usage join\'s section')
-// The harness hands the conductor the return as JSON text, and JSON keeps an
-// array's elements only, so the section must also cross as a JSON log line.
-const loggedSection = () => {
-    const lines = LOG.filter((l) => l.startsWith('wave: coordination '))
-    if (lines.length !== 1) return undefined
-    try { return JSON.parse(lines[0].slice('wave: coordination '.length)) } catch { return undefined }
-}
-ok(JSON.parse(JSON.stringify(out)).coordination === undefined &&
-    JSON.stringify(loggedSection()) === JSON.stringify(c),
-    `coordination: one log line carries the whole section as JSON (got ${JSON.stringify(loggedSection())})`)
+// The harness hands the conductor the return as JSON text, so the whole
+// return, section included, must survive a JSON round trip.
+const crossed = JSON.parse(JSON.stringify(out))
+ok(JSON.stringify(crossed.coordination) === JSON.stringify(c) &&
+    JSON.stringify(crossed.statuses) === JSON.stringify(out.statuses),
+    `coordination: the section and the statuses survive the JSON transport (got ${JSON.stringify(crossed)})`)
 
 // ---- (8) every coordination bucket, one lane per settled status ---------
 // Each row is its own issue, so no status cascades into another row. The

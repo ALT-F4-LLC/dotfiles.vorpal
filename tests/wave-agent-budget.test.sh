@@ -119,7 +119,8 @@ const run = async (theRows) => {
     rows = theRows
     SPAWNED = []
     LOG.length = 0
-    return ladder()
+    // wave.js returns {statuses, coordination}; these cases read the statuses.
+    return ladder().then((out) => out.statuses)
 }
 // Read the production configuration rather than duplicating its values.
 const BUDGET = AGENT_BUDGET

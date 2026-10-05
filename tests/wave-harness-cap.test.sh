@@ -150,7 +150,8 @@ const start = (theRows, harnessCap) => {
     RESULTS = new Map()
     HOLD = new Set(theRows.map((r) => r.step))   // every row holds until finish()
     OPEN = new Map()
-    return ladder()
+    // wave.js returns {statuses, coordination}; these cases read the statuses.
+    return ladder().then((out) => out.statuses)
 }
 // N issue-less singleton rows, each its own lane, no class/writer coupling —
 // nothing but the harness cap gates their admission.

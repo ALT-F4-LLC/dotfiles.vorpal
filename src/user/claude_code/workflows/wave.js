@@ -1,6 +1,6 @@
 export const meta = {
     name: 'wave',
-    description: 'Internal: launched through scriptPath by docket-run, once per lane unit, to run one launch\'s share of a dispatched manifest end to end (executors, vote panels, staged issue lanes). Per executor row it spends 1 haiku claim agent, which claims the step and writes the packet the executor then receives verbatim in its brief. Per vote row it spends 3 read-only haiku probes of `docket gate status` on the normal path, 1 on a gate that was already decided, and 4 when a re-seat is needed. Budget, launch, lane and reply-tail contract in the header comment.',
+    description: 'Internal: launched through scriptPath by docket-run, once per lane unit, to run one launch\'s share of a dispatched manifest end to end (executors, vote panels, staged issue lanes). Per executor row it spends 1 haiku claim agent, which claims the step and writes the packet the executor then receives verbatim in its brief. Per vote row it spends 3 read-only haiku probes of `docket gate status` on the normal path, 1 on a gate that was already decided, and 4 when a re-seat is needed. Budget, launch, lane, return and reply-tail contract in the header comment.',
     whenToUse: 'Never by name. Args are {rows, tribunal, cwd, unit?, harnessCap?, integrated?} with the launch\'s own rows verbatim from lane_units.py; the full argument contract is in the header comment.',
 }
 
@@ -84,14 +84,14 @@ export const meta = {
 // commit — so the wave can assert base ancestry before seating the fanout.
 // There is no policy argument of any kind and no file access.
 //
-// Return: one {step, status, text, ...} entry per row this launch holds, in
-// manifest order, and on that same array a `coordination` property: the
-// launch's rounds per issue, gate outcomes, re-seats, claim conflicts,
+// Return: {statuses, coordination}, one plain object. `statuses` holds one
+// {step, status, text, ...} entry per row this launch holds, in manifest
+// order; `text` is the executor's own reply, the one agent output that stays
+// free text (its reply-tail contract lives with the executors). `coordination`
+// is the launch's rounds per issue, gate outcomes, re-seats, claim conflicts,
 // ancestry parks, spawn failures and deferrals, counted from its own rows and
 // settled statuses in the field set wave-usage.js's steps-mode join returns.
-// The harness's JSON transport drops a named property on an array, so the
-// log closes with `wave: coordination <the section as JSON>`, the copy that
-// reaches the conductor.
+// Every other agent the wave spawns answers through a schema.
 // ---------------------------------------------------------------------------
 
 // TEST-BEGIN configuration — shared by the extracted behavior suites.
@@ -105,6 +105,18 @@ const AGENT_CONFIG = {
     heldCluster: { model: 'haiku', effort: 'low' },
     proposal: { model: 'haiku', effort: 'low' },
     blockProbe: { effort: 'low' }, // Deliberately inherit the session model.
+}
+
+// The claim agent and the text probes run one command and hand back what it
+// printed. The schema keeps that output in one field, so commentary around it
+// never reaches the parsers that read it.
+const COMMAND_OUTPUT_SCHEMA = {
+    type: 'object',
+    properties: {
+        output: { type: 'string', description: 'The command output verbatim, or its error text verbatim when it failed' },
+    },
+    required: ['output'],
+    additionalProperties: false,
 }
 
 const BLOCK_PROBE_LOOKBACK_HOURS = 12
@@ -269,8 +281,8 @@ function claimCommand(row, r, owner, modulePath) {
         `--metadata ${shellQuote(claimMetadata(r))}`
 }
 
-// The claim agent's whole job is one command, and its reply only explains a
-// missing module: the module decides whether an executor spawns. The brief
+// The claim agent's whole job is one command, and its `output` only explains
+// a missing module: the module decides whether an executor spawns. The brief
 // never spells `docket step claim STEP-N`: wave-usage.js joins an agent's
 // tokens to the step its brief claims or records, and this agent is wave
 // overhead (the WAVE CLAIM line), not the step's executor. Its command names
@@ -284,9 +296,9 @@ It claims ${row.step} under that owner, parks the lease token in the step's
 private scratch dir, and writes the rendered packet for the executor the wave
 launches next.
 
-Return its output VERBATIM as your entire final reply: no summary, no
-commentary, no code fence. If the command errors, return the error text
-verbatim instead.
+Return its output VERBATIM as \`output\` in the structured output: no summary,
+no commentary, no code fence. If the command errors, return the error text
+there verbatim instead.
 
 Run nothing else.
 
@@ -901,6 +913,7 @@ async function claimPacket(row, r, phaseLabel) {
         phase: phaseLabel,
         agentType: 'executor-read',
         ...AGENT_CONFIG.claim,
+        schema: COMMAND_OUTPUT_SCHEMA,
     })
     let reply = null
     try {
@@ -951,12 +964,12 @@ async function claimPacket(row, r, phaseLabel) {
     return { ok: false, result: await claimFailure(row, owner, reply, loaded.error, phaseLabel) }
 }
 
-// No module loaded. The claim agent's reply says why: a CONFLICT keeps the
+// No module loaded. The claim agent's `output` says why: a CONFLICT keeps the
 // executor path's handling (a run park, or an orphaned claim diagnosed from
 // the step's own row); a wave-claim stop line is `blocked`; anything else
 // leaves the claim state unknown.
 function claimFailure(row, owner, reply, loadError, phaseLabel) {
-    const text = typeof reply === 'string' ? reply.trim() : ''
+    const text = reply && typeof reply.output === 'string' ? reply.output.trim() : ''
     if (isConflictReport(text)) {
         const returned = { step: row.step, status: 'returned', text }
         if (!isOrphanedClaimConflict(text)) return returned
@@ -1245,9 +1258,9 @@ function probeBrief(command, servingStep) {
 
   ${command}
 
-Return its output VERBATIM as your entire final reply: no summary, no
-commentary, no code fence. If the command errors, return the error text
-verbatim instead.
+Return its output VERBATIM as \`output\` in the structured output: no summary,
+no commentary, no code fence. If the command errors, return the error text
+there verbatim instead.
 
 ${probeTrailer(servingStep)}`
 }
@@ -1292,7 +1305,8 @@ function probe(command, label, phaseLabel, servingStep, acct) {
             phase: phaseLabel,
             agentType: 'executor-read',
             ...AGENT_CONFIG.probe,
-        }).then((text) => text == null ? '' : text)
+            schema: COMMAND_OUTPUT_SCHEMA,
+        }).then((reply) => reply && typeof reply.output === 'string' ? reply.output : '')
     }
     return retrying(label, acct, once, '')
 }
@@ -2725,15 +2739,12 @@ function coordinationOf(launchRows, statuses) {
     return out
 }
 
-// One entry per row this launch holds, in manifest order. The coordination
-// section rides the array as a named property, so every reader of the
-// per-row entries sees the same array as before. The harness hands the
-// conductor the return as JSON text, which keeps an array's elements only,
-// so the section also crosses whole as the `wave: coordination` log line.
+// `statuses` holds one entry per row this launch holds, in manifest order,
+// and `coordination` the section counted from them. The harness hands the
+// conductor the return as JSON text, so both ride one plain object.
 log(`wave: ${agentsLaunched} agent() call(s) launched this invocation (harness cap ${AGENT_LIFETIME_CAP})`)
 const statuses = rows.map((row) => byStep.get(row.step) ||
     { step: row.step, status: parked ? 'not-launched-run-parked' : 'spawn-failed' })
 const coordination = coordinationOf(rows, statuses)
-log(`wave: coordination ${JSON.stringify(coordination)}`)
-return Object.assign(statuses, { coordination })
+return { statuses, coordination }
 // TEST-END stage-ladder

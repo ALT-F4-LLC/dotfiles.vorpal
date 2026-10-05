@@ -43,11 +43,12 @@ export const meta = {
 // was), and by the pause and resume paths for a wave whose usage was never
 // back-filled. args is {dir: absolute transcript directory, mode: "steps"
 // (default) | "seats", exclude: [STEP-N...] in steps mode or [seat...] in
-// seats mode, rows: the manifest rows handed to wave.js, statuses: the wave's
-// returned array}; rows and statuses are optional, given together, and read in
-// steps mode only, where they feed the `coordination` section (null without
-// them, and the log says so). The script cannot read files itself; its agents
-// run one fixed jq program per transcript and the reduction happens here.
+// seats mode, rows: the manifest rows handed to wave.js, statuses: the
+// `statuses` array of the wave's return}; rows and statuses are optional,
+// given together, and read in steps mode only, where they feed the
+// `coordination` section (null without them, and the log says so). The
+// script cannot read files itself; its agents run one fixed jq program per
+// transcript and the reduction happens here.
 // ---------------------------------------------------------------------------
 
 // scout/extract/recheck only relay a fixed command's output through a schema
@@ -145,7 +146,8 @@ const DEFAULT_MODE = 'steps'
 //    would keep only the last block's calls: measured 4 of 8, 6 of 9 and 8 of
 //    11 tool_use blocks on three transcripts. A tool_use block carries its
 //    own id, which a rewritten line repeats and `unique` absorbs.
-//    server_tool_use blocks are not counted, matching session-census.js. The
+//    server_tool_use blocks are not counted, matching session-census.js, nor
+//    is the StructuredOutput call every seat's schema forces at its end. The
 //    count is an audit signal for docket-retro's seat-calibration row (reads
 //    can be spammed, so it is never a tally input) and reaches the ledger
 //    only in seats mode, as a fifth unit beside the four token units; steps
@@ -168,8 +170,9 @@ const DEFAULT_MODE = 'steps'
 //         exclude   [STEP-N...] in steps mode, [seat...] in seats mode; [] default
 //         rows      the manifest rows handed to wave.js; {step, instance, issue}
 //                   are read here. Steps mode, optional, given with statuses
-//         statuses  the wave's returned array; {step, status} are read here.
-//                   Steps mode, optional, given with rows
+//         statuses  the `statuses` array of the wave's {statuses, coordination}
+//                   return; {step, status} are read here. Steps mode,
+//                   optional, given with rows
 // return: {rows, overhead: {agents: [{file, label}], sums}, skipped, errors,
 //          model_observations, coordination}
 //         rows     [{step, unit, quantity}] or [{proposal, voter, unit, quantity}],
@@ -227,7 +230,8 @@ if ((manifestRows == null) !== (waveStatuses == null)) {
         'the coordination counts join the wave\'s returned statuses to the manifest rows by step')
 }
 if (manifestRows != null && (!Array.isArray(manifestRows) || !Array.isArray(waveStatuses))) {
-    throw new Error(`wave-usage: args.rows and args.statuses must be arrays, got ` +
+    throw new Error(`wave-usage: args.rows and args.statuses must be arrays (statuses is the ` +
+        `\`statuses\` field of the wave's return, not the whole return), got ` +
         `${JSON.stringify(manifestRows).slice(0, 80)} and ${JSON.stringify(waveStatuses).slice(0, 80)}`)
 }
 
@@ -271,7 +275,9 @@ if (manifestRows != null && (!Array.isArray(manifestRows) || !Array.isArray(wave
 //
 // reseat is the sentence tribunal.js opens a re-seated judge's brief with.
 // tool_uses counts distinct tool_use block ids over every assistant line, not
-// the deduplicated messages: see TOOL USE IS COUNTED BY BLOCK ID above.
+// the deduplicated messages: see TOOL USE IS COUNTED BY BLOCK ID above. The
+// StructuredOutput call a seat's schema forces is its return, not
+// investigation, so it never counts.
 //
 // Backslashes are doubled once for the template literal: the file the agent
 // writes carries jq source, in which `\\s` is the regex escape.
@@ -307,7 +313,7 @@ const EXTRACT_JQ = `${BRIEF_DEFS_JQ}[inputs | fromjson? | select(type == "object
     reseat: ($b | contains("THIS IS A SECOND ATTEMPT AT YOUR SEAT")),
     tool_uses: ([$lines[] | select(.type == "assistant") | .message.content
                  | if type == "array"
-                   then .[] | select(type == "object" and .type == "tool_use") | .id // empty
+                   then .[] | select(type == "object" and .type == "tool_use" and .name != "StructuredOutput") | .id // empty
                    else empty end]
                 | unique | length),
     models_observed: ([$messages[].model | select(type == "string" and . != "" and . != "<synthetic>")] | unique),
@@ -543,7 +549,7 @@ const instanceOrdinal = (row) => {
 }
 
 // results: the extracts as reduceRows takes them; rows: the manifest rows;
-// statuses: the wave's return, one entry per manifest row. null when the
+// statuses: the wave return's `statuses`, one entry per manifest row. null when the
 // caller passed neither, so an unmeasured wave never reads as a clean one.
 function coordinationOf(results, rows, statuses) {
     if (!Array.isArray(rows) || !Array.isArray(statuses)) return null

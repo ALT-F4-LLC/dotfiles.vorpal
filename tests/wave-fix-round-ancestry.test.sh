@@ -190,7 +190,8 @@ const run = async (theRows, integrated, ctx, git, self) => {
     CTX_PROBES = 0; GIT_PROBES = 0; SELF_PROBES = 0
     LOG.length = 0
     CTX = ctx || ''; GIT = git || ''; SELF = self || ''
-    return ladder()
+    // wave.js returns {statuses, coordination}; these cases read the statuses.
+    return ladder().then((out) => out.statuses)
 }
 
 // ---- AC (fail case): broken ancestry parks the fanout as a relay finding ----

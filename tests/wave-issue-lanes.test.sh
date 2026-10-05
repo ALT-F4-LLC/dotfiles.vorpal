@@ -168,7 +168,8 @@ const start = (theRows, opts) => {
     RESULTS = new Map(Object.entries((opts && opts.results) || {}))
     HOLD = new Set((opts && opts.hold) || [])
     OPEN = new Map()
-    return ladder()
+    // wave.js returns {statuses, coordination}; these cases read the statuses.
+    return ladder().then((out) => out.statuses)
 }
 const ex = (step, issue, stage, cls, extra) => Object.assign(
     { step, issue, stage, kind: 'executor', executor: cls === 'write' ? 'implement' : cls, class: cls },

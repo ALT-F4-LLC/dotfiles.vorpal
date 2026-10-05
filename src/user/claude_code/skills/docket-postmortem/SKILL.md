@@ -240,10 +240,12 @@ flagged: <flaggedLines>, priorUpheld: <findings from every earlier launch>}`,
 and repeat until `deferredLines` is empty. The last launch's `reconciled`
 covers every launch's findings.
 
-Its return is evidence for this conversation's ledger, not the ledger
-itself. Read every upheld finding, every refutation, every group, and every
-`uncovered` entry. A stage that returned nothing usable is uncovered, not
-clean.
+Its return is one JSON object whose fields the script's header comment
+lists. It is evidence for this conversation's ledger, not the ledger
+itself. Read every upheld finding, every refutation, every group, every
+`reconcile.dropped` entry (a candidate the reconciler set aside, with its
+reason), and every `uncovered` entry. A stage that returned nothing usable
+is uncovered, not clean.
 
 For deliberation and course-correction numbers across the driving
 sessions, launch the installed `session-census` workflow afterward, per

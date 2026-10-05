@@ -77,8 +77,10 @@ const goodModule = (owner) => ({
 const NOT_FOUND = `Workflow script file not found: ${MODULE}`
 const UNREADABLE = `workflow({scriptPath: '${MODULE}'}): scriptPath must be a script path this tool returned, or a file you can already read (the working directory or a directory you have added): ${MODULE}`
 
-// A fresh wave per scenario. `replies` answers successive agent() calls (a
-// string, null, or an Error to throw); `load` answers workflow().
+// A fresh wave per scenario. `replies` answers successive agent() calls (the
+// command output as a string, null, or an Error to throw); a string reaches
+// the wave as the claim agent's structured output, {output}, and only when
+// the call passed a schema. `load` answers workflow().
 function wave({ replies = [], load, cwd = '/repo', show = { status: 'claimed', attempt: '1' } } = {}) {
     const calls = { agent: [], workflow: [], stepShow: 0, log: [] }
     const sandbox = {
@@ -87,7 +89,9 @@ function wave({ replies = [], load, cwd = '/repo', show = { status: 'claimed', a
         agent: (prompt, opts) => {
             calls.agent.push({ prompt, opts })
             const next = replies.shift()
-            return next instanceof Error ? Promise.reject(next) : Promise.resolve(next === undefined ? null : next)
+            if (next instanceof Error) return Promise.reject(next)
+            if (next === undefined || next === null) return Promise.resolve(null)
+            return Promise.resolve(typeof next === 'string' && opts.schema ? { output: next } : next)
         },
         workflow: (ref) => {
             calls.workflow.push(ref.scriptPath)
@@ -112,6 +116,9 @@ function wave({ replies = [], load, cwd = '/repo', show = { status: 'claimed', a
         ok(calls.agent.length === 1 && calls.agent[0].opts.label === 'STEP-12 · claim' &&
             calls.agent[0].opts.agentType === 'executor-read' && calls.agent[0].opts.model === 'haiku',
             'exactly one claim agent ran, haiku, as executor-read, labelled STEP-12 · claim')
+        const schema = calls.agent[0].opts.schema
+        ok(schema && JSON.stringify(schema.required) === '["output"]' && schema.properties.output.type === 'string',
+            'the claim agent answers through the command-output schema')
         ok(calls.agent[0].prompt.includes(`--module '${MODULE}'`) && calls.workflow.length === 1 && calls.workflow[0] === MODULE,
             'the module the claim agent was told to write is the one the wave loads')
     }

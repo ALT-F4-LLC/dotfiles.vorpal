@@ -993,8 +993,10 @@ on the last launch only, `dispatch verify` and the pre-open
 reap check (`docket guard spawn --run $RUN` with no `--rows`; exit 2
 names an unacknowledged reap, so convene the ack-reap panel now, beside
 the join). A reap the open itself performed rides on that open's own
-`reaped`/`reap_hold` fields instead. End the turn on the join. Read the
-wave's return as rows, not a verdict: `not-launched-run-parked`,
+`reaped`/`reap_hold` fields instead. End the turn on the join. The wave
+returns `{statuses, coordination}`: one `statuses` entry per row the launch
+held, in manifest order, and the launch's `coordination` counts. Read
+`statuses` as rows, not a verdict: `not-launched-run-parked`,
 `not-launched-writer-budget`, `not-launched-agent-budget`,
 `not-launched-token-budget` (the session's output-token target is
 exhausted), `agent-cap`
@@ -1026,7 +1028,7 @@ on its behalf (step 3), so a reply that ends on it with no tail is
 reply ended in neither a record tail nor a stop signal: `docket step show
 STEP-N` is the only account of what happened, and a step still claimed
 by that spawn is a reap candidate. Read a dispatch's outcome as the
-union of its launches' returns.
+union of its launches' `statuses`.
 
 **A wave's early steps do not refuse the close just for running past the
 grace.** `dispatch.grace` (15 minutes) is measured from the run's newest
@@ -1090,8 +1092,8 @@ close, with one difference at the end:
 
 ```
 // 1. the join is a workflow (below); its return carries the rows and you check the shape.
-// rows and statuses are this wave's own launch args and completion return, verbatim —
-// pass them together so the join's coordination section reports rounds, gate passes,
+// rows are this wave's own launch rows and statuses its return's `statuses` array, both
+// verbatim — pass them together so the join's coordination section reports rounds, gate passes,
 // re-seats, claim conflicts, ancestry parks, and budget/chain deferrals for this wave;
 // omitting either leaves the section `null` and "not measured".
 Workflow({ scriptPath: "<absolute installed path to wave-usage.js>",
@@ -1664,9 +1666,14 @@ the auto-mode classifier mid-run, and a refusal here stalls a gate.
 Run `verify-pins` first on an active run to confirm disk matches pinned.
 tribunal.js refuses a voter missing any of the three fields. `gateKind`
 names the gate class (`"ack-reap"`, `"activation"`, `"budget"`,
-`"loop-extension"`, `"fix-batch"`), never invented per gate. Then `docket
-vote result <proposal-id>`: approved runs the underlying verb, citing the
-proposal id; anything else goes to the operator. **The evidence bar does
+`"loop-extension"`, `"fix-batch"`), never invented per gate. tribunal.js
+returns `{voteId, outcome, seatsSpawned, respawns, replies}`: `outcome` is
+its own read of the record (`null` means unknown, never "no casts"), and
+`replies` lists `{seat, castError}` for each seat whose cast failed after
+its retry; quote those errors when the panel comes up short. Then `docket
+vote result <proposal-id>`, the authority over that return: approved runs
+the underlying verb, citing the proposal id; anything else goes to the
+operator. **The evidence bar does
 not drop because a panel is cheap:** gather it before convening, not
 after.
 

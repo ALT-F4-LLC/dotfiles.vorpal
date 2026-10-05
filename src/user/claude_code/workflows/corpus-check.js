@@ -89,6 +89,37 @@ const CROSS_PAIRS = [
 
 // Called by skills/corpus-check/SKILL.md, which defines scope and handles fixes.
 // args: { sinceRef: string | null } supplies context without narrowing the audit.
+// Returns {findings, unverified, filesAudited, readPlanSize, coverage,
+// rawFindingCount, verifiedCount, survivedCount, unverifiedCount,
+// verificationPartial, summary}; `coverage` is {complete, gapsFound,
+// refilled, uncovered}, each gap a {file, range, reason}.
+
+const FILE_LIST_SCHEMA = {
+  type: 'object',
+  properties: {
+    files: { type: 'array', items: { type: 'string' }, description: 'Repo-relative paths, one entry per matching file' },
+  },
+  required: ['files'],
+}
+
+const SIZE_SCHEMA = {
+  type: 'object',
+  properties: {
+    large: {
+      type: 'array',
+      description: 'Only the files over the line threshold; empty when none qualify',
+      items: {
+        type: 'object',
+        properties: {
+          file: { type: 'string' },
+          lines: { type: 'integer' },
+        },
+        required: ['file', 'lines'],
+      },
+    },
+  },
+  required: ['large'],
+}
 
 const FINDING_SCHEMA = {
   type: 'object',
@@ -152,13 +183,6 @@ const BATCH_VERDICT_SCHEMA = {
     },
   },
   required: ['verdicts'],
-}
-
-function parseLines(text) {
-  return (text || '')
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line && !line.startsWith('#'))
 }
 
 // TEST-BEGIN verify-budget — pure planning helpers, exercised without a run.
@@ -259,6 +283,9 @@ deviations; otherwise false. Schema fixes cascade to workflows declaring them.
 Report linesRead as the spans you read.`
 }
 
+// Returns the refill reports and the gap lists the caller reports: `refilled`
+// gaps were re-read, and `uncovered` ones lay beyond the refill reserve or
+// had a refill that returned nothing.
 async function completeCoverage(files, lineCounts, reports, sinceRefNote) {
   const coverageSummary = reports.map((report) => `${report.file}: ${report.linesRead}`).join('\n')
   const sizeLines = files.map((file) => `${file} ${lineCounts.get(file) || '?'}`).join('\n')
@@ -280,7 +307,7 @@ or uncovered span in a large file as a gap, naming the file and missing range.`,
   const gaps = critic.gaps || []
   if (!gaps.length) {
     log('Completeness pass: full coverage confirmed, no gaps')
-    return { reports: [], coverageNote: 'No coverage gaps found.' }
+    return { reports: [], gapsFound: 0, refilled: [], uncovered: [] }
   }
 
   const refillLimit = COMPLETENESS_RESERVE - 1
@@ -292,10 +319,13 @@ or uncovered span in a large file as a gap, naming the file and missing range.`,
   const gapReads = await pipeline(refills, (gap) =>
     agent(readPrompt(gap.file, ` (lines ${gap.range})`, sinceRefNote), { phase: 'Completeness', label: `refill:${gap.file}`, schema: FINDING_SCHEMA, ...AGENT_CONFIG.refill })
   )
+  const failed = refills.filter((_, i) => !gapReads[i])
+  if (failed.length) log(`${failed.length} refill(s) returned nothing and stay UNCOVERED: ${describe(failed)}`)
   return {
     reports: gapReads.filter(Boolean),
-    coverageNote: `Re-dispatched ${refills.length} gap(s) found by the completeness pass: ${describe(refills)}.`
-      + (unfilled.length ? ` UNCOVERED, beyond the refill reserve: ${describe(unfilled)}.` : ''),
+    gapsFound: gaps.length,
+    refilled: refills.filter((_, i) => gapReads[i]),
+    uncovered: [...unfilled, ...failed],
   }
 }
 
@@ -339,28 +369,31 @@ phase('Discover')
 // they fan out together instead of paying two sequential agent hops.
 const [claudeFileList, docketFileList] = await parallel([
   () => agent(
-    'List every file under src/user/claude_code matching: CLAUDE.md itself, skills/**/*.md, agents/*.md, workflows/*.js. Return one path per line, repo-relative, nothing else.',
-    { phase: 'Discover', label: 'discover:claude_code', ...AGENT_CONFIG.discovery }
+    'List every file under src/user/claude_code matching: CLAUDE.md itself, skills/**/*.md, agents/*.md, workflows/*.js. Return every path in `files`, repo-relative.',
+    { phase: 'Discover', label: 'discover:claude_code', schema: FILE_LIST_SCHEMA, ...AGENT_CONFIG.discovery }
   ),
   () => agent(
-    'List every file under src/user/docket/config matching: contracts/*.md, fragments/*.md, workflows/*.toml, policy.toml, schemas/*.json, README.md. Return one path per line, repo-relative, nothing else.',
-    { phase: 'Discover', label: 'discover:docket_config', ...AGENT_CONFIG.discovery }
+    'List every file under src/user/docket/config matching: contracts/*.md, fragments/*.md, workflows/*.toml, policy.toml, schemas/*.json, README.md. Return every path in `files`, repo-relative.',
+    { phase: 'Discover', label: 'discover:docket_config', schema: FILE_LIST_SCHEMA, ...AGENT_CONFIG.discovery }
   ),
 ])
-const files = [...parseLines(claudeFileList), ...parseLines(docketFileList)]
+// Both trees, always: a tree whose listing never came back is not an empty tree.
+const undiscovered = [[claudeFileList, 'src/user/claude_code'], [docketFileList, 'src/user/docket/config']]
+  .filter(([list]) => !list).map(([, tree]) => tree)
+if (undiscovered.length) throw new Error(`corpus-check: discovery returned nothing for ${undiscovered.join(' and ')}; the file list is unknown`)
+const files = [...claudeFileList.files, ...docketFileList.files]
 log(`Discovered ${files.length} files across both trees`)
 
 // The workflow cannot inspect files directly.
 const sizeReport = await agent(
   `Run: wc -l ${files.join(' ')}
-Return only files exceeding ${SHARD_LINES} lines as "path lineCount", one per line.
-If none qualify, return an empty string.`,
-  { phase: 'Discover', label: 'size-check', ...AGENT_CONFIG.sizing }
+Return in \`large\` each file exceeding ${SHARD_LINES} lines, with the path and line count wc printed.
+Leave out the total line. Return an empty array when no file qualifies.`,
+  { phase: 'Discover', label: 'size-check', schema: SIZE_SCHEMA, ...AGENT_CONFIG.sizing }
 )
-const largeFiles = parseLines(sizeReport)
-  .map((line) => line.match(/^(.+?)\s+(\d+)\s*$/))
-  .filter(Boolean)
-  .map(([, file, lines]) => ({ file, lines: parseInt(lines, 10) }))
+if (!sizeReport) log('size-check returned nothing; no file is sharded, and the completeness pass re-reads any span a reader missed')
+const largeFiles = ((sizeReport && sizeReport.large) || [])
+  .filter(({ file, lines }) => files.includes(file) && lines > SHARD_LINES)
 const lineCounts = new Map(largeFiles.map(({ file, lines }) => [file, lines]))
 if (largeFiles.length) log(`Sharding ${largeFiles.length} large file(s): ${largeFiles.map(({ file, lines }) => `${file} (${lines}L)`).join(', ')}`)
 
@@ -375,7 +408,7 @@ const initialReports = (await pipeline(readPlan, ({ file, rangeNote, label }) =>
 )).filter(Boolean)
 
 phase('Completeness')
-const { reports: refillReports, coverageNote } = await completeCoverage(files, lineCounts, initialReports, sinceRefNote)
+const { reports: refillReports, gapsFound, refilled, uncovered: uncoveredGaps } = await completeCoverage(files, lineCounts, initialReports, sinceRefNote)
 
 phase('Cross-boundary')
 const crossReports = await pipeline(CROSS_PAIRS, (pair) =>
@@ -412,23 +445,21 @@ const verifiedCount = rawFindings.length - unverified.length
 if (rawFindings.length) log(`${findings.length}/${verifiedCount} verified finding(s) survived adversarial verification; ${unverified.length} unverified`)
 
 const partial = unverified.length > 0
-const verificationNote = partial
-  ? `Verification PARTIAL: ${unverified.length} of ${rawFindings.length} raw finding(s) unverified (agent budget or no refuter vote); see the unverified list.`
-  : 'Verification complete: every raw finding was judged.'
 const summary = rawFindings.length
-  ? `${rawFindings.length} raw findings, ${verifiedCount} verified, ${findings.length} survived adversarial verification (${REFUTERS_PER_BATCH} refuters/batch, one framing each: ${REFUTER_FRAMINGS.map((f) => f.key).join(", ")}; majority-uphold)${partial ? `; ${unverified.length} UNVERIFIED` : ''}.`
-  : 'no findings surfaced.'
+  ? `${rawFindings.length} raw findings, ${verifiedCount} verified, ${findings.length} survived adversarial verification (${REFUTERS_PER_BATCH} refuters/batch, one framing each: ${REFUTER_FRAMINGS.map((f) => f.key).join(", ")}; majority-uphold)${partial ? `; ${unverified.length} UNVERIFIED` : ''}`
+  : 'no findings surfaced'
+const coverageTail = uncoveredGaps.length ? `; ${uncoveredGaps.length} span(s) UNCOVERED` : ''
 
 return {
   findings,
   unverified,
   filesAudited: files.length,
   readPlanSize: readPlan.length,
-  coverageNote: rawFindings.length ? `${coverageNote} ${verificationNote}` : coverageNote,
+  coverage: { complete: uncoveredGaps.length === 0, gapsFound, refilled, uncovered: uncoveredGaps },
   rawFindingCount: rawFindings.length,
   verifiedCount,
   survivedCount: findings.length,
   unverifiedCount: unverified.length,
   verificationPartial: partial,
-  summary: `${files.length} files audited via ${readPlan.length} read(s); ${summary}`,
+  summary: `${files.length} files audited via ${readPlan.length} read(s); ${summary}${coverageTail}.`,
 }

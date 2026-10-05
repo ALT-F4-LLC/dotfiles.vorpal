@@ -1,6 +1,6 @@
 export const meta = {
     name: 'tribunal',
-    description: 'Internal: launched through scriptPath by docket-run (conversational gates) and by wave.js mid-wave; seats a judge panel that casts real `docket vote cast` votes on one gated proposal. Args and probe cost in the header comment.',
+    description: 'Internal: launched through scriptPath by docket-run (conversational gates) and by wave.js mid-wave; seats a judge panel that casts real `docket vote cast` votes on one gated proposal. Args, return, and probe cost in the header comment.',
     whenToUse: 'Never by name. The caller creates the proposal, passes its id, and passes every voter with its {model, effort, variant}; this script only fills an open one.',
     phases: [
         { title: 'Judge', detail: 'one seat per voter, each casting docket vote cast' },
@@ -46,6 +46,16 @@ export const meta = {
 // deep, so the seat brief renders from one place. The CALLER creates the
 // proposal, passes its id, and passes every voter WITH its {model, effort,
 // variant}; tribunal.js only fills an open one.
+//
+// Return: CONVERSATIONAL {voteId, outcome, seatsSpawned, respawns, replies}
+// — `outcome` is the probe's {status, final_outcome, votes} read of the vote
+// record, or null when the probe returned nothing twice (unknown, never "no
+// casts"), and `respawns` counts the seats re-spawned once. MID-WAVE
+// {voteId, seatsSpawned, absorbed, replies} — `absorbed` lists {seat, error}
+// per caught spawn error. In both, `replies` lists {seat, castError} for each
+// seat attempt that reported a cast error. Every seat answers through
+// SEAT_SCHEMA, so no free text crosses. The engine's record stays the
+// authority: the caller reads `docket vote result` before acting.
 // ---------------------------------------------------------------------------
 
 // Verifier settings are local; judges keep caller routing from pinned policy.
@@ -483,7 +493,7 @@ gate routes onward per its declared routing, to the human operator or into a
 rework loop that answers your findings, so reject when the evidence says
 reject; do not approve to keep things moving.
 
-CAST YOUR VOTE — exactly once, as your last action, in ONE Bash call that
+CAST YOUR VOTE — exactly once, as your last command, in ONE Bash call that
 feeds your one-paragraph summary to \`--summary -\` on stdin through a QUOTED
 heredoc. Quoting the delimiter means the shell expands NOTHING in the body:
 backticks, $( ), and $VAR all stay literal text. Write no summary file and
@@ -517,15 +527,13 @@ is cast, so read the refusal and report it.
                     a summary that could have been written without
                     investigating will read like one.
 
-YOUR FINAL TEXT IS NOT DELIVERED ANYWHERE. THE CAST IS YOUR DELIVERABLE.${step ? ` If the
-cast command errors, read the error, fix what it names, and retry ONCE. If it
-still fails, end your reply with the verbatim error text and nothing else —
-that is the only case where your final text matters.` : ` No
+YOUR FINAL TEXT IS NOT DELIVERED ANYWHERE. THE CAST IS YOUR DELIVERABLE.${step ? '' : ` No
 summary you write in chat reaches the panel, the conductor, or the operator;
-only the recorded vote does. If the cast command errors, read the error, fix
-what it names, and retry ONCE. If it still fails, end your reply with the
-verbatim error text and nothing else — that is the only case where your final
-text matters.`}`
+only the recorded vote does.`} If the cast command errors, read the error, fix
+what it names, and retry ONCE. Then return through the structured output:
+\`castError\` is the verbatim error text when the cast still failed, and an
+empty string when it landed. That field is the only part of your reply anyone
+reads.`
 }
 // TEST-END seat-brief
 
@@ -555,6 +563,17 @@ const VOTE_RESULT_SCHEMA = {
         },
         error: { type: 'string' },
     },
+}
+
+// A seat's whole reply. The cast is its deliverable; this field carries the
+// one thing its text was ever for, a cast that failed twice.
+const SEAT_SCHEMA = {
+    type: 'object',
+    properties: {
+        castError: { type: 'string', description: 'The verbatim error text when the cast still failed after one retry; empty when the cast landed' },
+    },
+    required: ['castError'],
+    additionalProperties: false,
 }
 
 function checkerBrief(voteId, cwd) {
@@ -667,11 +686,11 @@ if (seats.length > 1) {
 // Judge / Verify
 // ---------------------------------------------------------------------------
 
-// Every spawn attempt (first seating or the conversational re-seat) that ended
-// with text, as {seat, text} in completion order. The brief tells a seat its
-// final text goes nowhere except a verbatim cast error, so this is the one
-// route such an error has to the caller; null and empty replies never land
-// here.
+// Every spawn attempt (first seating or the conversational re-seat) that
+// reported a cast error, as {seat, castError} in completion order. The brief
+// tells a seat its structured output carries only a cast that failed twice,
+// so this is the one route such an error has to the caller; a null reply or
+// an empty castError never lands here.
 const replies = []
 
 function spawnJudge(r, respawn) {
@@ -681,16 +700,17 @@ function spawnJudge(r, respawn) {
         agentType: 'executor-read',
         model: r.model,
         effort: r.effort,
-    }).then((text) => {
-        if (text == null) {
+        schema: SEAT_SCHEMA,
+    }).then((reply) => {
+        if (reply == null) {
             log(`${r.seat}: SPAWN PRODUCED NOTHING (launch blocked, model ${r.model} ` +
                 `unavailable, or the agent died mid-flight) — whether a cast landed is ` +
                 `UNKNOWN; the verify pass below is what settles it`)
-        } else if (typeof text === 'string' && text.trim() !== '') {
-            log(`${r.seat}: ended with text (relayed as replies[]) — ${text}`)
-            replies.push({ seat: r.seat, text })
+        } else if (typeof reply.castError === 'string' && reply.castError.trim() !== '') {
+            log(`${r.seat}: reported a cast error (relayed as replies[]) — ${reply.castError}`)
+            replies.push({ seat: r.seat, castError: reply.castError })
         }
-        return text
+        return reply
     }).catch((err) => {
         log(`${r.seat}: spawn error: ${err}`)
         return { seat: r.seat, error: String(err) }

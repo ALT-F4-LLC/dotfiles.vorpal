@@ -62,7 +62,7 @@ export const meta = {
 //
 // return:
 //   coverage      — {inventoried, digested, digestErrors, flagged,
-//                    deepRead, deferred, shards, layersCovered}
+//                    deepRead, deferred, shards, layersCovered, agents}
 //   deferredLines — inventory lines no reader reached; relaunch with them.
 //   flaggedLines  — every digest-flagged line, for a continuation.
 //   layers        — [{layer, covered, candidateCount, notes}]
@@ -71,6 +71,8 @@ export const meta = {
 //   refuted       — candidates a majority refuted, with the refutations.
 //   unverified    — candidates fewer than two refuters could judge.
 //   reconciled    — [{fingerprint, severity, owner, members, draft...}]
+//   reconcile     — the reconciler's {notes, dropped}, each dropped entry a
+//                    localId with its reason; null when nothing reached it.
 //   uncovered     — [{what, why}] every gap, bound, and null return.
 //   summary       — one line for the skill's report.
 //
@@ -831,7 +833,7 @@ log(`docket-postmortem: ${upheld.length} upheld, ${refuted.length} refuted, ${un
 
 const toReconcile = [...(Array.isArray(continuation?.priorUpheld) ? continuation.priorUpheld : []), ...upheld]
 let reconciled = []
-let reconcileNotes = ''
+let reconcile = null
 if (toReconcile.length > 0) {
     phase('Reconcile')
     const r = await seat(reconcileBrief(toReconcile), {
@@ -842,7 +844,7 @@ if (toReconcile.length > 0) {
         uncovered.push({ what: 'reconcile', why: 'reconciler returned no usable result; merge and draft inline from findings' })
     } else {
         reconciled = r.drafts
-        reconcileNotes = [r.notes, ...r.dropped.map((d) => `dropped: ${d}`)].filter(Boolean).join('\n')
+        reconcile = { notes: r.notes, dropped: r.dropped }
     }
 }
 
@@ -870,7 +872,7 @@ return {
     refuted,
     unverified,
     reconciled,
-    reconcileNotes,
+    reconcile,
     uncovered,
     summary,
 }

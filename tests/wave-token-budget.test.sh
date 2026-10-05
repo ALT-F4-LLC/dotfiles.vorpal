@@ -153,7 +153,8 @@ const start = (theRows, budgetOverride) => {
     RESULTS = new Map()
     HOLD = new Set()   // nothing held in this suite — every row settles immediately
     OPEN = new Map()
-    return ladder()
+    // wave.js returns {statuses, coordination}; these cases read the statuses.
+    return ladder().then((out) => out.statuses)
 }
 const logged = (frag) => LOG.some((l) => l.includes(frag))
 const ex = (step, issue, stage) => ({

@@ -166,7 +166,8 @@ const run = async (theRows, results, probes) => {
     LOG.length = 0
     RESULTS = new Map(Object.entries(results || {}))
     PROBES = new Map(Object.entries(probes || {}))
-    return ladder()
+    // wave.js returns {statuses, coordination}; these cases read the statuses.
+    return ladder().then((out) => out.statuses)
 }
 
 // ---- AC1/AC2/AC3: a stage-0 'spawn-failed' kills only its own chain ----

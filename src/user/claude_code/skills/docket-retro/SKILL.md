@@ -58,8 +58,14 @@ analysts: [{brief, model, effort}, ...]}})` (source in the dotfiles
 checkout: `src/user/claude_code/workflows/retro-seat.js`), one array entry
 per analyst, with the intended `model` and `effort` set explicitly since the
 script has no row to resolve them from. They run the verbs and return
-evidence-labelled findings; you compose §3's
-proposals and hold the approval conversation. The verbs, for their briefs:
+evidence-labelled findings through a fixed schema; you compose §3's
+proposals and hold the approval conversation. The workflow returns
+`{reports, seated, returned}`: `reports` holds one entry per `analysts`
+entry, in order, each `{window, coverage, findings, gaps}` (a finding is
+`{kind, row, title, runs, body}`, `kind` either `config-proposal` or
+`issue-to-file`), or `null` for a seat that returned nothing. A `null` is
+a coverage gap for that analyst's run window, never a clean window. The
+verbs, for their briefs:
 
 ```bash
 docket run report RUN-N --json                        # per run; read-only, never advances a run
@@ -94,7 +100,7 @@ than assuming an unsandboxed shell is needed. Where it is not writable,
 | Gate health | `gates` pass/fail/**unmatched**, `gate_trail` (its `output` rides non-pass rows only, last 2000 bytes) | any `unmatched` is a missing trust entry, not a failing check |
 | Intervention profile | `run-paused`, `step-held`, and `step-routed` with destination `waiting-human` — that string is a run/step STATUS, not an event kind, so filtering events on it returns nothing; `lease-reaped` behind the holds — query with `--all-projects` | designed gate vs breach vs held — three different fixes; a hold behind a `lease-reaped` carrying `data.forced` was a relay declaring a dead spawn, not a slow step |
 | Attempt pressure | `attempts`, loop ordinals | a step repeatedly at `max_attempts` wants a smaller charter, not a bigger budget |
-| Integration health | the store half, from the event feed with `--all-projects`: `step-annotated` per write-class step recorded (one integration each; its payload cannot tell a verbatim pick from a hand-resolved one), `dispatch-closed` whose `reason` is not `reconciled` (an override such as `--skip-integration-check`), `loop-entered` ordinals and `step-routed` with detail `fix-loop` (rounds per issue), `lease-reaped`. The conversation half: cherry-pick conflicts resolved by hand, `dispatch close` CONFLICT refusals (a refusal writes no event), `parked-base-ancestry`, claim CONFLICTs, re-seats, budget and chain deferrals reach only the conversation that drove the wave, as wave-usage.js's `coordination` section (steps mode, with the wave's returned statuses and the manifest rows passed in) | an issue repeatedly reaching `fix@3`, or parking on ancestry, means parallel writers collide on the same files: serialize those lanes or split the charter, not a bigger budget; a first-pass gate pass rate falling across runs while spend holds is the review stage catching what implement should; a store-only retro sees the store half alone and says so instead of reporting a clean row |
+| Integration health | the store half, from the event feed with `--all-projects`: `step-annotated` per write-class step recorded (one integration each; its payload cannot tell a verbatim pick from a hand-resolved one), `dispatch-closed` whose `reason` is not `reconciled` (an override such as `--skip-integration-check`), `loop-entered` ordinals and `step-routed` with detail `fix-loop` (rounds per issue), `lease-reaped`. The conversation half: cherry-pick conflicts resolved by hand, `dispatch close` CONFLICT refusals (a refusal writes no event), `parked-base-ancestry`, claim CONFLICTs, re-seats, budget and chain deferrals reach only the conversation that drove the wave, as the `coordination` section of each wave's `{statuses, coordination}` return and of wave-usage.js's join (steps mode, with that return's `statuses` and the manifest rows passed in) | an issue repeatedly reaching `fix@3`, or parking on ancestry, means parallel writers collide on the same files: serialize those lanes or split the charter, not a bigger budget; a first-pass gate pass rate falling across runs while spend holds is the review stage catching what implement should; a store-only retro sees the store half alone and says so instead of reporting a clean row |
 | Trust drift | `trust-added`/`trust-removed` (store-level; query with `--all-projects` — visible either way, but only that flag proves you saw all of them) | **an entry the operator does not recognize is a finding, and you raise it first** |
 | Config churn | your own proposals per run over time | churn trending up means docket-bootstrap mined the repo wrong; fix the source, not each symptom |
 | Routing drift | the requested pair only, from step rows: `model_requested` / `effort_requested` (below). The resolved pair on a step row is `unknown` unless the runtime supplied an observation, so it measures nothing. The serving model reaches only the driving conversation, as `model_observations` from wave-usage.js (see the four metadata keys below) | a served model that differs from the requested one, in the driving conversation's wave-usage results, means policy asks for a model it does not get; a store-only retro cannot see it and says so instead of reporting a clean row |
@@ -235,7 +241,10 @@ absolute path (the tool expands no `~`), and there is no source-tree
 fallback: the tool launches only under the session's cwd or
 `permissions.additionalDirectories`, which adds exactly
 `~/.claude/workflows`. An absent installed file means the corpus was never
-activated here: stop and report it rather than hunting for another copy. Then `docket
+activated here: stop and report it rather than hunting for another copy. The
+workflow returns `{voteId, outcome, seatsSpawned, respawns, replies}`, the
+same shape docket-run reads: `replies` lists `{seat, castError}` for each
+seat whose cast failed after its retry. Then `docket
 vote result <id>`: approved is the authority to apply, and §4 runs
 immediately, with no follow-up question about whether to apply now or
 later. A rejection or a split goes to the operator through the built-in

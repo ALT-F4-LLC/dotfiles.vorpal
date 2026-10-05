@@ -247,7 +247,6 @@ other seats' or already decided.` : ''
     const gateLine = step
         ? `THE GATE:       step ${step.step} (${step.instance}, issue ${step.issue}, run ${step.run})`
         : `THE GATE:       ${gateKind}`
-    const summaryFile = step ? `${step.step}-${r.seat}-summary.txt` : `${voteId}-${r.seat}-summary.txt`
 
     // Both modes render the case VERBATIM: the conversational caller's own
     // text, or mid-wave the proposal body wave.js projected off the record
@@ -408,9 +407,10 @@ brief. (Use \`printenv\`, not \`echo\`.)
 
 PIN IT ONCE AND REUSE THE LITERAL. \`$TMPDIR\` is not guaranteed to resolve to
 the same root in every call, so a path written as the variable can name one
-directory when you create it and a different one when you read it back — the
-summary file your cast reads back below depends on exactly
-that.${heldClusterNote}
+directory when you create it and a different one when you read it back. Your
+cast's summary needs no file: it goes to \`--summary -\` on stdin through a
+QUOTED heredoc in the cast call itself, so its body passes literally — never
+type the summary inline in double quotes.${heldClusterNote}
 
 Run \`docket\` BARE from your working directory — the store resolves from
 anywhere inside the repository; nothing to probe for, nothing to prepend.
@@ -425,8 +425,9 @@ literal wherever <TMP> appears in this brief. (Use \`printenv\`, not \`echo\`.)
 \`$TMPDIR\` is not guaranteed to resolve to the same root on a later Bash
 call, so a path written as the variable can name one directory when you create
 a file and a different one when you read it back. Pin the literal once and
-reuse it everywhere — the summary file your cast reads back below depends on
-exactly that.
+reuse it everywhere. Your cast's summary needs no file: it goes to
+\`--summary -\` on stdin through a QUOTED heredoc in the cast call itself, so
+its body passes literally — never type the summary inline in double quotes.
 
 Run every command SANDBOXED, same as an executor step — do NOT pass
 dangerouslyDisableSandbox. Only the operator can grant that, and never
@@ -482,21 +483,16 @@ gate routes onward per its declared routing, to the human operator or into a
 rework loop that answers your findings, so reject when the evidence says
 reject; do not approve to keep things moving.
 
-CAST YOUR VOTE — exactly once, as your last action, in TWO Bash calls. First
-write your one-paragraph summary to a scratch file with a QUOTED heredoc —
-quoting the delimiter means the shell expands NOTHING in the body: backticks,
-$( ), and $VAR all stay literal text. The filename carries your ${step ? 'step' : 'proposal'} and
-seat, so no other seat's file can collide with yours:
+CAST YOUR VOTE — exactly once, as your last action, in ONE Bash call that
+feeds your one-paragraph summary to \`--summary -\` on stdin through a QUOTED
+heredoc. Quoting the delimiter means the shell expands NOTHING in the body:
+backticks, $( ), and $VAR all stay literal text. Write no summary file and
+run no separate call for the summary: if this one call is refused, nothing
+is cast, so read the refusal and report it.
 
-  ${cdPrefix}cat > <TMP>/${summaryFile} <<'EOF'
+  ${cdPrefix}docket vote cast ${voteId} --voter ${r.seat} --role ${role} -v <approve|approve-with-concerns|reject> --confidence <0.0-1.0> --domain-relevance <0.0-1.0> --metadata '${metadataClaim}' --summary - <<'EOF'
   <your one-paragraph reasoning, on ONE line>
   EOF
-
-Then cast, reading the file back — safe because the substitution wraps a fixed
-\`cat\` of your own file, so its content passes into the flag verbatim instead
-of being re-parsed as shell syntax:
-
-  ${cdPrefix}docket vote cast ${voteId} --voter ${r.seat} --role ${role} -v <approve|approve-with-concerns|reject> --confidence <0.0-1.0> --domain-relevance <0.0-1.0> --metadata '${metadataClaim}' --summary "$(cat <TMP>/${summaryFile})"
 
   --verdict/-v      approve                = nothing you found should stop this
                     approve-with-concerns  = proceed, with the risks you name recorded
@@ -513,10 +509,11 @@ of being re-parsed as shell syntax:
                     public. The relay measures observed models from the
                     completed transcript; do not infer them from this routing.
   --summary         ONE paragraph: your verdict's reasoning and the specific
-                    evidence behind it. Write it to the scratch file EXACTLY as
-                    above — NEVER type the paragraph inline in double quotes:
+                    evidence behind it. Pass it on stdin through the quoted
+                    heredoc EXACTLY as above — the body passes literally.
+                    NEVER type the paragraph inline in double quotes:
                     backticks, $( ), and $VAR execute there. No line breaks
-                    inside the file. Name files, shas, and commands you ran —
+                    inside the body. Name files, shas, and commands you ran —
                     a summary that could have been written without
                     investigating will read like one.
 

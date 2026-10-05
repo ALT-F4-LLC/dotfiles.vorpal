@@ -131,6 +131,23 @@ for (const [label, b] of [['conversational', conv], ['conversational re-seat', r
         `${label} brief carries the sibling-cast rule`)
 }
 
+// ---- the cast reads its summary from stdin in the SAME call. A summary
+// written to a file in one Bash call and read back by the cast in another
+// lets a refused write still record a cast with an empty summary; one call
+// means a refused heredoc refuses the cast with it.
+const CAST_STDIN = /^ *(cd \/repo && )?docket vote cast DKT-V304 [^\n]*--summary - <<'EOF'\n[^\n]*\n *EOF$/m
+for (const [label, b] of [['conversational', conv], ['mid-wave', mid]]) {
+    ok(CAST_STDIN.test(b),
+        `${label} brief casts with --summary - and a quoted heredoc in one call`)
+    const castLine = b.split('\n').find((l) => l.includes('docket vote cast DKT-V304')) || ''
+    ok(castLine !== '' && !castLine.includes('$('),
+        `${label} cast line carries no command substitution (got ${JSON.stringify(castLine)})`)
+    ok(!b.includes('$(cat'),
+        `${label} brief never reads a summary back through $(cat`)
+    ok(!b.includes('cat > <TMP>/'),
+        `${label} brief never writes a summary file under <TMP>`)
+}
+
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)
 JS

@@ -39,8 +39,9 @@ export const meta = {
 //                    by that project's agents, not guessed around.
 //   issues         — [{project, id, kind, parent_id, title, labels, assignee,
 //                    status, size, runIncluded}] — every surveyed non-epic
-//                    row of the judged projects that the skill's routing,
-//                    kind, and status filters admit, plus every open epic
+//                    row of the judged projects that the skill's named
+//                    issue ids and routing, kind, and status filters
+//                    admit, plus every open epic
 //                    row, as §1 established them. runIncluded is true
 //                    when the id is on any planning, active, or paused
 //                    run's roster; the script never re-derives it.

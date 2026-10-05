@@ -4,30 +4,32 @@ description: >-
   Use on "groom the backlog", "/groom", "clean up the backlog", "triage
   operator decisions", "which issues are still worth doing", or "make the
   backlog run-ready". Grooms the current Docket project's unrouted backlog
-  issues by default, once the operator approves or changes the scope
-  (routed issues, other statuses, kinds, the engine project), until retained
-  work is easy to consume: validates value, repairs acceptance criteria,
+  by default, once the operator approves or changes the scope (routed
+  issues, other statuses, kinds, the engine project), or only issues named
+  by id, until retained work is easy to consume: validates value, repairs
+  acceptance criteria,
   sizes and splits, triages operator decisions, retires approved obsolete
   or duplicate work, groups work under epics, closes readiness gaps.
-  Judges through the read-only docket-groom Workflow script; the survey,
-  every edit, every gate, and the report stay in the main session. Safe
-  edits apply directly; closures, merges, splits, rescopes, epic creation,
+  Judges through the read-only docket-groom Workflow; the survey,
+  edits, gates, and report stay in the main session. Safe edits apply
+  directly; closures, merges, splits, rescopes, epic creation,
   re-parenting, protected-issue edits, and the route-tend and route-loop
   labels need operator approval. One survey per invocation; no
   implementation, no watch. Distinct from docket-tend, which works
   route-tend issues.
-argument-hint: "[stale window, e.g. 14d] [engine] [routed|all] [kinds, e.g. bugs] [statuses, e.g. todo]"
+argument-hint: "[issue ids, e.g. DOT-1234, DOT-1235] [stale window, e.g. 14d] [engine] [routed|all] [kinds, e.g. bugs] [statuses, e.g. todo]"
 ---
 
 # docket-groom
 
 Run one grooming pass over the current project's open issues: by default
 its unrouted issues in `backlog` status, which bare `docket-plan` and
-`docket-tend` skip until a pass routes them (§1 sets the scope and its
-approval). The Docket engine project's open issues, including engine
-defects and capability gaps filed by other Docket skills, are judged only
-when the pass runs from the engine checkout, the word `engine` appears in
-`$ARGUMENTS`, or the operator adds the engine at §1's scope approval; a
+`docket-tend` skip until a pass routes them, or exactly the issues the
+invocation names (§1 sets the scope and its approval). The Docket engine
+project's open issues, including engine defects and capability gaps filed
+by other Docket skills, are judged only when the pass runs from the engine
+checkout, the word `engine` appears in `$ARGUMENTS`, the invocation names
+an engine issue, or the operator adds the engine at §1's scope approval; a
 pass from any other project surveys the engine project and reports what
 awaits grooming there, so no consumer backlog pays to re-judge an engine backlog
 that has not changed. Close every grooming gap so retained work
@@ -71,9 +73,19 @@ order, each one of:
   `task`, or `chore`.
 - **Status filter:** an open status: `backlog`, `todo`, `in-progress`, or
   `review`.
+- **Issue id:** a project prefix, a hyphen, and a number, such as
+  `DOT-1234`, matched case-insensitively. Several ids can be named, as in
+  `DOT-1234, DOT-1235`.
 
-Connectives such as `in`, `and`, `only`, and `the` carry no meaning. The
-judged issues are the non-epic rows that pass all three filters, and each
+Commas and connectives such as `in`, `and`, `only`, and `the` carry no
+meaning. Named issue ids fix the judged issues directly: §1 resolves
+each id, and only those issues are judged, whatever their routing, kind,
+or status. An id naming an epic admits the epic's open non-epic
+`sub_issues`; the epic itself stays context, as every epic does. Ids drop
+all three filter defaults. A routing, kind, or status word named beside
+ids still applies and narrows them; §5 reports each named id it excluded.
+The stale window and `engine` apply as usual. Without ids, the judged
+issues are the non-epic rows that pass all three filters, and each
 filter has its own default. Routing defaults to unrouted: none of
 `route-run`, `route-direct`, `route-tend`, `route-loop`. Status defaults
 to `backlog`. Kind defaults to every kind. A named filter replaces only
@@ -82,10 +94,10 @@ group. So a bare pass judges unrouted backlog issues, `bugs` judges
 unrouted backlog bugs, `todo backlog` judges unrouted issues in either
 status, and `all bugs todo backlog` judges every open bug in those
 statuses. A bare pass asks the operator to approve or override that
-default scope before judging (§1); any routing, kind, or status word is
-the operator's choice and skips that question. Before surveying, ask the
-operator through `AskUserQuestion` what any other word means; do not guess
-a filter from it. Honor the operator's explicit constraints in this session,
+default scope before judging (§1); any issue id or routing, kind, or
+status word is the operator's choice and skips that question. Before
+surveying, ask the operator through `AskUserQuestion` what any other word
+means; do not guess a filter from it. Honor the operator's explicit constraints in this session,
 but treat earlier issue reads or backlog discussion as stale, not current
 evidence. Maintain one ledger through approval and execution so the report
 covers the whole pass. Take the pass id once, at the survey, as the UTC
@@ -95,9 +107,9 @@ earlier pass minted.
 
 One pass includes the decision rounds and affected-issue rechecks needed to
 finish grooming the surveyed backlog; it does not end at the first operator
-question. It takes no parameter beyond the stale window, `engine`, and
-the routing, kind, and status filters, does not repeat the survey or
-watch for new work, schedules no wakeups, and never touches the code the
+question. It takes no parameter beyond the stale window, `engine`, the
+routing, kind, and status filters, and issue ids, does not repeat the
+survey or watch for new work, schedules no wakeups, and never touches the code the
 issues describe. If a gap cannot be resolved within the pass's authority or
 available evidence, report it as incomplete rather than inventing a
 resolution.
@@ -133,9 +145,10 @@ Rules:
 Survey both the invoking project and the Docket engine project, then fix
 the judged scope: the projects whose issues §2 reads and judges and §3 and
 §4 edit. The invoking project is always in it. The engine project joins it
-in three cases only: the invoking project is the engine project in the
+in four cases only: the invoking project is the engine project in the
 same store (survey it once), the word `engine` appears anywhere in
-`$ARGUMENTS`, or the operator approves the engine override below.
+`$ARGUMENTS`, a named issue id resolves to an engine-project row under
+the id rules below, or the operator approves the engine override below.
 Otherwise the engine survey is count-only: record, over its
 non-epic rows, how many are open, how many are unrouted (none of
 `route-run`, `route-direct`, `route-tend`, `route-loop`), and how many are
@@ -195,15 +208,27 @@ rosters, and execute issue commands in that owning context. Review an
 issue only once even if it appears through several queries or references.
 
 The survey itself is never filtered. The routing, kind, and status
-filters, named or defaulted, apply after it and narrow the judged scope to
-the admitted rows of the judged projects. The other surveyed rows are
+filters, named or defaulted, or the named issue ids, apply after it and
+narrow the judged scope to the admitted rows of the judged projects. The
+other surveyed rows are
 context. They can serve as a duplicate's canonical, an epic's member, or a
 dependency. They are never judged, edited, or proposed for any change in
 this pass. A proposal that would need one of them is left out and
 reported.
 
-On a pass with no routing, kind, or status word, approve the judged scope
-before §2. Through `AskUserQuestion`, show the default scope with its
+Resolve each named issue id against the surveyed rows of both projects,
+the count-only engine survey included, by the row's id, never by its
+prefix alone. An id matching an engine-project row puts the engine project
+in the judged scope, and its checkout resolves under the rules above,
+which stop the pass if it does not resolve. For an id no surveyed row
+matches, run the read-only `docket issue show <id> --json=v2` from the
+invoking checkout, record its `status` or the CLI's refusal in the ledger
+as the id's outcome, and do not judge it. When no named id
+resolves to an open issue the filters admit, report the outcomes under §5
+and stop.
+
+On a pass with no issue id and no routing, kind, or status word, approve
+the judged scope before §2. Through `AskUserQuestion`, show the default scope with its
 count of judged issues per project, and offer these overrides as a
 multi-select, each widening one with the number of issues it would add:
 
@@ -242,7 +267,8 @@ Launch it once, by `scriptPath` at its installed path under
 dotfiles checkout), `projects` (the judged projects only: name, prefix,
 root, and whether it is the engine project, from `docket project list
 --json` and §1's resolution), `issues` (every surveyed non-epic row of
-those projects that the routing, kind, and status filters admit, plus
+those projects that the named issue ids and the routing, kind, and
+status filters admit, plus
 every open epic row whatever the filter, so the clustering analyst can
 match members to existing epics; each row with its project, id, kind,
 parent, title, labels, assignee, status, stored size, and `runIncluded` as
@@ -965,7 +991,10 @@ how many received a value review, the stale window used, and counts by
 value decision, with survey and review counts for each project. Name the
 judged scope: its routing, kind, and status filters, whether each was the
 default, named, or an override approved in §1, and the number of surveyed
-issues it left unjudged, by routing, kind, and status. Explicitly report
+issues it left unjudged, by routing, kind, and status. On a pass with
+named issue ids, list them instead with each one's outcome: judged,
+expanded to an epic's children, excluded by a named filter, or
+unresolved with the status or refusal `docket issue show` returned. Explicitly report
 engine coverage: when the engine project was judged, which engine needs
 remain, are resolved or superseded, or could not be verified; when its
 survey was count-only, its open, unrouted, and unsized non-epic counts and

@@ -202,7 +202,9 @@
 #   - `for`, `select`, `case` and `eval` headers are RECORDED as scan lines:
 #     `for d in <TMP>/STEP-7.d; do rm -rf $d; done` names the dir only there,
 #     and `eval "$(printf 'rm -rf ...')"` runs a string every other pass reads
-#     as prose — `eval` is on the interpreter list for the same reason.
+#     as prose — `eval` is on the interpreter list for the same reason. A
+#     `for` or `select` header that names a `_leaf_*` variable DENIES: it
+#     would write the probe's own state, which no assignment leaf may.
 #   - `break` and `continue` RUN, so loops end where the real command's
 #     would (a `break` also sends every pending `read` site back for one
 #     more walk, below); `exit` and `return` stay vetoed so the caller
@@ -237,7 +239,15 @@
 #     before. The shape is
 #     `[IFS=<bare word>] read [-r] [name...]`: no other option, quote, `$`,
 #     subscript or redirect, and never a `_leaf_*` name, since a read into
-#     the counter would reset it on every pass.
+#     the counter would reset it on every pass. A vetoed read assigned
+#     nothing real, so the walk after it cannot follow the loop's own
+#     choices: while any read site is pending in the shell, a structural
+#     leaf that expands a value (`[ -n "$d" ] || continue`, `case $d in`,
+#     `while read d && [ -n "$d" ]`, `for f in $d`, `: ${d:?}`) or any
+#     `continue` DENIES as uninspectable, and the vetoed read gives each
+#     name the value `x` so that a for-list over it has a pass to refuse. A
+#     read loop that tests what it read is therefore refused, with a reason
+#     that says so.
 #   - The command reaches the probe on STDIN, not in the environment: a
 #     command over the argument-size limit made `bash -c` fail with no leaf
 #     and no syntax error, which allowed. Syntax is checked first with `bash
@@ -517,11 +527,29 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
         fi
         local head="${BASH_COMMAND%%[ $'"'"'\t\n'"'"']*}"
         head="${head##*/}"
+        # Structural leaves run for real. While a vetoed read stands in for
+        # input it never read (_leaf_reads holds a site), one that expands a
+        # value, or a continue, could steer the loop past the body it never
+        # walked, so the walk is refused. Both refusals are a marker on
+        # stderr: an exit inside a pipeline stage never reaches the probe
+        # exit status.
         case "$head" in
             for | select | case | eval)
                 case "$BASH_COMMAND" in
                     *[\<\>]*) exit 114 ;;
                 esac
+                case "$head:$BASH_COMMAND" in
+                    for:*_leaf_* | select:*_leaf_*)
+                        printf "%s\n" "_guard_probe: probe state in a loop header" >&2
+                        exit 116 ;;
+                esac
+                if [ "$_leaf_reads" != "|" ]; then
+                    case "$BASH_COMMAND" in
+                        *[\$\`]*)
+                            printf "%s\n" "_guard_probe: branch on an unread value" >&2
+                            exit 115 ;;
+                    esac
+                fi
                 printf "\035%s\036" "$BASH_COMMAND"
                 return 0 ;;
             while | until | if | elif | else | fi | then | do | done | \
@@ -530,6 +558,13 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
                 case "$BASH_COMMAND" in
                     *[\<\>]*) exit 114 ;;
                 esac
+                if [ "$_leaf_reads" != "|" ]; then
+                    case "$head:$BASH_COMMAND" in
+                        continue:* | *[\$\`]*)
+                            printf "%s\n" "_guard_probe: branch on an unread value" >&2
+                            exit 115 ;;
+                    esac
+                fi
                 # A break may leave a read loop whose site never runs, so a
                 # later read with the same text would run at once: every P
                 # site becomes B and walks its body once more. A break in an
@@ -541,6 +576,22 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
         if [[ "$BASH_COMMAND" =~ $_leaf_read_re ]] && [[ "$BASH_COMMAND" != *_leaf_* ]]; then
             printf "\035%s\036" "$BASH_COMMAND"
             local _leaf_site="${BASH_SUBSHELL}:${BASH_COMMAND}"
+            # A vetoed read gives each name the value x, so a for-list over
+            # it has a pass that reaches the guard above instead of none. A
+            # read that runs assigns its own values over these. BASH* names
+            # are left alone: BASH_SUBSHELL is part of the site key.
+            local _leaf_rest="${BASH_COMMAND#IFS=*[[:space:]]}" _leaf_named=0
+            _leaf_rest="${_leaf_rest#read}"
+            while [[ "$_leaf_rest" =~ ^[[:space:]]+([-A-Za-z0-9_]+)(.*)$ ]]; do
+                _leaf_rest="${BASH_REMATCH[2]}"
+                case "${BASH_REMATCH[1]}" in
+                    -r) ;;
+                    BASH*) _leaf_named=1 ;;
+                    *) printf -v "${BASH_REMATCH[1]}" %s x 2>&9
+                       _leaf_named=1 ;;
+                esac
+            done
+            [ "$_leaf_named" -eq 1 ] || REPLY=x
             case "$_leaf_reads" in
                 *"|B$_leaf_site|"*)
                     _leaf_reads="${_leaf_reads/"|B$_leaf_site|"/|Q$_leaf_site|}"
@@ -602,6 +653,12 @@ case "$PROBE_ERR" in
     *"readonly function"*)
         log_decision "deny" "probe-tamper"
         deny "$REASON_PREFIX this command redefines the sibling-guard hook's own probe handler (\`_guard_probe\`). No executor command needs a function by that name; rename it." ;;
+    *"_guard_probe: probe state in a loop header"*)
+        log_decision "deny" "probe-tamper"
+        deny "$REASON_PREFIX this command names a \`_leaf_*\` variable in a \`for\` or \`select\` header. The sibling-guard hook keeps its own analysis state under that prefix, so it cannot check the command; rename the variable." ;;
+    *"_guard_probe: branch on an unread value"*)
+        log_decision "deny" "read-value-branch"
+        deny "$REASON_PREFIX this command branches on a variable after a \`read\` in it (a \`[ ... ]\`, \`[[ ... ]]\`, \`case\`, \`for ... in\`, \`:\` or \`eval\` that expands a value, or a \`continue\`). The sibling-guard hook feeds a read no input, so it cannot tell which commands the loop would run. Filter the input before the loop instead (\`cmd | grep -v '^\$' | while IFS= read -r x; do ...; done\`), or split it into smaller Bash calls." ;;
 esac
 
 if [ -z "$PROBE_TEXT" ]; then

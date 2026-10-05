@@ -624,8 +624,37 @@ case_read_loops() {
     # Only a pipe at EOF lets a read run: a device that may never end, or
     # input the probe would read for real, keeps the read vetoed and caps.
     assert_deny_reason 'while read x; do :; done < /dev/zero' executor-write "$WAVE_42" "too many parts" "read loop over an endless device caps"
+    assert_deny_reason 'while read d; do :; done < /dev/null' executor-write "$WAVE_42" "too many parts" "read loop whose input is not a pipe caps"
     assert_verdict "while read d; do rm -rf \$d; done <<< \"${SIB_DIR}\"" executor-write "$WAVE_42" DENY "read loop over a here-string naming a sibling dir"
     assert_verdict "ls | while read -u 0 d; do :; done" executor-write "$WAVE_42" DENY "read with an option outside -r stays vetoed and caps"
+    # A vetoed read assigned nothing, so a test, case, for-list or expansion
+    # on a value during that walk, or a continue, can steer the loop past the
+    # body it never walked. The walk is refused instead, in the body or the
+    # condition, and even with a command after the loop.
+    local cmd
+    for cmd in \
+        "ls | while read d; do [ -n \"\$d\" ] || continue; rm -rf ${SIB_DIR}/\$d; done" \
+        "ls | while read d; do if [ -n \"\$d\" ]; then rm -rf ${SIB_DIR}/\$d; fi; done" \
+        "ls | while read d; do [ -z \"\$d\" ] && continue; pkill -f \"\$d\"; done" \
+        "ls | while IFS= read -r f; do [ -e \"\$f\" ] || continue; rm -rf ${SIB_DIR}/\$f; done" \
+        "ls | while read d; do [[ -n \$d ]] || continue; rm -rf ${SIB_DIR}/\$d; done" \
+        "ls | while read d; do case \$d in '') continue ;; esac; rm -rf ${SIB_DIR}/\$d; done" \
+        "ls | while read -r d && [ -n \"\$d\" ]; do rm -rf ${SIB_DIR}/\$d; done" \
+        "ls | while read -r d && [ -n \"\$d\" ]; do rm -rf ${SIB_DIR}/\$d; done; echo done" \
+        "ls | while read d; do test -z \"\$d\" && continue; rm -rf ${SIB_DIR}/\$d; done" \
+        "ls | while read d; do x=\$d; [ -n \"\$x\" ] || continue; rm -rf ${SIB_DIR}/\$x; done" \
+        "ls | while read d; do for f in \$d; do rm -rf ${SIB_DIR}/\$f; done; done" \
+        "ls | while read d; do : \${d:?}; rm -rf ${SIB_DIR}/\$d; done"; do
+        assert_deny_reason "$cmd" executor-write "$WAVE_42" "branches on a variable" "read loop that branches on its value: ${cmd}"
+    done
+    # The refusal costs these benign shapes too; a test on no value still ends.
+    assert_deny_reason "git status --short | while IFS= read -r f; do [ -e \"\$f\" ] || continue; echo \"\$f\"; done" executor-write "$WAVE_42" "branches on a variable" "benign read loop that tests its value is refused"
+    assert_deny_reason "read x; [ -n \"\$x\" ] && echo y" executor-write "$WAVE_42" "branches on a variable" "test after a lone read is refused"
+    assert_verdict "printf 'a\\n' | while read d; do [ -s /nonexistent ] || echo \$d; done" executor-write "$WAVE_42" ALLOW "read loop whose test expands no value ends"
+    # A for or select header cannot preset the probe's own read state.
+    assert_deny_reason "for _leaf_reads in '|P1:read d|'; do :; done; ls | while read d; do rm -rf ${SIB_DIR}/\$d; done" executor-write "$WAVE_42" "_leaf_*" "for header presetting the read state"
+    assert_deny_reason "ls | { for _leaf_reads in '|P1:read d|'; do :; done; while read d; do pkill node; done; }; echo done" executor-write "$WAVE_42" "_leaf_*" "for header presetting the read state in a pipeline stage"
+    assert_deny_reason "select _leaf_reads in x; do break; done; ls | while read d; do pkill node; done" executor-write "$WAVE_42" "_leaf_*" "select header naming the probe state"
     # KNOWN RESIDUAL: a read whose site was vetoed but never fired again (a
     # lone read, or a loop left through a failing condition right after its
     # read, or a second same-text loop left by break) leaves that site

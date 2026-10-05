@@ -644,6 +644,7 @@ case_read_loops() {
         "ls | while read d; do test -z \"\$d\" && continue; rm -rf ${SIB_DIR}/\$d; done" \
         "ls | while read d; do x=\$d; [ -n \"\$x\" ] || continue; rm -rf ${SIB_DIR}/\$x; done" \
         "ls | while read d; do for f in \$d; do rm -rf ${SIB_DIR}/\$f; done; done" \
+        "ls | while read head; do for f in \$head; do rm -rf ${SIB_DIR}/\$f; done; done" \
         "ls | while read d; do : \${d:?}; rm -rf ${SIB_DIR}/\$d; done"; do
         assert_deny_reason "$cmd" executor-write "$WAVE_42" "branches on a variable" "read loop that branches on its value: ${cmd}"
     done

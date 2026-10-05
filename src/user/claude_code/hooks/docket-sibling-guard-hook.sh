@@ -525,20 +525,20 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
         if [ "$_leaf_n" -eq 1 ] && [ "$BASH_COMMAND" = "eval \"\$COMMAND\"" ]; then
             return 0
         fi
-        local head="${BASH_COMMAND%%[ $'"'"'\t\n'"'"']*}"
-        head="${head##*/}"
+        local _leaf_head="${BASH_COMMAND%%[ $'"'"'\t\n'"'"']*}"
+        _leaf_head="${_leaf_head##*/}"
         # Structural leaves run for real. While a vetoed read stands in for
         # input it never read (_leaf_reads holds a site), one that expands a
         # value, or a continue, could steer the loop past the body it never
         # walked, so the walk is refused. Both refusals are a marker on
         # stderr: an exit inside a pipeline stage never reaches the probe
         # exit status.
-        case "$head" in
+        case "$_leaf_head" in
             for | select | case | eval)
                 case "$BASH_COMMAND" in
                     *[\<\>]*) exit 114 ;;
                 esac
-                case "$head:$BASH_COMMAND" in
+                case "$_leaf_head:$BASH_COMMAND" in
                     for:*_leaf_* | select:*_leaf_*)
                         printf "%s\n" "_guard_probe: probe state in a loop header" >&2
                         exit 116 ;;
@@ -559,7 +559,7 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
                     *[\<\>]*) exit 114 ;;
                 esac
                 if [ "$_leaf_reads" != "|" ]; then
-                    case "$head:$BASH_COMMAND" in
+                    case "$_leaf_head:$BASH_COMMAND" in
                         continue:* | *[\$\`]*)
                             printf "%s\n" "_guard_probe: branch on an unread value" >&2
                             exit 115 ;;
@@ -570,7 +570,7 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
                 # site becomes B and walks its body once more. A break in an
                 # inner loop does the same to the read loop around it, whose
                 # Q site then ends it on the next firing.
-                [ "$head" = break ] && _leaf_reads="${_leaf_reads//|P/|B}"
+                [ "$_leaf_head" = break ] && _leaf_reads="${_leaf_reads//|P/|B}"
                 return 0 ;;
         esac
         if [[ "$BASH_COMMAND" =~ $_leaf_read_re ]] && [[ "$BASH_COMMAND" != *_leaf_* ]]; then
@@ -579,7 +579,9 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
             # A vetoed read gives each name the value x, so a for-list over
             # it has a pass that reaches the guard above instead of none. A
             # read that runs assigns its own values over these. BASH* names
-            # are left alone: BASH_SUBSHELL is part of the site key.
+            # are left alone: BASH_SUBSHELL is part of the site key. Every
+            # local here is a _leaf_* name, which no admitted read names, so
+            # each assignment reaches the command variable.
             local _leaf_rest="${BASH_COMMAND#IFS=*[[:space:]]}" _leaf_named=0
             _leaf_rest="${_leaf_rest#read}"
             while [[ "$_leaf_rest" =~ ^[[:space:]]+([-A-Za-z0-9_]+)(.*)$ ]]; do
@@ -619,7 +621,7 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
             esac
         fi
         printf "\035%s\036" "$BASH_COMMAND"
-        if declare -F "$head" >&9 2>&9; then
+        if declare -F "$_leaf_head" >&9 2>&9; then
             return 0
         fi
         return 1

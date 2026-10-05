@@ -61,6 +61,8 @@ jobs:
 
       - run: bash tests/gate-range.test.sh
 
+      - run: bash tests/justfile-activate-review-guard.test.sh
+
       - run: bash tests/justfile-tests-parallel.test.sh
 
       - run: bash tests/justfile-tests-reuse.test.sh

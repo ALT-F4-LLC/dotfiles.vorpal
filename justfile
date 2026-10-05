@@ -2,7 +2,8 @@
 # definitions (DOT-600; pin-closure engine issue DOT-596), so this checks
 # `docket guard stop --all-projects` first and refuses on a denial. The check
 # is skipped entirely when docket is not on PATH (bootstrap chicken-and-egg).
-# Refuses while a docket run is active anywhere; override: `just activate force=1`
+# Refuses while a docket run is active anywhere, or while this project's run has
+# an integrated commit awaiting review; override: `just activate force=1`
 activate force="":
     #!/usr/bin/env bash
     set -euo pipefail
@@ -20,6 +21,54 @@ activate force="":
             } >&2
             exit 1
         fi
+    fi
+    # `guard stop` admits a paused or waiting-human run, but a write step that
+    # run already integrated into this checkout may still be under review, and
+    # installing now would make its unreviewed hooks live everywhere. Refuse
+    # while any step on such an issue is unfinished (not done, skipped or
+    # superseded). A read that fails or comes back partial refuses too: it
+    # cannot show that nothing awaits review.
+    if [ -z '{{force}}' ] && command -v docket >/dev/null 2>&1; then
+        refuse_unreviewed() {
+            {
+                echo "refusing to activate: $1"
+                echo "finish the review first, or override with: just activate force=1"
+            } >&2
+            exit 1
+        }
+        command -v jq >/dev/null 2>&1 \
+            || refuse_unreviewed "jq is missing, so integrated commits awaiting review cannot be checked."
+        unreadable="cannot read docket state to check integrated commits awaiting review"
+        runs=$(docket run status --limit 0 --json | jq -er '
+            select(.ok == true) | .data
+            | (.runs // []) as $runs
+            | select(($runs | type) == "array" and .total == ($runs | length))
+            | select(all($runs[]; .run | type == "string"))
+            | [$runs[].run] | join(" ")') \
+            || refuse_unreviewed "$unreadable (run status)."
+        for run in $runs; do
+            # Done steps on issues that still have an unfinished step, each as
+            # "<step> <first unfinished step on its issue>".
+            candidates=$(docket step list --run "$run" --json | jq -er '
+                select(.ok == true) | .data
+                | select((.steps | type) == "array" and .total == (.steps | length))
+                | .steps
+                | [.[] | select(.status | IN("done", "skipped", "superseded") | not)] as $open
+                | [.[] | select(.status == "done") as $s
+                    | ($open | map(select(.issue == $s.issue)) | first) as $o
+                    | select($o != null) | "\($s.step) \($o.step)"]
+                | join("\n")') \
+                || refuse_unreviewed "$unreadable (step list $run)."
+            while read -r step open_step; do
+                [ -n "$step" ] || continue
+                sha=$(docket step show "$step" --json=v2 | jq -er '
+                    select(.ok == true) | .data | .metadata.integrated_sha // ""') \
+                    || refuse_unreviewed "$unreadable (step show $step)."
+                if [ -n "$sha" ]; then
+                    refuse_unreviewed "$run's $step integrated $sha into main, and $open_step on its issue is unfinished, so that commit has not finished review."
+                fi
+            done <<< "$candidates"
+        done
     fi
     "$(vorpal build --path 'user')/bin/vorpal-activate"
     # Installing the corpus moves no registry. Report every project's drift

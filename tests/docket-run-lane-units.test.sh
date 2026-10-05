@@ -2,7 +2,7 @@
 
 # Behavior suite for the docket-run skill's launch splitter,
 # skills/docket-run/scripts/lane_units.py: how a conductor splits one
-# dispatch into wave launches, one per lane unit, each holding only its
+# dispatch into wave launches, one per issue lane, each holding only its
 # own rows and its share of the manifest's class headroom.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by
@@ -11,11 +11,11 @@
 #
 # WHY THIS EXISTS. A launch receives only its own rows, so the partition
 # and the class headroom a launch cannot see from its own rows are computed
-# here, before launch. Writer lanes the engine never co-staged weld into one
-# unit (wave.js serializes them through an in-flight set no sibling launch
-# sees); every other lane is its own unit; units above LAUNCH_CAP (20) pack
-# onto 20 launches. Every row lands in exactly one launch file. A split that
-# drifts runs a lane twice, not at all, or over-admits a class.
+# here, before launch. Every issue lane is its own launch, never welded or
+# packed with another; lanes past LAUNCH_CAP (20) go to deferred.jsonl for
+# the next dispatch. Every row lands in exactly one launch file or the
+# deferred file. A split that drifts runs a lane twice, not at all, or
+# over-admits a class.
 #
 # The suite also pins the SKILL.md side: the skill runs the installed file
 # and carries no inline interpreter program. The same program once lived in
@@ -73,44 +73,42 @@ w() { printf '{"step":"STEP-%s","issue":"%s","kind":"executor","class":"write","
 r() { printf '{"step":"STEP-%s","issue":"%s","kind":"executor","class":"read","stage":%s}' "$1" "$2" "$3"; }
 v() { printf '{"step":"STEP-%s","issue":"%s","kind":"vote","stage":%s}' "$1" "$2" "$3"; }
 
-# ---- Welding: writers the engine never co-staged are one unit ---------------
+# ---- One issue, one launch: writer lanes are never welded ---------------------
 n=$(count "[$(w 1 A 0),$(w 2 B 1),$(r 3 C 0)]")
-[ "$n" = "2" ]; ok $? "two writer lanes on different stages weld into one unit beside a read lane (got $n)"
-grep -q 'unit:A -> launch' "$WORK/err" && grep -q 'lane:C -> launch' "$WORK/err"; ok $? 'the units and their launches are named on stderr, welded writers as unit:<root>, others as lane:<issue>'
-[ "$(summary '[x["lanes"] for x in s if "A" in x["lanes"]][0]')" = "['A', 'B']" ]; ok $? 'welded writer lanes share one launch file'
+[ "$n" = "3" ]; ok $? "two writer lanes on different stages are two launches beside a read lane (got $n)"
+grep -q 'lane:A -> launch' "$WORK/err" && grep -q 'lane:B -> launch' "$WORK/err" && grep -q 'lane:C -> launch' "$WORK/err"; ok $? 'each lane and its launch is named on stderr as lane:<issue>'
+[ "$(summary 'sorted(len(x["lanes"]) for x in s)')" = "[1, 1, 1]" ]; ok $? 'every launch holds exactly one lane'
 
 # ---- Co-staged writers stay separate ----------------------------------------
 n=$(count "[$(w 1 A 0),$(w 2 B 0),$(r 3 C 0)]")
-[ "$n" = "3" ]; ok $? "two writer lanes certified on the same stage are separate units (got $n)"
+[ "$n" = "3" ]; ok $? "two writer lanes certified on the same stage are separate launches (got $n)"
 
-# ---- Certification is per pair --------------------------------------------------
-# A and B co-staged, B and C co-staged, A and C never: A-C weld into one unit,
-# and B, certified against both, stays its own.
+# ---- Certification never merges lanes -----------------------------------------
 n=$(count "[$(w 1 A 0),$(w 2 B 0),$(w 3 B 1),$(w 4 C 1)]")
-[ "$n" = "2" ]; ok $? "only the uncertified pair welds; a writer certified against every other stays its own unit (got $n)"
+[ "$n" = "3" ]; ok $? "three writer lanes are three launches whatever their co-staging (got $n)"
 
-# ---- Non-writer rows never weld and each issue is one lane --------------------
+# ---- Read and vote lanes: one launch per issue ---------------------------------
 n=$(count "[$(r 1 A 0),$(r 2 B 1),$(v 3 C 2),$(r 4 A 3)]")
-[ "$n" = "3" ]; ok $? "read and vote lanes are one unit per issue, never welded (got $n)"
-
-# ---- A vote row with class write is not a writer -----------------------------
-n=$(count '[{"step":"STEP-1","issue":"A","kind":"vote","class":"write","stage":0},{"step":"STEP-2","issue":"B","kind":"executor","class":"write","stage":1}]')
-[ "$n" = "2" ]; ok $? "kind vote or action is never a writer lane, whatever its class says (got $n)"
+[ "$n" = "3" ]; ok $? "read and vote lanes are one launch per issue (got $n)"
 
 # ---- executor field stands in for a missing class ----------------------------
 n=$(count '[{"step":"STEP-1","issue":"A","kind":"executor","executor":"write","stage":0},{"step":"STEP-2","issue":"B","kind":"executor","executor":"write","stage":1}]')
-[ "$n" = "1" ]; ok $? "executor == write counts as a writer when class is absent (got $n)"
+[ "$n" = "2" ] && [ "$(summary '[x["classCap"] for x in s]')" = "[{'write': 1}, {'write': 1}]" ]
+ok $? "executor == write keys the write class when class is absent, one launch per lane (got $n)"
 
-# ---- One launch per unit, capped at 20 -------------------------------------------
+# ---- One launch per lane, capped at 20; the rest defer ------------------------------
 n=$(count "[$(r 1 A 0),$(r 2 B 0),$(r 3 C 0),$(r 4 D 0),$(r 5 E 0),$(r 6 F 0)]")
-[ "$n" = "6" ]; ok $? "six lanes are six launches (got $n)"
+[ "$n" = "6" ]; ok $? "six issues are six launches (got $n)"
+[ -f "$WORK/launch/deferred.jsonl" ] && [ ! -s "$WORK/launch/deferred.jsonl" ]; ok $? 'deferred.jsonl exists and is empty under the cap'
 many=""
 for i in $(seq 1 25); do many="${many:+$many,}$(r "$i" "I$i" 0)"; done
 n=$(count "[$many]")
-[ "$n" = "20" ]; ok $? "25 lanes pack onto the 20-launch cap (got $n)"
-grep -q 'packed: 25 units onto 20 launches' "$WORK/err"; ok $? 'packing past the cap is named on stderr'
-[ "$(summary 'sum(x["rows"] for x in s)')" = "25" ] && [ "$(summary 'sorted(len(x["lanes"]) for x in s)[-1]')" = "2" ]
-ok $? 'packed launches still hold every row once, at most two lanes each'
+[ "$n" = "20" ]; ok $? "25 lanes launch the first 20 (got $n)"
+[ "$(summary 'sum(x["rows"] for x in s)')" = "20" ] && [ "$(summary 'sorted({len(x["lanes"]) for x in s})')" = "[1]" ]
+ok $? 'capped launches still hold one lane each, never packed'
+[ "$(wc -l < "$WORK/launch/deferred.jsonl" | tr -d ' ')" = "5" ] && grep -q '"issue":"I21"' "$WORK/launch/deferred.jsonl" && ! grep -q '"issue":"I20"' "$WORK/launch/deferred.jsonl"
+ok $? 'lanes past the cap land in deferred.jsonl, latest in manifest order'
+grep -q 'deferred: 5 lane(s) past the 20-launch cap' "$WORK/err" && grep -q 'I25' "$WORK/err"; ok $? 'the deferral is named on stderr with its lanes'
 n=$(count '[]')
 [ "$n" = "0" ]; ok $? "an empty manifest is zero launches (got $n)"
 
@@ -150,7 +148,7 @@ printf '%s\n%s\n' "$(w 1 A 0)" "$(r 2 B 0)" > "$WORK/rows.jsonl"
 n=$(python3 "$SCRIPT" "$WORK/rows.jsonl" "$WORK/out-jsonl" 2>/dev/null)
 [ "$n" = "2" ]; ok $? "JSON lines input (the paged rows file) is read the same as an array (got $n)"
 n=$(count "{\"rows\":[$(w 1 A 0),$(w 2 B 1)]}")
-[ "$n" = "1" ]; ok $? "a {rows: [...]} envelope is unwrapped (got $n)"
+[ "$n" = "2" ]; ok $? "a {rows: [...]} envelope is unwrapped, one launch per lane (got $n)"
 n=$(count "{\"rows\":[$(r 1 A 0),$(r 2 B 0)]}"); rc=$?
 [ "$rc" -eq 0 ] && [ "$n" = "2" ] && [ "$(summary 'sum(x["rows"] for x in s)')" = "2" ]
 ok $? "an envelope of two reader lanes is two rows, not one row object (rc=$rc, got $n)"
@@ -232,11 +230,11 @@ grep -qF 'python3 ~/.claude/skills/docket-run/scripts/seat_roster.py' "$SKILL"; 
 ! grep -qE "^(python[0-9]*|node) +-( |e |-eval|p )" "$SKILL"; ok $? \
     'SKILL.md carries no inline interpreter program (stdin heredoc or code argument) the deny rule refuses'
 
-# ---- the mirrored weights and caps match wave.js --------------------------------
-# lane_units.py packs launches by projected agent cost; a weight that drifts
-# from wave.js's own admission packs launches the wave then defers.
+# ---- the mirrored caps match wave.js --------------------------------------------
+# lane_units.py caps launches and reports harnessCap; a cap that drifts from
+# wave.js splits launches the wave then refuses or narrows.
 WAVE_JS="${WAVE_JS:-${ROOT}/src/user/claude_code/workflows/wave.js}"
-for name in EXECUTOR_AGENT_COST VOTE_PROBE_COST DEFAULT_PANEL_SEATS LAUNCH_CAP HARNESS_CAP; do
+for name in LAUNCH_CAP HARNESS_CAP; do
     js=$(sed -n "s/^const ${name} = \([0-9][0-9]*\).*/\1/p" "$WAVE_JS")
     py=$(sed -n "s/^${name} = \([0-9][0-9]*\).*/\1/p" "$SCRIPT")
     [ -n "$js" ] && [ "$js" = "$py" ]; ok $? "lane_units.py's ${name} (${py:-missing}) mirrors wave.js (${js:-missing})"

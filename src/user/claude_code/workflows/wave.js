@@ -1,7 +1,7 @@
 export const meta = {
     name: 'wave',
-    description: 'Internal: launched through scriptPath by docket-run, once per lane unit, to run one launch\'s share of a dispatched manifest end to end (executors, vote panels, staged issue lanes). Per executor row it spends 1 haiku claim agent, which claims the step and writes the packet the executor then receives verbatim in its brief. Per vote row it spends 3 read-only haiku probes of `docket gate status` on the normal path, 1 on a gate that was already decided, and 4 when a re-seat is needed. Budget, launch, lane, return and reply-tail contract in the header comment.',
-    whenToUse: 'Never by name. Args are {rows, tribunal, cwd, unit?, harnessCap?, integrated?} with the launch\'s own rows verbatim from lane_units.py; the full argument contract is in the header comment.',
+    description: 'Internal: launched through scriptPath by docket-run, once per issue, to run one issue lane of a dispatched manifest end to end (executors, vote panels, staged rows). Per executor row it spends 1 haiku claim agent, which claims the step and writes the packet the executor then receives verbatim in its brief. Per vote row it spends 3 read-only haiku probes of `docket gate status` on the normal path, 1 on a gate that was already decided, and 4 when a re-seat is needed. Budget, launch, lane, return and reply-tail contract in the header comment.',
+    whenToUse: 'Never by name. Args are {rows, tribunal, cwd, unit?, harnessCap?, integrated?} with the issue\'s own rows verbatim from lane_units.py; the full argument contract is in the header comment.',
 }
 
 // ---------------------------------------------------------------------------
@@ -16,13 +16,12 @@ export const meta = {
 // ~/.docket/bin/wave-claim, which writes the rendered packet into a module the
 // wave loads; the executor receives that packet verbatim in its brief and
 // never claims or fetches anything itself. Stages run as awaited groups per
-// issue lane, with the cross-issue
-// cohorts the manifest certifies honored — the staged closure means one wave
-// can carry judges -> gate -> reconcile -> report, and inside a wave no issue
-// idles behind the slower stages of another; writers the engine never co-
-// staged still serialize, so a wave launches at most three such writer cohorts
-// and defers the rest to the next dispatch rather than holding every finished
-// lane behind a long writer ladder. AGENT BUDGET: the Workflow tool caps one
+// issue lane — the staged closure means one wave can carry judges -> gate ->
+// reconcile -> report. A conductor launch holds ONE issue lane; a launch with
+// no `unit` may hold several, and then the cross-issue cohorts the manifest
+// certifies are honored inside it: writers the engine never co-staged
+// serialize, and the wave launches at most three such writer cohorts and
+// defers the rest to the next dispatch. AGENT BUDGET: the Workflow tool caps one
 // invocation at 1000 agents over its lifetime, so the wave reserves each row's
 // projected agents at admission (executor row 3: claim agent, executor, one
 // probe; vote row seats+4) against a 900-agent budget and defers, on the
@@ -30,11 +29,14 @@ export const meta = {
 // row the remainder cannot cover; the engine re-offers deferred rows at the
 // next dispatch, and a manifest of any size is safe to hand over whole.
 // LAUNCHES: both caps are per invocation, so one dispatch launches one wave
-// per lane unit, up to LAUNCH_CAP (20), each handed ONLY its own rows plus
-// `unit: {index, of, classCap}` from lane_units.py — whole issue lanes as
-// units, writer lanes the engine never co-staged welded into one unit so they
-// still serialize, and classCap carrying this launch's share of each class's
-// headroom over the full manifest. The retired `shard` arg is refused.
+// per issue, up to LAUNCH_CAP (20), each handed ONLY its issue's rows plus
+// `unit: {index, of, classCap}` from lane_units.py — classCap carrying this
+// launch's share of each class's headroom over the full manifest. A launch
+// with `unit` holding more than one issue lane is refused. No launch sees
+// another's writers, so the engine's claim check keeps uncertified writers
+// apart: a claim refused because another launch holds the scope or the class
+// headroom settles `skipped-not-ready` and the lane defers to the next
+// dispatch. The retired `shard` arg is refused.
 // PROBE COST PER VOTE ROW: 3 read-only haiku probes on the normal
 // path — `docket gate status` before the panel seats (decided yet, which
 // proposal, which target), one projection of the proposal body (the case every
@@ -59,9 +61,9 @@ export const meta = {
 //
 // When and how it is invoked:
 // Invoked by the docket-run skill on an open dispatch, always as
-// Workflow({scriptPath}) — never by name, and once per lane unit, every
+// Workflow({scriptPath}) — never by name, and once per issue, every
 // launch in the same conductor turn. args is {rows, tribunal, cwd, unit?,
-// harnessCap?}: the launch's own rows from `dispatch open` VERBATIM, as
+// harnessCap?}: the issue's own rows from `dispatch open` VERBATIM, as
 // lane_units.py split them (executor, vote, and action rows; human rows stay
 // with the conductor), each
 // executor row carrying the model/effort/variant the engine resolved from the
@@ -130,7 +132,7 @@ const EXECUTOR_AGENT_COST = 3
 const VOTE_PROBE_COST = 4
 const DEFAULT_PANEL_SEATS = 3
 const HARNESS_CAP = 16
-// Most concurrent wave launches per dispatch, one per lane unit. 20 is the
+// Most concurrent wave launches per dispatch, one per issue. 20 is the
 // measured bound; nothing above it was tested. Keep it equal to LAUNCH_CAP in
 // lane_units.py.
 const LAUNCH_CAP = 20
@@ -964,12 +966,30 @@ async function claimPacket(row, r, phaseLabel) {
     return { ok: false, result: await claimFailure(row, owner, reply, loaded.error, phaseLabel) }
 }
 
-// No module loaded. The claim agent's `output` says why: a CONFLICT keeps the
-// executor path's handling (a run park, or an orphaned claim diagnosed from
-// the step's own row); a wave-claim stop line is `blocked`; anything else
-// leaves the claim state unknown.
+// Every issue lane runs in its own launch, so no launch sees another lane's
+// writers or class load. The engine's claim check is what keeps them apart:
+// a claim refused because another launch holds the scope or the class
+// headroom is a WAIT, not a failure. It settles skipped-not-ready with the
+// engine's clause as blocked_reason, so the lane defers to the next dispatch.
+// Engine claim.go: the scope clause is bare; the headroom clause carries its
+// arithmetic in parentheses.
+const CROSS_LAUNCH_WAIT = /not ready to claim:\s*(its scope conflicts with a claimed or running step|no concurrency headroom in its class)(?:\s*\(.*\))?\s*$/m
+
+// No module loaded. The claim agent's `output` says why: a cross-launch wait
+// defers the lane; any other CONFLICT keeps the executor path's handling (a
+// run park, or an orphaned claim diagnosed from the step's own row); a
+// wave-claim stop line is `blocked`; anything else leaves the claim state
+// unknown.
 function claimFailure(row, owner, reply, loadError, phaseLabel) {
     const text = reply && typeof reply.output === 'string' ? reply.output.trim() : ''
+    const wait = isConflictReport(text) && !text.includes('run is not active') &&
+        CROSS_LAUNCH_WAIT.exec(text)
+    if (wait) {
+        log(`${row.step}: claim refused — "${wait[1]}"; another launch holds it, ` +
+            `so this issue's later stages defer to the next dispatch`)
+        const envelope = { data: { step: row.step, blocked_reason: wait[1] } }
+        return { step: row.step, status: 'skipped-not-ready', text: JSON.stringify(envelope) }
+    }
     if (isConflictReport(text)) {
         const returned = { step: row.step, status: 'returned', text }
         if (!isOrphanedClaimConflict(text)) return returned
@@ -2211,14 +2231,13 @@ const scopePairs = new Set([...stages.values()].flatMap((group) =>
     pairsOf(writerLanesOf(group)).map(([a, b]) => pairKey(a, b))))
 const scopeCertified = (a, b) => a === b || scopePairs.has(pairKey(a, b))
 
-// ---- launches: one dispatch, one wave per lane unit ----
+// ---- launches: one dispatch, one wave per issue ----
 // The Workflow tool caps ONE invocation at HARNESS_CAP concurrent agents and
 // AGENT_LIFETIME_CAP over its life; a nested workflow() shares both, separate
-// top-level launches share neither. lane_units.py owns the partition: whole
-// issue lanes as units, writer lanes the engine never co-staged welded into
-// one unit, units packed largest-first only when they outnumber LAUNCH_CAP.
-// A launch runs every row it holds. A launch still carrying the retired
-// `shard` arg is refused.
+// top-level launches share neither. lane_units.py owns the partition: one
+// launch per issue lane, never welded or packed; lanes past LAUNCH_CAP defer
+// to the next dispatch. A launch runs every row it holds. A launch still
+// carrying the retired `shard` arg is refused.
 function launchUnit(spec) {
     if (spec === undefined || spec === null) return { index: 0, of: 1, classCap: null }
     const bad = (why) => new Error(
@@ -2254,6 +2273,11 @@ if (unit.of > 1) {
 }
 
 const lanes = groupRows(rows, laneOf)
+// One issue, one wave: a conductor launch carries exactly one lane.
+if (input.unit != null && lanes.size > 1) throw new Error(
+    `wave.js: a launch with args.unit must hold exactly one issue lane; got ` +
+    `${lanes.size} (${[...lanes.keys()].join(', ')}). Re-split the dispatch with ` +
+    `lane_units.py, which gives every issue its own launch. Refusing to route.`)
 log(`wave: ${lanes.size} issue lane(s): ` + [...lanes.entries()].map(([name, laneRows]) => {
     const ks = [...new Set(laneRows.map(stageOf))].sort((a, b) => a - b)
     return `${name}×${laneRows.length}${ks.length > 1 ? ` (stages ${ks.join('→')})` : ''}`
@@ -2267,8 +2291,9 @@ log('wave: no wall-clock deadline exists in this harness — a hung seat holds i
 // Depth counts earlier stages with uncertified writers in OTHER lanes; a
 // lane's own chain and certified neighbours do not count. Defer depth >= 3
 // and the lane's later rows; the engine re-offers them next dispatch.
-// Read off THIS launch's rows: an uncertified writer in a sibling launch was
-// welded into this launch by lane_units.py, so none exists elsewhere.
+// Read off THIS launch's rows. A conductor launch holds one lane, so the
+// depth is always zero there; writers in sibling launches are kept apart by
+// the engine's claim check (CROSS_LAUNCH_WAIT).
 const writersByLane = groupRows(rows.filter((row) => isWriter(row) && row.issue), laneOf)
 const writerStagesByLane = new Map([...writersByLane].map(([lane, writers]) =>
     [lane, new Set(writers.map(stageOf))]))

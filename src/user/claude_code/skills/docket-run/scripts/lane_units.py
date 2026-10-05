@@ -1,4 +1,4 @@
-"""Split a kept manifest into wave launches, one per lane unit.
+"""Split a kept manifest into wave launches, one per issue lane.
 
 Usage: python3 lane_units.py <rows-file> <out-dir>
 
@@ -9,18 +9,23 @@ object is that one row. The script writes, under
 
   launch-<i>.jsonl  launch i's rows, one per line, in manifest order
   launches.json     [{index, of, classCap, rows, lanes, harnessCap}] per launch
+  deferred.jsonl    rows of lanes past LAUNCH_CAP, one per line (always written,
+                    empty when nothing is deferred)
 
 and prints the launch count N alone on stdout, so `N=$(python3 lane_units.py
-rows.jsonl out)` works. Units and their launches go to stderr for the
+rows.jsonl out)` works. Lanes and their launches go to stderr for the
 dispatch report. Each launch's Workflow args are its own rows, `unit: {index,
 of, classCap}`, and `harnessCap`, the last two copied from launches.json.
 
-The partition. Writer lanes (rows whose class, or executor when class is
-absent, is "write") that never share a manifest stage are welded into one
-unit, since wave.js serializes them through an in-flight set no sibling
-launch can see; every other lane is a unit of its own. Units are packed onto
-at most LAUNCH_CAP launches, largest projected agent cost first, onto the
-least-loaded launch, ties by unit name then lowest launch index.
+The partition. Every issue lane is its own launch: one issue, one wave. A
+row without an issue is a lane of its own, keyed by its step. Lanes are
+never welded or packed together. Writer lanes the engine never co-staged
+therefore run in separate launches, and the engine's claim check keeps them
+in stage order: a writer claimed while another lane's uncertified writer
+holds its scope is refused, and wave.js settles that refusal as a deferral
+the engine re-offers at the next dispatch. Past LAUNCH_CAP lanes, the
+earliest lanes in manifest order launch and the rest go to deferred.jsonl,
+named on stderr; the engine re-offers them at the next dispatch.
 
 Class headroom. The engine certifies a class at the largest same-stage count
 of its executor rows across the WHOLE manifest. A launch sees only its own
@@ -34,8 +39,7 @@ launch's harnessCap arg. cpus is os.cpu_count(), or LANE_UNITS_CPUS when set.
 
 This file exists because an inline heredoc (`python3 - <<'PY'`) is an
 interpreter code argument the auto-mode deny rule refuses before it runs.
-The weights and caps mirror wave.js (EXECUTOR_AGENT_COST, VOTE_PROBE_COST,
-DEFAULT_PANEL_SEATS, LAUNCH_CAP, HARNESS_CAP) and must not drift from it.
+LAUNCH_CAP and HARNESS_CAP mirror wave.js and must not drift from it.
 """
 
 import json
@@ -43,9 +47,6 @@ import os
 import sys
 
 LAUNCH_CAP = 20
-EXECUTOR_AGENT_COST = 3
-VOTE_PROBE_COST = 4
-DEFAULT_PANEL_SEATS = 3
 HARNESS_CAP = 16
 
 
@@ -88,57 +89,6 @@ def is_executor(row):
     return row.get("kind") not in ("action", "vote")
 
 
-def writer(row):
-    return is_executor(row) and cls(row) == "write"
-
-
-def agent_cost(row):
-    if row.get("kind") == "action":
-        return 0
-    if row.get("kind") == "vote":
-        seats = row.get("voter_assignments")
-        count = len(seats) if isinstance(seats, list) and seats else DEFAULT_PANEL_SEATS
-        return count + VOTE_PROBE_COST
-    return EXECUTOR_AGENT_COST
-
-
-def units_of(rows):
-    """Map each lane to its unit key: welded writer lanes share one."""
-    by_stage = {}
-    for row in rows:
-        if writer(row) and row.get("issue"):
-            by_stage.setdefault(stage(row), set()).add(lane(row))
-    certified = {
-        frozenset((a, b))
-        for lanes in by_stage.values()
-        for a in lanes
-        for b in lanes
-        if a != b
-    }
-    parent = {}
-
-    def find(x):
-        parent.setdefault(x, x)
-        while parent[x] != x:
-            parent[x] = parent[parent[x]]
-            x = parent[x]
-        return x
-
-    writers = sorted({lane(r) for r in rows if writer(r) and r.get("issue")})
-    for i, a in enumerate(writers):
-        find(a)
-        for b in writers[i + 1:]:
-            if frozenset((a, b)) not in certified:
-                ra, rb = find(a), find(b)
-                if ra != rb:
-                    lo, hi = sorted((ra, rb))
-                    parent[hi] = lo
-    return {
-        l: ("unit:" + find(l)) if l in parent else ("lane:" + l)
-        for l in {lane(r) for r in rows}
-    }
-
-
 def certified_classes(rows):
     counts = {}
     for row in rows:
@@ -152,44 +102,35 @@ def certified_classes(rows):
 
 
 def split(rows):
-    lane_unit = units_of(rows)
-    sizes = {}
-    for row in rows:
-        key = lane_unit[lane(row)]
-        sizes[key] = sizes.get(key, 0) + agent_cost(row)
-    of = max(1, min(LAUNCH_CAP, len(sizes))) if rows else 0
-    load = [0] * of
-    unit_launch = {}
-    for key in sorted(sizes, key=lambda k: (-sizes[k], k)):
-        target = min(range(of), key=lambda s: (load[s], s))
-        load[target] += sizes[key]
-        unit_launch[key] = target
-    launch_of = {l: unit_launch[k] for l, k in lane_unit.items()}
+    """One launch per lane, in manifest order; lanes past LAUNCH_CAP defer."""
+    order = list(dict.fromkeys(lane(r) for r in rows))
+    launched, deferred = order[:LAUNCH_CAP], order[LAUNCH_CAP:]
+    launch_of = {l: i for i, l in enumerate(launched)}
+    kept = [r for r in rows if lane(r) in launch_of]
 
     holders = {}
-    for row in rows:
+    for row in kept:
         if is_executor(row):
             holders.setdefault(cls(row), set()).add(launch_of[lane(row)])
     certified = certified_classes(rows)
     launches = []
-    for index in range(of):
+    for index, name in enumerate(launched):
         cap = {}
-        for name, held in holders.items():
+        for klass, held in holders.items():
             if index not in held:
                 continue
             ranked = sorted(held)
-            base, remainder = divmod(certified.get(name, 1), len(ranked))
+            base, remainder = divmod(certified.get(klass, 1), len(ranked))
             share = base + 1 if ranked.index(index) < remainder else base
-            cap[name] = max(1, share)
-        mine = [r for r in rows if launch_of[lane(r)] == index]
+            cap[klass] = max(1, share)
         launches.append({
             "index": index,
-            "of": of,
+            "of": len(launched),
             "classCap": dict(sorted(cap.items())),
-            "rows": mine,
-            "lanes": sorted({lane(r) for r in mine}),
+            "rows": [r for r in kept if lane(r) == name],
+            "lanes": [name],
         })
-    return launches, lane_unit, unit_launch
+    return launches, [r for r in rows if lane(r) not in launch_of], deferred
 
 
 def harness_cap():
@@ -204,6 +145,12 @@ def harness_cap():
     return min(HARNESS_CAP, max(1, cpus - 2))
 
 
+def write_rows(path, rows):
+    with open(path, "w", encoding="utf-8") as handle:
+        for row in rows:
+            handle.write(json.dumps(row, separators=(",", ":")) + "\n")
+
+
 def main(argv):
     if len(argv) != 3:
         raise SystemExit("usage: lane_units.py <rows-file> <out-dir>")
@@ -211,25 +158,24 @@ def main(argv):
     rows = load_rows(argv[1])
     out = argv[2]
     os.makedirs(out, exist_ok=True)
-    launches, lane_unit, unit_launch = split(rows)
+    launches, deferred_rows, deferred_lanes = split(rows)
     summary = []
     for launch in launches:
-        path = os.path.join(out, f"launch-{launch['index']}.jsonl")
-        with open(path, "w", encoding="utf-8") as handle:
-            for row in launch["rows"]:
-                handle.write(json.dumps(row, separators=(",", ":")) + "\n")
+        write_rows(os.path.join(out, f"launch-{launch['index']}.jsonl"), launch["rows"])
         entry = {k: (len(v) if k == "rows" else v) for k, v in launch.items()}
         entry["harnessCap"] = cap
         summary.append(entry)
     with open(os.path.join(out, "launches.json"), "w", encoding="utf-8") as handle:
         json.dump(summary, handle, indent=2)
         handle.write("\n")
+    write_rows(os.path.join(out, "deferred.jsonl"), deferred_rows)
     print(len(launches))
-    units = sorted(set(lane_unit.values()))
-    if len(units) > LAUNCH_CAP:
-        print(f"packed: {len(units)} units onto {LAUNCH_CAP} launches", file=sys.stderr)
-    for key in units:
-        print(f"{key} -> launch {unit_launch[key]}", file=sys.stderr)
+    for launch in launches:
+        print(f"lane:{launch['lanes'][0]} -> launch {launch['index']}", file=sys.stderr)
+    if deferred_lanes:
+        print(f"deferred: {len(deferred_lanes)} lane(s) past the {LAUNCH_CAP}-launch cap, "
+              f"{len(deferred_rows)} row(s) in deferred.jsonl; the engine re-offers them "
+              f"next dispatch: " + ", ".join(deferred_lanes), file=sys.stderr)
 
 
 if __name__ == "__main__":

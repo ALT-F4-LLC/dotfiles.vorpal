@@ -46,7 +46,7 @@ not infer hard from tone alone, and say which mode you use before you act.
    completes: it interrupts no step already claimed.
 2. If a wave is in flight, keep awaiting it exactly as docket-run normally
    does; do not busy-wait and do not abandon the dispatch. A dispatch is
-   one launch per lane unit, each holding its own share of the manifest:
+   one launch per issue, each holding that issue's rows of the manifest:
    await each one, and back-fill each launch's usage under its own `wfId`
    as it returns, before the close.
 

@@ -149,8 +149,23 @@ function wave({ replies = [], load, cwd = '/repo', show = { status: 'claimed', a
             res.result.text.includes('not ready to claim: the step is not pending'),
             'a not-pending CONFLICT is diagnosed from the step row, the refusal kept verbatim')
     }
+    for (const clause of [
+        'its scope conflicts with a claimed or running step',
+        'no concurrency headroom in its class (2 of 2 write in flight; cap from standard-change)',
+    ]) {
+        const { api, calls } = wave({
+            replies: [`STEP-12\nCONFLICT\nstep implement@0 is not ready to claim: ${clause}`],
+            load: new Error(NOT_FOUND),
+        })
+        const res = await api.claimPacket(row, r, 'lane')
+        let reason = null
+        try { reason = JSON.parse(res.result.text).data.blocked_reason } catch {}
+        ok(!res.ok && res.result.status === 'skipped-not-ready' && reason === clause.replace(/ \(.*\)$/, '') &&
+            !api.runParked(res.result) && calls.stepShow === 0,
+            `a cross-launch "${clause}" refusal defers the lane with the clause as blocked_reason`)
+    }
     for (const [signal, reply] of [
-        ['CLAIM FAILED', 'CLAIM FAILED: STEP-12: database is locked'],
+        ['CLAIM FAILED','CLAIM FAILED: STEP-12: database is locked'],
         ['CLAIM INCOMPLETE', 'CLAIM INCOMPLETE: STEP-12: bundle failed; the lease was ended with docket step fail'],
     ]) {
         const { api } = wave({ replies: [reply], load: new Error(NOT_FOUND) })

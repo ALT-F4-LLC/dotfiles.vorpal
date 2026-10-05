@@ -7,7 +7,7 @@ description: >-
   prompt, on "pause the run", "halt the run", "pause now, kill the wave", or
   "stop for now, I'll resume later". Drives an activated Docket run to
   completion in the invoking conversation: asks the engine what is ready,
-  dispatches it, launches one wave per lane unit, closes the dispatch, and
+  dispatches it, launches one wave per issue, closes the dispatch, and
   repeats. Vote gates ride the wave, conversational gates go to tribunal.js,
   three standing rulings answer parks machine-side, and every other park or
   reserved matter goes to the operator. Holds no run state and keeps the
@@ -803,15 +803,18 @@ Workflow({ scriptPath: "<absolute installed path to wave.js>", args: {rows: <lau
 …one launch per index, 0 through N-1, all in this same turn
 ```
 
-**A dispatch is N wave launches, one per lane unit, N from Split the
+**A dispatch is N wave launches, one per issue, N from Split the
 launches below.** One Workflow invocation runs at most 16 agents at once
 and 1000 over its life, and a nested workflow shares both with its
 parent; separate top-level launches share neither (20 ran concurrently,
-none refused or queued, measured). So each issue lane gets its own
-launch, 16 slots, and 1000-agent budget, and no lane's agents queue
-behind another's. Each launch gets only its own rows and its `unit`; a
-writer lane the engine never co-staged with another shares that one's
-launch so the wave still serializes them. Emit all N launches in ONE
+none refused or queued, measured). So each issue gets its own
+launch, 16 slots, and 1000-agent budget, and no issue's agents queue
+behind another's: a dispatch with six issues is six launches. Each launch
+gets only its issue's rows and its `unit`; never merge two issues into
+one launch, which wave.js refuses. Writers the engine never co-staged run
+in separate launches, and the engine's claim check keeps them apart: the
+later claimant settles `skipped-not-ready` and is re-offered next
+dispatch. Emit all N launches in ONE
 assistant message, as separate `Workflow` calls, never held back for a
 sibling's return: on past runs, launches spread over several messages
 started up to 17 minutes after the first, while one message put them
@@ -862,10 +865,11 @@ passed through is the one mistake the wave still refuses.
 
 **Split the launches before you launch.** From the kept rows (the file
 you wrote after the kind filter), the installed script partitions the
-dispatch: writer lanes (`class == "write"`, or `executor == "write"` when
-`class` is absent) that never share a manifest `stage` are welded into
-one unit; every other lane is a unit of its own; units above 20 are
-packed onto 20 launches by projected agent cost. It also computes each
+dispatch: every issue lane is a launch of its own (a row with no issue is
+a lane keyed by its step), never welded or packed with another. Past 20
+lanes, the first 20 in manifest order launch and the rest go to
+`deferred.jsonl`, named on stderr; report them as deferred, never launch
+them this dispatch, and the engine re-offers them next. It also computes each
 class's headroom over the whole manifest and each launch's share of it,
 which a launch holding only its own rows cannot see. Run it by its
 installed path, never as an inline interpreter program: a `python3 -c`
@@ -880,7 +884,8 @@ python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$ROWS_FILE" "$LAUNCH_
 It reads the kept rows as one JSON array or as JSON lines, prints N alone
 on stdout, writes `launch-<i>.jsonl` (launch i's rows, one per line) and
 `launches.json` (each launch's `index`, `of`, `classCap`, `harnessCap`,
-row count and lanes) under `$LAUNCH_DIR`, and names each unit's launch on
+row count and its one lane) and `deferred.jsonl` (rows past the cap,
+empty when none) under `$LAUNCH_DIR`, and names each lane's launch on
 stderr for the dispatch report. Use a fresh `$LAUNCH_DIR` per dispatch
 under the session's scratchpad (for example
 `<scratchpad>/launch-DISPATCH-M`). Read `launches.json`, then each launch
@@ -1002,7 +1007,9 @@ held, in manifest order, and the launch's `coordination` counts. Read
 exhausted), `agent-cap`
 (the harness's lifetime spawn cap reached mid-wave; nothing launched,
 and a row whose text names a live claim needs that claim reaped first),
-and `skipped-chain-dead` are all re-offered next dispatch. Every
+`skipped-not-ready` (the claim was refused because another issue's launch
+held the scope or the class headroom; nothing was claimed), and
+`skipped-chain-dead` are all re-offered next dispatch. Every
 executor row is claimed by its claim agent before the executor spawns,
 so a row that settled without a record usually leaves a live claim: the
 row's text names its owner and parked token when the wave knows it.

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Behavior suite for wave.js's per-unit LAUNCHES — one dispatch split into
-# one wave launch per lane unit, each launch holding only its own rows.
+# one wave launch per issue, each launch holding only its own rows.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
 # and this one is in that list. It needs only `node` and `awk` — no engine, no
@@ -10,12 +10,13 @@
 # WHY THIS EXISTS. The Workflow tool caps one invocation at 16 concurrent
 # agents and 1000 over its lifetime, and a nested workflow() shares both with
 # its parent; separate top-level launches share neither, and 20 of them ran
-# concurrently with none refused. So the conductor launches one wave per lane
-# unit and hands each only its own rows plus `unit: {index, of, classCap}`
+# concurrently with none refused. So the conductor launches one wave per
+# issue and hands each only its own rows plus `unit: {index, of, classCap}`
 # from lane_units.py (whose own suite, docket-run-lane-units, pins the
 # partition). What has to hold here: a launch runs every row it holds and
-# returns one entry per row, never another launch's status; writer lanes the
-# engine never co-staged, welded into one launch, still serialize inside it;
+# returns one entry per row, never another launch's status; a launch with
+# `unit` and more than one issue lane refuses to route, while a launch with no
+# `unit` still serializes writer lanes the engine never co-staged;
 # classCap, the launch's share of the manifest-wide class headroom, overrides
 # the narrower count its own rows show; and the retired `shard` arg and a
 # malformed `unit` refuse to route.
@@ -177,26 +178,35 @@ ok(['B-0', 'B-1a', 'B-1b', 'B-3', 'B-4'].every((s) => SPAWNED.includes(s)) && GA
 ok(logged('wave: launch 2 of 3') && logged('holds 6 row(s)') && logged('write≤1'),
     'unit: the log names the launch, its row count, and the class headroom it was handed')
 
-// ---- (3) welded writer lanes still serialize inside their launch --------
-// A and B: writers never co-staged (B rationed to stage 1), so lane_units.py
-// puts them in one launch; the coupling rule must hold them in stage order.
-const WELDED = () => [
+// ---- (3) one issue per launch: a unit launch with two lanes refuses ------
+// A and B: writers never co-staged (B rationed to stage 1). The conductor
+// launches each alone; a launch carrying both is refused before any spawn.
+const UNCERTIFIED = () => [
     ex('A-0', 'AGT-602', 0, 'write'),
     ex('A-1', 'AGT-602', 1, 'judge-correctness'),
     ex('A-2', 'AGT-602', 2, 'write', { executor: 'fix' }),
     ex('B-1', 'AGT-840', 1, 'write', { status: 'staged' }),
     ex('B-2', 'AGT-840', 2, 'judge-correctness'),
 ]
-let run = start(WELDED(), { unit: { index: 0, of: 2, classCap: { write: 1, 'judge-correctness': 2 } }, hold: ['A-0'] })
+try {
+    await start(UNCERTIFIED(), { unit: { index: 0, of: 2, classCap: { write: 1, 'judge-correctness': 2 } } })
+    ok(false, 'one issue per launch: a unit launch holding two lanes refuses')
+} catch (e) {
+    ok(String(e.message).includes('exactly one issue lane') && String(e.message).includes('AGT-602, AGT-840') &&
+        String(e.message).includes('Refusing to route') && SPAWNED.length === 0,
+        'one issue per launch: a unit launch holding two lanes refuses before any spawn')
+}
+// Without `unit`, the in-wave coupling rule still holds them in stage order.
+let run = start(UNCERTIFIED(), { hold: ['A-0'] })
 await settle()
 ok(SPAWNED.includes('A-0') && !SPAWNED.includes('B-1'),
-    "weld: B's writer waits while A's is in flight")
+    "no unit: B's writer waits while A's is in flight")
 ok(logged('cross-issue coupling') && LOG.some((l) => l.startsWith('B-1: waiting — writer A-0')),
-    "weld: the wait names the uncertified writer pair")
+    "no unit: the wait names the uncertified writer pair")
 await finish('A-0')
 out = await run
 ok(SPAWNED.includes('B-1') && SPAWNED.includes('A-2') && SPAWNED.includes('B-2'),
-    'weld: the welded lanes run to the end in their launch')
+    'no unit: both lanes run to the end')
 
 // ---- (4) classCap overrides the launch-local count -----------------------
 // HRN-1 alone co-stages two judges, so its own rows certify judge at 2. A
@@ -216,14 +226,8 @@ await finish('A-1a')
 out = await run
 ok(SPAWNED.includes('A-1b') && statusOf(out, 'A-1b') === 'returned',
     'classCap: the second judge launches once the first returns')
-// Widening: two lanes whose judges sit on different stages certify judge at
-// one locally, yet the manifest-wide share of two lets both run together.
-run = start([ex('J-1', 'HRN-3', 0, 'judge'), ex('K-1', 'HRN-4', 1, 'judge')], { unit: { index: 0, of: 2, classCap: { judge: 2 } }, hold: ['J-1'] })
-await settle()
-ok(SPAWNED.includes('J-1') && SPAWNED.includes('K-1'),
-    'classCap: a share above the launch-local count admits both judges at once')
-await finish('J-1')
-await run
+// Two lanes whose judges sit on different stages certify judge at one
+// locally; a launch with no unit has no wider share to apply.
 run = start([ex('J-1', 'HRN-3', 0, 'judge'), ex('K-1', 'HRN-4', 1, 'judge')], { hold: ['J-1'] })
 await settle()
 ok(SPAWNED.includes('J-1') && !SPAWNED.includes('K-1'),
@@ -238,8 +242,8 @@ await finish('A-1a')
 await run
 
 // ---- (5) determinism: the same launch twice picks the same order ------
-const first = [...(await start(THREE(), { unit: { index: 0, of: 1 } }), SPAWNED)]
-const second = [...(await start(THREE(), { unit: { index: 0, of: 1 } }), SPAWNED)]
+const first = [...(await start(chain('A', 'AGT-602'), { unit: { index: 0, of: 1 } }), SPAWNED)]
+const second = [...(await start(chain('A', 'AGT-602'), { unit: { index: 0, of: 1 } }), SPAWNED)]
 ok(first.join(',') === second.join(','), 'determinism: a repeated launch spawns the identical set in the identical order')
 
 // ---- (6) the retired shard arg and malformed units refuse to route -----

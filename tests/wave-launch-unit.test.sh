@@ -289,8 +289,58 @@ ok(c != null && c.rows === 3 && c.deferred.chain_dead === 1 && c.deferred.total 
 ok(c != null && JSON.stringify(Object.keys(c)) === JSON.stringify(['rows', 'rounds_per_issue', 'gates',
     'reseats', 'claim_conflicts', 'ancestry_parks', 'spawn_failed', 'deferred', 'unmatched_steps']),
     'coordination: the field set matches the wave-usage join\'s section')
-ok(logged('wave: coordination — 3 row(s)') && logged('1 re-seat(s), 1 claim conflict(s)'),
-    'coordination: the counts are logged at the end of the launch')
+// The harness hands the conductor the return as JSON text, and JSON keeps an
+// array's elements only, so the section must also cross as a JSON log line.
+const loggedSection = () => {
+    const lines = LOG.filter((l) => l.startsWith('wave: coordination '))
+    if (lines.length !== 1) return undefined
+    try { return JSON.parse(lines[0].slice('wave: coordination '.length)) } catch { return undefined }
+}
+ok(JSON.parse(JSON.stringify(out)).coordination === undefined &&
+    JSON.stringify(loggedSection()) === JSON.stringify(c),
+    `coordination: one log line carries the whole section as JSON (got ${JSON.stringify(loggedSection())})`)
+
+// ---- (8) every coordination bucket, one lane per settled status ---------
+// Each row is its own issue, so no status cascades into another row. The
+// expected section is derived by hand from the fixture: a gate is decided
+// when it passed, was rejected or parked, and counts toward first pass only
+// at instance ordinal 0.
+const BUCKETS = () => [
+    Object.assign(vote('R-0', 'CRD-3', 0), { instance: 'verify-tribunal@2' }),
+    Object.assign(vote('B-0', 'CRD-4', 0), { instance: 'verify-tribunal@0' }),
+    Object.assign(vote('P-0', 'CRD-5', 0), { instance: 'verify-tribunal@0' }),
+    Object.assign(vote('K-0', 'CRD-6', 0), { instance: 'gate@0' }),
+    ex('N-0', 'CRD-7', 0, 'write', { executor: 'fix', instance: 'fix@1' }),
+    ex('S-0', 'CRD-8', 0, 'judge-correctness', { instance: 'review@0#2' }),
+    ex('G-0', 'CRD-9', 0, 'judge-testing', { instance: 'review@0#1' }),
+    ex('W-0', 'CRD-10', 0, 'judge-security', { instance: 'review@0#3' }),
+    ex('U-0', 'CRD-11', 0, 'verify-ac', { instance: 'verify-ac@0' }),
+]
+const settledAs = (step, status) => ({ step, status, text: null })
+out = await start(BUCKETS(), { results: {
+    'R-0': settledAs('R-0', 'gate-rejected'),
+    'B-0': settledAs('B-0', 'gate-blocked'),
+    'P-0': settledAs('P-0', 'gate-parked'),
+    'K-0': settledAs('K-0', 'gate-skipped'),
+    'N-0': settledAs('N-0', 'parked-base-ancestry'),
+    'S-0': settledAs('S-0', 'spawn-failed'),
+    'G-0': settledAs('G-0', 'not-launched-agent-budget'),
+    'W-0': settledAs('W-0', 'not-launched-writer-budget'),
+    'U-0': settledAs('U-0', 'not-launched-run-parked'),
+} })
+ok(JSON.stringify(out.coordination) === JSON.stringify({
+    rows: 9,
+    rounds_per_issue: { 'CRD-3': 2, 'CRD-4': 0, 'CRD-5': 0, 'CRD-6': 0, 'CRD-7': 1,
+                        'CRD-8': 0, 'CRD-9': 0, 'CRD-10': 0, 'CRD-11': 0 },
+    gates: { decided: 2, passed: 0, rejected: 1, parked: 1, blocked: 1, skipped: 1,
+             first_pass: { decided: 1, passed: 0, rate: 0 } },
+    reseats: 0,
+    claim_conflicts: 0,
+    ancestry_parks: 1,
+    spawn_failed: 1,
+    deferred: { agent_budget: 1, writer_budget: 1, chain_dead: 0, run_parked: 1, total: 3 },
+    unmatched_steps: [],
+}), `coordination: every bucket counts its own settled status (got ${JSON.stringify(out.coordination)})`)
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)

@@ -89,7 +89,9 @@ export const meta = {
 // launch's rounds per issue, gate outcomes, re-seats, claim conflicts,
 // ancestry parks, spawn failures and deferrals, counted from its own rows and
 // settled statuses in the field set wave-usage.js's steps-mode join returns.
-// The same counts close the log as a `wave: coordination` line.
+// The harness's JSON transport drops a named property on an array, so the
+// log closes with `wave: coordination <the section as JSON>`, the copy that
+// reaches the conductor.
 // ---------------------------------------------------------------------------
 
 // TEST-BEGIN configuration — shared by the extracted behavior suites.
@@ -2677,8 +2679,9 @@ const COORDINATION_GATES = {
 }
 const INSTANCE_ORDINAL_RE = /@(\d+)(?:#\d+)?$/
 
+// `statuses[i]` is `launchRows[i]`'s settled result, so every status has its
+// row and `unmatched_steps` stays empty; it is kept for the join's field set.
 function coordinationOf(launchRows, statuses) {
-    const rowByStep = new Map(launchRows.map((row) => [row.step, row]))
     const out = {
         rows: 0,
         rounds_per_issue: {},
@@ -2691,13 +2694,12 @@ function coordinationOf(launchRows, statuses) {
         deferred: { agent_budget: 0, writer_budget: 0, chain_dead: 0, run_parked: 0, total: 0 },
         unmatched_steps: [],
     }
-    for (const s of statuses) {
+    statuses.forEach((s, index) => {
+        const row = launchRows[index]
         out.rows++
-        const row = rowByStep.get(s.step)
-        if (!row) out.unmatched_steps.push(s.step)
-        const m = INSTANCE_ORDINAL_RE.exec((row && row.instance) || '')
+        const m = INSTANCE_ORDINAL_RE.exec(row.instance || '')
         const ordinal = m ? parseInt(m[1], 10) : null
-        if (row && row.issue && ordinal != null) {
+        if (row.issue && ordinal != null) {
             const seen = out.rounds_per_issue[row.issue]
             out.rounds_per_issue[row.issue] = seen == null ? ordinal : Math.max(seen, ordinal)
         }
@@ -2711,13 +2713,13 @@ function coordinationOf(launchRows, statuses) {
         } else if (COORDINATION_GATES[s.status]) {
             const bucket = COORDINATION_GATES[s.status]
             out.gates[bucket]++
-            if (bucket !== 'passed' && bucket !== 'rejected' && bucket !== 'parked') continue
+            if (bucket !== 'passed' && bucket !== 'rejected' && bucket !== 'parked') return
             out.gates.decided++
-            if (ordinal !== 0) continue
+            if (ordinal !== 0) return
             out.gates.first_pass.decided++
             if (bucket === 'passed') out.gates.first_pass.passed++
         }
-    }
+    })
     const fp = out.gates.first_pass
     fp.rate = fp.decided > 0 ? fp.passed / fp.decided : null
     return out
@@ -2725,17 +2727,13 @@ function coordinationOf(launchRows, statuses) {
 
 // One entry per row this launch holds, in manifest order. The coordination
 // section rides the array as a named property, so every reader of the
-// per-row entries sees the same array as before.
+// per-row entries sees the same array as before. The harness hands the
+// conductor the return as JSON text, which keeps an array's elements only,
+// so the section also crosses whole as the `wave: coordination` log line.
 log(`wave: ${agentsLaunched} agent() call(s) launched this invocation (harness cap ${AGENT_LIFETIME_CAP})`)
 const statuses = rows.map((row) => byStep.get(row.step) ||
     { step: row.step, status: parked ? 'not-launched-run-parked' : 'spawn-failed' })
 const coordination = coordinationOf(rows, statuses)
-log(`wave: coordination — ${coordination.rows} row(s) this launch; rounds per issue ` +
-    `${Object.entries(coordination.rounds_per_issue).map(([i, n]) => `${i}@${n}`).join(', ') || 'none'}; ` +
-    `gates ${coordination.gates.passed} passed / ${coordination.gates.rejected} rejected / ` +
-    `${coordination.gates.parked} parked (first pass ${coordination.gates.first_pass.passed} of ` +
-    `${coordination.gates.first_pass.decided}); ${coordination.reseats} re-seat(s), ` +
-    `${coordination.claim_conflicts} claim conflict(s), ${coordination.ancestry_parks} ancestry park(s), ` +
-    `${coordination.spawn_failed} spawn failure(s), ${coordination.deferred.total} deferred`)
+log(`wave: coordination ${JSON.stringify(coordination)}`)
 return Object.assign(statuses, { coordination })
 // TEST-END stage-ladder

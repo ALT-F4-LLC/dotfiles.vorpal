@@ -236,7 +236,8 @@ lines with the baseline from §1:
   names some `SKILL.md`), and by its basename in simplify mode;
 - in simplify mode, also:
   - `just frozen-drift-check` (when it was available at baseline);
-  - when a `workflows/*.js` file landed: `bash tests/workflow-module-parse.test.sh`;
+  - when a `workflows/*.js` file landed: `bash tests/workflow-module-parse.test.sh`
+    and `bash tests/workflow-structured-output.test.sh`;
   - when a contract, fragment, or docket workflow TOML landed:
     `bash tests/contract-corpus.test.sh`, `bash tests/contract-includes.test.sh`,
     and `bash tests/contract-cluster-keys.test.sh`, the suites that pin

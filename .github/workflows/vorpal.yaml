@@ -169,6 +169,8 @@ jobs:
 
       - run: bash tests/workflow-module-parse.test.sh
 
+      - run: bash tests/workflow-structured-output.test.sh
+
       # CI has no docket install; the skip is reserved for this row.
       - run: bash tests/workflow-lint.test.sh
         env:

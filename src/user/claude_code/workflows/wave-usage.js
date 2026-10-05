@@ -3,8 +3,8 @@ export const meta = {
     description: 'Internal: launched through scriptPath by docket-run when a wave returns; measures a completed wave\'s token spend from its agent transcripts and emits the back-fill rows for `docket dispatch backfill-usage` or `docket vote backfill-usage`. Args and probe cost in the header comment.',
     whenToUse: 'Never by name. Launched beside the dispatch close, and by the pause and resume paths for a wave never back-filled.',
     phases: [
-        { title: 'Scout', detail: 'one agent lists the agent transcripts' },
-        { title: 'Extract', detail: 'one low-effort agent per transcript runs the fixed jq' },
+        { title: 'Scout', detail: 'one agent lists the agent transcripts and, in seats mode, selects the seat transcripts' },
+        { title: 'Extract', detail: 'one low-effort agent per listed transcript (seats mode: per seat transcript) runs the fixed jq' },
     ],
 }
 
@@ -23,9 +23,12 @@ export const meta = {
 // retro's seat-calibration row reads beside the cast's self-reported
 // confidence. Steps mode returns a `coordination` section beside the rows
 // (counts under return below) when the caller also passes the wave's returned
-// statuses and the manifest rows. PROBE COST: one low-effort
-// read-only agent per agent-*.jsonl in the directory, plus one scout, plus one
-// re-check for any transcript relayed as bootstrap:false. Invoke by scriptPath
+// statuses and the manifest rows. PROBE COST: one scout, plus one low-effort
+// read-only extract agent per transcript to measure: in steps mode every
+// agent-*.jsonl in the directory, in seats mode only each seat transcript
+// (one whose bootstrap brief carries `docket vote cast`, selected by the
+// scout without an agent per file), plus one re-check for any transcript
+// relayed as bootstrap:false. Invoke by scriptPath
 // ONLY, with args {dir, mode?, exclude?, rows?, statuses?}.
 //
 // When and how it is invoked:
@@ -66,7 +69,8 @@ const DEFAULT_MODE = 'steps'
 // `backfill-usage`. `docket step record --usage` is the engine's channel for
 // units a claimant CAN measure at source.
 //
-// Each agent-<id>.jsonl is read by one agent running EXTRACT_JQ below, which
+// Each agent-<id>.jsonl (in seats mode, each one the scout's SELECT_JQ
+// selects as a seat) is read by one agent running EXTRACT_JQ below, which
 // reports what the bootstrap brief (the first user message after any harness
 // relay) told the agent to do, the agent's four typed token units, its
 // tool-call count, and whether it was a re-seated judge. This script joins,
@@ -271,20 +275,26 @@ if (manifestRows != null && (!Array.isArray(manifestRows) || !Array.isArray(wave
 //
 // Backslashes are doubled once for the template literal: the file the agent
 // writes carries jq source, in which `\\s` is the regex escape.
-const EXTRACT_JQ = `[inputs | fromjson? | select(type == "object")] as $lines
-| ([$lines[] | select(.type == "user")
-    | select(.message.content | type == "string"
-        and startswith("[Workflow harness — user request]") | not)]
-   | .[0]) as $first
-| (if $first == null then null
-   else ($first.message.content | if type == "string" then . else tojson end) end) as $boot
+//
+// BRIEF_DEFS_JQ is the bootstrap rule and the cast join, shared verbatim with
+// SELECT_JQ below: seats mode extracts only what SELECT_JQ selects, so a
+// transcript this program would seat must be one that program selects.
+const BRIEF_DEFS_JQ = `def bootstrap_candidate: .type == "user"
+    and (.message.content | type == "string"
+        and startswith("[Workflow harness — user request]") | not);
+def bootstrap_text: .message.content | if type == "string" then . else tojson end;
+def cast_join: capture("docket vote cast\\\\s+(?<proposal>\\\\S+)\\\\s+--voter\\\\s+(?<voter>\\\\S+)");
+`
+const EXTRACT_JQ = `${BRIEF_DEFS_JQ}[inputs | fromjson? | select(type == "object")] as $lines
+| ([$lines[] | select(bootstrap_candidate)] | .[0]) as $first
+| (if $first == null then null else ($first | bootstrap_text) end) as $boot
 | ($boot // "") as $b
 | (reduce ($lines[] | select(.type == "assistant") | .message
             | select((.usage // {}) != {} and (.id // "") != "")) as $m
         ({}; .[$m.id] = $m) | [.[]]) as $messages
 | {
     bootstrap: ($boot != null),
-    cast: (($b | capture("docket vote cast\\\\s+(?<proposal>\\\\S+)\\\\s+--voter\\\\s+(?<voter>\\\\S+)")) // null),
+    cast: (($b | cast_join) // null),
     record: (($b | capture("docket step (?:claim|record|complete)\\\\s+(?<step>STEP-\\\\d+)") | .step) // null),
     probe: ($b | (
         contains("WAVE PROBE: not a step execution")
@@ -314,6 +324,22 @@ const EXTRACT_JQ = `[inputs | fromjson? | select(type == "object")] as $lines
   }
 `
 // TEST-END wave-usage-extract
+
+// TEST-BEGIN wave-usage-select — extracted and run by
+// tests/wave-usage-probe-overhead.test.sh after the extract region, whose
+// BRIEF_DEFS_JQ it reads. Keep it free of workflow globals.
+//
+// Run by the seats-mode scout as `jq -r -n -R -f <this> <transcript>...`
+// (any number of files per invocation): prints the path of every transcript
+// whose bootstrap carries the cast command, so seats mode spawns no extract
+// agent for a claimant, claim agent or probe. Only the first bootstrap
+// candidate per file is kept and read, never a later tool result.
+const SELECT_JQ = `${BRIEF_DEFS_JQ}reduce (inputs | fromjson? | select(type == "object" and bootstrap_candidate)
+        | {file: input_filename, text: bootstrap_text}) as $u
+    ({}; if has($u.file) then . else .[$u.file] = $u.text end)
+| to_entries[] | select(.value | cast_join) | .key
+`
+// TEST-END wave-usage-select
 
 // TEST-BEGIN wave-usage-classify — extracted and exercised by
 // tests/wave-usage-probe-overhead.test.sh over jq output from fixture
@@ -607,9 +633,10 @@ function rebuildListing(dir, listed) {
 
 const FILES_SCHEMA = {
     type: 'object',
-    required: ['files'],
+    required: mode === 'seats' ? ['files', 'seats'] : ['files'],
     properties: {
         files: { type: 'array', items: { type: 'string' } },
+        seats: { type: 'array', items: { type: 'string' } },
     },
 }
 
@@ -642,10 +669,23 @@ const EXTRACT_SCHEMA = {
     },
 }
 
-const scoutBrief = `You are a read-only scout. Do not cd anywhere. Run this command verbatim, sandboxed, and report what it prints — never a paraphrase:
+const LIST_COMMAND = `find ${shellPath(dir)} -maxdepth 1 -type f -name 'agent-*.jsonl' | LC_ALL=C sort; echo "exit=$?"`
+const scoutBrief = mode === 'seats'
+    ? `You are a read-only scout. Do not cd anywhere. Run these commands verbatim, sandboxed, and report what they print — never a paraphrase. The first writes a jq program with a quoted heredoc so nothing in it is expanded; the second lists the transcripts; the last prints only the transcripts whose brief casts a vote:
 
 \`\`\`
-find ${shellPath(dir)} -maxdepth 1 -type f -name 'agent-*.jsonl' | LC_ALL=C sort; echo "exit=$?"
+cat > "\${TMPDIR:-/tmp}/wave-usage-select-$$.jq" <<'JQ'
+${SELECT_JQ}JQ
+${LIST_COMMAND}
+echo '--- seats ---'
+find ${shellPath(dir)} -maxdepth 1 -type f -name 'agent-*.jsonl' -exec jq -r -n -R -f "\${TMPDIR:-/tmp}/wave-usage-select-$$.jq" {} + | LC_ALL=C sort; echo "exit=$?"
+\`\`\`
+
+The directory is written with one \`*\` where the flattened project name sits; leave that glob exactly as it is and let the shell resolve it. Return {files: [...], seats: [...]}: \`files\` is every path printed before the \`--- seats ---\` line, \`seats\` every path printed after it, one entry per line, verbatim and in order — a hyphen where a dot might be expected (\`github-com\`) is correct, not a typo. An empty listing is an empty array. Do not open, read, or count the files by any other means.`
+    : `You are a read-only scout. Do not cd anywhere. Run this command verbatim, sandboxed, and report what it prints — never a paraphrase:
+
+\`\`\`
+${LIST_COMMAND}
 \`\`\`
 
 The directory is written with one \`*\` where the flattened project name sits; leave that glob exactly as it is and let the shell resolve it. Return {files: [...]} with every path printed, one entry per line, verbatim and in that order — a hyphen where a dot might be expected (\`github-com\`) is correct, not a typo. An empty listing is {files: []}. Do not open, read, or count the files.`
@@ -671,14 +711,29 @@ if (listed.length !== rawFiles.length) {
     const dropped = rawFiles.filter((f) => !AGENT_LOG_RE.test(f))
     log(`wave-usage: scout listed ${rawFiles.length} path(s), ${dropped.length} not matching agent-*.jsonl and dropped: ${dropped.join(', ')}`)
 }
-const { files, retyped: retypedByScout } = rebuildListing(dir, listed)
+const { files: transcripts, retyped: retypedByScout } = rebuildListing(dir, listed)
 if (retypedByScout) {
     log(`wave-usage: scout returned ${retypedByScout} path(s) outside args.dir (the relay retyped the directory); rebuilt each from args.dir and the listed basename`)
 }
-log(`wave-usage: ${files.length} agent transcript(s) under ${dir} (${mode} mode)`)
-if (files.length === 0) {
+log(`wave-usage: ${transcripts.length} agent transcript(s) under ${dir} (${mode} mode)`)
+if (transcripts.length === 0) {
     throw new Error(`wave-usage: no agent-*.jsonl under ${dir} — nothing to measure, which is a finding, not an empty batch`)
 }
+// Seats mode extracts only the transcripts SELECT_JQ selected; their paths
+// are rebuilt on args.dir like the listing, and kept only if listed.
+const seatTranscripts = () => {
+    if (!Array.isArray(listing?.seats)) {
+        throw new Error('wave-usage: the seats-mode scout returned no seats listing — cannot tell judges from other agents')
+    }
+    const selected = new Set(rebuildListing(dir, listing.seats.filter((f) => AGENT_LOG_RE.test(f))).files)
+    const seats = transcripts.filter((f) => selected.has(f))
+    if (seats.length !== selected.size) {
+        log(`wave-usage: scout selected ${selected.size - seats.length} path(s) its own listing lacks; dropped`)
+    }
+    log(`wave-usage: ${seats.length} transcript(s) brief a vote cast; the other ${transcripts.length - seats.length} are not extracted`)
+    return seats
+}
+const files = mode === 'seats' ? seatTranscripts() : transcripts
 
 // TEST-BEGIN wave-usage-recheck-pipeline — extracted and exercised by
 // tests/wave-usage-recheck-pipeline.test.sh; EXTRACT_SCHEMA requires only

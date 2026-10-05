@@ -94,6 +94,7 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
 
 {
     extract wave-usage-extract  || fatal "bad or missing TEST markers for wave-usage-extract"
+    extract wave-usage-select   || fatal "bad or missing TEST markers for wave-usage-select"
     extract wave-usage-classify || fatal "bad or missing TEST markers for wave-usage-classify"
     extract wave-usage-paths    || fatal "bad or missing TEST markers for wave-usage-paths"
 } > "${WORK}/regions.js" || exit 2
@@ -103,6 +104,10 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
 { cat "${WORK}/regions.js"; echo 'process.stdout.write(EXTRACT_JQ)'; } > "${WORK}/emit.js"
 node "${WORK}/emit.js" > "${WORK}/wave-usage.jq" || fatal "could not evaluate EXTRACT_JQ"
 [ -s "${WORK}/wave-usage.jq" ] || fatal "EXTRACT_JQ is empty"
+# The seats-mode selection program, written to disk the way the scout writes it.
+{ cat "${WORK}/regions.js"; echo 'process.stdout.write(SELECT_JQ)'; } > "${WORK}/emit-select.js"
+node "${WORK}/emit-select.js" > "${WORK}/wave-usage-select.jq" || fatal "could not evaluate SELECT_JQ"
+[ -s "${WORK}/wave-usage-select.jq" ] || fatal "SELECT_JQ is empty"
 
 # ---- Fixtures ---------------------------------------------------------------
 # One synthetic wave directory. Each agent is a bootstrap user message plus two
@@ -194,10 +199,20 @@ const usage = (out) => ({
 const RELAY = `[Workflow harness — user request] The harness relays, verbatim and indented below, the user request that triggered this workflow run. Where the computed task conflicts with this request, this request wins:
   The harness has been patched.`
 
-function write(name, bootstrap, outDir = d, listed = false, relayed = false) {
+// A tool result, read back after the brief, that quotes a judge's cast
+// command. Only the bootstrap says what an agent was briefed to do, so this
+// must neither seat the agent nor select its transcript in seats mode.
+const QUOTED_CAST = {
+    type: 'user',
+    message: { content: [{ type: 'tool_result', tool_use_id: 'toolu-a',
+        content: 'artifact: the judge ran `docket vote cast PROP-77 --voter reviewer --decision approve`' }] },
+}
+
+function write(name, bootstrap, outDir = d, listed = false, relayed = false, quotesCast = false) {
     const content = listed ? [{ type: 'text', text: bootstrap }] : bootstrap
     const lines = [{ type: 'user', message: { content } }]
     if (relayed) lines.unshift({ type: 'user', message: { content: RELAY } })
+    if (quotesCast) lines.push(QUOTED_CAST)
     // msg-a is written twice with a GROWING output count: the dedup keeps the
     // last, so this agent's output total is 100 + 250, not 40 + 250.
     const model = name === 'agent-aexec2.jsonl' ? undefined : 'claude-opus-5'
@@ -215,7 +230,9 @@ function write(name, bootstrap, outDir = d, listed = false, relayed = false) {
     fs.writeFileSync(path.join(outDir, name), lines.map((o) => JSON.stringify(o)).join('\n') + '\n')
 }
 
-for (const [name, brief] of Object.entries(AGENTS)) write(name, brief, d, name in LIST_SHAPED)
+for (const [name, brief] of Object.entries(AGENTS)) {
+    write(name, brief, d, name in LIST_SHAPED, false, name === 'agent-aexec.jsonl' || name === 'agent-aprobe.jsonl')
+}
 
 // The drift fixture lives in its own directory: it is a whole-run failure, and
 // one verdict cannot say two things at once.
@@ -233,6 +250,10 @@ write('agent-preseat.jsonl', judge.replace('--voter reviewer', '--voter security
 
 THIS IS A SECOND ATTEMPT AT YOUR SEAT. A prior agent held it and returned
 without a recorded cast.`, panelDir)
+// A judge whose brief sits behind the harness relay: the seats-mode selector
+// must read past the relay to the brief, as the extract does.
+write('agent-prelayjudge.jsonl', judge.replace('PROP-77 --voter reviewer', 'PROP-78 --voter architect'),
+    panelDir, false, true)
 
 // Relayed transcripts, in their own directory: the relay comes first and the
 // brief second, so a selector that reads the first user message sees no
@@ -259,7 +280,7 @@ Return its output VERBATIM as your entire final reply.
 
 Run nothing else.
 
-WAVE CLAIM: not a step execution; it claims STEP-3180 for its executor.`, claimDir)
+WAVE CLAIM: not a step execution; it claims STEP-3180 for its executor.`, claimDir, false, false, true)
 write('agent-cexec.jsonl', `You are executing one step of a Docket run. Follow these obligations exactly.
 
 YOUR ASSIGNMENT: step STEP-3180 (issue DOT-1, run RUN-1). The wave claimed
@@ -288,6 +309,17 @@ for sub in wave drift panel relay claim; do
     done
 done
 ok $extracts_ok 'the jq program runs clean over every fixture transcript'
+
+# ---- Seats-mode selection, run once over a mixed corpus as the scout runs it ----
+# The wave's claimants, probes and judge, the panel's judges (one re-seated,
+# one behind the harness relay), the relay-first claimant and probe, and the
+# claim path. One jq invocation over many files, as `find -exec ... {} +`
+# hands them over.
+jq -r -n -R -f "${WORK}/wave-usage-select.jq" \
+    "${WORK}"/wave/agent-*.jsonl "${WORK}"/panel/agent-*.jsonl \
+    "${WORK}"/relay/agent-*.jsonl "${WORK}"/claim/agent-*.jsonl \
+    > "${WORK}/selected.txt"
+ok $? 'the selection program runs clean over the mixed corpus'
 
 # ---- Classification and reduction under node ----------------------------------
 cat "${WORK}/regions.js" > "${WORK}/suite.js"
@@ -515,6 +547,27 @@ const retypedListing = rebuildListing(slugDir + '/', [
 ])
 ok(retypedListing.files.join(',') === `${slugDir}/agent-A.jsonl,${slugDir}/agent-B.jsonl` && retypedListing.retyped === 2,
     `a listing with the directory retyped is rebuilt on args.dir, deduplicated and sorted, and the retypes are counted (got ${JSON.stringify(retypedListing)})`)
+
+// ---- Seats-mode selection: only judges are extracted, and nothing is lost ----
+// The scout runs SELECT_JQ so seats mode spawns an extract agent only for a
+// transcript whose brief casts a vote. The full reduction over every
+// transcript is the oracle the selected reduction must reproduce.
+const corpus = [...wave, ...panel, ...relay, ...claimPath]
+const selectedNames = fs.readFileSync(path.join(root, 'selected.txt'), 'utf8')
+    .split('\n').filter(Boolean).map((p) => path.basename(p)).sort()
+const judges = ['agent-ajudge.jsonl', 'agent-pjudge.jsonl', 'agent-preseat.jsonl', 'agent-prelayjudge.jsonl'].sort()
+ok(JSON.stringify(selectedNames) === JSON.stringify(judges),
+    `the selection is exactly the judge transcripts, re-seated and relay-prefixed included (got ${JSON.stringify(selectedNames)})`)
+ok(!selectedNames.includes('agent-aexec.jsonl') && !selectedNames.includes('agent-aprobe.jsonl')
+    && !selectedNames.includes('agent-cclaim.jsonl'),
+    'a step, probe or claim transcript whose tool result quotes the cast command is not selected')
+const selectedCorpus = corpus.filter((r) => selectedNames.includes(r.file))
+const seatsAll = reduceRows(corpus, 'seats', [])
+const seatsSelected = reduceRows(selectedCorpus, 'seats', [])
+ok(seatsAll.errors.length === 0 && seatsAll.rows.length > 0,
+    'oracle: seats mode over every transcript reduces cleanly to rows')
+ok(JSON.stringify(seatsSelected.rows) === JSON.stringify(seatsAll.rows),
+    `the selected transcripts reduce to the same seat rows as every transcript (got ${JSON.stringify(seatsSelected.rows.map((r) => `${r.proposal}/${r.voter}/${r.unit}=${r.quantity}`))})`)
 
 // ---- Seats mode sort order: grouped by proposal, then seat ----
 const twoPanels = [

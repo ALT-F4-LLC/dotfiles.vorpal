@@ -151,6 +151,21 @@ n=$(python3 "$SCRIPT" "$WORK/rows.jsonl" "$WORK/out-jsonl" 2>/dev/null)
 [ "$n" = "2" ]; ok $? "JSON lines input (the paged rows file) is read the same as an array (got $n)"
 n=$(count "{\"rows\":[$(w 1 A 0),$(w 2 B 1)]}")
 [ "$n" = "1" ]; ok $? "a {rows: [...]} envelope is unwrapped (got $n)"
+n=$(count "{\"rows\":[$(r 1 A 0),$(r 2 B 0)]}"); rc=$?
+[ "$rc" -eq 0 ] && [ "$n" = "2" ] && [ "$(summary 'sum(x["rows"] for x in s)')" = "2" ]
+ok $? "an envelope of two reader lanes is two rows, not one row object (rc=$rc, got $n)"
+# jq -c '.data.rows[] | select(.kind != "human")' over a one-row dispatch
+# emits one bare object on one line.
+row=$(r 1 A 0)
+printf '%s\n' "$row" > "$WORK/one.jsonl"
+rm -rf "$WORK/launch"
+n=$(python3 "$SCRIPT" "$WORK/one.jsonl" "$WORK/launch" 2> "$WORK/err"); rc=$?
+[ "$rc" -eq 0 ] && [ "$n" = "1" ] && [ "$(cat "$WORK/launch/launch-0.jsonl")" = "$row" ]
+ok $? "a rows file holding one row object is one launch holding that row (rc=$rc, got '$n': $(head -c 200 "$WORK/err"))"
+printf '42\n' > "$WORK/scalar.json"
+python3 "$SCRIPT" "$WORK/scalar.json" "$WORK/out-scalar" > /dev/null 2> "$WORK/err"; rc=$?
+[ "$rc" -eq 1 ] && grep -q 'holds neither a rows array nor JSON lines' "$WORK/err"
+ok $? "a top-level scalar is still exit 1 naming the accepted shapes (rc=$rc)"
 
 # ---- Only N reaches stdout ------------------------------------------------------
 out=$(count "[$(w 1 A 0),$(r 2 B 0)]")

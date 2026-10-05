@@ -3,7 +3,8 @@
 Usage: python3 lane_units.py <rows-file> <out-dir>
 
 <rows-file> holds the rows the conductor kept after the kind filter, either
-as one JSON array or as one JSON object per line. The script writes, under
+as one JSON array or as one JSON object per line; a file holding a single
+object is that one row. The script writes, under
 <out-dir>:
 
   launch-<i>.jsonl  launch i's rows, one per line, in manifest order
@@ -60,6 +61,8 @@ def load_rows(path):
         return [json.loads(line) for line in stripped.splitlines() if line.strip()]
     if isinstance(data, dict) and isinstance(data.get("rows"), list):
         return data["rows"]
+    if isinstance(data, dict):
+        return [data]
     if not isinstance(data, list):
         raise SystemExit(f"lane_units: {path} holds neither a rows array nor JSON lines")
     return data

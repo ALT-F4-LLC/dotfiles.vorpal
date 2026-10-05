@@ -664,10 +664,20 @@ case_read_loops() {
     assert_verdict "ls | { while read d; do break; done; while read d; do break; done; while read d; do rm -rf ${SIB_DIR}/\$d; done; }" executor-write "$WAVE_42" ALLOW "residual: same-text read loop after two loops left by break"
     assert_verdict "ls | { while read d && false; do :; done; while read d; do rm -rf ${SIB_DIR}/\$d; done; }" executor-write "$WAVE_42" ALLOW "residual: same-text read after a condition exit"
     assert_verdict "ls | { read d; while read d; do rm -rf ${SIB_DIR}/\$d; done; }" executor-write "$WAVE_42" ALLOW "residual: same-text read loop after a lone read in the same shell"
+    # KNOWN RESIDUAL: a read placeholder the command strips itself leaves a
+    # for-list empty again, so its body never fires.
+    assert_verdict "ls | while read d; do for f in \${d%x}; do rm -rf ${SIB_DIR}/\$f; done; done" executor-write "$WAVE_42" ALLOW "residual: for-list over a stripped read placeholder"
+    # KNOWN RESIDUAL: a vetoed condition reports status 0, so only its then
+    # branch is walked, in a read loop as at top level.
+    assert_verdict "ls | while read d; do if test -z \"\$d\"; then :; else rm -rf ${SIB_DIR}/\$d; fi; done" executor-write "$WAVE_42" ALLOW "residual: else branch after a vetoed condition in a read loop"
+    assert_verdict "if grep -q x f; then :; else rm -rf ${SIB_DIR}/x; fi" executor-write "$WAVE_42" ALLOW "residual: else branch after a vetoed condition at top level"
     # The cap reason names the counted wait and the read loop the probe ends.
     assert_deny_reason 'while true; do :; done' executor-write "$WAVE_42" 'n=0; until [ -s f ] || [ $n -ge N ]; do sleep S; n=$((n+1)); done' "cap reason names the counted wait loop"
     assert_deny_reason 'while true; do :; done' executor-write "$WAVE_42" 'cmd | while IFS= read -r x; do ...; done' "cap reason names the read loop shape that ends"
     assert_deny_reason 'while true; do :; done' executor-write "$WAVE_42" "too many parts (over 2000)" "cap reason keeps the oversized wording"
+    # The read-value reason names a filtered loop, and that loop ends.
+    assert_deny_reason "ls | while read d; do [ -n \"\$d\" ] || continue; echo \$d; done" executor-write "$WAVE_42" "cmd | grep -v '^\$' | while IFS= read -r x; do ...; done" "read-value reason names the filtered loop"
+    assert_verdict "git status --short | grep -v '^\$' | while IFS= read -r x; do echo \"\$x\"; done" executor-write "$WAVE_42" ALLOW "filtered read loop named by the read-value reason ends"
 }
 
 # Oversized and odd inputs fail closed or stay inert, quickly.

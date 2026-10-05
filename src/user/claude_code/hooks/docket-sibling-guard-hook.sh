@@ -276,7 +276,11 @@
 # (`while read d && false; do :; done; while read d; do rm ...; done`),
 # or two same-text loops in a row, each left by `break`. That site is
 # still marked, so the later read runs at once and its body is not
-# walked. An unquoted-delimiter heredoc body
+# walked. A for-list over a read placeholder the command strips itself
+# (`for f in ${d%x}`) is empty again, so its body never fires; and a
+# vetoed condition reports status 0, so the else branch after it (`if
+# test -z "$d"; then :; else rm ...; fi`) is never walked, in a read loop
+# as at top level. An unquoted-delimiter heredoc body
 # or an unquoted argument that merely mentions a sibling's `STEP-M.d` in
 # prose is a false DENY, and the deny reason names the Write tool or a
 # quoted delimiter as the way to write such prose. A quoted-delimiter

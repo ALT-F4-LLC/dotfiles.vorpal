@@ -395,6 +395,17 @@ sanctioned here because it fills the shared cache every executor reads.
 `x509: OSStatus` in a wave gate always means cold cache: warm it and
 redispatch, never park for review.
 
+**Warm the Cargo registry cache before dispatching into a Rust repo.**
+Cargo gates run `--locked --offline`, so they read only the shared
+`~/.cargo/registry` cache; a crate version the lockfile names but the
+cache lacks fails every cargo-backed gate. When the target repo has a
+`Cargo.lock`, run `cargo fetch --locked` in it from this session before
+the first dispatch, and again after any commit that changes `Cargo.lock`
+lands on the run's base (a dependency bump merged mid-run is enough). An
+offline cargo gate failing with `attempting to make an HTTP request, but
+--offline was specified` always means a cold registry cache: warm it and
+redispatch, never park for review.
+
 **A safety-classifier block is not a flake; a retry is not the answer.**
 The classifier screens a rendered brief before any agent exists, so a
 block is a verdict on content and a retry re-renders the same content.
@@ -450,8 +461,9 @@ differ` or `Only in <source>` line as drift, stop-and-report.
 
 **Those checks are not this whole section.** The permission-surface
 check, the deny-list read-class check, the completion-gate probe, and the
-Go module cache warmup are pre-dispatch obligations none of them cover: a
-clean doctor says nothing about them. Run all four every time by hand
+Go module and Cargo registry cache warmups are pre-dispatch obligations
+none of them cover: a clean doctor says nothing about them. Run all of
+them every time by hand
 before the first dispatch, and never narrow them by what the remaining
 steps look like.
 

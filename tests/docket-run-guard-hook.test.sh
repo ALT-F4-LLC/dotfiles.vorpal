@@ -33,6 +33,9 @@ command -v jq >/dev/null 2>&1 || fatal "jq is required to run this test"
 
 BASH_BIN=$(command -v bash) || fatal "bash not found on PATH"
 
+# shellcheck source=tests/lib/hook-probe.sh
+. "${SCRIPT_DIR}/lib/hook-probe.sh"
+
 SANDBOX=$(mktemp -d "${TMPDIR:-/tmp}/docket-run-guard-test.XXXXXX") || fatal "mktemp failed"
 trap 'rm -rf "$SANDBOX"' EXIT
 STDERR_FILE="${SANDBOX}/hook.stderr"
@@ -40,15 +43,9 @@ STDERR_FILE="${SANDBOX}/hook.stderr"
 TOOLS_DIR="${SANDBOX}/tools"
 TOOLS_DIR_NO_JQ="${SANDBOX}/tools-no-jq"
 STUB_DIR="${SANDBOX}/stub"
-mkdir -p "$TOOLS_DIR" "$TOOLS_DIR_NO_JQ" "$STUB_DIR"
-for tool in bash cat jq; do
-    tool_path=$(command -v "$tool") || fatal "hook dependency ${tool} not found on PATH"
-    ln -s "$tool_path" "${TOOLS_DIR}/${tool}"
-done
-for tool in bash cat; do
-    tool_path=$(command -v "$tool") || fatal "hook dependency ${tool} not found on PATH"
-    ln -s "$tool_path" "${TOOLS_DIR_NO_JQ}/${tool}"
-done
+mkdir -p "$STUB_DIR"
+hook_probe_link_shims "$TOOLS_DIR" bash cat jq || fatal "cannot build hook probe shims"
+hook_probe_link_shims "$TOOLS_DIR_NO_JQ" bash cat || fatal "cannot build hook probe shims"
 
 # Fake engine with the real default run page limit. Keeping the
 # pagination here makes omitted flags change behavior rather than only text.
@@ -450,6 +447,48 @@ case_engine_and_session_contracts() {
     run_case "generic exit 2 remains unknown without jq" DENY "$PATH_NO_JQ"
 }
 
+# ---- PROBE SHIMS: an interactive alias cannot leak into a shim ------------
+# The operator's zsh defines `alias -- cat=bat`, and agents copy this suite's
+# shim recipe into that shell. Bash reproduces the leak: `command -v` reports
+# the alias text, so a shim built from it links to that text, the probed hook
+# reads empty stdin, and its default allow masks the probe.
+case_probe_shims_ignore_aliases() {
+    local dir="${SANDBOX}/alias-probe" target out
+    (
+        shopt -s expand_aliases
+        alias cat=bat
+        hook_probe_link_shims "${dir}/helper" cat || exit 1
+        mkdir -p "${dir}/control" || exit 1
+        ln -s "$(command -v cat)" "${dir}/control/cat"
+    ) || fatal "cannot build the aliased probe fixture"
+
+    target=$(readlink "${dir}/control/cat")
+    case "$target" in
+        alias\ *) pass "control: plain command -v under the alias links to alias text (${target})" ;;
+        *) fail "control: plain command -v under the alias linked to ${target}, not alias text; the fixture does not reproduce the leak" ;;
+    esac
+
+    target=$(readlink "${dir}/helper/cat")
+    case "$target" in
+        /*)
+            if [ -f "$target" ] && [ -x "$target" ]; then
+                pass "helper shim under the alias resolves to an executable file (${target})"
+            else
+                fail "helper shim under the alias targets ${target}, not an executable regular file"
+            fi
+            ;;
+        *) fail "helper shim under the alias targets ${target}, not an absolute path" ;;
+    esac
+
+    out=$(printf x | "${dir}/helper/cat" 2>/dev/null)
+    if [ "$out" = x ]; then
+        pass "helper shim under the alias passes stdin through"
+    else
+        fail "helper shim under the alias printed '${out}' for input 'x'"
+    fi
+}
+
+case_probe_shims_ignore_aliases
 case_carveout4_single_run_paused_allows
 case_carveout4_one_active_run_denies
 case_carveout4_two_runs_both_paused_allows

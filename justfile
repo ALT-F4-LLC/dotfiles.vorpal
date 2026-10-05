@@ -39,6 +39,31 @@ build:
 tests:
     #!/usr/bin/env bash
     set -euo pipefail
+    # `docket step record` runs this recipe again as its `tests` gate, on the
+    # commit the executor ran it on minutes before. Under a wave of writers
+    # that second run cost about three minutes a step and was the one that hit
+    # the gate's five-minute timeout. So a full pass on a clean tree stamps the
+    # tree's hash in this checkout's git directory, and a gate run (DOCKET_GATE
+    # set) on that same clean tree reuses a stamp younger than
+    # TESTS_REUSE_MAX_AGE seconds instead of running the suites again.
+    # Executor, judge and CI runs never reuse; TESTS_NO_REUSE=1 forces a run.
+    tree=
+    stamps=
+    if git rev-parse --git-dir >/dev/null 2>&1 && [ -z "$(git status --porcelain)" ]; then
+        tree=$(git rev-parse 'HEAD^{tree}')
+        stamps="$(git rev-parse --git-dir)/tests-pass"
+    fi
+    if [ -n "$tree" ] && [ -n "${DOCKET_GATE:-}" ] && [ -z "${TESTS_NO_REUSE:-}" ] && [ -f "$stamps/$tree" ]; then
+        stamped_at=
+        stamped_commit=
+        read -r stamped_at stamped_commit < "$stamps/$tree" || true
+        case "$stamped_at" in ''|*[!0-9]*) stamped_at=0 ;; esac
+        age=$(( $(date +%s) - stamped_at ))
+        if [ "$age" -ge 0 ] && [ "$age" -le "${TESTS_REUSE_MAX_AGE:-7200}" ]; then
+            echo "tests: REUSED the full pass of tree $tree (commit ${stamped_commit:-unknown}) from ${age}s ago; no suite ran. TESTS_NO_REUSE=1 forces a run."
+            exit 0
+        fi
+    fi
     # Every suite runs even after one fails, so a single run names every
     # failure rather than only the first; the list is printed at the end.
     failed=()
@@ -76,6 +101,13 @@ tests:
     if [ "${#failed[@]}" -gt 0 ]; then
         printf 'FAILED: %s\n' "${failed[@]}" >&2
         exit 1
+    fi
+    # Stamp only the tree that was tested: a suite that left the tree dirty or
+    # moved HEAD voids the stamp. One stamp per checkout bounds the directory.
+    if [ -n "$tree" ] && [ -z "$(git status --porcelain)" ] && [ "$(git rev-parse 'HEAD^{tree}')" = "$tree" ]; then
+        rm -rf "$stamps"
+        mkdir -p "$stamps"
+        printf '%s %s\n' "$(date +%s)" "$(git rev-parse HEAD)" > "$stamps/$tree"
     fi
 
 # The project-supplied gate security-change binds on its write steps. Here the

@@ -63,6 +63,8 @@ jobs:
 
       - run: bash tests/justfile-tests-parallel.test.sh
 
+      - run: bash tests/justfile-tests-reuse.test.sh
+
       - run: bash tests/punch-list-skill.test.sh
 
       - run: bash tests/mutant-rule-crossref.test.sh

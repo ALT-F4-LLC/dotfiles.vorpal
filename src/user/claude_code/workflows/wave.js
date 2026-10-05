@@ -83,6 +83,13 @@ export const meta = {
 // map from each such issue to the sha of its prior round's INTEGRATION
 // commit — so the wave can assert base ancestry before seating the fanout.
 // There is no policy argument of any kind and no file access.
+//
+// Return: one {step, status, text, ...} entry per row this launch holds, in
+// manifest order, and on that same array a `coordination` property: the
+// launch's rounds per issue, gate outcomes, re-seats, claim conflicts,
+// ancestry parks, spawn failures and deferrals, counted from its own rows and
+// settled statuses in the field set wave-usage.js's steps-mode join returns.
+// The same counts close the log as a `wave: coordination` line.
 // ---------------------------------------------------------------------------
 
 // TEST-BEGIN configuration — shared by the extracted behavior suites.
@@ -1707,16 +1714,19 @@ async function runGate(row, phaseLabel) {
                 `vote(s); the tally decides on the engine's record as it stands`)
         }
     }
+    // The launch's coordination section counts re-seats off the settled
+    // result; `retries` cannot serve, since it also counts probe resubmissions.
+    const withReseats = (res) => (missing.length > 0 ? { ...res, reseats: missing.length } : res)
     if (!after) {
         log(`${row.step}: gate:outcome probe returned nothing — the tally is ` +
             `UNKNOWN; skipping this issue's later stages; the conductor escalates`)
-        return { step: row.step, status: 'gate-parked', text: '' }
+        return withReseats({ step: row.step, status: 'gate-parked', text: '' })
     }
     if (after.outcome === 'rejected') {
         log(`${row.step}: gate decided REJECTED (${voteId}) — engine ` +
             `routes on_fail; the conductor verifies the routing; ` +
             `skipping this issue's later stages`)
-        return { step: row.step, status: 'gate-rejected', text: asText(after) }
+        return withReseats({ step: row.step, status: 'gate-rejected', text: asText(after) })
     }
     // `done` says only that the step COMPLETED — a rejection whose on_fail
     // routes into rework also reads done/superseded — and the rejected case
@@ -1725,12 +1735,12 @@ async function runGate(row, phaseLabel) {
         log(`${row.step}: gate passed — continuing`)
         const res = gateSuccess(row.step, asText(after), acct)
         log(`${row.step}: ${accountingLine(res)}`)
-        return res
+        return withReseats(res)
     }
     log(`${row.step}: gate did NOT clear (${after.step_status}, tally ${after.outcome}) ` +
         (missing.length > 0 ? `after re-seating ${missing.map((s) => s.seat).join(', ')} ` : '') +
         `— skipping this issue's later stages; the conductor escalates`)
-    return { step: row.step, status: 'gate-parked', text: asText(after) }
+    return withReseats({ step: row.step, status: 'gate-parked', text: asText(after) })
 }
 // TEST-END gate-vote
 
@@ -2644,8 +2654,88 @@ if (budget.total) {
             : ''))
 }
 
-// One entry per row this launch holds, in manifest order.
+// The launch's coordination counts, for docket-retro's integration-health
+// row: what the store cannot see about a wave (a refused claim writes no
+// event, a deferred row never claims). Computed here from the launch's own
+// rows and settled statuses, so no conductor relay can drop them. The field
+// set is the one wave-usage.js's steps-mode join returns. Instance ordinals
+// are the engine's: `@0` is a step's first minting (`review@0#k`,
+// `verify-tribunal@0`) and a fix round's rows carry the round, so first pass
+// means ordinal 0.
+const COORDINATION_DEFERRALS = {
+    'not-launched-agent-budget': 'agent_budget',
+    'not-launched-writer-budget': 'writer_budget',
+    'skipped-chain-dead': 'chain_dead',
+    'not-launched-run-parked': 'run_parked',
+}
+const COORDINATION_GATES = {
+    'gate-passed': 'passed',
+    'gate-rejected': 'rejected',
+    'gate-parked': 'parked',
+    'gate-blocked': 'blocked',
+    'gate-skipped': 'skipped',
+}
+const INSTANCE_ORDINAL_RE = /@(\d+)(?:#\d+)?$/
+
+function coordinationOf(launchRows, statuses) {
+    const rowByStep = new Map(launchRows.map((row) => [row.step, row]))
+    const out = {
+        rows: 0,
+        rounds_per_issue: {},
+        gates: { decided: 0, passed: 0, rejected: 0, parked: 0, blocked: 0, skipped: 0,
+                 first_pass: { decided: 0, passed: 0, rate: null } },
+        reseats: 0,
+        claim_conflicts: 0,
+        ancestry_parks: 0,
+        spawn_failed: 0,
+        deferred: { agent_budget: 0, writer_budget: 0, chain_dead: 0, run_parked: 0, total: 0 },
+        unmatched_steps: [],
+    }
+    for (const s of statuses) {
+        out.rows++
+        const row = rowByStep.get(s.step)
+        if (!row) out.unmatched_steps.push(s.step)
+        const m = INSTANCE_ORDINAL_RE.exec((row && row.instance) || '')
+        const ordinal = m ? parseInt(m[1], 10) : null
+        if (row && row.issue && ordinal != null) {
+            const seen = out.rounds_per_issue[row.issue]
+            out.rounds_per_issue[row.issue] = seen == null ? ordinal : Math.max(seen, ordinal)
+        }
+        if (Number.isInteger(s.reseats)) out.reseats += s.reseats
+        if (s.status === 'claim-conflict') out.claim_conflicts++
+        else if (s.status === 'parked-base-ancestry') out.ancestry_parks++
+        else if (s.status === 'spawn-failed') out.spawn_failed++
+        else if (COORDINATION_DEFERRALS[s.status]) {
+            out.deferred[COORDINATION_DEFERRALS[s.status]]++
+            out.deferred.total++
+        } else if (COORDINATION_GATES[s.status]) {
+            const bucket = COORDINATION_GATES[s.status]
+            out.gates[bucket]++
+            if (bucket !== 'passed' && bucket !== 'rejected' && bucket !== 'parked') continue
+            out.gates.decided++
+            if (ordinal !== 0) continue
+            out.gates.first_pass.decided++
+            if (bucket === 'passed') out.gates.first_pass.passed++
+        }
+    }
+    const fp = out.gates.first_pass
+    fp.rate = fp.decided > 0 ? fp.passed / fp.decided : null
+    return out
+}
+
+// One entry per row this launch holds, in manifest order. The coordination
+// section rides the array as a named property, so every reader of the
+// per-row entries sees the same array as before.
 log(`wave: ${agentsLaunched} agent() call(s) launched this invocation (harness cap ${AGENT_LIFETIME_CAP})`)
-return rows.map((row) => byStep.get(row.step) ||
+const statuses = rows.map((row) => byStep.get(row.step) ||
     { step: row.step, status: parked ? 'not-launched-run-parked' : 'spawn-failed' })
+const coordination = coordinationOf(rows, statuses)
+log(`wave: coordination — ${coordination.rows} row(s) this launch; rounds per issue ` +
+    `${Object.entries(coordination.rounds_per_issue).map(([i, n]) => `${i}@${n}`).join(', ') || 'none'}; ` +
+    `gates ${coordination.gates.passed} passed / ${coordination.gates.rejected} rejected / ` +
+    `${coordination.gates.parked} parked (first pass ${coordination.gates.first_pass.passed} of ` +
+    `${coordination.gates.first_pass.decided}); ${coordination.reseats} re-seat(s), ` +
+    `${coordination.claim_conflicts} claim conflict(s), ${coordination.ancestry_parks} ancestry park(s), ` +
+    `${coordination.spawn_failed} spawn failure(s), ${coordination.deferred.total} deferred`)
+return Object.assign(statuses, { coordination })
 // TEST-END stage-ladder

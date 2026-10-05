@@ -260,6 +260,38 @@ await refuses({ unit: { index: 0, of: 2, classCap: [1] } }, 'classCap is not an 
 ok(SPAWNED.length === 0, 'refuse: nothing launched on a refused spec')
 ok(LAUNCH_CAP === 20, 'LAUNCH_CAP is the measured 20 (keep lane_units.py in step)')
 
+// ---- (7) the launch measures its own coordination section --------------
+// One lane's writer settles claim-conflict (its judge is then chain-dead);
+// another lane's gate passes on its first round after re-seating one judge.
+// The section comes from the launch's own rows and settled statuses, with no
+// conductor input, and rides the per-row array without changing it.
+const COORDINATED = () => [
+    ex('X-0', 'CRD-1', 0, 'write', { instance: 'implement@0' }),
+    ex('X-1', 'CRD-1', 1, 'judge-correctness', { instance: 'review@0#1' }),
+    Object.assign(vote('Y-2', 'CRD-2', 0), { instance: 'verify-tribunal@0' }),
+]
+out = await start(COORDINATED(), { results: {
+    'X-0': { step: 'X-0', status: 'claim-conflict', text: 'not ready to claim' },
+    'Y-2': { step: 'Y-2', status: 'gate-passed', text: '{"status":"done"}', reseats: 1 },
+} })
+const c = out.coordination
+ok(Array.isArray(out) && out.length === 3 &&
+    out.map((r) => `${r.step}:${r.status}`).join(',') === 'X-0:claim-conflict,X-1:skipped-chain-dead,Y-2:gate-passed',
+    'coordination: the per-row statuses array is unchanged')
+ok(c != null && c.claim_conflicts === 1, `coordination: one claim conflict counted (got ${JSON.stringify(c)})`)
+ok(c != null && c.reseats === 1, `coordination: one re-seated judge counted (got ${c && c.reseats})`)
+ok(c != null && c.rows === 3 && c.deferred.chain_dead === 1 && c.deferred.total === 1 &&
+    c.gates.passed === 1 && c.gates.decided === 1 &&
+    c.gates.first_pass.decided === 1 && c.gates.first_pass.rate === 1 &&
+    c.rounds_per_issue['CRD-1'] === 0 && c.rounds_per_issue['CRD-2'] === 0 &&
+    c.ancestry_parks === 0 && c.spawn_failed === 0 && c.unmatched_steps.length === 0,
+    'coordination: rows, gates, deferrals and rounds are counted from the settled statuses')
+ok(c != null && JSON.stringify(Object.keys(c)) === JSON.stringify(['rows', 'rounds_per_issue', 'gates',
+    'reseats', 'claim_conflicts', 'ancestry_parks', 'spawn_failed', 'deferred', 'unmatched_steps']),
+    'coordination: the field set matches the wave-usage join\'s section')
+ok(logged('wave: coordination — 3 row(s)') && logged('1 re-seat(s), 1 claim conflict(s)'),
+    'coordination: the counts are logged at the end of the launch')
+
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)
 JS

@@ -57,8 +57,11 @@ export const meta = {
 //   registry  — [{project, checkoutOk, workflows:[{name, version, kind,
 //                labels_any, labels_all, unless_labels, sizes_any}], notes}]
 //   ledger    — one entry per issue in args.issues; epics carry judged=false
-//               and only their identity, every other issue the judge's full
-//               entry (see LEDGER_SCHEMA), each stamped with its project.
+//               and only their identity, every other issue the judge's entry
+//               (see LEDGER_SCHEMA) plus the survey facts this script stamps:
+//               id, project, title, kind, size.storedSize, routing.current,
+//               and epic.current. Evidence entries are "<source>: <quote>"
+//               strings.
 //   clusters  — [{project, duplicates, epicMatches, epicProposals, notes}]
 //   uncovered — [{what, why}] every issue or project an agent could not cover,
 //               plus every issue beyond the judge bound
@@ -84,9 +87,6 @@ const AGENT_CONFIG = {
 // agents; the bound keeps a runaway backlog inside the Workflow tool's
 // lifetime cap. The skill judges issues beyond it inline.
 const JUDGE_CAP = 200
-
-const SIZES = ['trivial', 'small', 'bounded', 'needs-design', 'unknown']
-const VALUE_DECISIONS = ['retain', 'clarify', 'rescope', 'merge', 'close']
 
 const input = typeof args === 'string' ? JSON.parse(args) : (args || {})
 if (typeof args === 'string') log('docket-groom: decoded args from the harness JSON-encoded transport (normal)')
@@ -130,15 +130,25 @@ const todayIso = input.todayIso
 const engineRoot = typeof input.engineRoot === 'string' && input.engineRoot !== '' ? input.engineRoot : null
 
 // ---- Schemas -------------------------------------------------------------
+//
+// In auto mode the harness classifies each agent() spawn, prompt and output
+// schema together, before the agent starts. When that classifier is
+// unavailable or the caller's transcript overflows its context, a spawn whose
+// schema serializes to more than 4096 characters is blocked as too large to
+// pass unreviewed, and agent() returns null (claude 2.1.289). A blocked judge
+// leaves its issue to inline judgment, so every schema passed to agent()
+// stays within that bound: the judge prompt carries the ledger's field
+// descriptions, the script stamps the survey facts it already holds, and
+// evidence entries are single strings. tests/docket-groom-schema-budget.test.sh
+// measures each schema between the TEST markers.
 
-const EVIDENCE = {
-    type: 'object',
-    properties: {
-        source: { type: 'string', description: 'file:line, issue id and comment, verb and output, or run/step id' },
-        quote: { type: 'string', description: 'The exact text or value at that source that supports the claim' },
-    },
-    required: ['source', 'quote'],
-}
+// TEST-BEGIN schemas — every schema agent() receives, and what builds them.
+
+const SIZES = ['trivial', 'small', 'bounded', 'needs-design', 'unknown']
+const VALUE_DECISIONS = ['retain', 'clarify', 'rescope', 'merge', 'close']
+
+// One "<source>: <quote>" string per entry; the judge prompt states the form.
+const EVIDENCE = { type: 'array', items: { type: 'string' } }
 
 const REGISTRY_SCHEMA = {
     type: 'object',
@@ -175,7 +185,6 @@ const CRITERION = {
         repair: { type: 'string', description: 'The exact replacement or addition, with its verification method and mutant, or "" when none' },
         metAtHead: { type: 'string', description: 'For already-met: the evidence that HEAD satisfies it' },
     },
-    required: ['index', 'text', 'verdict', 'defect', 'repair'],
 }
 
 const SPLIT_PIECE = {
@@ -189,13 +198,15 @@ const SPLIT_PIECE = {
         size: { type: 'string', enum: SIZES },
         dependsOn: { type: 'array', items: { type: 'integer' }, description: '0-based indexes of pieces this one cannot start before, with the reason in notes; empty when independent' },
     },
-    required: ['title', 'outcome', 'criteria', 'files', 'scope', 'size', 'dependsOn'],
 }
 
+// `required` sits on the root and on value, size, and epic, the objects this
+// script reads; the judge prompt asks for every other field. The judge
+// returns no survey fact (id, stored size, route labels, parent): the judge
+// stage stamps those from the row.
 const LEDGER_SCHEMA = {
     type: 'object',
     properties: {
-        id: { type: 'string' },
         readOk: { type: 'boolean', description: 'False when issue show refused or the checkout could not be entered' },
         protection: { type: 'string', enum: ['none', 'run-included', 'claimed'] },
         value: {
@@ -206,7 +217,7 @@ const LEDGER_SCHEMA = {
                 needRemaining: { type: 'string', description: 'The unresolved problem, beneficiary, expected outcome, consequence of doing nothing' },
                 coverage: { type: 'string', description: 'What linked changes and related issues already deliver, verified by outcome' },
                 fit: { type: 'string', description: 'Fit with current goals, platforms, architecture, recorded decisions' },
-                evidence: { type: 'array', items: EVIDENCE },
+                evidence: EVIDENCE,
                 closeReason: { type: 'string', enum: ['', 'delivered', 'obsolete', 'superseded', 'rejected', 'cost'], description: 'Set only for close' },
                 mergeInto: { type: 'string', description: 'Canonical issue id for merge, else ""' },
             },
@@ -218,9 +229,8 @@ const LEDGER_SCHEMA = {
                 related: { type: 'boolean', description: 'True when the issue is an engine defect or capability gap' },
                 need: { type: 'string', enum: ['n/a', 'remains', 'partly-fixed', 'fixed', 'superseded', 'unverified'] },
                 revision: { type: 'string', description: 'Engine HEAD sha the check ran against, or "" when unverified' },
-                evidence: { type: 'array', items: EVIDENCE },
+                evidence: EVIDENCE,
             },
-            required: ['related', 'need', 'revision', 'evidence'],
         },
         activity: {
             type: 'object',
@@ -229,7 +239,6 @@ const LEDGER_SCHEMA = {
                 lastRaw: { type: 'string', description: 'YYYY-MM-DD of the last change of any kind' },
                 stale: { type: 'string', enum: ['yes', 'no', 'unknown'] },
             },
-            required: ['lastSubstantive', 'lastRaw', 'stale'],
         },
         readiness: {
             type: 'object',
@@ -247,9 +256,8 @@ const LEDGER_SCHEMA = {
                             question: { type: 'string' },
                             options: { type: 'array', items: { type: 'string' } },
                             recommendation: { type: 'string' },
-                            evidence: { type: 'array', items: EVIDENCE },
+                            evidence: EVIDENCE,
                         },
-                        required: ['question', 'options', 'recommendation', 'evidence'],
                     },
                 },
                 relationDefects: { type: 'array', items: { type: 'string' }, description: 'Cycles, obsolete prerequisites, bundled outcomes, each with the relation and the evidence' },
@@ -260,10 +268,8 @@ const LEDGER_SCHEMA = {
                         verdict: { type: 'string', enum: ['ok', 'missing', 'raise', 'lower'] },
                         reason: { type: 'string' },
                     },
-                    required: ['current', 'verdict', 'reason'],
                 },
             },
-            required: ['goalClear', 'filesOk', 'scopeOk', 'missingFiles', 'missingScope', 'decisionsNeeded', 'relationDefects', 'priority'],
         },
         criteria: { type: 'array', items: CRITERION },
         size: {
@@ -276,37 +282,33 @@ const LEDGER_SCHEMA = {
                 criteriaCount: { type: 'integer' },
                 surfaces: { type: 'integer', description: 'Distinct verification surfaces the criteria name' },
                 tier: { type: 'string', enum: ['trivial', 'small', 'bounded', 'needs-design', 'oversized', 'unknown'] },
-                storedSize: { type: 'string', description: 'The size field as stored, or "" when null' },
                 sizeVerdict: { type: 'string', enum: ['ok', 'set', 'correct', 'oversized'] },
                 labelVerdict: { type: 'string', enum: ['ok', 'add-small', 'add-trivial', 'remove', 'excluded'], description: 'excluded when ui or security rules forbid a size label' },
                 splitDraft: { type: 'array', items: SPLIT_PIECE, description: 'Non-empty only when tier is oversized; piece 0 is what the original is rescoped to' },
             },
-            required: ['outcomes', 'outcomeBoundaries', 'files', 'directories', 'criteriaCount', 'surfaces', 'tier', 'storedSize', 'sizeVerdict', 'labelVerdict', 'splitDraft'],
+            required: ['outcomes', 'outcomeBoundaries', 'files', 'directories', 'criteriaCount', 'surfaces', 'tier', 'sizeVerdict', 'labelVerdict', 'splitDraft'],
         },
         routing: {
             type: 'object',
             properties: {
-                current: { type: 'array', items: { type: 'string' }, description: 'route-* labels the issue carries' },
                 verdict: { type: 'string', enum: ['ok', 'route-run', 'route-direct', 'route-tend', 'route-loop', 'unrouted', 'remove'] },
                 defense: { type: 'string' },
                 staleBinding: { type: 'array', items: { type: 'string' }, description: 'Labels that are obsolete AND narrow or zero the match, with the evidence' },
                 matches: { type: 'array', items: { type: 'string' }, description: 'Registered workflows the current labels bind, from the registry' },
             },
-            required: ['current', 'verdict', 'defense', 'staleBinding', 'matches'],
         },
         epic: {
             type: 'object',
             properties: {
-                current: { type: 'string', description: 'parent_id or ""' },
                 candidate: { type: 'string', description: 'An open epic in the same project whose outcome this issue serves, or ""' },
                 defense: { type: 'string', description: 'One sentence, or why no open epic fits' },
             },
-            required: ['current', 'candidate', 'defense'],
+            required: ['candidate', 'defense'],
         },
         duplicateCandidates: { type: 'array', items: { type: 'string' }, description: 'Issue ids that may ask for the same outcome, for the cluster analyst to settle' },
         notes: { type: 'string', description: 'Verbs that refused, evidence that could not be read, anything the judge could not establish' },
     },
-    required: ['id', 'readOk', 'protection', 'value', 'engine', 'activity', 'readiness', 'criteria', 'size', 'routing', 'epic', 'duplicateCandidates', 'notes'],
+    required: ['readOk', 'protection', 'value', 'engine', 'activity', 'readiness', 'criteria', 'size', 'routing', 'epic', 'duplicateCandidates', 'notes'],
 }
 
 const CLUSTER_SCHEMA = {
@@ -360,6 +362,33 @@ const CLUSTER_SCHEMA = {
     },
     required: ['duplicates', 'epicMatches', 'epicProposals'],
 }
+
+// The judge receives LEDGER_SCHEMA without its descriptions and reads them in
+// its prompt as a field guide, so each description stays beside its field.
+function bareSchema(schema) {
+    const bare = { ...schema }
+    delete bare.description
+    if (bare.properties) {
+        bare.properties = Object.fromEntries(Object.entries(bare.properties).map(([key, field]) => [key, bareSchema(field)]))
+    }
+    if (bare.items) bare.items = bareSchema(bare.items)
+    return bare
+}
+
+function fieldGuide(schema, path = '') {
+    return Object.entries(schema.properties || {}).flatMap(([key, field]) => {
+        const at = path ? `${path}.${key}` : key
+        const line = field.description ? [`- ${at}: ${field.description}`] : []
+        if (field.type === 'object') return [...line, ...fieldGuide(field, at)]
+        if (field.items && field.items.type === 'object') return [...line, ...fieldGuide(field.items, `${at}[]`)]
+        return line
+    })
+}
+
+const JUDGE_SCHEMA = bareSchema(LEDGER_SCHEMA)
+const JUDGE_FIELD_GUIDE = fieldGuide(LEDGER_SCHEMA).join('\n')
+
+// TEST-END schemas
 
 // ---- Prompts -------------------------------------------------------------
 
@@ -416,14 +445,17 @@ Your contract is the skill's own text, not this brief. Read, in this order, and 
 Then run \`docket issue show ${row.id} --json=v2\` and \`docket issue comment list ${row.id}\` from the checkout, and read the repository only as far as a judgment needs: confirm a referenced path exists, confirm whether a described change already landed at HEAD (git log over the paths the criteria name), check an engine need against engine source. Never work the issue.
 
 Rules the schema cannot carry:
-- Every decision, verdict, and repair carries evidence with a source you read. Missing evidence is uncertainty, not proof of value or worthlessness. A "clarify" records the smallest question that would settle it under readiness.decisionsNeeded.
+- Every decision, verdict, and repair carries evidence with a source you read. Write each evidence entry as one string, "<source>: <quote>": the source is a file:line, an issue id and comment, a verb and its output, or a run or step id, and the quote is the exact text or value there that supports the claim. Missing evidence is uncertainty, not proof of value or worthlessness. A "clarify" records the smallest question that would settle it under readiness.decisionsNeeded.
 - Judge criteria individually and as a set. When every criterion is already met at HEAD, the value decision is close with closeReason delivered and each criterion carries metAtHead.
 - Size: tier "oversized" applies on either ground the reference's cap states: two or more independent outcomes, or one outcome past the bounded ceiling (files, directories, or verification surfaces) even with no bundled criterion — read the reference's current ceiling numbers, do not assume the values in this brief. Bias toward finding the split: the reference's own mined evidence is that a wide single-outcome issue costs sharply more and needs extra rounds, so an issue at or past the ceiling is a decomposition to find, not a large-but-legitimate exception. For oversized, fill splitDraft with piece 0 as what the original keeps and one piece per further outcome or file/surface group (whichever ground triggered it), criteria indexes carried verbatim, dependsOn only where one piece cannot start before another. sizeVerdict is "set" when the stored size is null or unknown and the tier is a size value, "correct" when the stored size differs from the tier, "oversized" for the oversized tier, else "ok".
 - Routing: judge the route-* verdict from the reference's rules in the skill's "Missing or stale routing label" finding; "unrouted" when no rule clearly holds or the size is null or unknown, with what would settle it in defense. Compute matches from the registry above against the issue's labels and stored size: labels_any and labels_all must hold when declared, sizes_any must hold when declared, and any unless_labels hit excludes.
 - Epic: name one open epic from the list above only with a one-sentence defense from the epic's title and description, shared relations, files, scope, or recorded decisions; a shared label alone is not a defense. Never propose an epic in another project.
 - duplicateCandidates are ids you noticed in relations, comments, or the survey that may ask for the same outcome; the cluster analyst settles them, you do not.
 - For an engine-related issue (an engine defect or capability gap, in either project), follow the skill's engine check: record the revision, whether the need remains, was partly or fully fixed, or was superseded, or "unverified" with why. For every other issue, engine.related is false and need is "n/a".
-- If issue show refuses or the checkout cannot be entered, return readOk=false with the refusal in notes and leave the other fields at their most conservative values (decision clarify, tier unknown, routing unrouted).`
+- If issue show refuses or the checkout cannot be entered, return readOk=false with the refusal in notes and leave the other fields at their most conservative values (decision clarify, tier unknown, routing unrouted).
+
+Field guide. The output schema names every field, its type, and its allowed values; these lines say what a field means where its name does not. Fill every field the schema lists, with "" or [] where nothing applies. The schema leaves out the survey facts (id, stored size, route labels, parent), which the script records itself.
+${JUDGE_FIELD_GUIDE}`
 }
 
 function clusterPrompt(project, entries, epics) {
@@ -509,12 +541,12 @@ const results = await pipeline(
                 label: `judge:${row.id}`,
                 phase: 'Judge',
                 agentType: 'executor-read',
-                schema: LEDGER_SCHEMA,
+                schema: JUDGE_SCHEMA,
                 ...AGENT_CONFIG.judge,
             })
         ))
-        // Judges sit at the same index as their row; the id a judge echoes
-        // back is not trusted to match the survey's spelling.
+        // Judges sit at the same index as their row, and the row supplies the
+        // survey facts a judge does not return.
         const judged = entries.map((e, i) => {
             const row = group.judged[i]
             if (!e) {
@@ -522,7 +554,18 @@ const results = await pipeline(
                 return null
             }
             if (e.readOk === false) uncovered.push({ what: `judge ${row.id} (${group.project.name})`, why: e.notes || 'issue could not be read' })
-            return { ...e, id: row.id, project: group.project.name, title: row.title || '', kind: row.kind || 'task', judged: true }
+            const labels = Array.isArray(row.labels) ? row.labels : []
+            return {
+                ...e,
+                id: row.id,
+                project: group.project.name,
+                title: row.title || '',
+                kind: row.kind || 'task',
+                size: { ...e.size, storedSize: row.size || '' },
+                routing: { ...e.routing, current: labels.filter((l) => typeof l === 'string' && l.startsWith('route-')) },
+                epic: { ...e.epic, current: row.parent_id || '' },
+                judged: true,
+            }
         }).filter(Boolean)
         return { ...group, entries: judged }
     },

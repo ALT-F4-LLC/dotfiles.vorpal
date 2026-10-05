@@ -528,6 +528,8 @@ case_probe_never_acts() {
     # reach into that substitution and veto the rm. (A redirect there is
     # refused by the restricted shell instead, so the probe is a bare rm.)
     check "arithmetic over a tainted for-word never runs its subscript" ALLOW "for x in 'a[\$(rm -f ${marker})]'; do n=\$((x)); done"
+    check "read with a substitution in its operand stays vetoed" ALLOW "read x\$(rm -f ${marker})"
+    check "read loop with a subscripted operand stays vetoed" DENY "ls | while read 'a[\$(rm -f ${marker})]'; do :; done"
     check "counter reset cannot lift the cap" DENY "_leaf_n=-100000; while true; do cat /dev/null > ${marker}; done"
     check "counter reset in a multi-assignment cannot lift the cap" DENY "x=1 _leaf_n=-100000; while true; do cat /dev/null > ${marker}; done"
     rm -f "$marker"
@@ -538,6 +540,42 @@ case_probe_never_acts() {
     verdict_of "$(build_input "ls" executor-write "$WAVE_42")" >/dev/null
     after=$(ls "${TMPDIR:-/tmp}" 2>/dev/null | grep -c 'docket-sibling-guard' || true)
     [ "$after" -le "$before" ] && pass "no probe file left in TMPDIR" || fail "probe files left in TMPDIR (${before} -> ${after})"
+}
+
+# --- Read loops. -------------------------------------------------------------
+# The probe vetoes every producer, so a `read` over a pipe sees no input. A
+# vetoed read reports success and the loop never ended; a read that always
+# ran would hit EOF before the body was walked. Each read site is vetoed once,
+# so the body is walked, then runs and ends the loop.
+case_read_loops() {
+    local err
+    assert_verdict "printf 'a\\nb\\n' | while read x; do echo \$x; done" executor-write "$WAVE_42" ALLOW "read loop over finite piped input ends"
+    assert_verdict "git status --short | while IFS= read -r f; do echo \"\$f\"; done" executor-write "$WAVE_42" ALLOW "IFS= read -r loop over piped input ends"
+    assert_verdict "ls | while read d; do rm -rf ${SIB_DIR}/\$d; done" executor-write "$WAVE_42" DENY "read loop body naming a sibling dir"
+    assert_deny_reason "ls | while read d; do rm -rf ${SIB_DIR}/\$d; done" executor-write "$WAVE_42" "STEP-7.d" "read loop body is walked before the loop ends"
+    err=$(PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "$HOOK" 2>&1 >/dev/null <<<"$(build_input "ls | while read d; do rm -rf ${SIB_DIR}/\$d; done" executor-write "$WAVE_42")")
+    case "$err" in
+        *"too many parts"*) fail "read loop over a sibling dir denied only by the cap: ${err}" ;;
+        *) pass "read loop over a sibling dir is denied by the scratch clause, not the cap" ;;
+    esac
+    assert_verdict "ls | while read d; do pkill node; done" executor-write "$WAVE_42" DENY "read loop body running pkill"
+    assert_verdict "ls | while read a; do ls \$a | while read b; do rm -rf ${SIB_DIR}/\$b; done; done" executor-write "$WAVE_42" DENY "nested read loops walk the inner body"
+    assert_verdict "ls | { while read d; do break; done; while read d; do rm -rf ${SIB_DIR}/\$d; done; }" executor-write "$WAVE_42" DENY "a read loop left by break does not skip a later same-text loop"
+    # The probe counter is never a read operand: the counter would reset on
+    # every pass and the walk would never reach the cap.
+    assert_deny_reason 'while :; do read _leaf_n; done' executor-write "$WAVE_42" "too many parts" "read into the probe counter stays vetoed"
+    # Only a pipe at EOF lets a read run: a device that may never end, or
+    # input the probe would read for real, keeps the read vetoed and caps.
+    assert_deny_reason 'while read x; do :; done < /dev/zero' executor-write "$WAVE_42" "too many parts" "read loop over an endless device caps"
+    assert_verdict "while read d; do rm -rf \$d; done <<< \"${SIB_DIR}\"" executor-write "$WAVE_42" DENY "read loop over a here-string naming a sibling dir"
+    assert_verdict "ls | while read -u 0 d; do :; done" executor-write "$WAVE_42" DENY "read with an option outside -r stays vetoed and caps"
+    # KNOWN RESIDUAL: a loop left through a failing condition right after its
+    # vetoed read leaves that site marked, so a later read with the same text
+    # in the same shell runs at once and its body is not walked.
+    assert_verdict "ls | { while read d && false; do :; done; while read d; do rm -rf ${SIB_DIR}/\$d; done; }" executor-write "$WAVE_42" ALLOW "residual: same-text read after a condition exit"
+    # The cap reason names the counted wait the probe ends.
+    assert_deny_reason 'while true; do :; done' executor-write "$WAVE_42" 'n=0; until [ -s f ] || [ $n -ge N ]; do sleep S; n=$((n+1)); done' "cap reason names the counted wait loop"
+    assert_deny_reason 'while true; do :; done' executor-write "$WAVE_42" "too many parts (over 2000)" "cap reason keeps the oversized wording"
 }
 
 # Oversized and odd inputs fail closed or stay inert, quickly.
@@ -1044,6 +1082,7 @@ case_worktree_and_branch
 case_processes
 case_engine_verbs
 case_probe_never_acts
+case_read_loops
 case_size_and_bytes
 case_artifact_heredoc_bodies
 case_multiline_substitutions

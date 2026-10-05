@@ -176,9 +176,10 @@
 # rule is applied to strings for the same reason.
 #
 # THE PROBE HARDENING, measured on bash 3.2 and pinned in the suite. This
-# probe is shared byte-for-byte with docket-trust-guard-hook.sh and
+# probe is shared with docket-trust-guard-hook.sh and
 # docket-commit-guard-hook.sh, which originally ran an unhardened copy;
-# the hardening this hook introduced is now ported into both:
+# the hardening this hook introduced is ported into both, except the `read`
+# admission below, which only this hook carries:
 #   - The probe shell is RESTRICTED (`set -r`) once the trap is armed, so no
 #     redirection can open a file. A vetoed leaf never performs its
 #     redirection anyway (verified: `rm x > marker` leaves the marker
@@ -203,7 +204,8 @@
 #     and `eval "$(printf 'rm -rf ...')"` runs a string every other pass reads
 #     as prose — `eval` is on the interpreter list for the same reason.
 #   - `break` and `continue` RUN, so loops end where the real command's
-#     would; `exit` and `return` stay vetoed so the caller cannot choose the
+#     would (a `break` also forgets every `read` site, below); `exit` and
+#     `return` stay vetoed so the caller cannot choose the
 #     probe's exit status. The cap EXITS the probe (nothing runs after it)
 #     instead of disarming the trap, and is checked before the empty-walk
 #     allow: `<2001 structural commands>; rm -rf <dir>` had capped with an
@@ -218,6 +220,18 @@
 #     can dispatch a command, and never a `_leaf_*` name, since the counter
 #     shares the shell. A command word after the assignment (`n=1 rm -rf
 #     <dir>`) is a command leaf as before.
+#   - A `read` leaf RUNS on the second firing of its site, so `... | while
+#     read d; do ...; done` ends instead of walking into the cap (a vetoed
+#     read reported success forever). Every pipe producer is vetoed, so the
+#     probe's read finds no input; a read that ran at once would end the
+#     loop before its body was walked. The first firing of a site (its exact
+#     text) is therefore vetoed, the body is walked once, and the next firing
+#     runs the read and ends the loop. It runs only on a pipe already at EOF:
+#     a here-string, a file or a device that may never end keeps
+#     every later read vetoed, and the loop caps as before. The shape is
+#     `[IFS=<bare word>] read [-r] [name...]`: no other option, quote, `$`,
+#     subscript or redirect, and never a `_leaf_*` name, since a read into
+#     the counter would reset it on every pass.
 #   - The command reaches the probe on STDIN, not in the environment: a
 #     command over the argument-size limit made `bash -c` fail with no leaf
 #     and no syntax error, which allowed. Syntax is checked first with `bash
@@ -238,8 +252,12 @@
 # ...)` (`k=pkill; $k node`), a command string carried in a variable (`x='rm
 # -rf ...'; $x`), `xargs` fed from a pipe stage that never names the dir,
 # `rm -rf <TMP>` or `<TMP>/*` against the whole scratch root (no step named;
-# the permission text clears it for every session), `fuser -k`, and a pid
-# read from a file under another checkout. An unquoted-delimiter heredoc body
+# the permission text clears it for every session), `fuser -k`, a pid
+# read from a file under another checkout, and a read loop that follows,
+# in the same shell, a loop left through a failing condition right after a
+# `read` with the same text (`while read d && false; do :; done; while read
+# d; do rm ...; done`): that site was vetoed but never run, so the later
+# read runs at once and its body is not walked. An unquoted-delimiter heredoc body
 # or an unquoted argument that merely mentions a sibling's `STEP-M.d` in
 # prose is a false DENY, and the deny reason names the Write tool or a
 # quoted delimiter as the way to write such prose. A quoted-delimiter
@@ -468,6 +486,13 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
     readonly _leaf_name="[A-Za-z_][A-Za-z0-9_]*"
     readonly _leaf_word="[A-Za-z0-9_./:@%+,-]|\\\$${_leaf_name}|\\\$\\{${_leaf_name}\\}|\\\$\\(\\(([^][()\$\`]|\\\$${_leaf_name})*\\)\\)"
     readonly _leaf_assign_re="^${_leaf_name}\\+?=(${_leaf_word})*([[:space:]]+${_leaf_name}\\+?=(${_leaf_word})*)*\$"
+    # A read leaf RUNS (see the header) only in this shape: an optional
+    # IFS= of bare characters, -r, and plain names. _leaf_reads holds the
+    # |-separated read sites vetoed once and not yet run; _leaf_read_ok
+    # drops to 0 for good once a read meets input other than a pipe at EOF.
+    readonly _leaf_read_re="^(IFS=[A-Za-z0-9_./:@%+,-]*[[:space:]]+)?read([[:space:]]+-r)?([[:space:]]+${_leaf_name})*\$"
+    _leaf_reads="|"
+    _leaf_read_ok=1
     _guard_probe() {
         _leaf_n=$((_leaf_n + 1))
         if [ "$_leaf_n" -gt 2000 ]; then
@@ -493,8 +518,27 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
                 case "$BASH_COMMAND" in
                     *[\<\>]*) exit 114 ;;
                 esac
+                # A loop left by break never ran its read site; forget every
+                # site so a later read with the same text walks its body.
+                [ "$head" = break ] && _leaf_reads="|"
                 return 0 ;;
         esac
+        if [[ "$BASH_COMMAND" =~ $_leaf_read_re ]] && [[ "$BASH_COMMAND" != *_leaf_* ]]; then
+            printf "\035%s\036" "$BASH_COMMAND"
+            case "$_leaf_reads" in
+                *"|$BASH_COMMAND|"*)
+                    _leaf_reads="${_leaf_reads/"|$BASH_COMMAND|"/|}"
+                    local _leaf_byte
+                    if [ "$_leaf_read_ok" -eq 1 ] && [ -p /dev/stdin ]; then
+                        IFS= read -r -t 1 -n 1 _leaf_byte
+                        [ "$?" -eq 1 ] && return 0
+                    fi
+                    _leaf_read_ok=0
+                    return 1 ;;
+            esac
+            _leaf_reads="${_leaf_reads}${BASH_COMMAND}|"
+            return 1
+        fi
         if [[ "$BASH_COMMAND" =~ $_leaf_assign_re ]]; then
             case "$BASH_COMMAND" in
                 *_leaf_*) ;;   # the counter and these patterns: never the command'"'"'s to set
@@ -519,7 +563,7 @@ PROBE_RC=$?
 
 if [ "$PROBE_RC" -eq 113 ]; then
     log_decision "deny" "oversized"
-    deny "$REASON_PREFIX this command has too many parts (over 2000) for the sibling-guard hook to finish checking it. Split it into smaller Bash calls; a single call this large is refused rather than passed through unchecked."
+    deny "$REASON_PREFIX this command has too many parts (over 2000) for the sibling-guard hook to finish checking it. A wait loop ends in the check when it counts its own passes, \`n=0; until [ -s f ] || [ \$n -ge N ]; do sleep S; n=\$((n+1)); done\`, and a \`read\` loop over piped input ends too; an uncounted wait never does. Otherwise split it into smaller Bash calls; a single call this large is refused rather than passed through unchecked."
 fi
 if [ "$PROBE_RC" -eq 114 ]; then
     log_decision "deny" "structural-redirect"

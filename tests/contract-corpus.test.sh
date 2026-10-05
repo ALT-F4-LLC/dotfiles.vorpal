@@ -14,7 +14,8 @@
 # clause) plus the Denials slot in contracts/implement.md's # Emit. Each
 # clause is checked by grepping the exact phrase that carries the invariant,
 # not by a word alone, so a mutant that keeps the word but reverses or drops
-# the requirement it states is caught.
+# the requirement it states is caught. It also pins the attempt bounds on
+# workflows/security-change.toml's non-loop executor steps (section 6).
 #
 # CORPUS_DIR overrides the directory under test, so a mutation probe can
 # point this suite at a deliberately-broken COPY under $TMPDIR without
@@ -88,8 +89,49 @@ require "$GATES" "redaction clause" \
 require "$IMPLEMENT" "Denials slot in implement.md's Emit" \
     "**Denials:**"
 
+# 6. Attempt bounds on security-change's executor steps: a step without
+#    max_attempts returns to ready after every failed attempt, so a step the
+#    safety classifier keeps stopping is re-offered indefinitely. Each bounded
+#    step parks waiting-human instead, leaving any retry past a refusal to the
+#    operator. The loop step `fix` is bounded by reconcile's max_fix_loops.
+SECURITY_CHANGE="${CORPUS}/workflows/security-change.toml"
+
+# Prints the one [[step]] block whose `name` line is <step>, from its header
+# to the next table header, so a key is attributed to the step that declares
+# it rather than to any line in the file.
+step_block() { # <toml> <step>
+    awk -v want="name = \"$2\"" '
+        /^\[/ { if (in_step && found) exit; in_step = ($0 == "[[step]]"); block = ""; found = 0 }
+        in_step { block = block $0 "\n"; if ($0 == want) found = 1 }
+        END { if (in_step && found) printf "%s", block }
+    ' "$1"
+}
+
+require_step_line() { # <toml> <step> <exact line>
+    local toml="$1" step="$2" line="$3" block
+    block=$(step_block "$toml" "$step")
+    if [ -z "$block" ]; then
+        echo "FAIL ${step}: no [[step]] block named ${step} in $(basename "$toml")"
+        fail=1
+    elif ! grep -qxF -- "$line" <<<"$block"; then
+        echo "FAIL ${step}: its [[step]] block lacks the line: ${line}"
+        fail=1
+    fi
+}
+
+bounded_steps=(threat-model implement synthesize-findings drain-highs verify-ac)
+if [ ! -f "$SECURITY_CHANGE" ]; then
+    echo "FAIL attempt bounds: no file at ${SECURITY_CHANGE}"
+    fail=1
+else
+    for step in "${bounded_steps[@]}"; do
+        require_step_line "$SECURITY_CHANGE" "$step" 'max_attempts = 2'
+        require_step_line "$SECURITY_CHANGE" "$step" 'on_fail = "waiting-human"'
+    done
+fi
+
 if [ "$fail" -ne 0 ]; then
     echo "contract-corpus: FAIL" >&2
     exit 1
 fi
-echo "contract-corpus: PASS (6 clauses checked across completion-gates.md and implement.md)"
+echo "contract-corpus: PASS (6 clauses checked across completion-gates.md and implement.md; ${#bounded_steps[@]} security-change steps bounded)"

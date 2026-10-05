@@ -1,7 +1,7 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 49
+version = 50
 
 [match]
 labels_any = ["security-change", "security-load-bearing", "security"]
@@ -36,7 +36,9 @@ executor = "threat-model"
 expected_cost = 0.80
 holds_tree = false
 inputs = []
+max_attempts = 2
 name = "threat-model"
+on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
 
 [[step]]
@@ -70,7 +72,9 @@ executor = "synthesize-findings"
 expected_cost = 0.60
 holds_tree = false
 inputs = ["review.*"]
+max_attempts = 2
 name = "synthesize-findings"
+on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
 payload = "findings-cluster@5"
 
@@ -125,6 +129,7 @@ executor = "drain-highs"
 expected_cost = 0.30
 holds_tree = false
 inputs = ["reconcile.findings"]
+max_attempts = 2
 name = "drain-highs"
 on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
@@ -137,7 +142,9 @@ expected_cost = 0.50
 gates = [{ name = "ac-commands", pre = true }]
 holds_tree = false
 inputs = ["issue.diff", "implement.change-summary", "implement.gate-results", "verify-ac.gate-results"]
+max_attempts = 2
 name = "verify-ac"
+on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
 payload = "ac-report@2"
 threshold = { "fix-loop" = "any(status == unmet)", "verify-ac-vote" = "any(status != met)" }

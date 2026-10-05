@@ -1,6 +1,6 @@
 ---
 fragment: completion-gates
-version: 12
+version: 13
 ---
 # Completion gates
 
@@ -10,10 +10,15 @@ the authoritative workflow definition. Your packet does not list them. Use
 will run. If either the required gate set or a command cannot be resolved, report
 the blocker rather than guess.
 
-Run every required gate after your final edits, from the worktree you will record,
-using the trusted command verbatim and the engine's documented execution settings.
-A later change to a gate's inputs invalidates its result. If a gate changes checked
-files, validate the resulting state before recording.
+Commit your final edits, then run every required gate once on that commit, from the
+worktree you will record, using the trusted command verbatim and the engine's
+documented execution settings. Send each gate's full output to a file in your private
+step directory, so one run serves every later reading. A later change to a gate's
+inputs invalidates its result. An amend or rebase that leaves
+`git rev-parse 'HEAD^{tree}'` unchanged changes no input: keep those results rather
+than rerunning. If a gate changes checked files, validate the resulting state before
+recording. Run no gate after `docket step record`; the recorded step belongs to the
+engine.
 
 For each gate, include its name, command, working directory, exit status, and actual
 output in the persisted summary alongside the build and test evidence. Distinguish

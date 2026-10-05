@@ -4,8 +4,9 @@
 # a full pass on the identical clean tree instead of running every suite a
 # second time. This suite runs the recipe BODY, extracted from the justfile,
 # inside a throwaway git repository holding a stub suite and a stub `cargo`,
-# and asserts when a pass is stamped and when a stamp is reused: only a gate
-# run (DOCKET_GATE set) reuses, only a stamp for the current clean tree counts,
+# and asserts when a pass is stamped and when a stamp is reused: only the
+# `tests` gate (DOCKET_GATE=tests) reuses, only a stamp for the current clean
+# tree counts,
 # a stale or unreadable stamp does not, TESTS_NO_REUSE=1 forces a run, and a
 # failing run or a dirtied tree stamps nothing.
 #
@@ -113,6 +114,10 @@ check "a reused pass names the tree in the gate output" $?
 run_body
 [ "$(cat "${WORK}/runs")" = 1 ]
 check "a run without DOCKET_GATE ignores the stamp" $?
+
+run_body DOCKET_GATE=ac-commands
+[ "$(cat "${WORK}/runs")" = 1 ]
+check "another gate running the recipe ignores the stamp" $?
 
 run_body DOCKET_GATE=tests TESTS_NO_REUSE=1
 [ "$(cat "${WORK}/runs")" = 1 ]

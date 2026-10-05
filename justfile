@@ -43,17 +43,19 @@ tests:
     # commit the executor ran it on minutes before. Under a wave of writers
     # that second run cost about three minutes a step and was the one that hit
     # the gate's five-minute timeout. So a full pass on a clean tree stamps the
-    # tree's hash in this checkout's git directory, and a gate run (DOCKET_GATE
-    # set) on that same clean tree reuses a stamp younger than
+    # tree's hash in this checkout's git directory, and the `tests` gate
+    # (DOCKET_GATE=tests) on that same clean tree reuses a stamp younger than
     # TESTS_REUSE_MAX_AGE seconds instead of running the suites again.
-    # Executor, judge and CI runs never reuse; TESTS_NO_REUSE=1 forces a run.
+    # Executor, judge and CI runs never reuse, nor does another gate that runs
+    # this recipe, such as an issue's acceptance commands; TESTS_NO_REUSE=1
+    # forces a run.
     tree=
     stamps=
     if git rev-parse --git-dir >/dev/null 2>&1 && [ -z "$(git status --porcelain)" ]; then
         tree=$(git rev-parse 'HEAD^{tree}')
         stamps="$(git rev-parse --git-dir)/tests-pass"
     fi
-    if [ -n "$tree" ] && [ -n "${DOCKET_GATE:-}" ] && [ -z "${TESTS_NO_REUSE:-}" ] && [ -f "$stamps/$tree" ]; then
+    if [ -n "$tree" ] && [ "${DOCKET_GATE:-}" = tests ] && [ -z "${TESTS_NO_REUSE:-}" ] && [ -f "$stamps/$tree" ]; then
         stamped_at=
         stamped_commit=
         read -r stamped_at stamped_commit < "$stamps/$tree" || true

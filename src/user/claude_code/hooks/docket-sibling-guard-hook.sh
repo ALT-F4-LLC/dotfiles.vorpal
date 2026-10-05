@@ -204,9 +204,9 @@
 #     and `eval "$(printf 'rm -rf ...')"` runs a string every other pass reads
 #     as prose — `eval` is on the interpreter list for the same reason.
 #   - `break` and `continue` RUN, so loops end where the real command's
-#     would (a `break` also forgets every `read` site, below); `exit` and
-#     `return` stay vetoed so the caller cannot choose the
-#     probe's exit status. The cap EXITS the probe (nothing runs after it)
+#     would (a `break` also sends every pending `read` site back for one
+#     more walk, below); `exit` and `return` stay vetoed so the caller
+#     cannot choose the probe's exit status. The cap EXITS the probe (nothing runs after it)
 #     instead of disarming the trap, and is checked before the empty-walk
 #     allow: `<2001 structural commands>; rm -rf <dir>` had capped with an
 #     empty leaf list and fallen through to allow.
@@ -225,10 +225,16 @@
 #     read reported success forever). Every pipe producer is vetoed, so the
 #     probe's read finds no input; a read that ran at once would end the
 #     loop before its body was walked. The first firing of a site (its exact
-#     text) is therefore vetoed, the body is walked once, and the next firing
-#     runs the read and ends the loop. It runs only on a pipe already at EOF:
-#     a here-string, a file or a device that may never end keeps
-#     every later read vetoed, and the loop caps as before. The shape is
+#     text in one shell: `$BASH_SUBSHELL` tells a pipeline stage, a `( )`
+#     or a function's pipeline from the shell around it) is therefore
+#     vetoed, the body is walked once, and the next firing runs the read and
+#     ends the loop. A `break` between the two marks the site for one more
+#     vetoed firing, so a loop left by `break` cannot hand a later read of
+#     the same text a run at once, while a loop whose body breaks out of an
+#     inner loop on every pass still ends after its second walk. It runs
+#     only on a pipe already at EOF: a here-string, a file or a device that
+#     may never end keeps every later read vetoed, and the loop caps as
+#     before. The shape is
 #     `[IFS=<bare word>] read [-r] [name...]`: no other option, quote, `$`,
 #     subscript or redirect, and never a `_leaf_*` name, since a read into
 #     the counter would reset it on every pass.
@@ -254,10 +260,13 @@
 # `rm -rf <TMP>` or `<TMP>/*` against the whole scratch root (no step named;
 # the permission text clears it for every session), `fuser -k`, a pid
 # read from a file under another checkout, and a read loop that follows,
-# in the same shell, a loop left through a failing condition right after a
-# `read` with the same text (`while read d && false; do :; done; while read
-# d; do rm ...; done`): that site was vetoed but never run, so the later
-# read runs at once and its body is not walked. An unquoted-delimiter heredoc body
+# in the same shell, a `read` with the same text that was vetoed and never
+# fired again: a lone read (`ls | { read d; while read d; do rm ...; done;
+# }`) or a loop left through a failing condition right after its read
+# (`while read d && false; do :; done; while read d; do rm ...; done`),
+# or two same-text loops in a row, each left by `break`. That site is
+# still marked, so the later read runs at once and its body is not
+# walked. An unquoted-delimiter heredoc body
 # or an unquoted argument that merely mentions a sibling's `STEP-M.d` in
 # prose is a false DENY, and the deny reason names the Write tool or a
 # quoted delimiter as the way to write such prose. A quoted-delimiter
@@ -487,9 +496,12 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
     readonly _leaf_word="[A-Za-z0-9_./:@%+,-]|\\\$${_leaf_name}|\\\$\\{${_leaf_name}\\}|\\\$\\(\\(([^][()\$\`]|\\\$${_leaf_name})*\\)\\)"
     readonly _leaf_assign_re="^${_leaf_name}\\+?=(${_leaf_word})*([[:space:]]+${_leaf_name}\\+?=(${_leaf_word})*)*\$"
     # A read leaf RUNS (see the header) only in this shape: an optional
-    # IFS= of bare characters, -r, and plain names. _leaf_reads holds the
-    # |-separated read sites vetoed once and not yet run; _leaf_read_ok
-    # drops to 0 for good once a read meets input other than a pipe at EOF.
+    # IFS= of bare characters, -r, and plain names. A site is the subshell
+    # level and the leaf text. _leaf_reads holds |-separated sites, each
+    # after a state letter: P vetoed once, B vetoed once and then a break
+    # ran, Q vetoed again after that break. A P or Q site runs on its next
+    # firing; a B site is vetoed once more. _leaf_read_ok drops to 0 for
+    # good once a read meets input other than a pipe at EOF.
     readonly _leaf_read_re="^(IFS=[A-Za-z0-9_./:@%+,-]*[[:space:]]+)?read([[:space:]]+-r)?([[:space:]]+${_leaf_name})*\$"
     _leaf_reads="|"
     _leaf_read_ok=1
@@ -518,16 +530,24 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
                 case "$BASH_COMMAND" in
                     *[\<\>]*) exit 114 ;;
                 esac
-                # A loop left by break never ran its read site; forget every
-                # site so a later read with the same text walks its body.
-                [ "$head" = break ] && _leaf_reads="|"
+                # A break may leave a read loop whose site never runs, so a
+                # later read with the same text would run at once: every P
+                # site becomes B and walks its body once more. A break in an
+                # inner loop does the same to the read loop around it, whose
+                # Q site then ends it on the next firing.
+                [ "$head" = break ] && _leaf_reads="${_leaf_reads//|P/|B}"
                 return 0 ;;
         esac
         if [[ "$BASH_COMMAND" =~ $_leaf_read_re ]] && [[ "$BASH_COMMAND" != *_leaf_* ]]; then
             printf "\035%s\036" "$BASH_COMMAND"
+            local _leaf_site="${BASH_SUBSHELL}:${BASH_COMMAND}"
             case "$_leaf_reads" in
-                *"|$BASH_COMMAND|"*)
-                    _leaf_reads="${_leaf_reads/"|$BASH_COMMAND|"/|}"
+                *"|B$_leaf_site|"*)
+                    _leaf_reads="${_leaf_reads/"|B$_leaf_site|"/|Q$_leaf_site|}"
+                    return 1 ;;
+                *"|P$_leaf_site|"* | *"|Q$_leaf_site|"*)
+                    _leaf_reads="${_leaf_reads/"|P$_leaf_site|"/|}"
+                    _leaf_reads="${_leaf_reads/"|Q$_leaf_site|"/|}"
                     local _leaf_byte
                     if [ "$_leaf_read_ok" -eq 1 ] && [ -p /dev/stdin ]; then
                         IFS= read -r -t 1 -n 1 _leaf_byte
@@ -536,7 +556,7 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
                     _leaf_read_ok=0
                     return 1 ;;
             esac
-            _leaf_reads="${_leaf_reads}${BASH_COMMAND}|"
+            _leaf_reads="${_leaf_reads}P${_leaf_site}|"
             return 1
         fi
         if [[ "$BASH_COMMAND" =~ $_leaf_assign_re ]]; then
@@ -563,7 +583,7 @@ PROBE_RC=$?
 
 if [ "$PROBE_RC" -eq 113 ]; then
     log_decision "deny" "oversized"
-    deny "$REASON_PREFIX this command has too many parts (over 2000) for the sibling-guard hook to finish checking it. A wait loop ends in the check when it counts its own passes, \`n=0; until [ -s f ] || [ \$n -ge N ]; do sleep S; n=\$((n+1)); done\`, and a \`read\` loop over piped input ends too; an uncounted wait never does. Otherwise split it into smaller Bash calls; a single call this large is refused rather than passed through unchecked."
+    deny "$REASON_PREFIX this command has too many parts (over 2000) for the sibling-guard hook to finish checking it. A wait loop ends in the check when it counts its own passes, \`n=0; until [ -s f ] || [ \$n -ge N ]; do sleep S; n=\$((n+1)); done\`, and so does a read loop fed by a pipe whose read takes no option but -r, \`cmd | while IFS= read -r x; do ...; done\` (a file, here-string or process-substitution input, or another read option, keeps it from ending); an uncounted wait never does. Otherwise split it into smaller Bash calls; a single call this large is refused rather than passed through unchecked."
 fi
 if [ "$PROBE_RC" -eq 114 ]; then
     log_decision "deny" "structural-redirect"

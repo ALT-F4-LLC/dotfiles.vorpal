@@ -110,17 +110,47 @@ cp "$SEAT" "${SESS_DIR}/subagents/workflows/wf_a/agent-a4.jsonl"
 UNRELATED="${WORK}/projects/proj/unrelated.jsonl"
 cp "$OPERATOR" "$UNRELATED"
 
+# run_hook <input>: one hook run on <input>, stdout and stderr passed through.
+# A probe that never ends would stall the suite (and CI) instead of failing
+# its row, and there is no portable `timeout`, so each run gets a CPU-time
+# bound. The bound kills the spinning probe, not the hook, and the hook then
+# carries on to a verdict; a run that lasted as long as the bound therefore
+# returns 124 so the row reports it as such rather than as that verdict.
+HOOK_CPU_LIMIT=20
+run_hook() {
+    local start=$SECONDS rc
+    (
+        ulimit -t "$HOOK_CPU_LIMIT"
+        PATH="$TOOLS_DIR" HOME="${WORK}/home" exec "$BASH_BIN" "$HOOK"
+    ) <<<"$1"
+    rc=$?
+    [ $((SECONDS - start)) -ge "$HOOK_CPU_LIMIT" ] && return 124
+    return "$rc"
+}
+
 # Classifies one hook run as DENY (exit 2) or ALLOW (exit 0). No
 # permissionDecision envelope is emitted -- exit 2 is a pre-permission hard
 # stop and exit 0 is silence -- so the exit code is the entire verdict.
 verdict_of() {
-    local input="$1" rc
-    PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "$HOOK" >/dev/null 2>&1 <<<"$input"
+    local rc
+    run_hook "$1" >/dev/null 2>&1
     rc=$?
-    if [ "$rc" -eq 2 ]; then
-        printf 'DENY'
+    case "$rc" in
+        2) printf 'DENY' ;;
+        124) printf 'HOOK-RAN-TO-THE-%sS-CPU-BOUND' "$HOOK_CPU_LIMIT" ;;
+        *) printf 'ALLOW' ;;
+    esac
+}
+
+# deny_reason_of <command> <agent_type> <transcript>: the hook's stderr.
+deny_reason_of() {
+    local err rc
+    err=$(run_hook "$(build_input "$1" "$2" "$3")" 2>&1 >/dev/null)
+    rc=$?
+    if [ "$rc" -eq 124 ]; then
+        printf 'hook ran to the %ss CPU bound' "$HOOK_CPU_LIMIT"
     else
-        printf 'ALLOW'
+        printf '%s' "$err"
     fi
 }
 
@@ -184,8 +214,8 @@ DENY_PREFIX='sibling-destructive verb blocked:'
 
 # assert_deny_reason <command> <agent_type> <transcript> <phrase> <label>
 assert_deny_reason() {
-    local cmd="$1" agent="$2" transcript="$3" phrase="$4" label="$5" err
-    err=$(PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "$HOOK" 2>&1 >/dev/null <<<"$(build_input "$cmd" "$agent" "$transcript")")
+    local phrase="$4" label="$5" err
+    err=$(deny_reason_of "$1" "$2" "$3")
     case "$err" in
         "${DENY_PREFIX}"*) pass "${label} (reason prefix unchanged)" ;;
         *) fail "${label} (reason prefix changed or missing: ${err})" ;;
@@ -193,6 +223,17 @@ assert_deny_reason() {
     case "$err" in
         *"${phrase}"*) pass "${label} (reason names: ${phrase})" ;;
         *) fail "${label} (reason no longer says '${phrase}': ${err})" ;;
+    esac
+}
+
+# assert_deny_reason_lacks <command> <agent_type> <transcript> <phrase> <label>
+assert_deny_reason_lacks() {
+    local phrase="$4" label="$5" err
+    err=$(deny_reason_of "$1" "$2" "$3")
+    case "$err" in
+        "${DENY_PREFIX}"*"${phrase}"*) fail "${label} (reason says '${phrase}': ${err})" ;;
+        "${DENY_PREFIX}"*) pass "${label} (reason does not say: ${phrase})" ;;
+        *) fail "${label} (not denied: ${err})" ;;
     esac
 }
 
@@ -528,7 +569,7 @@ case_probe_never_acts() {
     # reach into that substitution and veto the rm. (A redirect there is
     # refused by the restricted shell instead, so the probe is a bare rm.)
     check "arithmetic over a tainted for-word never runs its subscript" ALLOW "for x in 'a[\$(rm -f ${marker})]'; do n=\$((x)); done"
-    check "read with a substitution in its operand stays vetoed" ALLOW "read x\$(rm -f ${marker})"
+    check "read loop with a substitution in its operand stays vetoed" DENY "ls | while read x\$(rm -f ${marker}); do :; done"
     check "read loop with a subscripted operand stays vetoed" DENY "ls | while read 'a[\$(rm -f ${marker})]'; do :; done"
     check "counter reset cannot lift the cap" DENY "_leaf_n=-100000; while true; do cat /dev/null > ${marker}; done"
     check "counter reset in a multi-assignment cannot lift the cap" DENY "x=1 _leaf_n=-100000; while true; do cat /dev/null > ${marker}; done"
@@ -553,14 +594,30 @@ case_read_loops() {
     assert_verdict "git status --short | while IFS= read -r f; do echo \"\$f\"; done" executor-write "$WAVE_42" ALLOW "IFS= read -r loop over piped input ends"
     assert_verdict "ls | while read d; do rm -rf ${SIB_DIR}/\$d; done" executor-write "$WAVE_42" DENY "read loop body naming a sibling dir"
     assert_deny_reason "ls | while read d; do rm -rf ${SIB_DIR}/\$d; done" executor-write "$WAVE_42" "STEP-7.d" "read loop body is walked before the loop ends"
-    err=$(PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "$HOOK" 2>&1 >/dev/null <<<"$(build_input "ls | while read d; do rm -rf ${SIB_DIR}/\$d; done" executor-write "$WAVE_42")")
-    case "$err" in
-        *"too many parts"*) fail "read loop over a sibling dir denied only by the cap: ${err}" ;;
-        *) pass "read loop over a sibling dir is denied by the scratch clause, not the cap" ;;
-    esac
+    assert_deny_reason_lacks "ls | while read d; do rm -rf ${SIB_DIR}/\$d; done" executor-write "$WAVE_42" "too many parts" "read loop over a sibling dir is denied by the scratch clause, not the cap"
     assert_verdict "ls | while read d; do pkill node; done" executor-write "$WAVE_42" DENY "read loop body running pkill"
     assert_verdict "ls | while read a; do ls \$a | while read b; do rm -rf ${SIB_DIR}/\$b; done; done" executor-write "$WAVE_42" DENY "nested read loops walk the inner body"
+    # A read site is its text in one shell: a same-text read in a pipeline
+    # stage, a ( ) subshell or a function's pipeline is a site of its own.
+    assert_deny_reason_lacks "ls | while read d; do ls | while read d; do rm -rf ${SIB_DIR}/\$d; done; done" executor-write "$WAVE_42" "too many parts" "same-text nested read loops walk the inner body"
+    assert_deny_reason "ls | while read d; do ls | while read d; do rm -rf ${SIB_DIR}/\$d; done; done" executor-write "$WAVE_42" "STEP-7.d" "same-text nested read loops walk the inner body"
+    assert_verdict "ls | while read d; do echo \$d | while read d; do pkill node; done; done" executor-write "$WAVE_42" DENY "same-text nested read loop running pkill"
+    assert_verdict "ls | while read d; do (ls | while read d; do rm -rf ${SIB_DIR}/\$d; done); done" executor-write "$WAVE_42" DENY "same-text read loop inside ( ) walks its body"
+    assert_verdict "f() { ls | while read d; do rm -rf ${SIB_DIR}/\$d; done; }; ls | while read d; do f; done" executor-write "$WAVE_42" DENY "same-text read loop in a called function walks its body"
+    assert_verdict "read d; ls | while read d; do rm -rf ${SIB_DIR}/\$d; done" executor-write "$WAVE_42" DENY "a lone read does not skip a later piped same-text loop"
     assert_verdict "ls | { while read d; do break; done; while read d; do rm -rf ${SIB_DIR}/\$d; done; }" executor-write "$WAVE_42" DENY "a read loop left by break does not skip a later same-text loop"
+    # A break that leaves only an inner loop does not keep the read loop
+    # around it from ending, and its body is still walked.
+    assert_verdict "printf 'a\\n' | while read d; do for x in 1 2; do break; done; done" executor-write "$WAVE_42" ALLOW "read loop with a break in an inner loop ends"
+    assert_verdict "printf 'a\\n' | while read d; do while :; do break; done; done" executor-write "$WAVE_42" ALLOW "read loop with a break in an inner while loop ends"
+    assert_deny_reason_lacks "ls | while read d; do for x in 1 2; do break; done; rm -rf ${SIB_DIR}/\$d; done" executor-write "$WAVE_42" "too many parts" "read loop with an inner break walks the rest of its body"
+    assert_deny_reason "ls | while read d; do for x in 1 2; do break; done; rm -rf ${SIB_DIR}/\$d; done" executor-write "$WAVE_42" "STEP-7.d" "read loop with an inner break walks the rest of its body"
+    # Only `[IFS=<bare word>] read [-r] [name...]` runs; any other option,
+    # IFS value or redirect keeps the read vetoed, so these loops cap.
+    local shape
+    for shape in 'read -a d' 'read -d x d' 'read -n 1 d' 'read -p x d' 'read -t 1 d' 'read -s d' 'read -e d' 'IFS=$(true) read d' 'IFS="x" read d' "IFS='x' read d" 'read d < /dev/null'; do
+        assert_deny_reason "printf 'a\\n' | while ${shape}; do :; done" executor-write "$WAVE_42" "too many parts" "read loop over \`${shape}\` stays vetoed"
+    done
     # The probe counter is never a read operand: the counter would reset on
     # every pass and the walk would never reach the cap.
     assert_deny_reason 'while :; do read _leaf_n; done' executor-write "$WAVE_42" "too many parts" "read into the probe counter stays vetoed"
@@ -569,12 +626,17 @@ case_read_loops() {
     assert_deny_reason 'while read x; do :; done < /dev/zero' executor-write "$WAVE_42" "too many parts" "read loop over an endless device caps"
     assert_verdict "while read d; do rm -rf \$d; done <<< \"${SIB_DIR}\"" executor-write "$WAVE_42" DENY "read loop over a here-string naming a sibling dir"
     assert_verdict "ls | while read -u 0 d; do :; done" executor-write "$WAVE_42" DENY "read with an option outside -r stays vetoed and caps"
-    # KNOWN RESIDUAL: a loop left through a failing condition right after its
-    # vetoed read leaves that site marked, so a later read with the same text
-    # in the same shell runs at once and its body is not walked.
+    # KNOWN RESIDUAL: a read whose site was vetoed but never fired again (a
+    # lone read, or a loop left through a failing condition right after its
+    # read, or a second same-text loop left by break) leaves that site
+    # marked, so a later read with the same text in the same shell runs at
+    # once and its body is not walked.
+    assert_verdict "ls | { while read d; do break; done; while read d; do break; done; while read d; do rm -rf ${SIB_DIR}/\$d; done; }" executor-write "$WAVE_42" ALLOW "residual: same-text read loop after two loops left by break"
     assert_verdict "ls | { while read d && false; do :; done; while read d; do rm -rf ${SIB_DIR}/\$d; done; }" executor-write "$WAVE_42" ALLOW "residual: same-text read after a condition exit"
-    # The cap reason names the counted wait the probe ends.
+    assert_verdict "ls | { read d; while read d; do rm -rf ${SIB_DIR}/\$d; done; }" executor-write "$WAVE_42" ALLOW "residual: same-text read loop after a lone read in the same shell"
+    # The cap reason names the counted wait and the read loop the probe ends.
     assert_deny_reason 'while true; do :; done' executor-write "$WAVE_42" 'n=0; until [ -s f ] || [ $n -ge N ]; do sleep S; n=$((n+1)); done' "cap reason names the counted wait loop"
+    assert_deny_reason 'while true; do :; done' executor-write "$WAVE_42" 'cmd | while IFS= read -r x; do ...; done' "cap reason names the read loop shape that ends"
     assert_deny_reason 'while true; do :; done' executor-write "$WAVE_42" "too many parts (over 2000)" "cap reason keeps the oversized wording"
 }
 
@@ -1011,7 +1073,7 @@ case_transcript_bound() {
 # the marker a spinning loop keeps trying to create must not exist afterward.
 case_leaf_cap_stops_the_walk() {
     local marker="${WORK}/cap-marker" err
-    err=$(PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "$HOOK" 2>&1 >/dev/null <<<"$(build_input "while true; do touch ${marker}; done" executor-write "$WAVE_42")")
+    err=$(deny_reason_of "while true; do touch ${marker}; done" executor-write "$WAVE_42")
     case "$err" in
         "${DENY_PREFIX}"*"too many parts"*) pass "unbounded loop is refused as oversized" ;;
         *) fail "unbounded loop not refused as oversized: ${err}" ;;
@@ -1021,7 +1083,7 @@ case_leaf_cap_stops_the_walk() {
     else
         pass "the probe ran nothing for real after the cap"
     fi
-    err=$(PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "$HOOK" 2>&1 >/dev/null <<<"$(build_input "while true; do touch ${marker}; rm -rf ${SIB_DIR}; done" executor-write "$WAVE_42")")
+    err=$(deny_reason_of "while true; do touch ${marker}; rm -rf ${SIB_DIR}; done" executor-write "$WAVE_42")
     case "$err" in
         "${DENY_PREFIX}"*) pass "unbounded loop over a sibling's dir is refused" ;;
         *) fail "unbounded loop over a sibling's dir allowed: ${err}" ;;

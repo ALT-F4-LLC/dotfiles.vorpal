@@ -34,6 +34,11 @@
 # transcript writes one content block per line under a shared message id.
 # The coordination section is exercised over a synthetic manifest and wave
 # return, the two inputs the live conductor passes in.
+#
+# Seats-mode selection is exercised as SELECT_JQ over the fixtures and as
+# filesToExtract over the reply shape the scout returns. The scout's own
+# `find ... -exec jq ... {} +` launcher, its `--- seats ---` split and the
+# relay of `seats_exit` are not run here; green does not cover them.
 
 set -uo pipefail
 
@@ -321,6 +326,16 @@ jq -r -n -R -f "${WORK}/wave-usage-select.jq" \
     > "${WORK}/selected.txt"
 ok $? 'the selection program runs clean over the mixed corpus'
 
+# One malformed transcript in the batch aborts the whole selection. The
+# status is the only signal: seats_exit carries it, and filesToExtract
+# refuses a non-zero one rather than reading a short seat list as complete.
+mkdir -p "${WORK}/malformed"
+printf '%s\n' '{"type":"user","message":"not an object"}' > "${WORK}/malformed/agent-bad.jsonl"
+jq -r -n -R -f "${WORK}/wave-usage-select.jq" \
+    "${WORK}/malformed/agent-bad.jsonl" "${WORK}"/panel/agent-pjudge.jsonl \
+    > "${WORK}/selected-malformed.txt" 2>/dev/null
+[ $? -ne 0 ]; ok $? 'a malformed transcript fails the selection batch with a non-zero status'
+
 # ---- Classification and reduction under node ----------------------------------
 cat "${WORK}/regions.js" > "${WORK}/suite.js"
 cat >> "${WORK}/suite.js" <<'JS'
@@ -553,8 +568,14 @@ ok(retypedListing.files.join(',') === `${slugDir}/agent-A.jsonl,${slugDir}/agent
 // transcript whose brief casts a vote. The full reduction over every
 // transcript is the oracle the selected reduction must reproduce.
 const corpus = [...wave, ...panel, ...relay, ...claimPath]
-const selectedNames = fs.readFileSync(path.join(root, 'selected.txt'), 'utf8')
-    .split('\n').filter(Boolean).map((p) => path.basename(p)).sort()
+// The scout's reply as filesToExtract receives it: the listing rebuilt on one
+// directory, the paths SELECT_JQ printed, and the selection's exit status.
+const scoutDir = '/wave'
+const listedPaths = corpus.map((r) => `${scoutDir}/${r.file}`).sort()
+const printedSeats = fs.readFileSync(path.join(root, 'selected.txt'), 'utf8').split('\n').filter(Boolean)
+const seatsReply = { files: listedPaths, seats: printedSeats, seats_exit: 0 }
+const selectedNames = filesToExtract('seats', scoutDir, listedPaths, seatsReply).files
+    .map((p) => path.basename(p)).sort()
 const judges = ['agent-ajudge.jsonl', 'agent-pjudge.jsonl', 'agent-preseat.jsonl', 'agent-prelayjudge.jsonl'].sort()
 ok(JSON.stringify(selectedNames) === JSON.stringify(judges),
     `the selection is exactly the judge transcripts, re-seated and relay-prefixed included (got ${JSON.stringify(selectedNames)})`)
@@ -568,6 +589,27 @@ ok(seatsAll.errors.length === 0 && seatsAll.rows.length > 0,
     'oracle: seats mode over every transcript reduces cleanly to rows')
 ok(JSON.stringify(seatsSelected.rows) === JSON.stringify(seatsAll.rows),
     `the selected transcripts reduce to the same seat rows as every transcript (got ${JSON.stringify(seatsSelected.rows.map((r) => `${r.proposal}/${r.voter}/${r.unit}=${r.quantity}`))})`)
+
+// ---- The mode gate and the selection's failure channel ----
+ok(JSON.stringify(filesToExtract('steps', scoutDir, listedPaths, seatsReply).files) === JSON.stringify(listedPaths),
+    'steps mode extracts every listed transcript, even when the reply carries a seat selection')
+const refusal = (listing) => {
+    try { filesToExtract('seats', scoutDir, listedPaths, listing); return '' } catch (e) { return String(e.message) }
+}
+ok(refusal({ ...seatsReply, seats_exit: 5 }).includes('exited 5'),
+    'a seats selection that exited non-zero is refused, not read as a short seat list')
+ok(refusal({ ...seatsReply, seats: [], seats_exit: 1 }).includes('exited 1'),
+    'a failed selection that printed nothing is refused, not read as a wave with no judges')
+ok(refusal({ files: listedPaths, seats: printedSeats }).includes('exited undefined'),
+    'a reply that does not carry the selection status is refused')
+ok(refusal({ files: listedPaths }).includes('no seats listing'),
+    'a reply with no seats listing is refused')
+const judgeless = [...relay, ...claimPath]
+const judgelessPaths = judgeless.map((r) => `${scoutDir}/${r.file}`).sort()
+const cleanEmpty = filesToExtract('seats', scoutDir, judgelessPaths, { files: judgelessPaths, seats: [], seats_exit: 0 }).files
+ok(cleanEmpty.length === 0
+    && JSON.stringify(reduceRows([], 'seats', []).rows) === JSON.stringify(reduceRows(judgeless, 'seats', []).rows),
+    'a clean selection naming no transcript extracts nothing and matches the rows of every transcript in a judge-less directory')
 
 // ---- Seats mode sort order: grouped by proposal, then seat ----
 const twoPanels = [

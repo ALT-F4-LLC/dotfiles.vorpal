@@ -629,14 +629,41 @@ function rebuildListing(dir, listed) {
     const retyped = listed.filter((f) => f.slice(0, f.lastIndexOf('/')) !== dirPath).length
     return { files, retyped }
 }
+
+const AGENT_LOG_RE = /\/agent-[^/]*\.jsonl$/
+
+// The transcripts the Extract phase spawns an agent for. Steps mode measures
+// every listed transcript, whatever else the scout returned. Seats mode
+// measures only the ones SELECT_JQ selected, and refuses a reply that cannot
+// show the selection ran clean: seats_exit is the status of the find that
+// ran jq, so a jq failure on any transcript, a missing program file or an
+// unreadable file throws here instead of arriving as missing seats. A clean
+// selection that names nothing is a directory with no judge, where
+// reduceRows over every transcript also gives no rows. Selected paths are
+// rebuilt on args.dir like the listing and kept only if listed; `unlisted`
+// counts the rest.
+function filesToExtract(mode, dir, transcripts, listing) {
+    if (mode !== 'seats') return { files: transcripts, unlisted: 0 }
+    if (!Array.isArray(listing?.seats)) {
+        throw new Error('wave-usage: the seats-mode scout returned no seats listing — cannot tell judges from other agents')
+    }
+    if (listing.seats_exit !== 0) {
+        throw new Error(`wave-usage: the seats selection exited ${listing.seats_exit}, not 0 — ` +
+            'its seat list may be short, so no seat is measured from it')
+    }
+    const selected = new Set(rebuildListing(dir, listing.seats.filter((f) => AGENT_LOG_RE.test(f))).files)
+    const files = transcripts.filter((f) => selected.has(f))
+    return { files, unlisted: selected.size - files.length }
+}
 // TEST-END wave-usage-paths
 
 const FILES_SCHEMA = {
     type: 'object',
-    required: mode === 'seats' ? ['files', 'seats'] : ['files'],
+    required: mode === 'seats' ? ['files', 'seats', 'seats_exit'] : ['files'],
     properties: {
         files: { type: 'array', items: { type: 'string' } },
         seats: { type: 'array', items: { type: 'string' } },
+        seats_exit: { type: 'integer' },
     },
 }
 
@@ -678,10 +705,10 @@ cat > "\${TMPDIR:-/tmp}/wave-usage-select-$$.jq" <<'JQ'
 ${SELECT_JQ}JQ
 ${LIST_COMMAND}
 echo '--- seats ---'
-find ${shellPath(dir)} -maxdepth 1 -type f -name 'agent-*.jsonl' -exec jq -r -n -R -f "\${TMPDIR:-/tmp}/wave-usage-select-$$.jq" {} + | LC_ALL=C sort; echo "exit=$?"
+find ${shellPath(dir)} -maxdepth 1 -type f -name 'agent-*.jsonl' -exec jq -r -n -R -f "\${TMPDIR:-/tmp}/wave-usage-select-$$.jq" {} +; echo "seats_exit=$?"
 \`\`\`
 
-The directory is written with one \`*\` where the flattened project name sits; leave that glob exactly as it is and let the shell resolve it. Return {files: [...], seats: [...]}: \`files\` is every path printed before the \`--- seats ---\` line, \`seats\` every path printed after it, one entry per line, verbatim and in order — a hyphen where a dot might be expected (\`github-com\`) is correct, not a typo. An empty listing is an empty array. Do not open, read, or count the files by any other means.`
+The directory is written with one \`*\` where the flattened project name sits; leave that glob exactly as it is and let the shell resolve it. Return {files: [...], seats: [...], seats_exit: N}: \`files\` is every path printed before the \`--- seats ---\` line, \`seats\` every path printed after it, one entry per line, verbatim and in order — a hyphen where a dot might be expected (\`github-com\`) is correct, not a typo — and \`seats_exit\` is the number printed on the \`seats_exit=\` line. An empty listing is an empty array. Do not open, read, or count the files by any other means.`
     : `You are a read-only scout. Do not cd anywhere. Run this command verbatim, sandboxed, and report what it prints — never a paraphrase:
 
 \`\`\`
@@ -704,7 +731,6 @@ jq prints exactly one JSON object. Return it as the structured output with ok:tr
 
 phase('Scout')
 const listing = await agent(scoutBrief, { label: 'scout', phase: 'Scout', schema: FILES_SCHEMA, ...AGENT_CONFIG.scout })
-const AGENT_LOG_RE = /\/agent-[^/]*\.jsonl$/
 const rawFiles = [...new Set(listing?.files || [])]
 const listed = rawFiles.filter((f) => AGENT_LOG_RE.test(f))
 if (listed.length !== rawFiles.length) {
@@ -719,21 +745,12 @@ log(`wave-usage: ${transcripts.length} agent transcript(s) under ${dir} (${mode}
 if (transcripts.length === 0) {
     throw new Error(`wave-usage: no agent-*.jsonl under ${dir} — nothing to measure, which is a finding, not an empty batch`)
 }
-// Seats mode extracts only the transcripts SELECT_JQ selected; their paths
-// are rebuilt on args.dir like the listing, and kept only if listed.
-const seatTranscripts = () => {
-    if (!Array.isArray(listing?.seats)) {
-        throw new Error('wave-usage: the seats-mode scout returned no seats listing — cannot tell judges from other agents')
-    }
-    const selected = new Set(rebuildListing(dir, listing.seats.filter((f) => AGENT_LOG_RE.test(f))).files)
-    const seats = transcripts.filter((f) => selected.has(f))
-    if (seats.length !== selected.size) {
-        log(`wave-usage: scout selected ${selected.size - seats.length} path(s) its own listing lacks; dropped`)
-    }
-    log(`wave-usage: ${seats.length} transcript(s) brief a vote cast; the other ${transcripts.length - seats.length} are not extracted`)
-    return seats
+const { files, unlisted } = filesToExtract(mode, dir, transcripts, listing)
+if (mode === 'seats') {
+    if (unlisted) log(`wave-usage: scout selected ${unlisted} path(s) its own listing lacks; dropped`)
+    log(`wave-usage: ${files.length} transcript(s) brief a vote cast; the other ${transcripts.length - files.length} are not extracted` +
+        (files.length === 0 ? ' — the selection ran clean and found no judge, so no seat row follows' : ''))
 }
-const files = mode === 'seats' ? seatTranscripts() : transcripts
 
 // TEST-BEGIN wave-usage-recheck-pipeline — extracted and exercised by
 // tests/wave-usage-recheck-pipeline.test.sh; EXTRACT_SCHEMA requires only

@@ -191,7 +191,7 @@ umask 077; cat > <scratchpad>/conductor.d/$RUN.verbs <<'EOF'
 docket dispatch backfill-usage --run $RUN --source "wave-journal:<wfId>" --from-json - < "$TMPDIR/wave-<wfId>.json"   # file holds the bare rows array, never {rows: [...]}
 docket vote create -d "<the decision, stated plainly>" -r "<evidence summary>" --files-changed "<comma-separated paths the decision covers>" -n 3 -c <low|medium|high|critical> --threshold 0.67 --created-by conductor
 docket vote link <proposal-id> --issue <ID>
-docket events list --run $RUN --json=v2 | jq '.data.items'
+docket events list --run $RUN --tail <N> --json=v2 | jq '.data.items'
 docket step reap STEP-N --reason "<what you observed>" < <scratchpad>/conductor.d/$RUN.token
 docket dispatch open --run $RUN --limit 240 --ack-reap <seq>
 docket guard spawn --run $RUN --ack-reap <seq>

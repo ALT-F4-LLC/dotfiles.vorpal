@@ -493,7 +493,9 @@ fi
 # --- Leaf enumeration: ask bash, don't re-derive it. ---------------------
 #
 # The trust guard's probe with the hardening the header lists. Leaves are
-# printed as \035<text>\036 frames on stdout; bash's stderr is merged into
+# printed as \035<text>\036 frames on the probe's stdout, saved as fd 8
+# before the walk: bash 5 runs a coproc's leaves in a child whose stdout is
+# the coproc pipe, and they would be lost there. bash's stderr is merged into
 # the same capture and recovered from between the frames. Exit codes: 113
 # the cap, 114 a redirection on a structural builtin. The caller cannot pick
 # either: `exit` and `return` are vetoed, and a vetoed leaf reports success.
@@ -554,7 +556,7 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
                             exit 115 ;;
                     esac
                 fi
-                printf "\035%s\036" "$BASH_COMMAND"
+                printf "\035%s\036" "$BASH_COMMAND" >&8
                 return 0 ;;
             while | until | if | elif | else | fi | then | do | done | \
             esac | function | time | "{" | "}" | "[" | "[[" | : | \
@@ -578,7 +580,7 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
                 return 0 ;;
         esac
         if [[ "$BASH_COMMAND" =~ $_leaf_read_re ]] && [[ "$BASH_COMMAND" != *_leaf_* ]]; then
-            printf "\035%s\036" "$BASH_COMMAND"
+            printf "\035%s\036" "$BASH_COMMAND" >&8
             local _leaf_site="${BASH_SUBSHELL}:${BASH_COMMAND}"
             # A vetoed read gives each name the value x, so a for-list over
             # it has a pass that reaches the guard above instead of none. A
@@ -620,18 +622,18 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
             case "$BASH_COMMAND" in
                 *_leaf_*) ;;   # the counter and these patterns: never the command'"'"'s to set
                 *)
-                    printf "\035%s\036" "$BASH_COMMAND"
+                    printf "\035%s\036" "$BASH_COMMAND" >&8
                     return 0 ;;
             esac
         fi
-        printf "\035%s\036" "$BASH_COMMAND"
+        printf "\035%s\036" "$BASH_COMMAND" >&8
         if declare -F "$_leaf_head" >&9 2>&9; then
             return 0
         fi
         return 1
     }
     readonly -f _guard_probe
-    exec 9>/dev/null
+    exec 8>&1 9>/dev/null
     set -r
     trap _guard_probe DEBUG
     eval "$COMMAND"
@@ -1033,10 +1035,11 @@ function head_of(w,   h) {
 function is_wrapper(h) {
     return (h == "sudo" || h == "doas" || h == "command" || h == "builtin" || h == "exec" || h == "xargs" || h == "nohup" || h == "nice" || h == "ionice" || h == "timeout" || h == "env" || h == "time" || h == "setsid" || h == "stdbuf" || h == "caffeinate" || h == "chronic" || h == "unbuffer")
 }
-# The verb position of a leaf: the first word, then past any wrapper and the
-# wrapper own options, values (`-n 5`, `5s`, `FOO=1`) and flags.
-function verb_index(n,   i, h) {
-    i = 1
+# The verb position of a leaf: the first word (or word `start`), then past
+# any wrapper and the wrapper own options, values (`-n 5`, `5s`, `FOO=1`) and
+# flags.
+function verb_index(n, start,   i, h) {
+    i = start ? start : 1
     while (i <= n && words[i] == "") i++
     if (i > n) return 0
     decode(words[i])
@@ -1152,6 +1155,55 @@ function report(clause, detail) {
     printf "%s\t%s\n", clause, detail
     exit
 }
+# ENGINE: `docket step reap` and `docket run conduct`, past docket own global
+# flags, for the docket word at vi.
+function engine_check(vi, n,   j, k, dq, dg, sq, sg, sw, vq, vg, vw) {
+    j = vi + 1
+    while (j <= n) {
+        if (words[j] == "") { j++; continue }
+        decode(words[j])
+        if (D_WORD !~ /^-/) break
+        if (D_WORD == "--format" || D_WORD == "--interval") { j += 2 } else { j++ }
+    }
+    k = j + 1
+    while (k <= n && words[k] == "") k++
+    if (j > n || k > n) return
+    dq = decode(words[vi]); dg = D_GROUP
+    sq = decode(words[j]); sg = D_GROUP; sw = tolower(D_WORD)
+    sub(/[^a-z0-9_-].*$/, "", sw)
+    vq = decode(words[k]); vg = D_GROUP; vw = tolower(D_WORD)
+    sub(/[^a-z0-9_-].*$/, "", vw)
+    if (sw == "step" && vw == "reap" && !(dq && sq && vq && dg == sg && sg == vg && !interp)) report("ENGINE", "docket step reap")
+    if (sw == "run" && vw == "conduct" && !(dq && sq && vq && dg == sg && sg == vg && !interp)) report("ENGINE", "docket run conduct")
+}
+# The commands inside a substitution on this line. bash 5.2 reprints a `$( )`
+# body onto its opener line (`echo $(\npkill node\n)` reaches the probe as
+# `echo $(pkill node)`), and a body written on one line never reached the
+# matcher as a leaf of its own on any bash. So the head of an unquoted word
+# that opens a substitution, or that follows a separator once one is open, is
+# a verb too, for the name-addressed kills and the engine verbs. A quoted
+# word stays data: the pre-pass leaves a `$( )` inside double quotes
+# unmarked, since bash runs it, and marks one inside single quotes.
+function nested_verbs(n,   i, w, opened, after_sep, vi, v) {
+    opened = 0
+    after_sep = 0
+    for (i = 1; i <= n; i++) {
+        if (words[i] == "") continue
+        if (decode(words[i])) { after_sep = 0; continue }
+        w = D_WORD
+        if (w ~ /\$\(|\140|[<>]\(/) opened = 1
+        if (opened && (after_sep || w ~ /\$\(|\140|[<>]\(|[;|&]/)) {
+            vi = verb_index(n, i)
+            if (vi > 0) {
+                decode(words[vi])
+                v = head_of(D_WORD)
+                if (v == "pkill" || v == "killall" || v == "killall5") report("PROCESS", v)
+                if (v == "docket") engine_check(vi, n)
+            }
+        }
+        after_sep = (opened && w ~ /[;|&(]$/)
+    }
+}
 {
     lines[NR] = $0
     n = split($0, words, /[ \t]+/)
@@ -1205,29 +1257,9 @@ END {
             # docket argument.
             prev_redirect_op = (w ~ /^([0-9]*|\{[A-Za-z_][A-Za-z0-9_]*\})[<>&|]*[<>][<>&|-]*$/)
         }
+        nested_verbs(n)
         if (vi == 0) continue
-        # ENGINE: `docket step reap` and `docket run conduct`, past docket own
-        # global flags.
-        if (verb == "docket") {
-            j = vi + 1
-            while (j <= n) {
-                if (words[j] == "") { j++; continue }
-                decode(words[j])
-                if (D_WORD !~ /^-/) break
-                if (D_WORD == "--format" || D_WORD == "--interval") { j += 2 } else { j++ }
-            }
-            k = j + 1
-            while (k <= n && words[k] == "") k++
-            if (j <= n && k <= n) {
-                dq = decode(words[vi]); dg = D_GROUP
-                sq = decode(words[j]); sg = D_GROUP; sw = tolower(D_WORD)
-                sub(/[^a-z0-9_-].*$/, "", sw)
-                vq = decode(words[k]); vg = D_GROUP; vw = tolower(D_WORD)
-                sub(/[^a-z0-9_-].*$/, "", vw)
-                if (sw == "step" && vw == "reap" && !(dq && sq && vq && dg == sg && sg == vg && !interp)) report("ENGINE", "docket step reap")
-                if (sw == "run" && vw == "conduct" && !(dq && sq && vq && dg == sg && sg == vg && !interp)) report("ENGINE", "docket run conduct")
-            }
-        }
+        if (verb == "docket") engine_check(vi, n)
         # PROCESS: name-addressed kills, and kill by literal pid.
         if (verb == "pkill" || verb == "killall" || verb == "killall5") report("PROCESS", verb)
         if (verb == "kill") {

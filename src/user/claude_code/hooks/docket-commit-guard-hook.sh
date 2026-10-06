@@ -174,7 +174,9 @@ fi
 # below (it is a control mechanism, not a leaf) so the trap sees straight
 # through it to what is actually inside.
 #
-# Leaves are printed as \035<text>\036 frames on stdout; bash's stderr is
+# Leaves are printed as \035<text>\036 frames on the probe's stdout, saved
+# as fd 8 before the walk: bash 5 runs a coproc's leaves in a child whose
+# stdout is the coproc pipe, and they would be lost there. bash's stderr is
 # merged into the same capture and recovered from between the frames. Exit
 # codes: 113 the cap, 114 a redirection on a structural builtin. The caller
 # cannot pick either: `exit` and `return` are vetoed, and a vetoed leaf
@@ -208,7 +210,7 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
                 case "$BASH_COMMAND" in
                     *[\<\>]*) exit 114 ;;
                 esac
-                printf "\035%s\036" "$BASH_COMMAND"
+                printf "\035%s\036" "$BASH_COMMAND" >&8
                 return 0 ;;
             while | until | if | elif | else | fi | then | do | done | \
             esac | function | time | "{" | "}" | "[" | "[[" | : | \
@@ -222,18 +224,18 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
             case "$BASH_COMMAND" in
                 *_leaf_*) ;;   # the counter and these patterns: never the command'"'"'s to set
                 *)
-                    printf "\035%s\036" "$BASH_COMMAND"
+                    printf "\035%s\036" "$BASH_COMMAND" >&8
                     return 0 ;;
             esac
         fi
-        printf "\035%s\036" "$BASH_COMMAND"
+        printf "\035%s\036" "$BASH_COMMAND" >&8
         if declare -F "$head" >&9 2>&9; then
             return 0
         fi
         return 1
     }
     readonly -f _guard_probe
-    exec 9>/dev/null
+    exec 8>&1 9>/dev/null
     set -r
     trap _guard_probe DEBUG
     eval "$COMMAND"

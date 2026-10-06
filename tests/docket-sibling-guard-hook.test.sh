@@ -56,6 +56,15 @@ fatal() {
 command -v jq >/dev/null 2>&1 || fatal "jq is required to run this test"
 
 BASH_BIN=$(command -v bash) || fatal "bash not found on PATH"
+# bash 5.2 parses a `$( )` body as it reads it and reprints the leaf from that
+# parse: a comment in the body is gone, and a heredoc in a substitution that
+# closed on its line takes the following lines as its body. The probe follows
+# whichever bash runs the hook, so the pins on those two shapes do too.
+if "$BASH_BIN" -c '[ "${BASH_VERSINFO[0]}" -gt 5 ] || { [ "${BASH_VERSINFO[0]}" -eq 5 ] && [ "${BASH_VERSINFO[1]}" -ge 2 ]; }'; then
+    COMSUB_REPRINTED=1
+else
+    COMSUB_REPRINTED=0
+fi
 
 # Every fixture path lands in command text the hook reads, so the work root
 # must not carry a `STEP-N.d` segment: a caller whose TMPDIR is its own step
@@ -731,7 +740,22 @@ case_artifact_heredoc_bodies() {
 # A substitution whose body spans lines is one leaf to the probe, which
 # vetoes it before the body runs; every body line is matched as its own leaf.
 # Only a quoted-delimiter heredoc body, up to its terminator line, is skipped.
+# bash 5.2 reprints the body onto the opener line instead, so the verbs after
+# a substitution opener are matched too, on one line as on several.
 case_multiline_substitutions() {
+    assert_verdict 'echo $(pkill node)' executor-write "$WAVE_42" DENY "one-line \$( ) body holding pkill"
+    assert_verdict 'echo "$(pkill node)"' executor-write "$WAVE_42" DENY "one-line \$( ) in double quotes holding pkill"
+    assert_verdict "echo '\$(pkill node)'" executor-write "$WAVE_42" ALLOW "a single-quoted \$( ) is data"
+    assert_verdict 'echo `pkill node`' executor-write "$WAVE_42" DENY "one-line backtick body holding pkill"
+    assert_verdict 'cat <(pkill node)' executor-write "$WAVE_42" DENY "one-line process substitution holding pkill"
+    assert_verdict 'echo $(ls; pkill node)' executor-write "$WAVE_42" DENY "pkill after a separator inside a \$( )"
+    assert_verdict 'echo $(sudo pkill node)' executor-write "$WAVE_42" DENY "pkill behind a wrapper inside a \$( )"
+    assert_verdict 'echo $(docket step reap STEP-7 --reason x)' executor-write "$WAVE_42" DENY "one-line \$( ) body holding docket step reap"
+    assert_verdict 'echo $(grep -rn pkill hooks/)' executor-write "$WAVE_42" ALLOW "pkill as an argument inside a \$( ) is a read"
+    # bash 5 walks a coproc body in a child whose stdout is the coproc pipe;
+    # the probe writes its frames to a saved fd so they still arrive.
+    assert_verdict 'coproc { pkill node; }' executor-write "$WAVE_42" DENY "coproc body holding pkill"
+    assert_verdict 'coproc X { pkill node; }' executor-write "$WAVE_42" DENY "named coproc body holding pkill"
     assert_verdict $'echo $(\nrm -rf STEP-$s\n)' executor-write "$WAVE_42" DENY "multi-line \$( ) body holding a sibling rm"
     assert_verdict $'docket step artifacts $(\nrm -rf /tmp/claude-501/STEP-7.d\n)' executor-write "$WAVE_42" DENY "multi-line \$( ) body as a docket argument"
     assert_verdict $'echo `\nrm -rf STEP-$s\n`' executor-write "$WAVE_42" DENY "multi-line backtick body holding a sibling rm"
@@ -780,12 +804,20 @@ case_multiline_substitutions() {
     assert_verdict $'docket step artifacts "$(cat <<\'E\' $(\nrm -rf '"${SIB_DIR}"$'\n)\nE\n)"' executor-write "$WAVE_42" DENY "a \$( ) after a heredoc operator, as a docket argument"
     assert_verdict $'echo "$(cat <<\'E\' $(\npkill node\n)\nE\n)"' executor-write "$WAVE_42" DENY "a \$( ) opened after a heredoc operator hides no pkill"
     assert_verdict $'echo "$(cat <<\'E\' $(\nrm -rf '"${SIB_DIR}"$'\nE\n)\n)"' executor-write "$WAVE_42" DENY "a \$( ) opened after a heredoc operator holds its terminator line too"
-    assert_verdict $'echo "$(echo $(cat <<\'E\')\nrm -rf '"${SIB_DIR}"$'\nE\n)"' executor-write "$WAVE_42" DENY "a heredoc whose substitution closed on its line has no body"
+    if [ "$COMSUB_REPRINTED" = 1 ]; then
+        assert_verdict $'echo "$(echo $(cat <<\'E\')\nrm -rf '"${SIB_DIR}"$'\nE\n)"' executor-write "$WAVE_42" ALLOW "bash 5.2: a heredoc whose substitution closed on its line still reads the next lines as its body"
+    else
+        assert_verdict $'echo "$(echo $(cat <<\'E\')\nrm -rf '"${SIB_DIR}"$'\nE\n)"' executor-write "$WAVE_42" DENY "a heredoc whose substitution closed on its line has no body"
+    fi
     # Accepted false denies: every code line of a leaf is matched, and the
     # interpreter test reads them all.
     assert_verdict $'echo "multi\nuse node STEP-7.d prose"' executor-write "$WAVE_42" DENY "accepted false deny: interpreter word on a later line of quoted prose"
     assert_verdict $'echo "multi\nline STEP-7.d prose"' executor-write "$WAVE_42" ALLOW "multi-line quoted prose naming a sibling dir"
-    assert_verdict $'echo $(\n# see STEP-7.d\nls\n)' executor-write "$WAVE_42" DENY "accepted false deny: comment line in a substitution body"
+    if [ "$COMSUB_REPRINTED" = 1 ]; then
+        assert_verdict $'echo $(\n# see STEP-7.d\nls\n)' executor-write "$WAVE_42" ALLOW "bash 5.2: a comment line in a substitution body is dropped by the parse"
+    else
+        assert_verdict $'echo $(\n# see STEP-7.d\nls\n)' executor-write "$WAVE_42" DENY "accepted false deny: comment line in a substitution body"
+    fi
     # Further substitution shapes.
     assert_verdict $'echo "$(\nrm -rf '"${SIB_DIR}"$'\n)"' executor-write "$WAVE_42" DENY "multi-line \$( ) inside double quotes"
     assert_verdict $'echo $(echo $(\nrm -rf '"${SIB_DIR}"$'\n))' executor-write "$WAVE_42" DENY "nested multi-line \$( )"

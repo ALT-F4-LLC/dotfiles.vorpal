@@ -1,6 +1,6 @@
 export const meta = {
     name: 'sandbox-friction',
-    description: 'Internal: launched through scriptPath by the sandbox-friction skill; groups the sandbox friction ledger by denied path, host, or classifier reason and optionally files one dotfiles issue per group. Args in the header comment.',
+    description: 'Internal: launched through scriptPath at its installed absolute path, per the docket-postmortem evidence reference; groups the sandbox friction ledger by denied path, host, or classifier reason and optionally files one dotfiles issue per group. Args in the header comment.',
     whenToUse: 'Never by name. Read-only unless `file` is true; the ledger comes from sandbox-friction-hook.sh.',
     phases: [
         { title: 'Group', detail: 'one agent ranks the ledger by denied subject' },
@@ -9,8 +9,8 @@ export const meta = {
 }
 
 // ---------------------------------------------------------------------------
-// CONTRACT FOR CALLERS (the listing's description is deliberately one line;
-// this block is the single copy of what it used to carry).
+// CONTRACT FOR CALLERS (the listing's description is a one-line summary;
+// this block is the single copy of the argument and return contract).
 //
 // What it does:
 // Turn the sandbox friction ledger into a ranked summary grouped by the denied

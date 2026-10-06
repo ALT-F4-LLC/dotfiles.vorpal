@@ -9,7 +9,8 @@
 # and the only reason it surfaced at all was a post-mortem nobody had scheduled.
 #
 # This hook records, and records ONLY. It appends one line per friction event to
-# a ledger; `sandbox-friction-report` turns that ledger into DOT issues. Nothing
+# a ledger; the `sandbox-friction` workflow (workflows/sandbox-friction.js,
+# launched with `file: true`) turns that ledger into DOT issues. Nothing
 # here files, prompts, blocks, or writes to the observed repo.
 #
 # THREE ABSOLUTES, because this runs after EVERY Bash call in every session:

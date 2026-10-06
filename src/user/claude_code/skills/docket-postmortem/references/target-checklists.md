@@ -51,7 +51,7 @@ applied, and never judge a past execution against a newer checklist alone.
 | Casts | `vote show` per proposal: confidence, domain relevance, effective weight, and verdict per seat; a cast error surfaced rather than swallowed. |
 | Tally and threshold | `vote result` against the rule's threshold; a rule whose outcome never differs from a plain human gate is a referral to docket-retro, not a defect. |
 | Gate verdicts | `step gates` per parked or failed step: verdict, exit, `output_tail`, and `unmatched` reasons. An `unmatched` verdict is a missing trust entry, not a failing check. |
-| Parks and escalation | Each park's `park_reason` and later `routing`; the three standing rulings applied only where they apply; every other park reached the operator with the actual artifact. A condition a seat raised was filed with `-l tribunal`, one issue per condition. |
+| Parks and escalation | Each park's `park_reason` and later `routing`; the standing rulings applied only where they apply; every other park reached the operator with the actual artifact. A condition a seat raised was filed with `-l tribunal`, one issue per condition. |
 | Reaps | `lease-reaped` with `data.forced` is a relay declaring a dead spawn; an expiry against a live holder is a lease-sizing referral. |
 
 ## Operator touches

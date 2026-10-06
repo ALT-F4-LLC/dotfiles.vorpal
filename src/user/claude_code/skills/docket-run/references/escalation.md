@@ -2,8 +2,8 @@
 
 Consumer: the docket-run skill, whose **Gates** section points here. Read
 this file in full before presenting any gate, park, or question to the
-operator. The panel mechanics and the three standing rulings stay in the
-skill body; this file governs what a question carries, how a ruling is
+operator. The panel mechanics and the standing rulings stay in the skill
+body; this file governs what a question carries, how a ruling is
 scoped and routed, and which answers the engine's verbs can honor.
 
 **Every non-approval arrives with the panel's reasoning:** the tally and
@@ -103,8 +103,8 @@ made.
 
 **A gate disposition is scoped to the step it answered.** An
 override-pass on STEP-N settles only STEP-N, however identical the next
-park's root cause looks: a `waiting-human` park outside the three
-standing rulings is always the operator's, and approval never extends
+park's root cause looks: a `waiting-human` park outside the standing
+rulings is always the operator's, and approval never extends
 across contexts. Only a standing ruling or an answer whose own text
 named a class carries further, exactly as far as that class.
 

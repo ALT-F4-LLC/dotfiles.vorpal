@@ -139,7 +139,7 @@ themselves. Write one TSV row per log, main transcripts first, numbered from
 {
   for t in <each driving transcript>; do printf '%s\tmain\t-\t%s\t%s\n' "$t" "<session id>" "$(wc -c < "$t" | tr -d ' ')"; done
   for s in <each driving session dir>; do
-    find "$s/subagents" -name 'agent-*.jsonl' 2>/dev/null | while IFS= read -r p; do
+    find "$s/subagents" -name 'agent-*.jsonl' -print0 2>/dev/null | while IFS= read -r -d '' p; do
       b=$(wc -c < "$p" | tr -d ' ')
       case "$p" in */workflows/*) k=workflow; w=$(basename "$(dirname "$p")");; *) k=subagent; w=-;; esac
       printf '%s\t%s\t%s\t%s\t%s\n' "$p" "$k" "$w" "$(basename "$s")" "$b"

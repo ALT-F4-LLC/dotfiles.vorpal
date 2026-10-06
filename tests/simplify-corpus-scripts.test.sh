@@ -46,6 +46,9 @@ for tool in awk git cmp comm node python3 yq; do
     command -v "$tool" >/dev/null 2>&1 || fatal "${tool} is required to run this test"
 done
 
+# shellcheck source=tests/lib/hook-probe.sh
+. "${SCRIPT_DIR}/lib/hook-probe.sh"
+
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/simplify-corpus-scripts.XXXXXX") || fatal "mktemp failed"
 trap 'rm -rf "$WORK"' EXIT
 
@@ -255,10 +258,7 @@ printf '%s\n' '[pipeline]' 'name = "x"' '' '[nodes.a]' 'version = 3' > "${WORK}/
 check toml-unversioned workflow-toml "${WORK}/wf-unversioned.toml" "${WORK}/wf-unversioned.toml"
 grep -qx 'version -1 -1' "${WORK}/toml-unversioned.check"; ok $? 'workflow-toml: a version outside [pipeline] is not the pipeline'"'"'s'
 # A PATH holding every tool the toml path needs except yq.
-mkdir -p "${WORK}/no-yq"
-for tool in dirname grep sed head cut wc tr awk; do
-    ln -s "$(command -v "$tool")" "${WORK}/no-yq/${tool}"
-done
+hook_probe_link_shims "${WORK}/no-yq" dirname grep sed head cut wc tr awk || fatal "cannot build no-yq shims"
 PATH="${WORK}/no-yq" "$BASH" "$CHECK" toml "${WORK}/wf.toml" "${WORK}/wf.toml" > "${WORK}/toml-no-yq.check" 2>&1
 echo $? > "${WORK}/toml-no-yq.rc"
 gate_failed toml-no-yq toml && grep -q '^gate toml failed: .*yq' "${WORK}/toml-no-yq.check" && ! grep -q '^gate toml ok' "${WORK}/toml-no-yq.check"

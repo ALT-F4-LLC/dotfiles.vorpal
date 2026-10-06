@@ -344,6 +344,31 @@ ok(JSON.stringify(out.coordination) === JSON.stringify({
     unmatched_steps: [],
 }), `coordination: every bucket counts its own settled status (got ${JSON.stringify(out.coordination)})`)
 
+// ---- (9) multi-row rounds, a fractional first-pass rate, no instance ----
+// CRD-12 holds three rows whose ordinals arrive 0, 2, 1, so the issue's
+// rounds are the max, not the last row's. Two first-pass gates, each its own
+// issue so the rejection cascades nowhere, split one passed, one rejected.
+// The instance-less gate rides its own launch so it cannot move that rate.
+out = await start([
+    ex('M-0', 'CRD-12', 0, 'write', { instance: 'implement@0' }),
+    ex('M-1', 'CRD-12', 1, 'judge-correctness', { instance: 'review@2#1' }),
+    ex('M-2', 'CRD-12', 2, 'verify-ac', { instance: 'verify-ac@1' }),
+    Object.assign(vote('F-0', 'CRD-13', 0), { instance: 'verify-tribunal@0' }),
+    Object.assign(vote('F-1', 'CRD-14', 0), { instance: 'verify-tribunal@0' }),
+], { results: {
+    'F-0': settledAs('F-0', 'gate-passed'),
+    'F-1': settledAs('F-1', 'gate-rejected'),
+} })
+ok(out.coordination.rounds_per_issue['CRD-12'] === 2,
+    `coordination: an issue's rounds are its highest ordinal, not its last row's (got ${JSON.stringify(out.coordination.rounds_per_issue)})`)
+const fp = out.coordination.gates.first_pass
+ok(fp.decided === 2 && fp.passed === 1 && fp.rate === 0.5,
+    `coordination: the first-pass rate is passed over decided (got ${JSON.stringify(fp)})`)
+out = await start([vote('V-0', 'CRD-15', 0)], { results: { 'V-0': settledAs('V-0', 'gate-passed') } })
+ok(out.coordination.gates.decided === 1 && out.coordination.gates.first_pass.decided === 0 &&
+    !('CRD-15' in out.coordination.rounds_per_issue),
+    `coordination: a gate with no instance ordinal is decided but not first pass, and has no rounds (got ${JSON.stringify(out.coordination)})`)
+
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)
 JS

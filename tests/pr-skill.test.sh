@@ -115,12 +115,12 @@
 #                 "trailing newline" prose, which the region excludes
 #                 MN: revert the NUL item to "contains no NUL byte" with no
 #                 detection command
-#   (k)  determ   MK: delete the fenced /usr/bin/perl -0777 -pe 's/\n\z//'
+#   (k)  determ   MK: delete the fenced /usr/bin/awk 'NR>1{printf "\n"} ...'
 #                 de-terminate command, leaving the check with no producer
 #                 MZ: the "runs once" sentence rewritten to "after the
 #                 refuse-list scan has cleared the stripped file" — the block
 #                 stays in place, only the ordering claim inverts
-#                 MZ2: the fenced perl block physically moved to the end of
+#                 MZ2: the fenced awk block physically moved to the end of
 #                 the document, below the refuse list — the prose is
 #                 untouched, only the block's position moves
 #
@@ -615,15 +615,18 @@ fi
 
 # (k) The de-terminate step exists to PRODUCE that property: BSD grep's strip
 # pass always terminates its output, so without this the check refuses every
-# title. Anchored on perl, not head -c: the perl form depends on no
+# title. Anchored on awk, not head -c: the awk form depends on no
 # hand-computed byte count, which a head -c form would let an off-by-one
-# silently truncate the title past every item in the validation list.
-if determinate=$(find_block "/usr/bin/perl -0777 -pe 's/\\n\\z//'"); then
-    ok "de-terminate: a fenced block cuts the terminator with perl -0777 -pe s/\\n\\z//"
+# silently truncate the title past every item in the validation list; and
+# not perl -e, which rides an auto-mode classifier gap rather than an allowed
+# path.
+DETERMINATE_CMD="/usr/bin/awk 'NR>1{printf \"\\n\"} {printf \"%s\",\$0}'"
+if determinate=$(find_block "$DETERMINATE_CMD"); then
+    ok "de-terminate: a fenced block cuts the terminator with awk, final newline only"
     if grep -qF -- '> <final-title-file>' "$determinate"; then
         ok "de-terminate: it redirects into the file that gets scanned and sent"
     else
-        bad "de-terminate: the perl command does not redirect into <final-title-file>"
+        bad "de-terminate: the awk command does not redirect into <final-title-file>"
     fi
 
     # Ordering, not just presence: find_block returns the first block
@@ -642,9 +645,9 @@ if determinate=$(find_block "/usr/bin/perl -0777 -pe 's/\\n\\z//'"); then
         refuse_n=${refuse_block##*/block.}
         refuse_n=${refuse_n%.joined}
         if [ "$determinate_n" -lt "$refuse_n" ]; then
-            ok "de-terminate: the perl block (block ${determinate_n}) precedes the refuse-list block (block ${refuse_n})"
+            ok "de-terminate: the awk block (block ${determinate_n}) precedes the refuse-list block (block ${refuse_n})"
         else
-            bad "de-terminate: the perl block (block ${determinate_n}) does not precede the refuse-list block (block ${refuse_n})"
+            bad "de-terminate: the awk block (block ${determinate_n}) does not precede the refuse-list block (block ${refuse_n})"
         fi
     else
         bad "de-terminate: no fenced block carries the refuse list's DOT-<n> pattern — cannot check ordering"
@@ -660,7 +663,7 @@ if determinate=$(find_block "/usr/bin/perl -0777 -pe 's/\\n\\z//'"); then
         bad "de-terminate: no 'runs once' sentence names the refuse-list scan as coming after"
     fi
 else
-    bad "de-terminate: no fenced block runs /usr/bin/perl -0777 -pe s/\\n\\z// — the strip pass's terminator has no remover"
+    bad "de-terminate: no fenced block runs the awk de-terminate command — the strip pass's terminator has no remover"
 fi
 
 if [ "$fail" -ne 0 ]; then

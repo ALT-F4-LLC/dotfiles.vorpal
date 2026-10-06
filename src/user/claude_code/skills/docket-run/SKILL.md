@@ -494,8 +494,13 @@ docket doc list -T resume-prompt --sort updated_at:desc --limit 20 --json \
 
 Match on the title `Resume RUN-N`, never on recency. If one matches, read
 it in full (`docket doc show DOC-N`) and honor its contents before your
-first mutating verb; none of it is recoverable from the engine. No
-matching doc is not an error: proceed on engine state alone.
+first mutating verb; none of it is recoverable from the engine. Write it
+to a session-private file and, from the cwd you will drive the run from,
+run [references/pause.md](references/pause.md)'s **Resume-prompt paths**
+`attach` step (`bash <scratchpad>/resume-prompt-paths.sh attach
+<prompt-file>`); on exit 1, stop and report both paths it names before
+`docket run conduct`. No matching doc is not an error: proceed on engine
+state alone.
 
 **Then take the seat.** A run this session did not activate is bound to a
 conductor capability this session does not hold, and a resume prompt

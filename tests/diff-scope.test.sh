@@ -155,6 +155,17 @@ r=$(workflow_repo small-wf-mismatch)
 printf 'version = 2\n' > "$r/src/user/docket/config/workflows/a.toml"; printf -- '- 2\n' >> "$r/src/user/docket/config/changelogs/b.md"; commit_all "$r"
 expect "small: a workflow and another workflow's changelog span two directories" small 1 "$r" "paths span two directories"
 
+# A deleted member voids the pair exemption. git orders the changelog first,
+# so the deleted workflow is the guard's second argument and the deleted
+# changelog its first.
+r=$(workflow_repo small-wf-del-workflow)
+rm "$r/src/user/docket/config/workflows/a.toml"; printf -- '- 2\n' >> "$r/src/user/docket/config/changelogs/a.md"; commit_all "$r"
+expect "small: a deleted workflow beside its changelog edit spans two directories" small 1 "$r" "paths span two directories"
+
+r=$(workflow_repo small-wf-del-changelog)
+printf 'version = 2\n' > "$r/src/user/docket/config/workflows/a.toml"; rm "$r/src/user/docket/config/changelogs/a.md"; commit_all "$r"
+expect "small: a workflow edit beside its deleted changelog spans two directories" small 1 "$r" "paths span two directories"
+
 # ---- control-class paths (every track) ------------------------------------
 r=$(fresh_repo ctrl); mkdir -p "$r/.docket"; printf '# control classes\nhooks/*\n' > "$r/.docket/scope-control-paths"
 printf 'x\n' >> "$r/hooks/guard.sh"

@@ -1032,8 +1032,10 @@ function head_of(w,   h) {
     sub(/^.*\//, "", h)
     return tolower(h)
 }
+# `coproc` is here because bash 3.2 has no coproc keyword and reports it as
+# the command name, while zsh runs the words after it as a coprocess.
 function is_wrapper(h) {
-    return (h == "sudo" || h == "doas" || h == "command" || h == "builtin" || h == "exec" || h == "xargs" || h == "nohup" || h == "nice" || h == "ionice" || h == "timeout" || h == "env" || h == "time" || h == "setsid" || h == "stdbuf" || h == "caffeinate" || h == "chronic" || h == "unbuffer")
+    return (h == "coproc" || h == "sudo" || h == "doas" || h == "command" || h == "builtin" || h == "exec" || h == "xargs" || h == "nohup" || h == "nice" || h == "ionice" || h == "timeout" || h == "env" || h == "time" || h == "setsid" || h == "stdbuf" || h == "caffeinate" || h == "chronic" || h == "unbuffer")
 }
 # The verb position of a leaf: the first word (or word `start`), then past
 # any wrapper and the wrapper own options, values (`-n 5`, `5s`, `FOO=1`) and

@@ -756,6 +756,12 @@ case_multiline_substitutions() {
     # the probe writes its frames to a saved fd so they still arrive.
     assert_verdict 'coproc { pkill node; }' executor-write "$WAVE_42" DENY "coproc body holding pkill"
     assert_verdict 'coproc X { pkill node; }' executor-write "$WAVE_42" DENY "named coproc body holding pkill"
+    # bash 3.2 has no coproc keyword and reports `coproc` as the command name,
+    # while zsh runs the rest as a coprocess: the verb resolves past it.
+    assert_verdict 'coproc pkill node' executor-write "$WAVE_42" DENY "coproc simple command running pkill"
+    assert_verdict 'coproc docket step reap STEP-7 --reason x' executor-write "$WAVE_42" DENY "coproc simple command running docket step reap"
+    assert_verdict 'echo $(coproc pkill node)' executor-write "$WAVE_42" DENY "coproc pkill inside a \$( )"
+    assert_verdict 'coproc grep -rn pkill hooks/' executor-write "$WAVE_42" ALLOW "coproc wrapping a read stays a read"
     assert_verdict $'echo $(\nrm -rf STEP-$s\n)' executor-write "$WAVE_42" DENY "multi-line \$( ) body holding a sibling rm"
     assert_verdict $'docket step artifacts $(\nrm -rf /tmp/claude-501/STEP-7.d\n)' executor-write "$WAVE_42" DENY "multi-line \$( ) body as a docket argument"
     assert_verdict $'echo `\nrm -rf STEP-$s\n`' executor-write "$WAVE_42" DENY "multi-line backtick body holding a sibling rm"

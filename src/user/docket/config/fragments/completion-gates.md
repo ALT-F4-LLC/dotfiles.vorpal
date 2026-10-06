@@ -1,6 +1,6 @@
 ---
 fragment: completion-gates
-version: 13
+version: 14
 ---
 # Completion gates
 
@@ -19,6 +19,9 @@ inputs invalidates its result. An amend or rebase that leaves
 than rerunning. If a gate changes checked files, validate the resulting state before
 recording. Run no gate after `docket step record`; the recorded step belongs to the
 engine.
+
+Finish every self-check you run (probes, mutants, and advisor review) before the
+required gate set runs, so no gate run precedes a further edit.
 
 For each gate, include its name, command, working directory, exit status, and actual
 output in the persisted summary alongside the build and test evidence. Distinguish

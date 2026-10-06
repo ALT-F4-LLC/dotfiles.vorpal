@@ -340,7 +340,7 @@ ok(JSON.stringify(out.coordination) === JSON.stringify({
     claim_conflicts: 0,
     ancestry_parks: 1,
     spawn_failed: 1,
-    deferred: { agent_budget: 1, writer_budget: 1, chain_dead: 0, run_parked: 1, total: 3 },
+    deferred: { agent_budget: 1, writer_budget: 1, chain_dead: 0, run_parked: 1, token_budget: 0, total: 3 },
     unmatched_steps: [],
 }), `coordination: every bucket counts its own settled status (got ${JSON.stringify(out.coordination)})`)
 

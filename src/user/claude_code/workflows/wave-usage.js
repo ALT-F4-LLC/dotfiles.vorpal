@@ -9,8 +9,8 @@ export const meta = {
 }
 
 // ---------------------------------------------------------------------------
-// CONTRACT FOR CALLERS (the listing's description is deliberately one line;
-// this block is the single copy of what it used to carry).
+// CONTRACT FOR CALLERS (the listing's description is a one-line summary;
+// this block is the single copy of the argument and return contract).
 //
 // What it does:
 // Measure a completed wave's token spend from its agent transcripts and emit
@@ -28,7 +28,8 @@ export const meta = {
 // agent-*.jsonl in the directory, in seats mode only each seat transcript
 // (one whose bootstrap brief carries `docket vote cast`, selected by the
 // scout without an agent per file), plus one re-check for any transcript
-// relayed as bootstrap:false. Invoke by scriptPath
+// relayed as bootstrap:false, plus one retry for any transcript whose path
+// the relay retyped. Invoke by scriptPath
 // ONLY, with args {dir, mode?, exclude?, rows?, statuses?}.
 //
 // When and how it is invoked:
@@ -101,12 +102,13 @@ const DEFAULT_MODE = 'steps'
 //    obligation it is reading about, and with the join first the ledger was
 //    safe only while probe briefs happened to carry no record-shaped text.
 //
-//  * ALL THREE JOINS READ THE BOOTSTRAP ONLY, never a later user message.
+//  * ALL THREE BOOTSTRAP TESTS (cast, read, record) READ THE BOOTSTRAP ONLY,
+//    never a later user message.
 //    Later messages carry tool results, and a probe's own `docket step show`
 //    output can quote a step artifact naming the record command. What briefs
 //    the agent decides; what the agent read back cannot.
 //
-//  * EXEC_MARK IS THE DRIFT SAFETY NET. An agent whose brief opens as an
+//  * THE `exec` MARK IS THE DRIFT SAFETY NET. An agent whose brief opens as an
 //    executor yet names no claim/record command means the brief was reworded
 //    out from under the join; without this error every claimant would fall
 //    silently into overhead and the wave would back-fill nothing. The same
@@ -198,7 +200,7 @@ const DEFAULT_MODE = 'steps'
 //                  blocked, skipped, first_pass: {decided, passed, rate}},
 //                  reseats, claim_conflicts, ancestry_parks, spawn_failed,
 //                  deferred: {agent_budget, writer_budget, chain_dead,
-//                  run_parked, total}, unmatched_steps}. `rows` counts the
+//                  run_parked, token_budget, total}, unmatched_steps}. `rows` counts the
 //                  statuses this launch owned; `decided` is passed + rejected
 //                  + parked (a parked gate is one whose tally did not clear or
 //                  could not be read); `rate` is passed over decided, null at
@@ -256,7 +258,7 @@ if (manifestRows != null && (!Array.isArray(manifestRows) || !Array.isArray(wave
 // can quote a `docket step record STEP-N` it merely read.
 //
 // probe is the four-way read test: the explicit declaration wave.js's
-// probeBrief() opens with, the block probe's opening sentence, the legacy
+// probeBrief() closes with (via probeTrailer()), the block probe's opening sentence, the legacy
 // probe self-description (truncated on purpose: wave.js writes "what the
 // record currently says", tribunal.js "what the VOTE record currently says"),
 // and the READ JOB itself — the fixed opening line followed by one docket
@@ -532,6 +534,7 @@ const DEFERRAL_STATUSES = {
     'not-launched-writer-budget': 'writer_budget',
     'skipped-chain-dead': 'chain_dead',
     'not-launched-run-parked': 'run_parked',
+    'not-launched-token-budget': 'token_budget',
 }
 const GATE_STATUSES = {
     'gate-passed': 'passed',
@@ -563,7 +566,7 @@ function coordinationOf(results, rows, statuses) {
         claim_conflicts: 0,
         ancestry_parks: 0,
         spawn_failed: 0,
-        deferred: { agent_budget: 0, writer_budget: 0, chain_dead: 0, run_parked: 0, total: 0 },
+        deferred: { agent_budget: 0, writer_budget: 0, chain_dead: 0, run_parked: 0, token_budget: 0, total: 0 },
         unmatched_steps: [],
     }
     const decided = (bucket) => bucket === 'passed' || bucket === 'rejected' || bucket === 'parked'

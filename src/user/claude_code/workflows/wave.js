@@ -1,12 +1,12 @@
 export const meta = {
     name: 'wave',
-    description: 'Internal: launched through scriptPath by docket-run, once per issue, to run one issue lane of a dispatched manifest end to end (executors, vote panels, staged rows). Per executor row it spends 1 haiku claim agent, which claims the step and writes the packet the executor then receives verbatim in its brief. Per vote row it spends 3 read-only haiku probes of `docket gate status` on the normal path, 1 on a gate that was already decided, and 4 when a re-seat is needed. Budget, launch, lane, return and reply-tail contract in the header comment.',
+    description: 'Internal: launched through scriptPath by docket-run, once per issue, to run one issue lane of a dispatched manifest end to end (executors, vote panels, staged rows). Per executor row it spends 1 haiku claim agent, which claims the step and writes the packet the executor then receives verbatim in its brief. Per vote row it spends 3 read-only haiku probes on the normal path (gate status before, the proposal body, gate status after), 1 on a gate that was already decided, and 4 when a re-seat is needed. Budget, launch, lane, return and reply-tail contract in the header comment.',
     whenToUse: 'Never by name. Args are {rows, tribunal, cwd, unit?, harnessCap?, integrated?} with the issue\'s own rows verbatim from lane_units.py; the full argument contract is in the header comment.',
 }
 
 // ---------------------------------------------------------------------------
-// CONTRACT FOR CALLERS (the listing's description is deliberately one line;
-// this block is the single copy of what it used to carry).
+// CONTRACT FOR CALLERS (the listing's description is a one-line summary;
+// this block is the single copy of the argument and return contract).
 //
 // What it does:
 // Run one dispatched manifest end to end: spawn one executor per executor row
@@ -36,7 +36,7 @@ export const meta = {
 // another's writers, so the engine's claim check keeps uncertified writers
 // apart: a claim refused because another launch holds the scope or the class
 // headroom settles `skipped-not-ready` and the lane defers to the next
-// dispatch. The retired `shard` arg is refused.
+// dispatch. The `shard` arg is refused.
 // PROBE COST PER VOTE ROW: 3 read-only haiku probes on the normal
 // path — `docket gate status` before the panel seats (decided yet, which
 // proposal, which target), one projection of the proposal body (the case every
@@ -552,8 +552,9 @@ function lastLine(text) {
     return lines.length ? lines[lines.length - 1].trim() : ''
 }
 
-// Obligation 1 caps a CONFLICT report at three lines (one line of slack
-// here). A longer reply is a finding about conflicts, not a conflict.
+// wave-claim prints a CONFLICT as three lines (`STEP-N`, `CONFLICT`, the
+// engine's error), which the claim agent relays; the cap allows one line of
+// slack. A longer reply is a finding about conflicts, not a conflict.
 function isConflictReport(text) {
     if (typeof text !== 'string' || !text.includes('CONFLICT')) return false
     return text.trim().split('\n').filter((l) => l.trim()).length
@@ -799,8 +800,8 @@ function blockProbeBrief(label) {
         `TARGET LABEL (match byte-for-byte): ${label}`,
         '',
         'WHERE: the harness persists each workflow run as JSON at',
-        '  ~/.claude/projects/*/workflows/wf_*.json',
-        '  ~/.claude/projects/*/subagents/workflows/wf_*.json',
+        '  ~/.claude/projects/*/*/workflows/wf_*.json',
+        '  ~/.claude/projects/*/*/subagents/workflows/wf_*.json',
         '(one session-id directory between the project dir and',
         '`workflows`/`subagents`). Each file has a top-level `status` and a',
         '`workflowProgress` array whose entries carry `label`, `state`,',
@@ -1075,6 +1076,8 @@ function launchExecutor(row, r, type, isWrite, isolated, phaseLabel, { owner, cl
             }
             // The reply-tail contract (recordTail / stopSignal). A CONFLICT
             // report keeps its own path below; everything else settles here.
+            // The executor brief never claims, so that path is defense against
+            // a brief that drifts back to self-claiming.
             if (!recordTail(text) && !isConflictReport(text)) {
                 const signal = stopSignal(text)
                 if (signal) {
@@ -1101,7 +1104,7 @@ function launchExecutor(row, r, type, isWrite, isolated, phaseLabel, { owner, cl
                     const diagnosed = orphanedClaimReport(row.step, text, show)
                     if (!diagnosed) {
                         log(`${row.step}: the claim-conflict probe read no status ` +
-                            `— relaying the refusal verbatim, exactly as before`)
+                            `— relaying the refusal verbatim`)
                         return returned
                     }
                     log(`${row.step}: ${diagnosed.headline}`)
@@ -1470,7 +1473,7 @@ function gateStatus(step, label, phaseLabel, acct) {
 // A gate the engine has settled one way or the other. `outcome` is the
 // proposal's tally; a step already done/skipped/superseded with the outcome
 // still "open" is a gate decided some other way (a closed ballot, an
-// operator verb) — continue, as before.
+// operator verb) — continue.
 const GATE_SETTLED = ['done', 'skipped', 'superseded']
 const gateDecided = (g) => g.outcome !== 'open' || GATE_SETTLED.includes(g.step_status)
 
@@ -1863,9 +1866,9 @@ function parseTargetRef(text) {
 // calls into it). Keep everything between the markers free of workflow
 // globals (agent, probe, log, args) so it stays evaluable on its own.
 //
-// ONE declared dependency on another region: the target read shares the gate
-// path's command and reader (`target-envelope`, nested inside `gate-vote`),
-// so every suite that extracts THIS region prepends that one.
+// ONE declared dependency on another region: the target read goes through
+// the `target-envelope` region, so every suite that extracts THIS region
+// prepends that one.
 
 // A fix round's REVIEW FANOUT: the engine mints per-round instances as
 // `name@N`, with `#k` on fanout siblings. Only fanout rows (`@N#k`) are
@@ -1981,7 +1984,8 @@ function ancestryParkReport(step, broken) {
 // (laneParked, runParked, isConflictReport) and fix-round-ancestry with its
 // nested target-envelope helpers; other ladder dependencies stay inside the
 // markers, and the only workflow globals it may reach for are those stubs,
-// `rows`, `input`, and the prepended regions' helpers.
+// `rows`, `input`, `budget`, `agentsLaunched`, and the prepended regions'
+// helpers.
 const stageOf = (row) => (Number.isInteger(row.stage) ? row.stage : 0)
 
 // Preserve manifest order within each group; only the new map is mutated.
@@ -2289,8 +2293,9 @@ log('wave: no wall-clock deadline exists in this harness — a hung seat holds i
 
 // Bound long writer queues so finished lanes can reach the next dispatch.
 // Depth counts earlier stages with uncertified writers in OTHER lanes; a
-// lane's own chain and certified neighbours do not count. Defer depth >= 3
-// and the lane's later rows; the engine re-offers them next dispatch.
+// lane's own chain and certified neighbours do not count. Defer depth >=
+// WRITER_LADDER_BUDGET and the lane's later rows; the engine re-offers them
+// next dispatch.
 // Read off THIS launch's rows. A conductor launch holds one lane, so the
 // depth is always zero there; writers in sibling launches are kept apart by
 // the engine's claim check (CROSS_LAUNCH_WAIT).
@@ -2315,8 +2320,7 @@ const seatCount = (row) => Array.isArray(row.voter_assignments) && row.voter_ass
 // allowing other lanes to continue. Deepest-first admission finishes chains.
 // Project the ordinary path: claim agent + executor + one probe; panel + two
 // status reads + one proposal body read + one blocked/held read. Keep 100
-// agents for retries, re-seats and block probes. lane_units.py mirrors
-// EXECUTOR_AGENT_COST.
+// agents for retries, re-seats and block probes.
 function agentCost(row) {
     if (row.kind === 'action') return 0
     if (row.kind === 'vote') return seatCount(row) + VOTE_PROBE_COST
@@ -2708,6 +2712,7 @@ const COORDINATION_DEFERRALS = {
     'not-launched-writer-budget': 'writer_budget',
     'skipped-chain-dead': 'chain_dead',
     'not-launched-run-parked': 'run_parked',
+    'not-launched-token-budget': 'token_budget',
 }
 const COORDINATION_GATES = {
     'gate-passed': 'passed',
@@ -2730,7 +2735,7 @@ function coordinationOf(launchRows, statuses) {
         claim_conflicts: 0,
         ancestry_parks: 0,
         spawn_failed: 0,
-        deferred: { agent_budget: 0, writer_budget: 0, chain_dead: 0, run_parked: 0, total: 0 },
+        deferred: { agent_budget: 0, writer_budget: 0, chain_dead: 0, run_parked: 0, token_budget: 0, total: 0 },
         unmatched_steps: [],
     }
     statuses.forEach((s, index) => {

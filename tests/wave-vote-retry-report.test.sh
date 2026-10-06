@@ -242,6 +242,8 @@ ok(!/fail/.test(A.status), 'A: nothing failure-shaped in the status')
 ok(calls('STEP-2493 · gate:outcome') === 3,
     `A: the outcome probe was resubmitted once and re-read once after the re-seat (got ${calls('STEP-2493 · gate:outcome')})`)
 ok(calls('STEP-2493 · seat:judge-security (retry)') === 1, 'A: the missing seat was re-spawned once')
+ok(A.reseats === 1,
+    `A: the settled result carries the one re-seat (got ${JSON.stringify(A.reseats)})`)
 ok(calls('STEP-2493 · seat:judge-architecture (retry)') === 0 &&
    calls('STEP-2493 · seat:judge-correctness (retry)') === 0,
     'A: seats the engine lists as cast are never re-spawned')
@@ -365,6 +367,7 @@ const E = await run({
 ok(E.status === 'gate-passed', 'E: the healthy gate passes')
 ok(E.spawn_accounting === '3 seats, 3 probes, 0 retries',
     `E: status + proposal body + outcome (got ${JSON.stringify(E.spawn_accounting)})`)
+ok(!('reseats' in E), `E: no missing seat -> no reseats key (got ${JSON.stringify(E.reseats)})`)
 ok(probes() === 3, `AC: exactly THREE read-only probes on the normal path (got ${JSON.stringify(CALLS)})`)
 // The seat brief's case comes from the proposal body, projected WITHOUT its
 // casts: the probe's schema cannot even carry a vote, a score, or an

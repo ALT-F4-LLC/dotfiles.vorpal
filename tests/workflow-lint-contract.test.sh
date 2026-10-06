@@ -31,6 +31,9 @@ fatal() {
 [ -f "$LINT" ] || fatal "lint suite not found at ${LINT}"
 BASH_BIN=$(command -v bash) || fatal "bash not found on PATH"
 
+# shellcheck source=tests/lib/hook-probe.sh
+. "${SCRIPT_DIR}/lib/hook-probe.sh"
+
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/workflow-lint-contract.XXXXXX") || exit 2
 trap 'rm -rf "$WORK"' EXIT
 
@@ -39,12 +42,9 @@ trap 'rm -rf "$WORK"' EXIT
 TOOLS="${WORK}/tools"
 TOOLS_NO_JQ="${WORK}/tools-no-jq"
 STUB="${WORK}/stub"
-mkdir -p "$TOOLS" "$TOOLS_NO_JQ" "$STUB"
-for tool in bash dirname basename sed jq; do
-    tool_path=$(command -v "$tool") || fatal "lint suite dependency ${tool} not found on PATH"
-    ln -s "$tool_path" "${TOOLS}/${tool}"
-    [ "$tool" = jq ] || ln -s "$tool_path" "${TOOLS_NO_JQ}/${tool}"
-done
+mkdir -p "$STUB"
+hook_probe_link_shims "$TOOLS" bash dirname basename sed jq || fatal "cannot build lint suite shims"
+hook_probe_link_shims "$TOOLS_NO_JQ" bash dirname basename sed || fatal "cannot build lint suite shims"
 
 # `project list --json` answers ok only when STUB_REGISTRY_OK=1, and
 # `workflow lint` rejects only the basename named in STUB_LINT_FAIL.

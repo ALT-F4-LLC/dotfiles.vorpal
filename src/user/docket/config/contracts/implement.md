@@ -1,6 +1,6 @@
 ---
 node: implement
-version: 18
+version: 19
 archetype: executor-write
 packet_includes:
   - fragments/code-philosophy.md
@@ -123,7 +123,8 @@ Record the gap with `step complete` through the brief's gap channel,
 including the state of partial edits or commits and the required denial
 report. This records a handled gap, not satisfied ACs or permission to
 integrate incomplete work. Use `step fail` only for an unsuccessful execution
-that redispatch might redeem; it carries `--note` only, with no artifact. If
+that redispatch might redeem; it takes `--note` (and optional `--metadata`)
+and no artifact. If
 recording is unavailable or fails, return the gap or failure and observed
 error without claiming it was recorded. A workaround that hides a gap is a
 defect.

@@ -3,6 +3,17 @@
 Version history of `workflows/ui-change.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 41
+
+`implement` and `fix` add the `vuln-scan` gate, matching standard-change@26
+and every other code-writing track. A UI change can add a third-party
+dependency too, and nothing in this pipeline audited a new dependency's
+CVE exposure. The gate is unconditional because step-level `when` reads
+issue kind and labels, never the diff. A repository with no `vuln-scan`
+trust entry records `unmatched`, which routes as a failure: register one (a
+declared stub, if there is no scanner yet) before binding this version. No
+topology, routing, or limit change.
+
 ## 40
 
 `implement`, `drain-highs`, `design-qa`, and `verify-ac` no longer declare

@@ -3,6 +3,15 @@
 Version history of `policy.toml`, newest first. Each heading is the
 `[policy].version` the entry describes.
 
+## 40
+
+`opus-low` escalates to `opus-medium` instead of `opus-high`, so every
+`*-low` variant and every fallback hop steps one tier. No executor row
+names `opus-low`, so no current routing changes. `[security].reason` now
+dates its Opus 5 and Opus 4.8 claims to policy version 32, when the reason
+was written; re-check them when the runtime's fallback changes. The
+`opus-xhigh` row loses a stray space before `=`.
+
 ## 39
 
 `sonnet-max` and `sonnet-xhigh` leave `[variants]`. Under version

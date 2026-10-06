@@ -1,6 +1,6 @@
 ---
 node: dispose
-version: 11
+version: 12
 archetype: executor-write
 packet_includes:
   - fragments/evidence-rules.md
@@ -82,8 +82,11 @@ instead of inferring success from an issued command. After a failed or ambiguous
 write, reconcile the saved state before any authorized retry; if the outcome
 remains unknown, stop the dependent actions.
 
-When `verify-ac.ac-report` is present, read it and the posted disposition. Answer each
-unmet rationale with a correction within this node's scope or cited counter-evidence.
+When `verify-ac.ac-report` is present, read it and the posted disposition. Answer
+every AC the report marks other than `met`. Answer an `unmet` rationale with a
+correction within this node's scope or cited counter-evidence. Answer an
+`unverifiable` AC with the evidence the verifier lacked, such as a recorded gate
+result or a citation into the carrier, or with a gap naming what cannot be shown.
 An AC the report marks `unmet-out-of-scope` is filed as a follow-up and is not
 yours to answer unless the supplied vote record rejected that judgment; then
 treat it as unmet.
@@ -98,7 +101,8 @@ authority.
 whether this attempt closed it or confirmed an existing closure. Include the
 comment id and full saved text, followed by an AC → evidence mapping for this
 issue, including actual build/test and other required gate output. For revisions,
-link the earlier comment and map every unmet rationale to its resolution.
+link the earlier comment and map every AC the report marked other than `met` to
+its resolution.
 
 List each permitted follow-up as a discovery with evidence, impact, and fix shape.
 Describe it as proposed unless an existing issue identifier establishes otherwise.

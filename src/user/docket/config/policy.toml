@@ -1,5 +1,5 @@
 [policy]
-version = 39
+version = 40
 
 [variants]
 fable-high = { model = "fable", effort = "high" }
@@ -8,10 +8,10 @@ fable-max = { model = "fable", effort = "max" }
 fable-medium = { model = "fable", effort = "medium" }
 fable-xhigh = { model = "fable", effort = "xhigh" }
 opus-high = { model = "opus", effort = "high", escalate_to = "fable-high" }
-opus-low = { model = "opus", effort = "low", escalate_to = "opus-high" }
+opus-low = { model = "opus", effort = "low", escalate_to = "opus-medium" }
 opus-max = { model = "opus", effort = "max", escalate_to = "fable-max" }
 opus-medium = { model = "opus", effort = "medium", escalate_to = "fable-medium" }
-opus-xhigh  = { model = "opus", effort = "xhigh", escalate_to = "fable-xhigh" }
+opus-xhigh = { model = "opus", effort = "xhigh", escalate_to = "fable-xhigh" }
 sonnet-high = { model = "sonnet", effort = "high", escalate_to = "opus-high" }
 sonnet-low = { model = "sonnet", effort = "low", escalate_to = "sonnet-medium" }
 sonnet-medium = { model = "sonnet", effort = "medium", escalate_to = "opus-medium" }
@@ -57,7 +57,7 @@ ceiling = "opus-max"
 labels = ["security-change", "security-load-bearing", "security"]
 never = ["fable"]
 nodes = ["judge-security", "threat-model", "tdd-author-security", "spec-author-security", "tribunal-security"]
-reason = "Fable's safety classifiers cover more categories than Opus 5's cyber-only set and flag security review by its nature; Claude Code then re-runs the request on the fallback model (cyber → Opus 4.8), so a Fable seat here pays Fable's rate for an Opus 4.8 run and the ledger credits a model that never ran. Name Opus up front. Residual: Opus 5 itself re-runs cyber-flagged requests on Opus 4.8 with nothing in the step record catching the hop — the wave records `model_resolved` as unknown unless the runtime supplies an observation, so the serving model surfaces only in the transcript-read usage back-fill, whose ledger rows carry units and quantities only."
+reason = "As observed at policy version 32: Fable's safety classifiers cover more categories than Opus 5's cyber-only set and flag security review by its nature; Claude Code then re-runs the request on the fallback model (cyber → Opus 4.8), so a Fable seat here pays Fable's rate for an Opus 4.8 run and the ledger credits a model that never ran. Name Opus up front. Residual: Opus 5 itself re-runs cyber-flagged requests on Opus 4.8 with nothing in the step record catching the hop — the wave records `model_resolved` as unknown unless the runtime supplies an observation, so the serving model surfaces only in the transcript-read usage back-fill, whose ledger rows carry units and quantities only."
 
 [escalation]
 on_failure = "one-hop"

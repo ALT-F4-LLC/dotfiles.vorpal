@@ -1,6 +1,6 @@
 ---
 fragment: hard-gates
-version: 7
+version: 8
 ---
 # Hard gates G1–G6
 
@@ -117,8 +117,8 @@ present.
 
 **A gate finding names five things:** the location and reviewed state; the
 gate; the observed symptom and supporting evidence; the required mitigation;
-and why the relevant counter-example does not apply. Report confirmed,
-unoverridden gates plainly as blocking a passing review. Assign severity from
-supported impact and preconditions, independently of confidence. Do not
-inflate every gate to maximum severity or average it away because unrelated
-features work.
+and why the relevant counter-example does not apply. A confirmed,
+unoverridden gate is a Blocker: report it plainly as blocking a passing
+review, and never average it away because unrelated features work. A
+candidate that does not confirm is not a gate finding; grade it under the
+dimension rubric by its supported impact, independently of confidence.

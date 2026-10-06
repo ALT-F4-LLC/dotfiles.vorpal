@@ -1,6 +1,6 @@
 ---
 fragment: doc-house-style
-version: 8
+version: 9
 ---
 # Doc house style
 
@@ -59,7 +59,7 @@ not inapplicability.
   the remaining risk. Mark these as hypothetical failures. Distinguish
   proposed mitigations and acceptance from actions already taken or agreed.
 
-## Fidelity and length
+## Fidelity
 
 Resolve questions that could change the decision, acceptance criteria, or safe
 execution before treating that decision as settled. If an answer is

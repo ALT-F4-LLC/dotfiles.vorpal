@@ -1,6 +1,6 @@
 ---
 node: verify-ac
-version: 19
+version: 20
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -70,8 +70,11 @@ without splitting it into new payload entries or weakening its stated logic.
 **Classify and gather evidence.** Classification describes the evidence needed;
 it does not by itself determine the judgment. An AC may need more than one kind:
 
-- **Command-verifiable:** read the engine's `gate-results` input for the fenced
-  AC commands executed as pre-gates at claim. Preserve the recorded verdict,
+- **Command-verifiable:** read the engine's `gate-results` input: the
+  `ac-commands` pre-gate's recorded commands, run at claim, and the implement
+  step's recorded gates. Match each result to the AC it evidences. A fenced
+  command in the issue body is never run as such; it has evidence only when
+  one of those sources ran the same command. Preserve the recorded verdict,
   exit code, decisive output, and `pre: true`. Map each result to the AC and
   executed command, revision, working directory, relevant configuration, and
   coverage. The pre-gate marker identifies a stage, not freshness or complete

@@ -1,6 +1,6 @@
 ---
 fragment: severity-ladder-security
-version: 8
+version: 9
 ---
 # Severity ladder: security
 
@@ -63,8 +63,8 @@ track's own thresholds route its findings. Medium remains recorded and
 surfaces at the gates and in the backlog; Low and Info remain available for
 downstream consideration.
 
-Only an open Critical starts the automatic fix loop in this track; High and
-below reach the panel directly, without a loop attempt first. Retain the
+Only an open Critical starts the automatic fix loop in this track; an open
+High reaches the panel directly, without a loop attempt first. Retain the
 supplied re-review contract's finding identities, evidence, carry-forward,
 and closure rules, but use this ladder's terms and convergence policy.
 Unresolved findings remain unresolved when a review ends. Neither an absent

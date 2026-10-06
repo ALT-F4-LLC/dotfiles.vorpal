@@ -1,6 +1,6 @@
 ---
 node: judge-security
-version: 21
+version: 22
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -105,9 +105,9 @@ inventing security impact. Redact live secrets from every representation.
 Emit one payload entry per finding to be reconciled, including unresolved
 prior findings. Supply `id`, `title`, self-contained `evidence`, and
 `alternative`, with repo-relative `file` and 1-based `line` where applicable
-(`line: null` for broader scope); `evidence` carries the same reviewed state,
-labels, references, and limitations as the body finding, self-contained, with
-causal trace, preconditions, controls, and impact as applicable. Map
+(`line: null` for broader scope); `evidence` carries the reviewed state,
+labels, references, limitations, causal trace, preconditions, controls, and
+impact, as the body finding does. Map
 `severity` through the security ladder. Mirror each suggested direction into
 `alternative`: fix and revise consume the reconciled payload, not the body
 alone. When no concrete direction is established, state that limit in both

@@ -1,6 +1,6 @@
 [pipeline]
 name = "ui-change"
-version = 40
+version = 41
 description = "UI change bound to an accepted ux-spec cited in the issue body. Design-judged and design-QA'd before AC verification, so AC verification can read the design-QA findings and resolve met/unmet instead of unverifiable. The conductor integrates commits; the operator publishes."
 
 [match]
@@ -39,7 +39,7 @@ class = "write"
 emits = "change-summary"
 executor = "implement"
 expected_cost = 1.50
-gates = ["build", "tests", "self-hygiene", "secret-scan", "doc-validate"]
+gates = ["build", "tests", "self-hygiene", "secret-scan", "vuln-scan", "doc-validate"]
 inputs = []
 max_attempts = 2
 name = "implement"
@@ -95,7 +95,7 @@ class = "write"
 emits = "change-summary"
 executor = "fix"
 expected_cost = 1.00
-gates = ["build", "tests", "self-hygiene", "secret-scan", "doc-validate"]
+gates = ["build", "tests", "self-hygiene", "secret-scan", "vuln-scan", "doc-validate"]
 inputs = ["reconcile.findings", "synthesize-findings.findings", "implement.change-summary", "issue.latest.change-summary", "issue.latest.ac-report", "design-qa.findings", "verify-ac-vote.vote-record"]
 loop = true
 name = "fix"

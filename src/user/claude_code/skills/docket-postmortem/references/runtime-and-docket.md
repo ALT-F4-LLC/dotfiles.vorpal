@@ -77,9 +77,10 @@ the installed absolute `scriptPath` with literal arguments, never a source
 copy.
 [Workflows](https://code.claude.com/docs/en/workflows).
 
-As checked 2026-09-11, Fable 5.1 (`claude-fable-5-1`), Opus 5
-(`claude-opus-5`), and Sonnet 5 (`claude-sonnet-5`) are the current
-documented models, and the `fable` alias resolves to Fable 5.1. Spawn
+As checked 2026-10-05, Fable 5.1 (`claude-fable-5-1`), Opus 5.5
+(`claude-opus-5-5`), and Sonnet 5.5 (`claude-sonnet-5-5`) are the current
+models, and the harness pins the `fable`, `opus`, and `sonnet` aliases to
+them. Spawn
 metadata establishes the requested model and effort; deduplicated assistant
 messages with `message.model` establish what served. Neither is evidence
 that a behavior evaluation ran on that model.

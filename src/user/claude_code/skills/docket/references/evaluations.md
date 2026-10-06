@@ -34,7 +34,7 @@ From this skill directory:
 python3 scripts/evaluate.py --baseline /path/to/saved/docket \
   --output /path/to/results.json --dry-run
 python3 scripts/evaluate.py --baseline /path/to/saved/docket \
-  --models claude-sonnet-5 claude-opus-5 claude-fable-5-1 \
+  --models claude-sonnet-5-5 claude-opus-5-5 claude-fable-5-1 \
   --efforts high --max-budget-usd 1.5 --docket /path/to/docket \
   --output /path/to/results.json
 ```
@@ -76,15 +76,16 @@ model served it.
 
 ## Current model targets
 
-As checked 2026-09-11, use Fable 5.1, Opus 5, and Sonnet 5 for the generally
-available Claude 5 comparison. Mythos 5.1 is an optional additional target,
+As checked 2026-10-05, use Fable 5.1, Opus 5.5, and Sonnet 5.5 for the
+generally available Claude 5 comparison: the ids the harness pins for its
+`fable`, `opus`, and `sonnet` aliases. Mythos 5.1 is an optional additional target,
 only for an account granted access. Haiku remains 4.5 and has no effort
 control. The repository's policy already routes work by model and effort;
 preserve it until Docket-specific results justify a change.
 
-- Sonnet 5 benefits from explicitly scoped requirements and concrete output
+- Sonnet 5.5 benefits from explicitly scoped requirements and concrete output
   contracts, particularly at lower effort.
-- Opus 5 needs the task's actual gates and acceptance criteria; repeated
+- Opus 5.5 needs the task's actual gates and acceptance criteria; repeated
   generic instructions to verify everything can add unnecessary work.
 - Fable 5.1 should be compared across effort levels on completed-task
   quality, cost, and latency. Low effort can retrieve less, so verify live
@@ -92,8 +93,8 @@ preserve it until Docket-specific results justify a change.
   long operations.
 
 Sources: [Claude skill evaluation guidance](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices),
-[Sonnet 5](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-sonnet-5),
-[Opus 5](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5),
+[Sonnet 5 line prompting](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-sonnet-5),
+[Opus 5 line prompting](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5),
 [Fable 5.1](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5-1),
 [model availability](https://platform.claude.com/docs/en/about-claude/models/overview),
 [effective models and effort limits](https://code.claude.com/docs/en/model-config).

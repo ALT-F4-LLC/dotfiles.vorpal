@@ -18,7 +18,7 @@ EVALUATOR_SHA256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 CASE_DATA = json.loads((SKILL / "evals/cases.json").read_text())
 INVENTORY = json.loads((SKILL / "references/cli-inventory.json").read_text())
 INVENTORY_SHA256 = hashlib.sha256(json.dumps(INVENTORY, sort_keys=True).encode()).hexdigest()
-MODELS = ("claude-sonnet-5", "claude-opus-5", "claude-fable-5-1")
+MODELS = ("claude-sonnet-5-5", "claude-opus-5-5", "claude-fable-5-1")
 LITERAL = "operator's `echo changed` and $(echo substituted)\nEOF\nKeep this line."
 
 

@@ -402,7 +402,10 @@ contents_mismatches() {
       n++
       match($0, /^ */); ind[n] = RLENGTH
       match($0, /\(#[^)]+\)/); id[n] = substr($0, RSTART + 2, RLENGTH - 3)
-      match($0, /— [0-9]+ lines/); stated[n] = substr($0, RSTART + 4, RLENGTH - 10) + 0
+      # Strip to the digits rather than slice by offset: the em dash is one
+      # character to gawk in a UTF-8 locale and three bytes to BSD awk.
+      match($0, /— [0-9]+ lines/); count = substr($0, RSTART, RLENGTH); gsub(/[^0-9]/, "", count)
+      stated[n] = count + 0
       ln[n] = FNR
     }
     END {

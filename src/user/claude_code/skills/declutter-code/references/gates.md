@@ -38,10 +38,11 @@ before the rerun, so the tree that passes the gates is the tree that is
 committed.
 
 A repository with no test command at all has no guard for live-code
-transformations: only `reachability` entries can be applied, and the report
-says the tree has no test suite. A repository whose discovered command
+transformations: only `inert` and `reachability` entries can be applied,
+and the report says the tree has no test suite. A repository whose discovered command
 needs a service, network, or credential this environment lacks has a gate
-that cannot run: report which, and rest.
+that cannot run: ledger it as `gate unavailable` with HEAD, report which
+once, and rest.
 
 Run the full suite for the baseline and for the rerun. A narrowed run (one
 package, one test file) is allowed only for the mutation probe, and only
@@ -87,7 +88,8 @@ guarding condition is a literal that cannot vary. Reflection, string-built
 symbol names, plugin registries, and exported entry points that an external
 consumer may call defeat search; when the language or framework uses any
 of these near the unit, treat the symbol as reachable and leave it alone.
-After the removal, build, typecheck, and the full suite must pass.
+After the removal, build, typecheck, and the full suite must pass; in a
+repository with no test command, build and typecheck must pass.
 
 ## Inert edits
 

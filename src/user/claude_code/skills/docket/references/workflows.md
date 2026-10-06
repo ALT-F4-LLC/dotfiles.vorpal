@@ -333,7 +333,7 @@ leaving that step's siblings legitimately `claimed` at `waiting-human`.
 | `name` | string, required, unique in workflow | step identity |
 | `executor` | string (opaque hint) | a worker step; docket never interprets the value |
 | `action` | string | a deterministic computation step |
-| `type` | `"human"` \| `"vote"` | an operator gate |
+| `type` | `"human"` \| `"vote"` | a human gate (one operator decides) or a vote gate (a panel tallies) |
 | `fanout` | [hints] | expands to one parallel sibling per entry |
 | — | | **exactly one** of `executor` / `action` / `type` / `fanout` per step |
 | `class` | string, default = the `executor` value | the key `[limits]` accounts against |
@@ -349,7 +349,7 @@ leaving that step's siblings legitimately `claimed` at `waiting-human`.
 | `min_siblings` | int, default = all | how many fanout siblings the join needs |
 | `threshold` | table: routing → predicate | routing computed from the step's results |
 | `on_fail` | `"fix-loop"` \| `"waiting-human"` \| `"skip"` \| `"abandon-issue"`; default `"waiting-human"` | where a failure routes. **Required explicitly on `type="human"` and `type="vote"` steps** |
-| `on_exhausted` | `"waiting-human"` \| `"abandon-issue"` \| the name of a `type="vote"` step of this workflow \| the name of an executor step of this workflow; default `"waiting-human"`; only on a step that routes `fix-loop` and declares a positive `max_fix_loops` on the same step (V41) | where fix-loop exhaustion routes: a `fix-loop` entry whose next ordinal would exceed `max_fix_loops` plus `fix-round` grants ([Loops](#loops), item 1). `waiting-human` parks for an operator, as every exhaustion did before the key existed; `abandon-issue` stops the run's work on the issue; a vote step name opens that panel's proposal, which is how a loop-extension vote under a hard ceiling is declared; an executor step name runs that step, so a file-and-stop default runs machine-side. A named step is an interposed target, read as `on_fail` reads one, and its `after` must include this step (V41). It is the exhaustion's routing, not a second bound: the `max_fix_loops` arithmetic is unchanged *(engine commit 9d70870, branch `feature/engine-improvements`)* |
+| `on_exhausted` | `"waiting-human"` \| `"abandon-issue"` \| the name of a `type="vote"` step of this workflow \| the name of an executor step of this workflow; default `"waiting-human"`; only on a step that routes `fix-loop` and declares a positive `max_fix_loops` on the same step (V41) | where fix-loop exhaustion routes: a `fix-loop` entry whose next ordinal would exceed `max_fix_loops` plus `fix-round` grants ([Loops](#loops), item 1). `waiting-human` parks for an operator; `abandon-issue` stops the run's work on the issue; a vote step name opens that panel's proposal, which is how a loop-extension vote under a hard ceiling is declared; an executor step name runs that step, so a file-and-stop default runs machine-side. A named step is an interposed target, read as `on_fail` reads one, and its `after` must include this step (V41). It is the exhaustion's routing, not a second bound: the `max_fix_loops` arithmetic is unchanged *(engine commit 9d70870, branch `feature/engine-improvements`)* |
 | `loop` | bool, default false | marks a loop-body step |
 | `serves` | [step names], default = every `fix-loop`-capable step | scopes this `loop = true` step (and its `after_loop` chain) to the named steps' **loop cluster** — entry fires only the bodies serving the step whose routing triggered it (the **trigger**). Omitted or empty means "serves every trigger," one cluster for the whole workflow |
 | `after_loop` | step name | where execution re-enters after a loop body |
@@ -539,9 +539,13 @@ and `diff.files` counts are the exception: the engine measured them, knows
 their order, and never parks on them.
 
 **Executor hints are opaque.** `executor`, `fanout` entries, `voters`, and
-`class` are strings docket stores, echoes back, and uses as map keys. There
-is no registry of known executors and no behavior keyed on the value: role
-names, team names, or people's names there mean what you intend. `metadata`
+`class` are strings docket stores, echoes back, and uses as map keys. The
+workflow grammar has no registry of known executors, and the validator keys
+nothing on the value: role names, team names, or people's names there mean
+what you intend. The run's pinned `policy.toml` does key on executor names,
+through `[executors]` (model variant), `[security].nodes` (reroute), and
+`[escalation].round_executors`; an executor with no `[executors]` row does
+not route in a wave. `metadata`
 remains opaque. `params` follows the selected action's contract: docket
 reads `output`, and the built-in `aggregate` validates and interprets its
 declared keys. See [Action steps](#action-steps--computations-not-workers).
@@ -889,8 +893,7 @@ not stale. Omitting `serves` (or leaving it empty) means
 "serves every trigger": one cluster spans the whole workflow. Input
 redirection for stale artifacts is still computed workflow-wide, not per
 cluster; only the supersede/instantiate set on entry is cluster-scoped. The
-event feed's `loop-entered` data gains a `trigger` field alongside
-`ordinal`.
+event feed's `loop-entered` data carries `trigger` and `ordinal`.
 
 What happens on loop entry, in one transaction:
 

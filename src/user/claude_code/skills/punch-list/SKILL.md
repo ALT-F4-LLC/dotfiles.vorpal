@@ -74,8 +74,7 @@ docket issue list --json=v2 --limit 1000 -l inspect -s backlog -s todo -s in-pro
 
 ## The systems checklist
 
-Walk structure, roof, electrical, plumbing, and finish in turn, so nothing
-is missed by wandering:
+Walk each system in the table below, so nothing is missed by wandering:
 
 | System | What to look at |
 |---|---|

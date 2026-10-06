@@ -14,16 +14,16 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket step`](#step-commands) — 512 lines
-  - [`step artifacts`](#step-artifacts) — 68 lines
+- [`docket step`](#step-commands) — 515 lines
+  - [`step artifacts`](#step-artifacts) — 36 lines
   - [`step claim`](#step-claim) — 34 lines
-  - [`step reap`](#step-reap) — 37 lines
+  - [`step reap`](#step-reap) — 36 lines
   - [`step complete`](#step-complete) — 68 lines
   - [`step fail`](#step-fail) — 23 lines
   - [`step annotate`](#step-annotate) — 49 lines
-  - [`step resolve`](#step-resolve) — 120 lines
-  - [`step approve|reject`](#step-approve-reject) — 41 lines
-  - [`step context`](#step-context) — 26 lines
+  - [`step resolve`](#step-resolve) — 122 lines
+  - [`step approve|reject`](#step-approve-reject) — 42 lines
+  - [`step context`](#step-context) — 52 lines
 
 <a id="step-commands"></a>
 
@@ -38,14 +38,14 @@ then **completed** with an artifact.
 | `step claim STEP-N [--render] [--template F]` | no | CAS claim; mints token; returns token + context (or packet) |
 | `step heartbeat STEP-N` | **yes** | extends the lease; does not touch `attempt` |
 | `step reap STEP-N --reason R` | **conductor** | forced reap of a dead holder's claim, without waiting out the lease |
-| `step complete STEP-N --artifact-file F …` | **yes** (stages 0–1) | the saga |
+| `step complete STEP-N --artifact-file F …` | **yes** (until the artifact records) | the saga |
 | `step fail STEP-N [--note …] [--metadata …]` | **yes** | routes per `on_fail` when the CLAIM count reaches `max_attempts` (attempt counts claims, never failures); counts the failure into the row's `failed_attempts` (a reap counts into `reaped_claims` instead) |
 | `step annotate STEP-N [--metadata JSON] [--integrated-sha SHA]` | no | merges opaque KV onto a **finished** step's record; `--integrated-sha` verifies ancestry and re-records the step's `issue.diff` from the named commit; event-logged |
 | `step approve\|reject STEP-N --authority A [--authority-ref R] [--note …] [--value V]` | **conductor** | `type="human"` gate steps, and a materialized held step of either kind (a vote-minted one once a failed tally parks it) |
 | `step resolve STEP-N --as … --authority A [--authority-ref R]` | **conductor** | `waiting-human` resolutions; `retry` **resets the retry budget** (moves `attempt_base`) — `attempt` itself and the `failed_attempts`/`reaped_claims` breakdown are never reset and not incremented by it |
 | `step show STEP-N` | no | read-only; effective status |
 | `step list (--run RUN-N \| --issue ISSUE-N)` | no | read-only; steps with id, run, instance, issue, kind, effective status, attempt (plus its `failed_attempts`/`reaped_claims` breakdown when nonzero), expected_cost — in (issue, creation) order. Scope by `--run` (the whole run), `--issue` (that issue across every run holding a step for it), or both (that issue inside that run); at least one is required. The budget-projection enumeration: step ids are a store-wide sequence, so id arithmetic cannot enumerate a run. `--issue` is the issue-shaped question a conductor actually holds. Watch-eligible. |
-| `step context STEP-N [--meta]` | no | re-emits `context` read-only |
+| `step context STEP-N [--live] [--meta]` | no | re-emits `context` read-only |
 | `step render STEP-N [--template F]` | no | context bundle → rendered work packet |
 | `step artifacts STEP-N` | no | read-only; lists what the step PRODUCED, sizes not bodies |
 | `step gates STEP-N [--gate NAME…] [--full]` | no | read-only; the step's recorded gate results: verdict, exit, argv, duration, and `output_tail` on every non-passing row, `stub` flagged; `--full` adds complete output |
@@ -71,6 +71,13 @@ the stored claim can still refuse until it is reaped. When inputs bind an
 `issue.diff`, `target_sha` and `target_worktree` identify the reviewed tree;
 do not substitute the shared checkout's HEAD when those fields are absent.
 
+`step show` renders a **gate summary** when the step has recorded gate
+results — a verdict, the gate name, an exit code, and a pointer to
+`step gates` when something did not pass, so the surface an operator reaches
+for to ask "why is this step parked" reports the gates that parked it. It is a
+summary, not a copy of `step gates`: that verb owns the reasons and the
+output tails.
+
 <a id="step-artifacts"></a>
 
 #### `docket step artifacts` / `docket step artifact`
@@ -79,8 +86,8 @@ do not substitute the shared checkout's HEAD when those fields are absent.
 aggregate's held-cluster payload both live in the `artifacts` table.
 `step show` renders the row, `step context` renders a step's **inputs**,
 and the run report's artifact index gives sizes and hashes but never a
-body; `step artifacts` / `step artifact` (below) are the CLI surface for
-the body itself.
+body; `step artifacts` / `step artifact` (this section) are the CLI surface
+for the body itself.
 
 `step artifacts STEP-N` lists reference, kind, size, payload size, hash,
 `supersedes` — and deliberately carries **no bodies**, since an artifact
@@ -91,41 +98,10 @@ and what the operator accepted are two records. The `sha256` is a content
 address over the artifact's **body AND payload**: a supersession whose
 payload changed never shares a hash with what it revises, and the
 resolution artifact's body is **regenerated** from the resolved payload.
-(Body-only artifacts — gaps, diffs — hash exactly as before.) **A rollup
+(Body-only artifacts — gaps, diffs — hash over the body alone.) **A rollup
 counting work should skip artifacts that carry `supersedes`.** The run
 report's artifact index carries it too. A step that produced nothing
 lists nothing and exits 0; a step that does not exist is `NOT_FOUND`.
-
-`step render` emits a **`== RESOLUTION`** block when the step carries a
-routing record — the routing that sent it back, and the note whoever
-decided it wrote. This lets an operator ruling issued BETWEEN rounds reach
-the retry it authorizes, instead of requiring an out-of-band repo commit.
-It is **scoped to the step's own row**: instance labels repeat across a
-run's issues, so a note on another step never renders here. Absent on a
-step with no routing record.
-
-**The resolution also names the gates that did not pass** — verdict and
-reason, last attempt per gate. It rides in `context.resolution.gates`
-under `--json`, so a relay composing a retry can tell an **environmental**
-failure from a **capability** one without a second query.
-
-`skipped` means nothing was measured — the tree could not be bound — and
-such a step parks for an operator rather than routing `on_fail`, so it
-never reaches a retry at all. `unmatched` means the command was never
-trusted here. Only **`fail`** means a measurement was taken and the work
-did not pass it.
-
-Use the pinned policy's resolved assignment rather than inventing model or
-effort choices; `policy resolve` exposes the engine's seat-resolution rules.
-A `fail` verdict establishes that a measurement ran, not that model capability
-caused the failure. Read its reason before escalating: an environmental defect
-does not improve because the next variant costs more.
-
-`step show` renders a **gate summary** when the step has recorded gate results — a verdict, the gate name, an exit code, and a pointer to
-`step gates` when something did not pass, so the surface an operator reaches
-for to ask "why is this step parked" reports the gates that parked it. It is a
-summary, not a copy of `step gates`: that verb owns the reasons and the
-output tails.
 
 `step artifact ARTIFACT-N` fetches one in full. `--payload` narrows to the
 structured half and, under `--json`, emits it as **parsed JSON rather than a
@@ -218,7 +194,7 @@ when the word `complete` collides with shell-builtin classification.
 | Flag | Type | Notes |
 |---|---|---|
 | `--artifact-file` | string | **required**; the artifact body. Capped at **1 MiB**; over it is `VALIDATION_ERROR` naming the size and the cap |
-| `--payload-file` | string | JSON array of objects. When the step declares `payload = "name@version"`, it is validated against that schema — the bytes the run PINNED, not the registry's current ones — and a failure is a `VALIDATION_ERROR` (exit 3) naming the element and property (`payload[3].severity: …`), up to five lines and then `(+N more)`. Omitting it on a step that declares `payload` is the same refusal: a declared payload is a contract, and recording none would make every threshold over it evaluate against the empty set. A step that declares no `payload` is shape-checked only, exactly as before. |
+| `--payload-file` | string | JSON array of objects. When the step declares `payload = "name@version"`, it is validated against that schema — the bytes the run PINNED, not the registry's current ones — and a failure is a `VALIDATION_ERROR` (exit 3) naming the element and property (`payload[3].severity: …`), up to five lines and then `(+N more)`. Omitting it on a step that declares `payload` is the same refusal: a declared payload is a contract, and recording none would make every threshold over it evaluate against the empty set. A step that declares no `payload` is shape-checked only. |
 | `--gap-file` | string, **repeatable** | one out-of-scope problem the work surfaced. Each records an auxiliary artifact of kind `gap` beside the step's declared emit **and** materializes a backlog issue related (`relates_to`) to the step's own — same transaction, so the residue cannot evaporate. Capped at **1 MiB** each, like any artifact; an **empty** gap is `VALIDATION_ERROR` (exit 3). Gap files are read whole before the saga starts, so a bad path refuses without spending the completion |
 | `--usage` | string | `{"unit": n, …}` — a JSON object of **opaque** unit names to numbers, recorded in the run's usage ledger and summed per unit by `run report`. At most **32** units; each name at most **64** printable-ASCII bytes with no whitespace; each number finite and **≥ 0**. Any other shape is `VALIDATION_ERROR` (exit 3) naming the offending key. Docket never interprets, converts, or routes on these numbers — the one named by `docket config budget.unit`, if any, participates in the run's cap comparison, and that is the whole contract |
 | `--metadata` | string | a JSON **object** of opaque keys to values, **merged onto the step's own** metadata: keys the definition declared survive, keys only the worker reports are added, and a key in both takes the worker's value. The merge is **shallow** — a nested object is a value, replaced wholesale, never descended into. Capped at **16 KiB** measured on the supplied bytes; over it is `VALIDATION_ERROR` naming the size, the cap, and the two channels for bulk detail (`--artifact-file`, `--payload-file`). Anything that is not a JSON object — an array, a scalar, `null` — is `VALIDATION_ERROR`. Docket never reads a key inside: the merged bag is delivered verbatim in the context bundle and rolled up key → distinct value → count by `run report` |
@@ -273,7 +249,7 @@ threshold is consulted** — the worker's whole answer was "this work cannot
 be done here, and here is the residue", and routing `pass` over it would
 schedule the issue's entire downstream pipeline over an empty change.
 `step resolve` is the operator's disposition. Gaps recorded **beside real
-content** route exactly as before. When the gap belongs to a different
+content** route by the normal gate verdict and threshold. When the gap belongs to a different
 repository, `docket issue move --project` re-homes the filed issue.
 
 <a id="step-fail"></a>
@@ -356,6 +332,8 @@ Refusals: a step that has not reached a terminal status is `CONFLICT`
 |---|---|---|
 | `--as` | string | **required**: `retry` \| `rerun-gates` \| `skip` \| `abandon-issue` \| `override-pass` \| `fix-round` |
 | `--note` | string | why |
+| `--authority` | string | **required**: `operator` \| `standing-grant` \| `conductor`; refused as `VALIDATION_ERROR` without it |
+| `--authority-ref` | string | required alongside `--authority standing-grant`; names the standing authorization |
 | `--batch` | bool | with `--as override-pass` only: also record one **run-scoped** grant per failed gate |
 | `--drop-interposed` | bool | with `--as override-pass` on a step whose threshold interposes other steps: acknowledge that the generic pass skips them without evaluating the threshold. Without it such a resolution is refused before anything commits; a step with no interposed steps never needs it |
 | `--worktree` | string | with `--as override-pass` or `rerun-gates`: re-pin the step's recorded `issue.diff` and target sha to this checkout's tree before resolving, as a new artifact superseding the previous one; with `rerun-gates` the gates re-run there too |
@@ -437,7 +415,7 @@ over every issue it matches, and loosening it to unstick one issue would
 loosen it for all of them. The effective bound is `max_fix_loops +
 loop_grants`, so **one grant buys exactly one round**. The parked step is
 recorded `superseded`, not passed: its question is answered by the new
-round's work, not by a verdict nobody reached. The park's own reason now
+round's work, not by a verdict nobody reached. The park's own reason
 names this verb.
 
 **`retry` is refused on a step parked by a rejected held cluster** —
@@ -474,6 +452,8 @@ cherry-pick that rewrote the sha but not the content warns about nothing.
 
 | Flag | Type | Default | Notes |
 |---|---|---|---|
+| `--authority` | string | — | **required**: `operator` \| `standing-grant` \| `conductor`; refused as `VALIDATION_ERROR` without it |
+| `--authority-ref` | string | `""` | required alongside `--authority standing-grant`; names the standing authorization |
 | `--note` | string | `""` | why the gate was approved or rejected |
 | `--value` | string | `""` | (`approve` only) corrected value for a **held cluster's** aggregated field |
 
@@ -530,6 +510,32 @@ hashes — never a warning, never a silent re-pin. An unpinned template
 renders unverified and says so. `--executor` (also on `step claim
 --render`) overrides the resolved hint used for `packet` entries'
 `{executor}` substitution; the default is the step's own declared hint.
+
+`step render` emits a **`== RESOLUTION`** block when the step carries a
+routing record — the routing that sent it back, and the note whoever
+decided it wrote. This lets an operator ruling issued BETWEEN rounds reach
+the retry it authorizes, instead of requiring an out-of-band repo commit.
+It is **scoped to the step's own row**: instance labels repeat across a
+run's issues, so a note on another step never renders here. Absent on a
+step with no routing record.
+
+**The resolution also names the gates that did not pass** — verdict and
+reason, last attempt per gate. It rides in `context.resolution.gates`
+under `--json`, so a relay composing a retry can tell an **environmental**
+failure from a **capability** one without a second query.
+
+`skipped` means nothing was measured — the tree could not be bound — and
+such a step parks for an operator rather than routing `on_fail`, so it
+never reaches a retry at all. `unmatched` means the command was never
+trusted here. Only **`fail`** means a measurement was taken and the work
+did not pass it.
+
+Use the pinned policy's resolved assignment rather than inventing model or
+effort choices; `policy resolve` exposes the engine's seat-resolution rules
+(see [gate, policy, and registry](gate-policy.md)). A `fail` verdict
+establishes that a measurement ran, not that model capability caused the
+failure. Read its reason before escalating: an environmental defect does not
+improve because the next variant costs more.
 
 **Read verbs here write nothing**, including no reap — even for a step whose
 lease has lapsed, which reads as `pending` while the row still carries the stale

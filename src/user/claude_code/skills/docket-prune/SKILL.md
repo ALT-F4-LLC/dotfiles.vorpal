@@ -53,7 +53,9 @@ supplies the recurring wake-up, and each firing re-enters this skill from
 ## Scope
 
 The corpus is every tracked file under `src/user/docket/config` except
-the ledger, `src/user/docket/config/cut-ledger.json`: `policy.toml`,
+the two non-definition surfaces, the ledger
+(`src/user/docket/config/cut-ledger.json`) and `changelogs/*.md`:
+`policy.toml`,
 `README.md`, `contracts/*.md`, `fragments/*.md`, `workflows/*.toml`,
 `schemas/*.json`. Every one receives a verdict each pass, fresh or carried
 from the ledger; a definition the trial could not settle is reported as
@@ -85,7 +87,7 @@ other verdict forward. `all` re-tries every definition.
 2. Enumerate the corpus with hashes, from the repository root:
 
    ```bash
-   git ls-files -- src/user/docket/config | grep -v '/cut-ledger\.json$' | while read -r f; do
+   git ls-files -- src/user/docket/config | grep -v -e '/cut-ledger\.json$' -e '/changelogs/' | while read -r f; do
      rel="${f#src/user/docket/config/}"
      case "$rel" in policy.toml) s=policy;; README.md) s=readme;; contracts/*) s=contract;; fragments/*) s=fragment;; workflows/*) s=workflow;; schemas/*) s=schema;; *) s=other;; esac
      printf '{"path":"%s","surface":"%s","hash":"%s"}\n' "$rel" "$s" "$(shasum -a 256 "$f" | cut -c1-64)"
@@ -101,9 +103,10 @@ other verdict forward. `all` re-tries every definition.
    directories; `~/.claude/friction`, `~/.docket/config`, and `~/.claude`
    when they exist, else null. Expand `~` to a literal absolute path
    yourself.
-4. Choose a scratch directory under `$TMPDIR`, empty and unique to this
-   pass (for example `$TMPDIR/docket-prune/pass-<n>`, incrementing `<n>`
-   from earlier passes in this session), and take the UTC timestamp with
+4. Set the pass number `<n>` to the ledger's `pass` plus one (1 on a first
+   pass); it is the `pass` arg and the `$PASS` §3 writes. Choose a scratch
+   directory under `$TMPDIR`, empty and unique to this pass (for example
+   `$TMPDIR/docket-prune/pass-<n>`), and take the UTC timestamp with
    `date -u +%Y-%m-%dT%H:%M:%SZ`.
 
 ## 2. Run the workflow

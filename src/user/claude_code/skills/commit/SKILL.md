@@ -8,14 +8,16 @@ argument-hint: "[paths | intent | all]"
 
 Invocation scope: $ARGUMENTS
 
-Survey the changes, settle scope, group, guard, commit, and report. You run
-in an isolated subagent without the parent conversation's history. Use the
-invocation and repository state; do not assume what the parent edited.
+Survey the changes, settle scope, group, guard, commit, and report. Callers
+usually invoke this skill inline, through `Skill()` in their own session.
+Either way, work from the invocation and repository state; do not assume
+what the caller edited.
 
 **Commit immediately once scope and guards are satisfied.** Do not ask for
 approval of messages or a staging plan. If scope requires clarification,
-return the candidate groups and their paths to the parent for one choice.
-Do not rely on `AskUserQuestion` being available in this subagent.
+ask once with `AskUserQuestion` when it is available. When launched as a
+subagent, where it may not be, return the candidate groups and their paths
+to the parent for one choice instead.
 
 **Never push, bypass hooks, discard changes, or rewrite existing commits.**
 Do not change source files or repository configuration to make a commit

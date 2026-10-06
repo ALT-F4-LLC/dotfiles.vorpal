@@ -37,14 +37,15 @@ docket vote list --json          # open proposals only, by default
 ```
 
 There is no `--run` filter; match on description and `linked_issues`
-against the fresh dry-run's binding, then `docket vote show <id>` to
+against the run's issue roster (`docket issue list --run RUN-N`), then `docket vote show <id>` to
 confirm. Reconcile every match:
 
 - **Adopt it** when it names this run and the same binding. Pass its id
   to tribunal.js as `voteId`; top up missing seats per SKILL.md's **A
   panel that cannot finish escalates** if short of quorum.
 - **Close it** when superseded: `docket vote close <id> --reason
-  "superseded by <new-proposal-id>"`. `--reason` is required.
+  "superseded by a fresh activation proposal for RUN-N"`. `--reason` is
+  required.
 
 Skip this and ballots accumulate silently, showing the operator
 outstanding work that does not exist and admitting a panel past a reap

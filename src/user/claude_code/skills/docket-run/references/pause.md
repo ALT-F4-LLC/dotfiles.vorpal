@@ -77,18 +77,20 @@ two you do.
 
 Only on an explicit operator ask for immediate stop.
 
-1. Stop awaiting the current wave. No engine verb cancels a running
-   executor: an in-flight wave task keeps running in the background after
-   this session stops watching it. Say so in the resume prompt: any step
-   mid-execution when you stopped watching is orphaned from this
-   session's perspective, and its worktree (if it exists) is not cleaned
-   up.
+1. Stop the wave per docket-run's **An operator stop while a wave is in
+   flight**: `TaskStop` every launch, read each killed launch's journal and
+   last replies, reconcile with `dispatch verify` and `docket step show`,
+   and reap the holders established dead. No engine verb cancels a running
+   executor, so a launch `TaskStop` could not reach keeps running. Say so
+   in the resume prompt: a step mid-execution when it stopped is orphaned
+   from this session's perspective, and its worktree (if it exists) is not
+   cleaned up.
 2. `docket run pause RUN-N --authority operator --reason '<why, naming that
    this was a hard halt>' < <scratchpad>/conductor.d/RUN-N.token` before
    touching the dispatch, under the same conductor capability as the
-   graceful halt.
-   The wave is still running, so pausing first stops it claiming more. Abandoning a manifest while the run is still active
-   leaves a window in which the live wave claims against a manifest that
+   graceful halt. Pausing first stops any launch `TaskStop` missed from
+   claiming more; abandoning a manifest while the run is still active
+   leaves a window in which such a launch claims against a manifest that
    no longer exists.
 3. `docket dispatch abandon --run RUN-N --reason '<why>'` retires the open
    manifest unconditionally, so the engine no longer considers those steps
@@ -192,7 +194,8 @@ session's token; the prompt says so and nothing more.
   `docket run report RUN-N`.
 - Crashed-relay reconciliation and the attach-preflight a new session runs
   on arrival: docket-run's **Crashed-relay reconciliation** (under its
-  step 3, Close the dispatch) and **Seat** sections cover this; do not
+  step 3, Close the dispatch), **Before the loop**, and **The conductor
+  capability** sections cover this; do not
   duplicate the procedure in the prompt, just point at those sections.
 
 **Must be re-done fresh in the new session, never carried forward:** seat

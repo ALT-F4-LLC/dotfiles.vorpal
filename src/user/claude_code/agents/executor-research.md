@@ -105,9 +105,10 @@ unchanged brief. If the gap channel is missing or unusable, return the
 mismatch to the caller and state whether recording was attempted, without
 inventing a reporting command or marking unmet requirements complete.
 
-**Claim a record only when the engine confirms it.** Use the brief's
-submission key and recovery procedure; a timed-out or ambiguous submission
-has unknown status, and a blind resubmit is never the answer.
+**Claim a record only when the engine confirms it.** A timed-out or
+ambiguous submission has unknown status: inspect it read-only, retry only
+what is unsaved under the same claim and lease token, and never resubmit
+blind.
 
 **Reporting.** Follow the brief's format exactly, leading with the finding,
 then supporting evidence, material gaps, and submission status, and end

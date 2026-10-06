@@ -391,7 +391,7 @@ Return in \`large\` each file exceeding ${SHARD_LINES} lines, with the path and 
 Leave out the total line. Return an empty array when no file qualifies.`,
   { phase: 'Discover', label: 'size-check', schema: SIZE_SCHEMA, ...AGENT_CONFIG.sizing }
 )
-if (!sizeReport) log('size-check returned nothing; no file is sharded, and the completeness pass re-reads any span a reader missed')
+if (!sizeReport) log('size-check returned nothing; no file is sharded, large files are read unsharded, and span coverage is unchecked')
 const largeFiles = ((sizeReport && sizeReport.large) || [])
   .filter(({ file, lines }) => files.includes(file) && lines > SHARD_LINES)
 const lineCounts = new Map(largeFiles.map(({ file, lines }) => [file, lines]))

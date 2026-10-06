@@ -479,9 +479,10 @@ Record these findings alongside the value decision:
   single outcome exceeds the bounded ceiling (files, directories, or
   verification surfaces). Bias toward finding the split, per the sizing
   reference: treat an issue past the ceiling as a decomposition to find,
-  not a large-but-legitimate unit to wave through. Record the four measures
-  (independent outcomes, files, directories, criteria) and the outcome or
-  file-group boundaries in the ledger, and draft the pieces for a
+  not a large-but-legitimate unit to wave through. Record the five measures
+  (independent outcomes, files, directories, verification surfaces,
+  criteria) and the outcome or file-group boundaries in the ledger, and
+  draft the pieces for a
   **split** proposal under §4b: one piece per outcome, or per
   file/surface group when the ceiling alone is what triggered it, with
   its title, files, scope, and the criteria carried verbatim. A
@@ -664,7 +665,7 @@ land via `docket issue file add` (appends), scope via
 `docket issue edit --scope` (replaces), size via
 `docket issue edit --size <tier>` under the
 [sizing reference](../docket/references/sizing.md)'s measures, with the
-four counts in the drafting comment: one entry per file the description
+five counts in the drafting comment: one entry per file the description
 or a gap's `Files:` and `Scope:` header lines name. Validate existing paths in the checkout; for an
 explicitly intended new file, confirm the proposed location against the
 repo layout and check that the installed Docket accepts planned paths. If

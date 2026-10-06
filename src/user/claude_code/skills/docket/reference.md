@@ -48,7 +48,7 @@ length to read. The engine families live in docket-run's references:
 [gate, policy and registry](../docket-run/references/gate-policy.md),
 [report and doctor](../docket-run/references/report-doctor.md).
 
-- [JSON envelope](#json-output) — 69 lines
+- [JSON envelope](#json-output) — 67 lines
 - [Command & Flag Reference](#command-reference) — 9 lines
 - [`docket issue` (alias `i`)](#issue-commands) — 273 lines
   - [`issue create`](#issue-create) — 19 lines
@@ -70,11 +70,11 @@ length to read. The engine families live in docket-run's references:
   - [`issue graph [id]`](#issue-graph) — 12 lines
 - [`docket plan`](#plan-commands) — 27 lines
 - [`docket next`](#next-commands) — 22 lines
-- [`docket workflow` (alias `wf`)](#workflow-commands) — 130 lines
+- [`docket workflow` (alias `wf`)](#workflow-commands) — 129 lines
   - [`workflow register <file.toml>`](#workflow-register) — 22 lines
   - [`workflow lint <file.toml>`](#workflow-lint) — 24 lines
   - [`workflow deprecate <name>@<version>`](#workflow-deprecate) — 18 lines
-  - [`workflow list`](#workflow-list) — 27 lines
+  - [`workflow list`](#workflow-list) — 26 lines
   - [`workflow show <name>[@<version>]`](#workflow-show) — 17 lines
   - [`workflow init`](#workflow-init) — 18 lines
 - [`docket schema`](#schema-commands) — 85 lines
@@ -82,8 +82,8 @@ length to read. The engine families live in docket-run's references:
   - [`schema list`](#schema-list) — 16 lines
   - [`schema show <name>[@<version>]`](#schema-show) — 17 lines
   - [`schema deprecate <name>@<version>`](#schema-deprecate) — 27 lines
-- [`docket vote` (alias `v`)](#vote-commands) — 137 lines
-  - [`vote create`](#vote-create) — 17 lines
+- [`docket vote` (alias `v`)](#vote-commands) — 138 lines
+  - [`vote create`](#vote-create) — 18 lines
   - [`vote cast <id>`](#vote-cast) — 18 lines
   - [`vote commit <id>`](#vote-commit) — 9 lines
   - [`vote close <id>`](#vote-close) — 35 lines
@@ -92,11 +92,11 @@ length to read. The engine families live in docket-run's references:
   - [`vote list`](#vote-list) — 14 lines
   - [`vote result <id>`](#vote-result) — 6 lines
   - [`vote show [id]`](#vote-show) — 6 lines
-- [`docket doc` (alias `d`)](#doc-commands) — 80 lines
+- [`docket doc` (alias `d`)](#doc-commands) — 81 lines
   - [`doc create`](#doc-create) — 12 lines
   - [`doc edit <id>`](#doc-edit) — 11 lines
   - [`doc show [id]`](#doc-show) — 10 lines
-  - [`doc list`](#doc-list) — 14 lines
+  - [`doc list`](#doc-list) — 15 lines
   - [`doc delete <id>`](#doc-delete) — 9 lines
   - [`doc link add/remove`](#doc-link) — 9 lines
   - [`doc comment add [id]`](#doc-comment) — 11 lines

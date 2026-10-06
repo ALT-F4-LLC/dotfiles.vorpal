@@ -408,7 +408,8 @@ through the workflow script and never through parallel subagents, since
 consumers routinely share files and a parallel writer would race.
 
 - **Workflow TOML** — redesigned steps, plus a `[pipeline].version`
-  bump (frozen versions, see the design canon above).
+  bump (frozen versions, see the design canon above) and a new entry at the
+  top of `changelogs/<name>.md`.
 - **Contracts** (`src/user/docket/config/contracts/<executor>.md`) — one
   per new executor, in the house shape its siblings
   follow (`contracts/implement.md` is the precedent): frontmatter (`node`,
@@ -427,8 +428,8 @@ consumers routinely share files and a parallel writer would race.
   `version`.
 - **policy.toml** — an `[executors]` row for every new executor and every
   new vote seat (the wave refuses to route or seat anything without a row),
-  plus the informational `[policy].version` bump, which
-  frozen-drift-check does not enforce. Match variant tiers to comparable existing
+  plus the informational `[policy].version` bump and its entry in
+  `changelogs/policy.md`, which frozen-drift-check does not enforce. Match variant tiers to comparable existing
   seats — least-capable tier that meets the bar, exceptions carrying an
   explicit `reason` — and prove the `[security]` invariants (`never`
   models, ceiling, node list) still hold for every touched row.

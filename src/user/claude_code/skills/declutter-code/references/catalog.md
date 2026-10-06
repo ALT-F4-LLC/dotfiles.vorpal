@@ -95,10 +95,12 @@ worker never touches, and what looks like cruft and is not.
 - Why: breaks grep-ability and log parsing; a known generated-code tell.
 - Simplification: strip the decoration, keep the informational content and
   the log level.
-- Risk: a dashboard or alert may match on the exact string. Search the
-  repository's alerting and dashboard config for the literal first.
-- Proof: `probe` when a test captures the log output, else `inert` only if
-  the literal is not asserted on anywhere.
+- Risk: a dashboard or alert may match on the exact string, and a log line
+  is runtime output a downstream parser may read. Search the repository's
+  alerting and dashboard config for the literal before the probe; a match
+  leaves the line alone.
+- Proof: `probe`; a test must capture the log output. A unit with no such
+  test is ledgered `no tests`.
 - Source: unsourced.
 
 ### Unjustified lint suppression
@@ -219,7 +221,8 @@ worker never touches, and what looks like cruft and is not.
   has.
 - Why: a branch that can no longer be taken, kept by inertia.
 - Simplification: delete the branch for versions below the declared
-  minimum; inline an adapter that now has one implementation.
+  minimum. An adapter left with one implementation is a separate entry,
+  Single-implementation interface, with its own proof.
 - Risk: the declared minimum may lag what is deployed. The declared minimum
   in the build config is the only evidence the pass may use; when the
   repository declares none, the shim stays.
@@ -545,8 +548,9 @@ worker never touches, and what looks like cruft and is not.
   Programmers" (secondary summary).
 
 ### Superseded-version naming
-- Signal: an identifier matching `\b\w*(Enhanced|Improved|New|Updated|
-  Refactored|Final)\w*\b`, or a `_v2`, `_new`, `_old` suffix, especially
+- Signal: an identifier matching
+  `\b\w*(Enhanced|Improved|New|Updated|Refactored|Final)\w*\b`, or a `_v2`,
+  `_new`, `_old` suffix, especially
   where both the suffixed and unsuffixed (or `_old`) symbol still exist.
 - Why: residue of a generation that wrote a new version beside the old one
   instead of editing in place; the tree carries two symbols with no clear

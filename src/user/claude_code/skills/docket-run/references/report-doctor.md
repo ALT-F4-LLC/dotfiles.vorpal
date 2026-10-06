@@ -15,8 +15,8 @@ examples reflect the swept commands as of that build.
 ## Contents
 
 - [`docket report`](#report-commands) — 32 lines
-- [`docket doctor`](#doctor-commands) — 28 lines
-  - [`doctor [--run RUN-N] [--source PATH]`](#doctor-check) — 24 lines
+- [`docket doctor`](#doctor-commands) — 30 lines
+  - [`doctor [--run RUN-N] [--source PATH]`](#doctor-check) — 26 lines
 
 <a id="report-commands"></a>
 
@@ -75,6 +75,8 @@ per check: `{check, verdict, detail}`, verdict `OK` | `FAIL` | `DRIFT` |
 | `stragglers` | a REPORT of detached worktrees homed under scratch-shaped paths; WARN or OK, never moves `clean` |
 
 `--json` data: `{clean, skipped, checks}`. `clean` is true only when every
-check is OK; `skipped` is true when any check is SKIP, and a `--run` omitted
+check other than `stragglers` is OK, so any SKIP makes it false;
+`stragglers` reports WARN or OK and never moves it. `skipped` is true when
+any check is SKIP, and a `--run` omitted
 on an active run reads `clean: false, skipped: true` rather than a clean
 report that quietly checked six things instead of seven.

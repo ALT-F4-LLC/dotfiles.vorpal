@@ -81,8 +81,8 @@ each create, measure the issue against the docket skill's
 [sizing reference](../../docket/references/sizing.md): pass its tier as
 `--size` on every create, file a remedy whose acceptance describes two or
 more independent outcomes as one issue per outcome, and keep a paper-cut
-batch under the cap or split it into batches that are. Retain the original
-local metadata contract when supported by the installed CLI:
+batch under the cap or split it into batches that are. Set this metadata,
+each field only when the installed CLI supports it:
 
 - Title: concrete behavior and consequence, one line. Run, step, and session
   ids go in the description, not the title.

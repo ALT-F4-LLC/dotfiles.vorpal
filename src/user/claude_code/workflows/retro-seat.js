@@ -25,13 +25,15 @@ export const meta = {
 // or died). `seated` counts the analysts launched and `returned` the
 // non-null reports.
 //
+// Cost: one executor-read agent per `analysts` entry, no probe or claim
+// agents.
+//
 // When and how it is invoked:
 // Invoked by the docket-retro skill's §1 (Gather), always as
 // Workflow({scriptPath}), never by name. No policy.toml row or wave
 // dispatch covers retro-analyst, so this script is its only seating path
-// and the caller resolves each seat's {model, effort} itself (docket-retro's
-// operator-set default, or an explicit choice for a heavier window) instead
-// of this script reading pinned policy as wave.js does for a real step.
+// and the caller sets each seat's {model, effort} explicitly per analyst
+// entry instead of this script reading pinned policy as wave.js does for a real step.
 // ---------------------------------------------------------------------------
 
 // The retro-analyst contract's Emit and Stuck sections, as fields: the window

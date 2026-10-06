@@ -13,8 +13,8 @@ export const meta = {
 }
 
 // ---------------------------------------------------------------------------
-// CONTRACT FOR CALLERS (the listing's description is deliberately one line;
-// this block is the single copy of what it used to carry).
+// CONTRACT FOR CALLERS (the listing's description is a one-line summary;
+// this block is the single copy of the argument and return contract).
 //
 // What it does:
 // Runs one pass of the docket-prune skill as read-only agent fan-outs over the
@@ -72,8 +72,9 @@ export const meta = {
 // return:
 //   pass       — this pass's number, echoed from args.
 //   plan       — {judged:[path], carried:[path], dropped:[path], deferred:[path]}
-//   rest       — true when the pass judged nothing and every carried cut
-//                already has an issue: the caller's loop rests.
+//   rest       — true when the pass judged nothing, dropped nothing, and
+//                every carried cut already has an issue: the caller's loop
+//                rests.
 //   verdicts   — [{path, surface, hash, unit, kind, verdict, judged, reason,
 //                 cut, evidence:[{class, locator, note}], upheldBy, seated,
 //                 contested, disposition, refutations, key, issue, pass,
@@ -83,12 +84,12 @@ export const meta = {
 //                merged ledger (carried plus fresh, sorted, sections of a
 //                removed file marked subsumed) written as bare JSON arrays
 //                <dir>/1.json .. <dir>/<shards>.json, every shard checked
-//                entry by entry in code; null when any writer failed, and
-//                then nothing is landed.
+//                entry by entry in code; null when the pass rests, or when
+//                any writer failed and then nothing is landed.
 //   unfiled    — [{path, unit, verdict, key}] every cut with no issue yet.
 //   issues     — {dir, indexes, count}: one body file per unfiled cut under
 //                dir, listed across indexes (TSV: key, title, scope, body
-//                path), or null when a writer failed.
+//                path), or null when the pass rests or a writer failed.
 //   superseded — [{path, unit, issue, replacementKey}] every ledgered cut
 //                issue a fresh verdict replaced; replacementKey is null when
 //                no fresh cut replaces it.
@@ -621,7 +622,7 @@ function recordPrompt(n, shardPath, shard, issuesDir, unfiled) {
 
 Scratch: ${scratchDir} (the only place you may write). ${READ_ONLY}
 
-1. Write this JSON array, pretty-printed with two-space indentation and a trailing newline, to ${shardPath}, then verify it parses and count its entries: node -e 'const a=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));console.log(a.length)' ${shardPath}. Return under units one "<path>#<unit>=<verdict>" per entry, in order.
+1. Write this JSON array, pretty-printed with two-space indentation and a trailing newline, to ${shardPath}, then verify it parses and count its entries: jq length ${shardPath}. Return under units one "<path>#<unit>=<verdict>" per entry, in order.
 
 ${JSON.stringify(shard)}
 
@@ -698,7 +699,7 @@ function censusPrompt() {
     return `Take a static consumer census of the docket corpus so a trial can see which definitions nothing references.
 
 Corpus root: ${corpusRoot}
-Harness scripts: ${harnessDir} (wave.js resolves policy rows; tribunal.js holds the vote-seat LENSES table)
+Harness scripts: ${harnessDir} (no harness script resolves a policy row: the engine resolves rows, so count policy consumers in workflow steps and vote seats; tribunal.js holds the vote-seat LENSES table)
 Skill tree: ${claudeTree} (skills and agents cite contracts, fragments, and gates by path)
 
 ${READ_ONLY}

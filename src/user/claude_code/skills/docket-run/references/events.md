@@ -14,9 +14,9 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket events`](#events-commands) — 199 lines
+- [`docket events`](#events-commands) — 200 lines
   - [`events list`](#events-list) — 101 lines
-  - [`events prune`](#events-prune) — 48 lines
+  - [`events prune`](#events-prune) — 49 lines
   - [Attribution](#events-attribution) — 42 lines
 
 <a id="events-commands"></a>
@@ -47,7 +47,7 @@ that polls. An interval below the floor is `VALIDATION_ERROR` (exit 3).
 Each event is:
 
 ```
-{ seq, at_ms, kind, run?, step?, step_id?, issue?, data }
+{ seq, at_ms, kind, project?, run?, step?, step_id?, issue?, data }
 ```
 
 `seq` is a monotonic counter that is **never reused**, including after a delete.

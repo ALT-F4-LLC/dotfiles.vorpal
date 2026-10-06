@@ -5,10 +5,10 @@ description: >-
   runs, or gates in a repository bound to a Docket project: inspection, safe
   tracker mutations, run and gate inspection, and engine diagnostics. Routes
   planning to docket-plan, driving to docket-run, binding to docket-bootstrap,
-  registry work to docket-reconcile, corpus authoring to docket-refit, backlog
-  grooming to docket-groom, and the route-tend queue to docket-tend. Inspecting a run
-  never starts or advances it, and recording an issue never authorizes the
-  work.
+  registry work to docket-reconcile, corpus authoring to docket-refit, corpus
+  pruning to docket-prune, backlog grooming to docket-groom, and the
+  route-tend queue to docket-tend. Inspecting a run never starts or advances
+  it, and recording an issue never authorizes the work.
 ---
 
 # Docket
@@ -25,8 +25,12 @@ and a request to record an issue does not authorize executing the work.
 | Plan a request or select a backlog batch as a run | [docket-plan](../docket-plan/SKILL.md) |
 | Drive or resume a run | [docket-run](../docket-run/SKILL.md) |
 | Bind a repository to the shared corpus | [docket-bootstrap](../docket-bootstrap/SKILL.md) |
-| Author a standalone workflow or schema | [Workflow definitions](references/workflows.md) and [schemas](references/schemas.md) |
+| Register, restore, or retire workflow and schema versions | [docket-reconcile](../docket-reconcile/SKILL.md) |
+| Change a shared-corpus definition | [docket-refit](../docket-refit/SKILL.md) |
+| Author a repository-local workflow or schema | [Workflow definitions](references/workflows.md) and [schemas](references/schemas.md) |
 | Cut or maintain the shared corpus by verdict | [docket-prune](../docket-prune/SKILL.md) |
+| Groom the backlog until it is run-ready | [docket-groom](../docket-groom/SKILL.md) |
+| Work the route-tend queue without a run | [docket-tend](../docket-tend/SKILL.md) |
 
 Load a companion only for its operating mode; its run, routing, and approval
 policies govern that operation, not this CLI reference. On the Docket engine
@@ -245,8 +249,9 @@ submitting.
 After casting, read the outcome from `vote result` or `gate status`.
 `vote commit` is an out-of-band decision, not the ordinary final step of
 agent voting.
-Read [voting](references/voting.md) for tally rules, post-approval
-thresholds, held-step escalation, and authorized closure.
+Read [voting](references/voting.md) for casting, inspection, post-approval
+thresholds, and authorized closure; held steps and vote-rule keys are in
+[workflows](references/workflows.md).
 
 ## Find advanced details
 
@@ -259,9 +264,9 @@ contents list: search for the command or heading before loading a section.
 | [Tracker](references/tracker.md) | Issue/document CRUD, relationships, exports/imports, enum and ID rules |
 | [Workflows](references/workflows.md) | Engine config, workflow registration/lint, matching, gates, packets, actions, fanout, loops |
 | [Schemas](references/schemas.md) | Immutable schemas, validation, ordered enums, conservative median ties |
-| [Voting](references/voting.md) | Proposals, named seats, weighted tallies, post-approval routing |
+| [Voting](references/voting.md) | Proposals, named seats, casting, closure, post-approval routing |
 | [Sizing](references/sizing.md) | Size tiers and labels, the cap above which an issue must split, the gate every filer applies before `issue create`, and the split shape groom proposes |
-| [Automation first](references/automation.md) | When a human in the loop is vital, and the automation ladder every remedy, proposal, and design climbs; the primary goal shared by docket-postmortem, docket-retro, docket-refit, docket-reconcile, docket-groom, docket-cli-audit, and corpus-check |
+| [Automation first](references/automation.md) | When a human in the loop is vital, and the automation ladder every remedy, proposal, and design climbs; the primary goal shared by docket-postmortem, docket-retro, docket-refit, docket-reconcile, docket-groom, docket-cli-audit, docket-prune, and corpus-check |
 | [Queue ownership](references/queue-ownership.md) | Which open issues a backlog-reading skill may take (run-included, claimed, routed elsewhere), the `--limit 1000` rule, and what to do without AskUserQuestion; shared by docket-plan, docket-groom, and docket-tend |
 | [CLI reference](reference.md#contents) | Exact flags and response shapes for the tracker and authoring verbs; the engine families are in docket-run's references: [run](../docket-run/references/run.md), [step](../docket-run/references/step.md), [dispatch](../docket-run/references/dispatch.md), [events](../docket-run/references/events.md), [guard and trust](../docket-run/references/guard-trust.md), [gate, policy, and registry](../docket-run/references/gate-policy.md), [report and doctor](../docket-run/references/report-doctor.md) |
 

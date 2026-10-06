@@ -12,6 +12,7 @@ Find the relevant heading before reading a large section:
 - JSON envelope shape
 - `--json` values (v1 vs v2)
 - Primary-key naming (`id` vs the noun)
+- v2 list envelope
 - Error codes & exit codes
 - Optimistic concurrency (`--if-version`)
 - Idempotency keys (`--idempotency-key`)
@@ -150,6 +151,8 @@ v1 and v2. Use either spelling consistently. See [per-verb response
 shapes](../reference.md#json-envelope--per-verb-data-shapes) for other
 verbs' key nesting.
 
+### v2 list envelope
+
 Under **`--json=v2`**, list commands return a uniform envelope instead of
 their per-command key (`issues`, `docs`, `proposals`, `entries`):
 
@@ -281,10 +284,11 @@ Refusals:
 
 Expiry is the liveness mechanism. A lease that lapses without release returns
 the issue to the unclaimed pool: the next claim wins, and `attempt` records
-that a claim was made. No reaper runs. Issue inspection reports effective status without reaping, so an
-expired lease shows `"live": false` the instant it lapses. This differs from
-step scheduling: `next --run`, `dispatch open`, and `step claim` can reap
-step leases or otherwise mutate scheduling state.
+that a claim was made. No reaper runs. Issue inspection reports effective
+status without reaping, so an expired lease shows `"live": false` the
+instant it lapses. This differs from step scheduling: `next --run`,
+`dispatch open`, and `step claim` can reap step leases or otherwise mutate
+scheduling state.
 
 ```bash
 docket issue show DKT-1 --json=v2 | jq '.data.lease'
@@ -354,7 +358,7 @@ terminal or `</dev/null` fails fast with exit 3.
 ### Interactive forms
 
 Several write commands (`issue create`, `issue delete` with sub-issues,
-`vote create`, `vote cast`, `doc create`, `doc delete`, `label delete`) fall
+`vote create`, `vote cast`, `doc create`, `doc delete`, `issue label delete`) fall
 back to an interactive `huh` form when required flags are omitted and stdin
 is a TTY. `import --replace` is the exception: it requires `--yes`
 in every output mode and regardless of terminal attachment,

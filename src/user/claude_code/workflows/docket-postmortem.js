@@ -14,8 +14,8 @@ export const meta = {
 }
 
 // ---------------------------------------------------------------------------
-// CONTRACT FOR CALLERS (the listing's description is deliberately one line;
-// this block is the single copy of what it used to carry).
+// CONTRACT FOR CALLERS (the listing's description is a one-line summary;
+// this block is the single copy of the argument and return contract).
 //
 // What it does:
 // Runs §4 of the docket-postmortem skill as read-only agent fan-outs over one terminal
@@ -65,7 +65,9 @@ export const meta = {
 //                    deepRead, deferred, shards, layersCovered, agents}
 //   deferredLines — inventory lines no reader reached; relaunch with them.
 //   flaggedLines  — every digest-flagged line, for a continuation.
-//   layers        — [{layer, covered, candidateCount, notes}]
+//   layers        — [{layer, covered, candidateCount, notes, controls}], one
+//                    per conductor shard plus one per layer analyst;
+//                    coverage.layersCovered counts both.
 //   groups        — observation groups the pattern analyst received.
 //   findings      — upheld candidates with verdicts (`upheld: true`).
 //   refuted       — candidates a majority refuted, with the refutations.
@@ -599,7 +601,7 @@ ${RUN_FACTS}
 Your evidence surfaces: ${layer.surfaces}.
 Your focus: ${layer.focus}.
 
-Read target-checklists.md if it has a table for your layer (wave and panels do; the others derive their obligations from runtime-and-docket.md, evidence.md, the automation reference, and the pinned definitions), then the evidence. For each obligation, find what happened and cite the exact locator.
+Read target-checklists.md if it has a table for your layer (wave, panels, and operator do; the others derive their obligations from runtime-and-docket.md, evidence.md, the automation reference, and the pinned definitions), then the evidence. For each obligation, find what happened and cite the exact locator.
 
 ${FINDING_RULES}
 

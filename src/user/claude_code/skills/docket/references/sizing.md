@@ -19,10 +19,12 @@ below are what a filer or groomer can take from the issue body alone.
 
 ## The measures
 
-Take four counts from the issue as it will be stored: the number of
+Take five counts from the issue as it will be stored: the number of
 **independent outcomes** its acceptance criteria describe, the number of
 paths under `-f`, the number of distinct **directories** those paths span,
-and the number of acceptance **criteria**. An outcome is independent when a
+the number of **verification surfaces** the criteria verify (a Go package, a
+docs tree, a config corpus, a TUI surface), and the number of acceptance
+**criteria**. An outcome is independent when a
 worker could deliver and verify it without delivering the others; the tell
 is a criterion naming a different subsystem, verification command, or
 artifact from its neighbours. A filing that carries `--scope` globs and no
@@ -45,7 +47,7 @@ are set.
 | trivial | a typo, a config value, a doc line, or a one-line fix | `trivial` | `trivial` | trivial-change |
 | small | at most two files in one directory, adds no file, every criterion verifiable from the diff or a trusted fenced command; a workflow version bump touching exactly `src/user/docket/config/workflows/<name>.toml` and `src/user/docket/config/changelogs/<name>.md` with the same `<name>` counts as one directory, as `diff-scope small` treats it | `small` | `small` | small-change |
 | bounded | one independent outcome, within the bounded ceiling below, with a known approach | `bounded` | none | the workflow its other labels bind |
-| needs-design | one outcome whose approach is an open design decision the run must settle first | `needs-design` | none | a spec or investigation workflow, or docket-plan's design round |
+| needs-design | one outcome whose approach is an open design decision the run must settle first | `needs-design` | none | the workflow its other labels bind |
 | unknown | the filer could not measure it, or it is a bundle filed under the conduct exception below | `unknown` | none | none until groom sizes or splits it |
 | oversized | above the cap: two or more independent outcomes, or one outcome past the bounded ceiling | none | none | must split |
 
@@ -152,7 +154,7 @@ dotfiles projects (no `loop-bound` issue existed yet) — eight through a run,
 
 `--size` is never omitted on `docket issue create` for a non-epic issue;
 an epic is a container and carries no size. Before the create, take the
-four measures for the issue as drafted and pick the tier:
+five measures for the issue as drafted and pick the tier:
 
 - Under the cap: file it with its tier's `--size`, and, for docket-plan,
   its label.

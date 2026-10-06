@@ -36,7 +36,7 @@ schemas. Everything else in the corpus reaches a run another way:
 | `workflows/*.toml` | registry row, bound at activation | yes |
 | `schemas/<name>@<version>.json` | registry row, referenced by `payload` | yes |
 | `contracts/`, `fragments/`, `policy.toml` | read from disk and pinned by hash at activation | no registry; the references to and from them are checked |
-| `changelogs/`, `README.md`, `cut-ledger.json` | not read by the engine | no |
+| `changelogs/`, `README.md`, `cut-ledger.json` | pinned by content hash at activation, never parsed | no |
 
 A contract, fragment, or `policy.toml` edit is live for the next activation
 as soon as `just activate` installs it. A run already under way keeps the
@@ -232,8 +232,8 @@ DEPRECATE lines land.
 **RESTORE** — the corpus version is registered but retired. For a workflow,
 binding is falling through to something older; for a schema, a workflow
 that references it will refuse to register. Re-registering the same bytes
-reports success and changes nothing. `--restore` is the only verb that fixes
-it.
+reports success and changes nothing. The `--restore` flag on `deprecate` is
+the only fix for it.
 
 **CONFLICT** — the registry holds this exact `name@version` with different
 bytes than the file. For a workflow, the lint failed with `"code":"CONFLICT"`

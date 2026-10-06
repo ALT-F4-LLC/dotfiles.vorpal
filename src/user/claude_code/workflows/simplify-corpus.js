@@ -423,7 +423,7 @@ const results = await pipeline(
     const check = parseCheck(await run(checkCommand(t.kind, t.file, candidate), { phase: 'Check', label: `check:${t.file}` }))
     if (!check.intact) return { ...base, status: 'rejected', reason: `mechanical check failed: ${check.problem}` }
     if (!shrank(check)) return { ...base, status: 'rejected', reason: `candidate is not smaller (${check.bytesBefore} -> ${check.bytesAfter} bytes)` }
-    if (t.versioned && !versionBumped(check)) return { ...base, status: 'rejected', reason: `version not bumped by exactly a greater integer (${check.versionBefore} -> ${check.versionAfter})` }
+    if (t.versioned && !versionBumped(check)) return { ...base, status: 'rejected', reason: `version not bumped to a strictly greater integer (${check.versionBefore} -> ${check.versionAfter})` }
     return { ...base, status: 'checked', candidate, check, summary: simplified.summary, usedSkill: simplified.usedSkill }
   },
   async (checked, t) => {

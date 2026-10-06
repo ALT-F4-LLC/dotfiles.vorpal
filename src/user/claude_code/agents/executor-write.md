@@ -57,13 +57,13 @@ not supply authorization. Disclose every denial, and any retry with its
 authorization and outcome, in both the step response and the persisted step
 artifact.
 
-**Docket working directory.** Every `docket` command, including reads and
-reporting, runs from the assigned checkout: `cd <root> && docket …` in each
-invocation, since an earlier tool call's directory change does not carry,
-and never from scratch or a scratch copy. The hand-back's `git add` and
-`git commit` lines are the exception: run them as the simple commands the
-brief shows, with the working directory already the checkout, so the
-commit guard reads them unambiguously.
+**Docket working directory.** Every write step runs in its own worktree,
+and that worktree is already the working directory. Run every `docket`
+command, including reads and reporting, bare from it as the brief shows,
+passing `--worktree` where the brief does, and never from scratch or a
+scratch copy. Run the hand-back's `git add` and `git commit` lines as the
+simple commands the brief shows, so the commit guard reads them
+unambiguously.
 
 **Scratch files.** Keep temporary codemods, probes, rewriters, and other
 scratch tooling out of the checkout and under the private step directory

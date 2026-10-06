@@ -20,13 +20,13 @@ examples reflect the swept commands as of that build.
   - [`run issue add|remove RUN-N DKT-N...`](#run-issue) — 38 lines
   - [`run note add|list`](#run-note) — 22 lines
   - [`run refresh-scope`](#run-refresh-scope) — 31 lines
-  - [`run report RUN-N`](#run-report) — 104 lines
+  - [`run report RUN-N`](#run-report) — 103 lines
   - [`run activate RUN-N`](#run-activate) — 210 lines
   - [`run conduct RUN-N`](#run-conduct) — 39 lines
   - [`run pause|resume|abandon RUN-N`](#run-lifecycle) — 90 lines
   - [`run repin RUN-N --reason R`](#run-repin) — 67 lines
   - [`pin show RUN-N PATH`](#pin-show) — 15 lines
-  - [`run budget RUN-N [--set N]`](#run-budget) — 70 lines
+  - [`run budget RUN-N [--set N]`](#run-budget) — 71 lines
   - [`run status [RUN-N]`](#run-status) — 29 lines
 
 <a id="run-commands"></a>
@@ -104,7 +104,7 @@ docket run issue remove RUN-3 DKT-12 --json
 | `remove` | `planning` only | the run has been activated at all — `CONFLICT` (exit 4) |
 
 **`add` on an ACTIVE run is legal**, and the new issues are bound and
-snapshotted by the **next** `docket run activate` (RA3) — they join as their
+snapshotted by the **next** `docket run activate` — they join as their
 dependencies allow, exactly as a later phase does. The success message says so.
 A parked run is a person's decision in progress and a terminal run's issue set
 is history, so neither admits an add.
@@ -191,14 +191,14 @@ reports zeros, `abandoned` reports the trail up to abandonment.
 | `run` | id, status, reason, request |
 | `wall_clock_ms` | its own top-level key, not nested in `run`: activation → now, or → the terminal transition |
 | `pinned_workflows` | the run's pinned workflow refs: `{ref, name, pinned_version, current_version, behind}` |
-| `budget` | effective `cap` and its `cap_source` (`run` \| `config` \| `unlimited`), the `floor`, `reported` per unit, the `budget_unit` the cap counts, `spend` = max(reported, floor), `burn_rate` (floor per wall-clock hour), and `breach_reason` when a budget paused the run |
+| `budget` | effective `cap` and its `cap_source` (`run` \| `config` \| `unlimited`), the `floor`, `reported` per unit, the `budget_unit` the cap counts, `spend` = max(reported, floor), `burn_rate` (floor per wall-clock hour), `breach_reason` when a budget paused the run, and the measured cap's `usage_cap`, `usage_budget_unit`, and `usage_spend` (absent while that cap is dormant) |
 | `steps` | count by **effective** status, plus per-step `attempts`, each row carrying its `issue`, its `routing` (how the step ended, with its reason) and — for a vote step — `vote` (its proposal and how it tallied) |
 | `issues` | the run's **issue-level terminal rulings**: per abandoned issue, `{issue, disposition, by, reason}` — the operator's recorded rationale, verbatim. Rendered as a *How issues ended* section |
 | `gates` | per-gate pass/fail/unmatched/**skipped** counts, a **stub** count, and the per-step trail |
 | `actions` | the same rollup over action results, `builtin` included |
 | `artifacts` | the **index**: id, kind, producer instance, producer `executor` and `issue`, sha256, bytes — never the bodies |
 | `metadata` | step `metadata` keys → distinct values with counts, verbatim and uninterpreted — over the **merged** bag, so both what a definition declared and what a worker reported via `step complete --metadata` are counted |
-| `actors` | per-actor event counts (`next` / `gate` / `threshold` / `human`) — the attribution rollup described under `docket events` below, computed over the events that remain |
+| `actors` | per-actor event counts (`next` / `gate` / `threshold` / `human`) — the attribution rollup described under [Attribution](events.md#attribution--who-caused-each-transition), computed over the events that remain |
 | `authorities` | per-`authority` value event counts — the companion rollup to `actors`, reflecting the `--authority` flag on `run pause`/`abandon` and `step approve`/`reject`/`resolve` |
 | `step_usage` | the usage **ledger** row by row: each row's `step`, `instance`, `attempt`, `unit`, `quantity`, and `source` — the detail behind `budget`'s per-unit `reported` sums, and what a duplicate back-fill refusal points at |
 | `vote_metadata` | the same key → distinct-value rollup over vote seats' `--metadata` bags |
@@ -600,11 +600,11 @@ silently applied — pausing an already-paused run must not report success.
 
 **Each of the three writes its event in the same transaction as the
 status** — `run-paused`, `run-resumed`, `run-abandoned`. `run-abandoned`'s
-`data` carries `{from, to, reason, authority, authority_ref?}` (confirmed:
-`authority_ref` appears only alongside `standing-grant`). `run-paused`
-likely carries the same `authority` fields since `pause` now requires the
-flag too, but this was not directly confirmed against a fixture. `run-resumed`
-stays `{from, to, reason}`, since `resume` takes no `--authority`. There is no
+`data` carries `{from, to, reason, authority, authority_ref?}`
+(`authority_ref` appears only alongside `standing-grant`), and so does a
+`run-paused` written by `run pause`. A budget breach writes its own
+`run-paused` with `data.reason = "budget"`. `run-resumed` stays `{from, to,
+reason}`, since `resume` takes no `--authority`. There is no
 `run-done` here: no operator verb moves a run to `done` — that is the
 reconciliation rollup's transition, and it logs itself.
 
@@ -684,7 +684,7 @@ Response: `{run, repinned: [{kind, ref, old_sha256, new_sha256, path}],
 dropped: [...], added: [...], unchanged}` — `dropped` carries the refs
 retired via `--drop`/`--drop-unresolvable`, `added` carries newly-adopted
 pins; all three arrays empty (never `null`) on a no-op. `run-repinned` is
-attributed to `human` (Attribution, below).
+attributed to `human` ([Attribution](events.md#attribution--who-caused-each-transition)).
 
 <a id="pin-show"></a>
 
@@ -721,8 +721,10 @@ ledger recorded, as opposed to the declared step costs the cap above
 counts. Arm it with `run start --usage-budget N` (or `budget.usage.default`)
 **and** `budget.usage.unit`; both are required, since a cap with no unit counts
 nothing, and the read form says `DORMANT` when only one is set. `run budget`
-and `run report` then carry `usage_budget` / `usage_unit` / `usage_spend`
-beside the declared numbers.
+then carries `usage_budget` / `usage_unit` / `usage_spend`, and `run
+report`'s `budget` section carries `usage_cap` / `usage_budget_unit` /
+`usage_spend`, beside the declared numbers. All three are absent while the
+dimension is dormant.
 
 The two are **never combined**: declared units and measured tokens answer
 different questions, and folding measured tokens into `max(reported, floor)`

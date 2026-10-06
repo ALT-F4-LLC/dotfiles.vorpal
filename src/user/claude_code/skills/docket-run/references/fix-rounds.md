@@ -16,8 +16,10 @@ when it does not. The sha must be the integrated one; the writer's sha is
 never an ancestor of the shared branch even after landing.
 
 **Round off-by-one trap:** if fix@N has already been integrated before its
-own fanout dispatches, fix@N's integration commit is the wrong sha (it
-post-dates the judged tree and will park every healthy round). Ask "which
+own fanout dispatches, fix@N's integration commit is the wrong sha: it
+post-dates the judged tree, so wave.js's ancestry self-check detects it,
+logs "wrong round, fail-open", and dispatches the round without the
+ancestry guard, leaving that fanout unguarded. Ask "which
 write step built the tree these judges will read?" and pass the
 integration of the one before it. Derive it fresh each time: the writer
 sha for round N-1 is that round's change-summary first line, and its

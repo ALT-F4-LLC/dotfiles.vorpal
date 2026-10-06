@@ -16,7 +16,7 @@ restating it; a change to a rule lands here once.
   every other edit through its approval step.
 - **Claimed.** Any issue with a non-empty `assignee` belongs to someone or
   something else, since docket-tend never sets `assignee` on the issues it
-  works. Skip it.
+  works. Skip it, with the same groom exception as a run-included issue.
 - **Routed elsewhere.** The routing label decides the consumer:
   `route-run` is docket-plan's, `route-tend` is docket-tend's, `route-direct` is the
   operator's own session through brief, `route-loop` is a scheduled loop's.

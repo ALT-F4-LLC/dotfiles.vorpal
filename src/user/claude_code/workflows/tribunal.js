@@ -9,8 +9,8 @@ export const meta = {
 }
 
 // ---------------------------------------------------------------------------
-// CONTRACT FOR CALLERS (the listing's description is deliberately one line;
-// this block is the single copy of what it used to carry).
+// CONTRACT FOR CALLERS (the listing's description is a one-line summary;
+// this block is the single copy of the argument and return contract).
 //
 // What it does:
 // Spawn a judge panel that decides one gated proposal by each seat casting a
@@ -37,9 +37,9 @@ export const meta = {
 // files.
 //
 // When and how it is invoked:
-// Invoked on a CONVERSATIONAL gate the docket-run skill routes to a panel
-// (ack-reap, activation, budget, loop-extension, fix-batch, retro-batch),
-// always as
+// Invoked on a CONVERSATIONAL gate routed to a panel — by the docket-run
+// skill (ack-reap, activation, budget, loop-extension, fix-batch) or the
+// docket-retro skill (retro-batch) — always as
 // Workflow({scriptPath}) — never by name. Engine `type = "vote"` step rows
 // ride the wave since the staged closure: wave.js calls this same script MID-
 // WAVE (passing `step`) to seat their panels, one level of workflow nesting
@@ -73,8 +73,7 @@ const AGENT_CONFIG = {
 
 // A seat missing any of the triple was never routed — the run pins no
 // policy.toml, or the roster was re-typed without its fields — and a panel
-// seated on a guessed tier is the drift a harness-side policy parser used
-// to cause.
+// seated on a guessed tier would drift from the engine's pinned routing.
 function resolveSeat(voter) {
     const seat = voter && voter.seat
     if (typeof seat !== 'string' || seat === '') {
@@ -273,18 +272,14 @@ THE PROPOSAL BODY COULD NOT BE READ INTO THIS BRIEF (the read that projects
 it returned nothing). The question is the gate itself — ${step ? `${step.instance} on
 ${step.issue}` : gateKind} — and the record below carries everything it decides.`
 
-    // Both modes carry the same parsing rule. Seats have read the context
-    // bundle with `docket step context ... > file; <interpreter> -c "..."`
-    // as one compound call; the harness deny rule on interpreter code
-    // arguments refuses the whole call before any of it runs, no hook
-    // records it, the seat's no-retry rule then applies, and it votes on
-    // the proposal summary alone. A prohibition alone did not stop it:
-    // with the rule already rendered, eight seats on one run (security
-    // and verify-ac votes alike) still reached for an interpreter, every
-    // one to print the same dump — a header per input, then its body and
-    // payload cut to a few thousand characters. The rule now hands them
-    // that exact dump as one jq command, and says a refused compound
-    // command is not a refused read.
+    // Both modes carry the same parsing rule: one jq command that prints the
+    // bundle (a header per input, then its body and payload cut to a few
+    // thousand characters). A compound call that hands an interpreter code
+    // as an argument is refused whole before any of it runs, and a seat
+    // under its no-retry rule would then vote on the proposal summary alone.
+    // A prohibition alone does not stop seats reaching for an interpreter,
+    // so the brief supplies the jq dump and says a refused compound command
+    // is not a refused read.
     const evidenceParseRule = `
 HOW TO READ IT: one read per Bash call, parsed with jq. This one command
 prints the whole bundle the way seats want it — one header per input, then
@@ -340,8 +335,7 @@ AND KNOW \`step artifact\`'S TWO JSON SHAPES BEFORE YOU PARSE ONE. With
 for a findings or cluster payload, so \`.data[0]\` is the first entry and
 \`.data.get(...)\` raises. Without \`--payload\`, \`--json\` returns the artifact
 RECORD and the payload hangs off \`.data.payload\` as a JSON STRING you must
-parse a second time. Two seats on one wave lost their whole turn indexing the
-first shape as if it were the second. Pick one and match it: \`--payload
+parse a second time. Pick one and match it: \`--payload
 --json | jq '.data'\` for the payload, or plain \`--json | jq -r '.data.payload'
 | jq .\` for the record.
 

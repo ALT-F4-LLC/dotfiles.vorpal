@@ -154,7 +154,8 @@ small:
 - Build/CI: real build and check commands, CI jobs, prerequisites, and merge
   gates.
 - Gates/scripts: what each candidate checks, failure behavior, side effects,
-  coverage, and measured results under the protocol below.
+  coverage, and any already-recorded measured result. The main session, not
+  the workflow, runs the check-execution protocol below.
 - Docs/history: the seven specs, README/CONTRIBUTING, recent commit
   subjects, review practices, and evidence of earlier docket configuration.
 
@@ -237,8 +238,8 @@ repository cannot yet satisfy gets no argv and no stub: list it as a known
 unmatched gate with the workflows it would park and the consequence stated
 plainly, so the operator decides whether to close the gap before or after
 activation. Include the installed `doc-record` action even if today's issue
-will not use it, marking its future-use status explicitly. Propose
-`commit-exec` only if a local workflow consumes it.
+will not use it, marking its future-use status explicitly. Propose any
+other action only if a local workflow consumes it.
 
 Prepare exact proposed changes: project/store initialization if needed,
 prefix, config keys with current and proposed values and scopes, local
@@ -284,8 +285,8 @@ operator's answer or infer it from silence.
    before presenting it, and fold its input in with the rest of §5.
 3. **Approve trust individually.** Each call identifies one entry,
    repository, exact argv, and explicit values for `re-runnable`, `tree`,
-   `flaky`, and `stub`. Explain any prefix matching or absolute mutable
-   repo path in its proposal. Apply only that approved entry with
+   `flaky`, and `stub`, each of which defaults to off. Explain any prefix
+   matching or absolute mutable repo path in its proposal. Apply only that approved entry with
    `trust add --yes`, flags before `--`, then read back the effective
    entry. Show any conflict with an existing entry to the operator and
    apply only what they choose; never silently remove existing trust. A

@@ -135,7 +135,7 @@ themselves. Write one TSV row per log, main transcripts first, numbered from
 
 ```bash
 {
-  for t in <each driving transcript>; do printf '%s\tmain\t-\t%s\t%s\n' "$t" "<session id>" "$(stat -c %s "$t")"; done
+  for t in <each driving transcript>; do printf '%s\tmain\t-\t%s\t%s\n' "$t" "<session id>" "$(wc -c < "$t" | tr -d ' ')"; done
   for s in <each driving session dir>; do
     find "$s/subagents" -name 'agent-*.jsonl' -printf '%p\t%s\n' 2>/dev/null | while IFS=$'\t' read -r p b; do
       case "$p" in */workflows/*) k=workflow; w=$(basename "$(dirname "$p")");; *) k=subagent; w=-;; esac
@@ -244,8 +244,9 @@ Its return is one JSON object whose fields the script's header comment
 lists. It is evidence for this conversation's ledger, not the ledger
 itself. Read every upheld finding, every refutation, every group, every
 `reconcile.dropped` entry (a candidate the reconciler set aside, with its
-reason), and every `uncovered` entry. A stage that returned nothing usable
-is uncovered, not clean.
+reason), every `unverified` candidate (fewer than two refuters judged it;
+judge it inline or carry it as uncovered), and every `uncovered` entry. A
+stage that returned nothing usable is uncovered, not clean.
 
 For deliberation and course-correction numbers across the driving
 sessions, launch the installed `session-census` workflow afterward, per

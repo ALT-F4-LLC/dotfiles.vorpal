@@ -23,7 +23,7 @@ argument-hint: "[tighten] [paths or globs, default: src/user/claude_code src/use
 Run this skill inline in the main session. You resolve the targets, launch
 the workflow, land what it accepted one file at a time, run the gates, and
 commit. The workflow never writes to the repository; every candidate lands
-here.
+here. Never run `just activate`. Never push.
 
 **Two modes share one pass.** A first argument of `tighten` selects tighten
 mode, and the arguments after it are its paths; otherwise every argument is
@@ -36,8 +36,8 @@ differ; everything else applies to both.
 **Run it under `/loop` for repeated passes.** `simplify-corpus` has no watch
 loop of its own: `/loop /simplify-corpus [tighten]` (self-pacing) or
 `/loop 30m /simplify-corpus [tighten] <paths>` supplies the recurring
-wake-up, and each firing re-enters this skill from §1. Invoked bare with no
-loop wrapping it, do one pass and say so; there will be no next tick.
+wake-up, and each firing re-enters this skill from §1. Invoked outside
+`/loop`, do one pass and say so; there will be no next tick.
 
 ## Scope
 
@@ -90,12 +90,10 @@ argument that matches:
 Inside a file, `scripts/protected-spans.sh` compares frontmatter, fenced
 blocks at any indentation, indented code blocks, headings, and HTML
 comments, and in prose the inline code, double-quoted spans, section and
-line references, and relative links, between original and candidate; the
-workflow rejects a chunk where any differs. Backticks and quote marks pair
-only within a paragraph, so a quote mark inside a code snippet never locks
-the prose after it.
-
-Never run `just activate`. Never push.
+line references, and link targets, plus trailing blank lines and the final
+newline, between original and candidate; the workflow rejects a chunk where
+any differs. Backticks and quote marks pair only within a paragraph, so a
+quote mark inside a code snippet never locks the prose after it.
 
 ## 1. Each pass
 
@@ -189,7 +187,7 @@ Separate the accepted list first; only simplify mode returns `confirm`:
 
 - **`confirm: true` (settings.rs).** Never landed by a `/loop` tick:
   report the candidate path and its summary and leave it for the operator.
-  Under bare invocation, show the operator `diff -u <file> <candidate>`
+  Outside `/loop`, show the operator `diff -u <file> <candidate>`
   and ask, with `AskUserQuestion`, whether to land it; land it only on a
   yes.
 - **Everything else** lands now.
@@ -248,10 +246,11 @@ A line absent from the baseline that names a landed file, or the skill it
 belongs to, is this pass's breakage: a dead anchor, a renamed reference the
 mechanical check could not see, a broken caller the refuters missed, a
 version the drift check rejects, or a sentence a guard suite pins verbatim.
-Revert that file to its committed state with `git checkout -- <file>`,
-drop it from the accepted list with the failure line as its reason, and
-rerun the gates. At most two rounds; if new failures remain, revert every
-file this pass landed, report the failure lines, and stop. Baseline
+Revert that file to its committed state with `git checkout -- <file>`
+(for a workflow TOML, its `changelogs/<name>.md` too), drop it from the
+accepted list with the failure line as its reason, and rerun the gates. At
+most two rounds; if new failures remain, revert every file this pass
+landed and every changelog it wrote, report the failure lines, and stop. Baseline
 failures, and new failures naming files this pass did not land, are
 reported and never acted on; the revert touches only files this pass
 landed. A pinned sentence changes only in a commit that re-anchors its
@@ -280,7 +279,7 @@ when one landed.
 A pass that landed edits is evidence another pass may find more; a pass
 that finds nothing is what stops the loop.
 
-- **Bare invocation:** one pass. Say the pass is done and stop.
+- **Outside `/loop`:** one pass. Say the pass is done and stop.
 - **Self-paced `/loop /simplify-corpus [tighten]`:**
   - Landed edits: loop back to §1 immediately on the same mode and targets,
     up to three consecutive passes per tick, then arm

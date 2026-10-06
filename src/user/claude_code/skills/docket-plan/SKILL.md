@@ -459,8 +459,10 @@ alternative. Present the following above one `AskUserQuestion` round:
   4: no ACs, no scope, a glob matching nothing, `labels match N workflows`,
   `binds <wf>, ACs imply <other>`, or `AC names <path>, not in scope`),
   explicit budget or issue cap, dependency cycle, already landed (commit),
-  unrouted (no routing label; `/docket-groom` sets one), or routed elsewhere
-  (`route-direct`, `route-tend`, or `route-loop`).
+  unrouted (no routing label; `/docket-groom` sets one), routed elsewhere
+  (`route-direct`, `route-tend`, or `route-loop`), or unsized or oversized
+  (`size` null or `unknown`, or over the cap; `/docket-groom` sizes and
+  splits).
 
 When useful, compare two or three concrete alternatives in a compact table:
 the maximum complete run first and recommended, a parallel-only or
@@ -493,8 +495,8 @@ request intake are exactly these, and nothing else in §3 relaxes:
   (`docket issue label add` or `docket issue edit` calls) run before `run
   start`.
 - `run start --issue` names the backlog issues themselves. Direct binding
-  is the operator's settled choice for batch mode, and it is what makes the
-  §3 `/docket-plan DKT-N` obligations do not apply here: a batch member is the
+  is the operator's settled choice for batch mode, so the §3
+  `/docket-plan DKT-N` obligations do not apply here: a batch member is the
   unit of work, not a question the run answers.
 - The request-file content holds the invocation and the operator's
   confirmation verbatim, the option they picked and any text they typed,
@@ -597,8 +599,8 @@ fix that lands between the read and the record otherwise becomes a bound
 issue whose implement step exists to discover the work is done.
 
 **Track the batch in the task list as it records.** Once the issue set for
-this run is settled (the decomposition from §1, or the batch from §1b),
-`TaskCreate` one `pending` task per issue about to be created, `subject`
+this run is settled from §1's decomposition, `TaskCreate` one `pending`
+task per issue about to be created, `subject`
 the working title. `TaskUpdate` each to `in_progress` right before its own
 `issue create` call and to `completed` once the id comes back, rewriting
 the subject to the real `DKT-N: <title>`. This is a display for the
@@ -663,9 +665,9 @@ fanout-expanded and includes when-gated and loop steps — read that total (or
 `definition.steps[].expected_cost` under `--json`) for the workflow's
 registered, bound version. Fall back to `grep -n expected_cost
 ~/.docket/config/workflows/<wf>.toml`, summed over every line it returns,
-with each `fanout` step's cost multiplied by its sibling count (`grep -n
-'fanout =' ~/.docket/config/workflows/<wf>.toml` gives the list; the tomls
-annotate those lines `# per expanded sibling`), only when comparing against a
+with each `fanout` step's cost multiplied by the length of its `fanout`
+list (`grep -n 'fanout =' ~/.docket/config/workflows/<wf>.toml` finds
+them), only when comparing against a
 candidate or unregistered source file `workflow show` cannot see.
 Standard-change's review is 0.60 × three judges = 1.80, security-change's and
 ui-change's are 0.60 × four, spec-doc's 0.60 × three, and spec-project's

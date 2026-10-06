@@ -70,6 +70,10 @@ docket run status $RUN --json | jq -r '.data.pins // [] | map(select(.kind == "f
       done; }
 ```
 
+This walk resolves refs under `~/.docket/config` only. A pin frozen from
+the repository's `.docket/config/` reports `MISSING` here although it may
+be sound; check it against that root by hand before calling it drift.
+
 Count the rows before believing the verdict: `.pins[]` alone selects
 nothing from `{data, ok}`, so zero file pins means your path is wrong, not
 a clean run.

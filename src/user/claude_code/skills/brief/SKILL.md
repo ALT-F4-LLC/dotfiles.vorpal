@@ -5,7 +5,7 @@ description: >-
   to revise an existing brief. Turns a freeform work request into a faithful,
   checkable brief: clarifies material decisions in up to three question
   rounds, then confirms the brief and routes it to /docket-plan, /loop,
-  /peer, another orchestration skill, or direct execution.
+  /docket-tend, /peer, another orchestration skill, or direct execution.
 argument-hint: "<freeform work request or revision to an existing brief>"
 ---
 

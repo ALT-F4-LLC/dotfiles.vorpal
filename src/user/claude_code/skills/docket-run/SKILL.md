@@ -452,7 +452,8 @@ staleness trees, `run verify-pins`, the `.docket/config` symlink debris
 check (its disposition is in
 [references/activation.md](references/activation.md)), and a straggler
 report.
-Read its return, not its last line: `clean` requires every check OK;
+Read its return, not its last line: `clean` requires every check except
+`stragglers` (a report that never moves it) to be OK;
 `skipped` on the pin check means you gave no `--run`, not a pass on an
 active run; `checks[]` carries each verdict (`OK`, `FAIL`, `DRIFT`,
 `SKIP`, `WARN`). The `diff -rq` pair is the one check `doctor` does not
@@ -623,8 +624,10 @@ one phase at a time; a wave completing is not the run completing. After
 every close, go straight back to step 1. **The loop terminates for
 exactly three things:**
 
-1. A gate parks the run (`waiting-human`): a `human:*` step, or a vote
-   step whose tally fell short. Apply the three standing rulings under
+1. Nothing can move without the operator: the run itself is
+   `waiting-human`, or every remaining issue is parked (a `human:*` step,
+   or a vote step whose tally fell short) and `next` offers only parked
+   rows with no launch in flight. Apply the three standing rulings under
    **Gates** first, then present whatever remains to the operator and
    wait. A vote step merely ready is work for you, mid-loop, not this.
 2. An engine **refusal** you cannot resolve: report it verbatim and stop.
@@ -715,8 +718,8 @@ reasons); run `docket next --run $RUN` once in human mode if something
 looks stuck. `DKT-` is a local prefix fact, not a format: never hardcode
 it in a filter you write here. `STEP-`/`RUN-` are reserved and safe.
 
-**Never open a dispatch while the run is parked.** A park on one step
-parks its issue (engine R2b); the run stays `active` and `next` keeps
+**Never open a dispatch with no executor rows to dispatch.** A park on one
+step parks its issue (engine R2b); the run stays `active` and `next` keeps
 offering other issues' rows, so a non-empty offer alongside parked steps
 is ordinary, not a stall. Open only when you have executor rows to
 dispatch.
@@ -1518,7 +1521,8 @@ Promote the header at the same close: `docket issue file add <id>
 <files>` from the gap's `Files:` line, `docket issue edit <id> --scope`
 from its `Scope:` line. The same routing governs everything you file:
 its owning project from the start, `-l conduct` for provenance (never
-`-l shadow`, `-l tribunal`, or `-l loop-bound`, reserved to those routes).
+`-l shadow`, `-l tribunal`, `-l loop-bound`, or `-l review-gap`, reserved
+to those routes).
 
 Everything you file carries `-f` for each file the fix touches and
 `--scope` for the bounding globs. Under zsh, quote every glob-shaped
@@ -1574,7 +1578,8 @@ below still answer it.
 **Convene or present the moment a gate is ready.** Never leave it sitting
 while a wave grinds, discovered only when the operator asks, or narrated
 in prose instead of asked. Presentation and resolution stay decoupled:
-run the engine verb per the ordering rule below, saying so when it must
+run the engine verb per **Order gate resolutions around in-flight work**
+in [escalation.md](references/escalation.md), saying so when it must
 wait.
 
 ### The panel
@@ -1629,7 +1634,7 @@ presenting anything to the operator. The description is the question
 (did fix round N-1 regress the named item, does one round to restore it
 beat filing it); the rationale is the five-field loop-history line **A
 fix-round gate past the workflow's `max_fix_loops` presents the loop**
-(below) specifies, plus the latest rejection's tally and every seat's
+(in [escalation.md](references/escalation.md)) specifies, plus the latest rejection's tally and every seat's
 verdict verbatim; `--files-changed` is the issue's files. Seat the
 constant roster (`tribunal-architecture`, `tribunal-security`,
 `tribunal-correctness`), looked up from pinned policy. An approved tally
@@ -1765,7 +1770,9 @@ failing gate is a security gate (`secret-scan`, `vuln-scan`,
 resolve STEP-N --as override-pass --authority standing-grant
 --authority-ref machine-caused-gate-failure < <scratchpad>/conductor.d/$RUN.token`
 with a note naming this ruling, the
-reproduction, and the root-cause issue the broken-check rule below
+reproduction, and the root-cause issue that **A gate that failed on a
+broken check is settled on evidence** in
+[escalation.md](references/escalation.md)
 requires, filed or linked. Report every auto-pass in your next status
 report, one line each. Everything else stays the operator's: a gate that
 also fails on reproduction is a real failure or an environment this class

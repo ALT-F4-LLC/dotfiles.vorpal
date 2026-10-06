@@ -1,7 +1,8 @@
 # Votes and workflow gates
 
-Read this when casting an assigned seat’s vote, authoring a vote rule, or
-interpreting a workflow vote’s routing. For exact flags, use
+Read this when casting an assigned seat’s vote or interpreting a workflow
+vote’s routing. Vote-rule authoring is under **Vote rules** in
+[workflows](workflows.md). For exact flags, use
 [the CLI reference](../reference.md).
 
 Find the relevant heading before reading a large section:
@@ -18,8 +19,8 @@ is legal there and escalates to an operator; a human gate refuses it. The
 proposal's id rides on the step row as `proposal`,
 and the roster as `voters`, so a caller holding a `next` row can cast without
 reading the pinned definition; there is no new verb beyond `docket vote
-cast`. The step names a `vote_rule`, a pair of `vote.rule.<name>.*` config
-keys, and `required_voters` is the length of its own `voters` list. Nothing
+cast`. The step names a `vote_rule`, a set of `vote.rule.<name>.*` config
+keys (see **Vote rules** in [workflows](workflows.md)), and `required_voters` is the length of its own `voters` list. Nothing
 casts a vote automatically; a voter is a person or a process running the CLI.
 
 Create a proposal:

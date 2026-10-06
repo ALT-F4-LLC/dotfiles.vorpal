@@ -67,9 +67,8 @@ link <proposal-id> --issue <successor>`) so the record carries the
 dissent, not just this session's scrollback.
 
 And read every seat's rationale on such a pass for a condition naming
-later work. File each as its own issue (`docket issue create`, landing in
-the run's project per [step complete](step.md#docket-step-complete), always
-`-l tribunal`) before `dispatch close`, linked
+later work. File each as its own issue (`docket issue create` in its
+owning project, always `-l tribunal`) before `dispatch close`, linked
 to the proposal, id in the close report:
 
 ```bash

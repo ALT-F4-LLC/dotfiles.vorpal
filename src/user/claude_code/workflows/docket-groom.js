@@ -10,8 +10,8 @@ export const meta = {
 }
 
 // ---------------------------------------------------------------------------
-// CONTRACT FOR CALLERS (the listing's description is deliberately one line;
-// this block is the single copy of what it used to carry).
+// CONTRACT FOR CALLERS (the listing's description is a one-line summary;
+// this block is the single copy of the argument and return contract).
 //
 // What it does:
 // Runs §2 of the docket-groom skill (read and judge) as read-only agent
@@ -58,7 +58,8 @@ export const meta = {
 //   registry  — [{project, checkoutOk, workflows:[{name, version, kind,
 //                labels_any, labels_all, unless_labels, sizes_any}], notes}]
 //   ledger    — one entry per issue in args.issues; epics carry judged=false
-//               and only their identity, every other issue the judge's entry
+//               and only {id, project, kind, title, parent_id, labels}, every
+//               other issue the judge's entry
 //               (see LEDGER_SCHEMA) plus the survey facts this script stamps:
 //               id, project, title, kind, size.storedSize, routing.current,
 //               and epic.current. Evidence entries are "<source>: <quote>"
@@ -76,8 +77,8 @@ export const meta = {
 // Pin models so a launch never inherits the caller's quota-limited model.
 // The registry probe relays match blocks; clustering compares titles and
 // defenses; the judge makes the value, readiness, and size call the whole
-// pass rests on, so it gets the strongest reading tier the corpus already
-// pins for judgment work.
+// pass rests on, so it gets opus/medium, the variant policy.toml gives most
+// of its judge-* executors.
 const AGENT_CONFIG = {
     registry: { model: 'sonnet', effort: 'high' },
     judge: { model: 'opus', effort: 'medium' },
@@ -439,7 +440,7 @@ ${READ_ONLY}
 
 Your contract is the skill's own text, not this brief. Read, in this order, and apply as written:
 1. ${groomSkill}, from the heading "2a. Validate value and relevance for every issue" through the end of "2c. Verify every acceptance criterion": value questions and the one decision per issue (retain, clarify, rescope, merge, close), the quality and execution-fit findings, and the acceptance-criteria conditions. The paragraphs above 2a describe how the skill launches this script and are not your contract.
-2. ${sizingRef}: the four measures, the tiers, the cap, and the split shape. The measures come from the issue as stored; count independent outcomes from the criteria, files and directories from the files list, surfaces from what the criteria verify.
+2. ${sizingRef}: the five measures, the tiers, the cap, and the split shape. The measures come from the issue as stored; count independent outcomes from the criteria, files and directories from the files list, surfaces from what the criteria verify, and criteriaCount from the acceptance criteria.
 3. ${ownershipRef}, "Not free to take or edit": run-included and claimed. The survey already says whether this issue is run-included; a non-empty assignee makes it claimed.
 4. ${planSkill}: the mutant rule for command-backed criteria (search for "mutant"), for any repair you draft.
 

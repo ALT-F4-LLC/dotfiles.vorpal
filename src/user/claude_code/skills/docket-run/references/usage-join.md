@@ -17,6 +17,12 @@ file kinds, and only one carries usage:
 Attribution is a join on `agentId`: read each transcript for usage, and
 map `agentId` to a step through the agent's first `user` message.
 
+The transcript writes one content block per line under a shared message
+id, so dedupe assistant lines by `message.id` (the last line wins for
+usage) before summing. Return four integer units per dispatched step, as
+wave-usage.js does: `input_tokens`, `output_tokens`,
+`cache_creation_tokens`, and `cache_read_tokens`.
+
 **Join on the obligation the brief carries, never on the first `STEP-N`
 mentioned.** An agent owns a step only if its brief tells it to `docket
 step claim`/`record STEP-N`. A brief that merely mentions a step (a

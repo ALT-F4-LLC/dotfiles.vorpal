@@ -14,16 +14,16 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket guard`](#guard-commands) — 115 lines
+- [`docket guard`](#guard-commands) — 114 lines
   - [`guard record`](#guard-record) — 18 lines
-  - [`guard spawn`](#guard-spawn) — 46 lines
-- [`docket trust`](#trust-commands) — 199 lines
+  - [`guard spawn`](#guard-spawn) — 45 lines
+- [`docket trust`](#trust-commands) — 200 lines
   - [`trust add <name> -- <argv...>`](#trust-add) — 65 lines
   - [`trust list`](#trust-list) — 16 lines
   - [`trust probe [--run RUN-N]`](#trust-probe) — 23 lines
   - [`trust rm <name>`](#trust-rm) — 20 lines
   - [The tenancy audit trail](#trust-tenancy-audit) — 18 lines
-  - [The trust audit trail](#trust-audit) — 37 lines
+  - [The trust audit trail](#trust-audit) — 38 lines
 
 <a id="guard-commands"></a>
 
@@ -321,10 +321,12 @@ footing as step metadata, not a verified identity. Record it anyway: a
 grant is the one act in the system that widens what code may
 execute.
 
-**Recording is mandatory inside a repository with a database.** The
-event is written *before* the store, as a hook inside the store's own
-lock: if it cannot be recorded, the verb fails with `GENERAL_ERROR`
-(exit 1) and **nothing is granted**.
+**Recording is mandatory inside a repository with a database.** For
+`add`, the event is written *before* the store, as a hook inside the
+store's own lock: if it cannot be recorded, the verb fails with
+`GENERAL_ERROR` (exit 1) and **nothing is granted**. `rm` publishes the
+store first and records the event after, as [`trust rm`](#trust-rm)
+describes.
 
 **An idempotent re-add emits no event.** Nothing was written, so there is
 nothing to record.

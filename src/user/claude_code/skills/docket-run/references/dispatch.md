@@ -14,13 +14,15 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket next` in step mode](#next-run) — 84 lines
-- [`docket dispatch`](#dispatch-commands) — 292 lines
-  - [`dispatch open`](#dispatch-open) — 97 lines
+- [`docket next` in step mode](#next-run) — 85 lines
+- [`docket dispatch`](#dispatch-commands) — 317 lines
+  - [`dispatch open`](#dispatch-open) — 77 lines
+  - [`dispatch extend`](#dispatch-extend) — 23 lines
   - [`dispatch verify`](#dispatch-verify) — 37 lines
   - [`dispatch close`](#dispatch-close) — 39 lines
   - [`dispatch backfill-usage`](#dispatch-backfill-usage) — 49 lines
   - [`dispatch abandon`](#dispatch-abandon) — 18 lines
+  - [`dispatch waive-target`](#dispatch-waive-target) — 22 lines
   - [The write-reap acknowledgment](#dispatch-write-reap-ack) — 25 lines
 
 <a id="next-run"></a>
@@ -48,7 +50,8 @@ trusts a filter that does nothing.
 
 Step mode may WRITE: it reaps expired step leases, returning them to the ready
 pool, and auto-abandons a dispatch manifest that has outlived its TTL. Lease
-reaping happens here and at `step claim` and nowhere else; the dispatch
+reaping happens here, at `step claim`, at `dispatch open`, and through a
+forced `step reap`, never at `dispatch verify`; the dispatch
 auto-abandon happens here alone — `claim` never retires a manifest, since a
 dispatch is about a *batch*, and letting a single-step verb expire one would
 let a claim silently unwedge a run whose relay is still alive.
@@ -130,7 +133,7 @@ with a reason.
 | `dispatch close --run RUN-N` | yes | reconciles and closes — refused while a discrepancy exists |
 | `dispatch abandon --run RUN-N` | yes | gives up on the manifest **unconditionally** |
 | `dispatch backfill-usage --run RUN-N` | yes | records usage a relay measured but the claimant could not report |
-| `dispatch waive-target --run RUN-N --step ... --target ...` | yes | records that a stale-target warning was investigated and ruled acceptable |
+| `dispatch waive-target --run RUN-N --step ... --target ... --note ...` | yes | records that a stale-target warning was investigated and ruled acceptable |
 
 `--run` is required on all seven. None are watch-eligible.
 
@@ -145,9 +148,12 @@ with a reason.
 | `--ack-reap` | lease-reaped | `[]` | acknowledge a write-class reap by its `lease-reaped` event `seq`; repeatable |
 
 Response is engine-spec §11.4's `dispatch` shape: `{dispatch, run, opened_seq,
-expires_ms, rows: [<next row>…], total, truncated}`, plus `reaped` and
-`reap_hold` (both `omitempty`, absent when this open reaped nothing);
-`truncated` reflects whether `--limit` sliced the manifest. Each row is stored as its
+expires_ms, rows: [<next row>…], total, truncated}`, plus five optional
+fields: `reaped` and `reap_hold` (both `omitempty`, absent when this open
+reaped nothing), `stale_targets` (absent when no row's target diverged),
+`pin_drift` (absent when every pin is sound), and `budget_held` (absent
+when nothing was withheld), each described below. `truncated` reflects
+whether `--limit` sliced the manifest. Each row is stored as its
 canonical JSON bytes plus a sha256, so `verify` compares bytes rather than a
 re-serialization that could differ in key order.
 
@@ -374,6 +380,28 @@ Nothing is lost. Opening a manifest never claimed anything, so its steps
 return to the ready set intact, and an executor that claimed one *before*
 the crash finishes normally.
 
+<a id="dispatch-waive-target"></a>
+
+#### `docket dispatch waive-target`
+
+| Flag | Type | Default | Notes |
+|---|---|---|---|
+| `--run` | string | — | **required** |
+| `--step` | string (repeatable) | — | a step instance the warning named, e.g. `review@1#0` |
+| `--target` | string | — | the warned target sha: full, or the prefix of 7 or more characters the warning renders; matched case-insensitively |
+| `--note` | string | — | why the warning is acceptable; recorded on every waiver |
+
+Records that a `stale_targets` warning was investigated and ruled
+acceptable. The advisory recomputes on every `open` and `verify` and has no
+memory, so without a waiver an investigated warning re-fires at every later
+open and verify of the same (step, target) pair.
+
+**A waiver suppresses only the exact pair it names.** The same step warning
+about a different sha, or the same sha on a step no waiver names, warns as
+usual: a new divergence never rides an old ruling. Waivers are run-scoped
+and end with their run. Each one records a `stale-target-waived` event, so
+the feed shows what precedent was set and why.
+
 <a id="dispatch-write-reap-ack"></a>
 
 #### The write-reap acknowledgment
@@ -397,5 +425,5 @@ passes `--ack-reap <seq>`.
 - `acked_by` records the **verb** (`dispatch-open`), never a user identity —
   core has no identity model.
 
-`docket guard spawn --ack-reap` is the other entry point and lands with the
-guard verbs.
+`docket guard spawn --ack-reap` is the other entry point; see
+[guard and trust](guard-trust.md).

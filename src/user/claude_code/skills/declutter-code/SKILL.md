@@ -61,7 +61,8 @@ supplies the recurring wake-up, and each firing re-enters this skill from
    anything: ledger the failing command with HEAD, report it once, and rest.
    Later ticks stay quiet on that ledger entry until HEAD moves. A gate that
    cannot run in this environment (missing tool, network, permission) is
-   neither red nor green: report which one, and rest. Nothing is refactored
+   neither red nor green: ledger it as `gate unavailable` with HEAD, report
+   which one once, and rest. Nothing is refactored
    on a tree whose gates you cannot run.
 3. **Scout.** Seat one read-only scout (§3) to rank candidate units against
    the catalog. A unit is one file, or one directory that forms a module
@@ -81,10 +82,13 @@ supplies the recurring wake-up, and each firing re-enters this skill from
    `reachability` in the catalog, which need no tests. A unit with no
    tests and a mix of classes is taken for its inert and reachability
    entries only; its `probe` entries are ledgered as `no tests` with the
-   HEAD. Everything else the scout ranked is ledgered the same way. Then
+   HEAD. Everything else the scout ranked is ledgered the same way, and
+   each security-boundary unit the scout skipped is ledgered as
+   `security boundary` with the HEAD. Then
    declutter it (§2) and **loop back to step 1 immediately**; do not
    schedule a wakeup between units while candidates remain. Go quiet only
-   once a scout returns nothing pickable.
+   once a scout returns nothing pickable. Invoked bare, stop after this
+   unit instead of looping back.
 5. **Rest.** Under self-paced `/loop /declutter-code`, arm
    `ScheduleWakeup({delaySeconds: 1200-1800, noop: true, ...})` and stop;
    under an explicit interval the cron firing supplies the next tick, so
@@ -206,7 +210,8 @@ default.
 **The scout brief** carries: the repository's absolute path, the catalog
 path, the ledger's current entries, the exclusion list from §1 step 3, and
 the return shape (ranked units, matched entries with lines, test files
-referencing each unit). It runs read-only: search, read, and LSP only, no
+referencing each unit, and the security-boundary units skipped, each with
+its path and the boundary matched). It runs read-only: search, read, and LSP only, no
 edits, no commands that write.
 
 **The worker brief** carries: the repository's absolute path, the unit, the

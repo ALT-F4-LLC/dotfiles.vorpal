@@ -4,13 +4,13 @@ export const meta = {
     whenToUse: 'Never by name. Read-only: every agent inspects the checkout or the installed corpus and writes nothing. The caller keeps environment setup, spec authoring, every operator approval, trust mutation, and activation in the main session.',
     phases: [
         { title: 'Mine', detail: 'one executor-read analyst per seam (build/CI, gates/scripts, docs/history) reads the repository, or one combined analyst for a small repo' },
-        { title: 'Gate union', detail: 'one executor-read analyst per installed workflow TOML parses its gates, pre-gates, actions, and consumer steps' },
+        { title: 'Gate union', detail: 'one executor-read analyst per installed workflow TOML parses its gates (pre-gates flagged), actions, and consumer steps' },
     ],
 }
 
 // ---------------------------------------------------------------------------
-// CONTRACT FOR CALLERS (the listing's description is deliberately one line;
-// this block is the single copy of what it used to carry).
+// CONTRACT FOR CALLERS (the listing's description is a one-line summary;
+// this block is the single copy of the argument and return contract).
 //
 // What it does:
 // Runs the two read-only fan-outs of the docket-bootstrap skill (§3 "Mine
@@ -35,8 +35,8 @@ export const meta = {
 //                  args.smallRepo is true, matching SKILL.md §3's "combining
 //                  them only when the repo is small".
 //   "gate-union" — one analyst per workflow TOML in args.workflowFiles,
-//                  each returning that file's declared gates, pre-gates,
-//                  actions, and consumer steps. The script unions the
+//                  each returning that file's declared gates (pre-gates
+//                  flagged), actions, and consumer steps. The script unions the
 //                  results and marks each gate matched or unmatched against
 //                  args.trustEntries, treating an entry bound to another
 //                  repository as missing here (SKILL.md §4).
@@ -67,8 +67,10 @@ export const meta = {
 //                 {claims:[{claim, evidence}], uncertainties:[string], notes}
 //                 when smallRepo is true, buildCi carries the combined
 //                 report and gatesScripts/docsHistory are null.
-//   gateUnion   — {gates:[{name, workflow, step, onFail, matched, trustPath,
-//                 evidence}], uncovered}
+//   gateUnion   — {gates:[{name, workflow, step, onFail, pre, matched,
+//                 trustPath, evidence}], actions:[{name, workflow}],
+//                 consumerSteps:[{step, workflow}], uncovered}; a pre-gate
+//                 is a gate with pre=true, trust-matched like any other
 //   uncovered   — [{what, why}] every agent that returned nothing, plus
 //                 every workflow file gate-union could not read
 //   summary     — one line for the skill's report
@@ -154,7 +156,7 @@ const SEAM_SCHEMA = {
 const GATE_UNION_SCHEMA = {
     type: 'object',
     properties: {
-        workflow: { type: 'string', description: 'Corpus-relative path of the workflow TOML' },
+        workflow: { type: 'string', description: 'The workflow file path as given in the prompt' },
         readOk: { type: 'boolean', description: 'False when the file could not be read or parsed' },
         gates: {
             type: 'array',
@@ -165,16 +167,16 @@ const GATE_UNION_SCHEMA = {
                     step: { type: 'string', description: 'The step that consumes this gate' },
                     onFail: { type: 'string', description: 'The declared on_fail behavior for this gated step' },
                     evidence: { type: 'string', description: 'file:line of the gate declaration' },
+                    pre: { type: 'boolean', description: 'True for a pre-gate (declared `{ name, pre = true }`), which runs at claim' },
                 },
-                required: ['name', 'step', 'onFail', 'evidence'],
+                required: ['name', 'step', 'onFail', 'evidence', 'pre'],
             },
         },
-        preGates: { type: 'array', items: { type: 'string' } },
         actions: { type: 'array', items: { type: 'string' } },
         consumerSteps: { type: 'array', items: { type: 'string' } },
         notes: { type: 'string' },
     },
-    required: ['workflow', 'readOk', 'gates', 'preGates', 'actions', 'consumerSteps'],
+    required: ['workflow', 'readOk', 'gates', 'actions', 'consumerSteps'],
 }
 
 // ---- Prompts -----------------------------------------------------------
@@ -233,7 +235,7 @@ Workflow file: ${workflowPath}
 
 ${READ_ONLY}
 
-Read the file whole. Return every gate it declares (name, the step that consumes it, its on_fail behavior, and the file:line of the declaration), every pre-gate, every action the workflow can take, and every consumer step (a step that any issue's labels could bind to, not only a hypothetical smoke issue). If the file cannot be read or does not parse as a workflow definition, return readOk=false and say why in notes rather than inventing gates.`
+Read the file whole. Return every gate it declares (name, the step that consumes it, its on_fail behavior, the file:line of the declaration, and pre=true for a pre-gate declared as \`{ name, pre = true }\`, false otherwise) in gates, pre-gates included, then every action the workflow can take, and every consumer step (a step that any issue's labels could bind to, not only a hypothetical smoke issue). If the file cannot be read or does not parse as a workflow definition, return readOk=false and say why in notes rather than inventing gates.`
 }
 
 // ---- Stage: mine -------------------------------------------------------
@@ -301,22 +303,27 @@ async function runGateUnion() {
     // other entry counts as missing here, never as applicable (SKILL.md §4).
     const boundEntries = trustEntries.filter((e) => e.global || e.repo === checkoutRoot)
     const answered = results.filter(Boolean)
-    const gates = answered.filter((r) => r.readOk !== false).flatMap((r) => r.gates.map((g) => {
+    const parsed = answered.filter((r) => r.readOk !== false)
+    // A pre-gate is trust-matched like any gate: it runs a named command too.
+    const gates = parsed.flatMap((r) => r.gates.map((g) => {
         const trust = boundEntries.find((e) => e.gate === g.name || e.name === g.name)
         return {
             name: g.name,
             workflow: r.workflow,
             step: g.step,
             onFail: g.onFail,
+            pre: g.pre === true,
             matched: Boolean(trust),
             trustPath: Array.isArray(trust?.argv) ? trust.argv.join(' ') : null,
             evidence: g.evidence,
         }
     }))
     gates.sort((a, b) => a.name.localeCompare(b.name) || a.workflow.localeCompare(b.workflow))
+    const actions = parsed.flatMap((r) => (r.actions || []).map((name) => ({ name, workflow: r.workflow })))
+    const consumerSteps = parsed.flatMap((r) => (r.consumerSteps || []).map((step) => ({ step, workflow: r.workflow })))
     const matched = gates.filter((g) => g.matched).length
     return {
-        gateUnion: { gates, uncovered },
+        gateUnion: { gates, actions, consumerSteps, uncovered },
         uncovered,
         summary: `${gates.length} gate(s) across ${answered.length}/${files.length} workflow(s); ${matched} matched to trust, ${gates.length - matched} unmatched${tail()}.`,
     }

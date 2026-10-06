@@ -113,6 +113,12 @@ assert_group '{"at":"2026-01-01T00:00:00Z","kind":"classifier-denial","tool_name
 assert_group '{"at":"2026-01-01T00:00:00Z","kind":"classifier-denial","tool_name":"Bash","agent_id":"","cwd":"/repo","command":"kubectl apply -f x","file_path":"","bypassed":false,"evidence":"bash denied"}' \
     '.example == "kubectl apply -f x" and .tool_name == "Bash"' \
     "group: a Bash row keeps its command as the example"
+assert_group '{"at":"2026-01-01T00:00:00Z","kind":"sandbox-denial","cwd":"/repo","command":"echo hi","bypassed":false,"evidence":"/x/y: Operation not permitted"}' \
+    '.tool_name == "" and .agent_id == "" and .file_path == "" and .example == "echo hi"' \
+    "group: a legacy row with no tool_name, agent_id, or file_path key defaults them to empty strings"
+assert_group '{"at":"2026-01-01T00:00:00Z","kind":"classifier-denial","tool_name":"Write","agent_id":"","cwd":"/repo","file_path":"/x/z.nix","bypassed":false,"evidence":"write denied"}' \
+    '.example == "/x/z.nix"' \
+    "group: a row with no command key uses file_path as its example"
 
 extract sandbox-friction-file > "${WORK}/region.js" || fatal "bad or missing TEST markers for sandbox-friction-file"
 grep -q 'async function fileGroups' "${WORK}/region.js" || fatal "region does not contain fileGroups"

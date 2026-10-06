@@ -69,6 +69,8 @@ node "${WORK}/emit.js" > "${WORK}/census.jq" || fatal "could not evaluate CENSUS
 # output_tokens grows again. Only the last line is the message. msg-b is a
 # single line with a tool call and no thinking, so think_msgs must stay at 1.
 # The id-less row exercises the fallback: no id, no dedupe, counted once.
+# msg-c writes one block per line, as live transcripts do: every block counts,
+# while usage stays last-wins.
 node - "$WORK/main.jsonl" <<'JS' || fatal "fixture build failed"
 const fs = require('fs')
 const row = (id, out, think, blocks, extra = {}) => JSON.stringify({
@@ -83,6 +85,10 @@ const lines = [
     row('msg-a', 100, 30, [{ type: 'thinking', thinking: 'abcdef' }, { type: 'text', text: 'done' }]),
     row('msg-b', 20, 0, [{ type: 'text', text: 'run' }, { type: 'tool_use', name: 'Bash' }]),
     row(undefined, 7, 0, [{ type: 'text', text: 'x' }]),
+    row('msg-c', 2, 0, [{ type: 'thinking', thinking: 'pq' }]),
+    row('msg-c', 5, 0, [{ type: 'text', text: 'hi' }]),
+    row('msg-c', 5, 0, [{ type: 'tool_use', id: 'tu-1', name: 'Read' }]),
+    row('msg-c', 5, 0, [{ type: 'tool_use', id: 'tu-2', name: 'Read' }]),
 ]
 fs.writeFileSync(process.argv[2], lines.join('\n') + '\n')
 JS
@@ -92,18 +98,18 @@ ok $? 'the jq program runs clean over the fixture transcript'
 
 get() { jq -r "$1" "${WORK}/out.json"; }
 
-[ "$(get .msgs)" = "3" ]; ok $? "msgs counts messages, not lines (got $(get .msgs))"
-[ "$(get .out)" = "127" ]; ok $? "out sums each message's last output_tokens: 100+20+7 (got $(get .out))"
+[ "$(get .msgs)" = "4" ]; ok $? "msgs counts messages, not lines (got $(get .msgs))"
+[ "$(get .out)" = "132" ]; ok $? "out sums each message's last output_tokens: 100+20+7+5 (got $(get .out))"
 [ "$(get .think)" = "30" ]; ok $? "think keeps only the final thinking count for msg-a (got $(get .think))"
 [ "$(get .think_msgs)" = "1" ]; ok $? "think_msgs counts msg-a once (got $(get .think_msgs))"
-[ "$(get .think_chars)" = "6" ]; ok $? "think_chars is the final thinking block's length, not 2+6+6 (got $(get .think_chars))"
-[ "$(get .text_chars)" = "8" ]; ok $? "text_chars is 4+3+1 (got $(get .text_chars))"
-[ "$(get .tool_uses)" = "1" ]; ok $? "tool_uses is unaffected by the rewrites (got $(get .tool_uses))"
-[ "$(get '.rows.assistant')" = "5" ]; ok $? "rows still counts lines, so the histogram fields are line-based (got $(get '.rows.assistant'))"
+[ "$(get .think_chars)" = "8" ]; ok $? "think_chars is msg-a's final thinking block (not 2+6+6) plus msg-c's 2 (got $(get .think_chars))"
+[ "$(get .text_chars)" = "10" ]; ok $? "text_chars is 4+3+1+2 (got $(get .text_chars))"
+[ "$(get .tool_uses)" = "3" ]; ok $? "tool_uses counts msg-b's call and both of msg-c's one-per-line blocks (got $(get .tool_uses))"
+[ "$(get '.rows.assistant')" = "9" ]; ok $? "rows still counts lines, so the histogram fields are line-based (got $(get '.rows.assistant'))"
 [ "$(get '.seen // "absent"')" = "absent" ]; ok $? 'the seen map is stripped from the emitted object'
 
 cell=$(get '.cells[] | select(.model == "claude-opus-5") | "\(.msgs) \(.out) \(.think) \(.think_msgs) \(.think_chars) \(.text_chars)"')
-[ "$cell" = "3 127 30 1 6 8" ]; ok $? "the model|effort|skill cell carries the same deduplicated totals (got '${cell}')"
+[ "$cell" = "4 132 30 1 8 10" ]; ok $? "the model|effort|skill cell carries the same deduplicated totals (got '${cell}')"
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

@@ -98,11 +98,17 @@ function planAgentCap(fileCount) {
 //   between messages with and without thinking blocks (3014 vs 2965), so the
 //   exclusion is close to unbiased; when the two disagree, trust
 //   think_text_ratio, which every message can contribute to.
-// * Assistant rows are deduplicated by message id, last occurrence wins, the
-//   same rule wave-usage.js applies: a streamed message repeats across lines
-//   under one id with output_tokens growing, so a per-line sum inflates every
-//   token and character total. Row histograms (versions, efforts, excluded)
-//   and the context-size trace still count lines.
+// * A message spans several lines under one id. Usage repeats on each line
+//   with output_tokens growing, so usage is deduplicated by message id, last
+//   occurrence wins, as wave-usage.js does. Content blocks are merged per
+//   message instead: a transcript can write each block on its own line, so
+//   last-wins would keep only the final block (measured 9 of 14 tool calls on
+//   one transcript). tool_uses counts distinct block ids, as wave-usage.js
+//   does; a thinking or text block that repeats or extends an earlier one
+//   replaces it, and any other block adds. Character and tool counts from
+//   censuses before this rule are lower and not comparable. Row histograms
+//   (versions, efforts, excluded) and the context-size trace still count
+//   lines.
 // * Most user-role rows are not the operator: task notifications, teammate
 //   messages, tool results, and isMeta skill-body injections all arrive as
 //   role=user. Only typed prose, slash commands, and !bash count as input.
@@ -224,8 +230,32 @@ def user_row($rec):
       else . end
   end;
 
-# One assistant line's share of the totals; $sign -1 retracts a share an
-# earlier line under the same message id already added.
+# Merge one line's content blocks into its message's block set. A tool_use
+# counts once per block id (name and position when it has none). A thinking or
+# text block replaces an earlier block of the same type that it repeats or
+# extends (a streamed rewrite), and otherwise adds a new block, since a
+# transcript can write each block of one message on its own line.
+def merge_blocks($blocks):
+  reduce ($blocks | to_entries[]) as $e (.;
+    $e.value as $b
+    | if $b.type == "tool_use" then
+        .tools[($b.id // (($b.name // "") + "#" + ($e.key | tostring)))] = 1
+      elif $b.type == "thinking" or $b.type == "text" then
+        (if $b.type == "thinking" then ($b.thinking // $b.text // "") else ($b.text // "") end) as $s
+        | ($s | length) as $n
+        | ($s[0:200]) as $p
+        | (.chars | map(. as $o | $o.type == $b.type and ($p | startswith($o.p)) and $n >= $o.n) | index(true)) as $hit
+        | if $hit != null then .chars[$hit] = {type: $b.type, p: $p, n: $n}
+          else .chars += [{type: $b.type, p: $p, n: $n}] end
+      else . end);
+
+def block_counts:
+  {tc: ([.chars[] | select(.type == "thinking") | .n] | add // 0),
+   txc: ([.chars[] | select(.type == "text") | .n] | add // 0),
+   tu: (.tools | length)};
+
+# One message's share of the totals; $sign -1 retracts the share an earlier
+# line under the same message id already added.
 def contribute($c; $sign):
   .msgs += $sign * $c.msgs
   | .think_chars += $sign * $c.tc
@@ -252,13 +282,15 @@ def assistant_row($rec):
   | ($msg.model // null) as $model
   | ($rec.attributionSkill // "-") as $skill
   | ($msg.content | if type == "array" then map(select(type == "object")) else [] end) as $blocks
-  | ([$blocks[] | select(.type == "thinking") | ((.thinking // .text // "") | length)] | add // 0) as $tc
-  | ([$blocks[] | select(.type == "text") | ((.text // "") | length)] | add // 0) as $txc
   | ([$blocks[] | select(.type == "text") | select(((.text // "") | strip) != "")] | length > 0) as $visible
   | ([$blocks[] | select(.type == "tool_use")] | length) as $tu
   | (($version | no_think_accounting | not) and $think != null) as $usable
   | ($msg.id // null) as $id
-  | ({msgs: 1, tc: $tc, txc: $txc, tu: $tu, usable: $usable, out: $out, think: ($think // 0),
+  | ((if $id != null then (.blk[$id] // null) else null end) // {chars: [], tools: {}}
+     | merge_blocks($blocks)) as $merged
+  | (if $id != null then .blk[$id] = $merged else . end)
+  | ($merged | block_counts) as $bc
+  | ({msgs: 1, tc: $bc.tc, txc: $bc.txc, tu: $bc.tu, usable: $usable, out: $out, think: ($think // 0),
       key: (if $kind == "main" and ($model // "") != "" and ($effort // "") != "" then ($model + "|" + $effort + "|" + $skill) else null end),
       model: $model, effort: $effort, skill: $skill}) as $c
   | .versions[$version] += 1
@@ -269,9 +301,10 @@ def assistant_row($rec):
      else . end)
   | (if .idle_open then .idle_tools += $tu | (if $visible then .idle_texts += 1 else . end) else . end)
   | (if ($effort // "") != "" then .efforts[$effort] += 1 else . end)
-  # A streamed message repeats across lines under one id with output_tokens
-  # growing; the last line is the whole message, so retract the earlier line's
-  # contribution before adding this one (last occurrence wins).
+  # A message spans several lines under one id: usage repeats with
+  # output_tokens growing, so usage is last-wins, while $c's block counts
+  # already cover every block merged so far. Retract the earlier share before
+  # adding this one.
   | (if $id != null and .seen[$id] != null then contribute(.seen[$id]; -1) else . end)
   | contribute($c; 1)
   | (if $id != null then .seen[$id] = $c else . end)
@@ -292,7 +325,7 @@ def step($rec):
   end;
 
 reduce (inputs | try fromjson catch null) as $rec (
-  {kind: $kind, role: null, rows: {}, versions: {}, excluded: {}, seen: {},
+  {kind: $kind, role: null, rows: {}, versions: {}, excluded: {}, seen: {}, blk: {},
    msgs: 0, out: 0, think: 0, think_msgs: 0, think_chars: 0, text_chars: 0, tool_uses: 0,
    sidechain_dropped: 0, efforts: {}, cells: {},
    operator: 0, interrupts: 0, kills: 0, kill_events: 0,
@@ -312,7 +345,7 @@ reduce (inputs | try fromjson catch null) as $rec (
 | .last_ts = (if ($s | length) > 0 then ($s[-1] | todateiso8601) else null end)
 | .version = (.versions | to_entries | sort_by(-.value) | .[0].key // "?")
 | .cells = [.cells[]]
-| del(.stamps, .idle_open, .idle_tools, .idle_texts, .ctx_last, .seen)
+| del(.stamps, .idle_open, .idle_tools, .idle_texts, .ctx_last, .seen, .blk)
 `
 // TEST-END session-census-extract
 

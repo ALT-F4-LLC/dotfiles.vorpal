@@ -63,6 +63,10 @@
 #   name         A definition's declared name equals its file stem: `name:`
 #                for skills and agents, `node:` for contracts, `fragment:`
 #                for fragments.
+#   contents     A Contents entry `- [label](#id) — N lines` names an
+#                `<a id>` anchor in the same file, and N equals the span
+#                from that anchor to the next entry's at the same or a
+#                shallower indent (or to end of file).
 #
 # What is skipped, and why. src/user/docket/config/changelogs/<name>.md holds
 # each workflow's and policy.toml's version history; a renamed path is CORRECT
@@ -381,6 +385,44 @@ for wf in "$docket_tree"/workflows/*.toml; do
     [ -z "$pin" ] || [ "$pin" = "$payload" ] || fail payload "$wf" "$line" "step $step declares $payload; $contract pins $pin"
   done < <(step_payload_rows "$wf")
 done
+
+# --- contents ----------------------------------------------------------------
+# A Contents entry `- [label](#id) — N lines` states the span from its
+# `<a id="id">` anchor to the anchor of the next entry at the same or a
+# shallower indent, or to end of file. Edits shift those spans silently, so
+# the stated count is recomputed here rather than trusted.
+contents_mismatches() {
+  awk '
+    FNR == NR {
+      if (match($0, /<a id="[^"]+"><\/a>/)) anchor[substr($0, RSTART + 7, RLENGTH - 13)] = FNR
+      total = FNR
+      next
+    }
+    /^ *- \[.*\]\(#[^)]+\) — [0-9]+ lines/ {
+      n++
+      match($0, /^ */); ind[n] = RLENGTH
+      match($0, /\(#[^)]+\)/); id[n] = substr($0, RSTART + 2, RLENGTH - 3)
+      match($0, /— [0-9]+ lines/); stated[n] = substr($0, RSTART + 4, RLENGTH - 10) + 0
+      ln[n] = FNR
+    }
+    END {
+      for (i = 1; i <= n; i++) {
+        if (!(id[i] in anchor)) { printf "%d\tentry #%s has no <a id> anchor\n", ln[i], id[i]; continue }
+        end = total + 1
+        for (j = i + 1; j <= n; j++) if (ind[j] <= ind[i] && (id[j] in anchor)) { end = anchor[id[j]]; break }
+        if (end - anchor[id[i]] != stated[i])
+          printf "%d\t#%s states %d lines; the anchors span %d\n", ln[i], id[i], stated[i], end - anchor[id[i]]
+      }
+    }
+  ' "$1" "$1"
+}
+while IFS= read -r f; do
+  case "$f" in *.md) ;; *) continue ;; esac
+  grep -q -- '— [0-9][0-9]* lines' "$f" || continue
+  while IFS=$'\t' read -r line msg; do
+    fail contents "$f" "$line" "$msg"
+  done < <(contents_mismatches "$f")
+done < <(corpus_files)
 
 if [ "$failed" -ne 0 ]; then
   echo "" >&2

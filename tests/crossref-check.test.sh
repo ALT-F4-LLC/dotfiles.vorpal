@@ -4,9 +4,9 @@
 # THE PROPERTY UNDER TEST: every name the prose corpus points at exists —
 # paths, relative links and their heading anchors, /docket-* skill references
 # and the skill names a description hands off to, schema versions, workflow
-# executors, workflow gates, routing labels, and each definition's declared
-# name — and the gate names the check and the location of every reference
-# that does not resolve. Nothing else reads both trees: a rename
+# executors, workflow gates, routing labels, each definition's declared
+# name, and Contents line counts — and the gate names the check and the
+# location of every reference that does not resolve. Nothing else reads both trees: a rename
 # on one side used to leave the other side describing a thing that is gone,
 # with every other gate green.
 #
@@ -309,6 +309,38 @@ expect_fail "name: skill name differs from directory" "$FIX" name "expected 'alp
 build_corpus "$FIX"
 sed -i.bak 's|^name: executor-x|name: executor-y|' "$FIX/src/user/claude_code/agents/executor-x.md"
 expect_fail "name: agent name differs from stem" "$FIX" name "expected 'executor-x'"
+
+# --- contents -------------------------------------------------------------------
+# A Contents list whose counts equal the anchor spans passes; a stale count and
+# an entry with no anchor each fail with the entry named.
+REF="src/user/claude_code/skills/alpha/references/notes.md"
+write_contents() { # <dir> <first-count> <second-id>
+    cat > "$1/$REF" <<EOF
+# Notes on \`alpha\`
+
+- [One](#one) — $2 lines
+- [Two](#$3) — 3 lines
+
+<a id="one"></a>
+
+One.
+<a id="two"></a>
+
+Two.
+EOF
+}
+
+build_corpus "$FIX"
+write_contents "$FIX" 3 two
+expect_pass "contents: counts equal the anchor spans" "$FIX"
+
+build_corpus "$FIX"
+write_contents "$FIX" 4 two
+expect_fail "contents: a stale line count" "$FIX" contents "#one states 4 lines; the anchors span 3"
+
+build_corpus "$FIX"
+write_contents "$FIX" 3 three
+expect_fail "contents: an entry with no anchor" "$FIX" contents "entry #three has no <a id> anchor"
 
 # --- every failure is listed, not only the first ------------------------------
 build_corpus "$FIX"

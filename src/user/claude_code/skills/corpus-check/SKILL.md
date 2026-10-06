@@ -57,8 +57,8 @@ of judgment calls, and catches dead paths, dead relative links and heading
 anchors, dead `/docket-*` references and skill names in a description,
 schema references with no file on disk, undeclared workflow executors,
 gate names with no `just` recipe or `PROJECT_GATES` row, bad routing
-labels, and name/stem mismatches. Read `.docket/bin/crossref-check` for the
-exact rule set.
+labels, name/stem mismatches, and stale Contents line counts. Read
+`.docket/bin/crossref-check` for the exact rule set.
 
 If it fails, read every failure line. These are unambiguous (a name either
 resolves or it doesn't) and safe to fix directly, no confirmation needed.
@@ -143,8 +143,8 @@ Frozen-file edits need a version bump, decided by the file changed:
 - `policy.toml`: carries a `[policy].version`, but `frozen-drift-check` does
   not gate it; free to edit directly. Bump `version` and add the entry at
   the top of `changelogs/policy.md` when the body changes.
-- `skills/**/*.md`, `agents/*.md`, `CLAUDE.md`, `README.md`: no version
-  field; free to edit directly.
+- `skills/**/*.md`, `agents/*.md`, `README.md`: no version field; free to
+  edit directly.
 
 Never spend a version bump on a comment that only flags an unresolved
 question (a TODO, a "needs operator decision" note) with no other content

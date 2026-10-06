@@ -107,12 +107,14 @@ snapshot rather than re-opening the store:
 docket run status RUN-N --json                                   > "$AUDIT/status.json"
 docket run report RUN-N --json                                   > "$AUDIT/report.json"
 docket events list --run RUN-N --all-projects --json --limit 5000 > "$AUDIT/events.json"
-docket run verify-pins RUN-N --json                              > "$AUDIT/pins.json"
+(cd "<verified checkout>" && docket run verify-pins RUN-N --json) > "$AUDIT/pins.json"
 docket issue show <each roster issue> --json=v2                  > "$AUDIT/issues/<id>.json"
 ```
 
-Paginate `events list` with `--since <last seq>` until `total` is reached;
-a newest-page view is not a trail. Record each capture's exit code and
+Run the `verify-pins` capture from the owning project's checkout root (the
+verified checkout from §1), never from `$AUDIT`; elsewhere it refuses with
+`VALIDATION_ERROR`. Paginate `events list` with `--since <last seq>` until
+`total` is reached; a newest-page view is not a trail. Record each capture's exit code and
 refusal text; a refused capture is a coverage gap, never a reason to guess.
 Per-step reads (`step show`, `step gates`, `step artifacts`, `step artifact`,
 `vote show`) stay with the agents, who run them on demand.
@@ -137,12 +139,13 @@ themselves. Write one TSV row per log, main transcripts first, numbered from
 {
   for t in <each driving transcript>; do printf '%s\tmain\t-\t%s\t%s\n' "$t" "<session id>" "$(wc -c < "$t" | tr -d ' ')"; done
   for s in <each driving session dir>; do
-    find "$s/subagents" -name 'agent-*.jsonl' -printf '%p\t%s\n' 2>/dev/null | while IFS=$'\t' read -r p b; do
+    find "$s/subagents" -name 'agent-*.jsonl' 2>/dev/null | while IFS= read -r p; do
+      b=$(wc -c < "$p" | tr -d ' ')
       case "$p" in */workflows/*) k=workflow; w=$(basename "$(dirname "$p")");; *) k=subagent; w=-;; esac
       printf '%s\t%s\t%s\t%s\t%s\n' "$p" "$k" "$w" "$(basename "$s")" "$b"
     done
   done
-} | awk -F'\t' -v OFS='\t' '{print NR, $0}' > "$AUDIT/inventory.tsv"
+} | nl -ba -w1 -s"$(printf '\t')" > "$AUDIT/inventory.tsv"
 ```
 
 Every workflow directory beneath a driving session is inventoried, whether

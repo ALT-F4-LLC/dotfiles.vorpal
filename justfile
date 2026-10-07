@@ -137,24 +137,28 @@ tests:
     # CPU count, capped at 8), so one run stays inside the tests gate's
     # timeout while several writers share the machine. Each suite's output
     # goes to its own log and is replayed in order, so the lines of two
-    # suites never interleave. Every job is waited on by its own pid.
+    # suites never interleave. Each job writes its own exit status to a file
+    # beside its log: bash 3.2 drops a reaped job from its table, so a later
+    # `wait <pid>` can report "not a child of this shell" for a suite that
+    # passed. A missing status file counts as a failure.
     max=${TESTS_JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)}
     [ "$max" -gt 8 ] && max=8
     logs=$(mktemp -d "${TMPDIR:-/tmp}/just-tests.XXXXXX")
     trap 'rm -rf "$logs"' EXIT
-    pids=()
     names=()
     for suite in tests/*.test.sh; do
         while [ "$(jobs -rp | wc -l)" -ge "$max" ]; do
             sleep 0.1
         done
-        bash "$suite" >"$logs/${#pids[@]}.log" 2>&1 </dev/null &
-        pids+=("$!")
+        i=${#names[@]}
+        { rc=0; bash "$suite" >"$logs/$i.log" 2>&1 </dev/null || rc=$?; echo "$rc" >"$logs/$i.rc"; } &
         names+=("$suite")
     done
-    for i in "${!pids[@]}"; do
+    wait
+    for i in "${!names[@]}"; do
         echo "==> ${names[$i]}"
-        wait "${pids[$i]}" || failed+=("${names[$i]}")
+        rc=$(cat "$logs/$i.rc" 2>/dev/null) || rc=missing
+        [ "$rc" = 0 ] || failed+=("${names[$i]}")
         cat "$logs/$i.log"
     done
     if [ "${#failed[@]}" -gt 0 ]; then

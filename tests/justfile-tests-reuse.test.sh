@@ -63,13 +63,15 @@ g() { # git in the fixture, its commits off the operator's identity and signing 
 
 # The stub suite records each run outside the repository, so running it leaves
 # the tree clean. It exits with the code in suite-exit, and dirties the tree
-# when the dirty flag exists.
+# when the dirty flag exists. With the kill-runner flag it kills the job that
+# runs it, so the recipe never receives that suite's exit status.
 mkdir -p "${REPO}/tests"
 git init -q "$REPO"
 cat > "${REPO}/tests/stub.test.sh" <<STUB
 #!/bin/bash
 echo ran >> "${RAN}"
 [ -e "${WORK}/dirty" ] && : > "${REPO}/left-behind.txt"
+[ -e "${WORK}/kill-runner" ] && kill -9 "\$PPID"
 exit "\$(cat "${WORK}/suite-exit" 2>/dev/null || echo 0)"
 STUB
 g add -A
@@ -179,6 +181,14 @@ run_body DOCKET_GATE=tests
 [ "$(cat "${WORK}/status")" = 1 ] && [ "$(cat "${WORK}/runs")" = 1 ]
 check "the gate after a failing run runs and fails" $?
 rm -f "${WORK}/suite-exit"
+
+# A suite whose job dies before it reports an exit status fails the run.
+rm -rf "$STAMPS"
+: > "${WORK}/kill-runner"
+run_body
+[ "$(cat "${WORK}/status")" = 1 ] && [ ! -e "$STAMPS" ] && grep -q 'FAILED: tests/stub.test.sh' "${WORK}/out"
+check "a suite with no recorded exit status fails the run" $?
+rm -f "${WORK}/kill-runner"
 
 # A suite that leaves the tree dirty voids the stamp.
 rm -rf "$STAMPS"

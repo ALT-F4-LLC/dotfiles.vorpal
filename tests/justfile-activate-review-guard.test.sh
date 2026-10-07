@@ -111,10 +111,12 @@ JSON
 
 # Run the body with `{{force}}` set to the given value, leaving stderr in err,
 # the exit status in status, and whether vorpal-activate ran in activated.
+# CASE_PATH, when set, replaces the whole PATH the body runs under.
+BASH_BIN=$(command -v bash)
 activate() { # <force>
     rm -f "$MARKER" "$CALLS"
     sed "s/{{force}}/$1/g" "${WORK}/body.sh" > "${WORK}/run.sh"
-    (cd "$WORK" && PATH="${BIN}:${PATH}" bash "${WORK}/run.sh") > "${WORK}/out" 2> "${WORK}/err"
+    (cd "$WORK" && PATH="${CASE_PATH:-${BIN}:${PATH}}" "$BASH_BIN" "${WORK}/run.sh") > "${WORK}/out" 2> "${WORK}/err"
     echo $? > "${WORK}/status"
     if [ -e "$MARKER" ]; then echo yes; else echo no; fi > "${WORK}/activated"
 }
@@ -232,6 +234,44 @@ for case_ in 'STEP-10:STEP-1 x:done step' 'STEP-11:step-2:open step'; do
     refused && grep -q '(step list RUN-7)\.$' "${WORK}/err" && ! called 'step show'
     check "a malformed ${label} id ('${bad}') refuses before any step show" $?
 done
+
+# A step list whose total disagrees with its steps is partial, even when every
+# listed step is finished and nothing else would refuse.
+arrange done
+cat > "${FIX}/steps-RUN-7.json" <<'JSON'
+{"ok":true,"data":{"steps":[
+ {"run":"RUN-7","issue":"DOT-1","step":"STEP-9","instance":"threat-model@0","kind":"executor","attempt":1,"status":"done"},
+ {"run":"RUN-7","issue":"DOT-1","step":"STEP-10","instance":"implement@0","kind":"executor","attempt":1,"status":"done"},
+ {"run":"RUN-7","issue":"DOT-1","step":"STEP-11","instance":"review-correctness@0","kind":"executor","attempt":1,"status":"done"},
+ {"run":"RUN-7","issue":"DOT-2","step":"STEP-20","instance":"implement@0","kind":"executor","attempt":1,"status":"skipped"}
+],"total":5}}
+JSON
+activate ""
+refused && grep -q '(step list RUN-7)' "${WORK}/err"
+check "a step list whose total differs from its length refuses activation" $?
+
+# Without jq nothing can be checked. The PATH holds only the stubs and cat
+# (macOS ships /usr/bin/jq, so no system directory is on it).
+NOJQ="${WORK}/nojq"
+mkdir -p "$NOJQ"
+for tool in docket vorpal python3; do ln -s "${BIN}/${tool}" "${NOJQ}/${tool}"; done
+ln -s "$(command -v cat)" "${NOJQ}/cat"
+arrange done
+if PATH="$NOJQ" command -v jq >/dev/null 2>&1; then
+    echo "justfile-activate-review-guard: FAIL — jq is reachable on the no-jq PATH" >&2
+    fail=1
+fi
+CASE_PATH="$NOJQ" activate ""
+refused && grep -q 'jq is missing' "${WORK}/err"
+check "a missing jq refuses activation" $?
+
+# A non-string run id refuses through the filter's own type check, not
+# through a jq runtime error on the id regex.
+arrange done
+printf '%s\n' '{"ok":true,"data":{"runs":[{"run":7,"status":"paused"}],"total":1}}' > "${FIX}/runs.json"
+activate ""
+refused && grep -q '(run status)' "${WORK}/err" && ! grep -q '^jq: error' "${WORK}/err"
+check "a non-string run id refuses activation" $?
 
 if [ "$fail" -ne 0 ]; then
     echo "justfile-activate-review-guard: FAIL" >&2

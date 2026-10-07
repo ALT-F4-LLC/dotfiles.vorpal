@@ -437,7 +437,10 @@ SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v RS='\036' -v widen="$WIDEN" '
 # test suite runs it with PATH restricted to exactly those.
 # HOOK_DIR and PREPASS_AWK are resolved at the top of this file, in the
 # install-integrity check that runs before the engine query.
-STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk -f "$PREPASS_AWK" 2>/dev/null) || allow_default
+# A pre-pass that fails (a program awk cannot parse) leaves the match stage
+# no command to read, so the hook refuses rather than allowing.
+STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk -f "$PREPASS_AWK" 2>/dev/null) || \
+    deny "$REASON_PREFIX the commit-guard hook's pre-pass program failed (docket-guard-prepass.awk), so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
 
 # THE MATCH: `git (commit|push|add)`, head-normalized on `git` and skipping
 # git's own global options (`-C`, `-c`, `--git-dir`, …) that may precede the

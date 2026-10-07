@@ -959,6 +959,38 @@ case_match_program_failure() {
     rm -rf "$scratch_dir"
 }
 
+# ---- Unparseable pre-pass program: fail CLOSED, not open ------------------
+#
+# A pre-pass program awk cannot parse prints nothing and exits non-zero, so
+# the match stage would see no command at all. The hook refuses instead of
+# allowing. The copy appends one unparseable statement to the shared file and
+# runs under an unapproved gate, the one engine state that reaches the
+# pre-pass; `ls` is allowed by the shipped hook.
+
+case_prepass_program_failure() {
+    local scratch_dir scratch_hook err rc
+    scratch_dir=$(mktemp -d "${TMPDIR:-/tmp}/docket-commit-guard-prepass-broken.XXXXXX") || \
+        fatal "mktemp failed"
+    scratch_hook="${scratch_dir}/docket-commit-guard-hook.sh"
+    cp "$HOOK" "$scratch_hook" || fatal "could not copy hook to scratch dir"
+    { cat "$(dirname "$HOOK")/docket-guard-prepass.awk"; printf '%s\n' 'BEGIN { x = = 1 }'; } \
+        >"${scratch_dir}/docket-guard-prepass.awk" || \
+        fatal "could not write the broken pre-pass file to scratch dir"
+    err=$(PATH="$PATH_WITH_DOCKET" GATE_STATE=unapproved "$BASH_BIN" "$scratch_hook" 2>&1 >/dev/null \
+        <<<"$(build_input 'ls')")
+    rc=$?
+    if [ "$rc" -eq 2 ]; then
+        pass "unparseable pre-pass program fails closed on ls (DENY)"
+    else
+        fail "unparseable pre-pass program on ls (want DENY, got exit ${rc})"
+    fi
+    case "$err" in
+        *"pre-pass program failed"*) pass "unparseable pre-pass program names the analysis failure" ;;
+        *) fail "unparseable pre-pass program reason: ${err}" ;;
+    esac
+    rm -rf "$scratch_dir"
+}
+
 # ---- Pre-pass drift: the two guard hooks must share one lexer file --------
 #
 # The quote-aware pre-pass used to be duplicated byte-for-byte in the commit
@@ -1042,6 +1074,7 @@ case_probe_never_acts
 case_many_quoted_groups_on_one_line
 case_missing_prepass_file_denies
 case_match_program_failure
+case_prepass_program_failure
 case_prepass_copies_identical
 case_input_edge_cases
 

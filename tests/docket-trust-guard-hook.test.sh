@@ -53,15 +53,14 @@ command -v jq >/dev/null 2>&1 || fatal "jq is required to run this test"
 
 BASH_BIN=$(command -v bash) || fatal "bash not found on PATH"
 
+# shellcheck source=tests/lib/hook-probe.sh
+. "${SCRIPT_DIR}/lib/hook-probe.sh"
+
 SANDBOX=$(mktemp -d "${TMPDIR:-/tmp}/docket-trust-guard-test.XXXXXX") || fatal "mktemp failed"
 trap 'rm -rf "$SANDBOX"' EXIT
 
 TOOLS_DIR="${SANDBOX}/tools"
-mkdir -p "$TOOLS_DIR"
-for tool in bash cat jq awk; do
-    tool_path=$(command -v "$tool") || fatal "hook dependency ${tool} not found on PATH"
-    ln -s "$tool_path" "${TOOLS_DIR}/${tool}"
-done
+hook_probe_link_shims "$TOOLS_DIR" bash cat jq awk || fatal "cannot build hook probe shims"
 
 # Classifies one hook run as DENY (exit 2) or ALLOW (exit 0). No
 # permissionDecision envelope is emitted -- exit 2 is a pre-permission hard

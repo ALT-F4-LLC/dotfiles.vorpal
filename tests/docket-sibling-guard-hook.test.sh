@@ -657,6 +657,17 @@ case_read_loops() {
         "ls | while read d; do : \${d:?}; rm -rf ${SIB_DIR}/\$d; done"; do
         assert_deny_reason "$cmd" executor-write "$WAVE_42" "branches on a variable" "read loop that branches on its value: ${cmd}"
     done
+    # A loop that closes stderr cannot swallow the refusal: the marker
+    # travels on a descriptor the probe opens before `set -r`.
+    assert_verdict "ls | while read d; do [ -n \"\$d\" ] || continue; rm -rf ${SIB_DIR}/\$d; done 2>&-" executor-write "$WAVE_42" DENY "guarded read loop with stderr closed"
+    assert_verdict "ls | while read d; do [ -n \"\$d\" ] || continue; rm -rf ${SIB_DIR}/\$d; done 2>&-; echo done" executor-write "$WAVE_42" DENY "guarded read loop with stderr closed before a trailing command"
+    assert_verdict "{ ls | while read d; do [ -n \"\$d\" ] || continue; rm -rf ${SIB_DIR}/\$d; done; } 2>&-" executor-write "$WAVE_42" DENY "guarded read loop in a group with stderr closed"
+    assert_verdict "ls | while read d; do [ -z \"\$d\" ] && continue; pkill -f node; done 2>&-" executor-write "$WAVE_42" DENY "guarded read loop running pkill with stderr closed"
+    assert_verdict "read d; for f in \$d; do rm -rf ${SIB_DIR}/\$f; done 2>&-" executor-write "$WAVE_42" DENY "for-list over a lone read with stderr closed"
+    assert_deny_reason "ls | while read d; do rm -rf ${SIB_DIR}/\$d; done 2>&-" executor-write "$WAVE_42" "STEP-7.d" "unguarded read loop with stderr closed walks its body"
+    assert_verdict "ls | while read d; do [ -n \"\$d\" ] || continue; rm -rf ${SIB_DIR}/\$d; done 2>/dev/null" executor-write "$WAVE_42" DENY "guarded read loop redirecting stderr to a file"
+    assert_verdict "printf 'a\\nb\\n' | while read x; do echo \$x; done 2>&-" executor-write "$WAVE_42" ALLOW "read loop with stderr closed ends"
+    assert_verdict "printf 'a\\n' | while read d; do [ -s /nonexistent ] || echo \$d; done 2>&-" executor-write "$WAVE_42" ALLOW "read loop whose test expands no value, stderr closed, ends"
     # The read placeholder covers the IFS= -r form, a read with no name
     # (REPLY) and every operand of a multi-name read.
     assert_deny_reason "ls | while IFS= read -r f; do for g in \$f; do rm -rf ${SIB_DIR}/\$g; done; done" executor-write "$WAVE_42" "branches on a variable" "for-list over an IFS= read -r placeholder"

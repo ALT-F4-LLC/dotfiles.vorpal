@@ -34,8 +34,6 @@
 # its own agent's spend and nobody else's. The tool-call count is asserted
 # the same way: distinct tool_use block ids across lines, since the
 # transcript writes one content block per line under a shared message id.
-# The coordination section is exercised over a synthetic manifest and wave
-# return, the two inputs the live conductor passes in.
 #
 # Seats-mode selection is exercised three ways: SELECT_JQ over the fixtures,
 # the scout's own fenced command block (rendered from scoutBrief and run under
@@ -748,52 +746,6 @@ ok(order.join(',') === 'PROP-10/amy,PROP-10/bob,PROP-9/zed',
     'seats rows sort lexicographically by (proposal, voter), grouped per proposal')
 ok(reduceRows(twoPanels, 'seats', []).rows.filter((r) => r.unit === 'tool_uses').every((r) => r.quantity === 0),
     'an extract without a tool_uses field counts zero calls rather than NaN')
-
-// ---- Coordination: the wave's statuses joined to the manifest rows ----
-// Instance ordinals are the engine's: @0 is a step's first minting, a fix
-// round's rows carry the round number. One sibling-shard row and one status
-// no manifest row explains, so both edges are exercised.
-const manifest = [
-    { step: 'STEP-3150', instance: 'implement@0', issue: 'DOT-1', kind: 'executor' },
-    { step: 'STEP-3146', instance: 'verify-tribunal@0', issue: 'DOT-1', kind: 'vote' },
-    { step: 'STEP-3156', instance: 'fix@2', issue: 'DOT-2', kind: 'executor' },
-    { step: 'STEP-3166', instance: 'review@2#0', issue: 'DOT-2', kind: 'executor' },
-    { step: 'STEP-3158', instance: 'verify-tribunal@2', issue: 'DOT-2', kind: 'vote' },
-    { step: 'STEP-3170', instance: 'synthesize-findings@2', issue: 'DOT-2', kind: 'executor' },
-    { step: 'STEP-3180', instance: 'implement@0', issue: 'DOT-3', kind: 'executor' },
-    { step: 'STEP-3190', instance: 'verify-tribunal@0', issue: 'DOT-3', kind: 'vote' },
-]
-const settled = [
-    { step: 'STEP-3150', status: 'returned', text: 'ok' },
-    { step: 'STEP-3146', status: 'gate-passed', text: '', spawn_accounting: '3 seats, 3 probes, 0 retries' },
-    { step: 'STEP-3156', status: 'claim-conflict', text: 'STEP-3156 CLAIM CONFLICT' },
-    { step: 'STEP-3166', status: 'parked-base-ancestry', text: '' },
-    { step: 'STEP-3158', status: 'gate-rejected', text: '' },
-    { step: 'STEP-3170', status: 'skipped-chain-dead', text: null },
-    { step: 'STEP-3180', status: 'not-launched-agent-budget', text: null },
-    { step: 'STEP-3190', status: 'not-launched-other-shard', text: null },
-    { step: 'STEP-9999', status: 'spawn-failed', text: null },
-]
-const coord = coordinationOf(panel, manifest, settled)
-ok(coord.rows === 8, `a sibling shard's row counts nowhere (got rows ${coord.rows})`)
-ok(JSON.stringify(coord.rounds_per_issue) === JSON.stringify({ 'DOT-1': 0, 'DOT-2': 2, 'DOT-3': 0 }),
-    `rounds per issue is the highest instance ordinal the wave carried per issue (got ${JSON.stringify(coord.rounds_per_issue)})`)
-ok(coord.gates.decided === 2 && coord.gates.passed === 1 && coord.gates.rejected === 1 && coord.gates.parked === 0,
-    'gate outcomes are bucketed from the wave statuses')
-ok(coord.gates.first_pass.decided === 1 && coord.gates.first_pass.passed === 1 && coord.gates.first_pass.rate === 1,
-    'first pass counts only gates at ordinal 0; a fix round\'s gate is not a first pass')
-ok(coord.reseats === 1, 'a re-seated judge is counted from its own brief')
-ok(coord.claim_conflicts === 1 && coord.ancestry_parks === 1 && coord.spawn_failed === 1,
-    'claim conflicts, ancestry parks and spawn failures each count once')
-ok(coord.deferred.agent_budget === 1 && coord.deferred.chain_dead === 1 && coord.deferred.total === 2
-    && coord.deferred.writer_budget === 0 && coord.deferred.run_parked === 0,
-    'deferrals are bucketed by cause, sibling-shard rows excluded')
-ok(coord.unmatched_steps.join(',') === 'STEP-9999',
-    'a status no manifest row explains is named, never silently dropped')
-ok(coordinationOf(panel, undefined, undefined) === null,
-    'without the wave statuses and rows the section is null, so an unmeasured wave never reads as clean')
-ok(coordinationOf(wave, manifest, settled).reseats === 0,
-    'a panel with no respawn sentence counts no re-seats')
 
 // ---- The drift guard survives the new ordering ----
 const drifted = reduceRows(drift, 'steps', [])

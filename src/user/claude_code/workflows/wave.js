@@ -101,8 +101,8 @@ export const meta = {
 // free text (its reply-tail contract lives with the executors). `coordination`
 // is the launch's rounds per issue, gate outcomes, re-seats, claim conflicts,
 // ancestry parks, spawn failures and deferrals, counted from its own rows and
-// settled statuses in the field set wave-usage.js's steps-mode join returns.
-// Every other agent the wave spawns answers through a schema.
+// settled statuses. It is the run's only coordination source; wave-usage.js
+// measures tokens alone. Every other agent the wave spawns answers through a schema.
 // ---------------------------------------------------------------------------
 
 // TEST-BEGIN configuration — shared by the extracted behavior suites.
@@ -2898,8 +2898,8 @@ if (budget.total) {
 // The launch's coordination counts, for docket-retro's integration-health
 // row: what the store cannot see about a wave (a refused claim writes no
 // event, a deferred row never claims). Computed here from the launch's own
-// rows and settled statuses, so no conductor relay can drop them. The field
-// set is the one wave-usage.js's steps-mode join returns. Instance ordinals
+// rows and settled statuses, so no conductor relay can drop them. `reseats`
+// counts judges re-spawned in runGate. Instance ordinals
 // are the engine's: `@0` is a step's first minting (`review@0#k`,
 // `verify-tribunal@0`) and a fix round's rows carry the round, so first pass
 // means ordinal 0.

@@ -314,7 +314,7 @@ ok(c != null && c.rows === 3 && c.deferred.chain_dead === 1 && c.deferred.total 
     'coordination: rows, gates, deferrals and rounds are counted from the settled statuses')
 ok(c != null && JSON.stringify(Object.keys(c)) === JSON.stringify(['rows', 'rounds_per_issue', 'gates',
     'reseats', 'claim_conflicts', 'ancestry_parks', 'spawn_failed', 'deferred', 'unmatched_steps']),
-    'coordination: the field set matches the wave-usage join\'s section')
+    'coordination: the field set is the one docket-retro\'s integration-health row reads')
 // The harness hands the conductor the return as JSON text, so the whole
 // return, section included, must survive a JSON round trip.
 const crossed = JSON.parse(JSON.stringify(out))

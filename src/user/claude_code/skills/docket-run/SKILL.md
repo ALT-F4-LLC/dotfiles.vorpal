@@ -422,7 +422,11 @@ Integrated wave worktrees therefore stay `prunable` entries until the
 operator prunes them outside the sandbox. Run the prune here anyway,
 before the probe: it clears whatever the deny list does not cover and
 costs nothing when that is none. Only entries git itself reports
-`prunable` are touched; a live worktree is never pruned by this:
+`prunable` are touched; a live worktree is never pruned by this. This
+prune and its `git update-ref -d` deletion of `worktree-wf_*` and
+`worktree-agent-*` refs are cross-session by design, because they clear
+prior sessions' prunable leftovers, whose directories are already gone;
+the run-close sweep, not this one, is scoped to this session's waves:
 
 ```bash
 git worktree list --porcelain | awk '/^worktree /{w=$2} /^HEAD /{h=$2} /^branch /{b=$2} /^prunable/{print w, h, b} /^$/{w="";h="";b=""}'
@@ -1344,11 +1348,34 @@ working directory is already gone, so the
 entry now reads `prunable` in `git worktree list` and only the branch is
 left; `git branch -D` refuses it ("used by worktree") on that stale entry,
 so delete the ref directly with `git update-ref -d`, and only once the
-entry reads `prunable`:
+entry reads `prunable`. Do it with the sweep below, never a hand-rolled
+pass over every prunable ref, since several sessions share the bare repo.
+Pass the wfId of every wave this session launched: it reads `git worktree
+list --porcelain` one entry at a time, resetting at each blank line, so a
+detached entry never inherits the previous entry's branch, and deletes
+only a `refs/heads/worktree-<wfId>-*` ref whose own entry is `prunable`.
+Each output line is a deleted ref and the sha it held, for the close
+report:
 
 ```bash
-git worktree list --porcelain | grep -A3 "^worktree <path>$" | grep -q '^prunable' &&
-  git update-ref -d refs/heads/worktree-<basename>
+# run-close sweep: delete this session's prunable wave branch refs
+set -- <wfId> ...   # every wave this session launched
+git worktree list --porcelain | awk -v ids="$*" '
+  function flush(  i) {
+    if (p && b != "")
+      for (i = 1; i <= n; i++)
+        if (index(b, "refs/heads/worktree-" want[i] "-") == 1) { print b; break }
+    b = ""; p = 0
+  }
+  BEGIN { n = split(ids, want, " ") }
+  /^branch / { b = $2 }
+  /^prunable/ { p = 1 }
+  /^$/ { flush() }
+  END { flush() }
+' | while read -r ref; do
+  sha=$(git rev-parse --verify -q "$ref") &&
+    git update-ref -d "$ref" "$sha" && echo "$ref $sha"
+done
 ```
 
 The stale metadata directory is inert and stays until the operator prunes

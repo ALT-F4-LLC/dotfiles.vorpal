@@ -813,6 +813,82 @@ else
     fi
 fi
 
+# (m) The run-close sweep deletes only this session's prunable wave branch
+# refs; several sessions share the bare repo. The snippet is the one fenced
+# block carrying its header comment, run with session wfId wf_mine against
+# a fixture bare repo whose porcelain list holds, in order: a prunable
+# foreign entry, a live entry of this session, a detached prunable entry,
+# and a prunable entry of this session. Only worktree-wf_mine-2 may go, and
+# stdout is exactly that ref with the sha it held.
+#
+#   m1 drop the wfId filter (worktree-wf_other-1 is deleted)
+#   m2 drop the per-blank-line reset (worktree-wf_mine-1 is deleted via the
+#      detached entry)
+#   m3 remove the print, or print the path instead of the ref
+sweep_header='# run-close sweep: delete this session'"'"'s prunable wave branch refs'
+sweep="${WORK}/sweep"
+mkdir -p "$sweep"
+if awk -v header="$sweep_header" '
+        /^```/ {
+            if (open) { if (found) { printf "%s", block; n++ }; open = 0; found = 0; block = "" }
+            else open = 1
+            next
+        }
+        open { block = block $0 "\n"; if ($0 == header) found = 1 }
+        END { exit n == 1 ? 0 : 1 }
+    ' "$SKILL" | sed 's/^set -- .*/set -- wf_mine/' > "${sweep}/sweep.sh" &&
+    [ "$(grep -c '^set -- wf_mine$' "${sweep}/sweep.sh")" -eq 1 ]; then
+    ok "run-close sweep: exactly one fenced block carries the sweep"
+    if (
+        export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
+        g() { git -c user.name=fixture -c user.email=fixture@example.invalid "$@"; }
+        g init -q "${sweep}/seed" &&
+            g -C "${sweep}/seed" commit -q --allow-empty -m fixture &&
+            g clone -q --bare "${sweep}/seed" "${sweep}/repo.git" &&
+            g -C "${sweep}/repo.git" worktree add -q -b worktree-wf_other-1 "${sweep}/wt/a-other1" &&
+            g -C "${sweep}/repo.git" worktree add -q -b worktree-wf_mine-1 "${sweep}/wt/b-mine1" &&
+            g -C "${sweep}/repo.git" worktree add -q --detach "${sweep}/wt/c-detached" &&
+            g -C "${sweep}/repo.git" worktree add -q -b worktree-wf_mine-2 "${sweep}/wt/d-mine2" &&
+            rm -rf "${sweep}/wt/a-other1" "${sweep}/wt/c-detached" "${sweep}/wt/d-mine2"
+    ) >/dev/null 2>&1; then
+        fixture_git() { GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 git -C "${sweep}/repo.git" "$@"; }
+        order=$(fixture_git worktree list --porcelain |
+            awk '/^worktree /{w=$2} /^branch /{b=$2} /^detached/{b="detached"} /^prunable/{p="prunable"} /^$/{if (w ~ /\/wt\//) print b, (p ? p : "live"); b=""; p=""}' |
+            tr '\n' ',')
+        if [ "$order" != "refs/heads/worktree-wf_other-1 prunable,refs/heads/worktree-wf_mine-1 live,detached prunable,refs/heads/worktree-wf_mine-2 prunable," ]; then
+            bad "run-close sweep: the fixture porcelain list is not in the planned order: ${order}"
+        else
+            mine2=$(fixture_git rev-parse refs/heads/worktree-wf_mine-2)
+            (cd "${sweep}/repo.git" && GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 bash "${sweep}/sweep.sh") \
+                > "${sweep}/out" 2>"${sweep}/err"
+            if fixture_git rev-parse -q --verify refs/heads/worktree-wf_mine-2 >/dev/null; then
+                bad "run-close sweep: this session's prunable worktree-wf_mine-2 was not deleted: $(head -c 300 "${sweep}/err")"
+            else
+                ok "run-close sweep: this session's prunable ref is deleted"
+            fi
+            if fixture_git rev-parse -q --verify refs/heads/worktree-wf_other-1 >/dev/null; then
+                ok "run-close sweep: another session's prunable ref survives"
+            else
+                bad "run-close sweep: another session's worktree-wf_other-1 was deleted"
+            fi
+            if fixture_git rev-parse -q --verify refs/heads/worktree-wf_mine-1 >/dev/null; then
+                ok "run-close sweep: a live ref survives a detached prunable entry after it"
+            else
+                bad "run-close sweep: the live worktree-wf_mine-1 was deleted"
+            fi
+            if [ "$(cat "${sweep}/out")" = "refs/heads/worktree-wf_mine-2 ${mine2}" ]; then
+                ok "run-close sweep: stdout is exactly the deleted ref and the sha it held"
+            else
+                bad "run-close sweep: stdout is not one line naming the deleted ref and its sha: $(head -c 300 "${sweep}/out")"
+            fi
+        fi
+    else
+        bad "run-close sweep: could not build the fixture bare repository"
+    fi
+else
+    bad "run-close sweep: no single fenced block carries '${sweep_header}' with a set -- line"
+fi
+
 if [ "$fail" -ne 0 ]; then
     echo "docket-run-skill: FAIL — a sandbox lift without its precondition is the failure this pins; fix the skill, not the test." >&2
     exit 1

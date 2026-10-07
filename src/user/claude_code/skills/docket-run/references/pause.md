@@ -225,8 +225,10 @@ The prompt's paths come from git, and are checked when the prompt is
 recorded and again when a new session attaches. Write this block verbatim
 to `<scratchpad>/resume-prompt-paths.sh` with the Write tool and run it
 with `bash`. `print` emits the Checkout, branch and worktree lines from
-the cwd's checkout. `check` exits 1 when an absolute path in the prompt
-file does not exist, quoting each such line. `attach` exits 1 when the
+the cwd's checkout, skipping every worktree entry git marks `prunable`
+(its directory is gone), so `check` passes what `print` emits. `check`
+exits 1 when an absolute path in the prompt file does not exist, quoting
+each such line. `attach` exits 1 when the
 prompt's Checkout is not this cwd's `git rev-parse --show-toplevel`,
 naming both.
 
@@ -239,7 +241,12 @@ case "${1:-}" in
         top=$(git rev-parse --show-toplevel) || exit 1
         branch=$(git rev-parse --abbrev-ref HEAD) || exit 1
         printf '**Checkout:** `%s`\n**Branch:** `%s`\n' "$top" "$branch"
-        git worktree list --porcelain | sed -n 's/^worktree \(.*\)$/**Worktree:** `\1`/p'
+        git worktree list --porcelain | awk '
+            function emit() { if (wt != "" && !prunable) printf "**Worktree:** `%s`\n", wt; wt = ""; prunable = 0 }
+            /^worktree / { emit(); wt = substr($0, 10); next }
+            /^prunable/ { prunable = 1; next }
+            /^$/ { emit() }
+            END { emit() }'
         ;;
     check)
         [ -f "$prompt" ] || { echo "resume-prompt-paths: no prompt file: $prompt" >&2; exit 2; }

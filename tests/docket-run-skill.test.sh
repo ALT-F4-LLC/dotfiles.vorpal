@@ -130,6 +130,11 @@
 #          prompt naming the mistyped incident checkout then exits 0
 #       i2 replace the toplevel comparison in `attach` with `true` (or delete
 #          the attach branch); the mismatched Checkout then exits 0
+#       i3 make `print` emit every porcelain entry again (drop its prunable
+#          skip); the removed ../wt worktree reaches the round-trip prompt
+#          and check exits 1 on it
+#       i4 make `print` emit no linked-worktree lines; the live ../live
+#          worktree's Worktree line is missing from print's output
 #
 # A missing input file fails; it never skips green.
 
@@ -626,6 +631,35 @@ if awk -v usage="$paths_usage" '
             ok "resume-prompt paths: attach refuses a Checkout other than this toplevel, naming both"
         else
             bad "resume-prompt paths: attach on a mismatched Checkout exited ${rc}: $(head -c 300 "${paths}/elsewhere.err")"
+        fi
+
+        # Round trip: print's output from the main checkout must pass check.
+        # ../wt is added and its directory removed, so the porcelain list
+        # marks it prunable (as a sandboxed `git worktree remove` leaves it);
+        # ../live is added and left in place.
+        fixture_parent=$(dirname "$repo_top")
+        if (cd "${paths}/repo" &&
+            export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 &&
+            git worktree add -q ../wt &&
+            git worktree add -q ../live &&
+            rm -rf ../wt &&
+            git worktree list --porcelain | grep -q '^prunable') >/dev/null 2>&1; then
+            (cd "${paths}/repo" && bash "${paths}/resume-prompt-paths.sh" print) \
+                > "${paths}/roundtrip.md" 2>/dev/null
+            if ! grep -qF -- "${fixture_parent}/wt" "${paths}/roundtrip.md" &&
+                bash "${paths}/resume-prompt-paths.sh" check "${paths}/roundtrip.md" \
+                    >/dev/null 2>"${paths}/roundtrip.err"; then
+                ok "resume-prompt paths: print skips a prunable worktree and check passes its output"
+            else
+                bad "resume-prompt paths: print's output named the removed worktree or failed check: $(head -c 300 "${paths}/roundtrip.err")"
+            fi
+            if grep -qF -- "**Worktree:** \`${fixture_parent}/live\`" "${paths}/roundtrip.md"; then
+                ok "resume-prompt paths: print keeps a live linked worktree"
+            else
+                bad "resume-prompt paths: print's output has no Worktree line for ${fixture_parent}/live: $(head -c 300 "${paths}/roundtrip.md")"
+            fi
+        else
+            bad "resume-prompt paths: could not build the prunable and live worktree fixture"
         fi
     else
         bad "resume-prompt paths: could not create the fixture git repository"

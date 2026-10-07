@@ -723,6 +723,16 @@ case "$PROBE_RC:$PROBE_ERR" in
         deny "$REASON_PREFIX this command branches on a variable after a \`read\` in it (a \`[ ... ]\`, \`[[ ... ]]\`, \`case\`, \`for ... in\`, \`for ((...))\`, \`:\` or \`eval\` that expands a value, or a \`continue\`). The sibling-guard hook feeds a read no input, so it cannot tell which commands the loop would run. An earlier lone \`read\` anywhere in the same Bash call counts too, and refuses every later test on a variable, the counted wait loop \`until [ -s f ] || [ \$n -ge N ]\` included: run that read in its own Bash call. Otherwise filter the input before the loop instead (\`cmd | grep -v '^\$' | while IFS= read -r x; do ...; done\`), or split it into smaller Bash calls." ;;
 esac
 
+# A probe that a signal ended (a status above 128, such as 152 from SIGXCPU
+# under a CPU limit) stopped mid-walk, so its leaf list may be partial or
+# empty, and an empty one would read as an inert command. The command cannot
+# choose this status (`exit`, `kill`, `trap` and `ulimit` leaves are vetoed);
+# only a limit outside the probe ends it this way, and the hook refuses.
+if [ "$PROBE_RC" -gt 128 ]; then
+    log_decision "deny" "probe-signal"
+    deny "$REASON_PREFIX the sibling-guard hook's analysis of this command was ended by a signal (status ${PROBE_RC}), so the command could not be fully checked and is refused rather than passed through. Retry it once; if it is refused again, split it into smaller Bash calls."
+fi
+
 if [ -z "$PROBE_TEXT" ]; then
     # No leaf dispatched: the command is inert (all comment, all whitespace,
     # or only structural builtins), unless bash reported something while

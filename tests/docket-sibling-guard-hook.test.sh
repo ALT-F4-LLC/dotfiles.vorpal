@@ -121,9 +121,10 @@ cp "$OPERATOR" "$UNRELATED"
 # run_hook <input>: one hook run on <input>, stdout and stderr passed through.
 # A probe that never ends would stall the suite (and CI) instead of failing
 # its row, and there is no portable `timeout`, so each run gets a CPU-time
-# bound. The bound kills the spinning probe, not the hook, and the hook then
-# carries on to a verdict; a run that lasted as long as the bound therefore
-# returns 124 so the row reports it as such rather than as that verdict.
+# bound. The bound kills the spinning probe by a signal, not the hook, and the
+# hook then denies the command as one it could not fully check; a run that
+# lasted as long as the bound therefore returns 124 so the row reports it as
+# such rather than as that deny.
 HOOK_CPU_LIMIT=20
 run_hook() {
     local start=$SECONDS rc
@@ -1404,6 +1405,33 @@ case_leaf_cap_stops_the_walk() {
     [ -e "$marker" ] && fail "the probe ran the sibling-dir loop body for real (marker exists)" || pass "the sibling-dir loop body never ran"
 }
 
+# A probe that a signal ends mid-walk leaves a partial or empty leaf list,
+# which must not read as an inert command. The analyzed command cannot pick
+# that status, so the row's PATH carries a `bash` whose probe run (`bash -c`)
+# sends itself SIGXCPU, as a CPU limit outside the probe would; `bash -n`
+# runs the real bash. `ls` is allowed by the shipped hook. A probe that ends
+# with status 1 or 2 (a failing test as the last command) is no signal.
+case_probe_killed_by_signal() {
+    assert_verdict "ls; false" executor-write "$WAVE_42" ALLOW "probe exiting 1 keeps its verdict"
+    assert_verdict "ls; [ a -eq 1 ]" executor-write "$WAVE_42" ALLOW "probe exiting 2 keeps its verdict"
+    local TOOLS_DIR="${WORK}/signal-tools" log_file="${WORK}/home/.claude/friction/docket-sibling-guard.jsonl"
+    hook_probe_link_shims "$TOOLS_DIR" cat jq awk || { fail "probe killed by a signal: cannot build shims"; return; }
+    printf '#!%s\nif [ "$1" = -c ]; then kill -XCPU $$; fi\nexec %s "$@"\n' "$BASH_BIN" "$BASH_BIN" >"${TOOLS_DIR}/bash"
+    chmod +x "${TOOLS_DIR}/bash"
+    assert_verdict "ls" executor-write "$WAVE_42" DENY "probe ended by a signal is refused"
+    assert_deny_reason "ls" executor-write "$WAVE_42" "could not be fully checked" "probe ended by a signal"
+    # Logging may use more than the four tools, so this run keeps the full
+    # PATH behind the signalling bash.
+    mkdir -p "${log_file%/*}"
+    : >"$log_file"
+    PATH="${TOOLS_DIR}:${PATH}" HOME="${WORK}/home" "$BASH_BIN" "$HOOK" >/dev/null 2>&1 <<<"$(build_input "ls" executor-write "$WAVE_42")"
+    if jq -se 'length > 0 and (last | .decision == "deny" and (.clause | IN("oversized", "structural-redirect") | not))' "$log_file" >/dev/null 2>&1; then
+        pass "probe ended by a signal is logged as a deny under its own clause"
+    else
+        fail "probe ended by a signal: friction log $(cat "$log_file" 2>/dev/null)"
+    fi
+}
+
 # Denies and own-unknown allows land in the friction ledger; routine allows do
 # not (an executor makes hundreds of Bash calls).
 case_friction_log_records_decisions() {
@@ -1477,6 +1505,7 @@ case_match_program_failure
 case_prepass_program_failure
 case_transcript_bound
 case_leaf_cap_stops_the_walk
+case_probe_killed_by_signal
 case_friction_log_records_decisions
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"

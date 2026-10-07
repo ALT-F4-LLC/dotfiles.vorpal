@@ -1102,6 +1102,29 @@ mod tests {
             fragment.contains(&format!("vorpal run {alias} build ./...")),
             "the fragment's build example uses the pinned alias"
         );
+        let mut in_sh_block = false;
+        for line in fragment.lines() {
+            if line.starts_with("```") {
+                in_sh_block = line == "```sh";
+                continue;
+            }
+            if !in_sh_block {
+                continue;
+            }
+            for segment in line.split("&&").map(str::trim) {
+                let name = segment.split('=').next().unwrap_or_default();
+                assert!(
+                    !segment.contains('=')
+                        || name.is_empty()
+                        || !name.chars().all(|c| c.is_ascii_uppercase() || c == '_'),
+                    "the fragment's sh block prefixes an assignment: {segment}"
+                );
+            }
+        }
+        assert!(
+            !fragment.contains("Set `GOCACHE`"),
+            "the fragment's prose does not tell executors to set a GOCACHE prefix"
+        );
         assert!(
             !PERMISSION_ALLOW_RULES
                 .iter()

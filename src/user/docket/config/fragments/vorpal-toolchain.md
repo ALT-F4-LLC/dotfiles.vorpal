@@ -1,6 +1,6 @@
 ---
 fragment: vorpal-toolchain
-version: 13
+version: 14
 ---
 # Vorpal toolchain
 
@@ -57,14 +57,13 @@ The conductor prepares the shared module cache before dispatch. Preserve that
 configuration: do not override `GOMODCACHE`, redirect it through `GOPATH`,
 create a private module cache, or delete shared caches.
 
-Set `GOCACHE` to a fresh subdirectory inside the brief's assigned private step
-directory, `<TMP>/<STEP-N>.d`. `<TMP>` is the literal value pinned from
-`printenv TMPDIR`; that directory is built fresh at claim and is exclusive to
-this session and dispatch. If no directory is assigned, stop and report the
-missing assignment; this deliberately narrows the executor archetype's
-$TMPDIR fallback because a Go build cache must not share a scratch root with
-other steps. Use this directory for temporary diff inputs too. Cleanup
-may touch only your own step directory, after its processes have finished.
+Leave `GOCACHE` at its default: the default Go build cache is in the sandbox
+write allowlist, and a `NAME=value` prefix on a command matches no allow rule
+and goes to the auto-mode classifier. Put temporary diff inputs in the
+brief's assigned private step directory, `<TMP>/<STEP-N>.d`. `<TMP>` is the
+literal value pinned from `printenv TMPDIR`; that directory is built fresh at
+claim and is exclusive to this session and dispatch. Cleanup may touch only
+your own step directory, after its processes have finished.
 
 Explicitly change to the repository root in each build/test call. In Claude
 Code, set the Bash tool's `timeout` to `300000` milliseconds for a cold build
@@ -72,19 +71,17 @@ or test run; do not wrap commands with `timeout`. Use the targets specified in
 the brief. A repository-wide build has this form:
 
 ```sh
-cd "<repo-root>" && GOCACHE="<TMP>/<STEP-N>.d/gocache" vorpal run go:1.26.0 build ./...
+cd "<repo-root>" && vorpal run go:1.26.0 build ./...
 ```
 
-Substitute the literal paths before execution. Use the same directory and
-cache setup for tests and for the repository's own gate targets (`make fmt`,
-`make vet`, `make lint`, or the targets the brief names), each as its own
-top-level command (`make fmt && make vet && make lint`), never through
-`sh -c` or another interpreter: a command handed to an interpreter is
-refused outright. The permission rules clear a bare `make` and
-`vorpal run go:1.26.0`; a `GOCACHE=` prefix matches no allow rule and goes
-to the auto-mode classifier. An allowed native fallback changes the
-launcher to `go1.26.5`, preserving the working directory, cache, and
-arguments.
+Substitute the literal path before execution. Run tests and the repository's
+own gate targets (`make fmt`, `make vet`, `make lint`, or the targets the
+brief names) the same way, each as its own top-level command
+(`make fmt && make vet && make lint`) with no assignment prefix, never
+through `sh -c` or another interpreter: a command handed to an interpreter
+is refused outright. The permission rules clear a bare `make` and
+`vorpal run go:1.26.0`. An allowed native fallback changes the launcher to
+`go1.26.5`, preserving the working directory and arguments.
 
 Go can select or download another toolchain according to its existing
 configuration and `go.mod`/`go.work`. Do not change that configuration to

@@ -1201,12 +1201,11 @@ close, with one difference at the end:
 
 ```
 // 1. the join is a workflow (below); its return carries the rows and you check the shape.
-// rows are this wave's own launch rows and statuses its return's `statuses` array, both
-// verbatim — pass them together so the join's coordination section reports rounds, gate passes,
-// re-seats, claim conflicts, ancestry parks, and budget/chain deferrals for this wave;
-// omitting either leaves the section `null` and "not measured".
+// The join measures tokens only. A wave's coordination counts (rounds, gate passes,
+// re-seats, claim conflicts, ancestry parks, budget/chain deferrals) come from the
+// `coordination` field of that wave's own return, which wave.js computes; the join has none.
 Workflow({ scriptPath: "<absolute installed path to wave-usage.js>",
-           args: {dir: "<transcript-dir>", mode: "steps", rows, statuses, exclude: []} })
+           args: {dir: "<transcript-dir>", mode: "steps", exclude: []} })
 ```
 
 ```bash
@@ -1270,9 +1269,9 @@ run's cap counts.
 
 **Launch wave-usage over the transcript directory**: the installed
 `~/.claude/workflows/wave-usage.js`, with
-`args: {dir, mode: "steps", rows, statuses, exclude: []}`, passing
-`rows`/`statuses` verbatim (per the join's comment above) so the
-coordination section is measured rather than `null`. It fans one
+`args: {dir, mode: "steps", exclude: []}`. The coordination counts are
+not the join's: read them from the `coordination` field of the wave's
+own return (per the join's comment above). It fans one
 low-effort agent per `agent-*.jsonl` file to run a fixed jq program and
 returns `rows`: four typed units per step,
 deduplicated by message id, keyed by the step each agent's `docket step

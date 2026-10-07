@@ -75,6 +75,8 @@ export const meta = {
 // be the session's working directory: every claim writes its packet module
 // under <cwd>/.claude/docket-packets, and the Workflow tool loads a
 // scriptPath only from the working directory or a directory added to it.
+// A shared (unisolated) executor's brief also cds to `cwd` before each docket
+// verb it records with.
 // `harnessCap` is the per-invocation agent() concurrency cap, computed by
 // lane_units.py and copied by the conductor from launches.json (this script
 // cannot read the machine's CPU count itself); when present and a positive
@@ -355,8 +357,13 @@ function packetFromModule(mod, row, owner) {
 // owner. The assignment paragraph names the step twice in the spelling the
 // sibling guard reads, ahead of the packet, so it falls inside the guard's
 // 64 KiB scan of the transcript's opening.
-function executorBrief(row, owner, claim, isolated, isWrite) {
+//
+// `cwd` is the wave's args.cwd, the checkout. A shared executor's cwd may not
+// be that checkout, so its record and fail commands cd there first. An
+// isolated executor's reset cwd is its worktree, so its commands stay bare.
+function executorBrief(row, owner, claim, isolated, isWrite, cwd) {
     const { dir, token } = claim
+    const atCheckout = isolated ? '' : `cd ${cwd} && `
     const isolationNote = isolated ? `
 
 0. YOU ARE IN A PRIVATE WORKTREE. These rules bind every call:
@@ -369,6 +376,8 @@ function executorBrief(row, owner, claim, isolated, isWrite) {
    - A probe that must modify files runs on a COPY under ${dir}, never on
      this checkout (never git restore, checkout --, reset, or clean).
    - RUN \`docket\` BARE, with no DOCKET_PATH prefix.
+   - Run every \`docket\` verb from this worktree, with no preceding \`cd\`:
+     it is your reset cwd.
 
    Bootstrap, one plain command at a time:
 
@@ -460,7 +469,7 @@ ${!isWrite ? `
 3. Record it yourself with \`docket step record\`, feeding the token file to
    STDIN:
 
-   \`docket step record ${row.step}${isWrite ? ' --worktree <YOUR CHECKOUT>' : ''} --artifact-file ${dir}/${row.step}-<kind>.md --metadata '{"model_resolved":"unknown","effort_resolved":"unknown"}' < ${token}\`
+   \`${atCheckout}docket step record ${row.step}${isWrite ? ' --worktree <YOUR CHECKOUT>' : ''} --artifact-file ${dir}/${row.step}-<kind>.md --metadata '{"model_resolved":"unknown","effort_resolved":"unknown"}' < ${token}\`
 ${isWrite ? `
    - WORKTREE: \`--worktree\` is the literal path of the checkout the work
      happened in (\`git rev-parse --show-toplevel\`).
@@ -496,7 +505,7 @@ ${isWrite ? `
      bounds the fix wider than those files.
    - FAILURE, only when a retry might redeem the attempt:
 
-     \`docket step fail ${row.step} --note '<why>' < ${token}\`
+     \`${atCheckout}docket step fail ${row.step} --note '<why>' < ${token}\`
 
      The one exception: when you stop on WRITE BLOCKED, the wave settles
      your claim with \`docket step fail\` for you.
@@ -1326,7 +1335,7 @@ function launchExecutor(row, r, type, isWrite, isolated, phaseLabel, { owner, cl
         }
     }
     const launch = (iso, retried) =>
-        countedAgent(executorBrief(row, owner, claim, iso, isWrite), opts(iso)).then((text) => handle(text, retried))
+        countedAgent(executorBrief(row, owner, claim, iso, isWrite, input.cwd), opts(iso)).then((text) => handle(text, retried))
     // EXACTLY ONCE, and only from the top-level catch: same brief bytes, same
     // opts, same isolation. `retried` rides through so a retry that resolves
     // null does not probe-and-retry again. A second failure returns

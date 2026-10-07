@@ -99,11 +99,20 @@ const BEGIN = '----- BEGIN WORK PACKET STEP-4381 -----\n'
 const END = '\n----- END WORK PACKET STEP-4381 -----'
 const GUARD_RE = /docket step claim STEP-([0-9]+) --owner wave:STEP-([0-9]+):/
 const JOIN_RE = /docket step (?:claim|record|complete)\s+(STEP-\d+)/
+// The wave's args.cwd: the checkout a shared executor cds into before a
+// docket verb.
+const CWD = '/home/op/repo/checkout'
+// Obligation 3's rendered command for a docket verb: the backtick-quoted
+// line that names it with this step's id, without its backticks.
+const verbCommand = (head, verb) => {
+    const line = head.split('\n').find((l) => new RegExp(`^\\s*\`[^\`]*docket step ${verb} STEP-4381 `).test(l))
+    return line ? line.trim().replace(/^`|`$/g, '') : ''
+}
 
 for (const isolated of [true, false]) {
     for (const isWrite of [true, false]) {
         const label = `${isolated ? 'isolated' : 'shared'} ${isWrite ? 'write' : 'read'}-class`
-        const brief = executorBrief(row, owner, claim, isolated, isWrite)
+        const brief = executorBrief(row, owner, claim, isolated, isWrite, CWD)
 
         // ---- the packet is delivered, verbatim, and closes the brief ----
         ok(brief.endsWith(BEGIN + PACKET + END), `${label}: the packet closes the brief byte for byte`)
@@ -141,6 +150,27 @@ for (const isolated of [true, false]) {
 
         // ---- class and isolation shape ----
         ok(isolated === head.includes('YOU ARE IN A PRIVATE WORKTREE'), `${label}: worktree rules only when isolated`)
+
+        // ---- where the docket verbs run ----
+        // A shared executor's cwd may not be the checkout, so its record and
+        // fail commands cd there first. An isolated executor's reset cwd is
+        // its worktree, so its commands stay bare and it never cds first.
+        const recordCmd = verbCommand(head, 'record')
+        const failCmd = verbCommand(head, 'fail')
+        if (isolated) {
+            ok(recordCmd.startsWith('docket step record STEP-4381 '),
+                `${label}: obligation 3's docket step record command stays bare (got ${JSON.stringify(recordCmd)})`)
+            ok(failCmd.startsWith('docket step fail STEP-4381 '),
+                `${label}: obligation 3's docket step fail command stays bare (got ${JSON.stringify(failCmd)})`)
+            ok(!head.includes(`cd ${CWD}`), `${label}: the brief never cds to the wave's cwd`)
+            ok(head.replace(/\s+/g, ' ').includes('Run every `docket` verb from this worktree, with no preceding `cd`'),
+                `${label}: the brief states docket verbs run from the worktree with no preceding cd`)
+        } else {
+            ok(recordCmd.startsWith(`cd ${CWD} && docket step record STEP-4381 `),
+                `${label}: obligation 3's docket step record command begins with cd <cwd> && (got ${JSON.stringify(recordCmd)})`)
+            ok(failCmd.startsWith(`cd ${CWD} && docket step fail STEP-4381 `),
+                `${label}: obligation 3's docket step fail command begins with cd <cwd> && (got ${JSON.stringify(failCmd)})`)
+        }
         if (isolated) {
             ok(head.includes('git worktree list --porcelain') && head.includes('git checkout --detach --quiet'),
                 `${label}: the worktree bootstrap aligns HEAD before any work`)

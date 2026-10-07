@@ -268,7 +268,7 @@ node "${WORK}/suite.js" "${WORK}/regions.js" || exit 1
 # spawn() must reach the executor only through claimPacket(), and the
 # executor's prompt must be the brief carrying the claim's packet.
 if [ "$(grep -c 'return claimPacket(row, r, phaseLabel).then((claimed) => claimed.ok' "$WAVE")" = 1 ] &&
-    [ "$(grep -c 'countedAgent(executorBrief(row, owner, claim, iso, isWrite), opts(iso))' "$WAVE")" = 1 ]; then
+    [ "$(grep -c 'countedAgent(executorBrief(row, owner, claim, iso, isWrite, input.cwd), opts(iso))' "$WAVE")" = 1 ]; then
     printf 'PASS: spawn() launches the executor only after claimPacket(), with the packet-bearing brief\n'
 else
     printf 'FAIL: spawn() no longer gates the executor launch on claimPacket()\n' >&2

@@ -1338,8 +1338,12 @@ claim it fresh (`docket step claim STEP-N --owner conduct:recovery
 --json`) and record against the new token; never redispatch a step whose
 complete parked payload you hold. On a write-class step, carry
 `--worktree <its checkout>` (it defaults to the invoking checkout
-otherwise). Once landed, sweep the parked dir with `rm -rf`. Parked state
-you cannot tie to a step is a stop-and-ask.
+otherwise). Once landed, sweep the parked dir as wave.js's executor
+cleanup does after a record: a later reader opens every path the recorded
+artifact cites, so remove only the uncited scratch, the spent token
+included, and keep the artifact and every file it cites. Only a step that
+failed or was reaped loses its whole dir. Parked state you cannot tie to a
+step is a stop-and-ask.
 
 **Worktree writers: they record, then you integrate.** Every write
 executor's deliverable is a commit in its own worktree, its sha on the

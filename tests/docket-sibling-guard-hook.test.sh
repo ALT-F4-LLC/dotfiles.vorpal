@@ -961,6 +961,12 @@ case_verb_spellings() {
     assert_verdict "echo \$(repeat 1+1 pkill node)" executor-write "$WAVE_42" DENY "zsh repeat inside a \$( )"
     assert_verdict "repeat 2 kill 4242" executor-write "$WAVE_42" DENY "zsh repeat count resolves the verb for a pid kill"
     assert_verdict "repeat x+1 noglob kill 4242" executor-write "$WAVE_42" DENY "zsh repeat count then a modifier resolves the verb for a pid kill"
+    # A pid kill is read only at the verb verb_index resolves, so these pin
+    # its lone-brace skip and its quoted-count span: repeat_scan denies the
+    # name-addressed kills behind them whatever verb_index resolves.
+    assert_verdict "repeat 2 { kill 4242 }" executor-write "$WAVE_42" DENY "zsh repeat brace body resolves the verb for a pid kill"
+    assert_verdict "repeat \$n { { kill 4242 } }" executor-write "$WAVE_42" DENY "zsh repeat nested brace bodies resolve the verb for a pid kill"
+    assert_verdict "repeat \"1 + 1\" kill 4242" executor-write "$WAVE_42" DENY "zsh repeat quoted multi-word count resolves the verb for a pid kill"
     # The pre-pass splits one count word built from glued quoted parts or a
     # quoted expansion into several tokens, and a quoted blank leaves no token
     # at all, so the end of the count cannot be found: a name-addressed kill or

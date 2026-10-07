@@ -1099,6 +1099,25 @@ BEGIN {
     # count: verb_index skips them by position, whatever their shape, after
     # the wrapper options (`timeout 1.5 cmd`, `timeout $t cmd`).
     WRAPPER_OPERANDS["timeout"] = 1
+    # Keyed by wrapper and option: an option whose value is the next word.
+    # verb_index skips that word by position too, whatever its shape
+    # (`sudo -u root cmd`, `env -C /tmp cmd`). A "command" value is a
+    # command line env runs, skipped only when it names no keyed verb.
+    WRAPPER_OPERANDS["sudo", "-u"] = 1
+    WRAPPER_OPERANDS["sudo", "-g"] = 1
+    WRAPPER_OPERANDS["sudo", "-C"] = 1
+    WRAPPER_OPERANDS["sudo", "-D"] = 1
+    WRAPPER_OPERANDS["env", "-u"] = 1
+    WRAPPER_OPERANDS["env", "-C"] = 1
+    WRAPPER_OPERANDS["env", "-S"] = "command"
+    WRAPPER_OPERANDS["nice", "-n"] = 1
+    WRAPPER_OPERANDS["ionice", "-c"] = 1
+    WRAPPER_OPERANDS["ionice", "-n"] = 1
+    WRAPPER_OPERANDS["timeout", "-s"] = 1
+    WRAPPER_OPERANDS["timeout", "-k"] = 1
+    WRAPPER_OPERANDS["stdbuf", "-i"] = 1
+    WRAPPER_OPERANDS["stdbuf", "-o"] = 1
+    WRAPPER_OPERANDS["stdbuf", "-e"] = 1
 }
 function decode(raw,    inner, cpos) {
     if (length(raw) >= 2 && substr(raw, 1, 1) == MARK && substr(raw, length(raw), 1) == MARK) {
@@ -1135,10 +1154,30 @@ function head_of(w,   h) {
 function is_wrapper(h) {
     return (h == "coproc" || h == "noglob" || h == "nocorrect" || h == "-" || h == "repeat" || h == "sudo" || h == "doas" || h == "command" || h == "builtin" || h == "exec" || h == "xargs" || h == "nohup" || h == "nice" || h == "ionice" || h == "timeout" || h == "env" || h == "time" || h == "setsid" || h == "stdbuf" || h == "caffeinate" || h == "chronic" || h == "unbuffer")
 }
+# A verb some clause keys on.
+function keyed_verb(v) {
+    return (v == "pkill" || v == "killall" || v == "killall5" || v == "kill" || v == "docket" || v == "git" || v == "rm" || v == "rmdir" || v == "mv" || v == "find")
+}
+# The last word the wrapper option at word i takes: the next word when
+# WRAPPER_OPERANDS lists the option for wrapper h, else the option itself.
+# A "command" value naming a keyed verb is not taken, since env runs it
+# (`env -S "kill 1"`).
+function option_end(h, i, n,   j, o) {
+    decode(words[i])
+    o = D_WORD
+    if (!((h, o) in WRAPPER_OPERANDS)) return i
+    j = i + 1
+    while (j <= n && words[j] == "") j++
+    if (j > n) return i
+    decode(words[j])
+    if (WRAPPER_OPERANDS[h, o] == "command" && keyed_verb(head_of(D_WORD))) return i
+    return j
+}
 # The verb position of a leaf: the first word (or word `start`), then past
 # any wrapper and the wrapper own options, values (`-n 5`, `5s`, `FOO=1`) and
-# flags. A wrapper in WRAPPER_OPERANDS has its mandatory operands skipped by
-# position after its options, whatever their shape. zsh evaluates the `repeat` count arithmetically, so the word after
+# flags. An option WRAPPER_OPERANDS lists for the wrapper has its value word
+# skipped by position, and a wrapper listed there alone has its mandatory
+# operands skipped by position after its options, whatever their shape. zsh evaluates the `repeat` count arithmetically, so the word after
 # `repeat` is the count whatever its shape (a quoted count spans its whole
 # group), and each lone `{` after it opens a body.
 # The pre-pass splits a count word built from glued quoted parts or a quoted
@@ -1185,7 +1224,7 @@ function verb_index(n, start,   i, h, quoted, g, k, a) {
         }
         if (h in WRAPPER_OPERANDS) {
             while (i <= n) {
-                if (words[i] != "") { decode(words[i]); if (D_WORD !~ /^-/) break }
+                if (words[i] != "") { decode(words[i]); if (D_WORD !~ /^-/) break; i = option_end(h, i, n) }
                 i++
             }
             for (k = 0; i <= n && k < WRAPPER_OPERANDS[h]; i++) if (words[i] != "") k++
@@ -1193,6 +1232,7 @@ function verb_index(n, start,   i, h, quoted, g, k, a) {
         while (i <= n) {
             if (words[i] == "") { i++; continue }
             decode(words[i])
+            if ((h, D_WORD) in WRAPPER_OPERANDS) { i = option_end(h, i, n) + 1; continue }
             if (D_WORD ~ /^-/ || D_WORD ~ /^[0-9]+[smhd]?$/ || D_WORD ~ /^[A-Za-z_][A-Za-z0-9_]*=/) { i++; continue }
             break
         }

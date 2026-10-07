@@ -912,6 +912,26 @@ case_verb_spellings() {
     assert_verdict "timeout 5 ls" executor-write "$WAVE_42" ALLOW "timeout prefix with a duration before a read"
     assert_verdict "env FOO=1 pkill node" executor-write "$WAVE_42" DENY "env prefix with an assignment"
     assert_verdict "nice -n 5 killall node" executor-write "$WAVE_42" DENY "nice prefix with an option value"
+    # A wrapper option whose value is a separate word of any shape. The
+    # timeout rows keep the mandatory DURATION after the option value.
+    assert_verdict "sudo -u root pkill node" executor-write "$WAVE_42" DENY "sudo -u value before pkill"
+    assert_verdict "env -u FOO pkill node" executor-write "$WAVE_42" DENY "env -u value before pkill"
+    assert_verdict "sudo -g wheel pkill node" executor-write "$WAVE_42" DENY "sudo -g value before pkill"
+    assert_verdict "sudo -C \$fd pkill node" executor-write "$WAVE_42" DENY "sudo -C value before pkill"
+    assert_verdict "sudo -D /tmp pkill node" executor-write "$WAVE_42" DENY "sudo -D value before pkill"
+    assert_verdict "env -C /tmp pkill node" executor-write "$WAVE_42" DENY "env -C value before pkill"
+    assert_verdict "env -S x pkill node" executor-write "$WAVE_42" DENY "env -S value before pkill"
+    assert_verdict "ionice -c idle pkill node" executor-write "$WAVE_42" DENY "ionice -c value before pkill"
+    assert_verdict "ionice -n \$n pkill node" executor-write "$WAVE_42" DENY "ionice -n value before pkill"
+    assert_verdict "timeout -s KILL 1.5 pkill node" executor-write "$WAVE_42" DENY "timeout -s value before pkill"
+    assert_verdict "timeout -k 1.5 1.5 pkill node" executor-write "$WAVE_42" DENY "timeout -k value before pkill"
+    assert_verdict "stdbuf -i 1K pkill node" executor-write "$WAVE_42" DENY "stdbuf -i value before pkill"
+    assert_verdict "stdbuf -o L pkill node" executor-write "$WAVE_42" DENY "stdbuf -o value before pkill"
+    assert_verdict "stdbuf -e L pkill node" executor-write "$WAVE_42" DENY "stdbuf -e value before pkill"
+    assert_verdict "sudo -u root ls" executor-write "$WAVE_42" ALLOW "sudo -u value before a read stays a read"
+    # A value that is itself a verb stays the verb: env -S runs its value.
+    assert_verdict "env -S 'kill 1234'" executor-write "$WAVE_42" DENY "env -S value running a literal-pid kill"
+    assert_verdict "env -S \"pkill node\"" executor-write "$WAVE_42" DENY "env -S value running pkill"
     assert_verdict "command kill 1234" executor-write "$WAVE_42" DENY "command prefix"
     # zsh precommand modifiers that bash reads as the command name.
     assert_verdict "noglob pkill node" executor-write "$WAVE_42" DENY "zsh noglob prefix"

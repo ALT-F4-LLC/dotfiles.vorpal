@@ -140,6 +140,7 @@ require_bounded security-change threat-model implement synthesize-findings drain
 require_bounded standard-change implement synthesize-findings drain-highs verify-ac
 require_bounded disposition dispose verify-ac
 require_bounded docs-only implement review verify-ac
+require_bounded investigation investigate research report
 
 if [ "$fail" -ne 0 ]; then
     echo "contract-corpus: FAIL" >&2

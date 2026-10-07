@@ -3,6 +3,16 @@
 Version history of `workflows/investigation.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 22
+
+The executor steps `research` and `report` gain `max_attempts = 2` with
+`on_fail = "waiting-human"`, matching `investigate`. Without a bound, a
+step the safety classifier stopped returned to ready after every failed
+attempt and was re-offered indefinitely. After its second failed attempt
+each step now parks waiting-human, so a retry past a refusal is the
+operator's decision. Takes effect for runs activated after install. No
+topology, routing, or limit change.
+
 ## 21
 
 The packet steps (`investigate`, `research`, `report`,

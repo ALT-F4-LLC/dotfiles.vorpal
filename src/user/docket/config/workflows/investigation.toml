@@ -1,7 +1,7 @@
 [pipeline]
 description = "Read-only root-cause investigation with an optional research step, ending at a tribunal read. A rejection sends the report back to a bounded revision loop."
 name = "investigation"
-version = 21
+version = 22
 
 [match]
 labels_any  = ["investigation"]
@@ -32,7 +32,9 @@ executor = "research"
 expected_cost = 0.50
 holds_tree = false
 inputs = ["investigate.investigation"]
+max_attempts = 2
 name = "research"
+on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
 payload = "research-notes@2"
 when = "labels contains needs-research"
@@ -44,7 +46,9 @@ executor = "report"
 expected_cost = 0.40
 holds_tree = false
 inputs = ["investigate.investigation", "research.*"]
+max_attempts = 2
 name = "report"
+on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
 
 [[step]]

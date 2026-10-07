@@ -946,13 +946,21 @@ running agent's transcript has had no new entry for 15 minutes. Its exit
 is a completion notification, so it re-invokes you mid-wave without
 busy-waiting, foreground sleep loops, or `ScheduleWakeup`; the `sleep`
 runs inside the background task. Its output names the idle agent's step
-ID:
+ID. The directories are positional parameters, not one string: the Bash
+tool runs zsh, which does not word-split an unquoted parameter, so a
+space-joined list reaches `find` as one path that does not exist. A
+missing directory prints `WATCHER-ERROR <dir>` and exits 2 at once, so a
+misconfigured watcher wakes you instead of polling nothing:
 
 ```bash
-DIRS="<transcript-dir-0> <transcript-dir-1>"   # every launch of this dispatch
+# dispatch-watcher: begin
+set -- "<transcript-dir-0>" "<transcript-dir-1>"   # every launch of this dispatch
 SKIP=""   # step IDs already handled, space-separated
 while :; do
-  for DIR in $DIRS; do
+  for DIR in "$@"; do
+    [ -d "$DIR" ] || { echo "WATCHER-ERROR $DIR"; exit 2; }
+  done
+  for DIR in "$@"; do
     for f in $(find "$DIR" -name 'agent-*.jsonl' -mmin +15); do
       id=$(basename "$f" .jsonl); id=${id#agent-}
       grep "$id" "$DIR/journal.jsonl" | grep -q '"result"' && continue
@@ -966,6 +974,7 @@ while :; do
   done
   sleep 60
 done
+# dispatch-watcher: end
 ```
 
 It counts only agents still running: an agent with a `result` entry in
@@ -986,7 +995,7 @@ transcript:
 
 After handling a firing, restart the watcher, with `SKIP` updated, for
 the agents still running; a watcher started once at dispatch open goes
-blind after its first firing. Drop a launch's directory from `DIRS` once
+blind after its first firing. Drop a launch's directory from the `set --` list once
 that launch has notified. Stop the watcher (`TaskStop` on its task) when
 the dispatch closes, at the last launch's notification in step 3, so no
 watcher outlives its dispatch.

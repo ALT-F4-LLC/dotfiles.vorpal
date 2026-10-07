@@ -631,6 +631,81 @@ else
     bad "resume-prompt paths: no single fenced block in ${PAUSE} carries '${paths_usage}'"
 fi
 
+# (j) The dispatch idle watcher runs under zsh, which is what the Bash tool
+# runs. zsh does not word-split an unquoted parameter, so a space-joined
+# directory list reached find as one missing path and the watcher never
+# fired. The block between its begin and end anchors is extracted from
+# SKILL.md, its two directory placeholders are substituted, and it is run
+# under zsh against fixture transcripts with a stub docket on PATH. Each run
+# is bounded by a portable wall-clock kill (no timeout binary): a watchdog
+# sleeps the bound, then kills the run; the case fails when it fires. A
+# missing zsh fails, never skips: CI must exercise the zsh defect.
+#
+#   j1 restore DIRS="<transcript-dir-0> <transcript-dir-1>"; for DIR in $DIRS
+#      (find gets one joined path, no IDLE prints, the 120 s kill fires)
+#   j2 delete the directory-existence check (find errors on the missing dir,
+#      the loop keeps sleeping, the 90 s kill fires)
+bounded_run() { # <seconds> <out> <script> <dir-0> <dir-1>; sets b_rc, b_secs, b_fired
+    local secs=$1 out=$2 script=$3 zpid wpid start=$SECONDS
+    rm -f "${WORK}/watchdog-fired"
+    sed -e "s|<transcript-dir-0>|$4|g" -e "s|<transcript-dir-1>|$5|g" \
+        "$script" > "${script}.run"
+    PATH="${WORK}/watcher-bin:$PATH" zsh "${script}.run" > "$out" 2>&1 &
+    zpid=$!
+    (
+        trap 'kill "$sp" 2>/dev/null; exit 0' TERM
+        sleep "$secs" & sp=$!
+        wait "$sp"
+        kill "$zpid" 2>/dev/null && touch "${WORK}/watchdog-fired"
+    ) >/dev/null 2>&1 &
+    wpid=$!
+    wait "$zpid"
+    b_rc=$?
+    b_secs=$((SECONDS - start))
+    kill "$wpid" 2>/dev/null
+    wait "$wpid" 2>/dev/null
+    b_fired=0
+    [ -e "${WORK}/watchdog-fired" ] && b_fired=1
+}
+
+watcher="${WORK}/watcher.zsh"
+sed -n '/^# dispatch-watcher: begin$/,/^# dispatch-watcher: end$/p' "$SKILL" > "$watcher"
+if [ "$(grep -cE '^# dispatch-watcher: (begin|end)$' "$watcher")" -ne 2 ]; then
+    bad "dispatch watcher: no block between '# dispatch-watcher: begin' and '# dispatch-watcher: end' in ${SKILL}"
+elif ! command -v zsh >/dev/null 2>&1; then
+    bad "dispatch watcher: zsh is not on PATH; the zsh cases cannot run and do not skip"
+else
+    ok "dispatch watcher: the block is extracted between its anchors"
+    mkdir -p "${WORK}/watcher-bin" "${WORK}/wdir-0" "${WORK}/wdir-1"
+    printf '#!/bin/sh\n[ "$1 $2 $3" = "step show STEP-1" ] && echo "  status:    claimed"\nexit 0\n' \
+        > "${WORK}/watcher-bin/docket"
+    chmod +x "${WORK}/watcher-bin/docket"
+    printf '{"type":"assistant","text":"docket step claim STEP-1"}\n' \
+        > "${WORK}/wdir-1/agent-idle1.jsonl"
+    printf '{"agent":"idle1","event":"started"}\n' > "${WORK}/wdir-1/journal.jsonl"
+    touch -t "$(date -r "$(( $(date +%s) - 960 ))" +%Y%m%d%H%M.%S 2>/dev/null ||
+        date -d "@$(( $(date +%s) - 960 ))" +%Y%m%d%H%M.%S)" "${WORK}/wdir-1/agent-idle1.jsonl"
+
+    bounded_run 120 "${WORK}/watcher-idle.out" "$watcher" "${WORK}/wdir-0" "${WORK}/wdir-1"
+    if [ "$b_fired" -eq 1 ]; then
+        bad "dispatch watcher: no IDLE line within 120 s under zsh with two dirs (killed): $(head -c 300 "${WORK}/watcher-idle.out")"
+    elif grep -q '^IDLE STEP-1' "${WORK}/watcher-idle.out"; then
+        ok "dispatch watcher: under zsh with two dirs, a 16-minute-idle claimed agent prints IDLE STEP-1"
+    else
+        bad "dispatch watcher: exited ${b_rc} without an IDLE STEP-1 line: $(head -c 300 "${WORK}/watcher-idle.out")"
+    fi
+
+    bounded_run 90 "${WORK}/watcher-missing.out" "$watcher" "${WORK}/wdir-0" "${WORK}/wdir-missing"
+    if [ "$b_fired" -eq 1 ]; then
+        bad "dispatch watcher: a missing dir did not stop the watcher within 90 s (killed): $(head -c 300 "${WORK}/watcher-missing.out")"
+    elif [ "$b_rc" -eq 2 ] && [ "$b_secs" -lt 60 ] &&
+        [ "$(grep '^WATCHER-ERROR ' "${WORK}/watcher-missing.out")" = "WATCHER-ERROR ${WORK}/wdir-missing" ]; then
+        ok "dispatch watcher: a missing dir prints WATCHER-ERROR naming it and exits 2 before the first sleep"
+    else
+        bad "dispatch watcher: a missing dir exited ${b_rc} after ${b_secs} s:$(head -c 300 "${WORK}/watcher-missing.out")"
+    fi
+fi
+
 if [ "$fail" -ne 0 ]; then
     echo "docket-run-skill: FAIL — a sandbox lift without its precondition is the failure this pins; fix the skill, not the test." >&2
     exit 1

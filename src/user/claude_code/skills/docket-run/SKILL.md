@@ -1313,9 +1313,12 @@ A cherry-pick touching `.claude/skills/**` can fail under the sandbox on
 the unlink; verify the sha and paths, then retry with the sandbox lifted.
 A signed pick failing with a missing `agent-signing.pub` key means
 installed settings predate that allowance: `git cherry-pick --abort` a
-pick in progress (leave a plain commit's staged work intact), then tell
-the operator to
-run `just activate`. Never lift the sandbox around this or inspect
+pick in progress (leave a plain commit's staged work intact), pause the
+run with `/docket-run pause`, then tell the operator to run plain `just
+activate`. If its preflight refuses on a pending review, that review
+finishes first (review steps are read-class and need no signing), then
+the operator activates and the run resumes. This is the one exception to
+**No escalation offers activation mid-run**. Never lift the sandbox around this or inspect
 `~/.ssh`.
 
 Because integrations land immediately, later write steps' worktrees
@@ -1978,6 +1981,15 @@ Before presenting any gate, park, or question to the operator, read
 rules for what a question carries, how a ruling is scoped and routed, and
 which answers the engine's verbs can honor; nothing there is optional, and
 the panel mechanics and standing rulings above are its premises.
+
+**No escalation offers activation mid-run.** An operator escalation never
+offers `just activate` or `just activate force=1` as a remedy while any
+run is non-terminal (`planning`, `active`, `paused`, or `waiting-human`),
+because activation installs main's guard hooks while a halted run's
+integrated security-change commit may still be under review. The one
+exception is the signing-key carve-out in step 3 (a signed pick failing
+on a missing `agent-signing.pub` key), which goes through `/docket-run pause` and
+plain `just activate`, never `force=1`.
 
 Nothing here, panel or operator, has an auto-approve, a default, or a
 timeout. A parked run stays parked and can be resumed by any later

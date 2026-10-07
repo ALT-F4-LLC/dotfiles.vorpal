@@ -435,8 +435,59 @@ if paragraph 'A cherry-pick touching `.claude/skills/**` can fail under the sand
         "${WORK}/signing" 'tell the operator to'
     states "signing: lifting around the failure is forbidden" \
         "${WORK}/signing" 'Never lift the sandbox around this'
+    states "signing: the conductor pauses the run before the operator activates" \
+        "${WORK}/signing" 'pause the run with `/docket-run pause`'
+    states "signing: the operator runs plain just activate" \
+        "${WORK}/signing" 'run plain `just activate`'
+    # Read from the anchor's own flat line, so the self-checks' degraded
+    # paragraph() copy (whole-file extract) stays green on a clean file.
+    grep -F -- 'A cherry-pick touching `.claude/skills/**` can fail under the sandbox' \
+        "${WORK}/signing" > "${WORK}/signing-line"
+    if grep -qF -- 'force' "${WORK}/signing-line"; then
+        bad "signing: the carve-out paragraph names force"
+    else
+        ok "signing: the carve-out paragraph never names force"
+    fi
 else
     bad "signing: no single paragraph carries 'A cherry-pick touching \`.claude/skills/**\` can fail under the sandbox'"
+fi
+
+# (p) An operator escalation never offers activation while any run is
+# non-terminal; the signing carve-out above is its one exception. The region
+# is the section from `### Escalating to the operator` to the next `### `
+# heading, flattened.
+#
+#   p1 delete the never-offers sentence
+#   p2 drop `paused` from its status list
+#   p3 drop the `just activate force=1` form
+#   p4 reword it to "may offer activation once the run is paused"
+#   p5 delete the exception sentence
+#   p6 restore the carve-out paragraph as at 233a3175 (no pause step, bare
+#      `just activate` mid-run; checked under (b) above)
+sed -n '/^### Escalating to the operator$/,/^### /p' "$SKILL" | sed '$d' | tr '\n' ' ' \
+    > "${WORK}/escalating"
+activate_rule='An operator escalation never offers `just activate` or `just activate force=1` as a remedy while any run is non-terminal'
+if ! grep -qF -- '### Escalating to the operator' "${WORK}/escalating"; then
+    bad "no activation offer: no '### Escalating to the operator' section in ${SKILL}"
+elif sentence "$activate_rule" "${WORK}/escalating" "${WORK}/activate-rule"; then
+    ok "no activation offer: one sentence of the escalation section carries the rule"
+    for lit in '`just activate`' 'force=1' '`planning`' '`active`' '`paused`' '`waiting-human`'; do
+        states "no activation offer: the rule names ${lit}" "${WORK}/activate-rule" "$lit"
+    done
+    states "no activation offer: the signing carve-out is the one exception" \
+        "${WORK}/escalating" 'The one exception is the signing-key carve-out'
+    # Every other sentence naming activation beside a paused or waiting-human
+    # run is a permission the rule forbids. Matched by containment, so the
+    # self-checks' degraded sentences() copy stays green on a clean file.
+    sentences "${WORK}/escalating" | grep -i 'activat' | grep -E 'paused|waiting-human' |
+        grep -vF -- "$activate_rule" > "${WORK}/activate-offers"
+    if [ -s "${WORK}/activate-offers" ]; then
+        bad "no activation offer: another sentence permits activation on a paused or waiting-human run: $(head -c 300 "${WORK}/activate-offers")"
+    else
+        ok "no activation offer: no other sentence permits activation on a paused or waiting-human run"
+    fi
+else
+    bad "no activation offer: no single sentence of the escalation section carries '${activate_rule}'"
 fi
 
 # (c) The worktree-remove refusal is never answered with a lift: the harness

@@ -1273,6 +1273,15 @@ case_checkout_paths() {
         assert_deny_reason "cat x ${rw}/repo/.claude/worktrees/wf_x/.git" executor-write "$WAVE_42" "write into" "read-write redirect '${rw}' deny is the write-into rule"
     done
     assert_verdict "cat < /repo/.claude/worktrees/wf_x/srv.pid" executor-write "$WAVE_42" ALLOW "input redirect from a sibling's checkout"
+    # bash renders `>&` onto a path, spaced or not, as one glued word
+    # (`>&/path`), which only the glued write-into alternative reads; a
+    # numeric duplication or a close (`>&2`, `>&-`) is moved after the
+    # arguments, so the path stays an argument.
+    assert_deny_reason "echo x >&/repo/.claude/worktrees/wf_x/note" executor-write "$WAVE_42" "write into" "glued >& onto a sibling's checkout"
+    assert_deny_reason "echo x >& /repo/.claude/worktrees/wf_x/note" executor-write "$WAVE_42" "write into" "spaced >& onto a sibling's checkout"
+    assert_deny_reason "echo x 1>& /repo/.claude/worktrees/wf_x/note" executor-write "$WAVE_42" "write into" "spaced 1>& onto a sibling's checkout"
+    assert_verdict "echo x >&2 /repo/.claude/worktrees/wf_x/note" executor-write "$WAVE_42" ALLOW "numeric duplication beside a sibling path argument"
+    assert_verdict "echo x >&- /repo/.claude/worktrees/wf_x/note" executor-write "$WAVE_42" ALLOW "fd close beside a sibling path argument"
     # A verb that writes the file its operand names writes into a sibling's
     # checkout as surely as a redirect does; a read operand does not.
     local wcmd

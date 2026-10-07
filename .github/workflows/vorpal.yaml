@@ -133,6 +133,8 @@ jobs:
 
       - run: bash tests/wave-claim-path.test.sh
 
+      - run: bash tests/wave-executor-read-write.test.sh
+
       - run: bash tests/wave-classifier-retry.test.sh
 
       - run: bash tests/wave-fix-round-ancestry.test.sh

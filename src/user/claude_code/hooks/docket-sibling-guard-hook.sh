@@ -1178,12 +1178,24 @@ function protected_at(vi, n,   v) {
 }
 # After `repeat` the verb may be any later word (see verb_index), so each
 # word from the count on that is not prose is read as a verb by protected_at.
-function repeat_scan(from, n,   j) {
-    for (j = from; j <= n; j++) {
+function repeat_scan(from, n, to,   j) {
+    if (!to) to = n
+    for (j = from; j <= to; j++) {
         if (words[j] == "") continue
         if (decode(words[j]) && gsize[D_GROUP] >= 2 && !interp) continue
         protected_at(j, n)
     }
+}
+# repeat_scan reads every word from its start to the end of the line, so a
+# later call from a start at or past one already read finds nothing new.
+# RS_LOW is the lowest start read on this line (n + 1 before any), and a call
+# reads only the words below it. One scan per substitution opener to the end
+# of the line made the matcher quadratic in repeat-headed substitutions.
+function repeat_scan_once(from, n,   to) {
+    if (from >= RS_LOW) return
+    to = RS_LOW - 1
+    RS_LOW = from
+    repeat_scan(from, n, to)
 }
 # The commands inside a substitution on this line. bash 5.2 reprints a `$( )`
 # body onto its opener line (`echo $(\npkill node\n)` reaches the probe as
@@ -1203,7 +1215,7 @@ function nested_verbs(n,   i, w, opened, after_sep, vi) {
         if (w ~ /\$\(|\140|[<>]\(/) opened = 1
         if (opened && (after_sep || w ~ /\$\(|\140|[<>]\(|[;|&]/)) {
             vi = verb_index(n, i)
-            if (REPEAT_FROM) repeat_scan(REPEAT_FROM, n)
+            if (REPEAT_FROM) repeat_scan_once(REPEAT_FROM, n)
             if (vi > 0) protected_at(vi, n)
         }
         after_sep = (opened && w ~ /[;|&(]$/)
@@ -1263,8 +1275,9 @@ END {
             # docket argument.
             prev_redirect_op = (w ~ /^([0-9]*|\{[A-Za-z_][A-Za-z0-9_]*\})[<>&|]*[<>][<>&|-]*$/)
         }
+        RS_LOW = n + 1
         nested_verbs(n)
-        if (repeat_from) repeat_scan(repeat_from, n)
+        if (repeat_from) repeat_scan_once(repeat_from, n)
         if (vi == 0) continue
         protected_at(vi, n)
         # PROCESS: kill by literal pid.

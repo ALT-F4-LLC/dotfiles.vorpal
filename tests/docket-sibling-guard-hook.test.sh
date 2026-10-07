@@ -979,6 +979,14 @@ case_verb_spellings() {
     assert_verdict "repeat \$( echo 2 ) pkill node" executor-write "$WAVE_42" DENY "zsh repeat count from a spaced \$( ) substitution"
     assert_verdict "repeat \`echo 2\` pkill node" executor-write "$WAVE_42" DENY "zsh repeat count from a spaced backtick substitution"
     assert_verdict "echo \$(repeat 1'+1' pkill node)" executor-write "$WAVE_42" DENY "zsh repeat glued count inside a \$( )"
+    # The words after a repeat are read once per line, not once per
+    # substitution opener: the glued count hides the verb from verb_index, so
+    # only the scan from the second repeat reaches it, and 4000 repeat-headed
+    # substitutions stay inside the CPU bound (one scan each took about 41 s).
+    assert_verdict "echo \$(repeat 1 x) \$(repeat 1'+1' pkill node)" executor-write "$WAVE_42" DENY "zsh repeat glued count in a second \$( )"
+    local many="echo" k
+    for ((k = 0; k < 4000; k++)); do many="${many} \$(repeat 1 x)"; done
+    assert_verdict "${many}; pkill node" executor-write "$WAVE_42" DENY "4000 repeat-headed substitutions reach a verdict inside the bound"
     assert_verdict "command repeat pkill node" executor-write "$WAVE_42" DENY "a name-addressed kill read as a repeat count"
     assert_verdict "repeat 1 echo \"stop pkill now\"" executor-write "$WAVE_42" ALLOW "zsh repeat with prose naming a kill stays a read"
     # Accepted false DENY: a protected verb as data after `repeat`.

@@ -337,9 +337,9 @@ const EXTRACT_JQ = `${BRIEF_DEFS_JQ}[inputs | fromjson? | select(type == "object
 // tests/wave-usage-probe-overhead.test.sh after the extract region, whose
 // BRIEF_DEFS_JQ it reads. Keep it free of workflow globals.
 //
-// Run by the seats-mode scout as `jq -r -n -R -f <this> <transcript>...`
-// (any number of files per invocation): prints the path of every transcript
-// whose bootstrap carries the cast command, so seats mode spawns no extract
+// Run by the seats-mode scout as `jq -r -n -R '<this>' <transcript>...`
+// (any number of files per invocation; see scoutBrief): prints the path of
+// every transcript whose bootstrap carries the cast command, so seats mode spawns no extract
 // agent for a claimant, claim agent or probe. Only the first bootstrap
 // candidate per file is kept and read, never a later tool result.
 const SELECT_JQ = `${BRIEF_DEFS_JQ}reduce (inputs | fromjson? | select(type == "object" and bootstrap_candidate)
@@ -644,10 +644,10 @@ const AGENT_LOG_RE = /\/agent-[^/]*\.jsonl$/
 // The transcripts the Extract phase spawns an agent for. Steps mode measures
 // every listed transcript, whatever else the scout returned. Seats mode
 // measures only the ones SELECT_JQ selected, and refuses a reply that cannot
-// show the selection ran clean: seats_exit is the status of the find that
-// ran jq, so a jq failure on any transcript, a missing program file or an
-// unreadable file throws here instead of arriving as missing seats. A clean
-// selection that names nothing is a directory with no judge, where
+// show the selection ran clean: seats_exit is the status of the one jq call
+// over every transcript, so a jq failure on any transcript, a glob that
+// matched nothing or an unreadable file throws here instead of arriving as
+// missing seats. A clean selection that names nothing is a directory with no judge, where
 // reduceRows over every transcript also gives no rows. Selected paths are
 // rebuilt on args.dir like the listing and kept only if listed; `unlisted`
 // counts the rest.
@@ -705,16 +705,24 @@ const EXTRACT_SCHEMA = {
     },
 }
 
+// TEST-BEGIN wave-usage-scout — extracted by
+// tests/wave-usage-probe-overhead.test.sh, which sets `dir` and `mode`, renders
+// the seats-mode brief and runs its fenced command block over fixture
+// transcripts.
+//
+// The seats selection hands SELECT_JQ to jq as one single-quoted argument and
+// the transcripts as a glob, so the block writes no program file and runs no
+// `find -exec` or `xargs` (both refused by the settings deny list). A scout
+// that splits the block across Bash calls loses nothing: each command stands
+// alone.
 const LIST_COMMAND = `find ${shellPath(dir)} -maxdepth 1 -type f -name 'agent-*.jsonl' | LC_ALL=C sort; echo "exit=$?"`
 const scoutBrief = mode === 'seats'
-    ? `You are a read-only scout. Do not cd anywhere. Run these commands verbatim, sandboxed, and report what they print — never a paraphrase. The first writes a jq program with a quoted heredoc so nothing in it is expanded; the second lists the transcripts; the last prints only the transcripts whose brief casts a vote:
+    ? `You are a read-only scout. Do not cd anywhere. Run these commands verbatim, sandboxed, and report what they print — never a paraphrase. The first lists the transcripts; the last runs a jq program, passed whole as one single-quoted argument so nothing in it is expanded, and prints only the transcripts whose brief casts a vote:
 
 \`\`\`
-cat > "\${TMPDIR:-/tmp}/wave-usage-select-$$.jq" <<'JQ'
-${SELECT_JQ}JQ
 ${LIST_COMMAND}
 echo '--- seats ---'
-find ${shellPath(dir)} -maxdepth 1 -type f -name 'agent-*.jsonl' -exec jq -r -n -R -f "\${TMPDIR:-/tmp}/wave-usage-select-$$.jq" {} +; echo "seats_exit=$?"
+jq -r -n -R ${sq(SELECT_JQ)} ${shellPath(dir)}/agent-*.jsonl; echo "seats_exit=$?"
 \`\`\`
 
 The directory is written with one \`*\` where the flattened project name sits; leave that glob exactly as it is and let the shell resolve it. Return {files: [...], seats: [...], seats_exit: N}: \`files\` is every path printed before the \`--- seats ---\` line, \`seats\` every path printed after it, one entry per line, verbatim and in order — a hyphen where a dot might be expected (\`github-com\`) is correct, not a typo — and \`seats_exit\` is the number printed on the \`seats_exit=\` line. An empty listing is an empty array. Do not open, read, or count the files by any other means.`
@@ -725,6 +733,7 @@ ${LIST_COMMAND}
 \`\`\`
 
 The directory is written with one \`*\` where the flattened project name sits; leave that glob exactly as it is and let the shell resolve it. Return {files: [...]} with every path printed, one entry per line, verbatim and in that order — a hyphen where a dot might be expected (\`github-com\`) is correct, not a typo. An empty listing is {files: []}. Do not open, read, or count the files.`
+// TEST-END wave-usage-scout
 
 const extractBrief = (file, retry) => `You are a read-only measurement relay for one transcript file. Do not cd anywhere. Run these commands verbatim, sandboxed. The first writes a jq program with a quoted heredoc so nothing in it is expanded; the second runs it:
 

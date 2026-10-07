@@ -35,10 +35,12 @@
 # The coordination section is exercised over a synthetic manifest and wave
 # return, the two inputs the live conductor passes in.
 #
-# Seats-mode selection is exercised as SELECT_JQ over the fixtures and as
-# filesToExtract over the reply shape the scout returns. The scout's own
-# `find ... -exec jq ... {} +` launcher, its `--- seats ---` split and the
-# relay of `seats_exit` are not run here; green does not cover them.
+# Seats-mode selection is exercised three ways: SELECT_JQ over the fixtures,
+# the scout's own fenced command block (rendered from scoutBrief and run under
+# bash over fixture transcripts behind a ~/.claude/projects slug glob, with
+# its `--- seats ---` split and `seats_exit` line checked), and
+# filesToExtract over the reply shape the scout returns. That structured
+# reply is a fixture here: no agent copies the block's output into it.
 
 set -uo pipefail
 
@@ -322,8 +324,8 @@ ok $extracts_ok 'the jq program runs clean over every fixture transcript'
 # ---- Seats-mode selection, run once over a mixed corpus as the scout runs it ----
 # The wave's claimants, probes and judge, the panel's judges (one re-seated,
 # one behind the harness relay), the relay-first claimant and probe, and the
-# claim path. One jq invocation over many files, as `find -exec ... {} +`
-# hands them over.
+# claim path. One jq invocation over many files, as the scout's glob hands
+# them over.
 jq -r -n -R -f "${WORK}/wave-usage-select.jq" \
     "${WORK}"/wave/agent-*.jsonl "${WORK}"/panel/agent-*.jsonl \
     "${WORK}"/relay/agent-*.jsonl "${WORK}"/claim/agent-*.jsonl \
@@ -339,6 +341,32 @@ jq -r -n -R -f "${WORK}/wave-usage-select.jq" \
     "${WORK}/malformed/agent-bad.jsonl" "${WORK}"/panel/agent-pjudge.jsonl \
     > "${WORK}/selected-malformed.txt" 2>/dev/null
 [ $? -ne 0 ]; ok $? 'a malformed transcript fails the selection batch with a non-zero status'
+
+# ---- The scout's seats-mode command block, rendered and run as the scout runs it ----
+# The wave fixtures sit behind a ~/.claude/projects slug, so the block's path
+# carries the `*` glob shellPath writes. The block runs under bash with stdin
+# closed: a jq call that lost its transcript operand reads stdin instead.
+SCOUT_DIR="${WORK}/home/.claude/projects/-Users-x-Development-repository-github-com-ORG-repo-git-main/5575d475/subagents/workflows/wf_1"
+mkdir -p "$SCOUT_DIR" && cp "${WORK}"/wave/agent-*.jsonl "$SCOUT_DIR"/ || fatal "scout fixture copy failed"
+{
+    cat "${WORK}/regions.js"
+    echo 'const dir = process.argv[2]; const mode = "seats"'
+    extract wave-usage-scout || fatal "bad or missing TEST markers for wave-usage-scout"
+    echo 'process.stdout.write(scoutBrief)'
+} > "${WORK}/emit-scout.js" || exit 2
+node "${WORK}/emit-scout.js" "$SCOUT_DIR" > "${WORK}/scout-brief.txt" || fatal "could not render scoutBrief"
+awk '/^```$/ { n++; next } n == 1' "${WORK}/scout-brief.txt" > "${WORK}/seats-block.sh"
+[ -s "${WORK}/seats-block.sh" ]; ok $? 'the seats-mode scout brief carries a fenced command block'
+bash "${WORK}/seats-block.sh" < /dev/null > "${WORK}/scout-out.txt" 2> "${WORK}/scout-err.txt"
+grep -qx 'seats_exit=0' "${WORK}/scout-out.txt"; ok $? \
+    "the seats block's selection exits 0 over the fixture transcripts (stderr: $(head -c 300 "${WORK}/scout-err.txt"))"
+scout_seats=$(sed -n '/^--- seats ---$/,$p' "${WORK}/scout-out.txt" | sed '1d' | grep -v '^seats_exit=')
+[ "$scout_seats" = "${SCOUT_DIR}/agent-ajudge.jsonl" ]; ok $? \
+    "the paths after --- seats --- are exactly the fixture seat transcripts (got: ${scout_seats:-none})"
+scout_files=$(sed -n '/^--- seats ---$/q;p' "${WORK}/scout-out.txt" | grep -v '^exit=')
+want_files=$(for f in "${SCOUT_DIR}"/agent-*.jsonl; do printf '%s\n' "$f"; done | LC_ALL=C sort)
+[ -n "$scout_files" ] && [ "$scout_files" = "$want_files" ]; ok $? \
+    'the paths before --- seats --- are every fixture transcript, sorted'
 
 # ---- Classification and reduction under node ----------------------------------
 cat "${WORK}/regions.js" > "${WORK}/suite.js"

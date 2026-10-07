@@ -91,10 +91,13 @@
 # function definition's two operators, so `f()#` opens a comment.
 # Where the text alone does not settle bash's reading, the pass stops marking
 # prose rather than guess: every later quote group in the leaf reaches the
-# matcher unmarked, which can only add a DENY. Two shapes do that. An extglob
+# matcher unmarked, which can only add a DENY. Three shapes do that. An extglob
 # group (@( ?( *( +( !( ) is one word only with extglob on, and with it off
 # `!(cmd)#` is a negated subshell then a comment. The word case inside a $( )
-# or backticks makes its pattern `)` close the wrong group.
+# or backticks makes its pattern `)` close the wrong group. A quote that opens
+# inside an m group: when the arithmetic parse fails (its `)` is not followed
+# by `)`), bash re-reads `((` and `$((` as nested subshells, where a `#`
+# after a blank opens a comment and the quote may be comment text.
 # The group state, the open backtick and that fallback end with the leaf (the
 # \036 byte): one leaf's unbalanced text, such as a heredoc body bash never
 # parsed, must not move a comment in the next.
@@ -268,6 +271,8 @@ END {
             continue
         }
         if (c == "#" && !in_comment && !in_word_group() && (!in_word || word_start)) in_comment = 1
+        # A quote inside (( or $(( may be comment text (see the header).
+        if ((c == SQ || c == DQ) && !in_comment && index(nest, "m")) unsure = 1
         if (c == SQ && !in_comment) {
             j = i + 1
             content = ""

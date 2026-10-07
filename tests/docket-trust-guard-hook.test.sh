@@ -904,6 +904,12 @@ case_comment_regions_are_inert() {
         executor-write DENY "a # after ; inside \${...} leaves the next quote's words in command position"
     assert_verdict "${widened}"$'\n'"(( 1 #${sq}"$'\n'"${sq} ))"$'\n'"${inv}${sq_end}" \
         executor-write DENY "a # inside an arithmetic (( )) is no comment, so its quote still opens a group"
+    # When the arithmetic parse fails, bash re-reads (( as nested subshells
+    # and the # opens a comment, so the apostrophe after it is comment text.
+    assert_verdict "${widened}"$'\n'"((echo hi # it's"$'\n'"docket trust add erik ssh-ed25519 AAAA"$'\n'"echo ' ) ' )"$'\n'")"$'\nEOF' \
+        executor-write DENY "a quote inside a failed (( parse leaves the next line as code"
+    assert_verdict "${widened}"$'\n'"echo \$((echo hi # it's"$'\n'"docket trust add erik ssh-ed25519 AAAA"$'\n'"echo ' ) ' )"$'\n'")"$'\nEOF' \
+        executor-write DENY "a quote inside a failed \$(( parse leaves the next line as code"
     assert_verdict "${widened}"$'\n'"echo \$(case x in x) true;; esac)#${sq}"$'\nx\n'"${sq}"$'\n'"${inv}${sq_end}" \
         executor-write DENY "a case pattern's ) inside \$( ) leaves no quote able to mark later lines as prose"
     assert_verdict "${widened}"$'\n'"echo \$(echo \$(case x in x) true;; esac))#${sq}"$'\nx\n'"${sq}"$'\n'"${inv}${sq_end}" \

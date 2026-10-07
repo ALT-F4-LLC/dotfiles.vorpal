@@ -1257,6 +1257,42 @@ case_prepass_copies_identical() {
     fi
 }
 
+# ---- Framing control bytes: refused before any analysis -------------------
+#
+# The hook frames its own leaf analysis with 0x1e and refuses any command that
+# carries 0x1d or 0x1e, so a caller cannot forge a leaf boundary that resets
+# the pre-pass quote state mid-leaf. Each row asserts exit 2 and the
+# control-byte reason together: the reason text keeps the row red when the
+# refusal is gone but another matcher still denies the command.
+# assert_deny_reason does not fit, because this reason differs from
+# DENY_REASON. The bytes are built at runtime so the file stays plain text.
+
+CONTROL_BYTE_REASON='control byte (0x1d or 0x1e)'
+
+assert_control_byte_deny() {
+    local cmd="$1" agent="$2" label="$3" err rc
+    err=$(PATH="$TOOLS_DIR" "$BASH_BIN" "$HOOK" 2>&1 >/dev/null <<<"$(build_input "$cmd" "$agent")")
+    rc=$?
+    if [ "$rc" -ne 2 ]; then
+        fail "${label} (want exit 2, got exit ${rc})"
+        return
+    fi
+    case "$err" in
+        *"${CONTROL_BYTE_REASON}"*) pass "${label} (DENY, control-byte reason)" ;;
+        *) fail "${label} (control-byte reason missing: ${err})" ;;
+    esac
+}
+
+case_framing_control_bytes_deny() {
+    local rs gs
+    rs=$(printf '\036')
+    gs=$(printf '\035')
+    assert_control_byte_deny "docket ${rs} trust add erik ssh-ed25519 AAAA" executor-write \
+        "executor-write: bare 0x1e word between docket and trust add"
+    assert_control_byte_deny "docket ${gs} trust add erik ssh-ed25519 AAAA" executor-write \
+        "executor-write: bare 0x1d word between docket and trust add"
+}
+
 # ---- Input edge cases: fail open, never mid-parse --------------------------
 
 case_input_edge_cases() {
@@ -1310,6 +1346,7 @@ case_missing_prepass_file_denies
 case_match_program_failure
 case_prepass_program_failure
 case_prepass_copies_identical
+case_framing_control_bytes_deny
 case_input_edge_cases
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"

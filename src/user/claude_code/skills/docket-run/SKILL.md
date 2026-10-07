@@ -1522,10 +1522,16 @@ any stash your own integration or diagnosis created.
 
 **Two more pieces of the close report are pasted literal output, never a
 recount or a paraphrase:** the landed-commit list, `git log
---format='%h %s' <shared-branch tip when this run activated>..HEAD`
-verbatim (conductor patch commits named by sha within the same range);
-and `dispatch close`'s own JSON in full, including any refusal's step,
-sha, and worktree.
+--format='%h %s' <head>..HEAD` verbatim (conductor patch commits named by
+sha within the same range); and `dispatch close`'s own JSON in full,
+including any refusal's step, sha, and worktree. `<head>` is the
+activation head the engine recorded: `.data.activation_head.commit` in
+`docket run status $RUN --json=v2`, the same sha as `head_commit` on the
+run's `run-activated` event (`docket events list --run $RUN --kind
+run-activated --json=v2`). When neither carries one (the exec root was
+not a git checkout, or the run activated before the engine recorded
+heads), report that no activation head was recorded and paste no list;
+never reconstruct the range from commit messages or any other source.
 
 **A disposition is reported only where one was actually taken, and a
 `pre = true` gate can never be one.** A pre-gate runs at claim and rides

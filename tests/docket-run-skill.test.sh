@@ -1239,6 +1239,30 @@ else
     ok "events by kind: every events-list invocation carries --tail, --kind or --step"
 fi
 
+# (u) The close report's landed-commit list ranges from the activation head
+# the engine recorded, read in the same paragraph, and an absent head is
+# reported as absent rather than reconstructed.
+#
+#   u1 restore the `<shared-branch tip when this run activated>` placeholder
+#      and move the run-status source to a new paragraph elsewhere
+#   u2 delete the absent-head sentence
+landed_anchor='**Two more pieces of the close report are pasted literal output'
+if paragraph "$landed_anchor" "${WORK}/landed"; then
+    states "close report: the landed-commit list ranges from the recorded head" \
+        "${WORK}/landed" "git log --format='%h %s' <head>..HEAD"
+    states "close report: the head is read from run status's activation_head" \
+        "${WORK}/landed" '`.data.activation_head.commit` in `docket run status $RUN --json=v2`'
+    states "close report: an absent head is reported, not reconstructed" \
+        "${WORK}/landed" 'report that no activation head was recorded and paste no list; never reconstruct the range'
+    if grep -qF -- '<shared-branch tip when this run activated>' "${WORK}/landed"; then
+        bad "close report: the paragraph still asks the conductor to remember the activation tip"
+    else
+        ok "close report: no remembered-tip placeholder in the paragraph"
+    fi
+else
+    bad "close report: no single paragraph carries '${landed_anchor}'"
+fi
+
 if [ "$fail" -ne 0 ]; then
     echo "docket-run-skill: FAIL — a sandbox lift without its precondition is the failure this pins; fix the skill, not the test." >&2
     exit 1

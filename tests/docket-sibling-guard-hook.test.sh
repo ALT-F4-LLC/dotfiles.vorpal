@@ -657,6 +657,11 @@ case_read_loops() {
         "ls | while read d; do : \${d:?}; rm -rf ${SIB_DIR}/\$d; done"; do
         assert_deny_reason "$cmd" executor-write "$WAVE_42" "branches on a variable" "read loop that branches on its value: ${cmd}"
     done
+    # The read placeholder covers the IFS= -r form, a read with no name
+    # (REPLY) and every operand of a multi-name read.
+    assert_deny_reason "ls | while IFS= read -r f; do for g in \$f; do rm -rf ${SIB_DIR}/\$g; done; done" executor-write "$WAVE_42" "branches on a variable" "for-list over an IFS= read -r placeholder"
+    assert_deny_reason "ls | while read; do for f in \$REPLY; do rm -rf ${SIB_DIR}/\$f; done; done" executor-write "$WAVE_42" "branches on a variable" "for-list over the REPLY placeholder of a nameless read"
+    assert_deny_reason "ls | while read a b; do for f in \$b; do rm -rf ${SIB_DIR}/\$f; done; done" executor-write "$WAVE_42" "branches on a variable" "for-list over the second operand of a multi-name read"
     # An arithmetic `[[` comparison or `((...))` reads a bare name as a
     # variable, so it branches on the read value with no `$` in sight.
     assert_deny_reason "seq 3 | while read n; do if [[ n -ne 0 ]]; then rm -rf ${SIB_DIR}/\$n; fi; done" executor-write "$WAVE_42" "branches on a variable" "bare name in an arithmetic [[ if after a read"

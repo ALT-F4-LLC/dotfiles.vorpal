@@ -138,6 +138,7 @@ require_bounded() { # <workflow> <step>...
 
 require_bounded security-change threat-model implement synthesize-findings drain-highs verify-ac
 require_bounded standard-change implement synthesize-findings drain-highs verify-ac
+require_bounded disposition dispose verify-ac
 
 if [ "$fail" -ne 0 ]; then
     echo "contract-corpus: FAIL" >&2

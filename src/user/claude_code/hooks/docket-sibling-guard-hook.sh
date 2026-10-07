@@ -1040,6 +1040,10 @@ BEGIN {
     MARK = "\001"
     DOTDOT_RE = "(^|/)\\.\\.(/|$)"
     discovery = 0
+    # Mandatory positional operands a wrapper takes before its command, by
+    # count: verb_index skips them by position, whatever their shape, after
+    # the wrapper options (`timeout 1.5 cmd`, `timeout $t cmd`).
+    WRAPPER_OPERANDS["timeout"] = 1
 }
 function decode(raw,    inner, cpos) {
     if (length(raw) >= 2 && substr(raw, 1, 1) == MARK && substr(raw, length(raw), 1) == MARK) {
@@ -1074,14 +1078,15 @@ function is_wrapper(h) {
 }
 # The verb position of a leaf: the first word (or word `start`), then past
 # any wrapper and the wrapper own options, values (`-n 5`, `5s`, `FOO=1`) and
-# flags. zsh evaluates the `repeat` count arithmetically, so the word after
+# flags. A wrapper in WRAPPER_OPERANDS has its mandatory operands skipped by
+# position after its options, whatever their shape. zsh evaluates the `repeat` count arithmetically, so the word after
 # `repeat` is the count whatever its shape (a quoted count spans its whole
 # group), and each lone `{` after it opens a body.
 # The pre-pass splits a count word built from glued quoted parts or a quoted
 # expansion into several tokens, and a quoted blank in it leaves none, so
 # where the count ends is a best guess. REPEAT_FROM is the first word after
 # the first `repeat` passed (0 when none), for repeat_scan.
-function verb_index(n, start,   i, h, quoted, g) {
+function verb_index(n, start,   i, h, quoted, g, k) {
     REPEAT_FROM = 0
     i = start ? start : 1
     while (i <= n && words[i] == "") i++
@@ -1101,6 +1106,13 @@ function verb_index(n, start,   i, h, quoted, g) {
                 if (words[i] != "") { decode(words[i]); if (D_WORD != "{") break }
                 i++
             }
+        }
+        if (h in WRAPPER_OPERANDS) {
+            while (i <= n) {
+                if (words[i] != "") { decode(words[i]); if (D_WORD !~ /^-/) break }
+                i++
+            }
+            for (k = 0; i <= n && k < WRAPPER_OPERANDS[h]; i++) if (words[i] != "") k++
         }
         while (i <= n) {
             if (words[i] == "") { i++; continue }

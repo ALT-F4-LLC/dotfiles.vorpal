@@ -509,7 +509,8 @@ it in full (`docket doc show DOC-N`) and honor its contents before your
 first mutating verb; none of it is recoverable from the engine. Write it
 to a session-private file and, from the cwd you will drive the run from,
 run [references/pause.md](references/pause.md)'s **Resume-prompt paths**
-`attach` step (`bash <scratchpad>/resume-prompt-paths.sh attach
+`attach` step (`bash
+~/.claude/skills/docket-run/scripts/resume-prompt-paths.sh attach
 <prompt-file>`); on exit 1, stop and report both paths it names before
 `docket run conduct`. No matching doc is not an error: proceed on engine
 state alone.

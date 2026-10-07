@@ -136,6 +136,14 @@
 #          and check exits 1 on it
 #       i4 make `print` emit no linked-worktree lines; the live ../live
 #          worktree's Worktree line is missing from print's output
+#   (n) pause.md runs the installed resume-prompt-paths script and carries
+#       no copy of it
+#       n1 the record step names `<scratchpad>/resume-prompt-paths.sh` again;
+#          the negative assertion fails
+#       n2 the attach step drops the installed invocation; the mode count is
+#          2 and the positive assertion fails
+#       n3 restore the fenced script block in pause.md; the inline-copy
+#          assertion fails
 #
 # A missing input file fails; it never skips green.
 
@@ -991,6 +999,43 @@ if paragraph "$classifier_anchor" "${WORK}/classifier"; then
         "${WORK}/classifier" 'A step stopped a second time goes to **Standing ruling: a step stopped twice by the safety classifier**'
 else
     bad "classifier: no single paragraph carries '${classifier_anchor}'"
+fi
+
+# (r) pause.md runs the installed script by its install path in all three
+# places (print while building the snapshot, check before recording, attach
+# in a new session) and never tells the conductor to write a copy. Lines are
+# joined first, so an invocation wrapped across lines still counts.
+tr '\n' ' ' < "$PAUSE" > "${WORK}/pause-joined"
+installed_modes=$(grep -oE 'bash +~/\.claude/skills/docket-run/scripts/resume-prompt-paths\.sh +(print|check|attach)' \
+    "${WORK}/pause-joined" | awk '{print $NF}' | sort -u | wc -l | tr -d ' ')
+if [ "$installed_modes" -eq 3 ]; then
+    ok "installed paths script: pause.md runs print, check and attach from ~/.claude/skills/docket-run/scripts"
+else
+    bad "installed paths script: pause.md runs ${installed_modes} of print, check and attach by the installed path, not 3"
+fi
+if grep -qE '<scratchpad>/resume-prompt-paths|script to your scratchpad|with the Write tool' "${WORK}/pause-joined"; then
+    bad "installed paths script: pause.md still tells the conductor to write the script: $(grep -oE '<scratchpad>/resume-prompt-paths|script to your scratchpad|with the Write tool' "${WORK}/pause-joined" | head -1)"
+else
+    ok "installed paths script: pause.md never tells the conductor to write the script"
+fi
+
+# No fenced block carries the script's usage line, and the Resume-prompt
+# paths section has no bash fence.
+paths_usage='# resume-prompt-paths: print | check <prompt-file> | attach <prompt-file>'
+inline_copies=$(awk -v usage="$paths_usage" '
+        /^[[:space:]]*```/ { open = !open; next }
+        open && $0 == usage { n++ }
+        END { print n + 0 }
+    ' "$PAUSE")
+section_fences=$(awk '
+        /^## / { on = ($0 == "## Resume-prompt paths"); next }
+        on && /^[[:space:]]*```bash/ { n++ }
+        END { print n + 0 }
+    ' "$PAUSE")
+if [ "$inline_copies" -eq 0 ] && [ "$section_fences" -eq 0 ]; then
+    ok "installed paths script: pause.md carries no inline copy of the script"
+else
+    bad "installed paths script: pause.md carries an inline copy (${inline_copies} fenced usage lines, ${section_fences} bash fences under Resume-prompt paths)"
 fi
 
 if [ "$fail" -ne 0 ]; then

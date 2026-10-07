@@ -118,7 +118,8 @@ Every `docket` read is scoped to the project the cwd resolves to, so a
 prompt without it sends the new session looking for a run the store will
 not show it, and a mistyped one sends it to a path that does not exist.
 From the checkout the run is driven from — the shared checkout, never a
-wave worktree — run `bash <scratchpad>/resume-prompt-paths.sh print`
+wave worktree — run `bash
+~/.claude/skills/docket-run/scripts/resume-prompt-paths.sh print`
 (**Resume-prompt paths**, below) and paste its `**Checkout:**`,
 `**Branch:**` and `**Worktree:**` lines into the prompt verbatim. Copy
 every other path the prompt names from command output as well.
@@ -222,62 +223,14 @@ replacement for the list above.
 ## Resume-prompt paths
 
 The prompt's paths come from git, and are checked when the prompt is
-recorded and again when a new session attaches. Write this block verbatim
-to `<scratchpad>/resume-prompt-paths.sh` with the Write tool and run it
-with `bash`. `print` emits the Checkout, branch and worktree lines from
-the cwd's checkout, skipping every worktree entry git marks `prunable`
-(its directory is gone), so `check` passes what `print` emits. `check`
-exits 1 when an absolute path in the prompt file does not exist, quoting
-each such line. `attach` exits 1 when the
-prompt's Checkout is not this cwd's `git rev-parse --show-toplevel`,
-naming both.
-
-```bash
-# resume-prompt-paths: print | check <prompt-file> | attach <prompt-file>
-set -u
-prompt=${2:-}
-case "${1:-}" in
-    print)
-        top=$(git rev-parse --show-toplevel) || exit 1
-        branch=$(git rev-parse --abbrev-ref HEAD) || exit 1
-        printf '**Checkout:** `%s`\n**Branch:** `%s`\n' "$top" "$branch"
-        git worktree list --porcelain | awk '
-            function emit() { if (wt != "" && !prunable) printf "**Worktree:** `%s`\n", wt; wt = ""; prunable = 0 }
-            /^worktree / { emit(); wt = substr($0, 10); next }
-            /^prunable/ { prunable = 1; next }
-            /^$/ { emit() }
-            END { emit() }'
-        ;;
-    check)
-        [ -f "$prompt" ] || { echo "resume-prompt-paths: no prompt file: $prompt" >&2; exit 2; }
-        grep -noE '(^|[[:space:]`"(])/[^/[:space:]`"()]+/([^[:space:]`"()]*[^[:space:]`"().,;:])?' "$prompt" | {
-            status=0
-            while IFS=: read -r line_no match; do
-                path=/${match#*/}
-                test -e "$path" && continue
-                echo "resume-prompt-paths: line $line_no names a path that does not exist: $path" >&2
-                sed -n "${line_no}p" "$prompt" >&2
-                status=1
-            done
-            exit "$status"
-        }
-        ;;
-    attach)
-        [ -f "$prompt" ] || { echo "resume-prompt-paths: no prompt file: $prompt" >&2; exit 2; }
-        checkout=$(sed -n 's/^[[:space:]]*\*\*Checkout:\*\* `\([^`]*\)`.*$/\1/p' "$prompt")
-        top=$(git rev-parse --show-toplevel) || exit 1
-        if [ "$checkout" != "$top" ]; then
-            echo "resume-prompt-paths: the prompt's Checkout is '${checkout:-<none>}' but this session's checkout is '$top'" >&2
-            exit 1
-        fi
-        echo "resume-prompt-paths: Checkout matches $top"
-        ;;
-    *)
-        echo "usage: bash resume-prompt-paths.sh print | check <prompt-file> | attach <prompt-file>" >&2
-        exit 2
-        ;;
-esac
-```
+recorded and again when a new session attaches, by the installed script
+`~/.claude/skills/docket-run/scripts/resume-prompt-paths.sh`, run with
+`bash`. `print` emits the Checkout, branch and worktree lines from the
+cwd's checkout, skipping every worktree entry git marks `prunable` (its
+directory is gone), so `check` passes what `print` emits. `check` exits 1
+when an absolute path in the prompt file does not exist, quoting each
+such line. `attach` exits 1 when the prompt's Checkout is not this cwd's
+`git rev-parse --show-toplevel`, naming both.
 
 `check` reads a path as a run of two or more `/`-separated components
 starting at a line start, whitespace, backtick, quote or parenthesis, so
@@ -287,8 +240,9 @@ starting at a line start, whitespace, backtick, quote or parenthesis, so
 
 The prompt is a single document, delivered both ways, not either:
 
-1. Write it to a file and run `bash <scratchpad>/resume-prompt-paths.sh
-   check <path-to-prompt-file>`. On exit 1, correct each quoted line from
+1. Write it to a file and run `bash
+   ~/.claude/skills/docket-run/scripts/resume-prompt-paths.sh check
+   <path-to-prompt-file>`. On exit 1, correct each quoted line from
    `print` or other command output, never by retyping, and run it again.
    Record nothing until it exits 0.
 2. Record it as a docket doc:
@@ -363,10 +317,10 @@ snapshot exists to preserve, the conductor capability included.
 
 **In a new session**: read the resume prompt (doc or pasted text) and
 write it to a session-private file. Before any other docket command, the
-prompt's own state check included, write the **Resume-prompt paths**
-script to your scratchpad and run `bash
-<scratchpad>/resume-prompt-paths.sh attach <prompt-file>` from the cwd
-you will drive the run from. On exit 1, stop and report both paths it
+prompt's own state check included, run `bash
+~/.claude/skills/docket-run/scripts/resume-prompt-paths.sh attach
+<prompt-file>` (**Resume-prompt paths**) from the cwd you will drive the
+run from. On exit 1, stop and report both paths it
 names to the operator: a docket read from another checkout scopes to
 another project, and a Checkout that does not match is either a typo in
 the prompt or a session started in the wrong place. On exit 0, take the

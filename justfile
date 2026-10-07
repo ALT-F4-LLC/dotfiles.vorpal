@@ -205,8 +205,34 @@ diff-scope-small:
 vuln-scan:
     .docket/bin/vuln-scan
 
+# As the record-time gate (DOCKET_GATE=sdet-abuse) on a clean tree, this
+# reuses the `tests` recipe's stamp for the same tree: when a full `tests` pass
+# of HEAD's tree is younger than TESTS_REUSE_MAX_AGE seconds, the hook suites
+# it already ran are skipped (SDET_ABUSE_SKIP_SUITES=1), and the hook
+# classification and registration checks still run and decide the result.
+# Every other run, and TESTS_NO_REUSE=1, runs the suites in full. This recipe
+# only reads the `tests` stamp and never writes a stamp of its own.
 sdet-abuse:
-    .docket/bin/sdet-abuse
+    #!/usr/bin/env bash
+    set -euo pipefail
+    unset SDET_ABUSE_SKIP_SUITES
+    if [ "${DOCKET_GATE:-}" = sdet-abuse ] && [ -z "${TESTS_NO_REUSE:-}" ] &&
+        git rev-parse --git-dir >/dev/null 2>&1 && [ -z "$(git status --porcelain)" ]; then
+        tree=$(git rev-parse 'HEAD^{tree}')
+        stamp="$(git rev-parse --git-dir)/tests-pass/$tree"
+        if [ -f "$stamp" ]; then
+            stamped_at=
+            stamped_commit=
+            read -r stamped_at stamped_commit < "$stamp" || true
+            case "$stamped_at" in ''|*[!0-9]*) stamped_at=0 ;; esac
+            age=$(( $(date +%s) - stamped_at ))
+            if [ "$age" -ge 0 ] && [ "$age" -le "${TESTS_REUSE_MAX_AGE:-7200}" ]; then
+                echo "sdet-abuse: REUSED the tests pass of tree $tree (commit ${stamped_commit:-unknown}) from ${age}s ago for the hook suites; the classification and registration checks run now. TESTS_NO_REUSE=1 forces the suites."
+                SDET_ABUSE_SKIP_SUITES=1 exec .docket/bin/sdet-abuse
+            fi
+        fi
+    fi
+    exec .docket/bin/sdet-abuse
 
 doc-validate:
     .docket/bin/doc-validate

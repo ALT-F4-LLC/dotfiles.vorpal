@@ -145,6 +145,7 @@ require_bounded small-change implement review verify-ac
 require_bounded spec-doc research tdd-author-security tdd-author adr-author ux-spec-author prd-author \
     synthesize-findings drain-highs
 require_bounded spec-project research synthesize-findings drain-highs
+require_bounded trivial-change implement verify-ac
 
 if [ "$fail" -ne 0 ]; then
     echo "contract-corpus: FAIL" >&2

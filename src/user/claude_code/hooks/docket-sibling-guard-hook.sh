@@ -321,8 +321,9 @@
 # body inside a substitution is read, since bash 3.2 may end the
 # substitution inside it (see LEAF_LINES_AWK), and a sibling named there is
 # a false DENY. A skipped body stays unread because the interpreter test
-# that widens a body into the scan reads the leaf's code lines only, never
-# a heredoc body, and never counts a file extension as an interpreter (a
+# that widens a body into the scan reads the leaf's code lines, and of a
+# heredoc body only the substitutions of an unquoted-delimiter one (which
+# bash runs), never a quoted-delimiter body, and never counts a file extension as an interpreter (a
 # target named `cases.sh` or `.env` does not widen; an earlier spelling
 # matched the extension and scanned the body) — a findings artifact that
 # mentions `node`, `sh` or `.env` in passing is the sanctioned record path
@@ -883,7 +884,8 @@ LEAF_LINES_AWK="${HOOK_DIR}/docket-guard-leaf-lines.awk"
 #
 # The trust guard's two triggers, applied to this guard's line selection
 # rather than its first lines, with one correction: the interpreter test
-# reads each leaf's code lines only, never a heredoc body. An interpreter that
+# reads each leaf's code lines, never a heredoc body's text (the one addition,
+# substitutions inside an unquoted-delimiter body, follows). An interpreter that
 # consumes a heredoc is always a command word, never body text; reading bodies
 # too made an artifact that mentioned `node` or `.env` widen itself, and its
 # prose was then matched — the sanctioned record path for the two archetypes
@@ -936,6 +938,42 @@ WIDEN_LINES=$(printf '%s\n' "$CODE_LINES" | awk "$QUOTED_PROSE_AWK")
 WIDEN=0
 if [[ "$WIDEN_LINES" =~ $INTERPRETER_RE ]]; then
     WIDEN=1
+fi
+
+# bash expands an unquoted-delimiter heredoc body when its redirection runs,
+# so a `$( )` or backtick substitution there runs a command (`cat <<E` then
+# `$(echo '...' | sh)`), and an interpreter inside one widens the scan as a
+# code-line interpreter does. The scan at widen 0 holds those bodies and no
+# quoted-delimiter body; every substitution span in it is read, through the
+# same quoted-prose rule, so `$(date) wrote notes` does not widen. A span
+# that never closes runs to the end of the text, toward reading.
+SUBST_SPANS_AWK='
+BEGIN { BQ = "\140" }
+{
+    s = $0
+    n = length(s)
+    out = ""
+    for (i = 1; i <= n; i++) {
+        c = substr(s, i, 1)
+        if (c == "\\") { if (depth > 0 || inbt) out = out substr(s, i, 2); i++; continue }
+        if (c == BQ) { inbt = !inbt; out = out " "; continue }
+        if (c == "$" && substr(s, i + 1, 1) == "(") { depth++; out = out " "; i++; continue }
+        if (depth > 0) {
+            if (c == "(") depth++
+            else if (c == ")") { depth--; if (depth == 0) { out = out " "; continue } }
+            out = out c
+        } else if (inbt) {
+            out = out c
+        }
+    }
+    print out
+}
+'
+if [ "$WIDEN" -eq 0 ]; then
+    SUBST_LINES=$(printf '%s' "$PROBE_TEXT" | awk -v mode=scan -v widen=0 -f "$LEAF_LINES_AWK" | awk "$SUBST_SPANS_AWK" | awk "$QUOTED_PROSE_AWK")
+    if [[ "$SUBST_LINES" =~ $INTERPRETER_RE ]]; then
+        WIDEN=1
+    fi
 fi
 
 SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v mode=scan -v widen="$WIDEN" -f "$LEAF_LINES_AWK")

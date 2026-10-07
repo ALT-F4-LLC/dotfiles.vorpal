@@ -775,6 +775,13 @@ case_artifact_heredoc_bodies() {
     assert_verdict "${sh_target}"$'\nFound a leftover STEP-7.d beside my own dir.\nEOF' executor-read "$WAVE_42" ALLOW "own .sh target: quoted body naming a sibling dir"
     assert_verdict "cat > ${OWN_DIR}/probe/.env <<'EOF'"$'\nrm -rf '"${SIB_DIR}"$'\nEOF' executor-write "$WAVE_42" ALLOW "own .env target: quoted body is still inert"
     assert_verdict "cat > ${OWN_DIR}/probe/tests/cases.sh <<EOF"$'\nrm -rf '"${SIB_DIR}"$'\nEOF' executor-write "$WAVE_42" DENY "own .sh target: unquoted body is still scanned"
+    # bash expands an unquoted body, so an interpreter inside a substitution
+    # there runs; it widens the scan as a code-line interpreter does.
+    assert_verdict $'cat <<E\n$(echo \'rm -rf /tmp/claude-501/STEP-7.d\' | sh)\nE' executor-write "$WAVE_42" DENY "interpreter in a substitution in an unquoted body"
+    assert_verdict $'cat <<E\n$(echo \'rm -rf /tmp/claude-501/STEP-7.d extra\' | sh)\nE' executor-write "$WAVE_42" DENY "interpreter in a substitution in an unquoted body, two-word string"
+    assert_verdict $'cat <<\'E\'\n$(echo \'rm -rf /tmp/claude-501/STEP-7.d\' | sh)\nE' executor-write "$WAVE_42" ALLOW "interpreter in a substitution in a quoted body is inert"
+    assert_verdict $'cat <<E\n$(date) wrote notes\nE' executor-write "$WAVE_42" ALLOW "benign substitution in an unquoted body"
+    assert_verdict $'cat <<E\n`echo \'rm -rf /tmp/claude-501/STEP-7.d\' | sh`\nE' executor-write "$WAVE_42" DENY "interpreter in a backtick substitution in an unquoted body"
     assert_verdict $'/bin/sh <<\'EOF\'\nrm -rf '"${SIB_DIR}"$'\nEOF' executor-write "$WAVE_42" DENY "heredoc fed to /bin/sh (path-prefixed word) is code"
     assert_verdict $'env sh <<\'EOF\'\nrm -rf '"${SIB_DIR}"$'\nEOF' executor-write "$WAVE_42" DENY "heredoc fed through env to sh is code"
     # An interpreter name inside another leaf's quoted prose argument is not

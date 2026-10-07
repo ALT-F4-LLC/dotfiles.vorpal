@@ -933,6 +933,33 @@ the retry passes, and the deny is not an instruction to keep working. A
 teammate idle notification is not an event; speak only when the message
 carries content.
 
+**Extend the dispatch each time a launch returns.** Each time one lane
+unit's wave launch returns while the dispatch is still open, run
+`docket dispatch extend --run $RUN --json` before waiting on the
+remaining launches. It appends the steps that became ready since the open
+(a fix round minted when its step recorded, a held-cluster gate, an
+`on_fail` route, a limit-cut chain tail) to the same open manifest, so
+no lane waits for the slowest lane before its next rows are offered.
+When extend returns no appended rows, launch nothing new from it and keep
+waiting on the outstanding launches. When it returns rows, apply the kind
+filter to them and append them to the dispatch's kept rows file, then
+re-split the whole open manifest, opened plus appended rows, by
+re-running lane_units.py over that file into a fresh `$LAUNCH_DIR`, and
+launch only the resulting units that hold no lane already in flight. No
+verb re-reads the open manifest, so that file is the manifest of record:
+keep it for the whole dispatch. Re-splitting the whole manifest, never
+the appended rows alone, keeps both invariants lane_units.py computes:
+an appended write-class row never runs beside an uncostaged writer in
+another launch, and each launch's class share reflects the whole
+manifest's headroom. A unit holding a lane still in flight is not
+launched; its appended rows wait for that lane's launch to return, and
+the re-split at that return launches them even when that return's own
+extend appends nothing. Launch the new units in one message exactly as
+above, with `unit` and `harnessCap` from the fresh launches.json, add
+their transcript directories to the watcher below and restart it, then
+end the turn again. An appended row nobody launches stays pending and is
+not a discrepancy at close; the engine re-offers it next dispatch.
+
 **A launch that never notifies is a stall, not a wait.** The completion
 notification is the only status surface, and nothing in the harness
 bounds it: a launch whose Workflow died (a harness restart, a stray
@@ -1026,10 +1053,15 @@ watcher outlives its dispatch.
 ### 3. Close the dispatch
 
 On a wave's completion notification, in this order. A dispatch returns
-one notification per launch, each getting its own join and back-fill
-under its own `wfId`, handled the moment it arrives rather than batched
-behind siblings still running; `dispatch verify` onward waits for the
-last launch's notification, since the dispatch closes once.
+one notification per launch, each getting its own join under its own
+`wfId`, launched the moment it arrives rather than batched behind
+siblings still running, and each join's `rows` land on disk the moment
+it returns, so an interrupt loses no launch's record. Back-fill, verify
+and close run only after every launch has returned, including every
+launch started from extended rows (step 2's **Extend the dispatch each
+time a launch returns**), since the dispatch closes once: a launch
+started from extend is a launch of this dispatch, and its join precedes
+the close like any other.
 
 **1. Launch the usage join first, before reading or diagnosing the wave's
 result.** In the same turn, while it runs: every cherry-pick, `step
@@ -1088,8 +1120,9 @@ close can still wait on the join. A join outstanding at the next close is
 back-filled first; one outstanding when `next` returns empty is
 back-filled before the done report, never after.
 
-**2. On the join's notification: back-fill, verify, close, as separate
-calls, close first, then next.** A panel's seats-mode join launches beside
+**2. On the last launch's join notification (every launch returned,
+extended ones included): back-fill, verify, close, as separate calls,
+close first, then next.** A panel's seats-mode join launches beside
 the next wave, after the close. Never issue `docket next --run` while the
 dispatch is open. Never chain close unconditionally behind a back-fill in
 one compound command; a chained failure closes on stranded usage.
@@ -1152,9 +1185,9 @@ Workflow({ scriptPath: "<absolute installed path to wave-usage.js>",
 ```
 
 ```bash
-# 2. back-fill when the join returns, before or after the close alike. One
-#    transaction, whole batch or nothing: four typed rows per step, --source
-#    naming the wave. Land the workflow's `rows` array on disk with the Write
+# 2. back-fill each launch's landed rows once every launch has returned. One
+#    transaction per launch, whole batch or nothing: four typed rows per
+#    step, --source naming the wave. Land the workflow's `rows` array on disk with the Write
 #    tool, copied from the completion notification byte for byte — never
 #    retyped, never reshaped — then pipe the file. Nothing else goes in that
 #    file: the workflow's overhead and skip lines are in its return, not `rows`.

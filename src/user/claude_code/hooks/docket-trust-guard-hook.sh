@@ -571,7 +571,10 @@ HOOK_DIR="${0%/*}"
 [ "$HOOK_DIR" = "$0" ] && HOOK_DIR="."
 PREPASS_AWK="${HOOK_DIR}/docket-guard-prepass.awk"
 [ -r "$PREPASS_AWK" ] || deny "trust-store write blocked: the trust-guard hook's shared pre-pass file (docket-guard-prepass.awk) is missing or unreadable beside this hook, so it cannot check this command. This is a hook installation defect, not a caller mistake -- report it rather than retrying."
-STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk -f "$PREPASS_AWK" 2>/dev/null) || allow_default
+# A pre-pass that fails (a program awk cannot parse) leaves the match stage
+# no command to read, so the hook refuses rather than allowing.
+STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk -f "$PREPASS_AWK" 2>/dev/null) || \
+    deny "$REASON_PREFIX the trust-guard hook's pre-pass program failed (docket-guard-prepass.awk), so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
 
 # --- THE MATCH, unchanged from the pre-redesign hook. ---------------------
 #

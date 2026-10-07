@@ -363,6 +363,34 @@ case_brace_word_prose_allows() {
         ALLOW 'widened quoted heredoc body naming git and a brace word with no comma'
 }
 
+# ---- A brace word in command position behind a wrapper or modifier -------
+#
+# A wrapper (env, command, nohup, timeout) runs the word after its own
+# options, and zsh, the Bash tool's shell here, runs noglob, nocorrect, - and
+# repeat N as precommand modifiers and still brace-expands the word after
+# them. A brace word there can expand into git and its write subcommand. The
+# plain spellings deny through the git head check, which runs at every word.
+
+case_wrapper_brace_word_denies() {
+    assert_verdict 'env {git,commit} -m x' DENY 'brace word after env'
+    assert_verdict 'command {git,commit} -m x' DENY 'brace word after command'
+    assert_verdict 'nohup {git,commit} -m x' DENY 'brace word after nohup'
+    assert_verdict 'timeout 5 {git,push}' DENY 'brace word after timeout and its duration'
+    assert_verdict 'noglob {git,commit} -m x' DENY 'brace word after the zsh modifier noglob'
+    assert_verdict 'nocorrect {git,push}' DENY 'brace word after the zsh modifier nocorrect'
+    assert_verdict 'repeat 1 {git,commit} -m x' DENY 'brace word after a zsh repeat count'
+    assert_verdict 'noglob git commit -m x' DENY 'plain spelling after noglob'
+    assert_verdict 'nocorrect git push' DENY 'plain spelling after nocorrect'
+    assert_verdict '- git commit -m x' DENY 'plain spelling after the zsh modifier -'
+    assert_verdict 'repeat 1 git commit -m x' DENY 'plain spelling after a zsh repeat count'
+}
+
+case_wrapper_brace_word_allows() {
+    assert_verdict 'noglob git status' ALLOW 'git read after noglob'
+    assert_verdict 'echo {git,commit} -m x' ALLOW 'brace word as an argument of echo'
+    assert_verdict 'cp f{,.bak}' ALLOW 'brace word with an empty alternative as an argument'
+}
+
 # ---- MUST ALLOW: option-before-subcommand help exemption -----------------
 
 case_must_allow_help_exemption() {
@@ -875,6 +903,8 @@ case_must_allow_terminal_fix_negative_controls
 case_must_allow_computed_subcommand_residual
 case_brace_split_subcommand_denies
 case_brace_word_prose_allows
+case_wrapper_brace_word_denies
+case_wrapper_brace_word_allows
 case_must_allow_help_exemption
 case_accepted_false_positive_control
 case_must_not_catch_prose_and_reads

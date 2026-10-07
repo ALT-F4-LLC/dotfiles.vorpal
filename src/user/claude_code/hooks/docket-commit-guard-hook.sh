@@ -165,7 +165,7 @@ if ! printf '%s' "$COMMAND" | bash -n >/dev/null 2>&1; then
     deny "$REASON_PREFIX the commit-guard hook could not parse this command to check it (bash reported a syntax error while analyzing it) and refuses rather than guessing. Fix the command's syntax; if it is not actually invalid, that is a hook defect to report separately."
 fi
 
-# `eval "$COMMAND"` is how the untrusted text reaches bash as SOURCE rather
+# `eval -- "$COMMAND"` is how the untrusted text reaches bash as SOURCE rather
 # than as a re-quoted argument: COMMAND travels on stdin, never through
 # string interpolation into this script's own source, so nothing about the
 # outer invocation's quoting can be confused by what the inner text
@@ -200,7 +200,7 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
         fi
         # The first firing is this probe own eval line, not a leaf of the
         # command; recording it would put an interpreter word in every walk.
-        if [ "$_leaf_n" -eq 1 ] && [ "$BASH_COMMAND" = "eval \"\$COMMAND\"" ]; then
+        if [ "$_leaf_n" -eq 1 ] && [ "$BASH_COMMAND" = "eval -- \"\$COMMAND\"" ]; then
             return 0
         fi
         local head="${BASH_COMMAND%%[ $'"'"'\t\n'"'"']*}"
@@ -238,7 +238,7 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
     exec 8>&1 9>/dev/null
     set -r
     trap _guard_probe DEBUG
-    eval "$COMMAND"
+    eval -- "$COMMAND"
 ' 2>&1)
 PROBE_RC=$?
 
@@ -482,6 +482,13 @@ STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk -f "$PREPASS_AWK" 2>/dev/null) || allo
 # computed-subcommand shape this pass already declines to resolve), and
 # `${` is never brace ALTERNATION syntax, so it carries none of the risk
 # this check exists for.
+# The same DENY covers a brace word in command position, at a leaf's head or
+# behind a prefix word, a wrapper (env, command, nohup, timeout) or a zsh
+# precommand modifier (noglob, nocorrect, -, repeat N), which zsh still
+# brace-expands: `env {git,commit} -m x` can expand into the whole write. It
+# denies when the brace may expand and the letters of git and a write
+# subcommand follow it in order. A brace word in argument position
+# (`echo {git,commit}`, `cp f{,.bak}`) stays allowed.
 MATCH=$(printf '%s' "$STRIPPED" | awk '
 BEGIN { MARK = "\001"; TRUNCATED = "\035" }
 function has_brace(word,   stripped) {
@@ -500,6 +507,27 @@ function may_brace_expand(from,   k) {
         if (index(lines[k], ",") > 0 || index(lines[k], "..") > 0) return 1
     }
     return 0
+}
+# Every word bash builds from a brace is a subsequence of the source text from
+# the brace onward, so a brace can produce git and a write subcommand only
+# when these letters appear in order there.
+function may_spell_git_write(from,   k, rest) {
+    rest = ""
+    for (k = from; k <= n; k++) rest = rest words[k]
+    return rest ~ /g.*i.*t.*(c.*o.*m.*m.*i.*t|p.*u.*s.*h|a.*d.*d)/
+}
+# A word bash reads in command position without making it the command name:
+# an assignment or a reserved word. A lone { is the reserved word unless a
+# quoted fragment follows it, since the pre-pass splits {"a",b} at the quote.
+function is_command_prefix(word, next_word) {
+    if (word ~ /^[A-Za-z_][A-Za-z0-9_]*=/) return 1
+    if (word ~ /^(if|then|else|elif|do|while|until|time|coproc|!)$/) return 1
+    return word == "{" && substr(next_word, 1, 1) != MARK
+}
+# A wrapper or zsh precommand modifier runs the command named after its own
+# options, so that word is in command position too.
+function is_wrapper(word) {
+    return word ~ /^(env|command|nohup|timeout|noglob|nocorrect|-|repeat)$/
 }
 function decode(raw,    inner, cpos) {
     if (length(raw) >= 2 && substr(raw, 1, 1) == MARK && substr(raw, length(raw), 1) == MARK) {
@@ -520,12 +548,55 @@ END {
     for (r = 1; r <= NR; r++) {
         n = split(lines[r], words, /[ \t]+/)
         truncated = (words[1] == TRUNCATED)
+        cmdpos = 1
+        wrapper = ""
+        wrapper_arg = 0
+        after_repeat = 0
         for (i = 1; i <= n; i++) {
             hquoted = decode(words[i])
             hgroup = D_GROUP
             w = D_WORD
             hw = w
             sub(/^.*(\$\(|\140|\(|;|\||&)/, "", hw)
+            # Command position: line start, after a prefix word, after a
+            # wrapper and its own options, or behind an operator. A quoted
+            # fragment leaves it unchanged: the pre-pass splits one source
+            # word at its quotes. After `repeat` every later word of the
+            # command counts, since the pre-pass may split its count.
+            if (!hquoted && !(i == 1 && truncated)) {
+                at_command = cmdpos
+                if (hw != w || hw == "") {
+                    at_command = 1
+                    wrapper = ""
+                    wrapper_arg = 0
+                    after_repeat = 0
+                }
+                if (wrapper != "" && hw != "") {
+                    if (wrapper_arg) {
+                        wrapper_arg = 0
+                    } else if (hw ~ /^-/) {
+                        if (wrapper == "env" && hw ~ /^-[uCS]$/) wrapper_arg = 1
+                        if (wrapper == "timeout" && hw ~ /^-[sk]$/) wrapper_arg = 1
+                    } else if (wrapper == "env" && hw ~ /^[A-Za-z_][A-Za-z0-9_]*=/) {
+                    } else if (wrapper == "timeout" && hw ~ /^[0-9.]+[smhd]?$/) {
+                        wrapper = "timeout-duration-read"
+                    } else {
+                        wrapper = ""
+                    }
+                }
+                if (wrapper != "" || hw == "") {
+                    cmdpos = 1
+                } else if (at_command && is_command_prefix(hw, words[i + 1])) {
+                    cmdpos = 1
+                } else if (at_command && is_wrapper(hw)) {
+                    cmdpos = 1
+                    if (hw == "repeat") after_repeat = 1
+                    else if (hw == "env" || hw == "command" || hw == "timeout") wrapper = hw
+                } else {
+                    if ((at_command || after_repeat) && has_brace(hw) && (truncated || may_brace_expand(i)) && may_spell_git_write(i)) { print "MATCH"; exit }
+                    cmdpos = 0
+                }
+            }
             if (hw == "git" || hw ~ /\/git$/) {
                 j = i + 1
                 helped = 0

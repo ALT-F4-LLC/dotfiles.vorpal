@@ -153,7 +153,96 @@ case_ordinary_reads_allow() {
 case_other_tools_allow() {
     assert_verdict Bash command 'cat ~/.ssh/id_ed25519' "$REPO" ALLOW "Bash is the sandbox's job"
     assert_verdict Edit file_path '~/.ssh/config' "$REPO" ALLOW "Edit is covered by Edit() rules"
-    assert_verdict Write file_path '~/.aws/credentials' "$REPO" ALLOW "Write is covered by Edit() rules"
+}
+
+# ---- Write: sensitive roots for every caller, own STEP-N.d for executor-read
+
+# A scratch root reached through a symlink, so the TMPDIR spelling and its
+# physical path differ on every platform, and transcripts whose opening is a
+# wave brief claiming STEP-7, an operator message, or nothing.
+WORK=$(mktemp -d "${TMPDIR:-/tmp}/sensitive-path-guard-test.XXXXXX") || fatal "mktemp failed"
+trap 'rm -rf "$WORK"' EXIT
+SCRATCH_PHYS=$(cd -P "$WORK" && pwd -P)/scratch
+mkdir -p "${SCRATCH_PHYS}/STEP-7.d" "${SCRATCH_PHYS}/STEP-8.d"
+SCRATCH_LINK="${WORK}/scratch-link"
+ln -s "$SCRATCH_PHYS" "$SCRATCH_LINK"
+WAVE_7="${WORK}/wave-7.jsonl"
+printf '%s\n' '{"type":"user","message":{"role":"user","content":"docket step claim STEP-7 --owner wave:STEP-7:1 --render --json > <TMP>/STEP-7.d/STEP-7.claim.json"}}' >"$WAVE_7"
+OPERATOR="${WORK}/operator.jsonl"
+printf '%s\n' '{"type":"user","message":{"role":"user","content":"tidy /tmp/claude-501/STEP-7.d"}}' >"$OPERATOR"
+SESS_DIR="${WORK}/projects/proj/sess-1"
+mkdir -p "${SESS_DIR}/subagents"
+cp "$OPERATOR" "${WORK}/projects/proj/sess-1.jsonl"
+cp "$WAVE_7" "${SESS_DIR}/subagents/agent-a7.jsonl"
+
+# write_verdict <file_path> <agent_type or ""> <transcript or ""> <ALLOW|DENY> <label> [agent_id session_id]
+write_verdict() {
+    local path="$1" agent="$2" transcript="$3" want="$4" label="$5" id="${6:-}" session="${7:-}" input out got
+    input=$(jq -nc --arg p "$path" --arg a "$agent" --arg t "$transcript" --arg c "$REPO" --arg id "$id" --arg s "$session" '
+        {hook_event_name:"PreToolUse",tool_name:"Write",tool_input:{file_path:$p,content:"x"},cwd:$c}
+        | if $a != "" then .agent_type = $a else . end
+        | if $t != "" then .transcript_path = $t else . end
+        | if $id != "" then .agent_id = $id | .session_id = $s else . end')
+    out=$(HOME="$FAKE_HOME" TMPDIR="$SCRATCH_LINK" "$BASH_BIN" "$HOOK" 2>/dev/null <<<"$input")
+    if printf '%s' "$out" | jq -e '.hookSpecificOutput.permissionDecision == "deny"' >/dev/null 2>&1; then
+        got=DENY
+    else
+        got=ALLOW
+    fi
+    if [ "$got" = "$want" ]; then
+        pass "${label} (${want})"
+    else
+        fail "${label} (want ${want}, got ${got})"
+    fi
+}
+
+case_executor_read_write_confined() {
+    write_verdict "${SCRATCH_LINK}/STEP-7.d/STEP-7-payload.json" executor-read "$WAVE_7" ALLOW \
+        "executor-read Write in its own STEP-N.d, TMPDIR spelling"
+    write_verdict "${SCRATCH_PHYS}/STEP-7.d/out/STEP-7-findings.md" executor-read "$WAVE_7" ALLOW \
+        "executor-read Write in its own STEP-N.d, physical path"
+    write_verdict "${SCRATCH_LINK}/STEP-7.d/STEP-7-payload.json" executor-read "${WORK}/projects/proj/sess-1.jsonl" ALLOW \
+        "executor-read Write, own transcript found by agent_id" a7 sess-1
+    write_verdict "${REPO}/src/main.rs" executor-read "$WAVE_7" DENY \
+        "executor-read Write in the checkout"
+    write_verdict "${SCRATCH_LINK}/STEP-8.d/STEP-8-payload.json" executor-read "$WAVE_7" DENY \
+        "executor-read Write in a sibling STEP-M.d"
+    write_verdict "${SCRATCH_LINK}/STEP-7.d/../STEP-8.d/x.json" executor-read "$WAVE_7" DENY \
+        "executor-read Write walking out of its own dir with .."
+    write_verdict "${SCRATCH_LINK}/STEP-7.d" executor-read "$WAVE_7" DENY \
+        "executor-read Write onto its own dir path itself"
+    write_verdict '~/.ssh/authorized_keys' executor-read "$WAVE_7" DENY \
+        "executor-read Write under a sensitive home path"
+    write_verdict "${SCRATCH_LINK}/STEP-7.d/STEP-7-payload.json" executor-read "" DENY \
+        "executor-read Write with no transcript: own dir undetermined"
+    write_verdict "${SCRATCH_LINK}/STEP-7.d/STEP-7-payload.json" executor-read "$OPERATOR" DENY \
+        "executor-read Write whose transcript carries no claim"
+}
+
+case_other_callers_write_unconfined() {
+    write_verdict "${REPO}/src/main.rs" "" "" ALLOW \
+        "main session Write in the checkout"
+    write_verdict '~/.aws/credentials' "" "" DENY \
+        "main session Write under a sensitive home path"
+    write_verdict "${REPO}/src/main.rs" executor-write "$WAVE_7" ALLOW \
+        "executor-write Write in the checkout"
+    write_verdict "${REPO}/src/main.rs" executor-write "" ALLOW \
+        "executor-write Write in the checkout with no transcript"
+    write_verdict '~/.ssh/config' executor-write "$WAVE_7" DENY \
+        "executor-write Write under a sensitive home path"
+}
+
+# The confinement is for Write alone: an executor-read seat reads the checkout.
+case_executor_read_reads_unconfined() {
+    local input got
+    input=$(jq -nc --arg p "${REPO}/src/main.rs" --arg t "$WAVE_7" --arg c "$REPO" \
+        '{hook_event_name:"PreToolUse",tool_name:"Read",tool_input:{file_path:$p},agent_type:"executor-read",transcript_path:$t,cwd:$c}')
+    got=$(verdict_of "$input")
+    if [ "$got" = "ALLOW" ]; then
+        pass "executor-read Read in the checkout (ALLOW)"
+    else
+        fail "executor-read Read in the checkout (want ALLOW, got ${got})"
+    fi
 }
 
 case_malformed_input_is_silent() {
@@ -181,6 +270,9 @@ case_alternate_spellings_deny
 case_grep_and_glob_deny
 case_ordinary_reads_allow
 case_other_tools_allow
+case_executor_read_write_confined
+case_other_callers_write_unconfined
+case_executor_read_reads_unconfined
 case_malformed_input_is_silent
 case_deny_reason_names_root
 

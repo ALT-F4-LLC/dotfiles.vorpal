@@ -41,6 +41,11 @@
 # its `--- seats ---` split and `seats_exit` line checked), and
 # filesToExtract over the reply shape the scout returns. That structured
 # reply is a fixture here: no agent copies the block's output into it.
+#
+# The transcript listing is exercised the same way in both modes: listCommand
+# is rendered and run under bash, and under zsh where it exists, to show its
+# files_exit= line carries find's status rather than sort's; checkListing is
+# called on replies carrying a failed and a clean status.
 
 set -uo pipefail
 
@@ -419,10 +424,52 @@ grep -qx 'seats_exit=0' "${WORK}/scout-out.txt"; ok $? \
 scout_seats=$(sed -n '/^--- seats ---$/,$p' "${WORK}/scout-out.txt" | sed '1d' | grep -v '^seats_exit=')
 [ "$scout_seats" = "${SCOUT_DIR}/agent-ajudge.jsonl" ]; ok $? \
     "the paths after --- seats --- are exactly the fixture seat transcripts (got: ${scout_seats:-none})"
-scout_files=$(sed -n '/^--- seats ---$/q;p' "${WORK}/scout-out.txt" | grep -v '^exit=')
+grep -qx 'files_exit=0' "${WORK}/scout-out.txt"; ok $? \
+    "the seats block's listing reports find's status 0 on a files_exit= line"
+scout_files=$(sed -n '/^--- seats ---$/q;p' "${WORK}/scout-out.txt" | grep -v '^files_exit=')
 want_files=$(for f in "${SCOUT_DIR}"/agent-*.jsonl; do printf '%s\n' "$f"; done | LC_ALL=C sort)
 [ -n "$scout_files" ] && [ "$scout_files" = "$want_files" ]; ok $? \
     'the paths before --- seats --- are every fixture transcript, sorted'
+
+# ---- LIST_COMMAND reports find's exit status, not sort's, in bash and zsh ----
+# A listing whose find failed must not reach the Extract phase looking like an
+# empty or complete directory. listCommand(dir) is rendered and run from the
+# scratch directory, once over a missing directory and once over two
+# transcripts written out of order, under bash and, where it exists, zsh.
+{
+    cat "${WORK}/regions.js"
+    echo 'process.stdout.write(listCommand(process.argv[2]) + "\n")'
+} > "${WORK}/emit-list.js"
+LIST_MISSING="${WORK}/no-such-wave-dir"
+LIST_DIR="${WORK}/list-wave"
+mkdir -p "$LIST_DIR" "${WORK}/list-tmp"
+: > "${LIST_DIR}/agent-b.jsonl"
+: > "${LIST_DIR}/agent-a.jsonl"
+node "${WORK}/emit-list.js" "$LIST_MISSING" > "${WORK}/list-missing.sh"; ok $? \
+    'listCommand renders for a missing directory'
+node "${WORK}/emit-list.js" "$LIST_DIR" > "${WORK}/list-present.sh"; ok $? \
+    'listCommand renders for a transcript directory'
+list_shells=(bash)
+if command -v zsh >/dev/null 2>&1; then
+    list_shells+=(zsh)
+else
+    echo 'SKIP: zsh not found; LIST_COMMAND runs under bash only here'
+fi
+for sh in "${list_shells[@]}"; do
+    (cd "$WORK" && TMPDIR="${WORK}/list-tmp" "$sh" "${WORK}/list-missing.sh") \
+        > "${WORK}/list-missing.${sh}.out" 2>/dev/null
+    missing_exit=$(sed -n 's/^files_exit=//p' "${WORK}/list-missing.${sh}.out")
+    printf '%s\n' "$missing_exit" | grep -qx '[1-9][0-9]*'; ok $? \
+        "${sh}: a listing of a missing directory reports find's non-zero status (got files_exit=${missing_exit})"
+    (cd "$WORK" && TMPDIR="${WORK}/list-tmp" "$sh" "${WORK}/list-present.sh") \
+        > "${WORK}/list-present.${sh}.out" 2>"${WORK}/list-present.${sh}.err"
+    present_exit=$(sed -n 's/^files_exit=//p' "${WORK}/list-present.${sh}.out")
+    [ "$present_exit" = 0 ]; ok $? \
+        "${sh}: a listing of a transcript directory reports files_exit=0 (got ${present_exit}; stderr: $(head -c 200 "${WORK}/list-present.${sh}.err"))"
+    present_files=$(grep -v '^files_exit=' "${WORK}/list-present.${sh}.out")
+    [ "$present_files" = "$(printf '%s\n%s' "${LIST_DIR}/agent-a.jsonl" "${LIST_DIR}/agent-b.jsonl")" ]; ok $? \
+        "${sh}: the listing prints both transcripts in C-locale sorted order (got: $(printf '%s' "$present_files" | tr '\n' ' '))"
+done
 
 # ---- Classification and reduction under node ----------------------------------
 cat "${WORK}/regions.js" > "${WORK}/suite.js"
@@ -728,6 +775,19 @@ ok(refusal({ files: listedPaths, seats: printedSeats }).includes('exited undefin
     'a reply that does not carry the selection status is refused')
 ok(refusal({ files: listedPaths }).includes('no seats listing'),
     'a reply with no seats listing is refused')
+// ---- The listing's own failure channel: find's status, in both modes ----
+const listingRefusal = (mode, listing) => {
+    try { checkListing(mode, listing); return '' } catch (e) { return String(e.message) }
+}
+for (const mode of ['steps', 'seats']) {
+    ok(listingRefusal(mode, { files: listedPaths, files_exit: 2 }).includes('exited 2'),
+        `${mode} mode: a listing whose find exited 2 is refused before any extract`)
+    const clean = { files: listedPaths, files_exit: 0 }
+    const before = JSON.stringify(clean)
+    ok(checkListing(mode, clean) === clean && JSON.stringify(clean) === before,
+        `${mode} mode: a listing whose find exited 0 passes through unchanged`)
+}
+
 const judgeless = [...relay, ...claimPath]
 const judgelessPaths = judgeless.map((r) => `${scoutDir}/${r.file}`).sort()
 const cleanEmpty = filesToExtract('seats', scoutDir, judgelessPaths, { files: judgelessPaths, seats: [], seats_exit: 0 }).files

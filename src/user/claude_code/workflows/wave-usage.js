@@ -538,6 +538,27 @@ function rebuildListing(dir, listed) {
     return { files, retyped }
 }
 
+// The scout's listing command for one directory. It prints the transcripts in
+// C-locale order and then find's own exit status on a `files_exit=` line. A
+// `find | sort; echo $?` pipeline reports sort's status, which is 0 when find
+// failed on a missing or unreadable directory, and ${PIPESTATUS[0]} is
+// bash-only (empty under zsh). Capturing find's output first works in any
+// POSIX shell or zsh: `$?` after `var=$(cmd)` is cmd's status.
+const listCommand = (dir) =>
+    `listing=$(find ${shellPath(dir)} -maxdepth 1 -type f -name 'agent-*.jsonl'); list_exit=$?; ` +
+    `printf '%s' "$listing" | LC_ALL=C sort; echo "files_exit=$list_exit"`
+
+// The scout's reply, refused unless find exited 0. A failed or partial listing
+// would otherwise reach the Extract phase as a short directory, or as an empty
+// one only the no-transcripts check catches. Returns the listing unchanged.
+function checkListing(mode, listing) {
+    if (listing?.files_exit !== 0) {
+        throw new Error(`wave-usage: the ${mode}-mode transcript listing exited ${listing?.files_exit}, not 0 — ` +
+            'it may be short, so no transcript is measured from it')
+    }
+    return listing
+}
+
 const AGENT_LOG_RE = /\/agent-[^/]*\.jsonl$/
 
 // The transcripts the Extract phase spawns an agent for. Steps mode measures
@@ -567,9 +588,10 @@ function filesToExtract(mode, dir, transcripts, listing) {
 
 const FILES_SCHEMA = {
     type: 'object',
-    required: mode === 'seats' ? ['files', 'seats', 'seats_exit'] : ['files'],
+    required: mode === 'seats' ? ['files', 'files_exit', 'seats', 'seats_exit'] : ['files', 'files_exit'],
     properties: {
         files: { type: 'array', items: { type: 'string' } },
+        files_exit: { type: 'integer' },
         seats: { type: 'array', items: { type: 'string' } },
         seats_exit: { type: 'integer' },
     },
@@ -614,7 +636,7 @@ const EXTRACT_SCHEMA = {
 // `find -exec` or `xargs` (both refused by the settings deny list). A scout
 // that splits the block across Bash calls loses nothing: each command stands
 // alone.
-const LIST_COMMAND = `find ${shellPath(dir)} -maxdepth 1 -type f -name 'agent-*.jsonl' | LC_ALL=C sort; echo "exit=$?"`
+const LIST_COMMAND = listCommand(dir)
 const scoutBrief = mode === 'seats'
     ? `You are a read-only scout. Do not cd anywhere. Run these commands verbatim, sandboxed, and report what they print — never a paraphrase. The first lists the transcripts; the last runs a jq program, passed whole as one single-quoted argument so nothing in it is expanded, and prints only the transcripts whose brief casts a vote:
 
@@ -624,14 +646,14 @@ echo '--- seats ---'
 jq -r -n -R ${sq(SELECT_JQ)} ${shellPath(dir)}/agent-*.jsonl; echo "seats_exit=$?"
 \`\`\`
 
-The directory is written with one \`*\` where the flattened project name sits; leave that glob exactly as it is and let the shell resolve it. Return {files: [...], seats: [...], seats_exit: N}: \`files\` is every path printed before the \`--- seats ---\` line, \`seats\` every path printed after it, one entry per line, verbatim and in order — a hyphen where a dot might be expected (\`github-com\`) is correct, not a typo — and \`seats_exit\` is the number printed on the \`seats_exit=\` line. An empty listing is an empty array. Do not open, read, or count the files by any other means.`
+The directory is written with one \`*\` where the flattened project name sits; leave that glob exactly as it is and let the shell resolve it. Return {files: [...], files_exit: N, seats: [...], seats_exit: N}: \`files\` is every path printed before the \`files_exit=\` line, \`files_exit\` is the number printed on the \`files_exit=\` line, \`seats\` every path printed after the \`--- seats ---\` line, one entry per line, verbatim and in order — a hyphen where a dot might be expected (\`github-com\`) is correct, not a typo — and \`seats_exit\` is the number printed on the \`seats_exit=\` line. An empty listing is an empty array. Do not open, read, or count the files by any other means.`
     : `You are a read-only scout. Do not cd anywhere. Run this command verbatim, sandboxed, and report what it prints — never a paraphrase:
 
 \`\`\`
 ${LIST_COMMAND}
 \`\`\`
 
-The directory is written with one \`*\` where the flattened project name sits; leave that glob exactly as it is and let the shell resolve it. Return {files: [...]} with every path printed, one entry per line, verbatim and in that order — a hyphen where a dot might be expected (\`github-com\`) is correct, not a typo. An empty listing is {files: []}. Do not open, read, or count the files.`
+The directory is written with one \`*\` where the flattened project name sits; leave that glob exactly as it is and let the shell resolve it. Return {files: [...], files_exit: N}: \`files\` is every path printed before the \`files_exit=\` line, one entry per line, verbatim and in that order — a hyphen where a dot might be expected (\`github-com\`) is correct, not a typo — and \`files_exit\` is the number printed on the \`files_exit=\` line. An empty listing is an empty \`files\` array. Do not open, read, or count the files.`
 // TEST-END wave-usage-scout
 
 const extractBrief = (file, retry) => `You are a read-only measurement relay for one transcript file. Do not cd anywhere. Run these commands verbatim, sandboxed. The first writes a jq program with a quoted heredoc so nothing in it is expanded; the second runs it:
@@ -647,7 +669,8 @@ ${retry === 'path' ? '\nThis is a SECOND run: the first run reported that jq cou
 jq prints exactly one JSON object. Return it as the structured output with ok:true and every field copied verbatim — bootstrap, cast, record, probe, exec, claim_agent, step_mention, reseat, tool_uses, models_observed, model_observation_complete, usage — including every number exactly as printed. Do not compute, estimate, round, or adjust anything, and do not read the transcript by any other means. Model names come only from the extracted message fields; missing observations remain empty. If jq exits non-zero or prints nothing, return ok:false with the error text in \`error\`.`
 
 phase('Scout')
-const listing = await agent(scoutBrief, { label: 'scout', phase: 'Scout', schema: FILES_SCHEMA, ...AGENT_CONFIG.scout })
+const listing = checkListing(mode,
+    await agent(scoutBrief, { label: 'scout', phase: 'Scout', schema: FILES_SCHEMA, ...AGENT_CONFIG.scout }))
 const rawFiles = [...new Set(listing?.files || [])]
 const listed = rawFiles.filter((f) => AGENT_LOG_RE.test(f))
 if (listed.length !== rawFiles.length) {

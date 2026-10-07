@@ -9,7 +9,7 @@ description: >-
   completion in the invoking conversation: asks the engine what is ready,
   dispatches it, launches one wave per issue, closes the dispatch, and
   repeats. Vote gates ride the wave, conversational gates go to tribunal.js,
-  three standing rulings answer parks machine-side, and every other park or
+  standing rulings answer parks machine-side, and every other park or
   reserved matter goes to the operator. Holds no run state and keeps the
   conductor capability in one session-private file, never in a brief, tool
   output, or resume prompt. Distinct from docket-tend, which works issues
@@ -200,6 +200,7 @@ docket step resolve STEP-N --as override-pass --authority standing-grant --autho
 docket step resolve STEP-N --as override-pass --batch --authority standing-grant --authority-ref batch-grant < <scratchpad>/conductor.d/$RUN.token
 docket step resolve STEP-N --as fix-round --authority standing-grant --authority-ref <proposal id> < <scratchpad>/conductor.d/$RUN.token
 docket step resolve STEP-N --as override-pass --drop-interposed --authority standing-grant --authority-ref loop-bound --note "loop-bound ruling: residue; filed <ids>; <AC or cluster> out of scope, remedy <home>" < <scratchpad>/conductor.d/$RUN.token
+docket run abandon $RUN --issue <issue> --reason "classifier-stopped twice: <step>; re-plan <new-id>" --authority standing-grant --authority-ref classifier-stopped-twice < <scratchpad>/conductor.d/$RUN.token
 EOF
 ```
 
@@ -209,7 +210,7 @@ done, or abandoned run removes it with the token.
 
 **Supply it per command, by redirecting the file into stdin.** Every one
 of the seven verbs, in every example below and on every path this file
-names (the three standing rulings, the operator escalation, a forced
+names (the standing rulings, the operator escalation, a forced
 reap, a pause, a resume, an abandon), ends in `< <scratchpad>/conductor.d/$RUN.token`:
 
 ```bash
@@ -409,9 +410,14 @@ redispatch, never park for review.
 **A safety-classifier block is not a flake; a retry is not the answer.**
 The classifier screens a rendered brief before any agent exists, so a
 block is a verdict on content and a retry re-renders the same content.
-Reconcile and close as usual, then escalate once, quoting the refusal and
-the `wave.js` line it names. Never retry, never reword the brief; the fix
-is a definition edit the operator installs outside this run.
+It also stops a running agent's output mid-write; that stop is the same
+verdict on content, reached later. Reconcile and close as usual, then
+escalate once, quoting the refusal and the `wave.js` line it names; the
+question never offers or recommends an unchanged re-dispatch. Never
+retry, never reword the brief; the fix is a definition edit the operator
+installs outside this run. A step stopped a second time goes to
+**Standing ruling: a step stopped twice by the safety classifier** under
+**Gates**, never to a question.
 
 **Prune the last session's worktree leftovers first, every time.** A
 session cannot delete a wave worktree's metadata directory
@@ -638,9 +644,9 @@ exactly three things:**
 1. Nothing can move without the operator: the run itself is
    `waiting-human`, or every remaining issue is parked (a `human:*` step,
    or a vote step whose tally fell short) and `next` offers only parked
-   rows with no launch in flight. Apply the three standing rulings under
-   **Gates** first, then present whatever remains to the operator and
-   wait. A vote step merely ready is work for you, mid-loop, not this.
+   rows with no launch in flight. Apply every standing ruling under
+   **Gates** first, the twice-classifier-stopped ruling among them, then
+   present whatever remains to the operator and wait. A vote step merely ready is work for you, mid-loop, not this.
 2. An engine **refusal** you cannot resolve: report it verbatim and stop.
 3. `next` returns **no rows and nothing is running**, and the roster is
    covered. Compare `run status`'s bound-issue roster against issues
@@ -1233,9 +1239,9 @@ sums into that seat correctly. Skip this and the panel's spend is
 invisible, not free; `run report` prints `Coverage: N of M seat(s)
 reported spend`.
 
-Surface any `waiting-human` steps, the three standing rulings under
-**Gates** first, the operator for whatever remains, then go back to step
-1.
+Surface any `waiting-human` steps, every standing ruling under **Gates**
+first (the twice-classifier-stopped ruling among them), the operator for
+whatever remains, then go back to step 1.
 
 **If `close` refuses, that is the system working.** It refuses on
 discrepancies (a step claimed but never recorded, a finished step with
@@ -1929,11 +1935,31 @@ nothing in scope (its non-convergence refusal). Neither reaches a run
 pinned to an earlier workflow version, and neither sees a gap the round
 found for the first time. Those parks are this ruling's.
 
+### Standing ruling: a step stopped twice by the safety classifier
+
+The operator ruled twice, on evidence, and the ruling stands for every run
+until they withdraw it. Both times a step the classifier had stopped on
+two attempts was put to them, and both times they abandoned the issue's
+remaining steps in the run. This section is that ruling.
+
+**A twice-classifier-stopped step is abandoned and re-planned; you do not
+ask.** A step parked `waiting-human` after its second classifier-stopped
+attempt is resolved by `docket run abandon $RUN --issue <issue> --reason
+"classifier-stopped twice: <step>; re-plan <new-id>" --authority
+standing-grant --authority-ref classifier-stopped-twice <
+<scratchpad>/conductor.d/$RUN.token`, plus one re-plan issue carrying both
+refusals verbatim, filed first and linked `relates_to` the abandoned
+issue. Never retry the step and never reword its brief; no ruling applies
+a retry past a safety-classifier refusal. Report each such abandon in your
+next status report, one line each: the issue, the step, the first line of
+each refusal, and the re-plan id. A step stopped once follows the
+classifier paragraph under **Before the loop**, not this ruling.
+
 ### Escalating to the operator
 
 **The operator never types an engine command.** You present the gate in
 conversation and run the verb on their answer. `waiting-human` carries
-every operator-facing decision the three standing rulings under **Gates**
+every operator-facing decision the standing rulings under **Gates**
 do not answer: a park is how the operator hears about anything.
 
 Before presenting any gate, park, or question to the operator, read

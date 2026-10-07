@@ -889,6 +889,81 @@ else
     bad "run-close sweep: no single fenced block carries '${sweep_header}' with a set -- line"
 fi
 
+# (n) A step parked after its second classifier-stopped attempt is answered
+# by a standing ruling, never a question: abandon the issue's remaining steps
+# in the run under a named standing grant, file one re-plan issue carrying
+# both refusals, and never retry. A retry past a safety-classifier refusal
+# stays human, so no sentence of the ruling may offer or recommend one.
+#
+#   n1 replace the never-retry sentence with "Re-dispatch once as is, then
+#      abandon." (the never-retry and no-retry-offer checks red)
+#   n2 drop `--issue` from the abandon command
+#   n3 delete the re-plan clause
+#   n4 drop `--authority-ref` and its value from the abandon command
+#   n5 change "second classifier-stopped attempt" in the trigger sentence to
+#      "first classifier-stopped attempt"
+twice_anchor='A twice-classifier-stopped step is abandoned and re-planned'
+if paragraph "$twice_anchor" "${WORK}/twice"; then
+    ok "twice classifier-stopped: exactly one paragraph carries the ruling"
+    if sentence 'classifier-stopped attempt' "${WORK}/twice" "${WORK}/twice-trigger"; then
+        states "twice classifier-stopped: the trigger is a step parked waiting-human after its second classifier-stopped attempt" \
+            "${WORK}/twice-trigger" 'A step parked `waiting-human` after its second classifier-stopped attempt'
+    else
+        bad "twice classifier-stopped: no single sentence of the ruling names the classifier-stopped attempt"
+    fi
+    grep -oE '`docket run abandon [^`]*`' "${WORK}/twice" > "${WORK}/twice-abandon"
+    if [ "$(wc -l < "${WORK}/twice-abandon")" -ne 1 ]; then
+        bad "twice classifier-stopped: the ruling does not carry exactly one \`docket run abandon\` command"
+    else
+        if grep -qE -- '--issue [^ ]' "${WORK}/twice-abandon"; then
+            ok "twice classifier-stopped: the abandon command narrows to the issue with --issue"
+        else
+            bad "twice classifier-stopped: the abandon command lacks --issue: $(cat "${WORK}/twice-abandon")"
+        fi
+        if grep -qE -- '--authority standing-grant --authority-ref [a-z][a-z0-9-]*' "${WORK}/twice-abandon"; then
+            ok "twice classifier-stopped: the abandon command cites a named standing grant"
+        else
+            bad "twice classifier-stopped: the abandon command lacks --authority standing-grant --authority-ref <ruling>: $(cat "${WORK}/twice-abandon")"
+        fi
+    fi
+    states "twice classifier-stopped: one re-plan issue carries both refusals" \
+        "${WORK}/twice" 'plus one re-plan issue carrying both refusals'
+    twice_never='Never retry the step and never reword its brief; no ruling applies a retry past a safety-classifier refusal.'
+    states "twice classifier-stopped: the never-retry sentence stands" "${WORK}/twice" "$twice_never"
+    # Every sentence of the ruling that names a retry or re-dispatch must be
+    # the never-retry sentence. Matched by containment, as the census is, and
+    # read from the anchor's own flat line, so the self-checks' degraded
+    # paragraph() and sentences() copies stay green on a clean file.
+    grep -F -- "$twice_anchor" "${WORK}/twice" > "${WORK}/twice-line"
+    sentences "${WORK}/twice-line" | grep -iE 'retry|re-?dispatch' | grep -vF -- "$twice_never" > "${WORK}/twice-offers"
+    if [ -s "${WORK}/twice-offers" ]; then
+        bad "twice classifier-stopped: a sentence of the ruling offers or recommends a retry or re-dispatch: $(head -c 300 "${WORK}/twice-offers")"
+    else
+        ok "twice classifier-stopped: no sentence of the ruling offers a retry or re-dispatch"
+    fi
+else
+    bad "twice classifier-stopped: no single paragraph carries '${twice_anchor}'"
+fi
+
+# (o) The classifier paragraph covers a stop of a running agent's output
+# mid-write as well as pre-spawn brief screening, and sends a second stop to
+# the standing ruling above rather than to a question.
+#
+#   o1 delete the mid-write sentence
+#   o2 delete the sentence pointing a second stop to the standing ruling
+classifier_anchor='A safety-classifier block is not a flake'
+if paragraph "$classifier_anchor" "${WORK}/classifier"; then
+    ok "classifier: exactly one paragraph carries the classifier ruling"
+    states "classifier: pre-spawn brief screening is named" \
+        "${WORK}/classifier" 'The classifier screens a rendered brief before any agent exists'
+    states "classifier: a stop of a running agent's output mid-write is named" \
+        "${WORK}/classifier" "It also stops a running agent's output mid-write"
+    states "classifier: a step stopped a second time goes to the standing ruling" \
+        "${WORK}/classifier" 'A step stopped a second time goes to **Standing ruling: a step stopped twice by the safety classifier**'
+else
+    bad "classifier: no single paragraph carries '${classifier_anchor}'"
+fi
+
 if [ "$fail" -ne 0 ]; then
     echo "docket-run-skill: FAIL — a sandbox lift without its precondition is the failure this pins; fix the skill, not the test." >&2
     exit 1

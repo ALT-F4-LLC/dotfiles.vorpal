@@ -62,10 +62,13 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
 
 {
     extract configuration || fatal "bad or missing TEST markers for configuration"
+    # packet defines shellQuote, which the blocked-settle brief reads.
+    extract packet         || fatal "bad or missing TEST markers for packet"
     # park-signals first: it defines isConflictReport, which the orphaned-claim
     # predicate reads. chain-dead nests inside stage-ladder; extract it alone.
     extract park-signals   || fatal "bad or missing TEST markers for park-signals"
     extract orphaned-claim || fatal "bad or missing TEST markers for orphaned-claim"
+    extract blocked-settle || fatal "bad or missing TEST markers for blocked-settle"
     extract chain-dead     || fatal "bad or missing TEST markers for chain-dead"
 } > "${WORK}/regions.js" || exit 2
 
@@ -244,8 +247,114 @@ ok(!orphanedClaimReport('STEP-9', NOT_PENDING, '{"data":{"status":"claimed"}}')
     .text.includes('attempt='),
     'and an absent attempt is simply not claimed in the report')
 
-console.log(`\n${pass} passed, ${fail} failed`)
-process.exit(fail === 0 ? 0 : 1)
+// ---- A WRITE BLOCKED executor's claim is settled, not left to a reap ----
+// The RUN-125 STEP-11282 reply: the signal opens the last line, the refusal
+// sentence follows it, and no record tail closes the reply.
+const STEP = 'STEP-11282'
+const ROW = { step: STEP, issue: 'DOT-1', run: 'RUN-125', attempt: 0 }
+const CLAIM = {
+    dir: `/tmp/claude-501/${STEP}.d`,
+    token: `/tmp/claude-501/${STEP}.d/${STEP}.token`,
+    attempt: 1,
+}
+const OWNER = `wave:${STEP}:1`
+const HELD = `${STEP} is CLAIMED by ${OWNER}`
+const WRITE_BLOCKED_REPLY = [
+    'I could not write the artifact.',
+    '',
+    `WRITE BLOCKED: The live token is still in /tmp/claude-501/${STEP}.d/${STEP}.token, ` +
+        'and the step has no record and no fail.',
+].join('\n')
+const RECORD_BLOCKED_REPLY = [
+    'The record was refused.',
+    '',
+    'RECORD BLOCKED',
+    `${STEP}: permission denied`,
+].join('\n')
+const NETWORK_BLOCKED_REPLY = [
+    'The tests gate needs the network.',
+    '',
+    'NETWORK GATE BLOCKED: tests, proxy.golang.org, dial tcp: lookup proxy.golang.org: no such host',
+].join('\n')
+
+ok(lastLine(WRITE_BLOCKED_REPLY).startsWith('WRITE BLOCKED:') && recordTail(WRITE_BLOCKED_REPLY) === null,
+    'fixture integrity: the WRITE BLOCKED reply ends on the signal with no record tail')
+
+// A spy agent() and a stub `docket step show` reading `showStatus`.
+function harness(showStatus) {
+    const h = { prompts: [], shows: [] }
+    h.deps = {
+        row: ROW, owner: OWNER, claim: CLAIM, held: HELD, log: () => {},
+        agent: (brief) => { h.prompts.push(brief); return Promise.resolve({ output: 'ok' }) },
+        stepShow: (step) => {
+            h.shows.push(step)
+            return Promise.resolve(showStatus === null ? null : { status: showStatus, attempt: '1' })
+        },
+    }
+    return h
+}
+
+async function settleCases() {
+    // (1) WRITE BLOCKED: one settle agent, the fail and show commands, failed-blocked.
+    const w = harness('ready')
+    const wr = await settleStoppedReply({ ...w.deps, text: WRITE_BLOCKED_REPLY })
+    ok(w.prompts.length === 1, 'WRITE BLOCKED launches exactly one settle agent')
+    const p = w.prompts[0] || ''
+    ok(p.includes(`docket step fail ${STEP} --note`),
+        'the settle prompt runs docket step fail with a note')
+    ok(new RegExp(`docket step fail ${STEP} --note '[^\\n]*' < ${CLAIM.token.replace(/\./g, '\\.')}`).test(p),
+        'the settle prompt feeds the token through a < stdin redirect')
+    ok(p.includes(`docket step show ${STEP}`), 'the settle prompt runs docket step show')
+    ok(p.includes('WRITE BLOCKED: The live token is still in'),
+        'the note carries the signal and the first refusal line')
+    ok(p.includes(`docket step claim ${STEP} --owner ${OWNER}`),
+        'the settle prompt names its step in the sibling guard spelling')
+    ok(wr.status === 'failed-blocked' && wr.signal === 'WRITE BLOCKED',
+        'a settle whose step show reads ready reports failed-blocked')
+
+    // (3) RECORD BLOCKED keeps its token: no settle agent, status blocked.
+    const r = harness('ready')
+    const rr = await settleStoppedReply({ ...r.deps, text: RECORD_BLOCKED_REPLY })
+    ok(r.prompts.length === 0, 'RECORD BLOCKED launches no settle agent')
+    ok(rr.status === 'blocked' && rr.signal === 'RECORD BLOCKED',
+        'RECORD BLOCKED settles blocked with its signal')
+
+    // (4) NETWORK GATE BLOCKED keeps its token too.
+    const n = harness('ready')
+    const nr = await settleStoppedReply({ ...n.deps, text: NETWORK_BLOCKED_REPLY })
+    ok(n.prompts.length === 0, 'NETWORK GATE BLOCKED launches no settle agent')
+    ok(nr.status === 'blocked' && nr.signal === 'NETWORK GATE BLOCKED',
+        'NETWORK GATE BLOCKED settles blocked with its signal')
+
+    // (5) The settle ran but step show does not read ready: unsettled.
+    for (const status of ['claimed', null]) {
+        const u = harness(status)
+        const ur = await settleStoppedReply({ ...u.deps, text: WRITE_BLOCKED_REPLY })
+        ok(u.prompts.length === 1 && ur.status === 'unsettled',
+            `a settle whose step show reads ${status === null ? 'nothing' : status} reports unsettled`)
+        ok(ur.text.includes(HELD), 'an unsettled row names the claim still held')
+    }
+
+    // No signal and no tail keeps the unrecorded path, with no settle agent.
+    const x = harness('ready')
+    const xr = await settleStoppedReply({ ...x.deps, text: 'I did some things and stopped.' })
+    ok(x.prompts.length === 0 && xr.status === 'unrecorded',
+        'a reply with neither a tail nor a signal settles unrecorded')
+
+    // (6) Each new status leaves later same-issue steps unclaimable this wave.
+    ok(chainDead({ step: STEP, status: 'failed-blocked', text: '' }),
+        'failed-blocked kills its issue\'s chain for this wave')
+    ok(chainDead({ step: STEP, status: 'unsettled', text: '' }),
+        'unsettled kills its issue\'s chain for this wave')
+}
+
+settleCases().then(() => {
+    console.log(`\n${pass} passed, ${fail} failed`)
+    process.exit(fail === 0 ? 0 : 1)
+}, (err) => {
+    console.error(`FAIL: settle cases threw: ${err && err.stack || err}`)
+    process.exit(1)
+})
 JS
 
 node "${WORK}/suite.js"

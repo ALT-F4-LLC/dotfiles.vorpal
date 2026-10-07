@@ -106,6 +106,7 @@ const AGENT_CONFIG = {
     gateStatus: { model: 'haiku', effort: 'low' },
     heldCluster: { model: 'haiku', effort: 'low' },
     proposal: { model: 'haiku', effort: 'low' },
+    settle: { model: 'haiku', effort: 'low' },
     blockProbe: { effort: 'low' }, // Deliberately inherit the session model.
 }
 
@@ -483,6 +484,9 @@ ${isWrite ? `
 
      \`docket step fail ${row.step} --note '<why>' < ${token}\`
 
+     The one exception: when you stop on WRITE BLOCKED, the wave settles
+     your claim with \`docket step fail\` for you.
+
      \`fail\` takes ONLY --note and --metadata.
    - TOKEN: the stdin redirect is its only channel. Never \`cat\` the token
      file, echo it, paste it into a command line, or reproduce it in your
@@ -736,6 +740,111 @@ function orphanedClaimReport(step, conflict, show) {
     }
 }
 // TEST-END orphaned-claim
+
+// A BLOCKED EXECUTOR'S CLAIM. An executor that stops on WRITE BLOCKED holds a
+// live lease that no retry of its own can redeem. Left live, the lease
+// expires into an engine reap, an ack-reap panel, and a spawn hold on usage
+// joins. The wave settles it instead: one settle agent runs `docket step
+// fail` with the parked token, and a `step show` probe reads the result.
+// RECORD BLOCKED and NETWORK GATE BLOCKED keep the token on purpose, so the
+// conductor can resolve the block, and settle `blocked` untouched. A
+// classifier-stopped reply carries no stop signal the wave can read (the
+// classifier's text reaches only block-reason and error strings), so it
+// keeps the `unrecorded` path.
+//
+// TEST-BEGIN blocked-settle — extracted and exercised by
+// tests/wave-orphaned-claim.test.sh, which concatenates the packet
+// (shellQuote), park-signals (stopSignal) and orphaned-claim (parseStepShow)
+// regions ahead of it. agent(), stepShow() and log() are injected; keep
+// everything between the markers free of workflow globals.
+const SETTLE_SIGNALS = ['WRITE BLOCKED']
+const FAILED_BLOCKED_STATUS = 'failed-blocked'
+const UNSETTLED_STATUS = 'unsettled'
+const SETTLE_NOTE_MAX = 300
+
+// The signal's own line, which opens with the signal and carries the
+// refusal's first line after it.
+function settleNote(signal, text) {
+    const line = String(text).split('\n').find((l) => l.includes(signal)) || signal
+    const note = line.replace(/^[\s*_`>#]+/, '').replace(/[\s*_`]+$/, '')
+    return note.length > SETTLE_NOTE_MAX ? note.slice(0, SETTLE_NOTE_MAX) : note
+}
+
+// The settle agent names the step in the sibling guard's own spelling
+// (`docket step claim STEP-N --owner wave:STEP-N:k`), so the token path and
+// the scratch dir it touches read as its own.
+function settleBrief(row, owner, claim, note) {
+    return `You are settling one step of a Docket run. Its executor stopped on
+WRITE BLOCKED and recorded nothing.
+
+YOUR ASSIGNMENT: step ${row.step} (issue ${row.issue}, run ${row.run}). The
+wave claimed it with \`docket step claim ${row.step} --owner ${owner} --render\`
+(attempt ${claim.attempt}). That lease is still live and its token is parked
+at ${claim.token}. Never claim again.
+
+Run these in order, ONE plain command per Bash call:
+
+1. docket step fail ${row.step} --note ${shellQuote(note)} < ${claim.token}
+2. Only if (1) exited 0: rm -rf ${claim.dir}
+3. docket step show ${row.step}
+
+The stdin redirect is the token's only channel. Never \`cat\` the token file,
+echo it, or copy it into a command line or your reply. Run nothing else.
+
+Return the output of (1) and then (3), VERBATIM, as \`output\` in the
+structured output: no summary, no commentary, no code fence.`
+}
+
+// The reply-tail contract's settle for a reply with no record tail and no
+// CONFLICT report. Resolves the row's result.
+async function settleStoppedReply({ row, owner, claim, held, text, agent, stepShow, log }) {
+    const signal = stopSignal(text)
+    if (!signal) {
+        log(`${row.step}: the reply ends in neither a record tail nor a stop ` +
+            `signal — settling it unrecorded; this issue's later stages are ` +
+            `deferred this wave; \`docket step show ${row.step}\` says what ` +
+            `actually happened`)
+        return { step: row.step, status: 'unrecorded', text }
+    }
+    if (!SETTLE_SIGNALS.includes(signal)) {
+        log(`${row.step}: the executor stopped on ${signal} — nothing ` +
+            `recorded; this issue's later stages are deferred this wave ` +
+            `and the conductor resolves the block from the reply`)
+        return { step: row.step, status: 'blocked', signal, text }
+    }
+    const unsettled = (why) => {
+        log(`${row.step}: the executor stopped on ${signal} and the settle ` +
+            `did not land (${why}); ${held}`)
+        return { step: row.step, status: UNSETTLED_STATUS, signal, text: `${text}\n\n${why}; ${held}` }
+    }
+    log(`${row.step}: the executor stopped on ${signal} — settling its claim ` +
+        `with \`docket step fail\``)
+    try {
+        await agent(settleBrief(row, owner, claim, settleNote(signal, text)))
+    } catch (err) {
+        return unsettled(`the settle agent did not run: ${err && err.message ? err.message : err}`)
+    }
+    let show = null
+    try {
+        show = await stepShow(row.step)
+    } catch (err) {
+        show = null
+    }
+    const st = parseStepShow(show)
+    if (st.status !== 'ready') {
+        return unsettled(`\`docket step show ${row.step}\` reads ` +
+            `${st.status ? st.status : 'nothing'} after the settle, not ready`)
+    }
+    log(`${row.step}: settled with \`docket step fail\`; the step reads ready; ` +
+        `this issue's later stages are deferred this wave`)
+    return {
+        step: row.step,
+        status: FAILED_BLOCKED_STATUS,
+        signal,
+        text: `${text}\n\n${row.step} settled with docket step fail; step show reads ready.`,
+    }
+}
+// TEST-END blocked-settle
 
 // The safety classifier runs PRE-SPAWN and fails CLOSED. A retry is gated on
 // the classifier's own transient admission alone and resubmits the SAME
@@ -1079,18 +1188,17 @@ function launchExecutor(row, r, type, isWrite, isolated, phaseLabel, { owner, cl
             // The executor brief never claims, so that path is defense against
             // a brief that drifts back to self-claiming.
             if (!recordTail(text) && !isConflictReport(text)) {
-                const signal = stopSignal(text)
-                if (signal) {
-                    log(`${row.step}: the executor stopped on ${signal} — nothing ` +
-                        `recorded; this issue's later stages are deferred this wave ` +
-                        `and the conductor resolves the block from the reply`)
-                    return { step: row.step, status: 'blocked', signal, text }
-                }
-                log(`${row.step}: the reply ends in neither a record tail nor a stop ` +
-                    `signal — settling it unrecorded; this issue's later stages are ` +
-                    `deferred this wave; \`docket step show ${row.step}\` says what ` +
-                    `actually happened`)
-                return { step: row.step, status: 'unrecorded', text }
+                return settleStoppedReply({
+                    row, owner, claim, held, text, log,
+                    agent: (brief) => countedAgent(brief, {
+                        label: `${row.step} · settle`,
+                        phase: phaseLabel,
+                        agentType: 'executor-read',
+                        ...AGENT_CONFIG.settle,
+                        schema: COMMAND_OUTPUT_SCHEMA,
+                    }),
+                    stepShow: (step) => stepShow(step, `${step} · settle-show`, phaseLabel),
+                })
             }
             // "the step is not pending" means already claimed: ask the engine
             // what the step's row says and report that, refusal kept verbatim
@@ -2137,6 +2245,8 @@ const CHAIN_DEAD_STATUSES = [
     'bootstrap-denied', 'isolation-unavailable',
     // The reply-tail contract: a stop signal, or no record tail at all.
     'blocked', 'unrecorded',
+    // A WRITE BLOCKED executor's claim, settled with `step fail` or not.
+    'failed-blocked', 'unsettled',
     // The harness lifetime cap, reached knowingly (countedAgent).
     'agent-cap',
 ]

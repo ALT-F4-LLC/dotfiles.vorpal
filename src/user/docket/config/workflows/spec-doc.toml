@@ -1,7 +1,7 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by research, then validate, review, and vote to accept: the doc-acceptance panel for TDD/ADR, the tribunal for PRD/ux-spec. A rejection re-enters the doctype's revise step, then review, up to the loop bound."
 name = "spec-doc"
-version = 41
+version = 42
 
 [match]
 labels_any = ["spec-doc"]
@@ -23,7 +23,9 @@ executor = "research"
 expected_cost = 0.50
 holds_tree = false
 inputs = []
+max_attempts = 2
 name = "research"
+on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
 payload = "research-notes@2"
 when = "labels contains needs-research"
@@ -116,7 +118,9 @@ executor = "synthesize-findings"
 expected_cost = 0.60
 holds_tree = false
 inputs = ["review.*"]
+max_attempts = 2
 name = "synthesize-findings"
+on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
 payload = "findings-cluster@5"
 
@@ -137,6 +141,7 @@ executor = "drain-highs"
 expected_cost = 0.30
 holds_tree = false
 inputs = ["reconcile.findings"]
+max_attempts = 2
 name = "drain-highs"
 on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]

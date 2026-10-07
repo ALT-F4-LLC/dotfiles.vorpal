@@ -1141,10 +1141,27 @@ function is_wrapper(h) {
 # expansion into several tokens, and a quoted blank in it leaves none, so
 # where the count ends is a best guess. REPEAT_FROM is the first word after
 # the first `repeat` passed (0 when none), for repeat_scan.
-function verb_index(n, start,   i, h, quoted, g, k) {
+function verb_index(n, start,   i, h, quoted, g, k, a) {
     REPEAT_FROM = 0
     i = start ? start : 1
-    while (i <= n && words[i] == "") i++
+    # Leading NAME=value words prefix the command, and a leaf of them alone
+    # runs nothing. A quoted group of two or more words right after one is
+    # its value (the pre-pass splits `FOO="a b"` off its name). The test reads
+    # the word past any glued opener, as head_of does: `$(FOO=1` is an
+    # assignment, and `FOO=$(pkill` stays the verb word.
+    while (i <= n) {
+        if (words[i] == "") { i++; continue }
+        decode(words[i])
+        a = D_WORD
+        sub(/^.*(\$\(|\140|\(|;|\||&)/, "", a)
+        if (a !~ /^[A-Za-z_][A-Za-z0-9_]*=/) break
+        i++
+        while (i <= n && words[i] == "") i++
+        if (i <= n && decode(words[i]) && gsize[D_GROUP] >= 2) {
+            g = D_GROUP
+            while (i <= n && decode(words[i]) && D_GROUP == g) i++
+        }
+    }
     if (i > n) return 0
     decode(words[i])
     h = head_of(D_WORD)

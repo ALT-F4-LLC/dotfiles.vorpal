@@ -651,12 +651,23 @@ function may_brace_expand(from,   k) {
     }
     return 0
 }
-# Every word bash builds from a brace is a subsequence of the source text from
-# the brace onward, so a brace can produce docket only when these letters
-# appear in order there.
-function may_spell_docket(from,   k, rest) {
-    rest = ""
-    for (k = from; k <= n; k++) rest = rest words[k]
+# Every word bash builds from a brace is a subsequence of the brace word
+# itself, so a brace can produce docket only when these letters appear in
+# order there. The word starts at first (the brace word after any glued
+# operator) and runs on through the fragments the pre-pass split it into, up
+# to the first unquoted ; | & < > or backtick, which ends it. The test reads no
+# further: letters in later words cannot join the brace word, and a widened
+# heredoc body full of prose would otherwise spell docket by chance.
+function may_spell_docket(from, first,   k, rest, piece, p) {
+    rest = first
+    for (k = from + 1; k <= n; k++) {
+        piece = words[k]
+        if (substr(piece, 1, 1) != MARK && (p = match(piece, /[;|&<>\140]/)) > 0) {
+            rest = rest substr(piece, 1, p - 1)
+            break
+        }
+        rest = rest piece
+    }
     return rest ~ /d.*o.*c.*k.*e.*t/
 }
 # A word bash reads in command position without making it the command name:
@@ -708,7 +719,7 @@ function decode(raw,    inner, cpos) {
             } else {
                 if (after_repeat && hw == "") after_repeat = 0
                 at_command = at_command || after_repeat
-                if (at_command && has_brace(hw) && may_brace_expand(i) && may_spell_docket(i)) { print "MATCH"; exit }
+                if (at_command && has_brace(hw) && may_brace_expand(i) && may_spell_docket(i, hw)) { print "MATCH"; exit }
                 cmdpos = (hw == "")
             }
         }

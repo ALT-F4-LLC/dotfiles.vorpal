@@ -756,6 +756,17 @@ case_heredoc_body_prose() {
         executor-write ALLOW "a # inside an unquoted word is not a comment, so the heredoc still opens"
 }
 
+# A body that names an interpreter widens the whole command, so its prose
+# reaches the command-position brace check. Only the brace word itself can
+# spell docket: letters in the words after it never join it.
+case_widened_body_brace_prose() {
+    local body='`/bin/bash `{tool_name:"Bash",tool_input:{command},agent_type:"executor-write",cwd:<scratch>}` unknown; does not'
+    assert_verdict "cat > /tmp/claude-501/x.md <<'EOF'"$'\n'"${body}"$'\nEOF' \
+        executor-read ALLOW "widened artifact body: backtick-quoted harness argv is prose"
+    assert_verdict "cat <<'EOF' | bash"$'\n''`{docket,trust} add erik key`'$'\nEOF' \
+        executor-write DENY "a body bash runs still denies a brace word in a substitution"
+}
+
 # ---- HEREDOC DESTINATION: a quoted delimiter is inert only to THIS shell ----
 #
 # `<<'EOF'` stops the OUTER shell expanding the body; it says nothing about
@@ -1200,6 +1211,7 @@ case_interpreter_carriers_residual_allow
 case_help_read_exemption_allows
 case_help_lookalikes_and_compounds_deny
 case_heredoc_body_prose
+case_widened_body_brace_prose
 case_heredoc_body_destination
 case_comment_regions_are_inert
 case_quote_state_ends_with_its_leaf

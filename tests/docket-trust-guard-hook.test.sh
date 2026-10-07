@@ -163,6 +163,22 @@ case_conductor_seat_denies() {
         "conductor: deny reason keeps the fixed prefix"
 }
 
+# executor-read has no Write tool, so the deny text must name a recovery it
+# has: a quoted-delimiter heredoc into its own STEP-N.d read by cat, tee or jq.
+case_executor_read_deny_recovery() {
+    local err
+    err=$(PATH="$TOOLS_DIR" "$BASH_BIN" "$HOOK" 2>&1 >/dev/null <<<"$(build_input "docket trust add erik key" executor-read)")
+    case "$err" in
+        *"Write tool"*) fail "executor-read deny reason names no Write tool (found it: ${err})" ;;
+        *) pass "executor-read deny reason names no Write tool" ;;
+    esac
+    case "$err" in
+        *"<<'EOF'"*'$TMPDIR/STEP-N.d'*"cat, tee or jq"* | *'$TMPDIR/STEP-N.d'*"<<'EOF'"*"cat, tee or jq"*)
+            pass "executor-read deny reason names the own-scratch quoted heredoc read by cat, tee or jq" ;;
+        *) fail "executor-read deny reason names the own-scratch quoted heredoc read by cat, tee or jq (missing: ${err})" ;;
+    esac
+}
+
 case_main_conversation_and_other_agents_allow() {
     assert_verdict "docket trust add erik ssh-ed25519 AAAA" "" ALLOW \
         "no agent_type (main conversation): docket trust add"
@@ -1161,6 +1177,7 @@ case_input_edge_cases() {
 
 case_executor_archetypes_deny
 case_conductor_seat_denies
+case_executor_read_deny_recovery
 case_main_conversation_and_other_agents_allow
 case_ordinary_docket_verbs_allow
 case_must_not_catch_prose_and_reads

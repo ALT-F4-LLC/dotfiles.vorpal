@@ -1045,7 +1045,12 @@ function is_wrapper(h) {
 # flags. zsh evaluates the `repeat` count arithmetically, so the word after
 # `repeat` is the count whatever its shape (a quoted count spans its whole
 # group), and each lone `{` after it opens a body.
+# The pre-pass splits a count word built from glued quoted parts or a quoted
+# expansion into several tokens, and a quoted blank in it leaves none, so
+# where the count ends is a best guess. REPEAT_FROM is the first word after
+# the first `repeat` passed (0 when none), for repeat_scan.
 function verb_index(n, start,   i, h, quoted, g) {
+    REPEAT_FROM = 0
     i = start ? start : 1
     while (i <= n && words[i] == "") i++
     if (i > n) return 0
@@ -1055,6 +1060,7 @@ function verb_index(n, start,   i, h, quoted, g) {
         i++
         if (h == "repeat") {
             while (i <= n && words[i] == "") i++
+            if (!REPEAT_FROM) REPEAT_FROM = i
             quoted = decode(words[i])
             g = D_GROUP
             i++
@@ -1194,6 +1200,23 @@ function engine_check(vi, n,   j, k, dq, dg, sq, sg, sw, vq, vg, vw) {
     if (sw == "step" && vw == "reap" && !(dq && sq && vq && dg == sg && sg == vg && !interp)) report("ENGINE", "docket step reap")
     if (sw == "run" && vw == "conduct" && !(dq && sq && vq && dg == sg && sg == vg && !interp)) report("ENGINE", "docket run conduct")
 }
+# PROCESS and ENGINE for the word at vi read as a verb: a name-addressed kill,
+# or docket with an engine verb.
+function protected_at(vi, n,   v) {
+    decode(words[vi])
+    v = head_of(D_WORD)
+    if (v == "pkill" || v == "killall" || v == "killall5") report("PROCESS", v)
+    if (v == "docket") engine_check(vi, n)
+}
+# After `repeat` the verb may be any later word (see verb_index), so each
+# word from the count on that is not prose is read as a verb by protected_at.
+function repeat_scan(from, n,   j) {
+    for (j = from; j <= n; j++) {
+        if (words[j] == "") continue
+        if (decode(words[j]) && gsize[D_GROUP] >= 2 && !interp) continue
+        protected_at(j, n)
+    }
+}
 # The commands inside a substitution on this line. bash 5.2 reprints a `$( )`
 # body onto its opener line (`echo $(\npkill node\n)` reaches the probe as
 # `echo $(pkill node)`), and a body written on one line never reached the
@@ -1202,7 +1225,7 @@ function engine_check(vi, n,   j, k, dq, dg, sq, sg, sw, vq, vg, vw) {
 # a verb too, for the name-addressed kills and the engine verbs. A quoted
 # word stays data: the pre-pass leaves a `$( )` inside double quotes
 # unmarked, since bash runs it, and marks one inside single quotes.
-function nested_verbs(n,   i, w, opened, after_sep, vi, v) {
+function nested_verbs(n,   i, w, opened, after_sep, vi) {
     opened = 0
     after_sep = 0
     for (i = 1; i <= n; i++) {
@@ -1212,12 +1235,8 @@ function nested_verbs(n,   i, w, opened, after_sep, vi, v) {
         if (w ~ /\$\(|\140|[<>]\(/) opened = 1
         if (opened && (after_sep || w ~ /\$\(|\140|[<>]\(|[;|&]/)) {
             vi = verb_index(n, i)
-            if (vi > 0) {
-                decode(words[vi])
-                v = head_of(D_WORD)
-                if (v == "pkill" || v == "killall" || v == "killall5") report("PROCESS", v)
-                if (v == "docket") engine_check(vi, n)
-            }
+            if (REPEAT_FROM) repeat_scan(REPEAT_FROM, n)
+            if (vi > 0) protected_at(vi, n)
         }
         after_sep = (opened && w ~ /[;|&(]$/)
     }
@@ -1243,6 +1262,7 @@ END {
             if (decode(words[i])) gsize[D_GROUP]++
         }
         vi = verb_index(n)
+        repeat_from = REPEAT_FROM
         verb = ""
         if (vi > 0) { decode(words[vi]); verb = head_of(D_WORD) }
         # A substitution in the leaf is a command the probe vetoed along
@@ -1276,10 +1296,10 @@ END {
             prev_redirect_op = (w ~ /^([0-9]*|\{[A-Za-z_][A-Za-z0-9_]*\})[<>&|]*[<>][<>&|-]*$/)
         }
         nested_verbs(n)
+        if (repeat_from) repeat_scan(repeat_from, n)
         if (vi == 0) continue
-        if (verb == "docket") engine_check(vi, n)
-        # PROCESS: name-addressed kills, and kill by literal pid.
-        if (verb == "pkill" || verb == "killall" || verb == "killall5") report("PROCESS", verb)
+        protected_at(vi, n)
+        # PROCESS: kill by literal pid.
         if (verb == "kill") {
             listing = 0; probe_only = 0; dashdash = 0; signalled = 0; nops = 0
             for (j = vi + 1; j <= n; j++) {

@@ -689,17 +689,23 @@ case_read_loops() {
     assert_deny_reason "for _leaf_reads in '|P1:read d|'; do :; done; ls | while read d; do rm -rf ${SIB_DIR}/\$d; done" executor-write "$WAVE_42" "_leaf_*" "for header presetting the read state"
     assert_deny_reason "ls | { for _leaf_reads in '|P1:read d|'; do :; done; while read d; do pkill node; done; }; echo done" executor-write "$WAVE_42" "_leaf_*" "for header presetting the read state in a pipeline stage"
     assert_deny_reason "select _leaf_reads in x; do break; done; ls | while read d; do pkill node; done" executor-write "$WAVE_42" "_leaf_*" "select header naming the probe state"
-    # KNOWN RESIDUAL: a read whose site was vetoed but never fired again (a
-    # lone read, or a loop left through a failing condition right after its
-    # read, or a second same-text loop left by break) leaves that site
+    # A marked read site runs only when another leaf fired since the last
+    # read, so a lone read directly before a same-text loop does not let
+    # the loop skip its body, at top level or in a pipeline stage.
+    assert_verdict "read d; while read d; do rm -rf ${SIB_DIR}/\$d; done" executor-write "$WAVE_42" DENY "same-text read loop right after a top-level lone read"
+    assert_verdict "ls | { read d; while read d; do rm -rf ${SIB_DIR}/\$d; done; }" executor-write "$WAVE_42" DENY "same-text read loop after a lone read in the same shell"
+    # KNOWN RESIDUAL: a read whose site was vetoed but never fired again,
+    # with another leaf between it and the later read (a lone read and a
+    # command, a loop left through a failing condition right after its
+    # read, or a second same-text loop left by break), leaves that site
     # marked, so a later read with the same text in the same shell runs at
     # once and its body is not walked.
     assert_verdict "ls | { while read d; do break; done; while read d; do break; done; while read d; do rm -rf ${SIB_DIR}/\$d; done; }" executor-write "$WAVE_42" ALLOW "residual: same-text read loop after two loops left by break"
     assert_verdict "ls | { while read d && false; do :; done; while read d; do rm -rf ${SIB_DIR}/\$d; done; }" executor-write "$WAVE_42" ALLOW "residual: same-text read after a condition exit"
-    assert_verdict "ls | { read d; while read d; do rm -rf ${SIB_DIR}/\$d; done; }" executor-write "$WAVE_42" ALLOW "residual: same-text read loop after a lone read in the same shell"
-    # KNOWN RESIDUAL: a read placeholder the command strips itself leaves a
-    # for-list empty again, so its body never fires.
-    assert_verdict "ls | while read d; do for f in \${d%x}; do rm -rf ${SIB_DIR}/\$f; done; done" executor-write "$WAVE_42" ALLOW "residual: for-list over a stripped read placeholder"
+    assert_verdict "ls | { read d; ls; while read d; do rm -rf ${SIB_DIR}/\$d; done; }" executor-write "$WAVE_42" ALLOW "residual: same-text read loop after a lone read and another command"
+    # A read placeholder the command strips itself leaves a for-list empty,
+    # so no leaf fires between two reads and the loop caps.
+    assert_deny_reason "ls | while read d; do for f in \${d%x}; do rm -rf ${SIB_DIR}/\$f; done; done" executor-write "$WAVE_42" "too many parts" "for-list over a stripped read placeholder caps"
     # KNOWN RESIDUAL: a vetoed condition reports status 0, so only its then
     # branch is walked, in a read loop as at top level.
     assert_verdict "ls | while read d; do if test -z \"\$d\"; then :; else rm -rf ${SIB_DIR}/\$d; fi; done" executor-write "$WAVE_42" ALLOW "residual: else branch after a vetoed condition in a read loop"

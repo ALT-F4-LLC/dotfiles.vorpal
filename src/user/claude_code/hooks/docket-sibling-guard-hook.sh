@@ -233,7 +233,10 @@
 #     text in one shell: `$BASH_SUBSHELL` tells a pipeline stage, a `( )`
 #     or a function's pipeline from the shell around it) is therefore
 #     vetoed, the body is walked once, and the next firing runs the read and
-#     ends the loop. A `break` between the two marks the site for one more
+#     ends the loop, provided some leaf other than a read fired since the
+#     last read; otherwise it is vetoed again, so a lone read right before a
+#     same-text loop (`read d; while read d; do ...`) cannot end that loop
+#     unwalked, and a loop whose body fires no leaf caps. A `break` between the two marks the site for one more
 #     vetoed firing, so a loop left by `break` cannot hand a later read of
 #     the same text a run at once, while a loop whose body breaks out of an
 #     inner loop on every pass still ends after its second walk. It runs
@@ -277,13 +280,14 @@
 # the permission text clears it for every session), `fuser -k`, a pid
 # read from a file under another checkout, and a read loop that follows,
 # in the same shell, a `read` with the same text that was vetoed and never
-# fired again: a lone read (`ls | { read d; while read d; do rm ...; done;
-# }`) or a loop left through a failing condition right after its read
-# (`while read d && false; do :; done; while read d; do rm ...; done`),
-# or two same-text loops in a row, each left by `break`. That site is
-# still marked, so the later read runs at once and its body is not
-# walked. A for-list over a read placeholder the command strips itself
-# (`for f in ${d%x}`) is empty again, so its body never fires; and a
+# fired again, when some other leaf fired between the two: a lone read
+# followed by another command (`ls | { read d; ls; while read d; do rm
+# ...; done; }`), a loop left through a failing condition right after its
+# read (`while read d && false; do :; done; while read d; do rm ...;
+# done`), or two same-text loops in a row, each left by `break`. That site
+# is still marked, so the later read runs at once and its body is not
+# walked. A lone read directly before its loop (`read d; while read d`) is
+# not one: no leaf fired between, so the loop read is vetoed again. A
 # vetoed condition reports status 0, so the else branch after it (`if
 # test -z "$d"; then :; else rm ...; fi`) is never walked, in a read loop
 # as at top level. An unquoted-delimiter heredoc body
@@ -533,16 +537,22 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
     # after a state letter: P vetoed once, B vetoed once and then a break
     # ran, Q vetoed again after that break. A P or Q site runs on its next
     # firing; a B site is vetoed once more. _leaf_read_ok drops to 0 for
-    # good once a read meets input other than a pipe at EOF.
+    # good once a read meets input other than a pipe at EOF. A P or Q site
+    # runs only when a leaf other than a read fired since the last read
+    # (_leaf_walked): a same-text read just before the loop (`read d; while
+    # read d; do ...`) walked no body, so the loop read is vetoed again.
     readonly _leaf_read_re="^(IFS=[A-Za-z0-9_./:@%+,-]*[[:space:]]+)?read([[:space:]]+-r)?([[:space:]]+${_leaf_name})*\$"
     _leaf_reads="|"
     _leaf_read_ok=1
+    _leaf_other=0
     _guard_probe() {
         _leaf_n=$((_leaf_n + 1))
         if [ "$_leaf_n" -gt 2000 ]; then
             printf "%s\n" "_guard_probe: leaf cap" >&7
             exit 113
         fi
+        _leaf_walked=$_leaf_other
+        _leaf_other=1
         # The first firing is this probe own eval line, not a leaf of the
         # command; recording it would put an interpreter word in every walk.
         if [ "$_leaf_n" -eq 1 ] && [ "$BASH_COMMAND" = "eval -- \"\$COMMAND\"" ]; then
@@ -614,6 +624,7 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
         esac
         if [[ "$BASH_COMMAND" =~ $_leaf_read_re ]] && [[ "$BASH_COMMAND" != *_leaf_* ]]; then
             printf "\035%s\036" "$BASH_COMMAND" >&8
+            _leaf_other=0
             local _leaf_site="${BASH_SUBSHELL}:${BASH_COMMAND}"
             # A vetoed read gives each name the value x, so a for-list over
             # it has a pass that reaches the guard above instead of none. A
@@ -638,6 +649,7 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
                     _leaf_reads="${_leaf_reads/"|B$_leaf_site|"/|Q$_leaf_site|}"
                     return 1 ;;
                 *"|P$_leaf_site|"* | *"|Q$_leaf_site|"*)
+                    [ "$_leaf_walked" -eq 1 ] || return 1
                     _leaf_reads="${_leaf_reads/"|P$_leaf_site|"/|}"
                     _leaf_reads="${_leaf_reads/"|Q$_leaf_site|"/|}"
                     local _leaf_byte

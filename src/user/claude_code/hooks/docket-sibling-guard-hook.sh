@@ -246,8 +246,11 @@
 #     nothing real, so the walk after it cannot follow the loop's own
 #     choices: while any read site is pending in the shell, a structural
 #     leaf that expands a value (`[ -n "$d" ] || continue`, `case $d in`,
-#     `while read d && [ -n "$d" ]`, `for f in $d`, `: ${d:?}`) or any
-#     `continue` DENIES as uninspectable, and the vetoed read gives each
+#     `while read d && [ -n "$d" ]`, `for f in $d`, `: ${d:?}`), an
+#     arithmetic `[[` comparison over a bare name (`[[ n -ne 0 ]]`, any of
+#     -eq -ne -lt -le -gt -ge, since `[[` reads a bare operand as a
+#     variable), an arithmetic `for ((...))` head or `((...))` command, or
+#     any `continue` DENIES as uninspectable, and the vetoed read gives each
 #     name the value `x` so that a for-list over it has a pass to refuse. A
 #     read loop that tests what it read is therefore refused, with a reason
 #     that says so.
@@ -541,7 +544,15 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
         # value, or a continue, could steer the loop past the body it never
         # walked, so the walk is refused. Both refusals are a marker on
         # stderr: an exit inside a pipeline stage never reaches the probe
-        # exit status.
+        # exit status. An arithmetic `for ((...))` head or `((...))` command
+        # reads bare names as variables, so it is refused the same way.
+        if [ "$_leaf_reads" != "|" ]; then
+            case "$BASH_COMMAND" in
+                "(("*)
+                    printf "%s\n" "_guard_probe: branch on an unread value" >&2
+                    exit 115 ;;
+            esac
+        fi
         case "$_leaf_head" in
             for | select | case | eval)
                 case "$BASH_COMMAND" in
@@ -567,9 +578,13 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
                 case "$BASH_COMMAND" in
                     *[\<\>]*) exit 114 ;;
                 esac
+                # An arithmetic `[[` comparison reads a bare name as a
+                # variable (`[[ n -ne 0 ]]`), so it expands a value with no $.
                 if [ "$_leaf_reads" != "|" ]; then
                     case "$_leaf_head:$BASH_COMMAND" in
-                        continue:* | *[\$\`]*)
+                        continue:* | *[\$\`]* | \
+                        "[[:"*" -eq "* | "[[:"*" -ne "* | "[[:"*" -lt "* | \
+                        "[[:"*" -le "* | "[[:"*" -gt "* | "[[:"*" -ge "*)
                             printf "%s\n" "_guard_probe: branch on an unread value" >&2
                             exit 115 ;;
                     esac
@@ -669,7 +684,7 @@ case "$PROBE_ERR" in
         deny "$REASON_PREFIX this command names a \`_leaf_*\` variable in a \`for\` or \`select\` header. The sibling-guard hook keeps its own analysis state under that prefix, so it cannot check the command; rename the variable." ;;
     *"_guard_probe: branch on an unread value"*)
         log_decision "deny" "read-value-branch"
-        deny "$REASON_PREFIX this command branches on a variable after a \`read\` in it (a \`[ ... ]\`, \`[[ ... ]]\`, \`case\`, \`for ... in\`, \`:\` or \`eval\` that expands a value, or a \`continue\`). The sibling-guard hook feeds a read no input, so it cannot tell which commands the loop would run. Filter the input before the loop instead (\`cmd | grep -v '^\$' | while IFS= read -r x; do ...; done\`), or split it into smaller Bash calls." ;;
+        deny "$REASON_PREFIX this command branches on a variable after a \`read\` in it (a \`[ ... ]\`, \`[[ ... ]]\`, \`case\`, \`for ... in\`, \`for ((...))\`, \`:\` or \`eval\` that expands a value, or a \`continue\`). The sibling-guard hook feeds a read no input, so it cannot tell which commands the loop would run. Filter the input before the loop instead (\`cmd | grep -v '^\$' | while IFS= read -r x; do ...; done\`), or split it into smaller Bash calls." ;;
 esac
 
 if [ -z "$PROBE_TEXT" ]; then

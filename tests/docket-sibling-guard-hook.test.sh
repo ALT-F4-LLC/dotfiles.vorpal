@@ -657,6 +657,14 @@ case_read_loops() {
         "ls | while read d; do : \${d:?}; rm -rf ${SIB_DIR}/\$d; done"; do
         assert_deny_reason "$cmd" executor-write "$WAVE_42" "branches on a variable" "read loop that branches on its value: ${cmd}"
     done
+    # An arithmetic `[[` comparison or `((...))` reads a bare name as a
+    # variable, so it branches on the read value with no `$` in sight.
+    assert_deny_reason "seq 3 | while read n; do if [[ n -ne 0 ]]; then rm -rf ${SIB_DIR}/\$n; fi; done" executor-write "$WAVE_42" "branches on a variable" "bare name in an arithmetic [[ if after a read"
+    assert_deny_reason "seq 3 | while read n; do [[ n -gt 0 ]] || break; rm -rf ${SIB_DIR}/\$n; done" executor-write "$WAVE_42" "branches on a variable" "bare name in an arithmetic [[ || break after a read"
+    assert_deny_reason "seq 3 | while read n && [[ n -gt 0 ]]; do rm -rf ${SIB_DIR}/\$n; done" executor-write "$WAVE_42" "branches on a variable" "bare name in an arithmetic [[ in the read loop condition"
+    assert_verdict "seq 3 | while read n; do for ((i=n; i; i--)); do rm -rf ${SIB_DIR}/x; done; done" executor-write "$WAVE_42" DENY "arithmetic for head over a read value"
+    assert_deny_reason "seq 3 | while read n; do if [[ \$n -ne 0 ]]; then rm -rf ${SIB_DIR}/\$n; fi; done" executor-write "$WAVE_42" "branches on a variable" "\$n in an arithmetic [[ if after a read"
+    assert_verdict "n=1; [[ n -ne 0 ]] && echo ok" executor-write "$WAVE_42" ALLOW "bare name in an arithmetic [[ with no read"
     # The refusal costs these benign shapes too; a test on no value still ends.
     assert_deny_reason "git status --short | while IFS= read -r f; do [ -e \"\$f\" ] || continue; echo \"\$f\"; done" executor-write "$WAVE_42" "branches on a variable" "benign read loop that tests its value is refused"
     assert_deny_reason "read x; [ -n \"\$x\" ] && echo y" executor-write "$WAVE_42" "branches on a variable" "test after a lone read is refused"

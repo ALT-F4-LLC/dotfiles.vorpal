@@ -141,7 +141,9 @@ REPO_SKILL="${SCRIPT_DIR}/../src/user/claude_code/skills/docket-run/SKILL.md"
 SKILL="${DOCKET_RUN_SKILL_FILE:-$REPO_SKILL}"
 PAUSE="${DOCKET_RUN_PAUSE_FILE:-${SCRIPT_DIR}/../src/user/claude_code/skills/docket-run/references/pause.md}"
 
-for input in "$SKILL" "$PAUSE"; do
+ESCALATION="${DOCKET_RUN_ESCALATION_FILE:-${SCRIPT_DIR}/../src/user/claude_code/skills/docket-run/references/escalation.md}"
+
+for input in "$SKILL" "$PAUSE" "$ESCALATION"; do
     if [ ! -f "$input" ]; then
         echo "FAIL input: no such file: ${input}" >&2
         echo "docket-run-skill: FAIL" >&2
@@ -264,6 +266,7 @@ if [ -z "${DOCKET_RUN_SKILL_INNER:-}" ]; then
             cp "$1" "$3/tests/$(basename "$SELF")"
             cp "$2" "$3/src/user/claude_code/skills/docket-run/SKILL.md"
             cp "$PAUSE" "$3/src/user/claude_code/skills/docket-run/references/pause.md"
+            cp "$ESCALATION" "$3/src/user/claude_code/skills/docket-run/references/escalation.md"
             (cd "$3" && DOCKET_RUN_SKILL_INNER=1 bash "tests/$(basename "$SELF")") \
                 >/dev/null 2>&1
         }
@@ -704,6 +707,49 @@ else
     else
         bad "dispatch watcher: a missing dir exited ${b_rc} after ${b_secs} s:$(head -c 300 "${WORK}/watcher-missing.out")"
     fi
+fi
+
+# (k) The loop-history line in references/escalation.md takes each field
+# from a read verb that returns it whole. The round comes from step show's
+# loop_rounds_run, not from loop-entered's ordinal in an events page that
+# returned nothing unnoticed; budget raises come from a tailed events read
+# that is complete only when the page is not truncated. Each bullet runs
+# from its label to the next "- **" bullet (DOCKET_RUN_ESCALATION_FILE
+# overrides the file under test).
+#
+#   k1 restore "round from `loop-entered`'s `ordinal=N` in `docket events
+#      list --run $RUN`" (the events-list absence check reds)
+#   k2 replace `docket step show` with `docket run report` in the bullet
+#   k3 delete the `docket workflow show <name>@<version> --source` cap source
+#   k4 delete `--tail <N>` and the truncated check from the spend bullet
+bullet() { # <label> <out>
+    awk -v label="$1" '
+        on && /^- \*\*/ { exit }
+        index($0, "- **" label) == 1 { on = 1 }
+        on
+    ' "$ESCALATION" > "$2"
+    [ -s "$2" ]
+}
+contains() { # <label> <region-file> <literal>
+    if grep -qF -- "$3" "$2"; then ok "$1"; else bad "$1 — missing: $3"; fi
+}
+if bullet 'Rounds run against the cap' "${WORK}/rounds"; then
+    contains "loop history: the round comes from loop_rounds_run" "${WORK}/rounds" 'loop_rounds_run'
+    contains "loop history: the round is read with docket step show" "${WORK}/rounds" 'docket step show'
+    contains "loop history: the cap is read with docket workflow show" "${WORK}/rounds" 'docket workflow show'
+    if grep -qF -- 'events list --run' "${WORK}/rounds"; then
+        bad "loop history: the round is still derived from an events list --run page"
+    else
+        ok "loop history: the round is not derived from events list --run"
+    fi
+else
+    bad "loop history: no 'Rounds run against the cap' bullet in ${ESCALATION}"
+fi
+if bullet 'Spend against budget, including every raise' "${WORK}/spend"; then
+    contains "loop history: budget raises are read with --tail" "${WORK}/spend" '--tail'
+    contains "loop history: the raise list requires an untruncated page" "${WORK}/spend" 'truncated == false'
+else
+    bad "loop history: no 'Spend against budget, including every raise' bullet in ${ESCALATION}"
 fi
 
 if [ "$fail" -ne 0 ]; then

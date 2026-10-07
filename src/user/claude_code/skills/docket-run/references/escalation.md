@@ -28,8 +28,10 @@ carrying five fields, each a read verb away:
 
 - **Rounds run against the cap**: "round 9 of a loop capped at 3." Cap
   from `docket workflow show <name>@<version> --source` (pinned version
-  in `run report`'s "Pinned workflows" block); round from `loop-entered`'s
-  `ordinal=N` in `docket events list --run $RUN`.
+  in `run report`'s "Pinned workflows" block); round from
+  `loop_rounds_run` in `docket step show <step the exhausted fix loop
+  parked on> --json=v2`, which the engine writes on that row when the loop
+  exhausts its cap.
 - **Consecutive rejections, listed by proposal id**, not a count, from
   `run report`'s "How steps ended."
 - **Fixer and judge variants actually served.** Routing from pinned
@@ -38,7 +40,10 @@ carrying five fields, each a read verb away:
   Report the resolved variant, since round-based escalation may have
   moved it.
 - **Spend against budget, including every raise**: `run report`'s
-  Budget block plus each `run-budget-set` event's `from=`/`to=`/`reason=`.
+  Budget block plus each `run-budget-set` event's `from=`/`to=`/`reason=`,
+  read with `docket events list --run $RUN --json=v2 --tail <N>`. The raise
+  list is complete only when `.data.truncated == false`; otherwise raise
+  `<N>` and read again.
 - **Finding-volume trend across rounds**, cluster and blocker counts from
   each round's aggregate artifact (`docket step artifacts STEP-N`, then
   `docket step artifact ARTIFACT-N --payload`). Note when consecutive

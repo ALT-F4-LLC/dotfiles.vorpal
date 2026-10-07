@@ -56,6 +56,9 @@ fatal() {
 command -v jq >/dev/null 2>&1 || fatal "jq is required to run this test"
 
 BASH_BIN=$(command -v bash) || fatal "bash not found on PATH"
+
+# shellcheck source=tests/lib/hook-probe.sh
+. "${SCRIPT_DIR}/lib/hook-probe.sh"
 # bash 5.2 parses a `$( )` body as it reads it and reprints the leaf from that
 # parse: a comment in the body is gone, and a heredoc in a substitution that
 # closed on its line takes the following lines as its body. The probe follows
@@ -80,11 +83,7 @@ WORK=$(mktemp -d "$(work_root_for "${TMPDIR:-}")/docket-sibling-guard-test.XXXXX
 trap 'rm -rf "$WORK"' EXIT
 
 TOOLS_DIR="${WORK}/tools"
-mkdir -p "$TOOLS_DIR"
-for tool in bash cat jq awk; do
-    tool_path=$(command -v "$tool") || fatal "hook dependency ${tool} not found on PATH"
-    ln -s "$tool_path" "${TOOLS_DIR}/${tool}"
-done
+hook_probe_link_shims "$TOOLS_DIR" bash cat jq awk || fatal "cannot build hook probe shims"
 
 # Transcript fixtures: the first record of a wave executor's transcript is
 # its rendered brief, carrying the claim for its own step; a tribunal seat's

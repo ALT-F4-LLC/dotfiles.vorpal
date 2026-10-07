@@ -1289,10 +1289,38 @@ case_prepass_installation() {
     [ "$got" = "DENY" ] && pass "missing pre-pass file fails closed (DENY)" || fail "missing pre-pass file (want DENY, got ${got})"
     cp "$HOOK" "${beside}/hook.sh"
     cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "${beside}/"
+    cp "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "${beside}/"
     got=$(PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "${beside}/hook.sh" >/dev/null 2>&1 <<<"$(build_input "rm -rf ${SIB_DIR}" executor-write "$WAVE_42")"; [ $? -eq 2 ] && printf DENY || printf ALLOW)
     [ "$got" = "DENY" ] && pass "installed copy with pre-pass beside it denies a foreign dir (DENY)" || fail "installed copy with pre-pass (want DENY, got ${got})"
     got=$(PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "${beside}/hook.sh" >/dev/null 2>&1 <<<"$(build_input "rm -rf ${OWN_DIR}" executor-write "$WAVE_42")"; [ $? -eq 2 ] && printf DENY || printf ALLOW)
     [ "$got" = "ALLOW" ] && pass "installed copy with pre-pass beside it allows the own sweep (ALLOW)" || fail "installed copy own sweep (want ALLOW, got ${got})"
+}
+
+# The line-selection lexer is a second shared file beside the hook. Without
+# it no line of the command would be scanned, so the hook refuses even a
+# command the full installation allows (the own sweep). Each file's check is
+# pinned with the other file present, so each refusal is that file's own.
+case_leaf_lines_installation() {
+    local no_leaf="${WORK}/no-leaf" no_prepass="${WORK}/no-prepass" got err
+    mkdir -p "$no_leaf" "$no_prepass"
+    cp "$HOOK" "${no_leaf}/hook.sh"
+    cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "${no_leaf}/"
+    err=$(PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "${no_leaf}/hook.sh" 2>&1 >/dev/null <<<"$(build_input "rm -rf ${OWN_DIR}" executor-write "$WAVE_42")")
+    [ $? -eq 2 ] && got=DENY || got=ALLOW
+    [ "$got" = "DENY" ] && pass "missing line-selection file fails closed on the own sweep (DENY)" || fail "missing line-selection file (want DENY, got ${got})"
+    case "$err" in
+        *"docket-guard-leaf-lines.awk"*) pass "missing line-selection file is named in the reason" ;;
+        *) fail "missing line-selection file reason: ${err}" ;;
+    esac
+    cp "$HOOK" "${no_prepass}/hook.sh"
+    cp "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "${no_prepass}/"
+    err=$(PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "${no_prepass}/hook.sh" 2>&1 >/dev/null <<<"$(build_input "ls" executor-write "$WAVE_42")")
+    [ $? -eq 2 ] && got=DENY || got=ALLOW
+    [ "$got" = "DENY" ] && pass "missing pre-pass file beside the line-selection file fails closed (DENY)" || fail "missing pre-pass file beside the line-selection file (want DENY, got ${got})"
+    case "$err" in
+        *"docket-guard-prepass.awk"*) pass "missing pre-pass file is named in the reason" ;;
+        *) fail "missing pre-pass file reason: ${err}" ;;
+    esac
 }
 
 # A match program awk cannot parse prints nothing and exits non-zero. Read
@@ -1303,7 +1331,7 @@ case_match_program_failure() {
     local broken="${WORK}/broken" got err
     mkdir -p "$broken"
     sed 's/^    MARK = "\\001"$/    MARK = = "\\001"/' "$HOOK" >"${broken}/hook.sh"
-    cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "${broken}/"
+    cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "${broken}/"
     if cmp -s "$HOOK" "${broken}/hook.sh"; then
         fail "unparseable match program: the fixture edit did not apply"
         return
@@ -1426,6 +1454,7 @@ case_marker_shape
 case_deny_reasons
 case_input_edges
 case_prepass_installation
+case_leaf_lines_installation
 case_match_program_failure
 case_transcript_bound
 case_leaf_cap_stops_the_walk

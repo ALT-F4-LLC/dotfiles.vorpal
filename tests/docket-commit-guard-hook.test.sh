@@ -52,6 +52,9 @@ command -v jq >/dev/null 2>&1 || fatal "jq is required to run this test"
 
 BASH_BIN=$(command -v bash) || fatal "bash not found on PATH"
 
+# shellcheck source=tests/lib/hook-probe.sh
+. "${SCRIPT_DIR}/lib/hook-probe.sh"
+
 SANDBOX=$(mktemp -d "${TMPDIR:-/tmp}/docket-commit-guard-test.XXXXXX") || fatal "mktemp failed"
 trap 'rm -rf "$SANDBOX"' EXIT
 
@@ -60,11 +63,8 @@ trap 'rm -rf "$SANDBOX"' EXIT
 # is prepended only for the cases that want an installed engine.
 TOOLS_DIR="${SANDBOX}/tools"
 STUB_DIR="${SANDBOX}/stub"
-mkdir -p "$TOOLS_DIR" "$STUB_DIR"
-for tool in bash cat jq awk; do
-    tool_path=$(command -v "$tool") || fatal "hook dependency ${tool} not found on PATH"
-    ln -s "$tool_path" "${TOOLS_DIR}/${tool}"
-done
+mkdir -p "$STUB_DIR"
+hook_probe_link_shims "$TOOLS_DIR" bash cat jq awk || fatal "cannot build hook probe shims"
 
 # Fake engine. Implements exactly the one query the hook makes and returns the
 # verdict named by GATE_STATE, reproducing the engine's real reason strings

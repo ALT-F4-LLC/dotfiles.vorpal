@@ -385,6 +385,30 @@ case_wrapper_brace_word_denies() {
     assert_verdict 'repeat 1 git commit -m x' DENY 'plain spelling after a zsh repeat count'
 }
 
+# A command that starts with `-` reaches the probe's eval as its first word.
+# Without `--`, eval reads that word as an option and fails, so the probe
+# records no leaves and the hook denies as "could not analyze". These rows pin
+# the probe analyzing such a command: a plain one allows, and a git write
+# behind the zsh modifier `-` denies with the unapproved-gate reason.
+UNAPPROVED_REASON='git write blocked: gate "commit-gate" is pending, not approved.'
+
+assert_unapproved_reason() {
+    local cmd="$1" label="$2" err
+    err=$(PATH="$PATH_WITH_DOCKET" GATE_STATE=unapproved "$BASH_BIN" "$HOOK" 2>&1 >/dev/null <<<"$(build_input "$cmd")")
+    case "$err" in
+        "${UNAPPROVED_REASON}"*) pass "${label} (unapproved-commit reason)" ;;
+        *) fail "${label} (want the unapproved-commit reason, got: ${err})" ;;
+    esac
+}
+
+case_leading_dash_command() {
+    assert_verdict '- ls' ALLOW 'leading-dash command with no git word'
+    assert_gate_verdict '- git commit -m x' unapproved "$PATH_WITH_DOCKET" DENY \
+        'git commit behind a leading - with the gate unapproved'
+    assert_unapproved_reason '- git commit -m x' \
+        'git commit behind a leading - with the gate unapproved'
+}
+
 case_wrapper_brace_word_allows() {
     assert_verdict 'noglob git status' ALLOW 'git read after noglob'
     assert_verdict 'echo {git,commit} -m x' ALLOW 'brace word as an argument of echo'
@@ -905,6 +929,7 @@ case_brace_split_subcommand_denies
 case_brace_word_prose_allows
 case_wrapper_brace_word_denies
 case_wrapper_brace_word_allows
+case_leading_dash_command
 case_must_allow_help_exemption
 case_accepted_false_positive_control
 case_must_not_catch_prose_and_reads

@@ -74,6 +74,8 @@ const BOUND = 4096
 const ALLOW = [
     { file: 'wave.js', call: 'agent(brief, options)',
       why: "countedAgent()'s pass-through; every countedAgent() call is checked instead" },
+    { file: 'wave.js', call: 'agent(settleBrief(row, owner, claim, settleNote(signal, text)))',
+      why: "settleStoppedReply()'s injected agent; its caller's countedAgent() call passes COMMAND_OUTPUT_SCHEMA and is checked instead" },
     { file: 'wave.js', call: 'countedAgent(executorBrief(row, owner, claim, iso, isWrite), opts(iso))',
       why: "the executor's reply is free text under the reply-tail contract its agent definitions and docket fragments own" },
     { file: 'docket-postmortem.js', call: 'agent(prompt, opts)',

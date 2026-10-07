@@ -701,10 +701,11 @@ Read `next` as a summary, never as rows: the rows you launch are what
   the advisor tool is available, call it on that verdict before reporting it.
   Read the report from `docket run status $RUN`, then stop.
 - **A dispatch is already open** → `next --run` refuses rather than
-  returning empty. Reconcile in step 3's order: back-fill usage first,
-  then `docket dispatch verify --run $RUN` (writes nothing), then close
-  (`dispatch close` takes no reason flag; JSON reports it under
-  `close_reason`) or abandon. Never open a second one.
+  returning empty. Reconcile it: once every launch has returned, run step
+  3's one combined `docket dispatch close --run $RUN --backfill-from`
+  call; when a launch is gone, follow **Crashed-relay reconciliation**,
+  which closes or abandons (`dispatch close` takes no reason flag; JSON
+  reports it under `close_reason`). Never open a second one.
 - **Refuses with `usage-rows-missing`** → you skipped the back-fill. Run
   it, then ask again, once. A second identical refusal for the same step
   after a join that returned no rows for it means the journal genuinely

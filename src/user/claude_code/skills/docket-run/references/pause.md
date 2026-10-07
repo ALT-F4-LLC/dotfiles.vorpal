@@ -131,7 +131,8 @@ every other path the prompt names from command output as well.
   `unit: {index, of, classCap}`, and the journal/transcript directory path
   docket-run used for `wave-usage`. Without the `wfId` and that directory,
   usage for that wave can never be back-filled
-  (`docket dispatch backfill-usage --source "wave-journal:<wfId>"`), and
+  (`--source "wave-journal:<wfId>"` on the combined `dispatch close
+  --backfill-from`, or on a crashed-relay back-fill), and
   the worktree sweep set for that wave (`worktree-wf_<id>-*` branches)
   cannot be told apart from a foreign entry.
 - **The full original `Workflow` args** — each launch's literal `rows`

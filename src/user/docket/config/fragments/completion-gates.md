@@ -1,6 +1,6 @@
 ---
 fragment: completion-gates
-version: 14
+version: 15
 ---
 # Completion gates
 
@@ -12,8 +12,10 @@ the blocker rather than guess.
 
 Commit your final edits, then run every required gate once on that commit, from the
 worktree you will record, using the trusted command verbatim and the engine's
-documented execution settings. Send each gate's full output to a file in your private
-step directory, so one run serves every later reading. A later change to a gate's
+documented execution settings. Issue each gate as its own top-level Bash call of
+the bare command, such as `just tests`: no `sh -c` wrapper, no redirect, pipe, or
+`&&` chain, because the permission allow rules match only the bare form. Save
+each gate's full output to a file in your private step directory, so one run serves every later reading. A later change to a gate's
 inputs invalidates its result. An amend or rebase that leaves
 `git rev-parse 'HEAD^{tree}'` unchanged changes no input: keep those results rather
 than rerunning. If a gate changes checked files, validate the resulting state before

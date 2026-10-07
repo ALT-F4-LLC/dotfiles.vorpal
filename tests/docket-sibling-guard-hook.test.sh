@@ -773,6 +773,13 @@ case_artifact_heredoc_bodies() {
     for prose_name in zsh bash python3; do
         assert_verdict "cat > ${OWN_DIR}/a.md <<'EOF'"$'\nx `repeat 1 docket step reap STEP-7 --reason x` y\nEOF\n'"printf 'see ${prose_name} here' > ${OWN_DIR}/b.md" executor-read "$WAVE_42" ALLOW "quoted body beside a printf whose prose names ${prose_name}"
     done
+    # Each leaf ends at its own boundary for the pre-pass: an unquoted body,
+    # read whole, that leaves `${` open or sets the stop-marking fallback (an
+    # extglob group) does not reach the quoted prose of the next leaf. The
+    # `${` row passed before leaves were ended this way too; it is a
+    # regression pin.
+    assert_verdict "cat > ${OWN_DIR}/a.md <<EOF"$'\nopen ${ here\nEOF\n'"echo \"see ${SIB_DIR} later\"" executor-write "$WAVE_42" ALLOW "an open \${ in an unquoted body does not reach the next leaf's prose"
+    assert_verdict "cat > ${OWN_DIR}/a.md <<EOF"$'\nsee @(x) here\nEOF\n'"echo \"see ${SIB_DIR} later\"" executor-write "$WAVE_42" ALLOW "an extglob group in an unquoted body does not unmark the next leaf's prose"
     # A top-level quoted body naming an own-prefixed file before a backtick
     # and a sibling dir, then a jq leaf writing an own file, is not read.
     local own_art="cat > ${OWN_DIR}/STEP-42-art.md <<'EOF'"$'\nRan STEP-42-probe.sh` against STEP-7.d\nEOF\n'"jq -n '{a:1}' > ${OWN_DIR}/STEP-42-x.json"

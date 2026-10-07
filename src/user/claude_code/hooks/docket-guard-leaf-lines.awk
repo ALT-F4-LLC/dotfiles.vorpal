@@ -9,6 +9,11 @@
 #         lines, or the whole leaf when `widen` is set or the leaf carries an
 #         unquoted-delimiter heredoc.
 #   widen "1" makes scan mode print every leaf whole.
+# Output: lines of one leaf are joined by newlines. Scan mode ends each leaf
+# with 0x1e, which docket-guard-prepass.awk reads as a newline that also ends
+# the leaf's group state, so one leaf's unbalanced text (a heredoc body bash
+# never parsed) cannot move a comment or a prose group in the next; code mode
+# ends each leaf with a newline.
 #
 # A heredoc body (its terminator line included) is not a code line. The
 # operator is found with a quote-aware lexer, and classification stops,
@@ -237,14 +242,17 @@ BEGIN {
     SQ = "\047"
     DQ = "\042"
     BQ = "\140"
+    END_LEAF = (mode == "scan") ? "\036" : "\n"
 }
 {
     leaf = $0
     if (leaf == "") next
     classify(leaf)
     if (mode == "scan" && (widen == "1" || UNQ)) {
-        printf "%s\n", leaf
+        printf "%s\036", leaf
         next
     }
-    for (k = 1; k <= NL; k++) if (CLS[k] == "c") printf "%s\n", L[k]
+    last = 0
+    for (k = 1; k <= NL; k++) if (CLS[k] == "c") last = k
+    for (k = 1; k <= NL; k++) if (CLS[k] == "c") printf "%s%s", L[k], (k == last ? END_LEAF : "\n")
 }

@@ -792,7 +792,10 @@ fi
 # prints the code lines, or the whole leaf when `widen` is set or the leaf
 # carries an unquoted-delimiter heredoc (whose body bash expands before any
 # consumer sees it). A delimiter it cannot read ends classification like the
-# cases above: every remaining line is kept.
+# cases above: every remaining line is kept. Scan mode ends each leaf with
+# the \036 byte, so the pre-pass drops its group state, open backtick and
+# stop-marking fallback at the leaf boundary rather than carrying them into
+# the next leaf.
 #
 # The file is resolved beside this hook, like the pre-pass, and a missing or
 # unreadable copy refuses the command: without it no line would be scanned.

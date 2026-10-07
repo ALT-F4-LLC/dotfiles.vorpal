@@ -102,8 +102,7 @@
 # \036 byte): one leaf's unbalanced text, such as a heredoc body bash never
 # parsed, must not move a comment in the next.
 # KNOWN RESIDUALS of that rule: a caller that ends leaves with a plain
-# newline (the commit and sibling guards) carries that state across its
-# leaves; a $( inside a nested quoted heredoc body (text bash never parses)
+# newline (the commit guard) carries that state across its leaves; a $( inside a nested quoted heredoc body (text bash never parses)
 # is still counted; $[ ] arithmetic is not tracked; and $((cmd) ), which bash
 # may read as a substitution holding a subshell, is read as arithmetic. Each
 # can leave a later `#` misjudged.

@@ -498,6 +498,10 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
             serde_json::json!({ "effortLevel": "high" }), // default
         )
         .with_model_setting(
+            "claude-haiku-5-5",
+            serde_json::json!({ "effortLevel": "medium" }), // default
+        )
+        .with_model_setting(
             "claude-opus-5-5",
             serde_json::json!({ "effortLevel": "medium" }), // default
         )
@@ -527,7 +531,7 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         .with_enabled_plugin("rust-analyzer-lsp@claude-plugins-official", true)
         .with_enabled_plugin("typescript-lsp@claude-plugins-official", true)
         .with_env("ANTHROPIC_DEFAULT_FABLE_MODEL", "claude-fable-5-1")
-        .with_env("ANTHROPIC_DEFAULT_HAIKU_MODEL", "claude-haiku-4-5")
+        .with_env("ANTHROPIC_DEFAULT_HAIKU_MODEL", "claude-haiku-5-5")
         .with_env("ANTHROPIC_DEFAULT_OPUS_MODEL", "claude-opus-5-5")
         .with_env("ANTHROPIC_DEFAULT_SONNET_MODEL", "claude-sonnet-5-5")
         .with_env("CLAUDE_CODE_ENABLE_TELEMETRY", "1")

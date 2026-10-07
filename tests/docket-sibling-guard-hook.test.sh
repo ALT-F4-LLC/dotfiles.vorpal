@@ -1202,6 +1202,14 @@ case_deny_reasons() {
     assert_deny_reason "while true; do :; done 2>&-" executor-write "$WAVE_42" "too many parts (over 2000)" "cap with stderr closed"
     assert_deny_reason ": > ${SIB_DIR}/x 2>&-" executor-write "$WAVE_42" "cat /dev/null" "structural redirect with stderr closed"
     assert_deny_reason "{ : > ${SIB_DIR}/x; } 2>&-" executor-write "$WAVE_42" "cat /dev/null" "structural redirect inside a group with stderr closed"
+    # The probe's own fds: closing the marker fd (7) or the leaf-frame fd (8)
+    # would silence the refusal or hide the leaves, so any redirect of 7-9
+    # is refused before the walk.
+    assert_deny_reason "ls | while read d; do [ -n \"\$d\" ] || continue; rm -rf ${SIB_DIR}/\$d; done 7>&- 2>&-" executor-write "$WAVE_42" "file descriptor 7, 8 or 9" "guarded read loop closing the marker fd"
+    assert_deny_reason "ls | { rm -rf ${SIB_DIR}; } 8>&- 2>&-; echo done" executor-write "$WAVE_42" "file descriptor 7, 8 or 9" "pipeline stage closing the leaf-frame fd"
+    assert_deny_reason "exec 9>&-; ls" executor-write "$WAVE_42" "file descriptor 7, 8 or 9" "exec closing fd 9"
+    assert_verdict "ls 2>&1 | head -n 8 >/dev/null" executor-write "$WAVE_42" ALLOW "fds 1 and 2 and a numeric operand are not probe fds"
+    assert_verdict "echo \$7>/dev/null" executor-write "$WAVE_42" ALLOW "a positional parameter before a redirect is not a probe fd"
     assert_deny_reason "_guard_probe() { :; }; ls" executor-write "$WAVE_42" "_guard_probe" "probe-tamper deny names the handler"
     assert_deny_reason "git -c alias.x=worktree x prune" executor-write "$WAVE_42" "alias" "alias deny names the alias"
 }

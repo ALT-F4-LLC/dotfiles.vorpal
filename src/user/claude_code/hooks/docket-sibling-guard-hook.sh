@@ -493,6 +493,16 @@ case "$COMMAND" in
         log_decision "deny" "framing-bytes"
         deny "$REASON_PREFIX this command carries a control byte (0x1d or 0x1e) the sibling-guard hook uses to frame its own analysis, so it cannot be checked. Remove the byte; no shell command needs it." ;;
 esac
+# The probe below reports on fds 7 (refusal markers), 8 (leaf frames) and 9.
+# A command that redirects one of them (`done 7>&-`, `{ ...; } 8>&-`) would
+# silence its own refusal or hide its leaves, so any redirection whose
+# source is fd 7, 8 or 9 is refused before the walk. The match is textual
+# and over-reaches into quoted prose; no executor command needs these fds.
+PROBE_FD_RE='(^|[^A-Za-z0-9_$])[789][<>]'
+if [[ "$COMMAND" =~ $PROBE_FD_RE ]]; then
+    log_decision "deny" "probe-fd"
+    deny "$REASON_PREFIX this command redirects file descriptor 7, 8 or 9, which the sibling-guard hook uses to read its own analysis, so it cannot be checked. Use fds 0-2 or 3-6 instead; if the digits are prose in a quoted string, reword them."
+fi
 
 # --- Syntax first, on the same bytes the probe will walk. ------------------
 if ! printf '%s' "$COMMAND" | bash -n >/dev/null 2>&1; then

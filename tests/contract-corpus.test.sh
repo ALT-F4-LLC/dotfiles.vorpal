@@ -146,6 +146,7 @@ require_bounded spec-doc research tdd-author-security tdd-author adr-author ux-s
     synthesize-findings drain-highs
 require_bounded spec-project research synthesize-findings drain-highs
 require_bounded trivial-change implement verify-ac
+require_bounded ui-change implement synthesize-findings drain-highs design-qa verify-ac
 
 if [ "$fail" -ne 0 ]; then
     echo "contract-corpus: FAIL" >&2

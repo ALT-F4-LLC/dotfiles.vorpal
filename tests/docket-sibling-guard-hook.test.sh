@@ -717,6 +717,9 @@ case_read_loops() {
     # The read-value reason names a filtered loop, and that loop ends.
     assert_deny_reason "ls | while read d; do [ -n \"\$d\" ] || continue; echo \$d; done" executor-write "$WAVE_42" "cmd | grep -v '^\$' | while IFS= read -r x; do ...; done" "read-value reason names the filtered loop"
     assert_verdict "git status --short | grep -v '^\$' | while IFS= read -r x; do echo \"\$x\"; done" executor-write "$WAVE_42" ALLOW "filtered read loop named by the read-value reason ends"
+    # A lone read earlier in the call refuses the counted wait too, and the
+    # reason says to run that read in its own call.
+    assert_deny_reason 'read x; n=0; until [ -s f ] || [ $n -ge 3 ]; do n=$((n+1)); done' executor-write "$WAVE_42" "run that read in its own Bash call" "read-value reason names a lone read before a counted wait"
 }
 
 # Oversized and odd inputs fail closed or stay inert, quickly.

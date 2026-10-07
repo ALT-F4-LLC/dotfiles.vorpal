@@ -710,7 +710,7 @@ case "$PROBE_RC:$PROBE_ERR" in
         deny "$REASON_PREFIX this command names a \`_leaf_*\` variable in a \`for\` or \`select\` header. The sibling-guard hook keeps its own analysis state under that prefix, so it cannot check the command; rename the variable." ;;
     *"_guard_probe: branch on an unread value"*)
         log_decision "deny" "read-value-branch"
-        deny "$REASON_PREFIX this command branches on a variable after a \`read\` in it (a \`[ ... ]\`, \`[[ ... ]]\`, \`case\`, \`for ... in\`, \`for ((...))\`, \`:\` or \`eval\` that expands a value, or a \`continue\`). The sibling-guard hook feeds a read no input, so it cannot tell which commands the loop would run. Filter the input before the loop instead (\`cmd | grep -v '^\$' | while IFS= read -r x; do ...; done\`), or split it into smaller Bash calls." ;;
+        deny "$REASON_PREFIX this command branches on a variable after a \`read\` in it (a \`[ ... ]\`, \`[[ ... ]]\`, \`case\`, \`for ... in\`, \`for ((...))\`, \`:\` or \`eval\` that expands a value, or a \`continue\`). The sibling-guard hook feeds a read no input, so it cannot tell which commands the loop would run. An earlier lone \`read\` anywhere in the same Bash call counts too, and refuses every later test on a variable, the counted wait loop \`until [ -s f ] || [ \$n -ge N ]\` included: run that read in its own Bash call. Otherwise filter the input before the loop instead (\`cmd | grep -v '^\$' | while IFS= read -r x; do ...; done\`), or split it into smaller Bash calls." ;;
 esac
 
 if [ -z "$PROBE_TEXT" ]; then

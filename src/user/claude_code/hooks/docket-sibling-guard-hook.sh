@@ -85,7 +85,10 @@
 #              denied. The verb is read at the head of the leaf, after
 #              `sudo`, `env`, `command`, `xargs`, `nohup`, `timeout` and the
 #              like are stripped: `grep -rn pkill hooks/` is a read a judge of
-#              this very repository makes, and stays allowed.
+#              this very repository makes, and stays allowed. After zsh
+#              `repeat` every later word is read as a verb for the
+#              name-addressed kills and ENGINE, since the pre-pass cannot
+#              show where its count ends, so `repeat 3 echo pkill` denies.
 #   ENGINE     `docket step reap` and `docket run conduct` always, docket's
 #              own global flags skipped. A reap clears another holder's
 #              claim on the assertion that the holder is dead, which only

@@ -42,9 +42,12 @@ mkdir -p "$BIN" "$FIX" "${WORK}/store/bin"
 # The stub docket admits `guard stop` (the run is paused) and answers the
 # three reads from the fixture files the current case wrote. Any other call,
 # or a read with no fixture, fails, so an unexpected call is never mistaken
-# for an empty answer.
+# for an empty answer. Every call is logged to CALLS, one per line, so a case
+# can assert that a read was never reached.
+CALLS="${WORK}/calls.log"
 cat > "${BIN}/docket" <<STUB
 #!/bin/bash
+echo "\$*" >> "${CALLS}"
 case "\$1 \$2" in
     "guard stop") exit 0 ;;
     "run status") exec cat "${FIX}/runs.json" ;;
@@ -109,7 +112,7 @@ JSON
 # Run the body with `{{force}}` set to the given value, leaving stderr in err,
 # the exit status in status, and whether vorpal-activate ran in activated.
 activate() { # <force>
-    rm -f "$MARKER"
+    rm -f "$MARKER" "$CALLS"
     sed "s/{{force}}/$1/g" "${WORK}/body.sh" > "${WORK}/run.sh"
     (cd "$WORK" && PATH="${BIN}:${PATH}" bash "${WORK}/run.sh") > "${WORK}/out" 2> "${WORK}/err"
     echo $? > "${WORK}/status"
@@ -185,6 +188,50 @@ rm -f "${FIX}/show-STEP-10.json"
 activate ""
 refused
 check "a failed step show refuses activation" $?
+
+# The run-status and step-list envelopes are validated with the same
+# fail-closed rules as docket-run-guard-hook.sh: a `runs` array, run ids
+# matching ^RUN-[0-9]+$ with no duplicates, and step ids matching
+# ^STEP-[0-9]+$. Anything else refuses before the next read is made.
+called() { # <docket subcommand pair>
+    [ -f "$CALLS" ] && grep -q "^$1" "$CALLS"
+}
+run_status_refused() {
+    refused && grep -q '(run status)\.$' "${WORK}/err" && ! called 'step list'
+}
+
+arrange done
+printf '%s\n' '{"ok":true,"data":{"total":0}}' > "${FIX}/runs.json"
+activate ""
+refused && grep -q 'cannot read docket state to check integrated commits awaiting review (run status)' "${WORK}/err"
+check "a run status with no runs key refuses activation" $?
+
+for bad_run in 'RUN-1 RUN-2' 'run-7'; do
+    arrange done
+    printf '{"ok":true,"data":{"runs":[{"run":"%s","status":"paused"}],"total":1}}\n' "$bad_run" > "${FIX}/runs.json"
+    activate ""
+    run_status_refused
+    check "a malformed run id ('${bad_run}') refuses before any step list" $?
+done
+
+arrange done
+printf '%s\n' '{"ok":true,"data":{"runs":[{"run":"RUN-7","status":"paused"},{"run":"RUN-7","status":"paused"}],"total":2}}' > "${FIX}/runs.json"
+activate ""
+run_status_refused
+check "a duplicate run id refuses before any step list" $?
+
+# A malformed step id in either position of a candidate pair: the done step
+# (STEP-10 renamed) or the first unfinished step on its issue (STEP-11).
+for case_ in 'STEP-10:STEP-1 x:done step' 'STEP-11:step-2:open step'; do
+    IFS=: read -r good bad label <<< "$case_"
+    arrange ready
+    sed "s/\"step\":\"${good}\"/\"step\":\"${bad}\"/" "${FIX}/steps-RUN-7.json" > "${FIX}/steps.tmp"
+    mv "${FIX}/steps.tmp" "${FIX}/steps-RUN-7.json"
+    cp "${FIX}/show-STEP-10.json" "${FIX}/show-STEP-1.json"
+    activate ""
+    refused && grep -q '(step list RUN-7)\.$' "${WORK}/err" && ! called 'step show'
+    check "a malformed ${label} id ('${bad}') refuses before any step show" $?
+done
 
 if [ "$fail" -ne 0 ]; then
     echo "justfile-activate-review-guard: FAIL" >&2

@@ -39,16 +39,22 @@ activate force="":
         command -v jq >/dev/null 2>&1 \
             || refuse_unreviewed "jq is missing, so integrated commits awaiting review cannot be checked."
         unreadable="cannot read docket state to check integrated commits awaiting review"
+        # The same fail-closed rules docket-run-guard-hook.sh applies to this
+        # envelope, restated here rather than shared: the hook ships in the
+        # installed corpus, and this recipe runs from the checkout. One id per
+        # line, so no id is ever word-split.
         runs=$(docket run status --limit 0 --json | jq -er '
             select(.ok == true) | .data
-            | (.runs // []) as $runs
-            | select(($runs | type) == "array" and .total == ($runs | length))
-            | select(all($runs[]; .run | type == "string"))
-            | [$runs[].run] | join(" ")') \
+            | select((.runs | type) == "array" and .total == (.runs | length))
+            | select(all(.runs[];
+                (.run | type) == "string" and (.run | test("^RUN-[0-9]+$"))))
+            | select(([.runs[].run] | unique | length) == (.runs | length))
+            | [.runs[].run] | join("\n")') \
             || refuse_unreviewed "$unreadable (run status)."
-        for run in $runs; do
+        while read -r run <&3; do
+            [ -n "$run" ] || continue
             # Done steps on issues that still have an unfinished step, each as
-            # "<step> <first unfinished step on its issue>".
+            # "<step> <first unfinished step on its issue>", both ids checked.
             candidates=$(docket step list --run "$run" --json | jq -er '
                 select(.ok == true) | .data
                 | select((.steps | type) == "array" and .total == (.steps | length))
@@ -56,8 +62,10 @@ activate force="":
                 | [.[] | select(.status | IN("done", "skipped", "superseded") | not)] as $open
                 | [.[] | select(.status == "done") as $s
                     | ($open | map(select(.issue == $s.issue)) | first) as $o
-                    | select($o != null) | "\($s.step) \($o.step)"]
-                | join("\n")') \
+                    | select($o != null) | [$s.step, $o.step]]
+                | select(all(.[]; .[0] | type == "string" and test("^STEP-[0-9]+$")))
+                | select(all(.[]; .[1] | type == "string" and test("^STEP-[0-9]+$")))
+                | map(join(" ")) | join("\n")') \
                 || refuse_unreviewed "$unreadable (step list $run)."
             while read -r step open_step; do
                 [ -n "$step" ] || continue
@@ -68,7 +76,7 @@ activate force="":
                     refuse_unreviewed "$run's $step integrated $sha into main, and $open_step on its issue is unfinished, so that commit has not finished review."
                 fi
             done <<< "$candidates"
-        done
+        done 3<<< "$runs"
     fi
     "$(vorpal build --path 'user')/bin/vorpal-activate"
     # Installing the corpus moves no registry. Report every project's drift

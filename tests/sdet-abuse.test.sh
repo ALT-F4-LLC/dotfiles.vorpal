@@ -10,6 +10,8 @@
 # real tree, so three of the gate's own checks (the "suite now exists"
 # warning-turned-fail, the UNWIRED-stays-unregistered check, and the
 # KNOWN_UNVERIFIED staleness check) ran on no input on any real invocation.
+# In skip-suites mode (SDET_ABUSE_SKIP_SUITES=1) the gate runs no suite but
+# still fails on every classification and registration gap.
 #
 # SEAM. Each case drives the gate script against a synthetic fixture tree
 # (hook dir, claude_code.rs stand-in, tests dir, registry file) via the
@@ -426,6 +428,95 @@ else
         pass "dropped builder result: gate fails and names it"
     else
         fail "dropped builder result: gate failed but did not name it"
+        printf '%s\n' "$out" | sed 's/^/    /'
+    fi
+fi
+
+# ---- skip-suites mode: checks run, suites do not ---------------------------
+# SDET_ABUSE_SKIP_SUITES=1 lets the record-time gate reuse a `tests` pass for
+# the suite loop. It must skip only that loop: every classification and
+# registration check still runs and still fails the gate. The fixture suite
+# writes a marker, so whether it ran is observable; the first case is the
+# positive control that the marker appears when the suites do run.
+
+# write_marker_suite <path> <marker>; a passing suite that clears MIN_CASES
+# and touches <marker> when it runs.
+write_marker_suite() { # <path> <marker>
+    local path="$1" marker="$2"
+    {
+        echo '#!/bin/bash'
+        echo ": > '${marker}'"
+        echo 'for i in $(seq 1 10); do echo "PASS case $i"; done'
+        echo 'exit 0'
+    } > "$path"
+    chmod +x "$path"
+}
+
+# run_gate_skip <dir> <registry-body>; run_gate in skip-suites mode.
+run_gate_skip() { # <dir> <registry-body>
+    SDET_ABUSE_SKIP_SUITES=1 run_gate "$@"
+}
+
+FIX="${WORK}/marker-full"
+build_fixture "$FIX"
+write_marker_suite "${FIX}/tests/enforcing.test.sh" "${FIX}/marker"
+if out=$(run_gate "$FIX" "$CLEAN_REGISTRY" 2>&1) && [ -e "${FIX}/marker" ]; then
+    pass "without SDET_ABUSE_SKIP_SUITES: gate exits 0 and runs the suite"
+else
+    fail "without SDET_ABUSE_SKIP_SUITES: expected exit 0 and a suite run (marker present)"
+    printf '%s\n' "$out" | sed 's/^/    /'
+fi
+
+FIX="${WORK}/skip-clean"
+build_fixture "$FIX"
+write_marker_suite "${FIX}/tests/enforcing.test.sh" "${FIX}/marker"
+if out=$(run_gate_skip "$FIX" "$CLEAN_REGISTRY" 2>&1); then
+    if [ -e "${FIX}/marker" ]; then
+        fail "skip mode, clean fixture: gate exits 0 but ran the suite (marker present)"
+    elif printf '%s\n' "$out" | grep -q "enforcing.sh .*ENFORCING  suite"; then
+        pass "skip mode, clean fixture: gate exits 0, runs no suite, still classifies"
+    else
+        fail "skip mode, clean fixture: gate exits 0 but printed no classification line"
+        printf '%s\n' "$out" | sed 's/^/    /'
+    fi
+else
+    fail "skip mode, clean fixture: expected exit 0, gate failed"
+    printf '%s\n' "$out" | sed 's/^/    /'
+fi
+
+FIX="${WORK}/skip-unclassified"
+build_fixture "$FIX"
+write_marker_suite "${FIX}/tests/enforcing.test.sh" "${FIX}/marker"
+cat > "${FIX}/hooks/mystery.sh" <<'HOOK'
+#!/bin/bash
+echo unclassified
+HOOK
+chmod +x "${FIX}/hooks/mystery.sh"
+if out=$(run_gate_skip "$FIX" "$CLEAN_REGISTRY" 2>&1); then
+    fail "skip mode, unclassified hook: expected non-zero exit, gate passed"
+else
+    if printf '%s\n' "$out" | grep -q "mystery.sh is not classified"; then
+        pass "skip mode, unclassified hook: gate fails and names it"
+    else
+        fail "skip mode, unclassified hook: gate failed but did not name mystery.sh"
+        printf '%s\n' "$out" | sed 's/^/    /'
+    fi
+fi
+
+FIX="${WORK}/skip-no-registration"
+build_fixture "$FIX"
+cat > "${FIX}/claude_code.rs" <<'RS'
+fn build() {
+    let settings_builder = settings_builder;
+}
+RS
+if out=$(run_gate_skip "$FIX" "$CLEAN_REGISTRY" 2>&1); then
+    fail "skip mode, no registration: expected non-zero exit, gate passed"
+else
+    if printf '%s\n' "$out" | grep -q "enforcing.sh is ENFORCING but .* never registers it"; then
+        pass "skip mode, no registration: gate fails and names it"
+    else
+        fail "skip mode, no registration: gate failed but did not name it"
         printf '%s\n' "$out" | sed 's/^/    /'
     fi
 fi

@@ -54,6 +54,13 @@
 # suite" requirement is enforced against the whole tree, less the baseline of
 # gaps that predate the gate, so a step cannot add an unverified control and no
 # step is blocked by a gap it did not create.
+#
+# SKIP-SUITES MODE. SDET_ABUSE_SKIP_SUITES=1 skips the suite loop and nothing
+# else: every classification and registration check (steps 1-6 below) still
+# runs, any gap it finds still fails the gate, and an ENFORCING hook still
+# needs its suite file on disk. The justfile's record-time `sdet-abuse` gate
+# turns it on only when a full `tests` pass of the identical clean tree has
+# already run every suite. Unset, or any other value, runs the suites.
 
 set -euo pipefail
 
@@ -327,10 +334,19 @@ for name in ${KNOWN_UNVERIFIED[@]+"${KNOWN_UNVERIFIED[@]}"}; do
   [ -f "$HOOKS_DIR/$name" ] || fail "$name is in KNOWN_UNVERIFIED but no longer on disk; remove the stale entry"
 done
 
+skip_suites=0
+[ "${SDET_ABUSE_SKIP_SUITES:-}" = 1 ] && skip_suites=1
+
 echo
-echo "--- running the abuse-case suites ---"
 total_cases=0
-for name in ${suites[@]+"${suites[@]}"}; do
+run_suites=()
+if [ "$skip_suites" -eq 1 ]; then
+  echo "--- abuse-case suites skipped (SDET_ABUSE_SKIP_SUITES=1); the checks above ran in full ---"
+else
+  echo "--- running the abuse-case suites ---"
+  run_suites=(${suites[@]+"${suites[@]}"})
+fi
+for name in ${run_suites[@]+"${run_suites[@]}"}; do
   suite="$SUITES_DIR/${name%.sh}.test.sh"
   out="$work/${name%.sh}.out"
   rc=0
@@ -363,5 +379,9 @@ EOF
   exit 1
 fi
 
+if [ "$skip_suites" -eq 1 ]; then
+  echo "sdet-abuse: ok — classification and registration checks passed; ${#suites[@]} suite(s) not run (SDET_ABUSE_SKIP_SUITES=1)"
+  exit 0
+fi
 echo "sdet-abuse: ok — ${#suites[@]} suite(s), ${total_cases} abuse cases passed"
 exit 0

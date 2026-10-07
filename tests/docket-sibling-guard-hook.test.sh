@@ -1064,6 +1064,12 @@ case_own_leaf_expansions() {
     assert_verdict "cat ${OWN_DIR}/STEP-42-\$1.json" executor-read "$WAVE_42" DENY "positional parameter in the own leaf"
     assert_verdict "find /tmp/claude-501 ! -name STEP-42-\$x -delete" executor-write "$WAVE_42" DENY "find negating an own-leaf-shaped name"
     assert_verdict "git worktree remove ${OWN_DIR}/STEP-42-\$p" executor-write "$WAVE_42" DENY "worktree remove of an own-leaf-shaped path stays a token"
+    # A backtick substitution's closing backtick glued to the last word.
+    assert_verdict "echo \"\`cat ${OWN_DIR}/STEP-42-note\`\"" executor-write "$WAVE_42" ALLOW "own file closing a double-quoted backtick substitution"
+    assert_verdict "echo \`cat ${OWN_DIR}/STEP-42-note\`" executor-write "$WAVE_42" ALLOW "own file closing an unquoted backtick substitution"
+    assert_verdict "echo \"\`cat /tmp/claude-501/STEP-7.d/STEP-7-note\`\"" executor-write "$WAVE_42" DENY "sibling file closing a backtick substitution"
+    assert_verdict "rm -rf ${OWN_DIR}/STEP-42-\`echo x\`" executor-write "$WAVE_42" DENY "opening backtick inside the own leaf"
+    assert_verdict "echo \"\`cat ${OWN_DIR}/STEP-42-\$(id)\`\"" executor-write "$WAVE_42" DENY "\$( ) in the own leaf before a closing backtick"
 }
 
 # Prose under an interpreter, and the string forms of CL9.

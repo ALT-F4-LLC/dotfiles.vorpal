@@ -1197,6 +1197,9 @@ function scratch_token(w, docket_arg,   pos, rest, run, id, suffix, dot, sub_ok)
     rest = substr(w, pos)
     run = rest
     sub(/\/.*$/, "", run)
+    # One trailing backtick closes a substitution around the word; it is not
+    # part of the name. A backtick, `$` or `(` left inside still is.
+    sub(/`$/, "", run)
     if (run ~ /[$`(]/) {
         if (docket_arg && w ~ /^[Ss][Tt][Ee][Pp]-\$(\{[A-Za-z_][A-Za-z0-9_]*\}|[A-Za-z_][A-Za-z0-9_]*)$/) return 0
         T_TOKEN = "STEP-" run

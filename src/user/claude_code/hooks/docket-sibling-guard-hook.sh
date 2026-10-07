@@ -1006,10 +1006,43 @@ BEGIN {
 # separates a name from its extension, so `cases.sh` and `.env` do not widen
 # while `sh`, `/bin/sh`, `"sh"`, `$(sh`, a backtick and `;sh` all do; the
 # shapes are pinned in tests/docket-sibling-guard-hook.test.sh.
+#
+# Quoted prose is not a command word either: a quoted span holding a blank
+# (`printf 'see zsh here' > notes.md`) is dropped from the code lines before
+# the test, so an artifact write beside it is not widened, while a quoted
+# command word (`"sh" <<'EOF'`, `'/bin/sh' <<'EOF'`) holds no blank and still
+# widens. This is the pre-pass's prose rule, a quoted group of two or more
+# words, applied per line. A line whose quoting this cannot read as bash
+# would (an unclosed quote, `$'...'`, or a double-quoted span carrying `$(`,
+# `${` or a backtick, whose inner quotes nest) keeps its prose.
 INTERPRETER_RE='(^|[^A-Za-z0-9_.])(sh|bash|dash|zsh|ksh|mksh|csh|tcsh|python[0-9.]*|perl|ruby|node|nodejs|php|lua[0-9.]*|tclsh|expect|osascript|env|eval)([^A-Za-z0-9_.]|$)'
+QUOTED_PROSE_AWK='
+BEGIN { SQ = "\047"; DQ = "\042"; BQ = "\140" }
+{
+    s = $0
+    n = length(s)
+    if (index(s, "$" SQ)) { print s; next }
+    out = ""
+    i = 1
+    while (i <= n) {
+        c = substr(s, i, 1)
+        if (c == "\\") { out = out substr(s, i, 2); i += 2; continue }
+        if (c != SQ && c != DQ) { out = out c; i++; continue }
+        j = i + 1
+        while (j <= n && substr(s, j, 1) != c) j += (c == DQ && substr(s, j, 1) == "\\") ? 2 : 1
+        if (j > n) { out = out substr(s, i); break }
+        span = substr(s, i + 1, j - i - 1)
+        if (c == DQ && (index(span, "$(") || index(span, "${") || index(span, BQ))) { out = s; break }
+        out = out (span ~ /[ \t]/ ? " " : substr(s, i, j - i + 1))
+        i = j + 1
+    }
+    print out
+}
+'
 CODE_LINES=$(printf '%s' "$PROBE_TEXT" | awk -v mode=code "$LEAF_LINES_AWK")
+WIDEN_LINES=$(printf '%s\n' "$CODE_LINES" | awk "$QUOTED_PROSE_AWK")
 WIDEN=0
-if [[ "$CODE_LINES" =~ $INTERPRETER_RE ]]; then
+if [[ "$WIDEN_LINES" =~ $INTERPRETER_RE ]]; then
     WIDEN=1
 fi
 

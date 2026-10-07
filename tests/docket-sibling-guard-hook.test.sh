@@ -762,6 +762,12 @@ case_artifact_heredoc_bodies() {
     assert_verdict "cat > ${OWN_DIR}/probe/tests/cases.sh <<EOF"$'\nrm -rf '"${SIB_DIR}"$'\nEOF' executor-write "$WAVE_42" DENY "own .sh target: unquoted body is still scanned"
     assert_verdict $'/bin/sh <<\'EOF\'\nrm -rf '"${SIB_DIR}"$'\nEOF' executor-write "$WAVE_42" DENY "heredoc fed to /bin/sh (path-prefixed word) is code"
     assert_verdict $'env sh <<\'EOF\'\nrm -rf '"${SIB_DIR}"$'\nEOF' executor-write "$WAVE_42" DENY "heredoc fed through env to sh is code"
+    # An interpreter name inside another leaf's quoted prose argument is not
+    # a command word, so it does not widen the artifact body beside it.
+    local prose_name
+    for prose_name in zsh bash python3; do
+        assert_verdict "cat > ${OWN_DIR}/a.md <<'EOF'"$'\nx `repeat 1 docket step reap STEP-7 --reason x` y\nEOF\n'"printf 'see ${prose_name} here' > ${OWN_DIR}/b.md" executor-read "$WAVE_42" ALLOW "quoted body beside a printf whose prose names ${prose_name}"
+    done
     # The same bodies consumed by an interpreter are code.
     assert_verdict $'sh <<\'EOF\'\nrm -rf '"${SIB_DIR}"$'\nEOF' executor-write "$WAVE_42" DENY "heredoc fed to sh is code"
     assert_verdict $'python3 - <<\'EOF\'\nimport shutil; shutil.rmtree("'"${SIB_DIR}"$'")\nEOF' executor-write "$WAVE_42" DENY "heredoc fed to python is code"

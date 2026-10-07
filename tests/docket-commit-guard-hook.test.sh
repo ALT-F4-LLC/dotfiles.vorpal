@@ -274,6 +274,10 @@ case_must_deny_terminal_position() {
     assert_verdict '(git push)' DENY '(git push) terminal subshell, no trailing content'
     assert_verdict '(git commit)' DENY '(git commit) terminal subshell, no trailing content'
     assert_verdict '{ git push; }' DENY '{ git push; } terminal brace group'
+    # Under bash 5 a coproc body runs in a child whose stdout is the coproc
+    # pipe; the probe writes its frames to a saved fd so they still arrive.
+    assert_verdict 'coproc { git commit -m x; }' DENY 'coproc { git commit -m x; } unnamed coproc body'
+    assert_verdict 'coproc X { git commit -m x; }' DENY 'coproc X { git commit -m x; } named coproc body'
 }
 
 # ---- MUST ALLOW: negative controls for the terminal-position fix ---------

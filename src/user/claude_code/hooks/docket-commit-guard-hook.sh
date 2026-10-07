@@ -499,14 +499,14 @@ function has_brace(word,   stripped) {
 # Bash brace-expands only with a "," or ".." inside the braces. The pre-pass
 # splits a source word at its embedded quotes, so {"commit",} reaches here as
 # several words; the test reads from the brace word to the end of the text.
+# The later lines are read once, in END: sep_after[r] holds whether any line
+# after line r carries a separator, so a call scans only the words of its own
+# line and the pass stays linear in the text.
 function may_brace_expand(from,   k) {
     for (k = from; k <= n; k++) {
         if (index(words[k], ",") > 0 || index(words[k], "..") > 0) return 1
     }
-    for (k = r + 1; k <= NR; k++) {
-        if (index(lines[k], ",") > 0 || index(lines[k], "..") > 0) return 1
-    }
-    return 0
+    return sep_after[r]
 }
 # Every word bash builds from a brace is a subsequence of the source text from
 # the brace onward, so a brace can produce git and a write subcommand only
@@ -545,6 +545,10 @@ function decode(raw,    inner, cpos) {
 }
 { lines[NR] = $0 }
 END {
+    sep_after[NR] = 0
+    for (r = NR - 1; r >= 1; r--) {
+        sep_after[r] = sep_after[r + 1] || index(lines[r + 1], ",") > 0 || index(lines[r + 1], "..") > 0
+    }
     for (r = 1; r <= NR; r++) {
         n = split(lines[r], words, /[ \t]+/)
         truncated = (words[1] == TRUNCATED)

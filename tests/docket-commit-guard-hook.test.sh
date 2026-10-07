@@ -363,6 +363,39 @@ case_brace_word_prose_allows() {
         ALLOW 'widened quoted heredoc body naming git and a brace word with no comma'
 }
 
+# ---- The brace look-ahead is linear in the scanned text ------------------
+#
+# A brace word may expand when a `,` or `..` follows it anywhere later in the
+# scanned text, later lines included. Rescanning every later line for each
+# brace word made a widened heredoc of many `git {` lines quadratic: a body
+# under the input cap kept the hook running for minutes, past the 600 s
+# default hook timeout. The bound here is a tenth of that timeout. The
+# verdict rows pin both separators on a later line, and the ALLOW of a body
+# that has neither.
+
+case_brace_look_ahead_is_linear() {
+    local cmd got start elapsed
+    cmd=$(awk 'BEGIN {
+        print "bash -c :; cat > f <<\047EOF\047"
+        for (i = 0; i < 20000; i++) print "git {"
+        for (i = 0; i < 100000; i++) print ""
+        print "EOF"
+        printf "git commit -m x"
+    }')
+    start=$SECONDS
+    got=$(verdict_of "$(build_input "$cmd")")
+    elapsed=$((SECONDS - start))
+    if [ "$got" = "DENY" ] && [ "$elapsed" -le 60 ]; then
+        pass "20000 widened git { lines before a git commit decide within 60 s (DENY in ${elapsed} s, ${#cmd} bytes)"
+    else
+        fail "20000 widened git { lines before a git commit (want DENY within 60 s, got ${got} in ${elapsed} s)"
+    fi
+    assert_verdict 'git {commit'$'\n''echo a,b' DENY 'brace word with a comma on a later line'
+    assert_verdict 'git {commit'$'\n''echo a..b' DENY 'brace word with a .. on a later line'
+    assert_verdict "bash -c :; cat > f <<'EOF'"$'\n''git {x}'$'\n''git {x}'$'\n''git {x}'$'\nEOF' \
+        ALLOW 'widened quoted heredoc body of git {x} lines with no later , or ..'
+}
+
 # ---- A brace word in command position behind a wrapper or modifier -------
 #
 # A wrapper (env, command, nohup, timeout) runs the word after its own
@@ -927,6 +960,7 @@ case_must_allow_terminal_fix_negative_controls
 case_must_allow_computed_subcommand_residual
 case_brace_split_subcommand_denies
 case_brace_word_prose_allows
+case_brace_look_ahead_is_linear
 case_wrapper_brace_word_denies
 case_wrapper_brace_word_allows
 case_leading_dash_command

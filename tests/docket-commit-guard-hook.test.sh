@@ -466,6 +466,24 @@ case_accepted_false_positive_control() {
     assert_verdict "git commit --help" DENY "git commit --help (accepted FP, subcommand-before-flag NOT exempted)"
 }
 
+# ---- ACCEPTED FALSE DENY: a later separator in a widened heredoc ---------
+# may_brace_expand reads the later lines of the whole scanned text, not only
+# the current leaf. So a widened quoted-heredoc line naming git and a brace
+# word returns DENY when any later line of the same text holds a `,` or a
+# `..`, although the brace on that line cannot expand. The git line alone is
+# ALLOW (see case_brace_word_prose_allows); the later separator line is what
+# turns it to DENY. It is accepted because the rule fails closed: a quoted
+# newline can carry a real brace comma to a later line, and those rows must
+# keep denying. A later narrowing of the look-ahead to the current leaf may
+# turn both rows to ALLOW.
+
+case_accepted_false_deny_later_separator() {
+    assert_verdict "cat > \"\$TMPDIR/f.md\" <<'EOF'"$'\n''run bash later'$'\n''stub git {"ok":false}'$'\n''see a,b'$'\nEOF' \
+        DENY 'widened quoted heredoc with a later , line (accepted false DENY)'
+    assert_verdict "cat > \"\$TMPDIR/f.md\" <<'EOF'"$'\n''run bash later'$'\n''stub git {"ok":false}'$'\n''see a..b'$'\nEOF' \
+        DENY 'widened quoted heredoc with a later .. line (accepted false DENY)'
+}
+
 # ---- MUST NOT CATCH: prose / read-only -----------------------------------
 
 case_must_not_catch_prose_and_reads() {
@@ -966,6 +984,7 @@ case_wrapper_brace_word_allows
 case_leading_dash_command
 case_must_allow_help_exemption
 case_accepted_false_positive_control
+case_accepted_false_deny_later_separator
 case_must_not_catch_prose_and_reads
 case_must_not_catch_substitution_reads
 case_accepted_residual_risks

@@ -167,8 +167,13 @@
 # probe only inside its outer leaf. Stage one asks bash itself which simple
 # commands it would dispatch (a DEBUG trap under `extdebug` and `set -T`
 # that vetoes every leaf), so chains, subshells, substitutions, heredocs
-# and comments are bash's parse and not a re-derivation of it; stage two
-# is the shared quote-group pre-pass (docket-guard-prepass.awk) that tells
+# and comments are bash's parse when deciding which leaves dispatch, and
+# not a re-derivation of it. Stage two, the shared quote-group pre-pass
+# (docket-guard-prepass.awk), applies its own comment rule to every
+# non-heredoc-body line this hook feeds it: a `#` where bash starts a word
+# opens a comment to end of line, and a quote inside it opens no group. A
+# missed or an invented comment there shifts quote parity in either
+# direction; the pre-pass header states the rule. That stage tells
 # a quoted prose span from separately-quoted words and unmarks an
 # interpreter's code argument (`bash -c '...'`) so the words inside it are
 # read as the invocation they are. A word inside a quoted group of two or

@@ -416,10 +416,16 @@ SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v RS='\036' -v widen="$WIDEN" '
 # bypass of this guard rather than prose, and it is no longer an accepted
 # residual in either hook. Double-quoted content that could still trigger
 # command/parameter substitution ($(...), backticks, ${...}) is left
-# unmarked so the matcher inspects it directly. No heredoc, comment, or
-# arithmetic handling here: SCAN_TEXT above is already, by construction,
-# one or more complete simple-command lines with no unresolved separators
-# — there is nothing of that shape left for this pass to get wrong.
+# unmarked so the matcher inspects it directly. SCAN_TEXT above holds the
+# line this hook feeds per leaf: the first line of each leaf, or the whole
+# leaf when it is widened. The shared pre-pass (docket-guard-prepass.awk)
+# applies a comment rule to every line it reads: a `#` where bash starts a
+# word opens a comment to end of line, and a quote inside that comment opens
+# no group. It also tracks arithmetic groups ((( )) and $(( ))), where no
+# comment starts. A misread costs either way: a missed or an invented comment
+# shifts quote parity in either direction, so the rule tracks bash's rather
+# than erring toward either side. docket-guard-prepass.awk states the full
+# rule and its known residuals.
 #
 # The awk PROGRAM itself lives in docket-guard-prepass.awk, shared
 # byte-for-byte with docket-trust-guard-hook.sh: both hooks

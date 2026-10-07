@@ -691,6 +691,16 @@ case_read_loops() {
     assert_deny_reason "for _leaf_reads in '|P1:read d|'; do :; done; ls | while read d; do rm -rf ${SIB_DIR}/\$d; done" executor-write "$WAVE_42" "_leaf_*" "for header presetting the read state"
     assert_deny_reason "ls | { for _leaf_reads in '|P1:read d|'; do :; done; while read d; do pkill node; done; }; echo done" executor-write "$WAVE_42" "_leaf_*" "for header presetting the read state in a pipeline stage"
     assert_deny_reason "select _leaf_reads in x; do break; done; ls | while read d; do pkill node; done" executor-write "$WAVE_42" "_leaf_*" "select header naming the probe state"
+    # Every structural leaf runs with its expansions, so arithmetic in one
+    # could reset the probe's own state; any structural leaf naming a
+    # `_leaf_*` variable is refused, ahead of the read-value refusal.
+    assert_deny_reason 'while :; do : $((_leaf_n=0)); done' executor-write "$WAVE_42" "_leaf_*" ": leaf resetting the probe counter"
+    assert_deny_reason 'while :; do true $((_leaf_n=0)); done' executor-write "$WAVE_42" "_leaf_*" "true leaf resetting the probe counter"
+    assert_deny_reason 'while [[ $((_leaf_n=0)) -eq 0 ]]; do :; done' executor-write "$WAVE_42" "_leaf_*" "[[ condition resetting the probe counter"
+    assert_deny_reason ": \$((_leaf_reads=0)); ls | while read d; do rm -rf ${SIB_DIR}/\$d; done" executor-write "$WAVE_42" "_leaf_*" ": leaf overwriting the read state"
+    assert_deny_reason '[ $((_leaf_reads=0)) -eq 0 ]; ls | while read d; do pkill node; done' executor-write "$WAVE_42" "_leaf_*" "[ leaf overwriting the read state"
+    assert_deny_reason 'while :; do case $((_leaf_n=0)) in *) :;; esac; done' executor-write "$WAVE_42" "_leaf_*" "case header resetting the probe counter"
+    assert_deny_reason "ls | while read d; do : \$((_leaf_n=0)); rm -rf ${SIB_DIR}/\$d; done" executor-write "$WAVE_42" "_leaf_*" "probe-state refusal precedes the read-value refusal"
     # A marked read site runs only when another leaf fired since the last
     # read, so a lone read directly before a same-text loop does not let
     # the loop skip its body, at top level or in a pipeline stage.

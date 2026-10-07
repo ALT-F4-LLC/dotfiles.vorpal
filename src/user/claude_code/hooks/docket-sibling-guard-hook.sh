@@ -211,8 +211,11 @@
 #     `for d in <TMP>/STEP-7.d; do rm -rf $d; done` names the dir only there,
 #     and `eval "$(printf 'rm -rf ...')"` runs a string every other pass reads
 #     as prose — `eval` is on the interpreter list for the same reason. A
-#     `for` or `select` header that names a `_leaf_*` variable DENIES: it
-#     would write the probe's own state, which no assignment leaf may.
+#     structural leaf (one of these headers, or a `:`, `true`, `[` or `[[`
+#     that runs with its expansions) that names a `_leaf_*` variable DENIES:
+#     a loop variable or an arithmetic assignment (`: $((_leaf_n=0))`) would
+#     write the probe's own state, which no assignment leaf may. The refusal
+#     comes before the read-value refusal below.
 #   - `break` and `continue` RUN, so loops end where the real command's
 #     would (a `break` also sends every pending `read` site back for one
 #     more walk, below); `exit` and `return` stay vetoed so the caller
@@ -590,8 +593,8 @@ fi
 # the coproc pipe, and they would be lost there. bash's stderr is merged into
 # the same capture and recovered from between the frames. The probe refuses
 # with four exit codes: 113 the cap, 114 a redirection on a structural
-# builtin, 115 a branch on an unread value, 116 probe state in a loop
-# header. Each reaches the hook through the stderr marker printed before
+# builtin, 115 a branch on an unread value, 116 probe state in a
+# structural leaf. Each reaches the hook through the stderr marker printed before
 # the exit, since an exit inside a pipeline stage (`ls | { ...; }; echo
 # done`) ends only that stage and never reaches the probe exit status. The
 # cap alone still ends every shell: its count is the token pipe on fd 7,
@@ -670,9 +673,9 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
                         printf "%s\n" "_guard_probe: structural redirect" >&8
                         exit 114 ;;
                 esac
-                case "$_leaf_head:$BASH_COMMAND" in
-                    for:*_leaf_* | select:*_leaf_*)
-                        printf "%s\n" "_guard_probe: probe state in a loop header" >&8
+                case "$BASH_COMMAND" in
+                    *_leaf_*)
+                        printf "%s\n" "_guard_probe: probe state in a structural leaf" >&8
                         exit 116 ;;
                 esac
                 if [ "$_leaf_reads" != "|" ]; then
@@ -691,6 +694,13 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
                     *[\<\>]*)
                         printf "%s\n" "_guard_probe: structural redirect" >&8
                         exit 114 ;;
+                esac
+                # This leaf runs with its expansions, so arithmetic in it
+                # (`: $((_leaf_n=0))`) would write the probe state.
+                case "$BASH_COMMAND" in
+                    *_leaf_*)
+                        printf "%s\n" "_guard_probe: probe state in a structural leaf" >&8
+                        exit 116 ;;
                 esac
                 # An arithmetic `[[` comparison reads a bare name as a
                 # variable (`[[ n -ne 0 ]]`), so it expands a value with no $.
@@ -797,9 +807,9 @@ case "$PROBE_RC:$PROBE_ERR" in
     *"readonly function"*)
         log_decision "deny" "probe-tamper"
         deny "$REASON_PREFIX this command redefines the sibling-guard hook's own probe handler (\`_guard_probe\`). No executor command needs a function by that name; rename it." ;;
-    *"_guard_probe: probe state in a loop header"*)
+    *"_guard_probe: probe state in a structural leaf"*)
         log_decision "deny" "probe-tamper"
-        deny "$REASON_PREFIX this command names a \`_leaf_*\` variable in a \`for\` or \`select\` header. The sibling-guard hook keeps its own analysis state under that prefix, so it cannot check the command; rename the variable." ;;
+        deny "$REASON_PREFIX this command names a \`_leaf_*\` variable in a command the hook runs while checking it (a \`:\`, \`true\`, \`[\` or \`[[\` command, or a \`for\`, \`select\`, \`case\` or \`eval\` header). The sibling-guard hook keeps its own analysis state under that prefix, so it cannot check the command; rename the variable." ;;
     *"_guard_probe: branch on an unread value"*)
         log_decision "deny" "read-value-branch"
         deny "$REASON_PREFIX this command branches on a variable after a \`read\` in it (a \`[ ... ]\`, \`[[ ... ]]\`, \`case\`, \`for ... in\`, \`for ((...))\`, \`:\` or \`eval\` that expands a value, or a \`continue\`). The sibling-guard hook feeds a read no input, so it cannot tell which commands the loop would run. An earlier lone \`read\` anywhere in the same Bash call counts too, and refuses every later test on a variable, the counted wait loop \`until [ -s f ] || [ \$n -ge N ]\` included: run that read in its own Bash call. Otherwise filter the input before the loop instead (\`cmd | grep -v '^\$' | while IFS= read -r x; do ...; done\`), or split it into smaller Bash calls." ;;

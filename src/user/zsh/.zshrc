@@ -1,5 +1,7 @@
 # START MIGRATION: Needs to be moved to Vorpal
 
+# Zsh saves no history unless HISTFILE is set
+export HISTFILE="${ZDOTDIR:-$HOME}/.zsh_history"
 export HISTSIZE=100000
 # Maximum lines saved to $HISTFILE
 export SAVEHIST=100000

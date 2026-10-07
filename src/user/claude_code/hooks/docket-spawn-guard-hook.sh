@@ -10,7 +10,8 @@
 # This file contains no policy, no branching on run content, and no state
 # (AC-4.1). The tribunal path below decides nothing either — it reads one id
 # out of the harness's tool_input and hands it, with the run the engine itself
-# named, back to the engine, which owns the verdict. Behavior is pinned by
+# named, back to the engine, which owns the verdict. The launch-cwd check below
+# is input validation on a hand-typed argument, not run policy. Behavior is pinned by
 # tests/docket-spawn-guard-hook.test.sh.
 #
 # Exit 0 allow / exit 2 deny with the engine's reason on stderr (engine-spec §2).
@@ -96,6 +97,55 @@ if [ -n "$HOOK_INPUT" ] && command -v jq >/dev/null 2>&1; then
             | .voteId // ""' 2>/dev/null)
         [[ "$VOTE_ID" =~ ^[A-Z]{1,8}-V[0-9]+$ ]] && DECIDING_VOTE="$VOTE_ID"
     fi
+fi
+
+# A LAUNCH CWD THAT IS NOT THE CHECKOUT'S ROOT IS REFUSED HERE, BEFORE ANY AGENT.
+#
+# The conductor hand-types args.cwd, and a typo (`ALT-F-LLC` for `ALT-F4-LLC`)
+# died late: wave.js's first claim agent failed on `mkdir`, leaving an open
+# dispatch to reconcile and a step whose claim state was unknown. Workflow
+# scripts cannot stat a path, so the check lives in this hook. It is input
+# validation on one hand-typed argument, not run policy: it reads no run state
+# and asks the engine nothing.
+#
+# args.cwd must be an existing directory equal to the git toplevel of the
+# session's working directory (the payload's `cwd`, else this process's), which
+# the docket-run skill requires it to be. The toplevel is found by walking up to
+# the nearest `.git` entry (`-e`: in a worktree it is a file) with builtins
+# only, so the check adds no PATH dependency. Trailing slashes are stripped
+# before comparing. A launch with no args.cwd is not this check's business and
+# falls through unchanged.
+if [ -n "$HOOK_INPUT" ] && command -v jq >/dev/null 2>&1; then
+    case "$SCRIPT" in
+    wave.js)
+        LAUNCH_CWD=$(printf '%s' "$HOOK_INPUT" | jq -r '
+            .tool_input.args
+            | if type == "string" then (try fromjson catch {}) else (. // {}) end
+            | .cwd // "" | strings' 2>/dev/null)
+        if [ -n "$LAUNCH_CWD" ]; then
+            if [ ! -d "$LAUNCH_CWD" ]; then
+                printf 'spawn-guard: %s args.cwd is not an existing directory: %s\n' \
+                    "$SCRIPT" "$LAUNCH_CWD" >&2
+                exit 2
+            fi
+            SESSION_CWD=$(printf '%s' "$HOOK_INPUT" | jq -r '.cwd // "" | strings' 2>/dev/null)
+            [ -n "$SESSION_CWD" ] || SESSION_CWD="$PWD"
+            TOPLEVEL="$SESSION_CWD"
+            while [ -n "$TOPLEVEL" ] && [ ! -e "${TOPLEVEL}/.git" ]; do
+                TOPLEVEL="${TOPLEVEL%/*}"
+            done
+            [ -n "$TOPLEVEL" ] || TOPLEVEL="$SESSION_CWD"
+            WANT="$TOPLEVEL" GOT="$LAUNCH_CWD"
+            while [ "${#WANT}" -gt 1 ] && [ "${WANT%/}" != "$WANT" ]; do WANT="${WANT%/}"; done
+            while [ "${#GOT}" -gt 1 ] && [ "${GOT%/}" != "$GOT" ]; do GOT="${GOT%/}"; done
+            if [ "$GOT" != "$WANT" ]; then
+                printf 'spawn-guard: %s args.cwd is not the git toplevel of the checkout: %s (expected %s)\n' \
+                    "$SCRIPT" "$LAUNCH_CWD" "$TOPLEVEL" >&2
+                exit 2
+            fi
+        fi
+        ;;
+    esac
 fi
 
 command -v docket >/dev/null 2>&1 || exit 0

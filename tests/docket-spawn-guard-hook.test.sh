@@ -223,6 +223,16 @@ workflow_payload_stringified_args() {
           args:({voteId:$v} | tojson)}}'
 }
 
+# A launch carrying args.cwd, from a session whose working directory (the
+# payload's top-level `cwd`, which the harness sends with every hook input) is
+# the repo root. $3 = "string" emits args as a JSON string, the shape the
+# harness actually sends.
+workflow_payload_cwd() {
+    jq -nc --arg p "$1" --arg c "$2" --arg shape "${3:-object}" --arg s "$REPO_ROOT" \
+        '{tool_name:"Workflow", cwd:$s, tool_input:{scriptPath:$p,
+          args:({cwd:$c} | if $shape == "string" then tojson else . end)}}'
+}
+
 asked() { # the argv of the last `docket` call the hook made, or empty
     [ -f "$MARKER" ] && tail -n 1 "$MARKER" || printf ''
 }
@@ -441,6 +451,66 @@ case_empty_stdin_still_guards() {
     run_case "empty stdin — nothing to forward, guard still decides" DENY ''
 }
 
+# ---- A launch cwd that is not the checkout's root is refused before spawn ----
+# A hand-typed cwd that misses the checkout died late, at wave.js's first claim
+# agent, leaving an open dispatch behind. The hook refuses it first: no engine
+# call, exit 2, the bad path verbatim on stderr.
+# The reason is asserted too: a nonexistent path can never equal the toplevel,
+# so without it the existence check would be invisible to every row.
+expect_cwd_refused() {
+    local label="$1" bad="$2" reason="$3" payload="$4"
+    one_held_run
+    run_case "$label" DENY "$payload"
+    if grep -qF -- "$bad" "$STDERR_FILE"; then
+        pass "  ...naming the path verbatim"
+    else
+        fail "  ...stderr did not name ${bad} (stderr: $(tr '\n' ' ' <"$STDERR_FILE"))"
+    fi
+    if grep -qF -- "$reason" "$STDERR_FILE"; then
+        pass "  ...because it is ${reason}"
+    else
+        fail "  ...stderr did not say '${reason}' (stderr: $(tr '\n' ' ' <"$STDERR_FILE"))"
+    fi
+    if [ -f "$MARKER" ]; then
+        fail "  ...but the engine was consulted (asked: $(asked_all | tr '\n' ';'))"
+    else
+        pass "  ...before the engine was consulted"
+    fi
+}
+
+# Under the held run the existing verdict is the engine's DENY, so the row can
+# only pass if the hook let the launch through to the engine.
+expect_cwd_passes_through() {
+    local label="$1" payload="$2"
+    one_held_run
+    run_case "$label" DENY "$payload"
+    expect_argv "  ...the engine's verdict, asked the ordinary way" "guard spawn --active"
+}
+
+case_wave_cwd_missing_refused() {
+    local bad="${REPO_ROOT}-no-such-checkout"
+    expect_cwd_refused "wave.js with a nonexistent cwd (a sibling of the repo root)" "$bad" \
+        "not an existing directory" \
+        "$(workflow_payload_cwd "$HOME/.claude/workflows/wave.js" "$bad")"
+}
+
+case_wave_cwd_subdirectory_refused() {
+    local bad="${REPO_ROOT}/tests"
+    expect_cwd_refused "wave.js with a cwd that is a subdirectory of the repo" "$bad" \
+        "not the git toplevel" \
+        "$(workflow_payload_cwd "$HOME/.claude/workflows/wave.js" "$bad")"
+}
+
+case_wave_cwd_toplevel_passes() {
+    expect_cwd_passes_through "wave.js with cwd equal to the repo root" \
+        "$(workflow_payload_cwd "$HOME/.claude/workflows/wave.js" "$REPO_ROOT")"
+}
+
+case_wave_cwd_toplevel_trailing_slash_passes() {
+    expect_cwd_passes_through "wave.js with cwd equal to the repo root plus a trailing slash" \
+        "$(workflow_payload_cwd "$HOME/.claude/workflows/wave.js" "${REPO_ROOT}/")"
+}
+
 case_two_active_runs_older_holds
 case_never_resolves_a_run
 case_tribunal_installed_path_forwards
@@ -460,6 +530,10 @@ case_no_active_run_allows
 case_missing_docket_allows
 case_missing_jq_still_guards
 case_empty_stdin_still_guards
+case_wave_cwd_missing_refused
+case_wave_cwd_subdirectory_refused
+case_wave_cwd_toplevel_passes
+case_wave_cwd_toplevel_trailing_slash_passes
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

@@ -881,6 +881,12 @@ case_verb_spellings() {
     assert_verdict "nocorrect noglob pkill node" executor-write "$WAVE_42" DENY "stacked zsh modifiers"
     assert_verdict "echo \$(noglob pkill node)" executor-write "$WAVE_42" DENY "zsh noglob prefix inside a \$( )"
     assert_verdict "noglob ls" executor-write "$WAVE_42" ALLOW "zsh noglob wrapping a read stays a read"
+    # zsh `=cmd` equals expansion, which bash reads as a literal name.
+    assert_verdict "=pkill node" executor-write "$WAVE_42" DENY "zsh =cmd expansion of pkill"
+    assert_verdict "noglob =pkill node" executor-write "$WAVE_42" DENY "zsh =cmd expansion after noglob"
+    assert_verdict "=git worktree prune" executor-write "$WAVE_42" DENY "zsh =cmd expansion of git"
+    assert_verdict "=ls" executor-write "$WAVE_42" ALLOW "zsh =cmd expansion of a read stays a read"
+    assert_verdict "x=pkill; echo ok" executor-write "$WAVE_42" ALLOW "assignment whose value names pkill"
     assert_verdict "/usr/bin/env pkill node" executor-write "$WAVE_42" DENY "env by absolute path"
     assert_verdict "\\pkill node" executor-write "$WAVE_42" DENY "backslash-escaped verb"
     assert_verdict "pk\\ill node" executor-write "$WAVE_42" DENY "backslash inside the verb"

@@ -1024,11 +1024,12 @@ function decode(raw,    inner, cpos) {
     return 0
 }
 # The command name a word would resolve to: a delimiter or subshell glued
-# onto its front is stripped (`;rm`, `(rm`, `$(rm`), then the directory,
-# then case.
+# onto its front is stripped (`;rm`, `(rm`, `$(rm`), then a leading `=`
+# (zsh expands `=rm` to the path of rm), then the directory, then case.
 function head_of(w,   h) {
     h = w
     sub(/^.*(\$\(|\140|\(|;|\||&)/, "", h)
+    sub(/^=+/, "", h)
     sub(/^.*\//, "", h)
     return tolower(h)
 }

@@ -223,10 +223,15 @@ mkdir -p "$C/repo/.claude/docket-packets"
 printf 'old\n' >"$C/repo/.claude/docket-packets/STEP-1.a1.js"
 touch -t 202001010000 "$C/repo/.claude/docket-packets/STEP-1.a1.js"
 printf 'fresh\n' >"$C/repo/.claude/docket-packets/STEP-2.a1.js"
+printf 'old\n' >"$C/repo/.claude/docket-packets/rows-0ld.js"
+touch -t 202001010000 "$C/repo/.claude/docket-packets/rows-0ld.js"
+printf 'fresh\n' >"$C/repo/.claude/docket-packets/rows-fre5h.js"
 set_args
 run_claim sweep success "${ARGS[@]}"
 [ ! -e "$C/repo/.claude/docket-packets/STEP-1.a1.js" ] && [ -e "$C/repo/.claude/docket-packets/STEP-2.a1.js" ]
 check $? "modules older than a day are swept; a fresh sibling module stays"
+[ ! -e "$C/repo/.claude/docket-packets/rows-0ld.js" ] && [ -e "$C/repo/.claude/docket-packets/rows-fre5h.js" ]
+check $? "launch rows modules older than a day are swept; a fresh one stays"
 
 # ---- usage refusals never reach the engine ---------------------------------------
 usage_case() { # <label> <args...>

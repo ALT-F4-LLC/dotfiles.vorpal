@@ -127,7 +127,7 @@ sha256() {
 
 mkdir -p "$pkdir"
 [ -f "$pkdir/.gitignore" ] || printf '*\n' >"$pkdir/.gitignore"
-find "$pkdir" -maxdepth 1 -type f -name 'STEP-*.js' -mmin +1440 -exec rm -f {} + 2>/dev/null || :
+find "$pkdir" -maxdepth 1 -type f \( -name 'STEP-*.js' -o -name 'rows-*.js' \) -mmin +1440 -exec rm -f {} + 2>/dev/null || :
 
 # The claim lands in a private work dir first. The step dir and the module
 # are replaced only once this run holds the lease: a refused claim means

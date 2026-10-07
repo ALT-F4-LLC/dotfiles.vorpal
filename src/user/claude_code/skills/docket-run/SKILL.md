@@ -194,6 +194,7 @@ docket vote create -d "<the decision, stated plainly>" -r "<evidence summary>" -
 docket vote link <proposal-id> --issue <ID>
 docket events list --run $RUN --tail <N> --json=v2 | jq '.data.items'
 docket step reap STEP-N --reason "<what you observed>" < <scratchpad>/conductor.d/$RUN.token
+docket events list --run $RUN --kind lease-reaped --json=v2 | jq -c '.data.items[] | {seq, step_id, forced: .data.forced}'
 docket dispatch open --run $RUN --limit 240 --ack-reap <seq>
 docket guard spawn --run $RUN --ack-reap <seq>
 docket step approve STEP-N --authority operator --note "<their words>" < <scratchpad>/conductor.d/$RUN.token
@@ -231,7 +232,7 @@ bound to a conductor capability and … requires it") is your own omission:
 nothing was redirected, or the file is empty. `AUTH_ERROR` (exit 5, "the
 supplied token is not RUN-N's conductor capability") means the seat was
 taken: another session ran `run conduct` and retired your token. Stop
-there. `docket events list --run $RUN --json=v2` carries the
+there. `docket events list --run $RUN --kind conductor-seated --json=v2` carries the
 `conductor-seated` event with the taker's `actor` and `cwd`; put that to
 the operator through the question tool, and re-conduct only on their
 word. The mechanism is tamper-evident, not tamper-proof:
@@ -619,7 +620,7 @@ lists it by id, `promoted_issues[]` names what activation promotes, and
 `issues_bound` counts them. After activation, `docket next --run $RUN
 --json=v2` reports what is ready (pass no `--limit`, per **1. Ask what is
 ready** below); disagreement with what you presented is a stop-and-report.
-Also check `events list --run $RUN` for `issue-promoted`, since activation
+Also check `events list --run $RUN --kind issue-promoted`, since activation
 can promote a fix-issue at the last instant and its steps can surface
 first in `dispatch open` rather than `next`.
 
@@ -1565,7 +1566,14 @@ returned RECORD BLOCKED or died in front of you, `step show` still reads
 claimed). Then reap. Then open the ack-reap proposal keyed
 `reap-ack:<run>:<seq>` on that reap's `lease-reaped` seq, carrying the
 holder evidence verbatim in its rationale and context. Only then convene
-the panel. On an approved tally:
+the panel. Read the seq by kind, since an unfiltered read returns only the
+run's oldest 100 events and misses a late reap:
+
+```bash
+docket events list --run $RUN --kind lease-reaped --json=v2 | jq -c '.data.items[] | {seq, step_id, forced: .data.forced}'
+```
+
+On an approved tally:
 
 ```bash
 docket dispatch open --run $RUN --limit 240 --ack-reap <seq>
@@ -1948,7 +1956,7 @@ applying it. Nothing else widens: an unmatched signature, an
 `unmatched` or `skipped` row, or a security gate stays on the ordinary
 path. Report
 every grant (id from the `gate-override-granted` event's `detail`,
-`GATE#ID`, in `docket events list --run RUN-N --json --all-projects`;
+`GATE#ID`, in `docket events list --run RUN-N --kind gate-override-granted --json --all-projects`;
 signature; first reproduction; reach) and, in later reports, the count of
 `step-batch-overridden` events against it: the engine offers no verb to
 list or revoke a grant, so this report is the operator's only view of it.

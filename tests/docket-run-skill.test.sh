@@ -1174,6 +1174,71 @@ else
     bad "loop-extension CONFLICT: no single paragraph carries '${loopext_anchor}'"
 fi
 
+# (t) Event-log predicate lookups filter by kind. An unfiltered `docket events
+# list --run` returns only the run's oldest 100 events, so on a long run a
+# lookup for a late event comes back empty without saying so. The verbs
+# checkpoint carries the lease-reaped seq lookup in the form the --ack-reap
+# paragraph teaches, and every events-list invocation in the file carries
+# --tail, --kind or --step.
+#
+#   t1 delete the lease-reaped line from the verbs heredoc
+#   t2 drop `--kind lease-reaped` from the heredoc line only
+#   t3 revert the conductor-seated read to `docket events list --run $RUN
+#      --json=v2`
+#   t4 drop `--kind issue-promoted` from the post-activation check
+#   t5 drop `--kind gate-override-granted` from the grant report
+reaped_lookup='docket events list --run $RUN --kind lease-reaped --json=v2'
+awk '
+    index($0, "cat > <scratchpad>/conductor.d/$RUN.verbs <<'"'"'EOF'"'"'") { on = 1; next }
+    on && $0 == "EOF" { on = 0; next }
+    on { print }
+' "$SKILL" > "${WORK}/verbs-heredoc"
+grep -F -- "$reaped_lookup" "${WORK}/verbs-heredoc" > "${WORK}/verbs-reaped"
+if [ "$(wc -l < "${WORK}/verbs-reaped")" -eq 1 ]; then
+    ok "events by kind: the verbs checkpoint carries the lease-reaped seq lookup"
+    reaped_line=$(cat "${WORK}/verbs-reaped")
+    taught=$(awk '
+        index($0, "cat > <scratchpad>/conductor.d/$RUN.verbs <<'"'"'EOF'"'"'") { on = 1; next }
+        on && $0 == "EOF" { on = 0; next }
+        !on { print }
+    ' "$SKILL" | grep -cxF -- "$reaped_line")
+    if [ "$taught" -ge 1 ]; then
+        ok "events by kind: the checkpoint's lease-reaped line matches the form the body teaches"
+    else
+        bad "events by kind: the checkpoint's lease-reaped line is taught nowhere outside the heredoc: ${reaped_line}"
+    fi
+else
+    bad "events by kind: the verbs checkpoint does not carry exactly one '${reaped_lookup}' line"
+fi
+seated_anchor='**Two refusals, and what each means.**'
+if paragraph "$seated_anchor" "${WORK}/seated"; then
+    states "events by kind: the conductor-seated read filters by kind" \
+        "${WORK}/seated" 'docket events list --run $RUN --kind conductor-seated --json=v2'
+else
+    bad "events by kind: no single paragraph carries '${seated_anchor}'"
+fi
+roster_anchor='**Read the roster straight out of the dry-run JSON.**'
+if paragraph "$roster_anchor" "${WORK}/roster"; then
+    states "events by kind: the post-activation issue-promoted check filters by kind" \
+        "${WORK}/roster" 'events list --run $RUN --kind issue-promoted'
+else
+    bad "events by kind: no single paragraph carries '${roster_anchor}'"
+fi
+grant_anchor='the engine offers no verb to list or revoke a grant'
+if paragraph "$grant_anchor" "${WORK}/grant"; then
+    states "events by kind: the grant report reads gate-override-granted by kind" \
+        "${WORK}/grant" 'docket events list --run RUN-N --kind gate-override-granted --json --all-projects'
+else
+    bad "events by kind: no single paragraph carries '${grant_anchor}'"
+fi
+grep -oE '(docket events list|events list --run)[^`|]*' "${WORK}/flat" \
+    | grep -vE -- '--(tail|kind|step) ' > "${WORK}/events-unfiltered"
+if [ -s "${WORK}/events-unfiltered" ]; then
+    bad "events by kind: an events-list invocation carries none of --tail, --kind, --step: $(head -1 "${WORK}/events-unfiltered")"
+else
+    ok "events by kind: every events-list invocation carries --tail, --kind or --step"
+fi
+
 if [ "$fail" -ne 0 ]; then
     echo "docket-run-skill: FAIL — a sandbox lift without its precondition is the failure this pins; fix the skill, not the test." >&2
     exit 1

@@ -489,9 +489,9 @@ ${isWrite ? `
    - ARTIFACT, MANDATORY on every record: a FRESH file whose name starts
      with your step id, ${dir}/${row.step}-<kind>.md.
      <kind> is the artifact KIND your packet's OUTPUT section names; there
-     is no \`--artifact-kind\`.${isWrite ? `
+     is no \`--artifact-kind\`.
      You may create it with the Write tool at its physical path,
-     ${claim.dirPhysical}/${row.step}-<kind>.md, which is the same file.` : ''}
+     ${claim.dirPhysical}/${row.step}-<kind>.md, which is the same file.
      With Bash, build it in chunks of a few KB, ONE heredoc per Bash call:
      an initial \`cat > ${dir}/${row.step}-<kind>.md <<'EOF'\`, then
      \`cat >> ${dir}/${row.step}-<kind>.md <<'EOF'\` appends.

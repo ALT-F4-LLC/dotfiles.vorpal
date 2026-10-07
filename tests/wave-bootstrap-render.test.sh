@@ -219,9 +219,10 @@ for (const isolated of [true, false]) {
 
         // ---- the artifact channel: Write at the physical path, chunked Bash ----
         // The harness worktree guard refuses one large heredoc, so every brief
-        // offers a chunked Bash form; a writer's archetype has the Write tool,
-        // which lands at the claim's physical step dir, not at its TMPDIR
-        // spelling.
+        // offers a chunked Bash form; both archetypes hold the Write tool
+        // (executor-read's confined by the sensitive-path guard to its own
+        // step dir), which lands at the claim's physical step dir, not at its
+        // TMPDIR spelling.
         const aStart = head.indexOf('   - ARTIFACT, MANDATORY')
         const aEnd = head.indexOf('\n   - ', aStart + 1)
         const bullet = aStart >= 0 && aEnd > aStart ? head.slice(aStart, aEnd).replace(/\s+/g, ' ') : ''
@@ -230,12 +231,10 @@ for (const isolated of [true, false]) {
         const sStart = w >= 0 ? bullet.lastIndexOf('. ', w) + 2 : -1
         const sEnd = w >= 0 ? bullet.indexOf('. ', w) : -1
         const writeSentence = w >= 0 ? bullet.slice(sStart, sEnd < 0 ? bullet.length : sEnd + 1) : ''
-        if (isWrite) {
-            ok(writeSentence.includes(`${PHYS}/STEP-4381-<kind>.md`) && !writeSentence.includes(DIR),
-                `${label}: the ARTIFACT bullet permits Write at the claim's physical step dir, not its dir (got ${JSON.stringify(writeSentence)})`)
-        } else {
-            ok(w < 0, `${label}: the ARTIFACT bullet does not offer the Write tool`)
-        }
+        ok(writeSentence.includes(`${PHYS}/STEP-4381-<kind>.md`),
+            `${label}: the ARTIFACT bullet permits Write at the claim's physical step dir (got ${JSON.stringify(writeSentence)})`)
+        ok(writeSentence !== '' && !writeSentence.includes(DIR),
+            `${label}: the ARTIFACT bullet's Write sentence never names the claim's unresolved dir (got ${JSON.stringify(writeSentence)})`)
         const first = /cat > (\S+) <<'EOF'/.exec(bullet)
         const append = /cat >> (\S+) <<'EOF'/.exec(bullet)
         ok(first && append && first[1] === append[1] && first.index < append.index &&

@@ -219,7 +219,9 @@
 #     that runs with its expansions) that names a `_leaf_*` variable DENIES:
 #     a loop variable or an arithmetic assignment (`: $((_leaf_n=0))`) would
 #     write the probe's own state, which no assignment leaf may. The refusal
-#     comes before the read-value refusal below.
+#     comes before the read-value refusal below. An arithmetic `for ((...))`
+#     header is refused on the command text before the walk (ARITH_FOR_RE):
+#     its parts are vetoed leaves, so the loop would end before its body.
 #   - `break` and `continue` RUN, so loops end where the real command's
 #     would (a `break` also sends every pending `read` site back for one
 #     more walk, below); `exit` and `return` stay vetoed so the caller
@@ -592,6 +594,18 @@ fi
 if ! printf '%s' "$COMMAND" | bash -n >/dev/null 2>&1; then
     log_decision "deny" "unparseable"
     deny "$REASON_PREFIX the sibling-guard hook could not parse this command to check it (bash reported a syntax error while analyzing it) and refuses rather than guessing. Fix the command's syntax; if it is not actually invalid, that is a hook defect to report separately."
+fi
+
+# An arithmetic `for ((...))` header reaches the probe as `((...))` leaves,
+# which are vetoed, so the loop ends before its body fires and a sibling
+# target in the body is never matched; bash renders those leaves exactly as
+# a standalone `((...))` command, so the probe cannot tell them apart. Every
+# such header is refused on the command text instead. The match is textual
+# and over-reaches into quoted prose.
+ARITH_FOR_RE='(^|[^A-Za-z0-9_])for[[:space:]]*\(\('
+if [[ "$COMMAND" =~ $ARITH_FOR_RE ]]; then
+    log_decision "deny" "arithmetic-for"
+    deny "$REASON_PREFIX this command has an arithmetic \`for ((...))\` loop, whose body the sibling-guard hook cannot walk, so it cannot be checked. Loop over a literal list instead, in the \`for x in\` shape (\`for i in 0 1 2; do ...; done\`), which the hook walks; if the text is prose in a quoted string, reword it."
 fi
 
 # --- Leaf enumeration: ask bash, don't re-derive it. ---------------------

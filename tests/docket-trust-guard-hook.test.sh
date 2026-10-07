@@ -314,6 +314,42 @@ case_command_position_brace_denies() {
         "no agent_type (main conversation): command-position brace word"
 }
 
+# zsh, the Bash tool's shell here, runs `noglob`, `nocorrect`, `-` and
+# `repeat N` as precommand modifiers and still brace-expands the word after
+# them, so that word keeps command position. The plain spellings deny through
+# the docket head check, which runs at every word.
+case_zsh_modifier_brace_denies() {
+    assert_verdict "noglob {docket,trust} add erik key" executor-write DENY \
+        "brace word after the zsh modifier noglob"
+    assert_verdict "nocorrect {docket,trust} add erik key" executor-write DENY \
+        "brace word after the zsh modifier nocorrect"
+    assert_verdict "- {docket,trust} add erik key" executor-write DENY \
+        "brace word after the zsh modifier -"
+    assert_verdict "repeat 1 {docket,trust} add erik key" executor-write DENY \
+        "brace word after a zsh repeat count"
+    assert_verdict "noglob docket trust add erik key" executor-write DENY \
+        "plain spelling after noglob"
+    assert_verdict "nocorrect docket trust rm erik key" executor-write DENY \
+        "plain spelling after nocorrect"
+    assert_verdict "- docket trust add erik key" executor-write DENY \
+        "plain spelling after the zsh modifier -"
+    assert_verdict "repeat 1 docket trust add erik key" executor-write DENY \
+        "plain spelling after a zsh repeat count"
+    # Accepted false DENY: the pre-pass may split a repeat count into several
+    # words, so every later word of the leaf is read as command position.
+    assert_verdict "repeat 2 echo {docket,trust} add" executor-write DENY \
+        "accepted false DENY: brace argument after a repeat count"
+}
+
+case_zsh_modifier_brace_allows() {
+    assert_verdict "noglob echo {docket,trust} add" executor-write ALLOW \
+        "brace word as an argument behind noglob"
+    assert_verdict "noglob ls" executor-write ALLOW \
+        "noglob in front of a non-docket command"
+    assert_verdict "repeat 2 echo hi && echo {docket,trust} add" executor-write ALLOW \
+        "a standalone operator ends the repeat command"
+}
+
 case_command_position_brace_allows() {
     assert_verdict "'{docket,trust}' add erik key" executor-write ALLOW \
         "quoted command-position brace word: bash does not expand it"
@@ -1133,6 +1169,8 @@ case_must_deny_separately_quoted_tokens
 case_brace_split_verb_denies
 case_command_position_brace_denies
 case_command_position_brace_allows
+case_zsh_modifier_brace_denies
+case_zsh_modifier_brace_allows
 case_unexpandable_brace_prose_allows
 case_quoted_brace_interpreter_stdin_residual
 case_interpreter_code_argument_deny

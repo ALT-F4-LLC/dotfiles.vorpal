@@ -297,7 +297,7 @@ if ! printf '%s' "$COMMAND" | bash -n >/dev/null 2>&1; then
     deny "$REASON_PREFIX the trust-guard hook could not parse this command to check it (bash reported a syntax error while analyzing it) and refuses rather than guessing. Fix the command's syntax; if it is not actually invalid, that is a hook defect to report separately."
 fi
 
-# `eval "$COMMAND"` is how the untrusted text reaches bash as SOURCE rather
+# `eval -- "$COMMAND"` is how the untrusted text reaches bash as SOURCE rather
 # than as a re-quoted argument: COMMAND travels on stdin, never through
 # string interpolation into this script's own source, so nothing about the
 # outer invocation's quoting can be confused by what the inner text
@@ -332,7 +332,7 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
         fi
         # The first firing is this probe own eval line, not a leaf of the
         # command; recording it would put an interpreter word in every walk.
-        if [ "$_leaf_n" -eq 1 ] && [ "$BASH_COMMAND" = "eval \"\$COMMAND\"" ]; then
+        if [ "$_leaf_n" -eq 1 ] && [ "$BASH_COMMAND" = "eval -- \"\$COMMAND\"" ]; then
             return 0
         fi
         local head="${BASH_COMMAND%%[ $'"'"'\t\n'"'"']*}"
@@ -370,7 +370,7 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
     exec 8>&1 9>/dev/null
     set -r
     trap _guard_probe DEBUG
-    eval "$COMMAND"
+    eval -- "$COMMAND"
 ' 2>&1)
 PROBE_RC=$?
 
@@ -629,8 +629,12 @@ STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk -f "$PREPASS_AWK" 2>/dev/null) || allo
 # The same DENY covers the `docket` word itself: an unquoted brace word in
 # command position (`{docket,trust} add erik key`) can expand into the whole
 # invocation, so it denies when it may expand and the letters of docket follow
-# it in order. A brace word in argument position stays allowed, which leaves
-# `env {docket,trust} ...` behind a wrapper as a known residual.
+# it in order. The zsh precommand modifiers `noglob`, `nocorrect` and `-`
+# keep command position for the next word (zsh still brace-expands behind
+# them), and after `repeat` every later word of the leaf is checked, because
+# the pre-pass may split its count into several words. A brace word in
+# argument position stays allowed, which leaves `env {docket,trust} ...`
+# behind a wrapper as a known residual.
 MATCH=$(printf '%s' "$STRIPPED" | awk -v strict="$CONDUCTOR" '
 BEGIN { MARK = "\001" }
 function has_brace(word,   stripped) {
@@ -656,11 +660,12 @@ function may_spell_docket(from,   k, rest) {
     return rest ~ /d.*o.*c.*k.*e.*t/
 }
 # A word bash reads in command position without making it the command name:
-# an assignment or a reserved word. A lone { is the reserved word unless a
-# quoted fragment follows it, since the pre-pass splits {"a",b} at the quote.
+# an assignment, a reserved word or a zsh precommand modifier. A lone { is the
+# reserved word unless a quoted fragment follows it, since the pre-pass splits
+# {"a",b} at the quote.
 function is_command_prefix(word, next_word) {
     if (word ~ /^[A-Za-z_][A-Za-z0-9_]*=/) return 1
-    if (word ~ /^(if|then|else|elif|do|while|until|time|coproc|!)$/) return 1
+    if (word ~ /^(if|then|else|elif|do|while|until|time|coproc|!|noglob|nocorrect|-)$/) return 1
     return word == "{" && substr(next_word, 1, 1) != MARK
 }
 function decode(raw,    inner, cpos) {
@@ -680,6 +685,7 @@ function decode(raw,    inner, cpos) {
 {
     n = split($0, words, /[ \t]+/)
     cmdpos = 1
+    after_repeat = 0
     for (i = 1; i <= n; i++) {
         hquoted = decode(words[i])
         hgroup = D_GROUP
@@ -692,9 +698,16 @@ function decode(raw,    inner, cpos) {
         # at its quotes, so FOO="a b" reaches here as three words.
         if (!hquoted) {
             at_command = cmdpos || hw != w
-            if (at_command && is_command_prefix(hw, words[i + 1])) {
+            # A glued or standalone operator ends the repeat command.
+            if (hw != w) after_repeat = 0
+            if (at_command && hw == "repeat") {
+                after_repeat = 1
+                cmdpos = 1
+            } else if (at_command && is_command_prefix(hw, words[i + 1])) {
                 cmdpos = 1
             } else {
+                if (after_repeat && hw == "") after_repeat = 0
+                at_command = at_command || after_repeat
                 if (at_command && has_brace(hw) && may_brace_expand(i) && may_spell_docket(i)) { print "MATCH"; exit }
                 cmdpos = (hw == "")
             }

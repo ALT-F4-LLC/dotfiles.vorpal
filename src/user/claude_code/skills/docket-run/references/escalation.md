@@ -152,7 +152,19 @@ docket step approve STEP-N --authority operator --note "<their reasoning, their 
 docket step approve STEP-N --value <enum member> --authority operator --note "<their words>" < <scratchpad>/conductor.d/$RUN.token
 docket step reject  STEP-N --authority operator --note "<their reasoning, their words>" < <scratchpad>/conductor.d/$RUN.token
 docket step resolve STEP-N --as retry|skip|abandon-issue|override-pass --authority operator --note "<why>" < <scratchpad>/conductor.d/$RUN.token
+docket step hold STEP-N --reason "<the repeated failure, and the operator's word to hold it>" < <scratchpad>/conductor.d/$RUN.token
 ```
+
+**A step that keeps failing is held; its issue is not abandoned.** A step
+that declares no `max_attempts` is re-offered after every failure, so the
+engine never parks it on its own. When one step fails the same way again,
+offer the operator `docket step hold` (above) for that step: it parks the
+one READY step `waiting-human` (park class `held`), the next dispatch stops
+offering it, and the rest of its issue runs on. A claimed step is
+force-reaped first, which spends no attempt. The held step resolves like
+any park: `--as retry` returns it to the pool, `--as skip` skips it. Never
+offer `docket run abandon $RUN --issue` to stop one step: it fails every
+step of the issue.
 
 Which verb is the step's type, not your reading of the situation:
 `approve`/`reject` exist only on `type="human"` gate steps; an executor

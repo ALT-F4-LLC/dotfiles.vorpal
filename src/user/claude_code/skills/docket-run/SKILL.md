@@ -111,13 +111,13 @@ engine mutating verb, a trust verb, or a launch; those stay yours.
 
 ## The conductor capability
 
-The engine binds the seven operator verbs, `docket step
-approve|reject|resolve|reap` and `docket run pause|resume|abandon` (with
+The engine binds the eight operator verbs, `docket step
+approve|reject|resolve|reap|hold` and `docket run pause|resume|abandon` (with
 or without `--issue`), to a run-scoped CONDUCTOR CAPABILITY: a 256-bit
 token a run's first `docket run activate` returns exactly once
 (`conductor_token` in the `--json=v2` envelope; its own trailing stdout
 line in human mode), of which the store keeps only the hash. On a bound
-run each of the seven reads the token from `DOCKET_TOKEN` or stdin, never
+run each of the eight reads the token from `DOCKET_TOKEN` or stdin, never
 argv, and refuses without it. `docket run conduct RUN-N` re-mints it for
 a session that does not hold it, retiring the standing token and
 recording a `conductor-seated` event that names the caller's `actor` and
@@ -199,6 +199,7 @@ docket dispatch open --run $RUN --limit 240 --ack-reap <seq>
 docket guard spawn --run $RUN   # after a reconciled close; exit 2 names a hold the close left standing, the only kind that gets an ack-reap panel
 docket guard spawn --run $RUN --ack-reap <seq>
 docket step approve STEP-N --authority operator --note "<their words>" < <scratchpad>/conductor.d/$RUN.token
+docket step hold STEP-N --reason "<the repeated failure, and the operator's word to hold it>" < <scratchpad>/conductor.d/$RUN.token
 docket step resolve STEP-N --as override-pass --authority standing-grant --authority-ref machine-caused-gate-failure < <scratchpad>/conductor.d/$RUN.token
 docket step resolve STEP-N --as override-pass --batch --authority standing-grant --authority-ref batch-grant < <scratchpad>/conductor.d/$RUN.token
 docket step resolve STEP-N --as fix-round --authority standing-grant --authority-ref <proposal id> < <scratchpad>/conductor.d/$RUN.token
@@ -212,16 +213,16 @@ angle-bracket slots stay as written and are filled per use. A `finish`,
 done, or abandoned run removes it with the token.
 
 **Supply it per command, by redirecting the file into stdin.** Every one
-of the seven verbs, in every example below and on every path this file
+of the eight verbs, in every example below and on every path this file
 names (the standing rulings, the operator escalation, a forced
-reap, a pause, a resume, an abandon), ends in `< <scratchpad>/conductor.d/$RUN.token`:
+reap, a hold, a pause, a resume, an abandon), ends in `< <scratchpad>/conductor.d/$RUN.token`:
 
 ```bash
 docket step approve STEP-N --authority operator --note "<their words>" < <scratchpad>/conductor.d/$RUN.token
 ```
 
 A missing file fails in the shell before docket runs, and an empty one is
-refused at once. Never run one of the seven with nothing redirected and
+refused at once. Never run one of the eight with nothing redirected and
 `DOCKET_TOKEN` unset: on a harness whose Bash stdin is an open pipe the
 stdin fallback blocks until the tool timeout, and elsewhere it exits 3.
 `DOCKET_TOKEN="$(cat <file>)" docket …` is the same channel with a worse
@@ -240,7 +241,7 @@ word. The mechanism is tamper-evident, not tamper-proof:
 `run conduct` is deliberately open to any caller with repository access,
 so a run whose conductor died stays recoverable, and the sibling guard
 keeps executors off that one verb while the engine keeps them off the
-other seven.
+other eight.
 
 **The file lives as long as this session drives the run.** A pause keeps
 it (a same-session resume needs it; a new session re-mints and retires it

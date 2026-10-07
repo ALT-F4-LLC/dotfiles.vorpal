@@ -1320,6 +1320,49 @@ else
     ok "gap header: no hand promotion of a gap's Files: header"
 fi
 
+# (x) A step with no max_attempts that keeps failing is offered `docket step
+# hold`, which parks that one step, never `run abandon --issue`, which fails
+# every step of its issue. The hold form in escalation.md's answer block is
+# the one the verbs checkpoint carries.
+#
+#   x1 swap the hold offer for `docket run abandon $RUN --issue`
+#   x2 delete the never-abandon sentence
+#   x3 delete the hold line from the verbs heredoc
+awk '
+    function close_para() {
+        if (para != "") { print para; para = "" }
+    }
+    /^[[:space:]]*$/ { close_para(); next }
+    {
+        line = $0
+        sub(/^[[:space:]]+/, "", line)
+        para = (para == "" ? line : para " " line)
+    }
+    END { close_para() }
+' "$ESCALATION" > "${WORK}/esc-flat"
+hold_anchor='**A step that keeps failing is held; its issue is not abandoned.**'
+if [ "$(grep -cF -- "$hold_anchor" "${WORK}/esc-flat")" -eq 1 ]; then
+    grep -F -- "$hold_anchor" "${WORK}/esc-flat" > "${WORK}/hold"
+    contains "step hold: a repeatedly failing step is offered docket step hold" \
+        "${WORK}/hold" 'offer the operator `docket step hold` (above) for that step'
+    contains "step hold: the hold parks one step and the issue runs on" \
+        "${WORK}/hold" 'and the rest of its issue runs on'
+    contains "step hold: run abandon --issue is never offered to stop one step" \
+        "${WORK}/hold" 'Never offer `docket run abandon $RUN --issue` to stop one step'
+else
+    bad "step hold: escalation.md does not carry exactly one '${hold_anchor}' paragraph"
+fi
+hold_line=$(grep -E '^docket step hold STEP-N --reason ' "$ESCALATION")
+if [ -n "$hold_line" ] && [ "$(printf '%s\n' "$hold_line" | wc -l)" -eq 1 ]; then
+    if grep -qxF -- "$hold_line" "${WORK}/verbs-heredoc"; then
+        ok "step hold: the verbs checkpoint carries escalation.md's hold form"
+    else
+        bad "step hold: the verbs checkpoint lacks escalation.md's hold form: ${hold_line}"
+    fi
+else
+    bad "step hold: escalation.md's answer block does not carry exactly one 'docket step hold STEP-N --reason' line"
+fi
+
 if [ "$fail" -ne 0 ]; then
     echo "docket-run-skill: FAIL — a sandbox lift without its precondition is the failure this pins; fix the skill, not the test." >&2
     exit 1

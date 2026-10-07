@@ -193,7 +193,7 @@
 #     probe, truncating the target before any verdict — and never reached
 #     the matcher, since a compound redirect appears in no BASH_COMMAND.
 #     Now a structural leaf carrying `<` or `>` ends the probe with a
-#     distinct exit code, a compound redirect fails under the restriction
+#     refusal marker and a distinct exit code, a compound redirect fails under the restriction
 #     and its error text is read back, and both DENY as uninspectable, with
 #     a reason naming the plain-command spelling.
 #   - `readonly -f` on the handler: a function definition is a compound
@@ -502,9 +502,16 @@ fi
 # printed as \035<text>\036 frames on the probe's stdout, saved as fd 8
 # before the walk: bash 5 runs a coproc's leaves in a child whose stdout is
 # the coproc pipe, and they would be lost there. bash's stderr is merged into
-# the same capture and recovered from between the frames. Exit codes: 113
-# the cap, 114 a redirection on a structural builtin. The caller cannot pick
-# either: `exit` and `return` are vetoed, and a vetoed leaf reports success.
+# the same capture and recovered from between the frames. The probe refuses
+# with four exit codes: 113 the cap, 114 a redirection on a structural
+# builtin, 115 a branch on an unread value, 116 probe state in a loop
+# header. Each reaches the hook through the stderr marker printed before
+# the exit, since an exit inside a pipeline stage (`ls | { ...; }; echo
+# done`) ends only that stage and never reaches the probe exit status. 113
+# and 114 are also read from the exit status, as a fallback for a refusal
+# made where the command closed stderr (`while true; do :; done 2>&-`). The
+# caller cannot pick any of them: `exit` and `return` are vetoed, and a
+# vetoed leaf reports success.
 PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
     shopt -s extdebug
     set -T
@@ -530,6 +537,7 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
     _guard_probe() {
         _leaf_n=$((_leaf_n + 1))
         if [ "$_leaf_n" -gt 2000 ]; then
+            printf "%s\n" "_guard_probe: leaf cap" >&2
             exit 113
         fi
         # The first firing is this probe own eval line, not a leaf of the
@@ -556,7 +564,9 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
         case "$_leaf_head" in
             for | select | case | eval)
                 case "$BASH_COMMAND" in
-                    *[\<\>]*) exit 114 ;;
+                    *[\<\>]*)
+                        printf "%s\n" "_guard_probe: structural redirect" >&2
+                        exit 114 ;;
                 esac
                 case "$_leaf_head:$BASH_COMMAND" in
                     for:*_leaf_* | select:*_leaf_*)
@@ -576,7 +586,9 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
             esac | function | time | "{" | "}" | "[" | "[[" | : | \
             true | false | break | continue)
                 case "$BASH_COMMAND" in
-                    *[\<\>]*) exit 114 ;;
+                    *[\<\>]*)
+                        printf "%s\n" "_guard_probe: structural redirect" >&2
+                        exit 114 ;;
                 esac
                 # An arithmetic `[[` comparison reads a bare name as a
                 # variable (`[[ n -ne 0 ]]`), so it expands a value with no $.
@@ -658,21 +670,20 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
 ' 2>&1)
 PROBE_RC=$?
 
-if [ "$PROBE_RC" -eq 113 ]; then
-    log_decision "deny" "oversized"
-    deny "$REASON_PREFIX this command has too many parts (over 2000) for the sibling-guard hook to finish checking it. A wait loop ends in the check when it counts its own passes, \`n=0; until [ -s f ] || [ \$n -ge N ]; do sleep S; n=\$((n+1)); done\`, and so does a read loop fed by a pipe whose read takes no option but -r, \`cmd | while IFS= read -r x; do ...; done\` (a file, here-string or process-substitution input, or another read option, keeps it from ending); an uncounted wait never does. Otherwise split it into smaller Bash calls; a single call this large is refused rather than passed through unchecked."
-fi
-if [ "$PROBE_RC" -eq 114 ]; then
-    log_decision "deny" "structural-redirect"
-    deny "$REASON_PREFIX a redirection on a shell builtin that carries no command (\`: > file\`, \`true > file\`, \`[ ... ] > file\`) cannot be checked for a sibling's path. Truncate or create a file with \`cat /dev/null > <path>\`, so the target is a visible operand."
-fi
-
 # Leaves are the framed segments; everything outside a frame is bash's own
-# stderr during the walk.
+# stderr during the walk, the probe's refusal markers included.
 PROBE_TEXT=$(printf '%s' "$PROBE_RAW" | awk 'BEGIN { RS = "\036"; ORS = "" } { i = index($0, "\035"); if (i > 0) printf "%s\036", substr($0, i + 1) }')
 PROBE_ERR=$(printf '%s' "$PROBE_RAW" | awk 'BEGIN { RS = "\036"; ORS = "" } { i = index($0, "\035"); if (i > 0) printf "%s", substr($0, 1, i - 1); else printf "%s", $0 }')
 
-case "$PROBE_ERR" in
+# One dispatch for every probe refusal: the marker, or for 113 and 114 the
+# exit status as a fallback (see the comment above PROBE_RAW).
+case "$PROBE_RC:$PROBE_ERR" in
+    113:* | *"_guard_probe: leaf cap"*)
+        log_decision "deny" "oversized"
+        deny "$REASON_PREFIX this command has too many parts (over 2000) for the sibling-guard hook to finish checking it. A wait loop ends in the check when it counts its own passes, \`n=0; until [ -s f ] || [ \$n -ge N ]; do sleep S; n=\$((n+1)); done\`, and so does a read loop fed by a pipe whose read takes no option but -r, \`cmd | while IFS= read -r x; do ...; done\` (a file, here-string or process-substitution input, or another read option, keeps it from ending); an uncounted wait never does. Otherwise split it into smaller Bash calls; a single call this large is refused rather than passed through unchecked." ;;
+    114:* | *"_guard_probe: structural redirect"*)
+        log_decision "deny" "structural-redirect"
+        deny "$REASON_PREFIX a redirection on a shell builtin that carries no command (\`: > file\`, \`true > file\`, \`[ ... ] > file\`) cannot be checked for a sibling's path. Truncate or create a file with \`cat /dev/null > <path>\`, so the target is a visible operand." ;;
     *"restricted: cannot redirect output"*)
         log_decision "deny" "compound-redirect"
         deny "$REASON_PREFIX a redirection on a compound command (\`{ ... } > file\`, \`( ... ) > file\`, a loop or \`if\` followed by \`> file\`, or a function call \`> file\`) hides its target from this check. Redirect each simple command's output on its own, e.g. \`cargo build > <TMP>/STEP-N.d/build.log 2>&1\`." ;;

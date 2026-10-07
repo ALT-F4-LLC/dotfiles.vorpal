@@ -1159,6 +1159,15 @@ case_deny_reasons() {
     assert_deny_reason "docket run conduct RUN-5" executor-write "$WAVE_42" "finding in your step report" "conduct deny names the executor's own path"
     assert_deny_reason ": > ${SIB_DIR}/x" executor-write "$WAVE_42" "cat /dev/null" "structural-redirect deny names the plain spelling"
     assert_deny_reason "{ :; } > ${SIB_DIR}/x" executor-write "$WAVE_42" "compound command" "compound-redirect deny explains the shape"
+    # A cap or structural-redirect refusal inside a pipeline stage ends only
+    # that stage, so a trailing command must not turn it into an allow; one
+    # made where the command closed stderr must not either.
+    assert_deny_reason "ls | { while true; do :; done; rm -rf ${SIB_DIR}/x; }; echo done" executor-write "$WAVE_42" "too many parts (over 2000)" "cap in a pipeline stage before a trailing command"
+    assert_deny_reason "ls | { : > ${SIB_DIR}/f; }; echo done" executor-write "$WAVE_42" "cat /dev/null" "structural redirect in a pipeline stage before a trailing command"
+    assert_verdict "ls | { : > /tmp/zz; rm -rf ${SIB_DIR}/x; }; echo done" executor-write "$WAVE_42" DENY "structural redirect then a sibling rm in a pipeline stage before a trailing command"
+    assert_deny_reason "while true; do :; done 2>&-" executor-write "$WAVE_42" "too many parts (over 2000)" "cap with stderr closed"
+    assert_deny_reason ": > ${SIB_DIR}/x 2>&-" executor-write "$WAVE_42" "cat /dev/null" "structural redirect with stderr closed"
+    assert_deny_reason "{ : > ${SIB_DIR}/x; } 2>&-" executor-write "$WAVE_42" "cat /dev/null" "structural redirect inside a group with stderr closed"
     assert_deny_reason "_guard_probe() { :; }; ls" executor-write "$WAVE_42" "_guard_probe" "probe-tamper deny names the handler"
     assert_deny_reason "git -c alias.x=worktree x prune" executor-write "$WAVE_42" "alias" "alias deny names the alias"
 }

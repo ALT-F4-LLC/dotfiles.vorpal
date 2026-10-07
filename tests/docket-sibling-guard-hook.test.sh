@@ -962,6 +962,9 @@ case_verb_spellings() {
     assert_verdict "nocorrect noglob pkill node" executor-write "$WAVE_42" DENY "stacked zsh modifiers"
     assert_verdict "echo \$(noglob pkill node)" executor-write "$WAVE_42" DENY "zsh noglob prefix inside a \$( )"
     assert_verdict "noglob ls" executor-write "$WAVE_42" ALLOW "zsh noglob wrapping a read stays a read"
+    assert_verdict "nocorrect ls" executor-write "$WAVE_42" ALLOW "zsh nocorrect wrapping a read stays a read"
+    assert_verdict "true; - ls" executor-write "$WAVE_42" ALLOW "zsh - prefix on a read after a separator stays a read"
+    assert_verdict "true && - ls" executor-write "$WAVE_42" ALLOW "zsh - prefix on a read after && stays a read"
     # zsh `=cmd` equals expansion, which bash reads as a literal name.
     assert_verdict "=pkill node" executor-write "$WAVE_42" DENY "zsh =cmd expansion of pkill"
     assert_verdict "noglob =pkill node" executor-write "$WAVE_42" DENY "zsh =cmd expansion after noglob"

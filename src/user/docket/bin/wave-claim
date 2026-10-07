@@ -34,9 +34,10 @@
 #           CONFLICT leaves the holder's token and module untouched.
 #           The module, written atomically: a pure-literal meta, then
 #           `return {v, step, owner, attempt, expected_attempt, re_minted,
-#           lease_expires_ms, dir, token, packet_file, packet_sha256,
-#           packet}`. `token` is the token FILE's path; the token itself never
-#           enters the module, stdout, or argv.
+#           lease_expires_ms, dir, dir_physical, token, packet_file,
+#           packet_sha256, packet}`. `dir_physical` is `dir` with every
+#           symlink resolved (`pwd -P`). `token` is the token FILE's path;
+#           the token itself never enters the module, stdout, or argv.
 #           The module directory carries a `.gitignore` of `*`, so neither it
 #           nor the modules in it ever show in `git status`. Modules older
 #           than a day are swept on each run: a lease lives hours at most, so
@@ -162,6 +163,12 @@ rm -rf "$dir"
 mkdir -m 700 "$dir"
 mv "$work/token" "$token"
 chmod 600 "$token"
+# The step dir with every symlink resolved: under a sandbox the Write tool
+# lands at this physical path, not at $TMPDIR's spelling of it.
+dir_physical="$(cd "$dir" && pwd -P)" || {
+	printf 'CLAIM FAILED: %s: cannot resolve the physical path of %s; the token is kept at %s for a reap\n' "$step" "$dir" "$token"
+	exit 1
+}
 
 claim_error="$(jq -r '.data.claim_error // empty' "$claim")"
 if [ -n "$claim_error" ]; then
@@ -189,10 +196,12 @@ bytes="$(wc -c <"$packet" | tr -d ' ')"
 	printf 'return '
 	jq -c \
 		--arg step "$step" --arg owner "$owner" --argjson expected "$attempt" \
-		--arg dir "$dir" --arg token "$token" --arg packet_file "$packet" --arg sha "$digest" \
+		--arg dir "$dir" --arg dir_physical "$dir_physical" --arg token "$token" \
+		--arg packet_file "$packet" --arg sha "$digest" \
 		'{v: 1, step: $step, owner: $owner, attempt: .data.attempt,
 		  expected_attempt: $expected, re_minted: (.data.re_minted // false),
-		  lease_expires_ms: .data.lease_expires_ms, dir: $dir, token: $token,
+		  lease_expires_ms: .data.lease_expires_ms, dir: $dir,
+		  dir_physical: $dir_physical, token: $token,
 		  packet_file: $packet_file, packet_sha256: $sha, packet: .data.packet}' \
 		"$claim"
 } >"$partial"

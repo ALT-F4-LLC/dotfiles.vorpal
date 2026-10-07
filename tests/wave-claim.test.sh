@@ -157,6 +157,20 @@ run_claim remint remint "${ARGS[@]}"
 [ "$RC" -eq 0 ] && [ "$(modval "$MODULE" '.re_minted')" = "true" ]
 check $? "a re-minted claim succeeds and the module records re_minted"
 
+# ---- a symlinked TMPDIR: the module carries the physical step dir -------------
+# Under a sandbox the Write tool lands at the physical path, so the module
+# names it beside the TMPDIR spelling the token and record commands use.
+C="$WORK/symlink"; MODULE="$C/repo/.claude/docket-packets/STEP-7.a3.js"
+mkdir -p "$C/real"
+ln -s "$C/real" "$C/tmp"
+REAL=$(cd "$C/real" && pwd -P)
+set_args
+run_claim symlink success "${ARGS[@]}"
+[ "$RC" -eq 0 ] && [ "$(modval "$MODULE" '.dir_physical')" = "$REAL/STEP-7.d" ]
+check $? "a symlinked TMPDIR yields a physical step dir equal to the target's STEP-7.d (got $(modval "$MODULE" '.dir_physical'))"
+[ "$(modval "$MODULE" '.dir')" = "$C/tmp/STEP-7.d" ] && [ "$REAL/STEP-7.d" != "$C/tmp/STEP-7.d" ]
+check $? "the module's dir keeps the TMPDIR spelling, which differs from the physical path"
+
 # ---- conflict leaves the holder's files alone ---------------------------------
 C="$WORK/conflict"; MODULE="$C/repo/.claude/docket-packets/STEP-7.a3.js"
 mkdir -p "$C/tmp/STEP-7.d" "$C/repo/.claude/docket-packets"

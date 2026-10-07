@@ -54,15 +54,19 @@
 #              `git worktree remove`/`move` unless every path operand lies
 #              inside the caller's own scratch dir (a throwaway probe checkout
 #              the executor made itself); `git -c alias.<x>=...` (an alias
-#              can spell any of these); and `rm`/`rmdir`/`mv` of, or an
-#              output redirection into, a path under `.claude/worktrees/` or
-#              `.git/worktrees/` that is not the caller's own checkout, the
-#              checkout being its `cwd` (`cat /dev/null > <sibling>/.git`
-#              breaks that checkout as surely as removing it). The
-#              harness creates a writer's worktree and the conductor sweeps
-#              it after integration, so no other checkout is an executor's.
-#              A judge READS a sibling writer's target checkout by design, so
-#              the path rule binds destructive heads only.
+#              can spell any of these); and `rm`/`rmdir`/`mv` of, an output
+#              redirection into, or a write operand aimed at a path under
+#              `.claude/worktrees/` or `.git/worktrees/` that is not the
+#              caller's own checkout, the checkout being its `cwd` (`cat
+#              /dev/null > <sibling>/.git` breaks that checkout as surely as
+#              removing it). The write operands are every file `tee`,
+#              `truncate` and `touch` name, the destination (last operand)
+#              of `cp`, `install` and `ln`, the `of=` file of `dd`, and the
+#              files of `sed -i`. The harness creates a writer's worktree and
+#              the conductor sweeps it after integration, so no other
+#              checkout is an executor's. A judge READS a sibling writer's
+#              target checkout by design, so a read operand stays allowed:
+#              `cat`, the source of `cp`, `sed` without `-i`, `dd if=`.
 #   BRANCH     `git branch -d/-D/--delete`, `git update-ref -d`, `git
 #              symbolic-ref -d`, and `git push --delete` or `push <remote>
 #              :<ref>` unless the ref name carries the caller's own step id.
@@ -1352,6 +1356,40 @@ END {
             # docket argument.
             prev_redirect_op = (w ~ /^([0-9]*|\{[A-Za-z_][A-Za-z0-9_]*\})[<>&|]*[<>][<>&|-]*$/)
         }
+        # WORKTREE by write operand: a verb that writes the file an operand
+        # names, aimed at another checkout. tee, truncate and touch write
+        # every operand; cp, install and ln write the last; dd writes its
+        # of= file; sed writes its file operands under -i. A read operand
+        # (the source of cp, sed without -i, dd if=) stays allowed.
+        if (verb == "tee" || verb == "truncate" || verb == "touch" || verb == "cp" || verb == "install" || verb == "ln" || verb == "dd" || verb == "sed") {
+            inplace = 0; dashdash = 0; skipnext = 0; nwops = 0
+            for (j = vi + 1; j <= n; j++) {
+                if (words[j] == "") continue
+                quoted = decode(words[j])
+                x = D_WORD
+                if (skipnext) { skipnext = 0; continue }
+                if (quoted && gsize[D_GROUP] >= 2 && !interp) continue
+                # A redirect and its target belong to the shell, not the verb.
+                if (!quoted && x ~ /^([0-9]*|\{[A-Za-z_][A-Za-z0-9_]*\})[<>&|]*[<>][<>&|-]*$/) { skipnext = 1; continue }
+                if (!quoted && (x ~ /^[0-9]*[<>]/ || x ~ /^&>/)) continue
+                if (!dashdash && x == "--") { dashdash = 1; continue }
+                if (!dashdash && x ~ /^-/) {
+                    if (verb == "sed" && (x ~ /^-[A-Za-z]*i/ || x ~ /^--in-place/)) inplace = 1
+                    continue
+                }
+                if (verb == "dd") {
+                    if (x ~ /^of=/ && foreign_checkout(substr(x, 4))) report("WORKTREE", "dd " x)
+                    continue
+                }
+                wops[++nwops] = x
+            }
+            if (verb == "cp" || verb == "install" || verb == "ln") {
+                if (nwops > 1 && foreign_checkout(wops[nwops])) report("WORKTREE", verb " " wops[nwops])
+            } else if (verb != "sed" || inplace) {
+                for (k = 1; k <= nwops; k++) if (foreign_checkout(wops[k])) report("WORKTREE", verb " " wops[k])
+            }
+            delete wops
+        }
         RS_LOW = n + 1
         nested_verbs(n)
         if (repeat_from) repeat_scan_once(repeat_from, n)
@@ -1492,7 +1530,7 @@ case "$CLAUSE" in
         case "$DETAIL" in
             prune) deny "$REASON_PREFIX \`git worktree prune\` deletes the bookkeeping of every checkout that is momentarily absent, siblings still working included, and is never an executor's to run. Leave the worktree list as it is; the conductor sweeps checkouts after integration." ;;
             "git -c "* | "git -c="* | "git --config="*) deny "$REASON_PREFIX \`${DETAIL}\` defines a git alias for this one call; an alias can spell any worktree or branch verb, so the guard cannot read what it runs. Spell the git subcommand out." ;;
-            rm\ * | rmdir\ * | mv\ * | write\ into\ *) deny "$REASON_PREFIX \`${DETAIL}\` names another checkout under .claude/worktrees or .git/worktrees; your own checkout is your working directory and nothing else there is yours to remove, move or write into. The conductor sweeps checkouts after integration; if one blocks your step, report that as a finding." ;;
+            rm\ * | rmdir\ * | mv\ * | write\ into\ * | tee\ * | cp\ * | install\ * | dd\ * | sed\ * | truncate\ * | touch\ * | ln\ *) deny "$REASON_PREFIX \`${DETAIL}\` names another checkout under .claude/worktrees or .git/worktrees; your own checkout is your working directory and nothing else there is yours to remove, move or write into. The conductor sweeps checkouts after integration; if one blocks your step, report that as a finding." ;;
             *) deny "$REASON_PREFIX \`git worktree ${DETAIL}\` names a checkout you did not create; ${OWN_TEXT}. The harness created your worktree and the conductor sweeps it after integration; a checkout outside your own <TMP>/STEP-N.d is a sibling's or the shared tree. Leave it and, if it blocks your step, report that as a finding." ;;
         esac ;;
     BRANCH)

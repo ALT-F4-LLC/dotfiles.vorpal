@@ -1264,6 +1264,25 @@ case_checkout_paths() {
         assert_deny_reason "cat x ${rw}/repo/.claude/worktrees/wf_x/.git" executor-write "$WAVE_42" "write into" "read-write redirect '${rw}' deny is the write-into rule"
     done
     assert_verdict "cat < /repo/.claude/worktrees/wf_x/srv.pid" executor-write "$WAVE_42" ALLOW "input redirect from a sibling's checkout"
+    # A verb that writes the file its operand names writes into a sibling's
+    # checkout as surely as a redirect does; a read operand does not.
+    local wcmd
+    for wcmd in \
+        "tee /repo/.claude/worktrees/wf_x/.git < /dev/null" \
+        "cp x /repo/.claude/worktrees/wf_x/src/main.rs" \
+        "install x /repo/.claude/worktrees/wf_x/src/main.rs" \
+        "dd if=/dev/zero of=/repo/.claude/worktrees/wf_x/.git" \
+        "sed -i s/a/b/ /repo/.claude/worktrees/wf_x/src/main.rs" \
+        "truncate -s 0 /repo/.claude/worktrees/wf_x/.git" \
+        "touch /repo/.claude/worktrees/wf_x/.git" \
+        "ln -sf x /repo/.claude/worktrees/wf_x/.git"; do
+        assert_verdict "$wcmd" executor-write "$WAVE_42" DENY "write operand into a sibling's checkout: ${wcmd}"
+        assert_deny_reason "$wcmd" executor-write "$WAVE_42" "names another checkout under .claude/worktrees" "write operand into a sibling's checkout: ${wcmd}"
+    done
+    assert_verdict "cat /repo/.claude/worktrees/wf_x/src/main.rs" executor-write "$WAVE_42" ALLOW "cat reads a sibling's checkout"
+    assert_verdict "cp /repo/.claude/worktrees/wf_x/src/main.rs ./x" executor-write "$WAVE_42" ALLOW "cp with a sibling's file as the source"
+    assert_verdict "sed -n 1p /repo/.claude/worktrees/wf_x/src/main.rs" executor-write "$WAVE_42" ALLOW "sed without -i reads a sibling's file"
+    assert_verdict "dd if=/repo/.claude/worktrees/wf_x/.git of=/dev/null" executor-write "$WAVE_42" ALLOW "dd if= reads a sibling's file"
 }
 
 # Two claims in one opening: the marker must name the same step twice.

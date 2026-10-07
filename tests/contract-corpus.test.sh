@@ -141,6 +141,7 @@ require_bounded standard-change implement synthesize-findings drain-highs verify
 require_bounded disposition dispose verify-ac
 require_bounded docs-only implement review verify-ac
 require_bounded investigation investigate research report
+require_bounded small-change implement review verify-ac
 
 if [ "$fail" -ne 0 ]; then
     echo "contract-corpus: FAIL" >&2

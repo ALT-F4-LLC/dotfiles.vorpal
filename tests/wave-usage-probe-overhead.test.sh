@@ -24,7 +24,9 @@
 # claim/record STEP-N` obligation instead, and the read test runs BEFORE that
 # join: a brief that hands its agent one read command is overhead however much
 # record-shaped text its prose quotes. The fixtures below are the shapes that
-# ordering exists for.
+# ordering exists for. The mirror case is covered too: a step executor whose
+# packet quotes a `docket vote cast` command is still its step's claimant,
+# because the cast join reads only a seat's own cast instruction.
 #
 # WHAT THIS SUITE CANNOT SEE: it exercises classification, not measurement.
 # The by-message-id dedup (last write wins) and the arithmetic over the four
@@ -47,6 +49,7 @@ set -uo pipefail
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 USAGE="${WAVE_USAGE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/wave-usage.js}"
 WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/wave.js}"
+TRIBUNAL="${TRIBUNAL_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/tribunal.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
@@ -55,6 +58,7 @@ fatal() {
 
 [ -f "$USAGE" ] || fatal "wave-usage.js not found at ${USAGE}"
 [ -f "$WAVE" ] || fatal "wave.js not found at ${WAVE}"
+[ -f "$TRIBUNAL" ] || fatal "tribunal.js not found at ${TRIBUNAL}"
 for tool in jq node awk; do
     command -v "$tool" >/dev/null 2>&1 || fatal "${tool} is required to run this test"
 done
@@ -83,6 +87,10 @@ grep -qF 'You are executing one step of a Docket run' "$WAVE"; ok $? \
     'wave.js still opens an executor brief with the line the drift guard reads'
 grep -qF 'WAVE CLAIM: not a step execution' "$WAVE"; ok $? \
     'wave.js still declares its claim agent with the marker wave-usage reads'
+grep -qE '^  \$\{cdPrefix\}docket vote cast \$\{voteId\} --voter ' "$TRIBUNAL"; ok $? \
+    "tribunal.js still writes the seat's cast instruction as an indented line the cast join anchors on"
+grep -qF "'You are ONE SEAT of a tribunal" "$TRIBUNAL"; ok $? \
+    'tribunal.js still opens a seat brief with the line the cast-quote fixtures copy'
 
 # ---- Extract the two tested regions -----------------------------------------
 extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
@@ -304,12 +312,61 @@ it for you with \`docket step claim STEP-3180 --owner wave:STEP-3180:1 --render\
 == REQUEST
 An old run's note: \`docket step record STEP-999 --artifact-file x\`.
 ----- END WORK PACKET STEP-3180 -----`, claimDir)
+
+// Cast quotes, in their own directory: step executors whose packets quote the
+// vote path's cast command (an issue about wave.js or tribunal.js carries it
+// in its body, diff and excerpts), beside seat briefs in the shapes the cast
+// join must still read. A quoted cast must never seat an executor; only the
+// seat's own cast instruction seats an agent.
+const castDir = path.join(path.dirname(d), 'castquote')
+fs.mkdirSync(castDir, { recursive: true })
+// Placeholders quoted inline, as the observed packet carried them.
+write('agent-qexec.jsonl', executor + `
+
+----- BEGIN WORK PACKET STEP-3156 -----
+== REQUEST
+A seat runs \`docket vote cast <proposal> --voter <seat>\`, and the join keys on it.
+----- END WORK PACKET STEP-3156 -----`, castDir)
+// A real proposal id and voter, at the start of a line in a fenced excerpt:
+// the quote a line-start anchor alone cannot tell from a seat's instruction.
+write('agent-qexec5.jsonl', `You are executing one step of a Docket run (dispatch DISPATCH-12).
+
+Obligations:
+1. Claim it: \`docket step claim STEP-11646 --owner wave:STEP-11646 --render --json\`
+3. Record it yourself with \`docket step record STEP-11646 --artifact-file ...\`
+
+----- BEGIN WORK PACKET STEP-11646 -----
+== EXCERPT tribunal.js
+\`\`\`
+docket vote cast DKT-V304 --voter tribunal-security --role reviewer -v approve
+\`\`\`
+----- END WORK PACKET STEP-11646 -----`, castDir)
+// A seat whose case quotes a record command read from an artifact.
+write('agent-qseat.jsonl', `You are seated on a Docket gate panel.
+
+Cast with: docket vote cast PROP-79 --voter qa --decision approve
+
+The artifact under review says the executor ran \`docket step record STEP-3190 --artifact-file x\`.`, castDir)
+// tribunal.js's own cast instruction: indented, with and without the cd
+// prefix a conversational gate carries; the second arrives list-shaped.
+const tribunalSeat = (prefix, proposal, seat) => `You are ONE SEAT of a tribunal deciding a gated proposal in a Docket run.
+
+YOUR SEAT:      ${seat}
+THE PROPOSAL:   ${proposal}
+
+CAST YOUR VOTE — exactly once, as your last command.
+
+  ${prefix}docket vote cast ${proposal} --voter ${seat} --role reviewer -v <approve|approve-with-concerns|reject> --confidence <0.0-1.0> --summary - <<'EOF'
+  <your one-paragraph reasoning, on ONE line>
+  EOF`
+write('agent-qtribunal.jsonl', tribunalSeat('', 'DKT-V500', 'security'), castDir)
+write('agent-qtribunalcd.jsonl', tribunalSeat('cd /repo && ', 'DKT-V501', 'architect'), castDir, true)
 JS
 
 # ---- Run the jq program over every fixture, exactly as an agent would ----------
 # One extract per transcript, collected into {dir: {file: extract}}.
 extracts_ok=0
-for sub in wave drift panel relay claim; do
+for sub in wave drift panel relay claim castquote; do
     mkdir -p "${WORK}/extracts/${sub}"
     for f in "${WORK}/${sub}"/agent-*.jsonl; do
         name=$(basename "$f")
@@ -324,11 +381,12 @@ ok $extracts_ok 'the jq program runs clean over every fixture transcript'
 # ---- Seats-mode selection, run once over a mixed corpus as the scout runs it ----
 # The wave's claimants, probes and judge, the panel's judges (one re-seated,
 # one behind the harness relay), the relay-first claimant and probe, and the
-# claim path. One jq invocation over many files, as the scout's glob hands
-# them over.
+# claim path, and the cast-quoting executors beside their seats. One jq
+# invocation over many files, as the scout's glob hands them over.
 jq -r -n -R -f "${WORK}/wave-usage-select.jq" \
     "${WORK}"/wave/agent-*.jsonl "${WORK}"/panel/agent-*.jsonl \
     "${WORK}"/relay/agent-*.jsonl "${WORK}"/claim/agent-*.jsonl \
+    "${WORK}"/castquote/agent-*.jsonl \
     > "${WORK}/selected.txt"
 ok $? 'the selection program runs clean over the mixed corpus'
 
@@ -396,6 +454,7 @@ const drift = load('drift')
 const panel = load('panel')
 const relay = load('relay')
 const claimPath = load('claim')
+const castQuote = load('castquote')
 
 // Exercise missing and synthetic model fields through the actual jq extractor,
 // not only the reducer. Bootstrap prose cannot supply runtime observations.
@@ -599,7 +658,7 @@ ok(retypedListing.files.join(',') === `${slugDir}/agent-A.jsonl,${slugDir}/agent
 // The scout runs SELECT_JQ so seats mode spawns an extract agent only for a
 // transcript whose brief casts a vote. The full reduction over every
 // transcript is the oracle the selected reduction must reproduce.
-const corpus = [...wave, ...panel, ...relay, ...claimPath]
+const corpus = [...wave, ...panel, ...relay, ...claimPath, ...castQuote]
 // The scout's reply as filesToExtract receives it: the listing rebuilt on one
 // directory, the paths SELECT_JQ printed, and the selection's exit status.
 const scoutDir = '/wave'
@@ -608,7 +667,8 @@ const printedSeats = fs.readFileSync(path.join(root, 'selected.txt'), 'utf8').sp
 const seatsReply = { files: listedPaths, seats: printedSeats, seats_exit: 0 }
 const selectedNames = filesToExtract('seats', scoutDir, listedPaths, seatsReply).files
     .map((p) => path.basename(p)).sort()
-const judges = ['agent-ajudge.jsonl', 'agent-pjudge.jsonl', 'agent-preseat.jsonl', 'agent-prelayjudge.jsonl'].sort()
+const judges = ['agent-ajudge.jsonl', 'agent-pjudge.jsonl', 'agent-preseat.jsonl', 'agent-prelayjudge.jsonl',
+    'agent-qseat.jsonl', 'agent-qtribunal.jsonl', 'agent-qtribunalcd.jsonl'].sort()
 ok(JSON.stringify(selectedNames) === JSON.stringify(judges),
     `the selection is exactly the judge transcripts, re-seated and relay-prefixed included (got ${JSON.stringify(selectedNames)})`)
 ok(!selectedNames.includes('agent-aexec.jsonl') && !selectedNames.includes('agent-aprobe.jsonl')
@@ -621,6 +681,40 @@ ok(seatsAll.errors.length === 0 && seatsAll.rows.length > 0,
     'oracle: seats mode over every transcript reduces cleanly to rows')
 ok(JSON.stringify(seatsSelected.rows) === JSON.stringify(seatsAll.rows),
     `the selected transcripts reduce to the same seat rows as every transcript (got ${JSON.stringify(seatsSelected.rows.map((r) => `${r.proposal}/${r.voter}/${r.unit}=${r.quantity}`))})`)
+
+// ---- A quoted cast seats nobody; the seat's own instruction still does ----
+// Executor packets quote the vote path's cast command whenever the work is on
+// wave.js, wave-usage.js or tribunal.js. The cast join reads only a cast
+// instruction at the start of a line, in a brief that does not open as a step
+// executor, so the quote neither seats the executor nor selects it.
+const castSteps = reduceRows(castQuote, 'steps', [])
+ok(castSteps.errors.length === 0,
+    `steps mode reports no error over the cast-quote directory (got ${JSON.stringify(castSteps.errors)})`)
+ok([...new Set(castSteps.rows.map((r) => r.step))].join(',') === 'STEP-3156,STEP-11646',
+    `executors quoting a cast reduce to rows keyed by the step they record (got ${JSON.stringify([...new Set(castSteps.rows.map((r) => r.step))])})`)
+ok(JSON.stringify(unitsOf(castSteps.rows, 'STEP-3156')) === JSON.stringify(want),
+    'the executor quoting `docket vote cast <proposal> --voter <seat>` carries its own usage on STEP-3156')
+ok(JSON.stringify(unitsOf(castSteps.rows, 'STEP-11646')) === JSON.stringify(want),
+    'the executor quoting a real `docket vote cast DKT-V304 --voter tribunal-security` line carries its own usage on STEP-11646')
+ok(!castSteps.skipped.some((s) => s.file === 'agent-qexec.jsonl' || s.file === 'agent-qexec5.jsonl'),
+    `neither cast-quoting executor is skipped (got ${JSON.stringify(castSteps.skipped.filter((s) => /qexec/.test(s.file)))})`)
+const castSeated = castSteps.skipped.filter((s) => s.reason === 'seated').map((s) => s.label).sort()
+ok(JSON.stringify(castSeated) === JSON.stringify([
+    'agent-qseat.jsonl (PROP-79/qa)',
+    'agent-qtribunal.jsonl (DKT-V500/security)',
+    'agent-qtribunalcd.jsonl (DKT-V501/architect)',
+]), `seats are skipped as seated, tribunal.js's own instruction shape included (got ${JSON.stringify(castSeated)})`)
+ok(by(castQuote, 'agent-qseat.jsonl').extract.record === 'STEP-3190'
+    && !castSteps.rows.some((r) => r.step === 'STEP-3190'),
+    'a seat whose case quotes `docket step record STEP-N` is seated, not reduced to that step\'s row')
+ok(!selectedNames.includes('agent-qexec.jsonl') && !selectedNames.includes('agent-qexec5.jsonl'),
+    'the seats selection does not select an executor that quotes a cast')
+const castSeats = reduceRows(castQuote, 'seats', [])
+const castSeatKeys = [...new Set(castSeats.rows.map((r) => `${r.proposal}/${r.voter}`))]
+ok(castSeats.errors.length === 0 && castSeatKeys.join(',') === 'DKT-V500/security,DKT-V501/architect,PROP-79/qa',
+    `seats mode keys only the real seats (got ${JSON.stringify(castSeatKeys)})`)
+ok(!castSeats.rows.some((r) => r.proposal.includes('<') || r.voter.includes('<') || r.proposal === 'DKT-V304'),
+    'no seat row is keyed by a placeholder or by a cast an executor quoted')
 
 // ---- The mode gate and the selection's failure channel ----
 ok(JSON.stringify(filesToExtract('steps', scoutDir, listedPaths, seatsReply).files) === JSON.stringify(listedPaths),

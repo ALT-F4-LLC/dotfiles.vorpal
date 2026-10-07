@@ -26,7 +26,7 @@ export const meta = {
 // statuses and the manifest rows. PROBE COST: one scout, plus one low-effort
 // read-only extract agent per transcript to measure: in steps mode every
 // agent-*.jsonl in the directory, in seats mode only each seat transcript
-// (one whose bootstrap brief carries `docket vote cast`, selected by the
+// (one whose bootstrap brief instructs a `docket vote cast`, selected by the
 // scout without an agent per file), plus one re-check for any transcript
 // relayed as bootstrap:false, plus one retry for any transcript whose path
 // the relay retyped. Invoke by scriptPath
@@ -95,6 +95,12 @@ const DEFAULT_MODE = 'steps'
 //    this step": wave.js probes a row before claiming it, and a first-match
 //    join back-filled ~17K tokens per probe onto pending and superseded steps
 //    no agent ever ran on a past wave.
+//
+//  * THE CAST JOIN IS THE SEAT'S INSTRUCTION, NOT ANY CAST TEXT. A step
+//    executor's packet quotes cast commands whenever its work is on the vote
+//    path, and an unanchored join filed those executors as seats and dropped
+//    their steps' usage. The join reads only a cast command that opens a
+//    line, in a brief that does not open as a step executor (BRIEF_DEFS_JQ).
 //
 //  * ASK WHAT THE BRIEF IS FOR BEFORE ASKING WHAT STEP IT NAMES: briefed to
 //    cast? briefed only to read? briefed to record? The first yes wins. The
@@ -287,11 +293,23 @@ if (manifestRows != null && (!Array.isArray(manifestRows) || !Array.isArray(wave
 // BRIEF_DEFS_JQ is the bootstrap rule and the cast join, shared verbatim with
 // SELECT_JQ below: seats mode extracts only what SELECT_JQ selects, so a
 // transcript this program would seat must be one that program selects.
+//
+// The cast join reads the seat's own cast instruction, never a quote of one.
+// A step executor's packet quotes the issue body, the diff and file excerpts,
+// so work on the vote path carries `docket vote cast <x> --voter <y>` text;
+// an unanchored join once filed those executors as seats and dropped their
+// usage from the back-fill. Two anchors close that: the command must open a
+// line (after optional indentation, a `Cast with:` label, or tribunal.js's
+// `cd <cwd> && ` prefix), and a brief that opens as a step executor joins no
+// cast at all, wherever its packet puts the quote. The opening is read from
+// the first 200 characters, so a seat whose case quotes an executor brief
+// further down is still a seat.
 const BRIEF_DEFS_JQ = `def bootstrap_candidate: .type == "user"
     and (.message.content | type == "string"
         and startswith("[Workflow harness — user request]") | not);
 def bootstrap_text: .message.content | if type == "string" then . else tojson end;
-def cast_join: capture("docket vote cast\\\\s+(?<proposal>\\\\S+)\\\\s+--voter\\\\s+(?<voter>\\\\S+)");
+def cast_join: if .[0:200] | contains("You are executing one step of a Docket run") then null
+    else capture("(?:^|\\\\n|\\\\\\\\n)[ \\\\t]*(?:Cast with:[ \\\\t]*)?(?:cd\\\\s+\\\\S+\\\\s+&&\\\\s+)?docket vote cast\\\\s+(?<proposal>\\\\S+)\\\\s+--voter\\\\s+(?<voter>\\\\S+)") end;
 `
 const EXTRACT_JQ = `${BRIEF_DEFS_JQ}[inputs | fromjson? | select(type == "object")] as $lines
 | ([$lines[] | select(bootstrap_candidate)] | .[0]) as $first

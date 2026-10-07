@@ -802,6 +802,16 @@ case_multiline_substitutions() {
     assert_verdict 'echo "$(pkill node)"' executor-write "$WAVE_42" DENY "one-line \$( ) in double quotes holding pkill"
     assert_verdict "echo '\$(pkill node)'" executor-write "$WAVE_42" ALLOW "a single-quoted \$( ) is data"
     assert_verdict 'echo `pkill node`' executor-write "$WAVE_42" DENY "one-line backtick body holding pkill"
+    # A structural builtin runs for real, so a substitution in its arguments
+    # runs too; the inner leaves reach the probe's own frame fd, which the
+    # substitution's capture does not take.
+    assert_verdict ": \$(rm -rf ${SIB_DIR})" executor-write "$WAVE_42" DENY "substitution in a : builtin's arguments"
+    assert_verdict 'true $(pkill node)' executor-write "$WAVE_42" DENY "substitution in a true builtin's arguments"
+    assert_verdict "[ -n \"\$(rm -rf ${SIB_DIR})\" ]" executor-write "$WAVE_42" DENY "substitution in a [ builtin's arguments"
+    assert_verdict "if [[ \$(rm -rf ${SIB_DIR}) ]]; then echo; fi" executor-write "$WAVE_42" DENY "substitution in a [[ test's arguments"
+    assert_verdict "if [ -n \"\$("$'\n'"rm -rf ${SIB_DIR}"$'\n'")\" ]; then :; fi" executor-write "$WAVE_42" DENY "multi-line substitution in a [ builtin's arguments"
+    assert_verdict ": \`rm -rf ${SIB_DIR}\`" executor-write "$WAVE_42" DENY "backtick substitution in a : builtin's arguments"
+    assert_verdict '[ -n "$(ls)" ]' executor-write "$WAVE_42" ALLOW "a read substitution in a [ builtin's arguments"
     assert_verdict 'cat <(pkill node)' executor-write "$WAVE_42" DENY "one-line process substitution holding pkill"
     assert_verdict 'echo $(ls; pkill node)' executor-write "$WAVE_42" DENY "pkill after a separator inside a \$( )"
     assert_verdict 'echo $(sudo pkill node)' executor-write "$WAVE_42" DENY "pkill behind a wrapper inside a \$( )"

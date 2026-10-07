@@ -511,6 +511,39 @@ case_wave_cwd_toplevel_trailing_slash_passes() {
         "$(workflow_payload_cwd "$HOME/.claude/workflows/wave.js" "${REPO_ROOT}/")"
 }
 
+# tribunal.js carries the same hand-typed cwd. A launch with no args.cwd keeps
+# the existing verdict; the voteId forwarding rows above pin that.
+case_tribunal_cwd_missing_refused() {
+    local bad="${REPO_ROOT}-no-such-checkout"
+    expect_cwd_refused "tribunal.js with a nonexistent cwd, object args" "$bad" \
+        "not an existing directory" \
+        "$(workflow_payload_cwd "$HOME/.claude/workflows/tribunal.js" "$bad")"
+}
+
+case_tribunal_cwd_missing_stringified_refused() {
+    local bad="${REPO_ROOT}-no-such-checkout"
+    expect_cwd_refused "tribunal.js with a nonexistent cwd, args as a JSON string" "$bad" \
+        "not an existing directory" \
+        "$(workflow_payload_cwd "$HOME/.claude/workflows/tribunal.js" "$bad" string)"
+}
+
+case_tribunal_cwd_subdirectory_refused() {
+    local bad="${REPO_ROOT}/tests"
+    expect_cwd_refused "tribunal.js with a cwd that is a subdirectory of the repo" "$bad" \
+        "not the git toplevel" \
+        "$(workflow_payload_cwd "$HOME/.claude/workflows/tribunal.js" "$bad")"
+}
+
+case_tribunal_cwd_toplevel_passes() {
+    expect_cwd_passes_through "tribunal.js with cwd equal to the repo root" \
+        "$(workflow_payload_cwd "$HOME/.claude/workflows/tribunal.js" "$REPO_ROOT")"
+}
+
+case_tribunal_cwd_toplevel_trailing_slash_passes() {
+    expect_cwd_passes_through "tribunal.js with cwd equal to the repo root plus a trailing slash" \
+        "$(workflow_payload_cwd "$HOME/.claude/workflows/tribunal.js" "${REPO_ROOT}/")"
+}
+
 case_two_active_runs_older_holds
 case_never_resolves_a_run
 case_tribunal_installed_path_forwards
@@ -534,6 +567,11 @@ case_wave_cwd_missing_refused
 case_wave_cwd_subdirectory_refused
 case_wave_cwd_toplevel_passes
 case_wave_cwd_toplevel_trailing_slash_passes
+case_tribunal_cwd_missing_refused
+case_tribunal_cwd_missing_stringified_refused
+case_tribunal_cwd_subdirectory_refused
+case_tribunal_cwd_toplevel_passes
+case_tribunal_cwd_toplevel_trailing_slash_passes
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

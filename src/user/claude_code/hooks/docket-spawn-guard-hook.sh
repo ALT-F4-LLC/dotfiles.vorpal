@@ -106,7 +106,8 @@ fi
 # dispatch to reconcile and a step whose claim state was unknown. Workflow
 # scripts cannot stat a path, so the check lives in this hook. It is input
 # validation on one hand-typed argument, not run policy: it reads no run state
-# and asks the engine nothing.
+# and asks the engine nothing. tribunal.js carries the same hand-typed cwd and
+# gets the same check.
 #
 # args.cwd must be an existing directory equal to the git toplevel of the
 # session's working directory (the payload's `cwd`, else this process's), which
@@ -117,7 +118,7 @@ fi
 # falls through unchanged.
 if [ -n "$HOOK_INPUT" ] && command -v jq >/dev/null 2>&1; then
     case "$SCRIPT" in
-    wave.js)
+    wave.js | tribunal.js)
         LAUNCH_CWD=$(printf '%s' "$HOOK_INPUT" | jq -r '
             .tool_input.args
             | if type == "string" then (try fromjson catch {}) else (. // {}) end

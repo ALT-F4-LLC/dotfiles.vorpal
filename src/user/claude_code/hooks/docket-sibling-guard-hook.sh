@@ -1114,14 +1114,18 @@ function decode(raw,    inner, cpos) {
     gsub(/[\047\042\\]/, "", D_WORD)
     return 0
 }
-# The command name a word would resolve to: a delimiter or subshell glued
-# onto its front is stripped (`;rm`, `(rm`, `$(rm`), then a leading `=`
-# (zsh expands `=rm` to the path of rm), then the directory, then case.
+# The command name a word would resolve to: a delimiter, subshell or brace
+# glued onto its front is stripped (`;rm`, `(rm`, `$(rm`, `{rm`: zsh opens a
+# brace group on a glued `{`), then a leading `=` (zsh expands `=rm` to the
+# path of rm), then the directory, then case. In a word holding a `{`, the
+# name also ends at a `,` (`{rm,x}` brace-expands to run rm) or a `}`.
 function head_of(w,   h) {
     h = w
-    sub(/^.*(\$\(|\140|\(|;|\||&)/, "", h)
+    sub(/^.*(\$\(|\140|\(|;|\||&|\{)/, "", h)
+    if (index(w, "{")) sub(/,.*$/, "", h)
     sub(/^=+/, "", h)
     sub(/^.*\//, "", h)
+    if (index(w, "{")) sub(/}.*$/, "", h)
     return tolower(h)
 }
 # `coproc` is here because bash 3.2 has no coproc keyword and reports it as

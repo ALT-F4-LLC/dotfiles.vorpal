@@ -972,6 +972,13 @@ case_verb_spellings() {
     assert_verdict "noglob =pkill node" executor-write "$WAVE_42" DENY "zsh =cmd expansion after noglob"
     assert_verdict "=git worktree prune" executor-write "$WAVE_42" DENY "zsh =cmd expansion of git"
     assert_verdict "=ls" executor-write "$WAVE_42" ALLOW "zsh =cmd expansion of a read stays a read"
+    # zsh opens a brace group on a `{` glued to the verb; bash brace-expands
+    # `{a,b}` and runs its first element.
+    assert_verdict "{pkill node}" executor-write "$WAVE_42" DENY "zsh glued brace group around pkill"
+    assert_verdict "{=pkill node}" executor-write "$WAVE_42" DENY "zsh glued brace group around =pkill"
+    assert_verdict "{ls}" executor-write "$WAVE_42" ALLOW "zsh glued brace group around a read stays a read"
+    assert_verdict "{pkill,x} node" executor-write "$WAVE_42" DENY "brace expansion whose first element is pkill"
+    assert_verdict "\${HOME}/bin/pkill node" executor-write "$WAVE_42" DENY "a braced parameter in the verb's directory still resolves to pkill"
     assert_verdict "x=pkill; echo ok" executor-write "$WAVE_42" ALLOW "assignment whose value names pkill"
     # A leading assignment prefixes the command; the verb is after it.
     assert_verdict "FOO=1 pkill node" executor-write "$WAVE_42" DENY "assignment prefix before pkill"

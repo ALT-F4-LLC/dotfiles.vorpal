@@ -29,9 +29,17 @@
 # `spawn-admitted` audit event. Cases below assert the exact argv, and assert
 # that the verdict still comes back from the engine both ways.
 #
+# Third, the usage join. wave-usage.js claims no step, so a launch of the
+# INSTALLED copy asks `guard spawn --active --usage-join` and the engine
+# admits it past a reap hold. The match is on the resolved path, never the
+# basename: a same-named copy elsewhere, or wave.js, asks the plain question.
+# Production ~/.claude/workflows is a symlink into the vorpal store, so the
+# rows use fixture HOMEs, one real directory and one symlinked, and both the
+# symlinked and the resolved scriptPath must match.
+#
 # ALSO PINNED: the fail-OPEN path (no `docket`), the engine's own allow over
-# no active run, and the ordinary path (a non-tribunal launch reaches the
-# engine with no extra flags, and its denial text is the engine's).
+# no active run, and the ordinary path (a launch that is neither tribunal.js
+# nor the installed wave-usage.js reaches the engine with no extra flags, and its denial text is the engine's).
 #
 # WHAT THIS SUITE CANNOT SEE: it drives the hook's stdin and PATH only. The
 # stub answers however a case tells it to, so nothing here shows what the REAL
@@ -92,7 +100,9 @@ hook_probe_link_shims "$TOOLS_DIR_NO_JQ" bash cat || fatal "cannot build hook pr
 # reap. `guard spawn --active` walks ACTIVE_RUNS and denies on the first held
 # one, naming it, the way the engine documents; `guard spawn --run R` asks
 # about R alone. ADMIT_VOTE is the one proposal id whose --deciding-vote the
-# stub honors, standing in for "exists and is open". SPAWN_MARKER records
+# stub honors, standing in for "exists and is open". --usage-join relaxes the
+# reap half, so a held run admits only a launch that carries it; the stub
+# refuses it beside --deciding-vote, as the engine does. SPAWN_MARKER records
 # every argv, so a case can assert what was ASKED and not only what was
 # answered — including that `run status` is never asked.
 #
@@ -130,19 +140,25 @@ allow() {
     exit 64
 }
 shift 2
-MODE="" RUN="" VOTE="" JSON=no
+MODE="" RUN="" VOTE="" USAGE="" JSON=no
 while [ $# -gt 0 ]; do
     case "$1" in
         --active) MODE=active ;;
         --run) RUN="$2"; shift ;;
         --deciding-vote) VOTE="$2"; shift ;;
+        --usage-join) USAGE=yes ;;
         --json) JSON=yes ;;
         *) printf 'fake docket: unexpected flag: %s\n' "$1" >&2; exit 64 ;;
     esac
     shift
 done
+if [ -n "$USAGE" ] && [ -n "$VOTE" ]; then
+    printf '✘ Error: --usage-join and --deciding-vote are mutually exclusive\n' >&2
+    exit 3
+fi
 if [ "$MODE" = active ]; then
     [ -z "$VOTE" ] || { printf '✘ Error: --active does not take --deciding-vote\n' >&2; exit 3; }
+    [ -n "$USAGE" ] && allow
     for r in ${ACTIVE_RUNS:-}; do
         held "$r" && deny "$r"
     done
@@ -150,6 +166,7 @@ if [ "$MODE" = active ]; then
 fi
 [ -n "$RUN" ] || { printf '✘ Error: --run is required\n' >&2; exit 3; }
 if held "$RUN"; then
+    [ -n "$USAGE" ] && allow
     [ -n "$VOTE" ] && [ "$VOTE" = "${ADMIT_VOTE:-}" ] && allow
     deny "$RUN"
 fi
@@ -173,7 +190,7 @@ verdict_of() {
     local path_value="$1" payload="$2" rc
     rm -f "$MARKER"
     printf '%s' "$payload" \
-        | PATH="$path_value" SPAWN_MARKER="$MARKER" "$BASH_BIN" "$HOOK" \
+        | PATH="$path_value" HOME="${HOOK_HOME:-$HOME}" SPAWN_MARKER="$MARKER" "$BASH_BIN" "$HOOK" \
             >/dev/null 2>"$STDERR_FILE"
     rc=$?
     case "$rc" in
@@ -194,7 +211,7 @@ run_case() {
 }
 
 reset_env() {
-    unset ACTIVE_RUNS HELD_RUNS ADMIT_VOTE
+    unset ACTIVE_RUNS HELD_RUNS ADMIT_VOTE HOOK_HOME
 }
 
 # The common fixture: one active run holding a real reap, so an ALLOW can only
@@ -541,6 +558,76 @@ case_tribunal_cwd_toplevel_trailing_slash_passes() {
         "$(workflow_payload_cwd "$HOME/.claude/workflows/tribunal.js" "${REPO_ROOT}/")"
 }
 
+# ---- USAGE JOIN: the installed wave-usage.js declares itself to the engine ----
+# Fixture HOMEs, so the rows hold on a runner with no ~/.claude/workflows.
+# USAGE_HOME has a real workflows directory. LINK_HOME's workflows is a
+# symlink to STORE_DIR, as production's points into the vorpal store; the
+# target is resolved with `cd -P` because $TMPDIR itself may sit behind a
+# symlink (/var -> /private/var on macOS), and the resolved form is what a
+# caller holding the store path would pass.
+USAGE_HOME="${SANDBOX}/home-real"
+LINK_HOME="${SANDBOX}/home-link"
+STORE_DIR="${SANDBOX}/store/workflows"
+ELSEWHERE_DIR="${SANDBOX}/elsewhere"
+mkdir -p "${USAGE_HOME}/.claude/workflows" "${LINK_HOME}/.claude" "$STORE_DIR" "$ELSEWHERE_DIR" \
+    || fatal "cannot build usage-join fixtures"
+: >"${USAGE_HOME}/.claude/workflows/wave-usage.js"
+: >"${USAGE_HOME}/.claude/workflows/wave.js"
+: >"${STORE_DIR}/wave-usage.js"
+: >"${ELSEWHERE_DIR}/wave-usage.js"
+ln -s "$STORE_DIR" "${LINK_HOME}/.claude/workflows" || fatal "cannot link the fixture workflows"
+STORE_DIR_REAL=$(cd -P "$STORE_DIR" && pwd -P) || fatal "cannot resolve the fixture store"
+
+# Under one held run, so an ALLOW can only come from the engine admitting
+# the flag; the plain question is denied.
+expect_usage_join_admitted() {
+    local label="$1" home="$2" script="$3"
+    one_held_run
+    HOOK_HOME="$home"
+    run_case "$label" ALLOW "$(workflow_payload "$script")"
+    expect_argv "  ...by declaring the usage join alongside --active" \
+        "guard spawn --active --usage-join"
+}
+
+expect_usage_join_not_claimed() {
+    local label="$1" home="$2" script="$3"
+    one_held_run
+    HOOK_HOME="$home"
+    run_case "$label" DENY "$(workflow_payload "$script")"
+    expect_never_asked "  ...and declares no usage join" "--usage-join"
+    expect_argv "  ...asking the plain question" "guard spawn --active"
+}
+
+case_usage_join_installed_path() {
+    expect_usage_join_admitted "wave-usage.js at the installed path under a hold" \
+        "$USAGE_HOME" "${USAGE_HOME}/.claude/workflows/wave-usage.js"
+}
+
+case_usage_join_not_for_wave() {
+    expect_usage_join_not_claimed "wave.js at the installed path under a hold" \
+        "$USAGE_HOME" "${USAGE_HOME}/.claude/workflows/wave.js"
+}
+
+case_usage_join_not_for_foreign_path() {
+    expect_usage_join_not_claimed "wave-usage.js at /tmp/x, outside the install" \
+        "$USAGE_HOME" "/tmp/x/wave-usage.js"
+}
+
+case_usage_join_not_for_same_named_copy() {
+    expect_usage_join_not_claimed "an existing same-named copy outside the install" \
+        "$USAGE_HOME" "${ELSEWHERE_DIR}/wave-usage.js"
+}
+
+case_usage_join_symlinked_install() {
+    expect_usage_join_admitted "wave-usage.js through a symlinked workflows directory" \
+        "$LINK_HOME" "${LINK_HOME}/.claude/workflows/wave-usage.js"
+}
+
+case_usage_join_resolved_target() {
+    expect_usage_join_admitted "wave-usage.js at the symlink's resolved target" \
+        "$LINK_HOME" "${STORE_DIR_REAL}/wave-usage.js"
+}
+
 case_two_active_runs_older_holds
 case_never_resolves_a_run
 case_tribunal_installed_path_forwards
@@ -569,6 +656,12 @@ case_tribunal_cwd_missing_stringified_refused
 case_tribunal_cwd_subdirectory_refused
 case_tribunal_cwd_toplevel_passes
 case_tribunal_cwd_toplevel_trailing_slash_passes
+case_usage_join_installed_path
+case_usage_join_not_for_wave
+case_usage_join_not_for_foreign_path
+case_usage_join_not_for_same_named_copy
+case_usage_join_symlinked_install
+case_usage_join_resolved_target
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

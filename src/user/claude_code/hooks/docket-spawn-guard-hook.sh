@@ -10,7 +10,9 @@
 # This file contains no policy, no branching on run content, and no state
 # (AC-4.1). The tribunal path below decides nothing either — it reads one id
 # out of the harness's tool_input and hands it, with the run the engine itself
-# named, back to the engine, which owns the verdict. The launch-cwd check below
+# named, back to the engine, which owns the verdict. The usage-join path below
+# only declares that the installed wave-usage.js claims no step; the engine
+# decides what that admits. The launch-cwd check below
 # is input validation on a hand-typed argument, not run policy. Behavior is pinned by
 # tests/docket-spawn-guard-hook.test.sh.
 #
@@ -99,6 +101,34 @@ if [ -n "$HOOK_INPUT" ] && command -v jq >/dev/null 2>&1; then
     fi
 fi
 
+# THE USAGE JOIN IS DECLARED, NOT DECIDED.
+#
+# wave-usage.js reads finished transcripts and claims no step, yet under a
+# write-class reap hold the plain question denied it, so usage back-fill
+# waited on the reap's acknowledgment. `guard spawn --active --usage-join`
+# is the engine's carve-out for a launch that claims no step: it relaxes the
+# reap half only and logs every use as `spawn-admitted`. The hook only names
+# the launch; the engine owns the verdict.
+#
+# Matched on the RESOLVED INSTALLED PATH, not the basename: a same-named copy
+# anywhere else must not claim the carve-out. Production ~/.claude/workflows
+# is a symlink into the vorpal store, so the script's directory and the
+# installed directory are each resolved with `cd -P` (a builtin, so no PATH
+# dependency) and compared; either the symlinked or the resolved scriptPath
+# matches. A directory that does not resolve matches nothing, and the launch
+# asks the plain question.
+USAGE_JOIN=""
+if [ "${SCRIPT:-}" = "wave-usage.js" ] && [ -n "${HOME:-}" ]; then
+    SCRIPT_PATH=$(printf '%s' "$HOOK_INPUT" | jq -r '.tool_input.scriptPath // ""' 2>/dev/null)
+    if [ "${SCRIPT_PATH#/}" != "$SCRIPT_PATH" ]; then
+        SCRIPT_DIR_REAL=$(CDPATH='' cd -P -- "${SCRIPT_PATH%/*}/" 2>/dev/null && pwd -P)
+        INSTALLED_DIR_REAL=$(CDPATH='' cd -P -- "${HOME}/.claude/workflows" 2>/dev/null && pwd -P)
+        if [ -n "$SCRIPT_DIR_REAL" ] && [ "$SCRIPT_DIR_REAL" = "$INSTALLED_DIR_REAL" ]; then
+            USAGE_JOIN="--usage-join"
+        fi
+    fi
+fi
+
 # A LAUNCH CWD THAT IS NOT THE CHECKOUT'S ROOT IS REFUSED HERE, BEFORE ANY AGENT.
 #
 # The conductor hand-types args.cwd, and a typo (`ALT-F-LLC` for `ALT-F4-LLC`)
@@ -172,4 +202,4 @@ if [ -n "$DECIDING_VOTE" ]; then
     fi
 fi
 
-exec docket guard spawn --active >/dev/null
+exec docket guard spawn --active ${USAGE_JOIN:+"$USAGE_JOIN"} >/dev/null

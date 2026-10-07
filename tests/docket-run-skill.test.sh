@@ -123,9 +123,10 @@
 #          cap paragraph
 #       h2 revert either Workflow example to a bare `harnessCap`
 #       h3 restore the `getconf _NPROCESSORS_ONLN` probe anywhere in step 2
-#   (i) resume-prompt paths: the script in references/pause.md is extracted
-#       and run against fixture prompts (DOCKET_RUN_PAUSE_FILE overrides the
-#       pause.md under test, as DOCKET_RUN_SKILL_FILE does for SKILL.md)
+#   (i) resume-prompt paths: the shipped scripts/resume-prompt-paths.sh is
+#       run against fixture prompts (DOCKET_RUN_PATHS_SCRIPT overrides the
+#       script under test, as DOCKET_RUN_SKILL_FILE does for SKILL.md)
+#       i0 delete or rename the shipped script; case (i) fails
 #       i1 delete the `test -e` refusal from `check` (or make it exit 0); the
 #          prompt naming the mistyped incident checkout then exits 0
 #       i2 replace the toplevel comparison in `attach` with `true` (or delete
@@ -145,6 +146,7 @@ SELF="${SCRIPT_DIR}/$(basename "${BASH_SOURCE[0]}")"
 REPO_SKILL="${SCRIPT_DIR}/../src/user/claude_code/skills/docket-run/SKILL.md"
 SKILL="${DOCKET_RUN_SKILL_FILE:-$REPO_SKILL}"
 PAUSE="${DOCKET_RUN_PAUSE_FILE:-${SCRIPT_DIR}/../src/user/claude_code/skills/docket-run/references/pause.md}"
+PATHS_SCRIPT="${DOCKET_RUN_PATHS_SCRIPT:-${SCRIPT_DIR}/../src/user/claude_code/skills/docket-run/scripts/resume-prompt-paths.sh}"
 
 ESCALATION="${DOCKET_RUN_ESCALATION_FILE:-${SCRIPT_DIR}/../src/user/claude_code/skills/docket-run/references/escalation.md}"
 
@@ -267,10 +269,12 @@ if [ -z "${DOCKET_RUN_SKILL_INNER:-}" ]; then
         # of this suite still (or no longer) catches a mutant needs the copy
         # and the skill file at those same relative paths.
         run_in_tree() { # <suite-script> <skill-copy> <tree-dir>
-            mkdir -p "$3/tests" "$3/src/user/claude_code/skills/docket-run/references"
+            mkdir -p "$3/tests" "$3/src/user/claude_code/skills/docket-run/references" \
+                "$3/src/user/claude_code/skills/docket-run/scripts"
             cp "$1" "$3/tests/$(basename "$SELF")"
             cp "$2" "$3/src/user/claude_code/skills/docket-run/SKILL.md"
             cp "$PAUSE" "$3/src/user/claude_code/skills/docket-run/references/pause.md"
+            cp "$PATHS_SCRIPT" "$3/src/user/claude_code/skills/docket-run/scripts/resume-prompt-paths.sh"
             cp "$ESCALATION" "$3/src/user/claude_code/skills/docket-run/references/escalation.md"
             (cd "$3" && DOCKET_RUN_SKILL_INNER=1 bash "tests/$(basename "$SELF")") \
                 >/dev/null 2>&1
@@ -566,22 +570,13 @@ done < "${WORK}/all-sentences"
 [ "$census" -eq 0 ] && ok "lift census: every sentence naming a sandbox lift is one of the pinned rulings"
 
 # (i) The resume prompt's paths come from git and are checked before the
-# prompt is recorded and again at attach. The script is taken from the one
-# fenced block in pause.md carrying its usage line and run as the conductor
-# runs it, against fixture prompts.
-paths_usage='# resume-prompt-paths: print | check <prompt-file> | attach <prompt-file>'
+# prompt is recorded and again at attach. The shipped script, the file the
+# skills install puts at ~/.claude/skills/docket-run/scripts, is copied and
+# run as the conductor runs it, against fixture prompts.
 paths="${WORK}/paths"
 mkdir -p "${paths}/checkout" "${paths}/worktree" "${paths}/other" "${paths}/repo"
-if awk -v usage="$paths_usage" '
-        /^```/ {
-            if (open) { if (found) { printf "%s", block; n++ }; open = 0; found = 0; block = "" }
-            else open = 1
-            next
-        }
-        open { block = block $0 "\n"; if ($0 == usage) found = 1 }
-        END { exit n == 1 ? 0 : 1 }
-    ' "$PAUSE" > "${paths}/resume-prompt-paths.sh"; then
-    ok "resume-prompt paths: exactly one fenced block in pause.md carries the script"
+if [ -f "$PATHS_SCRIPT" ] && cp "$PATHS_SCRIPT" "${paths}/resume-prompt-paths.sh"; then
+    ok "resume-prompt paths: the shipped resume-prompt-paths.sh exists"
 
     incident='/Users/erikreinert/Development/repository/github.com/ALT-F-LLC/dotfiles.vorpal.git/main'
     printf '# Resume RUN-1\n\n**Checkout:** `%s`\n**Branch:** `main`\n' "$incident" \
@@ -665,7 +660,7 @@ if awk -v usage="$paths_usage" '
         bad "resume-prompt paths: could not create the fixture git repository"
     fi
 else
-    bad "resume-prompt paths: no single fenced block in ${PAUSE} carries '${paths_usage}'"
+    bad "resume-prompt paths: the shipped script is missing: ${PATHS_SCRIPT}"
 fi
 
 # (j) The dispatch idle watcher runs under zsh, which is what the Bash tool

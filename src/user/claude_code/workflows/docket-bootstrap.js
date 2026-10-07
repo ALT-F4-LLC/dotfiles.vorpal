@@ -81,16 +81,17 @@ export const meta = {
 // ---------------------------------------------------------------------------
 
 // Pin models so a launch never inherits the caller's quota-limited model.
-// Mining is evidence-gathering over source and history, so it gets the
-// sibling corpus's standard read tier. The gates seam is a tier up: a
-// misclassified side effect could authorize a check execution the skill
-// forbids, so it gets deliberately stronger reading than the other two
-// seams even when combined. Gate-union reads structured TOML for
-// declarations, which is mechanical enough for the lighter tier.
+// The build-CI and docs-history seams relay evidence that main re-checks:
+// per-argv operator approval and a diff review catch a wrong read, so they
+// run on haiku at medium effort. The gates seam is a tier up: a misclassified
+// side effect could authorize a check execution the skill forbids, so it
+// stays on opus, even when combined. Gate-union stays on sonnet: a gate it
+// misses leaves the union with no trust proposal and no deferred line, and
+// nothing reports the miss.
 const AGENT_CONFIG = {
-    buildCi: { model: 'sonnet', effort: 'medium' },
+    buildCi: { model: 'haiku', effort: 'medium' },
     gatesScripts: { model: 'opus', effort: 'medium' },
-    docsHistory: { model: 'sonnet', effort: 'medium' },
+    docsHistory: { model: 'haiku', effort: 'medium' },
     combined: { model: 'opus', effort: 'medium' },
     gateUnion: { model: 'sonnet', effort: 'medium' },
 }

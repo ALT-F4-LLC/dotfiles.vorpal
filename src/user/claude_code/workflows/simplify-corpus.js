@@ -61,7 +61,7 @@ const SCRIPTS = '~/.claude/skills/simplify-corpus/scripts'
 // Pin models so the run never inherits the caller's quota-limited model.
 const AGENT_CONFIG = {
   simplify: { model: 'opus', effort: 'medium' },
-  check: { model: 'sonnet', effort: 'high' },
+  check: { model: 'haiku', effort: 'medium' }, // relays simplify-check.sh verbatim; parseCheck rejects garbled output
   verify: { model: 'sonnet', effort: 'high' },
 }
 

@@ -80,7 +80,7 @@ export const meta = {
 // pass rests on, so it gets opus/medium, the variant policy.toml gives most
 // of its judge-* executors.
 const AGENT_CONFIG = {
-    registry: { model: 'sonnet', effort: 'high' },
+    registry: { model: 'haiku', effort: 'medium' },
     judge: { model: 'opus', effort: 'medium' },
     cluster: { model: 'sonnet', effort: 'high' },
 }

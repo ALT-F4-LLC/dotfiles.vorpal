@@ -293,7 +293,11 @@
 # is read through, since backslashes are dropped from every word), a glob
 # outside the id (`S*-7.d`), a verb reached through a variable or `$(which
 # ...)` (`k=pkill; $k node`), a command string carried in a variable (`x='rm
-# -rf ...'; $x`), `xargs` fed from a pipe stage that never names the dir,
+# -rf ...'; $x`), a path under the caller's own dir whose leaf is a bare
+# expansion (`<own>/$p`, `<own>/$i` after `i=$(printf 'x/../../STEP-%s.d'
+# 7)`), whose runtime value can carry `../` into a sibling's `STEP-M.d`
+# (the guard judges the unexpanded command text, never the value),
+# `xargs` fed from a pipe stage that never names the dir,
 # `rm -rf <TMP>` or `<TMP>/*` against the whole scratch root (no step named;
 # the permission text clears it for every session), `fuser -k`, a pid
 # read from a file under another checkout, and a read loop that follows,

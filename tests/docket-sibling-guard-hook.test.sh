@@ -1176,6 +1176,11 @@ case_own_leaf_expansions() {
     assert_verdict "sed -i s#${OWN_DIR}/STEP-42-base-hook.sh#\$D/basehooks/x.sh# ${OWN_DIR}/f" executor-write "$WAVE_42" ALLOW "own leaf glued to a #\$VAR sed delimiter, unquoted"
     assert_verdict "sed -i \"s#${OWN_DIR}/STEP-7-base-hook.sh#\$D/basehooks/x.sh#\" ${OWN_DIR}/f" executor-write "$WAVE_42" DENY "foreign leaf id glued to a #\$VAR sed delimiter"
     assert_verdict "D=${OWN_DIR}; sed -i \"s#\$D/STEP-42-base-hook.sh#\$D/basehooks/x.sh#\" \"\$D/f\"" executor-write "$WAVE_42" DENY "own leaf behind \$D, not the own dir, before a #\$VAR delimiter (accepted false deny)"
+    # KNOWN RESIDUAL: the guard judges unexpanded text, so a bare expansion
+    # leaf under the own dir passes whatever `..` its runtime value carries.
+    assert_verdict "rm -rf ${OWN_DIR}/\$p" executor-write "$WAVE_42" ALLOW "residual: rm of a bare expansion leaf under the own dir"
+    assert_verdict "git worktree remove ${OWN_DIR}/\$p" executor-write "$WAVE_42" ALLOW "residual: worktree remove of a bare expansion leaf under the own dir"
+    assert_verdict "i=\$(printf 'x/../../STEP-%s.d' 7); rm -rf ${OWN_DIR}/\$i" executor-write "$WAVE_42" ALLOW "residual: own-dir leaf whose assigned value traverses into a sibling"
 }
 
 # Prose under an interpreter, and the string forms of CL9.

@@ -1185,8 +1185,9 @@ function verb_index(n, start,   i, h, quoted, g, k) {
 # or "" when an expansion, glob or brace stands where the id should be).
 # T_END is the position just past the token, for scanning the rest of the
 # word. T_LEAF is 1 for an expansion token shaped as an own-file name: the
-# own digits, a `-`, then plain characters and `$name` or `${name}` up to the
-# next `/`. Only foreign_scratch honours it, and only after the own `.d`.
+# own digits, a `-`, then plain characters (a mid-word `#`, such as a sed
+# s### delimiter, among them) and `$name` or `${name}` up to the next `/`.
+# Only foreign_scratch honours it, and only after the own `.d`.
 # docket_arg is true only for a word the engine reads as a step id (see THE
 # MATCH); callers that pass nothing get 0.
 function scratch_token(w, docket_arg,   pos, rest, run, id, suffix, dot, sub_ok) {
@@ -1205,7 +1206,7 @@ function scratch_token(w, docket_arg,   pos, rest, run, id, suffix, dot, sub_ok)
         T_TOKEN = "STEP-" run
         T_NUM = ""
         T_END = pos + length(run)
-        T_LEAF = (own_mode == "known" && run ~ ("^" own "-([A-Za-z0-9_.,@%+:-]|[$][A-Za-z_][A-Za-z0-9_]*|[$][{][A-Za-z_][A-Za-z0-9_]*[}])*$"))
+        T_LEAF = (own_mode == "known" && run ~ ("^" own "-([A-Za-z0-9_.,@%+:#-]|[$][A-Za-z_][A-Za-z0-9_]*|[$][{][A-Za-z_][A-Za-z0-9_]*[}])*$"))
         return 1
     }
     id = run

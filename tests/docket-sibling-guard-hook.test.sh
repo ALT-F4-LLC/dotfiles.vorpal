@@ -1070,6 +1070,11 @@ case_own_leaf_expansions() {
     assert_verdict "echo \"\`cat /tmp/claude-501/STEP-7.d/STEP-7-note\`\"" executor-write "$WAVE_42" DENY "sibling file closing a backtick substitution"
     assert_verdict "rm -rf ${OWN_DIR}/STEP-42-\`echo x\`" executor-write "$WAVE_42" DENY "opening backtick inside the own leaf"
     assert_verdict "echo \"\`cat ${OWN_DIR}/STEP-42-\$(id)\`\"" executor-write "$WAVE_42" DENY "\$( ) in the own leaf before a closing backtick"
+    # A sed s### expression gluing the own leaf to a variable.
+    assert_verdict "sed -i \"s#${OWN_DIR}/STEP-42-base-hook.sh#\$D/basehooks/x.sh#\" ${OWN_DIR}/f" executor-write "$WAVE_42" ALLOW "own leaf glued to a #\$VAR sed delimiter"
+    assert_verdict "sed -i s#${OWN_DIR}/STEP-42-base-hook.sh#\$D/basehooks/x.sh# ${OWN_DIR}/f" executor-write "$WAVE_42" ALLOW "own leaf glued to a #\$VAR sed delimiter, unquoted"
+    assert_verdict "sed -i \"s#${OWN_DIR}/STEP-7-base-hook.sh#\$D/basehooks/x.sh#\" ${OWN_DIR}/f" executor-write "$WAVE_42" DENY "foreign leaf id glued to a #\$VAR sed delimiter"
+    assert_verdict "D=${OWN_DIR}; sed -i \"s#\$D/STEP-42-base-hook.sh#\$D/basehooks/x.sh#\" \"\$D/f\"" executor-write "$WAVE_42" DENY "own leaf behind \$D, not the own dir, before a #\$VAR delimiter (accepted false deny)"
 }
 
 # Prose under an interpreter, and the string forms of CL9.

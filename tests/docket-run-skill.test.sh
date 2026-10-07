@@ -118,10 +118,13 @@
 #          leaving the paragraph with dedupe only
 #       g-B move the sentence into the clean-HEAD ruling paragraph above;
 #          the literal survives whole-file but leaves the dedupe paragraph
-#   (h) harnessCap comes from launches.json, never computed by hand
+#   (h) harnessCap and every other launch arg come from lane_units.py's
+#       generated args-<i>.json, never computed or re-typed by hand
 #       h1 restore "Compute `harnessCap = min(16, that number - 2)`" in the
 #          cap paragraph
-#       h2 revert either Workflow example to a bare `harnessCap`
+#       h2 revert either Workflow example to an inline args object
+#       h4 restore `rows: <launch-0 rows>` in the first example line; the
+#          example paragraph's negative assertion goes red
 #       h3 restore the `getconf _NPROCESSORS_ONLN` probe anywhere in step 2
 #   (i) resume-prompt paths: the shipped scripts/resume-prompt-paths.sh is
 #       run against fixture prompts (DOCKET_RUN_PATHS_SCRIPT overrides the
@@ -578,18 +581,29 @@ else
     bad "first-duplicate note: no single paragraph carries 'A note reaches only packets rendered after it lands'"
 fi
 
-# (h) harnessCap has one source: lane_units.py writes it into launches.json
-# and the conductor passes it through. A hand-computed figure drifted in past
-# runs (1000 was passed as the cap), so step 2 must name launches.json as the
-# source and carry no formula, CPU probe, or literal of its own.
+# (h) harnessCap has one source: lane_units.py writes it into each launch's
+# generated args object, and the conductor passes that object unedited. A
+# hand-computed figure drifted in past runs (1000 was passed as the cap), so
+# step 2 must name the generated args as the source and carry no formula, CPU
+# probe, or literal of its own. The launch example passes args-<i>.json whole:
+# an inline object re-emits every row and hand-types cwd through model output.
 if paragraph 'wave.js uses `min(HARNESS_CAP, harnessCap)` as its own' "${WORK}/harness-cap"; then
     ok "harnessCap: exactly one paragraph rules on the cap"
-    states "harnessCap: each launch passes the launches.json figure" \
-        "${WORK}/harness-cap" "pass entry i's \`harnessCap\` from launches.json"
-    states "harnessCap: launch 0 example reads launches.json" \
-        "${WORK}/flat" 'harnessCap: <launches.json[0].harnessCap>'
-    states "harnessCap: launch 1 example reads launches.json" \
-        "${WORK}/flat" 'harnessCap: <launches.json[1].harnessCap>'
+    states "harnessCap: each launch passes the generated args figure" \
+        "${WORK}/harness-cap" "launch i's \`harnessCap\` reaches wave.js inside \`args-<i>.json\`"
+    if paragraph 'Workflow({ scriptPath: "<absolute installed path to wave.js>"' "${WORK}/launch-example"; then
+        states "launch example: launch 0 passes the generated args object" \
+            "${WORK}/launch-example" 'args: <$LAUNCH_DIR/args-0.json, the generated args object, unedited>'
+        states "launch example: launch 1 passes the generated args object" \
+            "${WORK}/launch-example" 'args: <$LAUNCH_DIR/args-1.json, the generated args object, unedited>'
+        if grep -qF -- 'rows: <launch-' "${WORK}/launch-example"; then
+            bad "launch example: still passes rows inline: rows: <launch-"
+        else
+            ok "launch example: no inline rows: <launch-"
+        fi
+    else
+        bad "launch example: no single paragraph carries the wave.js Workflow launch example"
+    fi
     awk '/^### 2\. /{on=1; next} /^### 3\. /{on=0} on' "$SKILL" > "${WORK}/step-2"
     if [ ! -s "${WORK}/step-2" ]; then
         bad "harnessCap: the step-2 section heading has drifted; nothing extracted"

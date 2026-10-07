@@ -772,13 +772,14 @@ JSON (the manifest is hashed and a retyped copy won't match): run
 `jq -c '.data.rows[]' > rows.jsonl` and page it with `Read`'s
 `offset`/`limit`, never reconstructing rows by hand.
 
-Paging is also how rows reach a launch. `Read` truncates a single-line
-file near 25K tokens (a 192-row manifest is 70 KB), so **Split the
-launches** below writes each launch's rows one per line. `Read` each
-launch file in pages of at most 96 lines until its rows are in context,
-then emit them as that launch's literal `rows` value, each row exactly
-once across the dispatch. Never emit from a truncated view, probe byte
-offsets, or split a file by hand.
+Rows never reach a launch through your context. **Split the launches**
+below writes each launch's rows into a rows module that wave.js loads
+itself, and the launch's generated args object names that module and its
+hash. Never re-emit rows into a launch's `args`, probe byte offsets, or
+split a file by hand. To inspect a launch's rows, page its
+`launch-<i>.jsonl` with `Read` in pages of at most 96 lines, since `Read`
+truncates a single-line file near 25K tokens (a 192-row manifest is
+70 KB).
 
 **No policy crosses a launch.** Every row carries `model`, `effort`,
 `variant` resolved by the engine from pinned policy.toml. Never `cat`,
@@ -815,14 +816,14 @@ report it, never hunt for another copy.
 it.** A wave script cannot read the CPU count itself. lane_units.py (Split the
 launches below) reads the CPU count itself (`os.cpu_count()`, overridable via
 `LANE_UNITS_CPUS`) and writes the cap, floored at 1, into every launches.json
-entry: pass entry i's `harnessCap` from launches.json in launch
-i's `args`, copied as written, never a figure of your own. wave.js uses
-`min(HARNESS_CAP, harnessCap)` as its own admission bound and logs which it
-used; omitting the field is never a refusal.
+entry and every generated args object: launch i's `harnessCap` reaches
+wave.js inside `args-<i>.json`, as written, never a figure of your own.
+wave.js uses `min(HARNESS_CAP, harnessCap)` as its own admission bound and
+logs which it used; omitting the field is never a refusal.
 
 ```
-Workflow({ scriptPath: "<absolute installed path to wave.js>", args: {rows: <launch-0 rows>, unit: <launches.json[0] as {index, of, classCap}>, tribunal, cwd, harnessCap: <launches.json[0].harnessCap>} })
-Workflow({ scriptPath: "<absolute installed path to wave.js>", args: {rows: <launch-1 rows>, unit: <launches.json[1] as {index, of, classCap}>, tribunal, cwd, harnessCap: <launches.json[1].harnessCap>} })
+Workflow({ scriptPath: "<absolute installed path to wave.js>", args: <$LAUNCH_DIR/args-0.json, the generated args object, unedited> })
+Workflow({ scriptPath: "<absolute installed path to wave.js>", args: <$LAUNCH_DIR/args-1.json, the generated args object, unedited> })
 …one launch per index, 0 through N-1, all in this same turn
 ```
 
@@ -845,9 +846,11 @@ about a minute apart. wave.js refuses `of` above 20 and the retired
 `shard` arg.
 
 `tribunal` is the absolute installed path to `tribunal.js`, resolved the
-same way as wave.js's; wave.js seats in-wave vote rows through it. `cwd`
-is the repo the run belongs to, and must be this session's working
-directory: before each executor spawns, a claim agent runs `wave-claim`
+same way as wave.js's and handed to lane_units.py as `--tribunal`; wave.js
+seats in-wave vote rows through it. `cwd` is the repo the run belongs to,
+and must be this session's working directory; lane_units.py writes the git
+toplevel of the directory it runs in, so run it from this session's working
+directory. Before each executor spawns, a claim agent runs `wave-claim`
 (`src/user/docket/bin/wave-claim`, installed under `~/.docket/bin`), which
 claims the step and writes its rendered packet into a module under
 `<cwd>/.claude/docket-packets/`. The wave loads
@@ -855,22 +858,26 @@ that module and hands the executor the packet verbatim in its brief, and
 the Workflow tool loads a module only from the working directory. A wave
 whose `cwd` is elsewhere stops claiming after its first unloadable module.
 `scriptPath` and `args` are the only parameters; there is no
-`run_in_background`. Resuming a stopped workflow needs the full original
-`args` again, verbatim.
+`run_in_background`. Resuming a stopped workflow needs the same
+`args-<i>.json` object again, verbatim.
 
 **Never `Workflow({name: "wave"})`**: the name registry can serve a stale
 snapshot. `scriptPath` is the only invocation that provably runs the
 current file.
 
-Pass `args` as `{rows, unit, tribunal, cwd, harnessCap}`, plus
-`integrated` when the dispatch carries a fix round's review fanout
-(instances `name@N#k` with N ≥ 2), the same map in every launch. Read
-[references/fix-rounds.md](references/fix-rounds.md) in full before
-building it: which sha each issue gets, the round off-by-one trap, and
-when an entry is omitted.
-Emit it as a literal JSON value, never hand-stringified. There is no `policyPath`/`policyText`; routing is on the
-rows. Pass rows verbatim as the launch file holds them, with
-`model`/`effort`/`variant` intact.
+Pass `args` as the generated args object lane_units.py writes for launch
+i, `$LAUNCH_DIR/args-<i>.json`, unedited: `{rowsModule, rows_sha256, unit,
+harnessCap, cwd, tribunal}`, plus `integrated` when the dispatch carries a
+fix round's review fanout (instances `name@N#k` with N ≥ 2). lane_units.py
+puts that map in every launch's object when you give it `--integrated`.
+Read [references/fix-rounds.md](references/fix-rounds.md) in full before
+building the map: which sha each issue gets, the round off-by-one trap,
+and when an entry is omitted. Emit the object as a literal JSON value,
+never hand-stringified, and never add, drop, or re-type a field. The rows
+ride in the rows module the object names, with `model`/`effort`/`variant`
+intact, never in `args`; wave.js refuses the launch before any claim when
+the module's `rows_sha256` differs from the object's. There is no
+`policyPath`/`policyText`; routing is on the rows.
 
 **wave-audit's advisory is never noise.** It arrives as additional
 context right after the Workflow tool returns (the hook emits it on the
@@ -901,21 +908,29 @@ is left to the classifier, which refused it mid-run (measured: accepted
 at one conductor's activation, refused at its fourth dispatch):
 
 ```bash
-python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$ROWS_FILE" "$LAUNCH_DIR"
+python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$ROWS_FILE" "$LAUNCH_DIR" --tribunal "<absolute installed path to tribunal.js>"
+# a dispatch carrying a fix round's review fanout adds its integrated map:
+python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$ROWS_FILE" "$LAUNCH_DIR" --tribunal "<absolute installed path to tribunal.js>" --integrated "$INTEGRATED_FILE"
 ```
 
-It reads the kept rows as one JSON array or as JSON lines, prints N alone
-on stdout, writes `launch-<i>.jsonl` (launch i's rows, one per line) and
-`launches.json` (each launch's `index`, `of`, `classCap`, `harnessCap`,
-row count and its one lane) and `deferred.jsonl` (rows past the cap,
-empty when none) under `$LAUNCH_DIR`, and names each lane's launch on
-stderr for the dispatch report. Use a fresh `$LAUNCH_DIR` per dispatch
-under the session's scratchpad (for example
-`<scratchpad>/launch-DISPATCH-M`). Read `launches.json`, then each launch
-file, and emit launch i with those rows, `unit: {index, of, classCap}`,
-and `harnessCap` copied from entry i. wave.js no longer re-derives the
-partition, so only the engine's claim check catches a row copied into the
-wrong launch: copy each launch file whole.
+Always pass `--tribunal`; without it no generated object carries
+`tribunal`, and the script says so on stderr. `$INTEGRATED_FILE` holds the
+integrated map as one JSON object of issue to sha, written under the
+session's scratchpad. Run it from this session's working directory: it
+exits 1 outside the run's git work tree and writes nothing. It reads the
+kept rows as one JSON array or as JSON lines, prints N alone on stdout,
+writes `launch-<i>.jsonl` (launch i's rows, one per line), `args-<i>.json`
+(launch i's complete wave.js args), `launches.json` (each launch's
+`index`, `of`, `classCap`, `harnessCap`, row count and its one lane) and
+`deferred.jsonl` (rows past the cap, empty when none) under
+`$LAUNCH_DIR`, writes each launch's rows module under
+`<cwd>/.claude/docket-packets/`, and names each lane's launch on stderr for
+the dispatch report. Use a fresh `$LAUNCH_DIR` per dispatch under the
+session's scratchpad (for example `<scratchpad>/launch-DISPATCH-M`). Pass
+launch i's `args` as the generated args object in `args-<i>.json`,
+unedited. wave.js no longer re-derives the partition, and its hash check
+proves only that the module matches the object's own `rows_sha256`, so
+pass each object whole to its own launch.
 
 Pass rows through unchanged beyond the kind filter and the split, with no
 reordering, dropping, or adding, and never sequence or hold rows back
@@ -946,7 +961,8 @@ When extend returns no appended rows, launch nothing new from it and keep
 waiting on the outstanding launches. When it returns rows, apply the kind
 filter to them and append them to the dispatch's kept rows file, then
 re-split the whole open manifest, opened plus appended rows, by
-re-running lane_units.py over that file into a fresh `$LAUNCH_DIR`, and
+re-running lane_units.py over that file, with the same `--tribunal` and
+`--integrated`, into a fresh `$LAUNCH_DIR`, and
 launch only the resulting units that hold no lane already in flight. No
 verb re-reads the open manifest, so that file is the manifest of record:
 keep it for the whole dispatch. Re-splitting the whole manifest, never
@@ -957,7 +973,7 @@ manifest's headroom. A unit holding a lane still in flight is not
 launched; its appended rows wait for that lane's launch to return, and
 the re-split at that return launches them even when that return's own
 extend appends nothing. Launch the new units in one message exactly as
-above, with `unit` and `harnessCap` from the fresh launches.json, add
+above, each passing its `args-<i>.json` from the fresh `$LAUNCH_DIR`, add
 their transcript directories to the watcher below and restart it, then
 end the turn again. An appended row nobody launches stays pending and is
 not a discrepancy at close; the engine re-offers it next dispatch.

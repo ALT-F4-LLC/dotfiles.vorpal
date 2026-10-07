@@ -135,12 +135,14 @@ every other path the prompt names from command output as well.
   --backfill-from`, or on a crashed-relay back-fill), and
   the worktree sweep set for that wave (`worktree-wf_<id>-*` branches)
   cannot be told apart from a foreign entry.
-- **The full original `Workflow` args** — each launch's literal `rows`
-  JSON exactly as its launch file held it, routing fields included, any
-  `integrated` map, and its `unit` — for any wave or tribunal a later
+- **The full original `Workflow` args** — each wave launch's generated
+  `args-<i>.json` object exactly as lane_units.py wrote it (`rowsModule`,
+  `rows_sha256`, `unit`, `harnessCap`, `cwd`, `tribunal`, any
+  `integrated` map), or the literal args of an older inline-rows launch,
+  and each tribunal's args — for any wave or tribunal a later
   session may need to resume with `resumeFromRunId`. The harness does not
   restore these; an arg-less resume dies at startup, and a launch resumed
-  with another launch's rows runs a different lane set. A wave launched
+  with another launch's args runs a different lane set. A wave launched
   before the split carries the retired `shard` arg, which wave.js now
   refuses: reconcile that dispatch instead of resuming it.
 - **Un-integrated writer shas**: any executor sha recorded but never

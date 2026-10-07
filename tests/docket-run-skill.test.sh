@@ -1363,6 +1363,43 @@ else
     bad "step hold: escalation.md's answer block does not carry exactly one 'docket step hold STEP-N --reason' line"
 fi
 
+# (y) Each budget or chain deferral and each vote re-seat is recorded with
+# `docket run fact add`, in the form the verbs checkpoint carries, so a retro
+# reading only the store can count them.
+#
+#   y1 delete the step-deferred line from the verbs heredoc
+#   y2 map `skipped-chain-dead` to cause `budget`
+#   y3 delete the taught vote-reseated line outside the heredoc, leaving the
+#      checkpoint's copy
+facts_anchor='**Record each deferral and re-seat as a run fact once the close lands.**'
+if paragraph "$facts_anchor" "${WORK}/facts"; then
+    states "run facts: budget statuses map to cause budget" \
+        "${WORK}/facts" '`not-launched-writer-budget` or `not-launched-token-budget` (cause `budget`)'
+    states "run facts: a chain-dead row maps to cause chain" \
+        "${WORK}/facts" '`skipped-chain-dead` (cause `chain`)'
+    states "run facts: every seat a reseated row names gets a fact" \
+        "${WORK}/facts" "for every seat a row's \`reseated: {proposal, seats}\` names"
+else
+    bad "run facts: no single paragraph carries '${facts_anchor}'"
+fi
+for kind in step-deferred vote-reseated; do
+    fact_line=$(grep -E "^docket run fact add \\\$RUN --kind ${kind} " "${WORK}/verbs-heredoc")
+    if [ -z "$fact_line" ] || [ "$(printf '%s\n' "$fact_line" | wc -l)" -ne 1 ]; then
+        bad "run facts: the verbs checkpoint does not carry exactly one ${kind} fact line"
+        continue
+    fi
+    taught=$(awk '
+        index($0, "cat > <scratchpad>/conductor.d/$RUN.verbs <<'"'"'EOF'"'"'") { on = 1; next }
+        on && $0 == "EOF" { on = 0; next }
+        !on { print }
+    ' "$SKILL" | grep -cxF -- "$fact_line")
+    if [ "$taught" -ge 1 ]; then
+        ok "run facts: the checkpoint's ${kind} line matches the form the body teaches"
+    else
+        bad "run facts: the checkpoint's ${kind} line is taught nowhere outside the heredoc: ${fact_line}"
+    fi
+done
+
 if [ "$fail" -ne 0 ]; then
     echo "docket-run-skill: FAIL — a sandbox lift without its precondition is the failure this pins; fix the skill, not the test." >&2
     exit 1

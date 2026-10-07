@@ -505,8 +505,8 @@ rotated) and then the token on its own stdout line, `step claim`'s
 discipline, so a session whose stdout lands in a transcript uses `--json`
 and extracts the field without printing it.
 
-The eight operator verbs — `step approve|reject|resolve|reap|hold`, `run
-pause|resume|abandon` (with or without `--issue`) — require the capability
+The nine operator verbs — `step approve|reject|resolve|reap|hold`, `run
+pause|resume|abandon` (with or without `--issue`), `run fact add` — require the capability
 on a bound run, via `DOCKET_TOKEN` or stdin, never argv (there is no
 `--token` flag on any verb): none supplied is `VALIDATION_ERROR` (exit 3)
 naming both channels and this verb; a wrong one, a step's lease token
@@ -524,7 +524,7 @@ only valid one from that moment, the displaced conductor's next ruling
 refuses `AUTH_ERROR`, and the `conductor-seated` event names who took it
 and from where. A harness keys its own callers off this one verb (the
 sibling guard denies it to the executor archetypes); the engine keeps them
-off the other eight.
+off the other nine.
 
 Refusals: `done` or `abandoned` run → `CONFLICT` (exit 4, "there is nothing
 left to conduct"); missing run → `NOT_FOUND` (exit 2).

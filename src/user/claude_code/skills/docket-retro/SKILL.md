@@ -242,7 +242,7 @@ fallback: the tool launches only under the session's cwd or
 `permissions.additionalDirectories`, which adds exactly
 `~/.claude/workflows`. An absent installed file means the corpus was never
 activated here: stop and report it rather than hunting for another copy. The
-workflow returns `{voteId, outcome, seatsSpawned, respawns, replies}`, the
+workflow returns `{voteId, outcome, seatsSpawned, respawns, respawned, replies}`, the
 same shape docket-run reads: `replies` lists `{seat, castError}` for each
 seat whose cast failed after its retry. Then `docket
 vote result <id>`: approved is the authority to apply, and §4 runs

@@ -141,6 +141,10 @@ ok(C.outcome && Array.isArray(C.outcome.votes) && C.outcome.votes.length === 3 &
 ok(CALLS.filter((c) => c === `verify:${VOTE}`).length === 2 && CALLS.filter((c) => c === 'seat:tribunal-security').length === 2,
     `the re-seat and both probes still happen (got ${JSON.stringify(CALLS)})`)
 ok(C.absorbed === undefined, 'a conversational result grows no absorbed field')
+// The conductor records one `run fact add --kind vote-reseated` per seat, so
+// the result names the re-seated seat, not only the count.
+ok(same(C.respawned, ['tribunal-security']),
+    `the conversational result names the re-seated seat (got ${JSON.stringify(C.respawned)})`)
 
 // ---- conversational, the re-seat ALSO reports a cast error: the retry's
 // error is relayed too, since that attempt is the one the brief tells to

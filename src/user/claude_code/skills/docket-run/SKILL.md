@@ -111,13 +111,13 @@ engine mutating verb, a trust verb, or a launch; those stay yours.
 
 ## The conductor capability
 
-The engine binds the eight operator verbs, `docket step
-approve|reject|resolve|reap|hold` and `docket run pause|resume|abandon` (with
-or without `--issue`), to a run-scoped CONDUCTOR CAPABILITY: a 256-bit
+The engine binds the nine operator verbs, `docket step
+approve|reject|resolve|reap|hold`, `docket run pause|resume|abandon` (with
+or without `--issue`), and `docket run fact add`, to a run-scoped CONDUCTOR CAPABILITY: a 256-bit
 token a run's first `docket run activate` returns exactly once
 (`conductor_token` in the `--json=v2` envelope; its own trailing stdout
 line in human mode), of which the store keeps only the hash. On a bound
-run each of the eight reads the token from `DOCKET_TOKEN` or stdin, never
+run each of the nine reads the token from `DOCKET_TOKEN` or stdin, never
 argv, and refuses without it. `docket run conduct RUN-N` re-mints it for
 a session that does not hold it, retiring the standing token and
 recording a `conductor-seated` event that names the caller's `actor` and
@@ -205,6 +205,8 @@ docket step resolve STEP-N --as override-pass --batch --authority standing-grant
 docket step resolve STEP-N --as fix-round --authority standing-grant --authority-ref <proposal id> < <scratchpad>/conductor.d/$RUN.token
 docket step resolve STEP-N --as override-pass --drop-interposed --authority standing-grant --authority-ref loop-bound --note "loop-bound ruling: residue; filed <ids>; <AC or cluster> out of scope, remedy <home>" < <scratchpad>/conductor.d/$RUN.token
 docket run abandon $RUN --issue <issue> --reason "classifier-stopped twice: <step>; re-plan <new-id>" --authority standing-grant --authority-ref classifier-stopped-twice < <scratchpad>/conductor.d/$RUN.token
+docket run fact add $RUN --kind step-deferred --step STEP-N --cause <budget|chain> --reason "<the row's status>" < <scratchpad>/conductor.d/$RUN.token
+docket run fact add $RUN --kind vote-reseated --proposal <proposal-id> --voter <seat> --reason "<why the seat was re-seated>" < <scratchpad>/conductor.d/$RUN.token
 EOF
 ```
 
@@ -213,16 +215,16 @@ angle-bracket slots stay as written and are filled per use. A `finish`,
 done, or abandoned run removes it with the token.
 
 **Supply it per command, by redirecting the file into stdin.** Every one
-of the eight verbs, in every example below and on every path this file
+of the nine verbs, in every example below and on every path this file
 names (the standing rulings, the operator escalation, a forced
-reap, a hold, a pause, a resume, an abandon), ends in `< <scratchpad>/conductor.d/$RUN.token`:
+reap, a hold, a run fact, a pause, a resume, an abandon), ends in `< <scratchpad>/conductor.d/$RUN.token`:
 
 ```bash
 docket step approve STEP-N --authority operator --note "<their words>" < <scratchpad>/conductor.d/$RUN.token
 ```
 
 A missing file fails in the shell before docket runs, and an empty one is
-refused at once. Never run one of the eight with nothing redirected and
+refused at once. Never run one of the nine with nothing redirected and
 `DOCKET_TOKEN` unset: on a harness whose Bash stdin is an open pipe the
 stdin fallback blocks until the tool timeout, and elsewhere it exits 3.
 `DOCKET_TOKEN="$(cat <file>)" docket …` is the same channel with a worse
@@ -241,7 +243,7 @@ word. The mechanism is tamper-evident, not tamper-proof:
 `run conduct` is deliberately open to any caller with repository access,
 so a run whose conductor died stays recoverable, and the sibling guard
 keeps executors off that one verb while the engine keeps them off the
-other eight.
+other nine.
 
 **The file lives as long as this session drives the run.** A pause keeps
 it (a same-session resume needs it; a new session re-mints and retires it
@@ -1132,6 +1134,24 @@ STEP-N` is the only account of what happened, and a step still claimed
 by that spawn is a reap candidate. Read a dispatch's outcome as the
 union of its launches' `statuses`.
 
+**Record each deferral and re-seat as a run fact once the close lands.**
+The store sees neither a deferred row nor a re-seated judge, so these
+facts are how a retro reading only the store counts them; the
+`coordination` counts stay as they are. Per launch, for every `statuses`
+row whose status is `not-launched-agent-budget`,
+`not-launched-writer-budget` or `not-launched-token-budget` (cause
+`budget`) or `skipped-chain-dead` (cause `chain`), and for every seat a
+row's `reseated: {proposal, seats}` names:
+
+```bash
+docket run fact add $RUN --kind step-deferred --step STEP-N --cause <budget|chain> --reason "<the row's status>" < <scratchpad>/conductor.d/$RUN.token
+docket run fact add $RUN --kind vote-reseated --proposal <proposal-id> --voter <seat> --reason "<why the seat was re-seated>" < <scratchpad>/conductor.d/$RUN.token
+```
+
+`not-launched-run-parked` is neither cause, so it gets no fact. A panel
+you convened records its re-seats the same way, per **A panel that
+cannot finish escalates**.
+
 **A wave's early steps do not refuse the close just for running past the
 grace.** `dispatch.grace` (15 minutes) is measured from the run's newest
 terminal step record, not each step's own timestamp, so a large wave's
@@ -1850,7 +1870,7 @@ Run `verify-pins` first on an active run to confirm disk matches pinned.
 tribunal.js refuses a voter missing any of the three fields. `gateKind`
 names the gate class (`"ack-reap"`, `"activation"`, `"budget"`,
 `"loop-extension"`, `"fix-batch"`), never invented per gate. tribunal.js
-returns `{voteId, outcome, seatsSpawned, respawns, replies}`: `outcome` is
+returns `{voteId, outcome, seatsSpawned, respawns, respawned, replies}`: `outcome` is
 its own read of the record (`null` means unknown, never "no casts"), and
 `replies` lists `{seat, castError}` for each seat whose cast failed after
 its retry; quote those errors when the panel comes up short. Then `docket
@@ -1864,7 +1884,10 @@ after.
 judge once; re-invoke it once more for missing seats only (`docket vote
 show <proposal-id>` names them; one cast per voter name prevents
 double-counting). A panel still short is a non-approval with the partial
-tally.
+tally. Every re-seat gets one `docket run fact add $RUN --kind
+vote-reseated` in the form **Record each deferral and re-seat** shows: each
+seat tribunal.js's `respawned` names, and each seat your re-invocation
+re-seats.
 
 Read a decided proposal with plain `docket vote show <id>`; reach for
 `--json` only for extraction the plain form lacks, and never pipe it

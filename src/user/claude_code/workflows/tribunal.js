@@ -47,10 +47,11 @@ export const meta = {
 // proposal, passes its id, and passes every voter WITH its {model, effort,
 // variant}; tribunal.js only fills an open one.
 //
-// Return: CONVERSATIONAL {voteId, outcome, seatsSpawned, respawns, replies}
-// — `outcome` is the probe's {status, final_outcome, votes} read of the vote
-// record, or null when the probe returned nothing twice (unknown, never "no
-// casts"), and `respawns` counts the seats re-spawned once. MID-WAVE
+// Return: CONVERSATIONAL {voteId, outcome, seatsSpawned, respawns, respawned,
+// replies} — `outcome` is the probe's {status, final_outcome, votes} read of
+// the vote record, or null when the probe returned nothing twice (unknown,
+// never "no casts"), `respawns` counts the seats re-spawned once, and
+// `respawned` names them. MID-WAVE
 // {voteId, seatsSpawned, absorbed, replies} — `absorbed` lists {seat, error}
 // per caught spawn error. In both, `replies` lists {seat, castError} for each
 // seat attempt that reported a cast error. Every seat answers through
@@ -773,7 +774,8 @@ async function verifyPanel() {
             `before acting on this return.`)
     }
 
-    return { voteId, outcome, seatsSpawned: seats.length, respawns: missing.length }
+    return { voteId, outcome, seatsSpawned: seats.length, respawns: missing.length,
+             respawned: missing.map((s) => s.seat) }
 }
 
 phase('Judge')

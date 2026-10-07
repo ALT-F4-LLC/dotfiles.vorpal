@@ -98,7 +98,9 @@ export const meta = {
 // Return: {statuses, coordination}, one plain object. `statuses` holds one
 // {step, status, text, ...} entry per row this launch holds, in manifest
 // order; `text` is the executor's own reply, the one agent output that stays
-// free text (its reply-tail contract lives with the executors). `coordination`
+// free text (its reply-tail contract lives with the executors). A vote row
+// whose panel re-seated a judge also carries `reseats` (the count) and
+// `reseated` ({proposal, seats}). `coordination`
 // is the launch's rounds per issue, gate outcomes, re-seats, claim conflicts,
 // ancestry parks, spawn failures and deferrals, counted from its own rows and
 // settled statuses. It is the run's only coordination source; wave-usage.js
@@ -1949,7 +1951,11 @@ async function runGate(row, phaseLabel) {
     }
     // The launch's coordination section counts re-seats off the settled
     // result; `retries` cannot serve, since it also counts probe resubmissions.
-    const withReseats = (res) => (missing.length > 0 ? { ...res, reseats: missing.length } : res)
+    // `reseated` names the proposal and seats, which the conductor records
+    // one `run fact add --kind vote-reseated` per seat.
+    const withReseats = (res) => (missing.length > 0
+        ? { ...res, reseats: missing.length, reseated: { proposal: voteId, seats: missing.map((s) => s.seat) } }
+        : res)
     if (!after) {
         log(`${row.step}: gate:outcome probe returned nothing — the tally is ` +
             `UNKNOWN; skipping this issue's later stages; the conductor escalates`)

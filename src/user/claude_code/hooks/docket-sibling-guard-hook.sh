@@ -302,7 +302,10 @@
 # quoted delimiter as the way to write such prose. A quoted-delimiter
 # heredoc body is not read, whatever words it carries, at top level or
 # inside a substitution when the body and its terminator line hold no
-# quote, backtick, backslash, `#` or `$` and their parens balance. Any other
+# quote, backtick, backslash, `#` or `$` and their parens balance, unless
+# another leaf in the same command names an interpreter: then the whole
+# command is scanned, body included, and a sibling named in the body is an
+# accepted false DENY (`cat > a.md <<'EOF' ... EOF` then `bash -c :`). Any other
 # body inside a substitution is read, since bash 3.2 may end the
 # substitution inside it (see LEAF_LINES_AWK), and a sibling named there is
 # a false DENY. A skipped body stays unread because the interpreter test
@@ -1410,7 +1413,7 @@ fi
 log_decision "deny" "$CLAUSE"
 case "$CLAUSE" in
     SCRATCH)
-        deny "$REASON_PREFIX this command names another step's scratch directory (${DETAIL}); ${OWN_TEXT}. A sibling's leftover dir is the conductor's to sweep at reap, never an executor's. If it blocks your step, record that as a finding in your step report and do not retry. If this command performs no operation on that directory and only mentions it in prose, write the prose with the Write tool where you have it, or through a heredoc with a quoted delimiter (<<'EOF'), which this guard does not read at top level; inside a substitution it skips that body only when the body holds no quote, backtick, backslash, # or \$ and its parens balance. If a search pattern must match a step id and the command operates on no sibling directory, spell the pattern \`STEP.[0-9]+\` (with grep -E or rg), which this guard does not read as a scratch directory. If the command only hands sibling step ids to a docket read verb and touches no directory, spell each id literally (for example \`docket step artifacts STEP-7; docket step artifacts STEP-8\`). Otherwise, rewording a command that operates on another step's directory is not authorized." ;;
+        deny "$REASON_PREFIX this command names another step's scratch directory (${DETAIL}); ${OWN_TEXT}. A sibling's leftover dir is the conductor's to sweep at reap, never an executor's. If it blocks your step, record that as a finding in your step report and do not retry. If this command performs no operation on that directory and only mentions it in prose, write the prose with the Write tool where you have it, or through a heredoc with a quoted delimiter (<<'EOF'), which this guard does not read at top level unless another leaf in the same command names an interpreter, in which case the whole command is scanned; inside a substitution it skips that body only when the body holds no quote, backtick, backslash, # or \$ and its parens balance. If a search pattern must match a step id and the command operates on no sibling directory, spell the pattern \`STEP.[0-9]+\` (with grep -E or rg), which this guard does not read as a scratch directory. If the command only hands sibling step ids to a docket read verb and touches no directory, spell each id literally (for example \`docket step artifacts STEP-7; docket step artifacts STEP-8\`). Otherwise, rewording a command that operates on another step's directory is not authorized." ;;
     WORKTREE)
         case "$DETAIL" in
             prune) deny "$REASON_PREFIX \`git worktree prune\` deletes the bookkeeping of every checkout that is momentarily absent, siblings still working included, and is never an executor's to run. Leave the worktree list as it is; the conductor sweeps checkouts after integration." ;;

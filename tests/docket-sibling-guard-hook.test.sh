@@ -773,6 +773,13 @@ case_artifact_heredoc_bodies() {
     for prose_name in zsh bash python3; do
         assert_verdict "cat > ${OWN_DIR}/a.md <<'EOF'"$'\nx `repeat 1 docket step reap STEP-7 --reason x` y\nEOF\n'"printf 'see ${prose_name} here' > ${OWN_DIR}/b.md" executor-read "$WAVE_42" ALLOW "quoted body beside a printf whose prose names ${prose_name}"
     done
+    # A top-level quoted body naming an own-prefixed file before a backtick
+    # and a sibling dir, then a jq leaf writing an own file, is not read.
+    local own_art="cat > ${OWN_DIR}/STEP-42-art.md <<'EOF'"$'\nRan STEP-42-probe.sh` against STEP-7.d\nEOF\n'"jq -n '{a:1}' > ${OWN_DIR}/STEP-42-x.json"
+    assert_verdict "${own_art}" executor-write "$WAVE_42" ALLOW "quoted body naming an own-prefixed file before a backtick, then jq"
+    # Accepted false deny: another leaf that names an interpreter widens the
+    # whole command, the quoted body included.
+    assert_verdict "${own_art}"$'\nbash -c :' executor-write "$WAVE_42" DENY "the same body beside an interpreter leaf is scanned (accepted false deny)"
     # The same bodies consumed by an interpreter are code.
     assert_verdict $'sh <<\'EOF\'\nrm -rf '"${SIB_DIR}"$'\nEOF' executor-write "$WAVE_42" DENY "heredoc fed to sh is code"
     assert_verdict $'python3 - <<\'EOF\'\nimport shutil; shutil.rmtree("'"${SIB_DIR}"$'")\nEOF' executor-write "$WAVE_42" DENY "heredoc fed to python is code"

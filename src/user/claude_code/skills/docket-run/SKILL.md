@@ -442,7 +442,7 @@ The probe is two commands, both read-only:
 
 ```bash
 docket doctor --run $RUN --source ~/Development/repository/github.com/ALT-F4-LLC/dotfiles.vorpal.git/main --json
-diff -rq "$CC_SRC/workflows" ~/.claude/workflows; diff -rq "$CC_SRC/hooks" ~/.claude/hooks   # $CC_SRC = <that checkout>/src/user/claude_code
+diff -rq -x .claude "$CC_SRC/workflows" ~/.claude/workflows; diff -rq -x .claude "$CC_SRC/hooks" ~/.claude/hooks   # $CC_SRC = <that checkout>/src/user/claude_code
 ```
 
 `doctor` writes nothing and runs seven checks without short-circuiting:
@@ -458,7 +458,9 @@ Read its return, not its last line: `clean` requires every check except
 active run; `checks[]` carries each verdict (`OK`, `FAIL`, `DRIFT`,
 `SKIP`, `WARN`). The `diff -rq` pair is the one check `doctor` does not
 own, since the wave runs installed bytes, not source: treat any `Files …
-differ` or `Only in <source>` line as drift, stop-and-report.
+differ` or `Only in <source>` line as drift, stop-and-report. `-x .claude`
+skips the empty `.claude/.cc-writes` directories the harness recreates in
+the source trees, which are not drift and would otherwise fire every time.
 
 **Those checks are not this whole section.** The permission-surface
 check, the deny-list read-class check, the completion-gate probe, and the

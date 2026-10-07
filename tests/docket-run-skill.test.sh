@@ -752,6 +752,67 @@ else
     bad "loop history: no 'Spend against budget, including every raise' bullet in ${ESCALATION}"
 fi
 
+# (l) The install-drift diff stops the run on any line it prints, so it must
+# print nothing for the empty .claude/.cc-writes directories the harness
+# recreates in the source trees, yet still name an added hook and a
+# byte-changed workflow. The command is the one `diff -rq` line of the
+# fenced probe block carrying `docket doctor --run`, run with CC_SRC and
+# HOME pointed at fixture source and installed trees.
+#
+#   l1 drop `-x .claude`; the clean fixture prints 'Only in <src>: .claude'
+#   l2 widen the exclude to `-x '*'` or `-x '*.sh'`; new-hook.sh goes unnamed
+#   l3 add `-x '*.js'`; the changed workflow goes unnamed
+drift="${WORK}/drift"
+mkdir -p "$drift"
+awk '
+    /^```/ {
+        if (open) { if (found) printf "%s", block; open = 0; found = 0; block = "" }
+        else open = 1
+        next
+    }
+    open { block = block $0 "\n"; if (index($0, "docket doctor --run")) found = 1 }
+' "$SKILL" | grep '^diff -rq' > "${drift}/cmd.sh"
+if [ "$(wc -l < "${drift}/cmd.sh")" -ne 1 ]; then
+    bad "install drift: the probe block does not carry exactly one diff -rq line"
+else
+    ok "install drift: the diff command is extracted from the probe block"
+    drift_fixture() { # <name>: source and installed trees, identical, with harness dirs in source
+        mkdir -p "${drift}/$1/src/workflows/.claude/.cc-writes" "${drift}/$1/src/hooks/.claude/.cc-writes" \
+            "${drift}/$1/home/.claude/workflows" "${drift}/$1/home/.claude/hooks"
+        echo 'export default 1' > "${drift}/$1/src/workflows/wave.js"
+        echo 'export default 1' > "${drift}/$1/home/.claude/workflows/wave.js"
+        echo 'exit 0' > "${drift}/$1/src/hooks/guard.sh"
+        echo 'exit 0' > "${drift}/$1/home/.claude/hooks/guard.sh"
+    }
+    drift_run() { # <name> <out>; sets d_rc
+        (cd "${drift}/$1" && CC_SRC="${drift}/$1/src" HOME="${drift}/$1/home" bash "${drift}/cmd.sh") > "$2" 2>&1
+        d_rc=$?
+    }
+    drift_fixture clean
+    drift_run clean "${drift}/clean.out"
+    if [ "$d_rc" -eq 0 ] && [ ! -s "${drift}/clean.out" ]; then
+        ok "install drift: an empty .claude/.cc-writes in both source trees prints nothing and exits 0"
+    else
+        bad "install drift: the harness directory alone exited ${d_rc}: $(head -c 300 "${drift}/clean.out")"
+    fi
+    drift_fixture hook
+    echo 'exit 0' > "${drift}/hook/src/hooks/new-hook.sh"
+    drift_run hook "${drift}/hook.out"
+    if grep -q '^Only in .*: new-hook\.sh$' "${drift}/hook.out"; then
+        ok "install drift: a hook added in source is named in an Only in line"
+    else
+        bad "install drift: an added new-hook.sh was not reported: $(head -c 300 "${drift}/hook.out")"
+    fi
+    drift_fixture workflow
+    echo 'export default 2' > "${drift}/workflow/src/workflows/wave.js"
+    drift_run workflow "${drift}/workflow.out"
+    if grep -q '^Files .*wave\.js and .*wave\.js differ$' "${drift}/workflow.out"; then
+        ok "install drift: a byte-changed workflow is named in a Files differ line"
+    else
+        bad "install drift: a changed wave.js was not reported: $(head -c 300 "${drift}/workflow.out")"
+    fi
+fi
+
 if [ "$fail" -ne 0 ]; then
     echo "docket-run-skill: FAIL — a sandbox lift without its precondition is the failure this pins; fix the skill, not the test." >&2
     exit 1

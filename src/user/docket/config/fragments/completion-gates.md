@@ -1,14 +1,15 @@
 ---
 fragment: completion-gates
-version: 15
+version: 16
 ---
 # Completion gates
 
-Before `docket step record`, identify every completion gate declared by your step in
-the authoritative workflow definition. Your packet does not list them. Use
-`docket trust list` to resolve each declared gate name to the exact command the engine
-will run. If either the required gate set or a command cannot be resolved, report
-the blocker rather than guess.
+Before `docket step record`, read your packet's `== GATES` section. It is the
+declared gate set for your step, one line per gate, and a matched line carries the
+trusted command the engine will run; run that command verbatim. `(pre)` marks a gate
+that runs at claim. A line reading `unmatched` (with its reason in parentheses) names a gate
+that has no trust entry and will not run: report it as a blocker rather than
+resolving a command anywhere else.
 
 Commit your final edits, then run every required gate once on that commit, from the
 worktree you will record, using the trusted command verbatim and the engine's

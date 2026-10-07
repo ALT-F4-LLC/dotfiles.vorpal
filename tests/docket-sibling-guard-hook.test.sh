@@ -880,6 +880,16 @@ case_verb_spellings() {
     assert_verdict "true; - pkill node" executor-write "$WAVE_42" DENY "zsh - prefix after a separator"
     assert_verdict "true && - killall node" executor-write "$WAVE_42" DENY "zsh - prefix after &&"
     assert_verdict "repeat 1 docket step reap STEP-7 --reason x" executor-write "$WAVE_42" DENY "zsh repeat with a count"
+    # zsh evaluates the repeat count arithmetically, so any word there is the
+    # count, and a lone `{` after it opens the body.
+    assert_verdict "repeat 1+1 pkill node" executor-write "$WAVE_42" DENY "zsh repeat with an arithmetic count"
+    assert_verdict "repeat \$n pkill node" executor-write "$WAVE_42" DENY "zsh repeat with a parameter count"
+    assert_verdict "repeat \"1 + 1\" pkill node" executor-write "$WAVE_42" DENY "zsh repeat with a quoted multi-word count"
+    assert_verdict "repeat 2 { pkill node }" executor-write "$WAVE_42" DENY "zsh repeat with a brace body"
+    assert_verdict "repeat \$n { pkill node }" executor-write "$WAVE_42" DENY "zsh repeat with a parameter count and a brace body"
+    assert_verdict "repeat 2 { { pkill node } }" executor-write "$WAVE_42" DENY "zsh repeat with nested brace bodies"
+    assert_verdict "repeat 1 ls" executor-write "$WAVE_42" ALLOW "zsh repeat of a read stays a read"
+    assert_verdict "repeat 3 echo pkill" executor-write "$WAVE_42" ALLOW "zsh repeat skips only the count"
     assert_verdict "nocorrect noglob pkill node" executor-write "$WAVE_42" DENY "stacked zsh modifiers"
     assert_verdict "echo \$(noglob pkill node)" executor-write "$WAVE_42" DENY "zsh noglob prefix inside a \$( )"
     assert_verdict "noglob ls" executor-write "$WAVE_42" ALLOW "zsh noglob wrapping a read stays a read"

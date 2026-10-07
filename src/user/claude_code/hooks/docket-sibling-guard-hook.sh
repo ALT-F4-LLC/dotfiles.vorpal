@@ -1042,8 +1042,10 @@ function is_wrapper(h) {
 }
 # The verb position of a leaf: the first word (or word `start`), then past
 # any wrapper and the wrapper own options, values (`-n 5`, `5s`, `FOO=1`) and
-# flags.
-function verb_index(n, start,   i, h) {
+# flags. zsh evaluates the `repeat` count arithmetically, so the word after
+# `repeat` is the count whatever its shape (a quoted count spans its whole
+# group), and each lone `{` after it opens a body.
+function verb_index(n, start,   i, h, quoted, g) {
     i = start ? start : 1
     while (i <= n && words[i] == "") i++
     if (i > n) return 0
@@ -1051,6 +1053,17 @@ function verb_index(n, start,   i, h) {
     h = head_of(D_WORD)
     while (is_wrapper(h)) {
         i++
+        if (h == "repeat") {
+            while (i <= n && words[i] == "") i++
+            quoted = decode(words[i])
+            g = D_GROUP
+            i++
+            if (quoted) while (i <= n && decode(words[i]) && D_GROUP == g) i++
+            while (i <= n) {
+                if (words[i] != "") { decode(words[i]); if (D_WORD != "{") break }
+                i++
+            }
+        }
         while (i <= n) {
             if (words[i] == "") { i++; continue }
             decode(words[i])

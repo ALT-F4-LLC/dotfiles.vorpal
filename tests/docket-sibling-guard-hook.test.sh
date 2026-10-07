@@ -954,6 +954,8 @@ case_verb_spellings() {
     assert_verdict "repeat \"\$(echo 2)\" pkill node" executor-write "$WAVE_42" DENY "zsh repeat count from a quoted substitution"
     assert_verdict "repeat \"\${n} + 1\" pkill node" executor-write "$WAVE_42" DENY "zsh repeat count from a quoted braced expansion"
     assert_verdict "repeat \$(( 1 + 1 )) pkill node" executor-write "$WAVE_42" DENY "zsh repeat count from an arithmetic expansion"
+    assert_verdict "repeat \$( echo 2 ) pkill node" executor-write "$WAVE_42" DENY "zsh repeat count from a spaced \$( ) substitution"
+    assert_verdict "repeat \`echo 2\` pkill node" executor-write "$WAVE_42" DENY "zsh repeat count from a spaced backtick substitution"
     assert_verdict "echo \$(repeat 1'+1' pkill node)" executor-write "$WAVE_42" DENY "zsh repeat glued count inside a \$( )"
     assert_verdict "command repeat pkill node" executor-write "$WAVE_42" DENY "a name-addressed kill read as a repeat count"
     assert_verdict "repeat 1 echo \"stop pkill now\"" executor-write "$WAVE_42" ALLOW "zsh repeat with prose naming a kill stays a read"

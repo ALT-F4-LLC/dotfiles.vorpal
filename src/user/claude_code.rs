@@ -379,9 +379,15 @@ const PERMISSION_ALLOW_RULES: &[&str] = &[
     "Bash(go vet:*)",
     "Bash(gofmt:*)",
     "Bash(just --list)",
+    "Bash(just build)",
     "Bash(just crossref-check)",
     "Bash(just doc-validate)",
     "Bash(just frozen-drift-check)",
+    "Bash(just sdet-abuse)",
+    "Bash(just secret-scan)",
+    "Bash(just self-hygiene)",
+    "Bash(just tests)",
+    "Bash(just vuln-scan)",
     "Bash(make:*)",
     "Bash(terraform fmt -check *)",
     "Bash(terraform validate *)",
@@ -632,7 +638,7 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         )
         .with_hook(
             "PreToolUse",
-            Some("Read|Grep|Glob"),
+            Some("Read|Grep|Glob|Write"),
             "bash ~/.claude/hooks/sensitive-path-guard-hook.sh",
             "command",
         )
@@ -1142,6 +1148,51 @@ mod tests {
     }
 
     #[test]
+    fn permission_allow_rules_cover_the_workflow_just_gates() {
+        // An executor runs each completion gate as a bare `just <gate>`. A
+        // gate with no deterministic allow rule lands in front of the
+        // auto-mode classifier, which refused build, tests, self-hygiene and
+        // secret-scan for an implement step. Table-form gates such as
+        // ac-commands are engine-run and skipped.
+        let justfile = include_str!("../../justfile");
+        let workflows = [
+            include_str!("docket/config/workflows/standard-change.toml"),
+            include_str!("docket/config/workflows/security-change.toml"),
+        ];
+        let mut checked = 0;
+        for source in workflows {
+            let workflow: toml::Value = toml::from_str(source).expect("workflow parses");
+            let steps = workflow
+                .get("step")
+                .and_then(toml::Value::as_array)
+                .expect("workflow declares [[step]] tables");
+            for gate in steps
+                .iter()
+                .filter_map(|step| step.get("gates").and_then(toml::Value::as_array))
+                .flatten()
+                .filter_map(toml::Value::as_str)
+            {
+                if !justfile.lines().any(|line| line == format!("{gate}:")) {
+                    continue;
+                }
+                let rule = format!("Bash(just {gate})");
+                assert!(
+                    PERMISSION_ALLOW_RULES.contains(&rule.as_str()),
+                    "missing allow rule for workflow gate {gate}: {rule}"
+                );
+                checked += 1;
+            }
+        }
+        assert!(checked > 0, "the workflows declare just gates");
+        for rule in PERMISSION_ALLOW_RULES {
+            assert!(
+                !(rule.starts_with("Bash(just") && rule.contains('*')),
+                "a just allow rule is a bare gate command, not a wildcard: {rule}"
+            );
+        }
+    }
+
+    #[test]
     fn auto_mode_allow_rules_keep_the_defaults_first_and_stay_unique() {
         assert_eq!(AUTO_MODE_ALLOW_RULES[0], "$defaults");
 
@@ -1597,5 +1648,34 @@ mod tests {
 
         assert_eq!(friction.len(), 1);
         assert!(friction[0].get("matcher").is_none());
+    }
+
+    #[test]
+    fn sensitive_path_guard_covers_write() {
+        // executor-read holds the Write tool for its own scratch dir; the
+        // guard confines that Write, so it must be registered on Write too.
+        let settings = emitted_settings();
+        let entries = settings["hooks"]["PreToolUse"]
+            .as_array()
+            .expect("a PreToolUse hook list");
+        let guard: Vec<_> = entries
+            .iter()
+            .filter(|entry| {
+                entry["hooks"].as_array().is_some_and(|hooks| {
+                    hooks.iter().any(|hook| {
+                        hook["command"] == "bash ~/.claude/hooks/sensitive-path-guard-hook.sh"
+                    })
+                })
+            })
+            .collect();
+
+        assert_eq!(guard.len(), 1);
+        let mut tools: Vec<&str> = guard[0]["matcher"]
+            .as_str()
+            .expect("the guard has a matcher")
+            .split('|')
+            .collect();
+        tools.sort_unstable();
+        assert_eq!(tools, ["Glob", "Grep", "Read", "Write"]);
     }
 }

@@ -4,7 +4,7 @@ description: >
   Graph-fleet executor for one dispatched Docket step. Inspects the checkout,
   runs permitted probes in scratch, and records findings without modifying
   the checkout.
-tools: Read, Grep, Glob, Bash, LSP
+tools: Read, Grep, Glob, Bash, LSP, Write
 ---
 
 You execute one step of a Docket run. Your rendered brief defines the

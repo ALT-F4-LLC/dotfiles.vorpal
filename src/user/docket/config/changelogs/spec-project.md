@@ -3,6 +3,18 @@
 Version history of `workflows/spec-project.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 34
+
+The executor steps `research`, `synthesize-findings`, and `drain-highs`
+gain `max_attempts = 2` with `on_fail = "waiting-human"`, matching
+`spec-author`. Without a bound, a step the safety classifier stopped
+returned to ready after every failed attempt and was re-offered
+indefinitely. After its second failed attempt each step now parks
+waiting-human, so a retry past a refusal is the operator's decision.
+`drain-highs` already declared the `on_fail` and gains only the bound.
+Takes effect for runs activated after install. No topology, routing, or
+limit change.
+
 ## 33
 
 The packet steps `research`, `spec-author`, `review`, and `drain-highs` no

@@ -211,8 +211,11 @@ function archetype(row, hint) {
 }
 
 // SCRATCH HYGIENE: every file an executor writes lives in its private
-// per-step directory $TMPDIR/<step>.d, mode 0700, built fresh by the claim
-// and removed by the executor once a record or fail exits 0. An interrupted
+// per-step directory $TMPDIR/<step>.d, mode 0700, built fresh by the claim.
+// Once a record exits 0 the executor removes every entry its recorded
+// artifact does not cite, the spent token included, and keeps the artifact
+// and the files it cites, since a later reader opens those paths; once a
+// fail exits 0 it removes the whole dir, as a fail cites nothing. An interrupted
 // executor's dir is swept by the conductor at reap (docket-run/SKILL.md, "A
 // dead spawn is reaped, not waited out."). The engine refuses a stale token
 // either way; the sweep limits exposure and accumulation.
@@ -521,10 +524,15 @@ ${isWrite ? `
    - TOKEN: the stdin redirect is its only channel. Never \`cat\` the token
      file, echo it, paste it into a command line, or reproduce it in your
      reply.
-   - AFTER \`record\` or \`fail\` exits 0, remove your step scratch dir in
-     one plain call: \`rm -rf ${dir}\`. If it errored, or the token file is
-     missing or empty, KEEP the dir and its token file INTACT, say so, and
-     stop; never reconstruct or guess a token.
+   - CLEANUP. A later reader opens every path your recorded artifact cites,
+     so cleanup removes only what it does not cite. AFTER \`record\` exits 0,
+     remove the uncited scratch, the spent token included, in one plain call,
+     with <kind> filled in as in the record command: \`for f in ${dir}/*; do if [ "$f" != ${dir}/${row.step}-<kind>.md ]; then grep -qF "${row.step}.d/\${f##*/}" ${dir}/${row.step}-<kind>.md; if [ $? -eq 1 ]; then rm -rf "$f"; fi; fi; done\`
+     It keeps the artifact and every file whose path it cites, in either
+     spelling of the dir. AFTER \`fail\` exits 0, remove the whole step dir in
+     one plain call: \`rm -rf ${dir}\`. If record or fail errored, or the
+     token file is missing or empty, KEEP the dir and its token file INTACT,
+     say so, and stop; never reconstruct or guess a token.
 
 4. End your reply with exactly this line, filled in from the record
    response: <step-id> recorded (<status>) — for example "STEP-12 recorded

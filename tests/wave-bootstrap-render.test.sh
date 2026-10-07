@@ -23,7 +23,10 @@
 # `executor-brief` markers. This suite extracts both and renders the brief
 # for every isolation and class combination. It also asserts the
 # refused-write rule: take the recovery the refusal's own text names, once,
-# and disclose it; a refusal naming no recovery ends in WRITE BLOCKED.
+# and disclose it; a refusal naming no recovery ends in WRITE BLOCKED. And it
+# runs the brief's after-record cleanup instruction against a fixture step
+# dir under $WORK: every path the recorded artifact cites survives, and the
+# uncited scratch goes.
 
 set -uo pipefail
 
@@ -61,7 +64,10 @@ for region in packet executor-brief; do
 done
 grep -q 'function executorBrief' "${WORK}/executor-brief.js" || fatal "executor-brief region does not contain executorBrief()"
 
-cat "${WORK}/packet.js" "${WORK}/executor-brief.js" > "${WORK}/suite.mjs"
+{
+    printf "import { execFileSync } from 'node:child_process'\nimport { existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'\n"
+    cat "${WORK}/packet.js" "${WORK}/executor-brief.js"
+} > "${WORK}/suite.mjs"
 cat >> "${WORK}/suite.mjs" <<'JS'
 
 let pass = 0
@@ -144,7 +150,38 @@ for (const isolated of [true, false]) {
             `${label}: record reads the parked token and writes under the claim's step dir`)
         ok(head.includes(`docket step fail STEP-4381 --note '<why>' < ${TOKEN}`),
             `${label}: fail reads the parked token`)
-        ok(head.includes(`rm -rf ${DIR}\``), `${label}: cleanup removes the literal step dir`)
+        // ---- cleanup keeps every file the recorded artifact cites ----
+        // Render the brief against a real step dir under $WORK, take the
+        // cleanup instruction it gives after a record, and run it there.
+        const FIX = `${process.env.WORK}/${isolated ? 'iso' : 'shared'}-${isWrite ? 'w' : 'r'}/STEP-4381.d`
+        const FIXPHYS = `${process.env.WORK}/phys-${isolated ? 'iso' : 'shared'}-${isWrite ? 'w' : 'r'}/STEP-4381.d`
+        mkdirSync(`${FIX}/target/src`, { recursive: true, mode: 0o700 })
+        // The Write tool's spelling of the same dir: another path to it.
+        symlinkSync(FIX.replace(/\/STEP-4381\.d$/, ''), FIXPHYS.replace(/\/STEP-4381\.d$/, ''))
+        const artifact = `${FIX}/STEP-4381-change-summary.md`
+        const cited = [`${FIX}/STEP-4381-probe.txt`, `${FIX}/STEP-4381-probe-out.log`]
+        writeFileSync(artifact, `# Summary\nProbe output: ${cited[0]}\nLog (Write-tool spelling): ${FIXPHYS}/STEP-4381-probe-out.log\n`)
+        for (const f of cited) writeFileSync(f, 'evidence\n')
+        writeFileSync(`${FIX}/STEP-4381-tmp.txt`, 'scratch\n')
+        writeFileSync(`${FIX}/STEP-4381.token`, 'spent-token\n')
+        writeFileSync(`${FIX}/target/src/x.go`, 'package x\n')
+        const fixHead = (() => {
+            const b = executorBrief(row, owner, { ...claim, dir: FIX, dirPhysical: FIXPHYS, token: `${FIX}/STEP-4381.token` }, isolated, isWrite, CWD)
+            return b.slice(0, b.indexOf(BEGIN))
+        })()
+        const m = /AFTER `record` exits 0[^`]*`([^`]+)`/.exec(fixHead)
+        const cleanup = m ? m[1].replace(/<kind>/g, 'change-summary') : ''
+        ok(cleanup !== '', `${label}: the brief gives a step-dir cleanup instruction after record`)
+        const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        const citedPaths = [...readFileSync(artifact, 'utf8').matchAll(new RegExp(`(?:${esc(FIX)}|${esc(FIXPHYS)})/\\S+`, 'g'))].map((x) => x[0])
+        let ran = ''
+        try { execFileSync('/bin/bash', ['-c', cleanup], { stdio: 'pipe' }) } catch (e) { ran = String(e.stderr || e.message) }
+        ok(ran === '' && citedPaths.length === 2 && citedPaths.every((p) => existsSync(p) && readFileSync(p, 'utf8') === 'evidence\n'),
+            `${label}: after cleanup every path the artifact body cites is readable, in either dir spelling (cleanup ${JSON.stringify(cleanup)}, error ${JSON.stringify(ran)}, left ${JSON.stringify(existsSync(FIX) ? readdirSync(FIX) : null)})`)
+        ok(!existsSync(`${FIX}/STEP-4381-tmp.txt`) && !existsSync(`${FIX}/STEP-4381.token`) && !existsSync(`${FIX}/target`),
+            `${label}: cleanup removes the uncited scratch, the spent token and uncited trees (left ${JSON.stringify(existsSync(FIX) ? readdirSync(FIX) : null)})`)
+        ok(head.replace(/\s+/g, ' ').includes(`AFTER \`fail\` exits 0, remove the whole step dir in one plain call: \`rm -rf ${DIR}\``),
+            `${label}: after a fail, which cites nothing, the whole step dir goes`)
         ok(!head.includes(`cat ${TOKEN}`) && head.includes('Never `cat` the token'),
             `${label}: the token's only channel stays the stdin redirect`)
 
@@ -234,4 +271,4 @@ console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)
 JS
 
-node "${WORK}/suite.mjs"
+WORK="$WORK" node "${WORK}/suite.mjs"

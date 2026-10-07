@@ -1168,7 +1168,10 @@ docket dispatch verify --run $RUN
 #    recorded commit must be on the shared branch — an ancestor of HEAD, or
 #    patch-equivalent after a cherry-pick — and an unintegrated one refuses
 #    CONFLICT naming the step, its sha and its worktree. On that refusal,
-#    integrate now (Worktree writers below) and close again.
+#    integrate now (Worktree writers below) and close again, unless the sha
+#    is a regressing round's under a loop-extension park: the loop-extension
+#    standing ruling under Gates convenes the panel first and integrates
+#    only on its approval.
 #    --skip-integration-check REASON is the operator's override, recorded on
 #    the close event; it is never yours to pass.
 docket dispatch close --run $RUN --json
@@ -1711,6 +1714,13 @@ fix-round --authority standing-grant --authority-ref <proposal id>
 then `docket vote link` to the issue.
 A rejected tally, a stalled panel, or any round beyond `max_fix_loops +
 1` goes to the operator with the panel's reasoning where there is one.
+When the regressing round's write sha is recorded but unintegrated
+and `docket dispatch close` refuses CONFLICT on it, leave the dispatch
+open and convene the panel without asking the operator. An approved
+tally integrates the sha, resolves the step `--as fix-round`, and closes
+the dispatch, in that order. A rejected or stalled tally goes to the
+operator with the integrate-or-discard choice, since discarding
+unintegrated commits cannot be undone.
 Nothing needs tracking: the arithmetic on the next park fails on its own.
 
 Read the proposal id from the create's own output and link in a separate

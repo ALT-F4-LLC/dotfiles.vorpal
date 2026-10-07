@@ -1135,6 +1135,31 @@ else
     bad "installed paths script: pause.md carries an inline copy (${inline_copies} fenced usage lines, ${section_fences} bash fences under Resume-prompt paths)"
 fi
 
+# (q) A regressing round whose write sha is recorded but unintegrated, so
+# close refuses CONFLICT on it, goes to the loop-extension panel without an
+# operator question: the ruling's own path is applied, not offered. An
+# approved tally integrates, resolves and closes; a rejected or stalled one
+# reaches the operator, since discarding unintegrated commits is
+# irreversible.
+#
+#   q1 rewrite (a) to ask the operator whether to integrate before
+#      convening the panel
+#   q2 delete (c), the rejected-or-stalled sentence
+#   q3 change (b) to resolve without integrating the sha
+#   q4 move (a) out of the anchored paragraph to another paragraph
+loopext_anchor="A loop-extension gate is the panel's once, then the operator's"
+if paragraph "$loopext_anchor" "${WORK}/loopext"; then
+    ok "loop-extension CONFLICT: exactly one paragraph carries the ruling"
+    states "loop-extension CONFLICT: (a) an unintegrated regressing sha refused CONFLICT leaves the dispatch open for the panel, unasked" \
+        "${WORK}/loopext" 'and `docket dispatch close` refuses CONFLICT on it, leave the dispatch open and convene the panel without asking the operator.'
+    states "loop-extension CONFLICT: (b) an approved tally integrates the sha, resolves --as fix-round, and closes" \
+        "${WORK}/loopext" 'An approved tally integrates the sha, resolves the step `--as fix-round`, and closes the dispatch'
+    states "loop-extension CONFLICT: (c) a rejected or stalled tally goes to the operator with the integrate-or-discard choice" \
+        "${WORK}/loopext" 'A rejected or stalled tally goes to the operator with the integrate-or-discard choice'
+else
+    bad "loop-extension CONFLICT: no single paragraph carries '${loopext_anchor}'"
+fi
+
 if [ "$fail" -ne 0 ]; then
     echo "docket-run-skill: FAIL — a sandbox lift without its precondition is the failure this pins; fix the skill, not the test." >&2
     exit 1

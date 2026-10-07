@@ -1680,9 +1680,9 @@ if no note names that tracker and its disposition, `docket run note add`
 lands one now, in the clean-HEAD ruling form. One run closed eleven
 duplicates of one pre-gate failure by hand, one per wave, with no note
 ever landed.
-Promote the header at the same close: `docket issue file add <id>
-<files>` from the gap's `Files:` line, `docket issue edit <id> --scope`
-from its `Scope:` line. The same routing governs everything you file:
+A gap's own `Files:` and `Scope:` header lines already set the filed
+issue's files and scope (scope defaults to the files), so the close
+promotes nothing by hand. The same routing governs everything you file:
 its owning project from the start, `-l conduct` for provenance (never
 `-l shadow`, `-l tribunal`, `-l loop-bound`, or `-l review-gap`, reserved
 to those routes).

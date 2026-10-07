@@ -1301,6 +1301,25 @@ else
     bad "reap check: the verbs checkpoint lacks the bare post-close 'docket guard spawn --run \$RUN' line"
 fi
 
+# (w) The engine sets a gap issue's files and scope from the gap's own
+# `Files:` and `Scope:` header lines, so the close promotes nothing by hand.
+#
+#   w1 restore the "Promote the header at the same close" sentence
+#   w2 delete the sentence saying the header lines already set files and
+#      scope
+gapdup_anchor='**A gap that duplicates a tracker you already hold gets the run note'
+if paragraph "$gapdup_anchor" "${WORK}/gapdup"; then
+    states "gap header: the header lines set the filed issue's files and scope" \
+        "${WORK}/gapdup" "A gap's own \`Files:\` and \`Scope:\` header lines already set the filed issue's files and scope"
+else
+    bad "gap header: no single paragraph carries '${gapdup_anchor}'"
+fi
+if grep -qE "Promote the header|from the gap's \`Files:\` line" "${WORK}/flat"; then
+    bad "gap header: the skill still promotes a gap's Files: header by hand"
+else
+    ok "gap header: no hand promotion of a gap's Files: header"
+fi
+
 if [ "$fail" -ne 0 ]; then
     echo "docket-run-skill: FAIL — a sandbox lift without its precondition is the failure this pins; fix the skill, not the test." >&2
     exit 1

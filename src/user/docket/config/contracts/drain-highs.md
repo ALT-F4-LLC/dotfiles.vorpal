@@ -1,6 +1,6 @@
 ---
 node: drain-highs
-version: 19
+version: 20
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -105,10 +105,11 @@ step does not repeat their review or independently verify the defects.
    location suffixes removed; preserve the actual paths, do not infer extra
    files or replace paths with broader globs. If the complete evidence names
    no files, leave the value empty and preserve its stated scope in the body.
-   The conductor promotes this line into file and scope metadata at close;
-   this step does not supply `-f` or `--scope`. Keep `Severity:` in the
-   leading header so the engine can assign the backlog priority from the open
-   severity. Every filing carries `review-gap` in `Labels:`, marking it apart
+   Keep `Files:` on one physical line: the engine sets the filed issue's
+   files from it and its scope from an optional `Scope:` line, defaulting to
+   the files, so this step supplies neither `-f` nor `--scope`. Keep
+   `Severity:` in the leading header so the engine can assign the backlog
+   priority from the open severity. Every filing carries `review-gap` in `Labels:`, marking it apart
    from an issue filed any other route for a later `/docket-tend` pass or
    `docket-retro` reading to filter on; also state this step's
    `source-run:RUN-N` in the body below the header so the filing's provenance

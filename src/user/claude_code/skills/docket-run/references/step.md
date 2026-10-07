@@ -14,11 +14,11 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket step`](#step-commands) — 515 lines
+- [`docket step`](#step-commands) — 517 lines
   - [`step artifacts`](#step-artifacts) — 36 lines
   - [`step claim`](#step-claim) — 34 lines
   - [`step reap`](#step-reap) — 36 lines
-  - [`step complete`](#step-complete) — 68 lines
+  - [`step complete`](#step-complete) — 70 lines
   - [`step fail`](#step-fail) — 23 lines
   - [`step annotate`](#step-annotate) — 49 lines
   - [`step resolve`](#step-resolve) — 122 lines
@@ -235,6 +235,8 @@ The required test fails because fixtures/example.json is absent at clean HEAD.
 | `Priority` | `critical`, `high`, `medium`, `low`, `none`; wins over Severity |
 | `Kind` | `bug`, `feature`, `task`, `epic`, `chore`; default `task` |
 | `Labels` | comma-separated labels, at most 16 |
+| `Files` | the issue's files: comma-separated paths on one line, at most 16 |
+| `Scope` | the issue's scope globs, comma-separated; defaults to `Files` when absent |
 
 Unknown keys do not end the header block; unsupported values for recognized
 keys are ignored. Without headers the issue defaults to priority `none`, kind

@@ -93,7 +93,8 @@ const PACKET = [
     '== OUTPUT',
     'Record an artifact of kind: change-summary',
 ].join('\n')
-const claim = { dir: DIR, token: TOKEN, attempt: 2, packet: PACKET, sha256: 'f'.repeat(64), reMinted: false }
+const PHYS = '/private/var/folders/xy/T/STEP-4381.d'
+const claim = { dir: DIR, dirPhysical: PHYS, token: TOKEN, attempt: 2, packet: PACKET, sha256: 'f'.repeat(64), reMinted: false }
 const BEGIN = '----- BEGIN WORK PACKET STEP-4381 -----\n'
 const END = '\n----- END WORK PACKET STEP-4381 -----'
 const GUARD_RE = /docket step claim STEP-([0-9]+) --owner wave:STEP-([0-9]+):/
@@ -148,6 +149,33 @@ for (const isolated of [true, false]) {
         ok(isWrite === head.includes('--worktree <YOUR CHECKOUT>'), `${label}: --worktree only on write-class records`)
         ok(!isWrite === head.includes(`mkdir -p ${DIR}/target`), `${label}: target reconstruction only for read-class`)
         ok((isolated && isWrite) === head.includes('2b. COMMIT YOUR DELIVERABLE'), `${label}: the commit obligation only for isolated writers`)
+
+        // ---- the artifact channel: Write at the physical path, chunked Bash ----
+        // The harness worktree guard refuses one large heredoc, so every brief
+        // offers a chunked Bash form; a writer's archetype has the Write tool,
+        // which lands at the claim's physical step dir, not at its TMPDIR
+        // spelling.
+        const aStart = head.indexOf('   - ARTIFACT, MANDATORY')
+        const aEnd = head.indexOf('\n   - ', aStart + 1)
+        const bullet = aStart >= 0 && aEnd > aStart ? head.slice(aStart, aEnd).replace(/\s+/g, ' ') : ''
+        ok(bullet !== '', `${label}: obligation 3 carries an ARTIFACT bullet`)
+        const w = bullet.indexOf('Write tool')
+        const sStart = w >= 0 ? bullet.lastIndexOf('. ', w) + 2 : -1
+        const sEnd = w >= 0 ? bullet.indexOf('. ', w) : -1
+        const writeSentence = w >= 0 ? bullet.slice(sStart, sEnd < 0 ? bullet.length : sEnd + 1) : ''
+        if (isWrite) {
+            ok(writeSentence.includes(`${PHYS}/STEP-4381-<kind>.md`) && !writeSentence.includes(DIR),
+                `${label}: the ARTIFACT bullet permits Write at the claim's physical step dir, not its dir (got ${JSON.stringify(writeSentence)})`)
+        } else {
+            ok(w < 0, `${label}: the ARTIFACT bullet does not offer the Write tool`)
+        }
+        const first = /cat > (\S+) <<'EOF'/.exec(bullet)
+        const append = /cat >> (\S+) <<'EOF'/.exec(bullet)
+        ok(first && append && first[1] === append[1] && first.index < append.index &&
+            first[1] === `${DIR}/STEP-4381-<kind>.md`,
+            `${label}: the ARTIFACT bullet names an initial cat > heredoc followed by cat >> appends`)
+        ok(!/<<'EOF' \.\.\. EOF/.test(bullet) && append !== null,
+            `${label}: no single heredoc is the bullet's only channel`)
 
         // ---- a writer's record call outlasts the default Bash timeout ----
         // The engine reruns every completion gate at record, so the call needs

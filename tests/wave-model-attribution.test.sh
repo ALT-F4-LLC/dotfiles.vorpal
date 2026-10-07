@@ -64,7 +64,7 @@ for (const [index, c] of cases.entries()) {
     assert.equal(arg('--module'), modulePath, 'the module path is one literal argument')
     assert(!argv.includes('--cost-multiplier'), 'no pricing multiplier is inferred from model names')
     assert(!fs.existsSync(marker), 'routing metadata and the module path remain literal shell arguments')
-    const claim = { dir: '/tmp/x/STEP-7.d', token: '/tmp/x/STEP-7.d/STEP-7.token', attempt: 2, packet: '== STEP STEP-7 implement@0\n' }
+    const claim = { dir: '/tmp/x/STEP-7.d', dirPhysical: '/private/tmp/x/STEP-7.d', token: '/tmp/x/STEP-7.d/STEP-7.token', attempt: 2, packet: '== STEP STEP-7 implement@0\n' }
     const execBrief = ctx.executorBrief(row, owner, claim, c.isolated, c.isolated)
     assert(execBrief.includes('runtime directly supplies an observation'), 'resolved attribution requires observed evidence')
     assert(!execBrief.includes('<model that served you>'), 'the executor is not required to invent its model')

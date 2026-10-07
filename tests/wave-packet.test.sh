@@ -80,6 +80,7 @@ ok(shellQuote(`it's`) === `'it'\\''s'`, 'shellQuote closes, escapes and reopens 
 const good = {
     v: 1, step: 'STEP-12', owner, attempt: 3, expected_attempt: 3, re_minted: false,
     lease_expires_ms: 1, dir: '/tmp/claude-1000/STEP-12.d', token: '/tmp/claude-1000/STEP-12.d/STEP-12.token',
+    dir_physical: '/private/tmp/claude-1000/STEP-12.d',
     packet_file: '/tmp/claude-1000/STEP-12.d/STEP-12.packet.md', packet_sha256: 'a'.repeat(64),
     packet: '== STEP STEP-12 implement@0\n',
 }
@@ -87,6 +88,8 @@ const accepted = packetFromModule(good, row, owner)
 ok(accepted.ok && accepted.packet === good.packet && accepted.token === good.token && accepted.dir === good.dir &&
     accepted.attempt === 3 && accepted.reMinted === false && accepted.sha256 === good.packet_sha256,
     'a module for this claim is accepted with its packet, token, dir and attempt')
+ok(accepted.ok && accepted.dirPhysical === good.dir_physical,
+    'an accepted module carries the physical step dir wave-claim resolved')
 ok(packetFromModule({ ...good, attempt: 4, re_minted: true }, row, owner).ok,
     'a later attempt (a claim taken after this dispatch) is still this claim')
 const refusals = [
@@ -100,6 +103,9 @@ const refusals = [
     ['a relative step dir', { ...good, dir: 'tmp/STEP-12.d', token: 'tmp/STEP-12.d/STEP-12.token' }],
     ["another step's dir", { ...good, dir: '/tmp/claude-1000/STEP-13.d', token: '/tmp/claude-1000/STEP-13.d/STEP-12.token' }],
     ['a token outside the step dir', { ...good, token: '/tmp/claude-1000/STEP-12.token' }],
+    ['a missing physical step dir', (({ dir_physical, ...rest }) => rest)(good)],
+    ['a relative physical step dir', { ...good, dir_physical: 'private/tmp/claude-1000/STEP-12.d' }],
+    ["a physical step dir that is not this step's", { ...good, dir_physical: '/private/tmp/claude-1000/STEP-13.d' }],
     ['no packet', { ...good, packet: '' }],
     ['a non-string packet', { ...good, packet: ['x'] }],
 ]

@@ -324,6 +324,12 @@ function packetFromModule(mod, row, owner) {
     if (!dir.startsWith('/') || !dir.endsWith(`/${row.step}.d`)) {
         return refuse(`the module's step dir ${JSON.stringify(mod.dir)} is not an absolute ${row.step}.d`)
     }
+    // wave-claim resolves every symlink in the step dir; a writer's Write
+    // tool lands at this physical path.
+    const dirPhysical = typeof mod.dir_physical === 'string' ? mod.dir_physical : ''
+    if (!dirPhysical.startsWith('/') || !dirPhysical.endsWith(`/${row.step}.d`)) {
+        return refuse(`the module's physical step dir ${JSON.stringify(mod.dir_physical)} is not an absolute ${row.step}.d`)
+    }
     if (mod.token !== `${dir}/${row.step}.token`) {
         return refuse(`the module's token path ${JSON.stringify(mod.token)} is not ${dir}/${row.step}.token`)
     }
@@ -332,6 +338,7 @@ function packetFromModule(mod, row, owner) {
         ok: true,
         packet: mod.packet,
         dir,
+        dirPhysical,
         token: mod.token,
         attempt: mod.attempt,
         sha256: typeof mod.packet_sha256 === 'string' ? mod.packet_sha256 : '',
@@ -461,10 +468,14 @@ ${isWrite ? `
      engine reruns every completion gate at record, which outlasts the
      default Bash timeout and would move the call to the background.` : ''}
    - ARTIFACT, MANDATORY on every record: a FRESH file whose name starts
-     with your step id, created WITH BASH
-     (\`cat > ${dir}/${row.step}-<kind>.md <<'EOF' ... EOF\`).
+     with your step id, ${dir}/${row.step}-<kind>.md.
      <kind> is the artifact KIND your packet's OUTPUT section names; there
-     is no \`--artifact-kind\`.
+     is no \`--artifact-kind\`.${isWrite ? `
+     You may create it with the Write tool at its physical path,
+     ${claim.dirPhysical}/${row.step}-<kind>.md, which is the same file.` : ''}
+     With Bash, build it in chunks of a few KB, ONE heredoc per Bash call:
+     an initial \`cat > ${dir}/${row.step}-<kind>.md <<'EOF'\`, then
+     \`cat >> ${dir}/${row.step}-<kind>.md <<'EOF'\` appends.
    - PAYLOAD, when your packet requires one: \`--payload-file <path>\`,
      built with \`jq -n\`.
    - METADATA: leave \`model_resolved\` and \`effort_resolved\` as

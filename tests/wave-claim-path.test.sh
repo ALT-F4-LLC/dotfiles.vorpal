@@ -71,7 +71,7 @@ const MODULE = '/repo/.claude/docket-packets/STEP-12.a3.js'
 const PACKET = '== STEP STEP-12 implement@0\n== OUTPUT\nRecord an artifact of kind: change-summary\n'
 const goodModule = (owner) => ({
     v: 1, step: 'STEP-12', owner, attempt: 3, expected_attempt: 3, re_minted: false, lease_expires_ms: 1,
-    dir: '/tmp/claude-1000/STEP-12.d', token: '/tmp/claude-1000/STEP-12.d/STEP-12.token',
+    dir: '/tmp/claude-1000/STEP-12.d', token: '/tmp/claude-1000/STEP-12.d/STEP-12.token', dir_physical: '/private/tmp/claude-1000/STEP-12.d',
     packet_file: '/tmp/claude-1000/STEP-12.d/STEP-12.packet.md', packet_sha256: 'a'.repeat(64), packet: PACKET,
 })
 const NOT_FOUND = `Workflow script file not found: ${MODULE}`
@@ -213,7 +213,7 @@ function wave({ replies = [], load, cwd = '/repo', show = { status: 'claimed', a
     {
         const { api, calls } = wave({ replies: [null, 'CLAIMED STEP-13'], load: (p) =>
             p.includes('STEP-13') ? { ...goodModule('wave:STEP-13:1'), step: 'STEP-13',
-                dir: '/tmp/claude-1000/STEP-13.d', token: '/tmp/claude-1000/STEP-13.d/STEP-13.token' }
+                dir: '/tmp/claude-1000/STEP-13.d', token: '/tmp/claude-1000/STEP-13.d/STEP-13.token', dir_physical: '/private/tmp/claude-1000/STEP-13.d' }
                 : new Error(NOT_FOUND) })
         const first = await api.claimPacket(row, r, 'lane')
         const second = await api.claimPacket({ ...row, step: 'STEP-13' }, r, 'lane')

@@ -1049,9 +1049,13 @@ text names is reaped; restoring means fixing the harness or worktree
 gap, never relaunching the writer without isolation. `blocked` means a stop signal and no record: the
 claim agent's `wave-claim` stopped on CLAIM FAILED or CLAIM INCOMPLETE
 (the lease was never taken, or was already ended with `docket step
-fail`), or the executor stopped on NETWORK GATE BLOCKED, RECORD BLOCKED
-or WRITE BLOCKED; the row's `signal` names which. Resolve what the reply
-reports before the engine re-offers the row. COMMIT BLOCKED is not a
+fail`), or the executor stopped on NETWORK GATE BLOCKED or RECORD
+BLOCKED; the row's `signal` names which. Resolve what the reply reports
+before the engine re-offers the row. A WRITE BLOCKED stop is settled by
+the wave itself with `docket step fail`: `failed-blocked` means the
+follow-up `step show` read the step released, so no reap is needed;
+`unsettled` means it still read claimed or could not be read, and the
+step is a reap candidate. COMMIT BLOCKED is not a
 stop signal: the writer reports it and goes on to record, and you commit
 on its behalf (step 3), so a reply that ends on it with no tail is
 `unrecorded`, not `blocked`. `unrecorded` means the
@@ -1466,7 +1470,7 @@ per **Gates**.
 
 The order is fixed, because the proposal's key names a seq that exists
 only after the reap. First establish the holder is actually gone (the
-wave reported `spawn-failed`, `blocked` or `unrecorded`, the agent
+wave reported `spawn-failed`, `blocked`, `unsettled` or `unrecorded`, the agent
 returned RECORD BLOCKED or died in front of you, `step show` still reads
 claimed). Then reap. Then open the ack-reap proposal keyed
 `reap-ack:<run>:<seq>` on that reap's `lease-reaped` seq, carrying the

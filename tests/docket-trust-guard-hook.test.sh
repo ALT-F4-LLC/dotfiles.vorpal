@@ -366,6 +366,20 @@ case_zsh_modifier_brace_allows() {
         "a standalone operator ends the repeat command"
 }
 
+# A command that starts with `-` reaches the probe's eval as its first word.
+# Without `--`, eval reads that word as an option and fails, so the probe
+# records no leaves and the hook denies as "could not analyze". These rows pin
+# the probe analyzing such a command: a plain one allows, and a trust-store
+# write behind the zsh modifier `-` denies with the trust-store reason.
+case_leading_dash_command() {
+    assert_verdict "- ls" executor-write ALLOW \
+        "leading-dash command with no docket word"
+    assert_verdict "- docket trust add erik key" executor-write DENY \
+        "trust-store write behind a leading -"
+    assert_deny_reason "- docket trust add erik key" executor-write \
+        "trust-store write behind a leading -"
+}
+
 case_command_position_brace_allows() {
     assert_verdict "'{docket,trust}' add erik key" executor-write ALLOW \
         "quoted command-position brace word: bash does not expand it"
@@ -1205,6 +1219,7 @@ case_command_position_brace_denies
 case_command_position_brace_allows
 case_zsh_modifier_brace_denies
 case_zsh_modifier_brace_allows
+case_leading_dash_command
 case_unexpandable_brace_prose_allows
 case_quoted_brace_interpreter_stdin_residual
 case_interpreter_code_argument_deny

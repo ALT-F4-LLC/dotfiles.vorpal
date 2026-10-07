@@ -1295,6 +1295,28 @@ case_prepass_installation() {
     [ "$got" = "ALLOW" ] && pass "installed copy with pre-pass beside it allows the own sweep (ALLOW)" || fail "installed copy own sweep (want ALLOW, got ${got})"
 }
 
+# A match program awk cannot parse prints nothing and exits non-zero. Read
+# as "no match", that would allow every command, so the hook refuses instead.
+# The copy breaks the program at its first statement; `ls` is allowed by the
+# shipped hook.
+case_match_program_failure() {
+    local broken="${WORK}/broken" got err
+    mkdir -p "$broken"
+    sed 's/^    MARK = "\\001"$/    MARK = = "\\001"/' "$HOOK" >"${broken}/hook.sh"
+    cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "${broken}/"
+    if cmp -s "$HOOK" "${broken}/hook.sh"; then
+        fail "unparseable match program: the fixture edit did not apply"
+        return
+    fi
+    err=$(PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "${broken}/hook.sh" 2>&1 >/dev/null <<<"$(build_input "ls" executor-write "$WAVE_42")")
+    [ $? -eq 2 ] && got=DENY || got=ALLOW
+    [ "$got" = "DENY" ] && pass "unparseable match program fails closed (DENY)" || fail "unparseable match program (want DENY, got ${got})"
+    case "$err" in
+        *"match program failed"*) pass "unparseable match program names the analysis failure" ;;
+        *) fail "unparseable match program reason: ${err}" ;;
+    esac
+}
+
 # The transcript read is bounded: a brief buried past 64 KiB is not found
 # (own step reads NONE), one within the bound on a later line is.
 case_transcript_bound() {
@@ -1404,6 +1426,7 @@ case_marker_shape
 case_deny_reasons
 case_input_edges
 case_prepass_installation
+case_match_program_failure
 case_transcript_bound
 case_leaf_cap_stops_the_walk
 case_friction_log_records_decisions

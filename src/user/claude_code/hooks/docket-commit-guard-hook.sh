@@ -633,6 +633,15 @@ END {
     }
 }
 ' 2>/dev/null)
+MATCH_RC=$?
+# An awk that exits non-zero with no match printed did not finish the match
+# (a program that fails to parse prints nothing), so its empty output is not
+# "no git write": refuse, as for a missing pre-pass file. A printed match
+# still decides below, since the program exits early on it and the pipeline
+# can then end on SIGPIPE.
+if [ "$MATCH_RC" -ne 0 ] && [ -z "$MATCH" ]; then
+    deny "git write blocked: the commit-guard hook's match program failed (awk exit ${MATCH_RC}), so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
+fi
 [ "$MATCH" = "MATCH" ] || allow_default
 
 

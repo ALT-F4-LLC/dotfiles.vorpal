@@ -1345,6 +1345,25 @@ case_match_program_failure() {
     esac
 }
 
+# A pre-pass program awk cannot parse prints nothing and exits non-zero, so
+# the match stage would see no command at all. The hook refuses instead of
+# allowing. The copy appends one unparseable statement to the shared file;
+# `ls` is allowed by the shipped hook.
+case_prepass_program_failure() {
+    local broken="${WORK}/broken-prepass" got err
+    mkdir -p "$broken"
+    cp "$HOOK" "${broken}/hook.sh"
+    cp "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "${broken}/"
+    { cat "$(dirname "$HOOK")/docket-guard-prepass.awk"; printf '%s\n' 'BEGIN { x = = 1 }'; } >"${broken}/docket-guard-prepass.awk"
+    err=$(PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "${broken}/hook.sh" 2>&1 >/dev/null <<<"$(build_input "ls" executor-write "$WAVE_42")")
+    [ $? -eq 2 ] && got=DENY || got=ALLOW
+    [ "$got" = "DENY" ] && pass "unparseable pre-pass program fails closed (DENY)" || fail "unparseable pre-pass program (want DENY, got ${got})"
+    case "$err" in
+        *"pre-pass program failed"*) pass "unparseable pre-pass program names the analysis failure" ;;
+        *) fail "unparseable pre-pass program reason: ${err}" ;;
+    esac
+}
+
 # The transcript read is bounded: a brief buried past 64 KiB is not found
 # (own step reads NONE), one within the bound on a later line is.
 case_transcript_bound() {
@@ -1456,6 +1475,7 @@ case_input_edges
 case_prepass_installation
 case_leaf_lines_installation
 case_match_program_failure
+case_prepass_program_failure
 case_transcript_bound
 case_leaf_cap_stops_the_walk
 case_friction_log_records_decisions

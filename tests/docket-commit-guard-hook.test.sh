@@ -922,6 +922,43 @@ case_missing_prepass_file_denies() {
     rm -rf "$scratch_dir"
 }
 
+# ---- Unparseable match program: fail CLOSED, not open ---------------------
+#
+# A match program awk cannot parse prints nothing and exits non-zero. Read
+# as "no git write", that would allow every command, so the hook refuses
+# instead. The copy breaks the program at its first statement and runs under
+# an unapproved gate, the one engine state in which the match decides; `ls`
+# is allowed by the shipped hook.
+
+case_match_program_failure() {
+    local scratch_dir scratch_hook err rc
+    scratch_dir=$(mktemp -d "${TMPDIR:-/tmp}/docket-commit-guard-match-broken.XXXXXX") || \
+        fatal "mktemp failed"
+    scratch_hook="${scratch_dir}/docket-commit-guard-hook.sh"
+    sed 's/^BEGIN { MARK = "\\001"; TRUNCATED = "\\035" }$/BEGIN { MARK = = "\\001"; TRUNCATED = "\\035" }/' \
+        "$HOOK" >"$scratch_hook" || fatal "could not copy hook to scratch dir"
+    cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "${scratch_dir}/" || \
+        fatal "could not copy the pre-pass file to scratch dir"
+    if cmp -s "$HOOK" "$scratch_hook"; then
+        fail "unparseable match program: the fixture edit did not apply"
+        rm -rf "$scratch_dir"
+        return
+    fi
+    err=$(PATH="$PATH_WITH_DOCKET" GATE_STATE=unapproved "$BASH_BIN" "$scratch_hook" 2>&1 >/dev/null \
+        <<<"$(build_input 'ls')")
+    rc=$?
+    if [ "$rc" -eq 2 ]; then
+        pass "unparseable match program fails closed on ls (DENY)"
+    else
+        fail "unparseable match program on ls (want DENY, got exit ${rc})"
+    fi
+    case "$err" in
+        *"match program failed"*) pass "unparseable match program names the analysis failure" ;;
+        *) fail "unparseable match program reason: ${err}" ;;
+    esac
+    rm -rf "$scratch_dir"
+}
+
 # ---- Pre-pass drift: the two guard hooks must share one lexer file --------
 #
 # The quote-aware pre-pass used to be duplicated byte-for-byte in the commit
@@ -1004,6 +1041,7 @@ case_leaf_cap_is_out_of_band
 case_probe_never_acts
 case_many_quoted_groups_on_one_line
 case_missing_prepass_file_denies
+case_match_program_failure
 case_prepass_copies_identical
 case_input_edge_cases
 

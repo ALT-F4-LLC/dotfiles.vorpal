@@ -1,7 +1,7 @@
 export const meta = {
     name: 'wave',
     description: 'Internal: launched through scriptPath by docket-run, once per issue, to run one issue lane of a dispatched manifest end to end (executors, vote panels, staged rows). Per executor row it spends 1 haiku claim agent, which claims the step and writes the packet the executor then receives verbatim in its brief. Per vote row it spends 3 read-only haiku probes on the normal path (gate status before, the proposal body, gate status after), 1 on a gate that was already decided, and 4 when a re-seat is needed. Budget, launch, lane, return and reply-tail contract in the header comment.',
-    whenToUse: 'Never by name. Args are {rows, tribunal, cwd, unit?, harnessCap?, integrated?} with the issue\'s own rows verbatim from lane_units.py; the full argument contract is in the header comment.',
+    whenToUse: 'Never by name. Args are the generated args-<i>.json from lane_units.py, passed unedited ({rowsModule, rows_sha256, unit, harnessCap, cwd, tribunal, integrated?}), or the older inline form {rows, tribunal, cwd, unit?, harnessCap?, integrated?}; the full argument contract is in the header comment.',
 }
 
 // ---------------------------------------------------------------------------
@@ -53,19 +53,26 @@ export const meta = {
 // (executor 1, vote row = its seat count — the peak the panel's own
 // `parallel()` fan-out draws, a DIFFERENT quantity from the agent-budget
 // projection above), narrowed to the conductor-reported `harnessCap` when
-// present. Invoke by scriptPath ONLY, with args {rows, tribunal, cwd, unit?,
-// harnessCap?} as a real object — every row carries model/effort/variant
-// resolved by the engine, and the script reads no policy and cannot read
-// files; the one file it loads is a claim's packet module, through a nested
+// present. Invoke by scriptPath ONLY, with args {rowsModule, rows_sha256,
+// tribunal, cwd, unit?, harnessCap?} (or inline {rows, ...}) as a real
+// object — every row carries model/effort/variant resolved by the engine, and
+// the script reads no policy and cannot read files; the files it loads are
+// the launch's rows module and each claim's packet module, through a nested
 // workflow({scriptPath}).
 //
 // When and how it is invoked:
 // Invoked by the docket-run skill on an open dispatch, always as
 // Workflow({scriptPath}) — never by name, and once per issue, every
-// launch in the same conductor turn. args is {rows, tribunal, cwd, unit?,
-// harnessCap?}: the issue's own rows from `dispatch open` VERBATIM, as
-// lane_units.py split them (executor, vote, and action rows; human rows stay
-// with the conductor), each
+// launch in the same conductor turn. args is lane_units.py's args-<i>.json,
+// passed unedited: {rowsModule, rows_sha256, unit, harnessCap, cwd,
+// tribunal, integrated?}. rowsModule is a module under
+// <cwd>/.claude/docket-packets returning {v: 1, rows_sha256, rows}; the wave
+// loads it and refuses the launch, before any claim, when the module's
+// rows_sha256 differs from the args'. The older inline form {rows, tribunal,
+// cwd, unit?, harnessCap?} still routes; a launch carrying both rows and
+// rowsModule is refused. Either way the rows are the issue's own rows from
+// `dispatch open` VERBATIM, as lane_units.py split them (executor, vote, and
+// action rows; human rows stay with the conductor), each
 // executor row carrying the model/effort/variant the engine resolved from the
 // run's pinned policy.toml and each vote row carrying the same per voter in
 // `voter_assignments` — a row re-typed without those fields is refused.
@@ -78,7 +85,7 @@ export const meta = {
 // A shared (unisolated) executor's brief also cds to `cwd` before each docket
 // verb it records with.
 // `harnessCap` is the per-invocation agent() concurrency cap, computed by
-// lane_units.py and copied by the conductor from launches.json (this script
+// lane_units.py and carried in its generated args (this script
 // cannot read the machine's CPU count itself); when present and a positive
 // integer, the wave admits against min(16, harnessCap) instead of the loose
 // 16-agent ceiling it would otherwise assume, and logs which bound it used
@@ -565,7 +572,55 @@ if (!input || typeof input !== 'object') throw new Error(
     `wave.js: args is ${typeof input}, expected {rows}. Refusing to route.`
 )
 
-const rows = input.rows || []
+// TEST-BEGIN launch-rows — extracted and exercised by
+// tests/wave-launch-unit.test.sh, which prepends the packet region and stubs
+// `workflow` and `log`.
+//
+// A launch's rows arrive inline as args.rows, or by reference: lane_units.py
+// writes them into a module under <cwd>/.claude/docket-packets that returns
+// {v: 1, rows_sha256, rows}, and the args carry rowsModule and rows_sha256.
+// This script cannot hash file bytes, so the check is the module's exported
+// rows_sha256 against the args' copy, the packet_sha256 precedent. Any
+// mismatch refuses the launch before a claim agent spawns.
+async function launchRows(input) {
+    const ref = input.rowsModule
+    if (ref === undefined || ref === null) return input.rows || []
+    const refuse = (why) => {
+        const text = `wave.js: launch rows module ${JSON.stringify(ref)} REFUSED — ${why}; ` +
+            `nothing was claimed. Re-run lane_units.py and relaunch. Refusing to route.`
+        log(text)
+        return new Error(text)
+    }
+    if (input.rows !== undefined) throw refuse('args carry both rows and rowsModule; pass one')
+    const dir = typeof input.cwd === 'string' && input.cwd.startsWith('/')
+        ? `${input.cwd.replace(/\/+$/, '')}/${PACKET_DIR}/` : ''
+    if (typeof ref !== 'string' || !dir || !ref.startsWith(dir) || !ref.endsWith('.js') || ref.includes('/../')) {
+        throw refuse(`it is not a .js module under args.cwd's ${PACKET_DIR}`)
+    }
+    const want = input.rows_sha256
+    if (typeof want !== 'string' || !/^[0-9a-f]{64}$/.test(want)) {
+        throw refuse(`args carry no rows_sha256 to check it against (got ${JSON.stringify(want)})`)
+    }
+    let mod
+    try {
+        mod = await workflow({ scriptPath: ref })
+    } catch (err) {
+        throw refuse(`it failed to load (${(err && err.message) || err})`)
+    }
+    if (!mod || typeof mod !== 'object' || mod.v !== 1) {
+        throw refuse(`its format is ${JSON.stringify(mod && mod.v)}, not 1`)
+    }
+    if (mod.rows_sha256 !== want) {
+        throw refuse(`hash mismatch: the module's rows_sha256 ${JSON.stringify(mod.rows_sha256)} ` +
+            `is not the args' rows_sha256 ${want}`)
+    }
+    if (!Array.isArray(mod.rows)) throw refuse('the module carries no rows array')
+    log(`wave: ${mod.rows.length} row(s) loaded from ${ref}; rows_sha256 matches the args`)
+    return mod.rows
+}
+// TEST-END launch-rows
+
+const rows = await launchRows(input)
 
 // An agent's reply is PROSE. Read only the shapes the brief mandates, never
 // a substring of the body: a judge reviewing park handling quotes the very

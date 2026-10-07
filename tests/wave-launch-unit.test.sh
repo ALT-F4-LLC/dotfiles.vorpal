@@ -61,13 +61,30 @@ extract target-envelope    > "${WORK}/envelope.js"      || fatal "bad or missing
 extract fix-round-ancestry > "${WORK}/ancestry.js"      || fatal "bad or missing TEST markers for fix-round-ancestry"
 extract stage-ladder       > "${WORK}/ladder.js"        || fatal "bad or missing TEST markers for stage-ladder"
 grep -q 'launchUnit' "${WORK}/ladder.js" || fatal "stage-ladder region does not contain launchUnit"
+extract packet             > "${WORK}/packet.js"        || fatal "bad or missing TEST markers for packet"
+extract launch-rows        > "${WORK}/launch-rows.js"   || fatal "bad or missing TEST markers for launch-rows"
+grep -q 'function launchRows' "${WORK}/launch-rows.js" || fatal "launch-rows region does not contain launchRows()"
 
 {
     cat "${WORK}/configuration.js"
+    cat "${WORK}/packet.js"
     cat <<'JS'
 let rows = []
 let input = {}
 const LOG = []
+// The nested workflow() the wave loads a rows module through: a path the
+// scenario registered resolves to that module's return value.
+let MODULES = new Map()
+let LOADED = []
+const workflow = ({ scriptPath }) => {
+    LOADED.push(scriptPath)
+    return MODULES.has(scriptPath)
+        ? Promise.resolve(MODULES.get(scriptPath))
+        : Promise.reject(new Error(`Workflow script file not found: ${scriptPath}`))
+}
+JS
+    cat "${WORK}/launch-rows.js"
+    cat <<'JS'
 const log = (m) => LOG.push(String(m))
 const parallel = (fns) => Promise.all(fns.map((f) => f()))
 // budget: no target set by default (matches an ordinary turn with no
@@ -108,6 +125,7 @@ const stepShow = (step) => {
 }
 
 const ladder = async () => {
+rows = await launchRows(input)
 JS
     cat "${WORK}/park.js"
     cat "${WORK}/envelope.js"
@@ -133,8 +151,10 @@ const finish = async (step) => {
     await settle()
 }
 const start = (theRows, opts) => {
-    rows = theRows
-    input = Object.assign({}, opts && opts.unit !== undefined ? { unit: opts.unit } : {}, opts && opts.shard !== undefined ? { shard: opts.shard } : {})
+    rows = []
+    input = Object.assign({}, theRows ? { rows: theRows } : {}, opts && opts.unit !== undefined ? { unit: opts.unit } : {}, opts && opts.shard !== undefined ? { shard: opts.shard } : {},
+        opts && opts.module ? { rowsModule: opts.module.path, rows_sha256: opts.module.sha, cwd: opts.module.cwd } : {})
+    LOADED = []
     SPAWNED = []; GATES = []; PROBED = []; LOG.length = 0
     RESULTS = new Map(Object.entries((opts && opts.results) || {}))
     HOLD = new Set((opts && opts.hold) || [])
@@ -368,6 +388,53 @@ out = await start([vote('V-0', 'CRD-15', 0)], { results: { 'V-0': settledAs('V-0
 ok(out.coordination.gates.decided === 1 && out.coordination.gates.first_pass.decided === 0 &&
     !('CRD-15' in out.coordination.rounds_per_issue),
     `coordination: a gate with no instance ordinal is decided but not first pass, and has no rounds (got ${JSON.stringify(out.coordination)})`)
+
+// ---- (10) rows by module reference, verified against the args' hash ----
+// lane_units.py writes each launch's rows into a module under
+// <cwd>/.claude/docket-packets/ that returns {v: 1, rows_sha256, rows}, and
+// the args carry rowsModule and rows_sha256. The wave compares the module's
+// exported hash with the args' before anything is claimed.
+const CWD = '/home/op/repo'
+const MOD = `${CWD}/.claude/docket-packets/rows-${'1'.repeat(64)}.js`
+const SHA = '1'.repeat(64)
+const UNIT = { index: 1, of: 3, classCap: { write: 1 } }
+MODULES = new Map([[MOD, { v: 1, rows_sha256: SHA, rows: chain('B', 'AGT-840') }]])
+const viaModule = await start(null, { unit: UNIT, module: { path: MOD, sha: SHA, cwd: CWD } })
+const loadedFrom = [...LOADED]
+const inline = await start(chain('B', 'AGT-840'), { unit: UNIT })
+ok(loadedFrom.length === 1 && loadedFrom[0] === MOD, `module: the wave loads the rows module it was handed (got ${JSON.stringify(loadedFrom)})`)
+ok(viaModule.statuses.length === 6 &&
+    JSON.stringify(viaModule.statuses) === JSON.stringify(inline.statuses) &&
+    viaModule.statuses.map((r) => r.step).join(',') === chain('B', 'AGT-840').map((r) => r.step).join(','),
+    `module: a matching hash returns the same entries, in manifest order, as the same rows inline (got ${JSON.stringify(viaModule.statuses.map((r) => r.step))})`)
+
+const refusesModule = async (opts, frag, label) => {
+    try {
+        await start(opts.rows || null, Object.assign({ unit: UNIT }, opts))
+        ok(false, `${label} (it routed)`)
+    } catch (e) {
+        ok(String(e.message).includes(frag) && String(e.message).includes('Refusing to route') &&
+            logged(frag) && SPAWNED.length === 0 && GATES.length === 0,
+            `${label} (spawned ${JSON.stringify(SPAWNED)}, error ${JSON.stringify(String(e.message))})`)
+    }
+}
+MODULES.set(MOD, { v: 1, rows_sha256: '2'.repeat(64), rows: chain('B', 'AGT-840') })
+await refusesModule({ module: { path: MOD, sha: SHA, cwd: CWD } }, 'hash mismatch',
+    'module: a module whose rows_sha256 differs from the args hash refuses and logs the mismatch before any claim agent spawns')
+MODULES.set(MOD, { v: 1, rows_sha256: SHA, rows: chain('B', 'AGT-840') })
+await refusesModule({ module: { path: MOD, sha: undefined, cwd: CWD } }, 'no rows_sha256',
+    'module: args naming a module without a hash refuse')
+await refusesModule({ module: { path: MOD, sha: SHA, cwd: CWD }, rows: chain('B', 'AGT-840') }, 'both rows and rowsModule',
+    'module: args carrying both inline rows and a module refuse')
+await refusesModule({ module: { path: '/elsewhere/rows.js', sha: SHA, cwd: CWD } }, 'not a .js module under',
+    'module: a module outside <cwd>/.claude/docket-packets refuses without loading')
+ok(LOADED.length === 0, 'module: the out-of-tree module was never loaded')
+MODULES.set(MOD, { v: 1, rows_sha256: SHA, rows: 'not rows' })
+await refusesModule({ module: { path: MOD, sha: SHA, cwd: CWD } }, 'no rows array',
+    'module: a module without a rows array refuses')
+MODULES = new Map()
+await refusesModule({ module: { path: MOD, sha: SHA, cwd: CWD } }, 'failed to load',
+    'module: a module that does not load refuses')
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)

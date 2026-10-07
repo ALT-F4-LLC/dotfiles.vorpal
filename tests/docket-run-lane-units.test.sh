@@ -312,6 +312,11 @@ for name in LAUNCH_CAP HARNESS_CAP; do
     py=$(sed -n "s/^${name} = \([0-9][0-9]*\).*/\1/p" "$SCRIPT")
     [ -n "$js" ] && [ "$js" = "$py" ]; ok $? "lane_units.py's ${name} (${py:-missing}) mirrors wave.js (${js:-missing})"
 done
+# The rows module's field names are the ones wave.js reads; a rename on
+# either side strands every launch.
+grep -q 'input\.rowsModule' "$WAVE_JS" && grep -q 'input\.rows_sha256' "$WAVE_JS" && grep -q 'mod\.rows_sha256' "$WAVE_JS" &&
+    grep -q 'mod\.v !== 1' "$WAVE_JS" && grep -q "const PACKET_DIR = '.claude/docket-packets'" "$WAVE_JS"
+ok $? 'wave.js reads rowsModule, rows_sha256 and v under the names lane_units.py writes, from the same packet directory'
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

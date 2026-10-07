@@ -251,6 +251,54 @@ is_conductor_seat() {
     esac
 }
 
+# --- Wall-clock bound. ----------------------------------------------------
+#
+# The harness cancels a hook that reaches its registered timeout (600 s) and
+# then runs the Bash call unchecked, so a check that outlived the timeout
+# would fail open. This hook therefore runs its whole check in a child copy
+# of itself under a wall-clock bound of DOCKET_GUARD_BOUND_SECONDS seconds
+# (default 60; a value other than a whole number from 1 to 300 reads as 60)
+# and denies, naming the bound, when the bound fires.
+# A CPU limit (`ulimit -t`) would not do: it is per process, and a probe walk
+# that forks starts each subshell on a fresh budget. The bound uses bash
+# builtins alone, since this hook's dependency set is bash/cat/jq/awk.
+# `set -m` puts the pipeline below in a process group of its own, so the
+# child and everything it starts (the probe and the awk passes) share one
+# group that this shell is outside of. The pipeline's last stage waits with
+# `read -t` for the line carrying the child's exit status; when none arrives
+# in time it reports the bound and kills the whole group, itself included,
+# with `kill -KILL 0`. DOCKET_GUARD_BOUNDED marks the child, which runs the
+# check below unchanged. docket-commit-guard-hook.sh and
+# docket-sibling-guard-hook.sh carry the same bound.
+if [ -z "${DOCKET_GUARD_BOUNDED:-}" ]; then
+    GUARD_BOUND=${DOCKET_GUARD_BOUND_SECONDS:-60}
+    case $GUARD_BOUND in
+        [1-9] | [1-9][0-9] | [12][0-9][0-9] | 300) ;;
+        *) GUARD_BOUND=60 ;;
+    esac
+    INPUT=$(cat 2>/dev/null) || allow_default
+    exec 4>&1 5>&2
+    GUARD_STATUS=$(
+        set -m
+        {
+            printf '%s' "$INPUT" | DOCKET_GUARD_BOUNDED=1 "$BASH" "$0" >&4 2>&5 4>&- 5>&-
+            printf '%s\n' "${PIPESTATUS[1]}"
+        } | {
+            if read -t "$GUARD_BOUND" -r guard_rc; then
+                printf '%s' "$guard_rc"
+                exit 0
+            fi
+            printf 'bound'
+            kill -KILL 0
+        }
+    ) 2>/dev/null
+    case $GUARD_STATUS in
+        bound) deny "trust-store write blocked: the trust-guard hook did not finish checking this command within its ${GUARD_BOUND} s wall-clock bound (DOCKET_GUARD_BOUND_SECONDS), so the command is refused rather than passed through unchecked. Split it into smaller Bash calls." ;;
+        [0-9] | [0-9][0-9] | [0-9][0-9][0-9]) exit "$GUARD_STATUS" ;;
+    esac
+    exit 1
+fi
+
 INPUT=$(cat 2>/dev/null) || allow_default
 
 if ! command -v jq >/dev/null 2>&1; then

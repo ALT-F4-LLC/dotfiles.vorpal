@@ -1479,6 +1479,41 @@ case_probe_killed_by_signal() {
     fi
 }
 
+# The harness cancels a hook that reaches its timeout and runs the Bash call
+# unchecked, and a CPU limit does not bound a walk that forks, since each
+# subshell starts a fresh budget. So the hook bounds its whole run by wall
+# clock, well under that timeout, and denies when the bound fires. The row
+# lowers the bound to 1 s through DOCKET_GUARD_BOUND_SECONDS on 1500 `ls`
+# leaves of about 130 bytes each, which this hook takes three to four seconds
+# to check and allows at the default bound.
+case_analysis_bound_denies() {
+    local cmd input err rc log_file="${WORK}/home/.claude/friction/docket-sibling-guard.jsonl"
+    cmd=$(awk 'BEGIN { p = sprintf("%120s", ""); gsub(/ /, "a", p); for (i = 0; i < 1500; i++) printf "ls %s%d\n", p, i }')
+    input=$(build_input "$cmd" executor-write "$WAVE_42")
+    mkdir -p "${log_file%/*}"
+    : >"$log_file"
+    # Logging may use more than the four tools, so this run keeps the full
+    # PATH behind them.
+    err=$(DOCKET_GUARD_BOUND_SECONDS=1 PATH="${TOOLS_DIR}:${PATH}" HOME="${WORK}/home" \
+        "$BASH_BIN" "$HOOK" 2>&1 >/dev/null <<<"$input")
+    rc=$?
+    if [ "$rc" -eq 2 ]; then
+        pass "analysis past a 1 s bound is refused (DENY)"
+    else
+        fail "analysis past a 1 s bound (want DENY, got exit ${rc})"
+    fi
+    case "$err" in
+        "${DENY_PREFIX}"*"within its 1 s wall-clock bound"*) pass "the bound deny names the bound" ;;
+        *) fail "the bound deny reason: ${err}" ;;
+    esac
+    if jq -se 'length > 0 and (last | .decision == "deny" and .clause == "analysis-bound")' "$log_file" >/dev/null 2>&1; then
+        pass "the bound deny is logged under its own clause"
+    else
+        fail "the bound deny: friction log $(cat "$log_file" 2>/dev/null)"
+    fi
+    assert_verdict_raw "$input" ALLOW "the same analysis at the default bound"
+}
+
 # Denies and own-unknown allows land in the friction ledger; routine allows do
 # not (an executor makes hundreds of Bash calls).
 case_friction_log_records_decisions() {
@@ -1553,6 +1588,7 @@ case_prepass_program_failure
 case_transcript_bound
 case_leaf_cap_stops_the_walk
 case_probe_killed_by_signal
+case_analysis_bound_denies
 case_friction_log_records_decisions
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"

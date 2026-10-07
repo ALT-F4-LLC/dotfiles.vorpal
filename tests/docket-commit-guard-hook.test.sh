@@ -1026,6 +1026,41 @@ case_prepass_copies_identical() {
     fi
 }
 
+# ---- Wall-clock bound: an analysis that outlives it denies ---------------
+#
+# The harness cancels a hook that reaches its timeout and runs the Bash call
+# unchecked, so the hook bounds its own run well under that timeout and
+# denies when the bound fires. The row lowers the bound to 1 s through
+# DOCKET_GUARD_BOUND_SECONDS on 1500 `ls` leaves of about 130 bytes each,
+# which this hook takes two to three seconds to check and allows at the
+# default bound. The input travels on jq's stdin: it is larger than the
+# 128 KiB a single Linux argument may carry.
+
+case_analysis_bound_denies() {
+    local cmd input err rc
+    cmd=$(awk 'BEGIN { p = sprintf("%120s", ""); gsub(/ /, "a", p); for (i = 0; i < 1500; i++) printf "ls %s%d\n", p, i }')
+    input=$(printf '%s' "$cmd" | jq -Rsc '{tool_name:"Bash",tool_input:{command:.}}')
+    err=$(DOCKET_GUARD_BOUND_SECONDS=1 PATH="$PATH_WITH_DOCKET" GATE_STATE=unapproved \
+        "$BASH_BIN" "$HOOK" 2>&1 >/dev/null <<<"$input")
+    rc=$?
+    if [ "$rc" -eq 2 ]; then
+        pass "analysis past a 1 s bound is refused (DENY)"
+    else
+        fail "analysis past a 1 s bound (want DENY, got exit ${rc})"
+    fi
+    case "$err" in
+        *"within its 1 s wall-clock bound"*) pass "the bound deny names the bound" ;;
+        *) fail "the bound deny reason: ${err}" ;;
+    esac
+    PATH="$PATH_WITH_DOCKET" GATE_STATE=unapproved "$BASH_BIN" "$HOOK" >/dev/null 2>&1 <<<"$input"
+    rc=$?
+    if [ "$rc" -eq 0 ]; then
+        pass "the same analysis at the default bound allows (ALLOW)"
+    else
+        fail "the same analysis at the default bound (want ALLOW, got exit ${rc})"
+    fi
+}
+
 # ---- Malformed / non-Bash input: fail open, never mid-parse --------------
 
 case_input_edge_cases() {
@@ -1076,6 +1111,7 @@ case_missing_prepass_file_denies
 case_match_program_failure
 case_prepass_program_failure
 case_prepass_copies_identical
+case_analysis_bound_denies
 case_input_edge_cases
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"

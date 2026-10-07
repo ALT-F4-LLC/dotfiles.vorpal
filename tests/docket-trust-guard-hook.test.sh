@@ -1293,6 +1293,40 @@ case_framing_control_bytes_deny() {
         "executor-write: bare 0x1d word between docket and trust add"
 }
 
+# ---- Wall-clock bound: an analysis that outlives it denies -----------------
+#
+# The harness cancels a hook that reaches its timeout and runs the Bash call
+# unchecked, so the hook bounds its own run well under that timeout and
+# denies when the bound fires. The row lowers the bound to 1 s through
+# DOCKET_GUARD_BOUND_SECONDS on 1500 `ls` leaves of about 130 bytes each,
+# which this hook takes two to three seconds to check for an executor and
+# allows at the default bound. The input travels on jq's stdin: it is larger
+# than the 128 KiB a single Linux argument may carry.
+
+case_analysis_bound_denies() {
+    local cmd input err rc
+    cmd=$(awk 'BEGIN { p = sprintf("%120s", ""); gsub(/ /, "a", p); for (i = 0; i < 1500; i++) printf "ls %s%d\n", p, i }')
+    input=$(printf '%s' "$cmd" | jq -Rsc '{tool_name:"Bash",tool_input:{command:.},agent_type:"executor-write"}')
+    err=$(DOCKET_GUARD_BOUND_SECONDS=1 PATH="$TOOLS_DIR" "$BASH_BIN" "$HOOK" 2>&1 >/dev/null <<<"$input")
+    rc=$?
+    if [ "$rc" -eq 2 ]; then
+        pass "executor-write: analysis past a 1 s bound is refused (DENY)"
+    else
+        fail "executor-write: analysis past a 1 s bound (want DENY, got exit ${rc})"
+    fi
+    case "$err" in
+        *"within its 1 s wall-clock bound"*) pass "executor-write: the bound deny names the bound" ;;
+        *) fail "executor-write: the bound deny reason: ${err}" ;;
+    esac
+    PATH="$TOOLS_DIR" "$BASH_BIN" "$HOOK" >/dev/null 2>&1 <<<"$input"
+    rc=$?
+    if [ "$rc" -eq 0 ]; then
+        pass "executor-write: the same analysis at the default bound allows (ALLOW)"
+    else
+        fail "executor-write: the same analysis at the default bound (want ALLOW, got exit ${rc})"
+    fi
+}
+
 # ---- Input edge cases: fail open, never mid-parse --------------------------
 
 case_input_edge_cases() {
@@ -1347,6 +1381,7 @@ case_match_program_failure
 case_prepass_program_failure
 case_prepass_copies_identical
 case_framing_control_bytes_deny
+case_analysis_bound_denies
 case_input_edge_cases
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"

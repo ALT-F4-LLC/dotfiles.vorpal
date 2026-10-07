@@ -196,6 +196,7 @@ docket events list --run $RUN --tail <N> --json=v2 | jq '.data.items'
 docket step reap STEP-N --reason "<what you observed>" < <scratchpad>/conductor.d/$RUN.token
 docket events list --run $RUN --kind lease-reaped --json=v2 | jq -c '.data.items[] | {seq, step_id, forced: .data.forced}'
 docket dispatch open --run $RUN --limit 240 --ack-reap <seq>
+docket guard spawn --run $RUN   # after a reconciled close; exit 2 names a hold the close left standing, the only kind that gets an ack-reap panel
 docket guard spawn --run $RUN --ack-reap <seq>
 docket step approve STEP-N --authority operator --note "<their words>" < <scratchpad>/conductor.d/$RUN.token
 docket step resolve STEP-N --as override-pass --authority standing-grant --authority-ref machine-caused-gate-failure < <scratchpad>/conductor.d/$RUN.token
@@ -1084,11 +1085,10 @@ the close like any other.
 
 **1. Launch the usage join first, before reading or diagnosing the wave's
 result.** In the same turn, while it runs: every cherry-pick, `step
-annotate`, and worktree sweep for rows this notification settled, and,
-on the last launch only, the pre-open reap check (`docket guard spawn --run $RUN` with no `--rows`; exit 2
-names an unacknowledged reap, so convene the ack-reap panel now, beside
-the join). A reap the open itself performed rides on that open's own
-`reaped`/`reap_hold` fields instead. End the turn on the join. The wave
+annotate`, and worktree sweep for rows this notification settled. The
+reap check waits for the close (step 2 below), since the close settles
+most reap holds itself. A reap the open itself performed rides on that
+open's own `reaped`/`reap_hold` fields instead. End the turn on the join. The wave
 returns `{statuses, coordination}`: one `statuses` entry per row the launch
 held, in manifest order, and the launch's `coordination` counts. Read
 `statuses` as rows, not a verdict: `not-launched-run-parked`,
@@ -1151,6 +1151,15 @@ dispatch is open.
 (Shell paper-cut: quote `echo '---'`, since zsh equals-expands an
 unquoted `echo ====`.) Sync any standing external-tracker milestone on
 this same notification.
+
+**After a reconciled close, run the reap check before `next`:** `docket
+guard spawn --run $RUN` with no `--rows`. The reconciled close has
+already acknowledged, as `acked_by: dispatch-close`, every non-forced
+reap of a claim admitted under that dispatch. Exit 0 means no hold
+stands, so no ack-reap panel convenes. Exit 2 names a hold the close left
+standing (a forced `step reap`, or a claim admitted under another
+dispatch), and only that hold gets the ack-reap panel under
+**`--ack-reap`**.
 
 **This order binds one dispatch's own sequence, not the relationship
 between dispatches.** When more than one dispatch or panel is genuinely
@@ -1563,7 +1572,10 @@ modules a day old, so leave it.
 **`--ack-reap`.** This flag tells the engine you have established the
 crashed writer is gone; the engine cannot check that itself. Never pass
 it on your own initiative: it is the panel's word, a conversational gate
-per **Gates**.
+per **Gates**. Convene that panel only for a hold still standing after
+the reconciled close (**After a reconciled close** above): a non-forced
+reap of a claim admitted under the closing dispatch is already
+acknowledged by the close and needs no panel.
 
 The order is fixed, because the proposal's key names a seq that exists
 only after the reap. First establish the holder is actually gone (the

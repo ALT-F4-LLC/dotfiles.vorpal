@@ -15,7 +15,7 @@ examples reflect the swept commands as of that build.
 ## Contents
 
 - [`docket next` in step mode](#next-run) — 85 lines
-- [`docket dispatch`](#dispatch-commands) — 317 lines
+- [`docket dispatch`](#dispatch-commands) — 321 lines
   - [`dispatch open`](#dispatch-open) — 77 lines
   - [`dispatch extend`](#dispatch-extend) — 23 lines
   - [`dispatch verify`](#dispatch-verify) — 37 lines
@@ -23,7 +23,7 @@ examples reflect the swept commands as of that build.
   - [`dispatch backfill-usage`](#dispatch-backfill-usage) — 49 lines
   - [`dispatch abandon`](#dispatch-abandon) — 18 lines
   - [`dispatch waive-target`](#dispatch-waive-target) — 22 lines
-  - [The write-reap acknowledgment](#dispatch-write-reap-ack) — 25 lines
+  - [The write-reap acknowledgment](#dispatch-write-reap-ack) — 29 lines
 
 <a id="next-run"></a>
 
@@ -424,6 +424,10 @@ passes `--ack-reap <seq>`.
   Acking the same seq twice is a success that changes nothing.
 - `acked_by` records the **verb** (`dispatch-open`), never a user identity —
   core has no identity model.
+- A reconciled `dispatch close` acknowledges, as `acked_by: dispatch-close`,
+  every non-forced reap of a claim admitted under the same dispatch. A forced
+  reap (`step reap`) and a claim admitted under another dispatch keep the
+  hold.
 
 `docket guard spawn --ack-reap` is the other entry point; see
 [guard and trust](guard-trust.md).

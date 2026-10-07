@@ -1263,6 +1263,44 @@ else
     bad "close report: no single paragraph carries '${landed_anchor}'"
 fi
 
+# (v) A reconciled dispatch close acknowledges its own dispatch's non-forced
+# reaps, so the ack-reap panel convenes only for a hold the reap check still
+# names after that close, never beside the usage join before it.
+#
+#   v1 restore the pre-close reap check that convenes the panel beside the
+#      join in the step-1 paragraph
+#   v2 delete the "Exit 0 means no hold stands" sentence
+#   v3 widen "only that hold gets the ack-reap panel" to every reap
+reapcheck_anchor='**After a reconciled close, run the reap check before `next`:**'
+if paragraph "$reapcheck_anchor" "${WORK}/reapcheck"; then
+    states "reap check: the close acknowledges its own dispatch's non-forced reaps" \
+        "${WORK}/reapcheck" 'already acknowledged, as `acked_by: dispatch-close`, every non-forced reap of a claim admitted under that dispatch'
+    states "reap check: a clean check convenes no panel" \
+        "${WORK}/reapcheck" 'Exit 0 means no hold stands, so no ack-reap panel convenes.'
+    states "reap check: only a hold left standing gets the panel" \
+        "${WORK}/reapcheck" 'and only that hold gets the ack-reap panel'
+else
+    bad "reap check: no single paragraph carries '${reapcheck_anchor}'"
+fi
+join_anchor='**1. Launch the usage join first, before reading or diagnosing the wave'
+if paragraph "$join_anchor" "${WORK}/join"; then
+    # Read from the anchor's own flat line, as (n) does, so the self-checks'
+    # degraded paragraph() copy stays green on a clean file.
+    grep -F -- "$join_anchor" "${WORK}/join" > "${WORK}/join-line"
+    if grep -qiE 'convene the ack-reap panel' "${WORK}/join-line"; then
+        bad "reap check: the usage-join step still convenes the ack-reap panel before the close"
+    else
+        ok "reap check: the usage-join step convenes no ack-reap panel before the close"
+    fi
+else
+    bad "reap check: no single paragraph carries '${join_anchor}'"
+fi
+if grep -qE '^docket guard spawn --run \$RUN +# after a reconciled close' "${WORK}/verbs-heredoc"; then
+    ok "reap check: the verbs checkpoint carries the post-close reap check"
+else
+    bad "reap check: the verbs checkpoint lacks the bare post-close 'docket guard spawn --run \$RUN' line"
+fi
+
 if [ "$fail" -ne 0 ]; then
     echo "docket-run-skill: FAIL — a sandbox lift without its precondition is the failure this pins; fix the skill, not the test." >&2
     exit 1

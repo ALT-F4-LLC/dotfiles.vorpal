@@ -1,6 +1,6 @@
 ---
 fragment: completion-gates
-version: 16
+version: 17
 ---
 # Completion gates
 
@@ -9,7 +9,10 @@ declared gate set for your step, one line per gate, and a matched line carries t
 trusted command the engine will run; run that command verbatim. `(pre)` marks a gate
 that runs at claim. A line reading `unmatched` (with its reason in parentheses) names a gate
 that has no trust entry and will not run: report it as a blocker rather than
-resolving a command anywhere else.
+resolving a command anywhere else. A line reading `commands from <source>, each
+matched when the gate runs` names a gate whose commands the engine harvests from
+that source and runs itself; there is no single command for you to run, but your
+change must satisfy each command that source declares.
 
 Commit your final edits, then run every required gate once on that commit, from the
 worktree you will record, using the trusted command verbatim and the engine's

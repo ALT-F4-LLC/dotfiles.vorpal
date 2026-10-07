@@ -8,7 +8,9 @@ contract and parsing traps. Verified 2026-10-02 against `docket
 nightly-229-g7f304cc` (commit `7f304cc`, built `2026-10-02T22:01:56Z`) by
 `--help`/`--version` and the docket-cli-audit skill's runtime sweep
 (`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
-examples reflect the swept commands as of that build.
+examples reflect the swept commands as of that build. The `dispatch-close`
+reap acknowledgment below was added for `nightly-260-gf08ce73` and checked
+against that build's source, not by the sweep.
 
 <a id="contents"></a>
 

@@ -188,6 +188,7 @@ stay identical to the form this file prescribes where the verb is taught:
 
 ```bash
 umask 077; cat > <scratchpad>/conductor.d/$RUN.verbs <<'EOF'
+docket dispatch close --run $RUN --backfill-from "$TMPDIR/dispatch-<M>-rows.json" --source "wave-journal:<wfId-0>,<wfId-1>" --json   # file holds the bare rows array of every launch, never {rows: [...]}
 docket dispatch backfill-usage --run $RUN --source "wave-journal:<wfId>" --from-json - < "$TMPDIR/wave-<wfId>.json"   # file holds the bare rows array, never {rows: [...]}
 docket vote create -d "<the decision, stated plainly>" -r "<evidence summary>" --files-changed "<comma-separated paths the decision covers>" -n 3 -c <low|medium|high|critical> --threshold 0.67 --created-by conductor
 docket vote link <proposal-id> --issue <ID>
@@ -1066,8 +1067,7 @@ the close like any other.
 **1. Launch the usage join first, before reading or diagnosing the wave's
 result.** In the same turn, while it runs: every cherry-pick, `step
 annotate`, and worktree sweep for rows this notification settled, and,
-on the last launch only, `dispatch verify` and the pre-open
-reap check (`docket guard spawn --run $RUN` with no `--rows`; exit 2
+on the last launch only, the pre-open reap check (`docket guard spawn --run $RUN` with no `--rows`; exit 2
 names an unacknowledged reap, so convene the ack-reap panel now, beside
 the join). A reap the open itself performed rides on that open's own
 `reaped`/`reap_hold` fields instead. End the turn on the join. The wave
@@ -1120,12 +1120,16 @@ close can still wait on the join. A join outstanding at the next close is
 back-filled first; one outstanding when `next` returns empty is
 back-filled before the done report, never after.
 
-**2. On the last launch's join notification (every launch returned,
-extended ones included): back-fill, verify, close, as separate calls,
-close first, then next.** A panel's seats-mode join launches beside
+**2. On the join's notification from the last launch (every launch
+returned, extended ones included): one `docket dispatch close --run $RUN
+--backfill-from <rows file> --source <source> --json`, then next.** That
+one call back-fills, verifies, and closes, each stage gating the next: a
+failed back-fill runs no verify and no close, a failed verify runs no
+close, and nothing is ever half-closed. Read its full output, verify
+stage included, before acting on the close or calling `next`; never pipe
+it through `head` or `tail`. A panel's seats-mode join launches beside
 the next wave, after the close. Never issue `docket next --run` while the
-dispatch is open. Never chain close unconditionally behind a back-fill in
-one compound command; a chained failure closes on stranded usage.
+dispatch is open.
 (Shell paper-cut: quote `echo '---'`, since zsh equals-expands an
 unquoted `echo ====`.) Sync any standing external-tracker milestone on
 this same notification.
@@ -1146,9 +1150,13 @@ join** (an interrupt mid-diagnosis takes the window with it).
 
 **A `verify` refusal on a step that recorded and then parked is
 expected, not a finding.** A step that moved `ready` → `waiting-human` is
-no longer in the ready set, so verify exits 4 for work that went exactly
-right. Confirm with `docket step show STEP-N` that it recorded, then
-close. A mismatch is a finding only when the named step did not record.
+no longer in the ready set, so the combined close's verify stage refuses
+for work that went exactly right. Confirm with `docket step show STEP-N`
+that it recorded, then re-close with a bare `docket dispatch close --run
+$RUN --json`. Never rerun `--backfill-from` after a verify or close
+refusal: the back-fill stage already landed, and under the default `--on-duplicate
+refuse` its rows would refuse the whole batch. A
+mismatch is a finding only when the named step did not record.
 
 #### Crashed-relay reconciliation
 
@@ -1185,28 +1193,33 @@ Workflow({ scriptPath: "<absolute installed path to wave-usage.js>",
 ```
 
 ```bash
-# 2. back-fill each launch's landed rows once every launch has returned. One
-#    transaction per launch, whole batch or nothing: four typed rows per
-#    step, --source naming the wave. Land the workflow's `rows` array on disk with the Write
-#    tool, copied from the completion notification byte for byte — never
-#    retyped, never reshaped — then pipe the file. Nothing else goes in that
+# 2. as each launch's join returns, land its `rows` array on disk with the Write
+#    tool as "$TMPDIR/wave-<wfId>.json", copied from the completion notification
+#    byte for byte — never retyped, never reshaped. Nothing else goes in that
 #    file: the workflow's overhead and skip lines are in its return, not `rows`.
-docket dispatch backfill-usage --run $RUN --source "wave-journal:<wfId>" --from-json - < "$TMPDIR/wave-<wfId>.json"
+# 3. once every launch has returned, merge every launch's file into one array,
+#    one file per launch named, extended launches included:
+jq -s add "$TMPDIR/wave-<wfId-0>.json" "$TMPDIR/wave-<wfId-1>.json" > "$TMPDIR/dispatch-<M>-rows.json"
 ```
 
 ```bash
-# 3. reconcile before closing — verify writes nothing, it only compares:
-docket dispatch verify --run $RUN
-# 4. only now. close verifies integration itself: every write-class step's
-#    recorded commit must be on the shared branch — an ancestor of HEAD, or
+# 4. back-fill, verify and close in one call, whole batch or nothing per stage:
+#    four typed rows per step, --source naming every launch's wave. The close
+#    stage verifies integration itself: every write-class step's recorded
+#    commit must be on the shared branch — an ancestor of HEAD, or
 #    patch-equivalent after a cherry-pick — and an unintegrated one refuses
 #    CONFLICT naming the step, its sha and its worktree. On that refusal,
-#    integrate now (Worktree writers below) and close again, unless the sha
-#    is a regressing round's under a loop-extension park: the loop-extension
-#    standing ruling under Gates convenes the panel first and integrates
-#    only on its approval.
+#    integrate now (Worktree writers below) and re-close bare (below), unless
+#    the sha is a regressing round's under a loop-extension park: the
+#    loop-extension standing ruling under Gates convenes the panel first and
+#    integrates only on its approval.
 #    --skip-integration-check REASON is the operator's override, recorded on
-#    the close event; it is never yours to pass.
+#    the close event; it is never yours to pass. Read the whole output.
+docket dispatch close --run $RUN --backfill-from "$TMPDIR/dispatch-<M>-rows.json" --source "wave-journal:<wfId-0>,<wfId-1>" --json
+# 5. re-close after a verify or close refusal you have answered (a recorded-then-
+#    parked step confirmed with `docket step show STEP-N`, or a CONFLICT sha
+#    integrated): bare, never --backfill-from again, since its rows already landed.
+#    Also the close when every join returned no rows.
 docket dispatch close --run $RUN --json
 ```
 
@@ -1219,13 +1232,14 @@ terminal step record, the wave's last one, close or no close.
 manifest are always refused: filter both out with `exclude: ["STEP-N",
 ...]` in the launch args. If the engine still refuses a row as
 already-recorded, that refusal is authoritative: delete that step's rows
-and resubmit the rest.
+and resubmit the rest through the same combined close, since a refused
+back-fill stage ran no verify and no close.
 
 Excluding a class does not mean its spend is counted elsewhere: seats
 never record usage at `docket vote cast`, so seat spend reaches the
 ledger only through the transcripts, in the panel back-fill below.
 
-Read `verify`'s answer by shape, not exit alone, per the refusal rule
+Read the verify stage's answer by shape, not exit alone, per the refusal rule
 above (dead lease, reaped claim). `close`'s own reconciliation
 (`close_reason: "reconciled"`) remains authoritative and refuses outright
 on a genuine discrepancy.

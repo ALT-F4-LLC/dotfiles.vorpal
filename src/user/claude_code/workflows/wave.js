@@ -456,7 +456,10 @@ ${!isWrite ? `
    \`docket step record ${row.step}${isWrite ? ' --worktree <YOUR CHECKOUT>' : ''} --artifact-file ${dir}/${row.step}-<kind>.md --metadata '{"model_resolved":"unknown","effort_resolved":"unknown"}' < ${token}\`
 ${isWrite ? `
    - WORKTREE: \`--worktree\` is the literal path of the checkout the work
-     happened in (\`git rev-parse --show-toplevel\`).` : ''}
+     happened in (\`git rev-parse --show-toplevel\`).
+   - TIMEOUT: issue the record Bash call with \`timeout: 600000\`. The
+     engine reruns every completion gate at record, which outlasts the
+     default Bash timeout and would move the call to the background.` : ''}
    - ARTIFACT, MANDATORY on every record: a FRESH file whose name starts
      with your step id, created WITH BASH
      (\`cat > ${dir}/${row.step}-<kind>.md <<'EOF' ... EOF\`).

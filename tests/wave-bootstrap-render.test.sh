@@ -149,6 +149,19 @@ for (const isolated of [true, false]) {
         ok(!isWrite === head.includes(`mkdir -p ${DIR}/target`), `${label}: target reconstruction only for read-class`)
         ok((isolated && isWrite) === head.includes('2b. COMMIT YOUR DELIVERABLE'), `${label}: the commit obligation only for isolated writers`)
 
+        // ---- a writer's record call outlasts the default Bash timeout ----
+        // The engine reruns every completion gate at record, so the call needs
+        // a timeout between 400000 and 600000 ms, stated inside obligation 3.
+        if (isWrite) {
+            const start = head.indexOf('3. Record it yourself with `docket step record`')
+            const stop = head.indexOf('\n4. ', start)
+            const block = start >= 0 && stop > start ? head.slice(start, stop) : ''
+            const t = /record Bash call with `timeout: (\d+)`/.exec(block.replace(/\s+/g, ' '))
+            const n = t ? Number(t[1]) : NaN
+            ok(n >= 400000 && n <= 600000,
+                `${label}: obligation 3 issues the record Bash call with a timeout of 400000-600000 ms (got ${t ? t[1] : 'none'})`)
+        }
+
         // ---- refused-write rule: the refusal's own recovery, once, disclosed ----
         const flat = head.replace(/\s+/g, ' ')
         ok(flat.includes(`If a write is refused and the refusal's own text names a recovery, take that recovery once and disclose the refusal and the retry in your reply and artifact.`),

@@ -528,7 +528,7 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
         fi
         # The first firing is this probe own eval line, not a leaf of the
         # command; recording it would put an interpreter word in every walk.
-        if [ "$_leaf_n" -eq 1 ] && [ "$BASH_COMMAND" = "eval \"\$COMMAND\"" ]; then
+        if [ "$_leaf_n" -eq 1 ] && [ "$BASH_COMMAND" = "eval -- \"\$COMMAND\"" ]; then
             return 0
         fi
         local _leaf_head="${BASH_COMMAND%%[ $'"'"'\t\n'"'"']*}"
@@ -636,7 +636,7 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
     exec 8>&1 9>/dev/null
     set -r
     trap _guard_probe DEBUG
-    eval "$COMMAND"
+    eval -- "$COMMAND"
 ' 2>&1)
 PROBE_RC=$?
 

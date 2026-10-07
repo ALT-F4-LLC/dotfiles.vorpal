@@ -875,6 +875,8 @@ case_verb_spellings() {
     assert_verdict "noglob pkill node" executor-write "$WAVE_42" DENY "zsh noglob prefix"
     assert_verdict "nocorrect killall node" executor-write "$WAVE_42" DENY "zsh nocorrect prefix"
     assert_verdict "- pkill node" executor-write "$WAVE_42" DENY "zsh - prefix leading the command"
+    assert_deny_reason "- pkill node" executor-write "$WAVE_42" "addresses processes by name across the whole machine" "zsh - prefix leading the command resolves to pkill"
+    assert_verdict "- ls" executor-write "$WAVE_42" ALLOW "zsh - prefix leading a read stays a read"
     assert_verdict "true; - pkill node" executor-write "$WAVE_42" DENY "zsh - prefix after a separator"
     assert_verdict "true && - killall node" executor-write "$WAVE_42" DENY "zsh - prefix after &&"
     assert_verdict "repeat 1 docket step reap STEP-7 --reason x" executor-write "$WAVE_42" DENY "zsh repeat with a count"

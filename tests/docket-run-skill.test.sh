@@ -685,6 +685,10 @@ fi
 #      (find gets one joined path, no IDLE prints, the 120 s kill fires)
 #   j2 delete the directory-existence check (find errors on the missing dir,
 #      the loop keeps sleeping, the 90 s kill fires)
+#   j3 delete the interrupted-tail check line (the fresh interrupted seat
+#      prints no STALLED line and the 10 s kill fires)
+#   j4 match any tool_result tail in that check (the fresh seat whose tail is
+#      an ordinary tool_result prints STALLED)
 bounded_run() { # <seconds> <out> <script> <dir-0> <dir-1>; sets b_rc, b_secs, b_fired
     local secs=$1 out=$2 script=$3 zpid wpid start=$SECONDS
     rm -f "${WORK}/watchdog-fired"
@@ -699,7 +703,7 @@ bounded_run() { # <seconds> <out> <script> <dir-0> <dir-1>; sets b_rc, b_secs, b
         kill "$zpid" 2>/dev/null && touch "${WORK}/watchdog-fired"
     ) >/dev/null 2>&1 &
     wpid=$!
-    wait "$zpid"
+    wait "$zpid" 2>/dev/null
     b_rc=$?
     b_secs=$((SECONDS - start))
     kill "$wpid" 2>/dev/null
@@ -717,7 +721,7 @@ elif ! command -v zsh >/dev/null 2>&1; then
 else
     ok "dispatch watcher: the block is extracted between its anchors"
     mkdir -p "${WORK}/watcher-bin" "${WORK}/wdir-0" "${WORK}/wdir-1"
-    printf '#!/bin/sh\n[ "$1 $2 $3" = "step show STEP-1" ] && echo "  status:    claimed"\nexit 0\n' \
+    printf '#!/bin/sh\n[ "$1 $2" = "step show" ] && echo "  status:    claimed"\nexit 0\n' \
         > "${WORK}/watcher-bin/docket"
     chmod +x "${WORK}/watcher-bin/docket"
     printf '{"type":"assistant","text":"docket step claim STEP-1"}\n' \
@@ -743,6 +747,48 @@ else
         ok "dispatch watcher: a missing dir prints WATCHER-ERROR naming it and exits 2 before the first sleep"
     else
         bad "dispatch watcher: a missing dir exited ${b_rc} after ${b_secs} s:$(head -c 300 "${WORK}/watcher-missing.out")"
+    fi
+
+    # Two fresh transcripts, identical but for their last two records. The
+    # interrupted tail copies its shape from RUN-125's seat transcript
+    # agent-ac2b6ee7805a1bbe6.jsonl:171 (the user-rejected tool_result) and
+    # :172 (the interrupt record Claude Code writes after it), trimmed to the
+    # fields the watcher reads. The ordinary tail is a plain tool_result.
+    mkdir -p "${WORK}/wdir-stalled" "${WORK}/wdir-ordinary"
+    for d in stalled ordinary; do
+        printf '{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_f","name":"Bash","input":{"command":"docket step claim STEP-2"}}]}}\n' \
+            > "${WORK}/wdir-${d}/agent-${d}2.jsonl"
+        printf '{"agent":"%s2","event":"started"}\n' "$d" > "${WORK}/wdir-${d}/journal.jsonl"
+    done
+    printf '%s\n' \
+        '{"isSidechain":true,"type":"user","message":{"role":"user","content":[{"type":"tool_result","content":"The user doesn'"'"'t want to proceed with this tool use. The tool use was rejected (eg. if it was a file edit, the new_string was NOT written to the file). STOP what you are doing and wait for the user to tell you how to proceed.","is_error":true,"tool_use_id":"toolu_f"}]},"toolUseResult":"User rejected tool use","toolDenialKind":"user-rejected"}' \
+        '{"isSidechain":true,"type":"user","message":{"role":"user","content":[{"type":"text","text":"[Request interrupted by user for tool use]"}]}}' \
+        >> "${WORK}/wdir-stalled/agent-stalled2.jsonl"
+    printf '%s\n' \
+        '{"isSidechain":true,"type":"user","message":{"role":"user","content":[{"type":"tool_result","content":"ok","is_error":false,"tool_use_id":"toolu_f"}]},"toolUseResult":{"stdout":"ok"}}' \
+        '{"isSidechain":true,"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"running the next check"}]}}' \
+        >> "${WORK}/wdir-ordinary/agent-ordinary2.jsonl"
+
+    bounded_run 10 "${WORK}/watcher-stalled.out" "$watcher" "${WORK}/wdir-0" "${WORK}/wdir-stalled"
+    if [ "$b_fired" -eq 1 ]; then
+        bad "dispatch watcher: a fresh interrupted seat printed no STALLED line within 10 s (killed): $(head -c 300 "${WORK}/watcher-stalled.out")"
+    elif grep -q '^STALLED STEP-2' "${WORK}/watcher-stalled.out"; then
+        ok "dispatch watcher: a fresh seat whose tail is a user-rejected tool_result and an interrupt prints STALLED STEP-2 at once"
+    else
+        bad "dispatch watcher: an interrupted seat exited ${b_rc} without a STALLED STEP-2 line: $(head -c 300 "${WORK}/watcher-stalled.out")"
+    fi
+
+    # The ordinary-tail case always runs to its 10 s kill, so the self-checks'
+    # nested runs skip it; the outer run, and every mutant run, does not.
+    if [ -n "${DOCKET_RUN_SKILL_INNER:-}" ]; then
+        :
+    elif bounded_run 10 "${WORK}/watcher-ordinary.out" "$watcher" "${WORK}/wdir-0" "${WORK}/wdir-ordinary"
+        grep -q '^STALLED' "${WORK}/watcher-ordinary.out"; then
+        bad "dispatch watcher: a fresh seat whose tail is an ordinary tool_result printed STALLED: $(head -c 300 "${WORK}/watcher-ordinary.out")"
+    elif [ "$b_fired" -eq 1 ]; then
+        ok "dispatch watcher: a fresh seat whose tail is an ordinary tool_result prints no STALLED line within 10 s"
+    else
+        bad "dispatch watcher: the ordinary-tail run exited ${b_rc} before the 10 s window closed: $(head -c 300 "${WORK}/watcher-ordinary.out")"
     fi
 fi
 

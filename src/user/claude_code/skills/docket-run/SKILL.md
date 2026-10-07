@@ -959,7 +959,10 @@ running agent's transcript has had no new entry for 15 minutes. Its exit
 is a completion notification, so it re-invokes you mid-wave without
 busy-waiting, foreground sleep loops, or `ScheduleWakeup`; the `sleep`
 runs inside the background task. Its output names the idle agent's step
-ID. The directories are positional parameters, not one string: the Bash
+ID. It does not wait the 15 minutes for an interrupted seat: a running
+agent whose transcript ends in a `user-rejected` tool_result followed by
+the interrupt record prints `STALLED <step>` on the next pass, since that
+seat stops until someone answers it. The directories are positional parameters, not one string: the Bash
 tool runs zsh, which does not word-split an unquoted parameter, so a
 space-joined list reaches `find` as one path that does not exist. A
 missing directory prints `WATCHER-ERROR <dir>` and exits 2 at once, so a
@@ -974,14 +977,17 @@ while :; do
     [ -d "$DIR" ] || { echo "WATCHER-ERROR $DIR"; exit 2; }
   done
   for DIR in "$@"; do
-    for f in $(find "$DIR" -name 'agent-*.jsonl' -mmin +15); do
+    for f in $(find "$DIR" -name 'agent-*.jsonl'); do
+      if [ -n "$(find "$f" -mmin +15)" ]; then why=IDLE
+      elif tail -n 2 "$f" | tr '\n' ' ' | grep -q '"toolDenialKind":"user-rejected".*Request interrupted by user'; then why=STALLED
+      else continue; fi
       id=$(basename "$f" .jsonl); id=${id#agent-}
       grep "$id" "$DIR/journal.jsonl" | grep -q '"result"' && continue
       step=$(grep -o 'step claim STEP-[0-9]*' "$f" | head -n 1 | cut -d' ' -f3)
       [ -n "$step" ] || continue
       case " $SKIP " in *" $step "*) continue ;; esac
       docket step show "$step" | grep -q 'status: *claimed' || continue
-      echo "IDLE $step agent=$id transcript=$f"
+      echo "$why $step agent=$id transcript=$f"
       exit 0
     done
   done
@@ -1005,6 +1011,10 @@ transcript:
   run long (a cold build, a test suite, a gate) under its own tool-call
   timeout, or the transcript gained entries since the watcher fired. Keep
   waiting and add the step to `SKIP` until its transcript moves again.
+- **Interrupted seat (`STALLED`):** the seat's last tool call was
+  rejected and the agent was interrupted; it will not continue on its
+  own. Surface it to the operator now, naming the step and the rejected
+  command; the operator answers the seat or tells you to stop it.
 
 After handling a firing, restart the watcher, with `SKIP` updated, for
 the agents still running; a watcher started once at dispatch open goes

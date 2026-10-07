@@ -606,6 +606,8 @@ case_read_loops() {
     assert_deny_reason_lacks "ls | while read d; do rm -rf ${SIB_DIR}/\$d; done" executor-write "$WAVE_42" "too many parts" "read loop over a sibling dir is denied by the scratch clause, not the cap"
     assert_verdict "ls | while read d; do pkill node; done" executor-write "$WAVE_42" DENY "read loop body running pkill"
     assert_verdict "ls | while read a; do ls \$a | while read b; do rm -rf ${SIB_DIR}/\$b; done; done" executor-write "$WAVE_42" DENY "nested read loops walk the inner body"
+    assert_deny_reason_lacks "ls | while read a; do ls \$a | while read b; do rm -rf ${SIB_DIR}/\$b; done; done" executor-write "$WAVE_42" "too many parts" "nested read loops walk the inner body"
+    assert_deny_reason "ls | while read a; do ls \$a | while read b; do rm -rf ${SIB_DIR}/\$b; done; done" executor-write "$WAVE_42" "STEP-7.d" "nested read loops walk the inner body"
     # A read site is its text in one shell: a same-text read in a pipeline
     # stage, a ( ) subshell or a function's pipeline is a site of its own.
     assert_deny_reason_lacks "ls | while read d; do ls | while read d; do rm -rf ${SIB_DIR}/\$d; done; done" executor-write "$WAVE_42" "too many parts" "same-text nested read loops walk the inner body"
@@ -1403,6 +1405,13 @@ case_leaf_cap_stops_the_walk() {
         *) fail "unbounded loop over a sibling's dir allowed: ${err}" ;;
     esac
     [ -e "$marker" ] && fail "the probe ran the sibling-dir loop body for real (marker exists)" || pass "the sibling-dir loop body never ran"
+    # The cap counts across subshells and pipeline stages and ends the whole
+    # walk: a loop around a capping stage or ( ) subshell does not start a
+    # fresh 2000-firing count on every pass.
+    assert_verdict "while :; do ls | while :; do ls | while :; do :; done; done; done" executor-write "$WAVE_42" DENY "three-deep pipeline loop caps"
+    assert_deny_reason "while :; do ls | while :; do ls | while :; do :; done; done; done" executor-write "$WAVE_42" "too many parts" "three-deep pipeline loop caps"
+    assert_verdict "while :; do ( while :; do ( while :; do :; done ); done ); done" executor-write "$WAVE_42" DENY "nested subshell loop caps"
+    assert_deny_reason "while :; do ( while :; do ( while :; do :; done ); done ); done" executor-write "$WAVE_42" "too many parts" "nested subshell loop caps"
 }
 
 # A probe that a signal ends mid-walk leaves a partial or empty leaf list,

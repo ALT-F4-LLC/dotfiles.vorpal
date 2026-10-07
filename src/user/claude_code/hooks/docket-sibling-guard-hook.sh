@@ -214,7 +214,13 @@
 #     cannot choose the probe's exit status. The cap EXITS the probe (nothing runs after it)
 #     instead of disarming the trap, and is checked before the empty-walk
 #     allow: `<2001 structural commands>; rm -rf <dir>` had capped with an
-#     empty leaf list and fallen through to allow.
+#     empty leaf list and fallen through to allow. The 2000 firings are
+#     counted across every subshell and pipeline stage, from one pipe of
+#     tokens they all read (fd 7), and once it is empty every shell of the
+#     probe exits at its next firing, so the cap ends the whole probe walk.
+#     A counter in each shell let a loop around a capping stage start a
+#     fresh 2000-firing subshell on every pass (`while :; do ls | while :;
+#     do ...; done; done` multiplied the firings by 2000 per level).
 #   - A leaf that is ONLY assignments (`n=0`, `i=$((i+1))`) RUNS, so a
 #     counter-bounded wait loop ends where the real command's would instead
 #     of walking into the cap (a vetoed counter never advanced, and every
@@ -493,10 +499,12 @@ case "$COMMAND" in
         log_decision "deny" "framing-bytes"
         deny "$REASON_PREFIX this command carries a control byte (0x1d or 0x1e) the sibling-guard hook uses to frame its own analysis, so it cannot be checked. Remove the byte; no shell command needs it." ;;
 esac
-# The probe below reports on fds 7 (refusal markers), 8 (leaf frames) and 9.
-# A command that redirects one of them (`done 7>&-`, `{ ...; } 8>&-`) would
-# silence its own refusal or hide its leaves, so any redirection whose
-# source is fd 7, 8 or 9 is refused before the walk. The match is textual
+# The probe below reads its cap tokens on fd 7 and reports on fds 8 (leaf
+# frames and refusal markers) and 9. A command that redirects one of them
+# (`done 7</dev/zero`, `{ ...; } 8>&-`) would refill its own cap, silence its
+# own refusal or hide its leaves, so any redirection whose source is fd 7, 8
+# or 9 is refused before the walk. Reading fd 7 (`<&7`) only drains tokens,
+# which ends the walk sooner. The match is textual
 # and over-reaches into quoted prose; no executor command needs these fds.
 PROBE_FD_RE='(^|[^A-Za-z0-9_$])[789][<>]'
 if [[ "$COMMAND" =~ $PROBE_FD_RE ]]; then
@@ -522,7 +530,10 @@ fi
 # header. Each reaches the hook through the stderr marker printed before
 # the exit, since an exit inside a pipeline stage (`ls | { ...; }; echo
 # done`) ends only that stage and never reaches the probe exit status. The
-# marker is written on fd 7, a copy of the probe's stdout opened before
+# cap alone still ends every shell: its count is the token pipe on fd 7,
+# shared by every subshell and stage, so a shell around a capped stage finds
+# the pipe empty at its own next firing and exits 113 too. The
+# marker is written on fd 8, a copy of the probe's stdout opened before
 # `set -r`, not on fd 2: a loop that closes stderr (`done 2>&-`) would
 # swallow it there, and restricted mode lets a close through since it opens
 # no file. The hook reads it back with bash's own stderr, from between the
@@ -557,8 +568,12 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
     _leaf_other=0
     _guard_probe() {
         _leaf_n=$((_leaf_n + 1))
-        if [ "$_leaf_n" -gt 2000 ]; then
-            printf "%s\n" "_guard_probe: leaf cap" >&7
+        # One token per firing from the pipe every shell of the probe shares
+        # (fd 7, filled with 2000 bytes before the walk and closed for
+        # writing), so the cap counts across subshells and pipeline stages
+        # and an empty pipe ends each shell at its next firing.
+        if ! read -r -n 1 -u 7 _leaf_tok; then
+            printf "%s\n" "_guard_probe: leaf cap" >&8
             exit 113
         fi
         _leaf_walked=$_leaf_other
@@ -574,13 +589,13 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
         # input it never read (_leaf_reads holds a site), one that expands a
         # value, or a continue, could steer the loop past the body it never
         # walked, so the walk is refused. Every refusal is a marker on
-        # fd 7: an exit inside a pipeline stage never reaches the probe
+        # fd 8: an exit inside a pipeline stage never reaches the probe
         # exit status. An arithmetic `for ((...))` head or `((...))` command
         # reads bare names as variables, so it is refused the same way.
         if [ "$_leaf_reads" != "|" ]; then
             case "$BASH_COMMAND" in
                 "(("*)
-                    printf "%s\n" "_guard_probe: branch on an unread value" >&7
+                    printf "%s\n" "_guard_probe: branch on an unread value" >&8
                     exit 115 ;;
             esac
         fi
@@ -588,18 +603,18 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
             for | select | case | eval)
                 case "$BASH_COMMAND" in
                     *[\<\>]*)
-                        printf "%s\n" "_guard_probe: structural redirect" >&7
+                        printf "%s\n" "_guard_probe: structural redirect" >&8
                         exit 114 ;;
                 esac
                 case "$_leaf_head:$BASH_COMMAND" in
                     for:*_leaf_* | select:*_leaf_*)
-                        printf "%s\n" "_guard_probe: probe state in a loop header" >&7
+                        printf "%s\n" "_guard_probe: probe state in a loop header" >&8
                         exit 116 ;;
                 esac
                 if [ "$_leaf_reads" != "|" ]; then
                     case "$BASH_COMMAND" in
                         *[\$\`]*)
-                            printf "%s\n" "_guard_probe: branch on an unread value" >&7
+                            printf "%s\n" "_guard_probe: branch on an unread value" >&8
                             exit 115 ;;
                     esac
                 fi
@@ -610,7 +625,7 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
             true | false | break | continue)
                 case "$BASH_COMMAND" in
                     *[\<\>]*)
-                        printf "%s\n" "_guard_probe: structural redirect" >&7
+                        printf "%s\n" "_guard_probe: structural redirect" >&8
                         exit 114 ;;
                 esac
                 # An arithmetic `[[` comparison reads a bare name as a
@@ -620,7 +635,7 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
                         continue:* | *[\$\`]* | \
                         "[[:"*" -eq "* | "[[:"*" -ne "* | "[[:"*" -lt "* | \
                         "[[:"*" -le "* | "[[:"*" -gt "* | "[[:"*" -ge "*)
-                            printf "%s\n" "_guard_probe: branch on an unread value" >&7
+                            printf "%s\n" "_guard_probe: branch on an unread value" >&8
                             exit 115 ;;
                     esac
                 fi
@@ -688,7 +703,10 @@ PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
         return 1
     }
     readonly -f _guard_probe
-    exec 7>&1 8>&1 9>/dev/null
+    # The cap tokens: 2000 bytes in a pipe whose writer exits once they are
+    # written, so an empty pipe reads as end of file, never as a wait.
+    _leaf_fill=$(printf "%2000s" "")
+    exec 7< <(printf "%s" "${_leaf_fill// /x}") 8>&1 9>/dev/null
     set -r
     trap _guard_probe DEBUG
     eval -- "$COMMAND"

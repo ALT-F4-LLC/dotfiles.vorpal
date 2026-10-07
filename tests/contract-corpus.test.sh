@@ -15,7 +15,7 @@
 # clause is checked by grepping the exact phrase that carries the invariant,
 # not by a word alone, so a mutant that keeps the word but reverses or drops
 # the requirement it states is caught. It also pins the attempt bounds on
-# workflows/security-change.toml's non-loop executor steps (section 6).
+# each workflow's non-loop executor steps (section 6).
 #
 # CORPUS_DIR overrides the directory under test, so a mutation probe can
 # point this suite at a deliberately-broken COPY under $TMPDIR without
@@ -89,12 +89,13 @@ require "$GATES" "redaction clause" \
 require "$IMPLEMENT" "Denials slot in implement.md's Emit" \
     "**Denials:**"
 
-# 6. Attempt bounds on security-change's executor steps: a step without
+# 6. Attempt bounds on each workflow's executor steps: a step without
 #    max_attempts returns to ready after every failed attempt, so a step the
 #    safety classifier keeps stopping is re-offered indefinitely. Each bounded
 #    step parks waiting-human instead, leaving any retry past a refusal to the
-#    operator. The loop step `fix` is bounded by reconcile's max_fix_loops.
-SECURITY_CHANGE="${CORPUS}/workflows/security-change.toml"
+#    operator. Every [[step]] that declares `executor` and not `loop = true`
+#    is listed; a loop body (`fix`, `revise-*`) is bounded by its workflow's
+#    max_fix_loops instead.
 
 # Prints the one [[step]] block whose `name` line is <step>, from its header
 # to the next table header, so a key is attributed to the step that declares
@@ -111,27 +112,35 @@ require_step_line() { # <toml> <step> <exact line>
     local toml="$1" step="$2" line="$3" block
     block=$(step_block "$toml" "$step")
     if [ -z "$block" ]; then
-        echo "FAIL ${step}: no [[step]] block named ${step} in $(basename "$toml")"
+        echo "FAIL $(basename "$toml") ${step}: no [[step]] block named ${step}"
         fail=1
     elif ! grep -qxF -- "$line" <<<"$block"; then
-        echo "FAIL ${step}: its [[step]] block lacks the line: ${line}"
+        echo "FAIL $(basename "$toml") ${step}: its [[step]] block lacks the line: ${line}"
         fail=1
     fi
 }
 
-bounded_steps=(threat-model implement synthesize-findings drain-highs verify-ac)
-if [ ! -f "$SECURITY_CHANGE" ]; then
-    echo "FAIL attempt bounds: no file at ${SECURITY_CHANGE}"
-    fail=1
-else
-    for step in "${bounded_steps[@]}"; do
-        require_step_line "$SECURITY_CHANGE" "$step" 'max_attempts = 2'
-        require_step_line "$SECURITY_CHANGE" "$step" 'on_fail = "waiting-human"'
+bounded=0
+require_bounded() { # <workflow> <step>...
+    local toml="${CORPUS}/workflows/$1.toml" step
+    shift
+    if [ ! -f "$toml" ]; then
+        echo "FAIL attempt bounds: no file at ${toml}"
+        fail=1
+        return
+    fi
+    for step in "$@"; do
+        require_step_line "$toml" "$step" 'max_attempts = 2'
+        require_step_line "$toml" "$step" 'on_fail = "waiting-human"'
+        bounded=$((bounded + 1))
     done
-fi
+}
+
+require_bounded security-change threat-model implement synthesize-findings drain-highs verify-ac
+require_bounded standard-change implement synthesize-findings drain-highs verify-ac
 
 if [ "$fail" -ne 0 ]; then
     echo "contract-corpus: FAIL" >&2
     exit 1
 fi
-echo "contract-corpus: PASS (6 clauses checked across completion-gates.md and implement.md; ${#bounded_steps[@]} security-change steps bounded)"
+echo "contract-corpus: PASS (6 clauses checked across completion-gates.md and implement.md; ${bounded} workflow steps bounded)"

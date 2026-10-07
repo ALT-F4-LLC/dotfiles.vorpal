@@ -1,21 +1,36 @@
 """Split a kept manifest into wave launches, one per issue lane.
 
-Usage: python3 lane_units.py <rows-file> <out-dir>
+Usage: python3 lane_units.py <rows-file> <out-dir> [--tribunal PATH]
+                              [--integrated FILE]
 
 <rows-file> holds the rows the conductor kept after the kind filter, either
 as one JSON array or as one JSON object per line; a file holding a single
-object is that one row. The script writes, under
-<out-dir>:
+object is that one row. --tribunal is the installed tribunal.js path;
+--integrated names a JSON file mapping each fix-round issue to its prior
+INTEGRATION sha. Run it from inside the run's git work tree: outside one it
+exits 1 and writes nothing. The script writes, under <out-dir>:
 
   launch-<i>.jsonl  launch i's rows, one per line, in manifest order
+  args-<i>.json     launch i's complete wave.js args (below)
   launches.json     [{index, of, classCap, rows, lanes, harnessCap}] per launch
   deferred.jsonl    rows of lanes past LAUNCH_CAP, one per line (always written,
                     empty when nothing is deferred)
 
-and prints the launch count N alone on stdout, so `N=$(python3 lane_units.py
+and, under <toplevel>/.claude/docket-packets/ (`git rev-parse
+--show-toplevel`), one rows module per launch, rows-<sha256>.js, returning
+{v: 1, rows_sha256, rows}: launch i's rows, and the sha256 of
+launch-<i>.jsonl's bytes. A Workflow script cannot read files but loads a
+module under its working directory, as wave.js already loads packet modules
+from the same directory. The directory carries a `.gitignore` of `*`.
+
+It prints the launch count N alone on stdout, so `N=$(python3 lane_units.py
 rows.jsonl out)` works. Lanes and their launches go to stderr for the
-dispatch report. Each launch's Workflow args are its own rows, `unit: {index,
-of, classCap}`, and `harnessCap`, the last two copied from launches.json.
+dispatch report. args-<i>.json is launch i's Workflow args, passed unedited:
+{rowsModule, rows_sha256, unit: {index, of, classCap}, harnessCap, cwd,
+tribunal, integrated}, where cwd is the git toplevel, `tribunal` is present
+when --tribunal is given, and `integrated` only when --integrated is given.
+wave.js compares the module's rows_sha256 with the args' before it claims
+anything. The rows themselves never ride in the args.
 
 The partition. Every issue lane is its own launch: one issue, one wave. A
 row without an issue is a lane of its own, keyed by its step. Lanes are
@@ -42,12 +57,15 @@ interpreter code argument the auto-mode deny rule refuses before it runs.
 LAUNCH_CAP and HARNESS_CAP mirror wave.js and must not drift from it.
 """
 
+import hashlib
 import json
 import os
+import subprocess
 import sys
 
 LAUNCH_CAP = 20
 HARNESS_CAP = 16
+PACKET_DIR = os.path.join(".claude", "docket-packets")
 
 
 def load_rows(path):
@@ -146,25 +164,105 @@ def harness_cap():
 
 
 def write_rows(path, rows):
+    text = "".join(json.dumps(row, separators=(",", ":")) + "\n" for row in rows)
     with open(path, "w", encoding="utf-8") as handle:
-        for row in rows:
-            handle.write(json.dumps(row, separators=(",", ":")) + "\n")
+        handle.write(text)
+    return text
+
+
+def git_toplevel():
+    """The checkout's root, looked up from this process's directory, or exit 1."""
+    try:
+        done = subprocess.run(["git", "rev-parse", "--show-toplevel"],
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                              universal_newlines=True)
+    except OSError as err:
+        raise SystemExit(f"lane_units: cannot run git ({err}); run from the run's git work tree")
+    top = done.stdout.strip()
+    if done.returncode != 0 or not top:
+        why = done.stderr.strip() or "git rev-parse --show-toplevel printed nothing"
+        raise SystemExit(f"lane_units: not inside a git work tree ({why}); run from the "
+                         "run's checkout so the launch args carry its root as cwd")
+    if not os.path.isdir(top):
+        raise SystemExit(f"lane_units: git toplevel {top!r} is not a directory")
+    return top
+
+
+def write_module(packets, digest, rows):
+    """Write a launch's rows as a module wave.js loads by path; return the path."""
+    os.makedirs(packets, exist_ok=True)
+    ignore = os.path.join(packets, ".gitignore")
+    if not os.path.exists(ignore):
+        with open(ignore, "w", encoding="utf-8") as handle:
+            handle.write("*\n")
+    path = os.path.join(packets, f"rows-{digest}.js")
+    body = json.dumps({"v": 1, "rows_sha256": digest, "rows": rows}, separators=(",", ":"))
+    partial = path + ".partial"
+    with open(partial, "w", encoding="utf-8") as handle:
+        handle.write("export const meta = { name: 'docket-launch-rows', "
+                     "description: 'Wave launch rows written by lane_units.py' }\n")
+        handle.write("return " + body + "\n")
+    os.replace(partial, path)
+    return path
+
+
+USAGE = "usage: lane_units.py <rows-file> <out-dir> [--tribunal PATH] [--integrated FILE]"
+
+
+def parse_args(argv):
+    positional, options = [], {}
+    rest = list(argv[1:])
+    while rest:
+        arg = rest.pop(0)
+        if arg in ("--tribunal", "--integrated"):
+            if not rest:
+                raise SystemExit(USAGE)
+            options[arg[2:]] = rest.pop(0)
+        elif arg.startswith("--"):
+            raise SystemExit(USAGE)
+        else:
+            positional.append(arg)
+    if len(positional) != 2:
+        raise SystemExit(USAGE)
+    return positional[0], positional[1], options.get("tribunal"), options.get("integrated")
 
 
 def main(argv):
-    if len(argv) != 3:
-        raise SystemExit("usage: lane_units.py <rows-file> <out-dir>")
+    rows_file, out, tribunal, integrated_file = parse_args(argv)
     cap = harness_cap()
-    rows = load_rows(argv[1])
-    out = argv[2]
+    rows = load_rows(rows_file)
+    integrated = None
+    if integrated_file is not None:
+        with open(integrated_file, encoding="utf-8") as handle:
+            integrated = json.load(handle)
+        if not isinstance(integrated, dict):
+            raise SystemExit(f"lane_units: {integrated_file} holds no JSON object of issue -> sha")
+    top = git_toplevel()
+    packets = os.path.join(top, PACKET_DIR)
     os.makedirs(out, exist_ok=True)
     launches, deferred_rows, deferred_lanes = split(rows)
     summary = []
     for launch in launches:
-        write_rows(os.path.join(out, f"launch-{launch['index']}.jsonl"), launch["rows"])
+        index = launch["index"]
+        text = write_rows(os.path.join(out, f"launch-{index}.jsonl"), launch["rows"])
+        digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
         entry = {k: (len(v) if k == "rows" else v) for k, v in launch.items()}
         entry["harnessCap"] = cap
         summary.append(entry)
+        args = {
+            "rowsModule": write_module(packets, digest, launch["rows"]),
+            "rows_sha256": digest,
+            "unit": {"index": index, "of": launch["of"], "classCap": launch["classCap"]},
+            "harnessCap": cap,
+            "cwd": top,
+        }
+        if tribunal is not None:
+            args["tribunal"] = tribunal
+        if integrated is not None:
+            args["integrated"] = integrated
+        with open(os.path.join(out, f"args-{index}.json"), "w", encoding="utf-8") as handle:
+            json.dump(args, handle, separators=(",", ":"))
+            handle.write("\n")
     with open(os.path.join(out, "launches.json"), "w", encoding="utf-8") as handle:
         json.dump(summary, handle, indent=2)
         handle.write("\n")
@@ -172,6 +270,9 @@ def main(argv):
     print(len(launches))
     for launch in launches:
         print(f"lane:{launch['lanes'][0]} -> launch {launch['index']}", file=sys.stderr)
+    if launches and tribunal is None:
+        print("lane_units: no --tribunal given, so no args object carries tribunal",
+              file=sys.stderr)
     if deferred_lanes:
         print(f"deferred: {len(deferred_lanes)} lane(s) past the {LAUNCH_CAP}-launch cap, "
               f"{len(deferred_rows)} row(s) in deferred.jsonl; the engine re-offers them "

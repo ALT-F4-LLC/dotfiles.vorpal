@@ -6,8 +6,8 @@
 # own rows and its share of the manifest's class headroom.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by
-# name and this one is in that list. It needs only `python3` — no engine, no
-# database, no network.
+# name and this one is in that list. It needs `python3`, `git` and `jq` — no
+# engine, no database, no network.
 #
 # WHY THIS EXISTS. A launch receives only its own rows, so the partition
 # and the class headroom a launch cannot see from its own rows are computed
@@ -41,6 +41,19 @@ command -v python3 >/dev/null 2>&1 || fatal "python3 is required to run this tes
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/lane-units.XXXXXX") || fatal "mktemp failed"
 trap 'rm -rf "$WORK"' EXIT
 
+command -v git >/dev/null 2>&1 || fatal "git is required to run this test"
+command -v jq >/dev/null 2>&1 || fatal "jq is required to run this test"
+
+# lane_units.py writes each launch's rows module under the git toplevel it
+# runs in, so every run happens inside a throwaway fixture repository, never
+# this checkout. GIT_CEILING_DIRECTORIES keeps the outside-work-tree case from
+# finding a repository above $WORK.
+export GIT_CEILING_DIRECTORIES="$WORK"
+git init -q "$WORK/repo" || fatal "git init failed"
+mkdir -p "$WORK/repo/sub/deeper" "$WORK/outside"
+TOP=$(git -C "$WORK/repo" rev-parse --show-toplevel) || fatal "fixture toplevel lookup failed"
+lu() { (cd "$WORK/repo" && python3 "$SCRIPT" "$@"); }
+
 pass=0
 fail=0
 ok() { # <condition-already-evaluated: 0/1> <label>
@@ -56,7 +69,7 @@ ok() { # <condition-already-evaluated: 0/1> <label>
 count() {
     printf '%s' "$1" > "$WORK/rows.json"
     rm -rf "$WORK/launch"
-    python3 "$SCRIPT" "$WORK/rows.json" "$WORK/launch" 2> "$WORK/err"
+    lu "$WORK/rows.json" "$WORK/launch" 2> "$WORK/err"
 }
 # steps_of <launch-index> -> the launch file's step ids, space-joined
 steps_of() {
@@ -145,7 +158,7 @@ n=$(count '[{"step":"STEP-9","kind":"action","stage":0},{"step":"STEP-8","kind":
 
 # ---- Input shapes: a JSON array, JSON lines, and a {rows: [...]} envelope --------
 printf '%s\n%s\n' "$(w 1 A 0)" "$(r 2 B 0)" > "$WORK/rows.jsonl"
-n=$(python3 "$SCRIPT" "$WORK/rows.jsonl" "$WORK/out-jsonl" 2>/dev/null)
+n=$(lu "$WORK/rows.jsonl" "$WORK/out-jsonl" 2>/dev/null)
 [ "$n" = "2" ]; ok $? "JSON lines input (the paged rows file) is read the same as an array (got $n)"
 n=$(count "{\"rows\":[$(w 1 A 0),$(w 2 B 1)]}")
 [ "$n" = "2" ]; ok $? "a {rows: [...]} envelope is unwrapped, one launch per lane (got $n)"
@@ -157,11 +170,11 @@ ok $? "an envelope of two reader lanes is two rows, not one row object (rc=$rc, 
 row=$(r 1 A 0)
 printf '%s\n' "$row" > "$WORK/one.jsonl"
 rm -rf "$WORK/launch"
-n=$(python3 "$SCRIPT" "$WORK/one.jsonl" "$WORK/launch" 2> "$WORK/err"); rc=$?
+n=$(lu "$WORK/one.jsonl" "$WORK/launch" 2> "$WORK/err"); rc=$?
 [ "$rc" -eq 0 ] && [ "$n" = "1" ] && [ "$(cat "$WORK/launch/launch-0.jsonl")" = "$row" ]
 ok $? "a rows file holding one row object is one launch holding that row (rc=$rc, got '$n': $(head -c 200 "$WORK/err"))"
 printf '42\n' > "$WORK/scalar.json"
-python3 "$SCRIPT" "$WORK/scalar.json" "$WORK/out-scalar" > /dev/null 2> "$WORK/err"; rc=$?
+lu "$WORK/scalar.json" "$WORK/out-scalar" > /dev/null 2> "$WORK/err"; rc=$?
 [ "$rc" -eq 1 ] && grep -q 'holds neither a rows array nor JSON lines' "$WORK/err"
 ok $? "a top-level scalar is still exit 1 naming the accepted shapes (rc=$rc)"
 
@@ -185,16 +198,76 @@ online=$(getconf _NPROCESSORS_ONLN)
 want=$((online - 2)); [ "$want" -lt 1 ] && want=1; [ "$want" -gt 16 ] && want=16
 printf '%s' "[$(w 1 A 0),$(r 2 B 0),$(r 3 C 0)]" > "$WORK/rows.json"
 rm -rf "$WORK/launch"
-out=$(env -u LANE_UNITS_CPUS -u PYTHON_CPU_COUNT python3 "$SCRIPT" "$WORK/rows.json" "$WORK/launch" 2> "$WORK/err")
+out=$(cd "$WORK/repo" && env -u LANE_UNITS_CPUS -u PYTHON_CPU_COUNT python3 "$SCRIPT" "$WORK/rows.json" "$WORK/launch" 2> "$WORK/err")
 got=$(summary 'sorted({x["harnessCap"] for x in s})')
 [ "$out" = "3" ] && [ "$got" = "[$want]" ] && [ "$(summary 'len(s)')" = "3" ]
 ok $? "with LANE_UNITS_CPUS unset every launch has harnessCap min(16, max(1, $online - 2)) = $want (got '$out', caps $got)"
+
+# ---- Generated launch args: a rows module by reference, never inline rows ------
+# The conductor passes args-<i>.json to wave.js unedited, so the object is
+# complete and small: the rows ride in a module under
+# <toplevel>/.claude/docket-packets/ that wave.js loads, and the module
+# exports rows_sha256, the sha256 of launch-<i>.jsonl's bytes, which wave.js
+# compares with the args' rows_sha256.
+fat() { # <n> <issue> <stage> — a kept row with the fields the engine renders
+    printf '{"step":"STEP-%s","issue":"%s","run":"RUN-125","kind":"executor","class":"read","executor":"review-correctness","instance":"review@0#%s","stage":%s,"attempt":0,"model":"sonnet","effort":"medium","variant":"judge-sonnet","scope":["src/user/claude_code/workflows/wave.js"]}' "$1" "$2" "$1" "$3"
+}
+big=""
+for lane in 1 2 3 4 5 6; do
+    for k in $(seq 1 20); do big="${big:+$big,}$(fat "$lane$k" "DOT-$lane" "$((k % 4))")"; done
+done
+printf '[%s]' "$big" > "$WORK/big.json"
+[ "$(jq length "$WORK/big.json")" = "120" ] || fatal "the 120-row fixture holds $(jq length "$WORK/big.json") rows"
+TRIBUNAL=/home/op/.claude/workflows/tribunal.js
+printf '{"DOT-2":"%s","DOT-5":"%s"}' "$(printf 'a%.0s' $(seq 1 40))" "$(printf 'b%.0s' $(seq 1 40))" > "$WORK/integrated.json"
+rm -rf "$WORK/gen"
+n=$(cd "$WORK/repo/sub/deeper" && LANE_UNITS_CPUS=10 python3 "$SCRIPT" "$WORK/big.json" "$WORK/gen" \
+    --tribunal "$TRIBUNAL" --integrated "$WORK/integrated.json" 2> "$WORK/err"); rc=$?
+[ "$rc" -eq 0 ] && [ "$n" = "6" ]; ok $? "the 120-row fixture splits into six launches from a subdirectory (rc=$rc, got '$n': $(head -c 300 "$WORK/err"))"
+packets="$TOP/.claude/docket-packets"
+for i in 0 1 2 3 4 5; do  # the fixture's six lanes, whatever the script printed
+    args="$WORK/gen/args-$i.json"
+    [ -f "$args" ] || { ok 1 "launch $i: args-$i.json is written"; continue; }
+    size=$(jq -c . "$args" | wc -c | tr -d ' ')
+    jq -e 'has("rows") | not' "$args" > /dev/null && [ "$size" -lt 2048 ]
+    ok $? "launch $i: the args carry no inline rows and serialize under 2048 bytes (got $size bytes, rows type $(jq -r '.rows | type' "$args"))"
+    mod=$(jq -r '.rowsModule // ""' "$args")
+    want=$(shasum -a 256 "$WORK/gen/launch-$i.jsonl" | cut -d' ' -f1)
+    case "$mod" in "$packets"/*.js) under=0 ;; *) under=1 ;; esac
+    [ "$under" -eq 0 ] && [ -f "$mod" ]
+    ok $? "launch $i: rowsModule names an existing module under <toplevel>/.claude/docket-packets/ (got $mod)"
+    body=$(sed -n 's/^return //p' "$mod" 2>/dev/null)
+    [ "$(jq -r '.rows_sha256' "$args")" = "$want" ] && [ "$(printf '%s' "$body" | jq -r '.rows_sha256')" = "$want" ]
+    ok $? "launch $i: args and module both carry rows_sha256 = sha256(launch-$i.jsonl) (args $(jq -r '.rows_sha256' "$args"), want $want)"
+    [ "$(printf '%s' "$body" | jq -c '.rows[]')" = "$(jq -c . "$WORK/gen/launch-$i.jsonl")" ] && [ "$(printf '%s' "$body" | jq '.v')" = "1" ]
+    ok $? "launch $i: the module's rows equal launch-$i.jsonl's rows in manifest order"
+    [ "$(jq -r '.cwd' "$args")" = "$TOP" ]
+    ok $? "launch $i: cwd is the git toplevel, not the subdirectory it ran in (got $(jq -r '.cwd' "$args"), want $TOP)"
+    [ "$(jq -c '.unit' "$args")" = "$(jq -c --argjson i "$i" '.[$i] | {index, of, classCap}' "$WORK/gen/launches.json")" ] &&
+        [ "$(jq '.unit.of' "$args")" = "$n" ] && [ "$(jq '.unit.index' "$args")" = "$i" ] &&
+        [ "$(jq '.harnessCap' "$args")" = "8" ] &&
+        [ "$(jq '.harnessCap' "$args")" = "$(jq --argjson i "$i" '.[$i].harnessCap' "$WORK/gen/launches.json")" ]
+    ok $? "launch $i: unit {index, of, classCap} and harnessCap match launches.json (got unit $(jq -c '.unit' "$args"), harnessCap $(jq '.harnessCap' "$args"))"
+    [ "$(jq -r '.tribunal' "$args")" = "$TRIBUNAL" ] && [ "$(jq -cS '.integrated' "$args")" = "$(jq -cS . "$WORK/integrated.json")" ]
+    ok $? "launch $i: tribunal and integrated equal the inputs"
+done
+[ -f "$packets/.gitignore" ] && [ "$(cat "$packets/.gitignore")" = "*" ]
+ok $? 'the packet directory carries a .gitignore of *, so rows modules never show in git status'
+rm -rf "$WORK/gen"
+n=$(lu "$WORK/big.json" "$WORK/gen" --tribunal "$TRIBUNAL" 2> "$WORK/err"); rc=$?
+[ "$rc" -eq 0 ] && [ "$n" = "6" ] && [ -z "$(for i in $(seq 0 5); do jq -r 'select(has("integrated")) | "x"' "$WORK/gen/args-$i.json"; done)" ] &&
+    [ "$(jq -r '.tribunal' "$WORK/gen/args-0.json")" = "$TRIBUNAL" ]
+ok $? "with no integrated-map file no args object carries an integrated key (rc=$rc)"
+rm -rf "$WORK/gen"
+(cd "$WORK/outside" && python3 "$SCRIPT" "$WORK/big.json" "$WORK/gen" --tribunal "$TRIBUNAL" > "$WORK/out" 2> "$WORK/err"); rc=$?
+[ "$rc" -ne 0 ] && grep -qi 'git work tree' "$WORK/err" && [ -z "$(ls "$WORK/gen"/args-*.json 2>/dev/null)" ] && [ ! -s "$WORK/out" ]
+ok $? "outside a git work tree it exits non-zero, names the problem, and writes no args object (rc=$rc: $(head -c 200 "$WORK/err"))"
 
 # ---- Bad usage fails loudly -------------------------------------------------------
 python3 "$SCRIPT" > /dev/null 2>&1; [ $? -ne 0 ]; ok $? 'no argument is a non-zero exit'
 python3 "$SCRIPT" "$WORK/rows.json" > /dev/null 2>&1; [ $? -ne 0 ]; ok $? 'a missing out-dir is a non-zero exit'
 printf 'not json' > "$WORK/bad.json"
-python3 "$SCRIPT" "$WORK/bad.json" "$WORK/out-bad" > /dev/null 2>&1; [ $? -ne 0 ]; ok $? 'unparseable input is a non-zero exit, never a count'
+lu "$WORK/bad.json" "$WORK/out-bad" > /dev/null 2>&1; [ $? -ne 0 ]; ok $? 'unparseable input is a non-zero exit, never a count'
 
 # ---- seat_roster.py: the conversational gate's voters from the policy ------------
 ROSTER="${SEAT_ROSTER_PY:-${ROOT}/src/user/claude_code/skills/docket-run/scripts/seat_roster.py}"

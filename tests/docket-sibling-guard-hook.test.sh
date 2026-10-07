@@ -827,6 +827,8 @@ case_multiline_substitutions() {
     assert_verdict 'echo $(sudo pkill node)' executor-write "$WAVE_42" DENY "pkill behind a wrapper inside a \$( )"
     assert_verdict 'echo $(docket step reap STEP-7 --reason x)' executor-write "$WAVE_42" DENY "one-line \$( ) body holding docket step reap"
     assert_verdict 'echo $(grep -rn pkill hooks/)' executor-write "$WAVE_42" ALLOW "pkill as an argument inside a \$( ) is a read"
+    assert_verdict 'echo $(ls)' executor-write "$WAVE_42" ALLOW "a harmless one-line \$( ) after another word"
+    assert_verdict $'echo $(cat <<\'EOF\'\n) $(pkill node) $(:\nEOF\n)' executor-write "$WAVE_42" DENY "pkill in a substitution reopened by a close paren in a heredoc body"
     # bash 5 walks a coproc body in a child whose stdout is the coproc pipe;
     # the probe writes its frames to a saved fd so they still arrive.
     assert_verdict 'coproc { pkill node; }' executor-write "$WAVE_42" DENY "coproc body holding pkill"

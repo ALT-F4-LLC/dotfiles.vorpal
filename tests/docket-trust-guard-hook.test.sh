@@ -80,11 +80,14 @@ verdict_of() {
 
 build_input() {
     local cmd="$1" agent="${2:-}"
+    # The command travels on jq's stdin, not as an argument: a Linux argument
+    # may carry at most 128 KiB, and a larger one would make jq fail to start
+    # and hand the hook no input at all.
     if [ -n "$agent" ]; then
-        jq -nc --arg c "$cmd" --arg a "$agent" \
-            '{tool_name:"Bash",tool_input:{command:$c},agent_type:$a}'
+        printf '%s' "$cmd" | jq -Rsc --arg a "$agent" \
+            '{tool_name:"Bash",tool_input:{command:.},agent_type:$a}'
     else
-        jq -nc --arg c "$cmd" '{tool_name:"Bash",tool_input:{command:$c}}'
+        printf '%s' "$cmd" | jq -Rsc '{tool_name:"Bash",tool_input:{command:.}}'
     fi
 }
 
@@ -1365,16 +1368,17 @@ case_framing_control_bytes_deny() {
 # The harness cancels a hook that reaches its timeout and runs the Bash call
 # unchecked, so the hook bounds its own run well under that timeout and
 # denies when the bound fires. The row lowers the bound to 1 s through
-# DOCKET_GUARD_BOUND_SECONDS on 1500 `ls` leaves of about 130 bytes each,
-# which this hook takes two to three seconds to check for an executor and
-# allows at the default bound. The input travels on jq's stdin: it is larger
-# than the 128 KiB a single Linux argument may carry.
+# DOCKET_GUARD_BOUND_SECONDS and puts an awk first on PATH that sleeps 3 s
+# before running the real one, so the check outlives the bound on any machine
+# rather than only on one slow enough to take more than a second.
 
 case_analysis_bound_denies() {
-    local cmd input err rc
-    cmd=$(awk 'BEGIN { p = sprintf("%120s", ""); gsub(/ /, "a", p); for (i = 0; i < 1500; i++) printf "ls %s%d\n", p, i }')
-    input=$(printf '%s' "$cmd" | jq -Rsc '{tool_name:"Bash",tool_input:{command:.},agent_type:"executor-write"}')
-    err=$(DOCKET_GUARD_BOUND_SECONDS=1 PATH="$TOOLS_DIR" "$BASH_BIN" "$HOOK" 2>&1 >/dev/null <<<"$input")
+    local input err rc slow="${SANDBOX}/slow-awk"
+    mkdir -p "$slow"
+    printf '#!%s\n/bin/sleep 3\nexec %s "$@"\n' "$BASH_BIN" "$(command -v awk)" > "${slow}/awk"
+    chmod +x "${slow}/awk"
+    input=$(build_input 'ls' executor-write)
+    err=$(DOCKET_GUARD_BOUND_SECONDS=1 PATH="${slow}:${TOOLS_DIR}" "$BASH_BIN" "$HOOK" 2>&1 >/dev/null <<<"$input")
     rc=$?
     if [ "$rc" -eq 2 ]; then
         pass "executor-write: analysis past a 1 s bound is refused (DENY)"

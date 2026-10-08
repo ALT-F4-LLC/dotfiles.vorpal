@@ -1602,18 +1602,20 @@ case_probe_killed_by_signal() {
 # unchecked, and a CPU limit does not bound a walk that forks, since each
 # subshell starts a fresh budget. So the hook bounds its whole run by wall
 # clock, well under that timeout, and denies when the bound fires. The row
-# lowers the bound to 1 s through DOCKET_GUARD_BOUND_SECONDS on 1500 `ls`
-# leaves of about 130 bytes each, which this hook takes three to four seconds
-# to check and allows at the default bound.
+# lowers the bound to 1 s through DOCKET_GUARD_BOUND_SECONDS and puts an awk
+# first on PATH that sleeps 3 s before running the real one, so the check
+# outlives the bound on any machine rather than only on a slow one.
 case_analysis_bound_denies() {
-    local cmd input err rc log_file="${WORK}/home/.claude/friction/docket-sibling-guard.jsonl"
-    cmd=$(awk 'BEGIN { p = sprintf("%120s", ""); gsub(/ /, "a", p); for (i = 0; i < 1500; i++) printf "ls %s%d\n", p, i }')
-    input=$(build_input "$cmd" executor-write "$WAVE_42")
+    local input err rc log_file="${WORK}/home/.claude/friction/docket-sibling-guard.jsonl" slow="${WORK}/slow-awk"
+    mkdir -p "$slow"
+    printf '#!%s\n/bin/sleep 3\nexec %s "$@"\n' "$BASH_BIN" "$(command -v awk)" > "${slow}/awk"
+    chmod +x "${slow}/awk"
+    input=$(build_input 'ls' executor-write "$WAVE_42")
     mkdir -p "${log_file%/*}"
     : >"$log_file"
     # Logging may use more than the four tools, so this run keeps the full
     # PATH behind them.
-    err=$(DOCKET_GUARD_BOUND_SECONDS=1 PATH="${TOOLS_DIR}:${PATH}" HOME="${WORK}/home" \
+    err=$(DOCKET_GUARD_BOUND_SECONDS=1 PATH="${slow}:${TOOLS_DIR}:${PATH}" HOME="${WORK}/home" \
         "$BASH_BIN" "$HOOK" 2>&1 >/dev/null <<<"$input")
     rc=$?
     if [ "$rc" -eq 2 ]; then

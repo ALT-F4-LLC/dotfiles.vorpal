@@ -230,6 +230,7 @@ cat > "${SFIX}/registry.sh" <<'REG'
 ENFORCING=(enforcing.sh)
 ADVISORY=(advisory.sh)
 UNWIRED=()
+LIBRARIES=()
 KNOWN_UNVERIFIED=()
 REG
 cat > "${SFIX}/tests/enforcing.test.sh" <<SUITE

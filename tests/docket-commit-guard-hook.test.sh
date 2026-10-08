@@ -255,6 +255,25 @@ case_must_deny_capture_output() {
     assert_verdict '$(git add -A)' DENY 'bare $(git add -A)'
 }
 
+# ---- MUST DENY: a git write on a later line of a substitution body --------
+#
+# The probe vetoes a leaf before its substitutions run, so a write inside a
+# multi-line `$( )`, backtick or `<( )` body reaches the hook only as a later
+# line of the outer leaf. Scanning each leaf's first line dropped it. A body
+# with no write stays allowed.
+
+case_multiline_substitution_body() {
+    local nl=$'\n'
+    assert_verdict "echo \$(${nl}git commit -m x${nl})" DENY \
+        'git commit on its own line inside a multi-line $( ) body'
+    assert_verdict "echo \`${nl}git commit -m x${nl}\`" DENY \
+        'git commit on its own line inside a multi-line backtick body'
+    assert_verdict "cat <(${nl}git commit -m x${nl})" DENY \
+        'git commit on its own line inside a multi-line <( ) body'
+    assert_verdict "echo \$(${nl}ls${nl})" ALLOW \
+        'a multi-line $( ) body with no git write'
+}
+
 # ---- MUST DENY: terminal-position subcommand normalization ---------------
 # A delimiter glued directly AFTER the subcommand with nothing following it.
 # The head-normalization alone does not close these, so they get their own
@@ -322,10 +341,9 @@ case_must_allow_computed_subcommand_residual() {
 # this hook declines to resolve -- an unresolved `{` at the subcommand
 # position is denied whenever bash could expand it: unquoted relative to
 # `git`, with a `,` or `..` after it. A quoted newline inside the brace
-# can push that `,` off the line the hook scans, either onto a line it
-# drops (an unwidened leaf keeps only its first line) or onto a later line
-# (a double-quoted string holding `$(` keeps its newline through the
-# pre-pass); both still deny. `bash -c :` is there to widen the leaf.
+# can push that `,` onto a later scanned line, either the leaf's next code
+# line or a later line of a double-quoted string holding `$(`, which keeps
+# its newline through the pre-pass; both still deny. `bash -c :` is there to widen the leaf.
 
 case_brace_split_subcommand_denies() {
     local widen='; bash -c :'
@@ -935,10 +953,10 @@ case_match_program_failure() {
     scratch_dir=$(mktemp -d "${TMPDIR:-/tmp}/docket-commit-guard-match-broken.XXXXXX") || \
         fatal "mktemp failed"
     scratch_hook="${scratch_dir}/docket-commit-guard-hook.sh"
-    sed 's/^BEGIN { MARK = "\\001"; TRUNCATED = "\\035" }$/BEGIN { MARK = = "\\001"; TRUNCATED = "\\035" }/' \
+    sed 's/^BEGIN { MARK = "\\001" }$/BEGIN { MARK = = "\\001" }/' \
         "$HOOK" >"$scratch_hook" || fatal "could not copy hook to scratch dir"
-    cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "${scratch_dir}/" || \
-        fatal "could not copy the pre-pass file to scratch dir"
+    cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "${scratch_dir}/" || \
+        fatal "could not copy the shared awk files to scratch dir"
     if cmp -s "$HOOK" "$scratch_hook"; then
         fail "unparseable match program: the fixture edit did not apply"
         rm -rf "$scratch_dir"
@@ -973,6 +991,8 @@ case_prepass_program_failure() {
         fatal "mktemp failed"
     scratch_hook="${scratch_dir}/docket-commit-guard-hook.sh"
     cp "$HOOK" "$scratch_hook" || fatal "could not copy hook to scratch dir"
+    cp "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "${scratch_dir}/" || \
+        fatal "could not copy the line-selection file to scratch dir"
     { cat "$(dirname "$HOOK")/docket-guard-prepass.awk"; printf '%s\n' 'BEGIN { x = = 1 }'; } \
         >"${scratch_dir}/docket-guard-prepass.awk" || \
         fatal "could not write the broken pre-pass file to scratch dir"
@@ -1081,6 +1101,7 @@ case_permission_mode_is_not_consulted
 case_must_deny_baseline
 case_must_deny_glued_separator_class
 case_must_deny_capture_output
+case_multiline_substitution_body
 case_must_deny_terminal_position
 case_must_allow_terminal_fix_negative_controls
 case_must_allow_computed_subcommand_residual

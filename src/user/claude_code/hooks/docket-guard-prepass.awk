@@ -1,8 +1,8 @@
 # Shared quote-group pre-pass for docket-trust-guard-hook.sh,
 # docket-commit-guard-hook.sh and docket-sibling-guard-hook.sh. Each hook
-# feeds this its SCAN_TEXT leaf buffer via `awk -f`: the trust and commit
-# guards pass the first line of each leaf (the whole leaf when widened), and
-# the sibling guard passes every line except heredoc bodies. See the trust or
+# feeds this its SCAN_TEXT leaf buffer via `awk -f`: the trust guard passes
+# the first line of each leaf (the whole leaf when widened), and the commit
+# and sibling guards pass every line except heredoc bodies. See the trust or
 # commit hook's header for the redesign this pre-pass is part of. Read as one
 # file rather than duplicated inline so a lexer fix lands once for all three.
 #
@@ -103,8 +103,7 @@
 # The group state, the open backtick and that fallback end with the leaf (the
 # \036 byte): one leaf's unbalanced text, such as a heredoc body bash never
 # parsed, must not move a comment in the next.
-# KNOWN RESIDUALS of that rule: a caller that ends leaves with a plain
-# newline (the commit guard) carries that state across its leaves; a $( inside a nested quoted heredoc body (text bash never parses)
+# KNOWN RESIDUALS of that rule: a $( inside a nested quoted heredoc body (text bash never parses)
 # is still counted; $[ ] arithmetic is not tracked; and $((cmd) ), which bash
 # may read as a substitution holding a subshell, is read as arithmetic. Each
 # can leave a later `#` misjudged.

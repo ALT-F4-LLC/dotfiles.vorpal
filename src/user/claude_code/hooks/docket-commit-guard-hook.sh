@@ -38,8 +38,9 @@
 #
 # THE MATCHER — leaf enumeration, widening, and quote-group marking below —
 # is shared with docket-trust-guard-hook.sh; see that file's header for the
-# redesign rationale this replaces. Two parts differ: this file's widening
-# step marks a line it truncated (see the widening comment), and this
+# redesign rationale this replaces. Two parts differ: this file selects
+# each leaf's code lines through docket-guard-leaf-lines.awk, where the
+# trust-guard scans a leaf's first line (see the widening comment), and this
 # file's MATCH step looks for `git commit`/`push`/`add`, with git's own
 # `-C`/`-c`/`--git-dir` global-option skipping and its
 # option-before-subcommand help exemption, where the trust-guard's looks
@@ -131,6 +132,8 @@ HOOK_DIR="${0%/*}"
 [ "$HOOK_DIR" = "$0" ] && HOOK_DIR="."   # bare-name invocation: no slash to strip
 PREPASS_AWK="${HOOK_DIR}/docket-guard-prepass.awk"
 [ -r "$PREPASS_AWK" ] || deny "git write blocked: the commit-guard hook's shared pre-pass file (docket-guard-prepass.awk) is missing or unreadable beside this hook, so it cannot check this command. This is a hook installation defect, not a caller mistake -- report it rather than retrying."
+LEAF_LINES_AWK="${HOOK_DIR}/docket-guard-leaf-lines.awk"
+[ -r "$LEAF_LINES_AWK" ] || deny "git write blocked: the commit-guard hook's shared line-selection file (docket-guard-leaf-lines.awk) is missing or unreadable beside this hook, so it cannot check this command. This is a hook installation defect, not a caller mistake -- report it rather than retrying."
 
 # ENGINE FIRST, PROBE ONLY WHEN A GATE STANDS. The gate query below is one
 # cheap engine call; the DEBUG-trap probe further down is about a dozen
@@ -343,17 +346,18 @@ fi
 #      A quoted delimiter (`<<'EOF'`, `<<"EOF"`, `<<\EOF`) suppresses all of
 #      that, which is the ONLY case this hook exempts as prose.
 #
-# With neither trigger, only each leaf's FIRST physical line is scanned: a
-# genuine invocation's verb is always on that first line by construction
-# (bash resolves `\`-continuations before setting $BASH_COMMAND, verified
-# live; only a heredoc body or a literal newline inside a quoted argument
-# adds further lines, and neither can move the verb off line one). A
-# quoted newline CAN move brace content off line one, though: in
-# `git {"--exec-path=a<newline>b",commit}` the `,` that makes bash expand
-# the brace sits on the dropped line. So a truncated line is emitted with
-# a leading 0x1d word, which the MATCH step reads as "this line is not the
-# whole leaf". The byte cannot come from the command: any command carrying
-# it is denied above.
+# With neither trigger, each leaf's code lines are scanned: every line
+# except a quoted-delimiter heredoc body and its terminator line. A leaf
+# spans lines when it carries a heredoc, a multi-line quoted word, or a
+# substitution whose body spans lines. The probe vetoes such a leaf before
+# its substitutions run, so a git write inside `$( )`, backticks or `<( )`
+# on a later line never reaches the probe as a leaf of its own; scanning
+# only the first line dropped it. The shared file docket-guard-leaf-lines.awk
+# beside this hook (LEAF_LINES_AWK, resolved at the top of this file) makes
+# that selection; docket-sibling-guard-hook.sh's "Line selection" comment
+# describes its rules. It ends each leaf with the \036 byte, so the pre-pass
+# drops its quote and group state at the leaf boundary rather than carrying
+# it into the next leaf.
 #
 # The boundary on either side of an interpreter name is any byte that is not
 # a word character and not a dot. The dot is what separates a file name from
@@ -366,92 +370,7 @@ if [[ "$PROBE_TEXT" =~ $INTERPRETER_RE ]]; then
     WIDEN=1
 fi
 
-SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v RS='\036' -v widen="$WIDEN" '
-    # Drops every balanced arithmetic span from a line: $((...)), ((...))
-    # and $[...]. A shift operator inside one is never a heredoc operator.
-    # An unbalanced opener is kept verbatim with everything after it, so
-    # the heredoc scan still reads any << there and errs toward widening.
-    function strip_arith(s,   out, i, n, c, depth, start) {
-        out = ""
-        i = 1
-        n = length(s)
-        while (i <= n) {
-            c = substr(s, i, 1)
-            if (substr(s, i, 3) == "$((" || substr(s, i, 2) == "((") {
-                start = i
-                i += (c == "$") ? 3 : 2
-                depth = 2
-                while (i <= n && depth > 0) {
-                    c = substr(s, i, 1)
-                    if (c == "(") depth++
-                    else if (c == ")") depth--
-                    i++
-                }
-                if (depth > 0) return out substr(s, start)
-                continue
-            }
-            if (substr(s, i, 2) == "$[") {
-                start = i
-                i += 2
-                depth = 1
-                while (i <= n && depth > 0) {
-                    c = substr(s, i, 1)
-                    if (c == "[") depth++
-                    else if (c == "]") depth--
-                    i++
-                }
-                if (depth > 0) return out substr(s, start)
-                continue
-            }
-            out = out c
-            i++
-        }
-        return out
-    }
-    # True when any heredoc operator on the line has an unquoted delimiter.
-    # Checked per operator rather than per line: a quoted delimiter must not
-    # mask an unquoted one beside it, whose body bash expands before any
-    # consumer sees it. A here-string (<<<) is skipped as one unit. After <<
-    # come an optional dash and blanks, then the delimiter: a quote or a
-    # backslash there means quoted; anything else, end of line included,
-    # means unquoted.
-    function unquoted_heredoc(s,   rest, p, after, c) {
-        rest = s
-        while ((p = index(rest, "<<")) > 0) {
-            after = substr(rest, p + 2)
-            if (substr(after, 1, 1) == "<") {
-                rest = substr(after, 2)
-                continue
-            }
-            sub(/^-?[ \t]*/, "", after)
-            c = substr(after, 1, 1)
-            if (c != "\047" && c != "\042" && c != "\\") return 1
-            rest = after
-        }
-        return 0
-    }
-    BEGIN { out = "" }
-    {
-        leaf = $0
-        if (leaf == "") next
-        eol = index(leaf, "\n")
-        line1 = (eol == 0 ? leaf : substr(leaf, 1, eol - 1))
-        leaf_widen = (widen == "1")
-        # A heredoc operator on this leafs own first line whose delimiter
-        # is NOT quoted, judged per operator by unquoted_heredoc above so
-        # that a quoted delimiter never masks an unquoted one on the same
-        # line, and with arithmetic shifts stripped first.
-        if (!leaf_widen && index(line1, "<<") > 0 && unquoted_heredoc(strip_arith(line1))) {
-            leaf_widen = 1
-        }
-        if (leaf_widen || eol == 0) {
-            out = out leaf "\n"
-        } else {
-            out = out "\035 " line1 "\n"
-        }
-    }
-    END { printf "%s", out }
-')
+SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v mode=scan -v widen="$WIDEN" -f "$LEAF_LINES_AWK")
 
 # --- Quote-group marking. ------------------------------------------------
 #
@@ -466,7 +385,7 @@ SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v RS='\036' -v widen="$WIDEN" '
 # residual in either hook. Double-quoted content that could still trigger
 # command/parameter substitution ($(...), backticks, ${...}) is left
 # unmarked so the matcher inspects it directly. SCAN_TEXT above holds the
-# line this hook feeds per leaf: the first line of each leaf, or the whole
+# lines this hook feeds per leaf: the code lines of each leaf, or the whole
 # leaf when it is widened. The shared pre-pass (docket-guard-prepass.awk)
 # applies a comment rule to every line it reads: a `#` where bash starts a
 # word opens a comment to end of line, and a quote inside that comment opens
@@ -532,10 +451,9 @@ STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk -f "$PREPASS_AWK" 2>/dev/null) || \
 # anywhere after it, which is literal text to bash (`stub git {"ok":false}`
 # in a findings note). "After it" runs to the end of the scanned text, not
 # the end of the line: the pre-pass emits a double-quoted string holding
-# `$(` raw, newline included, so the `,` can land on a later line. The
-# second exemption never applies to a line the widening step truncated
-# (leading 0x1d word), whose `,` may have been dropped. A
-# `${...}` parameter expansion is stripped before this test, not treated
+# `$(` raw, newline included, so the `,` can land on a later line, and a
+# quoted newline inside the brace word puts it on the leaf's next code line.
+# A `${...}` parameter expansion is stripped before this test, not treated
 # as a brace: `git ${V}` is the SAME accepted residual as `git $V` (a
 # computed-subcommand shape this pass already declines to resolve), and
 # `${` is never brace ALTERNATION syntax, so it carries none of the risk
@@ -548,7 +466,7 @@ STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk -f "$PREPASS_AWK" 2>/dev/null) || \
 # subcommand follow it in order. A brace word in argument position
 # (`echo {git,commit}`, `cp f{,.bak}`) stays allowed.
 MATCH=$(printf '%s' "$STRIPPED" | awk '
-BEGIN { MARK = "\001"; TRUNCATED = "\035" }
+BEGIN { MARK = "\001" }
 function has_brace(word,   stripped) {
     stripped = word
     gsub(/\$\{/, "", stripped)
@@ -609,7 +527,6 @@ END {
     }
     for (r = 1; r <= NR; r++) {
         n = split(lines[r], words, /[ \t]+/)
-        truncated = (words[1] == TRUNCATED)
         cmdpos = 1
         wrapper = ""
         wrapper_arg = 0
@@ -625,7 +542,7 @@ END {
             # fragment leaves it unchanged: the pre-pass splits one source
             # word at its quotes. After `repeat` every later word of the
             # command counts, since the pre-pass may split its count.
-            if (!hquoted && !(i == 1 && truncated)) {
+            if (!hquoted) {
                 at_command = cmdpos
                 if (hw != w || hw == "") {
                     at_command = 1
@@ -655,7 +572,7 @@ END {
                     if (hw == "repeat") after_repeat = 1
                     else if (hw == "env" || hw == "command" || hw == "timeout") wrapper = hw
                 } else {
-                    if ((at_command || after_repeat) && has_brace(hw) && (truncated || may_brace_expand(i)) && may_spell_git_write(i)) { print "MATCH"; exit }
+                    if ((at_command || after_repeat) && has_brace(hw) && may_brace_expand(i) && may_spell_git_write(i)) { print "MATCH"; exit }
                     cmdpos = 0
                 }
             }
@@ -678,7 +595,7 @@ END {
                     sgroup = D_GROUP
                     s = D_WORD
                     sw = s
-                    if (has_brace(sw) && !(hquoted && squoted && hgroup == sgroup) && (truncated || may_brace_expand(j))) { print "MATCH"; exit }
+                    if (has_brace(sw) && !(hquoted && squoted && hgroup == sgroup) && may_brace_expand(j)) { print "MATCH"; exit }
                     sub(/[^A-Za-z0-9_-].*$/, "", sw)
                     if (sw == "commit" || sw == "push" || sw == "add") {
                         if (hquoted && squoted && hgroup == sgroup) continue

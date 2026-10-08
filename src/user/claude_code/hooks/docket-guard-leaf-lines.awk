@@ -1,8 +1,9 @@
 # Leaf line selection for the docket guard hooks: which lines of a probed leaf
 # are code. Loaded with `awk -f` from beside the hook, like
 # docket-guard-prepass.awk, so the lexer lives in one file rather than one
-# inline copy per hook. docket-sibling-guard-hook.sh loads it today; its
-# "Line selection" comment describes the rules this program implements.
+# inline copy per hook. docket-sibling-guard-hook.sh and
+# docket-commit-guard-hook.sh load it; the sibling guard's "Line selection"
+# comment describes the rules this program implements.
 #
 # Input: the probe's leaves, each ended by 0x1e. Variables:
 #   mode  "code" prints the code lines of every leaf; "scan" prints the code

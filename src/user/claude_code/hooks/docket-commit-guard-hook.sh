@@ -134,6 +134,8 @@ PREPASS_AWK="${HOOK_DIR}/docket-guard-prepass.awk"
 [ -r "$PREPASS_AWK" ] || deny "git write blocked: the commit-guard hook's shared pre-pass file (docket-guard-prepass.awk) is missing or unreadable beside this hook, so it cannot check this command. This is a hook installation defect, not a caller mistake -- report it rather than retrying."
 LEAF_LINES_AWK="${HOOK_DIR}/docket-guard-leaf-lines.awk"
 [ -r "$LEAF_LINES_AWK" ] || deny "git write blocked: the commit-guard hook's shared line-selection file (docket-guard-leaf-lines.awk) is missing or unreadable beside this hook, so it cannot check this command. This is a hook installation defect, not a caller mistake -- report it rather than retrying."
+PROBE_SH="${HOOK_DIR}/docket-guard-probe.sh"
+[ -r "$PROBE_SH" ] && PROBE_PROGRAM=$(<"$PROBE_SH") && [ -n "$PROBE_PROGRAM" ] || deny "git write blocked: the commit-guard hook's shared probe file (docket-guard-probe.sh) is missing or unreadable beside this hook, so it cannot check this command. This is a hook installation defect, not a caller mistake -- report it rather than retrying."
 
 # ENGINE FIRST, PROBE ONLY WHEN A GATE STANDS. The gate query below is one
 # cheap engine call; the DEBUG-trap probe further down is about a dozen
@@ -217,101 +219,73 @@ if ! printf '%s' "$COMMAND" | bash -n >/dev/null 2>&1; then
     deny "$REASON_PREFIX the commit-guard hook could not parse this command to check it (bash reported a syntax error while analyzing it) and refuses rather than guessing. Fix the command's syntax; if it is not actually invalid, that is a hook defect to report separately."
 fi
 
-# `eval -- "$COMMAND"` is how the untrusted text reaches bash as SOURCE rather
-# than as a re-quoted argument: COMMAND travels on stdin, never through
-# string interpolation into this script's own source, so nothing about the
-# outer invocation's quoting can be confused by what the inner text
-# contains — it is parsed exactly once, by bash, exactly as it would be if
-# the real Bash tool ran it. `eval` itself is on the structural allowlist
-# below (it is a control mechanism, not a leaf) so the trap sees straight
-# through it to what is actually inside.
+# The probe is the shared file docket-guard-probe.sh (PROBE_SH, resolved and
+# checked at the top of this file), the same code docket-sibling-guard-hook.sh
+# and docket-trust-guard-hook.sh run; its header states the contract and
+# docket-sibling-guard-hook.sh's header (THE PROBE HARDENING) the design.
+# `eval -- "$COMMAND"` inside it is how the untrusted text reaches bash as
+# SOURCE rather than as a re-quoted argument: COMMAND travels on stdin, never
+# through string interpolation into this script's own source, so it is parsed
+# exactly once, by bash, exactly as the real Bash tool would. Leaves come back
+# as \035<text>\036 frames with bash's own stderr merged around them. The
+# probe refuses through a marker between the frames: 113 the cap, 114 a
+# redirection on a structural builtin, 115 a branch on a value a `read` never
+# read, 116 probe state in a structural leaf. An exit inside a pipeline stage
+# ends only that stage, so the marker, not the exit status, is what reaches
+# this hook; 113 and 114 are also read from the status as a fallback.
 #
-# Leaves are printed as \035<text>\036 frames on the probe's stdout, saved
-# as fd 8 before the walk: bash 5 runs a coproc's leaves in a child whose
-# stdout is the coproc pipe, and they would be lost there. bash's stderr is
-# merged into the same capture and recovered from between the frames. Exit
-# codes: 113 the cap, 114 a redirection on a structural builtin. The caller
-# cannot pick either: `exit` and `return` are vetoed, and a vetoed leaf
-# reports success.
-PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c '
-    shopt -s extdebug
-    set -T
-    COMMAND=$(cat)
-    _leaf_n=0   # not `n`: the analyzed command shares this shell, and `for n in …` collided with the counter
-    # A leaf that is only variable assignments RUNS (see the header), but
-    # only in these value shapes: bare words, $name, ${name}, and $(( ))
-    # over names and operators. No quotes, no $( ), no backticks, no
-    # subscripts, so nothing an assignment can evaluate runs a command.
-    readonly _leaf_name="[A-Za-z_][A-Za-z0-9_]*"
-    readonly _leaf_word="[A-Za-z0-9_./:@%+,-]|\\\$${_leaf_name}|\\\$\\{${_leaf_name}\\}|\\\$\\(\\(([^][()\$\`]|\\\$${_leaf_name})*\\)\\)"
-    readonly _leaf_assign_re="^${_leaf_name}\\+?=(${_leaf_word})*([[:space:]]+${_leaf_name}\\+?=(${_leaf_word})*)*\$"
-    _guard_probe() {
-        _leaf_n=$((_leaf_n + 1))
-        if [ "$_leaf_n" -gt 2000 ]; then
-            exit 113
-        fi
-        # The first firing is this probe own eval line, not a leaf of the
-        # command; recording it would put an interpreter word in every walk.
-        if [ "$_leaf_n" -eq 1 ] && [ "$BASH_COMMAND" = "eval -- \"\$COMMAND\"" ]; then
-            return 0
-        fi
-        local head="${BASH_COMMAND%%[ $'"'"'\t\n'"'"']*}"
-        head="${head##*/}"
-        case "$head" in
-            for | select | case | eval)
-                case "$BASH_COMMAND" in
-                    *[\<\>]*) exit 114 ;;
-                esac
-                printf "\035%s\036" "$BASH_COMMAND" >&8
-                return 0 ;;
-            while | until | if | elif | else | fi | then | do | done | \
-            esac | function | time | "{" | "}" | "[" | "[[" | : | \
-            true | false | break | continue)
-                case "$BASH_COMMAND" in
-                    *[\<\>]*) exit 114 ;;
-                esac
-                return 0 ;;
-        esac
-        if [[ "$BASH_COMMAND" =~ $_leaf_assign_re ]]; then
-            case "$BASH_COMMAND" in
-                *_leaf_*) ;;   # the counter and these patterns: never the command'"'"'s to set
-                *)
-                    printf "\035%s\036" "$BASH_COMMAND" >&8
-                    return 0 ;;
-            esac
-        fi
-        printf "\035%s\036" "$BASH_COMMAND" >&8
-        if declare -F "$head" >&9 2>&9; then
-            return 0
-        fi
-        return 1
-    }
-    readonly -f _guard_probe
-    exec 8>&1 9>/dev/null
-    set -r
-    trap _guard_probe DEBUG
-    eval -- "$COMMAND"
-' 2>&1)
+# A `read` fed by a pipe at EOF runs on its site's second firing, so a
+# pipe-fed read loop ends after one walk of its body instead of walking into
+# the cap. A read that has not run leaves its value unknown: the probe
+# refuses a structural leaf that branches on a value (115), and this hook
+# refuses a walked leaf whose command word expands a value (`$x`, a backtick)
+# after a read frame, since that leaf runs whatever the input names.
+PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c "$PROBE_PROGRAM" 2>&1)
 PROBE_RC=$?
 
-if [ "$PROBE_RC" -eq 113 ]; then
-    deny "$REASON_PREFIX this command has too many parts (over 2000) for the commit-guard hook to finish checking it. Split it into smaller Bash calls; a single call this large is refused rather than passed through unchecked."
-fi
-if [ "$PROBE_RC" -eq 114 ]; then
-    deny "$REASON_PREFIX a redirection on a shell builtin that carries no command (\`: > file\`, \`true > file\`, \`[ ... ] > file\`) cannot be checked for a git write. Truncate or create a file with \`cat /dev/null > <path>\`, so the target is a visible operand."
-fi
-
 # Leaves are the framed segments; everything outside a frame is bash's own
-# stderr during the walk.
+# stderr during the walk, the probe's refusal markers included.
 PROBE_TEXT=$(printf '%s' "$PROBE_RAW" | awk 'BEGIN { RS = "\036"; ORS = "" } { i = index($0, "\035"); if (i > 0) printf "%s\036", substr($0, i + 1) }')
 PROBE_ERR=$(printf '%s' "$PROBE_RAW" | awk 'BEGIN { RS = "\036"; ORS = "" } { i = index($0, "\035"); if (i > 0) printf "%s", substr($0, 1, i - 1); else printf "%s", $0 }')
 
-case "$PROBE_ERR" in
+READ_BRANCH_REASON="$REASON_PREFIX this command branches on a variable after a \`read\` in it (a \`[ ... ]\`, \`[[ ... ]]\`, \`case\`, \`for ... in\`, \`for ((...))\`, \`:\` or \`eval\` that expands a value, or a \`continue\`), or runs a command whose name expands a value (\`\$x\`) after one. The commit-guard hook feeds a read no input, so it cannot tell which commands the loop would run. An earlier lone \`read\` anywhere in the same Bash call counts too, and refuses every later test on a variable, the counted wait loop \`until [ -s f ] || [ \$n -ge N ]\` included: run that read in its own Bash call. Otherwise filter the input before the loop instead (\`cmd | grep -v '^\$' | while IFS= read -r x; do ...; done\`), or split it into smaller Bash calls."
+
+case "$PROBE_RC:$PROBE_ERR" in
+    113:* | *"_guard_probe: leaf cap"*)
+        deny "$REASON_PREFIX this command has too many parts (over 2000) for the commit-guard hook to finish checking it. A wait loop ends in the check when it counts its own passes, \`n=0; until [ -s f ] || [ \$n -ge N ]; do sleep S; n=\$((n+1)); done\`, and so does a read loop fed by a pipe whose read takes no option but -r, \`cmd | while IFS= read -r x; do ...; done\` (a file, here-string or process-substitution input, or another read option, keeps it from ending); an uncounted wait never does. Otherwise split it into smaller Bash calls; a single call this large is refused rather than passed through unchecked." ;;
+    114:* | *"_guard_probe: structural redirect"*)
+        deny "$REASON_PREFIX a redirection on a shell builtin that carries no command (\`: > file\`, \`true > file\`, \`[ ... ] > file\`) cannot be checked for a git write. Truncate or create a file with \`cat /dev/null > <path>\`, so the target is a visible operand." ;;
     *"restricted: cannot redirect output"*)
         deny "$REASON_PREFIX a redirection on a compound command (\`{ ... } > file\`, \`( ... ) > file\`, a loop or \`if\` followed by \`> file\`, or a function call \`> file\`) hides its target from this check. Redirect each simple command's output on its own." ;;
     *"readonly function"*)
         deny "$REASON_PREFIX this command redefines the commit-guard hook's own probe handler (\`_guard_probe\`). No command needs a function by that name; rename it." ;;
+    *"_guard_probe: probe state in a structural leaf"*)
+        deny "$REASON_PREFIX this command names a \`_leaf_*\` variable in a command the hook runs while checking it (a \`:\`, \`true\`, \`[\` or \`[[\` command, or a \`for\`, \`select\`, \`case\` or \`eval\` header). The commit-guard hook keeps its own analysis state under that prefix, so it cannot check the command; rename the variable." ;;
+    *"_guard_probe: branch on an unread value"*)
+        deny "$READ_BRANCH_REASON" ;;
 esac
+
+# A walked leaf whose command word expands a value, after a read frame: the
+# read stood in for input it never read, so the leaf's command is unknown.
+# Leading assignment words are skipped to reach the command word. This is
+# this hook's own rule; a computed command with no read before it stays the
+# accepted residual pinned in the suite.
+READ_COMPUTED=$(printf '%s' "$PROBE_TEXT" | awk '
+BEGIN { RS = "\036"; name = "[A-Za-z_][A-Za-z0-9_]*" }
+{
+    leaf = $0
+    if (seen_read) {
+        while (match(leaf, "^" name "\\+?=[^ \t\n]*[ \t]+")) leaf = substr(leaf, RLENGTH + 1)
+        if (leaf !~ "^" name "\\+?=") {
+            word = leaf
+            sub(/[ \t\n].*$/, "", word)
+            if (word ~ /[$`]/) { print "READ_COMPUTED"; exit }
+        }
+    }
+    if ($0 ~ "^(IFS=[A-Za-z0-9_./:@%+,-]*[ \t]+)?read([ \t]+-r)?([ \t]+" name ")*$") seen_read = 1
+}
+' 2>/dev/null)
+[ "$READ_COMPUTED" = "READ_COMPUTED" ] && deny "$READ_BRANCH_REASON"
 
 if [ -z "$PROBE_TEXT" ]; then
     # No leaf dispatched: the command is inert (all comment, all whitespace,

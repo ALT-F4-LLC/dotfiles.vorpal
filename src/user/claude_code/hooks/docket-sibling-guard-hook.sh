@@ -190,11 +190,10 @@
 # rule is applied to strings for the same reason.
 #
 # THE PROBE HARDENING, measured on bash 3.2 and pinned in the suite. The
-# probe's code lives in docket-guard-probe.sh beside this hook. It is shared
-# with docket-trust-guard-hook.sh and docket-commit-guard-hook.sh, which
+# probe's code lives in docket-guard-probe.sh beside this hook, and
+# docket-commit-guard-hook.sh loads the same file. docket-trust-guard-hook.sh
 # originally ran an unhardened copy; the hardening this hook introduced is
-# ported into both, except the `read` admission below, which only this hook
-# carries:
+# ported into it, except the `read` admission below:
 #   - The probe shell is RESTRICTED (`set -r`) once the trap is armed, so no
 #     redirection can open a file. A vetoed leaf never performs its
 #     redirection anyway (verified: `rm x > marker` leaves the marker

@@ -935,6 +935,40 @@ case_probe_never_acts() {
     rm -f "$marker"
 }
 
+# ---- Read loops: the shared probe's read admission ------------------------
+#
+# The probe in docket-guard-probe.sh lets a `read` fed by a pipe at EOF end
+# its loop after one walk of the body, so a pipe-fed read loop no longer
+# walks into the cap. A read that never ran leaves its value unknown, so a
+# branch on it is refused by the probe, and a command whose name expands a
+# value after a read is refused by this hook.
+
+case_read_loops() {
+    local err
+    assert_verdict "printf 'a\\nb\\n' | while read x; do echo \$x; done" ALLOW \
+        "read loop over finite piped input ends"
+    assert_verdict ': | while read x; do git commit -m x; done' DENY \
+        "read loop over empty piped input walks its body"
+    err=$(PATH="$PATH_WITH_DOCKET" GATE_STATE=unapproved "$BASH_BIN" "$HOOK" 2>&1 >/dev/null \
+        <<<"$(build_input "printf 'a\\n' | while IFS= read -r x; do [ \"\$x\" = a ] && git commit -m y; done")")
+    case "$err" in
+        "git write blocked:"*"branches on a variable after a \`read\`"*) pass "read loop that branches on its value is refused as a branch on a read value" ;;
+        *) fail "read loop that branches on its value (want the read-branch refusal, got: ${err})" ;;
+    esac
+    assert_verdict "printf 'a\\n' | while read x; do \$x; done" DENY \
+        "read loop running a command named by its value"
+    err=$(PATH="$PATH_WITH_DOCKET" GATE_STATE=unapproved "$BASH_BIN" "$HOOK" 2>&1 >/dev/null \
+        <<<"$(build_input 'while :; do ls; done')")
+    case "$err" in
+        *"too many parts (over 2000)"*"while IFS= read -r x"*) pass "the cap reason names the pipe-fed read loop shape" ;;
+        *) fail "the cap reason does not name the read loop shape: ${err}" ;;
+    esac
+    case "$err" in
+        *"too many parts (over 2000)"*"until [ -s f ] || [ \$n -ge N ]"*) pass "the cap reason names the counted wait shape" ;;
+        *) fail "the cap reason does not name the counted wait shape: ${err}" ;;
+    esac
+}
+
 # ---- One long line of quoted groups ---------------------------------------
 #
 # The quote-group pass carries the current line's state forward as it emits
@@ -988,6 +1022,35 @@ case_missing_prepass_file_denies() {
     rm -rf "$scratch_dir"
 }
 
+# ---- Missing shared probe file: fail CLOSED, not open ---------------------
+#
+# The DEBUG-trap probe lives in docket-guard-probe.sh beside the hook. A copy
+# with both awk files but no probe file has no leaf list to check, so it
+# denies and names the missing file, before the engine gate query.
+
+case_missing_probe_file_denies() {
+    local scratch_dir scratch_hook err rc
+    scratch_dir=$(mktemp -d "${TMPDIR:-/tmp}/docket-commit-guard-probe-missing.XXXXXX") || \
+        fatal "mktemp failed"
+    scratch_hook="${scratch_dir}/docket-commit-guard-hook.sh"
+    cp "$HOOK" "$scratch_hook" || fatal "could not copy hook to scratch dir"
+    cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "${scratch_dir}/" || \
+        fatal "could not copy the shared awk files to scratch dir"
+    err=$(PATH="$PATH_WITH_DOCKET" GATE_STATE=unapproved "$BASH_BIN" "$scratch_hook" 2>&1 >/dev/null \
+        <<<"$(build_input 'ls')")
+    rc=$?
+    if [ "$rc" -eq 2 ]; then
+        pass "hook copy with no probe file denies ls (exit 2)"
+    else
+        fail "hook copy with no probe file did not deny (exit ${rc})"
+    fi
+    case "$err" in
+        *"docket-guard-probe.sh"*) pass "missing probe file deny names the cause" ;;
+        *) fail "missing probe file deny reason changed or missing: ${err}" ;;
+    esac
+    rm -rf "$scratch_dir"
+}
+
 # ---- Unparseable match program: fail CLOSED, not open ---------------------
 #
 # A match program awk cannot parse prints nothing and exits non-zero. Read
@@ -1003,7 +1066,7 @@ case_match_program_failure() {
     scratch_hook="${scratch_dir}/docket-commit-guard-hook.sh"
     sed 's/^BEGIN { MARK = "\\001" }$/BEGIN { MARK = = "\\001" }/' \
         "$HOOK" >"$scratch_hook" || fatal "could not copy hook to scratch dir"
-    cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "${scratch_dir}/" || \
+    cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "$(dirname "$HOOK")/docket-guard-probe.sh" "${scratch_dir}/" || \
         fatal "could not copy the shared awk files to scratch dir"
     if cmp -s "$HOOK" "$scratch_hook"; then
         fail "unparseable match program: the fixture edit did not apply"
@@ -1039,7 +1102,7 @@ case_prepass_program_failure() {
         fatal "mktemp failed"
     scratch_hook="${scratch_dir}/docket-commit-guard-hook.sh"
     cp "$HOOK" "$scratch_hook" || fatal "could not copy hook to scratch dir"
-    cp "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "${scratch_dir}/" || \
+    cp "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "$(dirname "$HOOK")/docket-guard-probe.sh" "${scratch_dir}/" || \
         fatal "could not copy the line-selection file to scratch dir"
     { cat "$(dirname "$HOOK")/docket-guard-prepass.awk"; printf '%s\n' 'BEGIN { x = = 1 }'; } \
         >"${scratch_dir}/docket-guard-prepass.awk" || \
@@ -1177,8 +1240,10 @@ case_comment_regions_are_inert
 case_heredoc_position_edges
 case_leaf_cap_is_out_of_band
 case_probe_never_acts
+case_read_loops
 case_many_quoted_groups_on_one_line
 case_missing_prepass_file_denies
+case_missing_probe_file_denies
 case_match_program_failure
 case_prepass_program_failure
 case_prepass_copies_identical

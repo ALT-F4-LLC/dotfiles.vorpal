@@ -1429,6 +1429,7 @@ case_prepass_installation() {
     cp "$HOOK" "${beside}/hook.sh"
     cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "${beside}/"
     cp "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "${beside}/"
+    cp "$(dirname "$HOOK")/docket-guard-probe.sh" "${beside}/"
     got=$(PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "${beside}/hook.sh" >/dev/null 2>&1 <<<"$(build_input "rm -rf ${SIB_DIR}" executor-write "$WAVE_42")"; [ $? -eq 2 ] && printf DENY || printf ALLOW)
     [ "$got" = "DENY" ] && pass "installed copy with pre-pass beside it denies a foreign dir (DENY)" || fail "installed copy with pre-pass (want DENY, got ${got})"
     got=$(PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "${beside}/hook.sh" >/dev/null 2>&1 <<<"$(build_input "rm -rf ${OWN_DIR}" executor-write "$WAVE_42")"; [ $? -eq 2 ] && printf DENY || printf ALLOW)
@@ -1444,6 +1445,7 @@ case_leaf_lines_installation() {
     mkdir -p "$no_leaf" "$no_prepass"
     cp "$HOOK" "${no_leaf}/hook.sh"
     cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "${no_leaf}/"
+    cp "$(dirname "$HOOK")/docket-guard-probe.sh" "${no_leaf}/"
     err=$(PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "${no_leaf}/hook.sh" 2>&1 >/dev/null <<<"$(build_input "rm -rf ${OWN_DIR}" executor-write "$WAVE_42")")
     [ $? -eq 2 ] && got=DENY || got=ALLOW
     [ "$got" = "DENY" ] && pass "missing line-selection file fails closed on the own sweep (DENY)" || fail "missing line-selection file (want DENY, got ${got})"
@@ -1453,12 +1455,30 @@ case_leaf_lines_installation() {
     esac
     cp "$HOOK" "${no_prepass}/hook.sh"
     cp "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "${no_prepass}/"
+    cp "$(dirname "$HOOK")/docket-guard-probe.sh" "${no_prepass}/"
     err=$(PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "${no_prepass}/hook.sh" 2>&1 >/dev/null <<<"$(build_input "ls" executor-write "$WAVE_42")")
     [ $? -eq 2 ] && got=DENY || got=ALLOW
     [ "$got" = "DENY" ] && pass "missing pre-pass file beside the line-selection file fails closed (DENY)" || fail "missing pre-pass file beside the line-selection file (want DENY, got ${got})"
     case "$err" in
         *"docket-guard-prepass.awk"*) pass "missing pre-pass file is named in the reason" ;;
         *) fail "missing pre-pass file reason: ${err}" ;;
+    esac
+}
+
+# The probe is a third shared file beside the hook. Without it there is no
+# leaf list to check, so the hook refuses even a command the full
+# installation allows (the own sweep), and names the missing file.
+case_probe_installation() {
+    local no_probe="${WORK}/no-probe" got err
+    mkdir -p "$no_probe"
+    cp "$HOOK" "${no_probe}/hook.sh"
+    cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "${no_probe}/"
+    err=$(PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "${no_probe}/hook.sh" 2>&1 >/dev/null <<<"$(build_input "rm -rf ${OWN_DIR}" executor-write "$WAVE_42")")
+    [ $? -eq 2 ] && got=DENY || got=ALLOW
+    [ "$got" = "DENY" ] && pass "missing probe file fails closed on the own sweep (DENY)" || fail "missing probe file (want DENY, got ${got})"
+    case "$err" in
+        *"docket-guard-probe.sh"*) pass "missing probe file is named in the reason" ;;
+        *) fail "missing probe file reason: ${err}" ;;
     esac
 }
 
@@ -1470,7 +1490,7 @@ case_match_program_failure() {
     local broken="${WORK}/broken" got err
     mkdir -p "$broken"
     sed 's/^    MARK = "\\001"$/    MARK = = "\\001"/' "$HOOK" >"${broken}/hook.sh"
-    cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "${broken}/"
+    cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "$(dirname "$HOOK")/docket-guard-probe.sh" "${broken}/"
     if cmp -s "$HOOK" "${broken}/hook.sh"; then
         fail "unparseable match program: the fixture edit did not apply"
         return
@@ -1492,7 +1512,7 @@ case_prepass_program_failure() {
     local broken="${WORK}/broken-prepass" got err
     mkdir -p "$broken"
     cp "$HOOK" "${broken}/hook.sh"
-    cp "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "${broken}/"
+    cp "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "$(dirname "$HOOK")/docket-guard-probe.sh" "${broken}/"
     { cat "$(dirname "$HOOK")/docket-guard-prepass.awk"; printf '%s\n' 'BEGIN { x = = 1 }'; } >"${broken}/docket-guard-prepass.awk"
     err=$(PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "${broken}/hook.sh" 2>&1 >/dev/null <<<"$(build_input "ls" executor-write "$WAVE_42")")
     [ $? -eq 2 ] && got=DENY || got=ALLOW
@@ -1682,6 +1702,7 @@ case_deny_reasons
 case_input_edges
 case_prepass_installation
 case_leaf_lines_installation
+case_probe_installation
 case_match_program_failure
 case_prepass_program_failure
 case_transcript_bound

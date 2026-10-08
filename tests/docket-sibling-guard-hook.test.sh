@@ -1291,6 +1291,21 @@ case_checkout_paths() {
     assert_deny_reason "echo x 1>& /repo/.claude/worktrees/wf_x/note" executor-write "$WAVE_42" "write into" "spaced 1>& onto a sibling's checkout"
     assert_verdict "echo x >&2 /repo/.claude/worktrees/wf_x/note" executor-write "$WAVE_42" ALLOW "numeric duplication beside a sibling path argument"
     assert_verdict "echo x >&- /repo/.claude/worktrees/wf_x/note" executor-write "$WAVE_42" ALLOW "fd close beside a sibling path argument"
+    # zsh, which runs the Bash tool, writes the target of its clobber and
+    # append-clobber operators; bash reads `>!` as `>` onto a file named `!`
+    # and fails to parse the `|` forms, so each is judged in its bash spelling.
+    local zop
+    for zop in ">!" ">>!" "&>!" "&>|" ">&|" ">&!" ">>&|" ">>&!" "&>>|" "&>>!"; do
+        assert_deny_reason "echo x ${zop} /repo/.claude/worktrees/wf_x/.git" executor-write "$WAVE_42" "write into" "zsh write redirect '${zop}' onto a sibling's gitdir pointer"
+    done
+    assert_deny_reason "echo x >!/repo/.claude/worktrees/wf_x/.git" executor-write "$WAVE_42" "write into" "glued zsh >! onto a sibling's gitdir pointer"
+    assert_deny_reason "echo x &>|/repo/.claude/worktrees/wf_x/.git" executor-write "$WAVE_42" "write into" "glued zsh &>| onto a sibling's gitdir pointer"
+    assert_deny_reason "exec {fd}> /repo/.claude/worktrees/wf_x/.git" executor-write "$WAVE_42" "write into" "named-fd redirect onto a sibling's gitdir pointer"
+    assert_deny_reason "exec {fd}>> /repo/.claude/worktrees/wf_x/.git" executor-write "$WAVE_42" "write into" "named-fd append onto a sibling's gitdir pointer"
+    assert_deny_reason "exec {fd}>/repo/.claude/worktrees/wf_x/.git" executor-write "$WAVE_42" "write into" "glued named-fd redirect onto a sibling's gitdir pointer"
+    assert_verdict "echo ! /repo/.claude/worktrees/wf_x/README" executor-write "$WAVE_42" ALLOW "bare ! argument beside a sibling path"
+    assert_verdict "echo x >! ${OWN_DIR}/out.txt" executor-write "$WAVE_42" ALLOW "zsh >! into the own scratch dir"
+    assert_deny_reason 'echo x >! $f' executor-write "$WAVE_42" "Write to a literal path" "zsh >! onto an expansion it cannot judge"
     # A verb that writes the file its operand names writes into a sibling's
     # checkout as surely as a redirect does; a read operand does not.
     local wcmd

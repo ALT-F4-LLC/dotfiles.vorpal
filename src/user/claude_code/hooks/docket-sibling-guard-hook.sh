@@ -59,7 +59,9 @@
 #              `.claude/worktrees/` or `.git/worktrees/` that is not the
 #              caller's own checkout, the checkout being its `cwd` (`cat
 #              /dev/null > <sibling>/.git` breaks that checkout as surely as
-#              removing it). The write operands are every file `tee`,
+#              removing it). A zsh clobber redirect (`>!`, `&>|` and the
+#              like) is judged in its bash spelling (ZSH_WRITE_RE below),
+#              and refused when its target is an expansion. The write operands are every file `tee`,
 #              `truncate` and `touch` name, the destination (last operand)
 #              of `cp`, `install` and `ln`, the `of=` file of `dd`, and the
 #              files of `sed -i`. The harness creates a writer's worktree and
@@ -588,6 +590,49 @@ PROBE_FD_RE='(^|[^A-Za-z0-9_$])[789][<>]'
 if [[ "$COMMAND" =~ $PROBE_FD_RE ]]; then
     log_decision "deny" "probe-fd"
     deny "$REASON_PREFIX this command redirects file descriptor 7, 8 or 9, which the sibling-guard hook uses to read its own analysis, so it cannot be checked. Use fds 0-2 or 3-6 instead; if the digits are prose in a quoted string, reword them."
+fi
+
+# zsh, which runs the Bash tool's commands, writes the target of its clobber
+# and append-clobber operators (`>!`, `>>!`, `&>!`, `>&!`, `&>>!`, `>>&!` and
+# the same with `|` for `!`). bash, which this hook parses with, reads `>!`
+# as `>` onto a file named `!` and moves it after the arguments, so the real
+# target reaches the matcher as a plain argument; the `|` forms do not parse
+# at all. So the command text is spelled again with each such operator
+# replaced by bash's `>` or `>>`, and this hook checks that spelling in a
+# child copy of itself before anything else reads the command. A deny there
+# denies here with the child's reason; an allow there lets the original
+# command go on to every check below, so this only adds denies (a `|` form
+# still fails the syntax check). A target the path rules cannot judge (none,
+# or one carrying `$` or a backtick) is refused outright. The match is
+# textual: the operator inside quoted prose is spelled again too, which can
+# only add a deny.
+ZSH_WRITE_RE='(&>>?|>>&?|>&)[!|]|>!'
+ZSH_TARGET_RE="(${ZSH_WRITE_RE})[[:space:]]*([^[:space:];&|<>()]*)"
+if [ -z "${DOCKET_GUARD_ZSH_RESPELLED:-}" ] && [[ "$COMMAND" =~ $ZSH_WRITE_RE ]]; then
+    ZSH_COMMAND="$COMMAND"
+    while [[ "$ZSH_COMMAND" =~ $ZSH_TARGET_RE ]]; do
+        ZSH_OP="${BASH_REMATCH[1]}"
+        case "${BASH_REMATCH[3]}" in
+            "" | *[\$\`]*)
+                log_decision "deny" "zsh-write-redirect"
+                deny "$REASON_PREFIX this command has a zsh write redirect (\`${ZSH_OP}\`) whose target is an expansion or missing, so the sibling-guard hook cannot tell which file it writes. Write to a literal path." ;;
+        esac
+        case "$ZSH_OP" in
+            *'>>'*) ZSH_COMMAND="${ZSH_COMMAND/"$ZSH_OP"/>>}" ;;
+            *) ZSH_COMMAND="${ZSH_COMMAND/"$ZSH_OP"/>}" ;;
+        esac
+    done
+    ZSH_ERR=$(printf '%s' "$INPUT" | jq -c --arg c "$ZSH_COMMAND" '.tool_input.command = $c' 2>/dev/null \
+        | DOCKET_GUARD_BOUNDED=1 DOCKET_GUARD_ZSH_RESPELLED=1 "$BASH" "$0" 2>&1 >/dev/null)
+    case $? in
+        0) ;;
+        2)
+            log_decision "deny" "zsh-write-redirect"
+            deny "$ZSH_ERR" ;;
+        *)
+            log_decision "deny" "analysis-failure"
+            deny "$REASON_PREFIX the sibling-guard hook could not check this command's zsh write redirect (\`>!\`, \`&>|\` and the like) in its bash spelling. Use \`>\` or \`>>\` instead, which this hook reads directly." ;;
+    esac
 fi
 
 # --- Syntax first, on the same bytes the probe will walk. ------------------

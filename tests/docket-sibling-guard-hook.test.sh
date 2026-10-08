@@ -400,6 +400,17 @@ case_command_shapes() {
     # in the probe; its text is scanned instead.
     assert_verdict "for f in \$(true); do rm -rf ${SIB_DIR}/x; done" executor-write "$WAVE_42" DENY "for loop over a substitution removing a sibling's dir"
     assert_verdict "for f in \$(ls ${OWN_DIR}); do echo \$f; done" executor-write "$WAVE_42" ALLOW "for loop over a substitution naming no sibling"
+    # A compound command in a non-last pipeline stage runs with its stdout
+    # on the pipe; its leaves and markers travel on fd 8 and still reach the
+    # matcher, as a simple command's do.
+    assert_deny_reason "{ rm -rf ${SIB_DIR}; } | cat" executor-write "$WAVE_42" "another step's scratch directory" "brace group in a non-last pipeline stage"
+    assert_deny_reason "for d in a; do rm -rf ${SIB_DIR}/\$d; done | cat" executor-write "$WAVE_42" "another step's scratch directory" "for loop in a non-last pipeline stage"
+    assert_deny_reason "while true; do rm -rf ${SIB_DIR}/x; break; done | cat" executor-write "$WAVE_42" "another step's scratch directory" "while loop in a non-last pipeline stage"
+    assert_deny_reason "ls | while read d; do rm -rf ${SIB_DIR}/\$d; done | cat" executor-write "$WAVE_42" "another step's scratch directory" "read loop in a non-last pipeline stage"
+    assert_deny_reason "ls | while read d; do [ -n \"\$d\" ] || continue; rm -rf ${SIB_DIR}/\$d; done 2>&1 | cat" executor-write "$WAVE_42" "branches on a variable" "read-value refusal from a stage that merges stderr into the pipe"
+    assert_verdict "rm -rf ${SIB_DIR} | cat" executor-write "$WAVE_42" DENY "simple rm in a non-last pipeline stage"
+    assert_verdict "pkill node | cat" executor-write "$WAVE_42" DENY "simple pkill in a non-last pipeline stage"
+    assert_verdict "{ ls ${OWN_DIR}; } | cat" executor-write "$WAVE_42" ALLOW "own brace group in a non-last pipeline stage"
     # The probe ends an arithmetic for loop before its body fires, so every
     # `for ((...))` header is refused and the reason names the `for x in` shape.
     assert_verdict "for ((i=0; i<3; i++)); do rm -rf ${SIB_DIR}/x; done" executor-write "$WAVE_42" DENY "arithmetic for loop removing a sibling's dir"

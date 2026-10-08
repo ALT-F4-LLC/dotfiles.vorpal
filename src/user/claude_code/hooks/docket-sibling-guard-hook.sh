@@ -292,9 +292,14 @@
 #     and no syntax error, which allowed. Syntax is checked first with `bash
 #     -n` over the same stdin, and a command over 256 KiB is refused outright
 #     (the pre-pass is quadratic in a word's length).
-#   - No temporary file. Leaves travel on stdout inside \035...\036 frames
-#     and bash's own stderr is merged around them; the frame split recovers
-#     both. The unhardened design's predictable `$TMPDIR/<hook>.<pid>` path
+#   - No temporary file. Leaves travel inside \035...\036 frames on fd 8,
+#     a copy of the probe's stdout opened before the walk, and bash's own
+#     stderr is merged around them; the frame split recovers both. A
+#     compound command in a non-last pipeline stage (`{ ...; } | cat`, `for
+#     ...; done | cat`, `while ...; done 2>&1 | tee log`) runs with its
+#     stdout and stderr on the pipe, but fd 8 still reaches the capture, so
+#     its leaves and the refusal markers reach the matcher like any other.
+#     A command that redirects fd 8 is refused (PROBE_FD_RE). The unhardened design's predictable `$TMPDIR/<hook>.<pid>` path
 #     followed a planted symlink (overwriting its target with leaf text) and
 #     blocked forever on a planted FIFO. A command carrying either framing
 #     byte is refused.

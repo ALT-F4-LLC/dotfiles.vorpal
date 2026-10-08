@@ -274,6 +274,31 @@ case_multiline_substitution_body() {
         'a multi-line $( ) body with no git write'
 }
 
+# ---- MUST DENY: a quote left open in one leaf hides no later leaf ---------
+#
+# A leaf cut to its first line can end inside a quote that bash closes on a
+# later line. When leaves were newline-separated, the pre-pass read that
+# quote on into the next leaf, so a git write there joined a prose group and
+# was allowed. Leaves now end with the leaf-end byte and keep their code
+# lines. A heredoc body with an apostrophe, passed whole, is pinned too.
+# Multi-line quoted prose that names a git write stays allowed.
+
+case_open_quote_does_not_cross_leaves() {
+    local nl=$'\n'
+    assert_verdict "echo \"a${nl}b\"; git commit -m x" DENY \
+        'a multi-line double-quoted argument, then ; git commit'
+    assert_verdict "echo \"a${nl}b\"${nl}git commit -m x" DENY \
+        'a multi-line double-quoted argument, then git commit on the next line'
+    assert_verdict "jq -n '[${nl}1]'${nl}git commit -m x" DENY \
+        'a multi-line single-quoted argument, then git commit on the next line'
+    assert_verdict "echo \"a${nl}b\"; git {\"--exec-path=a${nl}b\",commit} -m x" DENY \
+        'a multi-line double-quoted argument, then a brace-split git commit'
+    assert_verdict "docket issue comment add D-1 -m 'never run git commit -m x${nl}on this step'" ALLOW \
+        'multi-line single-quoted prose naming git commit'
+    assert_verdict "cat <<EOF${nl}bash isn't here${nl}EOF${nl}git commit -m x" DENY \
+        'an apostrophe in a widened heredoc body, then git commit on the next line'
+}
+
 # ---- MUST DENY: terminal-position subcommand normalization ---------------
 # A delimiter glued directly AFTER the subcommand with nothing following it.
 # The head-normalization alone does not close these, so they get their own
@@ -1102,6 +1127,7 @@ case_must_deny_baseline
 case_must_deny_glued_separator_class
 case_must_deny_capture_output
 case_multiline_substitution_body
+case_open_quote_does_not_cross_leaves
 case_must_deny_terminal_position
 case_must_allow_terminal_fix_negative_controls
 case_must_allow_computed_subcommand_residual

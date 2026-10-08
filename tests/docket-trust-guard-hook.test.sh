@@ -1123,6 +1123,38 @@ case_many_quoted_groups_on_one_line() {
         executor-write DENY "the verb after 400 quoted groups is still caught"
 }
 
+# ---- Read loops: the shared probe's read admission ------------------------
+#
+# The probe in docket-guard-probe.sh lets a `read` fed by a pipe at EOF end
+# its loop after one walk of the body, so a pipe-fed read loop no longer
+# walks into the cap. A read that never ran leaves its value unknown, so a
+# command whose name expands a value after a read is refused with the
+# read-branch reason. Input other than a pipe keeps the read vetoed, and that
+# loop still caps.
+
+case_read_loops() {
+    local err
+    assert_verdict "printf 'a\\nb\\n' | while read x; do echo \$x; done" executor-write ALLOW \
+        "read loop over finite piped input ends"
+    assert_deny_reason ': | while read x; do docket trust add X; done' executor-read \
+        "read loop over empty piped input walks its body to the trust write"
+    err=$(PATH="$TOOLS_DIR" "$BASH_BIN" "$HOOK" 2>&1 >/dev/null \
+        <<<"$(build_input "printf 'a\\n' | while read x; do \$x; done" executor-read)")
+    case "$err" in
+        *"over 2000"*) fail "read loop running a command named by its value is refused by the cap: ${err}" ;;
+        "trust-store write blocked:"*"after a \`read\`"*) pass "read loop running a command named by its value is refused as a read-branch" ;;
+        *) fail "read loop running a command named by its value (want the read-branch refusal, got: ${err})" ;;
+    esac
+    err=$(PATH="$TOOLS_DIR" "$BASH_BIN" "$HOOK" 2>&1 >/dev/null \
+        <<<"$(build_input 'while :; do ls; done' executor-write)")
+    case "$err" in
+        *"too many parts (over 2000)"*"until [ -s f ] || [ \$n -ge N ]"*"while IFS= read -r x"*) pass "the cap reason names the counted wait and pipe-fed read loop shapes" ;;
+        *) fail "the cap reason does not name both loop shapes: ${err}" ;;
+    esac
+    assert_verdict "while read x; do echo \$x; done <<< a" executor-write DENY \
+        "read loop over a here-string stays vetoed"
+}
+
 # ---- Missing shared pre-pass file: fail CLOSED, not open ------------------
 #
 # The awk PROGRAM this hook's quote-group pass runs now lives in a sibling
@@ -1169,7 +1201,7 @@ case_match_program_failure() {
     scratch_hook="${scratch_dir}/docket-trust-guard-hook.sh"
     sed 's/^BEGIN { MARK = "\\001" }$/BEGIN { MARK = = "\\001" }/' \
         "$HOOK" >"$scratch_hook" || fatal "could not copy hook to scratch dir"
-    cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "${scratch_dir}/" || \
+    cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "$(dirname "$HOOK")/docket-guard-probe.sh" "${scratch_dir}/" || \
         fatal "could not copy the pre-pass file to scratch dir"
     if cmp -s "$HOOK" "$scratch_hook"; then
         fail "unparseable match program: the fixture edit did not apply"
@@ -1204,6 +1236,8 @@ case_prepass_program_failure() {
         fatal "mktemp failed"
     scratch_hook="${scratch_dir}/docket-trust-guard-hook.sh"
     cp "$HOOK" "$scratch_hook" || fatal "could not copy hook to scratch dir"
+    cp "$(dirname "$HOOK")/docket-guard-probe.sh" "${scratch_dir}/" || \
+        fatal "could not copy the probe file to scratch dir"
     { cat "$(dirname "$HOOK")/docket-guard-prepass.awk"; printf '%s\n' 'BEGIN { x = = 1 }'; } \
         >"${scratch_dir}/docket-guard-prepass.awk" || \
         fatal "could not write the broken pre-pass file to scratch dir"
@@ -1375,6 +1409,7 @@ case_quote_state_ends_with_its_leaf
 case_heredoc_position_edges
 case_leaf_cap_is_out_of_band
 case_probe_never_acts
+case_read_loops
 case_many_quoted_groups_on_one_line
 case_missing_prepass_file_denies
 case_match_program_failure

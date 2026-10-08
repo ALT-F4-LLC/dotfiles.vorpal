@@ -43,6 +43,15 @@ const SENSITIVE_PATHS: &[&str] = &[
 
 const SENSITIVE_PATHS_DENY_EDIT_ONLY: &[&str] = &["/Applications/**", "/Library/**", "/System/**"];
 
+/// docket's trust allowlist and the lock its writers hold. Only the operator
+/// adds or removes trust, outside the sandbox (`! docket trust add ...`), so
+/// no sandboxed command and no edit tool may write either file, however the
+/// command is spelled. Gates only read the allowlist, which stays allowed.
+const TRUST_STORE_PATHS: &[&str] = &[
+    "~/.config/docket/trust.toml",
+    "~/.config/docket/trust.toml.lock",
+];
+
 const AUTO_MODE_ENVIRONMENT_CONTEXT: &[&str] = &[
     "### Org-wide",
     "**Organization**: ALT-F4 LLC (solo operator)",
@@ -442,6 +451,7 @@ fn sensitive_path_edit_deny_patterns() -> Vec<String> {
     let mut paths: Vec<&str> = SENSITIVE_PATHS
         .iter()
         .chain(SENSITIVE_PATHS_DENY_EDIT_ONLY)
+        .chain(TRUST_STORE_PATHS)
         .copied()
         .collect();
     paths.sort_unstable();
@@ -708,6 +718,7 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
             .chain(just_tempdir)
             .collect(),
         )
+        .with_sandbox_filesystem_deny_write(owned(TRUST_STORE_PATHS))
         .with_sandbox_filesystem_deny_read(sandbox_filesystem_deny_read_paths())
         .with_sandbox_filesystem_allow_read(owned(SANDBOX_ALLOW_READ_PATHS))
         .with_sandbox_network_allowed_domains(owned(SANDBOX_NETWORK_ALLOWED_DOMAINS))
@@ -816,6 +827,7 @@ mod tests {
         PERMISSION_ALLOW_RULES, PUBLISHING_ASK_VERBS, SANDBOX_ALLOW_READ_PATHS,
         SCRATCH_ROOTS_TOKEN, SENSITIVE_PATHS, SENSITIVE_PATHS_DENY_EDIT_ONLY,
         SENSITIVE_PATHS_DENY_READ_ONLY, SHELL_INDIRECTION_DENY_PATTERNS, TRUST_STORE_ASK_VERBS,
+        TRUST_STORE_PATHS,
     };
     use crate::file::FileCreate;
 
@@ -1504,15 +1516,16 @@ mod tests {
     #[test]
     fn emitted_deny_rules_are_the_edit_and_indirection_rows_only() {
         // The deny array is the sorted Edit() row for every sensitive path
-        // followed by the shell-indirection patterns, and nothing else: a
-        // row added anywhere in `settings()` lands here. No row may be a
-        // Read() deny, which would re-arm the harness's compound-cd ask (see
-        // the comment where the Edit() denies are built).
+        // and trust-store file, followed by the shell-indirection patterns,
+        // and nothing else: a row added anywhere in `settings()` lands here.
+        // No row may be a Read() deny, which would re-arm the harness's
+        // compound-cd ask (see the comment where the Edit() denies are built).
         let deny = strings(&emitted_settings()["permissions"]["deny"]);
 
         let mut sensitive: Vec<&str> = SENSITIVE_PATHS
             .iter()
             .chain(SENSITIVE_PATHS_DENY_EDIT_ONLY)
+            .chain(TRUST_STORE_PATHS)
             .copied()
             .collect();
         sensitive.sort_unstable();
@@ -1648,6 +1661,31 @@ mod tests {
 
         assert_eq!(friction.len(), 1);
         assert!(friction[0].get("matcher").is_none());
+    }
+
+    #[test]
+    fn trust_store_is_unwritable_from_a_session() {
+        // The trust allowlist lives under ~/.config/docket, which stays a
+        // writable sandbox root for the rest of docket's config. The sandbox
+        // denies writes to the allowlist and its lock, and an Edit rule
+        // denies the edit tools, so no command spelling or Write call can add
+        // trust; only the operator does, outside the sandbox.
+        let settings = emitted_settings();
+        let deny_write = strings(&settings["sandbox"]["filesystem"]["denyWrite"]);
+        let allow_write = strings(&settings["sandbox"]["filesystem"]["allowWrite"]);
+        let deny = strings(&settings["permissions"]["deny"]);
+        for path in TRUST_STORE_PATHS {
+            assert!(
+                deny_write.iter().any(|p| p == path),
+                "sandbox denyWrite lacks {path}: {deny_write:?}"
+            );
+            let rule = format!("Edit({path})");
+            assert!(deny.contains(&rule), "permissions deny lacks {rule}");
+        }
+        assert!(
+            allow_write.iter().any(|p| p == "~/.config/docket"),
+            "the rest of docket's config stays writable"
+        );
     }
 
     #[test]

@@ -305,8 +305,9 @@ carries an informational `[policy].version` the engine never freezes or
 enforces, so bump it and add the entry to `changelogs/policy.md` as a
 courtesy, not because anything checks it. Note every change in those files
 so the next docket-retro can attribute what followed. Trust the operator
-approved goes in with `docket trust add
-<name> --yes -- <argv>`; no other approval opens that door.
+approved goes in only when the operator runs `! docket trust add
+<name> --yes -- <argv>` themselves: the sandbox refuses any session write to
+the trust store, so hand them the exact command rather than running it.
 
 Verify twice, and the order is load-bearing. First, `docket workflow lint
 <file.toml>` on the edited checkout bytes *before* the proposal reaches the

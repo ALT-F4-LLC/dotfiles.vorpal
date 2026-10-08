@@ -1920,8 +1920,8 @@ proposal is never bundled into a batch with other approvals**; it goes
 alone, as its own question.
 
 **Never run a trust verb yourself, `--help` included.** `docket trust
-add/rm` is a permission ask, and an ask with no operator at the terminal
-is a stall. Put the trust matter to the operator as its own question,
+add/rm` is a permission ask the sandbox then refuses (no session may write
+the trust store), and an ask with no operator at the terminal is a stall. Put the trust matter to the operator as its own question,
 with the exact `docket trust add ... -- <argv>` they would run.
 
 **A required gate with no trust entry is a park, never a stub.** Never

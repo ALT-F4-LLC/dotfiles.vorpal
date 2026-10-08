@@ -112,12 +112,12 @@ export const meta = {
 // Evidence agents count and cite; the judge and the refuters carry the
 // judgment.
 const AGENT_CONFIG = {
-    census: { model: 'sonnet', effort: 'medium' },
-    registry: { model: 'sonnet', effort: 'low' },
-    runs: { model: 'sonnet', effort: 'low' },
+    census: { model: 'haiku', effort: 'medium' },
+    registry: { model: 'haiku', effort: 'medium' },
+    runs: { model: 'haiku', effort: 'medium' },
     digest: { model: 'sonnet', effort: 'low' },
-    friction: { model: 'sonnet', effort: 'low' },
-    install: { model: 'sonnet', effort: 'low' },
+    friction: { model: 'haiku', effort: 'medium' },
+    install: { model: 'haiku', effort: 'medium' },
     prosecute: { model: 'sonnet', effort: 'medium' },
     defend: { model: 'sonnet', effort: 'medium' },
     judge: { model: 'opus', effort: 'medium' },
@@ -733,7 +733,7 @@ ${READ_ONLY} Run every docket command from the checkout root: each Bash call sta
 Definitions (corpus-relative):
 ${definitionList}
 
-Confirm verbs with --help before relying on them. \`docket run status --json\` lists runs; \`docket run report RUN-N --json\` rolls up one run; \`docket step list\` shows steps with executor, status, and cost; \`docket events list --run RUN-N --json\` is the transition trail. Per workflow, count the runs in this project and the most recent one. Attribute each contract to the runs whose steps recorded its executor, each fragment and schema to the runs of the workflows and contracts that include or emit it, and each policy row to the runs whose steps or seats resolved to it, naming the attribution in evidence. Flag only with this vocabulary and only when the numbers support it: never-run, chronic-park, budget-exhausted, gate-never-rejects, gate-never-passes, judge-rejections, emit-failures. A definition with runs and clean numbers gets an empty flags list.`
+Confirm verbs with --help before relying on them. \`docket run status --all --limit 500 --json\` lists runs; \`docket run report RUN-N --json\` rolls up one run; \`docket step list\` shows steps with executor, status, and cost; \`docket events list --run RUN-N --json\` is the transition trail. Per workflow, count the runs in this project and the most recent one. Attribute each contract to the runs whose steps recorded its executor, each fragment and schema to the runs of the workflows and contracts that include or emit it, and each policy row to the runs whose steps or seats resolved to it, naming the attribution in evidence. Flag only with this vocabulary and only when the numbers support it: never-run, chronic-park, budget-exhausted, gate-never-rejects, gate-never-passes, judge-rejections, emit-failures. A definition with runs and clean numbers gets an empty flags list.`
 }
 
 function digestPrompt(dir, scratch) {

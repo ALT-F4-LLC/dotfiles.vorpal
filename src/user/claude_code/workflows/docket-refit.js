@@ -86,7 +86,7 @@ const AGENT_CONFIG = {
     mine: { model: 'sonnet', effort: 'medium' },
     verify: { model: 'opus', effort: 'medium' },
     triage: { model: 'sonnet', effort: 'low' },
-    census: { model: 'sonnet', effort: 'low' },
+    census: { model: 'haiku', effort: 'medium' },
 }
 
 // Corpus mode can flag dozens of definitions across a dozen projects; the
@@ -329,7 +329,7 @@ ${READ_ONLY} There is no docket step to claim or complete here and no gap channe
 
 Run every docket command from the checkout root: each Bash call starts with \`cd ${project.root} && docket ...\` and proceeds only if that cd succeeds. If the root cannot be entered, or docket refuses there, return checkoutOk=false with the error in notes and nothing invented.
 
-Confirm verbs with --help before relying on them. Known read-only verbs: \`docket run status --json\` lists runs; \`docket run report RUN-N --json\` rolls up one run's budget, steps, attempts (with approval routing and rulings), and artifacts; \`docket step list\` lists a run's steps with status and cost; \`docket step artifacts\` and \`docket step artifact\` read what a step produced; \`docket events list --run RUN-N --json --all-projects\` is the transition trail. Find the runs whose bound workflow exercised the target (for a shared surface, any run whose workflow consumes it) and count ${MINE_FOCUS[target.surface]}
+Confirm verbs with --help before relying on them. Known read-only verbs: \`docket run status --all --limit 500 --json\` lists runs; \`docket run report RUN-N --json\` rolls up one run's budget, steps, attempts (with approval routing and rulings), and artifacts; \`docket step list\` lists a run's steps with status and cost; \`docket step artifacts\` and \`docket step artifact\` read what a step produced; \`docket events list --run RUN-N --json --all-projects\` is the transition trail. Find the runs whose bound workflow exercised the target (for a shared surface, any run whose workflow consumes it) and count ${MINE_FOCUS[target.surface]}
 
 A pattern seen in a few vivid runs is a hypothesis, not a finding: count it, and report the aggregate even when it contradicts the samples. Every metric and finding names the verb and run ids it came from. Mark a finding thin=true when few runs or a young definition mean it rests on design judgment rather than data. A project with no runs touching the target returns runsExamined=0, empty findings, and a one-line note; that is a real result, not a failure.`
 }
@@ -364,7 +364,7 @@ ${READ_ONLY} There is no docket step to claim or complete here and no gap channe
 
 Run every docket command from the checkout root: each Bash call starts with \`cd ${project.root} && docket ...\` and proceeds only if that cd succeeds. If the root cannot be entered, or docket refuses there, return checkoutOk=false with the error in notes.
 
-Confirm verbs with --help before relying on them. \`docket run status --json\` lists runs; \`docket run report RUN-N --json\` rolls up one run; \`docket step list\` shows steps with status and cost; \`docket events list --run RUN-N --json --all-projects\` is the transition trail. List every definition in the corpus (glob the five surfaces) and, per workflow, count runs in this project, their outcomes, parks, gate outcomes, budget exhaustions, and recorded cost against the workflow's expected_cost. Attribute contracts, fragments, schemas, and policy rows to the workflows that consume them and carry those workflows' numbers, naming the attribution in evidence.
+Confirm verbs with --help before relying on them. \`docket run status --all --limit 500 --json\` lists runs; \`docket run report RUN-N --json\` rolls up one run; \`docket step list\` shows steps with status and cost; \`docket events list --run RUN-N --json --all-projects\` is the transition trail. List every definition in the corpus (glob the five surfaces) and, per workflow, count runs in this project, their outcomes, parks, gate outcomes, budget exhaustions, and recorded cost against the workflow's expected_cost. Attribute contracts, fragments, schemas, and policy rows to the workflows that consume them and carry those workflows' numbers, naming the attribution in evidence.
 
 Flag with the enumerated vocabulary only when the numbers support it: never-run, chronic-park, budget-exhausted, gate-never-rejects, gate-never-passes, cost-off-expected, emit-failures, judge-rejections, version-skew. A definition with clean aggregate numbers gets an empty flags list; that is the common case. Do not deep-dive any one run; this pass is the aggregate.`
 }

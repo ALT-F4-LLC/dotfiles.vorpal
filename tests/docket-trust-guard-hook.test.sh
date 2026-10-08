@@ -738,6 +738,25 @@ case_help_lookalikes_and_compounds_deny() {
 # unquoted delimiter (`<<EOF`) does expand, so its body keeps reaching the
 # matcher unmarked and a real invocation there still denies.
 
+# An executor-read seat writes its payload into its own step dir through a
+# quoted heredoc; a body naming the guarded verb is data. The same body piped
+# into an interpreter, or written beside an interpreter leaf, runs or may run.
+case_executor_read_payload_heredoc() {
+    local body='docket trust add erik key'
+    assert_verdict "cat > \"\$TMPDIR/STEP-7.d/STEP-7-payload.json\" <<'EOF'"$'\n'"${body}"$'\nEOF' \
+        executor-read ALLOW "executor-read payload written by cat from a quoted heredoc"
+    assert_verdict "jq -c . > \"\$TMPDIR/STEP-7.d/STEP-7-payload.json\" <<'EOF'"$'\n'"${body}"$'\nEOF' \
+        executor-read ALLOW "executor-read payload written by jq from a quoted heredoc"
+    local agent
+    for agent in executor-read executor-write; do
+        assert_verdict "cat <<'EOF' | bash"$'\n'"${body}"$'\nEOF' \
+            "$agent" DENY "$agent: quoted heredoc piped into bash"
+        assert_verdict "$body" "$agent" DENY "$agent: bare trust-store write"
+    done
+    assert_verdict "cat > \"\$TMPDIR/STEP-7.d/p.json\" <<'EOF' && python3 --version"$'\n'"${body}"$'\nEOF' \
+        executor-read DENY "quoted heredoc body beside an interpreter on another leaf"
+}
+
 case_heredoc_body_prose() {
     local prose='the rule says docket trust add is operator-reserved'
     assert_verdict "cat > \"\$TMPDIR/f.txt\" <<'EOF'"$'\n'"${prose}"$'\nEOF' \
@@ -1402,6 +1421,7 @@ case_interpreter_carriers_residual_allow
 case_help_read_exemption_allows
 case_help_lookalikes_and_compounds_deny
 case_heredoc_body_prose
+case_executor_read_payload_heredoc
 case_widened_body_brace_prose
 case_heredoc_body_destination
 case_comment_regions_are_inert

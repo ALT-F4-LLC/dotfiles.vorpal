@@ -722,10 +722,18 @@ case_read_loops() {
     # A read placeholder the command strips itself leaves a for-list empty,
     # so no leaf fires between two reads and the loop caps.
     assert_deny_reason "ls | while read d; do for f in \${d%x}; do rm -rf ${SIB_DIR}/\$f; done; done" executor-write "$WAVE_42" "too many parts" "for-list over a stripped read placeholder caps"
-    # KNOWN RESIDUAL: a vetoed condition reports status 0, so only its then
-    # branch is walked, in a read loop as at top level.
-    assert_verdict "ls | while read d; do if test -z \"\$d\"; then :; else rm -rf ${SIB_DIR}/\$d; fi; done" executor-write "$WAVE_42" ALLOW "residual: else branch after a vetoed condition in a read loop"
-    assert_verdict "if grep -q x f; then :; else rm -rf ${SIB_DIR}/x; fi" executor-write "$WAVE_42" ALLOW "residual: else branch after a vetoed condition at top level"
+    # A vetoed condition reports status 0, so the probe walks only the
+    # branch that status selects; the command text of the others is
+    # scanned instead, split at its separators.
+    assert_verdict "ls | while read d; do if test -z \"\$d\"; then :; else rm -rf ${SIB_DIR}/\$d; fi; done" executor-write "$WAVE_42" DENY "else branch after a vetoed condition in a read loop"
+    assert_verdict "if grep -q x f; then :; else rm -rf ${SIB_DIR}/x; fi" executor-write "$WAVE_42" DENY "else branch after a vetoed condition at top level"
+    assert_verdict "if grep -q x f; then :; else rm -rf ${OWN_DIR}/x; fi" executor-write "$WAVE_42" ALLOW "own-scratch else branch after a vetoed condition"
+    assert_verdict "for f in a; do grep -q x f && continue; rm -rf ${SIB_DIR}/x; done" executor-write "$WAVE_42" DENY "code after a vetoed && continue"
+    assert_verdict "if grep -q x f; then :; elif true; then rm -rf ${SIB_DIR}/x; fi" executor-write "$WAVE_42" DENY "elif branch after a vetoed condition"
+    assert_verdict "grep -q x f || rm -rf ${SIB_DIR}/x" executor-write "$WAVE_42" DENY "right side of || after a vetoed leaf"
+    assert_verdict "if grep -q x f; then :; else pkill node; fi" executor-write "$WAVE_42" DENY "protected verb heading an unwalked else branch"
+    assert_verdict "if ! grep -q x f; then rm -rf ${SIB_DIR}/x; fi" executor-write "$WAVE_42" DENY "then branch after a negated vetoed condition"
+    assert_verdict "until grep -q x f; do rm -rf ${SIB_DIR}/x; done" executor-write "$WAVE_42" DENY "until body after a vetoed condition"
     # The cap reason names the counted wait and the read loop the probe ends.
     assert_deny_reason 'while true; do :; done' executor-write "$WAVE_42" 'n=0; until [ -s f ] || [ $n -ge N ]; do sleep S; n=$((n+1)); done' "cap reason names the counted wait loop"
     assert_deny_reason 'while true; do :; done' executor-write "$WAVE_42" 'cmd | while IFS= read -r x; do ...; done' "cap reason names the read loop shape that ends"

@@ -279,6 +279,12 @@
 #     name the value `x` so that a for-list over it has a pass to refuse. A
 #     read loop that tests what it read is therefore refused, with a reason
 #     that says so.
+#   - A vetoed leaf reports status 0, so the walk follows only the branch
+#     that status selects. When the command text holds a branch the walk
+#     cannot reach that way (an `else` or `elif`, `until`, `if !`, `||`,
+#     `&& continue`, `&& break`: VETO_BRANCH_RE), the whole text is also
+#     read as leaves, split at its separators (TEXT_SPLIT_AWK), and matched
+#     after the walked leaves. This only adds denies.
 #   - The command reaches the probe on STDIN, not in the environment: a
 #     command over the argument-size limit made `bash -c` fail with no leaf
 #     and no syntax error, which allowed. Syntax is checked first with `bash
@@ -314,9 +320,8 @@
 # is still marked, so the later read runs at once and its body is not
 # walked. A lone read directly before its loop (`read d; while read d`) is
 # not one: no leaf fired between, so the loop read is vetoed again. A
-# vetoed condition reports status 0, so the else branch after it (`if
-# test -z "$d"; then :; else rm ...; fi`) is never walked, in a read loop
-# as at top level. An unquoted-delimiter heredoc body
+# sibling named in a branch the text scan reads but the real command never
+# runs (see THE PROBE HARDENING) is a false DENY. An unquoted-delimiter heredoc body
 # or an unquoted argument that merely mentions a sibling's `STEP-M.d` in
 # prose is a false DENY, and the deny reason names the Write tool or a
 # quoted delimiter as the way to write such prose. A quoted-delimiter
@@ -653,6 +658,22 @@ if [[ "$COMMAND" =~ $ARITH_FOR_RE ]]; then
     deny "$REASON_PREFIX this command has an arithmetic \`for ((...))\` loop, whose body the sibling-guard hook cannot walk, so it cannot be checked. Loop over a literal list instead, in the \`for x in\` shape (\`for i in 0 1 2; do ...; done\`), which the hook walks; if the text is prose in a quoted string, reword it."
 fi
 
+# Code the probe cannot reach. A vetoed leaf reports status 0 and the DEBUG
+# trap cannot change that, so the walk follows only the branch that status
+# selects: an `else` or `elif` branch, the body of `until` or of `if !`, the
+# right side of `||`, and the code after `cmd && continue` or `&& break` are
+# never walked. When the command text holds one of those shapes, its whole
+# text is also scanned with the same rules (TEXT_SCAN below), split at its
+# separators so each piece's verb is read. This only adds denies. The match
+# is textual and over-reaches into prose, and the scan reads code the
+# real command never runs, so a sibling named in a dead branch is an
+# accepted false deny.
+VETO_BRANCH_RE='(^|[^A-Za-z0-9_])(else|elif|until)([^A-Za-z0-9_]|$)|\|\||&&[[:space:]]*(continue|break)([^A-Za-z0-9_]|$)|(^|[[:space:];&|({])![[:space:]]'
+TEXT_SCAN=""
+if [[ "$COMMAND" =~ $VETO_BRANCH_RE ]]; then
+    TEXT_SCAN="vetoed-branch"
+fi
+
 # --- Leaf enumeration: ask bash, don't re-derive it. ---------------------
 #
 # The trust guard's probe with the hardening the header lists. Leaves are
@@ -901,8 +922,15 @@ if [ -z "$PROBE_TEXT" ]; then
         log_decision "deny" "unanalyzable"
         deny "$REASON_PREFIX the sibling-guard hook could not analyze this command (bash reported: ${PROBE_ERR%%$'\n'*}) and refuses rather than guessing. Simplify the command; if it is valid, that is a hook defect to report separately."
     fi
-    allow_default
+    # Code the walk never reached is still scanned (TEXT_SCAN above).
+    [ -n "$TEXT_SCAN" ] || allow_default
 fi
+
+# The command text as one more leaf, for the text scan; empty when no shape
+# the walk cannot reach was found. It ends with the leaf-end byte, as every
+# frame of PROBE_TEXT does.
+TEXT_FRAME=""
+[ -z "$TEXT_SCAN" ] || TEXT_FRAME="${COMMAND}"$'\036'
 
 # --- Line selection: which lines of a leaf are code. ---------------------
 #
@@ -996,7 +1024,7 @@ BEGIN { SQ = "\047"; DQ = "\042"; BQ = "\140" }
     print out
 }
 '
-CODE_LINES=$(printf '%s' "$PROBE_TEXT" | awk -v mode=code -f "$LEAF_LINES_AWK")
+CODE_LINES=$(printf '%s' "$PROBE_TEXT$TEXT_FRAME" | awk -v mode=code -f "$LEAF_LINES_AWK")
 WIDEN_LINES=$(printf '%s\n' "$CODE_LINES" | awk "$QUOTED_PROSE_AWK")
 WIDEN=0
 if [[ "$WIDEN_LINES" =~ $INTERPRETER_RE ]]; then
@@ -1033,7 +1061,7 @@ BEGIN { BQ = "\140" }
 }
 '
 if [ "$WIDEN" -eq 0 ]; then
-    SUBST_LINES=$(printf '%s' "$PROBE_TEXT" | awk -v mode=scan -v widen=0 -f "$LEAF_LINES_AWK" | awk "$SUBST_SPANS_AWK" | awk "$QUOTED_PROSE_AWK")
+    SUBST_LINES=$(printf '%s' "$PROBE_TEXT$TEXT_FRAME" | awk -v mode=scan -v widen=0 -f "$LEAF_LINES_AWK" | awk "$SUBST_SPANS_AWK" | awk "$QUOTED_PROSE_AWK")
     if [[ "$SUBST_LINES" =~ $INTERPRETER_RE ]]; then
         WIDEN=1
     fi
@@ -1050,6 +1078,57 @@ STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk -f "$PREPASS_AWK" 2>/dev/null) || {
     log_decision "deny" "analysis-failure"
     deny "$REASON_PREFIX the sibling-guard hook's pre-pass program failed (docket-guard-prepass.awk), so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
 }
+
+# --- The text scan: code the walk cannot reach. ---------------------------
+#
+# TEXT_FRAME (set when TEXT_SCAN names a shape) goes through the same line
+# selection and pre-pass as the walked leaves, so a quoted-delimiter heredoc
+# body stays unread and a quoted span of two or more words stays prose. Each
+# line is then split into one line per simple command, so the matcher reads
+# each piece's verb: an unquoted `;`, `|`, `&`, `(`, `)` or backtick ends a
+# piece (the `&` and `|` of a redirect operator such as `2>&1`, `&>` or `>|`
+# do not), leading reserved words (`if`, `then`, `else`, `do`, `{`, `!` and
+# the like) are dropped, and an unquoted word that starts with `#` drops the
+# rest of its line as a comment. Quoted words pass through as the pre-pass
+# marked them. The lines are appended after the walked leaves, which the
+# matcher reads first.
+TEXT_SPLIT_AWK='
+BEGIN { MARK = "\001"; BQ = "\140"; KW = "^(if|then|else|elif|fi|do|done|while|until|[{}]|!)$" }
+{
+    n = split($0, t, /[ \t]+/)
+    out = ""
+    for (i = 1; i <= n; i++) {
+        w = t[i]
+        if (w == "") continue
+        if (length(w) >= 2 && substr(w, 1, 1) == MARK && substr(w, length(w), 1) == MARK) { out = out " " w; continue }
+        if (substr(w, 1, 1) == "#") break
+        gsub(/>\|/, ">\002", w); gsub(/>&/, ">\003", w); gsub(/&>/, "\003>", w); gsub(/<&/, "<\003", w)
+        gsub(/[;|&()]/, "\n", w); gsub(BQ, "\n", w)
+        gsub(/\002/, "|", w); gsub(/\003/, "\\&", w)
+        out = out " " w
+    }
+    m = split(out, seg, /\n/)
+    for (j = 1; j <= m; j++) {
+        k = split(seg[j], sw, /[ \t]+/)
+        line = ""
+        lead = 1
+        for (i = 1; i <= k; i++) {
+            if (sw[i] == "") continue
+            if (lead && sw[i] ~ KW) continue
+            lead = 0
+            line = line (line == "" ? "" : " ") sw[i]
+        }
+        if (line != "") print line
+    }
+}
+'
+if [ -n "$TEXT_FRAME" ]; then
+    TEXT_LINES=$(printf '%s' "$TEXT_FRAME" | awk -v mode=scan -v widen="$WIDEN" -f "$LEAF_LINES_AWK" | awk -f "$PREPASS_AWK" 2>/dev/null | awk "$TEXT_SPLIT_AWK") || {
+        log_decision "deny" "analysis-failure"
+        deny "$REASON_PREFIX the sibling-guard hook's text scan failed, so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
+    }
+    STRIPPED="${STRIPPED}"$'\n'"${TEXT_LINES}"
+fi
 
 # --- THE MATCH. -----------------------------------------------------------
 #

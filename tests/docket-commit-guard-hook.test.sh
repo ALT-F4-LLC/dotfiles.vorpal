@@ -231,6 +231,29 @@ case_must_deny_baseline() {
     assert_verdict "git 'commit' -m y" DENY "git 'commit' (quoted subcommand, bare head)"
 }
 
+# ---- MUST DENY: a quoted newline inside a git global-option value ---------
+#
+# The pre-pass splits a quoted word at its newline, so the tail of a quoted
+# `-c` or `--exec-path=` value reached the subcommand test in place of the
+# real subcommand. Each shape is pinned unwidened and widened. Controls: the
+# plain write, prose naming it, and a read behind the same option shape.
+
+case_global_option_quoted_newline() {
+    local nl=$'\n' widen='; bash -c :'
+    assert_verdict "git -c \"user.name=a${nl}b\" commit --allow-empty -m x" DENY \
+        'quoted newline inside a -c value before commit'
+    assert_verdict "git \"--exec-path=a${nl}b\" commit -m x" DENY \
+        'quoted newline inside an --exec-path= value before commit'
+    assert_verdict "git -c \"user.name=a${nl}b\" commit --allow-empty -m x${widen}" DENY \
+        'widened: quoted newline inside a -c value before commit'
+    assert_verdict "git \"--exec-path=a${nl}b\" commit -m x${widen}" DENY \
+        'widened: quoted newline inside an --exec-path= value before commit'
+    assert_verdict 'git commit -m x' DENY 'plain git commit (control)'
+    assert_verdict 'echo "git commit -m x"' ALLOW 'git commit named inside one quoted string (control)'
+    assert_verdict "git -c \"a${nl}b\" status" ALLOW \
+        'quoted newline inside a -c value before a read'
+}
+
 # ---- MUST DENY: glued separator/no-space class (5 shapes) ----------------
 # A separator or subshell-open glued directly onto `git` with no whitespace
 # still resolves to a head of "git" via the head-normalization, so all five
@@ -1124,6 +1147,7 @@ case_input_edge_cases() {
 case_engine_verdict_mapping
 case_permission_mode_is_not_consulted
 case_must_deny_baseline
+case_global_option_quoted_newline
 case_must_deny_glued_separator_class
 case_must_deny_capture_output
 case_multiline_substitution_body

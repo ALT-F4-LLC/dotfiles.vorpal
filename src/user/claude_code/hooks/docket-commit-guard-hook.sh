@@ -589,6 +589,14 @@ END {
                     } else {
                         j += 1
                     }
+                    # The pre-pass splits a quoted option or value at its
+                    # blanks and newlines, so `-c "a<newline>b"` reaches here
+                    # as several words of one quote group. The rest of that
+                    # group is the same argument, not the subcommand.
+                    if (decode(words[j - 1])) {
+                        vgroup = D_GROUP
+                        while (j <= n && decode(words[j]) && D_GROUP == vgroup) j++
+                    }
                 }
                 if (j <= n && !helped) {
                     squoted = decode(words[j])

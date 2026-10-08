@@ -2915,6 +2915,7 @@ const COORDINATION_DEFERRALS = {
     'skipped-chain-dead': 'chain_dead',
     'not-launched-run-parked': 'run_parked',
     'not-launched-token-budget': 'token_budget',
+    'skipped-not-ready': 'not_ready',
 }
 const COORDINATION_GATES = {
     'gate-passed': 'passed',
@@ -2937,7 +2938,7 @@ function coordinationOf(launchRows, statuses) {
         claim_conflicts: 0,
         ancestry_parks: 0,
         spawn_failed: 0,
-        deferred: { agent_budget: 0, writer_budget: 0, chain_dead: 0, run_parked: 0, token_budget: 0, total: 0 },
+        deferred: { agent_budget: 0, writer_budget: 0, chain_dead: 0, run_parked: 0, token_budget: 0, not_ready: 0, total: 0 },
         unmatched_steps: [],
     }
     statuses.forEach((s, index) => {

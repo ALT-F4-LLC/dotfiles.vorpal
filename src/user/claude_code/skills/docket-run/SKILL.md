@@ -1148,7 +1148,8 @@ docket run fact add $RUN --kind step-deferred --step STEP-N --cause <budget|chai
 docket run fact add $RUN --kind vote-reseated --proposal <proposal-id> --voter <seat> --reason "<why the seat was re-seated>" < <scratchpad>/conductor.d/$RUN.token
 ```
 
-`not-launched-run-parked` is neither cause, so it gets no fact. A panel
+`not-launched-run-parked` and `skipped-not-ready` are neither cause, so
+they get no fact. A panel
 you convened records its re-seats the same way, per **A panel that
 cannot finish escalates**.
 

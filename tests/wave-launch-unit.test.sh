@@ -337,6 +337,7 @@ const BUCKETS = () => [
     ex('G-0', 'CRD-9', 0, 'judge-testing', { instance: 'review@0#1' }),
     ex('W-0', 'CRD-10', 0, 'judge-security', { instance: 'review@0#3' }),
     ex('U-0', 'CRD-11', 0, 'verify-ac', { instance: 'verify-ac@0' }),
+    ex('Q-0', 'CRD-16', 0, 'write', { instance: 'implement@0' }),
 ]
 const settledAs = (step, status) => ({ step, status, text: null })
 out = await start(BUCKETS(), { results: {
@@ -349,18 +350,20 @@ out = await start(BUCKETS(), { results: {
     'G-0': settledAs('G-0', 'not-launched-agent-budget'),
     'W-0': settledAs('W-0', 'not-launched-writer-budget'),
     'U-0': settledAs('U-0', 'not-launched-run-parked'),
+    'Q-0': settledAs('Q-0', 'skipped-not-ready'),
 } })
 ok(JSON.stringify(out.coordination) === JSON.stringify({
-    rows: 9,
+    rows: 10,
     rounds_per_issue: { 'CRD-3': 2, 'CRD-4': 0, 'CRD-5': 0, 'CRD-6': 0, 'CRD-7': 1,
-                        'CRD-8': 0, 'CRD-9': 0, 'CRD-10': 0, 'CRD-11': 0 },
+                        'CRD-8': 0, 'CRD-9': 0, 'CRD-10': 0, 'CRD-11': 0, 'CRD-16': 0 },
     gates: { decided: 2, passed: 0, rejected: 1, parked: 1, blocked: 1, skipped: 1,
              first_pass: { decided: 1, passed: 0, rate: 0 } },
     reseats: 0,
     claim_conflicts: 0,
     ancestry_parks: 1,
     spawn_failed: 1,
-    deferred: { agent_budget: 1, writer_budget: 1, chain_dead: 0, run_parked: 1, token_budget: 0, total: 3 },
+    deferred: { agent_budget: 1, writer_budget: 1, chain_dead: 0, run_parked: 1, token_budget: 0,
+                not_ready: 1, total: 4 },
     unmatched_steps: [],
 }), `coordination: every bucket counts its own settled status (got ${JSON.stringify(out.coordination)})`)
 

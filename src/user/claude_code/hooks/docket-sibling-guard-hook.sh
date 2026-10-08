@@ -284,7 +284,9 @@
 #     cannot reach that way (an `else` or `elif`, `until`, `if !`, `||`,
 #     `&& continue`, `&& break`: VETO_BRANCH_RE), the whole text is also
 #     read as leaves, split at its separators (TEXT_SPLIT_AWK), and matched
-#     after the walked leaves. This only adds denies.
+#     after the walked leaves. This only adds denies. A `for` list built by
+#     a `$( )` or backtick substitution (FOR_SUBST_RE) is scanned the same
+#     way: the vetoed substitution prints nothing, so the body never fires.
 #   - The command reaches the probe on STDIN, not in the environment: a
 #     command over the argument-size limit made `bash -c` fail with no leaf
 #     and no syntax error, which allowed. Syntax is checked first with `bash
@@ -672,6 +674,16 @@ VETO_BRANCH_RE='(^|[^A-Za-z0-9_])(else|elif|until)([^A-Za-z0-9_]|$)|\|\||&&[[:sp
 TEXT_SCAN=""
 if [[ "$COMMAND" =~ $VETO_BRANCH_RE ]]; then
     TEXT_SCAN="vetoed-branch"
+fi
+# A for list built by a command substitution is empty in the probe, since
+# the substitution is vetoed and prints nothing, so the loop body never
+# fires and a sibling target there is never matched. The body is scanned
+# the same way. The match runs from `for NAME in` to the first `;`, so a
+# substitution later in the command can also set it, which only adds the
+# scan.
+FOR_SUBST_RE='(^|[^A-Za-z0-9_])for[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]+in[[:space:]][^;]*(\$\(|`)'
+if [[ "$COMMAND" =~ $FOR_SUBST_RE ]]; then
+    TEXT_SCAN="${TEXT_SCAN:-for-substitution}"
 fi
 
 # --- Leaf enumeration: ask bash, don't re-derive it. ---------------------

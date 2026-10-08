@@ -396,6 +396,10 @@ case_command_shapes() {
     assert_verdict "command rm -rf ${SIB_DIR}" executor-write "$WAVE_42" DENY "command builtin prefix"
     assert_verdict "for d in ${SIB_DIR}; do rm -rf \$d; done" executor-write "$WAVE_42" DENY "for loop naming the dir on its header"
     assert_verdict "for d in ${OWN_DIR}/a ${OWN_DIR}/b; do rm -rf \$d; done" executor-write "$WAVE_42" ALLOW "for loop over own paths"
+    # A vetoed substitution leaves the list empty, so the body never fires
+    # in the probe; its text is scanned instead.
+    assert_verdict "for f in \$(true); do rm -rf ${SIB_DIR}/x; done" executor-write "$WAVE_42" DENY "for loop over a substitution removing a sibling's dir"
+    assert_verdict "for f in \$(ls ${OWN_DIR}); do echo \$f; done" executor-write "$WAVE_42" ALLOW "for loop over a substitution naming no sibling"
     # The probe ends an arithmetic for loop before its body fires, so every
     # `for ((...))` header is refused and the reason names the `for x in` shape.
     assert_verdict "for ((i=0; i<3; i++)); do rm -rf ${SIB_DIR}/x; done" executor-write "$WAVE_42" DENY "arithmetic for loop removing a sibling's dir"

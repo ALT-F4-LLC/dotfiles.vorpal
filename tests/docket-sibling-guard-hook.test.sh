@@ -749,6 +749,9 @@ case_read_loops() {
     assert_verdict "if grep -q x f; then :; else pkill node; fi" executor-write "$WAVE_42" DENY "protected verb heading an unwalked else branch"
     assert_verdict "if ! grep -q x f; then rm -rf ${SIB_DIR}/x; fi" executor-write "$WAVE_42" DENY "then branch after a negated vetoed condition"
     assert_verdict "until grep -q x f; do rm -rf ${SIB_DIR}/x; done" executor-write "$WAVE_42" DENY "until body after a vetoed condition"
+    # Accepted false deny: the text scan reads a branch the real command
+    # never runs.
+    assert_verdict "if true; then :; else rm -rf ${SIB_DIR}/x; fi" executor-write "$WAVE_42" DENY "accepted: sibling named in a branch the command never runs"
     # The cap reason names the counted wait and the read loop the probe ends.
     assert_deny_reason 'while true; do :; done' executor-write "$WAVE_42" 'n=0; until [ -s f ] || [ $n -ge N ]; do sleep S; n=$((n+1)); done' "cap reason names the counted wait loop"
     assert_deny_reason 'while true; do :; done' executor-write "$WAVE_42" 'cmd | while IFS= read -r x; do ...; done' "cap reason names the read loop shape that ends"
@@ -1329,6 +1332,8 @@ case_checkout_paths() {
     assert_verdict "echo ! /repo/.claude/worktrees/wf_x/README" executor-write "$WAVE_42" ALLOW "bare ! argument beside a sibling path"
     assert_verdict "echo x >! ${OWN_DIR}/out.txt" executor-write "$WAVE_42" ALLOW "zsh >! into the own scratch dir"
     assert_deny_reason 'echo x >! $f' executor-write "$WAVE_42" "Write to a literal path" "zsh >! onto an expansion it cannot judge"
+    # Accepted false deny: the operator is matched in quoted prose too.
+    assert_deny_reason 'echo "x >! $f"' executor-write "$WAVE_42" "Write to a literal path" "accepted: zsh operator inside quoted prose"
     # A verb that writes the file its operand names writes into a sibling's
     # checkout as surely as a redirect does; a read operand does not.
     local wcmd

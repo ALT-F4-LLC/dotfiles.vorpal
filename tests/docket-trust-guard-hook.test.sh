@@ -235,6 +235,20 @@ case_must_deny_separately_quoted_tokens() {
         "separately-quoted docket/trust/add (bash-unquotes to a real call)"
 }
 
+# ---- MUST DENY: a word split by an empty or embedded quote pair --------
+#
+# Bash joins the fragments of one word across its quotes, so each of these
+# runs the guarded verb. The pre-pass emits a blank-free quoted fragment
+# glued to word text as bare text, so the matcher reads the joined word.
+case_must_deny_quote_split_words() {
+    assert_verdict 'docket trust a""dd erik key' executor-write DENY 'empty quote pair inside the verb'
+    assert_verdict 'docket trust ad"d" erik key' executor-write DENY 'double-quoted tail of the verb'
+    assert_verdict "docket trust 'a'dd erik key" executor-write DENY 'single-quoted head of the verb'
+    assert_verdict "docket trust r''m erik" executor-write DENY 'empty quote pair inside rm'
+    assert_verdict 'do""cket trust add erik key' executor-write DENY 'empty quote pair inside the CLI word'
+    assert_verdict 'docket tr""ust add erik key' executor-write DENY 'empty quote pair inside the trust word'
+}
+
 # ---- MUST DENY: a brace-split verb word --------------------------------
 #
 # bash's own $BASH_COMMAND reconstruction keeps a leaf's source spelling,
@@ -1403,6 +1417,7 @@ case_ordinary_docket_verbs_allow
 case_must_not_catch_prose_and_reads
 case_must_deny_glued_separator_class
 case_must_deny_separately_quoted_tokens
+case_must_deny_quote_split_words
 case_brace_split_verb_denies
 case_command_position_brace_denies
 case_command_position_brace_allows

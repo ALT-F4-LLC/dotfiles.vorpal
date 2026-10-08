@@ -1108,7 +1108,7 @@ case_verb_spellings() {
     assert_verdict "man pkill" executor-read "$WAVE_42" ALLOW "man pkill"
     assert_verdict "docket step show STEP-7 --json=v2 | jq .reap" executor-read "$WAVE_42" ALLOW "reap as a jq field"
     # Residuals, pinned ALLOW.
-    assert_verdict "p\"\"kill node" executor-write "$WAVE_42" ALLOW "residual: verb split by empty quotes"
+    assert_verdict "p\"\"kill node" executor-write "$WAVE_42" DENY "verb split by empty quotes is the word bash runs"
     assert_verdict "k=pkill; \$k node" executor-write "$WAVE_42" ALLOW "residual: verb reached through a variable"
     assert_verdict "\$(which pkill) node" executor-write "$WAVE_42" ALLOW "residual: verb reached through \$(which)"
     assert_verdict "x='rm -rf ${SIB_DIR}'; \$x" executor-write "$WAVE_42" ALLOW "residual: command string carried in a variable"
@@ -1167,10 +1167,10 @@ case_scratch_spellings() {
     assert_verdict "bash -c 'for s in 7 8; do docket step artifacts STEP-\$s; done'" executor-write "$WAVE_42" DENY "bash -c carrying a docket read loop (interpreter leaf, no admission)"
     assert_verdict "for s in 7 8; do docket step artifacts STEP-\$s; rm -rf /tmp/claude-501/STEP-\$s.d; done" executor-write "$WAVE_42" DENY "docket read beside an rm of the expansion-form .d"
     # Residuals, pinned ALLOW.
-    assert_verdict "rm -rf /tmp/claude-501/STEP-\"7\".d" executor-write "$WAVE_42" ALLOW "residual: id split by quotes"
+    assert_verdict "rm -rf /tmp/claude-501/STEP-\"7\".d" executor-write "$WAVE_42" DENY "id split by quotes is the sibling dir bash names"
     assert_verdict "rm -rf /tmp/claude-501/S*-7.d" executor-write "$WAVE_42" ALLOW "residual: glob outside the id"
     assert_verdict "cd /tmp/claude-501 && rm -rf [S]TEP-7.d" executor-write "$WAVE_42" ALLOW "residual: glob on the first letter"
-    assert_verdict "rm -rf ${OWN_DIR}/.\".\"/" executor-write "$WAVE_42" ALLOW "residual: .. split by quotes"
+    assert_verdict "rm -rf ${OWN_DIR}/.\".\"/" executor-write "$WAVE_42" DENY ".. split by quotes walks out of the own dir"
 }
 
 # A file inside the own dir whose name is the own id, a dash, then text that
@@ -1267,7 +1267,7 @@ case_git_spellings() {
     assert_verdict "git push origin HEAD:feature/x" executor-write "$WAVE_42" ALLOW "push with a source is not a deletion (the commit guard's domain)"
     assert_verdict "git push origin main" executor-write "$WAVE_42" ALLOW "plain push is not a deletion (the commit guard's domain)"
     # Residuals, pinned ALLOW.
-    assert_verdict "git wor\"\"ktree prune" executor-write "$WAVE_42" ALLOW "residual: subcommand split by quotes"
+    assert_verdict "git wor\"\"ktree prune" executor-write "$WAVE_42" DENY "subcommand split by quotes is the word bash runs"
     assert_verdict "g=git; \$g worktree prune" executor-write "$WAVE_42" ALLOW "residual: git via a variable"
 }
 

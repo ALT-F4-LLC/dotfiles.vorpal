@@ -58,6 +58,10 @@
 # reach the interpreter test as bash. Reading the emitted buffer instead tests
 # a word this pass has already rewritten -- a MARK-wrapped token, or the
 # literal \-c -- and one pair of quotes around the flag then bought a bypass.
+# The emitted buffer itself keeps one word whole in one case: a quoted group
+# with no blank in it, glued to word text on either side, is written bare
+# rather than marked, so `a""dd`, `ad"d"` and `'a'dd` reach the matcher as
+# add. Every other quoted group is marked, with a blank on each side.
 # A backslash-newline is a line boundary here, not the word joiner bash makes
 # of it: leaves reach this pass with continuations already resolved, so the
 # byte only ever appears mid-word in a hand-fed buffer, and resetting is the
@@ -147,6 +151,17 @@ function end_word() {
         if (is_interpreter(prev_word)) saw_interpreter = 1
         in_word = 0
     }
+}
+# A quoted group with no blank in it, glued to word text on either side, is a
+# fragment of one word bash builds by concatenation: a""dd, ad"d", 'a'dd and
+# "a""dd" all run as add. Such a group is emitted bare, so the buffer the
+# matcher reads holds the word bash builds rather than its fragments split
+# around a marked token. A group with a blank in it stays marked: bash keeps
+# the blank inside the word, so no fragment of it can stand as a verb word.
+function glued_fragment(content, after) {
+    if (content ~ /[ \t\n]/) return 0
+    if (in_word) return 1
+    return after != "" && after !~ /[ \t\n]/ && after != LEAF_END
 }
 function marked_group(content,   chunk, m, k) {
     GROUP++
@@ -286,6 +301,8 @@ END {
                 # glue: spacing them keeps a verb reachable as its own word.
                 gsub(/[\047\042]/, " ", content)
                 chunk = " " content " "
+            } else if (glued_fragment(content, substr(line, (stop == SQ) ? j + 1 : j, 1))) {
+                chunk = content
             } else {
                 chunk = marked_group(content)
             }
@@ -313,6 +330,8 @@ END {
                 chunk = " " content " "
             } else if (content ~ /\$\(|`|\$\{/) {
                 chunk = " " content " "
+            } else if (glued_fragment(content, substr(line, (stop == DQ) ? j + 1 : j, 1))) {
+                chunk = content
             } else {
                 chunk = marked_group(content)
             }

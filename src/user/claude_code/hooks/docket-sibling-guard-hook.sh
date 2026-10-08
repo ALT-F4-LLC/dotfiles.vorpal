@@ -304,10 +304,14 @@
 #     blocked forever on a planted FIFO. A command carrying either framing
 #     byte is refused.
 #
+# A verb or a scratch-dir name split across quotes inside one word
+# (`rm -rf STEP-"7".d`, `pk""ill`) is read as the word bash builds: the
+# shared pre-pass emits a blank-free quoted fragment glued to word text bare,
+# and a backslash split (`pk\ill`) is read through since backslashes are
+# dropped from every word.
+#
 # KNOWN RESIDUALS, each pinned ALLOW in the suite so a change of direction
-# is a visible diff: a verb or a scratch-dir name split across quotes inside
-# one word (`rm -rf STEP-"7".d`, `pk""ill`; a backslash split, `pk\ill`,
-# is read through, since backslashes are dropped from every word), a glob
+# is a visible diff: a glob
 # outside the id (`S*-7.d`), a verb reached through a variable or `$(which
 # ...)` (`k=pkill; $k node`), a command string carried in a variable (`x='rm
 # -rf ...'; $x`), a path under the caller's own dir whose leaf is a bare

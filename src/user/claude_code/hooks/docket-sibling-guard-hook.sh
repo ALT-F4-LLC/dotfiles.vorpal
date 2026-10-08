@@ -1365,8 +1365,8 @@ END {
             # WORKTREE by path: a destructive head, or an output or read-write
             # (`<>`) redirection, aimed at another checkout.
             if ((verb == "rm" || verb == "rmdir" || verb == "mv") && foreign_checkout(w)) report("WORKTREE", verb " " w)
-            if (foreign_checkout(w) && (w ~ /^[0-9]*<?>/ || w ~ /^&>/ || prev_redirect)) report("WORKTREE", "write into " w)
-            prev_redirect = (w ~ /^[0-9]*(>{1,2}\|?|<>)$/ || w ~ /^&>>?$/)
+            if (foreign_checkout(w) && (w ~ /^([0-9]*|\{[A-Za-z_][A-Za-z0-9_]*\})<?>/ || w ~ /^&>/ || prev_redirect)) report("WORKTREE", "write into " w)
+            prev_redirect = (w ~ /^([0-9]*|\{[A-Za-z_][A-Za-z0-9_]*\})(>{1,2}\|?|<>)$/ || w ~ /^&>>?$/)
             # Any standalone redirect operator (`<`, `<>`, `>&`, `3<>`,
             # `{fd}>`): the word after it is a file the shell opens, not a
             # docket argument.

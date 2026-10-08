@@ -113,7 +113,9 @@ write_suite() { # <path> <count>
 run_gate() { # <dir> <registry-body>
     local dir="$1" registry="$2" registry_file
     registry_file="${dir}/registry.sh"
-    printf '%s\n' "$registry" > "$registry_file"
+    # A fixture has no real shared library, so LIBRARIES starts empty; a
+    # case that tests the class sets its own after this line.
+    printf 'LIBRARIES=()\n%s\n' "$registry" > "$registry_file"
     SDET_ABUSE_HOOKS_DIR="${dir}/hooks" \
         SDET_ABUSE_REGISTRATION="${dir}/claude_code.rs" \
         SDET_ABUSE_SUITES_DIR="${dir}/tests" \
@@ -206,6 +208,60 @@ else
         fail "UNWIRED but registered: gate failed but did not name parked.sh"
         printf '%s\n' "$out" | sed 's/^/    /'
     fi
+fi
+
+# ---- LIBRARIES: shared code an ENFORCING hook loads ------------------------
+LIB_REGISTRY="${CLEAN_REGISTRY}
+LIBRARIES=(shared-lib.sh)"
+lib_fixture() { # <dir> <loaded:0|1>
+    build_fixture "$1"
+    printf '#!/bin/bash\n: shared code\n' > "$1/hooks/shared-lib.sh"
+    if [ "$2" = 1 ]; then
+        printf '#!/bin/bash\n# loads shared-lib.sh\nexit 2\n' > "$1/hooks/enforcing.sh"
+    fi
+}
+
+FIX="${WORK}/library-loaded"
+lib_fixture "$FIX" 1
+if out=$(run_gate "$FIX" "$LIB_REGISTRY" 2>&1) && printf '%s\n' "$out" | grep -q "shared-lib.sh .*LIBRARY .*loaded by enforcing.sh"; then
+    pass "library loaded by an ENFORCING hook: gate exits 0 and names its loader"
+else
+    fail "library loaded by an ENFORCING hook: expected exit 0 and a LIBRARY line"
+    printf '%s\n' "$out" | sed 's/^/    /'
+fi
+
+FIX="${WORK}/library-unloaded"
+lib_fixture "$FIX" 0
+if out=$(run_gate "$FIX" "$LIB_REGISTRY" 2>&1); then
+    fail "library no ENFORCING hook loads: expected non-zero exit, gate passed"
+elif printf '%s\n' "$out" | grep -q "shared-lib.sh is a LIBRARY but no ENFORCING hook loads it"; then
+    pass "library no ENFORCING hook loads: gate fails and names it"
+else
+    fail "library no ENFORCING hook loads: gate failed but did not name shared-lib.sh"
+    printf '%s\n' "$out" | sed 's/^/    /'
+fi
+
+FIX="${WORK}/library-registered"
+lib_fixture "$FIX" 1
+cat >> "${FIX}/claude_code.rs" <<'RS'
+
+fn build3() {
+    let settings_builder = settings_builder
+        .with_hook(
+            "PreToolUse",
+            Some("Bash"),
+            "bash ~/.claude/hooks/shared-lib.sh",
+            "command",
+        );
+}
+RS
+if out=$(run_gate "$FIX" "$LIB_REGISTRY" 2>&1); then
+    fail "registered library: expected non-zero exit, gate passed"
+elif printf '%s\n' "$out" | grep -q "shared-lib.sh is a LIBRARY but .* registers it"; then
+    pass "registered library: gate fails and names it"
+else
+    fail "registered library: gate failed but did not name shared-lib.sh"
+    printf '%s\n' "$out" | sed 's/^/    /'
 fi
 
 # ---- KNOWN_UNVERIFIED entry that is gone fails -----------------------------

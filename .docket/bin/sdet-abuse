@@ -23,9 +23,11 @@
 # cargo unit tests, which the `tests` gate runs; they are not re-run here.
 #
 # WHAT THIS GATE CHECKS
-#   1. Every hook on disk is classified below as ENFORCING, ADVISORY, or
-#      UNWIRED. An unclassified hook fails: a new control has to say which it
-#      is, in a diff a reviewer sees.
+#   1. Every hook on disk is classified below as ENFORCING, ADVISORY,
+#      UNWIRED, or LIBRARIES. An unclassified hook fails: a new control has to
+#      say which it is, in a diff a reviewer sees. A LIBRARIES entry is shared
+#      code an ENFORCING hook loads, not a hook: it fails unless at least one
+#      ENFORCING hook names it, and fails if it is registered.
 #   2. An ENFORCING hook is registered in src/user/claude_code.rs (a guard on
 #      disk that settings never invoke enforces nothing), carries a deny path in
 #      its code, has tests/<hook>.test.sh, and that suite passes with at least
@@ -105,6 +107,12 @@ ADVISORY=(
   sandbox-friction-hook.sh
 )
 UNWIRED=()
+# Shared code an ENFORCING hook loads, kept beside the hooks as a .sh file but
+# never itself a hook: it must be loaded by at least one ENFORCING hook, whose
+# suite covers it, and must not be registered.
+LIBRARIES=(
+  docket-guard-probe.sh
+)
 # Enforcing hooks that predate this gate with no suite. Each entry prints a
 # warning on every run, and the gate fails the moment its suite lands without
 # the entry going.
@@ -272,8 +280,8 @@ for path in "$HOOKS_DIR"/*.sh; do
   [ -f "$path" ] || continue
   hook_count=$((hook_count + 1))
   name="${path##*/}"
-  if ! in_list "$name" "${ENFORCING[@]}" "${ADVISORY[@]}" ${UNWIRED[@]+"${UNWIRED[@]}"}; then
-    fail "$name is not classified; add it to ENFORCING, ADVISORY, or UNWIRED in .docket/bin/sdet-abuse"
+  if ! in_list "$name" "${ENFORCING[@]}" "${ADVISORY[@]}" ${UNWIRED[@]+"${UNWIRED[@]}"} ${LIBRARIES[@]+"${LIBRARIES[@]}"}; then
+    fail "$name is not classified; add it to ENFORCING, ADVISORY, UNWIRED, or LIBRARIES in .docket/bin/sdet-abuse"
   fi
 done
 if [ "$hook_count" -eq 0 ]; then
@@ -325,6 +333,27 @@ for name in ${UNWIRED[@]+"${UNWIRED[@]}"}; do
     fail "$name is UNWIRED but $REGISTRATION registers it; move it to ENFORCING and give it a suite"
   else
     printf '  %-34s UNWIRED    not registered\n' "$name"
+  fi
+done
+
+# 5b. A library is loaded by an ENFORCING hook and is never registered.
+for name in ${LIBRARIES[@]+"${LIBRARIES[@]}"}; do
+  if [ ! -f "$HOOKS_DIR/$name" ]; then
+    fail "$name is in LIBRARIES but not in $HOOKS_DIR; remove the stale entry"
+    continue
+  fi
+  if is_registered "$name"; then
+    fail "$name is a LIBRARY but $REGISTRATION registers it; a registered file is a hook and needs ENFORCING or ADVISORY"
+    continue
+  fi
+  loaders=()
+  for hook in "${ENFORCING[@]}"; do
+    [ -f "$HOOKS_DIR/$hook" ] && grep -qF -- "$name" "$HOOKS_DIR/$hook" && loaders+=("$hook")
+  done
+  if [ "${#loaders[@]}" -eq 0 ]; then
+    fail "$name is a LIBRARY but no ENFORCING hook loads it; it guards nothing, so remove it or classify it"
+  else
+    printf '  %-34s LIBRARY    loaded by %s\n' "$name" "${loaders[*]}"
   fi
 done
 

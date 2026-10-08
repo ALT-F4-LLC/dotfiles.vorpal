@@ -401,6 +401,8 @@ case_brace_split_subcommand_denies() {
     assert_verdict 'git commit{,} -m x' DENY \
         'brace-split subcommand, alternative at the end: git commit{,}'
     assert_verdict 'git {commit,push} -m x' DENY 'brace alternation of two subcommands'
+    assert_verdict 'git co{m..m}mit -m x' DENY 'sequence expression inside the subcommand: git co{m..m}mit'
+    assert_verdict 'git {a..b} -m x' DENY 'sequence expression in subcommand position'
     assert_verdict 'git {"commit",} -m x' DENY 'quoted alternative inside an unquoted brace'
     assert_verdict 'bash -c "git {commit,} -m x"' DENY 'brace alternation in an interpreter code argument'
     assert_verdict '"git" "{commit,}" -m x' DENY \
@@ -417,6 +419,23 @@ case_brace_split_subcommand_denies() {
         'widened: substitution-bearing string carries the brace comma to a later line'
     assert_verdict 'git {"--exec-path=a'$'\n''$(true)",commit} -m x'"$widen" DENY \
         'widened: substitution-bearing string carries the brace comma to a later line (2)'
+}
+
+# ---- A brace word in command position that bash expands to git -----------
+#
+# Bash expands an unquoted brace word with a `,` or `..` before it runs the
+# command, so the head word itself can spell git. Quoted heads, braces with
+# neither separator, and brace words in argument position stay ALLOW.
+
+case_brace_head_word() {
+    assert_verdict '{git,} commit -m x' DENY 'brace head word expands to git'
+    assert_verdict '/usr/bin/gi{t,} commit -m x' DENY 'brace head word with a path prefix expands to git'
+    assert_verdict '{git,commit} -m x' DENY 'brace head word expands to git and its subcommand'
+    assert_verdict '{g..g}it commit -m x' DENY 'sequence-expression head word expands to git'
+    assert_verdict 'echo "{git,} commit"' ALLOW 'brace head spelling inside one quoted string'
+    assert_verdict "'{git,}' commit -m x" ALLOW 'quoted brace head word does not expand'
+    assert_verdict '{git} commit -m x' ALLOW 'brace head word with no , or .. does not expand'
+    assert_verdict 'cp f{,.bak}' ALLOW 'brace word in argument position'
 }
 
 # ---- MUST ALLOW: a brace word bash will not expand -----------------------
@@ -1219,6 +1238,7 @@ case_must_deny_terminal_position
 case_must_allow_terminal_fix_negative_controls
 case_must_allow_computed_subcommand_residual
 case_brace_split_subcommand_denies
+case_brace_head_word
 case_brace_word_prose_allows
 case_brace_look_ahead_is_linear
 case_wrapper_brace_word_denies

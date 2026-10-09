@@ -3,6 +3,16 @@
 Version history of `workflows/security-change.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 51
+
+The write steps `implement` and `fix` gain the `qa-test` gate, so a
+security-track change to a QA or gate script runs the project's own QA
+suite. Every project that runs security-change must supply a `qa-test`
+recipe and a `qa-test` trust entry: a required gate with no trust entry
+parks the step, and a trusted recipe that does not exist fails it. Takes
+effect for runs activated after install. No topology, routing, or limit
+change.
+
 ## 50
 
 The executor steps `threat-model`, `synthesize-findings`, `drain-highs`,

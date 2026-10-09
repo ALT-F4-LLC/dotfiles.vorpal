@@ -691,6 +691,15 @@ inadequate verification text through the same §3/§4b rules as the criterion
 itself. Read the local rule as reference if needed; do not invoke
 `docket-plan`. If the rule is unavailable, do not invent its format: leave
 the affected criterion unresolved and report the missing reference.
+Every criterion §3 or §4b writes into an issue must first pass the citation
+lint, `scripts/ac-lint.sh` in this skill's directory, run with `--base` set
+to the checkout's HEAD sha (`git rev-parse HEAD` in the issue's home
+repository) and the criterion text on stdin. Write the criterion only when
+that invocation exits 0. On a non-zero exit, rewrite each reported citation
+so it holds at that sha: cite `path:N` only with a quoted expression line N
+contains, or cite the path with an expression that occurs on exactly one
+line. The drafting comment that accompanies a written criterion records the
+HEAD sha the lint ran against.
 
 Grooming verifies the definition and verification design, not completion of
 the work. Record proposed verification text without implementing an issue,

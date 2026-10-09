@@ -253,6 +253,7 @@ for (const reason of [
     'its scope conflicts with a claimed or running step',
     'no concurrency headroom in its class',
     'no budget headroom',
+    'a detached pre-gate run for its target is in flight',
 ]) {
     out = await run(RUN43(), {
         'STEP-1547': { step: 'STEP-1547', status: 'gate-blocked', text: blockedPayload(reason) },

@@ -1208,9 +1208,12 @@ async function claimPacket(row, r, phaseLabel) {
 // a claim refused because another launch holds the scope or the class
 // headroom is a WAIT, not a failure. It settles skipped-not-ready with the
 // engine's clause as blocked_reason, so the lane defers to the next dispatch.
-// Engine claim.go: the scope clause is bare; the headroom clause carries its
-// arithmetic in parentheses.
-const CROSS_LAUNCH_WAIT = /not ready to claim:\s*(its scope conflicts with a claimed or running step|no concurrency headroom in its class)(?:\s*\(.*\))?\s*$/m
+// The same holds for a step held while a detached pre-gate still measures its
+// target: the claim refuses at once, and the hold lifts when that run ends.
+// Engine claim.go: the scope and pre-gate clauses are bare; the headroom
+// clause carries its arithmetic in parentheses.
+const PREGATE_HOLD = 'a detached pre-gate run for its target is in flight'
+const CROSS_LAUNCH_WAIT = /not ready to claim:\s*(its scope conflicts with a claimed or running step|no concurrency headroom in its class|a detached pre-gate run for its target is in flight)(?:\s*\(.*\))?\s*$/m
 
 // No module loaded. The claim agent's `output` says why: a cross-launch wait
 // defers the lane; any other CONFLICT keeps the executor path's handling (a
@@ -1222,7 +1225,10 @@ function claimFailure(row, owner, reply, loadError, phaseLabel) {
     const wait = isConflictReport(text) && !text.includes('run is not active') &&
         CROSS_LAUNCH_WAIT.exec(text)
     if (wait) {
-        log(`${row.step}: claim refused — "${wait[1]}"; another launch holds it, ` +
+        const holder = wait[1] === PREGATE_HOLD
+            ? 'its pre-gate is still measuring the target'
+            : 'another launch holds it'
+        log(`${row.step}: claim refused — "${wait[1]}"; ${holder}, ` +
             `so this issue's later stages defer to the next dispatch`)
         const envelope = { data: { step: row.step, blocked_reason: wait[1] } }
         return { step: row.step, status: 'skipped-not-ready', text: JSON.stringify(envelope) }
@@ -2443,6 +2449,7 @@ const PROGRESSING_BLOCKS = [
     'its scope conflicts with a claimed or running step',
     'no concurrency headroom in its class',
     'no budget headroom',
+    'a detached pre-gate run for its target is in flight',
 ]
 
 // Returns the engine's blocked_reason when it names a still-progressing

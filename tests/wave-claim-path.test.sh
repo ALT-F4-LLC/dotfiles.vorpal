@@ -152,6 +152,7 @@ function wave({ replies = [], load, cwd = '/repo', show = { status: 'claimed', a
     for (const clause of [
         'its scope conflicts with a claimed or running step',
         'no concurrency headroom in its class (2 of 2 write in flight; cap from standard-change)',
+        'a detached pre-gate run for its target is in flight',
     ]) {
         const { api, calls } = wave({
             replies: [`STEP-12\nCONFLICT\nstep implement@0 is not ready to claim: ${clause}`],
@@ -163,6 +164,9 @@ function wave({ replies = [], load, cwd = '/repo', show = { status: 'claimed', a
         ok(!res.ok && res.result.status === 'skipped-not-ready' && reason === clause.replace(/ \(.*\)$/, '') &&
             !api.runParked(res.result) && calls.stepShow === 0,
             `a cross-launch "${clause}" refusal defers the lane with the clause as blocked_reason`)
+        const pregate = clause.startsWith('a detached pre-gate')
+        ok(calls.log.some((l) => l.includes(pregate ? 'its pre-gate is still measuring' : 'another launch holds it')),
+            `a "${clause}" refusal logs who holds the step`)
     }
     for (const [signal, reply] of [
         ['CLAIM FAILED','CLAIM FAILED: STEP-12: database is locked'],

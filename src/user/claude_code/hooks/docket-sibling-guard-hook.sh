@@ -1082,9 +1082,10 @@ function option_end(h, i, n,   j, o) {
 # `repeat` is the count whatever its shape (a quoted count spans its whole
 # group), and each lone `{` after it opens a body.
 # The pre-pass keeps a count glued from blank-free or all-blank quoted parts
-# as one word (`1"+1"`, `1' '+1`), but splits a glued part holding text and
-# a blank, or a quoted expansion, into several tokens, so for those where the
-# count ends is a best guess. REPEAT_FROM is the first word after
+# as one word (1 then a quoted +1, or a quoted blank between 1 and +1), but
+# splits a glued part holding text and a blank, or a quoted expansion, into
+# several tokens, so for those where the count ends is a best guess.
+# REPEAT_FROM is the first word after
 # the first `repeat` passed (0 when none), for repeat_scan.
 function verb_index(n, start,   i, h, quoted, g, k, a) {
     REPEAT_FROM = 0

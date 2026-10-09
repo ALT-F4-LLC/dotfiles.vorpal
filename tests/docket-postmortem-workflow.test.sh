@@ -72,6 +72,27 @@ extract docket-postmortem-config       > "${WORK}/config.js" || fatal "bad or mi
 extract docket-postmortem-refute-tally > "${WORK}/tally.js"  || fatal "bad or missing TEST markers for docket-postmortem-refute-tally"
 extract docket-postmortem-plan         > "${WORK}/plan.js"   || fatal "bad or missing TEST markers for docket-postmortem-plan"
 extract docket-postmortem-digest-jq    > "${WORK}/jq.js"     || fatal "bad or missing TEST markers for docket-postmortem-digest-jq"
+extract docket-postmortem-inventory    > "${WORK}/inventory.js" || fatal "bad or missing TEST markers for docket-postmortem-inventory"
+
+# ---- Fixtures for the inventory read ---------------------------------------
+# A 528-line inventory like RUN-125's: 2 main transcripts, 526 workflow logs.
+# The expected arrays come from this suite's own jq program, never from the
+# skill's text, and the read output from running the workflow's fixed command.
+awk 'BEGIN {
+    for (i = 1; i <= 528; i++) {
+        kind = (i <= 2) ? "main" : "workflow"
+        printf "%d\t/logs/agent-%d.jsonl\t%s\twf_%d\tsess\t%d\n", i, i, kind, int(i / 40), (i * 137) % 9000 + 1
+    }
+}' > "${WORK}/inventory.tsv"
+jq -R -s -c 'split("\n") | map(select(. != "") | split("\t")) | {kinds: map(.[2]), bytes: map(.[5] | tonumber)}' \
+    "${WORK}/inventory.tsv" > "${WORK}/inventory.expected.json" || fatal "could not build the expected inventory arrays"
+node -e '
+eval(require("fs").readFileSync(process.argv[1], "utf8"))
+process.stdout.write(inventoryReadCommand(process.argv[2]))
+' "${WORK}/inventory.js" "${WORK}/inventory.tsv" > "${WORK}/inventory.cmd" || fatal "could not render the inventory read command"
+bash "${WORK}/inventory.cmd" > "${WORK}/inventory.out" || fatal "the inventory read command failed"
+# 527 records under a count line of 528: a reply that lost one record.
+{ sed -n '1,527p' "${WORK}/inventory.out"; tail -n 1 "${WORK}/inventory.out"; } > "${WORK}/inventory.short.out"
 
 # ---- Fixtures for the digest program --------------------------------------
 # A flagged log: one bwrap denial, one engine refusal, one command run twice.
@@ -108,6 +129,10 @@ digest "${WORK}/clean.jsonl" 8   > "${WORK}/clean.digest.json"   || fatal "diges
     cat "${WORK}/config.js"
     cat "${WORK}/tally.js"
     cat "${WORK}/plan.js"
+    cat "${WORK}/inventory.js"
+    printf 'const INVENTORY_OUT = %s\n' "$(jq -R -s . "${WORK}/inventory.out")"
+    printf 'const INVENTORY_SHORT_OUT = %s\n' "$(jq -R -s . "${WORK}/inventory.short.out")"
+    printf 'const INVENTORY_EXPECTED = %s\n' "$(cat "${WORK}/inventory.expected.json")"
     printf 'const FLAGGED_DIGEST = %s\n' "$(cat "${WORK}/flagged.digest.json")"
     printf 'const CLEAN_DIGEST = %s\n' "$(cat "${WORK}/clean.digest.json")"
 } > "${WORK}/suite.mjs"
@@ -195,6 +220,35 @@ ok(planShards(0, 0, SHARD_BYTES).length === 0, 'shards: an empty transcript plan
     ok(other.length === 2, 'group: the id prefix is kept, so two projects stay apart')
     ok(g[0].count === 3 && JSON.stringify(g[0].lines) === '[3,9]', 'group: counts every observation and each line once')
     ok(g[0].automatable === 2 && g[0].examples.length === 3, 'group: counts automatable touches and keeps up to three examples')
+}
+
+// ---- inventory read ------------------------------------------------------
+{
+    const throwsWith = (fn, ...parts) => {
+        try { fn() } catch (e) { return parts.every((p) => String(e.message).includes(p)) }
+        return false
+    }
+    const E = INVENTORY_EXPECTED
+    const r = resolveInventory(INVENTORY_OUT, { file: '/x/inventory.tsv' }, null)
+    ok(r.total === 528, `inventory: the derived line count is 528 (got ${r.total})`)
+    ok(r.kinds.length === E.kinds.length && r.kinds.every((k, i) => k === E.kinds[i]), 'inventory: derived kinds equal the jq-built array line for line')
+    ok(r.bytes.length === E.bytes.length && r.bytes.every((b, i) => b === E.bytes[i]), 'inventory: derived bytes equal the jq-built array line for line')
+    ok(JSON.stringify(planDigestBatches(r.total, DIGEST_BATCH)) === JSON.stringify(planDigestBatches(E.kinds.length, DIGEST_BATCH)), 'inventory: derived arrays plan the same digest batches')
+    const every = Array.from({ length: 528 }, (_, i) => i + 1)
+    const flagged = new Set([3, 40, 527])
+    ok(JSON.stringify(planDeepReads(every, r.kinds, r.bytes, flagged, 100, DEEP_BATCH_BYTES)) === JSON.stringify(planDeepReads(every, E.kinds, E.bytes, flagged, 100, DEEP_BATCH_BYTES)), 'inventory: derived arrays plan the same deep reads')
+    ok(throwsWith(() => resolveInventory(INVENTORY_SHORT_OUT, { file: '/x' }, null), '527', '528'), 'inventory: 527 records under a count of 528 throws naming both counts')
+
+    const k508 = E.kinds.slice(0, 508)
+    const b508 = E.bytes.slice(0, 508)
+    ok(throwsWith(() => resolveInventory(INVENTORY_OUT, { file: '/x', kinds: k508, bytes: E.bytes }, null), 'kinds has 508 entries', '528'), 'inventory: a 508-entry kinds override is refused naming 508 and 528')
+    ok(throwsWith(() => resolveInventory(INVENTORY_OUT, { file: '/x', kinds: E.kinds, bytes: b508 }, null), 'bytes has 508 entries', '528'), 'inventory: a 508-entry bytes override is refused naming 508 and 528')
+    const o = resolveInventory(INVENTORY_OUT, { file: '/x', kinds: E.kinds, bytes: E.bytes }, null)
+    ok(o.kinds === E.kinds && o.bytes === E.bytes, 'inventory: a full-length override is used as passed')
+
+    const c = resolveInventory(INVENTORY_OUT, { file: '/x' }, [3, 528])
+    ok(c.total === 528 && JSON.stringify(planDeepReads([3, 528], c.kinds, c.bytes, new Set([528]), 10, DEEP_BATCH_BYTES)) === JSON.stringify(planDeepReads([3, 528], E.kinds, E.bytes, new Set([528]), 10, DEEP_BATCH_BYTES)), 'inventory: a continuation with no arrays plans its deep reads from the derived arrays')
+    ok(throwsWith(() => resolveInventory(INVENTORY_OUT, { file: '/x' }, [529]), '529', '528'), 'inventory: a continuation line past the derived count is refused')
 }
 
 // ---- digest program ------------------------------------------------------

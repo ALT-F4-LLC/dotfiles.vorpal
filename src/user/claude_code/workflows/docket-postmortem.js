@@ -42,11 +42,15 @@ export const meta = {
 //                  conversation that drove the run. role is one of activate,
 //                  drive, pause, resume, finish. lines and bytes size the
 //                  conductor shards.
-//   inventory    — {file, kinds, bytes}: file is the absolute path of the
+//   inventory    — {file, kinds?, bytes?}: file is the absolute path of the
 //                  §2 inventory TSV (columns: line, path, kind, wfId,
 //                  sessionId, bytes; line N of the file carries line=N).
-//                  kinds[N-1] is "main", "workflow", or "subagent" and
-//                  bytes[N-1] the log's size, for every line. Main
+//                  Pass file alone: one read agent derives each line's
+//                  kind ("main", "workflow", or "subagent") and bytes from
+//                  the file before any digest agent, cross-checked against
+//                  the file's line count. kinds and bytes are an optional
+//                  override, refused with both counts named when either
+//                  length differs from the file's line count. Main
 //                  transcripts are digested but never deep-read here; the
 //                  conductor shards read them.
 //   memoryRoots  — absolute memory directories for the run's project.
@@ -78,7 +82,8 @@ export const meta = {
 //   uncovered     — [{what, why}] every gap, bound, and null return.
 //   summary       — one line for the skill's report.
 //
-// Cost: ceil(inventory/DIGEST_BATCH) digest agents (plus one retry each at
+// Cost: one inventory read agent (plus one retry at most),
+// ceil(inventory/DIGEST_BATCH) digest agents (plus one retry each at
 // most), one reader per conductor shard, LAYERS.length analysts, one
 // pattern analyst, up to REFUTE_CAP candidates x REFUTERS_PER_FINDING
 // refuters, one reconciler; every remaining agent under the cap goes to
@@ -235,6 +240,62 @@ function groupObservations(observations) {
 }
 // TEST-END docket-postmortem-plan
 
+// TEST-BEGIN docket-postmortem-inventory — Pure functions: no workflow
+// globals, no I/O. The script has no filesystem, so a bounded read agent
+// runs inventoryReadCommand over the inventory TSV and returns its output
+// verbatim; resolveInventory turns that output into the per-line kinds and
+// bytes every later stage plans with. The command prints one record per
+// line (line, kind, bytes: columns 1, 3 and 6) and then a count line from
+// wc -l, an independent measure of the same file, so a reply that lost or
+// gained a record fails the cross-check instead of planning short.
+function inventoryReadCommand(file) {
+    const q = `'${String(file).replace(/'/g, `'\\''`)}'`
+    return `awk -F'\\t' '{ printf "%s\\t%s\\t%s\\n", $1, $3, $6 }' ${q}; printf 'count\\t%s\\n' "$(wc -l < ${q} | tr -d ' ')"`
+}
+
+// Parse the read command's output and reconcile it with any caller-passed
+// override arrays and continuation lines. Throws, naming each count, when
+// the records and the count line disagree, when an override array's length
+// differs from the inventory's line count, or when a continuation line is
+// past the last inventory line.
+function resolveInventory(output, override, continuationLines) {
+    const fail = (msg) => { throw new Error(`docket-postmortem: ${msg}`) }
+    const rows = String(output || '').split('\n').filter((l) => l !== '')
+    const countRow = rows.length > 0 ? rows[rows.length - 1].split('\t') : []
+    if (countRow[0] !== 'count' || !/^\d+$/.test(countRow[1] || '')) {
+        fail('the inventory read returned no count line; its output ended: ' + JSON.stringify(rows.slice(-1)[0] || ''))
+    }
+    const lineCount = Number(countRow[1])
+    const records = rows.slice(0, -1)
+    if (records.length !== lineCount) {
+        fail(`the inventory read returned ${records.length} records; inventory.tsv has ${lineCount} lines`)
+    }
+    const kinds = []
+    const bytes = []
+    for (const [i, r] of records.entries()) {
+        const [line, kind, size] = r.split('\t')
+        if (Number(line) !== i + 1) fail(`inventory record ${i + 1} carries line ${JSON.stringify(line)}; line N of the file must carry line=N`)
+        if (!/^\d+$/.test(size || '')) fail(`inventory line ${i + 1} has bytes ${JSON.stringify(size)}; expected an integer`)
+        kinds.push(kind)
+        bytes.push(Number(size))
+    }
+    const counts = []
+    if (override && override.kinds != null && override.kinds.length !== lineCount) counts.push(`kinds has ${override.kinds.length} entries`)
+    if (override && override.bytes != null && override.bytes.length !== lineCount) counts.push(`bytes has ${override.bytes.length} entries`)
+    if (counts.length > 0) fail(`${counts.join('; ')}; inventory.tsv has ${lineCount} lines`)
+    const out = {
+        kinds: override && override.kinds != null ? override.kinds : kinds,
+        bytes: override && override.bytes != null ? override.bytes : bytes,
+        total: lineCount,
+    }
+    if (continuationLines != null) {
+        const bad = continuationLines.filter((n) => !(Number.isInteger(n) && n >= 1 && n <= lineCount))
+        if (bad.length > 0) fail(`args.continuation.lines must be inventory line numbers 1-${lineCount}; got ${JSON.stringify(bad.slice(0, 5))}`)
+    }
+    return out
+}
+// TEST-END docket-postmortem-inventory
+
 // TEST-BEGIN docket-postmortem-digest-jq — the fixed per-log digest program, run by
 // every digest agent as `jq -c -n -R --arg path P --arg kind K
 // --argjson line N -f <file> P`. Tests run it against fixture logs.
@@ -316,15 +377,13 @@ for (const [i, s] of input.sessions.entries()) {
     need(Number.isInteger(s.lines) && s.lines >= 0 && Number.isInteger(s.bytes) && s.bytes >= 0, `args.sessions[${i}] needs integer lines and bytes`)
 }
 need(input.inventory && typeof input.inventory.file === 'string' && input.inventory.file !== '', 'args.inventory.file (absolute path of the §2 inventory TSV) is required')
-need(Array.isArray(input.inventory.kinds) && Array.isArray(input.inventory.bytes) && input.inventory.kinds.length === input.inventory.bytes.length, 'args.inventory.kinds and args.inventory.bytes must be arrays of equal length, one entry per inventory line')
-for (const [i, k] of input.inventory.kinds.entries()) {
-    need(KINDS.includes(k), `args.inventory.kinds[${i}] must be one of ${KINDS.join(', ')}; got "${k}"`)
-}
+need(input.inventory.kinds == null || Array.isArray(input.inventory.kinds), 'args.inventory.kinds, when passed as an override, must be an array with one entry per inventory line')
+need(input.inventory.bytes == null || Array.isArray(input.inventory.bytes), 'args.inventory.bytes, when passed as an override, must be an array with one entry per inventory line')
 need(typeof input.auditDir === 'string' && input.auditDir !== '', 'args.auditDir (absolute path of the audit directory) is required')
 need(typeof input.nowIso === 'string' && input.nowIso !== '', 'args.nowIso is required; scripts cannot read the clock')
 const continuation = input.continuation || null
 if (continuation) {
-    need(Array.isArray(continuation.lines) && continuation.lines.every((n) => Number.isInteger(n) && n >= 1 && n <= input.inventory.kinds.length), 'args.continuation.lines must be inventory line numbers')
+    need(Array.isArray(continuation.lines), 'args.continuation.lines must be an array of inventory line numbers')
 }
 
 const checkoutRoot = input.checkoutRoot
@@ -333,8 +392,6 @@ const automationRef = `${checkoutRoot}/src/user/claude_code/skills/docket/refere
 const run = input.run
 const captures = input.captures
 const sessions = input.sessions
-const inventory = input.inventory
-const total = inventory.kinds.length
 const memoryRoots = Array.isArray(input.memoryRoots) ? input.memoryRoots : []
 const auditDir = input.auditDir
 const nowIso = input.nowIso
@@ -342,6 +399,41 @@ const digestDir = `${auditDir}/digests`
 
 let spent = 0
 function seat(prompt, opts) { spent++; return agent(prompt, opts) }
+
+// ---- Inventory -------------------------------------------------------------
+// Before any digest agent is seated, one bounded read agent runs the fixed
+// read command over the inventory TSV; kinds and bytes come from its output,
+// cross-checked against the file's own line count (see resolveInventory).
+
+const INVENTORY_READ_SCHEMA = {
+    type: 'object',
+    properties: {
+        output: { type: 'string', description: 'The command output verbatim, every line, or its error text verbatim when it failed' },
+    },
+    required: ['output'],
+    additionalProperties: false,
+}
+
+function inventoryReadBrief() {
+    return `Run exactly this one command, verbatim, and do nothing else:
+
+${inventoryReadCommand(input.inventory.file)}
+
+Return its complete output in output, every line unchanged and in order, including the final count line. If it failed, return its error text verbatim instead.`
+}
+
+let inventoryReply = await seat(inventoryReadBrief(), { label: 'inventory-read', phase: 'Digest', schema: INVENTORY_READ_SCHEMA, ...AGENT_CONFIG.digest })
+if (inventoryReply == null) {
+    log('docket-postmortem: the inventory read returned nothing; retrying once')
+    inventoryReply = await seat(inventoryReadBrief(), { label: 'inventory-read:retry', phase: 'Digest', schema: INVENTORY_READ_SCHEMA, ...AGENT_CONFIG.digest })
+}
+need(inventoryReply != null && typeof inventoryReply.output === 'string', `the inventory read of ${input.inventory.file} returned no usable result after one retry`)
+const resolved = resolveInventory(inventoryReply.output, input.inventory, continuation ? continuation.lines : null)
+for (const [i, k] of resolved.kinds.entries()) {
+    need(KINDS.includes(k), `inventory line ${i + 1} kind must be one of ${KINDS.join(', ')}; got "${k}"`)
+}
+const inventory = { file: input.inventory.file, kinds: resolved.kinds, bytes: resolved.bytes }
+const total = resolved.total
 
 // ---- Schemas -------------------------------------------------------------
 

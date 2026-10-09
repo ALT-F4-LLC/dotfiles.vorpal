@@ -424,6 +424,24 @@ case_brace_split_subcommand_denies() {
         'widened: substitution-bearing string carries the brace comma to a later line (2)'
 }
 
+# ---- A git word split across quote fragments ------------------------------
+#
+# Bash removes the quotes and concatenates adjacent fragments into one word,
+# so git c""ommit runs git commit. Fragments separated by a blank stay
+# separate words.
+
+case_quote_split_subcommand_denies() {
+    assert_verdict 'git c""ommit -m x' DENY 'subcommand split by an empty double-quoted pair'
+    assert_verdict "git c''ommit -m x" DENY 'subcommand split by an empty single-quoted pair'
+    assert_verdict 'git c""ommi{t,} -m x' DENY 'subcommand split by empty quotes and a brace'
+    assert_verdict 'git "c"ommit -m x' DENY 'subcommand with a double-quoted head fragment'
+    assert_verdict 'git co""mmit -m x' DENY 'subcommand split by empty quotes mid-word'
+    assert_verdict "git 'p'ush origin main" DENY 'push with a single-quoted head fragment'
+    assert_verdict 'gi""t commit -m x' DENY 'git head word split by empty quotes'
+    assert_verdict 'git "c"{ommit,} -m x' DENY 'quoted head fragment glued to a brace'
+    assert_verdict 'git c "" ommit -m x' ALLOW 'fragments separated by blanks stay separate words'
+}
+
 # ---- A brace word in command position that bash expands to git -----------
 #
 # Bash expands an unquoted brace word with a `,` or `..` before it runs the
@@ -1243,6 +1261,7 @@ case_must_allow_terminal_fix_negative_controls
 case_must_allow_computed_subcommand_residual
 case_brace_split_subcommand_denies
 case_brace_head_word
+case_quote_split_subcommand_denies
 case_brace_word_prose_allows
 case_brace_look_ahead_is_linear
 case_wrapper_brace_word_denies

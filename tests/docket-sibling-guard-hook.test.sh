@@ -1040,10 +1040,9 @@ case_verb_spellings() {
     assert_verdict "repeat 2 { kill 4242 }" executor-write "$WAVE_42" DENY "zsh repeat brace body resolves the verb for a pid kill"
     assert_verdict "repeat \$n { { kill 4242 } }" executor-write "$WAVE_42" DENY "zsh repeat nested brace bodies resolve the verb for a pid kill"
     assert_verdict "repeat \"1 + 1\" kill 4242" executor-write "$WAVE_42" DENY "zsh repeat quoted multi-word count resolves the verb for a pid kill"
-    # The pre-pass splits one count word built from glued quoted parts or a
-    # quoted expansion into several tokens, and a quoted blank leaves no token
-    # at all, so the end of the count cannot be found: a name-addressed kill or
-    # an engine verb anywhere after `repeat` denies.
+    # A name-addressed kill or an engine verb anywhere after `repeat` denies,
+    # wherever the count ends: these hold even where the pre-pass splits the
+    # count word (a quoted expansion, a glued part with text and a blank).
     assert_verdict "repeat 1\"+1\" pkill node" executor-write "$WAVE_42" DENY "zsh repeat count with a glued double-quoted tail"
     assert_verdict "repeat \"1\"+1 pkill node" executor-write "$WAVE_42" DENY "zsh repeat count with a glued double-quoted head"
     assert_verdict "repeat 1' '+1 pkill node" executor-write "$WAVE_42" DENY "zsh repeat count glued across a quoted blank"
@@ -1076,6 +1075,26 @@ case_verb_spellings() {
     assert_verdict "nocorrect ls" executor-write "$WAVE_42" ALLOW "zsh nocorrect wrapping a read stays a read"
     assert_verdict "true; - ls" executor-write "$WAVE_42" ALLOW "zsh - prefix on a read after a separator stays a read"
     assert_verdict "true && - ls" executor-write "$WAVE_42" ALLOW "zsh - prefix on a read after && stays a read"
+    # A verb word built from glued quoted fragments is the one word the shell
+    # builds once it removes the quotes.
+    assert_verdict "pk'ill' node" executor-write "$WAVE_42" DENY "pkill spelled with a glued single-quoted tail"
+    assert_verdict "pk\"\"ill node" executor-write "$WAVE_42" DENY "pkill spelled around an empty double-quoted pair"
+    assert_verdict "\"pk\"ill node" executor-write "$WAVE_42" DENY "pkill spelled with a glued double-quoted head"
+    assert_verdict "kill''all node" executor-write "$WAVE_42" DENY "killall spelled around an empty single-quoted pair"
+    assert_verdict "docket step re'ap' STEP-7" executor-write "$WAVE_42" DENY "docket step reap with a glued quoted tail"
+    assert_verdict "docket run con\"duct\" RUN-5" executor-write "$WAVE_42" DENY "docket run conduct with a glued quoted tail"
+    assert_verdict "pk 'ill' node" executor-write "$WAVE_42" ALLOW "a quoted word after a blank stays its own word"
+    # A repeat count glued across a quoted blank is one shell word, so the
+    # verb verb_index resolves is the word after it.
+    assert_verdict "repeat 1+' 'x kill 4242" executor-write "$WAVE_42" DENY "zsh repeat count glued across a quoted blank resolves the verb for a pid kill"
+    assert_verdict "repeat 1' '+1 kill 4242" executor-write "$WAVE_42" DENY "zsh repeat count glued across a leading quoted blank resolves the verb for a pid kill"
+    assert_verdict "repeat 1' '+1 rm -rf /repo/.claude/worktrees/wf_x" executor-write "$WAVE_42" DENY "zsh repeat glued count before rm of a checkout"
+    assert_verdict "repeat 1' '+1 mv /repo/.claude/worktrees/wf_x /tmp/x" executor-write "$WAVE_42" DENY "zsh repeat glued count before mv of a checkout"
+    assert_verdict "repeat 1' '+1 git worktree prune" executor-write "$WAVE_42" DENY "zsh repeat glued count before a denied git command"
+    assert_verdict "for s in 7 8; do repeat 1' '+1 docket step artifacts STEP-\$s.d; done" executor-write "$WAVE_42" DENY "zsh repeat glued count before a docket argument the admission denies"
+    assert_verdict "for s in 7 8; do repeat 1' '+1 docket step artifacts STEP-\$s; done" executor-write "$WAVE_42" ALLOW "zsh repeat glued count before a docket argument the admission admits"
+    assert_verdict "repeat 1+' 'x ls" executor-write "$WAVE_42" ALLOW "zsh repeat count glued across a quoted blank before a read stays a read"
+    assert_verdict "repeat 1' '+1 ls" executor-write "$WAVE_42" ALLOW "zsh repeat count glued across a leading quoted blank before a read stays a read"
     # zsh `=cmd` equals expansion, which bash reads as a literal name.
     assert_verdict "=pkill node" executor-write "$WAVE_42" DENY "zsh =cmd expansion of pkill"
     assert_verdict "noglob =pkill node" executor-write "$WAVE_42" DENY "zsh =cmd expansion after noglob"

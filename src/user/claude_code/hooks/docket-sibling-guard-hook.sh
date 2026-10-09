@@ -1081,9 +1081,10 @@ function option_end(h, i, n,   j, o) {
 # operands skipped by position after its options, whatever their shape. zsh evaluates the `repeat` count arithmetically, so the word after
 # `repeat` is the count whatever its shape (a quoted count spans its whole
 # group), and each lone `{` after it opens a body.
-# The pre-pass splits a count word built from glued quoted parts or a quoted
-# expansion into several tokens, and a quoted blank in it leaves none, so
-# where the count ends is a best guess. REPEAT_FROM is the first word after
+# The pre-pass keeps a count glued from blank-free or all-blank quoted parts
+# as one word (`1"+1"`, `1' '+1`), but splits a glued part holding text and
+# a blank, or a quoted expansion, into several tokens, so for those where the
+# count ends is a best guess. REPEAT_FROM is the first word after
 # the first `repeat` passed (0 when none), for repeat_scan.
 function verb_index(n, start,   i, h, quoted, g, k, a) {
     REPEAT_FROM = 0

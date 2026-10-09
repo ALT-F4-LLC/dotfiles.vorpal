@@ -59,9 +59,10 @@
 # a word this pass has already rewritten -- a MARK-wrapped token, or the
 # literal \-c -- and one pair of quotes around the flag then bought a bypass.
 # The emitted buffer itself keeps one word whole in one case: a quoted group
-# with no blank in it, glued to word text on either side, is written bare
-# rather than marked, so `a""dd`, `ad"d"` and `'a'dd` reach the matcher as
-# add. Every other quoted group is marked, with a blank on each side.
+# with no blank in it, or with only blanks, glued to word text on either side
+# is written bare rather than marked, so `a""dd`, `ad"d"` and `'a'dd` reach
+# the matcher as add, and `1' '+1` as one word with the quoted blank held as a
+# \035 byte. Every other quoted group is marked, with a blank on each side.
 # A backslash-newline is a line boundary here, not the word joiner bash makes
 # of it: leaves reach this pass with continuations already resolved, so the
 # byte only ever appears mid-word in a hand-fed buffer, and resetting is the
@@ -152,16 +153,26 @@ function end_word() {
         in_word = 0
     }
 }
-# A quoted group with no blank in it, glued to word text on either side, is a
-# fragment of one word bash builds by concatenation: a""dd, ad"d", 'a'dd and
-# "a""dd" all run as add. Such a group is emitted bare, so the buffer the
-# matcher reads holds the word bash builds rather than its fragments split
-# around a marked token. A group with a blank in it stays marked: bash keeps
-# the blank inside the word, so no fragment of it can stand as a verb word.
+# A quoted group with no blank in it, or with nothing but blanks, glued to
+# word text on either side is a fragment of one word bash builds by
+# concatenation: a""dd, ad"d", 'a'dd and "a""dd" all run as add. Such a group
+# is emitted bare, so the buffer the matcher reads holds the word bash builds
+# rather than its fragments split around a marked token. A group holding text
+# and a blank stays marked, as quoted prose: bash keeps the blank inside the
+# word, so no fragment of it can stand as a verb word.
 function glued_fragment(content, after) {
-    if (content ~ /[ \t\n]/) return 0
+    if (content ~ /[ \t\n]/ && content ~ /[^ \t\n]/) return 0
     if (in_word) return 1
     return after != "" && after !~ /[ \t\n]/ && after != LEAF_END
+}
+# The bare text of a glued fragment. Bash keeps a quoted blank inside the
+# word, so each blank of an all-blank group is held as HELD_BLANK rather than
+# emitted: 1' '+1 stays one word (a zsh repeat count), where a blank would
+# split it into two and move the verb a word-counting reader resolves.
+function glued_text(content,   t) {
+    t = content
+    gsub(/[ \t\n]/, HELD_BLANK, t)
+    return t
 }
 function marked_group(content,   chunk, m, k) {
     GROUP++
@@ -265,6 +276,7 @@ END {
     DQ = "\042"
     MARK = "\001"
     LEAF_END = "\036"
+    HELD_BLANK = "\035"
     GROUP = 0
     nest = ""
     in_backtick = 0
@@ -302,7 +314,7 @@ END {
                 gsub(/[\047\042]/, " ", content)
                 chunk = " " content " "
             } else if (glued_fragment(content, substr(line, (stop == SQ) ? j + 1 : j, 1))) {
-                chunk = content
+                chunk = glued_text(content)
             } else {
                 chunk = marked_group(content)
             }
@@ -331,7 +343,7 @@ END {
             } else if (content ~ /\$\(|`|\$\{/) {
                 chunk = " " content " "
             } else if (glued_fragment(content, substr(line, (stop == DQ) ? j + 1 : j, 1))) {
-                chunk = content
+                chunk = glued_text(content)
             } else {
                 chunk = marked_group(content)
             }

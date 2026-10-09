@@ -195,19 +195,16 @@ Workflow({scriptPath: "<home>/.claude/workflows/docket-postmortem.js", args: {
   run: {id, project, prefix, root, status, activatedAtMs, updatedAtMs},
   captures: {dir, status, report, events, pins, issuesDir},
   sessions: [{sessionId, transcript, role, cwd, lines, bytes}],
-  inventory: {file: "<$AUDIT/inventory.tsv>", kinds: [...], bytes: [...]},
+  inventory: {file: "<$AUDIT/inventory.tsv>"},
   memoryRoots: ["<memory dir for the run's project>"],
   auditDir: "<$AUDIT>",
   nowIso: "<UTC timestamp>"
 }})
 ```
 
-`kinds` and `bytes` are the inventory's kind and size columns in line
-order, one entry per row:
-
-```bash
-jq -R -s -c 'split("\n") | map(select(length > 0) | split("\t")) | {kinds: map(.[2]), bytes: map(.[5] | tonumber)}' "$AUDIT/inventory.tsv"
-```
+Pass the inventory file alone. The script reads each line's kind and size
+from it, cross-checked against the file's line count, before any digest
+agent runs.
 
 The script covers every surface:
 

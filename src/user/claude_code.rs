@@ -392,6 +392,7 @@ const PERMISSION_ALLOW_RULES: &[&str] = &[
     "Bash(just crossref-check)",
     "Bash(just doc-validate)",
     "Bash(just frozen-drift-check)",
+    "Bash(just qa-test)",
     "Bash(just sdet-abuse)",
     "Bash(just secret-scan)",
     "Bash(just self-hygiene)",

@@ -14,7 +14,7 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket guard`](#guard-commands) — 114 lines
+- [`docket guard`](#guard-commands) — 117 lines
   - [`guard record`](#guard-record) — 18 lines
   - [`guard spawn`](#guard-spawn) — 45 lines
 - [`docket trust`](#trust-commands) — 200 lines
@@ -62,7 +62,10 @@ run waiting on a person.
 A vote step with an open proposal, and work waiting behind that vote, do
 not block stopping either: the panel can decide outside the conductor's
 turn. After the proposal is decided, the step is dispatchable and blocks
-until an engine invocation routes it. A stop hook should preserve this
+until an engine invocation routes it. The same holds for a `gated` step
+suspended on its triage panel while that panel's proposal is open. A
+`pending` step held because its issue is parked on a person does not block,
+and neither do the steps behind it. A stop hook should preserve this
 distinction instead of treating every nonterminal row as active machine
 work.
 

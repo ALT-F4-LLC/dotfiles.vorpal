@@ -646,6 +646,7 @@ Docket then **sets** these itself:
 | `DOCKET_ISSUE` | `DKT-N`, the issue the gated step belongs to |
 | `DOCKET_SCOPE` | the issue's declared scope globs, **newline-joined**; absent entirely when there are no globs to carry |
 | `DOCKET_GATE_NETWORK` | the trust entry's declared hosts, comma-joined — set only when it declared any |
+| `DOCKET_GATE_BASE` | the base commit sha of the tree the gate runs in, so a range-shaped check can scan `DOCKET_GATE_BASE..HEAD`. A worktree's base is its fork point; a pre-gate's reconstructed tree uses the merge-base of the target sha and the shared head. Set for worktree-recorded completion gates and for pre-gates; unset for the shared checkout and for a tree with no merge-base |
 
 `DOCKET_ISSUE` and `DOCKET_SCOPE` let a **diff-shaped** gate evaluate the
 change it is actually gating instead of the whole dirty tree. The globs are

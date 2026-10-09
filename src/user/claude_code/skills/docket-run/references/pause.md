@@ -92,7 +92,8 @@ Only on an explicit operator ask for immediate stop.
    claiming more; abandoning a manifest while the run is still active
    leaves a window in which such a launch claims against a manifest that
    no longer exists.
-3. `docket dispatch abandon --run RUN-N --reason '<why>'` retires the open
+3. `docket dispatch abandon --run RUN-N --reason '<why>' <
+   <scratchpad>/conductor.d/RUN-N.token` (a conductor verb) retires the open
    manifest unconditionally, so the engine no longer considers those steps
    claimed-by-dispatch and a later `next` is not refused by a stale
    manifest.

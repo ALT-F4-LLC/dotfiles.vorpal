@@ -15,14 +15,14 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket run`](#run-commands) — 772 lines
+- [`docket run`](#run-commands) — 780 lines
   - [`run start`](#run-start) — 49 lines
   - [`run issue add|remove RUN-N DKT-N...`](#run-issue) — 38 lines
-  - [`run note add|list`](#run-note) — 22 lines
+  - [`run note add|list`](#run-note) — 26 lines
   - [`run refresh-scope`](#run-refresh-scope) — 31 lines
   - [`run report RUN-N`](#run-report) — 103 lines
   - [`run activate RUN-N`](#run-activate) — 210 lines
-  - [`run conduct RUN-N`](#run-conduct) — 39 lines
+  - [`run conduct RUN-N`](#run-conduct) — 43 lines
   - [`run pause|resume|abandon RUN-N`](#run-lifecycle) — 90 lines
   - [`run repin RUN-N --reason R`](#run-repin) — 67 lines
   - [`pin show RUN-N PATH`](#pin-show) — 15 lines
@@ -134,8 +134,12 @@ the shipped packet template and appear as `notes` in `step context`. Custom
 templates must render `.Notes` explicitly. Issue comments and mid-run issue
 description edits do not enter packets.
 
+On a bound run `note add` is a conductor verb: it needs the run's conductor
+capability on stdin and `--authority operator|conductor`, so the text comes
+from `--text` or `--file <path>`, never `--file -`.
+
 ```bash
-docket run note add RUN-N --file note.txt --json
+docket run note add RUN-N --authority conductor --file note.txt --json < <scratchpad>/conductor.d/RUN-N.token
 docket run note list RUN-N --json
 ```
 
@@ -154,7 +158,7 @@ After an authorized scope change, use both channels in order:
 
 ```bash
 docket issue edit DKT-M --scope 'src/component/**' --json
-docket run refresh-scope RUN-N --issue DKT-M --reason 'Authorized scope change' --json
+docket run refresh-scope RUN-N --issue DKT-M --reason 'Authorized scope change' --json < <scratchpad>/conductor.d/RUN-N.token
 ```
 
 `issue edit --scope` changes the live declaration used by scheduler mutual
@@ -505,8 +509,12 @@ rotated) and then the token on its own stdout line, `step claim`'s
 discipline, so a session whose stdout lands in a transcript uses `--json`
 and extracts the field without printing it.
 
-The nine operator verbs — `step approve|reject|resolve|reap|hold`, `run
-pause|resume|abandon` (with or without `--issue`), `run fact add` — require the capability
+The conductor verbs — the nine operator verbs `step
+approve|reject|resolve|reap|hold`, `run pause|resume|abandon` (with or
+without `--issue`), `run fact add`, and the seven ruling verbs `step
+annotate --integrated-sha`, `run note add`, `run refresh-scope`, `dispatch
+waive-target`, `dispatch abandon`, `dispatch close
+--skip-integration-check`, `vote commit` on a vote-step proposal — require the capability
 on a bound run, via `DOCKET_TOKEN` or stdin, never argv (there is no
 `--token` flag on any verb): none supplied is `VALIDATION_ERROR` (exit 3)
 naming both channels and this verb; a wrong one, a step's lease token
@@ -524,7 +532,7 @@ only valid one from that moment, the displaced conductor's next ruling
 refuses `AUTH_ERROR`, and the `conductor-seated` event names who took it
 and from where. A harness keys its own callers off this one verb (the
 sibling guard denies it to the executor archetypes); the engine keeps them
-off the other nine.
+off every other conductor verb.
 
 Refusals: `done` or `abandoned` run → `CONFLICT` (exit 4, "there is nothing
 left to conduct"); missing run → `NOT_FOUND` (exit 2).

@@ -133,6 +133,21 @@ const COMMAND_OUTPUT_SCHEMA = {
     additionalProperties: false,
 }
 
+// The executor's reply. `report` is the whole free-text reply, so nothing the
+// executor wrote is lost; the two enums carry what the wave acts on. No
+// additionalProperties: false — an extra field must not turn a recorded step
+// into a rejected (null) reply. executorReplyText() turns it back into the
+// reply-tail text every downstream reader parses.
+const EXECUTOR_REPLY_SCHEMA = {
+    type: 'object',
+    properties: {
+        recorded: { type: 'string', enum: ['done', 'waiting-human', 'paused', 'none'], description: 'The status in your docket step record response, or none when you did not record' },
+        signal: { type: 'string', enum: ['none', 'BOOTSTRAP DENIED', 'NETWORK GATE BLOCKED', 'RECORD BLOCKED', 'WRITE BLOCKED'], description: 'The stop signal you stopped on without recording, or none' },
+        report: { type: 'string', description: 'Your full report, with every refusal or error quoted verbatim' },
+    },
+    required: ['recorded', 'signal', 'report'],
+}
+
 const BLOCK_PROBE_LOOKBACK_HOURS = 12
 const CONFLICT_REPORT_MAX_LINES = 4
 const WRITER_LADDER_BUDGET = 3
@@ -398,9 +413,9 @@ function executorBrief(row, owner, claim, isolated, isWrite, cwd) {
       checkout from (a), the one NOT under \`.claude/worktrees\`. If they
       differ, run \`git checkout --detach --quiet <that sha>\`.
 
-   If the guard or the permission system DENIES one, put \`BOOTSTRAP DENIED\`
-   on a line of its own as the FIRST line of your reply, quote the denial
-   verbatim under it, and STOP with the token file intact: the step stays
+   If the guard or the permission system DENIES one, return \`signal\`
+   BOOTSTRAP DENIED with the denial quoted verbatim in \`report\` (see
+   obligation 4), and STOP with the token file intact: the step stays
    claimed until the conductor returns it to the pool. If a command fails on
    its own output, report it verbatim and STOP. NEVER start the work after a
    failed bootstrap.
@@ -536,11 +551,12 @@ ${isWrite ? `
      token file is missing or empty, KEEP the dir and its token file INTACT,
      say so, and stop; never reconstruct or guess a token.
 
-4. End your reply with exactly this line, filled in from the record
-   response: <step-id> recorded (<status>) — for example "STEP-12 recorded
-   (done)" or "STEP-12 recorded (waiting-human)". If instead you STOPPED
-   without recording, the signal opens its own line, as the first words on
-   it:
+4. Return through the structured output. \`report\` is your full reply.
+   \`recorded\` is the status in the record response, filled in from it:
+   done, waiting-human, or paused. If you did not record, \`recorded\` is
+   none. If instead you STOPPED without recording, \`recorded\` is none and
+   \`signal\` names the stop, with its details in \`report\`; otherwise
+   \`signal\` is none. The stop signals:
 
    NETWORK GATE BLOCKED: a gate needs network access the sandbox denies (a
    DNS failure, a TLS handshake failure, or a blocked host). Attempt once;
@@ -707,6 +723,29 @@ function stopSignal(text) {
         if (lines.some((l) => re.test(l))) return sig
     }
     return null
+}
+
+// The executor returns EXECUTOR_REPLY_SCHEMA; every reader above parses the
+// reply-tail text. This rebuilds that text with the structured fields as the
+// authority: a stop signal opens the first line, a record status becomes
+// the last line, and a tail the report merely quotes is neutralized when
+// `recorded` is none. A recorded status wins over a signal, as the tail does
+// in the text contract. null stays null (the null-recovery path asks the
+// engine); a string passes through unchanged.
+function executorReplyText(step, reply) {
+    if (reply == null) return null
+    if (typeof reply === 'string') return reply
+    if (typeof reply !== 'object') return null
+    const report = typeof reply.report === 'string' ? reply.report.trim() : ''
+    const recorded = ['done', 'waiting-human', 'paused'].includes(reply.recorded) ? reply.recorded : null
+    if (recorded) {
+        if (recordTail(report) === recorded) return report
+        return `${report}${report ? '\n\n' : ''}${step} recorded (${recorded})`
+    }
+    const signal = STOP_SIGNALS.concat(['BOOTSTRAP DENIED']).includes(reply.signal) ? reply.signal : null
+    let text = signal ? `${signal}${report ? `\n\n${report}` : ''}` : report
+    if (recordTail(text)) text += '\n\n(the structured reply reports no record)'
+    return text
 }
 // TEST-END park-signals
 
@@ -1353,6 +1392,21 @@ function launchExecutor(row, r, type, isWrite, isolated, phaseLabel, { owner, cl
                             `returned — the lane continues.`,
                     }
                 }
+                // Recorded, then parked: the record landed, so this is not a
+                // dead spawn either. The tail line lets laneParked park the
+                // lane exactly as a returned reply would.
+                if (st.status === 'waiting-human' || st.status === 'paused') {
+                    log(`${row.step}: agent() returned null, but \`docket step ` +
+                        `show\` reads ${st.status} — the record landed and parked ` +
+                        `the step; treating this as returned`)
+                    return {
+                        step: row.step,
+                        status: 'returned',
+                        text: `${row.step}: agent() returned null after the ` +
+                            `record completed (docket step show: status=${st.status}).` +
+                            `\n\n${row.step} recorded (${st.status})`,
+                    }
+                }
                 return notRecorded()
             }, () => {
                 nullBurstTripped = true
@@ -1400,7 +1454,8 @@ function launchExecutor(row, r, type, isWrite, isolated, phaseLabel, { owner, cl
         }
     }
     const launch = (iso, retried) =>
-        countedAgent(executorBrief(row, owner, claim, iso, isWrite, input.cwd), opts(iso)).then((text) => handle(text, retried))
+        countedAgent(executorBrief(row, owner, claim, iso, isWrite, input.cwd), { ...opts(iso), schema: EXECUTOR_REPLY_SCHEMA })
+            .then((reply) => handle(executorReplyText(row.step, reply), retried))
     // EXACTLY ONCE, and only from the top-level catch: same brief bytes, same
     // opts, same isolation. `retried` rides through so a retry that resolves
     // null does not probe-and-retry again. A second failure returns

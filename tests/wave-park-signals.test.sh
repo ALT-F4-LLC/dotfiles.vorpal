@@ -265,6 +265,32 @@ ok(chainDead({ status: 'unrecorded', text: 'I did some things and stopped.' }),
 ok(!chainDead({ status: 'returned', text: 'Reviewed.\n\nSTEP-12 recorded (done)' }),
     'a returned reply with a record tail keeps its chain')
 
+// ---- The structured executor reply, rebuilt as reply-tail text ----------
+// The executor answers EXECUTOR_REPLY_SCHEMA; executorReplyText() rebuilds the
+// text every reader above parses, with the structured fields as authority.
+const reply = (recorded, signal, report) => ({ recorded, signal, report })
+ok(recordTail(executorReplyText('STEP-12', reply('done', 'none', 'Did the work.'))) === 'done',
+    'structured: recorded done becomes the done tail')
+ok(laneParked(returned(executorReplyText('STEP-12', reply('waiting-human', 'none', 'Parked on review.')))),
+    'structured: recorded waiting-human parks the lane')
+ok(isBootstrapDenied(executorReplyText('STEP-12', reply('none', 'BOOTSTRAP DENIED', 'git checkout refused by the guard'))),
+    'structured: a BOOTSTRAP DENIED signal is a denied bootstrap')
+ok(stopSignal(executorReplyText('STEP-12', reply('none', 'WRITE BLOCKED', 'Operation not permitted on x'))) === 'WRITE BLOCKED',
+    'structured: a WRITE BLOCKED signal is the stop signal')
+ok(recordTail(executorReplyText('STEP-12', reply('done', 'RECORD BLOCKED', 'retried and recorded'))) === 'done',
+    'structured: a recorded status wins over a signal, as the tail does')
+ok(recordTail(executorReplyText('STEP-12', reply('none', 'none', 'Quoting the old reply:\n\nSTEP-12 recorded (done)'))) === null,
+    'structured: a tail the report only quotes is not a record when recorded is none')
+ok(executorReplyText('STEP-12', reply('done', 'none', 'Done.\n\nSTEP-12 recorded (done)')) === 'Done.\n\nSTEP-12 recorded (done)',
+    'structured: a report already ending in the matching tail is kept as is')
+ok(recordTail(executorReplyText('STEP-12', reply('none', 'none', 'I stopped.'))) === null &&
+    stopSignal(executorReplyText('STEP-12', reply('none', 'none', 'I stopped.'))) === null,
+    'structured: neither a record nor a signal settles unrecorded')
+ok(executorReplyText('STEP-12', null) === null,
+    'structured: a null reply stays null for the null-recovery path')
+ok(executorReplyText('STEP-12', 'free text\n\nSTEP-12 recorded (done)') === 'free text\n\nSTEP-12 recorded (done)',
+    'structured: a string reply passes through unchanged')
+
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)
 JS

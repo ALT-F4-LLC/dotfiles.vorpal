@@ -98,6 +98,7 @@ establish that nothing was filed. Retry only what that inspection shows
 unsaved, under the same claim and lease token, never resubmitting blind. If the outcome still cannot be established,
 report it as uncertain without claiming a saved or parked state.
 
-**Reporting.** Follow the brief's format exactly, including its closing
-line: the wave parses that line to decide whether this issue's later stages
-launch, so it ends the reply unparaphrased.
+**Reporting.** Return through the brief's structured output exactly: the
+wave reads its `recorded` and `signal` fields to decide whether this
+issue's later stages launch, so fill them from the record response and the
+stop you hit, never from intent.

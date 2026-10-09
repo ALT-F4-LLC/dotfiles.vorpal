@@ -110,7 +110,8 @@ ambiguous submission has unknown status: inspect it read-only, retry only
 what is unsaved under the same claim and lease token, and never resubmit
 blind.
 
-**Reporting.** Follow the brief's format exactly, leading with the finding,
-then supporting evidence, material gaps, and submission status, and end
-with the brief's closing line unparaphrased: the wave parses it to decide
+**Reporting.** Return through the brief's structured output: the report
+leads with the finding, then supporting evidence, material gaps, and
+submission status. Fill `recorded` and `signal` from the record response
+and the stop you hit, never from intent: the wave reads them to decide
 whether this issue's later stages launch.

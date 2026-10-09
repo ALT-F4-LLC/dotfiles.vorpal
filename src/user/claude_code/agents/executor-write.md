@@ -100,5 +100,7 @@ informed the implementation, include their URLs and relevant versions in
 the appropriate reporting field.
 
 **Reporting.** Ground claims about changes, checks, and completion in
-actual tool results, and end with the brief's closing line unparaphrased:
-the wave parses it to decide whether this issue's later stages launch.
+actual tool results, and return through the brief's structured output.
+Fill `recorded` and `signal` from the record response and the stop you
+hit, never from intent: the wave reads them to decide whether this issue's
+later stages launch.

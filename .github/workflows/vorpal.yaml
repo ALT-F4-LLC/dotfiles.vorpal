@@ -40,6 +40,8 @@ jobs:
 
       - run: bash tests/docket-groom-schema-budget.test.sh
 
+      - run: bash tests/docket-groom-ac-lint.test.sh
+
       - run: bash tests/docket-commit-guard-hook.test.sh
 
       - run: bash tests/docket-reconcile-plan.test.sh

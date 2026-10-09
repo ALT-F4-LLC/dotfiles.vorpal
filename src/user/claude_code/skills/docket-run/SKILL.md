@@ -427,9 +427,13 @@ installs outside this run. A step stopped a second time goes to
 
 **Prune the last session's worktree leftovers first, every time.** A
 session cannot delete a wave worktree's metadata directory
-(`<bare repo>/worktrees/<name>`): the harness keeps those paths on the
-sandbox deny list, and a later session that created none of them is
+(`<bare repo>/worktrees/<name>`): for every worktree it creates, the
+harness puts that directory's `commondir` file on the sandbox's
+`denyWithinAllow` list, and a later session that created none of them is
 refused on them too (measured: `Operation not permitted` on every one).
+The bare repo's own write allowance does not override that row, so no
+settings allowance is the fix; an entry made by hand, outside the
+harness, prunes normally.
 Integrated wave worktrees therefore stay `prunable` entries until the
 operator prunes them outside the sandbox. Run the prune here anyway,
 before the probe: it clears whatever the deny list does not cover and
@@ -1466,10 +1470,11 @@ constructed from a step or workflow id (the branch is
 `git worktree remove` on this bare-repo layout is benign; confirm with
 `git worktree list` and move on. A hard `Operation not permitted` is the
 harness, not a lift case: no sandbox lift, no retry, no escalation,
-since the harness keeps every wave worktree's metadata directory
-(`<bare repo>/worktrees/<name>`) on the sandbox deny list, in this
-session and in later ones that never created it, its files still
-writable but the directory itself neither unlinkable nor renamable. The
+since the harness puts the `commondir` file of every wave worktree's
+metadata directory (`<bare repo>/worktrees/<name>`) on the sandbox's
+`denyWithinAllow` list, in this session and in later ones that never
+created it: its other files stay writable, but with `commondir` refused
+the directory itself is neither unlinkable nor renamable. The
 working directory is already gone, so the
 entry now reads `prunable` in `git worktree list` and only the branch is
 left; `git branch -D` refuses it ("used by worktree") on that stale entry,

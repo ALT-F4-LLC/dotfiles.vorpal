@@ -522,9 +522,13 @@ ${isWrite ? `
      models go in the artifact with \`model_resolved\` still unknown. Add no
      routing or cost field.
    - GAPS: an out-of-scope problem your work surfaced is neither a failure
-     nor your declared artifact. Write each to its own file and pass
-     \`--gap-file <path>\` (repeatable) on the record; each files a backlog
-     issue. Your contract's Stuck clause is a SUCCESS recorded this way,
+     nor your declared artifact. File gaps under your contract's
+     evidence-rules "File gaps sparingly" rule: only a \`blocker\` or
+     \`high\` out-of-scope finding, and only after the open-backlog search
+     finds no match; that rule routes everything else. Write each gap you
+     file to its own file and pass \`--gap-file <path>\` (repeatable) on the
+     record; each files a backlog issue. Your contract's Stuck clause is a
+     SUCCESS recorded this way, still subject to that backlog search,
      never a \`fail\`. Gap file: line 1 is the issue TITLE naming the
      defect; line 2 is \`Home: <repo/checkout>\` or
      \`Home: THIS repository\`; line 3 is \`Files: <path>, <path>\`, every

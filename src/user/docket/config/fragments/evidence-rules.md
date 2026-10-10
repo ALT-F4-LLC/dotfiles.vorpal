@@ -89,8 +89,12 @@ unresolved question warrants it.
   of likely matches with `docket issue show <id>`. A listing that returns the
   full 1000 rows is truncated under the absence rule above. A match names the
   same locus and the same defect; similar titles alone are not a match. On a
-  match, add your evidence as a comment on that issue with
-  `docket issue comment add` and file nothing.
+  match for a finding no Stuck clause requires, add your evidence as a comment
+  on that issue with `docket issue comment add` and file nothing. A gap your
+  contract's Stuck clause requires is always attached as a gap file, even on a
+  match, and the gap body cites the matched issue id: the engine parks a
+  stuck step only when its emit body is empty and at least one gap is
+  recorded.
 - **Never file what the target head already fixes.** Before filing, read the
   cited locus at the target sha, the head your issue's work lands on. A
   finding that sha already fixes is never filed.

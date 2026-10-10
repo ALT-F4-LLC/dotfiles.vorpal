@@ -1,6 +1,6 @@
 ---
 fragment: evidence-rules
-version: 8
+version: 9
 ---
 # Evidence rules
 
@@ -71,6 +71,29 @@ unresolved question warrants it.
   behavior, tool versions, and input corpora: pre-existing wording does not prove
   an exclusion was already effective. An inherited gap can still violate the
   required coverage.
+
+## File gaps sparingly
+
+- **File only `blocker` and `high` discoveries.** Attach a `--gap-file` only
+  for a finding at `blocker` or `high` that lies outside your issue's scope.
+  Record a `medium` or `low` out-of-scope finding in your step's artifact and
+  in one `docket issue comment add` on your step's own issue instead, one
+  comment covering every such finding, and file nothing for it. This bound
+  governs discoveries outside your work. A gap your contract's Stuck clause
+  requires, and a filing your contract mandates for an item it selects, follow
+  that contract; the two checks below still apply to them.
+- **Search the open backlog before filing.** Before attaching any gap file,
+  search the owning project's open issues for the same locus and defect: run
+  `docket issue list --status backlog,todo,in-progress --limit 1000`, adding
+  `--project` when the finding's home is another project, and read the bodies
+  of likely matches with `docket issue show <id>`. A listing that returns the
+  full 1000 rows is truncated under the absence rule above. A match names the
+  same locus and the same defect; similar titles alone are not a match. On a
+  match, add your evidence as a comment on that issue with
+  `docket issue comment add` and file nothing.
+- **Never file what the target head already fixes.** Before filing, read the
+  cited locus at the target sha, the head your issue's work lands on. A
+  finding that sha already fixes is never filed.
 
 ## Anti-fabrication
 

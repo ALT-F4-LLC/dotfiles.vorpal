@@ -1,6 +1,6 @@
 ---
 node: drain-highs
-version: 20
+version: 21
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -76,6 +76,13 @@ step does not repeat their review or independently verify the defects.
    title) is a duplicate: file nothing for it and record in the report which
    sibling filing it duplicates. This is a cross-issue check within the run; it
    does not require reading every historical drain.
+
+   Extend it once more to the whole project: for every cluster still without
+   a prior filing, run the open-backlog search that evidence-rules' "Search
+   the open backlog before filing" rule defines. An open issue naming the same
+   locus and the same defect is a prior filing: add the cluster's evidence to
+   it as a comment, file nothing, and report its issue ID and current status.
+   Apply that fragment's fixed-head rule to each remaining cluster as well.
 
 4. **Prepare one gap file per selected cluster without a prior filing.**
    Recover its member records from the synthesis artifact's markdown body

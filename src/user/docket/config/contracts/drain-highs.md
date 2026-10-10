@@ -1,6 +1,6 @@
 ---
 node: drain-highs
-version: 21
+version: 22
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -82,7 +82,9 @@ step does not repeat their review or independently verify the defects.
    the open backlog before filing" rule defines. An open issue naming the same
    locus and the same defect is a prior filing: add the cluster's evidence to
    it as a comment, file nothing, and report its issue ID and current status.
-   Apply that fragment's fixed-head rule to each remaining cluster as well.
+   That fragment's "Never file what the target head already fixes" rule does
+   not apply to the clusters this step selects: the judges assessed them at
+   the candidate head, and the supplied judgments stand.
 
 4. **Prepare one gap file per selected cluster without a prior filing.**
    Recover its member records from the synthesis artifact's markdown body

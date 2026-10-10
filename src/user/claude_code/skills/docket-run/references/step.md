@@ -14,7 +14,7 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket step`](#step-commands) — 522 lines
+- [`docket step`](#step-commands) — 528 lines
   - [`step artifacts`](#step-artifacts) — 36 lines
   - [`step claim`](#step-claim) — 34 lines
   - [`step reap`](#step-reap) — 36 lines
@@ -70,6 +70,12 @@ true` even though effective status reads `pending`; operations that inspect
 the stored claim can still refuse until it is reaped. When inputs bind an
 `issue.diff`, `target_sha` and `target_worktree` identify the reviewed tree;
 do not substitute the shared checkout's HEAD when those fields are absent.
+
+A step that parked carries `park_reason`: the engine's own text for what it
+could not decide. It is a separate field from `routing` and is not replaced by
+it: on a resolved park, `routing` holds the resolver's routing and note while
+`park_reason` still holds the question. It is absent on a step that never
+parked, and on one that parked before the field existed.
 
 A step resolved by `step approve`, `step reject`, or `step resolve` carries
 `authority` (`operator`, `standing-grant`, or `conductor`), the value its

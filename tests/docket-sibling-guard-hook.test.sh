@@ -277,6 +277,28 @@ case_own_bootstrap_allows() {
     assert_verdict "cargo test --locked --offline" executor-write "$WAVE_42" ALLOW "own: cargo test"
 }
 
+# A hand-back note that opens with a word and a commit sha is note text, not
+# a command, and a polled path naming docket-git is a path. Neither may read
+# as git run from somewhere it could reach a sibling.
+case_hand_back_text_is_not_a_verb() {
+    local sha=3f84fa3024d4ae116864595bfa4fc0a1b2c3d4e5
+    assert_verdict "docket step fail STEP-42 --note \"Candidate ${sha} failed its gate\" < ${OWN_DIR}/STEP-42.token" executor-write "$WAVE_42" ALLOW "own: step fail with a Candidate <sha> note"
+    assert_verdict "docket step record STEP-42 --note 'Candidate ${sha}' < ${OWN_DIR}/STEP-42.token" executor-write "$WAVE_42" ALLOW "own: step record with a Candidate <sha> note"
+    assert_verdict "for i in 1 2 3; do [ -e ${OWN_DIR}/docket-git.done ] && break; sleep 5; done" executor-write "$WAVE_42" ALLOW "own: counted wait loop on a docket-git path"
+    assert_verdict "rm -rf ${SIB_DIR}" executor-write "$WAVE_42" DENY "control: sibling sweep still denies"
+}
+
+# Under a UTF-8 locale macOS awk refused a lone byte of a multibyte
+# character, so the byte-wise pre-pass failed and the guard denied any
+# command carrying one unquoted. The deny rows show the C-locale pass still
+# closes on a sibling verb beside the same text.
+case_multibyte_text_under_utf8() {
+    LC_ALL=en_US.UTF-8 assert_verdict "echo café" executor-write "$WAVE_42" ALLOW "utf-8: unquoted multibyte word"
+    LC_ALL=en_US.UTF-8 assert_verdict "docket step fail STEP-42 --note \"café — gate failed\" < ${OWN_DIR}/STEP-42.token" executor-write "$WAVE_42" ALLOW "utf-8: own step fail with a multibyte note"
+    LC_ALL=en_US.UTF-8 assert_verdict "echo café && rm -rf ${SIB_DIR}" executor-write "$WAVE_42" DENY "utf-8: multibyte word before a sibling sweep"
+    LC_ALL=en_US.UTF-8 assert_verdict "pkill -f café" executor-read "$WAVE_42" DENY "utf-8: pkill with a multibyte pattern"
+}
+
 # --- Caller scope. ----------------------------------------------------------
 case_scope() {
     assert_verdict "rm -rf ${SIB_DIR}" "" "$OPERATOR" ALLOW "main conversation: sweeping a step dir stays the operator's"
@@ -1697,6 +1719,8 @@ case_friction_log_records_decisions() {
 
 case_acceptance
 case_own_bootstrap_allows
+case_hand_back_text_is_not_a_verb
+case_multibyte_text_under_utf8
 case_scope
 case_own_step_states
 case_own_transcript_from_agent_id

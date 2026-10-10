@@ -909,8 +909,10 @@ SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v mode=scan -v widen="$WIDEN" -f "$
 PREPASS_AWK="${HOOK_DIR}/docket-guard-prepass.awk"
 [ -r "$PREPASS_AWK" ] || { log_decision "deny" "no-prepass"; deny "$REASON_PREFIX the sibling-guard hook's shared pre-pass file (docket-guard-prepass.awk) is missing or unreadable beside this hook, so it cannot check this command. This is a hook installation defect, not a caller mistake -- report it rather than retrying."; }
 # A pre-pass that fails (a program awk cannot parse) leaves the match stage
-# no command to read, so the hook refuses rather than allowing.
-STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk -f "$PREPASS_AWK" 2>/dev/null) || {
+# no command to read, so the hook refuses rather than allowing. The pass
+# walks bytes, and under a UTF-8 locale macOS awk refuses a lone byte of a
+# multibyte character, so it runs in the C locale.
+STRIPPED=$(printf '%s' "$SCAN_TEXT" | LC_ALL=C awk -f "$PREPASS_AWK" 2>/dev/null) || {
     log_decision "deny" "analysis-failure"
     deny "$REASON_PREFIX the sibling-guard hook's pre-pass program failed (docket-guard-prepass.awk), so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
 }
@@ -959,7 +961,7 @@ BEGIN { MARK = "\001"; BQ = "\140"; KW = "^(if|then|else|elif|fi|do|done|while|u
 }
 '
 if [ -n "$TEXT_FRAME" ]; then
-    TEXT_LINES=$(printf '%s' "$TEXT_FRAME" | awk -v mode=scan -v widen="$WIDEN" -f "$LEAF_LINES_AWK" | awk -f "$PREPASS_AWK" 2>/dev/null | awk "$TEXT_SPLIT_AWK") || {
+    TEXT_LINES=$(printf '%s' "$TEXT_FRAME" | awk -v mode=scan -v widen="$WIDEN" -f "$LEAF_LINES_AWK" | LC_ALL=C awk -f "$PREPASS_AWK" 2>/dev/null | awk "$TEXT_SPLIT_AWK") || {
         log_decision "deny" "analysis-failure"
         deny "$REASON_PREFIX the sibling-guard hook's text scan failed, so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
     }

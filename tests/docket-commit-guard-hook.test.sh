@@ -1136,6 +1136,20 @@ case_match_program_failure() {
 # runs under an unapproved gate, the one engine state that reaches the
 # pre-pass; `ls` is allowed by the shipped hook.
 
+# Under a UTF-8 locale macOS awk refused a lone byte of a multibyte
+# character, so the byte-wise pre-pass failed and the guard denied any
+# command carrying one unquoted. The deny rows show the C-locale pass still
+# closes on a git write beside the same text.
+case_multibyte_text_under_utf8() {
+    LC_ALL=en_US.UTF-8 assert_verdict "echo café" ALLOW "utf-8: unquoted multibyte word"
+    LC_ALL=en_US.UTF-8 assert_verdict "echo 'a — b' && git status" ALLOW \
+        "utf-8: quoted multibyte text beside a git read"
+    LC_ALL=en_US.UTF-8 assert_verdict "echo café && git commit -m y" DENY \
+        "utf-8: multibyte word before git commit"
+    LC_ALL=en_US.UTF-8 assert_verdict "git commit -m 'café — fix'" DENY \
+        "utf-8: git commit with a multibyte message"
+}
+
 case_prepass_program_failure() {
     local scratch_dir scratch_hook err rc
     scratch_dir=$(mktemp -d "${TMPDIR:-/tmp}/docket-commit-guard-prepass-broken.XXXXXX") || \
@@ -1289,6 +1303,7 @@ case_missing_prepass_file_denies
 case_missing_probe_file_denies
 case_match_program_failure
 case_prepass_program_failure
+case_multibyte_text_under_utf8
 case_prepass_copies_identical
 case_analysis_bound_denies
 case_input_edge_cases

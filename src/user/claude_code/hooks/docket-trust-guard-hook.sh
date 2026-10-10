@@ -599,8 +599,10 @@ SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v RS='\036' -v widen="$WIDEN" '
 # is fixed at bash/cat/jq/awk, and the test suite runs it with PATH
 # restricted to exactly those.
 # A pre-pass that fails (a program awk cannot parse) leaves the match stage
-# no command to read, so the hook refuses rather than allowing.
-STRIPPED=$(printf '%s' "$SCAN_TEXT" | awk -f "$PREPASS_AWK" 2>/dev/null) || \
+# no command to read, so the hook refuses rather than allowing. The pass
+# walks bytes, and under a UTF-8 locale macOS awk refuses a lone byte of a
+# multibyte character, so it runs in the C locale.
+STRIPPED=$(printf '%s' "$SCAN_TEXT" | LC_ALL=C awk -f "$PREPASS_AWK" 2>/dev/null) || \
     deny "$REASON_PREFIX the trust-guard hook's pre-pass program failed (docket-guard-prepass.awk), so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
 
 # --- THE MATCH, unchanged from the pre-redesign hook. ---------------------

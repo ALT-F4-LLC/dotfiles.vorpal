@@ -5,7 +5,8 @@ description: >-
   to revise an existing brief. Turns a freeform work request into a faithful,
   checkable brief: clarifies material decisions in up to three question
   rounds, then confirms the brief and routes it to /docket-plan, /loop,
-  /docket-tend, /peer, another orchestration skill, or direct execution.
+  /docket-tend, /goal, /peer, another orchestration skill, or direct
+  execution.
 argument-hint: "<freeform work request or revision to an existing brief>"
 ---
 
@@ -110,7 +111,9 @@ automatically an approved deliverable or constraint.
 Use `AskUserQuestion` in successive rounds. Each round covers the current
 frontier: material questions whose prerequisites are settled, up to four
 per call. Prioritize decisions affecting security, docket tracking, Shape,
-and scope, then Role. Ask concrete questions about the work
+and scope, then Role. For trivial one-shot work with checkable criteria,
+whether it runs now or waits for the queue is such a decision, since §3
+rule 5 routes on it. Ask concrete questions about the work
 rather than asking the operator to classify its complexity. Offer a
 recommendation when evidence supports one; do not recommend guesses about
 facts.
@@ -273,13 +276,17 @@ Apply these rules in order:
    requested lifetime. Recommend `/docket-plan` when a pass is larger or
    uncertain, or coordination across passes needs a plan.
 5. **Shape `one-shot`, Security-sensitive `no`, Size hint `trivial`:**
-   recommend `/docket-tend` when the work leaves no decision or judgment open,
-   and direct execution when it does. Recommending `/docket-tend` entails filing
-   the work as a `route-tend` issue, since docket-tend takes work only from that
-   queue.
+   test in this order. Recommend direct execution when the work leaves a
+   decision or judgment open, a criterion needs judgment to check, or the
+   deliverable is an assessment. Otherwise recommend `/docket-tend` when the
+   work can wait for the queue, and `/goal` when the operator wants it now.
+   When the operator states neither, that choice decides the route: ask it
+   under §1. Recommending `/docket-tend` entails filing the work as a
+   `route-tend` issue, since docket-tend takes work only from that queue.
 6. **Other one-shot work:** recommend `/docket-plan`.
 
-Resolve an unknown Shape before recommending execution. Investigative
+Resolve an unknown Shape before recommending execution, and the rule 5
+choice between now and the queue when the operator has not stated it. Investigative
 uncertainty may travel with a docket brief; an unresolved operator decision
 needed to authorize the work may not.
 
@@ -302,6 +309,22 @@ read. The
 [peer](../peer/SKILL.md) skill's input contract is the brief block
 verbatim.
 
+**Goal handoff.** `/goal` is the harness's built-in command, not a skill:
+only the operator can type it, and the `Skill` tool cannot start it. Once
+typed, it keeps this conversation taking turns until an evaluator clears
+its condition. The condition is also the directive for the work, and the
+evaluator reads the conversation only; it cannot run commands or read
+files. The route therefore converts the brief into a goal: before
+confirmation, prepare a single `/goal <condition>` line as the handoff.
+The condition states the Goal as the done-state, keeps each acceptance
+criterion's wording, carries the scope, exclusions, and constraints, and
+names the evidence that must appear in the conversation to show each
+criterion met, such as a check's command and its passing output. If the brief does not fit the command's 4,000-character condition
+limit, report that instead of truncating. A session holds one goal, and a
+new one replaces it, so say so at confirmation when a goal may be active.
+Offer the route only when `/goal` is available in this session; it runs
+as a hook, so settings that disable hooks remove it.
+
 Recommend only routes whose entry points and required capabilities are
 available. If a required route is unavailable, emit the brief with the
 blocker rather than silently downgrading to direct execution or another
@@ -318,8 +341,8 @@ information, report the incompatibility.
 
 Present the complete brief verbatim, followed by every route this skill
 can select, including routes §3 excludes: `/docket-plan`, `/loop`,
-`/docket-tend`, `/peer`, direct execution, and any orchestration alternative
-weighed under §3. Give each route one line stating why it fits or which §3
+`/docket-tend`, `/goal`, `/peer`, direct execution, and any orchestration
+alternative weighed under §3. Give each route one line stating why it fits or which §3
 rule excludes it, and mark the recommended route. If
 the downstream input requires a different structure, show the prepared
 handoff as well.
@@ -380,6 +403,10 @@ where a route bullet below says so.
   scope and acceptance criteria exists, filing one if it does not, and
   report that the work waits for the next docket-tend tick. The Role does not
   reach the worker, whose brief is the issue verbatim.
+- **`/goal`:** Print the confirmed `/goal` line in a fenced block for the
+  operator to type, report the work as pending until they do, and stop. Do
+  not begin the work directly: the line is the handoff, and typing it
+  starts the work in this conversation, where the Role still holds.
 - **`/peer`:** Invoke `peer` with `dispatch <session>` and the confirmed
   brief block verbatim as `args`. The peer skill in the receiving session
   re-selects the route by §3 under its own project and confirms it there

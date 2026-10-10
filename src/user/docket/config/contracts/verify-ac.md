@@ -1,6 +1,6 @@
 ---
 node: verify-ac
-version: 20
+version: 21
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -110,6 +110,12 @@ records behind it. A reproducible procedure with no observed result is a
 proposed check. Resolve conflicting evidence only as far as provenance and
 applicability allow; otherwise preserve the conflict and its effect on the
 affected judgment.
+
+Check an AC's mutant clause (`Mutant: ... the test then fails`) against the
+mutation diff, test command, and failing output the change-summary inlines.
+Never read another step's scratch directory; a path cited there is not
+evidence. When the inlined evidence is absent or incomplete, report the clause
+unverified and judge it `unverifiable`, naming the missing evidence.
 
 **Judge the criterion as written.** Use only these payload statuses:
 

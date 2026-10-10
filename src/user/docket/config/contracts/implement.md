@@ -1,6 +1,6 @@
 ---
 node: implement
-version: 19
+version: 20
 archetype: executor-write
 packet_includes:
   - fragments/code-philosophy.md
@@ -95,6 +95,11 @@ Include:
   and final result. Include observed pre-fail and post-pass output for changed
   testable behavior; use actual baseline and final evidence for existing behavior
   and other criteria. Account for required deliverables too.
+- **Mutant evidence:** for every mutant an AC names, inline the mutation diff,
+  the exact test command, and its observed failing output trimmed to the
+  decisive lines. A path under your private step scratch directory is not
+  evidence for a mutant: no other step can read it. Write none when no AC
+  names a mutant.
 - **Completion checks:** gate, build, and test commands and real output under the
   evidence and completion-gates rules. Explain any shared evidence mapping.
 - **Decisions:** material choices the issue left open, the design-search
@@ -103,7 +108,7 @@ Include:
 - **Denials:** as completion-gates requires; write none when there were none.
 - **Known limits:** evidence boundaries and matters reviewers should probe.
 
-Do not restate the diff. Record the artifact with `step record` using the
+Do not restate the candidate diff. Record the artifact with `step record` using the
 brief's procedure, and verify that recording succeeded before claiming the
 step was recorded.
 

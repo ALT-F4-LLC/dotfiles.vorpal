@@ -1,6 +1,6 @@
 ---
 node: fix
-version: 25
+version: 26
 archetype: executor-write
 packet_includes:
   - fragments/code-philosophy.md
@@ -125,11 +125,12 @@ of the candidate:
 - Remove or bypass only the enforcement under test in the copy. Confirm that
   the regression runs against that copy and fails for the expected behavioral
   reason, with setup and test discovery still valid.
-- Retain the mutation diff, command, candidate identity, and decisive results.
-  A syntax error or missing project file proves nothing about enforcement. If
-  another valid control still enforces the invariant, investigate that
-  result; do not weaken the invariant or pin an incidental call to kill a
-  mutant.
+- Record the candidate identity, and inline the mutation diff, exact test
+  command, and decisive failing output under the change-summary's mutant
+  evidence; a scratch path does not substitute for them. A syntax error or
+  missing project file proves nothing about enforcement. If another valid
+  control still enforces the invariant, investigate that result; do not
+  weaken the invariant or pin an incidental call to kill a mutant.
 
 Never plant or undo scratch mutations in the assigned worktree. Ordinary
 pinned tests run from that worktree; faithful private copies serve the
@@ -230,6 +231,11 @@ include:
   without losing member IDs. Give the design-search record for each repair:
   candidates weighed, the pick, why it won, or the one-line reason the
   search did not apply.
+- **Mutant evidence:** for every mutant an AC names, and every mutant run
+  under this contract's falsification, inline the mutation diff, the exact
+  test command, and its observed failing output trimmed to the decisive
+  lines. A path under your private step scratch directory is not evidence
+  for a mutant: no other step can read it. Write none when no mutant ran.
 - **Findings not addressed:** ID, disposition, evidence, and remaining
   question or owning stage. Distinguish disproven premise, supported
   disagreement, unsuccessful reproduction, scope block, and unavailable
@@ -249,10 +255,10 @@ include:
   needed, and follow-up references. Preserve partial work and evidence
   through the brief's gap channel when gaps prevent ordinary handoff.
 
-Do not restate the diff; review receives the engine's delta. Preserve the
-obligation IDs, declarations, candidate identity, dispositions, evidence
-references, attempted repairs, and unresolved gaps across compaction or
-handoff.
+Do not restate the candidate diff; review receives the engine's delta.
+Preserve the obligation IDs, declarations, candidate identity, dispositions,
+evidence references, attempted repairs, and unresolved gaps across
+compaction or handoff.
 
 # Stuck
 Gap the dependent work when required inputs are missing, requirements remain

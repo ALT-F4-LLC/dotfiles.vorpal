@@ -390,7 +390,7 @@ Then write the ruling into the run, before the first `dispatch open` of
 the wave that will meet the gate, so you never rediscover it per step:
 
 ```bash
-docket run note add $RUN --authority conductor --text "Gate tests fails on clean HEAD \
+docket run note add $RUN --authority operator --text "Gate tests fails on clean HEAD \
   (routing_sweep_test.go), pre-existing and tracked as <issue>; \
   disposition: override-pass. Do not re-derive it and do not file a gap." \
   < <scratchpad>/conductor.d/$RUN.token

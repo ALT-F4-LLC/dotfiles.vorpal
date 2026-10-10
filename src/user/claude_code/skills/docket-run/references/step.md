@@ -14,7 +14,7 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket step`](#step-commands) — 517 lines
+- [`docket step`](#step-commands) — 522 lines
   - [`step artifacts`](#step-artifacts) — 36 lines
   - [`step claim`](#step-claim) — 34 lines
   - [`step reap`](#step-reap) — 36 lines
@@ -70,6 +70,11 @@ true` even though effective status reads `pending`; operations that inspect
 the stored claim can still refuse until it is reaped. When inputs bind an
 `issue.diff`, `target_sha` and `target_worktree` identify the reviewed tree;
 do not substitute the shared checkout's HEAD when those fields are absent.
+
+A step resolved by `step approve`, `step reject`, or `step resolve` carries
+`authority` (`operator`, `standing-grant`, or `conductor`), the value its
+ruling was recorded under. `authority_ref` names the grant and appears only
+beside `standing-grant`. Both are absent on a step no ruling has resolved.
 
 `step show` renders a **gate summary** when the step has recorded gate
 results — a verdict, the gate name, an exit code, and a pointer to

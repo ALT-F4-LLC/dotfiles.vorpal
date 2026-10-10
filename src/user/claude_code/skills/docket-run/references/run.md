@@ -15,16 +15,16 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket run`](#run-commands) — 785 lines
+- [`docket run`](#run-commands) — 794 lines
   - [`run start`](#run-start) — 49 lines
   - [`run issue add|remove RUN-N DKT-N...`](#run-issue) — 38 lines
   - [`run note add|list`](#run-note) — 29 lines
   - [`run refresh-scope`](#run-refresh-scope) — 31 lines
   - [`run report RUN-N`](#run-report) — 103 lines
-  - [`run activate RUN-N`](#run-activate) — 210 lines
+  - [`run activate RUN-N`](#run-activate) — 218 lines
   - [`run conduct RUN-N`](#run-conduct) — 45 lines
   - [`run pause|resume|abandon RUN-N`](#run-lifecycle) — 90 lines
-  - [`run repin RUN-N --reason R`](#run-repin) — 67 lines
+  - [`run repin RUN-N --reason R`](#run-repin) — 68 lines
   - [`pin show RUN-N PATH`](#pin-show) — 15 lines
   - [`run budget RUN-N [--set N]`](#run-budget) — 71 lines
   - [`run status [RUN-N]`](#run-status) — 29 lines
@@ -379,7 +379,8 @@ change nothing.
 
 **A re-activation does not re-scan.** It inherits its pin set, so a config
 file edited while a run is under way is invisible to that run and cannot
-trigger the refusal above.
+trigger the refusal above. The one exception is a `policy.toml` the run did
+not start under (see re-activation below).
 
 **A repo with no `.docket/config/` is untouched by any of this**: the
 directory is checked once, and an absent one skips the scan entirely.
@@ -480,6 +481,13 @@ file edited since activation does not reach a run already under way. Its
 success line says so: `(re-activation: original pin set inherited, nothing
 re-registered)`, since counts alone would read as fresh binding-and-pinning
 work.
+
+The one exception is `policy.toml`. When the original pin set held none and
+the config now has one, re-activation pins it, because waiting rows adopt it
+from then on. Human mode warns on **stderr** that the run did not start under
+it. The JSON envelope carries it as `new_policy_pin` `{ref, sha256}`, omitted
+when no new policy pin was recorded. A `policy.toml` the run already pinned is
+inherited like any other file.
 
 Refusals: unbindable issue / work-graph cycle / run with no issues / context
 over `context.error_bytes` → `VALIDATION_ERROR` (3); missing run or `--pin`
@@ -647,7 +655,8 @@ content-hash granularity, and `docket run verify-pins RUN-N` reports when
 one no longer matches disk (`ok` / `changed` / `missing` per pin,
 `CONFLICT`/`NOT_FOUND` if any is unsound) — but writes nothing, not even a
 re-pin. Re-activation makes that permanent: it deliberately **inherits** the
-original pin set rather than re-scanning (see `run activate` above).
+original pin set rather than re-scanning, adding only a `policy.toml` the run
+did not start under (see `run activate` above).
 Without `repin`, a corpus install that replaces a pinned file out from
 under an active or parked run would leave abandon and a full re-plan as the
 only disposition.

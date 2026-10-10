@@ -1,6 +1,6 @@
 ---
 fragment: test-infra-discipline
-version: 7
+version: 8
 ---
 # Test-infrastructure discipline
 
@@ -45,8 +45,10 @@ production concerns, scaled to the behavior and users it supports.
   nonzero exit alone, do not establish detection. Run code-mutating probes only
   in a private copy containing the intended candidate changes; never plant and
   undo a scratch mutation in the shared checkout. Preserve the probe and result
-  as evidence before removing disposable files. A throwaway probe does not
-  replace warranted regression coverage.
+  as evidence before removing disposable files: the control result and mutation
+  diff land inline in the implement step's change-summary, not as a
+  scratch-directory path. A throwaway probe does not replace warranted
+  regression coverage.
 - **A failure hook must be exercised.** Provide the injection point for each
   claimed retry, timeout, or degradation behavior; fragments/tdd-discipline.md governs
   asserting the behavior it enables. An available but unused failure hook

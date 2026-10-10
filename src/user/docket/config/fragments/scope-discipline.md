@@ -1,6 +1,6 @@
 ---
 fragment: scope-discipline
-version: 11
+version: 12
 ---
 # Scope discipline
 
@@ -24,7 +24,9 @@ authorize it. Disclosure records a deviation; it does not authorize one.
   targeted edits and preserve unrelated content. Scripts, formatters, generators,
   and test commands count as writers when they change files. Keep scratch
   mutations in the private per-step scratch directory your brief names (the
-  wave's SCRATCH HYGIENE rules), not elsewhere in the checkout.
+  wave's SCRATCH HYGIENE rules), not elsewhere in the checkout. Any probe or
+  mutation evidence a later step needs lands inline in the implement step's
+  change-summary, not as a scratch-directory path.
 - **Include necessary work without granting yourself more scope.** Required
   callers, focused tests, documentation, configuration, and removal of code
   superseded by this change belong in the authorized fix. If they require a

@@ -1,6 +1,6 @@
 ---
 fragment: evidence-rules
-version: 9
+version: 10
 ---
 # Evidence rules
 
@@ -81,7 +81,8 @@ unresolved question warrants it.
   comment covering every such finding, and file nothing for it. This bound
   governs discoveries outside your work. A gap your contract's Stuck clause
   requires, and a filing your contract mandates for an item it selects, follow
-  that contract; the two checks below still apply to them.
+  that contract; the two checks below still apply to them unless that
+  contract exempts its selected items from a check by name.
 - **Search the open backlog before filing.** Before attaching any gap file,
   search the owning project's open issues for the same locus and defect: run
   `docket issue list --status backlog,todo,in-progress --limit 1000`, adding

@@ -816,8 +816,11 @@ hold where only the second cluster trips materializes `#1` and no `#0`.)
 
 | Verb | Effect |
 |---|---|
-| `docket step approve <held> [--note N] [--value V]` | records a **new** artifact on the routing step with `operator_resolved: true` on **that cluster**, marks the held step `done` |
-| `docket step reject <held> [--note N]` | records **no** artifact for that cluster, marks the held step `done` |
+| `docket step approve <held> --authority A [--note N] [--value V]` | records a **new** artifact on the routing step with `operator_resolved: true` on **that cluster**, marks the held step `done` |
+| `docket step reject <held> --authority A [--note N]` | records **no** artifact for that cluster, marks the held step `done` |
+
+Both verbs require `--authority` and, on a bound run, the run's conductor
+capability; see [the run's conductor capability](transport.md#the-runs-conductor-capability).
 
 **`--value V` is the corrected value for the cluster's aggregated field.** It
 lands on the **field itself**, so every threshold and downstream input

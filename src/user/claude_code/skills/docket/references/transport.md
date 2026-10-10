@@ -178,9 +178,9 @@ carries `code: "NOT_FOUND"` only because the engine reuses that code to exit
 |---|---|---|
 | `GENERAL_ERROR` | 1 | Unclassified failure (DB error, I/O error, etc.) |
 | `NOT_FOUND` | 2 | Referenced issue/doc/proposal/label/relation does not exist |
-| `VALIDATION_ERROR` | 3 | Bad input: invalid enum value, missing required flag, mutually exclusive flags, non-interactive environment without required flags, invalid `--json` value, negative `--limit` under v2, `--if-version < 1`, no capability token supplied to a verb that requires one (a lease verb, or one of the seven operator verbs on a conductor-bound run) |
+| `VALIDATION_ERROR` | 3 | Bad input: invalid enum value, missing required flag, mutually exclusive flags, non-interactive environment without required flags, invalid `--json` value, negative `--limit` under v2, `--if-version < 1`, no capability token supplied to a verb that requires one (a lease verb, or a conductor-gated verb on a conductor-bound run) |
 | `CONFLICT` | 4 | State conflict: duplicate relation, cycle detected, already-voted, non-empty project on import without `--merge`/`--replace`, `--if-version` mismatch, a dispatch already open for the run, `next --run` while a dispatch is open or discrepancies exist, `dispatch verify` byte mismatch, `dispatch close` over an unreconciled discrepancy, `dispatch backfill-usage` repeating a `(step, attempt, unit)` already recorded, any dispatch verb finding no manifest open, `step annotate` on a step that has not finished, or `issue move --project` on an issue a run holds |
-| `AUTH_ERROR` | 5 | The supplied capability token does not hold this lease (or the entity is unclaimed), or is not the run's current conductor capability on `step approve\|reject\|resolve\|reap` / `run pause\|resume\|abandon` |
+| `AUTH_ERROR` | 5 | The supplied capability token does not hold this lease (or the entity is unclaimed), or is not the run's current conductor capability on a conductor-gated verb: `step approve`, `step reject`, `step resolve`, `step reap`, `step hold`, `run pause`, `run resume`, `run abandon`, `run fact add`, or a ruling (`step annotate --integrated-sha`, `run note add`, `run refresh-scope`, `dispatch waive-target`, `dispatch abandon`, `dispatch close --skip-integration-check`, `vote commit` on a vote-step proposal) |
 | `STALE_LEASE` | 6 | The token is correct but the lease has expired — claim again |
 | `TIMEOUT` | 7 | Reserved — no verb emits this yet |
 | `UNTRUSTED` | 8 | Reserved — no verb emits this yet |
@@ -323,22 +323,40 @@ retiring the standing one and recording a `conductor-seated` event with
 conductor died stays recoverable; the seat is tamper-evident, not
 tamper-proof, and `events list --run` shows who took it.
 
-On a bound run the seven operator verbs — `step approve`, `step reject`,
-`step resolve`, `step reap`, `run pause`, `run resume`, `run abandon` (with
-or without `--issue`) — read it from `DOCKET_TOKEN` or stdin, never argv,
-after the step or run is found and before anything is written. A run
-activated before the capability existed asks for nothing until it is
-conducted. Five of them, `step approve`, `step reject`, `step resolve`,
-`run pause` and `run abandon`, also require `--authority` from the closed
-set `operator`, `standing-grant`, `conductor`, with `--authority-ref`
-required alongside `standing-grant` and refused otherwise; `step reap` and
-`run resume` take no `--authority`. Executor verbs
-(`step claim|heartbeat|record|fail`) are untouched, and an executor is
-never handed this token.
+On a bound run the conductor-gated verbs read it from `DOCKET_TOKEN` or
+stdin, never argv, after their target is found and before anything is
+written:
+
+- `step approve`, `step reject`, `step resolve`, `step reap`, `step hold`
+- `run pause`, `run resume`, `run abandon` (with or without `--issue`)
+- `run fact add`
+- the rulings: `step annotate --integrated-sha`, `run note add`,
+  `run refresh-scope`, `dispatch waive-target`, `dispatch abandon`,
+  `dispatch close --skip-integration-check`, and `vote commit` on a
+  vote-step proposal
+
+`dispatch close` without `--skip-integration-check` and `vote commit` on a
+conversational `vote create` proposal stay token-free. A run activated
+before the capability existed asks for nothing until it is conducted.
+
+Three `--authority` rules apply:
+
+- `step approve`, `step reject`, `step resolve`, `run pause` and
+  `run abandon` require `--authority` from the closed set `operator`,
+  `standing-grant`, `conductor`, with `--authority-ref` required alongside
+  `standing-grant` and refused otherwise.
+- `run note add` requires `--authority operator` when the note records the
+  operator's words, or `--authority conductor` for the conductor's own
+  ruling. It has no default, and `standing-grant` is refused.
+- `step reap`, `step hold`, `run resume` and `run fact add` take no
+  `--authority`.
+
+Executor verbs (`step claim|heartbeat|record|fail`) are untouched, and an
+executor is never handed this token.
 
 | Situation | Code | Exit |
 |---|---|---|
-| No token supplied to one of the seven on a bound run | `VALIDATION_ERROR` | 3 |
+| No token supplied to a conductor-gated verb on a bound run | `VALIDATION_ERROR` | 3 |
 | Token is not the run's current conductor capability (a step's lease token included) | `AUTH_ERROR` | 5 |
 | `run conduct` on a `done` or `abandoned` run | `CONFLICT` | 4 |
 
@@ -349,7 +367,7 @@ moment ago means another caller took the seat.
 Supply it per command, never through the ambient environment: a variable
 exported once reaches every child process, and under an agent harness every
 subagent's shell inherits that environment. Redirect an owner-only file into
-stdin (`docket step approve STEP-N --note '…' < <dir>/RUN-N.token`) or set
+stdin (`docket step approve STEP-N --authority operator --note '…' < <dir>/RUN-N.token`) or set
 `DOCKET_TOKEN` on that one invocation. Do not rely on the stdin fallback
 with nothing redirected: the CLI drains stdin to EOF on a bound run, so a
 harness whose stdin is an open pipe blocks until the tool timeout, while a

@@ -15,14 +15,14 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket run`](#run-commands) — 779 lines
+- [`docket run`](#run-commands) — 785 lines
   - [`run start`](#run-start) — 49 lines
   - [`run issue add|remove RUN-N DKT-N...`](#run-issue) — 38 lines
-  - [`run note add|list`](#run-note) — 26 lines
+  - [`run note add|list`](#run-note) — 29 lines
   - [`run refresh-scope`](#run-refresh-scope) — 31 lines
   - [`run report RUN-N`](#run-report) — 103 lines
   - [`run activate RUN-N`](#run-activate) — 210 lines
-  - [`run conduct RUN-N`](#run-conduct) — 42 lines
+  - [`run conduct RUN-N`](#run-conduct) — 45 lines
   - [`run pause|resume|abandon RUN-N`](#run-lifecycle) — 90 lines
   - [`run repin RUN-N --reason R`](#run-repin) — 67 lines
   - [`pin show RUN-N PATH`](#pin-show) — 15 lines
@@ -139,11 +139,14 @@ capability on stdin, so the text comes
 from `--text` or `--file <path>`, never `--file -`.
 
 ```bash
-docket run note add RUN-N --file note.txt --json < <scratchpad>/conductor.d/RUN-N.token
+docket run note add RUN-N --authority conductor --file note.txt --json < <scratchpad>/conductor.d/RUN-N.token
 docket run note list RUN-N --json
 ```
 
 `add` requires exactly one of `--text` or `--file`; `--file -` reads stdin.
+`add` also requires `--authority operator|conductor`, with no default:
+`operator` when the note records the operator's words, `conductor` for the
+conductor's own ruling.
 The note is capped at 16 KiB and one trailing newline is dropped from file
 input. Notes are append-only and event-logged; record a later correction
 instead of editing history. Adding is allowed while planning, active, or
@@ -511,9 +514,12 @@ and extracts the field without printing it.
 
 The conductor verbs — the nine operator verbs `step
 approve|reject|resolve|reap|hold`, `run pause|resume|abandon` (with or
-without `--issue`), `run fact add`, and the four ruling verbs `step
+without `--issue`), `run fact add`, and the seven ruling verbs `step
 annotate --integrated-sha`, `run note add`, `run refresh-scope`, `dispatch
-waive-target` — require the capability
+waive-target`, `dispatch abandon`, `dispatch close
+--skip-integration-check` (a close without the skip stays token-free), and
+`vote commit` on a vote-step proposal (a conversational `vote create`
+proposal stays token-free) — require the capability
 on a bound run, via `DOCKET_TOKEN` or stdin, never argv (there is no
 `--token` flag on any verb): none supplied is `VALIDATION_ERROR` (exit 3)
 naming both channels and this verb; a wrong one, a step's lease token

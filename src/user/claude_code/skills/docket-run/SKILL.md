@@ -114,10 +114,16 @@ engine mutating verb, a trust verb, or a launch; those stay yours.
 The engine binds the CONDUCTOR VERBS to a run-scoped CONDUCTOR CAPABILITY:
 the nine operator verbs, `docket step approve|reject|resolve|reap|hold`,
 `docket run pause|resume|abandon` (with or without `--issue`), and `docket
-run fact add`; and the four ruling verbs, `docket step annotate
+run fact add`; and the seven ruling verbs, `docket step annotate
 --integrated-sha` (the plain `--metadata` form stays token-free), `docket
-run note add`, `docket run refresh-scope`, and `docket dispatch
-waive-target`. The capability is a 256-bit
+run note add`, `docket run refresh-scope`, `docket dispatch
+waive-target`, `docket dispatch abandon`, `docket dispatch close
+--skip-integration-check` (a close without the skip stays token-free),
+and `docket vote commit` on a vote-step proposal (a conversational `vote
+create` proposal stays token-free). `run note add` also requires
+`--authority operator|conductor`, with no default: `operator` when the
+note records the operator's words, `conductor` for your own ruling. The
+capability is a 256-bit
 token a run's first `docket run activate` returns exactly once
 (`conductor_token` in the `--json=v2` envelope; its own trailing stdout
 line in human mode), of which the store keeps only the hash. On a bound
@@ -211,7 +217,9 @@ docket step resolve STEP-N --as override-pass --drop-interposed --authority stan
 docket run abandon $RUN --issue <issue> --reason "classifier-stopped twice: <step>; re-plan <new-id>" --authority standing-grant --authority-ref classifier-stopped-twice < <scratchpad>/conductor.d/$RUN.token
 docket run fact add $RUN --kind step-deferred --step STEP-N --cause <budget|chain> --reason "<the row's status>" < <scratchpad>/conductor.d/$RUN.token
 docket run fact add $RUN --kind vote-reseated --proposal <proposal-id> --voter <seat> --reason "<why the seat was re-seated>" < <scratchpad>/conductor.d/$RUN.token
-docket run note add $RUN --text "<the ruling>" < <scratchpad>/conductor.d/$RUN.token
+docket run note add $RUN --authority conductor --text "<the ruling>" < <scratchpad>/conductor.d/$RUN.token
+docket run note add $RUN --authority operator --text "<their words>" < <scratchpad>/conductor.d/$RUN.token
+docket dispatch abandon --run $RUN --reason "<why the manifest is given up>" < <scratchpad>/conductor.d/$RUN.token
 docket run refresh-scope $RUN --issue <ID> --reason "<the authorized scope change>" < <scratchpad>/conductor.d/$RUN.token
 docket step annotate STEP-N --integrated-sha <new full sha> --metadata '{"writer_sha":"<sha>"}' < <scratchpad>/conductor.d/$RUN.token
 EOF
@@ -225,7 +233,8 @@ done, or abandoned run removes it with the token.
 conductor verb, in every example below and on every path this file names
 (the standing rulings, the operator escalation, a forced reap, a hold, a
 run fact, a run note, a scope refresh, an integration annotate, a target
-waiver, a pause, a resume, an abandon), ends in `< <scratchpad>/conductor.d/$RUN.token`:
+waiver, a dispatch abandon, a skip-integration close, a vote-step commit,
+a pause, a resume, a run abandon), ends in `< <scratchpad>/conductor.d/$RUN.token`:
 
 ```bash
 docket step approve STEP-N --authority operator --note "<their words>" < <scratchpad>/conductor.d/$RUN.token
@@ -381,7 +390,7 @@ Then write the ruling into the run, before the first `dispatch open` of
 the wave that will meet the gate, so you never rediscover it per step:
 
 ```bash
-docket run note add $RUN --text "Gate tests fails on clean HEAD \
+docket run note add $RUN --authority conductor --text "Gate tests fails on clean HEAD \
   (routing_sweep_test.go), pre-existing and tracked as <issue>; \
   disposition: override-pass. Do not re-derive it and do not file a gap." \
   < <scratchpad>/conductor.d/$RUN.token
@@ -788,8 +797,9 @@ more waves.
 
 If `dispatch open --json` still exceeds size limits, never hand-chunk the
 JSON (the manifest is hashed and a retyped copy won't match): run
-`dispatch verify`, then `dispatch abandon` naming the
-size constraint in `--reason`, then reopen smaller. To inspect an oversized answer, pipe
+`dispatch verify`, then `docket dispatch abandon --run $RUN --reason
+"<the size constraint>" < <scratchpad>/conductor.d/$RUN.token`, then
+reopen smaller. To inspect an oversized answer, pipe
 `jq -c '.data.rows[]' > rows.jsonl` and page it with `Read`'s
 `offset`/`limit`, never reconstructing rows by hand.
 
@@ -1240,7 +1250,8 @@ close, with one difference at the end:
    the ack-reap proposal keyed `reap-ack:<run>:<seq>` on that reap's
    `lease-reaped` seq, and only then convene the panel.
 3. Close when every launched step is recorded or reaped. Abandon
-   (`docket dispatch abandon`, reserved to the
+   (`docket dispatch abandon --run $RUN --reason "<why the manifest is
+   given up>" < <scratchpad>/conductor.d/$RUN.token`, reserved to the
    conductor, never a panel's)
    only when a step can neither record nor be reaped; if the back-fill
    refused against the abandon, include the refusal verbatim in the
@@ -1279,8 +1290,12 @@ jq -s add "$TMPDIR/wave-<wfId-0>.json" "$TMPDIR/wave-<wfId-1>.json" > "$TMPDIR/d
 #    loop-extension standing ruling under Gates convenes the panel first and
 #    integrates only on its approval.
 #    --skip-integration-check REASON is the operator's override, recorded on
-#    the close event; it is never yours to pass. Read the whole output.
+#    the close event; pass it only on the operator's recorded word, never
+#    on your own ruling. Read the whole output.
 docket dispatch close --run $RUN --backfill-from "$TMPDIR/dispatch-<M>-rows.json" --source "wave-journal:<wfId-0>,<wfId-1>" --json
+# 4b. the operator's override: unlike a plain close it is a conductor verb,
+#    so the token rides stdin.
+docket dispatch close --run $RUN --skip-integration-check "<the operator's reason>" --json < <scratchpad>/conductor.d/$RUN.token
 # 5. re-close after a verify or close refusal you have answered (a recorded-then-
 #    parked step confirmed with `docket step show STEP-N`, or a CONFLICT sha
 #    integrated): bare, never --backfill-from again, since its rows already landed.
@@ -1718,8 +1733,8 @@ the same close.** Closing it as a duplicate (comment, then close, per
 still carry no note, and workers are not briefed to search the backlog,
 so every later verify-ac step re-files the same gap and you dedupe it
 again. Before the next `dispatch open`, read `docket run note list $RUN`;
-if no note names that tracker and its disposition, `docket run note add`
-(token redirected) lands one now, in the clean-HEAD ruling form. One run closed eleven
+if no note names that tracker and its disposition, `docket run note add
+$RUN --authority conductor` (token redirected) lands one now, in the clean-HEAD ruling form. One run closed eleven
 duplicates of one pre-gate failure by hand, one per wave, with no note
 ever landed.
 A gap's own `Files:` and `Scope:` header lines already set the filed

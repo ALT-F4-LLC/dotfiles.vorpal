@@ -275,7 +275,9 @@ a gate's outcome and missing seats, and `run report` for status, artifacts,
 checks, and spend. `run status` is the inspection verb; there is no `run
 show`. Use `run note add` for a correction that later work packets
 must carry, and `run refresh-scope` after an authorized scope edit when an
-active run needs the new declaration. Check current preconditions in help
+active run needs the new declaration; on a run bound to a conductor
+capability both need its token, so they belong to the session driving the
+run under docket-run. Check current preconditions in help
 and the CLI reference before changing state. `policy resolve` and `registry
 audit` inspect pinned model routing and workflow/schema registry drift when
 available; the base CLI skill does not choose an execution model.

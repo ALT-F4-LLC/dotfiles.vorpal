@@ -17,14 +17,14 @@ against that build's source, not by the sweep.
 ## Contents
 
 - [`docket next` in step mode](#next-run) — 85 lines
-- [`docket dispatch`](#dispatch-commands) — 321 lines
+- [`docket dispatch`](#dispatch-commands) — 322 lines
   - [`dispatch open`](#dispatch-open) — 77 lines
   - [`dispatch extend`](#dispatch-extend) — 23 lines
   - [`dispatch verify`](#dispatch-verify) — 37 lines
   - [`dispatch close`](#dispatch-close) — 39 lines
   - [`dispatch backfill-usage`](#dispatch-backfill-usage) — 49 lines
   - [`dispatch abandon`](#dispatch-abandon) — 18 lines
-  - [`dispatch waive-target`](#dispatch-waive-target) — 22 lines
+  - [`dispatch waive-target`](#dispatch-waive-target) — 23 lines
   - [The write-reap acknowledgment](#dispatch-write-reap-ack) — 29 lines
 
 <a id="next-run"></a>
@@ -396,7 +396,8 @@ the crash finishes normally.
 Records that a `stale_targets` warning was investigated and ruled
 acceptable. The advisory recomputes on every `open` and `verify` and has no
 memory, so without a waiver an investigated warning re-fires at every later
-open and verify of the same (step, target) pair.
+open and verify of the same (step, target) pair. On a bound run it is a
+conductor verb: redirect `< <scratchpad>/conductor.d/RUN-N.token` into it.
 
 **A waiver suppresses only the exact pair it names.** The same step warning
 about a different sha, or the same sha on a step no waiver names, warns as

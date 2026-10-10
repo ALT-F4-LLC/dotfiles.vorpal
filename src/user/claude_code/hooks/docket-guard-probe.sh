@@ -211,9 +211,12 @@ _guard_probe() {
 }
 readonly -f _guard_probe
 # The cap tokens: 2000 bytes in a pipe whose writer exits once they are
-# written, so an empty pipe reads as end of file, never as a wait.
-_leaf_fill=$(printf "%2000s" "")
-exec 7< <(printf "%s" "${_leaf_fill// /x}") 8>&1 9>/dev/null
+# written, so an empty pipe reads as end of file, never as a wait. The
+# string is built by doubling: bash 3.2's `${var// /x}` over 2000 bytes took
+# about 0.35 s, most of each hook run.
+_leaf_fill=x
+while [ "${#_leaf_fill}" -lt 2000 ]; do _leaf_fill=$_leaf_fill$_leaf_fill; done
+exec 7< <(printf "%s" "${_leaf_fill:0:2000}") 8>&1 9>/dev/null
 set -r
 trap _guard_probe DEBUG
 eval -- "$COMMAND"

@@ -3,6 +3,15 @@
 Version history of `workflows/ui-change.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 43
+
+The `verify-ac` step gains the `issue.latest.change-summary` input beside
+`implement.change-summary`. After a fix round, the latest change-summary is
+the fix step's, which carries the round's inlined mutant evidence; with
+only implement's summary, verify-ac judged a fix-round mutant clause
+unverifiable. Takes effect for runs activated after install. No topology,
+routing, or limit change.
+
 ## 42
 
 The executor steps `synthesize-findings`, `drain-highs`, `design-qa`, and

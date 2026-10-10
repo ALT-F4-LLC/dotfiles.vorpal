@@ -1,6 +1,6 @@
 ---
 node: verify-ac
-version: 21
+version: 22
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -113,7 +113,9 @@ affected judgment.
 
 Check an AC's mutant clause (`Mutant: ... the test then fails`) against the
 mutation diff, test command, and failing output the change-summary inlines.
-Never read another step's scratch directory; a path cited there is not
+When your inputs carry more than one change-summary, judge each mutant clause
+against the latest one, the summary of the round that produced the candidate
+you are verifying. Never read another step's scratch directory; a path cited there is not
 evidence. When the inlined evidence is absent or incomplete, report the clause
 unverified and judge it `unverifiable`, naming the missing evidence.
 

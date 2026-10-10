@@ -636,8 +636,9 @@ later re-activation never reaches the packets the writers render: they
 see the original text and stop on the conflict the amendment already
 resolved.
 Route a pre-expansion amendment through the run instead: `docket run
-note add $RUN --text "..."` for criteria (run notes
-render into every later packet) and `docket run refresh-scope RUN-N
+note add $RUN --authority operator --text "..."` for criteria when it
+relays the operator's amendment, `--authority conductor` when the
+amendment is your own ruling (run notes render into every later packet) and `docket run refresh-scope RUN-N
 --issue DKT-M --reason R` for scope, each with the token redirected. Then confirm the amendment appears in `docket step render
 STEP-N` before dispatching that step.
 
@@ -1734,7 +1735,10 @@ still carry no note, and workers are not briefed to search the backlog,
 so every later verify-ac step re-files the same gap and you dedupe it
 again. Before the next `dispatch open`, read `docket run note list $RUN`;
 if no note names that tracker and its disposition, `docket run note add
-$RUN --authority conductor` (token redirected) lands one now, in the clean-HEAD ruling form. One run closed eleven
+$RUN --authority operator` (token redirected) lands one now, in the
+clean-HEAD ruling form, when the note relays the operator's agreed
+disposition; use `--authority conductor` only when you ruled on that
+disposition alone. One run closed eleven
 duplicates of one pre-gate failure by hand, one per wave, with no note
 ever landed.
 A gap's own `Files:` and `Scope:` header lines already set the filed

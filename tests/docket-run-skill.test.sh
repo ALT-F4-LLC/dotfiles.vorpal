@@ -1400,6 +1400,114 @@ for kind in step-deferred vote-reseated; do
     fi
 done
 
+# (z) The seven ruling verbs are token-gated: the capability paragraph names
+# each one and the forms that stay token-free, `run note add` always carries
+# an explicit --authority, and every dispatch abandon and skip-integration
+# close redirects the conductor token. Invocations are read from bash fences
+# with backslash continuations joined, and from inline spans that begin with
+# the command in fence-free prose flattened per paragraph; the capability
+# paragraph's own verb list is not an invocation.
+#
+#   z1 drop `docket run refresh-scope` from the capability paragraph
+#   z2 delete a carve-out, e.g. "(a close without the skip stays token-free)"
+#   z3 drop `--authority operator` from the clean-HEAD run note example
+#   z4 drop the token redirect from the 4b skip-integration close
+#   z5 drop the token redirect from an inline dispatch abandon span
+#   z6 delete the dispatch abandon or a run note add line from the verbs
+#      heredoc, or duplicate it there
+token="< <scratchpad>/conductor.d/\$RUN.token"
+awk '
+    /^## The conductor capability$/ { on = 1; next }
+    on && /^[[:space:]]*$/ { if (para != "") exit; next }
+    on { para = (para == "" ? $0 : para " " $0) }
+    END { print para }
+' "$SKILL" > "${WORK}/capability"
+capability_anchor='The engine binds the CONDUCTOR VERBS'
+if grep -qF -- "$capability_anchor" "${WORK}/capability"; then
+    for lit in '`docket step annotate --integrated-sha`' '`docket run note add`' \
+        '`docket run refresh-scope`' '`docket dispatch waive-target`' \
+        '`docket dispatch abandon`' '`docket dispatch close --skip-integration-check`' \
+        '`docket vote commit`' \
+        '(the plain `--metadata` form stays token-free)' \
+        '(a close without the skip stays token-free)' \
+        '(a conversational `vote create` proposal stays token-free)' \
+        'requires `--authority operator|conductor`, with no default'; do
+        states "ruling verbs: the capability paragraph carries ${lit}" "${WORK}/capability" "$lit"
+    done
+else
+    bad "ruling verbs: the paragraph after '## The conductor capability' does not open with '${capability_anchor}'"
+fi
+
+awk '
+    /^[[:space:]]*```/ {
+        if (open) { open = 0; if (cmd != "") print cmd; cmd = "" }
+        else { open = 1; bash = ($0 ~ /^[[:space:]]*```bash[[:space:]]*$/) }
+        next
+    }
+    open && bash {
+        line = $0
+        sub(/^[[:space:]]+/, "", line)
+        continued = sub(/\\$/, "", line)
+        cmd = (cmd == "" ? line : cmd " " line)
+        if (!continued) { print cmd; cmd = "" }
+    }
+' "$SKILL" | grep -v '^#' > "${WORK}/fenced-commands"
+grep -F -- 'docket run note add' "${WORK}/fenced-commands" |
+    grep -vE -- '--authority (operator|conductor)( |$)' > "${WORK}/note-no-authority"
+if ! grep -qF -- 'docket run note add' "${WORK}/fenced-commands"; then
+    bad "ruling verbs: no fenced bash block carries a docket run note add invocation"
+elif [ -s "${WORK}/note-no-authority" ]; then
+    bad "ruling verbs: a fenced docket run note add lacks --authority operator|conductor: $(head -1 "${WORK}/note-no-authority")"
+else
+    ok "ruling verbs: every fenced docket run note add carries --authority operator or conductor"
+fi
+
+awk '
+    function close_para() {
+        if (para != "") { print para; para = "" }
+    }
+    /^[[:space:]]*```/ { close_para(); fenced = !fenced; next }
+    fenced { next }
+    /^[[:space:]]*$/ { close_para(); next }
+    {
+        line = $0
+        sub(/^[[:space:]]+/, "", line)
+        para = (para == "" ? line : para " " line)
+    }
+    END { close_para() }
+' "$SKILL" | grep -vF -- "$capability_anchor" |
+    grep -oE '`docket dispatch (abandon|close)[^`]*`' | tr -d '`' > "${WORK}/inline-commands"
+cat "${WORK}/fenced-commands" "${WORK}/inline-commands" |
+    grep -E 'docket dispatch abandon|docket dispatch close .*--skip-integration-check' \
+    > "${WORK}/token-gated"
+awk -v t="$token" 'substr($0, length($0) - length(t) + 1) != t' \
+    "${WORK}/token-gated" > "${WORK}/token-missing"
+if [ "$(grep -c 'docket dispatch abandon' "${WORK}/inline-commands")" -eq 0 ] ||
+    [ "$(grep -c -- '--skip-integration-check' "${WORK}/fenced-commands")" -eq 0 ]; then
+    bad "ruling verbs: the inline dispatch abandon spans or the fenced skip-integration close are gone"
+elif [ -s "${WORK}/token-missing" ]; then
+    bad "ruling verbs: a dispatch abandon or skip-integration close does not end in the token redirect: $(head -1 "${WORK}/token-missing")"
+else
+    ok "ruling verbs: every dispatch abandon and skip-integration close ends in the token redirect"
+fi
+
+for verbs_prefix in 'docket run note add $RUN --authority conductor --text ' \
+    'docket run note add $RUN --authority operator --text '; do
+    awk -v p="$verbs_prefix" 'index($0, p) == 1' "${WORK}/verbs-heredoc" > "${WORK}/verbs-note"
+    if [ "$(wc -l < "${WORK}/verbs-note")" -eq 1 ] &&
+        [ "$(awk -v t="$token" 'substr($0, length($0) - length(t) + 1) == t' "${WORK}/verbs-note")" != "" ]; then
+        ok "ruling verbs: the verbs checkpoint carries one '${verbs_prefix}' line ending in the token redirect"
+    else
+        bad "ruling verbs: the verbs checkpoint does not carry exactly one '${verbs_prefix}' line ending in the token redirect"
+    fi
+done
+if [ "$(grep -c '^docket dispatch abandon' "${WORK}/verbs-heredoc")" -eq 1 ] &&
+    [ "$(grep -cE '^docket dispatch abandon --run \$RUN --reason .* < <scratchpad>/conductor\.d/\$RUN\.token$' "${WORK}/verbs-heredoc")" -eq 1 ]; then
+    ok "ruling verbs: the verbs checkpoint carries exactly one dispatch abandon line with the token redirect"
+else
+    bad "ruling verbs: the verbs checkpoint does not carry exactly one 'docket dispatch abandon --run \$RUN --reason ... ${token}' line"
+fi
+
 if [ "$fail" -ne 0 ]; then
     echo "docket-run-skill: FAIL — a sandbox lift without its precondition is the failure this pins; fix the skill, not the test." >&2
     exit 1

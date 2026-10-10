@@ -17,13 +17,13 @@ against that build's source, not by the sweep.
 ## Contents
 
 - [`docket next` in step mode](#next-run) — 85 lines
-- [`docket dispatch`](#dispatch-commands) — 322 lines
+- [`docket dispatch`](#dispatch-commands) — 330 lines
   - [`dispatch open`](#dispatch-open) — 77 lines
   - [`dispatch extend`](#dispatch-extend) — 23 lines
   - [`dispatch verify`](#dispatch-verify) — 37 lines
-  - [`dispatch close`](#dispatch-close) — 39 lines
+  - [`dispatch close`](#dispatch-close) — 43 lines
   - [`dispatch backfill-usage`](#dispatch-backfill-usage) — 49 lines
-  - [`dispatch abandon`](#dispatch-abandon) — 18 lines
+  - [`dispatch abandon`](#dispatch-abandon) — 22 lines
   - [`dispatch waive-target`](#dispatch-waive-target) — 23 lines
   - [The write-reap acknowledgment](#dispatch-write-reap-ack) — 29 lines
 
@@ -298,6 +298,10 @@ unintegrated. Integrate, then close again. The close event records
 `integration: verified|skipped` and the shas checked, which `run report`
 shows.
 
+With `--skip-integration-check`, close is a conductor verb on a bound run:
+redirect `< <scratchpad>/conductor.d/RUN-N.token` into it. A close without
+that flag stays token-free.
+
 Refuses `CONFLICT` while any discrepancy exists, enumerating each with its
 resolution (the table under `docket next` above). `--accept-missing-usage`
 accepts **only** that class: `claimed-but-unrecorded` has its own
@@ -381,6 +385,10 @@ wedge a run.
 Nothing is lost. Opening a manifest never claimed anything, so its steps
 return to the ready set intact, and an executor that claimed one *before*
 the crash finishes normally.
+
+On a bound run it is a conductor verb: redirect
+`< <scratchpad>/conductor.d/RUN-N.token` into it, as in
+`docket dispatch abandon --run RUN-N --reason '<why>' < <scratchpad>/conductor.d/RUN-N.token`.
 
 <a id="dispatch-waive-target"></a>
 

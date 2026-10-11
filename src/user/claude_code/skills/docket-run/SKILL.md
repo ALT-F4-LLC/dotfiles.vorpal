@@ -114,9 +114,10 @@ engine mutating verb, a trust verb, or a launch; those stay yours.
 The engine binds the CONDUCTOR VERBS to a run-scoped CONDUCTOR CAPABILITY:
 the nine operator verbs, `docket step approve|reject|resolve|reap|hold`,
 `docket run pause|resume|abandon` (with or without `--issue`), and `docket
-run fact add`; and the seven ruling verbs, `docket step annotate
+run fact add`; and the ten ruling verbs, `docket step annotate
 --integrated-sha` (the plain `--metadata` form stays token-free), `docket
-run note add`, `docket run refresh-scope`, `docket dispatch
+run note add`, `docket run refresh-scope`, `docket run refresh-body`,
+`docket run refresh-files`, `docket run repin`, `docket dispatch
 waive-target`, `docket dispatch abandon`, `docket dispatch close
 --skip-integration-check` (a close without the skip stays token-free),
 and `docket vote commit` on a vote-step proposal (a conversational `vote
@@ -398,8 +399,9 @@ docket run note add $RUN --authority operator --text "Gate tests fails on clean 
 
 Include only the gate, why the failure is pre-existing, the tracking
 issue, and the disposition. The note is capped at 16 KiB and rides every
-packet afterward as a `== RUN NOTE N` section; `docket run note list
-$RUN` reads back what workers were already told. It is legal while
+packet afterward as a
+`== RUN NOTE <id> (authority: operator|conductor|unknown)` section;
+`docket run note list $RUN` reads back what workers were already told. It is legal while
 planning, active, or parked; refused once done or abandoned; and
 append-only (a changed ruling is a new note, never an edit).
 

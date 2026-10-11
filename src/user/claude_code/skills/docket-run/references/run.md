@@ -15,16 +15,18 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket run`](#run-commands) — 794 lines
+- [`docket run`](#run-commands) — 854 lines
   - [`run start`](#run-start) — 49 lines
   - [`run issue add|remove RUN-N DKT-N...`](#run-issue) — 38 lines
-  - [`run note add|list`](#run-note) — 29 lines
-  - [`run refresh-scope`](#run-refresh-scope) — 31 lines
+  - [`run note add|list`](#run-note) — 30 lines
+  - [`run refresh-scope`](#run-refresh-scope) — 33 lines
+  - [`run refresh-body RUN-N --issue <ID> --reason R`](#run-refresh-body) — 27 lines
+  - [`run refresh-files RUN-N --issue <ID> --reason R`](#run-refresh-files) — 28 lines
   - [`run report RUN-N`](#run-report) — 103 lines
   - [`run activate RUN-N`](#run-activate) — 218 lines
-  - [`run conduct RUN-N`](#run-conduct) — 45 lines
+  - [`run conduct RUN-N`](#run-conduct) — 46 lines
   - [`run pause|resume|abandon RUN-N`](#run-lifecycle) — 90 lines
-  - [`run repin RUN-N --reason R`](#run-repin) — 68 lines
+  - [`run repin RUN-N --reason R`](#run-repin) — 69 lines
   - [`pin show RUN-N PATH`](#pin-show) — 15 lines
   - [`run budget RUN-N [--set N]`](#run-budget) — 71 lines
   - [`run status [RUN-N]`](#run-status) — 29 lines
@@ -129,9 +131,10 @@ asked for.
 #### `docket run note add|list`
 
 Use a run note for an established fact or authorized disposition every later
-worker needs. Notes render verbatim as `== RUN NOTE N` after `== REQUEST` in
-the shipped packet template and appear as `notes` in `step context`. Custom
-templates must render `.Notes` explicitly. Issue comments and mid-run issue
+worker needs. Notes render verbatim after `== REQUEST` in the shipped packet
+template under a `== RUN NOTE <id> (authority: operator|conductor|unknown)`
+header and appear as `notes` in `step context`. Custom templates must render
+`.Notes` explicitly; each note offers `.Authority` beside `.ID` and `.Text`. Issue comments and mid-run issue
 description edits do not enter packets.
 
 On a bound run `note add` is a conductor verb: it needs the run's conductor
@@ -182,7 +185,64 @@ Respect the refusal and resolve the in-flight state before retrying.
 | Explain the same step's next retry | `step resolve ... --as retry --note ...` |
 | Explain an authorized next fix round | `step resolve ... --as fix-round --note ...` |
 | Propagate an authorized scope declaration to remaining work | `issue edit --scope`, then `run refresh-scope` |
+| Propagate an authorized description amendment to remaining work | `issue edit --description`, then `run refresh-body` |
+| Propagate an authorized file attachment change to remaining work | `issue file add\|remove`, then `run refresh-files` |
 | Replace drifted pinned file bytes after authorization | `run repin --reason ...`; this does not update issue descriptions |
+
+<a id="run-refresh-body"></a>
+
+#### `docket run refresh-body RUN-N --issue <ID> --reason R`
+
+After an authorized amendment to an issue's description, use both channels
+in order:
+
+```bash
+docket issue edit DKT-M --description - --json < amended.md
+docket run refresh-body RUN-N --issue DKT-M --reason 'Authorized amendment' --json < <scratchpad>/conductor.d/RUN-N.token
+```
+
+Activation freezes each issue's description into the run, and every packet's
+`== REQUEST` and `issue.body` input render from that snapshot, so `issue edit
+--description` alone reaches no live run. `refresh-body` copies the live
+description verbatim into that one issue's snapshot; it has no `--body` flag.
+Title, kind, labels, and the scope snapshot are untouched. Terminal steps keep
+the request their claim recorded; only remaining steps render the new text.
+One `issue-body-refreshed` event carries both digests, the superseded text,
+the steps reached, and the reason.
+
+It is a conductor verb: on a bound run it reads the conductor capability from
+`DOCKET_TOKEN` or stdin. The reason is required. It refuses while any of the
+issue's steps is claimed, running, or gated; while a dispatch is open; on a
+run that is not active or waiting-human; on an issue activation has not
+bound; and when the live description already equals the snapshot.
+
+<a id="run-refresh-files"></a>
+
+#### `docket run refresh-files RUN-N --issue <ID> --reason R`
+
+After an authorized `issue file add|remove`, use both channels in order:
+
+```bash
+docket issue file add DKT-M src/component/new.go --json
+docket run refresh-files RUN-N --issue DKT-M --reason 'Authorized file attachment' --json < <scratchpad>/conductor.d/RUN-N.token
+```
+
+Activation freezes each issue's attached paths into the run, and every
+packet's `issue.files` input renders from that snapshot, so `issue file
+add|remove` alone reaches no live run. `refresh-files` copies the live
+attachment list verbatim into that one issue's snapshot; it has no `--file`
+flag. Every other snapshot field is unchanged. Terminal steps keep the files
+they recorded; only remaining steps render the new list. One
+`issue-files-refreshed` event carries both lists, the steps reached, and the
+reason.
+
+It is a conductor verb: on a bound run it reads the conductor capability from
+`DOCKET_TOKEN` or stdin. The reason is required. It refuses while a dispatch
+is open or any of the issue's steps is in flight (claimed, running, or
+gated); when every step of the issue is terminal; on a run that is not active
+or waiting-human; on an issue activation has not bound or whose snapshot
+predates the frozen list; and when the live list already equals the frozen
+one.
 
 <a id="run-report"></a>
 
@@ -522,8 +582,9 @@ and extracts the field without printing it.
 
 The conductor verbs — the nine operator verbs `step
 approve|reject|resolve|reap|hold`, `run pause|resume|abandon` (with or
-without `--issue`), `run fact add`, and the seven ruling verbs `step
-annotate --integrated-sha`, `run note add`, `run refresh-scope`, `dispatch
+without `--issue`), `run fact add`, and the ten ruling verbs `step
+annotate --integrated-sha`, `run note add`, `run refresh-scope`,
+`run refresh-body`, `run refresh-files`, `run repin`, `dispatch
 waive-target`, `dispatch abandon`, `dispatch close
 --skip-integration-check` (a close without the skip stays token-free), and
 `vote commit` on a vote-step proposal (a conversational `vote create`
@@ -664,7 +725,8 @@ only disposition.
 `repin` adopts what each drifted ref resolves to **now** as the run's
 pinned bytes, for steps that have not yet claimed under the old agreement.
 It runs the identical comparison `verify-pins` reports, so the two verbs
-can never disagree about what is drifted.
+can never disagree about what is drifted. It is a conductor verb: on a bound
+run it reads the conductor capability from `DOCKET_TOKEN` or stdin.
 
 **Completed steps' pins are never rewritten.** The write touches only the
 `pins` table, one row at a time, as `UPDATE pins SET sha256 = <new> WHERE …

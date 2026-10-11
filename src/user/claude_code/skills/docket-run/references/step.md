@@ -14,9 +14,9 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket step`](#step-commands) — 528 lines
+- [`docket step`](#step-commands) — 539 lines
   - [`step artifacts`](#step-artifacts) — 36 lines
-  - [`step claim`](#step-claim) — 34 lines
+  - [`step claim`](#step-claim) — 45 lines
   - [`step reap`](#step-reap) — 36 lines
   - [`step complete`](#step-complete) — 70 lines
   - [`step fail`](#step-fail) — 23 lines
@@ -152,6 +152,17 @@ interrupted, inspect `step show` before retrying; a live claim can already
 exist. Recover the original output if available. Otherwise report the lost
 capability and use the lease/reap recovery protocol; do not turn an uncertain
 response into another claim or reap a worker whose liveness is unknown.
+
+A same-owner re-claim of a live lease re-mints its token instead of
+refusing: the previous token is void, the response carries `re_minted`, and
+the attempt and accrual stay the same. Each re-mint appends a
+`step-reminted` event naming the step, owner, and attempt. An optional
+recovery secret makes the re-mint provable. `step claim` reads it only from
+stdin redirected from a 0600 regular file (`< recovery.secret`), never from
+argv or the environment; a pipe or terminal on stdin supplies no secret, and
+a file group or other can read is refused. The first claim stores only the
+secret's hash. A same-owner re-claim on a lease that stored a secret hash
+must present the same secret or is refused with `CONFLICT`.
 
 Claim enforces readiness **itself** rather than trusting that you ran `next`; a
 step that is not ready is `CONFLICT` naming the unmet condition. **Human, vote,

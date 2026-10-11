@@ -20,7 +20,11 @@ which check only the refs they read. Read the exit code:
 
 - **0**: every pin is sound. Proceed.
 - **4**: drift. JSON carries `"code":"CONFLICT"` and an `error` naming
-  each changed file with both hashes.
+  each changed file with both hashes. Exit 4 also covers a gate reported
+  `executed-copy-changed`: this checkout's copy of a pinned gate script
+  differs from the run's pin while the pin itself may still match. The
+  remedy is restoring the gate script in the invoking checkout, or running
+  the gate from the run's checkout.
 - **2**: a pinned ref no longer resolves at all.
 
 Any non-zero exit is a stop-and-report: the engine resolves every row's

@@ -1,20 +1,24 @@
 """Split a kept manifest into wave launches, one per issue lane.
 
 Usage: python3 lane_units.py <rows-file> <out-dir> [--tribunal PATH]
-                              [--integrated FILE]
+                              [--integrated FILE] [--in-flight LANES]
 
 <rows-file> holds the rows the conductor kept after the kind filter, either
 as one JSON array or as one JSON object per line; a file holding a single
 object is that one row. --tribunal is the installed tribunal.js path;
 --integrated names a JSON file mapping each fix-round issue to its prior
-INTEGRATION sha. Run it from inside the run's git work tree: outside one it
-exits 1 and writes nothing. The script writes, under <out-dir>:
+INTEGRATION sha. --in-flight is a comma-separated list of the lanes whose
+launches are still running, as stderr names them (`lane:<lane>`): a refill
+re-split launches no lane in it, writes none of its rows anywhere, and
+counts each against LAUNCH_CAP. Run it from inside the run's git work tree:
+outside one it exits 1 and writes nothing. The script writes, under
+<out-dir>:
 
   launch-<i>.jsonl  launch i's rows, one per line, in manifest order
   args-<i>.json     launch i's complete wave.js args (below)
   launches.json     [{index, of, classCap, rows, lanes, harnessCap}] per launch
-  deferred.jsonl    rows of lanes past LAUNCH_CAP, one per line (always written,
-                    empty when nothing is deferred)
+  deferred.jsonl    rows of lanes past the free launch slots, one per line
+                    (always written, empty when nothing is deferred)
 
 and, under <toplevel>/.claude/docket-packets/ (`git rev-parse
 --show-toplevel`), one rows module per launch, rows-<sha256>.js, returning
@@ -37,10 +41,11 @@ row without an issue is a lane of its own, keyed by its step. Lanes are
 never welded or packed together. Writer lanes the engine never co-staged
 therefore run in separate launches, and the engine's claim check keeps them
 in stage order: a writer claimed while another lane's uncertified writer
-holds its scope is refused, and wave.js settles that refusal as a deferral
-the engine re-offers at the next dispatch. Past LAUNCH_CAP lanes, the
-earliest lanes in manifest order launch and the rest go to deferred.jsonl,
-named on stderr; the engine re-offers them at the next dispatch.
+holds its scope is refused, and wave.js settles that refusal as
+skipped-not-ready, which a later refill relaunches. The free slots are LAUNCH_CAP
+minus the lanes in flight. Past them, the earliest lanes in manifest order
+launch and the rest go to deferred.jsonl, named on stderr; the conductor
+launches them from a later re-split as running launches return.
 
 Class headroom. The engine certifies a class at the largest same-stage count
 of its executor rows across the WHOLE manifest. A launch sees only its own
@@ -119,10 +124,12 @@ def certified_classes(rows):
     return best
 
 
-def split(rows):
-    """One launch per lane, in manifest order; lanes past LAUNCH_CAP defer."""
-    order = list(dict.fromkeys(lane(r) for r in rows))
-    launched, deferred = order[:LAUNCH_CAP], order[LAUNCH_CAP:]
+def split(rows, in_flight=frozenset()):
+    """One launch per lane not in flight, in manifest order, up to the free
+    slots; the lanes past them defer."""
+    order = [l for l in dict.fromkeys(lane(r) for r in rows) if l not in in_flight]
+    free = max(0, LAUNCH_CAP - len(in_flight))
+    launched, deferred = order[:free], order[free:]
     launch_of = {l: i for i, l in enumerate(launched)}
     kept = [r for r in rows if lane(r) in launch_of]
 
@@ -148,7 +155,8 @@ def split(rows):
             "rows": [r for r in kept if lane(r) == name],
             "lanes": [name],
         })
-    return launches, [r for r in rows if lane(r) not in launch_of], deferred
+    deferred_set = set(deferred)
+    return launches, [r for r in rows if lane(r) in deferred_set], deferred
 
 
 def harness_cap():
@@ -206,7 +214,8 @@ def write_module(packets, digest, rows):
     return path
 
 
-USAGE = "usage: lane_units.py <rows-file> <out-dir> [--tribunal PATH] [--integrated FILE]"
+USAGE = ("usage: lane_units.py <rows-file> <out-dir> [--tribunal PATH] [--integrated FILE] "
+         "[--in-flight LANES]")
 
 
 def parse_args(argv):
@@ -214,7 +223,7 @@ def parse_args(argv):
     rest = list(argv[1:])
     while rest:
         arg = rest.pop(0)
-        if arg in ("--tribunal", "--integrated"):
+        if arg in ("--tribunal", "--integrated", "--in-flight"):
             if not rest:
                 raise SystemExit(USAGE)
             options[arg[2:]] = rest.pop(0)
@@ -224,11 +233,13 @@ def parse_args(argv):
             positional.append(arg)
     if len(positional) != 2:
         raise SystemExit(USAGE)
-    return positional[0], positional[1], options.get("tribunal"), options.get("integrated")
+    in_flight = frozenset(l for l in options.get("in-flight", "").split(",") if l)
+    return (positional[0], positional[1], options.get("tribunal"), options.get("integrated"),
+            in_flight)
 
 
 def main(argv):
-    rows_file, out, tribunal, integrated_file = parse_args(argv)
+    rows_file, out, tribunal, integrated_file, in_flight = parse_args(argv)
     cap = harness_cap()
     rows = load_rows(rows_file)
     integrated = None
@@ -240,7 +251,7 @@ def main(argv):
     top = git_toplevel()
     packets = os.path.join(top, PACKET_DIR)
     os.makedirs(out, exist_ok=True)
-    launches, deferred_rows, deferred_lanes = split(rows)
+    launches, deferred_rows, deferred_lanes = split(rows, in_flight)
     summary = []
     for launch in launches:
         index = launch["index"]
@@ -274,9 +285,10 @@ def main(argv):
         print("lane_units: no --tribunal given, so no args object carries tribunal",
               file=sys.stderr)
     if deferred_lanes:
-        print(f"deferred: {len(deferred_lanes)} lane(s) past the {LAUNCH_CAP}-launch cap, "
-              f"{len(deferred_rows)} row(s) in deferred.jsonl; the engine re-offers them "
-              f"next dispatch: " + ", ".join(deferred_lanes), file=sys.stderr)
+        print(f"deferred: {len(deferred_lanes)} lane(s) past the {LAUNCH_CAP}-launch cap "
+              f"with {len(in_flight)} in flight, {len(deferred_rows)} row(s) in "
+              f"deferred.jsonl; launch them as launches return: " + ", ".join(deferred_lanes),
+              file=sys.stderr)
 
 
 if __name__ == "__main__":

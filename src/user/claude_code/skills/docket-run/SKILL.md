@@ -869,8 +869,8 @@ behind another's: a dispatch with six issues is six launches. Each launch
 gets only its issue's rows and its `unit`; never merge two issues into
 one launch, which wave.js refuses. Writers the engine never co-staged run
 in separate launches, and the engine's claim check keeps them apart: the
-later claimant settles `skipped-not-ready` and is re-offered next
-dispatch. Emit all N launches in ONE
+later claimant settles `skipped-not-ready`, and a later launch return
+relaunches it (**Refill freed launch slots** below). Emit all N launches in ONE
 assistant message, as separate `Workflow` calls, never held back for a
 sibling's return: on past runs, launches spread over several messages
 started up to 17 minutes after the first, while one message put them
@@ -930,8 +930,9 @@ you wrote after the kind filter), the installed script partitions the
 dispatch: every issue lane is a launch of its own (a row with no issue is
 a lane keyed by its step), never welded or packed with another. Past 20
 lanes, the first 20 in manifest order launch and the rest go to
-`deferred.jsonl`, named on stderr; report them as deferred, never launch
-them this dispatch, and the engine re-offers them next. It also computes each
+`deferred.jsonl`, named on stderr; they launch in this same dispatch, as
+soon as returning launches free their slots (**Refill freed launch
+slots** below). It also computes each
 class's headroom over the whole manifest and each launch's share of it,
 which a launch holding only its own rows cannot see. Run it by its
 installed path, never as an inline interpreter program: a `python3 -c`
@@ -943,6 +944,9 @@ at one conductor's activation, refused at its fourth dispatch):
 python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$ROWS_FILE" "$LAUNCH_DIR" --tribunal "<absolute installed path to tribunal.js>"
 # a dispatch carrying a fix round's review fanout adds its integrated map:
 python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$ROWS_FILE" "$LAUNCH_DIR" --tribunal "<absolute installed path to tribunal.js>" --integrated "$INTEGRATED_FILE"
+# a refill at a launch return splits the pending rows and names the lanes
+# still in flight (add --integrated as above when the dispatch carries it):
+python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$PENDING_FILE" "$LAUNCH_DIR" --tribunal "<absolute installed path to tribunal.js>" --in-flight "<lane>,<lane>"
 ```
 
 Always pass `--tribunal`; without it no generated object carries
@@ -954,7 +958,7 @@ kept rows as one JSON array or as JSON lines, prints N alone on stdout,
 writes `launch-<i>.jsonl` (launch i's rows, one per line), `args-<i>.json`
 (launch i's complete wave.js args), `launches.json` (each launch's
 `index`, `of`, `classCap`, `harnessCap`, row count and its one lane) and
-`deferred.jsonl` (rows past the cap, empty when none) under
+`deferred.jsonl` (rows past the free slots, empty when none) under
 `$LAUNCH_DIR`, writes each launch's rows module under
 `<cwd>/.claude/docket-packets/`, and names each lane's launch on stderr for
 the dispatch report. Use a fresh `$LAUNCH_DIR` per dispatch under the
@@ -982,33 +986,63 @@ the retry passes, and the deny is not an instruction to keep working. A
 teammate idle notification is not an event; speak only when the message
 carries content.
 
-**Extend the dispatch each time a launch returns.** Each time one lane
-unit's wave launch returns while the dispatch is still open, run
-`docket dispatch extend --run $RUN --json` before waiting on the
-remaining launches. It appends the steps that became ready since the open
-(a fix round minted when its step recorded, a held-cluster gate, an
-`on_fail` route, a limit-cut chain tail) to the same open manifest, so
-no lane waits for the slowest lane before its next rows are offered.
-When extend returns no appended rows, launch nothing new from it and keep
-waiting on the outstanding launches. When it returns rows, apply the kind
-filter to them and append them to the dispatch's kept rows file, then
-re-split the whole open manifest, opened plus appended rows, by
-re-running lane_units.py over that file, with the same `--tribunal` and
-`--integrated`, into a fresh `$LAUNCH_DIR`, and
-launch only the resulting units that hold no lane already in flight. No
-verb re-reads the open manifest, so that file is the manifest of record:
-keep it for the whole dispatch. Re-splitting the whole manifest, never
-the appended rows alone, keeps both invariants lane_units.py computes:
-an appended write-class row never runs beside an uncostaged writer in
-another launch, and each launch's class share reflects the whole
-manifest's headroom. A unit holding a lane still in flight is not
-launched; its appended rows wait for that lane's launch to return, and
-the re-split at that return launches them even when that return's own
-extend appends nothing. Launch the new units in one message exactly as
-above, each passing its `args-<i>.json` from the fresh `$LAUNCH_DIR`, add
-their transcript directories to the watcher below and restart it, then
-end the turn again. An appended row nobody launches stays pending and is
-not a discrepancy at close; the engine re-offers it next dispatch.
+**Refill freed launch slots each time a launch returns.** Parallelism
+stays at the 20-launch cap until no work remains: every launch return
+frees a slot, and you fill it in the same turn, never waiting for the
+slowest lane or for the dispatch close. At open, keep two files under the
+session's scratchpad beside the kept rows file: `$SETTLED_FILE`, empty,
+and `$PENDING_FILE`, a copy of the kept rows. Each time one launch
+returns while the dispatch is open, right after launching its usage join
+(step 3), before waiting on the rest:
+
+1. Run `docket dispatch extend --run $RUN --json`. It appends the steps
+   that became ready since the open (a fix round minted when its step
+   recorded, a held-cluster gate, an `on_fail` route, a limit-cut chain
+   tail) to the same open manifest. Apply the kind filter to any appended
+   rows and append them to the kept rows file. No verb re-reads the open
+   manifest, so that file is the manifest of record: keep it for the
+   whole dispatch.
+2. Append to `$SETTLED_FILE`, one step id per line, every row the
+   returned launch's `statuses` settled with a status other than
+   `skipped-not-ready`. Those rows finished, or wait for the next
+   dispatch (step 3 lists them). Its `skipped-not-ready` rows stay
+   pending while another launch is in flight, since only a running launch
+   can free the scope or class headroom they wait on; when no other
+   launch is in flight, append them too.
+3. Rebuild the pending rows from the manifest of record:
+   `jq -c --rawfile settled "$SETTLED_FILE" 'select(.step as $id | $settled | split("\n") | index([$id]) | not)' "$ROWS_FILE" > "$PENDING_FILE"`.
+4. Re-split the pending rows with lane_units.py into a fresh
+   `$LAUNCH_DIR`, with the same `--tribunal` and `--integrated`, and
+   `--in-flight` naming every lane whose launch is still running (the
+   refill form above). It emits launches only for lanes not in flight,
+   up to 20 minus the in-flight count, and writes the rest to
+   `deferred.jsonl` for a later return.
+5. Launch every unit it wrote, in one message exactly as above, each
+   passing its `args-<i>.json` from the fresh `$LAUNCH_DIR`. That covers
+   lanes deferred past the cap, lanes whose rows settled
+   `skipped-not-ready` when no launch now in flight holds them, rows
+   appended to a lane that was in flight at an earlier return, and every
+   lane extend appended. Never hold a deferred or `skipped-not-ready`
+   lane for the next dispatch while fewer than 20 launches run. Add the
+   new launches' transcript directories to the watcher below, restart it,
+   then end the turn again.
+
+Re-splitting all pending rows, never the appended rows alone, keeps both
+invariants lane_units.py computes: an appended write-class row never runs
+beside an uncostaged writer in another launch, and each launch's class
+share reflects the pending manifest's headroom. A launch already in
+flight keeps the class share of its own split, so the shares can briefly
+sum past the engine's limit; the engine refuses the extra claim, the row
+settles `skipped-not-ready`, and a later return relaunches it. A relaunch
+whose holder still runs is refused again at the cost of one claim probe;
+there is no holder tracking.
+
+The dispatch closes only when no launch is in flight and the last
+return's extend appended nothing launchable, so the re-split had nothing
+to launch: the loop ends only when no work remains in this dispatch. A
+row still pending then (a `skipped-not-ready` row with no launch left to
+free it) is not a discrepancy at close; the engine re-offers it next
+dispatch.
 
 **A launch that never notifies is a stall, not a wait.** The completion
 notification is the only status surface, and nothing in the harness
@@ -1107,10 +1141,10 @@ one notification per launch, each getting its own join under its own
 `wfId`, launched the moment it arrives rather than batched behind
 siblings still running, and each join's `rows` land on disk the moment
 it returns, so an interrupt loses no launch's record. Back-fill, verify
-and close run only after every launch has returned, including every
-launch started from extended rows (step 2's **Extend the dispatch each
-time a launch returns**), since the dispatch closes once: a launch
-started from extend is a launch of this dispatch, and its join precedes
+and close run only when no launch is in flight and the last return's
+extend appended nothing launchable (step 2's **Refill freed launch slots
+each time a launch returns**), since the dispatch closes once: a launch
+started by a refill is a launch of this dispatch, and its join precedes
 the close like any other.
 
 **1. Launch the usage join first, before reading or diagnosing the wave's
@@ -1127,9 +1161,11 @@ held, in manifest order, and the launch's `coordination` counts. Read
 exhausted), `agent-cap`
 (the harness's lifetime spawn cap reached mid-wave; nothing launched,
 and a row whose text names a live claim needs that claim reaped first),
+and `skipped-chain-dead` are all re-offered next dispatch.
 `skipped-not-ready` (the claim was refused because another issue's launch
-held the scope or the class headroom; nothing was claimed), and
-`skipped-chain-dead` are all re-offered next dispatch. Every
+held the scope or the class headroom; nothing was claimed) is relaunched
+by a refill in this dispatch while another launch is in flight, and
+re-offered next dispatch otherwise. Every
 executor row is claimed by its claim agent before the executor spawns,
 so a row that settled without a record usually leaves a live claim: the
 row's text names its owner and parked token when the wave knows it.
@@ -1188,7 +1224,7 @@ back-filled first; one outstanding when `next` returns empty is
 back-filled before the done report, never after.
 
 **2. On the join's notification from the last launch (every launch
-returned, extended ones included): one `docket dispatch close --run $RUN
+returned, refill launches included): one `docket dispatch close --run $RUN
 --backfill-from <rows file> --source <source> --json`, then next.** That
 one call back-fills, verifies, and closes, each stage gating the next: a
 failed back-fill runs no verify and no close, a failed verify runs no
@@ -1275,7 +1311,7 @@ Workflow({ scriptPath: "<absolute installed path to wave-usage.js>",
 #    byte for byte — never retyped, never reshaped. Nothing else goes in that
 #    file: the workflow's overhead and skip lines are in its return, not `rows`.
 # 3. once every launch has returned, merge every launch's file into one array,
-#    one file per launch named, extended launches included:
+#    one file per launch named, refill launches included:
 jq -s add "$TMPDIR/wave-<wfId-0>.json" "$TMPDIR/wave-<wfId-1>.json" > "$TMPDIR/dispatch-<M>-rows.json"
 ```
 

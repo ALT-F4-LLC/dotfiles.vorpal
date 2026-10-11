@@ -12,10 +12,11 @@
 # WHY THIS EXISTS. A launch receives only its own rows, so the partition
 # and the class headroom a launch cannot see from its own rows are computed
 # here, before launch. Every issue lane is its own launch, never welded or
-# packed with another; lanes past LAUNCH_CAP (20) go to deferred.jsonl for
-# the next dispatch. Every row lands in exactly one launch file or the
-# deferred file. A split that drifts runs a lane twice, not at all, or
-# over-admits a class.
+# packed with another; lanes past the free slots (LAUNCH_CAP, 20, minus the
+# lanes still in flight) go to deferred.jsonl for a later refill. Every row
+# of a lane not in flight lands in exactly one launch file or the deferred
+# file. A split that drifts runs a lane twice, not at all, or over-admits a
+# class.
 #
 # The suite also pins the SKILL.md side: the skill runs the installed file
 # and carries no inline interpreter program. The same program once lived in
@@ -122,6 +123,19 @@ ok $? 'capped launches still hold one lane each, never packed'
 [ "$(wc -l < "$WORK/launch/deferred.jsonl" | tr -d ' ')" = "5" ] && grep -q '"issue":"I21"' "$WORK/launch/deferred.jsonl" && ! grep -q '"issue":"I20"' "$WORK/launch/deferred.jsonl"
 ok $? 'lanes past the cap land in deferred.jsonl, latest in manifest order'
 grep -q 'deferred: 5 lane(s) past the 20-launch cap' "$WORK/err" && grep -q 'I25' "$WORK/err"; ok $? 'the deferral is named on stderr with its lanes'
+
+# ---- A refill re-split launches only lanes not in flight, into the free slots ----
+# Three of the 25 lanes still run, so 17 slots are free: the 22 other lanes
+# fill them in manifest order and the last 5 defer. The in-flight lanes' rows
+# go to neither, since their launches still hold them.
+printf '%s' "[$many]" > "$WORK/rows.json"
+rm -rf "$WORK/launch"
+n=$(lu "$WORK/rows.json" "$WORK/launch" --in-flight I2,I5,I9 2> "$WORK/err"); rc=$?
+[ "$rc" -eq 0 ] && [ "$n" = "17" ]; ok $? "with 3 of 25 lanes in flight a re-split emits 17 launches (rc=$rc, got $n: $(head -c 200 "$WORK/err"))"
+[ "$(wc -l < "$WORK/launch/deferred.jsonl" | tr -d ' ')" = "5" ] && grep -q '"issue":"I21"' "$WORK/launch/deferred.jsonl" && ! grep -q '"issue":"I20"' "$WORK/launch/deferred.jsonl"
+ok $? 'the 5 lanes past the free slots land in deferred.jsonl, latest in manifest order'
+[ -z "$(cat "$WORK"/launch/launch-*.jsonl "$WORK/launch/deferred.jsonl" | grep -E '"issue":"I(2|5|9)"')" ] && [ "$(summary 'sorted({x["of"] for x in s})')" = "[17]" ]
+ok $? 'no launch or deferral holds an in-flight lane, and every unit carries of = 17'
 n=$(count '[]')
 [ "$n" = "0" ]; ok $? "an empty manifest is zero launches (got $n)"
 

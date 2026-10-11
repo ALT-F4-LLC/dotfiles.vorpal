@@ -390,9 +390,9 @@ and parallel width decide between equally large feasible rosters.
    reporting a clean probe.
 
    **Scope covers what the ACs name.** Every file path an acceptance criterion
-   names must be matched by one of the issue's scope globs. The check is
-   textual, paths against globs by the matcher's own rules in §3, so it
-   needs no repo read and can be done before you read the tree. The remedy
+   names must be matched by one of the issue's scope globs. Whether an AC
+   token names a file depends on the tree at the checkout's HEAD, so the
+   check reads that tree and runs after you have read it. The remedy
    is scope-side, never AC-side: the ACs in a backlog body are the
    operator's words and §1b does not rewrite them. Not ready: `AC names
    <path>, not in scope`; the fix the operator may authorize in the

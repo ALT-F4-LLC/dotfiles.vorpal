@@ -13,20 +13,25 @@
 #   default.
 #
 # The criteria text is the description's section under an `Acceptance
-# criteria` heading, up to the next heading of the same or a higher level,
-# or the whole description when it has no such heading. A token in it is a
-# repository path when:
-#   - it holds a `/`: the file exists at --base, or its directory does (a
-#     file the change creates). Absolute paths, URLs and `.`/`..` segments
-#     are not repository paths.
-#   - it is a bare file name: exactly one file at --base has that name.
+# criteria` heading or bold `**Acceptance criteria**` label, up to the next
+# heading of the same or a higher level (any heading after a bold label),
+# or the whole description when it has neither. Lines inside ``` or ~~~
+# fences are never headings. A token in it, a run of letters, digits and
+# `_.-/` without trailing dots, is a repository path when:
+#   - it holds a `/`: the file exists at --base, or the name has an
+#     extension and its directory exists there (a file the change creates).
+#   - it is a bare name with an extension or a leading dot: exactly one file
+#     at --base has that name.
+#   - it is any other bare name: a file of that name sits at the root.
 # A trailing `:N` line citation is not part of the path. Each such path must
 # appear in `files` and match a `scope` glob. Each `files` entry `x.go` whose
 # `x_test.go` exists at --base needs that test matched by a `scope` glob.
 #
-# Scope globs: `*` and `?` match within one path segment, `**` matches across
-# segments (`a/**/b` includes `a/b`), `[...]` is a character class (`[!...]`
-# negates), and `{a,b}` is an alternation.
+# Scope globs match as the engine applies them, as git pathspecs filtering
+# the step's diff: a glob without `*`, `?` or `[` covers that path and
+# everything under it; otherwise `*` matches any run of characters, `/`
+# included (so `**` is `*`), `?` any one character, and `[...]` a character
+# class (`[!...]` negates). Braces are literal.
 #
 # Read-only: it runs git rev-parse and ls-tree against --base and writes
 # nothing. Exit 0 with no output when everything is covered, 1 with one line
@@ -75,10 +80,11 @@ files=$(printf '%s' "$envelope" | jq -r '(.data.files // [])[]')
 scope=$(printf '%s' "$envelope" | jq -r '(.data.scope // [])[]')
 
 criteria=$(printf '%s\n' "$description" | awk '
-    tolower($0) ~ /^#+[ \t]+acceptance criteria/ {
-        match($0, /^#+/); level = RLENGTH; inside = 1; found = 1; next
+    /^[ \t]*(```|~~~)/ { fenced = !fenced }
+    !fenced && tolower($0) ~ /^(#+[ \t]+acceptance criteria|\*\*acceptance criteria:?\*\*)/ {
+        level = match($0, /^#+/) ? RLENGTH : 6; inside = 1; found = 1; next
     }
-    inside && /^#+[ \t]/ { match($0, /^#+/); if (RLENGTH <= level) inside = 0 }
+    inside && !fenced && /^#+[ \t]/ { match($0, /^#+/); if (RLENGTH <= level) inside = 0 }
     inside { print }
     { all = all $0 "\n" }
     END { if (!found) printf "%s", all }
@@ -87,14 +93,16 @@ criteria=$(printf '%s\n' "$description" | awk '
 tokens=$(printf '%s\n' "$criteria" | awk '
 {
     line = $0
-    while (match(line, /[A-Za-z0-9_.\/-]*[A-Za-z0-9_-]\.[A-Za-z0-9]+/)) {
-        print substr(line, RSTART, RLENGTH)
+    while (match(line, /[A-Za-z0-9_.\/-]+/)) {
+        tok = substr(line, RSTART, RLENGTH)
         line = substr(line, RSTART + RLENGTH)
+        sub(/\.+$/, "", tok)
+        if (tok != "") print tok
     }
 }' | sort -u)
 
-tree=$(git -C "$repo" ls-tree -r --name-only "$commit")
-dirs=$(git -C "$repo" ls-tree -r -d --name-only "$commit")
+tree=$(git -C "$repo" ls-tree -r --full-tree --name-only "$commit")
+dirs=$(git -C "$repo" ls-tree -r -d --full-tree --name-only "$commit")
 in_list() { # <item> <newline-separated list>
     grep -Fxq -- "$1" <<<"$2"
 }
@@ -102,17 +110,26 @@ in_list() { # <item> <newline-separated list>
 ac_paths=""
 while IFS= read -r tok; do
     [ -n "$tok" ] || continue
-    case "/$tok/" in
-        //* | */./* | */../*) continue ;;
-    esac
     case "$tok" in
+        */)
+            continue
+            ;;
         */*)
-            in_list "$tok" "$tree" || in_list "${tok%/*}" "$dirs" || continue
+            if ! in_list "$tok" "$tree"; then
+                case "${tok##*/}" in
+                    ?*.[A-Za-z0-9]*) in_list "${tok%/*}" "$dirs" || continue ;;
+                    *) continue ;;
+                esac
+            fi
             path="$tok"
             ;;
-        *)
+        ?*.?* | .?*)
             path=$(printf '%s\n' "$tree" | awk -v n="$tok" '$0 == n || substr($0, length($0) - length(n)) == "/" n')
             [ -n "$path" ] && [ "$(printf '%s\n' "$path" | wc -l)" -eq 1 ] || continue
+            ;;
+        *)
+            in_list "$tok" "$tree" || continue
+            path="$tok"
             ;;
     esac
     ac_paths="${ac_paths}${path}"$'\n'
@@ -146,35 +163,35 @@ while IFS= read -r path; do
 done <<<"$ac_paths"
 
 outside=$(printf '%s' "$scope_rows" | SCOPE_LINT_GLOBS="$scope" awk -F '\t' '
-function glob_re(g,   out, i, n, c, j, cls, braces) {
-    out = "^"; n = length(g); braces = 0
+function literal_re(c) {
+    if (c == "^" || c == "\\") return "\\" c
+    if (index(".+()|{}$[]*?", c)) return "[" c "]"
+    return c
+}
+function glob_re(g,   out, i, n, c, j, cls) {
+    out = "^"; n = length(g)
     for (i = 1; i <= n; i++) {
         c = substr(g, i, 1)
-        if (c == "*") {
-            if (substr(g, i + 1, 1) != "*") out = out "[^/]*"
-            else if (substr(g, i + 2, 1) == "/") { out = out "(.*/)?"; i += 2 }
-            else { out = out ".*"; i++ }
-        } else if (c == "?") out = out "[^/]"
+        if (c == "*") out = out ".*"
+        else if (c == "?") out = out "."
         else if (c == "[" && (j = index(substr(g, i + 1), "]")) > 1) {
             cls = substr(g, i + 1, j - 1)
             if (substr(cls, 1, 1) == "!") cls = "^" substr(cls, 2)
             out = out "[" cls "]"; i += j
         }
-        else if (c == "{") { out = out "("; braces++ }
-        else if (c == "}" && braces > 0) { out = out ")"; braces-- }
-        else if (c == "," && braces > 0) out = out "|"
-        else if (c == "^" || c == "\\") out = out "\\" c
-        else if (index(".+()|{}$[]", c)) out = out "[" c "]"
-        else out = out c
+        else if (c == "\\" && i < n) out = out literal_re(substr(g, ++i, 1))
+        else out = out literal_re(c)
     }
     return out "$"
 }
-BEGIN {
-    count = split(ENVIRON["SCOPE_LINT_GLOBS"], globs, "\n")
-    for (k = 1; k <= count; k++) if (globs[k] != "") res[k] = glob_re(globs[k])
+function covers(g, path) {
+    if (g ~ /[*?[]/) return path ~ glob_re(g)
+    sub(/\/+$/, "", g)
+    return path == g || index(path, g "/") == 1
 }
+BEGIN { count = split(ENVIRON["SCOPE_LINT_GLOBS"], globs, "\n") }
 {
-    for (k in res) if ($1 ~ res[k]) next
+    for (k = 1; k <= count; k++) if (globs[k] != "" && covers(globs[k], $1)) next
     printf "outside scope: %s (%s)\n", $1, $2
 }')
 if [ -n "$outside" ]; then

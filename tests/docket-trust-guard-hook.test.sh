@@ -914,6 +914,18 @@ case_comment_regions_are_inert() {
         executor-write DENY "a # right after a substitution's ) is mid-word, so its double quote still opens a group"
     assert_verdict "${widened}"$'\n'"echo \$(true)#; FOO='a b' {docket,} trust add erik key"$'\nEOF' \
         executor-write DENY "a # right after a substitution's ) leaves the next quote's words in command position"
+    # The same word shape without the #: an operator that follows a
+    # substitution inside one word still ends the command before it.
+    assert_verdict "${widened}"$'\n'"echo \$(true);${inv}"$'\nEOF' \
+        executor-write DENY "a ; glued after a substitution's ) puts the next word in command position"
+    assert_verdict "${widened}"$'\n'"x=\$(true)&&${inv}"$'\nEOF' \
+        executor-write DENY "a && glued after a substitution's ) puts the next word in command position"
+    assert_verdict "${widened}"$'\n'"echo \$((1+2));${inv}"$'\nEOF' \
+        executor-write DENY "a ; glued after an arithmetic close puts the next word in command position"
+    assert_verdict "bash -c ${sq}x=\$(true);${inv}${sq}" \
+        executor-write DENY "a ; glued after a substitution's ) in an interpreter's code argument puts the next word in command position"
+    assert_verdict "${widened}"$'\n'"echo \$(docket trust list);docket trust list"$'\nEOF' \
+        executor-write ALLOW "a trust read glued after a substitution's ) stays a read"
     assert_verdict "echo \$((1+2))#${sq}${prose}${sq}" \
         executor-write ALLOW "a # right after an arithmetic close is mid-word, so the quoted prose stays prose"
     assert_verdict "echo \$(date)#${sq}${prose}${sq}" \

@@ -734,7 +734,10 @@ function decode(raw,    inner, cpos) {
         hgroup = D_GROUP
         w = D_WORD
         hw = w
-        sub(/^.*(\$\(|\140|\(|;|\||&)/, "", hw)
+        # Keep the text after the last glued operator. One leftmost match
+        # of a one-byte class per pass: mawk does not take the longest
+        # match of a greedy prefix before an alternation.
+        while (match(hw, /[\140(;|&]/)) hw = substr(hw, RSTART + 1)
         # Command position: line start, after an assignment or reserved
         # word, after a standalone operator, or behind a glued one. A quoted
         # fragment leaves it unchanged: the pre-pass splits one source word

@@ -433,8 +433,16 @@ Record these findings alongside the value decision:
   that adds, renames, or removes a test suite a repository gate registers
   elsewhere without that registration file in scope: here a new suite
   under `tests/` needs `.github/workflows/vorpal.yaml`, which
-  `tests/ci-suite-wiring.test.sh` checks under `just tests`. A populated
-  field alone does not establish readiness.
+  `tests/ci-suite-wiring.test.sh` checks under `just tests`. Before
+  classifying an issue run-ready, run the scope lint,
+  `scripts/scope-lint.sh` in this skill's directory, on it: `docket issue
+  show <id> --json | scripts/scope-lint.sh --base <sha>`, with `<sha>` the
+  checkout's HEAD in the issue's home repository. Each line it prints is a
+  files-and-scope gap: an acceptance-criterion path missing from files or
+  outside every scope glob, or a listed Go file's sibling `_test.go`
+  outside scope. Only an exit 0 leaves the issue eligible; a gap it reports
+  makes the issue not run-ready until a fill closes it. A populated field
+  alone does not establish readiness.
 - **Needs operator decision:** an unanswered question, approval request,
   conflicting direction, or choice about value, requirements, tradeoffs,
   dependencies, or intended workflow. Inspect bodies and comments as well

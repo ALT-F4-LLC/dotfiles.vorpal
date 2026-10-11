@@ -398,6 +398,16 @@ and parallel width decide between equally large feasible rosters.
    <path>, not in scope`; the fix the operator may authorize in the
    confirmation round is `docket issue edit --scope` (§3 Scope).
 
+   Run docket-groom's scope lint on each candidate issue to check this
+   mechanically, along with `files`: `docket issue show <id> --json |
+   ../docket-groom/scripts/scope-lint.sh --base <sha>` (the path is
+   relative to this skill's directory; `<sha>` is `git rev-parse HEAD` in
+   this checkout). It reports each AC-named path missing from `files` or
+   outside every scope glob, and each listed Go file whose sibling
+   `_test.go` exists but falls outside scope (§3 Scope's regression-test
+   rule). Any line it prints is a not-ready reason, quoted as the reason;
+   only exit 0 passes. Rerun it after a fill the operator authorizes.
+
    **Every AC is satisfiable inside the issue's scope.** An AC whose only
    remedy needs a change outside every scope glob, in another repository, or
    in a capability the engine does not have (read the issue's related gap

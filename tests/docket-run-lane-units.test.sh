@@ -20,8 +20,9 @@
 #
 # The suite also pins the SKILL.md side: the skill runs the installed file
 # and carries no inline interpreter program, and its refill loop keeps the
-# --in-flight re-split, the close condition, and a pending-rows filter that
-# drops exactly the settled and held steps. The same program once lived in
+# --in-flight re-split, the close condition, a settle filter that keeps a
+# refused lane pending, and a pending-rows filter that drops exactly the
+# settled steps. The same program once lived in
 # SKILL.md as a `python3 - <<'PY'` heredoc, which the auto-mode deny rule on
 # interpreter code arguments refuses before it runs.
 
@@ -152,6 +153,17 @@ n=$(lu "$WORK/rows.json" "$WORK/launch" --in-flight X1,X2,X3 2> "$WORK/err"); rc
 [ "$rc" -eq 0 ] && [ "$n" = "17" ] && [ "$(wc -l < "$WORK/launch/deferred.jsonl" | tr -d ' ')" = "8" ]
 ok $? "3 in-flight lanes absent from the rows still hold 3 slots: 17 launches, 8 deferred (rc=$rc, got $n)"
 grep -q 'in flight but in no row: X1, X2, X3' "$WORK/err"; ok $? 'in-flight names matching no lane are named on stderr'
+rm -rf "$WORK/launch"
+lu "$WORK/rows.json" "$WORK/launch" --in-flight I2,I5,I9 > /dev/null 2> "$WORK/err"
+! grep -q 'in flight but in no row' "$WORK/err"; ok $? 'in-flight names that match lanes are not named as in no row'
+# A row with no issue is its own lane, keyed row:<step>; named in flight, it
+# must not launch twice.
+printf '%s' '[{"step":"STEP-1","kind":"executor","class":"read","stage":0},'"$(r 2 A 0)"']' > "$WORK/rows.json"
+rm -rf "$WORK/launch"
+n=$(lu "$WORK/rows.json" "$WORK/launch" --in-flight lane:row:STEP-1 2> "$WORK/err"); rc=$?
+[ "$rc" -eq 0 ] && [ "$n" = "1" ] && [ "$(cat "$WORK"/launch/launch-*.jsonl | jq -r .step)" = "STEP-2" ] && ! grep -q 'in flight but in no row' "$WORK/err"
+ok $? "an issue-less lane named in flight as row:<step> is not launched again (rc=$rc, got $n)"
+printf '%s' "[$many]" > "$WORK/rows.json"
 # More names in flight than the cap leaves no free slot, never a negative one.
 names=$(for i in $(seq 1 20); do printf 'I%s,' "$i"; done)X1,X2
 rm -rf "$WORK/launch"
@@ -342,22 +354,42 @@ grep -qF 'python3 ~/.claude/skills/docket-run/scripts/seat_roster.py' "$SKILL"; 
 # ---- SKILL.md's refill loop: the re-split form, the close, the pending filter ---
 grep -qF -- '"$PENDING_FILE" "$LAUNCH_DIR" --tribunal "<absolute installed path to tribunal.js>" --in-flight "<lane>,<lane>"' "$SKILL"; ok $? \
     'SKILL.md re-splits the pending rows with --in-flight at a launch return'
-grep -qF 'hold a `skipped-not-ready` lane past a freeing return' "$SKILL" && grep -qF 'Never hold a deferred lane while fewer than 20' "$SKILL"; ok $? \
-    'SKILL.md holds neither a deferred lane nor a skipped-not-ready lane for the next dispatch while a refill can launch it'
-grep -qF 'The dispatch closes only when no launch is in flight and the last' "$SKILL"; ok $? \
-    'SKILL.md closes the dispatch only when no launch is in flight and nothing is left to launch'
-# The pending rows are the manifest of record minus the settled and held step
-# ids, matched whole: STEP-12 settled must not drop STEP-123.
-filter=$(sed -n 's/.*--rawfile held "$HELD_FILE" '"'"'\([^'"'"']*\)'"'"' "$ROWS_FILE" > "$PENDING_FILE".*/\1/p' "$SKILL")
+# Prose pins match across line wraps.
+skill_text=$(tr -s ' \n' '  ' < "$SKILL")
+printf '%s' "$skill_text" | grep -qF 'Never hold a deferred lane while fewer than 20 launches run'; ok $? \
+    'SKILL.md never holds a deferred lane while a slot is free'
+# A refused lane relaunches at the return that settled it, alone or not: no
+# held or freed state may keep it out of the pending rows.
+printf '%s' "$skill_text" | grep -qF 'never hold a `skipped-not-ready` lane for a later return or the next dispatch: it relaunches at the return that settled it, even when no other launch is in flight' &&
+    ! grep -qE 'HELD_FILE|FREED_FILE|freeing return' "$SKILL"; ok $? \
+    'SKILL.md relaunches a skipped-not-ready lane at its own return and keeps no held or freed lanes'
+printf '%s' "$skill_text" | grep -qF "The dispatch closes only when no launch is in flight and the last return's re-split had nothing to launch: extend appended nothing launchable, and every row of the manifest of record is in \`\$SETTLED_FILE\`. The loop ends only when no work remains in this dispatch." &&
+    ! printf '%s' "$skill_text" | grep -qF 're-offers it next dispatch'; ok $? \
+    'SKILL.md closes the dispatch only when no launch is in flight and every row of the manifest is settled'
+# A returned launch's statuses settle every row except a refused row and, in
+# the refused row's lane, the chain-dead rows waiting on it. The filter runs
+# as SKILL.md spells it.
+settle=$(sed -n 's/.*`jq -r '"'"'\([^'"'"']*\)'"'"' "$STATUSES_FILE" >> "$SETTLED_FILE"`.*/\1/p' "$SKILL")
+printf '%s' '[{"step":"STEP-1","status":"returned"},{"step":"STEP-2","status":"skipped-not-ready"},{"step":"STEP-3","status":"skipped-chain-dead"}]' > "$WORK/statuses.json"
+got=$(jq -r "$settle" "$WORK/statuses.json" | tr '\n' ' ')
+[ -n "$settle" ] && [ "$got" = "STEP-1 " ]; ok $? \
+    "SKILL.md's settle filter keeps a refused row and its chain-dead rows pending (filter '$settle', got '$got')"
+printf '%s' '[{"step":"STEP-4","status":"spawn-failed"},{"step":"STEP-5","status":"skipped-chain-dead"},{"step":"STEP-6","status":"returned"}]' > "$WORK/statuses.json"
+got=$(jq -r "$settle" "$WORK/statuses.json" | tr '\n' ' ')
+[ -n "$settle" ] && [ "$got" = "STEP-4 STEP-5 STEP-6 " ]; ok $? \
+    "SKILL.md's settle filter settles every row of a launch with no refused row, chain-dead included (got '$got')"
+# The pending rows are the manifest of record minus the settled step ids,
+# matched whole: STEP-12 settled must not drop STEP-123.
+filter=$(sed -n 's/.*--rawfile settled "$SETTLED_FILE" '"'"'\([^'"'"']*\)'"'"' "$ROWS_FILE" > "$PENDING_FILE".*/\1/p' "$SKILL")
 printf '%s\n%s\n%s\n%s\n' "$(r 5 A 0)" "$(r 12 B 0)" "$(r 123 C 0)" "$(r 7 D 0)" > "$WORK/kept.jsonl"
-: > "$WORK/settled"; : > "$WORK/held"
-got=$(jq -c --rawfile settled "$WORK/settled" --rawfile held "$WORK/held" "$filter" "$WORK/kept.jsonl" | jq -r .step | tr '\n' ' ')
+cat /dev/null > "$WORK/settled"
+got=$(jq -c --rawfile settled "$WORK/settled" "$filter" "$WORK/kept.jsonl" | jq -r .step | tr '\n' ' ')
 [ -n "$filter" ] && [ "$got" = "STEP-5 STEP-12 STEP-123 STEP-7 " ]; ok $? \
-    "SKILL.md's pending filter keeps every row while nothing is settled or held (filter '$filter', got '$got')"
-printf 'STEP-12\n' > "$WORK/settled"; printf 'STEP-7\n' > "$WORK/held"
-got=$(jq -c --rawfile settled "$WORK/settled" --rawfile held "$WORK/held" "$filter" "$WORK/kept.jsonl" | jq -r .step | tr '\n' ' ')
+    "SKILL.md's pending filter keeps every row while nothing is settled (filter '$filter', got '$got')"
+printf 'STEP-12\nSTEP-7\n' > "$WORK/settled"
+got=$(jq -c --rawfile settled "$WORK/settled" "$filter" "$WORK/kept.jsonl" | jq -r .step | tr '\n' ' ')
 [ -n "$filter" ] && [ "$got" = "STEP-5 STEP-123 " ]; ok $? \
-    "SKILL.md's pending filter drops exactly the settled and held steps (got '$got')"
+    "SKILL.md's pending filter drops exactly the settled steps (got '$got')"
 
 # ---- the mirrored caps match wave.js --------------------------------------------
 # lane_units.py caps launches and reports harnessCap; a cap that drifts from

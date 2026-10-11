@@ -871,7 +871,7 @@ behind another's: a dispatch with six issues is six launches. Each launch
 gets only its issue's rows and its `unit`; never merge two issues into
 one launch, which wave.js refuses. Writers the engine never co-staged run
 in separate launches, and the engine's claim check keeps them apart: the
-later claimant settles `skipped-not-ready`, and a later freeing return
+later claimant settles `skipped-not-ready`, and the refill at its return
 relaunches it (**Refill freed launch slots** below). Emit all N launches in ONE
 assistant message, as separate `Workflow` calls, never held back for a
 sibling's return: on past runs, launches spread over several messages
@@ -968,15 +968,16 @@ writes `launch-<i>.jsonl` (launch i's rows, one per line), `args-<i>.json`
 `deferred.jsonl` (rows past the free slots, empty when none) under
 `$LAUNCH_DIR`, writes each launch's rows module under
 `<cwd>/.claude/docket-packets/`, and names each lane's launch on stderr for
-the dispatch report. Use a fresh `$LAUNCH_DIR` per dispatch under the
-session's scratchpad (for example `<scratchpad>/launch-DISPATCH-M`). Pass
+the dispatch report. Use a fresh `$LAUNCH_DIR` per split under the
+session's scratchpad (for example `<scratchpad>/launch-DISPATCH-M` at the
+open and `<scratchpad>/launch-DISPATCH-M-R<k>` for its k-th refill). Pass
 launch i's `args` as the generated args object in `args-<i>.json`,
 unedited. wave.js no longer re-derives the partition, and its hash check
 proves only that the module matches the object's own `rows_sha256`, so
 pass each object whole to its own launch.
 
 Pass rows through unchanged beyond the kind filter, the refill's
-settled and held filter below, and the split, with no reordering,
+settled filter below, and the split, with no reordering,
 dropping, or adding, and never sequence or hold rows back otherwise; wave.js's own `stage` labels are one global schedule, and
 offering a `staged` row ahead of readiness is the mechanism, not a
 mistake.
@@ -996,18 +997,12 @@ carries content.
 **Refill freed launch slots each time a launch returns.** Parallelism
 stays at the 20-launch cap until no work remains: every launch return
 frees a slot, and you fill it in the same turn, never waiting for the
-slowest lane or for the dispatch close. At open, keep four files under
-the session's scratchpad beside the kept rows file: `$SETTLED_FILE`,
-`$HELD_FILE` and `$FREED_FILE`, each empty, and `$PENDING_FILE`, a copy of
-the kept rows. `$SETTLED_FILE` lists the steps that need no relaunch this
-dispatch, `$HELD_FILE` the steps of refused lanes waiting for a return
-that can free them, and `$FREED_FILE` the `args-<i>.json` path of every
-launch that was in flight when such a return arrived. A return is
-*freeing* when its `statuses` settle at least one row with a status other
-than `skipped-not-ready` and `skipped-chain-dead`: that launch claimed
-something, so its return can release a scope or class headroom. A launch
-whose rows all settled with those two claimed nothing and frees nothing.
-Each time one launch returns while the dispatch is open, right after
+slowest lane or for the dispatch close. At open, keep two files under the
+session's scratchpad beside the kept rows file: `$SETTLED_FILE`, created
+empty with `cat /dev/null > "$SETTLED_FILE"`, and `$PENDING_FILE`, a copy
+of the kept rows. `$SETTLED_FILE` lists the steps that need no relaunch
+this dispatch; every other row of the manifest of record is work that
+remains. Each time one launch returns while the dispatch is open, right after
 launching its usage join (step 3), before waiting on the rest:
 
 1. Run `docket dispatch extend --run $RUN --json`. It appends the steps
@@ -1017,42 +1012,35 @@ launching its usage join (step 3), before waiting on the rest:
    rows and append them, as JSON lines, to the kept rows file. No verb
    re-reads the open manifest, so that file is the manifest of record:
    keep it for the whole dispatch.
-2. Append to `$SETTLED_FILE`, one step id per line, every row the
-   returned launch's `statuses` settled, except its `skipped-not-ready`
-   rows and, when one of its rows settled `skipped-not-ready`, its
-   `skipped-chain-dead` rows too: wave.js
-   settles the later stages of a refused row's issue `skipped-chain-dead`,
-   and they wait on that row, so they stay with it. The settled rows
-   finished, or wait for the next dispatch (step 3 lists them).
-3. When the return is freeing, empty `$HELD_FILE` with
-   `: > "$HELD_FILE"`, so every held lane rejoins the pending rows, and
-   append to `$FREED_FILE`, one per line, the `args-<i>.json` path of
-   every launch still in flight.
-4. When the returned launch has `skipped-not-ready` rows, check whether a
-   freeing return arrived while it ran:
-   `grep -qxF "<the returned launch's args-<i>.json path>" "$FREED_FILE"`.
-   On a match (exit 0) its refused rows and the rows step 2 kept with
-   them stay pending and relaunch now, since the scope or headroom may
-   have freed after its claim probe. Otherwise (exit 1) append those step
-   ids to `$HELD_FILE`: nothing has freed since the refusal, so they wait
-   for the next freeing return in this dispatch.
-5. Rebuild the pending rows from the manifest of record:
-   `jq -c --rawfile settled "$SETTLED_FILE" --rawfile held "$HELD_FILE" 'select(.step as $id | ($settled | split("\n")) + ($held | split("\n")) | index([$id]) | not)' "$ROWS_FILE" > "$PENDING_FILE"`.
-6. Re-split the pending rows with lane_units.py into a fresh
+2. Write the returned launch's `statuses` array, as the wave returned
+   it, to `$STATUSES_FILE` under the session's scratchpad with the Write
+   tool, then append the steps it settled to `$SETTLED_FILE`, one step id
+   per line:
+   `jq -r '(any(.[]; .status == "skipped-not-ready")) as $refused | .[] | select(.status != "skipped-not-ready" and (($refused and .status == "skipped-chain-dead") | not)) | .step' "$STATUSES_FILE" >> "$SETTLED_FILE"`.
+   That settles every row except a `skipped-not-ready` row and, in a
+   launch holding one, its `skipped-chain-dead` rows: wave.js settles the
+   later stages of a refused row's issue `skipped-chain-dead`, and they
+   wait on that row, so they stay pending with it. The settled rows
+   finished, or are re-offered next dispatch (the statuses list under
+   **3. Close the dispatch**).
+3. Rebuild the pending rows from the manifest of record:
+   `jq -c --rawfile settled "$SETTLED_FILE" 'select(.step as $id | $settled | split("\n") | index([$id]) | not)' "$ROWS_FILE" > "$PENDING_FILE"`.
+4. Re-split the pending rows with lane_units.py into a fresh
    `$LAUNCH_DIR`, with the same `--tribunal` and `--integrated`, and
    `--in-flight` naming every lane whose launch is still running (the
    refill form above). It emits launches only for lanes not in flight,
    up to 20 minus the in-flight count, and writes the rest to
    `deferred.jsonl` for a later return.
-7. Launch every unit it wrote, in one message exactly as above, each
+5. Launch every unit it wrote, in one message exactly as above, each
    passing its `args-<i>.json` from the fresh `$LAUNCH_DIR`. That covers
-   lanes deferred past the cap, `skipped-not-ready` lanes a freeing
-   return released or overtook in flight, rows appended to a lane that
-   was in flight at an earlier return, and every lane extend appended.
-   Never hold a deferred lane while fewer than 20 launches run, and never
-   hold a `skipped-not-ready` lane past a freeing return. Add the new
-   launches' transcript directories to the watcher below, restart it,
-   then end the turn again.
+   lanes deferred past the cap, every `skipped-not-ready` lane with the
+   rows behind it, rows appended to a lane that was in flight at an
+   earlier return, and every lane extend appended. Never hold a deferred
+   lane while fewer than 20 launches run, and never hold a
+   `skipped-not-ready` lane for a later return or the next dispatch: it
+   relaunches at the return that settled it, even when no other launch
+   is in flight. Add the new launches' transcript directories to the
+   watcher below, restart it, then end the turn again.
 
 Re-splitting all pending rows, never the appended rows alone, keeps both
 invariants lane_units.py computes: an appended write-class row never runs
@@ -1060,23 +1048,20 @@ beside an uncostaged writer in another launch, and each launch's class
 share reflects the pending manifest's headroom. A launch already in
 flight keeps the class share of its own split, so the shares can briefly
 sum past the engine's limit; the engine refuses the extra claim, the row
-settles `skipped-not-ready`, and the next freeing return relaunches it.
+settles `skipped-not-ready`, and the refill at that return relaunches it.
 A wave reports why a claim was refused, not which launch holds the scope,
-so there is no holder tracking: a refused lane is retried after every
-freeing return, and a retry whose holder still runs is refused again at
-the cost of one claim probe. The retries stay bounded. A lane is retried
-only after a freeing return, and every freeing return settles at least
-one row, so lanes refused by a holder outside this dispatch (another
-session's claim, a detached pre-gate) are held rather than relaunching
-each other.
+so there is no holder tracking: a refused lane relaunches at every
+return that settles it, and a retry whose holder still runs is refused
+again at the cost of one claim probe. The retries end when the holder
+releases the scope or headroom: an in-dispatch launch records or is
+reaped, another session's claim records or its lease ends, a detached
+pre-gate finishes.
 
 The dispatch closes only when no launch is in flight and the last
 return's re-split had nothing to launch: extend appended nothing
-launchable, and every row not in `$SETTLED_FILE` is held. The loop ends
-only when no work remains in this dispatch. A held row then waits on a
-holder outside this dispatch, since every return inside it already
-released or retried it; it is not a discrepancy at close, and the engine
-re-offers it next dispatch.
+launchable, and every row of the manifest of record is in
+`$SETTLED_FILE`. The loop ends only when no work remains in this
+dispatch.
 
 **A launch that never notifies is a stall, not a wait.** The completion
 notification is the only status surface, and nothing in the harness
@@ -1198,9 +1183,9 @@ and a row whose text names a live claim needs that claim reaped first),
 and `skipped-chain-dead` are all re-offered next dispatch.
 `skipped-not-ready` (the claim was refused because another issue's launch
 held the scope or the class headroom; nothing was claimed) is relaunched
-by a refill in this dispatch after the next freeing return, with the
-`skipped-chain-dead` rows behind it, and re-offered next dispatch only
-when the dispatch closes with it still held. Every
+by the refill at the return that settled it, with the
+`skipped-chain-dead` rows behind it, and stays pending in this dispatch
+until a claim succeeds. Every
 executor row is claimed by its claim agent before the executor spawns,
 so a row that settled without a record usually leaves a live claim: the
 row's text names its owner and parked token when the wave knows it.

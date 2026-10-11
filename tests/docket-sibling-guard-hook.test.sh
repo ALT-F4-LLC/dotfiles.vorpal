@@ -124,8 +124,12 @@ cp "$OPERATOR" "$UNRELATED"
 # bound. The bound kills the spinning probe by a signal, not the hook, and the
 # hook then denies the command as one it could not fully check; a run that
 # lasted as long as the bound therefore returns 124 so the row reports it as
-# such rather than as that deny.
-HOOK_CPU_LIMIT=20
+# such rather than as that deny. The wall-clock test is what a loaded host
+# trips, so the bound sits well above the slowest row, a 100 KiB command
+# (about 6 s of CPU on an idle host), and level with the hook's own 60 s
+# default wall-clock bound; the CPU limit and the wall-clock test must stay
+# one number, or a probe killed at the CPU limit would read as a plain deny.
+HOOK_CPU_LIMIT=60
 run_hook() {
     local start=$SECONDS rc
     (

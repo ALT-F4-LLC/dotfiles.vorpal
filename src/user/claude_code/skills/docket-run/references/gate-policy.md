@@ -16,7 +16,7 @@ examples reflect the swept commands as of that build.
 
 - [`docket gate`](#gate-commands) — 25 lines
   - [`gate status STEP-N`](#gate-status) — 21 lines
-- [`docket policy`](#policy-commands) — 17 lines
+- [`docket policy`](#policy-commands) — 26 lines
 - [`docket registry`](#registry-commands) — 16 lines
 
 <a id="gate-commands"></a>
@@ -48,9 +48,9 @@ exactly.
 
 ### `docket policy`
 
-`docket policy resolve --run RUN-N SEAT [SEAT...] --json` reads the run's
-**pinned** policy and returns each seat's `{voter, model, effort, variant}` in
-the requested order. Use this for named panels instead of independently
+`docket policy resolve --run RUN-N [--size SIZE] SEAT [SEAT...] --json` reads
+the run's **pinned** policy and returns each seat's
+`{voter, model, effort, variant}` in the requested order. Use this for named panels instead of independently
 reconstructing model selection in the skill or relay.
 
 Pass repeatable `--label` values when issue labels govern sensitivity. A seat
@@ -60,6 +60,15 @@ rules for sensitive seats, the security variant ceiling, and escalation
 fallback. Every seat must resolve or the whole call fails with `NOT_FOUND`;
 a run without pinned `policy.toml` also fails. Omitting labels resolves as an
 unlabelled row, not as automatic discovery of an issue's labels.
+
+Pass `--size` with one of `trivial`, `small`, `bounded`, `needs-design`, or
+`unknown` to route `[sizes]` the way a vote step row with that frozen issue
+Size does. A size other than `unknown` that `[sizes]` maps sets every seat's
+starting variant ahead of any mapped `--label`. An empty `--size` leaves each
+seat on its standing variant. A value outside those five is refused with
+`VALIDATION_ERROR` (exit 3), for example `invalid size "bogus": must be one of
+[trivial small bounded needs-design unknown]`. Verified 2026-10-11 against
+`docket nightly-586-g3cd04e4`.
 
 <a id="registry-commands"></a>
 

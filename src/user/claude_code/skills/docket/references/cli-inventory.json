@@ -3003,7 +3003,7 @@
     {
       "command": "docket policy resolve",
       "usage": [
-        "docket policy resolve --run RUN-N SEAT [SEAT...] [flags]"
+        "docket policy resolve --run RUN-N [--size SIZE] SEAT [SEAT...] [flags]"
       ],
       "aliases": [],
       "flags": [
@@ -3018,6 +3018,10 @@
         },
         {
           "name": "--run",
+          "value": "string"
+        },
+        {
+          "name": "--size",
           "value": "string"
         }
       ],

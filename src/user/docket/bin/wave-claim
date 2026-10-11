@@ -29,9 +29,19 @@
 #   files   $TMPDIR/STEP-N.d/                  private step dir, mode 0700
 #           $TMPDIR/STEP-N.d/STEP-N.token      the lease token, mode 0600
 #           $TMPDIR/STEP-N.d/STEP-N.packet.md  the packet, for the record
+#           $TMPDIR/STEP-N.d/STEP-N.secret     the recovery secret, mode 0600
+#           The recovery secret is made before the first claim (32 random
+#           bytes from /dev/urandom, hex) and reused, byte for byte, by every
+#           later run for the step; `docket step claim` reads it on stdin,
+#           stores its hash on a fresh lease, and re-mints a lease only for
+#           the same secret. An existing secret that is not a non-empty
+#           regular file the caller owns at mode 0600 is refused before any
+#           claim. The secret never enters argv, the environment, the module
+#           or stdout.
 #           The claim lands in a private work dir first, and the step dir
 #           and module are rebuilt only once the lease is this run's: a
-#           CONFLICT leaves the holder's token and module untouched.
+#           CONFLICT leaves the holder's token and module untouched. The
+#           rebuild clears every file in the step dir but the secret.
 #           The module, written atomically: a pure-literal meta, then
 #           `return {v, step, owner, attempt, expected_attempt, re_minted,
 #           lease_expires_ms, dir, dir_physical, token, packet_file,
@@ -113,6 +123,7 @@ tmp="${TMPDIR:-}"
 tmp="${tmp%/}"
 dir="$tmp/$step.d"
 token="$dir/$step.token"
+secret="$dir/$step.secret"
 packet="$dir/$step.packet.md"
 pkdir="${module%/*}"
 partial="$module.partial"
@@ -140,9 +151,26 @@ claim_err="$work/claim.err"
 # script exits by.
 trap 'rm -rf "$work" "$partial"' EXIT
 
+uid="$(id -u)"
+mkdir -m 700 "$dir" 2>/dev/null || :
+[ -n "$(find "$dir" -prune -type d -user "$uid" 2>/dev/null)" ] ||
+	{ echo "CLAIM FAILED: $step: $dir is not a directory you own"; exit 1; }
+# A fresh secret is written whole in the work dir, then hard-linked into
+# place: the link never clobbers, so a concurrent run's secret wins intact and
+# no partial secret is ever visible at $secret. The work dir's link goes with
+# the EXIT trap.
+if [ ! -e "$secret" ] && [ ! -L "$secret" ]; then
+	od -An -N32 -tx1 /dev/urandom | tr -d ' \n' >"$work/secret"
+	[ "$(wc -c <"$work/secret" | tr -d ' ')" -eq 64 ] ||
+		{ echo "CLAIM FAILED: $step: cannot read 32 random bytes from /dev/urandom"; exit 1; }
+	ln "$work/secret" "$secret" 2>/dev/null || :
+fi
+[ -n "$(find "$secret" -prune -type f -user "$uid" -perm 600 ! -empty 2>/dev/null)" ] ||
+	{ echo "CLAIM FAILED: $step: $secret must be a non-empty regular file you own at mode 0600"; exit 1; }
+
 rc=0
 docket step claim "$step" --owner "$owner" --render --metadata "$metadata" --json=v2 \
-	>"$claim" 2>"$claim_err" </dev/null || rc=$?
+	>"$claim" 2>"$claim_err" <"$secret" || rc=$?
 
 jq -r '.data.token // empty' "$claim" >"$work/token" 2>/dev/null || :
 if [ ! -s "$work/token" ]; then
@@ -159,8 +187,8 @@ fi
 
 # This run holds the lease (fresh, or re-minted under the same owner).
 rm -f "$module"
-rm -rf "$dir"
-mkdir -m 700 "$dir"
+find "$dir" -mindepth 1 -maxdepth 1 ! -name "$step.secret" -exec rm -rf {} +
+chmod 700 "$dir"
 mv "$work/token" "$token"
 chmod 600 "$token"
 # The step dir with every symlink resolved: under a sandbox the Write tool

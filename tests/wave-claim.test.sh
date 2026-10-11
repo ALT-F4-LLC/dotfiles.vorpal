@@ -43,6 +43,8 @@ cat >"$WORK/bin/docket" <<'STUB'
 printf '%s\n' "$*" >>"$STUB_LOG"
 case "$1 $2" in
 "step claim")
+    cat >"$STUB_CLAIM_STDIN"
+    env >"$STUB_CLAIM_ENV"
     case "$STUB_MODE" in
     success)
         jq -n --rawfile p "$STUB_PACKET" --arg t "$STUB_TOKEN" \
@@ -87,6 +89,7 @@ run_claim() {
     OUT=$(cd "$C/repo" && PATH="$WORK/bin:$PATH" TMPDIR="$C/tmp" STUB_MODE="$mode" \
         STUB_LOG="$C/stub.log" STUB_PACKET="$WORK/packet.txt" STUB_TOKEN="$TOKEN_VALUE" \
         STUB_FAIL_STDIN="$C/fail.stdin" STUB_FAIL_EXIT="${STUB_FAIL_EXIT:-0}" \
+        STUB_CLAIM_STDIN="$C/claim.stdin" STUB_CLAIM_ENV="$C/claim.env" \
         "$CLAIM" "$@" 2>&1)
     RC=$?
 }
@@ -156,6 +159,74 @@ set_args
 run_claim remint remint "${ARGS[@]}"
 [ "$RC" -eq 0 ] && [ "$(modval "$MODULE" '.re_minted')" = "true" ]
 check $? "a re-minted claim succeeds and the module records re_minted"
+
+# ---- the recovery secret reaches the claim on stdin and nowhere else ----------
+# A stale scratch file in the step dir must go with the rebuild; the secret,
+# created fresh before the claim, must survive it.
+C="$WORK/secret-fresh"; MODULE="$C/repo/.claude/docket-packets/STEP-7.a3.js"
+mkdir -p "$C/tmp/STEP-7.d"
+printf 'old scratch\n' >"$C/tmp/STEP-7.d/STEP-7-old.md"
+set_args
+run_claim secret-fresh success "${ARGS[@]}"
+SECRET="$C/tmp/STEP-7.d/STEP-7.secret"
+[ "$RC" -eq 0 ] && [ -f "$SECRET" ] && [ ! -L "$SECRET" ] && [ "$(mode_of "$SECRET")" = "600" ]
+check $? "after the claim the secret survives the step-dir rebuild as a regular file, mode 600 (got $RC: $OUT)"
+[ "$(wc -c <"$SECRET" | tr -d ' ')" -ge 32 ]; check $? "a fresh secret carries at least 32 bytes"
+[ -s "$C/claim.stdin" ] && cmp -s "$C/claim.stdin" "$SECRET"
+check $? "the claim reads exactly the secret file's bytes on stdin"
+[ ! -e "$C/tmp/STEP-7.d/STEP-7-old.md" ] && [ "$(mode_of "$C/tmp/STEP-7.d")" = "700" ]
+check $? "the rebuild clears every other file from the step dir and keeps it mode 700"
+SECRET_VALUE=$(cat "$SECRET")
+! grep -qF "$SECRET_VALUE" "$C/stub.log"; check $? "the secret never enters the claim's argv"
+! grep -qF "$SECRET_VALUE" "$C/claim.env"; check $? "the secret never enters the claim's environment"
+! grep -qF "$SECRET_VALUE" "$MODULE"; check $? "the secret never enters the module"
+! printf '%s' "$OUT" | grep -qF "$SECRET_VALUE"; check $? "the secret never reaches stdout"
+
+C="$WORK/secret-seeded"; MODULE="$C/repo/.claude/docket-packets/STEP-7.a3.js"
+mkdir -p "$C/tmp/STEP-7.d"
+chmod 700 "$C/tmp/STEP-7.d"
+printf 'seeded-recovery-value' >"$C/tmp/STEP-7.d/STEP-7.secret"
+chmod 600 "$C/tmp/STEP-7.d/STEP-7.secret"
+set_args
+run_claim secret-seeded success "${ARGS[@]}"
+[ "$RC" -eq 0 ] && [ "$(cat "$C/claim.stdin")" = "seeded-recovery-value" ] &&
+    [ "$(cat "$C/tmp/STEP-7.d/STEP-7.secret")" = "seeded-recovery-value" ] &&
+    [ "$(mode_of "$C/tmp/STEP-7.d/STEP-7.secret")" = "600" ]
+check $? "an existing secret is presented and kept unchanged (got $RC: $OUT)"
+
+C="$WORK/secret-twice"; MODULE="$C/repo/.claude/docket-packets/STEP-7.a3.js"
+set_args
+run_claim secret-twice success "${ARGS[@]}"
+first_rc=$RC
+cp "$C/claim.stdin" "$C/claim.stdin.first"
+run_claim secret-twice remint "${ARGS[@]}"
+[ "$first_rc" -eq 0 ] && [ "$RC" -eq 0 ] && [ -s "$C/claim.stdin.first" ] &&
+    cmp -s "$C/claim.stdin.first" "$C/claim.stdin"
+check $? "two claims of one step present the same secret (got $first_rc then $RC)"
+
+# refuse_secret <case> <label>: the planted secret is refused before any claim.
+refuse_secret() {
+    local name="$1" label="$2"
+    set_args "$C/repo/.claude/docket-packets/STEP-7.a3.js"
+    run_claim "$name" success "${ARGS[@]}"
+    if [ "$RC" -eq 1 ] && [[ "$OUT" == "CLAIM FAILED: STEP-7: "*"STEP-7.secret"* ]] && [ ! -s "$C/stub.log" ]; then
+        ok "a secret that is $label is refused before the claim"
+    else
+        bad "a secret that is $label is refused before the claim (exit $RC: $OUT; stub log: $(cat "$C/stub.log"))"
+    fi
+}
+C="$WORK/secret-symlink"; mkdir -p "$C/tmp/STEP-7.d"
+printf 'elsewhere' >"$C/elsewhere"; chmod 600 "$C/elsewhere"
+ln -s "$C/elsewhere" "$C/tmp/STEP-7.d/STEP-7.secret"
+refuse_secret secret-symlink "a symlink"
+C="$WORK/secret-readable"; mkdir -p "$C/tmp/STEP-7.d"
+printf 'readable' >"$C/tmp/STEP-7.d/STEP-7.secret"; chmod 644 "$C/tmp/STEP-7.d/STEP-7.secret"
+refuse_secret secret-readable "readable by group or other"
+C="$WORK/secret-dir"; mkdir -p "$C/tmp/STEP-7.d/STEP-7.secret"
+refuse_secret secret-dir "a directory"
+C="$WORK/secret-empty"; mkdir -p "$C/tmp/STEP-7.d"
+: >"$C/tmp/STEP-7.d/STEP-7.secret"; chmod 600 "$C/tmp/STEP-7.d/STEP-7.secret"
+refuse_secret secret-empty "empty"
 
 # ---- a symlinked TMPDIR: the module carries the physical step dir -------------
 # Under a sandbox the Write tool lands at the physical path, so the module

@@ -960,7 +960,8 @@ Always pass `--tribunal`; without it no generated object carries
 integrated map as one JSON object of issue to sha, written under the
 session's scratchpad. Run it from this session's working directory: it
 exits 1 outside the run's git work tree and writes nothing. It reads the
-kept rows as one JSON array or as JSON lines, prints N alone on stdout,
+kept rows as one JSON array or as JSON lines (the kept rows file itself
+is JSON lines, per the kind filter), prints N alone on stdout,
 writes `launch-<i>.jsonl` (launch i's rows, one per line), `args-<i>.json`
 (launch i's complete wave.js args), `launches.json` (each launch's
 `index`, `of`, `classCap`, `harnessCap`, row count and its one lane) and
@@ -1018,7 +1019,8 @@ launching its usage join (step 3), before waiting on the rest:
    keep it for the whole dispatch.
 2. Append to `$SETTLED_FILE`, one step id per line, every row the
    returned launch's `statuses` settled, except its `skipped-not-ready`
-   rows and, when it has any, its `skipped-chain-dead` rows: wave.js
+   rows and, when one of its rows settled `skipped-not-ready`, its
+   `skipped-chain-dead` rows too: wave.js
    settles the later stages of a refused row's issue `skipped-chain-dead`,
    and they wait on that row, so they stay with it. The settled rows
    finished, or wait for the next dispatch (step 3 lists them).

@@ -150,6 +150,12 @@ lint "$(printf -- '- [ ] AC-1: the snippet shows:\n\n```md\n~~~\n# comment\n~~~\
     "src/pkg/y.go"
 expect_line "missing from files: docs/guide.md" "an AC path after a fenced # line inside the other marker"
 
+# AC-2: a ~~~ fence holds its # line like a ``` fence does.
+lint "$(printf -- '- [ ] AC-1: the snippet runs:\n\n~~~sh\n# regenerate\nmake\n~~~\n\n- [ ] AC-2: docs/guide.md explains it.')" \
+    "src/pkg/y.go" \
+    "src/pkg/y.go"
+expect_line "missing from files: docs/guide.md" "an AC path after a # line in a ~~~ fence"
+
 # AC-2: a line that opens and closes a backtick span opens no fence, so the
 # real fence after it still holds its # line.
 lint "$(printf -- '```x```\n\n```sh\n# comment\n```\n\n- [ ] AC-2: docs/guide.md explains it.')" \
@@ -170,6 +176,12 @@ lint_body "$(printf '## Acceptance criteria\n\n- [ ] AC-1: docs/guide.md explain
     "src/pkg/y.go" \
     --repo "${REPO}/src"
 expect_line "missing from files: docs/guide.md" "a --repo below the repository root"
+# A new file's directory resolves from the repository root too.
+lint_body "$(printf '## Acceptance criteria\n\n- [ ] AC-1: docs/new.md records the decision.\n')" \
+    "src/pkg/y.go" \
+    "src/pkg/y.go" \
+    --repo "${REPO}/src"
+expect_line "missing from files: docs/new.md" "a new file outside the --repo subdirectory"
 
 # AC-2, file argument: the envelope may be named instead of piped.
 envelope "$(printf '## Acceptance criteria\n\n- [ ] AC-1: docs/guide.md explains the flag.\n')" \
@@ -228,6 +240,13 @@ lint "- [ ] AC-1: docs/guide.md and docs/new.md explain the flag." \
     "$(printf 'docs/guide.md\ndocs/new.md')" \
     "docs"
 expect_clean "a literal directory covers the files under it"
+
+# AC-3: a literal glob covers a path only at a directory boundary, so `doc`
+# leaves docs/ out.
+lint "- [ ] AC-1: docs/guide.md explains the flag." \
+    "docs/guide.md" \
+    "doc"
+expect_line "outside scope: docs/guide.md" "a literal glob that is a prefix of a directory name"
 
 # Prose outside the criteria section, a later section, URLs, host:ports,
 # relative paths that leave the repository, dotted words, directories,

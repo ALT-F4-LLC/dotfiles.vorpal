@@ -1018,10 +1018,10 @@ platform = "x86_64-linux"
 
 [[sources]]
 name = "herdr"
-path = "https://github.com/herdrdev/herdr/releases/download/v0.9.1/herdr-macos-aarch64"
+path = "https://github.com/herdrdev/herdr/releases/download/v0.9.3/herdr-macos-aarch64"
 includes = []
 excludes = []
-digest = "b5f51b22c76acbd25fcb5cb05e47f9198a86526e8aa04ee7fd7f232bd844b9ee"
+digest = "9ff1c7e1a3d86bf96aad41a0332c18056e9cc1aae2f3391d151e858a95dcb2a6"
 platform = "aarch64-darwin"
 
 [[sources]]

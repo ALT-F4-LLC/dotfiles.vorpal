@@ -143,6 +143,20 @@ lint "$(printf -- '- [ ] AC-1: the snippet runs:\n\n```sh\n# regenerate\nmake\n`
     "src/pkg/y.go"
 expect_line "missing from files: docs/guide.md" "an AC path after a fenced # line"
 
+# AC-2: a fence closes only on its own marker, so a ~~~ line inside a ```
+# fence leaves the # line fenced.
+lint "$(printf -- '- [ ] AC-1: the snippet shows:\n\n```md\n~~~\n# comment\n~~~\n```\n\n- [ ] AC-2: docs/guide.md explains it.')" \
+    "src/pkg/y.go" \
+    "src/pkg/y.go"
+expect_line "missing from files: docs/guide.md" "an AC path after a fenced # line inside the other marker"
+
+# AC-2: a line that opens and closes a backtick span opens no fence, so the
+# real fence after it still holds its # line.
+lint "$(printf -- '```x```\n\n```sh\n# comment\n```\n\n- [ ] AC-2: docs/guide.md explains it.')" \
+    "src/pkg/y.go" \
+    "src/pkg/y.go"
+expect_line "missing from files: docs/guide.md" "an AC path after an inline backtick span line"
+
 # AC-2: a description with no criteria heading is checked whole.
 lint_body "Update docs/guide.md to explain the flag." \
     "src/pkg/y.go" \

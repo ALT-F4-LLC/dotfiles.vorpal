@@ -16,7 +16,9 @@
 # criteria` heading or bold `**Acceptance criteria**` label, up to the next
 # heading of the same or a higher level (any heading after a bold label),
 # or the whole description when it has neither. Lines inside ``` or ~~~
-# fences are never headings. A token in it, a run of letters, digits and
+# fences are never headings; a fence closes only on a run of its own
+# character at least as long as its opener, and a backtick line whose rest
+# holds a backtick opens none. A token in it, a run of letters, digits and
 # `_.-/` without trailing dots, is a repository path when:
 #   - it holds a `/`: the file exists at --base, or the name has an
 #     extension and its directory exists there (a file the change creates).
@@ -80,11 +82,21 @@ files=$(printf '%s' "$envelope" | jq -r '(.data.files // [])[]')
 scope=$(printf '%s' "$envelope" | jq -r '(.data.scope // [])[]')
 
 criteria=$(printf '%s\n' "$description" | awk '
-    /^[ \t]*(```|~~~)/ { fenced = !fenced }
-    !fenced && tolower($0) ~ /^(#+[ \t]+acceptance criteria|\*\*acceptance criteria:?\*\*)/ {
+    {
+        if (fence == "") {
+            if (match($0, /^[ \t]*(```+|~~~+)/)) {
+                run = substr($0, RSTART, RLENGTH); sub(/^[ \t]*/, "", run)
+                if (run ~ /^~/ || index(substr($0, RSTART + RLENGTH), "`") == 0) fence = run
+            }
+        } else if ($0 ~ /^[ \t]*[`~]+[ \t]*$/) {
+            run = $0; gsub(/[ \t]/, "", run)
+            if (gsub(substr(fence, 1, 1), "", run) >= length(fence) && run == "") fence = ""
+        }
+    }
+    fence == "" && tolower($0) ~ /^(#+[ \t]+acceptance criteria|\*\*acceptance criteria:?\*\*)/ {
         level = match($0, /^#+/) ? RLENGTH : 6; inside = 1; found = 1; next
     }
-    inside && !fenced && /^#+[ \t]/ { match($0, /^#+/); if (RLENGTH <= level) inside = 0 }
+    inside && fence == "" && /^#+[ \t]/ { match($0, /^#+/); if (RLENGTH <= level) inside = 0 }
     inside { print }
     { all = all $0 "\n" }
     END { if (!found) printf "%s", all }

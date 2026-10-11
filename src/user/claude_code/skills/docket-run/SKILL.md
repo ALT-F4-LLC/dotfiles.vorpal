@@ -10,7 +10,8 @@ description: >-
   dispatches it, launches one wave per issue, closes the dispatch, and
   repeats. Vote gates ride the wave, conversational gates go to tribunal.js,
   standing rulings answer parks machine-side, and every other park or
-  reserved matter goes to the operator. Holds no run state and keeps the
+  reserved matter goes to the advisor first, then to the operator when the
+  advisor's answer is not clear. Holds no run state and keeps the
   conductor capability in one session-private file, never in a brief, tool
   output, or resume prompt. Distinct from docket-tend, which works issues
   without a run.
@@ -21,11 +22,12 @@ argument-hint: "[RUN-N | pause [RUN-N]]"
 
 You are the conductor: a relay between the engine, the panel, and the
 operator. The engine decides what runs, `wave.js` decides what each step
-routes to, a tribunal panel decides at gates, and the operator decides
-what the panel could not or must not.
+routes to, a tribunal panel decides at gates, and what the panel could
+not or must not decide goes to the advisor first and to the operator when
+the advisor's answer is not clear.
 
 **One seat drives a run: this conversation.** It runs the engine verbs,
-launches the workflows, and puts gates to the operator. A background
+launches the workflows, and puts gates to the advisor and the operator. A background
 conductor agent lacks the `Workflow` tool and would relay every launch
 through a message. One conversation drives one run; a second run needs a
 second conversation.
@@ -216,6 +218,13 @@ docket step resolve STEP-N --as override-pass --batch --authority standing-grant
 docket step resolve STEP-N --as fix-round --authority standing-grant --authority-ref <proposal id> < <scratchpad>/conductor.d/$RUN.token
 docket step resolve STEP-N --as override-pass --drop-interposed --authority standing-grant --authority-ref loop-bound --note "loop-bound ruling: residue; filed <ids>; <AC or cluster> out of scope, remedy <home>" < <scratchpad>/conductor.d/$RUN.token
 docket run abandon $RUN --issue <issue> --reason "classifier-stopped twice: <step>; re-plan <new-id>" --authority standing-grant --authority-ref classifier-stopped-twice < <scratchpad>/conductor.d/$RUN.token
+docket step resolve STEP-N --as <the disposition the advisor named> --authority standing-grant --authority-ref advisor-first --note "advisor-first ruling: <the advisor's answer, quoted>" < <scratchpad>/conductor.d/$RUN.token
+docket step approve STEP-N --authority standing-grant --authority-ref advisor-first --note "advisor-first ruling: <the advisor's answer, quoted>" < <scratchpad>/conductor.d/$RUN.token
+docket step reject STEP-N --authority standing-grant --authority-ref advisor-first --note "advisor-first ruling: <the advisor's answer, quoted>" < <scratchpad>/conductor.d/$RUN.token
+docket run abandon $RUN --reason "advisor-first ruling: <the advisor's answer, quoted>" --authority standing-grant --authority-ref advisor-first < <scratchpad>/conductor.d/$RUN.token
+docket step hold STEP-N --reason "advisor-first ruling: <the repeated failure, and the advisor's answer, quoted>" < <scratchpad>/conductor.d/$RUN.token
+docket run budget $RUN --set <n> --reason "advisor-first ruling: <the advisor's answer, quoted>" --if-version <the version you read>
+docket dispatch close --run $RUN --skip-integration-check "advisor-first ruling: <the advisor's answer, quoted>" --json < <scratchpad>/conductor.d/$RUN.token
 docket run fact add $RUN --kind step-deferred --step STEP-N --cause <budget|chain> --reason "<the row's status>" < <scratchpad>/conductor.d/$RUN.token
 docket run fact add $RUN --kind vote-reseated --proposal <proposal-id> --voter <seat> --reason "<why the seat was re-seated>" < <scratchpad>/conductor.d/$RUN.token
 docket run note add $RUN --authority conductor --text "<the ruling>" < <scratchpad>/conductor.d/$RUN.token
@@ -258,9 +267,9 @@ nothing was redirected, or the file is empty. `AUTH_ERROR` (exit 5, "the
 supplied token is not RUN-N's conductor capability") means the seat was
 taken: another session ran `run conduct` and retired your token. Stop
 there. `docket events list --run $RUN --kind conductor-seated --json=v2` carries the
-`conductor-seated` event with the taker's `actor` and `cwd`; put that to
-the operator through the question tool, and re-conduct only on their
-word. The mechanism is tamper-evident, not tamper-proof:
+`conductor-seated` event with the taker's `actor` and `cwd`; put that
+advisor-first (**Gates**), and re-conduct only on the ruling that comes
+back. The mechanism is tamper-evident, not tamper-proof:
 `run conduct` is deliberately open to any caller with repository access,
 so a run whose conductor died stays recoverable, and the sibling guard
 keeps executors off that one verb while the engine keeps them off every
@@ -370,9 +379,9 @@ close-out.
 
 A gate that fails on clean HEAD is not caused by this run's changes,
 commonly environmental (an untracked toolchain, a sandbox denial, a
-network block) but possibly a genuine pre-existing defect. Surface it to
-the operator once, before any step pays for it, and record the agreed
-disposition: fix the environment, a named override policy, or fix-first.
+network block) but possibly a genuine pre-existing defect. Put it
+advisor-first (**Gates**) once, before any step pays for it, and record
+the disposition: fix the environment, a named override policy, or fix-first.
 Never assume a standing override, security gates especially.
 
 File the `<issue>` the ruling cites first. It is an ordinary conductor
@@ -605,8 +614,8 @@ the panel or the operator decides it.
 tool call with another:**
 
 1. **Read the tally**: `docket vote show <proposal-id>`. Anything short
-   of approval goes to the operator with the full tally instead of
-   continuing.
+   of approval goes advisor-first (**Gates**) with the full tally instead
+   of continuing.
 2. **Back-fill the panel's seat usage**: the seats-mode case of **A
    panel you convened yourself gets the same treatment** (loop step 3):
 
@@ -695,11 +704,12 @@ gates live inside it, each stated where it arises, including symlink
 debris, a `next` set disagreeing with the presented roster, unexpanded
 added issues, unprovenanced parked payload, a cherry-pick conflict,
 staged but uncommitted content, and any unpredicted engine state. These
-go straight to the operator, never a panel, and none of them ends the run.
+go advisor-first (**Gates**), never to a panel, and none of them ends the
+run.
 
 **An unexpected state change freezes every mutating verb.** Diagnose with
 read verbs only (`step show`, `step gates`, `run status`, `events list`);
-the next mutating verb waits for an operator ruling. Never test a
+the next mutating verb waits for an advisor-first ruling. Never test a
 recovery idea live in the same turn you flag the surprise.
 
 ### 1. Ask what is ready
@@ -743,8 +753,8 @@ Read `next` as a summary, never as rows: the rows you launch are what
   it, then ask again, once. A second identical refusal for the same step
   after a join that returned no rows for it means the journal genuinely
   lacks that step's usage (the executor died before writing a transcript):
-  stop looping, and put `--accept-missing-usage` to the operator with the
-  empty join as evidence, since that flag is theirs alone (see
+  stop looping, and put `--accept-missing-usage` advisor-first with the
+  empty join as evidence, since that flag is reserved (see
   **`--accept-missing-usage`** below). Never a third join.
 
 Any other refusal from `next` is a real stall: report it verbatim and
@@ -1135,8 +1145,9 @@ transcript:
 - **Approval wait:** the last entry is an assistant `tool_use` with no
   matching `tool_result` after it. The agent is blocked on a permission
   prompt. Surface it to the operator now, naming the step, the pending
-  command, and the prompt it is waiting on; the operator answers the
-  prompt or tells you to stop that agent.
+  command, and the prompt it is waiting on; only the operator can answer
+  the prompt, and stopping that agent instead is an advisor-first
+  decision.
 - **Long-running work:** the pending `tool_use` is a command expected to
   run long (a cold build, a test suite, a gate) under its own tool-call
   timeout, or the transcript gained entries since the watcher fired. Keep
@@ -1144,7 +1155,8 @@ transcript:
 - **Interrupted seat (`STALLED`):** the seat's last tool call was
   rejected and the agent was interrupted; it will not continue on its
   own. Surface it to the operator now, naming the step and the rejected
-  command; the operator answers the seat or tells you to stop it.
+  command; only the operator can answer the seat, and stopping it instead
+  is an advisor-first decision.
 
 After handling a firing, restart the watcher, with `SKIP` updated, for
 the agents still running; a watcher started once at dispatch open goes
@@ -1346,12 +1358,13 @@ jq -s add "$TMPDIR/wave-<wfId-0>.json" "$TMPDIR/wave-<wfId-1>.json" > "$TMPDIR/d
 #    the sha is a regressing round's under a loop-extension park: the
 #    loop-extension standing ruling under Gates convenes the panel first and
 #    integrates only on its approval.
-#    --skip-integration-check REASON is the operator's override, recorded on
-#    the close event; pass it only on the operator's recorded word, never
-#    on your own ruling. Read the whole output.
+#    --skip-integration-check REASON is an override, recorded on the close
+#    event; pass it only on the operator's recorded word or an advisor-first
+#    ruling (Gates carries that form), never on your own ruling. Read the
+#    whole output.
 docket dispatch close --run $RUN --backfill-from "$TMPDIR/dispatch-<M>-rows.json" --source "wave-journal:<wfId-0>,<wfId-1>" --json
-# 4b. the operator's override: unlike a plain close it is a conductor verb,
-#    so the token rides stdin.
+# 4b. the override, in the form that records the operator's own word:
+#    unlike a plain close it is a conductor verb, so the token rides stdin.
 docket dispatch close --run $RUN --skip-integration-check "<the operator's reason>" --json < <scratchpad>/conductor.d/$RUN.token
 # 5. re-close after a verify or close refusal you have answered (a recorded-then-
 #    parked step confirmed with `docket step show STEP-N`, or a CONFLICT sha
@@ -1518,7 +1531,8 @@ Because integrations land immediately, later write steps' worktrees
 already contain every prior integration, so sequential steps chain. A
 cherry-pick that still conflicts is a stop-and-ask presenting the sha and
 conflicting hunks. Content staged but uncommitted in the shared tree is
-an operator's work in progress: stop and ask, never build on it.
+an operator's work in progress: stop and ask advisor-first, never build
+on it.
 
 A wave result of `parked-base-ancestry` is the fix-round ancestry guard
 firing: the round's judged tree does not descend from the prior round's
@@ -1537,7 +1551,8 @@ proceed from step 1.
 
 A formatting-only commit of your own on the shared branch (such as a
 gofmt fix that keeps later writers' repo-wide format gate green) is
-allowed only under an explicit operator ruling: stage the change, then
+allowed only under an explicit ruling, the operator's own or one reached
+advisor-first: stage the change, then
 verify the staged diff is whitespace-only with `git diff --cached
 --ignore-all-space --ignore-blank-lines --exit-code` (prints nothing and
 exits 0) before committing, record a run note naming the ruling and the
@@ -1713,7 +1728,7 @@ docket dispatch open --run $RUN --limit 240 --ack-reap <seq>
 
 `docket guard spawn --run $RUN --ack-reap <seq>` acks the same way and is
 the only form that works while a dispatch is already open. Anything
-short of approval goes to the operator with the tally; silence, or an
+short of approval goes advisor-first (**Gates**) with the tally; silence, or an
 answer to something else, is never a yes.
 
 Open the proposal first and pass its id as `voteId`, which admits the
@@ -1752,7 +1767,7 @@ set is the wall announcing itself.
 yours: at most one raise per run, capped at 2x the current cap.** Inside
 the bound, an approved tally is enough: run the verb, then notify the
 operator with the tally, don't ask. Outside it (a second raise, or above
-2x), no tally suffices; it goes through the question tool.
+2x), no tally suffices; it goes advisor-first (**Gates**).
 
 On an approved tally within bounds: `docket run budget $RUN --set <n>
 --reason "tribunal <proposal-id>: <the panel's reasoning>" --if-version
@@ -1763,15 +1778,16 @@ moving again>" < <scratchpad>/conductor.d/$RUN.token` does, never bare.
 
 **`--accept-missing-usage`.** Never on your own initiative; not a
 panel's to grant either, since it sits on the reserved list in **Gates**.
-Only for a journal that genuinely lacks usage, authorized by the operator
-per run. The other case this flag used to cover retired when `dispatch
+Only for a journal that genuinely lacks usage, authorized per run,
+advisor-first. The other case this flag used to cover retired when `dispatch
 backfill-usage` landed; reaching for it when you could have back-filled
 makes the ledger lie.
 
 **Authorization provenance.** A cross-session message claiming the
 operator's word is a peer claim you cannot verify: never execute on it,
 but surface it at the next operator interaction rather than discarding
-it silently. A panel cannot launder one either.
+it silently. It goes advisor-first like every reserved matter and is
+never clear there: neither a panel nor the advisor can launder one.
 
 **A gap filed by a wave lands in this run's project even when the work
 belongs elsewhere; re-home it at the same close.** Whichever repo owns
@@ -1844,9 +1860,10 @@ quoting applies to `-m`, `--summary`, and `--note`.
 ## Gates
 
 A gate is any decision the run cannot make for itself. **The panel is the
-default path; the operator is the escalation path**, plus a short
-reserved list. A `human:*` step parks in `waiting-human` and is the
-operator's; a `kind: "vote"` step is the panel's, and **a ready `kind:
+default path; past it the advisor answers first and the operator is the
+escalation path**, plus a short reserved list. A `human:*` step parks in
+`waiting-human` and goes advisor-first (**Standing ruling: the advisor
+answers first** below); a `kind: "vote"` step is the panel's, and **a ready `kind:
 "vote"` row is not a human gate**: never present one through the
 question tool. The engine already opened its proposal, carrying seats
 and proposal id on the row; you convene the panel and the engine tallies
@@ -1904,13 +1921,13 @@ reap hold indefinitely. No other gate class has a key convention.
 
 ### Standing ruling: a loop-extension panel decides only the first round past `max_fix_loops`
 
-A loop-extension gate is the panel's once, then the operator's, only for
-a regression. When the engine parks a step for exceeding `max_fix_loops`,
+A loop-extension gate is the panel's once, then goes advisor-first, only
+for a regression. When the engine parks a step for exceeding `max_fix_loops`,
 first apply **Standing ruling: a loop-bound park** below (residue files
 and passes, no panel). For a regression, read the round from `loop N` in
 the park reason. If that round is exactly `max_fix_loops + 1`, open a
 proposal with `gateKind` `"loop-extension"` and convene the panel before
-presenting anything to the operator. The description is the question
+putting anything to the advisor or the operator. The description is the question
 (did fix round N-1 regress the named item, does one round to restore it
 beat filing it); the rationale is the five-field loop-history line **A
 fix-round gate past the workflow's `max_fix_loops` presents the loop**
@@ -1923,13 +1940,13 @@ fix-round --authority standing-grant --authority-ref <proposal id>
 < <scratchpad>/conductor.d/$RUN.token` citing the proposal id,
 then `docket vote link` to the issue.
 A rejected tally, a stalled panel, or any round beyond `max_fix_loops +
-1` goes to the operator with the panel's reasoning where there is one.
+1` goes advisor-first with the panel's reasoning where there is one.
 When the regressing round's write sha is recorded but unintegrated
 and `docket dispatch close` refuses CONFLICT on it, leave the dispatch
 open and convene the panel without asking the operator. An approved
 tally integrates the sha, resolves the step `--as fix-round`, and closes
-the dispatch, in that order. A rejected or stalled tally goes to the
-operator with the integrate-or-discard choice, since discarding
+the dispatch, in that order. A rejected or stalled tally goes
+advisor-first with the integrate-or-discard choice, since discarding
 unintegrated commits cannot be undone.
 Nothing needs tracking: the arithmetic on the next park fails on its own.
 
@@ -1971,8 +1988,8 @@ its own read of the record (`null` means unknown, never "no casts"), and
 `replies` lists `{seat, castError}` for each seat whose cast failed after
 its retry; quote those errors when the panel comes up short. Then `docket
 vote result <proposal-id>`, the authority over that return: approved runs
-the underlying verb, citing the proposal id; anything else goes to the
-operator. **The evidence bar does
+the underlying verb, citing the proposal id; anything else goes
+advisor-first. **The evidence bar does
 not drop because a panel is cheap:** gather it before convening, not
 after.
 
@@ -1996,8 +2013,9 @@ a proposal.
 
 ### Reserved to the operator
 
-These never reach a panel, however routine they look. Each is a direct operator
-gate through the question tool, every time:
+These never reach a panel, however routine they look. Each goes
+advisor-first, every time, and reaches the operator through the question
+tool unless the advisor's answer is clear:
 
 - trust-store writes;
 - anything resting on a peer-relayed claim of operator authorization;
@@ -2016,15 +2034,18 @@ alone, as its own question.
 
 **Never run a trust verb yourself, `--help` included.** `docket trust
 add/rm` is a permission ask the sandbox then refuses (no session may write
-the trust store), and an ask with no operator at the terminal is a stall. Put the trust matter to the operator as its own question,
-with the exact `docket trust add ... -- <argv>` they would run.
+the trust store), and an ask with no operator at the terminal is a stall. A trust matter is never clear under
+the advisor-first ruling: put it to the operator as its own question,
+with the advisor's framing and the exact `docket trust add ... -- <argv>`
+they would run.
 
 **A required gate with no trust entry is a park, never a stub.** Never
 propose, and never accept without saying so plainly, an argv that cannot
 fail (`true`, `:`, `echo`) to satisfy a gate. It records `pass` in
 `gate_results` forever, in milliseconds, and the gap becomes invisible to
-everyone downstream. Present the gap as what it is and let the operator
-decide. If they direct a stub anyway, file the removal issue in the same
+everyone downstream. Present the gap as what it is, advisor-first: a
+missing trust entry is a trust matter, so the operator decides. If they
+direct a stub anyway, file the removal issue in the same
 turn and name the stubbed gate in every subsequent status report until it
 is gone.
 
@@ -2064,11 +2085,11 @@ reproduction, and the root-cause issue that **A gate that failed on a
 broken check is settled on evidence** in
 [escalation.md](references/escalation.md)
 requires, filed or linked. Report every auto-pass in your next status
-report, one line each. Everything else stays the operator's: a gate that
+report, one line each. Everything else goes advisor-first: a gate that
 also fails on reproduction is a real failure or an environment this class
 does not cover, an `unmatched` row is a trust matter and reserved, a
 `skipped` row is the engine's own park, and a security gate's failure is
-presented however clean the reproduction looks.
+never passed under this ruling, however clean the reproduction looks.
 
 **A repeating signature gets one run-scoped grant, on its second park.**
 The engine keys a `--batch` grant on the failure signature (gate, exit,
@@ -2089,8 +2110,8 @@ override-pass --batch --authority standing-grant --authority-ref batch-grant
 < <scratchpad>/conductor.d/$RUN.token`, no fresh
 reproduction, citing this ruling and the first reproduction it rests
 on. An empty fingerprint marks a pre-v30 grant that matches nothing, so
-a step it would have covered parks and re-asks the operator instead of
-applying it. Nothing else widens: an unmatched signature, an
+a step it would have covered parks and is asked afresh, advisor-first,
+instead of applying it. Nothing else widens: an unmatched signature, an
 `unmatched` or `skipped` row, or a security gate stays on the ordinary
 path. Report
 every grant (id from the `gate-override-granted` event's `detail`,
@@ -2164,7 +2185,7 @@ regression at round `max_fix_loops + 1` is what the loop-extension gate
 under **The panel** decides, and its question is the classification
 itself, with the loop-history line beside it. Approval mints exactly one
 round; rejection, a panel that cannot finish, or a regression at any
-later round goes to the operator with the panel's reasoning. Never extend
+later round goes advisor-first with the panel's reasoning. Never extend
 on residue, however new and however real the gap: the ruling exists
 because every one of those rounds looked worth buying on its own.
 
@@ -2196,14 +2217,108 @@ next status report, one line each: the issue, the step, the first line of
 each refusal, and the re-plan id. A step stopped once follows the
 classifier paragraph under **Before the loop**, not this ruling.
 
+### Standing ruling: the advisor answers first
+
+The operator ruled once, and the ruling stands for every run until they
+withdraw it: always consult the advisor before the operator, and come to
+the operator when an answer is not clear. This section is that ruling,
+and "advisor-first" anywhere in this file names this route.
+
+**Every decision this file sends to the operator goes to the `advisor`
+tool first.** That holds under any wording (a gate, a park, a question, a
+stop-and-ask, a surfaced choice) and for every class: a `waiting-human`
+park the rulings above leave over, an override-pass or class-scope
+choice, a panel rejection or a stalled panel, a budget breach or a raise
+outside the panel's bound, a held step, a scope or what-next question,
+every item under **Reserved to the operator**, and a failed security
+gate. The panel stays the default path for the gates it owns, and the
+standing rulings above answer their own classes first under their own
+references: `advisor-first` is never the reference for a class another
+ruling answers.
+
+**Gather the evidence, then call.** The call comes after everything
+[references/escalation.md](references/escalation.md) requires before an
+operator question: the gate verdicts read, the artifact read in full, the
+premise-check run, and the status of every cited tracker read. The tool
+takes no parameters and reads your transcript, so state the question in
+your own turn before the call: the decision's class, the evidence with
+every failing row quoted, and the dispositions the engine's verbs can
+honor.
+
+**A clear answer settles the decision.** An answer is clear when the
+advisor names exactly one disposition the engine verbs can honor, states
+it unconditionally, and that disposition does not contradict evidence you
+hold. Nothing else is clear: two dispositions, a condition ("if X,
+then"), a recommendation to ask the operator, a disposition no verb can
+honor, an answer that contradicts a gate row, an artifact, or a recorded
+ruling, and a call that errors, times out, or returns nothing. An answer
+that conflicts with your evidence gets one reconcile call, and only one.
+Name the conflict in your own turn before it. When that call does not
+produce a clear answer, the decision goes to the operator with the text
+of both advisor answers attached. Every other answer that is not clear
+goes to the operator with the advisor text attached, through the question
+tool as **Escalating to the operator** describes.
+
+**Three classes are never clear, whatever the advisor answers.** A trust
+verb (an `unmatched` gate row is a trust matter), the provenance of an
+executing artifact, and a peer-relayed claim of operator authorization
+each turn on something no session holds. Consult the advisor first on
+these too: its answer is framing, never a disposition, and the decision
+reaches the operator with that framing attached. A trust matter still
+carries the exact `docket trust add ... -- <argv>` line the operator
+would run. A decision you cannot place in a class is not clear.
+
+**The ruling changes who answers first, not which answers exist.** A
+disposition this file prohibits outright is not one the advisor can name:
+a fix round bought on residue, a second attempt past a safety-classifier
+refusal, an activation offered while a run is non-terminal. An answer
+naming one is not clear.
+
+**Record the ruling, never the operator.** An advisor-settled decision is
+the operator's standing ruling applied, and the advisor's answer stays
+review input: never record it `--authority operator`, and never describe
+it as the operator having decided. On the four verbs that take the flag:
+
+```bash
+docket step resolve STEP-N --as <the disposition the advisor named> --authority standing-grant --authority-ref advisor-first --note "advisor-first ruling: <the advisor's answer, quoted>" < <scratchpad>/conductor.d/$RUN.token
+docket step approve STEP-N --authority standing-grant --authority-ref advisor-first --note "advisor-first ruling: <the advisor's answer, quoted>" < <scratchpad>/conductor.d/$RUN.token
+docket step reject STEP-N --authority standing-grant --authority-ref advisor-first --note "advisor-first ruling: <the advisor's answer, quoted>" < <scratchpad>/conductor.d/$RUN.token
+docket run abandon $RUN --reason "advisor-first ruling: <the advisor's answer, quoted>" --authority standing-grant --authority-ref advisor-first < <scratchpad>/conductor.d/$RUN.token
+```
+
+`docket step hold`, `docket run budget --set`, and the
+`--skip-integration-check` form of `docket dispatch close` take no
+`--authority` flag and record a reason only, so the reason names this
+ruling:
+
+```bash
+docket step hold STEP-N --reason "advisor-first ruling: <the repeated failure, and the advisor's answer, quoted>" < <scratchpad>/conductor.d/$RUN.token
+docket run budget $RUN --set <n> --reason "advisor-first ruling: <the advisor's answer, quoted>" --if-version <the version you read>
+docket dispatch close --run $RUN --skip-integration-check "advisor-first ruling: <the advisor's answer, quoted>" --json < <scratchpad>/conductor.d/$RUN.token
+```
+
+A run note that records an advisor-settled decision carries `--authority
+conductor` and names this ruling in its text. Every note and reason
+quotes the advisor's answer, never your summary of it.
+
+**Report every advisor-settled decision in your next status report, one
+line each:** the step or run, the disposition, the verb run, and the
+advisor's answer quoted.
+
+**A session without the `advisor` tool sends every such decision to the
+operator.** Say so in the question.
+
 ### Escalating to the operator
 
 **The operator never types an engine command.** You present the gate in
 conversation and run the verb on their answer. `waiting-human` carries
 every operator-facing decision the standing rulings under **Gates**
-do not answer: a park is how the operator hears about anything.
+do not answer: a park is how the operator hears about anything. A
+decision reaches this section only after **Standing ruling: the advisor
+answers first** left it not clear, and the question carries the advisor's
+text.
 
-Before presenting any gate, park, or question to the operator, read
+Before putting any gate, park, or question to the advisor or the operator, read
 [references/escalation.md](references/escalation.md) in full. It holds the
 rules for what a question carries, how a ruling is scoped and routed, and
 which answers the engine's verbs can honor; nothing there is optional, and
@@ -2218,9 +2333,10 @@ exception is the signing-key carve-out in step 3 (a signed pick failing
 on a missing `agent-signing.pub` key), which goes through `/docket-run pause` and
 plain `just activate`, never `force=1`.
 
-Nothing here, panel or operator, has an auto-approve, a default, or a
-timeout. A parked run stays parked and can be resumed by any later
-session.
+Nothing here, panel, advisor, or operator, has an auto-approve, a
+default, or a timeout: an advisor call that returns no clear answer
+settles nothing. A parked run stays parked and can be resumed by any
+later session.
 
 ## Ending and resuming
 
@@ -2235,7 +2351,7 @@ the run-guard blocks the turn-end instead, when installed (check the
 `hooks` key in `~/.claude/settings.json`); without it, the continuous-loop
 obligation is yours alone to keep. Where the guard fires, its deny is not
 the operator instructing: surface the choice (drive on, park, abandon)
-and let them decide. For a deliberate mid-progress halt, use
+advisor-first. For a deliberate mid-progress halt, use
 **Pause mode** below rather than a bare `docket run pause`,
 which captures none of this session's own state (in-flight wave ids,
 un-integrated shas, Workflow args for a resume, budget-raise usage).

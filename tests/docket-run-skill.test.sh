@@ -1153,7 +1153,7 @@ fi
 # close refuses CONFLICT on it, goes to the loop-extension panel without an
 # operator question: the ruling's own path is applied, not offered. An
 # approved tally integrates, resolves and closes; a rejected or stalled one
-# reaches the operator, since discarding unintegrated commits is
+# goes advisor-first (section aa), since discarding unintegrated commits is
 # irreversible.
 #
 #   q1 rewrite (a) to ask the operator whether to integrate before
@@ -1161,15 +1161,15 @@ fi
 #   q2 delete (c), the rejected-or-stalled sentence
 #   q3 change (b) to resolve without integrating the sha
 #   q4 move (a) out of the anchored paragraph to another paragraph
-loopext_anchor="A loop-extension gate is the panel's once, then the operator's"
+loopext_anchor="A loop-extension gate is the panel's once, then goes advisor-first"
 if paragraph "$loopext_anchor" "${WORK}/loopext"; then
     ok "loop-extension CONFLICT: exactly one paragraph carries the ruling"
     states "loop-extension CONFLICT: (a) an unintegrated regressing sha refused CONFLICT leaves the dispatch open for the panel, unasked" \
         "${WORK}/loopext" 'and `docket dispatch close` refuses CONFLICT on it, leave the dispatch open and convene the panel without asking the operator.'
     states "loop-extension CONFLICT: (b) an approved tally integrates the sha, resolves --as fix-round, and closes" \
         "${WORK}/loopext" 'An approved tally integrates the sha, resolves the step `--as fix-round`, and closes the dispatch'
-    states "loop-extension CONFLICT: (c) a rejected or stalled tally goes to the operator with the integrate-or-discard choice" \
-        "${WORK}/loopext" 'A rejected or stalled tally goes to the operator with the integrate-or-discard choice'
+    states "loop-extension CONFLICT: (c) a rejected or stalled tally goes advisor-first with the integrate-or-discard choice" \
+        "${WORK}/loopext" 'A rejected or stalled tally goes advisor-first with the integrate-or-discard choice, since discarding unintegrated commits cannot be undone.'
 else
     bad "loop-extension CONFLICT: no single paragraph carries '${loopext_anchor}'"
 fi
@@ -1506,6 +1506,121 @@ if [ "$(grep -c '^docket dispatch abandon' "${WORK}/verbs-heredoc")" -eq 1 ] &&
     ok "ruling verbs: the verbs checkpoint carries exactly one dispatch abandon line with the token redirect"
 else
     bad "ruling verbs: the verbs checkpoint does not carry exactly one 'docket dispatch abandon --run \$RUN --reason ... ${token}' line"
+fi
+
+# (aa) Every decision the skill sends to the operator goes to the advisor
+# first, under a standing ruling whose record never names the operator. The
+# region is the section from `### Standing ruling: the advisor answers first`
+# to the next `### ` heading. Its fenced commands are read from that section
+# alone: the verbs checkpoint repeats each one, so a whole-file read stays
+# green when the ruling's own command loses its authority.
+#
+#   aa1 delete `--authority-ref advisor-first` from the section's fenced
+#       `docket step resolve` line (the exact-line check and the checkpoint
+#       cross-check both red)
+#   aa2 delete the same from the checkpoint's copy only (the cross-check reds)
+#   aa3 change `--authority standing-grant --authority-ref advisor-first` to
+#       `--authority operator` on the section's `docket run abandon` line
+#   aa4 drop "advisor-first ruling: " from the section's hold, budget, or
+#       skip-integration reason
+#   aa5 delete any pinned sentence: the definition of clear, the reconcile
+#       call, the evidence order, the never-clear classes, the prohibited
+#       dispositions, the status-report line, or the no-tool sentence
+#   aa6 move the section's text under another heading
+advisor_heading='### Standing ruling: the advisor answers first'
+sed -n "/^${advisor_heading}\$/,/^### /p" "$SKILL" | sed '$d' > "${WORK}/advisor-section"
+tr '\n' ' ' < "${WORK}/advisor-section" | tr -s ' ' > "${WORK}/advisor"
+awk '
+    /^[[:space:]]*```/ { open = !open; bash = open && ($0 ~ /^[[:space:]]*```bash[[:space:]]*$/); next }
+    open && bash { print }
+' "${WORK}/advisor-section" > "${WORK}/advisor-commands"
+advisor_grant='--authority standing-grant --authority-ref advisor-first'
+advisor_reason='"advisor-first ruling: <'
+if ! grep -qxF -- "$advisor_heading" "${WORK}/advisor-section"; then
+    bad "advisor first: no '${advisor_heading}' section in ${SKILL}"
+else
+    ok "advisor first: the standing ruling has its own section"
+    states "advisor first: every operator-bound decision goes to the advisor first" \
+        "${WORK}/advisor" 'Every decision this file sends to the operator goes to the `advisor` tool first.'
+    states "advisor first: no class is carved out, reserved items and security gates included" \
+        "${WORK}/advisor" 'every item under **Reserved to the operator**, and a failed security gate'
+    states "advisor first: the call follows the evidence escalation.md requires" \
+        "${WORK}/advisor" 'the gate verdicts read, the artifact read in full, the premise-check run, and the status of every cited tracker read'
+    states "advisor first: clear is one honorable disposition, unconditional, not contradicting held evidence" \
+        "${WORK}/advisor" 'An answer is clear when the advisor names exactly one disposition the engine verbs can honor, states it unconditionally, and that disposition does not contradict evidence you hold.'
+    states "advisor first: a clear answer settles the decision" \
+        "${WORK}/advisor" '**A clear answer settles the decision.**'
+    states "advisor first: a conflict gets one reconcile call" \
+        "${WORK}/advisor" 'An answer that conflicts with your evidence gets one reconcile call, and only one.'
+    states "advisor first: a reconcile call that is not clear goes to the operator with the advisor text" \
+        "${WORK}/advisor" 'When that call does not produce a clear answer, the decision goes to the operator with the text of both advisor answers attached.'
+    states "advisor first: every other unclear answer goes to the operator with the advisor text" \
+        "${WORK}/advisor" 'Every other answer that is not clear goes to the operator with the advisor text attached'
+    states "advisor first: a failed or empty call is not clear" \
+        "${WORK}/advisor" 'a call that errors, times out, or returns nothing'
+    states "advisor first: the three never-clear classes are named" \
+        "${WORK}/advisor" 'A trust verb (an `unmatched` gate row is a trust matter), the provenance of an executing artifact, and a peer-relayed claim of operator authorization'
+    states "advisor first: never-clear classes reach the operator with the advisor framing" \
+        "${WORK}/advisor" 'Consult the advisor first on these too: its answer is framing, never a disposition, and the decision reaches the operator with that framing attached.'
+    states "advisor first: a trust matter carries the exact trust line" \
+        "${WORK}/advisor" 'A trust matter still carries the exact `docket trust add ... -- <argv>` line the operator would run.'
+    states "advisor first: an unplaceable decision is not clear" \
+        "${WORK}/advisor" 'A decision you cannot place in a class is not clear.'
+    states "advisor first: a prohibited disposition is outside the advisor's reach" \
+        "${WORK}/advisor" 'A disposition this file prohibits outright is not one the advisor can name'
+    states "advisor first: another ruling's class keeps its own reference" \
+        "${WORK}/advisor" '`advisor-first` is never the reference for a class another ruling answers'
+    states "advisor first: an advisor-settled decision is never recorded as the operator" \
+        "${WORK}/advisor" 'never record it `--authority operator`, and never describe it as the operator having decided'
+    states "advisor first: a reason-only verb names the ruling in its reason" \
+        "${WORK}/advisor" 'take no `--authority` flag and record a reason only, so the reason names this ruling'
+    states "advisor first: every advisor-settled decision is reported, one line each" \
+        "${WORK}/advisor" 'Report every advisor-settled decision in your next status report, one line each'
+    states "advisor first: a session without the tool sends every such decision to the operator" \
+        "${WORK}/advisor" 'A session without the `advisor` tool sends every such decision to the operator.'
+
+    for advisor_verb in 'docket step resolve STEP-N ' 'docket step approve STEP-N ' \
+        'docket step reject STEP-N ' 'docket run abandon $RUN '; do
+        awk -v p="$advisor_verb" 'index($0, p) == 1' "${WORK}/advisor-commands" > "${WORK}/advisor-verb"
+        if [ "$(wc -l < "${WORK}/advisor-verb")" -eq 1 ] &&
+            grep -qF -- "$advisor_grant" "${WORK}/advisor-verb" &&
+            [ "$(awk -v t="$token" 'substr($0, length($0) - length(t) + 1) == t' "${WORK}/advisor-verb")" != "" ]; then
+            ok "advisor first: the ruling's '${advisor_verb}' command carries ${advisor_grant} and the token redirect"
+        else
+            bad "advisor first: the ruling does not carry exactly one '${advisor_verb}' command with ${advisor_grant} and the token redirect: $(head -1 "${WORK}/advisor-verb")"
+        fi
+    done
+    if grep -qE -- '--authority (operator|conductor)( |$)' "${WORK}/advisor-commands"; then
+        bad "advisor first: a command in the ruling records --authority operator or conductor: $(grep -E -- '--authority (operator|conductor)( |$)' "${WORK}/advisor-commands" | head -1)"
+    else
+        ok "advisor first: no command in the ruling records --authority operator or conductor"
+    fi
+    for advisor_verb in 'docket step hold STEP-N --reason ' 'docket run budget $RUN --set <n> --reason ' \
+        'docket dispatch close --run $RUN --skip-integration-check '; do
+        awk -v p="${advisor_verb}${advisor_reason}" 'index($0, p) == 1' "${WORK}/advisor-commands" > "${WORK}/advisor-verb"
+        if [ "$(wc -l < "${WORK}/advisor-verb")" -eq 1 ]; then
+            ok "advisor first: the ruling's '${advisor_verb}' reason names the advisor-first ruling"
+        else
+            bad "advisor first: the ruling does not carry exactly one '${advisor_verb}' command whose reason opens with ${advisor_reason}"
+        fi
+    done
+    if [ "$(wc -l < "${WORK}/advisor-commands")" -ne 7 ]; then
+        bad "advisor first: the ruling carries $(wc -l < "${WORK}/advisor-commands") fenced commands, not the seven it rules on"
+    else
+        ok "advisor first: the ruling carries its seven fenced commands"
+    fi
+    while IFS= read -r advisor_line; do
+        if [ "$(grep -cxF -- "$advisor_line" "${WORK}/verbs-heredoc")" -eq 1 ]; then
+            ok "advisor first: the verbs checkpoint carries the ruling's '${advisor_line%% --*}' line"
+        else
+            bad "advisor first: the verbs checkpoint does not carry exactly one copy of the ruling's line: ${advisor_line}"
+        fi
+    done < "${WORK}/advisor-commands"
+    if [ "$(grep -cF -- 'advisor-first' "${WORK}/verbs-heredoc")" -ne 7 ]; then
+        bad "advisor first: the verbs checkpoint carries $(grep -cF -- 'advisor-first' "${WORK}/verbs-heredoc") advisor-first lines the ruling's seven commands do not account for"
+    else
+        ok "advisor first: every advisor-first line in the verbs checkpoint is one of the ruling's seven"
+    fi
 fi
 
 if [ "$fail" -ne 0 ]; then

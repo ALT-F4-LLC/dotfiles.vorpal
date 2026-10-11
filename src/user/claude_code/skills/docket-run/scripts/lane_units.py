@@ -8,11 +8,13 @@ as one JSON array or as one JSON object per line; a file holding a single
 object is that one row. --tribunal is the installed tribunal.js path;
 --integrated names a JSON file mapping each fix-round issue to its prior
 INTEGRATION sha. --in-flight is a comma-separated list of the lanes whose
-launches are still running, as stderr names them (`lane:<lane>`): a refill
-re-split launches no lane in it, writes none of its rows anywhere, and
-counts each against LAUNCH_CAP. Run it from inside the run's git work tree:
-outside one it exits 1 and writes nothing. The script writes, under
-<out-dir>:
+launches are still running: the issue id, or row:<step> for a row without
+an issue, with stderr's `lane:` prefix and surrounding spaces accepted. A
+refill re-split launches no lane in it, writes none of its rows anywhere,
+and counts each against LAUNCH_CAP, including a name matching no row,
+which stderr lists in case it is a typo. Run it from inside the run's git
+work tree: outside one it exits 1 and writes nothing. The script writes,
+under <out-dir>:
 
   launch-<i>.jsonl  launch i's rows, one per line, in manifest order
   args-<i>.json     launch i's complete wave.js args (below)
@@ -218,6 +220,13 @@ USAGE = ("usage: lane_units.py <rows-file> <out-dir> [--tribunal PATH] [--integr
          "[--in-flight LANES]")
 
 
+def lane_key(name):
+    """An --in-flight name as lane() keys it: stderr's `lane:` prefix and
+    surrounding spaces dropped."""
+    name = name.strip()
+    return name[len("lane:"):].strip() if name.startswith("lane:") else name
+
+
 def parse_args(argv):
     positional, options = [], {}
     rest = list(argv[1:])
@@ -233,7 +242,7 @@ def parse_args(argv):
             positional.append(arg)
     if len(positional) != 2:
         raise SystemExit(USAGE)
-    in_flight = frozenset(l for l in options.get("in-flight", "").split(",") if l)
+    in_flight = frozenset(filter(None, map(lane_key, options.get("in-flight", "").split(","))))
     return (positional[0], positional[1], options.get("tribunal"), options.get("integrated"),
             in_flight)
 
@@ -284,6 +293,10 @@ def main(argv):
     if launches and tribunal is None:
         print("lane_units: no --tribunal given, so no args object carries tribunal",
               file=sys.stderr)
+    absent = sorted(in_flight - {lane(r) for r in rows})
+    if absent:
+        print("lane_units: in flight but in no row: " + ", ".join(absent) +
+              "; each still holds a launch slot", file=sys.stderr)
     if deferred_lanes:
         print(f"deferred: {len(deferred_lanes)} lane(s) past the {LAUNCH_CAP}-launch cap "
               f"with {len(in_flight)} in flight, {len(deferred_rows)} row(s) in "

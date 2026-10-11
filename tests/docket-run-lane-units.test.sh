@@ -19,7 +19,9 @@
 # class.
 #
 # The suite also pins the SKILL.md side: the skill runs the installed file
-# and carries no inline interpreter program. The same program once lived in
+# and carries no inline interpreter program, and its refill loop keeps the
+# --in-flight re-split, the close condition, and a pending-rows filter that
+# drops exactly the settled and held steps. The same program once lived in
 # SKILL.md as a `python3 - <<'PY'` heredoc, which the auto-mode deny rule on
 # interpreter code arguments refuses before it runs.
 
@@ -136,6 +138,26 @@ n=$(lu "$WORK/rows.json" "$WORK/launch" --in-flight I2,I5,I9 2> "$WORK/err"); rc
 ok $? 'the 5 lanes past the free slots land in deferred.jsonl, latest in manifest order'
 [ -z "$(cat "$WORK"/launch/launch-*.jsonl "$WORK/launch/deferred.jsonl" | grep -E '"issue":"I(2|5|9)"')" ] && [ "$(summary 'sorted({x["of"] for x in s})')" = "[17]" ]
 ok $? 'no launch or deferral holds an in-flight lane, and every unit carries of = 17'
+# Names arrive as stderr prints them (lane:<lane>) or padded by hand; either
+# way they name the same running lanes, which must not launch twice.
+rm -rf "$WORK/launch"
+n=$(lu "$WORK/rows.json" "$WORK/launch" --in-flight ' lane:I2, I5 ,lane:I9 ' 2> "$WORK/err"); rc=$?
+[ "$rc" -eq 0 ] && [ "$n" = "17" ] && [ -z "$(cat "$WORK"/launch/launch-*.jsonl "$WORK/launch/deferred.jsonl" | grep -E '"issue":"I(2|5|9)"')" ]
+ok $? "lane:-prefixed and space-padded in-flight names match their lanes (rc=$rc, got $n: $(head -c 200 "$WORK/err"))"
+# A running launch holds a slot whether or not its lane still has rows here
+# (every row it held may have settled), so absent names count against the cap
+# and are named on stderr in case they are typos.
+rm -rf "$WORK/launch"
+n=$(lu "$WORK/rows.json" "$WORK/launch" --in-flight X1,X2,X3 2> "$WORK/err"); rc=$?
+[ "$rc" -eq 0 ] && [ "$n" = "17" ] && [ "$(wc -l < "$WORK/launch/deferred.jsonl" | tr -d ' ')" = "8" ]
+ok $? "3 in-flight lanes absent from the rows still hold 3 slots: 17 launches, 8 deferred (rc=$rc, got $n)"
+grep -q 'in flight but in no row: X1, X2, X3' "$WORK/err"; ok $? 'in-flight names matching no lane are named on stderr'
+# More names in flight than the cap leaves no free slot, never a negative one.
+names=$(for i in $(seq 1 20); do printf 'I%s,' "$i"; done)X1,X2
+rm -rf "$WORK/launch"
+n=$(lu "$WORK/rows.json" "$WORK/launch" --in-flight "$names" 2> "$WORK/err"); rc=$?
+[ "$rc" -eq 0 ] && [ "$n" = "0" ] && [ "$(wc -l < "$WORK/launch/deferred.jsonl" | tr -d ' ')" = "5" ] && grep -q '"issue":"I21"' "$WORK/launch/deferred.jsonl"
+ok $? "22 lanes in flight leave no free slot: 0 launches, the 5 other lanes deferred (rc=$rc, got $n)"
 n=$(count '[]')
 [ "$n" = "0" ]; ok $? "an empty manifest is zero launches (got $n)"
 
@@ -316,6 +338,26 @@ grep -qF 'python3 ~/.claude/skills/docket-run/scripts/seat_roster.py' "$SKILL"; 
     'SKILL.md runs seat_roster.py by its installed path'
 ! grep -qE "^(python[0-9]*|node) +-( |e |-eval|p )" "$SKILL"; ok $? \
     'SKILL.md carries no inline interpreter program (stdin heredoc or code argument) the deny rule refuses'
+
+# ---- SKILL.md's refill loop: the re-split form, the close, the pending filter ---
+grep -qF -- '"$PENDING_FILE" "$LAUNCH_DIR" --tribunal "<absolute installed path to tribunal.js>" --in-flight "<lane>,<lane>"' "$SKILL"; ok $? \
+    'SKILL.md re-splits the pending rows with --in-flight at a launch return'
+grep -qF 'hold a `skipped-not-ready` lane past a freeing return' "$SKILL" && grep -qF 'Never hold a deferred lane while fewer than 20' "$SKILL"; ok $? \
+    'SKILL.md holds neither a deferred lane nor a skipped-not-ready lane for the next dispatch while a refill can launch it'
+grep -qF 'The dispatch closes only when no launch is in flight and the last' "$SKILL"; ok $? \
+    'SKILL.md closes the dispatch only when no launch is in flight and nothing is left to launch'
+# The pending rows are the manifest of record minus the settled and held step
+# ids, matched whole: STEP-12 settled must not drop STEP-123.
+filter=$(sed -n 's/.*--rawfile held "$HELD_FILE" '"'"'\([^'"'"']*\)'"'"' "$ROWS_FILE" > "$PENDING_FILE".*/\1/p' "$SKILL")
+printf '%s\n%s\n%s\n%s\n' "$(r 5 A 0)" "$(r 12 B 0)" "$(r 123 C 0)" "$(r 7 D 0)" > "$WORK/kept.jsonl"
+: > "$WORK/settled"; : > "$WORK/held"
+got=$(jq -c --rawfile settled "$WORK/settled" --rawfile held "$WORK/held" "$filter" "$WORK/kept.jsonl" | jq -r .step | tr '\n' ' ')
+[ -n "$filter" ] && [ "$got" = "STEP-5 STEP-12 STEP-123 STEP-7 " ]; ok $? \
+    "SKILL.md's pending filter keeps every row while nothing is settled or held (filter '$filter', got '$got')"
+printf 'STEP-12\n' > "$WORK/settled"; printf 'STEP-7\n' > "$WORK/held"
+got=$(jq -c --rawfile settled "$WORK/settled" --rawfile held "$WORK/held" "$filter" "$WORK/kept.jsonl" | jq -r .step | tr '\n' ' ')
+[ -n "$filter" ] && [ "$got" = "STEP-5 STEP-123 " ]; ok $? \
+    "SKILL.md's pending filter drops exactly the settled and held steps (got '$got')"
 
 # ---- the mirrored caps match wave.js --------------------------------------------
 # lane_units.py caps launches and reports harnessCap; a cap that drifts from

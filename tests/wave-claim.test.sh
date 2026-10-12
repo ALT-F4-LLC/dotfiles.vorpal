@@ -39,7 +39,8 @@ printf '\n== OUTPUT\nRecord an artifact of kind: change-summary\n' >>"$WORK/pack
 mkdir -p "$WORK/bin"
 cat >"$WORK/bin/docket" <<'STUB'
 #!/bin/bash
-# Stub docket: answers `step claim` per $STUB_MODE, records `step fail`.
+# Stub docket: answers `step claim` per $STUB_MODE and `step render` from
+# $STUB_RENDER (nothing when unset), records `step fail`.
 printf '%s\n' "$*" >>"$STUB_LOG"
 case "$1 $2" in
 "step claim")
@@ -71,6 +72,9 @@ case "$1 $2" in
         ;;
     esac
     ;;
+"step render")
+    [ -z "${STUB_RENDER:-}" ] || cat "$STUB_RENDER"
+    ;;
 "step fail")
     cat >"$STUB_FAIL_STDIN"
     exit "${STUB_FAIL_EXIT:-0}"
@@ -87,7 +91,8 @@ run_claim() {
     : >"$C/stub.log"
     MODULE="$C/repo/.claude/docket-packets/STEP-7.a3.js"
     OUT=$(cd "$C/repo" && PATH="$WORK/bin:$PATH" TMPDIR="$C/tmp" STUB_MODE="$mode" \
-        STUB_LOG="$C/stub.log" STUB_PACKET="$WORK/packet.txt" STUB_TOKEN="$TOKEN_VALUE" \
+        STUB_LOG="$C/stub.log" STUB_PACKET="${STUB_PACKET_FILE:-$WORK/packet.txt}" STUB_TOKEN="$TOKEN_VALUE" \
+        STUB_RENDER="${STUB_RENDER:-}" \
         STUB_FAIL_STDIN="$C/fail.stdin" STUB_FAIL_EXIT="${STUB_FAIL_EXIT:-0}" \
         STUB_CLAIM_STDIN="$C/claim.stdin" STUB_CLAIM_ENV="$C/claim.env" \
         "$CLAIM" "$@" 2>&1)
@@ -287,6 +292,97 @@ set_args
 run_claim empty-packet empty-packet "${ARGS[@]}"
 [ "$RC" -eq 1 ] && [[ "$OUT" == "CLAIM FAILED: STEP-7: the claim committed but carried no packet"* ]] && [ ! -e "$MODULE" ]
 check $? "a claim with no packet fails, keeps the token for a reap and writes no module"
+
+# ---- the Workflow script cap ------------------------------------------------------
+# The Workflow tool refuses a script file over 524,288 bytes. The engine keeps
+# up to 262,144 bytes of each gate's output, so two long rows overflow it.
+CAP=524288
+
+# gate_packet <verdict> <out>: a packet whose gate-results input holds two
+# 262 KB rows of that verdict beside one short failing row.
+gate_packet() {
+    {
+        printf '== STEP STEP-7 verify-ac@0\nrun:    RUN-3\n\n== INPUT gate-results from implement@0\n'
+        jq -cn --arg v "$1" '
+            def big($name): "HEAD-\($name)\n" + ("x" * 262000) + "TAIL-\($name)\n";
+            [{gate: "tests", exit: 0, output: big("tests"), truncated: true, verdict: $v},
+             {gate: "qa-test", exit: 0, output: big("qa-test"), truncated: true, verdict: $v},
+             {gate: "lint", exit: 1, output: "lint: 3 errors\nLINT-TAIL\n", truncated: false, verdict: "fail"}]'
+        printf '\n== OUTPUT\nRecord an artifact of kind: ac-report\n'
+    } >"$2"
+}
+# gate_row <module> <gate> <jq filter>: a field of one abridged gate row.
+gate_row() {
+    modval "$1" '.packet' | sed -n '/^== INPUT gate-results from /{n;p;}' | jq -r --arg g "$2" ".[] | select(.gate == \$g) | $3"
+}
+
+gate_packet pass "$WORK/gates-pass.txt"
+gate_packet fail "$WORK/gates-fail.txt"
+# No gate row to abridge: the bulk sits in a section this script never cuts.
+{ printf '== INPUT issue.diff from implement@0\n'; jq -rn '"d" * 600000'; } >"$WORK/too-big.txt"
+
+C="$WORK/cap-pass"; MODULE="$C/repo/.claude/docket-packets/STEP-7.a3.js"
+set_args
+STUB_PACKET_FILE="$WORK/gates-pass.txt" STUB_RENDER="$WORK/gates-pass.txt" run_claim cap-pass success "${ARGS[@]}"
+[ "$RC" -eq 0 ] && [ -f "$MODULE" ] && [ "$(wc -c <"$MODULE" | tr -d ' ')" -lt "$CAP" ]
+check $? "two 262 KB passing gate rows yield a module under the script cap (got $RC: ${OUT:0:200})"
+[[ "$OUT" == "CLAIMED STEP-7 attempt=3 packet_bytes=$(wc -c <"$WORK/gates-pass.txt" | tr -d ' ') module_bytes=$(wc -c <"$MODULE" | tr -d ' ') abridged=1 sha256="* ]]
+check $? "the CLAIMED line carries the engine packet's bytes, the module's bytes and abridged=1"
+[ "$(modval "$MODULE" '.packet_abridged')" = "true" ]; check $? "the module records that its packet is abridged"
+[ "$(gate_row "$MODULE" tests '.output | length')" -lt 8500 ] &&
+    [ "$(gate_row "$MODULE" tests '.output | startswith("HEAD-tests\n") and endswith("TAIL-tests\n")')" = "true" ] &&
+    [ "$(gate_row "$MODULE" qa-test '.output | endswith("TAIL-qa-test\n")')" = "true" ]
+check $? "an abridged passing row keeps the head and tail of its output"
+gate_row "$MODULE" tests '.output' | grep -qF "characters omitted here to fit the Workflow script cap; the unabridged packet is $C/tmp/STEP-7.d/STEP-7.packet.md]"
+check $? "the cut names its size and the file holding the engine's render"
+[ "$(gate_row "$MODULE" tests '[.gate, .exit, .truncated, .verdict] | join(" ")')" = "tests 0 true pass" ]
+check $? "an abridged row keeps every other field"
+[ "$(gate_row "$MODULE" lint '.output')" = "$(printf 'lint: 3 errors\nLINT-TAIL')" ]
+check $? "a short failing row reaches the module whole"
+cmp -s "$C/tmp/STEP-7.d/STEP-7.packet.md" "$WORK/gates-pass.txt" &&
+    [ "$(modval "$MODULE" '.packet_sha256')" = "$(sha256_of "$WORK/gates-pass.txt")" ]
+check $? "the packet file and packet_sha256 stay the engine's render"
+diff <(sed -n '2s/^return //p' "$MODULE" | jq -j '.packet' | sed '/^== INPUT gate-results from /{n;d;}') <(sed '/^== INPUT gate-results from /{n;d;}' "$WORK/gates-pass.txt") >/dev/null
+check $? "every line outside the gate rows is unchanged"
+[ "$(sed -n '1p' "$C/stub.log")" = "step render STEP-7" ] && [ "$(sed -n '2p' "$C/stub.log" | cut -d' ' -f1-3)" = "step claim STEP-7" ]
+check $? "the packet is rendered and sized before the claim"
+sed -n '2s/^return //p' "$MODULE" | jq -j '.packet' >"$C/packet.out"
+node "$WORK/success/load.mjs" "$MODULE" "$C/packet.out"
+check $? "the abridged module evaluates as a script body"
+
+C="$WORK/cap-fail"; MODULE="$C/repo/.claude/docket-packets/STEP-7.a3.js"
+set_args
+STUB_PACKET_FILE="$WORK/gates-fail.txt" run_claim cap-fail success "${ARGS[@]}"
+[ "$RC" -eq 0 ] && [ "$(wc -c <"$MODULE" | tr -d ' ')" -lt "$CAP" ] &&
+    [ "$(gate_row "$MODULE" tests '.output | length')" -gt 65536 ] &&
+    [ "$(gate_row "$MODULE" tests '.output | endswith(("x" * 40000) + "TAIL-tests\n")')" = "true" ]
+check $? "a failing gate's output tail still reaches the module when its row is abridged (got $RC)"
+
+C="$WORK/cap-small"; MODULE="$C/repo/.claude/docket-packets/STEP-7.a3.js"
+set_args
+STUB_RENDER="$WORK/packet.txt" run_claim cap-small success "${ARGS[@]}"
+sed -n '2s/^return //p' "$MODULE" | jq -j '.packet' >"$C/packet.out"
+[ "$RC" -eq 0 ] && cmp -s "$C/packet.out" "$WORK/packet.txt" && [ "$(modval "$MODULE" '.packet_abridged')" = "false" ] &&
+    [[ "$OUT" == *" abridged=0 "* ]]
+check $? "a packet whose module fits is never abridged"
+
+C="$WORK/cap-refused"; MODULE="$C/repo/.claude/docket-packets/STEP-7.a3.js"
+set_args
+STUB_RENDER="$WORK/too-big.txt" run_claim cap-refused success "${ARGS[@]}"
+[ "$RC" -eq 1 ] && [[ "$OUT" == "CLAIM FAILED: STEP-7: the packet module would be about "*" bytes, over the Workflow script cap of 524288 bytes, with gate output abridged; nothing was claimed" ]]
+check $? "an oversized render is CLAIM FAILED naming the size and the cap (got $RC: ${OUT:0:200})"
+! grep -q '^step claim' "$C/stub.log" && ! grep -q '^step fail' "$C/stub.log" && [ ! -e "$MODULE" ] && [ ! -e "$C/tmp/STEP-7.d/STEP-7.token" ]
+check $? "the oversized render stops before the claim: no lease, no token, no module"
+
+# The render before the claim fit, or printed nothing; the claim's own did not.
+C="$WORK/cap-released"; MODULE="$C/repo/.claude/docket-packets/STEP-7.a3.js"
+set_args
+STUB_PACKET_FILE="$WORK/too-big.txt" run_claim cap-released success "${ARGS[@]}"
+[ "$RC" -eq 5 ] && [[ "$OUT" == "CLAIM INCOMPLETE: STEP-7: the packet module is "*" bytes, over the Workflow script cap of 524288 bytes, with gate output abridged; the lease was ended with docket step fail" ]]
+check $? "an oversized claimed packet is CLAIM INCOMPLETE naming the size and the cap (got $RC: ${OUT:0:200})"
+grep -q '^step fail STEP-7 --note the packet module is [0-9]* bytes, over the Workflow script cap of 524288 bytes' "$C/stub.log" &&
+    [ "$(cat "$C/fail.stdin")" = "$TOKEN_VALUE" ] && [ ! -e "$C/tmp/STEP-7.d" ] && [ ! -e "$MODULE" ] && [ ! -e "$MODULE.partial" ]
+check $? "its lease is ended with docket step fail, and no module or step dir remains"
 
 # ---- stale modules are swept, fresh ones kept ------------------------------------
 C="$WORK/sweep"; MODULE="$C/repo/.claude/docket-packets/STEP-7.a3.js"

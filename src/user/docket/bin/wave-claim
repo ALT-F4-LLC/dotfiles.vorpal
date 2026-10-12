@@ -11,7 +11,7 @@
 # the session's working directory; wave.js loads that module through a nested
 # workflow({scriptPath}) and spawns the executor with the packet inline. The
 # harness reads the module from disk, so the executor's prompt carries the
-# engine's bytes and no model ever copies them.
+# module's bytes and no model ever copies them.
 #
 # CONTRACT
 #
@@ -45,26 +45,42 @@
 #           The module, written atomically: a pure-literal meta, then
 #           `return {v, step, owner, attempt, expected_attempt, re_minted,
 #           lease_expires_ms, dir, dir_physical, token, packet_file,
-#           packet_sha256, packet}`. `dir_physical` is `dir` with every
-#           symlink resolved (`pwd -P`). `token` is the token FILE's path;
-#           the token itself never enters the module, stdout, or argv.
+#           packet_sha256, packet_abridged, packet}`. `dir_physical` is `dir`
+#           with every symlink resolved (`pwd -P`). `token` is the token
+#           FILE's path; the token itself never enters the module, stdout, or
+#           argv.
+#           THE SCRIPT CAP. The Workflow tool refuses a script file over
+#           524,288 bytes, and the engine keeps up to 262,144 bytes of each
+#           gate's output, so a packet with two long gate-results rows cannot
+#           load. `packet` is the engine's render byte for byte whenever its
+#           module fits. When it would not, each `== INPUT gate-results` row
+#           whose `output` is over its budget (8,192 characters on a passing
+#           gate, 65,536 on any other) keeps the head and tail of that output
+#           around a line naming the cut, and `packet_abridged` is true.
+#           `packet_file` and `packet_sha256` are always the engine's render.
+#           The size is checked twice: on a `docket step render` before the
+#           claim, where an oversized module is CLAIM FAILED with no lease
+#           taken, and on the written module, where it is CLAIM INCOMPLETE.
 #           The module directory carries a `.gitignore` of `*`, so neither it
 #           nor the modules in it ever show in `git status`. Modules older
 #           than a day are swept on each run: a lease lives hours at most, so
 #           those packets belong to steps long since recorded or reaped.
 #
 #   stdout  ONE outcome, nothing else:
-#             CLAIMED STEP-N attempt=A packet_bytes=B sha256=H module=PATH
+#             CLAIMED STEP-N attempt=A packet_bytes=B module_bytes=M
+#               abridged=0|1 sha256=H module=PATH                (one line)
 #             STEP-N / CONFLICT / <the engine's error line>   (three lines)
 #             CLAIM FAILED: STEP-N: <why>
-#             CLAIM INCOMPLETE: STEP-N: <claim_error>; <how the lease ended>
+#             CLAIM INCOMPLETE: STEP-N: <why>; <how the lease ended>
+#           packet_bytes and sha256 describe the engine's render at
+#           packet_file; module_bytes is the module on disk.
 #
 #   exit    0 claimed, 1 claim failed, 2 usage, 4 conflict, 5 incomplete.
 #
 # A claim whose later stage failed (`claim_error`, docket internal/cli/step.go
-# claimStepResponse) holds a live lease; this script ends it with `docket step
-# fail` and keeps the step dir only when that fail itself errors, so the token
-# stays recoverable.
+# claimStepResponse), or whose written module is over the script cap, holds a
+# live lease; this script ends it with `docket step fail` and keeps the step
+# dir only when that fail itself errors, so the token stays recoverable.
 
 set -eu
 umask 077
@@ -136,6 +152,66 @@ sha256() {
 	fi
 }
 
+# The Workflow tool refuses a script file over $cap bytes, and the module is
+# one. $wrap covers what the module adds around the packet's JSON string: the
+# meta line and the other fields.
+cap=524288
+wrap=4096
+# What an abridged gate row keeps of its `output`, in characters.
+keep_pass=8192
+keep_fail=65536
+
+# module_estimate <packet file>: the module's size in bytes, within $wrap.
+module_estimate() {
+	echo $(($(jq -Rs . "$1" | wc -c) + wrap))
+}
+
+# fit <in> <out>: <out> is <in> byte for byte when its module fits the cap.
+# Otherwise each `== INPUT gate-results` row whose `output` is longer than its
+# budget keeps that output's head and tail around a line naming the cut and
+# the file holding the engine's render. Sets $abridged.
+fit() {
+	abridged=0
+	cp "$1" "$2"
+	[ "$(module_estimate "$1")" -gt "$cap" ] || return 0
+	jq -Rsj --arg file "$packet" --argjson pass "$keep_pass" --argjson fail "$keep_fail" '
+		def abridge($keep):
+			if (.output | type) == "string" and (.output | length) > $keep then
+				(.output | length) as $n | ($keep / 4 | floor) as $head
+				| .output = .output[:$head]
+					+ "\n[wave-claim: \($n - $keep) of \($n) characters omitted here to fit the Workflow script cap; the unabridged packet is \($file)]\n"
+					+ .output[-($keep - $head):]
+			else . end;
+		def rows:
+			try (fromjson
+				| if type == "array" then
+					map(if type == "object" then abridge(if .verdict == "pass" then $pass else $fail end) else . end)
+					| tojson
+				else null end)
+			catch null;
+		split("\n") as $l
+		| [range(0; $l | length) as $i
+			| if $i > 0 and ($l[$i - 1] | startswith("== INPUT gate-results from "))
+				then ($l[$i] | rows) // $l[$i]
+				else $l[$i] end]
+		| join("\n")' "$1" >"$2.fit" 2>/dev/null || return 0
+	cmp -s "$1" "$2.fit" || { mv -f "$2.fit" "$2"; abridged=1; }
+}
+
+# end_lease <why>: ends this run's live lease with `docket step fail` and
+# exits 5. The step dir is kept only when that fail itself errors, so the
+# token stays recoverable.
+end_lease() {
+	if fail_out="$(docket step fail "$step" --note "$1" <"$token" 2>&1)"; then
+		rm -rf "$dir"
+		printf 'CLAIM INCOMPLETE: %s: %s; the lease was ended with docket step fail\n' "$step" "$1"
+	else
+		printf 'CLAIM INCOMPLETE: %s: %s; docket step fail errored (%s), so the token is kept at %s\n' \
+			"$step" "$1" "$(printf '%s' "$fail_out" | head -n 1)" "$token"
+	fi
+	exit 5
+}
+
 mkdir -p "$pkdir"
 [ -f "$pkdir/.gitignore" ] || printf '*\n' >"$pkdir/.gitignore"
 find "$pkdir" -maxdepth 1 -type f \( -name 'STEP-*.js' -o -name 'rows-*.js' \) -mmin +1440 -exec rm -f {} + 2>/dev/null || :
@@ -168,6 +244,21 @@ fi
 [ -n "$(find "$secret" -prune -type f -user "$uid" -perm 600 ! -empty 2>/dev/null)" ] ||
 	{ echo "CLAIM FAILED: $step: $secret must be a non-empty regular file you own at mode 0600"; exit 1; }
 
+# The size check comes before the lease: a module the Workflow tool would
+# refuse launches no executor, and a lease taken for it has to be reaped. The
+# claim's own render can still differ (a pre-gate runs at claim), so the
+# module is measured again once it is written. A render that fails or prints
+# nothing leaves the question to that second check.
+if docket step render "$step" >"$work/pre.md" 2>/dev/null && [ -s "$work/pre.md" ]; then
+	fit "$work/pre.md" "$work/pre.fit"
+	est="$(module_estimate "$work/pre.fit")"
+	if [ "$est" -gt "$cap" ]; then
+		printf 'CLAIM FAILED: %s: the packet module would be about %s bytes, over the Workflow script cap of %s bytes, with gate output abridged; nothing was claimed\n' \
+			"$step" "$est" "$cap"
+		exit 1
+	fi
+fi
+
 rc=0
 docket step claim "$step" --owner "$owner" --render --metadata "$metadata" --json=v2 \
 	>"$claim" 2>"$claim_err" <"$secret" || rc=$?
@@ -199,16 +290,7 @@ dir_physical="$(cd "$dir" && pwd -P)" || {
 }
 
 claim_error="$(jq -r '.data.claim_error // empty' "$claim")"
-if [ -n "$claim_error" ]; then
-	if fail_out="$(docket step fail "$step" --note "$claim_error" <"$token" 2>&1)"; then
-		rm -rf "$dir"
-		printf 'CLAIM INCOMPLETE: %s: %s; the lease was ended with docket step fail\n' "$step" "$claim_error"
-	else
-		printf 'CLAIM INCOMPLETE: %s: %s; docket step fail errored (%s), so the token is kept at %s\n' \
-			"$step" "$claim_error" "$(printf '%s' "$fail_out" | head -n 1)" "$token"
-	fi
-	exit 5
-fi
+[ -z "$claim_error" ] || end_lease "$claim_error"
 
 got="$(jq -r '.data.attempt // empty' "$claim")"
 jq -j '.data.packet // ""' "$claim" >"$packet"
@@ -218,6 +300,7 @@ if [ ! -s "$packet" ]; then
 fi
 digest="$(sha256 "$packet")"
 bytes="$(wc -c <"$packet" | tr -d ' ')"
+fit "$packet" "$work/packet.fit"
 
 {
 	printf "export const meta = { name: 'docket-packet', description: 'Docket work packet written by wave-claim' }\n"
@@ -226,13 +309,21 @@ bytes="$(wc -c <"$packet" | tr -d ' ')"
 		--arg step "$step" --arg owner "$owner" --argjson expected "$attempt" \
 		--arg dir "$dir" --arg dir_physical "$dir_physical" --arg token "$token" \
 		--arg packet_file "$packet" --arg sha "$digest" \
+		--rawfile packet "$work/packet.fit" --argjson abridged "$abridged" \
 		'{v: 1, step: $step, owner: $owner, attempt: .data.attempt,
 		  expected_attempt: $expected, re_minted: (.data.re_minted // false),
 		  lease_expires_ms: .data.lease_expires_ms, dir: $dir,
 		  dir_physical: $dir_physical, token: $token,
-		  packet_file: $packet_file, packet_sha256: $sha, packet: .data.packet}' \
+		  packet_file: $packet_file, packet_sha256: $sha,
+		  packet_abridged: ($abridged == 1), packet: $packet}' \
 		"$claim"
 } >"$partial"
+module_bytes="$(wc -c <"$partial" | tr -d ' ')"
+if [ "$module_bytes" -gt "$cap" ]; then
+	rm -f "$partial"
+	end_lease "the packet module is $module_bytes bytes, over the Workflow script cap of $cap bytes, with gate output abridged"
+fi
 mv -f "$partial" "$module"
 
-printf 'CLAIMED %s attempt=%s packet_bytes=%s sha256=%s module=%s\n' "$step" "$got" "$bytes" "$digest" "$module"
+printf 'CLAIMED %s attempt=%s packet_bytes=%s module_bytes=%s abridged=%s sha256=%s module=%s\n' \
+	"$step" "$got" "$bytes" "$module_bytes" "$abridged" "$digest" "$module"

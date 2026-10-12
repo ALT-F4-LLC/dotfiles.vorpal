@@ -242,12 +242,15 @@ function archetype(row, hint) {
 // step, parks the token in the step dir, and writes the rendered packet into
 // a module under <cwd>/.claude/docket-packets. The wave loads that module
 // with a nested workflow({scriptPath}): the harness reads the file, so no
-// model copies the bytes. The executor is spawned with the packet verbatim at
+// model copies the bytes. The executor is spawned with that packet verbatim at
 // the end of its brief. Every channel an agent could read a packet through
 // is capped below a packet's size (a Bash result past 128,000 characters, a
 // hook's additionalContext past 10,000, a Read past its token limit); the
 // spawn prompt is not. No executor spawns without a packet: a claim that
-// yields no valid module launches nothing.
+// yields no valid module launches nothing. The Workflow tool refuses a script
+// file over 524,288 bytes, so wave-claim abridges long gate-results output
+// when the module would not fit (packet_abridged), and refuses the claim when
+// it still would not: CLAIM FAILED before the lease, CLAIM INCOMPLETE after.
 //
 // HOW THESE BRIEFS ARE WORDED, and it is load-bearing: state the required
 // form, omit the defense. A brief never addresses the safety classifier,
@@ -372,6 +375,7 @@ function packetFromModule(mod, row, owner) {
         attempt: mod.attempt,
         sha256: typeof mod.packet_sha256 === 'string' ? mod.packet_sha256 : '',
         reMinted: mod.re_minted === true,
+        abridged: mod.packet_abridged === true,
     }
 }
 // TEST-END packet
@@ -1188,7 +1192,8 @@ async function claimPacket(row, r, phaseLabel) {
         if (claim.ok) {
             log(`${row.step}: claimed by ${owner} at attempt ${claim.attempt}` +
                 (claim.reMinted ? ' (re-minted)' : '') +
-                `; packet of ${claim.packet.length} characters loaded from ${modulePath}`)
+                `; packet of ${claim.packet.length} characters loaded from ${modulePath}` +
+                (claim.abridged ? ' (gate output abridged to fit the script cap)' : ''))
             return { ok: true, owner, claim }
         }
         const text = `${row.step}: packet module ${modulePath} REFUSED — ${claim.why}; ` +

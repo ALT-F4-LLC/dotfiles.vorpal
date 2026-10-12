@@ -2,8 +2,9 @@
 
 The one statement of which open issues a backlog-reading skill may treat as
 free, how to read the whole backlog, and what to do when the question tool is
-missing. `docket-plan` and `docket-groom` point here instead of
-restating it; a change to a rule lands here once.
+missing. `docket-plan` and `docket-groom` point here for the ownership and
+backlog-reading rules instead of restating them; `docket-plan` also points
+here for the question-tool rule. A change to a rule lands here once.
 
 ## Not free to take or edit
 

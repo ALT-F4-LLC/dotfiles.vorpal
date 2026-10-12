@@ -15,7 +15,7 @@ criteria docket-groom writes, and a fix docket-cli-audit or corpus-check
 lands.
 
 It does not remove the skills' own confirmation gates. A gate that
-authorizes this skill's edit, filing, registration, or commit stays: the
+authorizes a consuming skill's edit, filing, registration, or commit stays: the
 working agreement's "permission to prepare an action does not authorize
 executing it" governs those, and this rule never overrides it. Removing or
 loosening one of those gates is a change to the skill itself, made through

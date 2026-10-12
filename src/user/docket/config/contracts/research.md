@@ -1,6 +1,6 @@
 ---
 node: research
-version: 13
+version: 14
 archetype: executor-research
 packet_includes:
   - fragments/design-search.md
@@ -107,7 +107,7 @@ The `research-notes@2` payload carries these as `answer`, `evidence`,
 `open_questions`.
 
 # Stuck
-Use the brief's `gap` protocol when a required answer lacks inspectable evidence,
+Use the brief's gap channel when a required answer lacks inspectable evidence,
 permitted sources leave a material conflict unresolved, or a necessary action
 exceeds the archetype's authority. Name the affected question, evidence obtained,
 attempts made, remaining uncertainty, and the smallest missing source or routed

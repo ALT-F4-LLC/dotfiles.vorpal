@@ -1,6 +1,6 @@
 ---
 node: judge-correctness
-version: 25
+version: 26
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -62,7 +62,9 @@ An unfamiliar pattern alone does not establish a defect.
 
 Run hard-gates as a separate mechanical pass, applying its objective triggers,
 counter-examples, and override-recognition procedure. Do not reconstruct missing
-fragment rules from memory.
+fragment rules from memory. Note in the body, without a severity entry, when a
+recorded design-search alternative would have changed the correctness evidence
+in front of you.
 
 **Verify within this seat.** Follow rerun-discipline for focused candidate probes
 and required reproduction of supplied FAILED gates or disputed gate outcomes.
@@ -75,11 +77,6 @@ source trace can establish a defect without execution. A reproduction
 built from a hypothesis establishes its tested case, not the cause of a
 reported incident. Keep that causal claim qualified and name the smallest
 observation that would resolve it.
-
-Fire hard gate G6, the missing design-search record, from the change summary
-alone.
-Note in the body, without a severity entry, when a recorded alternative would
-have changed the correctness evidence in front of you.
 
 Preserve unsupported candidates as qualified leads or Questions, with the missing
 evidence and next probe, rather than a low-severity finding; use `gap` when they
@@ -103,7 +100,8 @@ findings. Supply stable `id`, `title`, self-contained `evidence`, and `alternati
 plus repo-relative `file` and 1-based `line` where applicable (`line: null` for
 broader scope). Keep evidence labels and limitations in `evidence`. Map severity
 through the general ladder. Mirror the suggested direction into `alternative`:
-fix and revise consume the reconciled payload, not the body alone.
+fix and revise consume the payload (reconciled where the workflow has a
+reconcile stage), not the body alone.
 
 Report every supported finding, including minor ones, without a quota. Record
 coverage, prior dispositions and closures, qualified leads, Questions, and gaps

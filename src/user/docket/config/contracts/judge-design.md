@@ -1,6 +1,6 @@
 ---
 node: judge-design
-version: 21
+version: 22
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -52,7 +52,7 @@ conflicts with an applicable house requirement or established system constraint,
 identify the conflict and recommend whether implementation correction or
 authorized specification revision is needed. Do not silently choose a new
 requirement or approve the deviation. If the evidence cannot establish which
-commitment governs, leave that judgment open and use the gap route.
+commitment governs, leave that judgment open and use the gap channel.
 
 Missing specification coverage blocks the dependent conformance judgment, not
 independently supported findings against applicable house requirements. Cite

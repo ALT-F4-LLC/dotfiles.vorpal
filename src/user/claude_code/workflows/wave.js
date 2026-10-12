@@ -1,12 +1,12 @@
 export const meta = {
     name: 'wave',
-    description: 'Internal: launched through scriptPath by docket-run, once per issue, to run one issue lane of a dispatched manifest end to end (executors, vote panels, staged rows). Per executor row it spends 1 haiku claim agent, which claims the step and writes the packet the executor then receives verbatim in its brief. Per vote row it spends 3 read-only haiku probes on the normal path (gate status before, the proposal body, gate status after), 1 on a gate that was already decided, and 4 when a re-seat is needed. Budget, launch, lane, return and reply-tail contract in the header comment.',
-    whenToUse: 'Never by name. Args are the generated args-<i>.json from lane_units.py, passed unedited ({rowsModule, rows_sha256, unit, harnessCap, cwd, tribunal, integrated?}), or the older inline form {rows, tribunal, cwd, unit?, harnessCap?, integrated?}; the full argument contract is in the header comment.',
+    description: 'Internal: launched through scriptPath by docket-run, once per issue, to run one issue lane of a dispatched manifest end to end (executors, vote panels, staged rows). Per executor row it spends 1 haiku claim agent, which claims the step and writes the packet the executor then receives verbatim in its brief. Per vote row it spends 3 read-only haiku probes on the normal path (gate status before, the proposal body, gate status after), 1 on a gate that was already decided, and 4 when a re-seat is needed. Budget, launch, lane, argument and return contract in the header comment; the reply-tail contract is THE REPLY-TAIL CONTRACT comment beside the park signals.',
+    whenToUse: 'Never by name. Pass lane_units.py\'s generated args-<i>.json unedited; the argument contract is in the header comment.',
 }
 
 // ---------------------------------------------------------------------------
-// CONTRACT FOR CALLERS (the listing's description is a one-line summary;
-// this block is the single copy of the argument and return contract).
+// CONTRACT FOR CALLERS (meta.description is a short summary; this block is
+// the single copy of the argument and return contract).
 //
 // What it does:
 // Run one dispatched manifest end to end: spawn one executor per executor row
@@ -53,8 +53,7 @@ export const meta = {
 // (executor 1, vote row = its seat count — the peak the panel's own
 // `parallel()` fan-out draws, a DIFFERENT quantity from the agent-budget
 // projection above), narrowed to the conductor-reported `harnessCap` when
-// present. Invoke by scriptPath ONLY, with args {rowsModule, rows_sha256,
-// tribunal, cwd, unit?, harnessCap?} (or inline {rows, ...}) as a real
+// present. Invoke by scriptPath ONLY, with the args below as a real
 // object — every row carries model/effort/variant resolved by the engine, and
 // the script reads no policy and cannot read files; the files it loads are
 // the launch's rows module and each claim's packet module, through a nested
@@ -68,8 +67,8 @@ export const meta = {
 // tribunal, integrated?}. rowsModule is a module under
 // <cwd>/.claude/docket-packets returning {v: 1, rows_sha256, rows}; the wave
 // loads it and refuses the launch, before any claim, when the module's
-// rows_sha256 differs from the args'. The older inline form {rows, tribunal,
-// cwd, unit?, harnessCap?} still routes; a launch carrying both rows and
+// rows_sha256 differs from the args'. The older inline form, which carries
+// `rows` in place of rowsModule and rows_sha256, still routes; a launch carrying both rows and
 // rowsModule is refused. Either way the rows are the issue's own rows from
 // `dispatch open` VERBATIM, as lane_units.py split them (executor, vote, and
 // action rows; human rows stay with the conductor), each
@@ -97,14 +96,17 @@ export const meta = {
 //
 // Return: {statuses, coordination}, one plain object. `statuses` holds one
 // {step, status, text, ...} entry per row this launch holds, in manifest
-// order; `text` is the executor's own reply, the one agent output that stays
-// free text (its reply-tail contract lives with the executors). A vote row
+// order; for an executor row, `text` is the reply executorReplyText()
+// rebuilds from the executor's structured answer. Every agent the wave spawns
+// answers through a schema; the executor's `report` field is the one
+// free-text field, and THE REPLY-TAIL CONTRACT comment beside the park
+// signals defines the tail `text` ends in. A vote row
 // whose panel re-seated a judge also carries `reseats` (the count) and
 // `reseated` ({proposal, seats}). `coordination`
 // is the launch's rounds per issue, gate outcomes, re-seats, claim conflicts,
 // ancestry parks, spawn failures and deferrals, counted from its own rows and
 // settled statuses. It is the run's only coordination source; wave-usage.js
-// measures tokens alone. Every other agent the wave spawns answers through a schema.
+// measures tokens alone.
 // ---------------------------------------------------------------------------
 
 // TEST-BEGIN configuration — shared by the extracted behavior suites.
@@ -2021,8 +2023,8 @@ async function runGate(row, phaseLabel) {
     }
     // The launch's coordination section counts re-seats off the settled
     // result; `retries` cannot serve, since it also counts probe resubmissions.
-    // `reseated` names the proposal and seats, which the conductor records
-    // one `run fact add --kind vote-reseated` per seat.
+    // `reseated` names the proposal and seats; the conductor records one
+    // `run fact add --kind vote-reseated` per seat.
     const withReseats = (res) => (missing.length > 0
         ? { ...res, reseats: missing.length, reseated: { proposal: voteId, seats: missing.map((s) => s.seat) } }
         : res)
@@ -2978,7 +2980,7 @@ if (budget.total) {
 // rows and settled statuses, so no conductor relay can drop them. `reseats`
 // counts judges re-spawned in runGate. Instance ordinals
 // are the engine's: `@0` is a step's first minting (`review@0#k`,
-// `verify-tribunal@0`) and a fix round's rows carry the round, so first pass
+// `verify-ac-vote@0`) and a fix round's rows carry the round, so first pass
 // means ordinal 0.
 const COORDINATION_DEFERRALS = {
     'not-launched-agent-budget': 'agent_budget',
@@ -2997,8 +2999,8 @@ const COORDINATION_GATES = {
 }
 const INSTANCE_ORDINAL_RE = /@(\d+)(?:#\d+)?$/
 
-// `statuses[i]` is `launchRows[i]`'s settled result, so every status has its
-// row and `unmatched_steps` stays empty; it is kept for the join's field set.
+// `unmatched_steps` is always empty because `statuses[i]` is `launchRows[i]`'s
+// settled result; it is kept so the return shape stays stable.
 function coordinationOf(launchRows, statuses) {
     const out = {
         rows: 0,

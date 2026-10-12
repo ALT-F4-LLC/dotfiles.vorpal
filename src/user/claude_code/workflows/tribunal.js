@@ -49,8 +49,9 @@ export const meta = {
 //
 // Return: CONVERSATIONAL {voteId, outcome, seatsSpawned, respawns, respawned,
 // replies} — `outcome` is the probe's {status, final_outcome, votes} read of
-// the vote record, or null when the probe returned nothing twice (unknown,
-// never "no casts"), `respawns` counts the seats re-spawned once, and
+// the vote record, or null when the final probe returned nothing (the first
+// read is retried once, the read after a re-seat is not; unknown, never "no
+// casts"), `respawns` counts the seats re-spawned once, and
 // `respawned` names them. MID-WAVE
 // {voteId, seatsSpawned, absorbed, replies} — `absorbed` lists {seat, error}
 // per caught spawn error. In both, `replies` lists {seat, castError} for each
@@ -340,7 +341,7 @@ parse a second time. Pick one and match it: \`--payload
 --json | jq '.data'\` for the payload, or plain \`--json | jq -r '.data.payload'
 | jq .\` for the record.
 
-plus reading any file those name. The gate sits downstream of the work it
+Read any file the artifacts name, too. The gate sits downstream of the work it
 judges — its issue's earlier steps recorded THIS wave, and their artifacts and
 payloads are the evidence. Read what the claims rest on. Do not write, edit,
 commit, or run anything that mutates state — the ONE state change you are
@@ -768,7 +769,8 @@ async function verifyPanel() {
     }
 
     if (outcome === null) {
-        log(`tribunal: the verify probe returned nothing twice — the outcome is null, ` +
+        log(`tribunal: the final verify probe returned nothing (after a retry on the first ` +
+            `read, none after a re-seat) — the outcome is null, ` +
             `which says nothing about whether the casts landed, and no seat was re-spawned ` +
             `on that silence. Read the record directly with \`docket vote result ${voteId}\` ` +
             `before acting on this return.`)

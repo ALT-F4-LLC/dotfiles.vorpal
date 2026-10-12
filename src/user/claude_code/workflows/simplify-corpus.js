@@ -298,7 +298,7 @@ them: shorten a prompt only when it says the same thing.`
     case 'python':
       return `This is a Python script a skill runs. Keep its command-line
 interface, exit codes, output format, and every name a test suite
-imports or invokes. The candidate must compile with py_compile.`
+imports or invokes. The candidate must parse as Python.`
     case 'shell':
       return `This is a shell script. Keep its arguments, exit codes, output,
 and environment-variable contract. Keep \`set\` options as they are. The

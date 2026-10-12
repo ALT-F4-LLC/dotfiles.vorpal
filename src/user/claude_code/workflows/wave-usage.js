@@ -32,15 +32,14 @@ export const meta = {
 //
 // When and how it is invoked:
 // Invoked by the docket-run skill the moment a wave returns. On the normal
-// path, launched in docket-run's back-fill step, ahead of the close call in
-// that step's own call order, but the join's usage record can still land
-// after the close call returns (the engine measures `dispatch.grace` from
-// the run's newest terminal step record — the wave's last one — so every step
-// recorded before it is usage PENDING while that record is inside the window,
-// and the join may land after the close; a step still unbilled once the wave's
-// last record is past the window is the `usage-rows-missing` refusal it always
-// was), and by the pause and resume paths for a wave whose usage was never
-// back-filled. args is {dir: absolute transcript directory, mode: "steps"
+// path it launches in docket-run's back-fill step, ahead of that step's close
+// call, and the pause and resume paths launch it for a wave whose usage was
+// never back-filled. The join's usage record can still land after the close
+// call returns. The engine measures the `dispatch.grace` window from the run's
+// newest terminal step record, which is the wave's last one. While that record
+// is inside the window, every step recorded before it is usage PENDING. A step
+// still unbilled once that record is past the window gets the
+// `usage-rows-missing` refusal. args is {dir: absolute transcript directory, mode: "steps"
 // (default) | "seats", exclude: [STEP-N...] in steps mode or [seat...] in
 // seats mode}. The script cannot read files itself; its agents run one fixed jq program per
 // transcript and the reduction happens here.
@@ -179,10 +178,14 @@ const DEFAULT_MODE = 'steps'
 //                  Effective effort is not exposed by this transcript shape.
 //                  complete covers parsed, deduplicated usage-bearing messages;
 //                  it does not certify that the transcript or task finished.
-// Throws when the directory holds no agent transcripts, when the fresh
-// re-check of a relayed bootstrap:false fails to return a usable answer,
-// when an executor brief names no step to record, or when a dispatched agent
-// carries no usage. A bootstrap:false confirmed on that re-check is not an
+// Throws on an invalid args.dir or args.mode; on a scout listing whose
+// files_exit is not 0; in seats mode, on a scout with no seats listing or a
+// non-zero seats_exit; when the directory holds no agent transcripts; and
+// whenever `errors` is non-empty. `errors` collects, among others, a fresh
+// re-check of a relayed bootstrap:false that returns no usable answer, an
+// extraction agent that returns nothing, a jq failure that survives its retry,
+// a step key that is not STEP-N or an executor brief that names no step to
+// record, and a dispatched agent that carries no usage. A bootstrap:false confirmed on that re-check is not an
 // error: it is folded into wave overhead instead, since wave.js never
 // dispatches an agent without a bootstrap brief.
 // ---------------------------------------------------------------------------

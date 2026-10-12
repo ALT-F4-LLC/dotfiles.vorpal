@@ -266,12 +266,17 @@ changed, or a step completed.
 **Every stored row gets a verdict, in one pass** (`rows` in the payload,
 summarized above the refusal for a human): `matched`, `recorded` (the step
 moved off the scheduler — the dispatch working, not a failure),
-`rendering-shifted` (still offerable, renders differently than at open), or
-`genuinely-missing` (still non-terminal and yet no longer offerable — the
-narrow, alarming case). The comparison does not stop at the first shifted
-row, so a dispatch where several steps moved
-mid-flight reports all of them. The exit code is unchanged: any row that is
-not `matched` or `recorded` still fails the verb.
+`rendering-shifted` (still offerable, renders differently than at open),
+`held-by-park` (still pending, and its issue is parked `waiting-human`
+under R2b — typically the staged successors of the step that parked, whose
+own row reads `recorded`), or `genuinely-missing` (still non-terminal and
+yet no longer offerable — the narrow, alarming case). `held-by-park` does
+not fail the verify: the park, not a conflict, keeps the row out of the
+recomputation. A row claimed since the manifest opened, or otherwise
+unofferable, still reads `genuinely-missing` and still refuses. The
+comparison does not stop at the first shifted row, so a dispatch where
+several steps moved mid-flight reports all of them. Any row that is not
+`matched`, `recorded`, or `held-by-park` fails the verb.
 
 `stage` and `conditional` are **normalized before the comparison**: both
 are set-relative and legitimately move as an in-offer predecessor records or

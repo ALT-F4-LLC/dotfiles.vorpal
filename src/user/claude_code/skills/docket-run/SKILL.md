@@ -1274,15 +1274,15 @@ spawns all failed still burned tokens; skip only when the join itself
 returns no rows), and **diagnosing the wave's result before launching the
 join** (an interrupt mid-diagnosis takes the window with it).
 
-**A `verify` refusal on a step that recorded and then parked is
-expected, not a finding.** A step that moved `ready` → `waiting-human` is
-no longer in the ready set, so the combined close's verify stage refuses
-for work that went exactly right. Confirm with `docket step show STEP-N`
-that it recorded, then re-close with a bare `docket dispatch close --run
-$RUN --json`. Never rerun `--backfill-from` after a verify or close
-refusal: the back-fill stage already landed, and under the default `--on-duplicate
-refuse` its rows would refuse the whole batch. A
-mismatch is a finding only when the named step did not record.
+**A step that recorded and then parked does not fail `verify`.** Its
+own row reads `recorded`, and each pending row of its parked issue reads
+`held-by-park`; neither verdict fails the combined close's verify stage.
+A verify refusal after a park is therefore a finding: a `genuinely-missing`
+row names a step that is claimed or otherwise unofferable. Check it with
+`docket step show STEP-N` before acting, then re-close with a bare `docket
+dispatch close --run $RUN --json`. Never rerun `--backfill-from` after a
+verify or close refusal: the back-fill stage already landed, and under the
+default `--on-duplicate refuse` its rows would refuse the whole batch.
 
 #### Crashed-relay reconciliation
 

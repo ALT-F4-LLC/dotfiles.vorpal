@@ -81,8 +81,8 @@ export const meta = {
 // of its judge-* executors.
 const AGENT_CONFIG = {
     registry: { model: 'haiku', effort: 'medium' },
-    judge: { model: 'opus', effort: 'medium' },
-    cluster: { model: 'sonnet', effort: 'high' },
+    judge: { model: 'haiku', effort: 'medium' },
+    cluster: { model: 'haiku', effort: 'medium' },
 }
 
 // One judge per open issue over one or two backlogs is normally tens of

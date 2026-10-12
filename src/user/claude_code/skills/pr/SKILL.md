@@ -513,12 +513,12 @@ substitution, a heredoc carrying diff or log text, `-b "<body>"` or
 
 **The title file is validated before it is used**, and a failure refuses the
 publish rather than repairing it: one line with no embedded newline; ends
-without a trailing newline (`od -An -c <file>` run on its own, its full
-output read from the tool result, shows a last character that is not
-`\n`); contains no NUL byte, detected by running `tr -d '\000' < <file> >
-<nul-stripped-file>` on its own, then comparing `wc -c <
-<nul-stripped-file>` against `wc -c < <file>`, each exit-checked under
-**Command shapes** (a mismatch refuses, since neither an agent reading
+without a trailing newline (`tail -c1 <file> > <last-byte-file>` run on
+its own, then `od -An -c <last-byte-file>` shows no `\n`); contains no NUL
+byte, detected by running `tr -d '\000' < <file> > <nul-stripped-file>` on
+its own, then comparing `wc -c < <nul-stripped-file>` against `wc -c <
+<file>`, each command exit-checked under **Command shapes** (a mismatch
+refuses, since neither an agent reading
 the title nor the denylist's grep pass, which degrades to `Binary file …
 matches` on a NUL-bearing input and loses line, pattern, and token
 attribution, can see one directly); non-empty after the denylist's strip

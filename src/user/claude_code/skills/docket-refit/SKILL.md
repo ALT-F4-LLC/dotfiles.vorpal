@@ -36,7 +36,6 @@ recorded in the spec. A human touch you find in the target with no vital
 condition is a deviation to surface for removal. The operator decisions and
 the approval gate this skill holds authorize the design; they stay.
 
-
 You run in the main conversation, never in a forked subagent: the deviation
 decisions, the spec iteration, and the artifact approval gate below are real
 questions through `AskUserQuestion` and `Artifact`, and a fork has neither.
@@ -79,10 +78,10 @@ Every read-only evidence phase runs through one script, launched by
 `~/.claude/workflows/docket-refit.js`, expanding `~` to a literal absolute
 path yourself first (`echo ~` or your session's known home). The Workflow
 tool does not expand `~` and resolves a relative path against the target
-repo's cwd, not the dotfiles source tree. The installed copy under `~/.claude/workflows` is also the only one the
-tool may launch. A missing installed file means the corpus was never
-activated after this script was added: report that, don't launch the
-source copy instead.
+repo's cwd, not the dotfiles source tree. Only the installed copy may be
+launched. A missing installed file means the corpus was never activated
+after this script was added: report that, don't launch the source copy
+instead.
 
 The script runs one stage per launch, selected by `args.stage`, because the
 capability questions §3 verifies exist only once the operator's spec is
@@ -102,10 +101,12 @@ Workflow({ scriptPath: "<absolute installed path to docket-refit.js>", args: {
 Scout the arguments inline before launching: resolve the target and read it
 whole, list the projects with `docket project list --json`, and resolve the
 engine checkout (§3) — the script cannot inspect files or run commands
-itself. Every agent it spawns is an `executor-read` agent, whose tool set
-carries no write verb: sweeps grep the corpus and the harness scripts,
-mining analysts run `docket` read verbs from each project's checkout root,
-verifiers read engine source. Nothing in it edits, mutates a store, or asks
+itself. Every agent it spawns is an `executor-read` agent, which keeps the
+checkout unchanged and writes only scratch files and authorized engine
+records; it cannot edit the checkout, change trust, or ask the operator.
+Sweeps grep the corpus and the harness scripts, mining analysts run
+`docket` read verbs from each project's checkout root, verifiers read
+engine source. Nothing in it edits, mutates a store, or asks
 the operator anything. Each return carries a `summary` line and an
 `uncovered` list naming every agent that returned nothing, every project
 whose checkout could not be entered, and every pair a fan-out bound
@@ -306,12 +307,13 @@ authorities cover the corpus:
 
 The docket engine checkout normally lives beside this repo
 (`.../github.com/ALT-F4-LLC/docket.git/main`), but may be absent (a bare
-clone with no checked-out `main`, for instance). Confirm it resolves before launching; if it does not, pass
-`engineRoot: null`, and the script returns `engineUnavailable` without
-spawning an agent: report engine verification as unavailable rather than
-proceeding from memory of these files, and carry every unverified
-capability into §4 as an open deviation the operator decides. Its
-load-bearing files, which the verifiers are pointed at:
+clone with no checked-out `main`, for instance). Confirm it resolves
+before launching; if it does not, pass `engineRoot: null`, and the
+script returns `engineUnavailable` without spawning an agent: report
+engine verification as unavailable rather than proceeding from memory of
+these files, and carry every unverified capability into §4 as an open
+deviation the operator decides. Its load-bearing files, which the
+verifiers are pointed at:
 
 - `internal/workflow/parse.go` — every legal `[[step]]` field and form
 - `internal/workflow/validate.go` — the V-rules lint enforces (`after`,
@@ -415,12 +417,13 @@ consumers routinely share files and a parallel writer would race.
   follow (`contracts/implement.md` is the precedent): frontmatter (`node`,
   `version`, `archetype`, `packet_includes`, `emits`) then Charter / Not /
   Method / Emit / Stuck. `src/user/docket/config/README.md`'s naming
-  convention fixes the file stem, the `# Charter` H1, and the `node:` field. Editing an existing shared contract is a
-  blast-radius change: bump its `version` and verify the edit against every
-  consuming workflow, not just the one in hand — a rule needed by only one
-  pipeline belongs in a step-level packet fragment instead. Add README.md to
-  this checklist as touched whenever a naming exception or convention
-  changes, not-applicable otherwise.
+  convention fixes the file stem, the `# Charter` H1, and the `node:`
+  field. Editing an existing shared contract is a blast-radius change:
+  bump its `version` and verify the edit against every consuming
+  workflow, not just the one in hand — a rule needed by only one pipeline
+  belongs in a step-level packet fragment instead. Add README.md to this
+  checklist as touched whenever a naming exception or convention changes,
+  not-applicable otherwise.
 - **Fragments** (`src/user/docket/config/fragments/`) — rules shared across
   nodes (a protocol, a store convention) live once in a fragment appended to
   each consumer's packet (one source of truth, see the design canon above).
@@ -429,10 +432,11 @@ consumers routinely share files and a parallel writer would race.
 - **policy.toml** — an `[executors]` row for every new executor and every
   new vote seat (the wave refuses to route or seat anything without a row),
   plus the informational `[policy].version` bump and its entry in
-  `changelogs/policy.md`, which frozen-drift-check does not enforce. Match variant tiers to comparable existing
-  seats — least-capable tier that meets the bar, exceptions carrying an
-  explicit `reason` — and prove the `[security]` invariants (`never`
-  models, ceiling, node list) still hold for every touched row.
+  `changelogs/policy.md`, which frozen-drift-check does not enforce.
+  Match variant tiers to comparable existing seats — least-capable tier
+  that meets the bar, exceptions carrying an explicit `reason` — and
+  prove the `[security]` invariants (`never` models, ceiling, node list)
+  still hold for every touched row.
 - **Vote-seat lenses** — a seat's lens is the last hyphen-token of its name,
   resolved against the `LENSES` table in
   `src/user/claude_code/workflows/tribunal.js`; a new lens key needs an
@@ -472,9 +476,9 @@ they are cheap, and their output is the acceptance evidence.
 Lint resolves schemas and vote rules from the current project's store, which
 can lag the corpus: before blaming your edit, lint the installed known-good
 version of the same workflow — an identical failure is environmental.
-A missing corpus schema registers from its source file
-(`docket schema register <kind@n> src/user/docket/config/schemas/<kind@n>.json`), then
-re-lint. Schema registration into the local project's engine store is a
+A missing corpus schema registers from its source file with
+`docket schema register <kind@n> src/user/docket/config/schemas/<kind@n>.json`;
+then re-lint. Schema registration into the local project's engine store is a
 lint prerequisite this skill may perform directly, unlike a genuinely new
 vote rule (§6), reserved for the operator: a schema registered here binds
 only the one project being worked on, while a vote-rule threshold set with

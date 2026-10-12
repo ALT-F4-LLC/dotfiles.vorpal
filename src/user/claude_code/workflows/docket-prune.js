@@ -153,14 +153,14 @@ const RECORD_SHARD_ENTRIES = 12
 // value keeps the skill's former name so logs from earlier passes still match.
 const SENTINEL = 'corpus-cut-pass'
 
-// Which evidence classes apply to which unit kind. A unit with nothing in
-// any applicable class gets remove; a class that cannot apply is never held
-// against it (a section inside a contract has no consumer of its own).
 // What a section unit is. Contracts are a fixed "# " skeleton (Charter, Not,
 // Method, Emit, Stuck, and any extra top-level block), so their sections are
 // top-level blocks; fragments carry one "# " title and "## " sections.
 const SECTION_DEF = 'in a contract, every "# " block after "# Charter" and every "## " heading; in a fragment, every "## " heading (its single "# " line is the title, not a section)'
 
+// Which evidence classes apply to which unit kind. A unit with nothing in
+// any applicable class gets remove; a class that cannot apply is never held
+// against it (a section inside a contract has no consumer of its own).
 const UNIT_CLASSES = {
     'file:contract': ['consumer', 'run', 'behavior', 'install'],
     'file:fragment': ['consumer', 'run', 'behavior', 'install'],

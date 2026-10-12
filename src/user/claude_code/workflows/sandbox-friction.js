@@ -16,7 +16,15 @@ export const meta = {
 // Turn the sandbox friction ledger into a ranked summary grouped by the denied
 // path, host, or classifier reason — the thing an allowlist or autoMode entry
 // would name — and optionally file one dotfiles issue per group. Invoke by
-// scriptPath ONLY, with args {ledger, cutoff, file, checkout}.
+// scriptPath ONLY.
+//
+// args: {ledger, cutoff, file, checkout}
+//   ledger   — absolute path of the friction ledger (~/.claude/friction/sandbox.jsonl, expanded).
+//   cutoff   — ISO-8601 UTC timestamp or null; events at or after it count.
+//   file     — true files one issue per actionable group not already filed.
+//   checkout — absolute path of the dotfiles checkout to file from.
+//
+// return: {groups:[{subject, kind, count, bypasses, repos, example, tool_name, agent_id, file_path}], filed:[subject], skipped:[{subject, why}]}
 //
 // When and how it is invoked:
 // The operator-ruling half of the sandbox self-improving loop. sandbox-
@@ -51,14 +59,6 @@ const ERROR_DETAIL_LENGTH = 300
 //
 // Subjects starting with "(" are unclassified: they are never filed, and
 // appear in the summary and in `skipped`.
-//
-// args: {ledger, cutoff, file, checkout}
-//   ledger   — absolute path of the friction ledger (~/.claude/friction/sandbox.jsonl, expanded).
-//   cutoff   — ISO-8601 UTC timestamp or null; events at or after it count.
-//   file     — true files one issue per actionable group not already filed.
-//   checkout — absolute path of the dotfiles checkout to file from.
-//
-// return: {groups:[{subject, kind, count, bypasses, repos, example, tool_name, agent_id, file_path}], filed:[subject], skipped:[{subject, why}]}
 
 // TEST-BEGIN sandbox-friction-group — evaluate with the settings above; run as
 // `jq -c -n -R --arg cutoff '' -f <file> <ledger>`. Prints one JSON array.

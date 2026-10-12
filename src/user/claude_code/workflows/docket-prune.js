@@ -109,20 +109,21 @@ export const meta = {
 // ---------------------------------------------------------------------------
 
 // Pin models so a launch never inherits the caller's quota-limited model.
-// Evidence agents count and cite; the judge and the refuters carry the
+// Evidence agents count and cite, and each recording shard is checked in
+// code, so both run on haiku; the judge and the refuters carry the
 // judgment.
 const AGENT_CONFIG = {
     census: { model: 'haiku', effort: 'medium' },
     registry: { model: 'haiku', effort: 'medium' },
     runs: { model: 'haiku', effort: 'medium' },
-    digest: { model: 'sonnet', effort: 'low' },
+    digest: { model: 'haiku', effort: 'medium' },
     friction: { model: 'haiku', effort: 'medium' },
     install: { model: 'haiku', effort: 'medium' },
     prosecute: { model: 'sonnet', effort: 'medium' },
     defend: { model: 'sonnet', effort: 'medium' },
     judge: { model: 'opus', effort: 'medium' },
     refute: { model: 'sonnet', effort: 'medium' },
-    record: { model: 'sonnet', effort: 'low' },
+    record: { model: 'haiku', effort: 'medium' },
 }
 
 // TEST-BEGIN docket-prune-config — include before any pure test region.

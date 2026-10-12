@@ -78,14 +78,15 @@ export const meta = {
 // ---------------------------------------------------------------------------
 
 // Pin models so a launch never inherits the caller's quota-limited model.
-// Sweep and mining are counting work over greps and ledgers; verify reads
+// Sweep, mining, and triage are counting work over greps and ledgers that
+// the design conversation re-reads, so they run on haiku; verify reads
 // engine source for a cited mechanism the design will lean on, so it gets
 // opus/medium, the variant policy.toml gives most of its judge-* executors.
 const AGENT_CONFIG = {
-    sweep: { model: 'sonnet', effort: 'medium' },
-    mine: { model: 'sonnet', effort: 'medium' },
+    sweep: { model: 'haiku', effort: 'high' },
+    mine: { model: 'haiku', effort: 'high' },
     verify: { model: 'opus', effort: 'medium' },
-    triage: { model: 'sonnet', effort: 'low' },
+    triage: { model: 'haiku', effort: 'medium' },
     census: { model: 'haiku', effort: 'medium' },
 }
 

@@ -77,10 +77,12 @@ the installed absolute `scriptPath` with literal arguments, never a source
 copy.
 [Workflows](https://code.claude.com/docs/en/workflows).
 
-As checked 2026-10-05, Fable 5.1 (`claude-fable-5-1`), Opus 5.5
-(`claude-opus-5-5`), and Sonnet 5.5 (`claude-sonnet-5-5`) are the current
-models, and the harness pins the `fable`, `opus`, and `sonnet` aliases to
-them. Spawn
+As checked 2026-10-11, Fable 5.1 (`claude-fable-5-1`), Opus 5.5
+(`claude-opus-5-5`), Sonnet 5.5 (`claude-sonnet-5-5`), and Haiku 5.5
+(`claude-haiku-5-5`) are the current models, and the harness pins the
+`fable`, `opus`, `sonnet`, and `haiku` aliases to them. Haiku 5.5 has no
+fallback model: a safeguard refusal ends the request instead of
+re-running it elsewhere. Spawn
 metadata establishes the requested model and effort; deduplicated assistant
 messages with `message.model` establish what served. Neither is evidence
 that a behavior evaluation ran on that model.

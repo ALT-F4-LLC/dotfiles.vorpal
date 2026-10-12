@@ -76,12 +76,14 @@ model served it.
 
 ## Current model targets
 
-As checked 2026-10-05, use Fable 5.1, Opus 5.5, and Sonnet 5.5 for the
+As checked 2026-10-11, use Fable 5.1, Opus 5.5, and Sonnet 5.5 for the
 generally available Claude 5 comparison: the ids the harness pins for its
 `fable`, `opus`, and `sonnet` aliases. Mythos 5.1 is an optional additional target,
-only for an account granted access. Haiku remains 4.5 and has no effort
-control. The repository's policy already routes work by model and effort;
-preserve it until Docket-specific results justify a change.
+only for an account granted access. Haiku 5.5 (`claude-haiku-5-5`, the
+`haiku` alias) takes the same five effort levels, defaulting to `medium`;
+add it with `--models` when a comparison covers a seat routed to it. The
+repository's policy already routes work by model and effort; preserve it
+until Docket-specific results justify a change.
 
 - Sonnet 5.5 benefits from explicitly scoped requirements and concrete output
   contracts, particularly at lower effort.
@@ -91,10 +93,14 @@ preserve it until Docket-specific results justify a change.
   quality, cost, and latency. Low effort can retrieve less, so verify live
   CLI discovery on unfamiliar commands. Request concise progress updates on
   long operations.
+- Haiku 5.5 suits narrowly scoped steps whose output a later check reads.
+  It has no fallback model, so a safeguard refusal fails the request, and
+  at `low` effort in a long agent prompt it can stop early or skip a check.
 
 Sources: [Claude skill evaluation guidance](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices),
 [Sonnet 5 line prompting](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-sonnet-5),
 [Opus 5 line prompting](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5),
 [Fable 5.1](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5-1),
+[Haiku 5.5 system card](https://www.anthropic.com/document/claude-haiku-5-5-system-card),
 [model availability](https://platform.claude.com/docs/en/about-claude/models/overview),
 [effective models and effort limits](https://code.claude.com/docs/en/model-config).

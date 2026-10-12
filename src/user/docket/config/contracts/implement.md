@@ -1,6 +1,6 @@
 ---
 node: implement
-version: 20
+version: 21
 archetype: executor-write
 packet_includes:
   - fragments/code-philosophy.md
@@ -124,7 +124,7 @@ for the same blocker. A second attempt needs a supported, authorized recovery
 action; repeating a command without new grounds is not recovery. Permission
 denials and toolchain-specific stop rules take precedence over this limit.
 
-Record the gap with `step complete` through the brief's gap channel,
+Record the gap with `step record` through the brief's gap channel,
 including the state of partial edits or commits and the required denial
 report. This records a handled gap, not satisfied ACs or permission to
 integrate incomplete work. Use `step fail` only for an unsuccessful execution

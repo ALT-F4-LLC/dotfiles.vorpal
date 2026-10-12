@@ -8,7 +8,9 @@ points here instead of restating these; a change to a rule lands here once.
 
 Find the commands the repository itself uses, in this order, and stop at
 the first source that names a command for each of build, typecheck, test,
-and format. Never invent a command the repository does not name.
+format, and lint. Never invent a command the repository does not name.
+Lint is optional and has no toolchain default: a repository whose sources
+below name no lint command has no lint gate.
 
 1. `CLAUDE.md` or `AGENTS.md` at the root or under the unit's directory: an
    instruction that names a test or build command wins.
@@ -29,7 +31,7 @@ and format. Never invent a command the repository does not name.
    | `*.gemspec`, `Gemfile` | none | `sorbet tc` if configured | `bundle exec rspec` or `rake test` | `rubocop -x <files>` if configured |
    | `mix.exs` | `mix compile --warnings-as-errors` | same | `mix test` | `mix format <files>` |
    | `pom.xml`, `build.gradle` | `mvn -q compile` or `gradle build -x test` | same | `mvn -q test` or `gradle test` | none |
-   | `*.csproj`, `*.sln` | `dotnet build` | same | `dotnet test` | `dotnet format <project>` |
+   | `*.csproj`, `*.sln` | `dotnet build` | same | `dotnet test` | `dotnet format whitespace <project>` |
 
 The formatter is a layout tool, never a lint autocorrector: an option
 that rewrites code rather than whitespace (`rubocop -a`, `eslint --fix`,
@@ -40,7 +42,8 @@ committed.
 A repository with no test command at all has no guard for live-code
 transformations: only `inert` and `reachability` entries can be applied,
 and the report says the tree has no test suite. A repository whose discovered command
-needs a service, network, or credential this environment lacks has a gate
+needs a tool, service, network access, permission, or credential this
+environment lacks has a gate
 that cannot run: ledger it as `gate unavailable` with HEAD, report which
 once, and rest.
 
@@ -96,9 +99,10 @@ repository with no test command, build and typecheck must pass.
 An `inert` edit cannot change what the program does: a comment, a banner, a
 docstring the runtime does not expose, a lint suppression the linter no
 longer needs, a compile-time-only cast the type checker no longer needs.
-No probe and no reachability search; build, typecheck, and the linter
+No probe and no reachability search; build, typecheck, and the lint gate
 must still pass afterwards, and the full suite runs once at the end of the
-pass with everything else. Inert edits and reachability removals are the
+pass with everything else. In a repository with no lint gate, removing a
+lint suppression is not an inert edit; the suppression stays. Inert edits and reachability removals are the
 only kinds the pass may apply in a unit no test references.
 
 ## Frozen contracts

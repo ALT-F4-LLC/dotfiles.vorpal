@@ -47,28 +47,26 @@ supplies the recurring wake-up, and each firing re-enters this skill from
 
 1. **Tree and ledger.** `git status --porcelain` must be empty. A dirty
    tree is someone else's work in progress: stop, say so, and rest (step 5)
-   without touching anything. Record `git rev-parse HEAD`. Read the ledger,
-   a file named `declutter-ledger.md` in the session's scratchpad
-   directory, or under `$TMPDIR` when the session lists none. It holds one
-   line per unit skipped on an earlier tick, with the reason and the HEAD
-   at the time; the [gates reference](references/gates.md#ledger) gives the
-   format and the expiry rule. Drop expired entries before reading the
-   rest.
-2. **Gates.** Discover the repository's test, build, typecheck, and
-   formatter commands as the [gates reference](references/gates.md#discovery)
-   describes, then run the baseline: build, typecheck, and the full test
-   suite on the untouched tree. A red baseline means the pass cannot prove
-   anything: ledger the failing command with HEAD, report it once, and rest.
-   Later ticks stay quiet on that ledger entry until HEAD moves. A gate that
-   cannot run in this environment (missing tool, network, permission) is
-   neither red nor green: ledger it as `gate unavailable` with HEAD, report
-   which one once, and rest. Nothing is refactored
-   on a tree whose gates you cannot run.
+   without touching anything. Record `git rev-parse HEAD`. Read the
+   [ledger](references/gates.md#ledger), which holds one line per unit
+   skipped on an earlier tick; that reference gives its location, format,
+   and expiry rule. Drop expired entries before reading the rest.
+2. **Gates.** Discover the repository's build, typecheck, test, format, and
+   lint commands as the [gates reference](references/gates.md#discovery)
+   describes, then run the baseline: build, typecheck, lint when the
+   repository names one, and the full test suite on the untouched tree. A
+   red baseline means the pass cannot prove anything: ledger the failing
+   command with HEAD, report it once, and rest. Later ticks stay quiet on
+   that ledger entry until HEAD moves. A gate that cannot run in this
+   environment is neither red nor green; the same reference says how to
+   ledger it. Nothing is refactored on a tree whose gates you cannot run.
 3. **Scout.** Seat one read-only scout (§3) to rank candidate units against
    the catalog. A unit is one file, or one directory that forms a module
    when the language groups code that way. The scout returns at most ten
    units, each with the catalog entries it matched, the concrete lines that
-   matched, and the test files that reference the unit. It excludes every
+   matched, the test files that reference the unit, and the catalog's
+   [report-only](references/catalog.md#report-only) items found in it with
+   their lines. It excludes every
    unit on the ledger, every test file (tests are frozen, so a test file
    is never a unit), every generated or vendored file (lockfiles,
    `node_modules`, `vendor`, `target`, `dist`, files whose header says they
@@ -82,8 +80,10 @@ supplies the recurring wake-up, and each firing re-enters this skill from
    `reachability` in the catalog, which need no tests. A unit with no
    tests and a mix of classes is taken for its inert and reachability
    entries only; its `probe` entries are ledgered as `no tests` with the
-   HEAD. Everything else the scout ranked is ledgered the same way, and
-   each security-boundary unit the scout skipped is ledgered as
+   HEAD. Any other ranked unit with no test references and probe entries
+   is ledgered the same way. Ranked units with tests that were not picked
+   are not ledgered; the next scout re-ranks them. Each security-boundary
+   unit the scout skipped is ledgered as
    `security boundary` with the HEAD. Then
    declutter it (§2) and **loop back to step 1 immediately**; do not
    schedule a wakeup between units while candidates remain. Go quiet only
@@ -101,27 +101,21 @@ supplies the recurring wake-up, and each firing re-enters this skill from
 1. **Prove the guard.** Each catalog entry names its proof class.
    - `inert`: an edit that cannot change runtime behavior (a comment, a
      banner, commented-out code, a suppression the linter no longer
-     needs). No proof beyond
-     build, typecheck, and linter passing afterwards; see the
-     [gates reference](references/gates.md#inert-edits).
+     needs). No probe; the gates the
+     [gates reference](references/gates.md#inert-edits) names must pass
+     afterwards.
    - `probe`: a transformation of live code (inline, extract, flatten,
      dedupe, rename with callers). Before the worker touches a function or
-     method, the orchestrator runs a mutation probe on it as the
-     [gates reference](references/gates.md#mutation-probe) describes: one
-     deliberate behavior change at that site must make the tests fail, and
-     the probe is then reverted by path, never by stash. A site whose probe
-     survives has no guard; it is left as it is and ledgered as `no
-     coverage`. The probe proves the suite notices a change at that site.
-     It does not prove the suite checks every branch, so the worker's
-     transformation stays inside what the probed site does.
+     method, the orchestrator runs a
+     [mutation probe](references/gates.md#mutation-probe) on it, which also
+     bounds what the worker may change there. A site whose probe survives
+     has no guard; it is left as it is and ledgered as `no coverage`.
    - `reachability`: removal of code that nothing can execute (unused
      symbols, unreachable statements, a branch on a constant, an import
-     nothing uses). The proof is static: no reference
-     anywhere in the tree by search or LSP, or the compiler or linter
-     reports it unused, or the condition is a literal; the
-     [gates reference](references/gates.md#reachability-proof) gives the
-     bar. "This cannot happen at runtime" is not a proof. No probe runs,
-     and the full gates in step 4 must still pass after removal.
+     nothing uses). The proof is static, to the bar the
+     [gates reference](references/gates.md#reachability-proof) sets.
+     "This cannot happen at runtime" is not a proof. No probe runs, and
+     the full gates in step 4 must still pass after removal.
 
    Say in the report which class each applied entry used. The operator
    chose to skip uncovered code; applying inert edits and dead-code
@@ -142,7 +136,8 @@ supplies the recurring wake-up, and each firing re-enters this skill from
    not retried every tick.
 4. **Rerun the gates.** Run the repository formatter on the touched files,
    layout only, as the gates reference defines it. Then, on that tree, run
-   build, typecheck, and the full test suite yourself and read the output. The
+   build, typecheck, lint when the repository names one, and the full test
+   suite yourself and read the output. The
    worker's report is a claim, not evidence. A fresh failure goes back to
    the worker as the one follow-up round §3 describes, briefed with the
    command and its output. When the advisor tool is available, call it on
@@ -160,7 +155,9 @@ supplies the recurring wake-up, and each firing re-enters this skill from
    batched across units, never sweeping in files the pass did not touch.
 7. **Report** in one line: the unit, the catalog entries applied with their
    proof class, lines removed and added, the gate commands and their
-   results, and the commit hash. Then one line per site or unit skipped on
+   results, and the commit hash. Then one line per report-only item the
+   scout found in the unit, with its location, and one line per site or
+   unit skipped on
    this pass, with the reason. A landed unit is a state change; always say
    so.
 
@@ -210,7 +207,8 @@ default.
 **The scout brief** carries: the repository's absolute path, the catalog
 path, the ledger's current entries, the exclusion list from §1 step 3, and
 the return shape (ranked units, matched entries with lines, test files
-referencing each unit, and the security-boundary units skipped, each with
+referencing each unit, report-only items in each unit with lines, and the
+security-boundary units skipped, each with
 its path and the boundary matched). It runs read-only: search, read, and LSP only, no
 edits, no commands that write.
 

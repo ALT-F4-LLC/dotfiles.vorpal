@@ -99,8 +99,9 @@ worker never touches, and what looks like cruft and is not.
   is runtime output a downstream parser may read. Search the repository's
   alerting and dashboard config for the literal before the probe; a match
   leaves the line alone.
-- Proof: `probe`; a test must capture the log output. A unit with no such
-  test is ledgered `no tests`.
+- Proof: `probe`; a test must capture the log output. A site whose tests
+  do not capture the output is ledgered `no coverage`; a unit with no tests
+  is `no tests`.
 - Source: unsourced.
 
 ### Unjustified lint suppression

@@ -163,11 +163,12 @@ issue per row of every `<scratchDir>/issues/index.<n>.tsv`, in this
 session, from the repository root. In the snippets below `$SCRATCH`,
 `$PASS`, and `$NOW` hold the scratch path, the pass number, and the
 timestamp from §1. The row's key is the replay key: a repeated pass on
-unchanged bytes returns the original issue, open or closed. Once the bytes change the key changes, so a cut the operator
-declined is skipped by title instead: a row whose title matches a closed
-`corpus-cut` issue labelled `wont-do` files nothing and records that
-issue's id. To decline a cut, run `docket issue label add <id> wont-do`,
-then close it. A landed cut is closed without the label and never skipped.
+unchanged bytes returns the original issue, open or closed. Once the
+bytes change the key changes, so a cut the operator declined is skipped
+by title instead: a row whose title matches a closed `corpus-cut` issue
+labelled `wont-do` files nothing and records that issue's id. To decline
+a cut, run `docket issue label add <id> wont-do`, then close it. A
+landed cut is closed without the label and never skipped.
 
 The shards hold carried entries in the slim form you passed. Restore each
 from the committed ledger, and stop if any restored entry disagrees with

@@ -9,9 +9,9 @@ description: >-
   installed corpus exactly: registers missing versions, restores one retired
   by mistake, retires every version the corpus no longer declares, and
   reports orphaned workflow names, frozen-row conflicts, drifted sources,
-  and dangling payload, fragment, or packet references it must not fix. Read-only until it prints a
-  plan and the operator approves. Registry only; corpus authoring belongs to
-  docket-refit.
+  and dangling payload, fragment, or packet references it must not fix.
+  Read-only until it prints a plan and the operator approves. Registry
+  only; corpus authoring belongs to docket-refit.
 ---
 
 # docket-reconcile
@@ -64,8 +64,9 @@ lint.
 - **Sources:** every binding workflow row's `source_path` still hashes to
   its `source_sha256`, or activation refuses the run.
 
-After a successful pass, the planner prints no actionable line and its
-target counts equal the live counts in both registries.
+After a successful pass, the planner prints no REGISTER, RESTORE, or
+DEPRECATE line, and its target counts equal the live counts in both
+registries, excluding any workflow name under CONFLICT.
 
 **Automation first is the primary goal.** The plan is derived from the
 corpus mechanically, never from judgment. Whatever it cannot resolve
@@ -78,8 +79,7 @@ The approval before any registry write stays; it authorizes this pass.
 
 **Not `docket-refit`.** You change registry rows only, never a workflow
 TOML, a schema file, a contract, a version bump, or a definition; when the
-corpus is wrong, stop and say so. Fixing it is `docket-refit`'s
-contract.
+corpus is wrong, stop and say so. Fixing it belongs to `docket-refit`.
 
 ## Cwd discipline — read this before running anything
 

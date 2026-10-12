@@ -1,6 +1,6 @@
 ---
 fragment: severity-ladder-general
-version: 10
+version: 11
 ---
 # Severity ladder: general
 
@@ -69,12 +69,9 @@ payload schema and this mapping. Do not substitute security-track labels.
 The observed/unobserved split is the only route to `medium`. Grade it from
 your evidence, not from how much you want the finding fixed: an unobserved
 Concern you feel strongly about is still `medium`, and an observed one is
-`high` even when the fix is one line. `info` is not a substitute for a
-Question or Praise. Use the contract's existing representation; do not invent
-fields or encode missing judgment as a defect severity.
+`high` even when the fix is one line.
 
-**Only a Blocker opens a fix round.** Neither a Concern nor a Suggestion
-recruits another automatic fix round. Preserve unresolved findings and their
+**Only a Blocker opens a fix round.** Preserve unresolved findings and their
 identities under the re-review contract; do not suppress a supported
 Blocker to finish the loop or promote a preference to continue it. No
 Blockers means no severity-triggered fix round, not permission to publish:
@@ -88,10 +85,11 @@ the aggregation contract for cluster membership, severity order, and
 `hold_spread` calculation; do not assume an unstated formula or tune a
 finding's severity to obtain a routing outcome.
 
-**Questions and Praise stay outside severity.** Neither `info` nor `blocker`
-means "could not judge," and a judgment a Question blocks stays incomplete
-while independent work continues. Praise lives in the body and never enters
-cluster arithmetic.
+**Questions and Praise stay outside severity.** No severity, `info` and
+`blocker` included, stands in for a Question, Praise, or "could not judge."
+Use the contract's existing representation; do not invent fields. A judgment
+a Question blocks stays incomplete while independent work continues. Praise
+lives in the body and never enters cluster arithmetic.
 
 **Report every finding; do not self-filter for importance.** Preserve
 supported minor findings for downstream filtering. Tool detectability does

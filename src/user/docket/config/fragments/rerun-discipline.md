@@ -1,6 +1,6 @@
 ---
 fragment: rerun-discipline
-version: 13
+version: 14
 ---
 # Re-run discipline
 
@@ -59,9 +59,8 @@ comparison mechanism; it does not establish a defect in the reviewed change.
 A code-mutating probe, including a positive control or planted mutant, runs
 only in a private copy of the state being tested. Keep the mutation confined
 to that copy and preserve the control result and mutation diff as evidence.
-That evidence lands inline in the step's emitted artifact, the implement
-step's change-summary, not as a scratch-directory path another step cannot
-read. Never plant or undo a scratch mutation in the shared checkout.
+That evidence lands inline in your own seat's emitted findings or
+investigation, not as a scratch-directory path another step cannot read. Never plant or undo a scratch mutation in the shared checkout.
 
 Never use `git stash` to obtain a clean tree: the stash stack is shared by the
 repository's worktrees. For a committed comparison base, use the one baseline

@@ -12,13 +12,13 @@ export const meta = {
 
 // Pin models to avoid inheriting the caller's quota-limited model.
 const AGENT_CONFIG = {
-  discovery: { model: 'sonnet', effort: 'high' },
-  sizing: { model: 'sonnet', effort: 'high' },
+  discovery: { model: 'haiku', effort: 'medium' },
+  sizing: { model: 'haiku', effort: 'medium' },
   read: { model: 'sonnet', effort: 'high' },
   coverage: { model: 'opus', effort: 'medium' },
   refill: { model: 'sonnet', effort: 'high' },
-  crossBoundary: { model: 'fable', effort: 'high' },
-  verify: { model: 'sonnet', effort: 'high' },
+  crossBoundary: { model: 'opus', effort: 'medium' },
+  verify: { model: 'haiku', effort: 'medium' },
 }
 
 const SHARD_LINES = 1500

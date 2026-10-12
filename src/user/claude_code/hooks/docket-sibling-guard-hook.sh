@@ -30,7 +30,9 @@
 #              id is never spelled that way; a glob standing for the `.d`
 #              (`STEP-7.[d]`, `STEP-7*`); the caller's own dir followed by a
 #              `..` component; and a `find` that negates the own name
-#              (`! -name STEP-N.d`) to reach everything else. Not only `rm
+#              (`! -name STEP-N.d`) to reach everything else. An own-file
+#              leaf (`STEP-N-x-$m`) with no own dir before it in the word is
+#              denied too, with a reason naming the full-path form. Not only `rm
 #              -rf`: a redirect into a sibling's token file, `mv`, `find
 #              -delete`, `chmod`, or a variable assignment that a later `rm
 #              $d` in the same call consumes all name the dir, and an executor
@@ -1367,7 +1369,9 @@ END {
             # SCRATCH: any word naming a strangers scratch dir; a `find`
             # negating the own name reaches every stranger at once.
             if (own_mode != "unknown") {
-                if (foreign_scratch(w, docket_leaf && !prev_redirect_op)) report("SCRATCH", T_TOKEN)
+                # T_LEAF still set here means the token was the own-file
+                # leaf shape with no own dir before it in the word.
+                if (foreign_scratch(w, docket_leaf && !prev_redirect_op)) report(T_LEAF ? "SCRATCH_OWN_LEAF" : "SCRATCH", T_TOKEN)
                 if (verb == "find" && (w == "!" || w == "-not")) negated = 1
                 if (verb == "find" && negated && own_mode == "known" && scratch_token(w) && T_NUM == own) report("SCRATCH", "everything but " T_TOKEN)
             }
@@ -1549,6 +1553,8 @@ fi
 
 log_decision "deny" "$CLAUSE"
 case "$CLAUSE" in
+    SCRATCH_OWN_LEAF)
+        deny "$REASON_PREFIX \`${DETAIL}\` is your own file's name, but this guard admits it only written inside your own dir in the same word: <TMP>/STEP-${OWN_STEP}.d/STEP-${OWN_STEP}-..., with <TMP> spelled as the literal scratch root path. A bare name after a \`cd\` is not admitted, because the guard cannot tell which directory it lands in. Retry with the full path." ;;
     SCRATCH)
         deny "$REASON_PREFIX this command names another step's scratch directory (${DETAIL}); ${OWN_TEXT}. A sibling's leftover dir is the conductor's to sweep at reap, never an executor's. If it blocks your step, record that as a finding in your step report and do not retry. If this command performs no operation on that directory and only mentions it in prose, write the prose with the Write tool where you have it, or through a heredoc with a quoted delimiter (<<'EOF'), which this guard does not read at top level unless another leaf in the same command names an interpreter, in which case the whole command is scanned; inside a substitution it skips that body only when the body holds no quote, backtick, backslash, # or \$ and its parens balance. If a search pattern must match a step id and the command operates on no sibling directory, spell the pattern \`STEP.[0-9]+\` (with grep -E or rg), which this guard does not read as a scratch directory. If the command only hands sibling step ids to a docket read verb and touches no directory, spell each id literally (for example \`docket step artifacts STEP-7; docket step artifacts STEP-8\`). Otherwise, rewording a command that operates on another step's directory is not authorized." ;;
     WORKTREE)

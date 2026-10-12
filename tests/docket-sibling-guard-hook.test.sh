@@ -433,6 +433,7 @@ case_command_shapes() {
     assert_deny_reason "for d in a; do rm -rf ${SIB_DIR}/\$d; done | cat" executor-write "$WAVE_42" "another step's scratch directory" "for loop in a non-last pipeline stage"
     assert_deny_reason "while true; do rm -rf ${SIB_DIR}/x; break; done | cat" executor-write "$WAVE_42" "another step's scratch directory" "while loop in a non-last pipeline stage"
     assert_deny_reason "ls | while read d; do rm -rf ${SIB_DIR}/\$d; done | cat" executor-write "$WAVE_42" "another step's scratch directory" "read loop in a non-last pipeline stage"
+    assert_deny_reason "for d in a; do echo x > ${SIB_DIR}/\$d; done" executor-write "$WAVE_42" "another step's scratch directory" "for loop redirecting into a sibling's dir through a parameter"
     assert_deny_reason "ls | while read d; do [ -n \"\$d\" ] || continue; rm -rf ${SIB_DIR}/\$d; done 2>&1 | cat" executor-write "$WAVE_42" "branches on a variable" "read-value refusal from a stage that merges stderr into the pipe"
     assert_verdict "rm -rf ${SIB_DIR} | cat" executor-write "$WAVE_42" DENY "simple rm in a non-last pipeline stage"
     assert_verdict "pkill node | cat" executor-write "$WAVE_42" DENY "simple pkill in a non-last pipeline stage"
@@ -1234,6 +1235,16 @@ case_own_leaf_expansions() {
     assert_verdict "cat ${OWN_DIR}/STEP-4-\$i.json" executor-read "$WAVE_42" DENY "own dir carrying a prefix of the own id"
     assert_verdict "cat ${OWN_DIR}/STEP-420-\$i.json" executor-read "$WAVE_42" DENY "own dir carrying the own id extended"
     assert_verdict "cat STEP-42-\$i.json" executor-read "$WAVE_42" DENY "own leaf shape without the own dir before it"
+    # That deny names the admitted full-path form instead of a sibling's dir.
+    local bare_own_leaf="cd ${OWN_DIR} && for m in a b; do git diff > STEP-42-mutant-\$m.diff; done"
+    assert_deny_reason "$bare_own_leaf" executor-write "$WAVE_42" "<TMP>/STEP-42.d/STEP-42-" "bare own leaf after a cd names the full-path form"
+    assert_deny_reason_lacks "$bare_own_leaf" executor-write "$WAVE_42" "another step's scratch directory" "bare own leaf after a cd is not called a sibling's dir"
+    assert_verdict "for m in a b; do git diff > ${OWN_DIR}/STEP-42-mutant-\$m.diff; done" executor-write "$WAVE_42" ALLOW "full-path own leaf in a loop's redirect"
+    local not_own_leaf
+    for not_own_leaf in "echo x > ${OWN_DIR}/STEP-7-\$m.diff" "echo x > STEP-420-\$m.diff" "echo x > STEP-42-\$(date).diff" "cat ${OWN_DIR}/STEP-42-\$i/../x"; do
+        assert_deny_reason "$not_own_leaf" executor-write "$WAVE_42" "another step's scratch directory" "not an admitted own leaf keeps the sibling reason: ${not_own_leaf}"
+        assert_deny_reason_lacks "$not_own_leaf" executor-write "$WAVE_42" "<TMP>/STEP-42.d/STEP-42-" "not an admitted own leaf gets no full-path hint: ${not_own_leaf}"
+    done
     assert_verdict "cat ${OWN_DIR}/STEP-42-\$i/../../STEP-7.d/t" executor-read "$WAVE_42" DENY "own leaf followed by a traversal into a sibling"
     assert_verdict "cat ${OWN_DIR}/STEP-42-\$(date).json" executor-read "$WAVE_42" DENY "command substitution in the own leaf"
     assert_verdict "cat ${OWN_DIR}/STEP-42-\${x:-y}.json" executor-read "$WAVE_42" DENY "parameter operator in the own leaf"

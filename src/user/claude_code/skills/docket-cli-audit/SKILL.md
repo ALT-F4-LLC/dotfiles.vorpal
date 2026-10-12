@@ -57,9 +57,9 @@ hook parsing an output shape, a script passing a flag.
 
 Report-only, never edited: `src/user/claude_code/CLAUDE.md` and
 `src/user/claude_code/references/working-agreement.md` (the operator's own
-charter). The three generated evidence files (`cli-inventory.json`,
-`cli-fixtures.json`, `sweep-scenario.json`) are evidence, not prose, and are
-excluded from the audit. Never run `just activate`. Never point a probe at
+charter). The generated `cli-inventory.json` and `cli-fixtures.json`, and the
+hand-authored `sweep-scenario.json`, are evidence, not prose, and are excluded
+from the audit. Never run `just activate`. Never point a probe at
 `~/.docket` or `~/.config/docket`.
 
 `$ARGUMENTS` may carry `--no-sweep`: skip step 2 and audit against the

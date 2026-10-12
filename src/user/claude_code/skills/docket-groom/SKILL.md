@@ -693,8 +693,11 @@ land via `docket issue file add` (appends), scope via
 `docket issue edit --scope` (replaces), size via
 `docket issue edit --size <tier>` under the
 [sizing reference](../docket/references/sizing.md)'s measures, with the
-five counts in the drafting comment: one entry per file the description
-or a gap's `Files:` and `Scope:` header lines name. Validate existing paths in the checkout; for an
+five counts in the drafting comment. Each file the description names
+becomes one `docket issue file add` entry. An issue filed from a step's
+gap file carries that file's header lines: `Files:` lists every file the
+fix touches, one `docket issue file add` entry each, and `Scope:`, when
+present, lists the globs that bound it for `--scope`. Validate existing paths in the checkout; for an
 explicitly intended new file, confirm the proposed location against the
 repo layout and check that the installed Docket accepts planned paths. If
 it does not, record the readiness limitation rather than inventing an
@@ -887,7 +890,7 @@ is the approval; do not add members the proposal did not list.
 
 A **split** proposes the pieces of one issue over the
 [sizing reference](../docket/references/sizing.md)'s cap, in the shape
-that reference's split section defines: the four size measures and the
+that reference's split section defines: the five size measures and the
 outcome boundaries as evidence; the original rescoped to the first
 outcome with its exact new title, criteria, files, and scope; one new
 issue per further outcome with title, kind, priority, parent, carried
@@ -913,7 +916,7 @@ Then the `depends_on` links, then the rescope of the original in one
 `--scope` replace the stored lists, so every kept path is named), then
 the comment on the original. Piece ids are named placeholders resolved
 from each create's JSON output. The idempotency key adds the piece number
-to the epic's project, pass id, and proposal number, for the same reason.
+to the original's project, pass id, and proposal number, for the same reason.
 Routing and size labels are re-judged per piece after the split lands,
 under §2b, never copied from the original. Provenance labels
 (`review-gap`, `loop-bound`, `conduct`, `tribunal`) are never carried to a

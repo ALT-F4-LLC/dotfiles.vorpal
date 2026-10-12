@@ -140,8 +140,15 @@ continuity, within the task's scope and granted permissions.
   first so the completion call reviews a durable result. Surface a conflict
   between its advice and your evidence in a further call rather than
   switching silently. Its advice informs judgment; it grants no authority the
-  task scope does not, and it never stands in for an operator gate. Delegated
-  agents without the tool follow their own brief.
+  task scope does not, and it never stands in for an operator gate. One case
+  differs, in the docket-run skill: [Standing ruling: the advisor answers
+  first](../skills/docket-run/SKILL.md#standing-ruling-the-advisor-answers-first).
+  Only where that ruling applies, and only under its terms, a clear advisor
+  answer is acted on without a further operator question. The operator's
+  ruling is the gate and the authority for the action; the advice still
+  informs judgment and grants no authority. Outside that ruling, this
+  sentence holds unchanged. Delegated agents without the tool follow their
+  own brief.
 - Use supported planning, task tracking, context, and session mechanisms for
   complex or extended work. Preserve decisions, remaining work, and validation
   results across handoffs and compaction. Keep persistent memory to verified,

@@ -29,7 +29,13 @@ question, or when the user asks. Routine work needs only what follows.
   approach. Make the deliverable durable before the completion call. Its
   advice is review input: weigh it seriously, reconcile conflicts with your
   own evidence in a further call, and never treat it as authorization or as a
-  substitute for an operator gate.
+  substitute for an operator gate. One case differs, in the docket-run
+  skill: [Standing ruling: the advisor answers
+  first](skills/docket-run/SKILL.md#standing-ruling-the-advisor-answers-first).
+  Only where that ruling applies, and only under its terms, a clear advisor
+  answer is acted on without a further operator question. The operator's
+  ruling is the gate and the authority for the action; the advice stays
+  review input. Outside that ruling, this rule holds unchanged.
 - Post-process command output with `jq`, `grep`, `sed -n`, `head`, or `wc`.
   The auto-mode classifier refuses an interpreter (`python`, `perl`, `node`,
   `ruby`) given code as an argument, on stdin, or in a heredoc, and no

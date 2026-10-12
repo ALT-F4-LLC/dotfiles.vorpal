@@ -19,6 +19,8 @@
 # deleted when every commit on it is already on HEAD, by ancestry or as a
 # patch-equivalent cherry-pick. One that still carries a commit HEAD lacks is
 # kept and named, since deleting it would drop the only ref to that work.
+# HEAD is the starting session's checkout, so a branch integrated on another
+# branch reads as kept from here.
 #
 # STDOUT IS CONTEXT. SessionStart stdout reaches the model, so each removed
 # entry, deleted ref and kept ref is named there and a repo with nothing to
@@ -45,6 +47,9 @@ git for-each-ref --format='%(refname)' 'refs/heads/worktree-wf_*' 'refs/heads/wo
             echo "kept $ref $sha: it carries commits HEAD lacks"
             continue
         fi
+        # Another session may have added a worktree on this branch since the
+        # list above was read; a freshly cut branch has no commit HEAD lacks.
+        git worktree list --porcelain 2>/dev/null | grep -qxF "branch $ref" && continue
         git update-ref -d "$ref" "$sha" && echo "deleted $ref $sha"
     done
 

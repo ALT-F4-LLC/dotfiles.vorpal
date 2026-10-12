@@ -2,7 +2,9 @@
 
 Consumer: the docket-run skill, step 3. When the installed `wave-usage.js`
 is absent (drift, stop-and-report), the conductor delegates the usage join
-to one `executor-read` agent, briefed verbatim with the text below.
+to one `executor-read` agent. The brief is the text below verbatim, followed
+by two inputs the conductor appends: the journal directory path and the
+dispatched step ids.
 
 **Where the numbers are.** The journal directory holds three
 file kinds, and only one carries usage:
@@ -19,9 +21,11 @@ map `agentId` to a step through the agent's first `user` message.
 
 The transcript writes one content block per line under a shared message
 id, so dedupe assistant lines by `message.id` (the last line wins for
-usage) before summing. Return four integer units per dispatched step, as
-wave-usage.js does: `input_tokens`, `output_tokens`,
-`cache_creation_tokens`, and `cache_read_tokens`.
+usage) before summing. Return a JSON array of rows shaped
+`{step, unit, quantity}`, as wave-usage.js does and `docket dispatch
+backfill-usage --from-json -` consumes: four rows per dispatched step, one
+for each unit in the order `input_tokens`, `output_tokens`,
+`cache_creation_tokens`, `cache_read_tokens`, each `quantity` an integer.
 
 **Join on the obligation the brief carries, never on the first `STEP-N`
 mentioned.** An agent owns a step only if its brief tells it to `docket

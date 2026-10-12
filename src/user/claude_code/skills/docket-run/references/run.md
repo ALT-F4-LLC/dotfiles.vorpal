@@ -1,11 +1,11 @@
 # Docket engine CLI — `docket run`
 
-Covers the `docket run` family and `docket pin show`, the single copy of this
-engine CLI contract,
-split out of docket's
-[reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
-(consumer: the docket-run skill), which still holds the response-shape
-contract and parsing traps. Verified 2026-10-02 against `docket
+This file is the single copy of the engine CLI contract for the `docket run`
+family and `docket pin show` (consumer: the docket-run skill), except two
+verbs: `run verify-pins` is documented in [pins.md](pins.md), and `run fact
+add` in the docket-run [SKILL.md](../SKILL.md). Response shapes and parsing
+traps live in docket's
+[reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes). Verified 2026-10-02 against `docket
 nightly-229-g7f304cc` (commit `7f304cc`, built `2026-10-02T22:01:56Z`) by
 `--help`/`--version` and the docket-cli-audit skill's runtime sweep
 (`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
@@ -85,7 +85,7 @@ breaches again — which is why raising the cap and resuming are two commands:
 
 ```bash
 docket run budget RUN-3 --set 50 --reason "estimate was low"
-docket run resume RUN-3
+docket run resume RUN-3 < <scratchpad>/conductor.d/RUN-3.token
 ```
 
 <a id="run-issue"></a>
@@ -671,8 +671,10 @@ and this verb record it, since they are one fact about the issue with two
 actors. `issue list` shows `⊘ abandoned` in the status column, `issue show`
 prints the status and the resolution side by side, and `issue show --json`
 carries a `resolution` key — emitted **only when set**. The resolution says
-*that* a run gave up; **which run, when, and why** is the `Run disposition`
-section `issue show` prints beside it (in [reference.md](../../docket/reference.md), under `issue show`). `issue reopen` clears it.
+*that* a run gave up; **which run, when, and why** is the `run_disposition`
+key `issue show --json` carries, shaped `{run, disposition, by, reason, at}`
+(see [reference.md](../../docket/reference.md#issue-show)). `issue reopen`
+clears the resolution.
 Refusals: run not `active` or `waiting-human` → `CONFLICT` (exit 4); issue
 not part of the run → `NOT_FOUND` (exit 2); every step already terminal →
 `CONFLICT` (nothing to abandon); missing `--reason` → `VALIDATION_ERROR`
@@ -829,7 +831,7 @@ breach:
 ```bash
 docket run budget RUN-3                    # what stopped it, and at what
 docket run budget RUN-3 --set 50 --reason "estimate was low"
-docket run resume RUN-3                    # a separate, deliberate act
+docket run resume RUN-3 < <scratchpad>/conductor.d/RUN-3.token  # a separate, deliberate act
 ```
 
 **It does not change the run's status.** A breached run is `waiting-human`

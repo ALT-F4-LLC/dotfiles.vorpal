@@ -44,7 +44,7 @@ then **completed** with an artifact.
 | `step approve\|reject STEP-N --authority A [--authority-ref R] [--note …] [--value V]` | **conductor** | `type="human"` gate steps, and a materialized held step of either kind (a vote-minted one once a failed tally parks it) |
 | `step resolve STEP-N --as … --authority A [--authority-ref R]` | **conductor** | `waiting-human` resolutions; `retry` **resets the retry budget** (moves `attempt_base`) — `attempt` itself and the `failed_attempts`/`reaped_claims` breakdown are never reset and not incremented by it |
 | `step show STEP-N` | no | read-only; effective status |
-| `step list (--run RUN-N \| --issue ISSUE-N)` | no | read-only; steps with id, run, instance, issue, kind, effective status, attempt (plus its `failed_attempts`/`reaped_claims` breakdown when nonzero), expected_cost — in (issue, creation) order. Scope by `--run` (the whole run), `--issue` (that issue across every run holding a step for it), or both (that issue inside that run); at least one is required. The budget-projection enumeration: step ids are a store-wide sequence, so id arithmetic cannot enumerate a run. `--issue` is the issue-shaped question a conductor actually holds. Watch-eligible. |
+| `step list (--run RUN-N \| --issue ISSUE-N)` | no | read-only; steps with id, run, instance, issue, kind, effective status, attempt (plus its `failed_attempts`/`reaped_claims` breakdown when nonzero), expected_cost — in (issue, creation) order. Scope by `--run` (the whole run), `--issue` (that issue across every run holding a step for it), or both (that issue inside that run); at least one is required. Enumerates a run for budget projection, since step ids are a store-wide sequence and id arithmetic cannot. Watch-eligible. |
 | `step context STEP-N [--live] [--meta]` | no | re-emits `context` read-only |
 | `step render STEP-N [--template F]` | no | context bundle → rendered work packet |
 | `step artifacts STEP-N` | no | read-only; lists what the step PRODUCED, sizes not bodies |
@@ -273,8 +273,7 @@ threshold is consulted** — the worker's whole answer was "this work cannot
 be done here, and here is the residue", and routing `pass` over it would
 schedule the issue's entire downstream pipeline over an empty change.
 `step resolve` is the operator's disposition. Gaps recorded **beside real
-content** route by the normal gate verdict and threshold. When the gap belongs to a different
-repository, `docket issue move --project` re-homes the filed issue.
+content** route by the normal gate verdict and threshold.
 
 <a id="step-fail"></a>
 
@@ -377,12 +376,11 @@ first, and the report counts one attempt for work that happened twice.
 whose voters have not cast — a run must not be hostage to a quorum that
 never arrives.
 
-**`rerun-gates` re-measures without re-executing**. Most retries in
-practice are not about the work at all: a gate fails because a trust entry
-is missing or a tool is broken, someone fixes that out of band, and the
-step's own output was never in question. Using `retry` for this case pays
-for a full re-execution, and the re-execution is **destructive**: it diffs
-a tree that already contains the change, so the diff comes back empty and
+**`rerun-gates` re-measures without re-executing**. It covers a gate that
+failed for a reason outside the step's output, such as a missing trust
+entry or a broken tool fixed out of band. `retry` in that case re-executes
+the whole step, and the re-execution is **destructive**: it diffs a tree
+that already contains the change, so the diff comes back empty and
 supersedes the real `issue.diff` with 0 bytes.
 
 `rerun-gates` rewinds the step to the point just after its artifact recorded and
@@ -397,8 +395,7 @@ and says so, naming `retry` instead: a `pre = true` gate runs at claim and
 is not part of the completion saga, so a step with only those has nothing
 to re-run.
 
-Two artifact rules follow from the same reasoning and apply to **every**
-path, not just this verb. A recomputed `issue.diff` that records **no
+Two artifact rules apply to **every** path, not just this verb. A recomputed `issue.diff` that records **no
 change** does not supersede one that recorded a change — an empty diff is
 evidence that this measurement had nothing to compare, never evidence that
 the change vanished (a *first* empty diff still records; a genuine
@@ -406,9 +403,7 @@ the change vanished (a *first* empty diff still records; a genuine
 not a supersession at all.
 
 **`override-pass --batch` extends the ruling to identical later failures in
-the same run** (schema v24). The dominant measured operator toil is
-environmental gate parks — the same "sandbox artifact, not a code defect"
-ruling re-made for every step of a run. With `--batch`, the override-pass
+the same run** (schema v24). With `--batch`, the override-pass
 also records one grant per failed completion gate, keyed by the failure
 **signature**: gate name + exit code + reason classification. A later step
 of the **same run** whose every failing gate matches a grant routes the
@@ -425,8 +420,7 @@ quorum, a rejected hold, a gap-only completion), is `VALIDATION_ERROR`
 auto-passed, so it parks with the block named, for individual resolution.
 
 **`fix-round` is the sanctioned re-entry into an exhausted fix loop**.
-Exhausting `max_fix_loops` parks the issue, correctly; without this verb
-the only alternative is going around the engine. `fix-round` authorizes
+Exhausting `max_fix_loops` parks the issue. `fix-round` authorizes
 **one** more loop for **that issue** and enters it in the same
 transaction, minting a fresh fix+review round judged like every other.
 

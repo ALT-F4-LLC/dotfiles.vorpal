@@ -10,9 +10,11 @@ not say how a run ended. Before characterizing it or re-presenting a
 parked decision, read that run's terminal events by kind:
 
 ```bash
-docket events list --run $RUN --json --tail 400 | jq -r '
-  (if type == "object" and has("data") then .data else . end)
-  | (if type == "array" then . else .events end)     # missing .events beats a silent empty read
+docket events list --run $RUN --json=v2 --tail 400 --limit 400 | jq -r '
+  .data
+  | if .total != (.items | length)
+    then error("partial read: \(.items | length) of \(.total) events; raise --tail and --limit")
+    else .items end
   | .[] | select(.kind as $k | ["issue-abandoned","step-resolved","step-approved","step-rejected","run-done","run-abandoned"] | index($k))
   | "\(.seq) \(.kind) \(.issue // "") \(.step // "") \(.data | tojson)"'
 ```

@@ -1279,8 +1279,8 @@ own row reads `recorded`, and each pending row of its parked issue reads
 `held-by-park`; neither verdict fails the combined close's verify stage.
 A verify refusal after a park is therefore a finding: a `genuinely-missing`
 row names a step that is claimed or otherwise unofferable. Check it with
-`docket step show STEP-N` before acting, then re-close with a bare `docket
-dispatch close --run $RUN --json`. Never rerun `--backfill-from` after a
+`docket step show STEP-N`, and once that step has recorded or been reaped,
+re-close with a bare `docket dispatch close --run $RUN --json`. Never rerun `--backfill-from` after a
 verify or close refusal: the back-fill stage already landed, and under the
 default `--on-duplicate refuse` its rows would refuse the whole batch.
 

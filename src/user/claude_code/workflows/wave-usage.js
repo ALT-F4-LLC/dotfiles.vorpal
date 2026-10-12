@@ -259,12 +259,15 @@ const exclude = Array.isArray(input.exclude) ? input.exclude.map(String) : []
 // `cd <cwd> && ` prefix), and a brief that opens as a step executor joins no
 // cast at all, wherever its packet puts the quote. The opening is read from
 // the first 200 characters, so a seat whose case quotes an executor brief
-// further down is still a seat.
+// further down is still a seat. Those characters are counted after the
+// harness's one-line `[Workflow harness — …]` preamble, which can open the
+// bootstrap ahead of the brief and is itself longer than 200 characters.
 const BRIEF_DEFS_JQ = `def bootstrap_candidate: .type == "user"
     and (.message.content | type == "string"
         and startswith("[Workflow harness — user request]") | not);
 def bootstrap_text: .message.content | if type == "string" then . else tojson end;
-def cast_join: if .[0:200] | contains("You are executing one step of a Docket run") then null
+def cast_join: if sub("^\\\\[Workflow harness —[^\\\\n]*\\\\n"; "") | .[0:200]
+        | contains("You are executing one step of a Docket run") then null
     else capture("(?:^|\\\\n|\\\\\\\\n)[ \\\\t]*(?:Cast with:[ \\\\t]*)?(?:cd\\\\s+\\\\S+\\\\s+&&\\\\s+)?docket vote cast\\\\s+(?<proposal>\\\\S+)\\\\s+--voter\\\\s+(?<voter>\\\\S+)") end;
 `
 const EXTRACT_JQ = `${BRIEF_DEFS_JQ}[inputs | fromjson? | select(type == "object")] as $lines
@@ -362,14 +365,16 @@ function normalizeKeys(x) {
 // appears only in labels and error text.
 function classify(raw, mode, file) {
     const x = normalizeKeys(raw)
+    // A seat needs both halves of its key. The extract relay has copied jq's
+    // `cast: null` as {proposal: "", voter: ""}, which seated a step executor
+    // under ["",""] and dropped its step's usage; such a cast is no cast.
+    const seat = x.cast && x.cast.proposal && x.cast.voter ? [x.cast.proposal, x.cast.voter] : null
     if (mode === 'seats') {
-        if (!x.cast) return { bucket: 'unattributed', key: null, label: file }
-        const key = [x.cast.proposal, x.cast.voter]
-        return { bucket: 'row', key, label: key.join('/') }
+        if (!seat) return { bucket: 'unattributed', key: null, label: file }
+        return { bucket: 'row', key: seat, label: seat.join('/') }
     }
-    if (x.cast) {
-        return { bucket: 'seated', key: [x.cast.proposal, x.cast.voter],
-                 label: `${file} (${x.cast.proposal}/${x.cast.voter})` }
+    if (seat) {
+        return { bucket: 'seated', key: seat, label: `${file} (${seat.join('/')})` }
     }
     if (!x.bootstrap) {
         // The relaying agent said jq found no first `type:"user"` line. Twice

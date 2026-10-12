@@ -180,9 +180,11 @@ PUNCH_LIST_ITEM
   beyond the default. Groom groups items under epics and routes them.
 - Read each receipt back and record the issue id on the punch list.
 
-The deduplication ledger and receipt verification follow docket-postmortem's
+The deduplication ledger follows docket-postmortem's
 [deduplicate before creating](../docket-postmortem/references/filing.md#deduplicate-before-creating)
-section as written. Do not invent a second procedure.
+section as written; receipt verification follows its
+[worker-ready issue contract](../docket-postmortem/references/filing.md#worker-ready-issue-contract).
+Do not invent a second procedure.
 
 ## Final walkthrough: `punch-list reinspect`
 

@@ -185,7 +185,6 @@ const BATCH_VERDICT_SCHEMA = {
   required: ['verdicts'],
 }
 
-// TEST-BEGIN verify-budget — pure planning helpers, exercised without a run.
 function verifyBudget(readPlanSize, crossPairs) {
   return Math.max(0, AGENT_CAP - AGENT_CAP_MARGIN - DISCOVERY_AGENTS - readPlanSize - COMPLETENESS_RESERVE - crossPairs)
 }
@@ -237,7 +236,6 @@ function applyBatchVerdicts(batch, returns) {
   })
   return { upheld, unverified }
 }
-// TEST-END verify-budget
 
 function buildReadPlan(files, lineCounts) {
   return files.flatMap((file) => {

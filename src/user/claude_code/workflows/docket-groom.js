@@ -220,7 +220,7 @@ const LEDGER_SCHEMA = {
                 coverage: { type: 'string', description: 'What linked changes and related issues already deliver, verified by outcome' },
                 fit: { type: 'string', description: 'Fit with current goals, platforms, architecture, recorded decisions' },
                 evidence: EVIDENCE,
-                closeReason: { type: 'string', enum: ['', 'delivered', 'obsolete', 'superseded', 'rejected', 'cost'], description: 'Set only for close' },
+                closeReason: { type: 'string', enum: ['', 'delivered', 'obsolete', 'superseded', 'rejected', 'cost', 'unobserved'], description: 'Set only for close' },
                 mergeInto: { type: 'string', description: 'Canonical issue id for merge, else ""' },
             },
             required: ['decision', 'reason', 'needRemaining', 'coverage', 'fit', 'evidence', 'closeReason', 'mergeInto'],

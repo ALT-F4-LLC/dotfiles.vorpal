@@ -23,7 +23,8 @@ export const meta = {
 // conversation. Invoke by scriptPath ONLY, at the installed path under
 // ~/.claude/workflows. If that installed file is missing, the corpus was
 // never activated after this script was added: the skill reports that and
-// falls back to running §3 inline itself, never launching the source copy
+// falls back to doing the work inline itself (§3's mining and §4's workflow
+// file parsing alike), never launching the source copy
 // under src/user/claude_code/workflows/docket-bootstrap.js instead.
 //
 // Stages (args.stage selects one launch; the skill runs "mine" during §3
@@ -49,7 +50,7 @@ export const meta = {
 //                    checkout path `trust list` records, never a project
 //                    name) to decide whether the entry binds here.
 //   gateCandidates — [{path, kind}] scripts/CI entrypoints the skill
-//                    enumerated inline in §1/§3, kind one of build | ci |
+//                    enumerated inline in §3, kind one of build | ci |
 //                    check | other. Mine only.
 //   smallRepo      — boolean; the skill's own §3 judgment ("combining them
 //                    only when the repo is small"), made in main and passed

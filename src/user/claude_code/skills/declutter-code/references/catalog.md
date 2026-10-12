@@ -10,7 +10,8 @@ Every entry carries a proof class the skill's §2 applies:
 
 - `inert`: the edit cannot change runtime behavior. Comments, dividers, a
   suppression the linter no longer needs, a cast the type checker no longer
-  needs. Build and typecheck must still pass; no test is required.
+  needs. Build, typecheck, and the lint gate must still pass; no test is
+  required.
 - `reachability`: removal of code nothing can execute. Proven statically as
   the [gates reference](gates.md#reachability-proof) describes; no probe.
 - `probe`: a transformation of live code. The site must fail a mutation

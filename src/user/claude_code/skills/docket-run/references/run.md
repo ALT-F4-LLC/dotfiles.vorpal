@@ -15,10 +15,10 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket run`](#run-commands) — 854 lines
+- [`docket run`](#run-commands) — 856 lines
   - [`run start`](#run-start) — 49 lines
   - [`run issue add|remove RUN-N DKT-N...`](#run-issue) — 38 lines
-  - [`run note add|list`](#run-note) — 30 lines
+  - [`run note add|list`](#run-note) — 32 lines
   - [`run refresh-scope`](#run-refresh-scope) — 33 lines
   - [`run refresh-body RUN-N --issue <ID> --reason R`](#run-refresh-body) — 27 lines
   - [`run refresh-files RUN-N --issue <ID> --reason R`](#run-refresh-files) — 28 lines
@@ -149,7 +149,9 @@ docket run note list RUN-N --json
 `add` requires exactly one of `--text` or `--file`; `--file -` reads stdin.
 `add` also requires `--authority operator|conductor`, with no default:
 `operator` when the note records the operator's words, `conductor` for the
-conductor's own ruling.
+conductor's own ruling. A note recording a decision the advisor-first
+standing ruling settled is `conductor` and names that ruling in its text,
+never `operator`: no person decided it.
 The note is capped at 16 KiB and one trailing newline is dropped from file
 input. Notes are append-only and event-logged; record a later correction
 instead of editing history. Adding is allowed while planning, active, or

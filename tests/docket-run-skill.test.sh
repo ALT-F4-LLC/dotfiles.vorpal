@@ -1623,6 +1623,142 @@ else
     fi
 fi
 
+# (bb) references/escalation.md follows the advisor-first ruling without
+# restating it: the call sits after the evidence and before the question, an
+# operator question carries the advisor's text, and the answer block records
+# who decided. The ruling's definitions stay in SKILL.md, so every
+# advisor-first command escalation.md fences is one of the ruling's own lines.
+# Regions are escalation.md's flattened paragraphs (section x's extract).
+#
+#   bb1 restore "before presenting any gate, park, or question to the
+#       operator" in the header, or delete the sentence naming the ruling
+#   bb2 move the consultation paragraph above the artifact-read paragraph, or
+#       below the paragraph that presents the gate through the question tool
+#   bb3 drop one of the four evidence items from the consultation paragraph
+#   bb4 delete the sentence putting the advisor's text in a fenced block
+#   bb5 reword the scope sentence to "may be settled by any agent, and
+#       approval extends"
+#   bb6 change `--authority operator` to `--authority conductor` on the
+#       answer block's lines
+#   bb7 change a fenced advisor-first line's grant to `--authority operator`,
+#       or alter one character of it
+#   bb8 add "An answer is clear when ..." to escalation.md
+esc_para() { # <anchor> <out>
+    [ "$(grep -cF -- "$1" "${WORK}/esc-flat")" -eq 1 ] || return 1
+    grep -F -- "$1" "${WORK}/esc-flat" > "$2"
+}
+esc_para_number() { # <anchor>, printing 0 unless exactly one paragraph carries it
+    if [ "$(grep -cF -- "$1" "${WORK}/esc-flat")" -eq 1 ]; then
+        grep -nF -- "$1" "${WORK}/esc-flat" | cut -d: -f1
+    else
+        echo 0
+    fi
+}
+contains "escalation: the file is read before anything goes to the advisor or the operator" \
+    "${WORK}/esc-flat" 'before putting any gate, park, or question to the advisor or the operator'
+contains "escalation: the standing ruling in SKILL.md governs the route" \
+    "${WORK}/esc-flat" '**Standing ruling: the advisor answers first** in [SKILL.md](../SKILL.md) governs'
+contains "escalation: every present, offer, or ask follows an advisor answer that was not clear" \
+    "${WORK}/esc-flat" 'Wherever this file says to present, offer, or ask the operator, the advisor was consulted first and its answer was not clear.'
+if grep -qF -- 'An answer is clear when' "${WORK}/esc-flat"; then
+    bad "escalation: escalation.md defines a clear answer in its own words; the definition lives in SKILL.md's ruling"
+else
+    ok "escalation: escalation.md leaves the definition of a clear answer to the ruling"
+fi
+
+consult_anchor='**Consult the advisor after the evidence and before the question.**'
+if esc_para "$consult_anchor" "${WORK}/consult"; then
+    contains "escalation: the advisor is consulted before anything is presented to the operator" \
+        "${WORK}/consult" 'When the session provides the `advisor` tool, call it before any gate, park, or question is presented to the operator'
+    contains "escalation: the call follows the gate verdicts, the full artifact read, the premise-check, and tracker status" \
+        "${WORK}/consult" 'the gate verdicts read, the artifact read in full, the premise-check run, and the status of every cited tracker read'
+    consult_at=$(esc_para_number "$consult_anchor")
+    consult_placed=1
+    for evidence_anchor in '**The artifact a question is framed from is read in full**' \
+        '**The premise-check runs before the question, not only before a filing.**' \
+        '**"Tracked by <ID>" is a claim with a status, and you read the status before you relay it.**' \
+        "**When the park followed a step's gates, read the verdicts before you present or characterize the outcome.**"; do
+        evidence_at=$(esc_para_number "$evidence_anchor")
+        if [ "$evidence_at" -eq 0 ] || [ "$evidence_at" -ge "$consult_at" ]; then
+            consult_placed=0
+            bad "escalation: the consultation paragraph does not follow exactly one '${evidence_anchor}' paragraph"
+        fi
+    done
+    for later_anchor in 'through the question tool, recommended option first' \
+        'On a clear advisor answer, with no question asked'; do
+        later_at=$(esc_para_number "$later_anchor")
+        if [ "$later_at" -eq 0 ] || [ "$later_at" -le "$consult_at" ]; then
+            consult_placed=0
+            bad "escalation: the consultation paragraph does not precede exactly one paragraph carrying '${later_anchor}'"
+        fi
+    done
+    if [ "$consult_placed" -eq 1 ]; then
+        ok "escalation: the consultation sits after the four evidence rules and before the question and the answer block"
+    fi
+else
+    bad "escalation: escalation.md does not carry exactly one '${consult_anchor}' paragraph"
+fi
+
+carries_anchor="**A question that follows an answer that was not clear carries the advisor's text.**"
+if esc_para "$carries_anchor" "${WORK}/carries"; then
+    contains "escalation: the advisor's text travels whole in a fenced block, labelled as review input" \
+        "${WORK}/carries" "Put it whole in your accompanying message, in a fenced block labelled as the advisor's answer and as review input"
+    contains "escalation: a question after a reconcile call carries both answers" \
+        "${WORK}/carries" 'after a reconcile call, both answers'
+    contains "escalation: a trust matter still carries the exact trust line" \
+        "${WORK}/carries" 'the exact `docket trust add ... -- <argv>` line the operator would run'
+else
+    bad "escalation: escalation.md does not carry exactly one '${carries_anchor}' paragraph"
+fi
+
+scope_anchor='**A gate disposition is scoped to the step it answered.**'
+if esc_para "$scope_anchor" "${WORK}/scope"; then
+    contains "escalation: a leftover park goes advisor-first and reaches the operator on an answer that is not clear" \
+        "${WORK}/scope" "goes advisor-first and reaches the operator when the advisor's answer is not clear, and approval never extends across contexts"
+    contains "escalation: a class carries exactly as far as its answer named, under that answer's authority" \
+        "${WORK}/scope" 'exactly as far as that class, under the authority of whoever gave it'
+else
+    bad "escalation: escalation.md does not carry exactly one '${scope_anchor}' paragraph"
+fi
+
+contains "escalation: an advisor-settled decision is never recorded as the operator's" \
+    "${WORK}/esc-flat" 'never record an advisor-settled decision `--authority operator`'
+contains "escalation: an advisor-settled note quotes the advisor under the ruling's prefix" \
+    "${WORK}/esc-flat" "the advisor's answer quoted, prefixed \`advisor-first ruling:\`"
+
+awk '
+    /^[[:space:]]*```/ { open = !open; bash = open && ($0 ~ /^[[:space:]]*```bash[[:space:]]*$/); next }
+    open && bash { print }
+' "$ESCALATION" > "${WORK}/esc-commands"
+for operator_form in 'docket step approve STEP-N --authority operator ' \
+    'docket step approve STEP-N --value <enum member> --authority operator ' \
+    'docket step reject  STEP-N --authority operator ' \
+    'docket step resolve STEP-N --as retry|skip|abandon-issue|override-pass --authority operator '; do
+    if [ "$(awk -v p="$operator_form" 'index($0, p) == 1' "${WORK}/esc-commands" | wc -l)" -eq 1 ]; then
+        ok "escalation: the answer block keeps '${operator_form}' for a decision the operator made"
+    else
+        bad "escalation: the answer block does not carry exactly one '${operator_form}' line"
+    fi
+done
+grep -F -- 'advisor-first' "${WORK}/esc-commands" > "${WORK}/esc-advisor-commands"
+if grep -F -- "$advisor_grant" "${WORK}/esc-advisor-commands" | grep -q '^docket step resolve STEP-N '; then
+    ok "escalation: an advisor-settled resolve is shown with ${advisor_grant}"
+else
+    bad "escalation: no fenced docket step resolve line carries ${advisor_grant}"
+fi
+while IFS= read -r esc_advisor_line; do
+    if grep -qxF -- "$esc_advisor_line" "${WORK}/advisor-commands"; then
+        ok "escalation: the '${esc_advisor_line%% --*}' advisor-first line is the ruling's own"
+    else
+        bad "escalation: a fenced advisor-first line is not one of the ruling's commands in ${SKILL}: ${esc_advisor_line}"
+    fi
+done < "${WORK}/esc-advisor-commands"
+if grep -qE -- '--authority (operator|conductor)( |$)' "${WORK}/esc-advisor-commands"; then
+    bad "escalation: a fenced advisor-first line records --authority operator or conductor: $(grep -E -- '--authority (operator|conductor)( |$)' "${WORK}/esc-advisor-commands" | head -1)"
+else
+    ok "escalation: no fenced advisor-first line records --authority operator or conductor"
+fi
+
 if [ "$fail" -ne 0 ]; then
     echo "docket-run-skill: FAIL — a sandbox lift without its precondition is the failure this pins; fix the skill, not the test." >&2
     exit 1

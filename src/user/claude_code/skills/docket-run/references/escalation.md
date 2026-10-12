@@ -1,10 +1,18 @@
 # Escalating to the operator
 
 Consumer: the docket-run skill, whose **Gates** section points here. Read
-this file in full before presenting any gate, park, or question to the
-operator. The panel mechanics and the standing rulings stay in the skill
-body; this file governs what a question carries, how a ruling is
-scoped and routed, and which answers the engine's verbs can honor.
+this file in full before putting any gate, park, or question to the
+advisor or the operator. The panel mechanics and the standing rulings stay
+in the skill body; this file governs what a question carries, how a ruling
+is scoped and routed, and which answers the engine's verbs can honor.
+
+**Every decision this file sends to the operator goes advisor-first.**
+**Standing ruling: the advisor answers first** in [SKILL.md](../SKILL.md)
+governs that route: which answer settles a decision, which classes never
+settle, the one reconcile call, and the session without the tool. This
+file adds only where the call sits and what the question then carries.
+Wherever this file says to present, offer, or ask the operator, the
+advisor was consulted first and its answer was not clear.
 
 **Every non-approval arrives with the panel's reasoning:** the tally and
 every judge's verdict, confidence, and one-line summary, not a count or
@@ -97,9 +105,30 @@ non-passing row (`--full` adds complete output). `step show` and `step
 artifacts` do not carry this, and the event stream renders a pass and a
 failure identically. Read exits too: a millisecond-fast `operation not
 permitted` measured the sandbox, not the code, and presenting it as a
-code failure invites an unreal override-pass. Present every gate through
-the question tool, recommended option first, each answer's real routing
-in its description, resolved from frozen definitions.
+code failure invites an unreal override-pass.
+
+**Consult the advisor after the evidence and before the question.** When
+the session provides the `advisor` tool, call it before any gate, park, or
+question is presented to the operator, and only with the evidence above in
+hand: the gate verdicts read, the artifact read in full, the premise-check
+run, and the status of every cited tracker read. The advisor reads your
+transcript, so a call made on a slice or a paraphrase weighs evidence
+nobody read. An answer the standing ruling counts as clear settles the
+decision, and no question is asked.
+
+**A question that follows an answer that was not clear carries the
+advisor's text.** Put it whole in your accompanying message, in a fenced
+block labelled as the advisor's answer and as review input, beside the
+evidence; after a reconcile call, both answers. Never fold it into the
+question text, an option, or your own finding, and state your recommended
+option separately, as your reading of the evidence. A class the ruling
+names as never clear carries the advisor's framing the same way, and a
+trust matter still carries the exact `docket trust add ... -- <argv>` line
+the operator would run.
+
+Present every gate the advisor's answer left unsettled through the
+question tool, recommended option first, each answer's real routing in its
+description, resolved from frozen definitions.
 
 **One gate, one proposal, one question.** Never bundle distinct gates
 into a shared proposal or question, even same-issue siblings, since a
@@ -108,20 +137,25 @@ made.
 
 **A gate disposition is scoped to the step it answered.** An
 override-pass on STEP-N settles only STEP-N, however identical the next
-park's root cause looks: a `waiting-human` park outside the standing
-rulings is always the operator's, and approval never extends
-across contexts. Only a standing ruling or an answer whose own text
-named a class carries further, exactly as far as that class.
+park's root cause looks: a `waiting-human` park the other standing
+rulings leave over goes advisor-first and reaches the operator when the
+advisor's answer is not clear, and approval never extends across contexts.
+Only a standing ruling or an answer whose own text named a class carries
+further, exactly as far as that class, under the authority of whoever gave
+it.
 
 So offer the class option at the first such gate instead of assuming it
 at the second, when a park can plainly recur: "Override-pass this step
 only (Recommended)" / "Override-pass this step and any recurrence of
 this exact defect class for the rest of this run" / "Park and stop the
-issue." Every recurrence still gets its own resolve verb, its own note,
-and the durable fix issue the broken-check rule below requires. For a
-later park identical to one already resolved this run with no
-class-scoped answer covering it, ask once whether the resolution
-extends.
+issue." The class choice goes advisor-first like any other decision. Every
+recurrence still gets its own resolve verb, its own note, and the durable
+fix issue the broken-check rule below requires, each recorded under the
+authority that named the class: the operator form for a class the operator
+named, the advisor-first form for one a clear advisor answer named. For a
+later park identical to one already resolved this run with no class-scoped
+answer covering it, the question whether the resolution extends goes
+advisor-first once, and to the operator when that answer is not clear.
 
 **Keep shell and JSON literals out of the question text**, since nested
 quotes and `$(...)` can be rejected outright. Put a command literal in a
@@ -145,7 +179,9 @@ engine vote row itself with a proposal id but no `workflows/` entry;
 only a panel you convened through a separate `Workflow({scriptPath:
 …tribunal.js})` call is a launch.
 
-On their answer:
+**The form you run records who decided, never whether the advisor was
+consulted.** On the operator's answer, including one given after an
+advisor answer that was not clear:
 
 ```bash
 docket step approve STEP-N --authority operator --note "<their reasoning, their words>" < <scratchpad>/conductor.d/$RUN.token
@@ -155,9 +191,25 @@ docket step resolve STEP-N --as retry|skip|abandon-issue|override-pass --authori
 docket step hold STEP-N --reason "<the repeated failure, and the operator's word to hold it>" < <scratchpad>/conductor.d/$RUN.token
 ```
 
+On a clear advisor answer, with no question asked, the record names the
+standing ruling: never record an advisor-settled decision `--authority
+operator`, and never describe it as the operator's.
+
+```bash
+docket step resolve STEP-N --as <the disposition the advisor named> --authority standing-grant --authority-ref advisor-first --note "advisor-first ruling: <the advisor's answer, quoted>" < <scratchpad>/conductor.d/$RUN.token
+docket step approve STEP-N --authority standing-grant --authority-ref advisor-first --note "advisor-first ruling: <the advisor's answer, quoted>" < <scratchpad>/conductor.d/$RUN.token
+docket step reject STEP-N --authority standing-grant --authority-ref advisor-first --note "advisor-first ruling: <the advisor's answer, quoted>" < <scratchpad>/conductor.d/$RUN.token
+```
+
+These three are the ruling's own lines. Its section in the skill body also
+carries the `docket run abandon` form and the forms for the verbs that
+take no `--authority` flag, the hold among them, whose reason names the
+ruling in place of the operator's word.
+
 **A step that keeps failing is held; its issue is not abandoned.** A step
 that declares no `max_attempts` is re-offered after every failure, so the
 engine never parks it on its own. When one step fails the same way again,
+the hold goes advisor-first; when that answer is not clear,
 offer the operator `docket step hold` (above) for that step: it parks the
 one READY step `waiting-human` (park class `held`), the next dispatch stops
 offering it, and the rest of its issue runs on. A claimed step is
@@ -257,10 +309,12 @@ waits.** A park conflicts every claim in flight, so dispatch executors
 and present the gate in the same turn, running the resolution verb only
 after the wave closes.
 
-The note carries their reasoning, never your summary: it is the audit
-trail's only record. Prefix `operator selected:` for a click-endorsement.
-When the panel decided, name it instead: `--note "panel <proposal-id>:
-<one-line tally>"`.
+The note carries the reasoning of whoever decided, never your summary: it
+is the audit trail's only record. For the operator, their words; prefix
+`operator selected:` for a click-endorsement, and only for a person's
+click. For an advisor-settled decision, the advisor's answer quoted,
+prefixed `advisor-first ruling:`. When the panel decided, name it instead:
+`--note "panel <proposal-id>: <one-line tally>"`.
 
 **A note is audit-trail only; it never renders into any brief.** The
 packet template carries only the step header, frozen issue body, input

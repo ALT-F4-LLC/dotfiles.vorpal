@@ -32,6 +32,11 @@ routing from the pinned bytes, so a drifted ref is refused wherever it is
 read, and there is no route past drift. Do not substitute `docket step
 render` for this check: it can exit 0 while a pin mismatch is present.
 
+**A pin-drift stop goes advisor-first, like every decision bound for the
+operator**, under **Standing ruling: the advisor answers first** in
+[SKILL.md](../SKILL.md). The list below is what the question offers the
+operator when the advisor's answer is not clear.
+
 **Dispositions at a pin-drift stop-and-report, all four executable, none
 run unprompted:**
 

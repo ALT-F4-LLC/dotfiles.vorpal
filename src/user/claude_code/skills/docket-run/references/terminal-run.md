@@ -31,5 +31,7 @@ abandoned rolls up to `done` legitimately.
 
 **Recorded rulings cite ids; those ids are required reading.** Read
 everything an `issue-abandoned` note cites before putting any related
-question to the operator. If a ruling turns out genuinely superseded, say
-what it was and why, and let them rule on that.
+question to the advisor or the operator. If a ruling turns out genuinely
+superseded, say what it was and why, consult the advisor first, and let
+the operator rule on that: an answer that contradicts a recorded ruling is
+never clear under the advisor-first standing ruling.

@@ -287,7 +287,7 @@ drifting.
 | `--backfill-from` | string | — | a JSON array of `{step, unit, quantity}` (`-` reads stdin): back-fill, verify, then close in one invocation |
 | `--source` | string | `backfilled` | with `--backfill-from`: who measured it, recorded on every row |
 | `--on-duplicate` | string | `refuse` | with `--backfill-from`: `refuse` the batch or `skip` a row whose (step, attempt, unit) is already recorded, reporting it |
-| `--skip-integration-check` | string | — | close without verifying integration, recording this REASON on the close event; the operator's override, never a relay's |
+| `--skip-integration-check` | string | — | close without verifying integration, recording this REASON on the close event; the operator's override, reached advisor-first, or the advisor-first standing ruling's with the REASON naming it; never a relay's |
 
 **Close verifies integration.** Every write-class step recorded in the
 dispatch must have its commit on the shared branch — an ancestor of HEAD,

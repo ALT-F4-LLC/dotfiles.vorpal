@@ -1,7 +1,7 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 52
+version = 53
 
 [match]
 unless_labels = [
@@ -46,15 +46,15 @@ on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
 
 [[step]]
-name = "review"
-holds_tree = false
 after = ["implement"]
-fanout = ["judge-correctness", "judge-architecture", "judge-testing"]
 emits = "findings"
+expected_cost = 0.60
+fanout = ["judge-correctness", "judge-architecture", "judge-testing"]
+holds_tree = false
+inputs = ["implement.change-summary", "issue.diff"]
+name = "review"
 packet = ["contracts/{executor}.md"]
 payload = "findings@12"
-expected_cost = 0.60
-inputs = ["implement.change-summary", "issue.diff"]
 
 [[step]]
 after = ["review"]

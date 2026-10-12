@@ -3,6 +3,12 @@
 Version history of `workflows/standard-change.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 53
+
+The `review` step's keys now sort alphabetically, matching every other
+step in this file and the `review` step in ui-change. No topology,
+routing, limit, or behavior change.
+
 ## 52
 
 unless_labels drops a retired routing label; `route-direct` and

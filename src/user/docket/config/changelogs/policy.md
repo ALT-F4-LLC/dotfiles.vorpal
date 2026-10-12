@@ -3,6 +3,51 @@
 Version history of `policy.toml`, newest first. Each heading is the
 `[policy].version` the entry describes.
 
+## 41
+
+`haiku-high` joins `[variants]`, escalating to `sonnet-high`, and
+drain-highs moves `sonnet-high` -> `haiku-high`. No other row changes;
+`[security]` and `[escalation]` are byte-identical.
+
+Sources, fetched 2026-10-11:
+
+- H1 Claude Haiku 5.5 System Card, October 7, 2026
+  (https://www.anthropic.com/document/claude-haiku-5-5-system-card).
+- H2 Introducing Claude Haiku 5.5
+  (https://www.anthropic.com/claude-haiku-5-5).
+
+Why drain-highs: its contract says "Select mechanically" on one
+field of a schema-bound artifact and forbids re-grading, merging, or
+dropping clusters. H2 calls Haiku 5.5 "best suited to more narrowly
+scoped tasks". `high` rather than the `medium` default because lower
+effort skips checks in long agent prompts, and the step's whole value
+is complete coverage. The seat is measured by clusters at `high` or
+`blocker` left without a backlog home, read from the round's findings
+artifact against the drain-report.
+
+Why nothing else moved. H1 6.2.3: Opus 5.5 and Sonnet 5.5 "were all
+strictly better on input hallucination, important omissions, and false
+completion claims", and H1 6.3.2 measures a self-preference bias as a
+grader larger than Opus 5.5's, so every judge-*, tribunal-*, verify-ac,
+design-qa, and synthesize-findings seat stays. H1 8.4: Terminal-Bench
+4.0 at 39.2% against Sonnet 5.5's 70.6% and Opus 5.5's 66.4%, and H2:
+Sonnet 5.5 and Opus 5.5 "remain better choices for complex agentic
+coding", so implement, fix, dispose, and every author and investigator
+seat stays.
+
+A Haiku seat has no fallback model (H1 1.5: "blocks on these safeguards
+will not fall back to any other models"), so a classifier stop is
+never a silent reroute and the `[security].reason` residual does not
+apply to this row. The cost moves to latency: wave.js cannot read a
+classifier stop, so the step stays unrecorded until its lease is
+reaped, and the re-run's variant is the engine's to resolve from
+`escalate_to`. H1 8.4 measured such stops in 1.8% of Terminal-Bench
+4.0 trials, 10 of the 12 on one task.
+
+Price per million tokens, input / output: Haiku 5.5 $0.10 / $0.50 for
+a prompt up to 100,000 tokens and $0.50 / $2.50 above it; Sonnet 5.5
+$2 / $10.
+
 ## 40
 
 `opus-low` escalates to `opus-medium` instead of `opus-high`, so every

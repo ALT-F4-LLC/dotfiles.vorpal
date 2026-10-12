@@ -1,5 +1,5 @@
 [policy]
-version = 40
+version = 41
 
 [variants]
 fable-high = { model = "fable", effort = "high" }
@@ -7,6 +7,7 @@ fable-low = { model = "fable", effort = "low", escalate_to = "fable-medium" }
 fable-max = { model = "fable", effort = "max" }
 fable-medium = { model = "fable", effort = "medium" }
 fable-xhigh = { model = "fable", effort = "xhigh" }
+haiku-high = { model = "haiku", effort = "high", escalate_to = "sonnet-high" }
 opus-high = { model = "opus", effort = "high", escalate_to = "fable-high" }
 opus-low = { model = "opus", effort = "low", escalate_to = "opus-medium" }
 opus-max = { model = "opus", effort = "max", escalate_to = "fable-max" }
@@ -20,7 +21,7 @@ sonnet-medium = { model = "sonnet", effort = "medium", escalate_to = "opus-mediu
 adr-author = { variant = "fable-high" }
 design-qa = { variant = "opus-medium" }
 dispose = { variant = "opus-medium" }
-drain-highs = { variant = "sonnet-high" }
+drain-highs = { variant = "haiku-high" }
 fix = { variant = "opus-medium" }
 implement = { variant = "opus-medium" }
 investigate = { variant = "fable-high" }

@@ -94,6 +94,7 @@ if [ -z "${DOCKET_GUARD_BOUNDED:-}" ]; then
     INPUT=$(cat 2>/dev/null) || allow_default
     exec 4>&1 5>&2
     GUARD_STATUS=$(
+        exec 2>/dev/null
         set -m
         {
             printf '%s' "$INPUT" | DOCKET_GUARD_BOUNDED=1 "$BASH" "$0" >&4 2>&5 4>&- 5>&-
@@ -106,7 +107,7 @@ if [ -z "${DOCKET_GUARD_BOUNDED:-}" ]; then
             printf 'bound'
             kill -KILL 0
         }
-    ) 2>/dev/null
+    )
     case $GUARD_STATUS in
         bound) deny "git write blocked: the commit-guard hook did not finish checking this command within its ${GUARD_BOUND} s wall-clock bound (DOCKET_GUARD_BOUND_SECONDS), so the command is refused rather than passed through unchecked. Split it into smaller Bash calls." ;;
         [0-9] | [0-9][0-9] | [0-9][0-9][0-9]) exit "$GUARD_STATUS" ;;

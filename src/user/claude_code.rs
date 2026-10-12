@@ -623,6 +623,14 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
             "bash ~/.claude/hooks/docket-session-start-hook.sh",
             "command",
         )
+        // A hook runs outside the Bash sandbox, which refuses the in-session
+        // prune of a wave worktree's metadata directory.
+        .with_hook(
+            "SessionStart",
+            None,
+            "bash ~/.claude/hooks/git-worktree-prune-hook.sh",
+            "command",
+        )
         // herdr installs this hook itself, through the ~/.claude/hooks
         // symlink into the current store; the corpus does not ship it and
         // the next `just activate` rebuilds without it. Guard the wiring so

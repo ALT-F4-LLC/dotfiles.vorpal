@@ -104,6 +104,7 @@ ENFORCING=(
 ADVISORY=(
   docket-session-start-hook.sh
   docket-wave-audit-hook.sh
+  git-worktree-prune-hook.sh
   sandbox-friction-hook.sh
 )
 UNWIRED=()

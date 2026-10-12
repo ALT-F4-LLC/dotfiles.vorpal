@@ -342,7 +342,9 @@ check $? "a short failing row reaches the module whole"
 cmp -s "$C/tmp/STEP-7.d/STEP-7.packet.md" "$WORK/gates-pass.txt" &&
     [ "$(modval "$MODULE" '.packet_sha256')" = "$(sha256_of "$WORK/gates-pass.txt")" ]
 check $? "the packet file and packet_sha256 stay the engine's render"
-diff <(sed -n '2s/^return //p' "$MODULE" | jq -j '.packet' | sed '/^== INPUT gate-results from /{n;d;}') <(sed '/^== INPUT gate-results from /{n;d;}' "$WORK/gates-pass.txt") >/dev/null
+sed '/^== INPUT gate-results from /{n;d;}' "$WORK/gates-pass.txt" >"$C/packet.expected"
+sed -n '2s/^return //p' "$MODULE" | jq -j '.packet' | sed '/^== INPUT gate-results from /{n;d;}' >"$C/packet.actual"
+diff "$C/packet.actual" "$C/packet.expected" >/dev/null
 check $? "every line outside the gate rows is unchanged"
 [ "$(sed -n '1p' "$C/stub.log")" = "step render STEP-7" ] && [ "$(sed -n '2p' "$C/stub.log" | cut -d' ' -f1-3)" = "step claim STEP-7" ]
 check $? "the packet is rendered and sized before the claim"

@@ -365,6 +365,29 @@ Answer these questions for each issue, concisely and from evidence:
   downstream outcome; a circular chain of speculative tasks does not
   establish value.
 
+**A defect claim needs observed evidence.** For an issue whose need is a
+claimed defect (a `review-gap`, `loop-bound`, or `conduct` filing, a verify
+gap, or a hand-filed finding from a code read), grade the evidence the issue
+itself carries by the general review ladder's rule
+(`src/user/docket/config/fragments/severity-ladder-general.md`). It is
+**observed** when someone ran a named input reachable in ordinary use and
+saw the wrong output; the project's gates and suites failing on a correct
+change in the pipeline's real environment count. It is **unobserved** when
+it is a missing test on code that works, a surviving mutant, a trace that
+was read but not run, a location, structure, or maintainability preference,
+or a contrived trigger; evidence marked INFERRED, UNVERIFIED, "code read",
+or "not reproduced" is unobserved. Grade the evidence as written. Do not
+reproduce, rerun, or re-review the defect yourself: that is the review
+pipeline's job, and a groom that repeats it becomes a second one.
+
+An unobserved defect claim is a **Close** with the reason "unobserved
+review finding". Its proposal includes one comment on the issue the filing
+came from (its `relates_to` source, else the issue itself), recording the
+finding in one line with its evidence reference, so nothing is lost. An
+operator may keep any of them from the batch; a kept one is retained with
+the operator's reason. An observed defect claim proceeds through the
+questions above like any other issue.
+
 Assign exactly one decision, keeping readiness as a separate assessment:
 
 - **Retain:** a current, unsatisfied benefit is supported by evidence. If
@@ -895,7 +918,11 @@ the comment on the original. Piece ids are named placeholders resolved
 from each create's JSON output. The idempotency key adds the piece number
 to the epic's project, pass id, and proposal number, for the same reason.
 Routing and size labels are re-judged per piece after the split lands,
-under §2b, never copied from the original.
+under §2b, never copied from the original. Provenance labels
+(`review-gap`, `loop-bound`, `conduct`, `tribunal`) are never carried to a
+piece either: they mark what a pipeline filed, and a piece groom created
+is not that filing. The original keeps its label, and the split comment on
+it, which maps each moved criterion to its piece, keeps the provenance.
 
 A **re-parent** shows each affected issue's current parent and proposed
 parent, or `none` when detaching, with the evidence for the move. Use it

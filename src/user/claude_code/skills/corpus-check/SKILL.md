@@ -88,14 +88,13 @@ Workflow({ scriptPath: "<absolute installed path to corpus-check.js>", args: {si
 ```
 
 This fans out one agent per file over both trees (sharded by line range for
-any file over roughly 1500 lines — `docket-run/SKILL.md` and
-`workflows/wave.js` are the known cases as of writing, since
-`docket/reference.md` was split by consumer; the workflow measures sizes
-itself at run time), runs a completeness pass that re-dispatches any file
-or range nothing covered, then a cross-boundary pass pairing claims one
-tree makes about the other, then verifies raw findings in per-file batches
-(independent skeptics voting refute/uphold) within an agent budget fixed
-before the read fan-out.
+any file over 1500 lines, for example `docket-run/SKILL.md` and
+`workflows/wave.js`; the workflow measures sizes at run time), runs a
+completeness pass that re-dispatches any file or range nothing covered,
+then a cross-boundary pass pairing claims one tree makes about the other,
+then verifies raw findings in per-file batches (three refuters per batch,
+each leading from a different angle, majority-uphold) within an agent
+budget fixed before the read fan-out.
 The workflow returns one JSON object. `findings` holds only
 majority-survived findings, each carrying its file, location, quote,
 counterpart, severity, and a proposed fix. `unverified` holds every
@@ -123,8 +122,8 @@ substitute a smaller manual read as if it satisfied the step.
 - **Needs operator decision** (two files each state a currently-correct but
   incompatible design choice, a deliberate-looking deviation with no
   recorded reason, a schema correction whose cascade is expensive, or
-  anything the workflow flagged as unresolved): do not stage it; carry it
-  to the final report.
+  any finding with `needsOperatorDecision` true): do not stage it; carry
+  it to the final report.
 
 ## 4. Confirm the staged batch before landing it
 
@@ -148,9 +147,8 @@ Frozen-file edits need a version bump, decided by the file changed:
 
 Never spend a version bump on a comment that only flags an unresolved
 question (a TODO, a "needs operator decision" note) with no other content
-change; that forces a second bump later. Land such notes as
-an unversioned comment addition when the file is a policy/README file, or
-fold the flag into your final report instead of touching a frozen file.
+change; that forces a second bump later. Fold the flag into your final
+report instead of touching a frozen file.
 
 When the advisor tool is available, call it on the staged batch before
 presenting it, and fold its input in with the rest of the classification.

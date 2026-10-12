@@ -95,8 +95,9 @@ command from the assigned checkout (`docket step artifacts`, `docket step
 artifact`, or `docket issue show`) before deciding whether the step result,
 its artifacts, and any gap issues were saved; a missing receipt does not
 establish that nothing was filed. Retry only what that inspection shows
-unsaved, under the same claim and lease token, never resubmitting blind. If the outcome still cannot be established,
-report it as uncertain without claiming a saved or parked state.
+unsaved, under the same claim and lease token, never resubmitting blind.
+If the outcome still cannot be established, report it as uncertain without
+claiming a saved or parked state.
 
 **Reporting.** Return through the brief's structured output exactly: the
 wave reads its `recorded` and `signal` fields to decide whether this

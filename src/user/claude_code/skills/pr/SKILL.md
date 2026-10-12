@@ -518,9 +518,8 @@ its own, then `od -An -c <last-byte-file>` shows no `\n`); contains no NUL
 byte, detected by running `tr -d '\000' < <file> > <nul-stripped-file>` on
 its own, then comparing `wc -c < <nul-stripped-file>` against `wc -c <
 <file>`, each command exit-checked under **Command shapes** (a mismatch
-refuses, since neither an agent reading
-the title nor the denylist's grep pass, which degrades to `Binary file …
-matches` on a NUL-bearing input and loses line, pattern, and token
+refuses, since neither an agent reading the title nor the denylist's grep
+pass, which degrades to `Binary file … matches` on a NUL-bearing input and loses line, pattern, and token
 attribution, can see one directly); non-empty after the denylist's strip
 pass; ≤ 72 characters; and matching the conventional-commit shape above
 (`type(scope): summary`). A leading `-` cannot parse as a flag under `-F

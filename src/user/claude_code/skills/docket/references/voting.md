@@ -42,8 +42,9 @@ record is not read first — unless the proposal is sealed, `vote show` and
 `vote result` print every cast already recorded, and a seat that reads them
 before deciding is no longer deciding alone. A sealed proposal (`vote create
 --sealed`, or a `vote_rule` with `sealed` set) withholds each cast's verdict,
-weights, findings, and summary until the tally closes. Replace the values below with the actual assignment and
-evidence; a file keeps long rationale out of argv:
+weights, findings, and summary until the tally closes. Replace the values
+below with the actual assignment and evidence; a file keeps long rationale
+out of argv:
 
 ```bash
 docket vote cast DKT-V1 --json=v2 \

@@ -456,10 +456,10 @@ inputs = ["gate.vote-record"]
 whichever step produced it. It names no producer, so it is the form a loop
 body uses to read the live version of what it iterates on: inside the body,
 a declared `<step>.<kind>` naming a step the loop does not re-run stays
-bound to that step's ordinal-0 artifact. Resolution takes recorded artifacts of the kind on this issue,
-excluding the consuming step's own, keeps those at the highest producer
-ordinal at or below the consumer's, and keeps one artifact per producer
-instance, the newest. Several producers at that ordinal each contribute, in
+bound to that step's ordinal-0 artifact. Resolution takes recorded
+artifacts of the kind on this issue, excluding the consuming step's own,
+keeps those at the highest producer ordinal at or below the consumer's, and
+keeps one artifact per producer instance, the newest. Several producers at that ordinal each contribute, in
 the ordinary within-input order. When nothing matches, the input contributes
 nothing: no error and no empty record. `<kind>` is one kind of letters,
 digits, `_` or `-`, with no wildcard. Registration refuses a malformed kind

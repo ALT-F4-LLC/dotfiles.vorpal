@@ -17,21 +17,20 @@ binary's behavior unless their commits match.
 [references/cli-inventory.json](references/cli-inventory.json) records command
 paths, aliases, usage, and local/inherited flags. Refreshed **2026-10-02 UTC**
 against `nightly-229-g7f304cc` (commit `7f304cc`, built `2026-10-02T22:01:56Z`);
-covers 155 public commands. The JSON envelope table and behavioral notes below
-were checked against that same build's runtime fixtures
-([../docket-cli-audit/references/cli-fixtures.json](../docket-cli-audit/references/cli-fixtures.json)),
-which cover the swept commands' exit codes and both JSON dialects; a flag path
-the swept scenario did not exercise remains a previously-observed claim, not
-a re-checked one. From this skill directory,
+covers 155 public commands. From this skill directory,
 `python3 scripts/cli_inventory.py --check` checks the inventory; `--write`
 refreshes it after a CLI upgrade. The helper invokes only `--help` and
 `--version` and does not read or mutate a Docket store. It detects command/flag
-drift, not changes to runtime semantics or JSON response shapes; those are
-recorded by the docket-cli-audit skill's sweep in
-[../docket-cli-audit/references/cli-fixtures.json](../docket-cli-audit/references/cli-fixtures.json),
-which drives every inventoried command against a scratch store and keeps each
-exit code, message and both JSON dialects. Run `/docket-cli-audit` after a
-CLI upgrade to refresh both and audit the prose against them.
+drift only, not changes to runtime semantics or JSON response shapes.
+
+The docket-cli-audit skill's sweep records those in
+[../docket-cli-audit/references/cli-fixtures.json](../docket-cli-audit/references/cli-fixtures.json):
+it drives every inventoried command against a scratch store and keeps each
+exit code, message and both JSON dialects. The JSON envelope table and
+behavioral notes below were checked against that same build's fixtures; a
+flag path the swept scenario did not exercise remains a previously-observed
+claim, not a re-checked one. Run `/docket-cli-audit` after a CLI upgrade to
+refresh both and audit the prose against them.
 
 <a id="contents"></a>
 
@@ -48,7 +47,7 @@ length to read. The engine families live in docket-run's references:
 [gate, policy and registry](../docket-run/references/gate-policy.md),
 [report and doctor](../docket-run/references/report-doctor.md).
 
-- [JSON envelope](#json-output) — 67 lines
+- [JSON envelope](#json-output) — 65 lines
 - [Command & Flag Reference](#command-reference) — 9 lines
 - [`docket issue` (alias `i`)](#issue-commands) — 273 lines
   - [`issue create`](#issue-create) — 19 lines
@@ -68,17 +67,17 @@ length to read. The engine families live in docket-run's references:
   - [`issue link add/remove/list`](#issue-link) — 7 lines
   - [`issue label add/rm/list/delete`](#issue-label) — 11 lines
   - [`issue graph [id]`](#issue-graph) — 12 lines
-- [`docket plan`](#plan-commands) — 27 lines
+- [`docket plan`](#plan-commands) — 28 lines
 - [`docket next`](#next-commands) — 22 lines
-- [`docket workflow` (alias `wf`)](#workflow-commands) — 129 lines
-  - [`workflow register <file.toml>`](#workflow-register) — 22 lines
-  - [`workflow lint <file.toml>`](#workflow-lint) — 24 lines
+- [`docket workflow` (alias `wf`)](#workflow-commands) — 127 lines
+  - [`workflow register <file.toml>`](#workflow-register) — 21 lines
+  - [`workflow lint <file.toml>`](#workflow-lint) — 23 lines
   - [`workflow deprecate <name>@<version>`](#workflow-deprecate) — 18 lines
   - [`workflow list`](#workflow-list) — 26 lines
   - [`workflow show <name>[@<version>]`](#workflow-show) — 17 lines
   - [`workflow init`](#workflow-init) — 18 lines
-- [`docket schema`](#schema-commands) — 85 lines
-  - [`schema register <name@version> <file.json>`](#schema-register) — 21 lines
+- [`docket schema`](#schema-commands) — 84 lines
+  - [`schema register <name@version> <file.json>`](#schema-register) — 20 lines
   - [`schema list`](#schema-list) — 16 lines
   - [`schema show <name>[@<version>]`](#schema-show) — 17 lines
   - [`schema deprecate <name>@<version>`](#schema-deprecate) — 27 lines
@@ -143,17 +142,15 @@ Two more shape distinctions: single vs. multiple IDs on [`issue
 show`](#issue-show) and `step show`, and `description`/`description_bytes`
 on summary rows (see [`issue list`](#issue-list)).
 
-Four parsing traps from the earlier runtime checks (`run status` with no id
-returned `runs: null` for an empty list through nightly-209; nightly-229
-returns `[]`):
+Four parsing traps (`run status` with no id returns `runs: []` for an empty
+list; older builds returned `null`):
 
 - **`items` is the v2 key, never the v1 key.** `--json` (v1, the bare flag)
   names the collection after the verb — `events`, `issues`, `steps`, `runs`,
   `proposals`. `--json=v2` and `--format json` rename it to `items` and add
   `truncated`. `json.load(...)["data"]["items"]` on a bare `--json` pipe is a
-  `KeyError`. The listed show verbs kept the same outer shape in the earlier
-  comparison; don't assume every optional field or future version matches
-  byte-for-byte.
+  `KeyError`. The listed show verbs keep the same outer shape under both
+  dialects; do not assume every optional field matches byte-for-byte.
 - **`run status RUN-N` does not return the issue or step rows.** `issues` is an
   `int` count, and `steps` is a status ROLLUP —
   `[{"status": "done", "count": 32}, {"status": "skipped", "count": 30}, ...]`,
@@ -475,6 +472,7 @@ Watch-eligible.
 | `--type` | `-T` | stringSlice | `nil` | repeatable |
 | `--assignee` | `-a` | string | `""` | |
 | `--size` | — | stringSlice | `nil` | repeatable |
+| `--with-body` | — | bool | `false` | include descriptions in JSON rows; otherwise rows carry `description_bytes` |
 
 Watch-eligible. Cycle in the dependency graph → `CONFLICT`. `--json` output
 also includes per-issue `blocked_by` (array of formatted blocker IDs,
@@ -521,7 +519,6 @@ write, its refusals, and the `next row` shape are in docket-run's
 
 | Flag | Short | Type | Default | Notes |
 |---|---|---|---|---|
-| `--json` | — | string | `""` | inherited; `v1` or `v2` |
 | `--project` | — | string | `""` | register in this project instead of the one cwd resolves to |
 | `--all-projects` | — | bool | `false` | register in every project, reporting each project's own outcome |
 
@@ -543,7 +540,6 @@ fan-out by its exit code and `failed`, never by `ok`.
 
 | Flag | Short | Type | Default | Notes |
 |---|---|---|---|---|
-| `--json` | — | string | `""` | inherited; `v1` or `v2` |
 | `--project` | — | string | `""` | lint against this project's registry instead of the one cwd resolves to (`nightly-209`+) |
 | `--all-projects` | — | bool | `false` | lint against every project, reporting each project's own verdict (`nightly-209`+) |
 
@@ -650,7 +646,6 @@ None of the `workflow` verbs are watch-eligible; `--watch` on any of them is a
 
 | Flag | Short | Type | Default | Notes |
 |---|---|---|---|---|
-| `--json` | — | string | `""` | inherited; `v1` or `v2` |
 | `--project` | — | string | `""` | register in this project instead of the one cwd resolves to |
 | `--all-projects` | — | bool | `false` | register in every project, reporting each project's own outcome |
 

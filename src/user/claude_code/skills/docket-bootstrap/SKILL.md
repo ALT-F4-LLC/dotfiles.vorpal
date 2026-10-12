@@ -57,8 +57,12 @@ tools. Confirm the specific `executor-read` and `executor-write` definitions;
 an unrelated agent file does not establish their availability.
 
 Use one unique session directory and record its absolute path in the
-conversation and checkpoint. Put snapshots, manifests, reports, and probes
-below it. Never derive identity from
+conversation and checkpoint. The checkpoint is `checkpoint.md` at the
+session directory's root: it holds the facts recorded here and every issue,
+run, approval, and applied change this session creates, so a retry resumes
+from it. The ownership manifest is `ownership-manifest.md` beside it: it
+lists each path this session creates with its content hash. Put snapshots,
+reports, and probes below the session directory. Never derive identity from
 `basename $(git rev-parse --git-common-dir)`: ordinary repos return `.git`.
 Use the registered project name when available, else the checkout basename
 as a display name, not a uniqueness key.
@@ -117,8 +121,9 @@ is a validation failure; confirm whether its author is still running before
 retrying.
 
 Publish verified private drafts only to the missing paths reserved by this
-session; for direct authoring, finalize the ownership record after
-verification instead. Record the exact created paths and hashes. Preserve
+session; for direct authoring, finalize the ownership manifest after
+verification instead. Record the exact created paths and hashes in the
+ownership manifest. Preserve
 any path that appeared or changed concurrently. Do not use
 `git checkout --` or broad deletion to repair an unexplained change;
 establish byte ownership before any repair.
@@ -159,8 +164,10 @@ small:
 - Docs/history: the seven specs, README/CONTRIBUTING, recent commit
   subjects, review practices, and evidence of earlier docket configuration.
 
-Every agent it spawns is an `executor-read` agent, whose tool set carries no
-write verb; nothing in it edits, mutates, or asks the operator anything. The
+Every agent it spawns is an `executor-read` agent. Those agents keep the
+checkout unchanged and write only scratch files and authorized engine
+records; they cannot edit the checkout, change trust, or ask the operator
+anything. The
 return's `mining` field carries `claim → source path:line` evidence,
 uncertainties, and concise reports per seam. Specs are maps to source files,
 not proof of their claims. Derive scopes from the real module and test
@@ -194,12 +201,15 @@ path allowlist and the miners' evidence, then review the diff.
 
 Choose the operator's named smoke issue, or propose one from a verified gap and
 offer a replacement. Identify its intended workflow and acceptance criteria.
-The smoke issue carries the `route-run` label and no other `route-*` label,
-following the corpus routing-label convention, and it
-sits within the docket skill's
-[sizing reference](../docket/references/sizing.md)'s cap with its tier
-stored in `size`: one outcome, so the first run exercises the pipeline,
-not a bundle.
+The smoke issue:
+
+- carries `route-run` and no other `route-*` label, following the corpus
+  routing-label convention;
+- measures within the cap in the docket skill's
+  [sizing reference](../docket/references/sizing.md), with its tier stored
+  in `size`;
+- is one outcome, so the first run exercises the pipeline, not a bundle.
+
 Do not create an unseen issue or start an unseen run. Broader work goes to
 `/docket-plan` before activation.
 

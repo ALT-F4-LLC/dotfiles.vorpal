@@ -31,8 +31,9 @@
 # `inspect:`, `run on`, `over` or `guide:` (any case) in the same sentence
 # and line, with only other paths, commas, `and`, backticks and blanks
 # between them. A sentence ends at a token's trailing dot; any other
-# character, or a word that is not a path, ends the marker's run. Each `files` entry `x.go` whose
-# `x_test.go` exists at --base needs that test matched by a `scope` glob.
+# character, or a word that is not a path, ends the marker's run. Each
+# `files` entry `x.go` whose `x_test.go` exists at --base needs that test
+# matched by a `scope` glob.
 #
 # Scope globs match as the engine applies them, as git pathspecs filtering
 # the step's diff: a glob without `*`, `?` or `[` covers that path and
@@ -121,7 +122,7 @@ tokens=$(printf '%s\n' "$criteria" | awk '
         marker = ""
         sentence_end = sub(/\.+$/, "", tok)
         word = tolower(tok)
-        if (chain && word == "and") { prev = word; continue }
+        if (chain && word == "and" && !sentence_end) { prev = word; continue }
         if (tok != "") print chain "\t" tok
         if (sentence_end) { chain = 0; prev = ""; continue }
         if (word == "inspect" || word == "guide") marker = "colon"

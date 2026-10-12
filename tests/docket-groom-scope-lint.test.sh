@@ -282,6 +282,27 @@ case "$OUT" in
     *) pass "a path after inspect: is not reported beside a same-line edit target" ;;
 esac
 
+# A sentence end or a punctuation gap ends the run on its own: an edit
+# target right after a period, after `and.`, or after a semicolon is checked.
+for criterion in \
+    "inspect: docs/guide.md. src/pkg/y.go returns the error." \
+    "inspect: docs/guide.md and. src/pkg/y.go returns the error." \
+    "inspect: docs/guide.md; src/pkg/y.go returns the error."; do
+    lint "- [ ] AC-1: ${criterion}" "docs/notes.txt" "docs/notes.txt"
+    expect_line "missing from files: src/pkg/y.go" "an edit target right after a marked run ends (${criterion})"
+    case "$OUT" in
+        *docs/guide.md*) fail "a path after inspect: is reported (${criterion}): ${OUT}" ;;
+        *) pass "a path after inspect: is not reported (${criterion})" ;;
+    esac
+done
+
+# The exemption belongs to the marked mention, not the path: the same path
+# named again as an edit target is still checked.
+lint "- [ ] AC-1: inspect: docs/guide.md for the wording. docs/guide.md must also gain a section." \
+    "docs/notes.txt" \
+    "docs/notes.txt"
+expect_line "missing from files: docs/guide.md" "a marked path named again as an edit target"
+
 # A word that is not a path ends the marker's run, so the path after it is
 # checked.
 lint "- [ ] AC-1: inspect: notes.txt src/pkg/y.go for the wording." \

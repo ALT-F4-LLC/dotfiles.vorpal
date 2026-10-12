@@ -585,7 +585,7 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         // through the Workflow tool, never the Agent tool, so the
         // project-wide `guard spawn --active` hold has nothing to stop on
         // an Agent spawn. Matching `Agent` too blocked every Explore
-        // helper and tend worker in every session of the repo whenever one
+        // helper in every session of the repo whenever one
         // write-class reap went unacknowledged.
         .with_hook(
             "PreToolUse",

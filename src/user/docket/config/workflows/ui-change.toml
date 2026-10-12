@@ -1,6 +1,6 @@
 [pipeline]
 name = "ui-change"
-version = 44
+version = 45
 description = "UI change bound to an accepted ux-spec cited in the issue body. Design-judged and design-QA'd before AC verification, so AC verification can read the design-QA findings and resolve met/unmet instead of unverifiable. The conductor integrates commits; the operator publishes."
 
 [match]
@@ -14,7 +14,6 @@ unless_labels = [
   "retro",
   "route-direct",
   "route-loop",
-  "route-tend",
   "security",
   "security-change",
   "security-load-bearing",

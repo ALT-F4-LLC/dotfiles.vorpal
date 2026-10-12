@@ -5,8 +5,7 @@ description: >-
   to revise an existing brief. Turns a freeform work request into a faithful,
   checkable brief: clarifies material decisions in up to three question
   rounds, then confirms the brief and routes it to /docket-plan, /loop,
-  /docket-tend, /goal, /peer, another orchestration skill, or direct
-  execution.
+  /goal, /peer, another orchestration skill, or direct execution.
 argument-hint: "<freeform work request or revision to an existing brief>"
 ---
 
@@ -112,7 +111,7 @@ Use `AskUserQuestion` in successive rounds. Each round covers the current
 frontier: material questions whose prerequisites are settled, up to four
 per call. Prioritize decisions affecting security, docket tracking, Shape,
 and scope, then Role. For trivial one-shot work with checkable criteria,
-whether it runs now or waits for the queue is such a decision, since §3
+whether it runs now in this conversation or through a docket run is such a decision, since §3
 rule 5 routes on it. Ask concrete questions about the work
 rather than asking the operator to classify its complexity. Offer a
 recommendation when evidence supports one; do not recommend guesses about
@@ -232,12 +231,11 @@ the described scope supports it.
 **Docket tracking** records an explicit tracking requirement or work
 performed against an existing issue; a background citation to an issue
 does not itself require tracking. A referenced issue's routing label
-(`route-run`, `route-direct`, `route-tend`, `route-loop`, set by
-docket-groom, by this skill when it files a `route-tend` issue, or by
+(`route-run`, `route-direct`, `route-loop`, set by docket-groom or by
 docket-plan when it records a run) is the operator's standing route
-decision: record it here and follow it in §3. Tracking for `route-direct` and `route-tend` work is
-satisfied by closing the issue with a summary comment when the work
-lands, not by a run.
+decision: record it here and follow it in §3. Tracking for
+`route-direct` work is satisfied by closing the issue with a summary
+comment when the work lands, not by a run.
 
 For iterative work, establish the action per pass, cadence, and
 stop/cancel policy. Acceptance criteria may supply a terminal stop
@@ -255,7 +253,7 @@ Apply these rules in order:
 1. **Security-sensitive `yes`:** `/docket-plan` is required, whatever
    routing label the issue carries; report the label as a conflict. A label
    other than `route-run` binds no workflow (every workflow's
-   `unless_labels` excludes `route-direct`, `route-tend`, and `route-loop`),
+   `unless_labels` excludes `route-direct` and `route-loop`),
    so note that the issue must be relabeled `route-run` — by hand or through
    `/docket-groom` — before `/docket-plan` can bind it. The same relabel
    need applies when rule 4 recommends `/docket-plan` for a `route-loop`
@@ -265,8 +263,7 @@ Apply these rules in order:
    reaches `/docket-plan` only when the operator names it explicitly (it
    then gets `route-run` on recording) — otherwise point at
    `/docket-groom` to set a routing label first; `route-direct` means
-   direct execution; `route-tend` means leave it to `/docket-tend`, or direct
-   when the operator wants it now; `route-loop` continues at rule 4. A
+   direct execution; `route-loop` continues at rule 4. A
    label that contradicts the operator's ask is surfaced, never resolved
    silently.
 3. **Security-sensitive `unknown` requiring investigation:** recommend
@@ -278,15 +275,14 @@ Apply these rules in order:
 5. **Shape `one-shot`, Security-sensitive `no`, Size hint `trivial`:**
    test in this order. Recommend direct execution when the work leaves a
    decision or judgment open, a criterion needs judgment to check, or the
-   deliverable is an assessment. Otherwise recommend `/docket-tend` when the
-   work can wait for the queue, and `/goal` when the operator wants it now.
-   When the operator states neither, that choice decides the route: ask it
-   under §1. Recommending `/docket-tend` entails filing the work as a
-   `route-tend` issue, since docket-tend takes work only from that queue.
+   deliverable is an assessment. Otherwise recommend `/docket-plan` when the
+   work can go through a docket run, and `/goal` when the operator wants it
+   now in this conversation. When the operator states neither, that choice decides the route:
+   ask it under §1.
 6. **Other one-shot work:** recommend `/docket-plan`.
 
 Resolve an unknown Shape before recommending execution, and the rule 5
-choice between now and the queue when the operator has not stated it. Investigative
+choice between now and a docket run when the operator has not stated it. Investigative
 uncertainty may travel with a docket brief; an unresolved operator decision
 needed to authorize the work may not.
 
@@ -341,7 +337,7 @@ information, report the incompatibility.
 
 Present the complete brief verbatim, followed by every route this skill
 can select, including routes §3 excludes: `/docket-plan`, `/loop`,
-`/docket-tend`, `/goal`, `/peer`, direct execution, and any orchestration
+`/goal`, `/peer`, direct execution, and any orchestration
 alternative weighed under §3. Give each route one line stating why it fits or which §3
 rule excludes it, and mark the recommended route. If
 the downstream input requires a different structure, show the prepared
@@ -398,11 +394,6 @@ where a route bullet below says so.
   exclusions, constraints, per-pass action, the stop/cancel policy, and
   the Role, since each pass receives the task text verbatim, and
   report the schedule actually established and any relevant lifetime limit.
-- **`/docket-tend`:** docket-tend takes work from the `route-tend` queue, not from an
-  `args` payload. Ensure a `route-tend`-labeled issue carrying the brief's
-  scope and acceptance criteria exists, filing one if it does not, and
-  report that the work waits for the next docket-tend tick. The Role does not
-  reach the worker, whose brief is the issue verbatim.
 - **`/goal`:** Print the confirmed `/goal` line in a fenced block for the
   operator to type, report the work as pending until they do, and stop. Do
   not begin the work directly: the line is the handoff, and typing it
@@ -421,7 +412,7 @@ where a route bullet below says so.
   Role unless it is `none`, without creating
   docket issues, plan artifacts, schedules, or teams. Verify the acceptance
   criteria with checks suited to the work. For an issue routed
-  `route-direct` or `route-tend`, close it once the criteria are verified:
+  `route-direct`, close it once the criteria are verified:
   `docket issue comment add <id> -m "<what landed and where>"`, then
   `docket issue close <id>`.
 - **Just give me the brief:** Emit the block verbatim and stop.

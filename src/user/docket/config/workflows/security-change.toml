@@ -1,7 +1,7 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 52
+version = 53
 
 [match]
 labels_any = ["security-change", "security-load-bearing", "security"]
@@ -13,7 +13,6 @@ unless_labels = [
   "retro",
   "route-direct",
   "route-loop",
-  "route-tend",
   "spec-doc",
   "spec-project",
 ]

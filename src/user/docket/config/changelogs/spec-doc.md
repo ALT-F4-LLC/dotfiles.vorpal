@@ -3,6 +3,13 @@
 Version history of `workflows/spec-doc.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 44
+
+unless_labels drops a retired routing label; `route-direct` and
+`route-loop` remain. Queued trivial work now routes `route-run`
+through docket-plan and docket-run. Takes effect for runs activated
+after install. No topology or limit change.
+
 ## 43
 
 `drain-highs` now runs once per round after the doc vote (`tdd-vote`, `adr-vote`, `ux-spec-vote` or `prd-vote`; the ones a `when` skips count as finished), on that round's reconcile findings, instead of as a `reconcile` threshold target. A fix round supersedes it, so only the issue's final round drains. Before this, drain could file against code that a later verify-ac fix round rewrote. Reconcile's threshold keeps only `fix-loop`. Pairs with the drain-highs contract v23, which files `high` and `blocker` clusters and records `medium` clusters in one comment on the issue, and with severity-ladder-general v9, where an unobserved Concern emits `medium`. Measured before the change: drain filed about 0.56 follow-ups per reviewed issue in docket.git and 0.76 in harness.git, and of the sampled filings 0-20% would stay `high` under the new rule. Takes effect for runs activated after install.
@@ -156,9 +163,9 @@ still sits at fable-high). No topology change.
 
 ## 28
 
-`route-direct`, `route-loop` and `route-tend` join unless_labels:
-an issue docket-groom routed to the operator's own session, the
-tend queue, or a loop matches zero workflows, like `blocked`,
+`route-direct` and `route-loop` join unless_labels:
+an issue docket-groom routed to the operator's own session or
+a loop matches zero workflows, like `blocked`,
 until the label changes; `route-run` stays bindable. No
 topology change.
 

@@ -188,7 +188,7 @@ project, or no store reachable, means this repo isn't bound: say so and
 stop. `--limit 1000` is not optional, for the
 reasons the docket skill's
 [queue ownership reference](../docket/references/queue-ownership.md) states
-once for this skill, `/docket-groom`, and `/docket-tend`: the default caps flag no
+once for this skill and `/docket-groom`: the default caps flag no
 truncation, and a result that reaches the limit is finished through the
 CLI's help-verified pagination before claiming coverage. Do not infer
 blocking from absence in a truncated result. `docket next` identifies issues
@@ -240,7 +240,7 @@ asked for.
 **Exclude what is not free.** This queue isn't docket-plan's alone; the
 run-included and claimed definitions are the ones in the docket skill's
 [queue ownership reference](../docket/references/queue-ownership.md), shared
-with `docket-groom` and `docket-tend`, and are applied here as written there:
+with `docket-groom`, and are applied here as written there:
 
 - **Off-scope.** Any issue whose kind or labels fall outside the alignment
   round's kind filter (a `feature` issue when "bugs only" was chosen, say),
@@ -251,8 +251,8 @@ with `docket-groom` and `docket-tend`, and are applied here as written there:
 - **Unrouted or routed elsewhere.** Only an issue carrying `route-run` is a
   candidate. An issue with no routing label is unrouted: count it, name the
   count in the proposal with a pointer to `/docket-groom`, and never rank
-  it. An issue carrying `route-direct`, `route-tend`, or `route-loop`
-  belongs to another route (the operator's own brief, the docket-tend queue, a
+  it. An issue carrying `route-direct` or `route-loop`
+  belongs to another route (the operator's own brief, a
   loop): list it as routed elsewhere (step 4 covers why activation would
   refuse it anyway if named for this run).
 - **Unsized or oversized.** An issue whose `size` is null or `unknown`,
@@ -341,10 +341,10 @@ and parallel width decide between equally large feasible rosters.
    later does not waive a missing scope, file, AC, or binding.
 
    **Routing labels bind the route before the workflow.** An issue the
-   operator named that carries `route-direct`, `route-tend`, or
+   operator named that carries `route-direct` or
    `route-loop` is not run work: refuse it with the label named, and let
    the operator relabel it (by hand or through `/docket-groom`) before it
-   can bind, since every registered workflow lists those three in
+   can bind, since every registered workflow lists those two in
    `unless_labels` and activation would refuse it too. An issue the
    operator named that carries no routing label gets `route-run` when the
    run is recorded (`docket issue label add <id> route-run`), so the label
@@ -470,7 +470,7 @@ alternative. Present the following above one `AskUserQuestion` round:
   `binds <wf>, ACs imply <other>`, or `AC names <path>, not in scope`),
   explicit budget or issue cap, dependency cycle, already landed (commit),
   unrouted (no routing label; `/docket-groom` sets one), routed elsewhere
-  (`route-direct`, `route-tend`, or `route-loop`), or unsized or oversized
+  (`route-direct` or `route-loop`), or unsized or oversized
   (`size` null or `unknown`, or over the cap; `/docket-groom` sizes and
   splits).
 

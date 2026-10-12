@@ -229,8 +229,8 @@ workflow in that union, and a gate declared there with no trust entry bound
 to this repository fails that issue's first gated step `unmatched`, which
 routes per its `on_fail`: `waiting-human` on every first-pass gated step in
 the installed corpus, so it parks. When diagnosing why an issue did not
-match a workflow, check first for a `route-direct`, `route-loop`, or
-`route-tend` label, which would prevent workflow matching.
+match a workflow, check first for a `route-direct` or `route-loop` label,
+which would prevent workflow matching.
 
 From the returned union, propose one entry per gate, bound to this
 repository, each carrying the real command the miners found. A gate this

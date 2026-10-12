@@ -1,7 +1,7 @@
 [pipeline]
 description = "Small ordinary change, bound by the `small` label. Implement with the full gate list; one correctness judge routes a blocker straight to the fix loop. AC verification uses a single-seat tribunal on an unverifiable or out-of-scope AC, and the bounded fix loop re-enters at review. The conductor integrates commits; the operator publishes."
 name = "small-change"
-version = 14
+version = 15
 
 [match]
 labels_any = ["small"]
@@ -14,7 +14,6 @@ unless_labels = [
   "retro",
   "route-direct",
   "route-loop",
-  "route-tend",
   "security",
   "security-change",
   "security-load-bearing",

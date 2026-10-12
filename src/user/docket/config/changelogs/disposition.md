@@ -3,6 +3,13 @@
 Version history of `workflows/disposition.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 17
+
+unless_labels drops a retired routing label; `route-direct` and
+`route-loop` remain. Queued trivial work now routes `route-run`
+through docket-plan and docket-run. Takes effect for runs activated
+after install. No topology or limit change.
+
 ## 16
 
 The executor step `verify-ac` gains `max_attempts = 2` with
@@ -70,9 +77,9 @@ loops, an out-of-scope or unverifiable AC goes to the one-seat
 `verify-ac-vote` (approve passes with the gap filed, reject
 routes fix-loop). No topology change; the measurement is on
 standard-change@37.
-Also `route-direct`, `route-loop` and `route-tend` join
+Also `route-direct` and `route-loop` join
 unless_labels: an issue docket-groom routed to the operator's
-own session, the tend queue, or a loop matches zero workflows,
+own session or a loop matches zero workflows,
 like `blocked`, until the label changes; `route-run` stays
 bindable.
 

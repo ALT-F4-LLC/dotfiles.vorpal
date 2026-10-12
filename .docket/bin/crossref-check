@@ -56,9 +56,9 @@
 #   gate         Every gate a workflow names is a justfile recipe. A gate
 #                the target project supplies instead of this repo is listed
 #                in PROJECT_GATES below, with the workflow that needs it.
-#   label        Every `route-<x>` token is one of the four routing labels
+#   label        Every `route-<x>` token is one of the three routing labels
 #                README.md defines, and every workflow's `[match]
-#                unless_labels` carries `blocked` plus the three
+#                unless_labels` carries `blocked` plus the two
 #                routed-away labels, as README.md says every workflow must.
 #   name         A definition's declared name equals its file stem: `name:`
 #                for skills and agents, `node:` for contracts, `fragment:`
@@ -293,21 +293,21 @@ for wf in "$docket_tree"/workflows/*.toml; do
   done < <(gate_names "$wf")
 done
 
-# --- label: routing labels are the four README.md defines --------------------
+# --- label: routing labels are the three README.md defines-------------------
 
 # A label is checked only when the prose quotes it (`route-x` or "route-x");
 # an unquoted route-<word> is ordinary English.
 while IFS=$'\t' read -r file line tok; do
   tok="${tok#[\`\"]}"; tok="${tok%[\`\"]}"
   case "$tok" in
-    route-run|route-direct|route-tend|route-loop) ;;
-    *) fail label "$file" "$line" "$tok is not one of route-run, route-direct, route-tend, route-loop" ;;
+    route-run|route-direct|route-loop) ;;
+    *) fail label "$file" "$line" "$tok is not one of route-run, route-direct, route-loop" ;;
   esac
 done < <(tokens '[`"]route-[a-z]+[`"]')
 
 for wf in "$docket_tree"/workflows/*.toml; do
   unless="$(tr '\n' ' ' < "$wf" | grep -oE 'unless_labels[[:space:]]*=[[:space:]]*\[[^]]*\]' | head -1)"
-  for want in blocked route-direct route-tend route-loop; do
+  for want in blocked route-direct route-loop; do
     grep -qE "\"$want\"" <<< "$unless" || fail label "$wf" "$(grep -n -m1 'unless_labels' "$wf" | cut -d: -f1)" "[match] unless_labels lacks \"$want\""
   done
 done

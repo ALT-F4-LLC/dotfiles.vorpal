@@ -293,7 +293,7 @@ const LEDGER_SCHEMA = {
         routing: {
             type: 'object',
             properties: {
-                verdict: { type: 'string', enum: ['ok', 'route-run', 'route-direct', 'route-tend', 'route-loop', 'unrouted', 'remove'] },
+                verdict: { type: 'string', enum: ['ok', 'route-run', 'route-direct', 'route-loop', 'unrouted', 'remove'] },
                 defense: { type: 'string' },
                 staleBinding: { type: 'array', items: { type: 'string' }, description: 'Labels that are obsolete AND narrow or zero the match, with the evidence' },
                 matches: { type: 'array', items: { type: 'string' }, description: 'Registered workflows the current labels bind, from the registry' },

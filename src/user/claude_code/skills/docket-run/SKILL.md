@@ -13,8 +13,7 @@ description: >-
   reserved matter goes to the advisor first, then to the operator when the
   advisor's answer is not clear. Holds no run state and keeps the
   conductor capability in one session-private file, never in a brief, tool
-  output, or resume prompt. Distinct from docket-tend, which works issues
-  without a run.
+  output, or resume prompt.
 argument-hint: "[RUN-N | pause [RUN-N]]"
 ---
 

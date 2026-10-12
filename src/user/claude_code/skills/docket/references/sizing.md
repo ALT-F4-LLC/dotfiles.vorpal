@@ -146,7 +146,7 @@ dotfiles projects (no `loop-bound` issue existed yet) — eight through a run,
   path. The `-f` requirement on every conduct filing and the scope-root
   rule under The measures close this.
 - One 10-file, one-directory config edit inside a single corpus sat over
-  the file line and landed cheaply as a small route-tend issue — the
+  the file line and landed cheaply as a small issue — the
   mechanical single-surface case the decomposition prompt above already
   covers, not a reason to raise the line.
 

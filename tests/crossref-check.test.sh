@@ -102,7 +102,7 @@ version = 2
 
 [match]
 labels_any = ["ui"]
-unless_labels = ["blocked", "route-direct", "route-loop", "route-tend"]
+unless_labels = ["blocked", "route-direct", "route-loop"]
 
 [[step]]
 name = "implement"
@@ -286,8 +286,8 @@ expect_fail "gate: PROJECT_GATES row is per workflow" "$FIX" gate "render-verify
 
 # --- label --------------------------------------------------------------------
 build_corpus "$FIX"
-echo 'Set `route-tended` on it.' >> "$FIX/$SKILL"
-expect_fail "label: quoted label outside the four" "$FIX" label "route-tended"
+echo 'Set `route-queued` on it.' >> "$FIX/$SKILL"
+expect_fail "label: quoted label outside the three" "$FIX" label "route-queued"
 
 build_corpus "$FIX"
 sed -i.bak 's|, "route-loop"||' "$FIX/$WF"

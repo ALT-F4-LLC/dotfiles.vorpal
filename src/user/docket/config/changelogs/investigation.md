@@ -3,6 +3,13 @@
 Version history of `workflows/investigation.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 23
+
+unless_labels drops a retired routing label; `route-direct` and
+`route-loop` remain. Queued trivial work now routes `route-run`
+through docket-plan and docket-run. Takes effect for runs activated
+after install. No topology or limit change.
+
 ## 22
 
 The executor steps `research` and `report` gain `max_attempts = 2` with
@@ -64,9 +71,9 @@ stale clause. No topology change.
 
 ## 14
 
-`route-direct`, `route-loop` and `route-tend` join unless_labels:
-an issue docket-groom routed to the operator's own session, the
-tend queue, or a loop matches zero workflows, like `blocked`,
+`route-direct` and `route-loop` join unless_labels:
+an issue docket-groom routed to the operator's own session or
+a loop matches zero workflows, like `blocked`,
 until the label changes; `route-run` stays bindable. No
 topology change.
 

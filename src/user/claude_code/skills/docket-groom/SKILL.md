@@ -13,18 +13,17 @@ description: >-
   Judges through the read-only docket-groom Workflow; the survey,
   edits, gates, and report stay in the main session. Safe edits apply
   directly; closures, merges, splits, rescopes, epic creation,
-  re-parenting, protected-issue edits, and the route-tend and route-loop
-  labels need operator approval. One survey per invocation; no
-  implementation, no watch. Distinct from docket-tend, which works
-  route-tend issues.
+  re-parenting, protected-issue edits, and the route-loop label need
+  operator approval. One survey per invocation; no
+  implementation, no watch.
 argument-hint: "[issue ids, e.g. DOT-1234, DOT-1235] [stale window, e.g. 14d] [engine] [routed|all] [kinds, e.g. bugs] [statuses, e.g. todo]"
 ---
 
 # docket-groom
 
 Run one grooming pass over the current project's open issues: by default
-its unrouted issues in `backlog` status, which bare `docket-plan` and
-`docket-tend` skip until a pass routes them, or exactly the issues the
+its unrouted issues in `backlog` status, which bare `docket-plan` skips
+until a pass routes them, or exactly the issues the
 invocation names (§1 sets the scope and its approval). The Docket engine
 project's open issues, including engine defects and capability gaps filed
 by other Docket skills, are judged only when the pass runs from the engine
@@ -46,7 +45,7 @@ the docket skill's [automation reference](../docket/references/automation.md),
 retained work drains without an operator unless a
 [vital condition](../docket/references/automation.md#when-a-human-is-vital)
 applies: prefer acceptance criteria a gate or script checks over
-`read-verified` judgment, route work to a queue that runs without a human
+`read-verified` judgment, route work to a docket run that needs no human
 when nothing vital blocks it, and settle a triaged operator decision from
 recorded evidence or precedent where one exists, asking only when the
 decision needs operator-only information. The approval gates in §4 still
@@ -87,7 +86,7 @@ ids still applies and narrows them; §5 reports each named id it excluded.
 The stale window and `engine` apply as usual. Without ids, the judged
 issues are the non-epic rows that pass all three filters, and each
 filter has its own default. Routing defaults to unrouted: none of
-`route-run`, `route-direct`, `route-tend`, `route-loop`. Status defaults
+`route-run`, `route-direct`, `route-loop`. Status defaults
 to `backlog`. Kind defaults to every kind. A named filter replaces only
 its own default; several kinds or several statuses union within their
 group. So a bare pass judges unrouted backlog issues, `bugs` judges
@@ -116,7 +115,7 @@ resolution.
 
 Rules:
 
-- **Never invoke `docket-plan`, `docket-run`, or `docket-tend`, and never create,
+- **Never invoke `docket-plan` or `docket-run`, and never create,
   activate, or advance a docket run.** Grooming is issue hygiene only.
   Docket mutations are limited to the `docket issue` write operations
   described below, including `docket issue edit --parent` and, only for a
@@ -151,7 +150,7 @@ same store (survey it once), the word `engine` appears anywhere in
 the id rules below, or the operator approves the engine override below.
 Otherwise the engine survey is count-only: record, over its
 non-epic rows, how many are open, how many are unrouted (none of
-`route-run`, `route-direct`, `route-tend`, `route-loop`), and how many are
+`route-run`, `route-direct`, `route-loop`), and how many are
 unsized (`size` absent or `unknown`) for §5's report; seat no judge for
 them and apply no edit to them. Engine issues need grooming before engine
 planning binds them, and that pass runs from the engine checkout; a
@@ -522,26 +521,24 @@ Record these findings alongside the value decision:
   re-measured after any criteria repair, rescope, or scope fill, since
   those can push an issue over the cap.
 - **Missing or stale routing label:** every retained non-epic issue carries
-  exactly one of `route-run`, `route-direct`, `route-tend`, `route-loop`,
-  the family [brief](../brief/SKILL.md)'s route rules define and
-  docket-plan, docket-tend, and brief read; every workflow's `unless_labels` lists
-  the three non-run values.
+  exactly one of `route-run`, `route-direct`, `route-loop`, the family
+  [brief](../brief/SKILL.md)'s route rules define and docket-plan and
+  brief read; every workflow's `unless_labels` lists the two non-run
+  values.
   Judge it from the issue's body, files, scope, and labels: `route-run`
-  when the work is security-sensitive or its boundary is unknown, when its
-  size is bounded or needs design, or when it needs the review evidence a
-  run produces; `route-tend` when it is one-shot, non-security, fits one
-  working turn, and leaves no decision open, so a worker finishes it
-  without a question; `route-direct` when it is that small but leaves a
-  decision or a judgment to the operator; `route-loop` when the ask is
-  explicitly recurring and the body states the per-pass action, cadence,
-  and stop policy with a trivial pass. `route-run` and `route-direct` apply
-  as safe edits when the criteria clearly hold: the first only makes the
-  issue a plan candidate behind docket-plan's own confirmation round, and
-  the second sends it to the operator's own session. `route-tend` and
-  `route-loop` are approval-gated: either label alone admits the issue to
-  an autonomous worker or a scheduled loop that commits with no further
-  operator turn, so propose them through §4b with the criteria evidence
-  and apply them only on approval. Correct a label the issue has outgrown
+  for one-shot work a worker can finish without a question, whatever its
+  size or security boundary, including trivial work that leaves no
+  decision open; `route-direct` when it is trivial but leaves a decision
+  or a judgment to the operator; `route-loop` when the ask is explicitly
+  recurring and the body states the per-pass action, cadence, and stop
+  policy with a trivial pass. `route-run` and `route-direct` apply as safe
+  edits when the criteria clearly hold: the first only makes the issue a
+  plan candidate behind docket-plan's own confirmation round, and the
+  second sends it to the operator's own session. `route-loop` is
+  approval-gated: the label alone admits the issue to a scheduled loop
+  that commits with no further operator turn, so propose it through §4b
+  with the criteria evidence and apply it only on approval. Correct a
+  label the issue has outgrown
   the way a stale size label is corrected, under the same split. When no
   rule clearly holds, apply nothing and list the issue in the report as
   unrouted with what would settle it, since bare `docket-plan` excludes
@@ -665,7 +662,7 @@ adds information; reuse existing findings instead of repeating them.
 Non-destructive edits land directly, no questions asked: labels (e.g.
 `stale` on §2's stale findings, or removing a §2 stale-binding label once
 its workflow-narrowing effect is confirmed), priority, comments, and field
-fills, except `route-tend` and `route-loop`, which §2b routes through §4b.
+fills, except `route-loop`, which §2b routes through §4b.
 On run-included or claimed issues, only comments and labels with confirmed
 unchanged workflow eligibility apply directly; other edits route to §4. Use
 existing label conventions and do not add a value label whose workflow
@@ -810,8 +807,8 @@ these blockers remain, report an incomplete pass under §5 and stop.
 Closures, merges, and splits never apply without the operator's say-so.
 Batch the proposals from §2: value-based closures, duplicate merges,
 rescopes, splits, repairs to acceptance criteria, relation corrections,
-epic creations, re-parents, confirmed workflow holds, `route-tend` and
-`route-loop` labels, and edits §1 rerouted here. Each proposal must
+epic creations, re-parents, confirmed workflow holds, `route-loop`
+labels, and edits §1 rerouted here. Each proposal must
 contain:
 
 - A stable number, kind, and every issue ID with its owning project.

@@ -1,11 +1,11 @@
 [pipeline]
 description = "Documentation change: implement with doc-validate and citation gates, one correctness judge, tribunal-filtered review and AC verification, and a bounded fix loop re-entering at review. The conductor integrates commits; the operator publishes. Design-heavy doc work routes through spec-doc first."
 name = "docs-only"
-version = 34
+version = 35
 
 [match]
 labels_any = ["docs-only"]
-unless_labels = ["blocked", "investigation", "spec-doc", "spec-project", "release", "retro", "route-direct", "route-loop", "route-tend"]
+unless_labels = ["blocked", "investigation", "spec-doc", "spec-project", "release", "retro", "route-direct", "route-loop"]
 
 [limits]
 "judge-correctness" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }

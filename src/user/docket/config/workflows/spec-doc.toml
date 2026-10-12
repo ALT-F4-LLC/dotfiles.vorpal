@@ -1,11 +1,11 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by research, then validate, review, and vote to accept: the doc-acceptance panel for TDD/ADR, the tribunal for PRD/ux-spec. A rejection re-enters the doctype's revise step, then review, up to the loop bound."
 name = "spec-doc"
-version = 43
+version = 44
 
 [match]
 labels_any = ["spec-doc"]
-unless_labels = ["blocked", "spec-project", "release", "retro", "route-direct", "route-loop", "route-tend"]
+unless_labels = ["blocked", "spec-project", "release", "retro", "route-direct", "route-loop"]
 
 [limits]
 "drain-highs" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }

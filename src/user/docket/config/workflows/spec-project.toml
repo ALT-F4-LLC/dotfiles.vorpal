@@ -1,11 +1,11 @@
 [pipeline]
 description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step. Review and reconcile the findings, accept by tribunal vote, then drain the final round's open findings. A rejection re-enters the bounded revise loop at spec authoring and runs review again."
 name = "spec-project"
-version = 36
+version = 37
 
 [match]
 labels_any = ["spec-project"]
-unless_labels = ["blocked", "release", "retro", "route-direct", "route-loop", "route-tend"]
+unless_labels = ["blocked", "release", "retro", "route-direct", "route-loop"]
 
 [limits]
 "drain-highs" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }

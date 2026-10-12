@@ -1,7 +1,7 @@
 [pipeline]
-description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step. Review and reconcile the findings, drain any open highs, and accept by tribunal vote. A rejection re-enters the bounded revise loop at spec authoring and runs review again."
+description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step. Review and reconcile the findings, accept by tribunal vote, then drain the final round's open findings. A rejection re-enters the bounded revise loop at spec authoring and runs review again."
 name = "spec-project"
-version = 35
+version = 36
 
 [match]
 labels_any = ["spec-project"]

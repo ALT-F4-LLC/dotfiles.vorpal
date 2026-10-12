@@ -1,6 +1,6 @@
 ---
 fragment: severity-ladder-general
-version: 9
+version: 10
 ---
 # Severity ladder: general
 
@@ -32,8 +32,8 @@ separately from confidence.
   runs them, are ordinary use: a required gate or suite you saw fail on a
   correct change is observed, because it blocks every later issue. A test
   that fails only in an environment the pipeline never produces, or that
-  passes while misleading evidence, is unobserved; say which environment you
-  ran in.
+  passes only because its evidence is misleading, is unobserved; say which
+  environment you ran in.
 - **Suggestion** (worth considering here or later): a minor issue or concrete
   improvement with an identifiable benefit. A preference alone cannot justify
   promotion to Concern or Blocker.

@@ -698,10 +698,12 @@ that owns the loop, which is `reconcile` on standard-change, ui-change,
 security-change, spec-doc and spec-project, `review` on small-change,
 `verify-ac` on docs-only, disposition and trivial-change, and the
 `report-vote` vote on investigation. trivial-change is the one track that
-declares `max_fix_loops = 1`. The round is the `loop = true` step plus
-everything replayed from its `after_loop` re-entry point up to that owning
-step: on the change tracks exactly the fix + judges + synthesize-findings
-arithmetic the floor already does. Read the step names, not the costs
+declares `max_fix_loops = 1`. The round is the `loop = true` step plus every
+step in its `after_loop` closure: the `after_loop` step and every step
+transitively `after` it, which the engine supersedes and re-instantiates
+together on each loop entry. That closure runs past the owning step: on the
+change tracks it includes verify-ac, its vote, and `drain-highs`, not only
+the fix, judges and synthesize-findings. Read the step names, not the costs
 alone: the fix step is called `revise-spec` on spec-project,
 `revise-investigation` on investigation and `revise-disposition` on
 disposition, docs-only's `review` is a single `judge-correctness` with no
@@ -709,18 +711,18 @@ fanout and the track has no synthesize-findings step at all, and spec-doc's
 five `revise-*` variants are mutually exclusive `when`s: exactly one
 fires, so its round carries 1.50 once, not five times.
 
-The corpus as it reads today, round × declared loops = reserved per issue:
-standard-change 1.0 + 1.80 + 0.60 = 3.4 × 2 = 6.8; ui-change 4.0 × 2 = 8.0;
-security-change 1.0 + 2.40 + 0.60 = 4.0 × 2 = 8.0; spec-doc 1.50 + 1.80 +
-0.60 = 3.9 × 2 = 7.8; spec-project (`revise-spec` fans out seven ways at
-0.70) 4.90 + 1.80 + 0.60 = 7.3 × 2 = 14.6; docs-only 0.60 + 0.60 +
-verify-ac 0.40 = 1.6 × 2 = 3.2; disposition 0.40 + verify-ac 0.40 = 0.8 × 2
-= 1.6; small-change 1.0 + review 0.60 = 1.6 × 2 = 3.2; trivial-change 1.0 +
-verify-ac 0.50 = 1.5 × 1 = 1.5; investigation `revise-investigation` 0.40
-alone, its re-entry being a vote that costs nothing, × 2 = 0.8. Recompute
-them from the tomls rather than trusting this list: it is a worked example
-of the read, not a substitute for it, and every one of these files is
-versioned.
+The four tracks whose `drain-highs` runs after the final vote, round ×
+declared loops = reserved per issue: standard-change fix 1.0 + judges 1.80 +
+synthesize-findings 0.60 + verify-ac 0.50 + drain-highs 0.30 = 4.2 × 2 =
+8.4; ui-change 1.0 + 2.40 + 0.60 + design-qa 0.90 + 0.50 + 0.30 = 5.7 × 2 =
+11.4; spec-doc `revise-*` 1.50 + 1.80 + 0.60 + drain-highs 0.30 + record
+0.20 = 4.4 × 2 = 8.8; spec-project (`revise-spec` fans out seven ways at
+0.70) 4.90 + 1.80 + 0.60 + 0.30 = 7.6 × 2 = 15.2. Votes and `reconcile`
+cost nothing. The other tracks' figures predate the closure rule above
+and undercount any step after their owning step, so compute them the same
+way from `docket workflow show <wf>` rather than from a remembered number:
+this is a worked example of the read, not a substitute for it, and every
+one of these files is versioned.
 
 The sizing rules below concern finite caps only, per the unlimited-budget
 rule above.

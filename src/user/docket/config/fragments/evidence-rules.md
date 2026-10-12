@@ -1,6 +1,6 @@
 ---
 fragment: evidence-rules
-version: 10
+version: 11
 ---
 # Evidence rules
 
@@ -76,7 +76,12 @@ unresolved question warrants it.
 
 - **File only `blocker` and `high` discoveries.** Attach a `--gap-file` only
   for a finding at `blocker` or `high` that lies outside your issue's scope.
-  Record a `medium` or `low` out-of-scope finding in your step's artifact and
+  `high` means observed: you ran a named input reachable in ordinary use and
+  saw the wrong output yourself, or saw a required gate or suite fail on a
+  correct change in the pipeline's real environment. A finding you inferred,
+  read from source without running, or marked UNVERIFIED is at most
+  `medium`, however serious it would be if real; so is a missing test on
+  code that works. Record a `medium` or `low` out-of-scope finding in your step's artifact and
   in one `docket issue comment add` on your step's own issue instead, one
   comment covering every such finding, and file nothing for it. This bound
   governs discoveries outside your work. A gap your contract's Stuck clause

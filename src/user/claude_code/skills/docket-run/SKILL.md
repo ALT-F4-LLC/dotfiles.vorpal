@@ -2126,9 +2126,13 @@ class:
   finding that is real is not a reason to extend.
 
 **Residue files and passes; you do not ask.** Run the premise check first:
-an open issue already carrying the residue is linked, never refiled. Then,
-per residue item without a home, one item per issue under the sizing rule
-in **3. Close the dispatch**:
+an open issue already carrying the residue is linked, never refiled. A
+review cluster files only at `open_severity` `high` or `blocker`: a
+`medium` cluster is an unobserved finding under the general severity
+ladder, so list it in the resolve `--note` and file nothing for it. An
+unmet acceptance criterion carries no severity and always files. Then, per
+residue item without a home, one item per issue under the sizing rule in
+**3. Close the dispatch**:
 
 ```bash
 docket issue create -t "<the defect in one line>" -T <bug|task> -p <priority from severity> \

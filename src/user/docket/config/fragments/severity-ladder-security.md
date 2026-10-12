@@ -1,6 +1,6 @@
 ---
 fragment: severity-ladder-security
-version: 9
+version: 10
 ---
 # Severity ladder: security
 
@@ -59,9 +59,10 @@ approve-with-concerns casts whose rationales stand in the vote record, after
 which `drain-highs` files every open High the panel approved past as a
 backlog issue, and only those. A rejected tally returns the round to the fix
 loop. Where another track seats this reviewer without a security vote, that
-track's own thresholds route its findings. Medium remains recorded and
-surfaces at the gates and in the backlog; Low and Info remain available for
-downstream consideration.
+track's own thresholds route its findings. Medium remains recorded in the
+run record and at the gates, and `drain-highs` lists it in one comment on the
+issue when the track runs that step; it is never filed as a backlog issue.
+Low and Info remain available for downstream consideration.
 
 Only an open Critical starts the automatic fix loop in this track; an open
 High reaches the panel directly, without a loop attempt first. Retain the

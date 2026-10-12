@@ -1,6 +1,6 @@
 ---
 node: drain-highs
-version: 23
+version: 24
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -99,6 +99,9 @@ step does not repeat their review or independently verify the defects.
    not complete findings; its single location and evidence may represent
    only one member, so follow `member_ids` into judge artifacts when
    necessary, and for standing clusters follow the cited prior-round record.
+   A member id is unique only within its producing judge's payload, so pair
+   each `member_id` with its `member_sources` entry to find the right judge
+   artifact; a missing or ambiguous pairing takes Stuck.
    Use the run's artifact index and `docket step artifacts STEP-N` to locate
    references, then `docket step artifact ARTIFACT-N` to read the full body
    and payload. Missing required member evidence takes Stuck.
@@ -116,7 +119,8 @@ step does not repeat their review or independently verify the defects.
 
    The first line becomes the issue title. Use the cluster's title where
    supplied; otherwise state the defect from its evidence, keeping the first
-   line to one line without changing its meaning. `Files:` includes every
+   line to one line of at most 120 characters, the engine's title limit,
+   without changing its meaning. `Files:` includes every
    distinct file named by the cluster's member `file:line` evidence, with
    location suffixes removed; preserve the actual paths, do not infer extra
    files or replace paths with broader globs. If the complete evidence names

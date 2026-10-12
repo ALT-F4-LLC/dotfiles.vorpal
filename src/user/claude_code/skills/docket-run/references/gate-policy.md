@@ -14,8 +14,8 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket gate`](#gate-commands) — 25 lines
-  - [`gate status STEP-N`](#gate-status) — 21 lines
+- [`docket gate`](#gate-commands) — 24 lines
+  - [`gate status STEP-N`](#gate-status) — 20 lines
 - [`docket policy`](#policy-commands) — 26 lines
 - [`docket registry`](#registry-commands) — 16 lines
 
@@ -27,9 +27,8 @@ examples reflect the swept commands as of that build.
 
 #### `docket gate status STEP-N`
 
-One gate step's whole decision state in one small envelope, replacing the
-scatter of `step show`, `vote show` and a re-derived outcome that wave.js's
-probes used to relay round trip by round trip. READ-ONLY; writes nothing.
+One gate step's whole decision state in one small envelope. READ-ONLY;
+writes nothing.
 STEP-N must be a `type="human"` or `type="vote"` step — any other kind is
 `VALIDATION_ERROR`.
 

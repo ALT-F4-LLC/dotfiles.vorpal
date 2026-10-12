@@ -57,9 +57,9 @@ not infer hard from tone alone, and say which mode you use before you act.
    started — is refused with `run is not active` and comes back
    unclaimed. No new work starts; that is the intended trade.
 3. Reconcile and close the dispatch through docket-run's normal path
-   (`docket dispatch close --run RUN-N`). `dispatch close` refuses while a
-   discrepancy stands, so resolve the refused steps in the manifest
-   first — they are unclaimed, not failed. Do not use `dispatch abandon`
+   (`docket dispatch close --run RUN-N`). The refused steps do not block
+   the close: they are unclaimed, not failed, and a step nobody claimed
+   is never a discrepancy. Do not use `dispatch abandon`
    here; that hard-halt verb discards live work unconditionally.
 4. Once the dispatch is closed, build and record the resume snapshot
    (below), listing by step id every step the pause refused, so the

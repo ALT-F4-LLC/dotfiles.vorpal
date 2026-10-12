@@ -60,7 +60,8 @@ offer it as a disposition with the operator's reason, never on your own
 judgment to unstick a dispatch.
 
 **"Proceed anyway / accept the risk" is not one of them; never offer it.**
-The hook refuses the relaunch outright. Re-activating is not a back door
+The engine refuses it anyway: a step that reads a drifted ref gets
+`CONFLICT` at claim and render. Re-activating is not a back door
 either: it expands newly-unblocked phases only and inherits the original
 pin set, by design, so in-flight work can rely on it.
 

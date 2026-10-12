@@ -34,7 +34,7 @@ Deterministic predicates over engine state, for hooks.
 | Verb | Allows when |
 |---|---|
 | `guard stop` | no pending work outside `waiting-human` |
-| `guard gate --step NAME` | a **passed** `type="human"` **or** `type="vote"` step of that name exists for an active run — an approval on the one, a tallied approval on the other. Both kinds answer, so converting a gate to a vote does not silently stop the hooks that check it; a vote still being cast reads as undecided and denies |
+| `guard gate --step NAME [--run RUN-N]` | a **passed** `type="human"` **or** `type="vote"` step of that name exists for the named run, or, without `--run`, for any active run of the current project — an approval on the one, a tallied approval on the other. Both kinds answer, so converting a gate to a vote does not silently stop the hooks that check it; a vote still being cast reads as undecided and denies |
 | `guard record [--run RUN-N]` | no unreconciled dispatch exists — no open manifest, and no discrepancy |
 | `guard spawn --run RUN-N` | the proposed rows byte-match the open dispatch **and** no write-class reap is unacknowledged (or `--deciding-vote PROPOSAL-N` names the open proposal this batch exists to decide — the reap half only) |
 | `guard spawn --active` | the reap half over **every** active run of the project: denies on the oldest run that would deny, its reason prefixed `RUN-N: `. Mutually exclusive with `--run`, and it takes neither `--deciding-vote` nor `--rows` (exit 3) — the carve-out and a proposed batch each belong to one run, so name that run with `--run`. The `--json` deny envelope is `{ok:false, error, code}` with no run field; the id is the reason's prefix |
@@ -164,7 +164,7 @@ These verbs need no `.docket/` database: the store is user-level.
 
 <a id="trust-add"></a>
 
-#### `docket trust add <name> -- <argv...>` 
+#### `docket trust add <name> -- <argv...>`
 
 | Flag | Type | Default | Notes |
 |---|---|---|---|

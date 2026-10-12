@@ -83,28 +83,20 @@ escalation target, and `[escalation]` value is unchanged.
 ## 32
 
 judge-testing moves opus-low -> sonnet-low as the corpus's
-one second-family review seat, a retro-measured experiment in
-panel decorrelation rather than a tuning. Every other judge-*
-and tribunal-* seat but tribunal-design stands on Opus, so a
-panel's seats differed by lens and effort but never by model
-family, and the match-rate statistics the workflow changelogs
-cite ("the seat matched the panel N of N") say nothing when
-the seats share a model. The metric that judges the move is
-sole-finder clusters, never match rates; docket-retro's evidence
-table reads the baseline recorded below. No other routing value
-changed; [security] never/ceiling/labels/nodes are byte-identical.
+one second-family review seat: a retro-measured experiment in
+panel decorrelation, not a tuning. Every other judge-* and
+tribunal-* seat but tribunal-design stands on Opus, so a panel's
+seats differ by lens and effort, never by model family, and
+seats sharing a model share its blind spots: "seat X matched the
+panel N of N" then measures conformity, not independent
+detection, and is not evidence for or against any seat. The
+metric that judges the move is sole-finder clusters, never match
+rates; docket-retro's evidence table reads the baseline recorded
+below. No other routing value changed; [security]
+never/ceiling/labels/nodes are byte-identical.
 
-Row note, recorded at 32 and moved here at 37: sonnet-low, from
-opus-low, as the corpus's one second-family review seat: a
-retro-measured experiment in panel decorrelation, not a tuning.
-Every other judge-* and tribunal-* seat but tribunal-design
-stands on Opus, so a panel's seats differ by lens and effort,
-never by model family, and seats sharing a model share its blind
-spots: "seat X matched the panel N of N" then measures
-conformity, not independent detection, and is not evidence for
-or against any seat. Chosen because it carries the most
-sole-finder highs of any review seat (clusters no other seat
-raised: 154 high / 3 blocker across 187 reconciled
+judge-testing was chosen because it carries the most sole-finder
+highs of any review seat (clusters no other seat raised: 154 high / 3 blocker across 187 reconciled
 standard-change rounds, 128 / 0 across 107 ui-change rounds,
 103 / 7 across 98 security-change rounds), so a family change
 here is the most measurable. Sonnet rather than Fable: on a

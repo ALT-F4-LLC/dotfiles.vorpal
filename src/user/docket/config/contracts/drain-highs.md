@@ -1,6 +1,6 @@
 ---
 node: drain-highs
-version: 25
+version: 26
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -129,11 +129,11 @@ step does not repeat their review or independently verify the defects.
    files from it and its scope from an optional `Scope:` line, defaulting to
    the files, so this step supplies neither `-f` nor `--scope`. Keep
    `Severity:` in the leading header so the engine can assign the backlog
-   priority from the open severity. Every filing carries `review-gap` in `Labels:`, marking it apart
-   from an issue filed any other route for a later `/docket-groom` pass or
-   `docket-retro` reading to filter on; also state this step's
-   `source-run:RUN-N` in the body below the header so the filing's provenance
-   survives even where `Labels:` is not read.
+   priority from the open severity, and carry `review-gap` in `Labels:` on
+   every filing, marking it apart from an issue filed any other route for a
+   later `/docket-groom` pass or `docket-retro` reading to filter on.
+   State this step's `source-run:RUN-N` in the body below the header, so the
+   filing's provenance survives even where `Labels:` is not read.
 
    After a blank line, include the cluster's `open_severity`, its supplied
    identity, and every member's judge, severity, `file:line`, and evidence.
@@ -183,8 +183,9 @@ supplied cluster IDs, or use the artifact position established above.
 A successful report is non-empty even when no files are needed. When no
 cluster is at `medium` or above, the report says so in one line, nothing is
 filed, and no comment is posted; that is the common case and a clean result.
-State explicitly when every selected cluster was already filed. The completion receipt pairs the newly attached files with issue IDs;
-do not invent those IDs in the report prepared before recording.
+State explicitly when every selected cluster was already filed. The
+completion receipt pairs the newly attached files with issue IDs; do not
+invent those IDs in the report prepared before recording.
 
 # Stuck
 
@@ -197,8 +198,7 @@ files, and attach them with the drain-failure gap under an empty
 the explanation in the gap; even a heading or "blocked" in the report would
 make its body non-empty.
 
-If recording
-itself fails or its outcome remains uncertain, report that state to the
-caller under the archetype's recovery rules. Do not claim the step was
-parked without confirmation, or submit a success report while any required
-drain is unresolved.
+If recording itself fails or its outcome remains uncertain, report that
+state to the caller under the archetype's recovery rules. Do not claim the
+step was parked without confirmation, or submit a success report while any
+required drain is unresolved.

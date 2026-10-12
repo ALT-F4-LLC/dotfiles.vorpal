@@ -235,7 +235,7 @@ value, unlike the change tracks where 36 of 38 approved it).
 
 ## 33
 
-`doc-validate` joins the `implement` and `fix` gate lists
+`doc-validate` joins the `implement` and `fix` gate lists:
 the widened doc-validate pathspec was declared
 only on docs-only and spec-doc/spec-project, so this
 track's doc edits were never checked by it.

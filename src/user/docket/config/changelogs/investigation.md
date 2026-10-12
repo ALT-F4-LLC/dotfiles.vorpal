@@ -57,8 +57,8 @@ anyway, so the ceiling is unchanged. No topology change.
 
 `report-vote` reads `issue.latest.investigation` instead of
 `report.investigation`, so a re-run after `revise-investigation`
-sees the revised report, as every other loop-gated vote in the
-corpus already does; `revise-investigation` gains
+sees the revised report, as the spec-doc and spec-project doc
+votes do; `revise-investigation` gains
 `report-vote.vote-record` in its inputs, the record its
 contract tells it to read. No topology change.
 

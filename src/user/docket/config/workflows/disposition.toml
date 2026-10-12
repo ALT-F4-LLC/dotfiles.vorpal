@@ -1,19 +1,19 @@
 [pipeline]
 description = "Cross-issue disposition: write the verdict comment and close the carrier. Gated on the build/test sanity check and AC verification, with a bounded revise loop. No code-review machinery."
 name = "disposition"
-version = 17
+version = 18
 
 [match]
 labels_any = ["disposition"]
 unless_labels = ["blocked", "docs-only", "investigation", "spec-doc", "spec-project", "release", "retro", "security", "security-change", "security-load-bearing", "ui", "route-direct", "route-loop"]
 
 [limits]
-"write" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
+"read" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
 "verify-ac" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
 
 [[step]]
 after = []
-class = "write"
+class = "read"
 emits = "disposition"
 executor = "dispose"
 expected_cost = 0.60
@@ -51,7 +51,7 @@ voters = ["tribunal-correctness"]
 
 [[step]]
 after_loop = "verify-ac"
-class = "write"
+class = "read"
 emits = "disposition"
 executor = "dispose"
 expected_cost = 0.40

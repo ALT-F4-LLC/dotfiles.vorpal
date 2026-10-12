@@ -3,6 +3,17 @@
 Version history of `workflows/disposition.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 18
+
+`dispose` and `revise-disposition` move from `class = "write"` to
+`class = "read"`, and `[limits]` keys their entry as `"read"` instead of
+`"write"`; no step remains in the write class. The dispose contract
+forbids repository changes and commits, so the wave now dispatches both
+steps to `executor-read`, whose brief carries no commit obligation and no
+`--worktree` record flag. `executor-read` permits the comment and close
+verbs the dispose step needs on its carrier issue. Takes effect for runs
+activated after install. No topology or routing change.
+
 ## 17
 
 unless_labels drops a retired routing label; `route-direct` and

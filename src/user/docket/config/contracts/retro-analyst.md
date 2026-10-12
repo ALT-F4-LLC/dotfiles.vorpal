@@ -1,6 +1,6 @@
 ---
 node: retro-analyst
-version: 15
+version: 16
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -19,8 +19,8 @@ schemas, policy, contracts, fragments, trust entries, and the store settings
 named by `docket-retro`.
 
 `docket-retro` briefs this analysis and receives its output. It owns the
-evidence taxonomy, gathering rules, proposal requirements, and zero-touch rule;
-read its governing sections instead of reconstructing them from memory.
+evidence taxonomy, gathering rules, proposal requirements, and automation-first
+rule; read its governing sections instead of reconstructing them from memory.
 Approval, versioning, schema succession, applying changes, verification, and
 issue filing remain with its downstream routes.
 
@@ -83,8 +83,7 @@ Return `findings` using the skill's evidence-labelling requirements (§2), with
 the analysis window and coverage stated once. The skill composes these into
 §3's ranked proposals and supplies each one's version bump and lint result;
 leave those to the skill. Rank trust-drift findings first, then config-churn
-findings that affect the remaining recommendations, then the rest by evidence
-strength.
+findings, then the rest by evidence strength.
 
 For each config proposal, give its finding, observed facts and inferred claims,
 supporting run IDs where applicable and event, step, or artifact references,

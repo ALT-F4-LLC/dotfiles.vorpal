@@ -1,6 +1,6 @@
 ---
 node: revise-investigation
-version: 11
+version: 12
 archetype: executor-read
 packet_includes:
   - fragments/truth-first.md
@@ -19,8 +19,8 @@ Apply the fragments within this revision-only, read-only assignment.
 
 # Not
 Do not restart the investigation or repeat unaffected reproduction and bisection.
-Reopen
-only disputed work and claims affected by evidence uncovered during this revision.
+Reopen only disputed work and claims affected by evidence uncovered during this
+revision.
 
 Do not weaken claims merely to obtain approval. Correct false claims, withdraw
 unsupported certifications, and state uncertainty where the evidence requires it.

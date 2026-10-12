@@ -1,6 +1,6 @@
 ---
 node: verify-ac
-version: 22
+version: 23
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -115,9 +115,9 @@ Check an AC's mutant clause (`Mutant: ... the test then fails`) against the
 mutation diff, test command, and failing output the change-summary inlines.
 When your inputs carry more than one change-summary, judge each mutant clause
 against the latest one, the summary of the round that produced the candidate
-you are verifying. Never read another step's scratch directory; a path cited there is not
-evidence. When the inlined evidence is absent or incomplete, report the clause
-unverified and judge it `unverifiable`, naming the missing evidence.
+you are verifying. Never read another step's scratch directory; a path cited
+there is not evidence. When the inlined evidence is absent or incomplete, report
+the clause unverified and judge it `unverifiable`, naming the missing evidence.
 
 **Judge the criterion as written.** Use only these payload statuses:
 
@@ -225,9 +225,9 @@ and a status in `met|unmet|unmet-out-of-scope|unverifiable`, plus one
 scope reconciliation above); the schema's `id` field admits that synthetic
 id, and the body's scope section is where a reader learns what it names.
 Keep body and payload consistent; do not add statuses for classifications,
-blockers, or gaps. Use the brief's gap and artifact protocol without inventing fields or
-filing external issues yourself. Routing is computed from the payload and
-gate results; draw no overall verdict and never relabel a result to force a
+blockers, or gaps. Use the brief's gap and artifact protocol without inventing
+fields or filing external issues yourself. Routing is computed from the payload
+and gate results; draw no overall verdict and never relabel a result to force a
 route.
 
 # Stuck

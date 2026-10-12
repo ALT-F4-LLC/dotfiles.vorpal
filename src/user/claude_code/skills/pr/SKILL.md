@@ -527,9 +527,9 @@ pass; ≤ 72 characters; and matching the conventional-commit shape above
 'title=@<file>'` — the file's bytes are a field value, never argv — so the
 shape check is style and length, not the barrier.
 
-**The body file gets the same NUL check**, the same `tr`/`wc` comparison on
-the stripped body file, run before the refuse-list scan as the title's is. A
-mismatch refuses the publish.
+**The body file gets the same NUL check**: the same `tr`/`wc` comparison,
+run on the stripped body file before the refuse-list scan, so the grep pass
+never meets a NUL-bearing body. A mismatch refuses the publish.
 
 **The scratch directory is private and single-use**: `mktemp -d` (mode
 `0700`, never a predictable or shared path), a fresh one per invocation,

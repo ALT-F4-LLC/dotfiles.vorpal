@@ -33,6 +33,7 @@ Engine defaults live in the database, read by the claim machinery:
 |---|---|---|---|
 | `lease.ttl.default` | duration | `15m` | fallback lease TTL |
 | `lease.ttl.<class>` | duration | (falls back to default) | per-class lease TTL. **The class is a step's `class` field, which defaults to its `executor` name** — see below |
+| `limits.max.<class>` | int ≥ 1 or `auto` | (unset: the pinned `[limits]` max) | the class's concurrency cap. Overrides that class's pinned `[limits]` max at scheduling time, read at every scheduling pass. `auto` is half the host's CPUs, with a minimum of 1. A project value wins over a `--global` value |
 | `attempt.max` | int ≥ 1 | `3` | maximum claims per entity |
 | `budget.default` | number ≥ 0 | `0` | default per-run budget cap; 0 is unlimited. Resolved at `run start` and stored on the run, so setting it later does not re-cap a run already started |
 | `budget.unit` | unit name or `""` | `""` | which recorded usage unit the run cap counts. Empty (the default) means the cap rests on the declared-cost floor alone |

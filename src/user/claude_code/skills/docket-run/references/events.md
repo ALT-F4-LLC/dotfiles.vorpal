@@ -8,14 +8,17 @@ contract and parsing traps. Verified 2026-10-02 against `docket
 nightly-229-g7f304cc` (commit `7f304cc`, built `2026-10-02T22:01:56Z`) by
 `--help`/`--version` and the docket-cli-audit skill's runtime sweep
 (`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
-examples reflect the swept commands as of that build.
+examples reflect the swept commands as of that build. The `--kind` and
+`--step` rows, the cross-project `--run` resolution, and `--tail` under
+`--follow` were checked against `nightly-623-gfefc91d`'s `--help`, not by
+the sweep.
 
 <a id="contents"></a>
 
 ## Contents
 
-- [`docket events`](#events-commands) — 200 lines
-  - [`events list`](#events-list) — 101 lines
+- [`docket events`](#events-commands) — 206 lines
+  - [`events list`](#events-list) — 107 lines
   - [`events prune`](#events-prune) — 49 lines
   - [Attribution](#events-attribution) — 42 lines
 
@@ -34,11 +37,17 @@ own account of itself rather than a summary written afterwards.
 | Flag | Type | Default | Notes |
 |---|---|---|---|
 | `--since` | int64 | `0` | return events with `seq` **strictly greater** than this cursor |
-| `--run` | string | `""` | filter to one run; omit for the project-wide feed |
+| `--run` | string | `""` | filter to one run, answered in whichever project owns it: a run in another project returns that run's events, and a run that does not exist is refused; omit for the project-wide feed |
+| `--kind` | string | `""` | return only events of this kind; an unknown kind is refused with the valid kinds |
+| `--step` | string | `""` | return only this step's events (`STEP-N`); a step that does not exist is not found |
 | `--all-projects` | bool | `false` | show every project's events instead of the current project's |
-| `--tail` | int | `0` | return the newest N events, still **oldest-first** — the mid-incident read, since reaching the end of a long feed by cursor means paging through all of it. Mutually exclusive with `--since` |
+| `--tail` | int | `0` | return the newest N events, still **oldest-first** — the mid-incident read, since reaching the end of a long feed by cursor means paging through all of it. With `--follow`, the newest N become the starting cursor: the stream opens there and then follows live. Mutually exclusive with `--since` |
 | `--limit` | int | `100` | maximum events returned, applied **after** ordering |
 | `--follow` | bool | `false` | poll for new events and print them as they arrive; Ctrl-C to stop |
+
+`--kind` and `--step` filter **before** `--limit` and `--tail`, and `total`
+counts only the matches, so a lookup by kind or step covers the whole trail
+rather than the oldest page.
 
 `--follow` uses the **global** `--interval` (default `2s`, minimum `500ms`) — the
 same flag `--watch` uses, so the poll period has one definition across every verb

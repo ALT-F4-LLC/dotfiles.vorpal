@@ -10,18 +10,21 @@ nightly-229-g7f304cc` (commit `7f304cc`, built `2026-10-02T22:01:56Z`) by
 (`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
 examples reflect the swept commands as of that build. The `dispatch-close`
 reap acknowledgment below was added for `nightly-260-gf08ce73` and checked
-against that build's source, not by the sweep.
+against that build's source, not by the sweep. The close-time reap, the
+`usage-rows-missing` definition, and the `--accept-missing-usage` and
+`--backfill-from` constraints were checked against `nightly-623-gfefc91d`'s
+`--help`, not by the sweep.
 
 <a id="contents"></a>
 
 ## Contents
 
-- [`docket next` in step mode](#next-run) — 85 lines
-- [`docket dispatch`](#dispatch-commands) — 330 lines
-  - [`dispatch open`](#dispatch-open) — 77 lines
+- [`docket next` in step mode](#next-run) — 91 lines
+- [`docket dispatch`](#dispatch-commands) — 347 lines
+  - [`dispatch open`](#dispatch-open) — 78 lines
   - [`dispatch extend`](#dispatch-extend) — 23 lines
   - [`dispatch verify`](#dispatch-verify) — 37 lines
-  - [`dispatch close`](#dispatch-close) — 43 lines
+  - [`dispatch close`](#dispatch-close) — 59 lines
   - [`dispatch backfill-usage`](#dispatch-backfill-usage) — 49 lines
   - [`dispatch abandon`](#dispatch-abandon) — 22 lines
   - [`dispatch waive-target`](#dispatch-waive-target) — 23 lines
@@ -52,8 +55,9 @@ trusts a filter that does nothing.
 
 Step mode may WRITE: it reaps expired step leases, returning them to the ready
 pool, and auto-abandons a dispatch manifest that has outlived its TTL. Lease
-reaping happens here, at `step claim`, at `dispatch open`, and through a
-forced `step reap`, never at `dispatch verify`; the dispatch
+reaping happens here, at `step claim`, at `dispatch open`, at `dispatch
+close` (before it probes for discrepancies), and through a forced `step
+reap`, never at `dispatch verify`; the dispatch
 auto-abandon happens here alone — `claim` never retires a manifest, since a
 dispatch is about a *batch*, and letting a single-step verb expire one would
 let a claim silently unwedge a run whose relay is still alive.
@@ -66,8 +70,8 @@ Each refusal is `CONFLICT` (exit 4):
 | Refusal | When | The way out |
 |---|---|---|
 | open dispatch | a manifest is open for the run and has not expired | `docket dispatch close`, `docket dispatch abandon`, or wait for `dispatch.ttl` — the message names all three plus the dispatch and its expiry |
-| `claimed-but-unrecorded` | a step is `claimed`/`running` and has been silent longer than `dispatch.grace` | **lease expiry clears it**: the lease lapses, the next `next` reaps the step, and the discrepancy dissolves. The message names the expiry time |
-| `usage-rows-missing` | a step finished after the run was activated with no recorded usage, **in a run that has ever opened a dispatch** | record the usage with `docket dispatch backfill-usage` (or `step complete --usage` at the time), or `docket dispatch close --accept-missing-usage`, which settles the accepted steps and clears the discrepancy immediately (no back-fill required to unblock `next`) |
+| `claimed-but-unrecorded` | a step is `claimed`/`running` and has been silent longer than `dispatch.grace` | **lease expiry clears it**: the lease lapses, a reap frees the step, and the discrepancy dissolves. The message names the expiry time. With no dispatch open, the next `next` does the reap. While a dispatch is open, `next` refuses and rolls its own reap back; `dispatch close` reaps a lapsed lease itself before it probes, so wait for the lapse and re-run close, `docket step reap` once the holder is established dead, or `docket dispatch abandon` |
+| `usage-rows-missing` | a step that was **claimed**, finished after the run was activated and more than `dispatch.grace` ago, and recorded no usage, **in a run that has ever opened a dispatch**. A step that finished more recently is usage **pending**, not missing; a step nobody ever claimed is never counted | record the usage with `docket dispatch backfill-usage` (or `step complete --usage` at the time), or `docket dispatch close --accept-missing-usage`, which settles every step still owing usage, pending ones included, and clears the discrepancy immediately (no back-fill required to unblock `next`) |
 
 The reap runs *before* the refusal is evaluated, so a step this invocation
 frees is never reported as a discrepancy naming a resolution that already
@@ -77,7 +81,12 @@ happened.
 never opened a dispatch can still leave a claimed step unrecorded. But
 `usage-rows-missing` applies only to runs with dispatch history: a run no
 relay ever drove has nobody owing usage, so a solo operator completing steps
-without `--usage` is never refused.
+without `--usage` is never refused. It also applies only to claimed steps
+that finished more than `dispatch.grace` ago: a more recent finish is usage
+pending, since the relay's transcript join may land beside the close rather
+than ahead of it. `docket run report` lists pending and missing steps alike
+under `missing_usage`, so a run's last wave, which no later close probes,
+stays visible.
 
 Issue mode (`docket next` with no `--run`) probes none of this and is
 byte-identical to what it was before dispatches existed.
@@ -151,8 +160,9 @@ with a reason.
 
 Response is engine-spec §11.4's `dispatch` shape: `{dispatch, run, opened_seq,
 expires_ms, rows: [<next row>…], total, truncated}`, plus five optional
-fields: `reaped` and `reap_hold` (both `omitempty`, absent when this open
-reaped nothing), `stale_targets` (absent when no row's target diverged),
+fields: `reaped` (`omitempty`, absent when this open reaped nothing),
+`reap_hold` (`omitempty`, absent when no unacknowledged reap holds the
+run), `stale_targets` (absent when no row's target diverged),
 `pin_drift` (absent when every pin is sound), and `budget_held` (absent
 when nothing was withheld), each described below. `truncated` reflects
 whether `--limit` sliced the manifest. Each row is stored as its
@@ -299,14 +309,30 @@ unintegrated. Integrate, then close again. The close event records
 shows.
 
 With `--skip-integration-check`, close is a conductor verb on a bound run:
-redirect `< <scratchpad>/conductor.d/RUN-N.token` into it. A close without
-that flag stays token-free.
+redirect `< <scratchpad>/conductor.d/RUN-N.token` into it. With
+`--backfill-from -`, stdin carries the usage rows, so the token comes from
+`DOCKET_TOKEN` only. A missing token refuses `VALIDATION_ERROR` and a wrong
+one `AUTH_ERROR`, before anything is written. A close without that flag
+stays token-free.
+
+**`--backfill-from` requires an open dispatch**, since its verify stage
+needs a manifest to compare. It runs back-fill, verify, and close in that
+order, each stage all-or-nothing, and refuses at whichever stage fails
+with that stage named: a failed back-fill runs no verify, a failed verify
+runs no close, and nothing is half-closed.
 
 Refuses `CONFLICT` while any discrepancy exists, enumerating each with its
 resolution (the table under `docket next` above). `--accept-missing-usage`
 accepts **only** that class: `claimed-but-unrecorded` has its own
 resolution — lease expiry — and a flag that accepted both would let a relay
 close over work that is still running.
+
+**`--accept-missing-usage` does not require an open dispatch.** It records
+a statement about steps, not about a manifest, so it breaks the cycle in
+which `next` offers no work until the discrepancy clears and no dispatch is
+open to close. The acceptance clears the discrepancy for `next` and
+`dispatch open`, which refuse on the same conditions. Without the flag,
+closing a manifest that is not open is still a `CONFLICT`.
 
 The acceptance is *recorded*, not merely permitted: `close_reason` becomes
 `accepted-missing-usage` and the accepted step list rides in the

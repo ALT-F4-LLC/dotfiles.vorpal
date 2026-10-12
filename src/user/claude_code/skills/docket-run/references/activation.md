@@ -33,12 +33,12 @@ ballots the run's own vote steps opened. Before `docket vote create`,
 list what is standing:
 
 ```bash
-docket vote list --json          # open proposals only, by default
+docket vote list --json=v2       # open proposals only, by default
 ```
 
 There is no `--run` filter; match on description and `linked_issues`
-against the run's issue roster (`docket issue list --run RUN-N`), then `docket vote show <id>` to
-confirm. Reconcile every match:
+against the run's issue roster (`docket issue list --run RUN-N`),
+then `docket vote show <id>` to confirm. Reconcile every match:
 
 - **Adopt it** when it names this run and the same binding. Pass its id
   to tribunal.js as `voteId`; top up missing seats per SKILL.md's **A
@@ -65,4 +65,4 @@ issue bound to the baseline whose title or scope lives in a variant's
 domain (TUI/UI paths without `ui`, canonically) is a routing flag, put
 into the proposal context verbatim. Fixing it before the gate is one
 `docket issue label add` plus a fresh dry-run; after activation, only
-re-docket-planning can fix it.
+re-planning through docket-plan can fix it.

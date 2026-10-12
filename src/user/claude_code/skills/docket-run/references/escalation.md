@@ -219,9 +219,10 @@ offer `docket run abandon $RUN --issue` to stop one step: it fails every
 step of the issue.
 
 Which verb is the step's type, not your reading of the situation:
-`approve`/`reject` exist only on `type="human"` gate steps; an executor
-step parked `waiting-human` takes `resolve --as …` only. A vote step
-parked by its `on_fail` follows the same rule. Resolving the parking step
+`approve`/`reject` exist only on `type="human"` gate steps and on a
+materialized `<step>-held` step of either kind; every other parked step,
+including an executor step or a vote step parked by its `on_fail`, takes
+`resolve --as …` only. Resolving the parking step
 on a rollup-parked run auto-resumes it in the same call; never follow
 with `docket run resume` (CONFLICTs). Find and read a gate's artifact as
 a pair of verbs: `docket step artifacts STEP-N` lists ids, `docket step

@@ -76,9 +76,9 @@ export const meta = {
 
 // Pin models so a launch never inherits the caller's quota-limited model.
 // The registry probe relays match blocks; clustering compares titles and
-// defenses; the judge makes the value, readiness, and size call the whole
-// pass rests on, so it gets opus/medium, the variant policy.toml gives most
-// of its judge-* executors.
+// defenses; the judge makes the value, readiness, and size call. All three
+// run haiku/medium: the caller treats each entry as evidence and re-reads
+// every closure, merge, rescope, or split candidate itself.
 const AGENT_CONFIG = {
     registry: { model: 'haiku', effort: 'medium' },
     judge: { model: 'haiku', effort: 'medium' },

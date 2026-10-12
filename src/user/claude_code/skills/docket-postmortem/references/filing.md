@@ -1,9 +1,11 @@
 # Reconcile and file
 
 Read this before any issue write. This conversation owns filing for the
-audit; the workflow's analysts and reconciler draft and never file. Audit
-authorization permits findings intake once these conditions are met. It
-never permits fixing or draining the queue.
+audit; the workflow's analysts and reconciler draft and never file. At
+filing time the only additional writes are the issue operations in this
+reference, made under the eligibility, routing, deduplication, and issue
+contract sections that follow. They never include fixing or draining the
+queue.
 
 ## Eligibility
 
@@ -15,7 +17,7 @@ current source, and existing issue state. Use this disposition:
 | Confirmed and unresolved | File, or attach recurrence to an existing issue. |
 | Already tracked | Name the owning project and issue. Add new material evidence only; do not repeat the same comment each audit. |
 | Fixed during the run's arc or since | Record the resolving artifact or commit and its verification. No new fix issue; a remaining install problem needs its own evidence. |
-| Instance policy choice | Refer to docket-retro with evidence; do not file it as a shipped-definition defect. |
+| Instance policy choice | Refer to `docket-retro` with evidence; do not file it as a shipped-definition defect. |
 | Uncertain, refuted, or only an expected guard firing | Retain as a limitation or control observation; no defect filing. |
 | Owning checkout or store unavailable, or the issue command blocked | Mark filing pending and deliver the worker-ready writeup. |
 
@@ -77,7 +79,7 @@ failed.
 
 Create one issue per distinct load-bearing or friction defect; batch
 paper-cuts only when they share an owning surface and coherent remedy. Before
-each create, measure the issue against the docket skill's
+each create, measure the issue against the `docket` skill's
 [sizing reference](../../docket/references/sizing.md): pass its tier as
 `--size` on every create, file a remedy whose acceptance describes two or
 more independent outcomes as one issue per outcome, and keep a paper-cut
@@ -135,7 +137,7 @@ not manufacture or waive approval.
 
 Acceptance criteria must be checkable by a worker without this conversation.
 A command-backed criterion states the concrete failing variant or mutant the
-local docket-plan contract requires. For a prose judgment without an
+local `docket-plan` contract requires. For a prose judgment without an
 executable check, mark it `read-verified` and state what to inspect; never
 use that label to hide an unperformed behavioral test, and never claim a
 proposed acceptance check already ran.
@@ -171,5 +173,5 @@ If storage was denied, deliver the full review through the conversation and
 say explicitly that no durable audit log was created.
 
 Say that no fixes were applied. Filed issues drain through `docket-groom`
-routing into a docket-plan → docket-run execution or direct work; do not start
-that work.
+routing into a `docket-plan` → `docket-run` execution or direct work; do
+not start that work.

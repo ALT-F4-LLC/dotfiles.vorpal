@@ -44,10 +44,14 @@ configuration secrets. The supplied resolution order is explicit
 `DOCKET_PATH`, then a repository-local store found by walking upward, then
 the global store; a matching run id in a different store is a different run.
 
-`events list` is cwd-scoped without `--all-projects` and can return `ok:true,
-total 0` for a run driven from another project's directory; always pass the
-flag, and paginate with `--since` until `total` is reached. `run report`,
-`step show`, and `step artifacts` answer for a run wherever it lives.
+`events list --run RUN-N` resolves the run in whichever project owns it,
+as `run report`, `step show`, and `step artifacts` do (observed in the
+`events list --help` text of build nightly-623-gfefc91d, 2026-10-12). Without
+`--run`, `events list` is cwd-scoped, so pass `--all-projects` for run-less
+or `--kind` queries. Keep the flag on `--run` queries too: older builds
+answered them per project and could return `ok:true, total 0` for a run
+driven from another project's directory; retire that guard once no older
+build remains in use. Paginate with `--since` until `total` is reached.
 
 ## What each read establishes
 

@@ -137,8 +137,11 @@ assessment. Report files discovered, reviewed, excluded, errored, and counted
 for each metric. A null analyst return is an incomplete assignment;
 reconcile or report it instead of silently reducing the denominator.
 
-The sandbox ledger analysis stays read-only (`file: false`), windowed to the
-run's arc. Group by evidenced cause, retaining affected projects, recency,
+The sandbox ledger analysis stays read-only (`file: false`) and passes the
+run's activation time as `cutoff`. The workflow takes no end bound and its
+groups carry no dates, so the result is bounded below only: label it that
+way, and when events after the run's terminal event matter, separate them
+by reading the ledger entries' `at` field. Group by evidenced cause, retaining affected projects, recency,
 the legitimate and illegitimate distinction, and resolved cases. A frequent
 denial is not itself a reason to widen access. Its bulk `file: true` mode
 may run only if it obeys every filing eligibility, ownership,

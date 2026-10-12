@@ -7,8 +7,8 @@ description: >-
   largest feasible complete run, shows cost forecasts without capping, offers
   smaller alternatives, and records the request, plan, issues, routing,
   scopes, dependencies, and verbatim acceptance criteria, then stops. Never
-  executes the planned work and never activates the run; activation is docket-
-  run's.
+  executes the planned work and never activates the run; activation is
+  docket-run's.
 ---
 
 # docket-plan
@@ -55,7 +55,7 @@ Rules you must not fight:
   surfaces, so what you produce is a recorded run, never a promise that a
   question is waiting for the operator.
 - **You never observe execution.** Once you present the recorded run and
-  stop, you are done. Re-docket-planning is a *fresh* invocation of this
+  stop, you are done. Re-planning is a *fresh* invocation of this
   skill that reads the run record, not this conversation continuing to watch.
 - **Acceptance criteria are copied verbatim.** Whatever the operator states
   as done-ness goes into the issue body word for word. You may add ACs you
@@ -1040,12 +1040,13 @@ If §1 or §1b concludes with nothing to record (the operator chose "propose
 only", or no feasible startable run remains after the full checks), present
 your reasoning as given and stop; run no further commands.
 
-When the advisor tool is available, call it on the composed run (or the
-proposal to record nothing) before presenting it, and fold its input into
-the presentation.
+When the advisor tool is available, call it after the recording commands
+above have run and before the presentation, on the recorded run (or, when
+§1 or §1b recorded nothing, on that conclusion), and fold its input into the
+presentation.
 
-Otherwise, once the recording commands above have run, present the recorded
-run: total issue count, the issues, their edges, scopes, Unlimited or explicit
+Once the recording commands above have run, present the recorded run:
+total issue count, the issues, their edges, scopes, Unlimited or explicit
 budget limits, the separate cost forecast, planned waves, and `First-wave
 width` accounting for both dependencies and collisions. State why any
 otherwise eligible work remains outside this run, and say plainly that

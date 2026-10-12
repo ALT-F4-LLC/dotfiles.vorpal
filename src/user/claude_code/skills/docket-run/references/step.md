@@ -14,14 +14,14 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket step`](#step-commands) — 539 lines
+- [`docket step`](#step-commands) — 533 lines
   - [`step artifacts`](#step-artifacts) — 36 lines
   - [`step claim`](#step-claim) — 45 lines
   - [`step reap`](#step-reap) — 36 lines
-  - [`step complete`](#step-complete) — 70 lines
+  - [`step complete`](#step-complete) — 69 lines
   - [`step fail`](#step-fail) — 23 lines
   - [`step annotate`](#step-annotate) — 49 lines
-  - [`step resolve`](#step-resolve) — 122 lines
+  - [`step resolve`](#step-resolve) — 117 lines
   - [`step approve|reject`](#step-approve-reject) — 42 lines
   - [`step context`](#step-context) — 52 lines
 

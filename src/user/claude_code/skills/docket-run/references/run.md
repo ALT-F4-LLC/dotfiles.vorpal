@@ -15,7 +15,7 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket run`](#run-commands) — 856 lines
+- [`docket run`](#run-commands) — 858 lines
   - [`run start`](#run-start) — 49 lines
   - [`run issue add|remove RUN-N DKT-N...`](#run-issue) — 38 lines
   - [`run note add|list`](#run-note) — 32 lines
@@ -25,7 +25,7 @@ examples reflect the swept commands as of that build.
   - [`run report RUN-N`](#run-report) — 103 lines
   - [`run activate RUN-N`](#run-activate) — 218 lines
   - [`run conduct RUN-N`](#run-conduct) — 46 lines
-  - [`run pause|resume|abandon RUN-N`](#run-lifecycle) — 90 lines
+  - [`run pause|resume|abandon RUN-N`](#run-lifecycle) — 92 lines
   - [`run repin RUN-N --reason R`](#run-repin) — 69 lines
   - [`pin show RUN-N PATH`](#pin-show) — 15 lines
   - [`run budget RUN-N [--set N]`](#run-budget) — 71 lines
@@ -673,7 +673,7 @@ prints the status and the resolution side by side, and `issue show --json`
 carries a `resolution` key — emitted **only when set**. The resolution says
 *that* a run gave up; **which run, when, and why** is the `run_disposition`
 key `issue show --json` carries, shaped `{run, disposition, by, reason, at}`
-(see [reference.md](../../docket/reference.md#issue-show)). `issue reopen`
+(see [reference.md](../../docket/reference.md#docket-issue-show-id--issue_showgo)). `issue reopen`
 clears the resolution.
 Refusals: run not `active` or `waiting-human` → `CONFLICT` (exit 4); issue
 not part of the run → `NOT_FOUND` (exit 2); every step already terminal →

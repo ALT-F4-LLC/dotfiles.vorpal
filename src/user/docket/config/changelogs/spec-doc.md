@@ -3,6 +3,10 @@
 Version history of `workflows/spec-doc.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 43
+
+`drain-highs` now runs once per round after the doc vote (`tdd-vote`, `adr-vote`, `ux-spec-vote` or `prd-vote`; the ones a `when` skips count as finished), on that round's reconcile findings, instead of as a `reconcile` threshold target. A fix round supersedes it, so only the issue's final round drains. Before this, drain could file against code that a later verify-ac fix round rewrote. Reconcile's threshold keeps only `fix-loop`. Pairs with the drain-highs contract v23, which files `high` and `blocker` clusters and records `medium` clusters in one comment on the issue, and with severity-ladder-general v9, where an unobserved Concern emits `medium`. Measured before the change: drain filed about 0.56 follow-ups per reviewed issue in docket.git and 0.76 in harness.git, and of the sampled filings 0-20% would stay `high` under the new rule. Takes effect for runs activated after install.
+
 ## 42
 
 The executor steps `research`, `synthesize-findings`, and `drain-highs`

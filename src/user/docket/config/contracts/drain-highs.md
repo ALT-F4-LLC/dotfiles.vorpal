@@ -1,6 +1,6 @@
 ---
 node: drain-highs
-version: 22
+version: 23
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -11,13 +11,17 @@ emits: drain-report
 Work as a release manager recording known issues in the backlog.
 
 Give every remaining open cluster at `high` or `blocker` a durable backlog
-home. Every such cluster must be accounted for, and every cluster requiring a
-new issue filed through completion's `--gap-file` transaction. Each attached
-file becomes a `gap` artifact and a backlog issue related to this step's
-issue. Writing a scratch file alone does not drain a cluster.
+home, and record every remaining open cluster at `medium` in one comment on
+this step's issue. Every such cluster must be accounted for, and every
+cluster requiring a new issue filed through completion's `--gap-file`
+transaction. Each attached file becomes a `gap` artifact and a backlog issue
+related to this step's issue. Writing a scratch file alone does not drain a
+cluster. A `medium` cluster is never filed as an issue.
 
-The workflow controls entry. In standard tracks, reconcile routes here when
-open highs remain and no open blocker matches `fix-loop` first. In the
+The workflow controls entry. In the general tracks this step runs once per
+issue round, after that round's final acceptance vote, on that round's
+reconcile findings; a fix round supersedes it and the next round runs it
+again, so only the issue's last round drains. In the
 security track, an approved security vote routes here and this step files
 every open High the panel approved past, and only those; a supported
 Critical (emitted `blocker`) never reaches this step, because the panel must
@@ -64,7 +68,10 @@ step does not repeat their review or independently verify the defects.
    establish the same defect, and an operational gap about a failed drain does
    not count as filing the affected defect, even if it cites that cluster's ID.
    Report a confirmed prior filing with its issue ID and current status instead
-   of filing it again; do not reopen or alter that issue. If an unreadable
+   of filing it again; do not reopen or alter that issue. A related issue
+   labeled `loop-bound` whose body carries the cluster's evidence is a prior
+   filing: the conductor's loop-bound ruling already filed that residue from
+   the same reconcile. If an unreadable
    relation or ambiguous match prevents establishing prior filing, use Stuck.
 
    Extend this check across every issue drained in this run, not only
@@ -135,7 +142,19 @@ step does not repeat their review or independently verify the defects.
    The reader must be able to understand the defect and recover its review
    weeks later from the backlog.
 
-5. **Record complete coverage.** Prepare all files before submitting a
+5. **Comment the medium clusters.** Select clusters whose `open_severity`
+   is `medium`, with `held` not true and `operator_resolved` not true. When at
+   least one is selected, post exactly one comment with `docket issue comment
+   add <this step's issue> --idempotency-key drain-medium:<this step's id>
+   -m "$(cat <<'MEDIUM' ... MEDIUM)"`, so a retry cannot post it twice,
+   listing each selected cluster: its ID or artifact position, one line
+   naming the finding, its `file:line` evidence, and the originating findings
+   artifact. Open the comment with one line naming the run and round and
+   stating these are unobserved findings recorded for reference, not
+   backlog work. When none is selected, post nothing. A failed comment is a
+   drain failure under Stuck.
+
+6. **Record complete coverage.** Prepare all files before submitting a
    completion. Every selected cluster must have either a confirmed existing
    issue or exactly one prepared gap file attached to this completion. Pass
    each new file with its own `--gap-file`, alongside the non-empty report,
@@ -151,14 +170,16 @@ step does not repeat their review or independently verify the defects.
 # Emit
 
 `drain-report` (markdown): identify the run, issue, and round. Include one
-line per newly filed cluster naming its gap file, and one line per excluded
+line per newly filed cluster naming its gap file, one line per excluded
 `high` or `blocker` cluster stating why: held, operator-resolved, or already
-filed as issue N, with the existing issue's status. Preserve supplied
-cluster IDs, or use the artifact position established above.
+filed as issue N, with the existing issue's status, and one line stating how
+many `medium` clusters the comment recorded (or that none existed). Preserve
+supplied cluster IDs, or use the artifact position established above.
 
-A successful report is non-empty even when no files are needed; state
-explicitly when no clusters qualify or every selected cluster was already
-filed. The completion receipt pairs the newly attached files with issue IDs;
+A successful report is non-empty even when no files are needed. When no
+cluster is at `medium` or above, the report says so in one line, nothing is
+filed, and no comment is posted; that is the common case and a clean result.
+State explicitly when every selected cluster was already filed. The completion receipt pairs the newly attached files with issue IDs;
 do not invent those IDs in the report prepared before recording.
 
 # Stuck

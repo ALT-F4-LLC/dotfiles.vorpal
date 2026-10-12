@@ -1,6 +1,6 @@
 ---
 fragment: severity-ladder-general
-version: 8
+version: 9
 ---
 # Severity ladder: general
 
@@ -21,7 +21,19 @@ separately from confidence.
 - **Concern** (should fix or explicitly justify): a supported issue below the
   Blocker bar, such as a consequential pattern violation, missing edge case,
   maintainability risk, or test gap on a non-critical path. State the
-  consequence that makes action or justification warranted.
+  consequence that makes action or justification warranted. A Concern is
+  **observed** when all three hold: you ran a named, concrete input; you saw
+  the wrong output yourself; and that input is reachable in ordinary use.
+  Every other Concern is **unobserved**: a missing test on code that works, a
+  surviving mutant, a trace you read but did not run, a location, structure,
+  or maintainability preference, or a trigger only a contrived input
+  reaches. Evidence you mark INFERRED or UNVERIFIED anywhere makes the
+  Concern unobserved. The project's gates and test suites, as the pipeline
+  runs them, are ordinary use: a required gate or suite you saw fail on a
+  correct change is observed, because it blocks every later issue. A test
+  that fails only in an environment the pipeline never produces, or that
+  passes while misleading evidence, is unobserved; say which environment you
+  ran in.
 - **Suggestion** (worth considering here or later): a minor issue or concrete
   improvement with an identifiable benefit. A preference alone cannot justify
   promotion to Concern or Blocker.
@@ -48,18 +60,18 @@ payload schema and this mapping. Do not substitute security-track labels.
 | Author as | Emit as | Routing |
 | --- | --- | --- |
 | Blocker | `blocker` | The only severity eligible to open a fix round |
-| Concern | `high` | Reconcile, run record, backlog, and operator gates |
+| Concern, observed | `high` | Filed as a backlog issue once the issue's final acceptance vote is done |
+| Concern, unobserved | `medium` | One comment on the issue, never a backlog issue |
 | Suggestion | `low` | Recorded for downstream consideration; no fix round |
 | Question | Body or contract-defined `gap` | No severity entry |
 | Praise | Body only | No severity entry |
 
-`medium` has no default authoring rung here. Use it for a downgraded Concern
-only if the controlling contract explicitly defines that exception, and record
-the supported reason and required disposition. Uncertainty, iteration count,
-or a desire to avoid a gate does not justify a downgrade. `info` is not a
-substitute for a Question or Praise. Use the contract's existing
-representation; do not invent fields or encode missing judgment as a defect
-severity.
+The observed/unobserved split is the only route to `medium`. Grade it from
+your evidence, not from how much you want the finding fixed: an unobserved
+Concern you feel strongly about is still `medium`, and an observed one is
+`high` even when the fix is one line. `info` is not a substitute for a
+Question or Praise. Use the contract's existing representation; do not invent
+fields or encode missing judgment as a defect severity.
 
 **Only a Blocker opens a fix round.** Neither a Concern nor a Suggestion
 recruits another automatic fix round. Preserve unresolved findings and their

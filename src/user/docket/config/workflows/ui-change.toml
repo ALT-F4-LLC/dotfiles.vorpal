@@ -1,6 +1,6 @@
 [pipeline]
 name = "ui-change"
-version = 43
+version = 44
 description = "UI change bound to an accepted ux-spec cited in the issue body. Design-judged and design-QA'd before AC verification, so AC verification can read the design-QA findings and resolve met/unmet instead of unverifiable. The conductor integrates commits; the operator publishes."
 
 [match]
@@ -78,10 +78,10 @@ max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", output = "findings" }
 payload = "findings@13"
-threshold = { "fix-loop" = "any(open_severity >= blocker)", "drain-highs" = "any(open_severity >= high)" }
+threshold = { "fix-loop" = "any(open_severity >= blocker)" }
 
 [[step]]
-after = ["reconcile"]
+after = ["verify-ac-vote"]
 emits = "drain-report"
 executor = "drain-highs"
 expected_cost = 0.30

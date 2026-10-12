@@ -1,7 +1,7 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 50
+version = 51
 
 [match]
 unless_labels = [
@@ -78,10 +78,10 @@ max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", output = "findings" }
 payload = "findings@13"
-threshold = { "fix-loop" = "any(open_severity >= blocker)", "drain-highs" = "any(open_severity >= high)" }
+threshold = { "fix-loop" = "any(open_severity >= blocker)" }
 
 [[step]]
-after = ["reconcile"]
+after = ["verify-ac-vote"]
 emits = "drain-report"
 executor = "drain-highs"
 expected_cost = 0.30

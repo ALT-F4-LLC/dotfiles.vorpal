@@ -12,9 +12,10 @@
 # (RUN-35 pin drift, RUN-36 activation refusal). This check moves that
 # discovery back to the tree, on demand, before the next run pays for it.
 #
-# What it compares. `docket schema list --json` and `docket workflow list
-# --json` each carry the frozen record: name, version, source_path, and
-# source_sha256 (the bytes as registered). For every such record this script
+# What it compares. `docket schema list --deprecated --json` and `docket
+# workflow list --deprecated --json` each carry the frozen record, retired
+# versions included: name, version, source_path, and source_sha256 (the bytes
+# as registered). For every such record this script
 # hashes up to two on-disk candidates and diffs against source_sha256:
 #   - the registered source_path itself (the installed copy under
 #     ~/.docket/config/ — catches drift that already propagated), and
@@ -78,7 +79,8 @@
 # which need a live `docket` engine and its registry. tests/frozen-drift-
 # check.test.sh sets it to drive the contracts/fragments comparison — the
 # half this check does entirely from git — against a throwaway fixture repo
-# with no engine involved.
+# with no engine involved; its schema-phase cases leave it unset and put a
+# stub `docket` first on PATH.
 
 set -euo pipefail
 
@@ -107,9 +109,9 @@ else
     echo "frozen-drift-check FAILED: required tool 'docket' not on PATH." >&2
     exit 2
   fi
-  if ! schemas_json="$(docket schema list --json 2>&1)" \
+  if ! schemas_json="$(docket schema list --deprecated --json 2>&1)" \
      || ! echo "$schemas_json" | jq -e '.ok == true' >/dev/null 2>&1; then
-    echo "frozen-drift-check FAILED: 'docket schema list --json' did not return ok:" >&2
+    echo "frozen-drift-check FAILED: 'docket schema list --deprecated --json' did not return ok:" >&2
     echo "$schemas_json" >&2
     exit 2
   fi

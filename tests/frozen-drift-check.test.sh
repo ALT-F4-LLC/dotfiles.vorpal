@@ -1,9 +1,10 @@
 #!/bin/bash
 
-# Behavior suite for .docket/bin/frozen-drift-check's contracts/fragments
-# comparison — the half of the gate that needs only git, run through
-# FROZEN_DRIFT_CHECK_SKIP_ENGINE=1 to skip the schema/workflow phases, which
-# need a live docket engine and its registry.
+# Behavior suite for .docket/bin/frozen-drift-check. Most cases drive the
+# contracts/fragments comparison — the half of the gate that needs only git,
+# run through FROZEN_DRIFT_CHECK_SKIP_ENGINE=1 to skip the schema/workflow
+# phases, which need a live docket engine and its registry. The schema-phase
+# cases at the end put a stub `docket` first on PATH instead.
 #
 # THE PROPERTY UNDER TEST: a contract's front-matter version must move in
 # lockstep with its body, checked against the merge-base with the
@@ -174,6 +175,89 @@ if out=$(run_gate "$FIX"); then
 else
     fail "new file: expected exit 0, got non-zero"
     printf '%s\n' "$out" | sed 's/^/    /'
+fi
+
+# ---- schema phase: a stub `docket` first on PATH ------------------------
+# The engine phases read their records from `docket ... list` calls. The stub
+# answers `schema list` with <deprecated.json> only when --deprecated is
+# passed and with an empty ok listing otherwise, so a gate that omits the
+# flag never sees the retired record. `workflow list` returns an empty ok
+# listing; any other call fails loudly.
+
+# build_stub_docket <stubdir> <schema-listing-with-deprecated> <schema-listing-without>
+build_stub_docket() {
+    local stub="$1"
+    mkdir -p "${stub}/bin"
+    printf '%s\n' "$2" > "${stub}/schemas-deprecated.json"
+    printf '%s\n' "$3" > "${stub}/schemas-current.json"
+    cat > "${stub}/bin/docket" <<'STUB'
+#!/bin/bash
+stub_dir=$(cd "$(dirname "$0")/.." && pwd)
+case "$1 $2" in
+    "schema list")
+        for arg in "$@"; do
+            if [ "$arg" = "--deprecated" ]; then
+                cat "${stub_dir}/schemas-deprecated.json"
+                exit 0
+            fi
+        done
+        cat "${stub_dir}/schemas-current.json"
+        ;;
+    "workflow list")
+        echo '{"ok":true,"data":{"workflows":[]}}'
+        ;;
+    *)
+        echo "stub docket: unsupported call: $*" >&2
+        exit 64
+        ;;
+esac
+STUB
+    chmod +x "${stub}/bin/docket"
+}
+
+# run_gate_with_engine <dir> <stubdir> <stderr-file>; runs the fixture's gate
+# with the engine phases enabled against the stub, printing stdout and
+# leaving stderr in <stderr-file>.
+run_gate_with_engine() {
+    ( cd "$1" && PATH="$2/bin:$PATH" bash .docket/bin/frozen-drift-check 2>"$3" )
+}
+
+# ---- a retired schema version whose file drifted fails -----------------
+FIX="${WORK}/retired-schema-drift"
+STUB="${WORK}/retired-schema-drift-stub"
+build_repo "$FIX"
+mkdir -p "$STUB"
+printf '{"retired": "edited after registration"}\n' > "${STUB}/retired@1.json"
+registered_sha=$(printf 'bytes as registered\n' | shasum -a 256 | cut -d' ' -f1)
+retired_listing=$(jq -nc --arg sha "$registered_sha" --arg path "${STUB}/retired@1.json" \
+    '{ok:true,data:{schemas:[{name:"retired",version:1,source_sha256:$sha,source_path:$path}]}}')
+build_stub_docket "$STUB" "$retired_listing" '{"ok":true,"data":{"schemas":[]}}'
+if out=$(run_gate_with_engine "$FIX" "$STUB" "${STUB}/stderr"); then
+    fail "retired schema drift: expected non-zero exit, gate passed"
+    printf '%s\n' "$out" | sed 's/^/    /'
+elif grep -q "DRIFT schema retired@1" "${STUB}/stderr"; then
+    pass "retired schema drift: gate fails with DRIFT schema retired@1"
+else
+    fail "retired schema drift: gate failed but did not report DRIFT schema retired@1"
+    printf '%s\n' "$out" | sed 's/^/    /'
+    sed 's/^/    /' "${STUB}/stderr"
+fi
+
+# ---- a schema listing that is not ok:true is an environment failure ----
+FIX="${WORK}/schema-listing-not-ok"
+STUB="${WORK}/schema-listing-not-ok-stub"
+build_repo "$FIX"
+build_stub_docket "$STUB" '{"ok":false}' '{"ok":false}'
+run_gate_with_engine "$FIX" "$STUB" "${STUB}/stderr" >/dev/null
+status=$?
+if [ "$status" -ne 2 ]; then
+    fail "schema listing not ok: expected exit 2, got ${status}"
+    sed 's/^/    /' "${STUB}/stderr"
+elif grep -qF "docket schema list --deprecated --json" "${STUB}/stderr"; then
+    pass "schema listing not ok: gate exits 2 naming the --deprecated listing"
+else
+    fail "schema listing not ok: exit 2 but stderr does not name 'docket schema list --deprecated --json'"
+    sed 's/^/    /' "${STUB}/stderr"
 fi
 
 echo

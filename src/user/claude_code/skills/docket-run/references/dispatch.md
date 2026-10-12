@@ -13,17 +13,19 @@ reap acknowledgment below was added for `nightly-260-gf08ce73` and checked
 against that build's source, not by the sweep. The close-time reap, the
 `usage-rows-missing` definition, and the `--accept-missing-usage` and
 `--backfill-from` constraints were checked against `nightly-623-gfefc91d`'s
-`--help`, not by the sweep.
+`--help`, not by the sweep. The `held-by-park` verify verdict was checked
+against the engine source on docket's `feature/engine-improvements` branch,
+since `--help` names no verdicts.
 
 <a id="contents"></a>
 
 ## Contents
 
 - [`docket next` in step mode](#next-run) — 91 lines
-- [`docket dispatch`](#dispatch-commands) — 347 lines
+- [`docket dispatch`](#dispatch-commands) — 352 lines
   - [`dispatch open`](#dispatch-open) — 78 lines
   - [`dispatch extend`](#dispatch-extend) — 23 lines
-  - [`dispatch verify`](#dispatch-verify) — 37 lines
+  - [`dispatch verify`](#dispatch-verify) — 42 lines
   - [`dispatch close`](#dispatch-close) — 59 lines
   - [`dispatch backfill-usage`](#dispatch-backfill-usage) — 49 lines
   - [`dispatch abandon`](#dispatch-abandon) — 22 lines

@@ -457,37 +457,20 @@ installs outside this run. A step stopped a second time goes to
 **Standing ruling: a step stopped twice by the safety classifier** under
 **Gates**, never to a question.
 
-**Prune the last session's worktree leftovers first, every time.** A
+**Stale worktree entries are pruned at session start, never by you.** A
 session cannot delete a wave worktree's metadata directory
 (`<bare repo>/worktrees/<name>`): for every worktree it creates, the
 harness puts that directory's `commondir` file on the sandbox's
-`denyWithinAllow` list, and a later session that created none of them is
-refused on them too (measured: `Operation not permitted` on every one).
-The bare repo's own write allowance does not override that row, so no
-settings allowance is the fix; an entry made by hand, outside the
-harness, prunes normally.
-Integrated wave worktrees therefore stay `prunable` entries until the
-operator prunes them outside the sandbox. Run the prune here anyway,
-before the probe: it clears whatever the deny list does not cover and
-costs nothing when that is none. Only entries git itself reports
-`prunable` are touched; a live worktree is never pruned by this. This
-prune and its `git update-ref -d` deletion of `worktree-wf_*` and
-`worktree-agent-*` refs are cross-session by design, because they clear
-prior sessions' prunable leftovers, whose directories are already gone;
-the run-close sweep, not this one, is scoped to this session's waves:
-
-```bash
-git worktree list --porcelain | awk '/^worktree /{w=$2} /^HEAD /{h=$2} /^branch /{b=$2} /^prunable/{print w, h, b} /^$/{w="";h="";b=""}'
-git worktree prune -v
-# for each printed path/sha/branch whose branch is refs/heads/worktree-wf_* or refs/heads/worktree-agent-*:
-git update-ref -d <that branch ref>
-```
-
-Name each entry in the attach report: a pruned path with its sha, or a
-still-`prunable` path with the refusal. The still-prunable list is the
-operator's to clear with the same two commands run outside the sandbox
-(the `!` prefix at their prompt); carry it to the close report, which
-names every leftover the same way, rather than asking at attach.
+`denyWithinAllow` list, so an in-session `git worktree prune` fails on it.
+The `git-worktree-prune-hook.sh` SessionStart hook runs `git worktree
+prune -v` outside the sandbox at every session start, then deletes every
+`worktree-wf_*` and `worktree-agent-*` branch no worktree entry holds
+whose commits are all on HEAD already. Its output reaches you as session
+context. Never run the prune yourself and never ask the operator to run
+it. An entry `git worktree list` still reports `prunable` at attach means
+that hook failed: name the entry and the hook's output in the attach
+report. A branch the hook reports `kept` carries commits HEAD lacks: name
+it and its sha in the attach report, and never delete it yourself.
 
 Attaching to an already-active run skips activation but not the probe.
 The probe is two commands, both read-only:
@@ -1611,10 +1594,10 @@ git worktree list --porcelain | awk -v ids="$*" '
 done
 ```
 
-The stale metadata directory is inert and stays until the operator prunes
-it outside the sandbox; no later session clears it. Name every such entry
-(path, sha, branch ref) in the close report, so the operator can run
-`git worktree prune -v` once for all of them. At run close, sweep every straggler whose branch matches
+The stale metadata directory is inert and stays until the next session
+start, when the worktree-prune hook clears it outside the sandbox; never
+ask the operator to prune it. Name every such entry (path, sha, branch
+ref) in the close report. At run close, sweep every straggler whose branch matches
 `worktree-wf_<id>-*` for a wave this session launched (the ids you
 already hold from `--source "wave-journal:<wfId>"`); never glob a path
 for discovery, since these root above your checkout on a bare-repo

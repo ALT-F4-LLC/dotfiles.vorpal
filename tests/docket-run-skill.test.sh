@@ -77,8 +77,8 @@
 #       every session, creating or later, and is answered with `git
 #       update-ref -d` on the prunable entry's branch, never with a lift
 #       (the lift is unavailable to a conductor seat; the stale entries are
-#       named in the reports for the operator's own prune outside the
-#       sandbox)
+#       named in the reports and cleared by the session-start prune hook,
+#       never by an operator prune)
 #       p-c reword the paragraph's anchor sentence
 #       s-c repeat the "A hard `Operation not permitted` is the harness"
 #          opener in a second sentence of the same paragraph, so no ONE
@@ -496,8 +496,8 @@ fi
 # (c) The worktree-remove refusal is never answered with a lift: the harness
 # denies that metadata directory in every session, the lift is unavailable
 # to a conductor seat, the branch is deleted by ref on the prunable entry
-# instead, and the stale entry is named for the operator's prune outside the
-# sandbox. The paragraph is the whole
+# instead, and the stale entry is named in the report and left to the
+# session-start prune hook. The paragraph is the whole
 # worktree-cleanup block and rules on several separate things, so the ruling
 # is asserted against the one sentence that rules on the hard refusal, and
 # the mechanism against the paragraph.
@@ -520,14 +520,14 @@ if paragraph 'Worktrees clean themselves up only when unchanged' "${WORK}/worktr
 else
     bad "worktree-remove refusal: no single paragraph carries 'Worktrees clean themselves up only when unchanged'"
 fi
-# The stale entry left behind is the operator's to prune outside the
-# sandbox; no session, this one or a later one, is told it clears it.
+# The stale entry left behind is cleared by the session-start prune hook,
+# outside the sandbox; the operator is never asked to prune it.
 if paragraph 'The stale metadata directory is inert' "${WORK}/stale-entry"; then
     ok "stale entry: exactly one paragraph rules on the leftover metadata directory"
-    states "stale entry: the operator prunes it outside the sandbox" \
-        "${WORK}/stale-entry" 'stays until the operator prunes it outside the sandbox'
-    states "stale entry: no later session clears it" \
-        "${WORK}/stale-entry" 'no later session clears it'
+    states "stale entry: the session-start hook clears it outside the sandbox" \
+        "${WORK}/stale-entry" 'when the worktree-prune hook clears it outside the sandbox'
+    states "stale entry: the operator is never asked to prune it" \
+        "${WORK}/stale-entry" 'never ask the operator to prune it'
     states "stale entry: named in the close report" \
         "${WORK}/stale-entry" 'in the close report'
 else

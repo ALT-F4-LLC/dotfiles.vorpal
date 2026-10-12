@@ -180,7 +180,7 @@ carries `code: "NOT_FOUND"` only because the engine reuses that code to exit
 | `NOT_FOUND` | 2 | Referenced issue/doc/proposal/label/relation does not exist |
 | `VALIDATION_ERROR` | 3 | Bad input: invalid enum value, missing required flag, mutually exclusive flags, non-interactive environment without required flags, invalid `--json` value, negative `--limit` under v2, `--if-version < 1`, no capability token supplied to a verb that requires one (a lease verb, or a conductor-gated verb on a conductor-bound run) |
 | `CONFLICT` | 4 | State conflict: duplicate relation, cycle detected, already-voted, non-empty project on import without `--merge`/`--replace`, `--if-version` mismatch, a dispatch already open for the run, `next --run` while a dispatch is open or discrepancies exist, `dispatch verify` byte mismatch, `dispatch close` over an unreconciled discrepancy, `dispatch backfill-usage` repeating a `(step, attempt, unit)` already recorded, any dispatch verb finding no manifest open, `step annotate` on a step that has not finished, or `issue move --project` on an issue a run holds |
-| `AUTH_ERROR` | 5 | The supplied capability token does not hold this lease (or the entity is unclaimed), or is not the run's current conductor capability on a conductor-gated verb: `step approve`, `step reject`, `step resolve`, `step reap`, `step hold`, `run pause`, `run resume`, `run abandon`, `run fact add`, or a ruling (`step annotate --integrated-sha`, `run note add`, `run refresh-scope`, `dispatch waive-target`, `dispatch abandon`, `dispatch close --skip-integration-check`, `vote commit` on a vote-step proposal) |
+| `AUTH_ERROR` | 5 | The supplied capability token does not hold this lease (or the entity is unclaimed), or is not the run's current conductor capability on a conductor-gated verb: `step approve`, `step reject`, `step resolve`, `step reap`, `step hold`, `run pause`, `run resume`, `run abandon`, `run fact add`, or a ruling (`step annotate --integrated-sha`, `run note add`, `run refresh-scope`, `run refresh-body`, `run refresh-files`, `run repin`, `dispatch waive-target`, `dispatch abandon`, `dispatch close --skip-integration-check`, `vote commit` on a vote-step proposal) |
 | `STALE_LEASE` | 6 | The token is correct but the lease has expired — claim again |
 | `TIMEOUT` | 7 | Reserved — no verb emits this yet |
 | `UNTRUSTED` | 8 | Reserved — no verb emits this yet |
@@ -331,7 +331,8 @@ written:
 - `run pause`, `run resume`, `run abandon` (with or without `--issue`)
 - `run fact add`
 - the rulings: `step annotate --integrated-sha`, `run note add`,
-  `run refresh-scope`, `dispatch waive-target`, `dispatch abandon`,
+  `run refresh-scope`, `run refresh-body`, `run refresh-files`,
+  `run repin`, `dispatch waive-target`, `dispatch abandon`,
   `dispatch close --skip-integration-check`, and `vote commit` on a
   vote-step proposal
 

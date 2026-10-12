@@ -5,23 +5,23 @@ vote’s routing. Vote-rule authoring is under **Vote rules** in
 [workflows](workflows.md). For exact flags, use
 [the CLI reference](../reference.md).
 
-Find the relevant heading before reading a large section:
-
-- Workflow: Voting (`docket vote`, consensus proposals)
-
 ## Workflow: Voting (`docket vote`, consensus proposals)
 
-A `type="vote"` workflow step creates a
-proposal when it becomes ready, fans out to the voters it names, and routes
-on the outcome. `approved` passes the step; `rejected` routes per its
-`on_fail`, which such a step must declare explicitly (V13a). `waiting-human`
-is legal there and escalates to an operator; a human gate refuses it. The
-proposal's id rides on the step row as `proposal`,
-and the roster as `voters`, so a caller holding a `next` row can cast without
-reading the pinned definition; there is no new verb beyond `docket vote
-cast`. The step names a `vote_rule`, a set of `vote.rule.<name>.*` config
-keys (see **Vote rules** in [workflows](workflows.md)), and `required_voters` is the length of its own `voters` list. Nothing
-casts a vote automatically; a voter is a person or a process running the CLI.
+A `type="vote"` workflow step creates a proposal when it becomes ready. It
+fans out to the voters it names and routes on the outcome. `approved` passes
+the step. `rejected` routes per the step's `on_fail`, which the step must
+declare explicitly (V13a). `waiting-human` is legal there and escalates to an
+operator; a human gate refuses it.
+
+The step row carries the proposal's id as `proposal` and the roster as
+`voters`. A caller holding a `next` row can therefore cast without reading
+the pinned definition. Callers cast with `docket vote cast`; no other verb is
+involved.
+
+The step names a `vote_rule`, a set of `vote.rule.<name>.*` config keys (see
+**Vote rules** in [workflows](workflows.md)). Its `required_voters` is the
+length of its own `voters` list. Nothing casts a vote automatically; a voter
+is a person or a process running the CLI.
 
 Create a proposal:
 
@@ -38,9 +38,11 @@ Cast only the assigned seat's own assessment. Pass its exact `--voter`: the
 default is `git user.name`, so concurrent agents using the default collide
 under one identity. Verify the seat, proposal id, content, and assessment
 against the assignment before casting; there is no amendment path, and the
-record is not read first — `vote show` and `vote result` print every cast
-already recorded, and a seat that reads them before deciding is no longer
-deciding alone. Replace the values below with the actual assignment and
+record is not read first — unless the proposal is sealed, `vote show` and
+`vote result` print every cast already recorded, and a seat that reads them
+before deciding is no longer deciding alone. A sealed proposal (`vote create
+--sealed`, or a `vote_rule` with `sealed` set) withholds each cast's verdict,
+weights, findings, and summary until the tally closes. Replace the values below with the actual assignment and
 evidence; a file keeps long rationale out of argv:
 
 ```bash
@@ -112,6 +114,4 @@ full approval weight; the threshold does not change the tally math. The
 step's own recorded tally is readable
 downstream as an input; see
 [engine-produced inputs](workflows.md#engine-produced-inputs).
-
----
 

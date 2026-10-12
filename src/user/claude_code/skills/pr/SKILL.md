@@ -47,8 +47,11 @@ Worked example, dated because it is a snapshot, read from this repository on
 2026-09-06: the asks were `gh api`, `gh pr close`, `gh pr comment`,
 `gh pr create`, `gh pr edit`, `gh pr merge`, `gh pr ready`, and `git push`.
 So `gh pr view`, `gh pr list`, `gh pr checks`, `gh run view`, and
-`gh repo view` ran **unprompted** that day: every read this skill makes had
-no human chokepoint, while every write did. The `PreToolUse` hooks had no
+`gh repo view` ran **unprompted** that day: every `gh pr`, `gh run`, and
+`gh repo` read this skill makes had no human chokepoint, while every write
+did. Its `gh api` reads, such as precondition 6's two remote reads,
+review's `gh api graphql` reads, and merge's branch-protection read, fall
+under the `gh api` ask and prompt. The `PreToolUse` hooks had no
 `gh` rule at all, and outside an active docket run did not gate `git push`
 either. Branch protection is repo-dependent; this skill only ever reads it.
 
@@ -510,9 +513,12 @@ substitution, a heredoc carrying diff or log text, `-b "<body>"` or
 
 **The title file is validated before it is used**, and a failure refuses the
 publish rather than repairing it: one line with no embedded newline; ends
-without a trailing newline (`tail -c1 <file> | od -An -c` shows no `\n`);
-contains no NUL byte, detected by comparing `tr -d '\000' < <file> | wc -c`
-against `wc -c < <file>` (a mismatch refuses, since neither an agent reading
+without a trailing newline (`od -An -c <file>` run on its own, its full
+output read from the tool result, shows a last character that is not
+`\n`); contains no NUL byte, detected by running `tr -d '\000' < <file> >
+<nul-stripped-file>` on its own, then comparing `wc -c <
+<nul-stripped-file>` against `wc -c < <file>`, each exit-checked under
+**Command shapes** (a mismatch refuses, since neither an agent reading
 the title nor the denylist's grep pass, which degrades to `Binary file …
 matches` on a NUL-bearing input and loses line, pattern, and token
 attribution, can see one directly); non-empty after the denylist's strip
@@ -520,6 +526,10 @@ pass; ≤ 72 characters; and matching the conventional-commit shape above
 (`type(scope): summary`). A leading `-` cannot parse as a flag under `-F
 'title=@<file>'` — the file's bytes are a field value, never argv — so the
 shape check is style and length, not the barrier.
+
+**The body file gets the same NUL check**, the same `tr`/`wc` comparison on
+the stripped body file, run before the refuse-list scan as the title's is. A
+mismatch refuses the publish.
 
 **The scratch directory is private and single-use**: `mktemp -d` (mode
 `0700`, never a predictable or shared path), a fresh one per invocation,
@@ -600,7 +610,7 @@ validated and published.** Nothing regenerates either file after this
 point: the refuse-list pass below runs on these files, not the originals,
 and they, byte-identical to what the refuse-list scan just cleared, are
 what `-F 'title=@<file>'` / `-F 'body=@<file>'`, a thread reply, or a close
-comment then sends. The scan-what-you-send rule below ("never regenerate
+comment then sends. The scan-what-you-send rule above ("never regenerate
 either file after the scan") does not forbid the strip and de-terminate
 passes themselves: together they produce the file that rule protects, run
 once, before that file is scanned and passed on unchanged.

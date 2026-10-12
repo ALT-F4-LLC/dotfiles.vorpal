@@ -140,8 +140,10 @@ docket workflow list --json=v2
 docket workflow show standard-dev --json=v2
 ```
 
-Registration only stores, validates, and makes a workflow inspectable;
-nothing runs it yet. A repo that never registers one runs no workflow.
+Registration stores, validates, and makes a workflow inspectable; it runs
+nothing. `run activate` registers any definition not yet registered when
+`registration.auto` is true (the default). A definition that is never
+registered or activated runs nothing.
 
 ### Shipped templates
 
@@ -244,6 +246,7 @@ A retired version reports `deprecated_at_ms` under `--json=v2` and prints
 | A threshold names a field its declared schema does not declare | `VALIDATION_ERROR` | 3 |
 | A threshold literal is not a value its declared schema allows | `VALIDATION_ERROR` | 3 |
 | An ordered comparison (`>=`, `>`, `<=`, `<`) on a field with no `ordered_enum` | `VALIDATION_ERROR` | 3 |
+| An ordered comparison in a `type="vote"` step's `threshold`, whose cast fields carry no registered schema (V36) | `VALIDATION_ERROR` | 3 |
 | A reserved `diff.*` predicate on a step that holds no tree (V45), a non-integer count literal (V46), or an ordered operator or non-boolean literal on `diff.empty` (V47) | `VALIDATION_ERROR` | 3 |
 | `on_exhausted` on a step that does not route `fix-loop` or declares no positive `max_fix_loops`, or naming a step that is not a vote or executor step of the workflow or whose `after` omits this step (V41) | `VALIDATION_ERROR` | 3 |
 | A step emitting the reserved kind `gate-results` or `vote-record` | `VALIDATION_ERROR` | 3 |
@@ -349,7 +352,7 @@ leaving that step's siblings legitimately `claimed` at `waiting-human`.
 | `params` | table | arguments defined by the selected action’s contract; built-in aggregate keys are interpreted and validated |
 | `min_siblings` | int, default = all | how many fanout siblings the join needs |
 | `threshold` | table: routing → predicate | routing computed from the step's results |
-| `on_fail` | `"fix-loop"` \| `"waiting-human"` \| `"skip"` \| `"abandon-issue"`; default `"waiting-human"` | where a failure routes. **Required explicitly on `type="human"` and `type="vote"` steps** |
+| `on_fail` | `"fix-loop"` \| `"waiting-human"` \| `"skip"` \| `"abandon-issue"`; default `"waiting-human"` | where a failure routes. **Required explicitly on `type="human"` and `type="vote"` steps** (V13a) |
 | `on_exhausted` | `"waiting-human"` \| `"abandon-issue"` \| the name of a `type="vote"` step of this workflow \| the name of an executor step of this workflow; default `"waiting-human"`; only on a step that routes `fix-loop` and declares a positive `max_fix_loops` on the same step (V41) | where fix-loop exhaustion routes: a `fix-loop` entry whose next ordinal would exceed `max_fix_loops` plus `fix-round` grants ([Loops](#loops), item 1). `waiting-human` parks for an operator; `abandon-issue` stops the run's work on the issue; a vote step name opens that panel's proposal, which is how a loop-extension vote under a hard ceiling is declared; an executor step name runs that step, so a file-and-stop default runs machine-side. A named step is an interposed target, read as `on_fail` reads one, and its `after` must include this step (V41). It is the exhaustion's routing, not a second bound: the `max_fix_loops` arithmetic is unchanged *(engine commit 9d70870, branch `feature/engine-improvements`)* |
 | `loop` | bool, default false | marks a loop-body step |
 | `serves` | [step names], default = every `fix-loop`-capable step | scopes this `loop = true` step (and its `after_loop` chain) to the named steps' **loop cluster** — entry fires only the bodies serving the step whose routing triggered it (the **trigger**). Omitted or empty means "serves every trigger," one cluster for the whole workflow |
@@ -447,6 +450,23 @@ is not `"vote"` (rule V11).
 
 ```toml
 inputs = ["gate.vote-record"]
+```
+
+`issue.latest.<kind>` is this issue's latest recorded round of `<kind>`,
+whichever step produced it. It names no producer, so it is the form a loop
+body uses to read the live version of what it iterates on: inside the body,
+a declared `<step>.<kind>` naming a step the loop does not re-run stays
+bound to that step's ordinal-0 artifact. Resolution takes recorded artifacts of the kind on this issue,
+excluding the consuming step's own, keeps those at the highest producer
+ordinal at or below the consumer's, and keeps one artifact per producer
+instance, the newest. Several producers at that ordinal each contribute, in
+the ordinary within-input order. When nothing matches, the input contributes
+nothing: no error and no empty record. `<kind>` is one kind of letters,
+digits, `_` or `-`, with no wildcard. Registration refuses a malformed kind
+and a kind no step of the workflow produces (V11).
+
+```toml
+inputs = ["implement.change-summary", "issue.latest.change-summary"]
 ```
 
 `issue.linked.<relation>.<kind>` is a **cross-issue** input: the latest
@@ -796,9 +816,9 @@ and the routing step **stops**. Concretely:
   step waits. Its threshold is **not** evaluated yet.
 - Each held step is offered by `next --run` immediately, takes no claim and
   no token, and shows up as an ordinary human gate, or as a vote gate when
-  `vote.hold.*` is configured (see *Engine configuration*). Either way, a
-  tally answers first and escalates to the operator's verbs below when it
-  does not pass.
+  `vote.hold.*` is configured (see *Engine configuration*). A held vote step
+  is tallied first and escalates to the operator's verbs below when it does
+  not pass; a held human step goes straight to those verbs.
 - Use `guard stop` to check whether stopping is currently allowed. A
   `waiting-human` state does not itself forbid stopping; do not approve or
   abandon a held question merely to end a turn.

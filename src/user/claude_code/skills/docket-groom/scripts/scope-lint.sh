@@ -26,7 +26,12 @@
 #     at --base has that name.
 #   - it is any other bare name: a file of that name sits at the root.
 # A trailing `:N` line citation is not part of the path. Each such path must
-# appear in `files` and match a `scope` glob. Each `files` entry `x.go` whose
+# appear in `files` and match a `scope` glob, unless the criteria only
+# inspect it: a path is exempt when it follows one of the markers
+# `inspect:`, `run on`, `over` or `guide:` (any case) in the same sentence
+# and line, with only other paths, commas, `and`, backticks and blanks
+# between them. A sentence ends at a token's trailing dot; any other
+# character, or a word that is not a path, ends the marker's run. Each `files` entry `x.go` whose
 # `x_test.go` exists at --base needs that test matched by a `scope` glob.
 #
 # Scope globs match as the engine applies them, as git pathspecs filtering
@@ -102,16 +107,28 @@ criteria=$(printf '%s\n' "$description" | awk '
     END { if (!found) printf "%s", all }
 ')
 
+# One "<chain>\t<token>" line per token, in text order. <chain> numbers each
+# inspect-only marker run and tags the tokens it may exempt; 0 is untagged.
 tokens=$(printf '%s\n' "$criteria" | awk '
 {
-    line = $0
+    line = $0; chain = 0; marker = ""; prev = ""
     while (match(line, /[A-Za-z0-9_.\/-]+/)) {
+        gap = substr(line, 1, RSTART - 1)
         tok = substr(line, RSTART, RLENGTH)
         line = substr(line, RSTART + RLENGTH)
-        sub(/\.+$/, "", tok)
-        if (tok != "") print tok
+        if (marker == "colon" && gap ~ /^`*:[ \t,`]*$/ || marker == "plain" && gap ~ /^[ \t,`]*$/) chain = ++chains
+        else if (chain && gap !~ /^[ \t,`]*$/) chain = 0
+        marker = ""
+        sentence_end = sub(/\.+$/, "", tok)
+        word = tolower(tok)
+        if (chain && word == "and") { prev = word; continue }
+        if (tok != "") print chain "\t" tok
+        if (sentence_end) { chain = 0; prev = ""; continue }
+        if (word == "inspect" || word == "guide") marker = "colon"
+        else if (word == "over" || word == "on" && prev == "run" && gap ~ /^[ \t]+$/) marker = "plain"
+        prev = word
     }
-}' | sort -u)
+}')
 
 tree=$(git -C "$repo" ls-tree -r --full-tree --name-only "$commit")
 dirs=$(git -C "$repo" ls-tree -r -d --full-tree --name-only "$commit")
@@ -120,30 +137,36 @@ in_list() { # <item> <newline-separated list>
 }
 
 ac_paths=""
-while IFS= read -r tok; do
+ended_chain=0
+while IFS=$'\t' read -r chain tok; do
     [ -n "$tok" ] || continue
+    path=""
     case "$tok" in
-        */)
-            continue
-            ;;
+        */) ;;
         */*)
-            if ! in_list "$tok" "$tree"; then
+            if in_list "$tok" "$tree"; then
+                path="$tok"
+            else
                 case "${tok##*/}" in
-                    ?*.[A-Za-z0-9]*) in_list "${tok%/*}" "$dirs" || continue ;;
-                    *) continue ;;
+                    ?*.[A-Za-z0-9]*) if in_list "${tok%/*}" "$dirs"; then path="$tok"; fi ;;
                 esac
             fi
-            path="$tok"
             ;;
         ?*.?* | .?*)
-            path=$(printf '%s\n' "$tree" | awk -v n="$tok" '$0 == n || substr($0, length($0) - length(n)) == "/" n')
-            [ -n "$path" ] && [ "$(printf '%s\n' "$path" | wc -l)" -eq 1 ] || continue
+            matches=$(printf '%s\n' "$tree" | awk -v n="$tok" '$0 == n || substr($0, length($0) - length(n)) == "/" n')
+            if [ -n "$matches" ] && [ "$(printf '%s\n' "$matches" | wc -l)" -eq 1 ]; then path="$matches"; fi
             ;;
         *)
-            in_list "$tok" "$tree" || continue
-            path="$tok"
+            if in_list "$tok" "$tree"; then path="$tok"; fi
             ;;
     esac
+    if [ -z "$path" ]; then
+        ended_chain=$chain # a token that is not a path ends its marker's run
+        continue
+    fi
+    if [ "$chain" -ne 0 ] && [ "$chain" -ne "$ended_chain" ]; then
+        continue
+    fi
     ac_paths="${ac_paths}${path}"$'\n'
 done <<<"$tokens"
 ac_paths=$(printf '%s' "$ac_paths" | sort -u)

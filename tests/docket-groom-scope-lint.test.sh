@@ -257,6 +257,38 @@ lint_body "$(printf 'Context lives in docs/prose-only.md.\n\n## Acceptance crite
     "src/pkg/y.go"
 expect_clean "non-repository tokens, prose outside the criteria, and a later section"
 
+# A path the criteria only inspect, named after `inspect:`, needs no files
+# or scope entry.
+lint "- [ ] AC-1: src/pkg/y.go returns the error; inspect: docs/guide.md for the wording." \
+    "src/pkg/y.go" \
+    "src/pkg/y.go"
+expect_clean "a path named only after inspect:"
+
+# Every marker exempts the paths that follow it, through commas, `and` and
+# backticks.
+lint "$(printf -- '- [ ] AC-1: src/pkg/y.go returns the error; Inspect: docs/guide.md, `docs/notes.txt` and bin/wave-claim.\n- [ ] AC-2: run on justfile; guide: src/pkg/notes.txt; the check runs over .gitignore.')" \
+    "src/pkg/y.go" \
+    "src/pkg/y.go"
+expect_clean "paths after each inspect-only marker"
+
+# A marker exempts only within its sentence: the edit target in the next
+# sentence of the same line is still checked.
+lint "- [ ] AC-1: inspect: docs/guide.md. Then src/pkg/y.go returns the error." \
+    "docs/notes.txt" \
+    "docs/notes.txt"
+expect_line "missing from files: src/pkg/y.go" "an edit target after a marked sentence on the same line"
+case "$OUT" in
+    *docs/guide.md*) fail "a path after inspect: is reported: ${OUT}" ;;
+    *) pass "a path after inspect: is not reported beside a same-line edit target" ;;
+esac
+
+# A word that is not a path ends the marker's run, so the path after it is
+# checked.
+lint "- [ ] AC-1: inspect: notes.txt src/pkg/y.go for the wording." \
+    "docs/notes.txt" \
+    "docs/notes.txt"
+expect_line "missing from files: src/pkg/y.go" "a path after a non-path word that follows a marker"
+
 # A bold criteria label starts the section like a heading.
 lint_body "$(printf 'Context names docs/guide.md.\n\n**Acceptance criteria**\n\n- [ ] AC-1: src/pkg/y.go returns the error.\n')" \
     "src/pkg/y.go" \

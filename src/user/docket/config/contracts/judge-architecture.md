@@ -1,6 +1,6 @@
 ---
 node: judge-architecture
-version: 24
+version: 25
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -57,7 +57,10 @@ preserve authorized changes and dispositions. Conformance does not exempt the
 implementation from independently supported architectural findings. Conflicting
 or uncertain commitments leave the dependent judgment open.
 
-Establish the candidate and comparison state under evidence-rules. Apply
+When the assigned target is an authored document rather than a change (the
+spec-doc review fanout), the reviewed state is the document, and the diff and
+comparison instructions in this paragraph do not apply. Otherwise establish
+the candidate and comparison state under evidence-rules. Apply
 diff-reconstruction before treating an empty diff as missing input. Inspect
 the changed code and enough surrounding implementation, callers, tests,
 configuration, and contracts to establish its effects, following

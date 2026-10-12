@@ -3,6 +3,16 @@
 Version history of `workflows/security-change.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 54
+
+Comment-only edits, bumped because a comment change alters the registered
+bytes (entry 27). The `reconcile` threshold comment states the current
+first-match rule and drops its version narration, which entries 42 and 23
+already record, along with the overbroad claim that every other track
+routes blockers the same way. The `security-vote` comment names the LENSES
+table in tribunal.js, the only workflow script that has one. No topology,
+routing, or limit change.
+
 ## 53
 
 unless_labels drops a retired routing label; `route-direct` and

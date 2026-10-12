@@ -1,7 +1,7 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 53
+version = 54
 
 [match]
 labels_any = ["security-change", "security-load-bearing", "security"]
@@ -85,11 +85,8 @@ max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
 payload = "findings@13"
-# First-match, declared order: an open blocker always gets a fix round before
-# the panel sees the change. v42 restores this route ahead of the vote,
-# matching every other track, after v23 had removed it and left the two-seat
-# vote as a blocker's only exit, letting two approvals pass a blocker to
-# drain-highs.
+# First-match, declared order: an open blocker gets a fix round before the
+# panel sees the change; an open high goes to security-vote.
 threshold = { "fix-loop" = "any(open_severity >= blocker)", "security-vote" = "any(open_severity >= high)" }
 
 [[step]]
@@ -114,7 +111,7 @@ vote_rule = "security-acceptance"
 # Deliberately judge-*, not tribunal-*: this is the security-acceptance panel,
 # not the operator-stand-in tribunal, and the two seat families are routed
 # separately in policy.toml even where their current tiers coincide. As
-# voters these seats are briefed by the workflow scripts' LENSES table, not
+# voters these seats are briefed by the LENSES table in tribunal.js, not
 # by contracts/judge-*.md — one name, two remits. Two seats: under the 0.67
 # security-acceptance rule a lone reject of two scores about 0.5 and rejects,
 # so a single dissent decides, which a three-seat 2-1 tally never reliably did.

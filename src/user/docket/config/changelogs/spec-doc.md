@@ -3,6 +3,13 @@
 Version history of `workflows/spec-doc.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 45
+
+Comment-only edit, bumped because a comment change alters the registered
+bytes. The `doc-acceptance` vote comment names the LENSES table in
+tribunal.js, the only workflow script that has one, instead of "the
+workflow scripts' LENSES table". No topology, routing, or limit change.
+
 ## 44
 
 unless_labels drops a retired routing label; `route-direct` and

@@ -3,6 +3,17 @@
 Version history of `workflows/disposition.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 19
+
+`verify-ac` gains `issue.latest.disposition` beside `dispose.disposition`.
+The engine does not rebind a loop body's outputs under the original step
+name, so after a `revise-disposition` round `verify-ac` re-verified the
+stale first-pass disposition. It now also reads the latest one, as the
+sibling tracks do with `issue.latest.change-summary`.
+`dispose.gate-results` stays, since the engine rebinds gate results (entry
+14). Takes effect for runs activated after install. No topology or limit
+change.
+
 ## 18
 
 `dispose` and `revise-disposition` move from `class = "write"` to

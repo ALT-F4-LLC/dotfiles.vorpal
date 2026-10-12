@@ -1,7 +1,7 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by research, then validate, review, and vote to accept: the doc-acceptance panel for TDD/ADR, the tribunal for PRD/ux-spec. A rejection re-enters the doctype's revise step, then review, up to the loop bound."
 name = "spec-doc"
-version = 44
+version = 45
 
 [match]
 labels_any = ["spec-doc"]
@@ -223,7 +223,7 @@ vote_rule = "doc-acceptance"
 # panel, not the operator-stand-in tribunal (`ux-spec-vote`/`prd-vote` below), and
 # the two seat families are routed separately in policy.toml even where
 # their current tiers coincide. As voters these seats are briefed
-# by the workflow scripts' LENSES table, not by contracts/judge-*.md — one
+# by the LENSES table in tribunal.js, not by contracts/judge-*.md — one
 # name, two remits.
 voters = ["judge-architecture", "judge-security", "judge-correctness"]
 when = "labels contains doc:tdd"

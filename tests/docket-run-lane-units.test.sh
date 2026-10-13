@@ -170,6 +170,36 @@ rm -rf "$WORK/launch"
 n=$(lu "$WORK/rows.json" "$WORK/launch" --in-flight "$names" 2> "$WORK/err"); rc=$?
 [ "$rc" -eq 0 ] && [ "$n" = "0" ] && [ "$(wc -l < "$WORK/launch/deferred.jsonl" | tr -d ' ')" = "5" ] && grep -q '"issue":"I21"' "$WORK/launch/deferred.jsonl"
 ok $? "22 lanes in flight leave no free slot: 0 launches, the 5 other lanes deferred (rc=$rc, got $n)"
+
+# ---- --write-cap: the write class's effective cap bounds the launches ----------
+# The launch cap is min(LAUNCH_CAP, N): a smaller write cap narrows it, a
+# larger one never lifts it past LAUNCH_CAP, and no flag keeps LAUNCH_CAP.
+rm -rf "$WORK/launch"
+n=$(lu "$WORK/rows.json" "$WORK/launch" --write-cap 5 2> "$WORK/err"); rc=$?
+[ "$rc" -eq 0 ] && [ "$n" = "5" ] && [ "$(wc -l < "$WORK/launch/deferred.jsonl" | tr -d ' ')" = "20" ] &&
+    grep -q '"issue":"I6"' "$WORK/launch/deferred.jsonl" && ! grep -q '"issue":"I5"' "$WORK/launch/deferred.jsonl"
+ok $? "--write-cap 5 over 25 lanes launches the first 5 and defers 20 (rc=$rc, got $n: $(head -c 200 "$WORK/err"))"
+grep -q 'deferred: 20 lane(s) past the 5-launch cap' "$WORK/err"; ok $? 'the deferral names the write cap as the launch cap'
+rm -rf "$WORK/launch"
+n=$(lu "$WORK/rows.json" "$WORK/launch" --write-cap 5 --in-flight I1,I2 2> "$WORK/err"); rc=$?
+[ "$rc" -eq 0 ] && [ "$n" = "3" ]; ok $? "--write-cap 5 with 2 lanes in flight leaves 3 free slots (rc=$rc, got $n)"
+rm -rf "$WORK/launch"
+n=$(lu "$WORK/rows.json" "$WORK/launch" --write-cap 50 2> "$WORK/err"); rc=$?
+[ "$rc" -eq 0 ] && [ "$n" = "20" ] && [ "$(wc -l < "$WORK/launch/deferred.jsonl" | tr -d ' ')" = "5" ] &&
+    grep -q 'deferred: 5 lane(s) past the 20-launch cap' "$WORK/err"
+ok $? "--write-cap 50 over 25 lanes still launches at most 20 (rc=$rc, got $n: $(head -c 200 "$WORK/err"))"
+rm -rf "$WORK/launch"
+n=$(lu "$WORK/rows.json" "$WORK/launch" 2> "$WORK/err"); rc=$?
+[ "$rc" -eq 0 ] && [ "$n" = "20" ] && grep -q 'deferred: 5 lane(s) past the 20-launch cap' "$WORK/err"
+ok $? "without --write-cap 25 lanes launch the first 20, as before (rc=$rc, got $n)"
+for bad in 0 -1 1.5 ''; do
+    rm -rf "$WORK/out-cap"
+    flag=(--write-cap); [ -n "$bad" ] && flag+=("$bad")
+    lu "$WORK/rows.json" "$WORK/out-cap" "${flag[@]}" > "$WORK/out" 2> "$WORK/err"; rc=$?
+    [ "$rc" -ne 0 ] && grep -q -- '--write-cap' "$WORK/err" && [ ! -e "$WORK/out-cap" ] && [ ! -s "$WORK/out" ]
+    ok $? "--write-cap ${bad:-with no value} exits non-zero naming --write-cap and writes nothing (rc=$rc: $(head -c 200 "$WORK/err"))"
+done
+
 n=$(count '[]')
 [ "$n" = "0" ]; ok $? "an empty manifest is zero launches (got $n)"
 

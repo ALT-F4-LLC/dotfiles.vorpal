@@ -2,6 +2,7 @@
 
 Usage: python3 lane_units.py <rows-file> <out-dir> [--tribunal PATH]
                               [--integrated FILE] [--in-flight LANES]
+                              [--write-cap N]
 
 <rows-file> holds the rows the conductor kept after the kind filter, either
 as one JSON array or as one JSON object per line; a file holding a single
@@ -11,8 +12,12 @@ INTEGRATION sha. --in-flight is a comma-separated list of the lanes whose
 launches are still running: the issue id, or row:<step> for a row without
 an issue, with stderr's `lane:` prefix and surrounding spaces accepted. A
 refill re-split launches no lane in it, writes none of its rows anywhere,
-and counts each against LAUNCH_CAP, including a name matching no row,
-which stderr lists in case it is a typo. Run it from inside the run's git
+and counts each against the launch cap, including a name matching no row,
+which stderr lists in case it is a typo. --write-cap is the write class's
+effective cap as the engine reports it, a positive integer; the launch cap
+is then min(LAUNCH_CAP, N), so launches never outgrow the class headroom the
+host grants, and LAUNCH_CAP when the flag is absent (the class is unbounded).
+Run it from inside the run's git
 work tree: outside one it exits 1 and writes nothing. The script writes,
 under <out-dir>:
 
@@ -44,8 +49,8 @@ never welded or packed together. Writer lanes the engine never co-staged
 therefore run in separate launches, and the engine's claim check keeps them
 in stage order: a writer claimed while another lane's uncertified writer
 holds its scope is refused, and wave.js settles that refusal as
-skipped-not-ready, which a later refill relaunches. The free slots are LAUNCH_CAP
-minus the lanes in flight. Past them, the earliest lanes in manifest order
+skipped-not-ready, which a later refill relaunches. The free slots are the
+launch cap minus the lanes in flight, never below zero. Past them, the earliest lanes in manifest order
 launch and the rest go to deferred.jsonl, named on stderr; the conductor
 launches them from a later re-split as running launches return.
 
@@ -126,11 +131,11 @@ def certified_classes(rows):
     return best
 
 
-def split(rows, in_flight=frozenset()):
+def split(rows, in_flight=frozenset(), launch_cap=LAUNCH_CAP):
     """One launch per lane not in flight, in manifest order, up to the free
     slots; the lanes past them defer."""
     order = [l for l in dict.fromkeys(lane(r) for r in rows) if l not in in_flight]
-    free = max(0, LAUNCH_CAP - len(in_flight))
+    free = max(0, launch_cap - len(in_flight))
     launched, deferred = order[:free], order[free:]
     launch_of = {l: i for i, l in enumerate(launched)}
     kept = [r for r in rows if lane(r) in launch_of]
@@ -217,7 +222,7 @@ def write_module(packets, digest, rows):
 
 
 USAGE = ("usage: lane_units.py <rows-file> <out-dir> [--tribunal PATH] [--integrated FILE] "
-         "[--in-flight LANES]")
+         "[--in-flight LANES] [--write-cap N]")
 
 
 def lane_key(name):
@@ -227,12 +232,19 @@ def lane_key(name):
     return name[len("lane:"):].strip() if name.startswith("lane:") else name
 
 
+def write_cap(value):
+    """--write-cap's value as a positive int, or exit naming the flag."""
+    if not (value.isascii() and value.isdecimal()) or int(value) < 1:
+        raise SystemExit(f"lane_units: --write-cap {value!r} is not a positive integer")
+    return int(value)
+
+
 def parse_args(argv):
     positional, options = [], {}
     rest = list(argv[1:])
     while rest:
         arg = rest.pop(0)
-        if arg in ("--tribunal", "--integrated", "--in-flight"):
+        if arg in ("--tribunal", "--integrated", "--in-flight", "--write-cap"):
             if not rest:
                 raise SystemExit(USAGE)
             options[arg[2:]] = rest.pop(0)
@@ -243,12 +255,15 @@ def parse_args(argv):
     if len(positional) != 2:
         raise SystemExit(USAGE)
     in_flight = frozenset(filter(None, map(lane_key, options.get("in-flight", "").split(","))))
+    launch_cap = LAUNCH_CAP
+    if "write-cap" in options:
+        launch_cap = min(LAUNCH_CAP, write_cap(options["write-cap"]))
     return (positional[0], positional[1], options.get("tribunal"), options.get("integrated"),
-            in_flight)
+            in_flight, launch_cap)
 
 
 def main(argv):
-    rows_file, out, tribunal, integrated_file, in_flight = parse_args(argv)
+    rows_file, out, tribunal, integrated_file, in_flight, launch_cap = parse_args(argv)
     cap = harness_cap()
     rows = load_rows(rows_file)
     integrated = None
@@ -260,7 +275,7 @@ def main(argv):
     top = git_toplevel()
     packets = os.path.join(top, PACKET_DIR)
     os.makedirs(out, exist_ok=True)
-    launches, deferred_rows, deferred_lanes = split(rows, in_flight)
+    launches, deferred_rows, deferred_lanes = split(rows, in_flight, launch_cap)
     summary = []
     for launch in launches:
         index = launch["index"]
@@ -298,7 +313,7 @@ def main(argv):
         print("lane_units: in flight but in no row: " + ", ".join(absent) +
               "; each still holds a launch slot", file=sys.stderr)
     if deferred_lanes:
-        print(f"deferred: {len(deferred_lanes)} lane(s) past the {LAUNCH_CAP}-launch cap "
+        print(f"deferred: {len(deferred_lanes)} lane(s) past the {launch_cap}-launch cap "
               f"with {len(in_flight)} in flight, {len(deferred_rows)} row(s) in "
               f"deferred.jsonl; launch them as launches return: " + ", ".join(deferred_lanes),
               file=sys.stderr)

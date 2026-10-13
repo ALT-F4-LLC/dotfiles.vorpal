@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "verified_on": "2026-10-13",
-  "binary_version": "docket version nightly-659-gec91591 (commit: ec91591, built: 2026-10-13T02:11:27Z)",
+  "binary_version": "docket version nightly-14-gaac20c0 (commit: aac20c0, built: 2026-10-13T05:25:40Z)",
   "inventory_version": "docket version nightly-659-gec91591 (commit: ec91591, built: 2026-10-13T02:11:27Z)",
-  "scenario_sha256": "85ebdc6ca9e50484c782d97c4b2db00f445730c203fd255f057b8f7cb071ec54",
+  "scenario_sha256": "2e45a232e236bb2ddb338f5a17f9ca93fdcd1891451b515e4f4918d631a81ac4",
   "probe_contract": "Every probe runs against a scratch HOME, XDG config and git repository; the trust roster is empty for every run- and step-level verb; --watch, --follow, --interval and 'trust probe' are refused.",
   "coverage": {
     "exercised": [
@@ -193,7 +193,7 @@
         "version"
       ],
       "exit": 0,
-      "stdout": "docket version nightly-659-gec91591 (commit: ec91591, built: <TIMESTAMP>)\n",
+      "stdout": "docket version nightly-14-gaac20c0 (commit: aac20c0, built: <TIMESTAMP>)\n",
       "stderr": ""
     },
     {
@@ -208,11 +208,11 @@
       "json": {
         "ok": true,
         "data": {
-          "version": "nightly-659-gec91591",
-          "commit": "ec91591",
+          "version": "nightly-14-gaac20c0",
+          "commit": "aac20c0",
           "build_date": "<TIMESTAMP>"
         },
-        "message": "docket version nightly-659-gec91591 (commit: ec91591, built: <TIMESTAMP>)"
+        "message": "docket version nightly-14-gaac20c0 (commit: aac20c0, built: <TIMESTAMP>)"
       },
       "stderr": ""
     },
@@ -229,11 +229,11 @@
       "json": {
         "ok": true,
         "data": {
-          "version": "nightly-659-gec91591",
-          "commit": "ec91591",
+          "version": "nightly-14-gaac20c0",
+          "commit": "aac20c0",
           "build_date": "<TIMESTAMP>"
         },
-        "message": "docket version nightly-659-gec91591 (commit: ec91591, built: <TIMESTAMP>)"
+        "message": "docket version nightly-14-gaac20c0 (commit: aac20c0, built: <TIMESTAMP>)"
       },
       "stderr": ""
     },
@@ -11345,7 +11345,7 @@
           "title": "Beta",
           "updated_at": "<TIMESTAMP>",
           "warnings": [
-            "DKT-2 is bound into RUN-1, which froze its scope at activation as no declared scope (§5.1.1) — the 2 step(s) still live there will render that frozen scope in their packets and record their diffs over it, NOT the [src/**] you just wrote. The live column does take effect for scheduling's mutual-exclusion check, and for nothing else. To make the widened scope real for this run's remaining work, refresh its snapshot — `docket run refresh-scope RUN-1 --issue DKT-2 --reason \"scope widened\"` (DKT-869; refuses while any of the issue's steps is claimed, running or gated, or while a dispatch is open). If the run's PREMISE changed rather than one declaration, the older disposition still applies: take the issue out of the run — `docket run abandon RUN-1 --issue DKT-2 --reason \"scope widened\"` — and re-plan it into a new run, whose activation snapshots the scope afresh"
+            "DKT-2 is bound into RUN-1, which froze its scope at activation as no declared scope — the 2 step(s) still live there will render that frozen scope in their packets and record their diffs over it, NOT the [src/**] you just wrote. The live column does take effect for scheduling's mutual-exclusion check, and for nothing else. To make the widened scope real for this run's remaining work, refresh its snapshot — `docket run refresh-scope RUN-1 --issue DKT-2 --reason \"scope widened\"` (DKT-869; refuses while any of the issue's steps is claimed, running or gated, or while a dispatch is open). If the run's PREMISE changed rather than one declaration, the older disposition still applies: take the issue out of the run — `docket run abandon RUN-1 --issue DKT-2 --reason \"scope widened\"` — and re-plan it into a new run, whose activation snapshots the scope afresh"
           ]
         },
         "message": "Updated DKT-2: Beta"
@@ -11504,7 +11504,7 @@
           "title": "Beta",
           "updated_at": "<TIMESTAMP>",
           "warnings": [
-            "DKT-2 is bound into RUN-1, which froze its description at activation (§5.1.1) — the 2 step(s) still live there will render that frozen description as their packets' REQUEST and issue.body, NOT the description you just wrote. To make the amendment reach this run's remaining work, refresh its snapshot — `docket run refresh-body RUN-1 --issue DKT-2 --reason \"description amended\"` (refuses while any of the issue's steps is claimed, running or gated, or while a dispatch is open)"
+            "DKT-2 is bound into RUN-1, which froze its description at activation — the 2 step(s) still live there will render that frozen description as their packets' REQUEST and issue.body, NOT the description you just wrote. To make the amendment reach this run's remaining work, refresh its snapshot — `docket run refresh-body RUN-1 --issue DKT-2 --reason \"description amended\"` (refuses while any of the issue's steps is claimed, running or gated, or while a dispatch is open)"
           ]
         },
         "message": "Updated DKT-2: Beta"
@@ -11738,6 +11738,162 @@
       "stderr": ""
     },
     {
+      "id": "vote-link-run",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "vote",
+        "link",
+        "DKT-V1",
+        "--issue",
+        "DKT-2",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "proposal_id": "DKT-V1",
+          "issue_id": "DKT-2"
+        },
+        "message": "Linked DKT-2 to proposal DKT-V1"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "run-report-before-reseated",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "run",
+        "report",
+        "RUN-1",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "run": {
+            "run": "RUN-1",
+            "status": "active",
+            "budget": 200,
+            "activated_at_ms": "<N>",
+            "created_at_ms": "<N>",
+            "updated_at_ms": "<N>"
+          },
+          "wall_clock_ms": "<N>",
+          "budget": {
+            "cap": 200,
+            "cap_source": "run",
+            "floor": 0,
+            "spend": 0,
+            "burn_rate": 0
+          },
+          "pinned_workflows": [
+            {
+              "ref": "sweep-dev@1",
+              "name": "sweep-dev",
+              "pinned_version": 1,
+              "current_version": 1,
+              "behind": 0
+            }
+          ],
+          "steps": [
+            {
+              "status": "pending",
+              "count": 2
+            },
+            {
+              "status": "ready",
+              "count": 2
+            }
+          ],
+          "attempts": [
+            {
+              "step": "STEP-2",
+              "instance": "approve@0",
+              "issue": "DKT-2",
+              "status": "pending",
+              "attempts": 0
+            },
+            {
+              "step": "STEP-4",
+              "instance": "approve@0",
+              "issue": "DKT-5",
+              "status": "pending",
+              "attempts": 0
+            },
+            {
+              "step": "STEP-1",
+              "instance": "check@0",
+              "issue": "DKT-2",
+              "status": "ready",
+              "attempts": 0
+            },
+            {
+              "step": "STEP-3",
+              "instance": "check@0",
+              "issue": "DKT-5",
+              "status": "ready",
+              "attempts": 0
+            }
+          ],
+          "actors": [
+            {
+              "actor": "next",
+              "count": 2
+            },
+            {
+              "actor": "human",
+              "count": 15
+            }
+          ],
+          "authorities": [
+            {
+              "authority": "operator",
+              "count": 3
+            },
+            {
+              "authority": "conductor",
+              "count": 1
+            }
+          ],
+          "note_rulings": [
+            {
+              "note": 1,
+              "authority": "operator",
+              "actor": "sweep",
+              "cwd": "<SCRATCH>/repo"
+            },
+            {
+              "note": 2,
+              "authority": "operator",
+              "actor": "sweep",
+              "cwd": "<SCRATCH>/repo"
+            },
+            {
+              "note": 3,
+              "authority": "operator",
+              "actor": "sweep",
+              "cwd": "<SCRATCH>/repo"
+            },
+            {
+              "note": 4,
+              "authority": "conductor",
+              "actor": "sweep",
+              "cwd": "<SCRATCH>/repo"
+            }
+          ],
+          "vote_usage_coverage": {
+            "casts": 0,
+            "reported": 0
+          }
+        }
+      },
+      "stderr": ""
+    },
+    {
       "id": "run-fact-add-reseated",
       "mode": "text",
       "argv": [
@@ -11755,9 +11911,9 @@
         "--reason",
         "seat respawned"
       ],
-      "exit": 3,
-      "stdout": "",
-      "stderr": "Error: proposal DKT-V1 is linked to no issue with a step on RUN-1, so no seat of it was re-seated for this run\n"
+      "exit": 0,
+      "stdout": "Recorded vote-reseated on RUN-1 (seq 19): seat respawned\n",
+      "stderr": ""
     },
     {
       "id": "run-fact-add-reseated",
@@ -11778,11 +11934,203 @@
         "seat respawned",
         "--json"
       ],
-      "exit": 3,
+      "exit": 0,
       "json": {
-        "ok": false,
-        "error": "proposal DKT-V1 is linked to no issue with a step on RUN-1, so no seat of it was re-seated for this run",
-        "code": "VALIDATION_ERROR"
+        "ok": true,
+        "data": {
+          "run": "RUN-1",
+          "kind": "vote-reseated",
+          "seq": 20,
+          "proposal": "DKT-V1",
+          "voter": "sweep",
+          "reason": "seat respawned"
+        },
+        "message": "Recorded vote-reseated on RUN-1 (seq 20): seat respawned"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "run-report-after-reseated",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "run",
+        "report",
+        "RUN-1",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "run": {
+            "run": "RUN-1",
+            "status": "active",
+            "budget": 200,
+            "activated_at_ms": "<N>",
+            "created_at_ms": "<N>",
+            "updated_at_ms": "<N>"
+          },
+          "wall_clock_ms": "<N>",
+          "budget": {
+            "cap": 200,
+            "cap_source": "run",
+            "floor": 0,
+            "spend": 0,
+            "burn_rate": 0
+          },
+          "pinned_workflows": [
+            {
+              "ref": "sweep-dev@1",
+              "name": "sweep-dev",
+              "pinned_version": 1,
+              "current_version": 1,
+              "behind": 0
+            }
+          ],
+          "steps": [
+            {
+              "status": "pending",
+              "count": 2
+            },
+            {
+              "status": "ready",
+              "count": 2
+            }
+          ],
+          "attempts": [
+            {
+              "step": "STEP-2",
+              "instance": "approve@0",
+              "issue": "DKT-2",
+              "status": "pending",
+              "attempts": 0
+            },
+            {
+              "step": "STEP-4",
+              "instance": "approve@0",
+              "issue": "DKT-5",
+              "status": "pending",
+              "attempts": 0
+            },
+            {
+              "step": "STEP-1",
+              "instance": "check@0",
+              "issue": "DKT-2",
+              "status": "ready",
+              "attempts": 0
+            },
+            {
+              "step": "STEP-3",
+              "instance": "check@0",
+              "issue": "DKT-5",
+              "status": "ready",
+              "attempts": 0
+            }
+          ],
+          "actors": [
+            {
+              "actor": "next",
+              "count": 2
+            },
+            {
+              "actor": "human",
+              "count": 17
+            }
+          ],
+          "authorities": [
+            {
+              "authority": "operator",
+              "count": 3
+            },
+            {
+              "authority": "conductor",
+              "count": 1
+            }
+          ],
+          "note_rulings": [
+            {
+              "note": 1,
+              "authority": "operator",
+              "actor": "sweep",
+              "cwd": "<SCRATCH>/repo"
+            },
+            {
+              "note": 2,
+              "authority": "operator",
+              "actor": "sweep",
+              "cwd": "<SCRATCH>/repo"
+            },
+            {
+              "note": 3,
+              "authority": "operator",
+              "actor": "sweep",
+              "cwd": "<SCRATCH>/repo"
+            },
+            {
+              "note": 4,
+              "authority": "conductor",
+              "actor": "sweep",
+              "cwd": "<SCRATCH>/repo"
+            }
+          ],
+          "vote_usage_coverage": {
+            "casts": 0,
+            "reported": 0
+          }
+        }
+      },
+      "stderr": ""
+    },
+    {
+      "id": "events-list-reseated",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "events",
+        "list",
+        "--run",
+        "RUN-1",
+        "--kind",
+        "vote-reseated",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "events": [
+            {
+              "seq": 19,
+              "at_ms": "<N>",
+              "kind": "vote-reseated",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "actor": "sweep",
+                "cwd": "<SCRATCH>/repo",
+                "proposal": "DKT-V1",
+                "reason": "seat respawned",
+                "voter": "sweep"
+              }
+            },
+            {
+              "seq": 20,
+              "at_ms": "<N>",
+              "kind": "vote-reseated",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "actor": "sweep",
+                "cwd": "<SCRATCH>/repo",
+                "proposal": "DKT-V1",
+                "reason": "seat respawned",
+                "voter": "sweep"
+              }
+            }
+          ],
+          "total": 2
+        }
       },
       "stderr": ""
     },
@@ -12694,7 +13042,7 @@
         "data": {
           "dispatch": "DISPATCH-1",
           "run": "RUN-1",
-          "opened_seq": 18,
+          "opened_seq": 20,
           "expires_ms": "<N>",
           "rows": [
             {
@@ -14164,7 +14512,7 @@
         "RUN-1"
       ],
       "exit": 0,
-      "stdout": "DISPATCH-1 extended for RUN-1 at seq 31 with 1 row(s), now expiring at <MS>\n\nSTEP INSTANCE ISSUE KIND EXECUTOR CLASS ATTEMPT TTL\n------------------------------------------------------------------------------------------------------------\nSTEP-2 approve@0 DKT-2 human - - 0 <DURATION>\n",
+      "stdout": "DISPATCH-1 extended for RUN-1 at seq 33 with 1 row(s), now expiring at <MS>\n\nSTEP INSTANCE ISSUE KIND EXECUTOR CLASS ATTEMPT TTL\n------------------------------------------------------------------------------------------------------------\nSTEP-2 approve@0 DKT-2 human - - 0 <DURATION>\n",
       "stderr": ""
     },
     {
@@ -14184,7 +14532,7 @@
         "data": {
           "dispatch": "DISPATCH-1",
           "run": "RUN-1",
-          "extended_seq": 32,
+          "extended_seq": 34,
           "expires_ms": "<N>",
           "rows": []
         }
@@ -14209,7 +14557,7 @@
         "data": {
           "dispatch": "DISPATCH-1",
           "run": "RUN-1",
-          "extended_seq": 33,
+          "extended_seq": 35,
           "expires_ms": "<N>",
           "rows": []
         }
@@ -14923,7 +15271,7 @@
             },
             {
               "actor": "human",
-              "count": 35
+              "count": 37
             }
           ],
           "authorities": [
@@ -16222,7 +16570,7 @@
         "data": {
           "dispatch": "DISPATCH-2",
           "run": "RUN-3",
-          "opened_seq": 67,
+          "opened_seq": 69,
           "expires_ms": "<N>",
           "rows": [
             {
@@ -16949,7 +17297,7 @@
               }
             }
           ],
-          "total": 73
+          "total": 75
         }
       },
       "stderr": ""
@@ -17041,7 +17389,7 @@
               }
             }
           ],
-          "total": 73,
+          "total": 75,
           "truncated": true
         }
       },
@@ -17110,7 +17458,7 @@
               }
             }
           ],
-          "total": 43
+          "total": 45
         }
       },
       "stderr": ""
@@ -17133,7 +17481,7 @@
         "data": {
           "events": [
             {
-              "seq": 71,
+              "seq": 73,
               "at_ms": "<N>",
               "kind": "issue-abandoned",
               "run": "RUN-3",
@@ -17149,7 +17497,7 @@
               }
             },
             {
-              "seq": 72,
+              "seq": 74,
               "at_ms": "<N>",
               "kind": "run-abandoned",
               "run": "RUN-3",
@@ -17162,7 +17510,7 @@
               }
             },
             {
-              "seq": 73,
+              "seq": 75,
               "at_ms": "<N>",
               "kind": "run-abandoned",
               "run": "RUN-1",
@@ -17176,7 +17524,7 @@
               }
             }
           ],
-          "total": 73
+          "total": 75
         }
       },
       "stderr": ""
@@ -17313,7 +17661,7 @@
         "data": {
           "events": [
             {
-              "seq": 70,
+              "seq": 72,
               "at_ms": "<N>",
               "kind": "step-held",
               "run": "RUN-3",
@@ -17353,39 +17701,39 @@
         "data": {
           "events": [
             {
-              "seq": 22,
-              "at_ms": "<N>",
-              "kind": "claim-refused",
-              "run": "RUN-1",
-              "step": "check@0",
-              "step_id": "STEP-1",
-              "issue": "DKT-2",
-              "project": "repo",
-              "data": {
-                "instance": "check@0",
-                "owner": "other",
-                "reason": "step check@0 is not ready to claim: the step is not pending",
-                "step": "STEP-1"
-              }
-            },
-            {
-              "seq": 23,
-              "at_ms": "<N>",
-              "kind": "claim-refused",
-              "run": "RUN-1",
-              "step": "check@0",
-              "step_id": "STEP-1",
-              "issue": "DKT-2",
-              "project": "repo",
-              "data": {
-                "instance": "check@0",
-                "owner": "other",
-                "reason": "step check@0 is not ready to claim: the step is not pending",
-                "step": "STEP-1"
-              }
-            },
-            {
               "seq": 24,
+              "at_ms": "<N>",
+              "kind": "claim-refused",
+              "run": "RUN-1",
+              "step": "check@0",
+              "step_id": "STEP-1",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "instance": "check@0",
+                "owner": "other",
+                "reason": "step check@0 is not ready to claim: the step is not pending",
+                "step": "STEP-1"
+              }
+            },
+            {
+              "seq": 25,
+              "at_ms": "<N>",
+              "kind": "claim-refused",
+              "run": "RUN-1",
+              "step": "check@0",
+              "step_id": "STEP-1",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "instance": "check@0",
+                "owner": "other",
+                "reason": "step check@0 is not ready to claim: the step is not pending",
+                "step": "STEP-1"
+              }
+            },
+            {
+              "seq": 26,
               "at_ms": "<N>",
               "kind": "claim-refused",
               "run": "RUN-1",
@@ -17401,7 +17749,7 @@
               }
             },
             {
-              "seq": 25,
+              "seq": 27,
               "at_ms": "<N>",
               "kind": "claim-refused",
               "run": "RUN-1",
@@ -17440,7 +17788,7 @@
         "data": {
           "events": [
             {
-              "seq": 38,
+              "seq": 40,
               "at_ms": "<N>",
               "kind": "dispatch-close-refused",
               "run": "RUN-1",
@@ -17450,7 +17798,7 @@
               }
             },
             {
-              "seq": 39,
+              "seq": 41,
               "at_ms": "<N>",
               "kind": "dispatch-close-refused",
               "run": "RUN-1",
@@ -17737,6 +18085,34 @@
             {
               "seq": 19,
               "at_ms": "<N>",
+              "kind": "vote-reseated",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "actor": "sweep",
+                "cwd": "<SCRATCH>/repo",
+                "proposal": "DKT-V1",
+                "reason": "seat respawned",
+                "voter": "sweep"
+              }
+            },
+            {
+              "seq": 20,
+              "at_ms": "<N>",
+              "kind": "vote-reseated",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "actor": "sweep",
+                "cwd": "<SCRATCH>/repo",
+                "proposal": "DKT-V1",
+                "reason": "seat respawned",
+                "voter": "sweep"
+              }
+            },
+            {
+              "seq": 21,
+              "at_ms": "<N>",
               "kind": "dispatch-opened",
               "run": "RUN-1",
               "project": "repo",
@@ -17747,7 +18123,7 @@
               }
             },
             {
-              "seq": 20,
+              "seq": 22,
               "at_ms": "<N>",
               "kind": "step-claimed",
               "run": "RUN-1",
@@ -17761,7 +18137,7 @@
               }
             },
             {
-              "seq": 21,
+              "seq": 23,
               "at_ms": "<N>",
               "kind": "issue-in-progress",
               "run": "RUN-1",
@@ -17774,51 +18150,19 @@
               }
             },
             {
-              "seq": 22,
-              "at_ms": "<N>",
-              "kind": "claim-refused",
-              "run": "RUN-1",
-              "step": "check@0",
-              "step_id": "STEP-1",
-              "issue": "DKT-2",
-              "project": "repo",
-              "data": {
-                "instance": "check@0",
-                "owner": "other",
-                "reason": "step check@0 is not ready to claim: the step is not pending",
-                "step": "STEP-1"
-              }
-            },
-            {
-              "seq": 23,
-              "at_ms": "<N>",
-              "kind": "claim-refused",
-              "run": "RUN-1",
-              "step": "check@0",
-              "step_id": "STEP-1",
-              "issue": "DKT-2",
-              "project": "repo",
-              "data": {
-                "instance": "check@0",
-                "owner": "other",
-                "reason": "step check@0 is not ready to claim: the step is not pending",
-                "step": "STEP-1"
-              }
-            },
-            {
               "seq": 24,
               "at_ms": "<N>",
               "kind": "claim-refused",
               "run": "RUN-1",
-              "step": "approve@0",
-              "step_id": "STEP-2",
+              "step": "check@0",
+              "step_id": "STEP-1",
               "issue": "DKT-2",
               "project": "repo",
               "data": {
-                "instance": "approve@0",
-                "owner": "sweep",
-                "reason": "step approve@0 is a human step and is not claimable: it is resolved by `docket step approve|reject`, not by a worker",
-                "step": "STEP-2"
+                "instance": "check@0",
+                "owner": "other",
+                "reason": "step check@0 is not ready to claim: the step is not pending",
+                "step": "STEP-1"
               }
             },
             {
@@ -17826,6 +18170,22 @@
               "at_ms": "<N>",
               "kind": "claim-refused",
               "run": "RUN-1",
+              "step": "check@0",
+              "step_id": "STEP-1",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "instance": "check@0",
+                "owner": "other",
+                "reason": "step check@0 is not ready to claim: the step is not pending",
+                "step": "STEP-1"
+              }
+            },
+            {
+              "seq": 26,
+              "at_ms": "<N>",
+              "kind": "claim-refused",
+              "run": "RUN-1",
               "step": "approve@0",
               "step_id": "STEP-2",
               "issue": "DKT-2",
@@ -17838,7 +18198,23 @@
               }
             },
             {
-              "seq": 26,
+              "seq": 27,
+              "at_ms": "<N>",
+              "kind": "claim-refused",
+              "run": "RUN-1",
+              "step": "approve@0",
+              "step_id": "STEP-2",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "instance": "approve@0",
+                "owner": "sweep",
+                "reason": "step approve@0 is a human step and is not claimable: it is resolved by `docket step approve|reject`, not by a worker",
+                "step": "STEP-2"
+              }
+            },
+            {
+              "seq": 28,
               "at_ms": "<N>",
               "kind": "step-recorded",
               "run": "RUN-1",
@@ -17852,7 +18228,7 @@
               }
             },
             {
-              "seq": 27,
+              "seq": 29,
               "at_ms": "<N>",
               "kind": "step-routed",
               "run": "RUN-1",
@@ -17866,7 +18242,7 @@
               }
             },
             {
-              "seq": 28,
+              "seq": 30,
               "at_ms": "<N>",
               "kind": "issue-review",
               "run": "RUN-1",
@@ -17876,34 +18252,6 @@
               "project": "repo",
               "data": {
                 "instance": "check@0"
-              }
-            },
-            {
-              "seq": 29,
-              "at_ms": "<N>",
-              "kind": "step-annotated",
-              "run": "RUN-1",
-              "step": "check@0",
-              "step_id": "STEP-1",
-              "issue": "DKT-2",
-              "project": "repo",
-              "data": {
-                "instance": "check@0",
-                "landed": true
-              }
-            },
-            {
-              "seq": 30,
-              "at_ms": "<N>",
-              "kind": "step-annotated",
-              "run": "RUN-1",
-              "step": "check@0",
-              "step_id": "STEP-1",
-              "issue": "DKT-2",
-              "project": "repo",
-              "data": {
-                "instance": "check@0",
-                "landed": true
               }
             },
             {
@@ -17923,27 +18271,29 @@
             {
               "seq": 32,
               "at_ms": "<N>",
-              "kind": "dispatch-extended",
+              "kind": "step-annotated",
               "run": "RUN-1",
+              "step": "check@0",
+              "step_id": "STEP-1",
+              "issue": "DKT-2",
               "project": "repo",
               "data": {
-                "dispatch": "DISPATCH-1",
-                "expires_ms": "<N>",
-                "extended_seq": 31,
-                "rows": 1
+                "instance": "check@0",
+                "landed": true
               }
             },
             {
               "seq": 33,
               "at_ms": "<N>",
-              "kind": "dispatch-extended",
+              "kind": "step-annotated",
               "run": "RUN-1",
+              "step": "check@0",
+              "step_id": "STEP-1",
+              "issue": "DKT-2",
               "project": "repo",
               "data": {
-                "dispatch": "DISPATCH-1",
-                "expires_ms": "<N>",
-                "extended_seq": 32,
-                "rows": 0
+                "instance": "check@0",
+                "landed": true
               }
             },
             {
@@ -17956,11 +18306,37 @@
                 "dispatch": "DISPATCH-1",
                 "expires_ms": "<N>",
                 "extended_seq": 33,
-                "rows": 0
+                "rows": 1
               }
             },
             {
               "seq": 35,
+              "at_ms": "<N>",
+              "kind": "dispatch-extended",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "dispatch": "DISPATCH-1",
+                "expires_ms": "<N>",
+                "extended_seq": 34,
+                "rows": 0
+              }
+            },
+            {
+              "seq": 36,
+              "at_ms": "<N>",
+              "kind": "dispatch-extended",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "dispatch": "DISPATCH-1",
+                "expires_ms": "<N>",
+                "extended_seq": 35,
+                "rows": 0
+              }
+            },
+            {
+              "seq": 37,
               "at_ms": "<N>",
               "kind": "stale-target-waived",
               "run": "RUN-1",
@@ -17976,7 +18352,7 @@
               }
             },
             {
-              "seq": 36,
+              "seq": 38,
               "at_ms": "<N>",
               "kind": "stale-target-waived",
               "run": "RUN-1",
@@ -17992,7 +18368,7 @@
               }
             },
             {
-              "seq": 37,
+              "seq": 39,
               "at_ms": "<N>",
               "kind": "dispatch-closed",
               "run": "RUN-1",
@@ -18008,27 +18384,27 @@
               }
             },
             {
-              "seq": 38,
-              "at_ms": "<N>",
-              "kind": "dispatch-close-refused",
-              "run": "RUN-1",
-              "project": "repo",
-              "data": {
-                "reason": "no dispatch is open for RUN-1 and there is no missing usage to accept"
-              }
-            },
-            {
-              "seq": 39,
-              "at_ms": "<N>",
-              "kind": "dispatch-close-refused",
-              "run": "RUN-1",
-              "project": "repo",
-              "data": {
-                "reason": "no dispatch is open for RUN-1 and there is no missing usage to accept"
-              }
-            },
-            {
               "seq": 40,
+              "at_ms": "<N>",
+              "kind": "dispatch-close-refused",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "reason": "no dispatch is open for RUN-1 and there is no missing usage to accept"
+              }
+            },
+            {
+              "seq": 41,
+              "at_ms": "<N>",
+              "kind": "dispatch-close-refused",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "reason": "no dispatch is open for RUN-1 and there is no missing usage to accept"
+              }
+            },
+            {
+              "seq": 42,
               "at_ms": "<N>",
               "kind": "step-approved",
               "run": "RUN-1",
@@ -18045,7 +18421,7 @@
               }
             },
             {
-              "seq": 41,
+              "seq": 43,
               "at_ms": "<N>",
               "kind": "issue-in-progress",
               "run": "RUN-1",
@@ -18058,7 +18434,7 @@
               }
             },
             {
-              "seq": 42,
+              "seq": 44,
               "at_ms": "<N>",
               "kind": "step-claimed",
               "run": "RUN-1",
@@ -18071,7 +18447,7 @@
               }
             },
             {
-              "seq": 43,
+              "seq": 45,
               "at_ms": "<N>",
               "kind": "issue-in-progress",
               "run": "RUN-1",
@@ -18084,7 +18460,7 @@
               }
             },
             {
-              "seq": 73,
+              "seq": 75,
               "at_ms": "<N>",
               "kind": "run-abandoned",
               "run": "RUN-1",
@@ -18098,7 +18474,7 @@
               }
             }
           ],
-          "total": 43
+          "total": 45
         }
       },
       "stderr": ""
@@ -18115,7 +18491,7 @@
         "--dry-run"
       ],
       "exit": 0,
-      "stdout": "Would prune 43 event(s). Retained minimum is now seq 1.\n",
+      "stdout": "Would prune 45 event(s). Retained minimum is now seq 1.\n",
       "stderr": ""
     },
     {
@@ -18134,7 +18510,7 @@
       "json": {
         "ok": true,
         "data": {
-          "pruned": 43,
+          "pruned": 45,
           "retained_minimum": 1,
           "dry_run": true,
           "before_run": "RUN-1"
@@ -18159,7 +18535,7 @@
       "json": {
         "ok": true,
         "data": {
-          "pruned": 43,
+          "pruned": 45,
           "retained_minimum": 1,
           "dry_run": true,
           "before_run": "RUN-1"

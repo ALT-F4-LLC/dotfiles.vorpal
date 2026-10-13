@@ -16,10 +16,10 @@ examples reflect the swept commands as of that build. The cross-project
 
 ## Contents
 
-- [`docket events`](#events-commands) — 209 lines
+- [`docket events`](#events-commands) — 206 lines
   - [`events list`](#events-list) — 107 lines
   - [`events prune`](#events-prune) — 49 lines
-  - [Attribution](#events-attribution) — 45 lines
+  - [Attribution](#events-attribution) — 42 lines
 
 <a id="events-commands"></a>
 
@@ -197,10 +197,7 @@ Every event kind the sweep produced maps to exactly one of four actors, and
 | `next` | the scheduler | `step-ready`, `lease-reaped`, `join-completed`, `loop-entered`, `dispatch-abandoned`, `issue-promoted`, `issue-in-progress`, `issue-review` |
 | `gate` | a deterministic check, actions included | `gate-started`, `gate-recorded`, `gate-unmatched`, `gate-rerun`, `vote-opened`, `vote-tallied` |
 | `threshold` | computed routing | `step-routed`, `step-failed`, `step-superseded`, `step-skipped`, `step-held`, `step-batch-overridden` |
-| `human` | an operator verb, including one a harness relays | `run-*` (`run-started`, `run-activated`, `run-paused`, `run-resumed`, `run-abandoned`, `run-done`, `run-budget-set`, `run-repinned`, `run-note-added`), `step-claimed`, `step-reminted`, `step-heartbeat`, `step-recorded`, `step-resolved`, `step-approved`, `step-rejected`, `step-annotated`, `issue-abandoned`, `issue-diff-repinned`, `issue-scope-refreshed`, `issue-body-refreshed`, `issue-files-refreshed`, `gate-override-granted`, `stale-target-waived`, `spawn-admitted`, `trust-*`, `project-registered`, `dispatch-opened`, `dispatch-closed`, `dispatch-extended`, `reap-acknowledged`, `conductor-seated`, `events-pruned`, `config-changed`, `claim-refused`, `dispatch-close-refused`, `step-deferred` |
-
-`vote-reseated` is a valid kind the sweep never produced, so its actor is
-unverified.
+| `human` | an operator verb, including one a harness relays | `run-*` (`run-started`, `run-activated`, `run-paused`, `run-resumed`, `run-abandoned`, `run-done`, `run-budget-set`, `run-repinned`, `run-note-added`), `step-claimed`, `step-reminted`, `step-heartbeat`, `step-recorded`, `step-resolved`, `step-approved`, `step-rejected`, `step-annotated`, `issue-abandoned`, `issue-diff-repinned`, `issue-scope-refreshed`, `issue-body-refreshed`, `issue-files-refreshed`, `gate-override-granted`, `stale-target-waived`, `spawn-admitted`, `trust-*`, `project-registered`, `dispatch-opened`, `dispatch-closed`, `dispatch-extended`, `reap-acknowledged`, `conductor-seated`, `events-pruned`, `config-changed`, `claim-refused`, `dispatch-close-refused`, `step-deferred`, `vote-reseated` |
 
 The three operator lifecycle kinds each carry `data` of `{from, to,
 reason}`, written in the same transaction as the status they record. A

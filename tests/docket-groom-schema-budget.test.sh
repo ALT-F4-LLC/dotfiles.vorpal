@@ -20,8 +20,11 @@
 # WHAT IS PINNED HERE. Every schema agent() receives serializes within the
 # bound; every `schema:` option in the script names one of those measured
 # schemas; JUDGE_SCHEMA is LEDGER_SCHEMA minus its descriptions and nothing
-# else; the field guide carries every description; and `required` still
-# covers each ledger field the script dereferences.
+# else; the field guide carries every description; `required` still
+# covers each ledger field the script dereferences; and the registry check
+# (the `registry` region) counts a probe as usable only when checkoutOk is
+# true and it listed at least one workflow, so an empty registry is reported
+# uncovered instead of reaching judges as a clean pass.
 #
 # DOCKET_GROOM_JS overrides the script under test, so a mutation probe can
 # point the suite at a deliberately-broken COPY under $TMPDIR and observe red
@@ -59,6 +62,9 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
 
 extract schemas > "${WORK}/suite.js" || fatal "bad or missing TEST markers for schemas"
 [ -s "${WORK}/suite.js" ] || fatal "extracted schemas region is empty"
+extract registry > "${WORK}/registry.js" || fatal "bad or missing TEST markers for registry"
+[ -s "${WORK}/registry.js" ] || fatal "extracted registry region is empty"
+cat "${WORK}/registry.js" >> "${WORK}/suite.js"
 
 cat >> "${WORK}/suite.js" <<'JS'
 
@@ -118,6 +124,13 @@ ok(requires(JUDGE_SCHEMA, ['readOk', 'value', 'size', 'epic', 'duplicateCandidat
 ok(requires(P.value, ['decision', 'reason', 'needRemaining']), 'value requires decision, reason, and needRemaining')
 ok(requires(P.size, ['tier', 'sizeVerdict', 'files', 'outcomes']), 'size requires tier, sizeVerdict, files, and outcomes')
 ok(requires(P.epic, ['candidate']), 'epic requires candidate')
+
+// A registry probe that reached the checkout but listed no workflow is not a
+// registry: judges would match labels against nothing.
+const workflow = { name: 'standard-change', version: 1, kind: '', labels_any: [], labels_all: [], unless_labels: [], sizes_any: [] }
+ok(!registryUsable({ checkoutOk: true, workflows: [] }), 'a registry with checkoutOk true and no workflows is unusable')
+ok(registryUsable({ checkoutOk: true, workflows: [workflow] }), 'a registry with checkoutOk true and one workflow is usable')
+ok(!registryUsable({ checkoutOk: false, workflows: [] }), 'a registry with checkoutOk false is unusable')
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)

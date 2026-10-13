@@ -3,6 +3,14 @@
 Version history of `workflows/disposition.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 20
+
+Repoints the verify-ac payload to ac-report@3, a description-only successor of
+ac-report@2. The new description scopes the unmet-out-of-scope claim to reports
+with no unmet entry and names the implement step's recorded gates beside the
+ac-commands pre-gate as command evidence. Fields, constraints, and thresholds
+are unchanged. No topology, routing, or limit change.
+
 ## 19
 
 `verify-ac` gains `issue.latest.disposition` beside `dispose.disposition`.

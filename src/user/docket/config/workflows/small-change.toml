@@ -1,7 +1,7 @@
 [pipeline]
 description = "Small ordinary change, bound by the `small` label. Implement with the full gate list; one correctness judge routes a blocker straight to the fix loop. AC verification uses a single-seat tribunal on an unverifiable or out-of-scope AC, and the bounded fix loop re-enters at review. The conductor integrates commits; the operator publishes."
 name = "small-change"
-version = 15
+version = 16
 
 [match]
 labels_any = ["small"]
@@ -79,7 +79,7 @@ max_attempts = 2
 name = "verify-ac"
 on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
-payload = "ac-report@2"
+payload = "ac-report@3"
 threshold = { "fix-loop" = "any(status == unmet)", "verify-ac-vote" = "any(status != met)" }
 
 [[step]]

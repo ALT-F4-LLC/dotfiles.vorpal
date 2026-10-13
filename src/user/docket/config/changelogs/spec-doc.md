@@ -3,6 +3,14 @@
 Version history of `workflows/spec-doc.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 46
+
+Repoints the synthesize payload to findings-cluster@6 and the reconcile payload
+to findings@14, both description-only successors of the schemas they replace.
+The descriptions no longer cite retired versions for the reconcile or judge
+payloads. Fields, constraints, and thresholds are unchanged. No topology,
+routing, or limit change.
+
 ## 45
 
 Comment-only edit, bumped because a comment change alters the registered

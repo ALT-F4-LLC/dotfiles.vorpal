@@ -1,7 +1,7 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 54
+version = 55
 
 [match]
 labels_any = ["security-change", "security-load-bearing", "security"]
@@ -75,7 +75,7 @@ max_attempts = 2
 name = "synthesize-findings"
 on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
-payload = "findings-cluster@5"
+payload = "findings-cluster@6"
 
 [[step]]
 action = "aggregate"
@@ -84,7 +84,7 @@ inputs = ["synthesize-findings.findings"]
 max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
-payload = "findings@13"
+payload = "findings@14"
 # First-match, declared order: an open blocker gets a fix round before the
 # panel sees the change; an open high goes to security-vote.
 threshold = { "fix-loop" = "any(open_severity >= blocker)", "security-vote" = "any(open_severity >= high)" }
@@ -142,7 +142,7 @@ max_attempts = 2
 name = "verify-ac"
 on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
-payload = "ac-report@2"
+payload = "ac-report@3"
 threshold = { "fix-loop" = "any(status == unmet)", "verify-ac-vote" = "any(status != met)" }
 
 [[step]]

@@ -1,7 +1,7 @@
 [pipeline]
 description = "Documentation change: implement with doc-validate and citation gates, one correctness judge, tribunal-filtered review and AC verification, and a bounded fix loop re-entering at review. The conductor integrates commits; the operator publishes. Design-heavy doc work routes through spec-doc first."
 name = "docs-only"
-version = 35
+version = 36
 
 [match]
 labels_any = ["docs-only"]
@@ -73,7 +73,7 @@ max_fix_loops = 2
 name = "verify-ac"
 on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
-payload = "ac-report@2"
+payload = "ac-report@3"
 threshold = { "fix-loop" = "any(status == unmet)", "verify-ac-vote" = "any(status != met)" }
 
 [[step]]

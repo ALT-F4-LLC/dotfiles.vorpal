@@ -3,6 +3,16 @@
 Version history of `workflows/standard-change.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 54
+
+Repoints three payloads to description-only successor schemas. The synthesize
+step declares findings-cluster@6, the reconcile step declares findings@14, and
+the verify-ac step declares ac-report@3. Each successor carries the fields,
+constraints, and thresholds of the version it replaces. The descriptions no
+longer cite retired versions for the reconcile or judge payloads, name the
+reconcile payload as findings@14, and scope the verify-ac claim about the
+fixer to reports with no unmet entry. No topology, routing, or limit change.
+
 ## 53
 
 The `review` step's keys now sort alphabetically, matching every other

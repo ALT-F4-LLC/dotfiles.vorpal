@@ -3,6 +3,14 @@
 Version history of `workflows/spec-project.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 38
+
+Repoints the synthesize payload to findings-cluster@6 and the reconcile payload
+to findings@14, both description-only successors of the schemas they replace.
+The descriptions no longer cite retired versions for the reconcile or judge
+payloads. Fields, constraints, and thresholds are unchanged. No topology,
+routing, or limit change.
+
 ## 37
 
 unless_labels drops a retired routing label; `route-direct` and

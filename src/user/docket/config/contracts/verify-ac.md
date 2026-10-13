@@ -1,12 +1,12 @@
 ---
 node: verify-ac
-version: 23
+version: 24
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
   - fragments/scope-discipline.md
 emits: ac-report
-payload: ac-report@2
+payload: ac-report@3
 ---
 # Charter
 Work as an independent verification and validation analyst with no stake in the

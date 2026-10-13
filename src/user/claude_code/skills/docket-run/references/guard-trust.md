@@ -108,7 +108,7 @@ run. Preserve that uncertainty when interpreting a hook result.
 | `--rows` | string | `""` | file holding the JSON array of rows about to be spawned (`-` for stdin); refused with `--active` |
 | `--ack-reap` | lease-reaped | `[]` | acknowledge a write-class reap by its `lease-reaped` event `seq` (repeatable) |
 | `--deciding-vote` | string | `""` | admit this batch past a reap hold because it exists to DECIDE the named OPEN proposal (`PROPOSAL-N`); event-logged |
-| `--usage-join` | bool | `false` | admit a launch that claims no step (a read-only usage join over finished transcripts) past a reap hold; relaxes the reap half only, never the row comparison; a launch with `--rows` gets no relief and is denied under the hold as without the flag; mutually exclusive with `--deciding-vote`; event-logged as `spawn-admitted` with `carve_out` `usage-join` |
+| `--usage-join` | bool | `false` | admit a launch that claims no step (a read-only usage join over finished transcripts) past a reap hold: alone, it is `allowed` (exit 0) under an unacknowledged write-class reap; relaxes the reap half only, never the row comparison; with `--rows` it still parses (no exit 3), and under a hold with no open dispatch `--usage-join --rows -` is denied (exit 2) by the row half, `RUN-N has no open dispatch, but 0 row(s) were proposed`; the help adds that a launch with `--rows` gets no reap relief, which that denial does not isolate; mutually exclusive with `--deciding-vote`; event-logged as `spawn-admitted` with `carve_out` `usage-join` |
 | `--all-projects` | bool | `false` | answer over every project's runs, not just the current project's |
 
 Both halves must hold. With **no** open dispatch and **no** `--rows`, the

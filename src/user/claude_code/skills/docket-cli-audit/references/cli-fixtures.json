@@ -3,7 +3,7 @@
   "verified_on": "2026-10-13",
   "binary_version": "docket version nightly-14-gaac20c0 (commit: aac20c0, built: 2026-10-13T05:25:40Z)",
   "inventory_version": "docket version nightly-659-gec91591 (commit: ec91591, built: 2026-10-13T02:11:27Z)",
-  "scenario_sha256": "2e45a232e236bb2ddb338f5a17f9ca93fdcd1891451b515e4f4918d631a81ac4",
+  "scenario_sha256": "04025e433a3c4bcb482826a3d9d9ff9f527335b027219f404057434256f04252",
   "probe_contract": "Every probe runs against a scratch HOME, XDG config and git repository; the trust roster is empty for every run- and step-level verb; --watch, --follow, --interval and 'trust probe' are refused.",
   "coverage": {
     "exercised": [
@@ -14193,7 +14193,7 @@
         "STEP-1"
       ],
       "exit": 0,
-      "stdout": "ARTIFACT KIND BYTES PAYLOAD SHA256\n----------------------------------------------------------------------------\nARTIFACT-1 check-report 35 - <HEX12>\nARTIFACT-2 issue.diff 28302 - <HEX12>\n\nRead one in full: docket step artifact ARTIFACT-1\n\n",
+      "stdout": "ARTIFACT KIND BYTES PAYLOAD SHA256\n----------------------------------------------------------------------------\nARTIFACT-1 check-report 35 - <HEX12>\nARTIFACT-2 issue.diff 28326 - <HEX12>\n\nRead one in full: docket step artifact ARTIFACT-1\n\n",
       "stderr": ""
     },
     {
@@ -14225,7 +14225,7 @@
               "kind": "issue.diff",
               "producer": "check@0",
               "sha256": "<HEX64>",
-              "bytes": 28302,
+              "bytes": 28326,
               "created_at_ms": "<N>"
             }
           ]
@@ -14263,7 +14263,7 @@
               "kind": "issue.diff",
               "producer": "check@0",
               "sha256": "<HEX64>",
-              "bytes": 28302,
+              "bytes": 28326,
               "created_at_ms": "<N>"
             }
           ]
@@ -15327,7 +15327,7 @@
               "executor": "prober",
               "issue": "DKT-2",
               "sha256": "<HEX64>",
-              "bytes": 28302
+              "bytes": 28326
             }
           ],
           "metadata": [
@@ -15524,7 +15524,7 @@
         "workflows/sweep-park.toml"
       ],
       "exit": 0,
-      "stdout": "[pipeline]\nname = \"sweep-park\"\nversion = 1\ndescription = \"Sweep: a check that parks on failure, then a person decides.\"\n\n[match]\nlabels_all = [\"sweep-park\"]\n\n[[step]]\nname = \"check\"\nafter = []\nexecutor = \"prober\"\nemits = \"check-report\"\nmax_attempts = 1\non_fail = \"waiting-human\"\n\n[[step]]\nname = \"approve\"\nafter = [\"check\"]\ntype = \"human\"\non_fail = \"abandon-issue\"\n",
+      "stdout": "[pipeline]\nname = \"sweep-park\"\nversion = 1\ndescription = \"Sweep: a check that parks on failure, then a person decides.\"\n\n[match]\nlabels_all = [\"sweep-park\"]\n\n[limits]\nprober = 1\n\n[[step]]\nname = \"check\"\nafter = []\nexecutor = \"prober\"\nemits = \"check-report\"\nmax_attempts = 1\non_fail = \"waiting-human\"\n\n[[step]]\nname = \"approve\"\nafter = [\"check\"]\ntype = \"human\"\non_fail = \"abandon-issue\"\n",
       "stderr": ""
     },
     {
@@ -15544,7 +15544,7 @@
         "data": {
           "run": "RUN-2",
           "path": "workflows/sweep-park.toml",
-          "body": "[pipeline]\nname = \"sweep-park\"\nversion = 1\ndescription = \"Sweep: a check that parks on failure, then a person decides.\"\n\n[match]\nlabels_all = [\"sweep-park\"]\n\n[[step]]\nname = \"check\"\nafter = []\nexecutor = \"prober\"\nemits = \"check-report\"\nmax_attempts = 1\non_fail = \"waiting-human\"\n\n[[step]]\nname = \"approve\"\nafter = [\"check\"]\ntype = \"human\"\non_fail = \"abandon-issue\"\n"
+          "body": "[pipeline]\nname = \"sweep-park\"\nversion = 1\ndescription = \"Sweep: a check that parks on failure, then a person decides.\"\n\n[match]\nlabels_all = [\"sweep-park\"]\n\n[limits]\nprober = 1\n\n[[step]]\nname = \"check\"\nafter = []\nexecutor = \"prober\"\nemits = \"check-report\"\nmax_attempts = 1\non_fail = \"waiting-human\"\n\n[[step]]\nname = \"approve\"\nafter = [\"check\"]\ntype = \"human\"\non_fail = \"abandon-issue\"\n"
         }
       },
       "stderr": ""
@@ -15567,7 +15567,7 @@
         "data": {
           "run": "RUN-2",
           "path": "workflows/sweep-park.toml",
-          "body": "[pipeline]\nname = \"sweep-park\"\nversion = 1\ndescription = \"Sweep: a check that parks on failure, then a person decides.\"\n\n[match]\nlabels_all = [\"sweep-park\"]\n\n[[step]]\nname = \"check\"\nafter = []\nexecutor = \"prober\"\nemits = \"check-report\"\nmax_attempts = 1\non_fail = \"waiting-human\"\n\n[[step]]\nname = \"approve\"\nafter = [\"check\"]\ntype = \"human\"\non_fail = \"abandon-issue\"\n"
+          "body": "[pipeline]\nname = \"sweep-park\"\nversion = 1\ndescription = \"Sweep: a check that parks on failure, then a person decides.\"\n\n[match]\nlabels_all = [\"sweep-park\"]\n\n[limits]\nprober = 1\n\n[[step]]\nname = \"check\"\nafter = []\nexecutor = \"prober\"\nemits = \"check-report\"\nmax_attempts = 1\non_fail = \"waiting-human\"\n\n[[step]]\nname = \"approve\"\nafter = [\"check\"]\ntype = \"human\"\non_fail = \"abandon-issue\"\n"
         }
       },
       "stderr": ""
@@ -16153,6 +16153,195 @@
       "stderr": ""
     },
     {
+      "id": "guard-spawn-reap-hold",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "guard",
+        "spawn",
+        "--run",
+        "RUN-2"
+      ],
+      "exit": 2,
+      "stdout": "",
+      "stderr": "Error: unacknowledged reaps in bounded classes hold headroom: check@0 (class prober) at seq 59 — confirm the previous holder is gone, then acknowledge with `dispatch open --ack-reap <seq>` (or `guard spawn --ack-reap <seq>`); a panel spawned to DECIDE this hold passes --deciding-vote PROPOSAL-N, and a launch that claims no step passes --usage-join\n"
+    },
+    {
+      "id": "guard-spawn-reap-hold",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "guard",
+        "spawn",
+        "--run",
+        "RUN-2",
+        "--json"
+      ],
+      "exit": 2,
+      "json": {
+        "ok": false,
+        "error": "unacknowledged reaps in bounded classes hold headroom: check@0 (class prober) at seq 59 — confirm the previous holder is gone, then acknowledge with `dispatch open --ack-reap <seq>` (or `guard spawn --ack-reap <seq>`); a panel spawned to DECIDE this hold passes --deciding-vote PROPOSAL-N, and a launch that claims no step passes --usage-join",
+        "code": "NOT_FOUND"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "guard-spawn-reap-hold-usage-join",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "guard",
+        "spawn",
+        "--run",
+        "RUN-2",
+        "--usage-join"
+      ],
+      "exit": 0,
+      "stdout": "allowed\n",
+      "stderr": ""
+    },
+    {
+      "id": "guard-spawn-reap-hold-usage-join",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "guard",
+        "spawn",
+        "--run",
+        "RUN-2",
+        "--usage-join",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "allowed": true
+        },
+        "message": "allowed"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "guard-spawn-reap-hold-usage-join-rows",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "guard",
+        "spawn",
+        "--run",
+        "RUN-2",
+        "--usage-join",
+        "--rows",
+        "-"
+      ],
+      "exit": 2,
+      "stdout": "",
+      "stderr": "Error: RUN-2 has no open dispatch, but 0 row(s) were proposed — open a manifest with `docket dispatch open --run RUN-2` before spawning against one\n"
+    },
+    {
+      "id": "guard-spawn-reap-hold-usage-join-rows",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "guard",
+        "spawn",
+        "--run",
+        "RUN-2",
+        "--usage-join",
+        "--rows",
+        "-",
+        "--json"
+      ],
+      "exit": 2,
+      "json": {
+        "ok": false,
+        "error": "RUN-2 has no open dispatch, but 0 row(s) were proposed — open a manifest with `docket dispatch open --run RUN-2` before spawning against one",
+        "code": "NOT_FOUND"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "events-list-lease-reaped",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "events",
+        "list",
+        "--run",
+        "RUN-2",
+        "--kind",
+        "lease-reaped",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "events": [
+            {
+              "seq": 59,
+              "at_ms": "<N>",
+              "kind": "lease-reaped",
+              "run": "RUN-2",
+              "step": "check@0",
+              "step_id": "STEP-5",
+              "issue": "DKT-3",
+              "project": "repo",
+              "data": {
+                "actor": "sweep",
+                "cwd": "<SCRATCH>/repo",
+                "forced": true,
+                "instance": "check@0",
+                "reason": "holder declared dead by the sweep"
+              }
+            }
+          ],
+          "total": 1
+        }
+      },
+      "stderr": ""
+    },
+    {
+      "id": "guard-spawn-ack-reap",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "guard",
+        "spawn",
+        "--run",
+        "RUN-2",
+        "--ack-reap",
+        "59"
+      ],
+      "exit": 0,
+      "stdout": "allowed\n",
+      "stderr": ""
+    },
+    {
+      "id": "guard-spawn-ack-reap",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "guard",
+        "spawn",
+        "--run",
+        "RUN-2",
+        "--ack-reap",
+        "59",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "allowed": true
+        },
+        "message": "allowed"
+      },
+      "stderr": ""
+    },
+    {
       "id": "step-claim-park-third",
       "mode": "json",
       "argv": [
@@ -16570,7 +16759,7 @@
         "data": {
           "dispatch": "DISPATCH-2",
           "run": "RUN-3",
-          "opened_seq": 69,
+          "opened_seq": 72,
           "expires_ms": "<N>",
           "rows": [
             {
@@ -17297,7 +17486,7 @@
               }
             }
           ],
-          "total": 75
+          "total": 78
         }
       },
       "stderr": ""
@@ -17389,7 +17578,7 @@
               }
             }
           ],
-          "total": 75,
+          "total": 78,
           "truncated": true
         }
       },
@@ -17481,7 +17670,7 @@
         "data": {
           "events": [
             {
-              "seq": 73,
+              "seq": 76,
               "at_ms": "<N>",
               "kind": "issue-abandoned",
               "run": "RUN-3",
@@ -17497,7 +17686,7 @@
               }
             },
             {
-              "seq": 74,
+              "seq": 77,
               "at_ms": "<N>",
               "kind": "run-abandoned",
               "run": "RUN-3",
@@ -17510,7 +17699,7 @@
               }
             },
             {
-              "seq": 75,
+              "seq": 78,
               "at_ms": "<N>",
               "kind": "run-abandoned",
               "run": "RUN-1",
@@ -17524,7 +17713,7 @@
               }
             }
           ],
-          "total": 75
+          "total": 78
         }
       },
       "stderr": ""
@@ -17661,7 +17850,7 @@
         "data": {
           "events": [
             {
-              "seq": 72,
+              "seq": 75,
               "at_ms": "<N>",
               "kind": "step-held",
               "run": "RUN-3",
@@ -18460,7 +18649,7 @@
               }
             },
             {
-              "seq": 75,
+              "seq": 78,
               "at_ms": "<N>",
               "kind": "run-abandoned",
               "run": "RUN-1",
@@ -18742,6 +18931,11 @@
                     "sweep-park"
                   ]
                 },
+                "limits": {
+                  "prober": {
+                    "max": 1
+                  }
+                },
                 "steps": [
                   {
                     "name": "check",
@@ -18898,6 +19092,11 @@
                     "sweep-park"
                   ]
                 },
+                "limits": {
+                  "prober": {
+                    "max": 1
+                  }
+                },
                 "steps": [
                   {
                     "name": "check",
@@ -18998,6 +19197,11 @@
               "labels_all": [
                 "sweep-park"
               ]
+            },
+            "limits": {
+              "prober": {
+                "max": 1
+              }
             },
             "steps": [
               {

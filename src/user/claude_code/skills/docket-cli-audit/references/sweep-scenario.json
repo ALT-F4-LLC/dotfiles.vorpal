@@ -145,7 +145,7 @@
     {"id": "workflow-lint", "argv": ["workflow", "lint", ".docket/config/workflows/sweep-dev.toml"],
       "files": {
         ".docket/config/workflows/sweep-dev.toml": "[pipeline]\nname = \"sweep-dev\"\nversion = 1\ndescription = \"Sweep: one worker step, then a person approves.\"\n\n[match]\nlabels_all = [\"sweep-dev\"]\n\n[[step]]\nname = \"check\"\nafter = []\nexecutor = \"prober\"\nemits = \"check-report\"\non_fail = \"fix-loop\"\n\n[[step]]\nname = \"approve\"\nafter = [\"check\"]\ntype = \"human\"\non_fail = \"fix-loop\"\n\n[[step]]\nname = \"fix\"\nexecutor = \"prober\"\nemits = \"fix-summary\"\nloop = true\nafter_loop = \"check\"\n",
-        ".docket/config/workflows/sweep-park.toml": "[pipeline]\nname = \"sweep-park\"\nversion = 1\ndescription = \"Sweep: a check that parks on failure, then a person decides.\"\n\n[match]\nlabels_all = [\"sweep-park\"]\n\n[[step]]\nname = \"check\"\nafter = []\nexecutor = \"prober\"\nemits = \"check-report\"\nmax_attempts = 1\non_fail = \"waiting-human\"\n\n[[step]]\nname = \"approve\"\nafter = [\"check\"]\ntype = \"human\"\non_fail = \"abandon-issue\"\n"
+        ".docket/config/workflows/sweep-park.toml": "[pipeline]\nname = \"sweep-park\"\nversion = 1\ndescription = \"Sweep: a check that parks on failure, then a person decides.\"\n\n[match]\nlabels_all = [\"sweep-park\"]\n\n[limits]\nprober = 1\n\n[[step]]\nname = \"check\"\nafter = []\nexecutor = \"prober\"\nemits = \"check-report\"\nmax_attempts = 1\non_fail = \"waiting-human\"\n\n[[step]]\nname = \"approve\"\nafter = [\"check\"]\ntype = \"human\"\non_fail = \"abandon-issue\"\n"
       }},
     {"id": "workflow-lint-stdin", "argv": ["workflow", "lint", "-"], "stdin": "[pipeline]\nname = \"broken\"\nversion = 1\n\n[[step]]\nname = \"a\"\nafter = [\"missing\"]\n", "modes": ["text", "json"]},
     {"id": "workflow-lint-project", "argv": ["workflow", "lint", ".docket/config/workflows/sweep-park.toml", "--project", "DKT"], "modes": ["text", "json"]},
@@ -289,6 +289,11 @@
     {"id": "step-resolve", "argv": ["step", "resolve", "STEP-5", "--as", "retry", "--authority", "operator", "--note", "retry once"], "env": {"DOCKET_TOKEN": "{conductor2}"}, "modes": ["json"]},
     {"id": "step-claim-park-again", "argv": ["step", "claim", "STEP-5", "--owner", "sweep"], "modes": ["json"], "expect_exit": 0, "capture": {"step3_token": "data.token"}},
     {"id": "step-reap", "argv": ["step", "reap", "STEP-5", "--reason", "holder declared dead by the sweep"], "env": {"DOCKET_TOKEN": "{conductor2}"}, "modes": ["json"]},
+    {"id": "guard-spawn-reap-hold", "argv": ["guard", "spawn", "--run", "RUN-2"], "modes": ["text", "json"]},
+    {"id": "guard-spawn-reap-hold-usage-join", "argv": ["guard", "spawn", "--run", "RUN-2", "--usage-join"], "modes": ["text", "json"]},
+    {"id": "guard-spawn-reap-hold-usage-join-rows", "argv": ["guard", "spawn", "--run", "RUN-2", "--usage-join", "--rows", "-"], "stdin": "[]", "modes": ["text", "json"]},
+    {"id": "events-list-lease-reaped", "argv": ["events", "list", "--run", "RUN-2", "--kind", "lease-reaped"], "modes": ["json"], "expect_exit": 0, "capture": {"reap_seq": "data.events.0.seq"}},
+    {"id": "guard-spawn-ack-reap", "argv": ["guard", "spawn", "--run", "RUN-2", "--ack-reap", "{reap_seq}"], "modes": ["text", "json"]},
     {"id": "step-claim-park-third", "argv": ["step", "claim", "STEP-5", "--owner", "sweep"], "modes": ["json"], "capture": {"step3_token": "data.token"}},
     {"id": "step-complete-park", "argv": ["step", "complete", "STEP-5", "--artifact-file", "artifact.md"], "env": {"DOCKET_TOKEN": "{step3_token}"}, "modes": ["json"]},
     {"id": "step-reject", "argv": ["step", "reject", "STEP-6", "--authority", "operator", "--note", "rejected by the sweep"], "env": {"DOCKET_TOKEN": "{conductor2}"}, "modes": ["json"]},

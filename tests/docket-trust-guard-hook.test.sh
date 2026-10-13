@@ -1101,6 +1101,45 @@ case_quote_state_ends_with_its_leaf() {
         executor-write ALLOW "multi-line quoted prose cut to its first line stays prose"
 }
 
+# ---- A quoted newline before the docket word ------------------------------
+#
+# When docket is an argument to a wrapper, a quoted argument holding a newline
+# before it moves `docket trust add` onto the leaf's second line. Every code
+# line of a leaf is scanned, so the verb is found wherever the quoted argument
+# leaves it; a newline inside one quoted group keeps that group prose. The
+# sudo and script wrappers are on no widening list, so only the line scan
+# catches them.
+
+case_quoted_newline_before_the_verb() {
+    local inv='docket trust add erik' nl=$'\n'
+    assert_verdict "echo key | xargs -I '@${nl}' ${inv} @" executor-write DENY \
+        "a quoted newline in xargs -I does not hide the verb on the next line"
+    assert_deny_reason "echo key | xargs -I '@${nl}' ${inv} @" executor-write \
+        "a quoted newline in xargs -I"
+    assert_verdict "echo key | xargs -I '@${nl}' ${inv} @" docket-conductor-RUN-1 DENY \
+        "conductor: a quoted newline in xargs -I does not hide the verb"
+    assert_verdict "echo key | xargs -I \$'@\\n' ${inv} @" executor-write DENY \
+        "an ANSI-C quoted newline, which bash's reconstruction makes literal, does not hide the verb"
+    assert_verdict "sudo -p 'pw${nl}' ${inv} key" executor-write DENY \
+        "a quoted newline in sudo -p does not hide the verb"
+    assert_verdict "script -q \"/dev/null${nl}\" docket trust rm erik" executor-write DENY \
+        "a double-quoted newline in script's file argument does not hide the verb"
+    assert_verdict "sudo -p 'pw${nl}' ${inv} key <<'K'${nl}key${nl}K" executor-write DENY \
+        "a quoted heredoc in the same leaf does not hide the verb on the code line"
+    assert_verdict "nice -n 1 ${inv} key" executor-write DENY \
+        "a wrapper with no quoted newline: nice"
+    assert_verdict "echo key | xargs ${inv}" executor-write DENY \
+        "a wrapper with no quoted newline: xargs"
+    assert_verdict "sudo -p 'pw${nl}' docket trust add --help" executor-write ALLOW \
+        "a help read behind a quoted newline stays a help read"
+    assert_verdict "sudo -p 'pw${nl}' docket trust add --help" docket-conductor-RUN-1 DENY \
+        "conductor: a help read behind a quoted newline still denies"
+    assert_verdict "docket issue comment add D-1 -m 'first line${nl}never run ${inv} key'" \
+        executor-write ALLOW "multi-line quoted prose naming the verb on its second line stays prose"
+    assert_verdict "jq -n '[${nl}1]'" executor-write ALLOW \
+        "a multi-line quoted argument with no verb stays allowed"
+}
+
 # ---- HEREDOC POSITION: `<<` is only a heredoc operator in redirection ------
 #
 # The two characters `<<` also appear in a here-string, in a comment, and in
@@ -1581,6 +1620,7 @@ case_heredoc_body_destination
 case_heredoc_written_then_run
 case_comment_regions_are_inert
 case_quote_state_ends_with_its_leaf
+case_quoted_newline_before_the_verb
 case_heredoc_position_edges
 case_leaf_cap_is_out_of_band
 case_probe_never_acts

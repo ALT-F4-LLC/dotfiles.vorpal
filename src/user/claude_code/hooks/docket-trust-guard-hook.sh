@@ -447,7 +447,7 @@ fi
 # --- Widening: where a heredoc's body stops being inert data. ------------
 #
 # Three independent triggers, any one widening a leaf's scan from its
-# first physical line to its whole text (heredoc body included) rather
+# code lines to its whole text (heredoc body included) rather
 # than exempted as prose:
 #
 #   1. INTERPRETER (CL9's fix, whole-command scope). If ANY leaf names a
@@ -480,11 +480,14 @@ fi
 #      incomplete by nature: an unlisted launcher, a PATH lookup of the
 #      written file, or a run in a later Bash call stays unwidened.
 #
-# With no trigger, only each leaf's FIRST physical line is scanned: a
-# genuine invocation's verb is always on that first line by construction
-# (bash resolves `\`-continuations before setting $BASH_COMMAND, verified
-# live; only a heredoc body or a literal newline inside a quoted argument
-# adds further lines, and neither can move the verb off line one).
+# With no trigger, each leaf is scanned on every line except a
+# quoted-delimiter heredoc body and its terminator line, as selected by
+# docket-guard-leaf-lines.awk in scan mode (SCAN_TEXT below). A literal
+# newline inside a quoted argument does move the verb off a leaf's first
+# line when docket is a wrapper's argument (`sudo -p 'x<newline>' docket
+# trust add ...`), so no line but heredoc data is skipped; a quoted span
+# that crosses lines stays one quote group for the pre-pass, so prose in it
+# stays prose. A leaf the lexer cannot classify is scanned whole.
 #
 # The boundary on either side of an interpreter name is any byte that is not
 # a word character and not a dot. The dot is what separates a file name from
@@ -522,94 +525,8 @@ END { if (runs) print "RUNS_FILE" }
 ') || deny "$REASON_PREFIX the trust-guard hook's run-a-file check failed, so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
 [ "$RUNS_FILE" = "RUNS_FILE" ] && WIDEN=1
 
-SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v RS='\036' -v widen="$WIDEN" '
-    # Drops every balanced arithmetic span from a line: $((...)), ((...))
-    # and $[...]. A shift operator inside one is never a heredoc operator.
-    # An unbalanced opener is kept verbatim with everything after it, so
-    # the heredoc scan still reads any << there and errs toward widening.
-    function strip_arith(s,   out, i, n, c, depth, start) {
-        out = ""
-        i = 1
-        n = length(s)
-        while (i <= n) {
-            c = substr(s, i, 1)
-            if (substr(s, i, 3) == "$((" || substr(s, i, 2) == "((") {
-                start = i
-                i += (c == "$") ? 3 : 2
-                depth = 2
-                while (i <= n && depth > 0) {
-                    c = substr(s, i, 1)
-                    if (c == "(") depth++
-                    else if (c == ")") depth--
-                    i++
-                }
-                if (depth > 0) return out substr(s, start)
-                continue
-            }
-            if (substr(s, i, 2) == "$[") {
-                start = i
-                i += 2
-                depth = 1
-                while (i <= n && depth > 0) {
-                    c = substr(s, i, 1)
-                    if (c == "[") depth++
-                    else if (c == "]") depth--
-                    i++
-                }
-                if (depth > 0) return out substr(s, start)
-                continue
-            }
-            out = out c
-            i++
-        }
-        return out
-    }
-    # True when any heredoc operator on the line has an unquoted delimiter.
-    # Checked per operator rather than per line: a quoted delimiter must not
-    # mask an unquoted one beside it, whose body bash expands before any
-    # consumer sees it. A here-string (<<<) is skipped as one unit. After <<
-    # come an optional dash and blanks, then the delimiter: a quote or a
-    # backslash there means quoted; anything else, end of line included,
-    # means unquoted.
-    function unquoted_heredoc(s,   rest, p, after, c) {
-        rest = s
-        while ((p = index(rest, "<<")) > 0) {
-            after = substr(rest, p + 2)
-            if (substr(after, 1, 1) == "<") {
-                rest = substr(after, 2)
-                continue
-            }
-            sub(/^-?[ \t]*/, "", after)
-            c = substr(after, 1, 1)
-            if (c != "\047" && c != "\042" && c != "\\") return 1
-            rest = after
-        }
-        return 0
-    }
-    BEGIN { out = "" }
-    {
-        leaf = $0
-        if (leaf == "") next
-        eol = index(leaf, "\n")
-        line1 = (eol == 0 ? leaf : substr(leaf, 1, eol - 1))
-        leaf_widen = (widen == "1")
-        # A heredoc operator on this leafs own first line whose delimiter
-        # is NOT quoted, judged per operator by unquoted_heredoc above so
-        # that a quoted delimiter never masks an unquoted one on the same
-        # line, and with arithmetic shifts stripped first.
-        if (!leaf_widen && index(line1, "<<") > 0 && unquoted_heredoc(strip_arith(line1))) {
-            leaf_widen = 1
-        }
-        # Each leaf ends in \036, so the pre-pass closes any quote it could
-        # not close inside this leaf before the next leaf starts.
-        if (leaf_widen) {
-            out = out leaf "\036"
-        } else {
-            out = out line1 "\036"
-        }
-    }
-    END { printf "%s", out }
-')
+SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v mode=scan -v widen="$WIDEN" -f "$LEAF_LINES_AWK") || \
+    deny "$REASON_PREFIX the trust-guard hook's line-selection program failed (docket-guard-leaf-lines.awk), so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
 
 # --- Quote-group marking. ------------------------------------------------
 #
@@ -623,8 +540,8 @@ SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v RS='\036' -v widen="$WIDEN" '
 # arithmetic handling here: SCAN_TEXT above is already, by construction,
 # one or more complete simple commands with no unresolved separators, each
 # ended by \036. The pre-pass reads that byte as a leaf boundary no quote
-# crosses, because a heredoc body or a first-line cut can leave a quote this
-# pass cannot close inside its own leaf. Each leaf's first line is a complete
+# crosses, because a heredoc body bash never parsed can leave a quote this
+# pass cannot close inside its own leaf. Each leaf's code lines are a complete
 # simple command bash has already parsed, with its comments already gone. A
 # widened leaf's body lines are not parsed, and an interpreter may run them as
 # a script, so the pass applies a bash-shaped comment rule to every line (a

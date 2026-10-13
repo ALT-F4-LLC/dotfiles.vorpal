@@ -12,10 +12,10 @@
 # (RUN-35 pin drift, RUN-36 activation refusal). This check moves that
 # discovery back to the tree, on demand, before the next run pays for it.
 #
-# What it compares. `docket schema list --deprecated --json` and `docket
-# workflow list --deprecated --json` each carry the frozen record, retired
-# versions included: name, version, source_path, and source_sha256 (the bytes
-# as registered). For every such record this script
+# What it compares. `docket schema list --deprecated --limit 0 --json` and
+# `docket workflow list --deprecated --limit 0 --json` each carry the frozen
+# record, retired versions included: name, version, source_path, and
+# source_sha256 (the bytes as registered). For every such record this script
 # hashes up to two on-disk candidates and diffs against source_sha256:
 #   - the registered source_path itself (the installed copy under
 #     ~/.docket/config/ — catches drift that already propagated), and
@@ -109,15 +109,17 @@ else
     echo "frozen-drift-check FAILED: required tool 'docket' not on PATH." >&2
     exit 2
   fi
-  if ! schemas_json="$(docket schema list --deprecated --json 2>&1)" \
+  # --limit 0 lifts the engine's default 50-row page; the registry holds more
+  # versions than that, and a capped page silently drops whole names.
+  if ! schemas_json="$(docket schema list --deprecated --limit 0 --json 2>&1)" \
      || ! echo "$schemas_json" | jq -e '.ok == true' >/dev/null 2>&1; then
-    echo "frozen-drift-check FAILED: 'docket schema list --deprecated --json' did not return ok:" >&2
+    echo "frozen-drift-check FAILED: 'docket schema list --deprecated --limit 0 --json' did not return ok:" >&2
     echo "$schemas_json" >&2
     exit 2
   fi
-  if ! workflows_json="$(docket workflow list --deprecated --json 2>&1)" \
+  if ! workflows_json="$(docket workflow list --deprecated --limit 0 --json 2>&1)" \
      || ! echo "$workflows_json" | jq -e '.ok == true' >/dev/null 2>&1; then
-    echo "frozen-drift-check FAILED: 'docket workflow list --deprecated --json' did not return ok:" >&2
+    echo "frozen-drift-check FAILED: 'docket workflow list --deprecated --limit 0 --json' did not return ok:" >&2
     echo "$workflows_json" >&2
     exit 2
   fi

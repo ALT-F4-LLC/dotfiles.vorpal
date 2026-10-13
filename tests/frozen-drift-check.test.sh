@@ -181,15 +181,19 @@ fi
 # The engine phases read their records from `docket ... list` calls. The stub
 # answers `schema list` with <deprecated.json> only when --deprecated is
 # passed and with an empty ok listing otherwise, so a gate that omits the
-# flag never sees the retired record. `workflow list` returns an empty ok
-# listing; any other call fails loudly.
+# flag never sees the retired record. `workflow list` answers with
+# <workflow-records> (a JSON array, default empty) the way the engine pages:
+# `.data.total` is always the full count, but the rows are cut to the first
+# one unless `--limit 0` is passed, a one-row stand-in for the engine's
+# default --limit 50. Any other call fails loudly.
 
-# build_stub_docket <stubdir> <schema-listing-with-deprecated> <schema-listing-without>
+# build_stub_docket <stubdir> <schema-listing-with-deprecated> <schema-listing-without> [<workflow-records>]
 build_stub_docket() {
     local stub="$1"
     mkdir -p "${stub}/bin"
     printf '%s\n' "$2" > "${stub}/schemas-deprecated.json"
     printf '%s\n' "$3" > "${stub}/schemas-current.json"
+    printf '%s\n' "${4:-[]}" > "${stub}/workflows.json"
     cat > "${stub}/bin/docket" <<'STUB'
 #!/bin/bash
 stub_dir=$(cd "$(dirname "$0")/.." && pwd)
@@ -204,7 +208,17 @@ case "$1 $2" in
         cat "${stub_dir}/schemas-current.json"
         ;;
     "workflow list")
-        echo '{"ok":true,"data":{"workflows":[]}}'
+        cap=1
+        prev=
+        for arg in "$@"; do
+            if [ "$prev" = "--limit" ]; then
+                cap="$arg"
+            fi
+            prev="$arg"
+        done
+        jq -c --argjson cap "$cap" \
+            '{ok:true,data:{total:length,workflows:(if $cap == 0 then . else .[:$cap] end)}}' \
+            "${stub_dir}/workflows.json"
         ;;
     *)
         echo "stub docket: unsupported call: $*" >&2
@@ -253,11 +267,38 @@ status=$?
 if [ "$status" -ne 2 ]; then
     fail "schema listing not ok: expected exit 2, got ${status}"
     sed 's/^/    /' "${STUB}/stderr"
-elif grep -qF "docket schema list --deprecated --json" "${STUB}/stderr"; then
+elif grep -qF "docket schema list --deprecated --limit 0 --json" "${STUB}/stderr"; then
     pass "schema listing not ok: gate exits 2 naming the --deprecated listing"
 else
-    fail "schema listing not ok: exit 2 but stderr does not name 'docket schema list --deprecated --json'"
+    fail "schema listing not ok: exit 2 but stderr does not name 'docket schema list --deprecated --limit 0 --json'"
     sed 's/^/    /' "${STUB}/stderr"
+fi
+
+# ---- a workflow's newest version past the listing's default cap -------
+# The listing reports total 2 but its capped page holds only paged@1. The
+# file declares v2 with bytes that differ from paged@2's registration, so it
+# is drift against paged@2. A gate that reads only the capped page compares
+# against paged@1, sees "declares v2 > registered v1", and passes silently.
+FIX="${WORK}/workflow-listing-capped"
+STUB="${WORK}/workflow-listing-capped-stub"
+build_repo "$FIX"
+mkdir -p "$STUB"
+printf '[pipeline]\nversion = 2\n# edited in place after v2 registered\n' > "${STUB}/paged.toml"
+v1_sha=$(printf '[pipeline]\nversion = 1\n' | shasum -a 256 | cut -d' ' -f1)
+v2_sha=$(printf '[pipeline]\nversion = 2\n' | shasum -a 256 | cut -d' ' -f1)
+paged_records=$(jq -nc --arg v1 "$v1_sha" --arg v2 "$v2_sha" --arg path "${STUB}/paged.toml" \
+    '[{name:"paged",version:1,source_sha256:$v1,source_path:$path},
+      {name:"paged",version:2,source_sha256:$v2,source_path:$path}]')
+build_stub_docket "$STUB" '{"ok":true,"data":{"schemas":[]}}' '{"ok":true,"data":{"schemas":[]}}' "$paged_records"
+run_gate_with_engine "$FIX" "$STUB" "${STUB}/stderr" >"${STUB}/stdout"
+status=$?
+if [ "$status" -eq 1 ] && grep -q "DRIFT workflow paged@2" "${STUB}/stderr"; then
+    pass "capped workflow listing: gate compares paged@2 and reports its DRIFT"
+elif [ "$status" -eq 2 ] && grep -qF "docket workflow list" "${STUB}/stderr"; then
+    pass "capped workflow listing: gate refuses the truncated listing with exit 2"
+else
+    fail "capped workflow listing: expected DRIFT workflow paged@2 or exit 2, got exit ${status}"
+    sed 's/^/    /' "${STUB}/stdout" "${STUB}/stderr"
 fi
 
 echo

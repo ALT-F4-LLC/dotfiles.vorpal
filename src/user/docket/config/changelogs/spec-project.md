@@ -12,11 +12,24 @@ after install. No topology or limit change.
 
 ## 36
 
-The description now states the step order: drain-highs runs after the tribunal vote, on the final round's findings, as version 35 rewired it. No topology, routing, or limit change.
+The description now states the step order: drain-highs runs after the
+tribunal vote, on the final round's findings, as version 35 rewired it. No
+topology, routing, or limit change.
 
 ## 35
 
-`drain-highs` now runs once per round after `spec-vote`, on that round's reconcile findings, instead of as a `reconcile` threshold target. A fix round supersedes it, so only the issue's final round drains. Before this, drain could file against code that a later verify-ac fix round rewrote. Reconcile's threshold keeps only `fix-loop`. Pairs with the drain-highs contract v23, which files `high` and `blocker` clusters and records `medium` clusters in one comment on the issue, and with severity-ladder-general v9, where an unobserved Concern emits `medium`. Measured before the change: drain filed about 0.56 follow-ups per reviewed issue in docket.git and 0.76 in harness.git, and of the sampled filings 0-20% would stay `high` under the new rule. Takes effect for runs activated after install.
+`drain-highs` now runs once per round after `spec-vote`, on that round's
+reconcile findings, instead of as a `reconcile` threshold target. A fix
+round supersedes it, so only the issue's final round drains. Before this,
+drain could file against code that a later verify-ac fix round rewrote.
+Reconcile's threshold keeps only `fix-loop`. Pairs with the drain-highs
+contract v23, which files `high` and `blocker` clusters and records
+`medium` clusters in one comment on the issue, and with
+severity-ladder-general v9, where an unobserved Concern emits `medium`.
+Measured before the change: drain filed about 0.56 follow-ups per reviewed
+issue in docket.git and 0.76 in harness.git, and of the sampled filings
+0-20% would stay `high` under the new rule. Takes effect for runs
+activated after install.
 
 ## 34
 
@@ -135,10 +148,11 @@ read `issue.latest.spec` instead of the first-pass
 `spec-author.*`, matching spec-doc's `issue.latest.doc`:
 after a fix-loop round through `revise-spec`, the reviewers
 and the tribunal now judge the latest spec rather than the
-pre-revision one. `review` and `synthesize-findings` repoint
-to `findings@10` and `findings-cluster@3` — prose-only
-schema corrections, no validation-semantics change. Also
-closes a dropped-period sentence in the v20 changelog entry.
+pre-revision one. `review`, `synthesize-findings` and
+`reconcile` repoint to `findings@10`, `findings-cluster@3`
+and `findings@10` — prose-only schema corrections, no
+validation-semantics change. Also closes a dropped-period
+sentence in the v14 changelog entry.
 
 ## 21
 

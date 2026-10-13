@@ -18,7 +18,18 @@ after install. No topology or limit change.
 
 ## 51
 
-`drain-highs` now runs once per round after `verify-ac-vote`, on that round's reconcile findings, instead of as a `reconcile` threshold target. A fix round supersedes it, so only the issue's final round drains. Before this, drain could file against code that a later verify-ac fix round rewrote. Reconcile's threshold keeps only `fix-loop`. Pairs with the drain-highs contract v23, which files `high` and `blocker` clusters and records `medium` clusters in one comment on the issue, and with severity-ladder-general v9, where an unobserved Concern emits `medium`. Measured before the change: drain filed about 0.56 follow-ups per reviewed issue in docket.git and 0.76 in harness.git, and of the sampled filings 0-20% would stay `high` under the new rule. Takes effect for runs activated after install.
+`drain-highs` now runs once per round after `verify-ac-vote`, on that
+round's reconcile findings, instead of as a `reconcile` threshold target. A
+fix round supersedes it, so only the issue's final round drains. Before
+this, drain could file against code that a later verify-ac fix round
+rewrote. Reconcile's threshold keeps only `fix-loop`. Pairs with the
+drain-highs contract v23, which files `high` and `blocker` clusters and
+records `medium` clusters in one comment on the issue, and with
+severity-ladder-general v9, where an unobserved Concern emits `medium`.
+Measured before the change: drain filed about 0.56 follow-ups per reviewed
+issue in docket.git and 0.76 in harness.git, and of the sampled filings
+0-20% would stay `high` under the new rule. Takes effect for runs
+activated after install.
 
 ## 50
 
@@ -136,8 +147,9 @@ anyway, so the ceiling is unchanged. No topology change.
 
 two fixes, no topology change. An earlier changelog entry
 cited a resolved tracker reference for the `ac-commands`
-gate stub; dropped as stale. review repoints to
-`findings@10` — a prose-only schema correction, no
+gate stub; dropped as stale. review, synthesize-findings
+and reconcile repoint to `findings@10`, `findings-cluster@3`
+and `findings@10` — prose-only schema corrections, no
 validation-semantics change.
 
 ## 37
@@ -238,7 +250,7 @@ findings were ever downgraded by a fixer, a panel or an operator.
 
 ## 33
 
-`doc-validate` joins the `implement` and `fix` gate lists
+`doc-validate` joins the `implement` and `fix` gate lists:
 the widened doc-validate pathspec was declared
 only on docs-only and spec-doc/spec-project, so an ordinary
 change's doc edits were never checked by it.
@@ -340,9 +352,9 @@ change can add a third-party dependency, and nothing in
 this pipeline audited a newly added dependency's own CVE
 exposure — a hash-pinned lockfile buys integrity, not
 vulnerability freedom. The gate is UNCONDITIONAL because
-a gate entry carries only
-`name`, `source`, and `pre`, and step-level `when` reads
-issue kind/labels, never the diff. A repo with no
-`vuln-scan` trust entry records `unmatched`, which routes
-as a failure — register one (a declared stub, if there is
-no scanner yet) before binding this version
+a gate entry carries only `name`, `source`, and `pre`,
+and step-level `when` reads issue kind/labels, never the
+diff. A repo with no `vuln-scan` trust entry records
+`unmatched`, which routes as a failure — register one (a
+declared stub, if there is no scanner yet) before binding
+this version.

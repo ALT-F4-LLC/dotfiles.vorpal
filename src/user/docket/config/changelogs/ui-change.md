@@ -12,7 +12,18 @@ after install. No topology or limit change.
 
 ## 44
 
-`drain-highs` now runs once per round after `verify-ac-vote`, on that round's reconcile findings, instead of as a `reconcile` threshold target. A fix round supersedes it, so only the issue's final round drains. Before this, drain could file against code that a later verify-ac fix round rewrote. Reconcile's threshold keeps only `fix-loop`. Pairs with the drain-highs contract v23, which files `high` and `blocker` clusters and records `medium` clusters in one comment on the issue, and with severity-ladder-general v9, where an unobserved Concern emits `medium`. Measured before the change: drain filed about 0.56 follow-ups per reviewed issue in docket.git and 0.76 in harness.git, and of the sampled filings 0-20% would stay `high` under the new rule. Takes effect for runs activated after install.
+`drain-highs` now runs once per round after `verify-ac-vote`, on that
+round's reconcile findings, instead of as a `reconcile` threshold target. A
+fix round supersedes it, so only the issue's final round drains. Before
+this, drain could file against code that a later verify-ac fix round
+rewrote. Reconcile's threshold keeps only `fix-loop`. Pairs with the
+drain-highs contract v23, which files `high` and `blocker` clusters and
+records `medium` clusters in one comment on the issue, and with
+severity-ladder-general v9, where an unobserved Concern emits `medium`.
+Measured before the change: drain filed about 0.56 follow-ups per reviewed
+issue in docket.git and 0.76 in harness.git, and of the sampled filings
+0-20% would stay `high` under the new rule. Takes effect for runs
+activated after install.
 
 ## 43
 
@@ -148,8 +159,8 @@ anyway, so the ceiling is unchanged. No topology change.
 
 ## 29
 
-review, synthesize-findings and reconcile repoint to
-`findings@10` and `findings-cluster@3` — prose-only schema
+review, synthesize-findings, reconcile and design-qa repoint
+to `findings@10` and `findings-cluster@3` — prose-only schema
 corrections (stale field descriptions), no
 validation-semantics change. No topology change.
 
@@ -203,7 +214,7 @@ runs routed a blocker no source-reading seat can observe).
 
 ## 25
 
-`doc-validate` joins the `implement` and `fix` gate lists
+`doc-validate` joins the `implement` and `fix` gate lists:
 the widened doc-validate pathspec was declared
 only on docs-only and spec-doc/spec-project, so this
 track's doc edits were never checked by it.

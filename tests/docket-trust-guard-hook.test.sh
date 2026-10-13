@@ -929,6 +929,36 @@ case_heredoc_written_then_run() {
         executor-write ALLOW "prose heredoc written beside a command -v lookup"
 }
 
+# ---- SOURCE FROM STDIN: `.`/`source` run a quoted body with no file written --
+#
+# `source /dev/stdin <<'EOF'` reads its own heredoc as code, so the body is
+# never data even though its delimiter is quoted. In a pipe the body belongs to
+# another leaf (`cat <<'EOF' | . /dev/stdin`), so only a whole-command trigger
+# reaches it.
+case_heredoc_sourced_from_stdin() {
+    local body=$'\n''docket trust add erik key'$'\nEOF'
+    assert_verdict "source /dev/stdin <<'EOF'${body}" \
+        executor-write DENY "AC-1: quoted heredoc sourced through /dev/stdin with source"
+    assert_deny_reason "source /dev/stdin <<'EOF'${body}" \
+        executor-write "AC-1: quoted heredoc sourced through /dev/stdin with source"
+    assert_verdict ". /dev/stdin <<'EOF'${body}" \
+        executor-write DENY "AC-2: quoted heredoc sourced through /dev/stdin with ."
+    assert_verdict "cat > \"\$TMPDIR/notes\" <<'EOF'${body}" \
+        executor-write ALLOW "AC-3: quoted heredoc naming the verb written to notes, nothing sourced"
+    assert_verdict "cat <<'EOF' | source /dev/stdin${body}" \
+        executor-write DENY "quoted heredoc piped into source /dev/stdin"
+    assert_verdict "cat <<'EOF' | . /dev/stdin${body}" \
+        executor-write DENY "quoted heredoc piped into . /dev/stdin"
+    assert_verdict "builtin source /dev/stdin <<'EOF'${body}" \
+        executor-write DENY "quoted heredoc sourced through builtin source"
+    assert_verdict "command . /dev/stdin <<'EOF'${body}" \
+        executor-write DENY "quoted heredoc sourced through command ."
+    assert_verdict "'source' /dev/stdin <<'EOF'${body}" \
+        executor-write DENY "quoted heredoc sourced through a quoted source word"
+    assert_verdict "s\\ource /dev/stdin <<'EOF'${body}" \
+        executor-write DENY "quoted heredoc sourced through a backslash-split source word"
+}
+
 # ---- COMMENTS: inert to bash, so inert here ---------------------------------
 #
 # A comment runs to the end of its line and bash executes none of it. Anything
@@ -1618,6 +1648,7 @@ case_widened_body_brace_prose
 case_scratch_prose_names_trust_verbs
 case_heredoc_body_destination
 case_heredoc_written_then_run
+case_heredoc_sourced_from_stdin
 case_comment_regions_are_inert
 case_quote_state_ends_with_its_leaf
 case_quoted_newline_before_the_verb

@@ -940,11 +940,11 @@ at one conductor's activation, refused at its fourth dispatch):
 ```bash
 python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$ROWS_FILE" "$LAUNCH_DIR" --tribunal "<absolute installed path to tribunal.js>" --write-cap "$WRITE_CAP"
 # a dispatch carrying a fix round's review fanout adds its integrated map:
-python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$ROWS_FILE" "$LAUNCH_DIR" --tribunal "<absolute installed path to tribunal.js>" --write-cap "$WRITE_CAP" --integrated "$INTEGRATED_FILE"
+python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$ROWS_FILE" "$LAUNCH_DIR" --tribunal "<absolute installed path to tribunal.js>" --integrated "$INTEGRATED_FILE" --write-cap "$WRITE_CAP"
 # a refill at a launch return splits the pending rows and names the lanes
 # still in flight, each by its key: the issue id, or row:<step> for a row
 # without an issue (add --integrated as above when the dispatch carries it):
-python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$PENDING_FILE" "$LAUNCH_DIR" --tribunal "<absolute installed path to tribunal.js>" --write-cap "$WRITE_CAP" --in-flight "<lane>,<lane>"
+python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$PENDING_FILE" "$LAUNCH_DIR" --tribunal "<absolute installed path to tribunal.js>" --in-flight "<lane>,<lane>" --write-cap "$WRITE_CAP"
 ```
 
 Always pass `--tribunal`; without it no generated object carries

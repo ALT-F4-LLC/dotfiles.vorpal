@@ -1057,7 +1057,9 @@ settles `skipped-not-ready`, and the refill at that return relaunches it.
 A wave reports why a claim was refused, not which launch holds the scope,
 so there is no holder tracking: a refused lane relaunches at every
 return that settles it, and a retry whose holder still runs is refused
-again at the cost of one claim probe. The retries end when the holder
+again at the cost of one claim probe plus the per-return usage join its
+launch's return triggers (item 1 of **3. Close the dispatch**), which
+runs even over a wave that claimed nothing. The retries end when the holder
 releases the scope or headroom: an in-dispatch launch records, or its
 dead holder is reaped and acked with `--ack-reap` at the return that
 reports it (step 3 above), so the retries end before the dispatch

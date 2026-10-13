@@ -28,7 +28,7 @@
 # A trailing `:N` line citation is not part of the path. Each such path must
 # appear in `files` and match a `scope` glob, unless the criteria only
 # inspect it: a path is exempt when it follows one of the markers
-# `inspect:`, `run on`, `over` or `guide:` (any case) in the same sentence
+# `inspect:`, `run on`, `over:` or `guide:` (any case) in the same sentence
 # and line, with only other paths, commas, `and`, backticks and blanks
 # between them. A sentence ends at a token's trailing dot; any other
 # character, or a word that is not a path, ends the marker's run. Each
@@ -125,8 +125,8 @@ tokens=$(printf '%s\n' "$criteria" | awk '
         if (chain && word == "and" && !sentence_end) { prev = word; continue }
         if (tok != "") print chain "\t" tok
         if (sentence_end) { chain = 0; prev = ""; continue }
-        if (word == "inspect" || word == "guide") marker = "colon"
-        else if (word == "over" || word == "on" && prev == "run" && gap ~ /^[ \t]+$/) marker = "plain"
+        if (word == "inspect" || word == "over" || word == "guide") marker = "colon"
+        else if (word == "on" && prev == "run" && gap ~ /^[ \t]+$/) marker = "plain"
         prev = word
     }
 }')

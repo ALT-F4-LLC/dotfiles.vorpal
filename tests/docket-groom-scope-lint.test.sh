@@ -266,10 +266,21 @@ expect_clean "a path named only after inspect:"
 
 # Every marker exempts the paths that follow it, through commas, `and` and
 # backticks.
-lint "$(printf -- '- [ ] AC-1: src/pkg/y.go returns the error; Inspect: docs/guide.md, `docs/notes.txt` and bin/wave-claim.\n- [ ] AC-2: run on justfile; guide: src/pkg/notes.txt; the check runs over .gitignore.')" \
+lint "$(printf -- '- [ ] AC-1: src/pkg/y.go returns the error; Inspect: docs/guide.md, `docs/notes.txt` and bin/wave-claim.\n- [ ] AC-2: run on justfile; guide: src/pkg/notes.txt; the check runs over: .gitignore.')" \
     "src/pkg/y.go" \
     "src/pkg/y.go"
 expect_clean "paths after each inspect-only marker"
+
+# `over` is ordinary English, so only `over:` marks a path as inspected: an
+# edit target after a bare `over` is still checked.
+lint "- [ ] AC-1: the installer copies over docs/guide.md." \
+    "src/pkg/y.go" \
+    "src/pkg/y.go"
+expect_line "missing from files: docs/guide.md" "a path after a bare over"
+lint "- [ ] AC-1: src/pkg/y.go returns the error; the check runs over: docs/guide.md." \
+    "src/pkg/y.go" \
+    "src/pkg/y.go"
+expect_clean "a path named only after over:"
 
 # A marker exempts only within its sentence: the edit target in the next
 # sentence of the same line is still checked.

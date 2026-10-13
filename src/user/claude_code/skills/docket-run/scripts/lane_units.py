@@ -17,9 +17,8 @@ which stderr lists in case it is a typo. --write-cap is the write class's
 effective cap as the engine reports it, a positive integer; the launch cap
 is then min(LAUNCH_CAP, N), so launches never outgrow the class headroom the
 host grants, and LAUNCH_CAP when the flag is absent (the class is unbounded).
-Run it from inside the run's git
-work tree: outside one it exits 1 and writes nothing. The script writes,
-under <out-dir>:
+Run it from inside the run's git work tree: outside one it exits 1 and
+writes nothing. The script writes, under <out-dir>:
 
   launch-<i>.jsonl  launch i's rows, one per line, in manifest order
   args-<i>.json     launch i's complete wave.js args (below)
@@ -50,9 +49,10 @@ therefore run in separate launches, and the engine's claim check keeps them
 in stage order: a writer claimed while another lane's uncertified writer
 holds its scope is refused, and wave.js settles that refusal as
 skipped-not-ready, which a later refill relaunches. The free slots are the
-launch cap minus the lanes in flight, never below zero. Past them, the earliest lanes in manifest order
-launch and the rest go to deferred.jsonl, named on stderr; the conductor
-launches them from a later re-split as running launches return.
+launch cap minus the lanes in flight, never below zero. Past them, the
+earliest lanes in manifest order launch and the rest go to deferred.jsonl,
+named on stderr; the conductor launches them from a later re-split as
+running launches return.
 
 Class headroom. The engine certifies a class at the largest same-stage count
 of its executor rows across the WHOLE manifest. A launch sees only its own

@@ -87,6 +87,13 @@ expect 0 "path plus an expression found exactly once"
 lint "Edit \`${P}\` \`function marked_group\` to join fragments."
 expect 0 "a backtick-quoted path plus an expression found exactly once"
 
+# A path that is not its span's first token: the span's closing backtick
+# does not open an expression, and a span right after it still anchors.
+lint "Check: \`bash ${P}\` exits 0 (run by \`function marked_group\`)."
+expect 0 "a path after a command inside its span, followed by prose"
+lint "Check: \`bash ${P}\` \`function never_written\` is gone."
+expect nonzero "a path after a command inside its span, then an unresolved expression"
+
 # Zero or several occurrences are refused.
 lint "Edit ${P} \`function never_written\` to join fragments."
 expect nonzero "path plus an expression found zero times"

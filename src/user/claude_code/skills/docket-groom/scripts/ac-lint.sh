@@ -14,7 +14,8 @@
 # (`path:N`, `path:N-M`), and its quoted expression is the backtick- or
 # double-quoted span that follows it, separated only by blanks and an
 # optional `(`: src/a.awk:168 `marked_group`, or src/a.awk ("marked_group").
-# A path written inside its own backtick span is read the same way.
+# A path inside a backtick span, at any position in it, is read the same way:
+# the span's closing backtick never opens the expression.
 #   - path:N with an expression: line N (or any line of N-M) at --base must
 #     contain the expression, compared as a fixed string.
 #   - path:N with no expression: refused. A bare line number drifts with
@@ -71,9 +72,11 @@ fi
 citations=$(printf '%s\n' "$text" | awk '
 {
     line = $0
+    ticks = 0
     while (match(line, /[A-Za-z0-9_.\/-]*[A-Za-z0-9_-]\.[A-Za-z0-9]+(:[0-9]+(-[0-9]+)?)?/)) {
         tok = substr(line, RSTART, RLENGTH)
-        before = (RSTART > 1) ? substr(line, RSTART - 1, 1) : ""
+        before = substr(line, 1, RSTART - 1)
+        ticks += gsub(/`/, "", before)
         rest = substr(line, RSTART + RLENGTH)
         line = rest
         path = tok; from = ""; to = ""
@@ -84,7 +87,7 @@ citations=$(printf '%s\n' "$text" | awk '
             from = r[1]; to = (2 in r) ? r[2] : r[1]
             delete r
         }
-        if (before == "`" && substr(rest, 1, 1) == "`") rest = substr(rest, 2)
+        if (ticks % 2 == 1) sub(/^[ \t]*`/, "", rest)
         sub(/^[ \t]*\(?[ \t]*/, "", rest)
         expr = ""
         q = substr(rest, 1, 1)

@@ -37,10 +37,12 @@
 # an unapproved or absent gate must.
 #
 # THE MATCHER — leaf enumeration, widening, and quote-group marking below —
-# is shared with docket-trust-guard-hook.sh; see that file's header for the
-# redesign rationale this replaces. Two parts differ: this file selects
-# each leaf's code lines through docket-guard-leaf-lines.awk, where the
-# trust-guard scans a leaf's first line (see the widening comment), and this
+# shares its pre-pass and line selection with docket-trust-guard-hook.sh and
+# docket-sibling-guard-hook.sh; the sibling guard's header carries the probe
+# design, and the trust guard's header explains why that hook now reads the
+# command's text in place of a probe walk. Two parts differ from the trust
+# guard: this file enumerates leaves through the shared probe and selects
+# each leaf's code lines through docket-guard-leaf-lines.awk, and this
 # file's MATCH step looks for `git commit`/`push`/`add`, with git's own
 # `-C`/`-c`/`--git-dir` global-option skipping and its
 # option-before-subcommand help exemption, where the trust-guard's looks
@@ -222,7 +224,7 @@ fi
 
 # The probe is the shared file docket-guard-probe.sh (PROBE_SH, resolved and
 # checked at the top of this file), the same code docket-sibling-guard-hook.sh
-# and docket-trust-guard-hook.sh run; its header states the contract and
+# runs; its header states the contract and
 # docket-sibling-guard-hook.sh's header (THE PROBE HARDENING) the design.
 # `eval -- "$COMMAND"` inside it is how the untrusted text reaches bash as
 # SOURCE rather than as a re-quoted argument: COMMAND travels on stdin, never

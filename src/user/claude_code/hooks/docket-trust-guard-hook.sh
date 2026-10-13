@@ -3,8 +3,8 @@
 # trust-guard — PreToolUse: Bash.
 #
 # `docket trust add/rm` mutates the trust store that authorizes an executor's
-# own completion gates (`~/.config/docket/trust.toml`, granted sandbox-write
-# at SANDBOX_DOCKET_TRUST_PATH in claude_code.rs). Unlike every other write an
+# own completion gates (`~/.config/docket/trust.toml`, denied sandbox-write
+# through TRUST_STORE_PATHS in claude_code.rs). Unlike every other write an
 # executor makes, this one lands nowhere in the recorded diff a wave judge
 # reads — trust.toml lives outside every checkout — so a self-repointed gate
 # is invisible to the one review layer downstream of the executor itself. The
@@ -15,6 +15,23 @@
 # sandbox bypasses a brief forbade (a fleet review found this; sandbox-bypass-guard-hook.sh
 # now denies the lift for executors outright). This hook re-keys the decision away from that
 # classifier for exactly the callers who must never win it.
+#
+# THE STRUCTURAL CONTROL IS NOT THIS HOOK. The sandbox denies every write to
+# trust.toml and its lock for every seat in a session, and the denial holds
+# at runtime: the sandbox friction ledger (~/.claude/friction/sandbox.jsonl)
+# records `docket trust add` and `docket trust rm` failing inside the sandbox
+# on 2026-09-02, 09-06, 09-07, 09-08, 09-18, 09-26, 10-09 and 10-10, each
+# with "operation not permitted" opening the lock file or renaming the
+# store's temp file onto it. An executor cannot lift the sandbox
+# (sandbox-bypass-guard-hook.sh). So a command that reaches the verb past
+# this hook does not write the store; it fails at the OS. What this hook
+# adds is the refusal's shape: an immediate, explained deny the seat can
+# route as a finding, in place of a permission ask nobody is at a terminal
+# to answer (one conductor's run sat behind such an ask for hours) or a bare
+# "operation not permitted" a seat retries. A shape that hides the literal
+# verb from the text, listed under KNOWN RESIDUALS below, is therefore not
+# a defect of this hook's contract: the write it would carry is refused one
+# layer down, with that evidence.
 #
 # THE SCOPE, and why it is not a blanket deny. `docket trust add/rm` stays a
 # permission ASK for the main conversation — the operator's own path, working
@@ -67,154 +84,82 @@
 # PreToolUse hook get a fresh environment snapshot. Both branches are
 # therefore an operator-machine tooling gap, not an attacker-reachable
 # input, so the existing fail-open direction (a tooling gap must not brick
-# every Bash call in the session) stands unchanged for both. The probe
-# keeps no scratch file (framed leaves travel on stdout instead), so there
-# is no third branch over an unwritable TMPDIR to reason about.
+# every Bash call in the session) stands unchanged for both. The hook keeps
+# no scratch file, so there is no third branch over an unwritable TMPDIR to
+# reason about.
 
-# REDESIGN, replacing a hand-rolled AWK shell lexer that re-scanned
-# raw command bytes for heredocs, comments, arithmetic expansions, and
-# separators with no notion of bash's actual grammar. Three fix-loop rounds
-# on that lexer EACH found a live, reproduced bypass or false-DENY
-# regression in what the PRIOR round had just landed:
-#   CL9  (survived all 3 rounds): a quoted heredoc's body, once marked
-#        prose because its immediate destination (cat/tee/dd) was on a
-#        short allowlist, still executes for real when that destination is
-#        piped into an interpreter — `cat <<'EOF' | sh` with the guarded
-#        invocation in the body ran it, live: PWNED_VIA_PIPE. A one-hop
-#        "is the destination safe" test can never be complete: a pipe, a
-#        command substitution, or a process substitution moves the same
-#        bytes to a consumer the allowlist never saw.
-#   CL16 (round 2): the lexer's head-word scan re-derived a fact bash's own
-#        parser already knows (where a simple command starts) by walking
-#        raw bytes for `;`/`&`/`|`/`(`/`)`, with no notion of quoting — a
-#        separator INSIDE a quoted argument spoofed it into a false ALLOW
-#        (`bash -s "a;cat " <<'EOF'` with the guarded invocation in the
-#        body ran it, live), and the round's own fix for that broke
-#        ordinary heredocs inside `for`/`if`/`{ }` (false DENY regression).
-#   CL17 (round 3, NEW): the lexer's comment-boundary rule for a bare `#`
-#        misfired on `$(...)`/`$((...))`/`=(...)` closes, so a real
-#        invocation after a `;` on the same line as one of those got
-#        swallowed into the "comment" and ALLOWED — a regression this
-#        round introduced while trying to close CL9's class.
+# THE RULE: a quoted string or a quoted-delimiter heredoc body is prose only
+# in an INERT command. Everywhere else the whole command text is the scan.
 #
-# Three independent bypasses in three rounds, each a NEW shape of the SAME
-# defect (a hand-rolled model of bash's grammar is not bash's grammar), is
-# the signature of the wrong tool for the job, not a bug count to keep
-# whittling down. This redesign does not re-implement heredocs, comments,
-# arithmetic, quoting, pipes, or command substitution to find where each
-# command starts: it asks bash itself what it would run, using bash's own
-# DEBUG trap with `extdebug` and `functrace` (`set -T`, which makes DEBUG
-# traps propagate into subshells, command substitutions, and function
-# bodies — without it, `(docket trust add …)` in a bare subshell ran
-# unobserved, verified live here). The trap
-# fires once per SIMPLE COMMAND bash's real parser is about to execute; it
-# ALWAYS vetoes that command (returns non-zero, which `extdebug` treats as
-# "skip it") rather than letting anything actually run, except for a small
-# fixed set of purely structural constructs (`eval`, loop/conditional
-# keywords, and names bash already knows as functions) — those are allowed
-# through so the trap gets to see what is genuinely INSIDE them, without
-# ever letting a real leaf command (an external program or a builtin with a
-# side effect) execute. Verified with a filesystem marker across pipes,
-# subshells, command substitutions, `eval`, loops, conditionals, function
-# calls, and backgrounded jobs: nothing the probe walks ever runs for real.
+# A command is inert when every command word in it names a program or
+# builtin that never runs its input or its arguments as code (INERT_WORDS
+# below: the writers and readers an executor's findings, payload and
+# scratch notes go through, plus the docket CLI itself), the command
+# branches on nothing (no `if`, `while`, `until`, `for`, `select`, `case`,
+# `!`, `[`, `[[`, `test` or `||`), and PATH is not reassigned. A launcher
+# (LAUNCHER_WORDS: `command`, `env`, `nice`, `timeout`, `sudo` and the
+# rest) is read through to the word it launches, past its options, counts
+# and assignments; a launcher that launches nothing visible is not inert.
+# In an inert command the quoted groups the pre-pass marks are exempt as
+# prose in THE MATCH below, and a quoted-delimiter heredoc body is not read
+# at all. An unquoted-delimiter heredoc body is read even there: bash
+# expands `$(...)` inside it before any consumer sees it.
 #
-# What this closes, by construction rather than by patching a symptom:
-#   - CL16's class cannot recur: there is no separator re-scan of any kind
-#     — bash's own parser is what decided where each simple command starts.
-#   - CL17's class is narrowed, not gone: bash's own parser decides what is
-#     a comment in each leaf's own text, but a widened heredoc body reaches
-#     the shared pre-pass unparsed, so the pre-pass carries one comment rule
-#     for it (stated in docket-guard-prepass.awk). That rule reads a `)`
-#     closing $(...) or $((...)) as mid-word, the exact CL17 trigger, and the
-#     suite pins that shape in both directions.
-#   - CL9's class is closed differently, because it is a genuinely
-#     different problem (not a parsing bug — a semantic one, about where
-#     data ends up): every leaf this probe records is inspected, and if ANY
-#     of them names a program that can interpret arbitrary input as code
-#     (INTERPRETER_WORDS below), every heredoc body in the WHOLE command is
-#     scanned for the guarded verb too, not exempted as it would be for a
-#     command with no interpreter anywhere in it. This does not try to
-#     prove which specific pipe or substitution carries the bytes to that
-#     interpreter — CL9 is exactly the finding that a one-hop version of
-#     that proof is unsound — it widens instead, which is this hook's
-#     established direction for an unresolvable case (a false DENY over a
-#     missed invocation).
+# In any other command every byte is read with quotes and backslashes
+# removed, the words bash would build from them: a body written to a file,
+# a string handed to an interpreter, a function body, an `eval` argument, a
+# comment, all alike. Which program runs it, how its name is spelled
+# (`b\ash`, `b''ash`), what launches it, and which branch reaches it no
+# longer matter, because the deny does not depend on tracing any of that.
 #
-# The final MATCH step below — is "docket trust add" or "docket trust rm"
-# present as three separately-resolved words versus one prose span, and is
-# a bare -h/--help present right after a clean verb — is UNCHANGED from the
-# pre-redesign hook: that logic was never implicated in any of the three
-# findings above, which were all about recognizing where a simple command
-# begins and what is data versus code BEFORE that step ever runs.
+# WHY THIS RULE, and not a list of what runs code. Each earlier design of this
+# hook each named the shapes that turn data into code (interpreter names,
+# code flags, launchers, run-a-file verbs, source through /dev/stdin), and
+# each review of each list found the next shape the list missed: an
+# unlisted launcher, a reader that takes a file as a program (`make`, `awk
+# -f`), a name bound with `hash -p`, an interpreter spelling the regex did
+# not join, a heredoc on a compound command that no simple command carried.
+# That list is open by nature. The list of commands that run NOTHING is
+# closed and short, so the exemption is keyed on it, and the failure
+# direction of a word outside it is a false DENY with a recourse (the deny
+# text below), never a missed write.
 #
-# The quote-GROUP marking that feeds it carries ONE later change: a quoted
-# group that is an interpreter's code argument (`bash -c '…'`, `python3 -c
-# '…'`) is emitted unmarked, because that is the one position where a quoted
-# string is executed verbatim rather than being prose. Without it the group
-# exemption below read a whole invocation as one prose span and allowed it —
-# the trust store is written from a quoted string at the cost of one extra
-# word. The pre-pass comment states which interpreters and flags count and
-# which carriers stay allowed as residuals.
-# What is gone is the heredoc/comment/arithmetic re-scanning this file used
-# to do to feed that step a stream of words; bash's own grammar does that
-# now, on every leaf it hands back. The one exception is a widened heredoc
-# body, which bash never parses: the pre-pass applies a bash-shaped comment
-# rule to its text, stated in docket-guard-prepass.awk.
+# WHAT THIS REMOVES. The earlier design walked the command with bash's own
+# DEBUG trap (docket-guard-probe.sh, still used by the commit and sibling
+# guards) to learn which simple commands bash would dispatch, then decided
+# per leaf what was prose. That walk was accurate about what it saw and
+# blind to what it could not reach: the right side of `||` after a vetoed
+# command, an `if` or `&&` behind a file test that the vetoed write never
+# satisfied, a loop over a glob or a substitution that was empty at probe
+# time, and a heredoc attached to a compound command, whose body belongs to
+# no leaf. The scan here reads the command's text, not its execution, so an
+# unreached branch is read like a reached one. The syntax precheck stays:
+# text bash cannot parse is refused rather than guessed at.
 #
-# ONE ACCEPTED INACCURACY, stated with its failure direction: bash's own
-# $BASH_COMMAND reconstruction MOVES a here-string redirect (`<<<word`) to
-# the end of the line, so `cat <<<docket trust add erik key` reconstructs
-# as `cat trust add erik key <<< docket` — "docket" no longer sits next to
-# "trust add", and the MATCH step's word-adjacency scan misses it. This is
-# a false ALLOW, but not a missed dispatch: bash treats "trust", "add",
-# "erik", "key" as cat's file arguments and "docket" as cat's stdin source,
-# so nothing here ever runs `docket trust add` as its own command — the
-# words are merely adjacent-looking text this scan no longer catches. Fixing
-# it would mean tracking each redirect operand's original source position
-# through bash's reconstruction, which this redesign deliberately does not
-# do (that is exactly the kind of re-derivation of what bash already knows
-# that produced CL16). Left open rather than patched around.
+# KNOWN RESIDUALS, each a shape the sandbox refuses at the write and each
+# pinned in the suite so a reader can tell a decision from a miss:
+#   - A verb reached through an expansion (`$V trust add`, `docket trust
+#     $(printf add)`, a decoded body), which leaves no literal run of the
+#     three words anywhere in the text.
+#   - A file written in one Bash call and run in a later one: the later
+#     call carries no verb, and this hook sees one call at a time.
+#   - A brace word in ARGUMENT position behind a wrapper (`env {docket,trust}
+#     ...`); command-position braces are handled in THE MATCH.
+#   - `cat <<<docket trust add erik key`: the three words are cat's
+#     operands and its stdin, nothing dispatches them.
+# And on the false-DENY side, by design: prose that names the verb in the
+# same call as any non-inert command (a `git commit -m`, a `grep` through
+# `xargs`, an interpreter), inside a comment of such a call, or beside
+# control flow. The recourse is in the deny text: the Write tool, or a
+# Bash call that holds only inert commands.
 #
-# PROBE HARDENING, ported from docket-sibling-guard-hook.sh, where four
-# reproduced shapes showed the original probe executes part of the
-# caller's command for real, or can be silenced entirely, while
-# "analyzing" it:
-#   - The probe shell is RESTRICTED (`set -r`) once the trap is armed, so
-#     no redirection can open a file. A vetoed leaf never performs its own
-#     redirection (a re-derivation of the sibling guard's own finding), but
-#     a redirection on a STRUCTURAL builtin (`: > f`, `true > f`, `[ ] > f`)
-#     or a COMPOUND command (`{ ...; } > f`, `( ... ) > f`, a loop or `if`
-#     with a trailing `> f`) was performed by the unhardened probe,
-#     truncating the target before any verdict — and a compound redirect
-#     appears in no `$BASH_COMMAND` at all, so it never even reached the
-#     matcher. A structural leaf carrying `<` or `>` now ends the probe
-#     with a distinct exit code, and a compound redirect fails under the
-#     restriction and denies on its error text.
-#   - `readonly -f` on the handler: `_guard_probe() { return 0; }; ...` is
-#     a function DEFINITION, a compound command the DEBUG trap never sees,
-#     so it silently disarmed the walk and let the rest of the command run
-#     for real. Redefinition now fails, and the attempt itself denies.
-#   - Function-call leaves are RECORDED (via an fd-9 probe under the
-#     restricted shell, since `declare -F ... >/dev/null` itself is a
-#     redirection `set -r` would refuse) before the body is walked, and
-#     `for`/`select`/`case`/`eval` headers are recorded as scan lines, so a
-#     wrapper function or a computed verb inside a loop still reaches the
-#     matcher.
-#   - `break` and `continue` RUN, so a loop ends where the real command's
-#     would; `exit`/`return` stay vetoed so the caller cannot pick the
-#     probe's own exit status. The leaf cap EXITS the probe outright
-#     (nothing runs after it) instead of disarming the trap, and is
-#     checked before the empty-walk allow — the unhardened probe's cap
-#     disarmed the trap and fell through to allow on an empty leaf list.
-#   - The command reaches the probe on STDIN with a `bash -n` syntax
-#     precheck first, and is refused outright over 256 KiB (the shared
-#     pre-pass is quadratic in a word's length), rather than traveling
-#     through the environment where an over-limit command made `bash -c`
-#     fail with no leaf and no syntax error, which allowed.
-#   - No temporary file: leaves travel on stdout framed in `\035...\036`
-#     bytes, recovered from bash's own merged stderr. The old design's
-#     predictable `$TMPDIR/<hook>.<pid>` path is gone along with the class
-#     of attack a planted symlink or FIFO at that path enabled.
+# THE MATCH step below — is "docket trust add" or "docket trust rm" present
+# as three separately-resolved words versus one prose span, and is a bare
+# -h/--help present right after a clean verb — is unchanged from the
+# pre-redesign hook: that logic was never implicated in any finding, which
+# were all about what is data versus code BEFORE that step ever runs. The
+# same awk program decides inertness, in `mode=inert`, from the same
+# command-position tracking the brace rule already needed.
 
 set -uo pipefail
 
@@ -259,15 +204,15 @@ is_conductor_seat() {
 # of itself under a wall-clock bound of DOCKET_GUARD_BOUND_SECONDS seconds
 # (default 60; a value other than a whole number from 1 to 300 reads as 60)
 # and denies, naming the bound, when the bound fires.
-# A CPU limit (`ulimit -t`) would not do: it is per process, and a probe walk
-# that forks starts each subshell on a fresh budget. The bound uses bash
+# A CPU limit (`ulimit -t`) would not do: it is per process, and the awk
+# passes are separate processes on separate budgets. The bound uses bash
 # builtins alone, since this hook's dependency set is bash/cat/jq/awk.
 # `set -m` puts the pipeline below in a process group of its own, so the
-# child and everything it starts (the probe and the awk passes) share one
-# group that this shell is outside of. The pipeline's last stage waits with
-# `read -t` for the line carrying the child's exit status; when none arrives
-# in time it reports the bound and kills the whole group, itself included,
-# with `kill -KILL 0`. DOCKET_GUARD_BOUNDED marks the child, which runs the
+# child and everything it starts (the awk passes) share one group that this
+# shell is outside of. The pipeline's last stage waits with `read -t` for
+# the line carrying the child's exit status; when none arrives in time it
+# reports the bound and kills the whole group, itself included, with
+# `kill -KILL 0`. DOCKET_GUARD_BOUNDED marks the child, which runs the
 # check below unchanged. docket-commit-guard-hook.sh and
 # docket-sibling-guard-hook.sh carry the same bound.
 if [ -z "${DOCKET_GUARD_BOUNDED:-}" ]; then
@@ -324,253 +269,68 @@ fi
 COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null) || allow_default
 [ -n "$COMMAND" ] || allow_default
 
-# --- Leaf enumeration: ask bash, don't re-derive it. ---------------------
-#
-# PROBE_TEXT holds every simple command bash's own grammar would dispatch,
-# `\036`-framed, each possibly itself multi-line when it embeds a heredoc
-# (the heredoc's body arrives as part of that ONE leaf's text, exactly as
-# bash reconstructs $BASH_COMMAND). The 2000-command ceiling below (exit
-# 113) is a circuit breaker against a crafted or pathological input driving
-# this into a long-running loop, not a bound expected to matter for an
-# ordinary executor call (empirically, hundreds of simple commands
-# enumerate in well under a second).
-#
 REASON_PREFIX="trust-store write blocked:"
 
 if [ "${#COMMAND}" -gt 262144 ]; then
     deny "$REASON_PREFIX this command is over 256 KiB, more than the trust-guard hook will check in one call. Split it into smaller Bash calls, or write a large body with the Write tool where you have it; a single call this large is refused rather than passed through unchecked."
 fi
 case "$COMMAND" in
-    *$'\035'* | *$'\036'*)
-        deny "$REASON_PREFIX this command carries a control byte (0x1d or 0x1e) the trust-guard hook uses to frame its own analysis, so it cannot be checked. Remove the byte; no shell command needs it." ;;
+    *$'\001'* | *$'\035'* | *$'\036'*)
+        deny "$REASON_PREFIX this command carries a control byte (0x01, 0x1d or 0x1e) the trust-guard hook uses to frame its own analysis, so it cannot be checked. Remove the byte; no shell command needs it." ;;
 esac
 
-# --- Syntax first, on the same bytes the probe will walk. ------------------
+# --- Syntax first, on the same bytes the passes will read. ------------------
 if ! printf '%s' "$COMMAND" | bash -n >/dev/null 2>&1; then
     deny "$REASON_PREFIX the trust-guard hook could not parse this command to check it (bash reported a syntax error while analyzing it) and refuses rather than guessing. Fix the command's syntax; if it is not actually invalid, that is a hook defect to report separately."
 fi
 
-# Install integrity before the walk: a hook copy missing a shared file beside
-# it cannot decide whether a trust-store write is present and fails CLOSED.
-# The pre-pass file is checked first (its reasoning is under "Quote-group
-# marking" below), then the line-selection file (under "Widening"), then the
-# probe file.
+# Install integrity before the passes: a hook copy missing a shared file
+# beside it cannot decide whether a trust-store write is present and fails
+# CLOSED (deny, not allow_default). This hook's whole job is deciding whether
+# a trust-store write is present in the command, and with no lexer there is
+# no way to make that call safely -- allowing would be worse than the
+# tooling-gap fail-opens above, which apply only when the CALLER or shape
+# can't be identified at all. The directory is a bash parameter expansion on
+# `$0` rather than a call to the external `dirname`: this hook's dependency
+# set is fixed at bash/cat/jq/awk, and the test suite runs it with PATH
+# restricted to exactly those. Both files install as siblings under
+# ~/.claude/hooks (src/user/claude_code.rs ships the whole hooks/ directory
+# as one artifact), so resolving them beside this script's own path reaches
+# the installed copies the same way in production and in the test suite's
+# scratch-copy override.
 HOOK_DIR="${0%/*}"
 [ "$HOOK_DIR" = "$0" ] && HOOK_DIR="."
 PREPASS_AWK="${HOOK_DIR}/docket-guard-prepass.awk"
 [ -r "$PREPASS_AWK" ] || deny "trust-store write blocked: the trust-guard hook's shared pre-pass file (docket-guard-prepass.awk) is missing or unreadable beside this hook, so it cannot check this command. This is a hook installation defect, not a caller mistake -- report it rather than retrying."
 LEAF_LINES_AWK="${HOOK_DIR}/docket-guard-leaf-lines.awk"
 [ -r "$LEAF_LINES_AWK" ] || deny "trust-store write blocked: the trust-guard hook's shared line-selection file (docket-guard-leaf-lines.awk) is missing or unreadable beside this hook, so it cannot check this command. This is a hook installation defect, not a caller mistake -- report it rather than retrying."
-PROBE_SH="${HOOK_DIR}/docket-guard-probe.sh"
-[ -r "$PROBE_SH" ] && PROBE_PROGRAM=$(<"$PROBE_SH") && [ -n "$PROBE_PROGRAM" ] || deny "trust-store write blocked: the trust-guard hook's shared probe file (docket-guard-probe.sh) is missing or unreadable beside this hook, so it cannot check this command. This is a hook installation defect, not a caller mistake -- report it rather than retrying."
 
-# The probe is the shared file docket-guard-probe.sh (PROBE_SH above), the
-# same code docket-sibling-guard-hook.sh and docket-commit-guard-hook.sh run;
-# its header states the contract and docket-sibling-guard-hook.sh's header
-# (THE PROBE HARDENING) the design. `eval -- "$COMMAND"` inside it is how the
-# untrusted text reaches bash as SOURCE rather than as a re-quoted argument:
-# COMMAND travels on stdin, never through string interpolation into this
-# script's own source, so it is parsed exactly once, by bash, exactly as the
-# real Bash tool would. Leaves come back as \035<text>\036 frames with bash's
-# own stderr merged around them. The probe refuses through a marker between
-# the frames: 113 the cap, 114 a redirection on a structural builtin, 115 a
-# branch on a value a `read` never read, 116 probe state in a structural
-# leaf. An exit inside a pipeline stage ends only that stage, so the marker,
-# not the exit status, is what reaches this hook; 113 and 114 are also read
-# from the status as a fallback.
+# --- Code text: the command without its quoted-delimiter heredoc bodies. ----
 #
-# A `read` fed by a pipe at EOF runs on its site's second firing, so a
-# pipe-fed read loop ends after one walk of its body instead of walking into
-# the cap. A read that has not run leaves its value unknown: the probe
-# refuses a structural leaf that branches on a value (115), and this hook
-# refuses a walked leaf whose command word expands a value (`$x`, a backtick)
-# after a read frame, since that leaf runs whatever the input names.
-PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c "$PROBE_PROGRAM" 2>&1)
-PROBE_RC=$?
-
-# Leaves are the framed segments; everything outside a frame is bash's own
-# stderr during the walk, the probe's refusal markers included.
-PROBE_TEXT=$(printf '%s' "$PROBE_RAW" | awk 'BEGIN { RS = "\036"; ORS = "" } { i = index($0, "\035"); if (i > 0) printf "%s\036", substr($0, i + 1) }')
-PROBE_ERR=$(printf '%s' "$PROBE_RAW" | awk 'BEGIN { RS = "\036"; ORS = "" } { i = index($0, "\035"); if (i > 0) printf "%s", substr($0, 1, i - 1); else printf "%s", $0 }')
-
-READ_BRANCH_REASON="$REASON_PREFIX this command branches on a variable after a \`read\` in it (a \`[ ... ]\`, \`[[ ... ]]\`, \`case\`, \`for ... in\`, \`for ((...))\`, \`:\` or \`eval\` that expands a value, or a \`continue\`), or runs a command whose name expands a value (\`\$x\`) after one. The trust-guard hook feeds a read no input, so it cannot tell which commands the loop would run. An earlier lone \`read\` anywhere in the same Bash call counts too, and refuses every later test on a variable, the counted wait loop \`until [ -s f ] || [ \$n -ge N ]\` included: run that read in its own Bash call. Otherwise filter the input before the loop instead (\`cmd | grep -v '^\$' | while IFS= read -r x; do ...; done\`), or split it into smaller Bash calls."
-
-case "$PROBE_RC:$PROBE_ERR" in
-    113:* | *"_guard_probe: leaf cap"*)
-        deny "$REASON_PREFIX this command has too many parts (over 2000) for the trust-guard hook to finish checking it. A wait loop ends in the check when it counts its own passes, \`n=0; until [ -s f ] || [ \$n -ge N ]; do sleep S; n=\$((n+1)); done\`, and so does a read loop fed by a pipe whose read takes no option but -r, \`cmd | while IFS= read -r x; do ...; done\` (a file, here-string or process-substitution input, or another read option, keeps it from ending); an uncounted wait never does. Otherwise split it into smaller Bash calls; a single call this large is refused rather than passed through unchecked." ;;
-    114:* | *"_guard_probe: structural redirect"*)
-        deny "$REASON_PREFIX a redirection on a shell builtin that carries no command (\`: > file\`, \`true > file\`, \`[ ... ] > file\`) cannot be checked for a trust-store write. Truncate or create a file with \`cat /dev/null > <path>\`, so the target is a visible operand." ;;
-    *"restricted: cannot redirect output"*)
-        deny "$REASON_PREFIX a redirection on a compound command (\`{ ... } > file\`, \`( ... ) > file\`, a loop or \`if\` followed by \`> file\`, or a function call \`> file\`) hides its target from this check. Redirect each simple command's output on its own, e.g. \`docket trust list > <path>\`." ;;
-    *"readonly function"*)
-        deny "$REASON_PREFIX this command redefines the trust-guard hook's own probe handler (\`_guard_probe\`). No command needs a function by that name; rename it." ;;
-    *"_guard_probe: probe state in a structural leaf"*)
-        deny "$REASON_PREFIX this command names a \`_leaf_*\` variable in a command the hook runs while checking it (a \`:\`, \`true\`, \`[\` or \`[[\` command, or a \`for\`, \`select\`, \`case\` or \`eval\` header). The trust-guard hook keeps its own analysis state under that prefix, so it cannot check the command; rename the variable." ;;
-    *"_guard_probe: branch on an unread value"*)
-        deny "$READ_BRANCH_REASON" ;;
-esac
-
-# A walked leaf whose command word expands a value, after a read frame: the
-# read stood in for input it never read, so the leaf's command is unknown.
-# Leading assignment words are skipped to reach the command word. This is
-# this hook's own rule, the same as docket-commit-guard-hook.sh's; a
-# computed command with no read before it stays an accepted residual.
-READ_COMPUTED=$(printf '%s' "$PROBE_TEXT" | awk '
-BEGIN { RS = "\036"; name = "[A-Za-z_][A-Za-z0-9_]*" }
-{
-    leaf = $0
-    if (seen_read) {
-        while (match(leaf, "^" name "\\+?=[^ \t\n]*[ \t]+")) leaf = substr(leaf, RLENGTH + 1)
-        if (leaf !~ "^" name "\\+?=") {
-            word = leaf
-            sub(/[ \t\n].*$/, "", word)
-            if (word ~ /[$`]/) { print "READ_COMPUTED"; exit }
-        }
-    }
-    if ($0 ~ "^(IFS=[A-Za-z0-9_./:@%+,-]*[ \t]+)?read([ \t]+-r)?([ \t]+" name ")*$") seen_read = 1
-}
-' 2>/dev/null)
-[ "$READ_COMPUTED" = "READ_COMPUTED" ] && deny "$READ_BRANCH_REASON"
-
-if [ -z "$PROBE_TEXT" ]; then
-    # No leaf dispatched: the command is inert (all comment, all whitespace,
-    # or only structural builtins), unless bash reported something while
-    # walking it, in which case the walk is "could not analyze" and refuses
-    # -- this hook's own direction on an unresolvable case is a false DENY
-    # over a missed invocation.
-    if [ -n "$PROBE_ERR" ]; then
-        deny "$REASON_PREFIX the trust-guard hook could not analyze this command (bash reported: ${PROBE_ERR%%$'\n'*}) and refuses rather than guessing. Simplify the command; if it is valid, that is a hook defect to report separately."
-    fi
-    allow_default
-fi
-
-# --- Widening: where a heredoc's body stops being inert data. ------------
-#
-# Three independent triggers, any one widening a leaf's scan from its
-# code lines to its whole text (heredoc body included) rather
-# than exempted as prose:
-#
-#   1. INTERPRETER (CL9's fix, whole-command scope). If ANY leaf names a
-#      program that reads arbitrary input as code, no heredoc body
-#      anywhere in the WHOLE command is treated as inert data — this does
-#      not try to prove which specific pipe or substitution carries the
-#      bytes to that interpreter (CL9 is exactly the finding that a
-#      one-hop version of that proof is unsound), it widens instead.
-#      The name is looked for on every line of every leaf except a
-#      quoted-delimiter heredoc body and its terminator line, as selected
-#      by the shared docket-guard-leaf-lines.awk (LEAF_LINES_AWK, resolved
-#      above) in scan mode: such a body is data until something runs it,
-#      so prose there that says `bash` names no program. A leaf with an
-#      unquoted-delimiter heredoc, or one the lexer cannot classify, is
-#      read whole.
-#   2. UNQUOTED DELIMITER (per leaf). A heredoc with an unquoted (or
-#      backslash-quoted-per-character, which is the same case) delimiter
-#      undergoes parameter/command/arithmetic expansion on its body BEFORE
-#      it ever reaches its consumer — `cat > f <<EOF` with a body
-#      containing `$(docket trust add …)` runs that substitution as bash
-#      prepares the heredoc, independent of what cat does with the result.
-#      A quoted delimiter (`<<'EOF'`, `<<"EOF"`, `<<\EOF`) suppresses all of
-#      that, which is the ONLY case this hook exempts as prose (AC1/AC2).
-#   3. RUN A FILE (whole-command scope). A body written to a file is code
-#      once the same call runs a file: by path (`"$TMPDIR/x"`, `./x`), by a
-#      computed command word, with `.`/`source`, or through `builtin`,
-#      `exec`, `command`, `nohup`, `xargs` or `find -exec`. Like trigger 1
-#      this widens rather than tracing which file runs, since a copy, a
-#      variable or a launcher hides that link. The launcher list is
-#      incomplete by nature: an unlisted launcher, a PATH lookup of the
-#      written file, or a run in a later Bash call stays unwidened.
-#
-# With no trigger, each leaf is scanned on every line except a
-# quoted-delimiter heredoc body and its terminator line, as selected by
-# docket-guard-leaf-lines.awk in scan mode (SCAN_TEXT below). A literal
-# newline inside a quoted argument does move the verb off a leaf's first
-# line when docket is a wrapper's argument (`sudo -p 'x<newline>' docket
-# trust add ...`), so no line but heredoc data is skipped; a quoted span
-# that crosses lines stays one quote group for the pre-pass, so prose in it
-# stays prose. A leaf the lexer cannot classify is scanned whole.
-#
-# The boundary on either side of an interpreter name is any byte that is not
-# a word character and not a dot. The dot is what separates a file name from
-# its extension, so a target named `cases.sh`, `x.env` or `run.node` is not
-# an interpreter and does not widen; every spelling that can run
-# one still does (`sh`, `/bin/sh`, `"sh"`, `$(sh`, a backtick, `;sh`).
-INTERPRETER_RE='(^|[^A-Za-z0-9_.])(sh|bash|dash|zsh|ksh|mksh|csh|tcsh|python[0-9.]*|perl|ruby|node|nodejs|php|lua[0-9.]*|tclsh|expect|osascript|env|eval)([^A-Za-z0-9_.]|$)'
-INTERPRETER_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v mode=scan -v widen=0 -f "$LEAF_LINES_AWK") || \
+# docket-guard-leaf-lines.awk (LEAF_LINES_AWK) in scan mode, over the whole
+# command as one record, keeps every line but a quoted-delimiter heredoc body
+# and its terminator, and keeps the text whole when a heredoc has an unquoted
+# delimiter (its body expands) or when its quote-aware lexer cannot settle
+# where a body ends. The pre-pass (PREPASS_AWK) then marks every quoted group
+# with a sentinel and a group id so THE MATCH can tell one prose span from
+# three separately-quoted words, and drops comments by a bash-shaped rule.
+# The pre-pass walks bytes, and under a UTF-8 locale macOS awk refuses a lone
+# byte of a multibyte character, so it runs in the C locale. A pass that
+# fails (a program awk cannot parse) leaves the next stage no command to
+# read, so the hook refuses rather than allowing.
+CODE_TEXT=$(printf '%s' "$COMMAND" | awk -v mode=scan -v widen=0 -f "$LEAF_LINES_AWK") || \
     deny "$REASON_PREFIX the trust-guard hook's line-selection program failed (docket-guard-leaf-lines.awk), so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
-WIDEN=0
-if [[ "$INTERPRETER_TEXT" =~ $INTERPRETER_RE ]]; then
-    WIDEN=1
-fi
-
-# Trigger 3 reads each leaf's first code line, after its leading assignment
-# words. `command -v`/`-V` only looks a name up, so it runs no file.
-RUNS_FILE=$(printf '%s' "$INTERPRETER_TEXT" | awk '
-BEGIN { RS = "\036"; name = "[A-Za-z_][A-Za-z0-9_]*" }
-{
-    leaf = $0
-    sub(/^[ \t\n]+/, "", leaf)
-    line = leaf
-    sub(/\n.*$/, "", line)
-    while (match(line, "^" name "\\+?=[^ \t]*[ \t]+")) line = substr(line, RLENGTH + 1)
-    if (line ~ "^" name "\\+?=") next
-    word = line
-    sub(/[ \t].*$/, "", word)
-    gsub(/[\047\042\\]/, "", word)
-    if (word ~ /[\/$\140]/ ||
-        word ~ /^(\.|source|builtin|exec|nohup|xargs)$/ ||
-        word == "command" && line !~ /^command[ \t]+-[vV]/ ||
-        word == "find" && leaf ~ /[ \t]-(exec|execdir|ok|okdir)([ \t]|$)/) runs = 1
-}
-END { if (runs) print "RUNS_FILE" }
-') || deny "$REASON_PREFIX the trust-guard hook's run-a-file check failed, so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
-[ "$RUNS_FILE" = "RUNS_FILE" ] && WIDEN=1
-
-SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v mode=scan -v widen="$WIDEN" -f "$LEAF_LINES_AWK") || \
-    deny "$REASON_PREFIX the trust-guard hook's line-selection program failed (docket-guard-leaf-lines.awk), so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
-
-# --- Quote-group marking. ------------------------------------------------
-#
-# Marks every word that came from inside a single- or double-quoted string
-# with a sentinel plus a quote-GROUP id, so the MATCH step below can tell
-# real prose (`-m "... docket trust add ..."`, one group) apart from a
-# bash-unquoted invocation built from separately-quoted words (`"docket"
-# "trust" "add"`, three groups). Double-quoted content that could still
-# trigger command/parameter substitution ($(...), backticks, ${...}) is
-# left unmarked so the matcher inspects it directly. No heredoc or
-# arithmetic handling here: SCAN_TEXT above is already, by construction,
-# one or more complete simple commands with no unresolved separators, each
-# ended by \036. The pre-pass reads that byte as a leaf boundary no quote
-# crosses, because a heredoc body bash never parsed can leave a quote this
-# pass cannot close inside its own leaf. Each leaf's code lines are a complete
-# simple command bash has already parsed, with its comments already gone. A
-# widened leaf's body lines are not parsed, and an interpreter may run them as
-# a script, so the pass applies a bash-shaped comment rule to every line (a
-# quote inside a comment opens no group); the pre-pass header states the
-# rule, why a misread fails in either direction, and its residuals.
-#
-# The awk PROGRAM itself lives in docket-guard-prepass.awk, shared
-# byte-for-byte with docket-commit-guard-hook.sh: both hooks
-# install as siblings under ~/.claude/hooks (src/user/claude_code.rs ships
-# the whole hooks/ directory as one artifact), so resolving it beside this
-# script's own path reaches the installed copy the same way in production
-# and in the test suite's scratch-copy override. A missing file fails
-# CLOSED (deny, not allow_default): this hook's whole job is deciding
-# whether a trust-store write is present in the command, and with no
-# pre-pass program there is no way to make that call safely -- allowing
-# would be worse than the tooling-gap fail-opens above, which apply only
-# when the CALLER or shape can't be identified at all, not when the lexer
-# itself is missing. The directory is a bash parameter expansion on `$0`
-# rather than a call to the external `dirname`: this hook's dependency set
-# is fixed at bash/cat/jq/awk, and the test suite runs it with PATH
-# restricted to exactly those.
-# A pre-pass that fails (a program awk cannot parse) leaves the match stage
-# no command to read, so the hook refuses rather than allowing. The pass
-# walks bytes, and under a UTF-8 locale macOS awk refuses a lone byte of a
-# multibyte character, so it runs in the C locale.
-STRIPPED=$(printf '%s' "$SCAN_TEXT" | LC_ALL=C awk -f "$PREPASS_AWK" 2>/dev/null) || \
+MARKED=$(printf '%s' "$CODE_TEXT" | LC_ALL=C awk -f "$PREPASS_AWK" 2>/dev/null) || \
     deny "$REASON_PREFIX the trust-guard hook's pre-pass program failed (docket-guard-prepass.awk), so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
 
-# --- THE MATCH, unchanged from the pre-redesign hook. ---------------------
+# --- THE MATCH, and the inertness test that bounds its prose exemption. -----
+#
+# One awk program, two modes. `mode=inert` walks the marked code text and
+# prints ACTIVE at the first command word outside INERT_WORDS, the first
+# control-flow word, the first `||`, or the first PATH assignment; a launcher
+# word defers the test to the word it launches. `mode=match` is the match
+# proper, on the marked code text of an inert command or on the unquoted
+# whole text of any other.
 #
 # Three consecutive words `docket trust (add|rm)`, head-normalized on
 # `docket` the same way commit-guard normalizes `git` (closes a delimiter
@@ -600,16 +360,14 @@ STRIPPED=$(printf '%s' "$SCAN_TEXT" | LC_ALL=C awk -f "$PREPASS_AWK" 2>/dev/null
 # `docket trust add --help && docket trust add x -- y` still denies on its
 # second occurrence, on this line or a later one.
 #
-# BRACE EXPANSION: bash's own $BASH_COMMAND reconstruction keeps
-# a leaf's SOURCE spelling, unexpanded -- `docket trust ad{d,} erik key`
-# reaches this scan as the literal text `ad{d,}`, not as the two words bash
-# actually dispatches (`ad`, `d`) after expansion. The truncation below
-# (stop at the first non-word character) then reads that as the word `ad`,
-# which fails the add/rm test and ALLOWs a verb bash really ran as `add`.
-# Rather than re-implementing brace expansion here -- exactly the kind of
-# re-derivation of what bash already knows that produced CL16 -- an
-# unresolved `{` in the `trust` or verb word position (checked on the
-# UNTRUNCATED word, before the truncation below runs) is read as the same
+# BRACE EXPANSION: the text keeps a word's SOURCE spelling, unexpanded --
+# `docket trust ad{d,} erik key` reaches this scan as the literal text
+# `ad{d,}`, not as the two words bash actually dispatches (`ad`, `d`) after
+# expansion. The truncation below (stop at the first non-word character)
+# then reads that as the word `ad`, which fails the add/rm test and ALLOWs a
+# verb bash really ran as `add`. Rather than re-implementing brace expansion
+# here, an unresolved `{` in the `trust` or verb word position (checked on
+# the UNTRUNCATED word, before the truncation below runs) is read as the same
 # residual class as a `$`-expansion look-behind: this pass cannot evaluate
 # it, so it deviates from that pattern's usual ALLOW and stays on the DENY
 # side, because every real use of `docket trust add/rm` needs no brace at
@@ -628,12 +386,32 @@ STRIPPED=$(printf '%s' "$SCAN_TEXT" | LC_ALL=C awk -f "$PREPASS_AWK" 2>/dev/null
 # invocation, so it denies when it may expand and the letters of docket follow
 # it in order. The zsh precommand modifiers `noglob`, `nocorrect` and `-`
 # keep command position for the next word (zsh still brace-expands behind
-# them), and after `repeat` every later word of the leaf is checked, because
+# them), and after `repeat` every later word of the line is checked, because
 # the pre-pass may split its count into several words. A brace word in
 # argument position stays allowed, which leaves `env {docket,trust} ...`
 # behind a wrapper as a known residual.
-MATCH=$(printf '%s' "$STRIPPED" | awk -v strict="$CONDUCTOR" '
-BEGIN { MARK = "\001" }
+MATCH_PROGRAM='
+BEGIN {
+    MARK = "\001"
+    k = split("cat tee printf echo jq mkdir rmdir cd pwd ls wc head tail grep cut sort uniq tr diff cmp stat basename dirname realpath mktemp date sleep true false : chmod cp mv rm touch ln export local unset shift set readonly declare typeset read docket", list, " ")
+    for (j = 1; j <= k; j++) INERT_WORDS[list[j]] = 1
+    k = split("command builtin exec nohup nice timeout time setsid stdbuf sudo env repeat", list, " ")
+    for (j = 1; j <= k; j++) LAUNCHER_WORDS[list[j]] = 1
+    k = split("if elif while until for select case ! [ [[ test", list, " ")
+    for (j = 1; j <= k; j++) FLOW_WORDS[list[j]] = 1
+}
+function active() { print "ACTIVE"; exit }
+# The word in command position, or the word a launcher launches: a word
+# outside INERT_WORDS ends the inert reading. A closing brace or paren is
+# structure, not a command. A launcher defers the test to its operand.
+function inert_word(word,   cw) {
+    cw = word
+    sub(/\).*$/, "", cw)
+    if (cw == "" || cw == "}") return
+    if (cw in FLOW_WORDS) active()
+    if (cw in LAUNCHER_WORDS) { launch = 1; return }
+    if (!(cw in INERT_WORDS)) active()
+}
 function has_brace(word,   stripped) {
     stripped = word
     gsub(/\$\{/, "", stripped)
@@ -653,7 +431,7 @@ function may_brace_expand(from,   k) {
 # order there. The word starts at first (the brace word after any glued
 # operator) and runs on through the fragments the pre-pass split it into, up
 # to the first unquoted ; | & < > or backtick, which ends it. The test reads no
-# further: letters in later words cannot join the brace word, and a widened
+# further: letters in later words cannot join the brace word, and a
 # heredoc body full of prose would otherwise spell docket by chance.
 function may_spell_docket(from, first,   k, rest, piece, p) {
     rest = first
@@ -690,8 +468,118 @@ function decode(raw,    inner, cpos) {
     gsub(/^[\047\042]+|[\047\042]+$/, "", D_WORD)
     return 0
 }
+function parens(word,   t, o, c) {
+    t = word; o = gsub(/\(/, "", t)
+    t = word; c = gsub(/\)/, "", t)
+    return o - c
+}
+# The inert reading of one line of marked code text. Every word in command
+# position must be inert: the first word of the line, the word after an
+# operator (standalone, or glued: `(cat`, `sh;`), and the word a launcher
+# launches. A quoted group is one word however many tokens the pre-pass
+# split it into, and is the command when it stands in command position
+# other than as an assignment value. Redirection operands, arithmetic spans
+# and launcher options are skipped. A quoted group that holds a blank can
+# never be an inert command, so `"a b"` in command position is active.
+function inert_line(   i, q, w, m, segs, s, seg, trailing, prev_group) {
+    cmdpos = 1
+    launch = 0
+    assign_tail = 0
+    redir = 0
+    arith = 0
+    array = 0
+    prev_group = ""
+    for (i = 1; i <= n; i++) {
+        q = decode(words[i])
+        w = D_WORD
+        if (q) {
+            if (D_GROUP == prev_group) continue
+            prev_group = D_GROUP
+            if (redir) { redir = 0; continue }
+            if (arith > 0) continue
+            if (launch) { launch = 0; inert_word(w); cmdpos = 0; continue }
+            if (cmdpos && !assign_tail) { inert_word(w); cmdpos = 0 }
+            assign_tail = 0
+            continue
+        }
+        prev_group = ""
+        if (index(w, "||") > 0) active()
+        if (w ~ /(^|[^A-Za-z0-9_])PATH\+?=/) active()
+        # An operator ending the word (`x;`, `f)&&`) puts the next word in
+        # command position whatever this word was.
+        trailing = (w ~ /[\140(;|&]$/)
+        skipped = 0
+        if (arith > 0) { arith += parens(w); skipped = 1 }
+        else if (index(w, "$((") > 0 || w ~ /^\(\(/) {
+            arith = parens(w)
+            if (arith < 0) arith = 0
+            skipped = 1
+        }
+        else if (redir) { redir = 0; skipped = 1 }
+        # A redirection, with its operand glued (`2>/dev/null`, `<<EOF`) or
+        # following (`> f`); `<(` and `>(` are substitutions, read below.
+        else if (w ~ /^[0-9]*[<>]+([^(<>].*)?$/ || w ~ /^&>>?/) {
+            redir = (w ~ /^[0-9]*[<>]+$/ || w ~ /^&>>?$/)
+            skipped = 1
+        }
+        # In an array assignment the words up to the `)` are values.
+        if (array) { if (index(w, ")") > 0) array = 0; skipped = 1 }
+        else if (w ~ /^[A-Za-z_][A-Za-z0-9_]*\+?=\(/) { array = (index(w, ")") == 0); skipped = 1 }
+        if (skipped) {
+            if (trailing) {
+                if (launch) active()
+                cmdpos = 1
+                assign_tail = 0
+            }
+            continue
+        }
+        # Backticks alternate outside and inside text; inside is a command,
+        # and the text glued after a closing backtick is not.
+        nb = split(w, parts, /\140/)
+        for (p = 1; p <= nb; p++) {
+            inside = (p % 2 == 0)
+            if (inside) { cmdpos = 1; assign_tail = 0 }
+            m = split(parts[p], segs, /[(;|&]+/)
+            for (s = 1; s <= m; s++) {
+                seg = segs[s]
+                if (s > 1) {
+                    if (launch) active()
+                    cmdpos = 1
+                    assign_tail = 0
+                }
+                if (seg == "") continue
+                if (launch) {
+                    if (seg ~ /^-/ || seg ~ /^[0-9]+$/ || seg ~ /^[A-Za-z_][A-Za-z0-9_]*\+?=/) continue
+                    launch = 0
+                    inert_word(seg)
+                    cmdpos = 0
+                    continue
+                }
+                if (!cmdpos) { assign_tail = 0; continue }
+                if (seg in FLOW_WORDS) active()
+                if (is_command_prefix(seg, words[i + 1])) { assign_tail = (seg ~ /=$/); continue }
+                inert_word(seg)
+                cmdpos = 0
+                assign_tail = 0
+            }
+            if (parts[p] ~ /[(;|&]$/) {
+                if (launch) active()
+                cmdpos = 1
+                assign_tail = 0
+            }
+            if (inside) cmdpos = 0
+        }
+        if (trailing) {
+            if (launch) active()
+            cmdpos = 1
+            assign_tail = 0
+        }
+    }
+    if (launch) active()
+}
 {
     n = split($0, words, /[ \t]+/)
+    if (mode == "inert") { inert_line(); next }
     cmdpos = 1
     after_repeat = 0
     for (i = 1; i <= n; i++) {
@@ -706,9 +594,11 @@ function decode(raw,    inner, cpos) {
         # Command position: line start, after an assignment or reserved
         # word, after a standalone operator, or behind a glued one. A quoted
         # fragment leaves it unchanged: the pre-pass splits one source word
-        # at its quotes, so FOO="a b" reaches here as three words.
+        # at its quotes, so FOO="a b" reaches here as three words. On
+        # unquoted whole text (anypos) every word is read as if in command
+        # position, since quote removal has already lost that boundary.
         if (!hquoted) {
-            at_command = cmdpos || hw != w
+            at_command = cmdpos || hw != w || anypos
             # A glued or standalone operator ends the repeat command.
             if (hw != w) after_repeat = 0
             if (at_command && hw == "repeat") {
@@ -723,6 +613,9 @@ function decode(raw,    inner, cpos) {
                 cmdpos = (hw == "")
             }
         }
+        # On unquoted whole text an assignment value is glued to its name
+        # (`C=docket trust add ...`), and the value runs once expanded.
+        if (anypos && hw ~ /^[A-Za-z_][A-Za-z0-9_]*\+?=docket$/) hw = "docket"
         if (hw == "docket" || hw ~ /\/docket$/) {
             if (i + 2 > n) continue
             tquoted = decode(words[i + 1])
@@ -755,13 +648,44 @@ function decode(raw,    inner, cpos) {
         }
     }
 }
-' 2>/dev/null)
+'
+
+# An awk that exits non-zero with nothing printed did not finish its pass (a
+# program that fails to parse prints nothing), so its empty output is not a
+# verdict: refuse, as for a missing pre-pass file. A printed result still
+# decides, since the program exits early on it and the pipeline can then end
+# on SIGPIPE.
+INERT=$(printf '%s' "$MARKED" | awk -v mode=inert "$MATCH_PROGRAM" 2>/dev/null)
+INERT_RC=$?
+if [ "$INERT_RC" -ne 0 ] && [ -z "$INERT" ]; then
+    deny "$REASON_PREFIX the trust-guard hook's match program failed (awk exit ${INERT_RC}), so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
+fi
+# The pre-pass emits `X= "a b"` and `X="a b"` alike (`X=` then marked
+# tokens), and the inert pass reads a marked group after an `=`-ending word
+# as that assignment's value. For the spaced form bash runs the quoted word
+# as the command, so the code text itself decides: an assignment name, `=`,
+# blank space and a quote make the call active.
+EMPTY_ASSIGN_RE='(^|[^A-Za-z0-9_])[A-Za-z_][A-Za-z0-9_]*\+?=[[:space:]]+[\"'"'"']'
+if [ "$INERT" != "ACTIVE" ] && [[ "$CODE_TEXT" =~ $EMPTY_ASSIGN_RE ]]; then
+    INERT=ACTIVE
+fi
+
+ANYPOS=0
+if [ "$INERT" = "ACTIVE" ]; then
+    # The whole command, as the words bash builds: a backslash-newline joins
+    # its lines, `$'` and `$"` are quotes, and every quote and backslash is
+    # dropped. Nothing is marked, so no span is prose, and the brace rules
+    # read every word as if in command position (anypos), since the quote
+    # removal has lost the boundary that told a value from a command.
+    SCAN_TEXT=$(printf '%s' "$COMMAND" | LC_ALL=C awk 'BEGIN { RS = "\001"; ORS = "" } { t = $0; gsub(/\\\n/, " ", t); gsub(/\$\047/, "\047", t); gsub(/\$\042/, "\042", t); gsub(/[\047\042\\]/, "", t); print t }' 2>/dev/null) || \
+        deny "$REASON_PREFIX the trust-guard hook's unquoting pass failed, so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
+    ANYPOS=1
+else
+    SCAN_TEXT=$MARKED
+fi
+
+MATCH=$(printf '%s' "$SCAN_TEXT" | awk -v mode=match -v strict="$CONDUCTOR" -v anypos="$ANYPOS" "$MATCH_PROGRAM" 2>/dev/null)
 MATCH_RC=$?
-# An awk that exits non-zero with no match printed did not finish the match
-# (a program that fails to parse prints nothing), so its empty output is not
-# "no trust-store write": refuse, as for a missing pre-pass file. A printed
-# match still decides below, since the program exits early on it and the
-# pipeline can then end on SIGPIPE.
 if [ "$MATCH_RC" -ne 0 ] && [ -z "$MATCH" ]; then
     deny "$REASON_PREFIX the trust-guard hook's match program failed (awk exit ${MATCH_RC}), so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
 fi
@@ -770,4 +694,4 @@ fi
 if [ "$CONDUCTOR" = "1" ]; then
     deny "trust-store write blocked: \`docket trust add/rm\` is operator-reserved and never the conductor's to run, \`--help\` included: a background seat's permission ask has nobody at a terminal to answer it, and one conductor has held one for hours. Send the trust matter to \`main\` as its own \`question:\` (never bundled with another gate) and end your turn; the operator's own terminal is the only path to that store."
 fi
-deny "trust-store write blocked: \`docket trust add/rm\` is operator-reserved and never in scope for an executor step, whatever the brief says. If your step genuinely needs a trust entry changed, that is a routing defect: record the mismatch as your step's finding through the gap channel your brief names, and do not retry this call. If this command performs no trust-store write, the matcher has false-positived on the phrase appearing as prose or as an interpreter's code argument (known limitation): to read or search a file's content, use the Read or Grep tool instead (bypasses this matcher entirely); to write prose that names the phrase, write it into your own \`\$TMPDIR/STEP-N.d\` with a quoted-delimiter heredoc (\`<<'EOF'\`) consumed by cat, tee or jq, for example \`cat > \"\$TMPDIR/STEP-N.d/STEP-N-findings.md\" <<'EOF'\`, never feed that heredoc to an interpreter, and do not run a file by path, source one, or use a launcher (exec, command, nohup, xargs, find -exec) in the same Bash call."
+deny "trust-store write blocked: \`docket trust add/rm\` is operator-reserved and never in scope for an executor step, whatever the brief says. If your step genuinely needs a trust entry changed, that is a routing defect: record the mismatch as your step's finding through the gap channel your brief names, and do not retry this call. If this command performs no trust-store write, the phrase appears as prose in a call that also runs something (known limitation: quoted text is prose only in a call made of inert commands such as cat, tee, printf, echo, jq, mkdir, ls and docket, with no interpreter, launcher, file run, loop, condition or PATH change beside it). To read or search a file's content, use the Read or Grep tool instead (bypasses this matcher entirely). To write prose that names the phrase, use the Write tool where you have it, or a Bash call that holds only inert commands, for example \`cat > \"\$TMPDIR/STEP-N.d/STEP-N-findings.md\" <<'EOF'\` with nothing else in the same call; put any other command in a call of its own."

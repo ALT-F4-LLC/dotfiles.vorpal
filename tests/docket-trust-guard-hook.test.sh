@@ -20,6 +20,17 @@
 #     "docket trust add", a help read (`docket trust add --help`, which
 #     opens nothing), or a main-conversation call, denied anyway.
 #
+# THE RULE the rows pin (the hook's header states it in full): quoted text
+# and a quoted-delimiter heredoc body are prose only in an INERT call, one
+# whose every command word is a program that runs nothing (cat, tee, printf,
+# echo, jq, mkdir, ls, docket and the rest of the hook's list, reached
+# through a launcher or not), with no branch, loop, `||` or PATH change. Any
+# other call is read whole with its quotes removed, so a verb anywhere in it
+# denies whatever runs it. Rows labeled "read unquoted" pin that side; the
+# prose controls pin the inert side. The structural control is the sandbox,
+# which refuses the trust-store write itself; this hook turns the refusal
+# into an explained deny before a seat's permission ask can stall.
+#
 # SEAM. No engine, no `docket` binary, no filesystem: this hook makes exactly
 # one decision from its stdin JSON and nothing else, so the suite is a single
 # process reading the hook's exit code.
@@ -165,19 +176,20 @@ case_conductor_seat_denies() {
         "conductor: deny reason keeps the fixed prefix"
 }
 
-# executor-read has no Write tool, so the deny text must name a recovery it
-# has: a quoted-delimiter heredoc into its own STEP-N.d read by cat, tee or jq.
+# executor-research has no Write tool, so the deny text must name a recovery
+# every executor has beside the Write tool: a quoted-delimiter heredoc into
+# its own STEP-N.d in a Bash call that holds only inert commands.
 case_executor_read_deny_recovery() {
     local err
     err=$(PATH="$TOOLS_DIR" "$BASH_BIN" "$HOOK" 2>&1 >/dev/null <<<"$(build_input "docket trust add erik key" executor-read)")
     case "$err" in
-        *"Write tool"*) fail "executor-read deny reason names no Write tool (found it: ${err})" ;;
-        *) pass "executor-read deny reason names no Write tool" ;;
+        *"Write tool where you have it"*) pass "executor deny reason names the Write tool as one recovery, not the only one" ;;
+        *) fail "executor deny reason names the Write tool as one recovery, not the only one (got: ${err})" ;;
     esac
     case "$err" in
-        *"<<'EOF'"*'$TMPDIR/STEP-N.d'*"cat, tee or jq"* | *'$TMPDIR/STEP-N.d'*"<<'EOF'"*"cat, tee or jq"*)
-            pass "executor-read deny reason names the own-scratch quoted heredoc read by cat, tee or jq" ;;
-        *) fail "executor-read deny reason names the own-scratch quoted heredoc read by cat, tee or jq (missing: ${err})" ;;
+        *"only inert commands"*"<<'EOF'"*'$TMPDIR/STEP-N.d'* | *"only inert commands"*'$TMPDIR/STEP-N.d'*"<<'EOF'"*)
+            pass "executor deny reason names the own-scratch quoted heredoc in an inert call" ;;
+        *) fail "executor deny reason names the own-scratch quoted heredoc in an inert call (missing: ${err})" ;;
     esac
 }
 
@@ -203,10 +215,10 @@ case_ordinary_docket_verbs_allow() {
         "executor: unrelated docket verb"
     assert_verdict "docket trust show erik" executor-write ALLOW \
         "executor: docket trust show (not add/rm)"
-    # The probe's leaf counter shares a shell with the analyzed command; a
-    # command that assigns `n` used to move the counter and trip the cap.
+    # A loop over a bare list is control flow, so the text is read whole; it
+    # names no verb, so it allows.
     assert_verdict 'for n in 100 833 922 1324 2026; do echo "$n"; done' executor-write ALLOW \
-        "executor: for n in … loop (the probe counter does not collide with the command)"
+        "executor: for n in … loop (control flow with no verb in the text)"
 }
 
 # ---- MUST NOT CATCH: prose / read-only, from an executor -------------------
@@ -382,11 +394,9 @@ case_zsh_modifier_brace_allows() {
         "a standalone operator ends the repeat command"
 }
 
-# A command that starts with `-` reaches the probe's eval as its first word.
-# Without `--`, eval reads that word as an option and fails, so the probe
-# records no leaves and the hook denies as "could not analyze". These rows pin
-# the probe analyzing such a command: a plain one allows, and a trust-store
-# write behind the zsh modifier `-` denies with the trust-store reason.
+# A command that starts with `-` (the zsh precommand modifier) keeps command
+# position for the next word. These rows pin that a plain one allows, and a
+# trust-store write behind it denies with the trust-store reason.
 case_leading_dash_command() {
     assert_verdict "- ls" executor-write ALLOW \
         "leading-dash command with no docket word"
@@ -397,8 +407,11 @@ case_leading_dash_command() {
 }
 
 case_command_position_brace_allows() {
-    assert_verdict "'{docket,trust}' add erik key" executor-write ALLOW \
-        "quoted command-position brace word: bash does not expand it"
+    # bash expands no quoted brace, so this runs a literal command that does
+    # not exist; the quoted word is no inert command either, so the text is
+    # read unquoted and the brace rule denies it. A false DENY of nothing.
+    assert_verdict "'{docket,trust}' add erik key" executor-write DENY \
+        "quoted command-position brace word: not inert, so read unquoted"
     assert_verdict "{docket} trust add erik key" executor-write ALLOW \
         "command-position brace with no , or ..: bash leaves it literal"
     assert_verdict "mkdir -p src/{a,b}" executor-write ALLOW \
@@ -421,9 +434,9 @@ case_command_position_brace_allows() {
 # `{` after `docket` but no `,` or `..`, or holds it inside one quoted
 # group, and bash brace-expands neither. Each row runs under both executor
 # archetypes; with no agent_type the hook allows before the matcher runs.
-# A quoted heredoc body reaches the matcher only when a code line names an
-# interpreter, so the widened row carries one beside the heredoc
-# (`&& bash --version`).
+# A quoted heredoc body is read only when the call is not inert, so the row
+# that reads it carries an interpreter beside the heredoc (`&& bash
+# --version`).
 
 # The denied findings command itself: a findings heredoc whose body names an
 # interpreter in prose and holds one apostrophe, then a multi-line jq
@@ -455,9 +468,14 @@ case_unexpandable_brace_prose_allows() {
             "$agent" ALLOW "${agent}: quoted heredoc body naming docket {...}"
         assert_verdict "cat > f.md <<'EOF' && bash --version"$'\n''stub docket {"ok":false}'$'\nEOF' \
             "$agent" ALLOW "${agent}: widened quoted heredoc body naming docket {...}"
+        # Accepted false deny: in an active call the text is read unquoted,
+        # so a brace word after docket with a comma in it and a word after
+        # it may expand, and the brace rule denies it.
+        assert_verdict "cat > f.md <<'EOF' && bash --version"$'\n''stub docket {"ok":false,"n":1}: same'$'\nEOF' \
+            "$agent" DENY "${agent}: accepted false deny: docket {...,...} in a body read unquoted"
         assert_verdict "$incident" "$agent" ALLOW \
             "${agent}: the denied findings command (body apostrophe, then a jq program naming docket {...} beside commas)"
-        assert_verdict "for c in 'docket trust ad{d,} erik key'; do :; done" "$agent" ALLOW \
+        assert_verdict "echo 'docket trust ad{d,} erik key'" "$agent" ALLOW \
             "${agent}: one quoted group naming a brace-split verb"
     done
 }
@@ -475,14 +493,14 @@ case_unexpandable_brace_prose_allows() {
 case_quoted_brace_interpreter_stdin_residual() {
     local agent
     for agent in executor-read executor-write; do
-        assert_verdict "echo 'docket trus{t,} add erik key' | sh" "$agent" ALLOW \
-            "${agent}: quoted brace trust word piped to sh (accepted residual, AB-7)"
-        assert_verdict "echo 'docket trust ad{d,} erik key' | bash" "$agent" ALLOW \
-            "${agent}: quoted brace verb piped to bash (accepted residual, AB-7)"
-        assert_verdict "sh <<< 'docket trus{t,} add erik key'" "$agent" ALLOW \
-            "${agent}: quoted brace trust word as a here-string to sh (accepted residual, AB-7)"
-        assert_verdict "bash <<< 'docket trust ad{d,} erik key'" "$agent" ALLOW \
-            "${agent}: quoted brace verb as a here-string to bash (accepted residual, AB-7)"
+        assert_verdict "echo 'docket trus{t,} add erik key' | sh" "$agent" DENY \
+            "${agent}: quoted brace trust word piped to sh (an interpreter reads the text unquoted)"
+        assert_verdict "echo 'docket trust ad{d,} erik key' | bash" "$agent" DENY \
+            "${agent}: quoted brace verb piped to bash (an interpreter reads the text unquoted)"
+        assert_verdict "sh <<< 'docket trus{t,} add erik key'" "$agent" DENY \
+            "${agent}: quoted brace trust word as a here-string to sh (an interpreter reads the text unquoted)"
+        assert_verdict "bash <<< 'docket trust ad{d,} erik key'" "$agent" DENY \
+            "${agent}: quoted brace verb as a here-string to bash (an interpreter reads the text unquoted)"
         assert_verdict "echo docket 'trus{t,}' add erik key | sh" "$agent" DENY \
             "${agent}: brace trust word in its own quote group, unquoted head"
         assert_verdict "echo 'docket' 'trus{t,}' add erik key | sh" "$agent" DENY \
@@ -631,12 +649,12 @@ case_interpreter_code_argument_prose_deny() {
         executor-write "prose-in-code-argument escape hatch is named"
 }
 
-# ---- MUST NOT CATCH: the code-argument rule's false-DENY floor ------------
+# ---- MUST NOT CATCH: the false-DENY floor ---------------------------------
 #
-# The rule fires only on a code FLAG directly before the quoted group with an
-# interpreter word earlier on the same leaf. Everything else keeps its old
-# verdict: an interpreter given a script path, a code argument with no
-# guarded verb in it, and prose quoted after any other flag.
+# Quoted text is read unquoted whenever a command outside the inert set is
+# in the call, and that reading finds only the three words: an interpreter
+# given a script path, a code argument with no guarded verb in it, and prose
+# quoted beside an inert command all keep their ALLOW.
 
 case_interpreter_code_argument_allows() {
     assert_verdict "bash -c 'echo hi'" executor-write ALLOW \
@@ -649,34 +667,36 @@ case_interpreter_code_argument_allows() {
         "prose quoted after a non-interpreter word"
     # The look-behind must not cross a leaf boundary: the words that end one
     # leaf cannot qualify a quoted group that opens the next one.
-    assert_verdict "echo bash -c"$'\n'"'the rule says docket trust add is reserved'" \
+    assert_verdict "echo bash -c"$'\n'"echo 'the rule says docket trust add is reserved'" \
         executor-write ALLOW "a code flag ending one leaf does not reach the next leaf's quotes"
 }
 
-# ---- ACCEPTED RESIDUALS of the code-argument rule ------------------------
+# ---- CARRIERS WITHOUT A CODE FLAG, and the one residual left ---------------
 #
-# Carriers with no code flag at all, and verbs reached through a variable,
-# stay ALLOW. Pinned so the omission reads as a decision rather than a miss;
-# the pre-pass comment in the hook states the same list.
+# A carrier with no code flag (awk, ssh), and a flag or an interpreter that
+# only exists after an expansion, all deny: each names a command outside the
+# inert set, so the quoted text is read as the words it holds. The pre-pass
+# comment in the hook states the same. The one residual is a verb reached
+# through a variable, which leaves no literal run of the three words.
 
 case_interpreter_carriers_residual_allow() {
     local inv='docket trust add erik key'
-    assert_verdict "awk 'BEGIN { system(\"${inv}\") }'" executor-write ALLOW \
-        "awk program text: no code flag (accepted residual)"
-    assert_verdict "ssh host '${inv}'" executor-write ALLOW \
-        "ssh remote command: no code flag (accepted residual)"
-    assert_verdict "C=\"${inv}\"; bash -c \"\$C\"" executor-write ALLOW \
-        "verb reached through a variable (accepted residual)"
-    # The look-behind word is read as bash builds it from LITERAL text, so a
-    # flag or an interpreter that only exists after an expansion is invisible
-    # here. Denying every word carrying a `$` would close the first row alone
-    # and deny ordinary `bash "$SCRIPT" ...` calls, so all three stay ALLOW.
-    assert_verdict "F=-c; bash \$F '${inv}'" executor-write ALLOW \
-        "code flag reached through a variable (accepted residual)"
-    assert_verdict "I=bash; \$I -c '${inv}'" executor-write ALLOW \
-        "interpreter reached through a variable (accepted residual)"
-    assert_verdict "bash \$(printf -- -c) '${inv}'" executor-write ALLOW \
-        "code flag reached through a substitution (accepted residual)"
+    assert_verdict "awk 'BEGIN { system(\"${inv}\") }'" executor-write DENY \
+        "awk program text: no code flag, read unquoted"
+    assert_verdict "ssh host '${inv}'" executor-write DENY \
+        "ssh remote command: no code flag, read unquoted"
+    assert_verdict "C=\"${inv}\"; bash -c \"\$C\"" executor-write DENY \
+        "verb assigned in a quoted value, then handed to an interpreter"
+    assert_verdict "C=\"${inv}\"; echo \"\$C\"" executor-write ALLOW \
+        "verb assigned in a quoted value beside echo alone"
+    assert_verdict "C=\"trust add erik key\"; docket \$C" executor-write ALLOW \
+        "verb reached through a variable (accepted residual: the sandbox refuses the write)"
+    assert_verdict "F=-c; bash \$F '${inv}'" executor-write DENY \
+        "code flag reached through a variable, read unquoted"
+    assert_verdict "I=bash; \$I -c '${inv}'" executor-write DENY \
+        "interpreter reached through a variable, read unquoted"
+    assert_verdict "bash \$(printf -- -c) '${inv}'" executor-write DENY \
+        "code flag reached through a substitution, read unquoted"
 }
 
 # ---- MUST ALLOW: the help read, the one exemption, from an executor -------
@@ -757,7 +777,7 @@ case_help_lookalikes_and_compounds_deny() {
 
 # An executor-read seat writes its payload into its own step dir through a
 # quoted heredoc; a body naming the guarded verb is data. The same body piped
-# into an interpreter, or written beside an interpreter leaf, runs or may run.
+# into an interpreter, or written beside one, runs or may run.
 case_executor_read_payload_heredoc() {
     local body='docket trust add erik key'
     assert_verdict "cat > \"\$TMPDIR/STEP-7.d/STEP-7-payload.json\" <<'EOF'"$'\n'"${body}"$'\nEOF' \
@@ -805,9 +825,9 @@ case_heredoc_body_prose() {
         executor-write ALLOW "a # inside an unquoted word is not a comment, so the heredoc still opens"
 }
 
-# An interpreter beside the heredoc widens the whole command, so the body's
-# prose reaches the command-position brace check. Only the brace word itself
-# can spell docket: letters in the words after it never join it.
+# An interpreter beside the heredoc makes the call active, so the body is
+# read unquoted and its prose reaches the brace check. Only the brace word
+# itself can spell docket: letters in the words after it never join it.
 case_widened_body_brace_prose() {
     local body='`/bin/bash `{tool_name:"Bash",tool_input:{command},agent_type:"executor-write",cwd:<scratch>}` unknown; does not'
     assert_verdict "cat > /tmp/claude-501/x.md <<'EOF' && bash --version"$'\n'"${body}"$'\nEOF' \
@@ -818,10 +838,9 @@ case_widened_body_brace_prose() {
 
 # An executor's own scratch artifact names the trust verbs in prose. A word
 # inside a quoted heredoc body is data, so an interpreter name there (a gate
-# table row reading `bash gate script`) must not widen the scan to the body;
-# an interpreter on a code line still does, wherever that line sits in its
-# leaf. A real invocation keeps its deny and reason, and a help read stays
-# allowed.
+# table row reading `bash gate script`) must not make the call active; an
+# interpreter in command position does, wherever it sits in the call. A real
+# invocation keeps its deny and reason, and a help read stays allowed.
 case_scratch_prose_names_trust_verbs() {
     local file='"$TMPDIR/STEP-N.d/STEP-N-findings.md"'
     local summary='"$TMPDIR/STEP-N.d/STEP-N-change-summary.md"'
@@ -886,10 +905,11 @@ case_heredoc_body_destination() {
 
 # ---- WRITE THEN RUN: a body written to a file is code once a file runs -------
 #
-# A quoted delimiter keeps the body from this shell only. When another leaf of
-# the same call executes a file by path, sources one, or hands a program
-# operand to a launcher, the written body may be what runs, whatever its own
-# words say, so the body reaches the matcher. A write with no run stays data.
+# A quoted delimiter keeps the body from this shell only. When any command
+# in the same call is outside the inert set (a path run, `.`/`source`, a
+# launcher, make, find), the written body may be what runs, whatever its own
+# words say, so the whole call is read unquoted. A write with no run stays
+# data.
 case_heredoc_written_then_run() {
     local write="cat > \"\$TMPDIR/x\" <<'EOF'"$'\n''docket trust add erik key'$'\nEOF'
     local prose="cat > \"\$TMPDIR/x\" <<'EOF'"$'\n''the rule says docket trust add is operator-reserved'$'\nEOF'
@@ -920,9 +940,9 @@ case_heredoc_written_then_run() {
     assert_verdict "${write}"$'\n''find "$TMPDIR" -name x -exec {} \;' \
         executor-write DENY "written file executed through find -exec"
     assert_verdict "${prose}"$'\n''make -C "$TMPDIR" test' \
-        executor-write ALLOW "prose heredoc written beside a tool that runs no file"
+        executor-write DENY "prose heredoc written beside make, which reads a Makefile"
     assert_verdict "${prose}"$'\n''find "$TMPDIR" -name x' \
-        executor-write ALLOW "prose heredoc written beside a find that runs nothing"
+        executor-write DENY "prose heredoc written beside find, which is not inert"
     assert_verdict "dir=\"\$TMPDIR/out\""$'\n'"${prose}" \
         executor-write ALLOW "prose heredoc written beside an assignment of a path"
     assert_verdict "command -v jq"$'\n'"${prose}" \
@@ -932,9 +952,8 @@ case_heredoc_written_then_run() {
 # ---- SOURCE FROM STDIN: `.`/`source` run a quoted body with no file written --
 #
 # `source /dev/stdin <<'EOF'` reads its own heredoc as code, so the body is
-# never data even though its delimiter is quoted. In a pipe the body belongs to
-# another leaf (`cat <<'EOF' | . /dev/stdin`), so only a whole-command trigger
-# reaches it.
+# never data even though its delimiter is quoted. `.` and `source` are not
+# inert, so the whole call is read unquoted, the piped form included.
 case_heredoc_sourced_from_stdin() {
     local body=$'\n''docket trust add erik key'$'\nEOF'
     assert_verdict "source /dev/stdin <<'EOF'${body}" \
@@ -959,23 +978,132 @@ case_heredoc_sourced_from_stdin() {
         executor-write DENY "quoted heredoc sourced through a backslash-split source word"
 }
 
+# ---- INERT COMMANDS: the only shape whose quoted text is prose ----------------
+#
+# A quoted group or a quoted-delimiter heredoc body is data only while every
+# command in the call is one that never runs its input or arguments as code
+# (the hook's INERT_WORDS), the call branches on nothing, and PATH is not
+# reassigned. Any other command word, however it is spelled or launched,
+# makes the whole command text the scan, so a body written to a file and run
+# by any means in the same call denies without the hook naming that means.
+# Each DENY row below is one observed bypass of the earlier trigger lists; the
+# ALLOW rows are the prose controls that keep the inert shape usable.
+case_inert_commands_bound_the_prose_exemption() {
+    local inv='docket trust add erik key'
+    local write="cat > \"\$TMPDIR/x\" <<'EOF'"$'\n'"${inv}"$'\nEOF\n''chmod +x "$TMPDIR/x"'
+    local notes="cat > \"\$TMPDIR/notes\" <<'EOF'"$'\n'"${inv}"$'\nEOF'
+    local heredoc=$'\n'"${inv}"$'\nEOF'
+
+    # A quoted argument written to a file, then run or sourced.
+    assert_verdict "echo '${inv}' > \"\$TMPDIR/x\"; chmod +x \"\$TMPDIR/x\"; \"\$TMPDIR/x\"" \
+        executor-write DENY "quoted argument written to a file, then run by path"
+    assert_verdict "printf '${inv}\\n' > \"\$TMPDIR/x\"; . \"\$TMPDIR/x\"" \
+        executor-write DENY "quoted argument written to a file, then sourced"
+    assert_verdict "echo '${inv}' > \"\$TMPDIR/notes\"" \
+        executor-write ALLOW "quoted argument written to notes, nothing run"
+
+    # An interpreter name split by an in-word backslash or empty quotes.
+    assert_verdict "cat <<'EOF' | b\\ash${heredoc}" \
+        executor-write DENY "quoted heredoc piped into a backslash-split bash"
+    assert_verdict "cat <<'EOF' | b''ash${heredoc}" \
+        executor-write DENY "quoted heredoc piped into an empty-quote-split bash"
+    assert_verdict "${notes}" \
+        executor-write ALLOW "quoted heredoc naming the verb written to notes, no interpreter"
+
+    # A leading assignment whose value holds a quoted or escaped blank.
+    assert_verdict "${write}"$'\n''X="a b" "$TMPDIR/x"' \
+        executor-write DENY "written file run by path behind an assignment with a quoted blank"
+    assert_verdict "${write}"$'\n''X="a b" . "$TMPDIR/x"' \
+        executor-write DENY "written file sourced behind an assignment with a quoted blank"
+    assert_verdict "${write}"$'\n''X=a\ b "$TMPDIR/x"' \
+        executor-write DENY "written file run by path behind an assignment with an escaped blank"
+    assert_verdict "${notes}"$'\n''FOO="a b" echo hi' \
+        executor-write ALLOW "notes written beside an assignment with a quoted blank before echo"
+    assert_verdict "${write}"$'\n''X= "$TMPDIR/x"' \
+        executor-write DENY "written file run as a quoted word after an empty assignment"
+    assert_verdict "${write}"$'\n'"X= '\$TMPDIR/x'" \
+        executor-write DENY "written file run as a single-quoted word after an empty assignment"
+
+    # Launchers in front of a written path.
+    assert_verdict "${write}"$'\n''timeout 5 "$TMPDIR/x"' \
+        executor-write DENY "written file run through timeout"
+    assert_verdict "${write}"$'\n''nice "$TMPDIR/x"' \
+        executor-write DENY "written file run through nice"
+    assert_verdict "${write}"$'\n''setsid "$TMPDIR/x"' \
+        executor-write DENY "written file run through setsid"
+    assert_verdict "${write}"$'\n''stdbuf -o0 "$TMPDIR/x"' \
+        executor-write DENY "written file run through stdbuf with an option"
+    assert_verdict "${write}"$'\n''sudo "$TMPDIR/x"' \
+        executor-write DENY "written file run through sudo"
+    assert_verdict "${write}"$'\n''time "$TMPDIR/x"' \
+        executor-write DENY "written file run through time"
+    assert_verdict "${write}"$'\n''caffeinate -i "$TMPDIR/x"' \
+        executor-write DENY "written file run through a launcher no list names"
+    assert_verdict "${notes}"$'\n''timeout 5 echo done' \
+        executor-write ALLOW "notes written beside a launcher in front of an inert command"
+
+    # Programs that read a written file as code.
+    assert_verdict "cat > \"\$TMPDIR/Makefile\" <<'EOF'"$'\nall:\n\t'"${inv}"$'\nEOF\n''make -C "$TMPDIR"' \
+        executor-write DENY "Makefile written, then run with make -C"
+    assert_verdict "cat > \"\$TMPDIR/x\" <<'EOF'"$'\n'"BEGIN { system(\"${inv}\") }"$'\nEOF\n''awk -f "$TMPDIR/x"' \
+        executor-write DENY "awk program written, then run with awk -f"
+    assert_verdict "cat > \"\$TMPDIR/x\" <<'EOF'"$'\n'"s/^/x/e ${inv}"$'\nEOF\n''sed -f "$TMPDIR/x"' \
+        executor-write DENY "sed script written, then run with sed -f"
+    assert_verdict "${notes}"$'\n''make --version' \
+        executor-write DENY "notes written beside make, which reads a Makefile from the directory"
+
+    # hash -p binding a bare name to the written path.
+    assert_verdict "${write}"$'\n''hash -p "$TMPDIR/x" t && t' \
+        executor-write DENY "written file bound to a bare name with hash -p, then run"
+    assert_verdict "${write}"$'\n''PATH="$TMPDIR:$PATH"; x' \
+        executor-write DENY "written file reached through a PATH reassignment"
+
+    # A heredoc on a compound command, whose body sits in no leaf.
+    assert_verdict "{ source /dev/stdin; } <<'EOF'${heredoc}" \
+        executor-write DENY "quoted heredoc sourced inside a brace group"
+    assert_verdict "( . /dev/stdin ) <<'EOF'${heredoc}" \
+        executor-write DENY "quoted heredoc sourced inside a subshell"
+    assert_verdict "if source /dev/stdin; then :; fi <<'EOF'${heredoc}" \
+        executor-write DENY "quoted heredoc sourced inside an if"
+    assert_verdict "while . /dev/stdin; do break; done <<'EOF'${heredoc}" \
+        executor-write DENY "quoted heredoc sourced inside a while loop"
+    assert_verdict "{ sh; } <<'EOF'${heredoc}" \
+        executor-write DENY "quoted heredoc fed to sh inside a brace group"
+    assert_verdict "( bash ) <<'EOF'${heredoc}" \
+        executor-write DENY "quoted heredoc fed to bash inside a subshell"
+    assert_verdict "{ source /dev/stdin; } <<EOF${heredoc}" \
+        executor-write DENY "unquoted heredoc sourced inside a brace group"
+    assert_verdict "{ cat; } <<'EOF'${heredoc}" \
+        executor-write ALLOW "quoted heredoc naming the verb fed to cat inside a brace group"
+
+    # A branch, a loop or an or-list makes the whole text the scan.
+    assert_verdict "${write}"$'\n''[ -x "$TMPDIR/x" ] && "$TMPDIR/x"' \
+        executor-write DENY "written file run behind a file test"
+    assert_verdict "${write}"$'\n''ls "$TMPDIR/none" || "$TMPDIR/x"' \
+        executor-write DENY "written file run on the failing side of an or-list"
+    assert_verdict "${write}"$'\n''for f in "$TMPDIR"/*; do "$f"; done' \
+        executor-write DENY "written file run from a loop over a glob"
+    assert_verdict "mkdir -p \"\$TMPDIR/d\" && ${notes}"$'\n''ls "$TMPDIR/d" | wc -l' \
+        executor-write ALLOW "notes written in a straight and-list of inert commands"
+}
+
 # ---- COMMENTS: inert to bash, so inert here ---------------------------------
 #
 # A comment runs to the end of its line and bash executes none of it. Anything
 # the pre-pass reads inside one -- a quote that would otherwise open a region
 # spanning the newline, a heredoc operator that would otherwise arm a body --
 # is text, and the command on the next line reaches the matcher on its own.
-# The outer command's comments never reach the pre-pass; a widened heredoc
-# body's do, so the body rows pin the pre-pass's own comment rule: a `#` that
-# starts a word (after a blank, an unquoted ;&|()<>, or an opening backtick)
-# opens a comment in which quotes open no group. A `#` inside a word is not a
-# comment start, including one right after a substitution's, an array's or an
-# arithmetic group's closing `)`, a closing backtick, or an escaped byte, and
-# no `#` inside ${...} or (( )) is one. A function definition's `()` is two
-# operators, so a `#` after it is. Where the text cannot settle bash's reading
-# (an extglob group, a case pattern inside $( )), the pre-pass stops marking
-# prose for the rest of the leaf. A misread either way moves quote parity, so
-# each row pins one side of that boundary.
+# A comment in the command is cut from the code text by the line-selection
+# lexer and read by the pre-pass's own comment rule: a `#` that starts a word
+# (after a blank, an unquoted ;&|()<>, or an opening backtick) opens a comment
+# in which quotes open no group. A `#` inside a word is not a comment start,
+# including one right after a substitution's or an arithmetic group's closing
+# `)`, a closing backtick, or an escaped byte, and no `#` inside ${...} or
+# (( )) is one. A function definition's `()` is two operators, so a `#` after
+# it is. A body handed to an interpreter (`widened` below) is read unquoted
+# and whole, comments included, so every such row denies whatever the comment
+# rule would have said; the rows without an interpreter pin the rule on the
+# outer command, where a misread either way moves quote parity.
 
 case_comment_regions_are_inert() {
     local inv='docket trust add erik key'
@@ -1002,7 +1130,9 @@ case_comment_regions_are_inert() {
     assert_verdict "${widened}"$'\n'"(echo hi)# it's"$'\n'"${inv}"$'\nEOF' \
         executor-write DENY "a widened body's comment opened right after ) does not swallow the next body line"
     assert_verdict "${widened}"$'\n'"echo a#b 'the rule says ${inv} is operator-reserved'"$'\nEOF' \
-        executor-write ALLOW "a # inside a widened body's word opens no comment, so the quoted prose stays prose"
+        executor-write DENY "a # inside a widened body's word opens no comment, and the body is read unquoted"
+    assert_verdict "echo a#b 'the rule says ${inv} is operator-reserved'" \
+        executor-write ALLOW "a # inside a word opens no comment, so the quoted prose beside echo stays prose"
     local op
     for op in '|' '&' '<' '>'; do
         assert_verdict "${widened}"$'\n'"echo hi ${op}# it's"$'\n'"${inv}"$'\nEOF' \
@@ -1013,7 +1143,9 @@ case_comment_regions_are_inert() {
     assert_verdict "${widened}"$'\n'"echo \`# it's"$'\n'"${inv}"$'\n`\nEOF' \
         executor-write DENY "a widened body's comment opened right after a backtick does not swallow the next body line"
     assert_verdict "${widened}"$'\n'"echo hi # it's"$'\n'"echo ${sq}${prose}${sq}"$'\nEOF' \
-        executor-write ALLOW "a widened body's comment apostrophe leaves the next line's quoted prose as prose"
+        executor-write DENY "a widened body's comment apostrophe does not matter: the body is read unquoted"
+    assert_verdict "echo hi # it's"$'\n'"echo ${sq}${prose}${sq}" \
+        executor-write ALLOW "a comment apostrophe leaves the next line's quoted prose as prose"
     assert_verdict "${widened}"$'\n'"echo \$(true)#${sq}"$'\nx\n'"${sq}"$'\n'"${inv}"$'\nEOF' \
         executor-write DENY "a # right after a substitution's ) is mid-word, so its quote still opens a group"
     assert_verdict "${widened}"$'\n'"echo a\\;#${sq}"$'\nx\n'"${sq}"$'\n'"${inv}"$'\nEOF' \
@@ -1103,14 +1235,13 @@ case_comment_regions_are_inert() {
 
 # ---- QUOTE STATE ENDS WITH ITS LEAF -----------------------------------------
 #
-# The pre-pass reads every leaf in one buffer. A quote it cannot close inside
-# one leaf -- an apostrophe in a heredoc body, or a multi-line argument cut to
-# its first line -- used to run on into the next leaf, putting that leaf's
-# words in the wrong quote group: a trust-store write after it read as prose,
-# and prose after it read as code. Each leaf now starts unquoted. An
-# unterminated quote in a one-line leaf stays prose, since bash closes it on a
-# line this hook does not scan; one in a multi-line leaf can only hold heredoc
-# body bytes, so its text reaches the matcher unmarked.
+# The pre-pass reads the code text in one buffer. A quote it cannot close --
+# an apostrophe in a heredoc body, or a multi-line argument -- used to run on
+# into the next command, putting its words in the wrong quote group: a
+# trust-store write after it read as prose, and prose after it read as code.
+# A quoted-delimiter body is cut from the code text before the pre-pass sees
+# it, and a call that hands a body to an interpreter is read unquoted, so no
+# body byte moves a quote group.
 
 case_quote_state_ends_with_its_leaf() {
     local inv='docket trust add erik key' incident
@@ -1134,11 +1265,11 @@ case_quote_state_ends_with_its_leaf() {
 # ---- A quoted newline before the docket word ------------------------------
 #
 # When docket is an argument to a wrapper, a quoted argument holding a newline
-# before it moves `docket trust add` onto the leaf's second line. Every code
-# line of a leaf is scanned, so the verb is found wherever the quoted argument
-# leaves it; a newline inside one quoted group keeps that group prose. The
-# sudo and script wrappers are on no widening list, so only the line scan
-# catches them.
+# before it moves `docket trust add` onto the command's second line. Every
+# line is scanned, so the verb is found wherever the quoted argument leaves
+# it; a newline inside one quoted group keeps that group prose. sudo is a
+# launcher read through to docket, and script is not inert, so the call is
+# read unquoted.
 
 case_quoted_newline_before_the_verb() {
     local inv='docket trust add erik' nl=$'\n'
@@ -1197,7 +1328,7 @@ case_heredoc_position_edges() {
     assert_verdict '((n = 1 << 3))'$'\n''echo "the rule says docket trust add is operator-reserved"' \
         executor-write ALLOW "a bare arithmetic command opens no heredoc either"
     assert_verdict 'for ((i = 1 << 2; i > 0; i--)); do echo $i; done'$'\n''echo "the rule says docket trust add is operator-reserved"' \
-        executor-write ALLOW "an arithmetic for header opens no heredoc either"
+        executor-write DENY "an arithmetic for header opens no heredoc, but a loop reads the text whole"
     assert_verdict 'n=$[1 << 3]'$'\n''echo "the rule says docket trust add is operator-reserved"' \
         executor-write ALLOW "a deprecated \$[ ] arithmetic shift opens no heredoc either"
     # ACCEPTED INACCURACY (hook header): bash's own $BASH_COMMAND
@@ -1211,94 +1342,7 @@ case_heredoc_position_edges() {
         executor-write ALLOW "here-string with an unquoted word: accepted false ALLOW, not a real dispatch"
 }
 
-# ---- Circuit breaker: a cap hit is the probe's finding, not the caller's ---
-#
-# The 2000-leaf ceiling reaches the script through the probe subshell's own
-# exit code (113), never through a token inside the leaf text, so caller
-# text cannot counterfeit one. A command that merely quotes the marker is an
-# ordinary command; only a command that really enumerates past the ceiling is
-# refused for size, and it must still say so.
 
-case_leaf_cap_is_out_of_band() {
-    local marker cmd i err
-    marker='__CAP_HIT__'
-    assert_verdict "echo ${marker}" executor-write ALLOW \
-        "a single leaf whose text is the cap marker is not a cap hit"
-    assert_verdict "cat <<'EOF'"$'\n'"prose naming ${marker} inline"$'\n'"EOF" \
-        executor-write ALLOW "a heredoc quoting the cap marker is not a cap hit"
-    cmd="echo 0"
-    for ((i = 1; i <= 2100; i++)); do cmd="${cmd}; echo ${i}"; done
-    assert_verdict "$cmd" executor-write DENY "over 2000 leaves still hits the cap"
-    err=$(PATH="$TOOLS_DIR" "$BASH_BIN" "$HOOK" 2>&1 >/dev/null <<<"$(build_input "$cmd" executor-write)")
-    case "$err" in
-        *"too many parts (over 2000)"*) pass "a real cap hit still explains itself as size" ;;
-        *) fail "cap deny reason changed or missing: ${err}" ;;
-    esac
-}
-
-# ---- Probe hardening: nothing the probe walks ever runs for real ----------
-#
-# Ported from docket-sibling-guard-hook.sh, where four reproduced shapes
-# showed the unhardened probe this hook used to run executes part of the
-# caller's command for real, or can be silenced entirely, while
-# "analyzing" it. This hook has no scratch dir or worktree to redirect
-# into, so the marker probes are a plain file rather than a sibling path;
-# the property under test is the same: a vetoed or structural leaf never
-# performs a real side effect.
-
-case_probe_never_acts() {
-    local marker="${SANDBOX}/probe-marker" got
-    plant() { printf 'twelve bytes' >"$marker"; }
-    intact() { [ "$(cat "$marker" 2>/dev/null)" = "twelve bytes" ]; }
-    check() { # <label> <want> <command>
-        plant
-        got=$(verdict_of "$(build_input "$3" executor-write)")
-        [ "$got" = "$2" ] && pass "${1} (${2})" || fail "${1} (want ${2}, got ${got})"
-        intact && pass "${1}: marker untouched" || fail "${1}: the probe altered the marker ($(cat "$marker" 2>/dev/null | head -c 40))"
-    }
-    check "structural redirect (: > file)" DENY ": > ${marker}"
-    check "structural redirect (true > file)" DENY "true > ${marker}"
-    check "structural redirect ([ ] > file)" DENY "[ 1 ] > ${marker}"
-    check "compound redirect ({ } > file)" DENY "{ :; } > ${marker}"
-    check "compound redirect (( ) > file)" DENY "( : ) > ${marker}"
-    check "compound redirect (loop > file)" DENY "while :; do break; done > ${marker}"
-    check "compound redirect (function call > file)" DENY "f() { :; }; f > ${marker}"
-    check "vetoed leaf redirect stays inspectable and inert" ALLOW "cat /dev/null > ${marker}"
-    check "handler redefinition" DENY "_guard_probe() { return 0; }; cat /dev/null > ${marker}"
-    check "handler redefinition, function keyword" DENY "function _guard_probe { :; }; cat /dev/null > ${marker}"
-    check "handler redefinition then the guarded verb" DENY "_guard_probe() { return 0; }; docket trust add erik key"
-    check "cap in a structural loop before the verb" DENY 'while [[ $((++i)) -lt 2100 ]]; do :; done; docket trust add erik key'
-    # A leaf that is only assignments RUNS, so a counter-bounded wait loop
-    # ends where the real command's would instead of walking into the cap;
-    # the guarded verb in its body is vetoed and matched as before, and the
-    # probe's own counter is never the command's to set.
-    check "counted wait loop (assignment counter) ends" ALLOW 'i=0; until [ -s /nonexistent ] || [ $i -ge 3 ]; do sleep 0; i=$((i+1)); done'
-    check "counted wait loop with the guarded verb in the body" DENY 'i=0; until [ $i -ge 3 ]; do docket trust add erik key; i=$((i+1)); done'
-    check "assignment from a command substitution stays vetoed" ALLOW "x=\$(cat /dev/null > ${marker})"
-    check "counter reset cannot lift the cap" DENY "_leaf_n=-100000; while true; do cat /dev/null > ${marker}; done"
-    # The issue's own acceptance text ("while true; do :; touch <m>; break;
-    # done" denies with no marker) is wrong for the HARDENED probe: `break`
-    # now RUNS (that is the fix -- the unhardened probe disarmed the trap on
-    # the cap and fell through to allow, not on break), so the loop ends
-    # after one iteration, `touch` is vetoed same as any other leaf, no
-    # guarded verb ever appears, and the correct verdict is ALLOW with the
-    # marker absent -- not a cap hit at all, since the loop only ran once.
-    rm -f "$marker"
-    got=$(verdict_of "$(build_input "while true; do :; touch ${marker}; break; done" executor-write)")
-    [ "$got" = "ALLOW" ] && pass "break runs and ends the loop: harmless command allows (ALLOW)" \
-        || fail "break runs and ends the loop (want ALLOW, got ${got})"
-    [ -e "$marker" ] && fail "break variant: touch ran for real (marker exists)" \
-        || pass "break variant: touch never ran (no guarded verb, cap never reached)"
-    # The DENY shape is the sibling suite's actual one: no break, so the
-    # loop is genuinely unbounded and only the 2000-leaf cap ends it.
-    rm -f "$marker"
-    got=$(verdict_of "$(build_input "while true; do touch ${marker}; done" executor-write)")
-    [ "$got" = "DENY" ] && pass "unbounded loop with no break hits the cap (DENY)" \
-        || fail "unbounded loop with no break (want DENY, got ${got})"
-    [ -e "$marker" ] && fail "unbounded loop: touch ran for real before the cap (marker exists)" \
-        || pass "unbounded loop: touch never ran for real"
-    rm -f "$marker"
-}
 
 # ---- One long line of quoted groups ---------------------------------------
 #
@@ -1320,37 +1364,6 @@ case_many_quoted_groups_on_one_line() {
         executor-write DENY "the verb after 400 quoted groups is still caught"
 }
 
-# ---- Read loops: the shared probe's read admission ------------------------
-#
-# The probe in docket-guard-probe.sh lets a `read` fed by a pipe at EOF end
-# its loop after one walk of the body, so a pipe-fed read loop no longer
-# walks into the cap. A read that never ran leaves its value unknown, so a
-# command whose name expands a value after a read is refused with the
-# read-branch reason. Input other than a pipe keeps the read vetoed, and that
-# loop still caps.
-
-case_read_loops() {
-    local err
-    assert_verdict "printf 'a\\nb\\n' | while read x; do echo \$x; done" executor-write ALLOW \
-        "read loop over finite piped input ends"
-    assert_deny_reason ': | while read x; do docket trust add X; done' executor-read \
-        "read loop over empty piped input walks its body to the trust write"
-    err=$(PATH="$TOOLS_DIR" "$BASH_BIN" "$HOOK" 2>&1 >/dev/null \
-        <<<"$(build_input "printf 'a\\n' | while read x; do \$x; done" executor-read)")
-    case "$err" in
-        *"over 2000"*) fail "read loop running a command named by its value is refused by the cap: ${err}" ;;
-        "trust-store write blocked:"*"after a \`read\`"*) pass "read loop running a command named by its value is refused as a read-branch" ;;
-        *) fail "read loop running a command named by its value (want the read-branch refusal, got: ${err})" ;;
-    esac
-    err=$(PATH="$TOOLS_DIR" "$BASH_BIN" "$HOOK" 2>&1 >/dev/null \
-        <<<"$(build_input 'while :; do ls; done' executor-write)")
-    case "$err" in
-        *"too many parts (over 2000)"*"until [ -s f ] || [ \$n -ge N ]"*"while IFS= read -r x"*) pass "the cap reason names the counted wait and pipe-fed read loop shapes" ;;
-        *) fail "the cap reason does not name both loop shapes: ${err}" ;;
-    esac
-    assert_verdict "while read x; do echo \$x; done <<< a" executor-write DENY \
-        "read loop over a here-string stays vetoed"
-}
 
 # ---- Missing shared pre-pass file: fail CLOSED, not open ------------------
 #
@@ -1384,16 +1397,16 @@ case_missing_prepass_file_denies() {
     rm -rf "$scratch_dir"
 }
 
-# The interpreter test reads its lines through docket-guard-leaf-lines.awk.
-# Without it the hook cannot tell a body word from a code word, so a copy
-# with every other sibling present still denies a command it would allow.
+# The code text is selected through docket-guard-leaf-lines.awk. Without it
+# the hook cannot tell a body word from a code word, so a copy with every
+# other sibling present still denies a command it would allow.
 case_missing_leaf_lines_file_denies() {
     local scratch_dir scratch_hook err rc
     scratch_dir=$(mktemp -d "${TMPDIR:-/tmp}/docket-trust-guard-leaf-lines-missing.XXXXXX") || \
         fatal "mktemp failed"
     scratch_hook="${scratch_dir}/docket-trust-guard-hook.sh"
     cp "$HOOK" "$scratch_hook" || fatal "could not copy hook to scratch dir"
-    cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "$(dirname "$HOOK")/docket-guard-probe.sh" "${scratch_dir}/" || \
+    cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "${scratch_dir}/" || \
         fatal "could not copy the shared files to scratch dir"
     err=$(PATH="$TOOLS_DIR" "$BASH_BIN" "$scratch_hook" 2>&1 >/dev/null \
         <<<"$(build_input 'ls' executor-write)")
@@ -1422,10 +1435,9 @@ case_match_program_failure() {
     scratch_dir=$(mktemp -d "${TMPDIR:-/tmp}/docket-trust-guard-match-broken.XXXXXX") || \
         fatal "mktemp failed"
     scratch_hook="${scratch_dir}/docket-trust-guard-hook.sh"
-    sed 's/^BEGIN { MARK = "\\001" }$/BEGIN { MARK = = "\\001" }/' \
+    sed 's/^function active() { print "ACTIVE"; exit }$/function active() { print = "ACTIVE"; exit }/' \
         "$HOOK" >"$scratch_hook" || fatal "could not copy hook to scratch dir"
-    cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" \
-        "$(dirname "$HOOK")/docket-guard-probe.sh" "${scratch_dir}/" || \
+    cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "${scratch_dir}/" || \
         fatal "could not copy the pre-pass file to scratch dir"
     if cmp -s "$HOOK" "$scratch_hook"; then
         fail "unparseable match program: the fixture edit did not apply"
@@ -1475,8 +1487,8 @@ case_prepass_program_failure() {
         fatal "mktemp failed"
     scratch_hook="${scratch_dir}/docket-trust-guard-hook.sh"
     cp "$HOOK" "$scratch_hook" || fatal "could not copy hook to scratch dir"
-    cp "$(dirname "$HOOK")/docket-guard-probe.sh" "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "${scratch_dir}/" || \
-        fatal "could not copy the probe file to scratch dir"
+    cp "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "${scratch_dir}/" || \
+        fatal "could not copy the line-selection file to scratch dir"
     { cat "$(dirname "$HOOK")/docket-guard-prepass.awk"; printf '%s\n' 'BEGIN { x = = 1 }'; } \
         >"${scratch_dir}/docket-guard-prepass.awk" || \
         fatal "could not write the broken pre-pass file to scratch dir"
@@ -1532,15 +1544,16 @@ case_prepass_copies_identical() {
 
 # ---- Framing control bytes: refused before any analysis -------------------
 #
-# The hook frames its own leaf analysis with 0x1e and refuses any command that
-# carries 0x1d or 0x1e, so a caller cannot forge a leaf boundary that resets
-# the pre-pass quote state mid-leaf. Each row asserts exit 2 and the
-# control-byte reason together: the reason text keeps the row red when the
-# refusal is gone but another matcher still denies the command.
+# The hook frames its own analysis with 0x01 (the pre-pass quote-group mark),
+# 0x1d (a quoted blank held in a word) and 0x1e (a record boundary) and
+# refuses any command that carries one, so a caller cannot forge a mark or a
+# boundary that resets the pre-pass quote state. Each row asserts exit 2 and
+# the control-byte reason together: the reason text keeps the row red when
+# the refusal is gone but another matcher still denies the command.
 # assert_deny_reason does not fit, because this reason differs from
 # DENY_REASON. The bytes are built at runtime so the file stays plain text.
 
-CONTROL_BYTE_REASON='control byte (0x1d or 0x1e)'
+CONTROL_BYTE_REASON='control byte (0x01, 0x1d or 0x1e)'
 
 assert_control_byte_deny() {
     local cmd="$1" agent="$2" label="$3" err rc
@@ -1649,13 +1662,11 @@ case_scratch_prose_names_trust_verbs
 case_heredoc_body_destination
 case_heredoc_written_then_run
 case_heredoc_sourced_from_stdin
+case_inert_commands_bound_the_prose_exemption
 case_comment_regions_are_inert
 case_quote_state_ends_with_its_leaf
 case_quoted_newline_before_the_verb
 case_heredoc_position_edges
-case_leaf_cap_is_out_of_band
-case_probe_never_acts
-case_read_loops
 case_many_quoted_groups_on_one_line
 case_missing_prepass_file_denies
 case_missing_leaf_lines_file_denies

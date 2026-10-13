@@ -1,10 +1,11 @@
 # Shared quote-group pre-pass for docket-trust-guard-hook.sh,
 # docket-commit-guard-hook.sh and docket-sibling-guard-hook.sh. Each hook
-# feeds this its SCAN_TEXT leaf buffer via `awk -f`: the trust guard passes
-# the first line of each leaf (the whole leaf when widened), and the commit
-# and sibling guards pass every line except heredoc bodies. See the trust or
-# commit hook's header for the redesign this pre-pass is part of. Read as one
-# file rather than duplicated inline so a lexer fix lands once for all three.
+# feeds this its code text via `awk -f`: the trust guard passes the whole
+# command with its quoted-delimiter heredoc bodies and comments cut, and the
+# commit and sibling guards pass every line of each probed leaf except
+# heredoc bodies. See the trust or commit hook's header for the design this
+# pre-pass is part of. Read as one file rather than duplicated inline so a
+# lexer fix lands once for all three.
 #
 # A quoted group in ONE position is code rather than prose: the argument an
 # interpreter executes verbatim. True when the word immediately before the

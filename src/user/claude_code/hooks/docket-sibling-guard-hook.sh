@@ -167,12 +167,13 @@
 # so it reports the collision as a finding instead of retrying under another
 # spelling.
 #
-# HOW THE COMMAND IS READ: the same two stages as docket-trust-guard-hook.sh
-# and docket-commit-guard-hook.sh, whose headers carry the full reasoning.
-# Between them, line selection differs: those guards keep the first line of
-# each leaf, while this one keeps every line except heredoc bodies (see
-# LEAF_LINES_AWK), since a substitution body that spans lines reaches the
-# probe only inside its outer leaf. Stage one asks bash itself which simple
+# HOW THE COMMAND IS READ: the same two stages as docket-commit-guard-hook.sh,
+# whose header carries the full reasoning (docket-trust-guard-hook.sh shares
+# the pre-pass and line selection but reads the command's text in place of
+# stage one; its header says why). This guard keeps every line of each leaf
+# except heredoc bodies (see LEAF_LINES_AWK), since a substitution body that
+# spans lines reaches the probe only inside its outer leaf. Stage one asks
+# bash itself which simple
 # commands it would dispatch (a DEBUG trap under `extdebug` and `set -T`
 # that vetoes every leaf), so chains, subshells, substitutions, heredocs
 # and comments are bash's parse when deciding which leaves dispatch, and
@@ -194,8 +195,7 @@
 # THE PROBE HARDENING, measured on bash 3.2 and pinned in the suite. The
 # probe's code lives in docket-guard-probe.sh beside this hook, and
 # docket-commit-guard-hook.sh loads the same file. docket-trust-guard-hook.sh
-# originally ran an unhardened copy; the hardening this hook introduced is
-# ported into it, except the `read` admission below:
+# originally ran an unhardened copy and now runs no probe at all:
 #   - The probe shell is RESTRICTED (`set -r`) once the trap is armed, so no
 #     redirection can open a file. A vetoed leaf never performs its
 #     redirection anyway (verified: `rm x > marker` leaves the marker
@@ -816,8 +816,9 @@ LEAF_LINES_AWK="${HOOK_DIR}/docket-guard-leaf-lines.awk"
 
 # --- Widening: where a heredoc's body stops being inert data. ------------
 #
-# The trust guard's two triggers, applied to this guard's line selection
-# rather than its first lines, with one correction: the interpreter test
+# The two triggers the trust guard carried before it moved to reading the
+# command's text, applied to this guard's line selection, with one
+# correction: the interpreter test
 # reads each leaf's code lines, never a heredoc body's text (the one addition,
 # substitutions inside an unquoted-delimiter body, follows). An interpreter that
 # consumes a heredoc is always a command word, never body text; reading bodies

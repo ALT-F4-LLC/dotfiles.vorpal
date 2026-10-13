@@ -960,11 +960,9 @@ case_multiline_substitutions() {
     # interpreter test reads them all.
     assert_verdict $'echo "multi\nuse node STEP-7.d prose"' executor-write "$WAVE_42" DENY "accepted false deny: interpreter word on a later line of quoted prose"
     assert_verdict $'echo "multi\nline STEP-7.d prose"' executor-write "$WAVE_42" ALLOW "multi-line quoted prose naming a sibling dir"
-    if [ "$COMSUB_REPRINTED" = 1 ]; then
-        assert_verdict $'echo $(\n# see STEP-7.d\nls\n)' executor-write "$WAVE_42" ALLOW "bash 5.2: a comment line in a substitution body is dropped by the parse"
-    else
-        assert_verdict $'echo $(\n# see STEP-7.d\nls\n)' executor-write "$WAVE_42" DENY "accepted false deny: comment line in a substitution body"
-    fi
+    # bash 5.2 drops the comment in its own reprint; under bash 3.2 the line
+    # selection cuts it, as bash would have.
+    assert_verdict $'echo $(\n# see STEP-7.d\nls\n)' executor-write "$WAVE_42" ALLOW "a comment line in a substitution body is cut before the match"
     # Further substitution shapes.
     assert_verdict $'echo "$(\nrm -rf '"${SIB_DIR}"$'\n)"' executor-write "$WAVE_42" DENY "multi-line \$( ) inside double quotes"
     assert_verdict $'echo $(echo $(\nrm -rf '"${SIB_DIR}"$'\n))' executor-write "$WAVE_42" DENY "nested multi-line \$( )"

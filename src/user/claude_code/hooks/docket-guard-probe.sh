@@ -1,6 +1,7 @@
 # docket-guard-probe.sh -- the DEBUG-trap leaf probe shared by the docket
-# guard hooks (docket-sibling-guard-hook.sh, docket-trust-guard-hook.sh and
-# docket-commit-guard-hook.sh). Each hook reads this file beside itself and
+# guard hooks (docket-sibling-guard-hook.sh and docket-commit-guard-hook.sh;
+# docket-trust-guard-hook.sh reads the command's text instead, as its header
+# explains). Each hook reads this file beside itself and
 # runs its text as `bash -c` with the command to check on stdin and stderr
 # merged into stdout:
 #

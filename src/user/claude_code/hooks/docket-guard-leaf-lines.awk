@@ -21,6 +21,10 @@
 # keeping every remaining line, wherever its reading could disagree with
 # bash's. Inside a substitution a body is skipped only when bash 3.2's paren
 # and quote scan reads it as plain balanced text (body_inert).
+# A comment is cut from its line (CUT[k] holds the column it starts at):
+# a `#` that starts a word in command text, where bash reads one. A `)`
+# that closed a substitution keeps the word open, so a `#` right after
+# it is text, as it is after any other word byte.
 function count_nl(s,   t) {
     t = s
     return gsub(/\n/, "", t)
@@ -118,8 +122,10 @@ function level(sp,   k, v) {
 # double quotes), B (inside ${ }, FD counts open braces). A body is taken
 # only at a newline at the level its operator was queued at, with no close
 # below that level since (pmin).
-function classify(leaf,   n, i, c, c2, j, k, t, s, sp, np, ln, found, x, lv, pmin) {
+function classify(leaf,   n, i, c, c2, j, k, t, s, sp, np, ln, found, x, lv, pmin, sub_close) {
     NL = split(leaf, L, "\n")
+    split("", CUT)
+    sub_close = 0
     START[1] = 1
     for (k = 1; k <= NL; k++) {
         CLS[k] = "c"
@@ -174,7 +180,7 @@ function classify(leaf,   n, i, c, c2, j, k, t, s, sp, np, ln, found, x, lv, pmi
         }
         if (FT[sp] == "D") {
             if (c == DQ) { sp--; if ((lv = level(sp)) < pmin) pmin = lv }
-            else if (c2 == "$(") { FT[++sp] = "N"; FD[sp] = 0; i++ }
+            else if (c2 == "$(") { FT[++sp] = "N"; FD[sp] = 0; FSUB[sp] = 1; i++ }
             else if (c2 == "${") { FT[++sp] = "B"; FD[sp] = 0; i++ }
             i++
             continue
@@ -196,7 +202,7 @@ function classify(leaf,   n, i, c, c2, j, k, t, s, sp, np, ln, found, x, lv, pmi
         if (c == DQ) { FT[++sp] = "D"; FD[sp] = 0; i++; continue }
         if (c2 == "${") { FT[++sp] = "B"; FD[sp] = 0; i += 2; continue }
         if (FT[sp] == "B") {
-            if (c2 == "$(") { FT[++sp] = "N"; FD[sp] = 0; i++ }
+            if (c2 == "$(") { FT[++sp] = "N"; FD[sp] = 0; FSUB[sp] = 1; i++ }
             else if (c == "{") FD[sp]++
             else if (c == "}") {
                 if (FD[sp] > 0) FD[sp]--; else sp--
@@ -205,15 +211,19 @@ function classify(leaf,   n, i, c, c2, j, k, t, s, sp, np, ln, found, x, lv, pmi
             i++
             continue
         }
-        if (c == "#" && (i == 1 || index(" \t\n;&|()<>", substr(leaf, i - 1, 1)))) return
+        if (c == "#" && (i == 1 || index(" \t\n;&|(<>", substr(leaf, i - 1, 1)) || (substr(leaf, i - 1, 1) == ")" && sub_close != i - 1))) {
+            CUT[ln] = i - START[ln] + 1
+            while (i <= n && substr(leaf, i, 1) != "\n") i++
+            continue
+        }
         if (c == "(" || c2 == "$(") {
-            FD[sp]++
+            PK[sp, ++FD[sp]] = (c2 == "$(")
             i += (c == "(") ? 1 : 2
             continue
         }
         if (c == ")") {
-            if (FD[sp] > 0) FD[sp]--
-            else if (sp > 1) sp--
+            if (FD[sp] > 0) { if (PK[sp, FD[sp]]) sub_close = i; FD[sp]-- }
+            else if (sp > 1) { if (FSUB[sp]) sub_close = i; FSUB[sp] = 0; sp-- }
             else if (np) return
             else { i++; continue }
             if ((lv = level(sp)) < pmin) pmin = lv
@@ -250,10 +260,10 @@ BEGIN {
     if (leaf == "") next
     classify(leaf)
     if (mode == "scan" && (widen == "1" || UNQ)) {
-        printf "%s\036", leaf
+        for (k = 1; k <= NL; k++) printf "%s%s", (k in CUT ? substr(L[k], 1, CUT[k] - 1) : L[k]), (k == NL ? "\036" : "\n")
         next
     }
     last = 0
     for (k = 1; k <= NL; k++) if (CLS[k] == "c") last = k
-    for (k = 1; k <= NL; k++) if (CLS[k] == "c") printf "%s%s", L[k], (k == last ? END_LEAF : "\n")
+    for (k = 1; k <= NL; k++) if (CLS[k] == "c") printf "%s%s", (k in CUT ? substr(L[k], 1, CUT[k] - 1) : L[k]), (k == last ? END_LEAF : "\n")
 }

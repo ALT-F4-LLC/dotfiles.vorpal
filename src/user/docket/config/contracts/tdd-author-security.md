@@ -1,6 +1,6 @@
 ---
 node: tdd-author-security
-version: 15
+version: 16
 archetype: executor-write
 packet_includes:
   - fragments/design-search.md
@@ -93,9 +93,8 @@ signals and incident-response needs. Cover key rotation, secret revocation, and
 recovery where applicable, with required evidence and responsible roles.
 
 # Emit
-Engine kind: `doc` (per frontmatter). Document type: `tdd`: the new or revised
-security-track technical design, with its status clear and document identity
-preserved. Include:
+Document type: `tdd`, the new or revised security-track technical design, with
+its status clear and document identity preserved. Include:
 
 - Problem, constraints, non-goals, current context, and versioned precedent.
 - Threat model: adversaries and capabilities, assets and security properties,

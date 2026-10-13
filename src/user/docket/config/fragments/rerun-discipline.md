@@ -1,6 +1,6 @@
 ---
 fragment: rerun-discipline
-version: 14
+version: 15
 ---
 # Re-run discipline
 
@@ -34,11 +34,11 @@ Allocate each attempt's scratch inside your assigned private step directory
 never re-resolve `$TMPDIR` mid-step, since a sandboxed and an unsandboxed
 call can resolve it differently) and use that literal `<TMP>/<STEP-N>.d`
 path directly wherever a private-step-directory reference is needed;
-creating it alone does not redirect writes. Set each command's `TMPDIR` and
-relevant tool-specific paths to redirect its private temporary,
-build-output, and writable cache paths beneath it, including `GOCACHE`; for
-Go, account for `GOTMPDIR` as well, but never override the shared
-`GOMODCACHE` (see vorpal-toolchain).
+creating it alone does not redirect writes. Leave `GOCACHE` at its default, which
+the sandbox write allowlist covers, and never override the shared `GOMODCACHE`:
+do not set it, redirect it through `GOPATH`, or create a private module cache.
+Do not prefix commands with `TMPDIR=` or other `NAME=value` assignments; such a
+prefix matches no sandbox allow rule and goes to the auto-mode classifier.
 Follow the evidence rules for fresh execution versus cached results. Use a
 private source copy when a command can write into the source tree or sibling
 edits could change its inputs. Isolate other mutable resources the command uses,

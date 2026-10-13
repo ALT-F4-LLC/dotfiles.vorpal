@@ -231,11 +231,15 @@ include:
   without losing member IDs. Give the design-search record for each repair:
   candidates weighed, the pick, why it won, or the one-line reason the
   search did not apply.
-- **Mutant evidence:** for every mutant an AC names, and every mutant run
-  under this contract's falsification, inline the mutation diff, the exact
-  test command, and its observed failing output trimmed to the decisive
-  lines. A path under your private step scratch directory is not evidence
-  for a mutant: no other step can read it. Write none when no mutant ran.
+- **Mutant evidence:** run every mutant an AC names against this fix
+  round's own commit, every round, whether or not the round touched the
+  mutated lines or their cases; a run from an earlier round or step does
+  not count. For each of those mutants, and every mutant run under this
+  contract's falsification, inline the mutation diff, the exact test
+  command, and its observed failing output trimmed to the decisive lines.
+  A path under your private step scratch directory is not evidence for a
+  mutant: no other step can read it. Write none only when no AC names a
+  mutant and no mutant ran under falsification.
 - **Findings not addressed:** ID, disposition, evidence, and remaining
   question or owning stage. Distinguish disproven premise, supported
   disagreement, unsuccessful reproduction, scope block, and unavailable

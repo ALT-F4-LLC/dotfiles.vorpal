@@ -57,6 +57,10 @@ no `dispatch close`, and never `dispatch abandon`; that verb discards live
 work unconditionally and belongs to pause's hard halt alone. Do not
 re-derive pause's steps here.
 
+Once the pause completes, remove the run's conductor token file so no later
+session inherits the capability: `rm <scratchpad>/conductor.d/RUN-N.token`.
+Pause keeps the file; finish owns its removal.
+
 Then continue the sweep.
 
 ## Sweep
@@ -153,6 +157,7 @@ or explicitly marked not applicable, never silently dropped:
 - artifact watches opened this session
 - worktrees created this session, each with its integration state
 - a driven Docket run, handed to docket-run's pause mode
+- that run's conductor token file, removed
 - operator questions this session never answered
 - `AskUserQuestion` rounds the operator never answered
 - uncommitted changes, split into this session's and others'

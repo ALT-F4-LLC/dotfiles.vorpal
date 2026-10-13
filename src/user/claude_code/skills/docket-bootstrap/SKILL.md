@@ -104,10 +104,11 @@ rewriting it. Create only missing axes; seven existing specs means no
 authoring or cleanup. A partial set is not permission to overwrite the files
 already there.
 
-Each author owns only its assigned output and report paths, publishes by
-writing them, and completes by reporting what it wrote and what it left
-open. Pass each author the absolute contract and fragment paths, its axis,
-date, project identity, snapshot context, and assigned output/report paths.
+Each author owns only its assigned draft and report paths below the session
+directory. An author writes its draft there, never to a canonical path, and
+completes by reporting what it wrote and what it left open. Pass each author
+the absolute contract and fragment paths, its axis, date, project identity,
+snapshot context, and assigned draft and report paths.
 Authors are leaf agents, do not commit, and do not wait for sibling drafts.
 Route each using its policy row, including exclusions. Dispatch independent
 authors in one batch when supported, respecting actual concurrency limits.
@@ -120,10 +121,9 @@ otherwise label the specs **seeded, not gate-validated**. A malformed file
 is a validation failure; confirm whether its author is still running before
 retrying.
 
-Publish verified private drafts only to the missing paths reserved by this
-session; for direct authoring, finalize the ownership manifest after
-verification instead. Record the exact created paths and hashes in the
-ownership manifest. Preserve
+Before dispatch, reserve each missing canonical path in the ownership
+manifest. After the verifier passes a draft, the main session copies it to
+its reserved path and records that path and its hash in the manifest. Preserve
 any path that appeared or changed concurrently. Do not use
 `git checkout --` or broad deletion to repair an unexplained change;
 establish byte ownership before any repair.

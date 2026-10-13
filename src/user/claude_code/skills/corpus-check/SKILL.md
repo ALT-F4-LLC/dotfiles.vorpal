@@ -136,7 +136,10 @@ Frozen-file edits need a version bump, decided by the file changed:
   carries no version comment.
 - `schemas/*.json`: cannot be edited in place. A fix here means a new
   `<name>@<N+1>.json` plus a `payload =` update in every workflow step that
-  declared the old version. Treat this as expensive by default — surface
+  declared the old version, a `payload:` frontmatter update and `version`
+  bump in every contract that pinned it, and a `[pipeline].version` bump with
+  a changelog entry for each such workflow. Count all of these in the cost
+  estimate. Treat this as expensive by default — surface
   it as an operator-decision item rather than staging it, unless the
   operator already asked for the schema cascade.
 - `policy.toml`: carries a `[policy].version`, but `frozen-drift-check` does

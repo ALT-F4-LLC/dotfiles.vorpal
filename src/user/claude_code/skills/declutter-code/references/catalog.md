@@ -528,10 +528,11 @@ worker never touches, and what looks like cruft and is not.
 - Why: clutters output and can leak state.
 - Simplification: remove it, or route it through the repository's logger
   when it carries diagnostic value.
-- Risk: a test may assert on captured stdout. Search the test tree for the
-  literal.
-- Proof: `probe` when a test captures output; `inert` only when no test
-  and no script reads the output.
+- Risk: a test may assert on captured stdout, and a script or downstream
+  parser may read a CLI's stdout. Search the test tree and the repository's
+  scripts for the literal; a match leaves the print alone.
+- Proof: `probe`. A print can feed a parser even when no test captures it,
+  so `inert` never applies.
 - Source: https://github.com/dabit3/deslop.
 
 ## Naming and shape

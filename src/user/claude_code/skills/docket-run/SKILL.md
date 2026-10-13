@@ -2223,7 +2223,7 @@ on residue, however new and however real the gap: the ruling exists
 because every one of those rounds looked worth buying on its own.
 
 **What the corpus and the engine already do machine-side, and what this
-ruling still covers.** From `ac-report@2` a verify-ac seat reports an
+ruling still covers.** From `ac-report@3` a verify-ac seat reports an
 out-of-scope AC as `unmet-out-of-scope`, which routes to the one-seat
 verify vote instead of the fixer; a run pinned to an earlier workflow
 version gets no such routing. The engine itself refuses a round whose

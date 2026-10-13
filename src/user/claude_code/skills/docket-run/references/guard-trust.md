@@ -17,13 +17,13 @@ examples reflect the swept commands as of that build.
 - [`docket guard`](#guard-commands) — 118 lines
   - [`guard record`](#guard-record) — 18 lines
   - [`guard spawn`](#guard-spawn) — 46 lines
-- [`docket trust`](#trust-commands) — 201 lines
+- [`docket trust`](#trust-commands) — 186 lines
   - [`trust add <name> -- <argv...>`](#trust-add) — 66 lines
   - [`trust list`](#trust-list) — 16 lines
   - [`trust probe [--run RUN-N]`](#trust-probe) — 23 lines
   - [`trust rm <name>`](#trust-rm) — 20 lines
-  - [The tenancy audit trail](#trust-tenancy-audit) — 18 lines
-  - [The trust audit trail](#trust-audit) — 38 lines
+  - [The trust audit trail](#trust-audit) — 41 lines
+- [Project registration events](#trust-tenancy-audit) — 15 lines
 
 <a id="guard-commands"></a>
 
@@ -288,24 +288,6 @@ command says so; the log then still shows the entry as trusted.
 
 `NOT_FOUND` (exit 2) when no such entry is bound here.
 
-<a id="trust-tenancy-audit"></a>
-
-#### The tenancy audit trail
-
-Registering a project writes a `project-registered` event carrying the
-`cwd`, the resolved `identity`, and the `verb` that triggered it. Like a
-trust event it has **no run** — registration precedes any run of the
-project by definition — and it is scoped to the project it names, so it
-appears in that project's feed rather than in every project's.
-
-Registration itself is **gated**: a project row is created only when the
-identity is a git worktree (or a deliberate `.docket` store) **and** the
-verb is not a read. A read from a directory with no project answers
-"nothing here"; a run-addressed verb (`step`, `dispatch`, `trust`,
-`guard`, `events`) carries on with no ambient project, since it reads its
-project off the run; and a verb that would WRITE through the ambient
-project from a non-repository directory is refused by name.
-
 <a id="trust-audit"></a>
 
 #### The trust audit trail
@@ -344,3 +326,21 @@ no database at the resolved path, the change is applied and a
 **warning** says it was not recorded and that nothing will show it later.
 The warning prints on stderr and rides in the JSON response's `warnings`
 array; like the argv disclosure, it is not suppressible.
+
+### Project registration events
+
+<a id="trust-tenancy-audit"></a>
+
+Registering a project writes a `project-registered` event carrying the
+`cwd`, the resolved `identity`, and the `verb` that triggered it. Like a
+trust event it has **no run** — registration precedes any run of the
+project by definition — and it is scoped to the project it names, so it
+appears in that project's feed rather than in every project's.
+
+Registration itself is **gated**: a project row is created only when the
+identity is a git worktree (or a deliberate `.docket` store) **and** the
+verb is not a read. A read from a directory with no project answers
+"nothing here"; a run-addressed verb (`step`, `dispatch`, `trust`,
+`guard`, `events`) carries on with no ambient project, since it reads its
+project off the run; and a verb that would WRITE through the ambient
+project from a non-repository directory is refused by name.

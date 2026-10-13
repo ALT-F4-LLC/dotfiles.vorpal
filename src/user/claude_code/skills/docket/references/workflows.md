@@ -35,7 +35,7 @@ Engine defaults live in the database, read by the claim machinery:
 | `lease.ttl.<class>` | duration | (falls back to default) | per-class lease TTL. **The class is a step's `class` field, which defaults to its `executor` name** — see below |
 | `limits.max.<class>` | int ≥ 1 or `auto` | (unset: the pinned `[limits]` max) | the class's concurrency cap. Overrides that class's pinned `[limits]` max at scheduling time, read at every scheduling pass. `auto` is half the host's CPUs, with a minimum of 1. A project value wins over a `--global` value |
 | `attempt.max` | int ≥ 1 | `3` | maximum claims per entity |
-| `budget.default` | number ≥ 0 | `0` | default per-run budget cap; 0 is unlimited. Resolved at `run start` and stored on the run, so setting it later does not re-cap a run already started |
+| `budget.default` | number ≥ 0 | `0` | default per-run budget cap; 0 is unlimited. Resolved at `run start` and stored on the run, so setting it later does not re-cap a run already started. The cap counts the declared-cost floor, raised to the reported total of the unit `budget.unit` names when that is set |
 | `budget.unit` | unit name or `""` | `""` | which recorded usage unit the run cap counts. Empty (the default) means the cap rests on the declared-cost floor alone |
 | `dispatch.ttl` | duration | `30m` | how long a dispatch manifest stays open before `next` auto-abandons it |
 | `dispatch.grace` | duration | `15m` | how long a claimed step may go unrecorded before it counts as a dispatch discrepancy |
@@ -49,7 +49,7 @@ Engine defaults live in the database, read by the claim machinery:
 | `vote.hold.rule` | rule name or `""` | `""` | vote rule a **materialized held step** is tallied under. Empty (the default) mints held steps as `human` for one operator to decide |
 | `vote.hold.voters` | comma-separated names or `""` | `""` | who casts on a materialized held step. Empty (the default) mints held steps as `human` |
 | `vote.hold.cost` | number ≥ 0 | `0` | declared `expected_cost` a materialized held **vote** step is minted with, so a held panel accrues to the budget floor. Applies only when both `vote.hold.*` keys above are set; a hold minted `human` ignores it |
-| `budget.usage.default` | number ≥ 0 | `0` | default per-run cap over measured usage (`budget.usage.unit`); separate from `budget.default`, which counts declared step costs |
+| `budget.usage.default` | number ≥ 0 | `0` | default per-run cap over measured usage (`budget.usage.unit`); an independent cap, checked alongside `budget.default`, which counts the declared-cost floor and, when `budget.unit` is set, that unit's reported total |
 | `budget.usage.unit` | unit name or `""` | `""` | which recorded usage unit `budget.usage.default` counts |
 | `registration.auto` | bool | `true` | auto-register workflows and schemas at `run activate` from the instance-config roots |
 
@@ -696,7 +696,7 @@ name    = "reconcile"
 after   = ["synthesize-findings"]
 action  = "aggregate"
 inputs  = ["synthesize-findings.findings"]
-payload = "findings@13"
+payload = "findings@14"
 params  = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
 ```
 

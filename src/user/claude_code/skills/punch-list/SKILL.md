@@ -215,12 +215,16 @@ the verdicts before presenting the report table. Then:
 - **pass** on an open issue: close it only after the operator confirms
   the batch of passes shown in the report table, with the compare-and-set
   `--if-version` read the [docket skill](../docket/SKILL.md) requires.
-  This is the one mutation this skill makes beyond filing and commenting.
+  This close is the one mutation this skill makes beyond filing and
+  commenting; the reopen under **fail** on a closed issue is the only other.
 - **fail** on an open issue: the comment is the record; the issue stays
   where it is for groom.
 - **fail** on a closed issue: this is a regression. Follow the project's
   reopen or new-regression convention, and link the prior issue when a
   new one is filed. A new issue goes through the filing section above.
+  Reopening the prior issue (`docket issue reopen`, shorthand for moving it
+  back to backlog) is a permitted second mutation, taken only after the
+  operator confirms it, with the same compare-and-set `--if-version` read.
 - **unverifiable**: comment and leave the state unchanged.
 
 Edit nothing else on any issue.
